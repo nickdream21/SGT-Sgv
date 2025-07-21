@@ -1,0 +1,234 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Site.Master.cs" Inherits="WebSGV.SiteMaster" %>
+
+<!DOCTYPE html>
+<html lang="es">
+<head runat="server">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%: Page.Title %> - Sistema SGV</title>
+
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+    <link href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" rel="stylesheet" />
+    <link href="/Content/App.css" rel="stylesheet" />
+    <link href="~/Content/App.css" rel="stylesheet" />
+
+
+    <!-- IMPORTANTE: jQuery PRIMERO para evitar ReferenceError -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+    <!-- Estilos para corregir problemas de transparencia -->
+    <style type="text/css">
+        /* Encabezados de tabla */
+        .table thead th {
+            background-color: #0275d8 !important;
+            color: white !important;
+            font-weight: bold !important;
+            border: 1px solid #0269c2 !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+            padding: 10px !important;
+            opacity: 1 !important;
+        }
+
+        /* Filas de tabla */
+        .table tbody tr {
+            opacity: 1 !important;
+        }
+
+            .table tbody tr:nth-child(odd) {
+                background-color: #f8f9fa !important;
+            }
+
+            .table tbody tr:nth-child(even) {
+                background-color: #ffffff !important;
+            }
+
+        .table tbody td {
+            border: 1px solid #dee2e6 !important;
+            padding: 8px !important;
+            vertical-align: middle !important;
+            opacity: 1 !important;
+        }
+
+        /* Tarjetas de indicadores */
+        .card.shadow-sm {
+            border-radius: 8px !important;
+            overflow: hidden !important;
+            margin-bottom: 15px !important;
+            opacity: 1 !important;
+        }
+
+        .card-body {
+            opacity: 1 !important;
+        }
+
+        /* Fondos gradientes */
+        .bg-gradient-primary {
+            background: linear-gradient(to right, #0062cc, #0275d8) !important;
+            opacity: 1 !important;
+        }
+
+        .bg-gradient-danger {
+            background: linear-gradient(to right, #c82333, #dc3545) !important;
+            opacity: 1 !important;
+        }
+
+        .bg-gradient-success {
+            background: linear-gradient(to right, #218838, #28a745) !important;
+            opacity: 1 !important;
+        }
+
+        .bg-gradient-info {
+            background: linear-gradient(to right, #138496, #17a2b8) !important;
+            opacity: 1 !important;
+        }
+
+        /* Modales */
+        .modal-content, .modal-header, .modal-body, .modal-footer {
+            opacity: 1 !important;
+        }
+    </style>
+</head>
+
+<body>
+    <form runat="server">
+        <!-- ScriptManager básico sin scripts personalizados -->
+        <asp:ScriptManager ID="ScriptManager1" runat="server" EnablePageMethods="true" />
+
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light" runat="server" id="Navbar">
+            <a class="navbar-brand" href="Inicio.aspx">Sistema SGV</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+
+                    <!-- Factura -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownFactura" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Factura
+     </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownFactura">
+                            <a class="dropdown-item" href="BuscarFactura.aspx">Buscar Factura</a>
+                            <a class="dropdown-item" href="AgregarFactura.aspx">Agregar Factura</a>
+                        </div>
+                    </li>
+
+                    <!-- CPIC -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownCPIC" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">CPIC
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownCPIC">
+                            <a class="dropdown-item" href="BuscarCPIC.aspx">Buscar CPIC</a>
+                            <a class="dropdown-item" href="AgregarCPIC.aspx">Agregar CPIC</a>
+                        </div>
+                    </li>
+
+
+
+                    <!-- Orden de Viaje -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownOrdenViaje" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Orden de Viaje
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownOrdenViaje">
+                            <a class="dropdown-item" href="AgregarOrdenViaje.aspx">Agregar</a>
+                            <a class="dropdown-item" href="BuscarOrdenViaje.aspx">Buscar</a>
+                        </div>
+                    </li>
+
+                    <!-- Abastecimiento de Combustible -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownAbastecimiento" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Abastecimiento de Combustible
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownAbastecimiento">
+                            <a class="dropdown-item" href="AgregarAbastecimiento.aspx">Agregar</a>
+                            <a class="dropdown-item" href="BuscarAbastecimiento.aspx">Buscar</a>
+                        </div>
+                    </li>
+
+                    <!-- Registro -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownRegistro" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Registro
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownRegistro">
+                            <a class="dropdown-item" href="RegistroChoferes.aspx">Choferes</a>
+                            <a class="dropdown-item" href="RegistroTractos.aspx">Tractos</a>
+                            <a class="dropdown-item" href="RegistroSemiremolques.aspx">Semiremolques</a>
+                            <a class="dropdown-item" href="RegistroProductos.aspx">Productos</a>
+                            <a class="dropdown-item" href="RegistroClientes.aspx">Clientes</a>
+                            <a class="dropdown-item" href="RegistroRutas.aspx">Rutas</a>
+                        </div>
+                    </li>
+
+                    <!-- Consultas -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownConsultas" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Consultas
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownConsultas">
+                            <a class="dropdown-item" href="Reportes.aspx">Reportes</a>
+                            <a class="dropdown-item" href="ConsultaAuditoria.aspx">Auditoria</a>
+                        </div>
+                    </li>
+
+                    <!-- Indicadores -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownIndicadores" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Indicadores
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownIndicadores">
+                            <a class="dropdown-item" href="CargarExcel.aspx">Registrar Indicadores</a>
+                            <a class="dropdown-item" href="Dashboard.aspx">Buscar Indicadores</a>
+                        </div>
+                    </li>
+
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Contenido principal -->
+        <div class="container mt-4">
+            <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer text-center py-3">
+            <p class="mb-0">&copy; <%: DateTime.Now.Year %> - Sistema SGV</p>
+        </footer>
+    </form>
+
+    <!-- Scripts en orden correcto - SIN jQuery porque ya está en el head -->
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+    <!-- Scripts para corregir problemas de transparencia -->
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            console.log("Inicializando scripts maestros del SGV...");
+
+            // Inicializar componentes
+            $('.dropdown-toggle').dropdown();
+
+            // Obtener instancia del PageRequestManager
+            if (typeof Sys !== 'undefined' && Sys.WebForms && Sys.WebForms.PageRequestManager) {
+                var prm = Sys.WebForms.PageRequestManager.getInstance();
+
+                // Al recibir una respuesta AJAX
+                prm.add_endRequest(function (sender, args) {
+                    console.log("AJAX completado en Site.Master");
+
+                    // Reinicializar dropdowns después de AJAX
+                    $('.dropdown-toggle').dropdown();
+                });
+            }
+        });
+    </script>
+    <!-- ContentPlaceHolder para scripts específicos de página -->
+    <asp:ContentPlaceHolder ID="ScriptsSection" runat="server">
+    </asp:ContentPlaceHolder>
+</body>
+</html>

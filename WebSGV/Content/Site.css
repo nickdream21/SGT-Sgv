@@ -1,0 +1,127 @@
+﻿Site.css
+/* Estilos para mejorar las modales */
+.modal-content {
+    border-radius: 0.5rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+.modal-backdrop.show {
+    opacity: 0.5;
+}
+
+.modal-header {
+    border-top-left-radius: 0.4rem;
+    border-top-right-radius: 0.4rem;
+}
+
+/* Mejorar visibilidad de tablas en modal */
+.modal .table {
+    margin-bottom: 0;
+}
+
+.modal .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.modal .table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.075);
+}
+
+/* Mejorar altura máxima del contenido modal */
+.modal .modal-body {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+/* Mejoras para los encabezados de tarjetas */
+.card-header {
+    padding: 0.75rem 1.25rem;
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Gradientes para las tarjetas indicadoras */
+.bg-gradient-primary {
+    background: linear-gradient(180deg, #007bff 0%, #0069d9 100%);
+}
+
+.bg-gradient-danger {
+    background: linear-gradient(180deg, #dc3545 0%, #c82333 100%);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(180deg, #28a745 0%, #218838 100%);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(180deg, #17a2b8 0%, #138496 100%);
+}
+
+
+/* Estilos para la paginación */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+    .pagination-container a {
+        color: #0056b3;
+        float: left;
+        padding: 8px 16px;
+        text-decoration: none;
+        transition: background-color .3s;
+        border: 1px solid #ddd;
+        margin: 0 4px;
+        border-radius: 4px;
+    }
+
+        .pagination-container a:hover:not(.active-page) {
+            background-color: #ddd;
+        }
+
+    .pagination-container .active-page {
+        background-color: #0d6efd;
+        color: white;
+        border: 1px solid #0d6efd;
+        border-radius: 4px;
+        padding: 8px 16px;
+        margin: 0 4px;
+    }
+
+    .pagination-container a:first-child {
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+    }
+
+    .pagination-container a:last-child {
+        border-top-right-radius: 4px;
+        border-bottom-right-radius: 4px;
+    }
+
+/* Estilos para el wrap de texto en GridView */
+.text-wrap {
+    white-space: normal !important;
+    word-break: break-word;
+}
+
+/* Estilos para tarjetas y encabezados */
+.card-header {
+    font-weight: 500;
+}
+
+.card {
+    margin-bottom: 25px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+/* Estilos para el modal de detalles */
+.modal-body label.form-label {
+    color: #0056b3;
+}
+
+.modal-body .bg-light {
+    min-height: 40px;
+    max-height: 150px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+}
