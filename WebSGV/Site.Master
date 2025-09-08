@@ -107,11 +107,23 @@
 
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
+                    <!-- Despacho -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDespacho" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Despacho
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownDespacho">
+                            <a class="dropdown-item" href="RegistroDespacho.aspx">Agregar Despacho</a>
+                            <a class="dropdown-item" href="ListaDespachos.aspx">Listar Despachos</a>
+                        </div>
+                    </li>
+
+
+
 
                     <!-- Factura -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownFactura" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Factura
-     </a>
+                        </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdownFactura">
                             <a class="dropdown-item" href="BuscarFactura.aspx">Buscar Factura</a>
                             <a class="dropdown-item" href="AgregarFactura.aspx">Agregar Factura</a>
