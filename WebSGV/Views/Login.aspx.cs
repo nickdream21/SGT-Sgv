@@ -45,8 +45,8 @@ namespace WebSGV.Views
                     Response.Cookies.Add(cookie);
                 }
 
-                // Redirigir a la página de inicio
-                Response.Redirect("Inicio.aspx");
+                // ✅ CORRECCIÓN: Redirigir a la página de inicio con la ruta correcta
+                Response.Redirect("~/Views/Inicio.aspx");
             }
             else
             {

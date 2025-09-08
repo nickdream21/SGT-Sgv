@@ -207,6 +207,7 @@
     <Content Include="Default.aspx" />
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
+    <Content Include="Scripts\agregarOrdenViaje.js" />
     <Content Include="Scripts\bootstrap.bundle.js" />
     <Content Include="Scripts\bootstrap.bundle.min.js" />
     <Content Include="Scripts\bootstrap.esm.js" />
@@ -284,9 +285,11 @@
     <Content Include="Views\ConsultaAuditoria.aspx" />
     <Content Include="Views\Dashboard.aspx" />
     <Content Include="Views\Inicio.aspx" />
+    <Content Include="Views\ListaDespachos.aspx" />
     <Content Include="Views\Login.aspx" />
     <Content Include="Views\RegistroChoferes.aspx" />
     <Content Include="Views\RegistroClientes.aspx" />
+    <Content Include="Views\RegistroDespacho.aspx" />
     <Content Include="Views\RegistroProductos.aspx" />
     <Content Include="Views\RegistroRutas.aspx" />
     <Content Include="Views\RegistroSemiremolques.aspx" />
@@ -442,6 +445,13 @@
     <Compile Include="Views\Inicio.aspx.designer.cs">
       <DependentUpon>Inicio.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Views\ListaDespachos.aspx.cs">
+      <DependentUpon>ListaDespachos.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\ListaDespachos.aspx.designer.cs">
+      <DependentUpon>ListaDespachos.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Views\Login.aspx.cs">
       <DependentUpon>Login.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -462,6 +472,13 @@
     </Compile>
     <Compile Include="Views\RegistroClientes.aspx.designer.cs">
       <DependentUpon>RegistroClientes.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\RegistroDespacho.aspx.cs">
+      <DependentUpon>RegistroDespacho.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\RegistroDespacho.aspx.designer.cs">
+      <DependentUpon>RegistroDespacho.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\RegistroProductos.aspx.cs">
       <DependentUpon>RegistroProductos.aspx</DependentUpon>
