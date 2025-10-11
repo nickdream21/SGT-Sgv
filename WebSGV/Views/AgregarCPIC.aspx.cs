@@ -24,9 +24,85 @@ namespace WebSGV.Views
             {
                 txtFechaEmision.Text = DateTime.Now.ToString("yyyy-MM-dd");
                 CrearDirectoriosUpload();
+
+                // NUEVO: Cargar datos desde query string si vienen de BuscarFactura
+                CargarDatosDesdeQueryString();
             }
         }
 
+        private void CargarDatosDesdeQueryString()
+        {
+            try
+            {
+                // Leer parámetros de la URL
+                string numeroFactura = Request.QueryString["numeroFactura"];
+                string valorTotalStr = Request.QueryString["valorTotal"];
+
+                if (!string.IsNullOrEmpty(numeroFactura) && !string.IsNullOrEmpty(valorTotalStr))
+                {
+                    // Decodificar el número de factura (por si tiene caracteres especiales)
+                    numeroFactura = HttpUtility.UrlDecode(numeroFactura);
+
+                    // Asignar número de factura
+                    txtNumFactura.Text = numeroFactura;
+
+                    // Validar y asignar valor total
+                    if (decimal.TryParse(valorTotalStr, out decimal valorTotal))
+                    {
+                        txtTotalFlete.Text = valorTotal.ToString("0.00");
+
+                        // Validar que la factura realmente existe y no está ya asociada a un CPIC
+                        ValidarFacturaParaCPIC(numeroFactura);
+
+                        // Mostrar mensaje informativo
+                        MostrarMensaje($"Datos cargados automáticamente para la factura: {numeroFactura}", "info");
+                    }
+                    else
+                    {
+                        MostrarMensaje("Error al cargar el valor total desde la factura seleccionada.", "warning");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error al cargar datos desde query string: " + ex.Message);
+                MostrarMensaje("Error al cargar datos automáticamente: " + ex.Message, "warning");
+            }
+        }
+        private void ValidarFacturaParaCPIC(string numeroFactura)
+        {
+            try
+            {
+                // Verificar si la factura ya tiene CPIC asociado
+                if (ExisteFactura(numeroFactura))
+                {
+                    lblErrorFactura.Text = "⚠️ ADVERTENCIA: Esta factura ya tiene un CPIC asociado.";
+                    lblErrorFactura.CssClass = "text-warning";
+                }
+                else
+                {
+                    // Verificar que la factura existe en el sistema
+                    int? idFactura = ObtenerIdFactura(numeroFactura);
+                    if (idFactura.HasValue)
+                    {
+                        lblErrorFactura.Text = "✅ Factura válida para crear CPIC.";
+                        lblErrorFactura.CssClass = "text-success";
+                    }
+                    else
+                    {
+                        lblErrorFactura.Text = "❌ El número de factura no existe en el sistema.";
+                        lblErrorFactura.CssClass = "text-danger";
+                        txtTotalFlete.Text = string.Empty;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error al validar factura: " + ex.Message);
+                lblErrorFactura.Text = "Error al validar la factura.";
+                lblErrorFactura.CssClass = "text-danger";
+            }
+        }
         protected void GuardarCPIC(object sender, EventArgs e)
         {
             try
@@ -83,28 +159,9 @@ namespace WebSGV.Views
                     return;
                 }
 
-                // Validar peso neto
-                decimal pesoNeto;
-                if (!decimal.TryParse(txtPesoNeto.Text, out pesoNeto) || pesoNeto <= 0)
-                {
-                    MostrarMensaje("Debe ingresar un peso neto válido.", "error");
-                    return;
-                }
-
-                // Validar peso bruto
-                decimal pesoBruto;
-                if (!decimal.TryParse(txtPesoBruto.Text, out pesoBruto) || pesoBruto <= 0)
-                {
-                    MostrarMensaje("Debe ingresar un peso bruto válido.", "error");
-                    return;
-                }
-
-                // Validar que el peso bruto sea mayor al peso neto
-                if (pesoBruto <= pesoNeto)
-                {
-                    MostrarMensaje("El peso bruto debe ser mayor al peso neto.", "error");
-                    return;
-                }
+                // Valores por defecto para peso (ya que los campos fueron removidos)
+                decimal pesoNeto = 0;   // Valor por defecto
+                decimal pesoBruto = 0;  // Valor por defecto
 
                 // Validar archivo si se seleccionó uno
                 string resultadoValidacion = ValidarArchivo();
@@ -122,29 +179,11 @@ namespace WebSGV.Views
                     return;
                 }
 
-                // Procesar productos desde el campo oculto
-                if (string.IsNullOrEmpty(hiddenProductos.Value))
-                {
-                    MostrarMensaje("Debe agregar al menos un producto.", "error");
-                    return;
-                }
-
-                List<ProductoCPIC> productos = ObtenerProductosDesdeJSON(hiddenProductos.Value);
-                if (productos.Count == 0)
-                {
-                    MostrarMensaje("Debe agregar al menos un producto válido.", "error");
-                    return;
-                }
-
-                // Guardar el CPIC y sus productos
-                GuardarCPICEnBaseDeDatos(numeroCPIC, idFactura.Value, valorTotalFlete, fechaEmision, pesoNeto, pesoBruto, productos);
+                // Guardar el CPIC (SIN productos)
+                GuardarCPICEnBaseDeDatos(numeroCPIC, idFactura.Value, valorTotalFlete, fechaEmision, pesoNeto, pesoBruto);
 
                 // Mostrar mensaje de éxito
                 MostrarMensaje("CPIC registrado correctamente.", "success");
-
-                // Evitar que aparezcan mensajes de alerta
-                ScriptManager.RegisterStartupScript(this, GetType(), "AvoidAlerts",
-                    "window.onbeforeunload = null; window.skipRowValidation = true;", true);
 
                 // Limpiar el formulario
                 LimpiarFormulario();
@@ -153,13 +192,6 @@ namespace WebSGV.Views
             {
                 MostrarMensaje("Error: " + ex.Message, "error");
             }
-        }
-
-        // Clase para manejar los productos (sin peso individual)
-        private class ProductoCPIC
-        {
-            public int IdProducto { get; set; }
-            public int Cantidad { get; set; }
         }
 
         // Clase para información del documento
@@ -173,9 +205,9 @@ namespace WebSGV.Views
             public string Descripcion { get; set; }
         }
 
-        // Guardar en base de datos (actualizado con peso neto, bruto y documentos)
+        // Guardar en base de datos (SIN productos)
         private void GuardarCPICEnBaseDeDatos(string numeroCPIC, int idFactura, decimal valorTotalFlete,
-                                           DateTime fechaEmision, decimal pesoNeto, decimal pesoBruto, List<ProductoCPIC> productos)
+                                           DateTime fechaEmision, decimal pesoNeto, decimal pesoBruto)
         {
             string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
 
@@ -186,7 +218,7 @@ namespace WebSGV.Views
                 {
                     try
                     {
-                        // 1. Insertar el CPIC con los nuevos campos
+                        // 1. Insertar el CPIC
                         string queryInsertCPIC = @"
                             INSERT INTO CPIC (numeroCPIC, idFactura, valorTotalFlete, fechaEmision, pesoNeto, pesoBruto)
                             VALUES (@numeroCPIC, @idFactura, @valorTotalFlete, @fechaEmision, @pesoNeto, @pesoBruto);
@@ -205,25 +237,7 @@ namespace WebSGV.Views
                             idCPIC = Convert.ToInt32(cmd.ExecuteScalar());
                         }
 
-                        // 2. Insertar los productos
-                        string queryInsertProducto = @"
-                            INSERT INTO CPIC_Productos (idCPIC, idProducto, cantidadBolsasProducto, pesoKg)
-                            VALUES (@idCPIC, @idProducto, @cantidadBolsas, @pesoKg)";
-
-                        foreach (var producto in productos)
-                        {
-                            using (SqlCommand cmd = new SqlCommand(queryInsertProducto, connection, transaction))
-                            {
-                                cmd.Parameters.AddWithValue("@idCPIC", idCPIC);
-                                cmd.Parameters.AddWithValue("@idProducto", producto.IdProducto);
-                                cmd.Parameters.AddWithValue("@cantidadBolsas", producto.Cantidad);
-                                cmd.Parameters.AddWithValue("@pesoKg", 0); // Peso 0 ya que se maneja a nivel CPIC
-
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
-
-                        // 3. Procesar archivo si existe
+                        // 2. Procesar archivo si existe
                         if (fileUploadCPIC.HasFile)
                         {
                             DocumentoInfo docInfo = ProcesarArchivo(idCPIC, numeroCPIC);
@@ -403,27 +417,6 @@ namespace WebSGV.Views
             }
         }
 
-        // Procesar JSON de productos (actualizado sin peso)
-        private List<ProductoCPIC> ObtenerProductosDesdeJSON(string json)
-        {
-            List<ProductoCPIC> productos = new List<ProductoCPIC>();
-
-            if (string.IsNullOrEmpty(json))
-                return productos;
-
-            try
-            {
-                productos = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ProductoCPIC>>(json);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("Error al deserializar productos: " + ex.Message);
-                throw new Exception("Error al procesar los productos: " + ex.Message);
-            }
-
-            return productos ?? new List<ProductoCPIC>();
-        }
-
         // Obtener ID de factura
         private int? ObtenerIdFactura(string numeroFactura)
         {
@@ -457,25 +450,15 @@ namespace WebSGV.Views
             }
         }
 
-        // Limpiar formulario (actualizado con nuevos campos)
+        // Limpiar formulario (SIN campos de peso)
         private void LimpiarFormulario()
         {
             txtNumCPIC.Text = string.Empty;
             txtNumFactura.Text = string.Empty;
             txtFechaEmision.Text = DateTime.Now.ToString("yyyy-MM-dd");
             txtTotalFlete.Text = string.Empty;
-            txtPesoNeto.Text = string.Empty;
-            txtPesoBruto.Text = string.Empty;
-            txtDescripcionDoc.Text = string.Empty; // Nuevo campo
+            txtDescripcionDoc.Text = string.Empty;
             lblErrorFactura.Text = string.Empty;
-            hiddenProductos.Value = string.Empty;
-
-            // Limpiar archivo
-            // Nota: fileUploadCPIC se limpia automáticamente en postback
-
-            // Limpiar tabla sin alertas
-            ScriptManager.RegisterStartupScript(this, GetType(), "resetProductos",
-                "window.skipRowValidation = true; document.querySelector('#tablaProductos tbody').innerHTML = ''; agregarFila(); clearFileSelection();", true);
         }
 
         // Verificar si el CPIC existe
@@ -638,33 +621,6 @@ namespace WebSGV.Views
             }
         }
 
-        // Obtener JSON de productos para el dropdown
-        protected string ObtenerProductosJSON()
-        {
-            try
-            {
-                DataTable dt = new DataTable();
-                using (SqlConnection connection = new SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString))
-                {
-                    connection.Open();
-                    string query = "SELECT idProducto, nombre FROM Producto";
-                    using (SqlCommand command = new SqlCommand(query, connection))
-                    {
-                        using (SqlDataAdapter adapter = new SqlDataAdapter(command))
-                        {
-                            adapter.Fill(dt);
-                        }
-                    }
-                }
-                return Newtonsoft.Json.JsonConvert.SerializeObject(dt);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("Error al obtener productos: " + ex.Message);
-                return "[]"; // Retornar array vacío en caso de error
-            }
-        }
-
         // Mostrar mensaje
         private void MostrarMensaje(string mensaje, string tipo)
         {
@@ -673,4 +629,4 @@ namespace WebSGV.Views
             lblMensaje.Visible = true;
         }
     }
-}  
+}

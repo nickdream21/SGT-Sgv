@@ -1,22 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using System.Data.SqlClient;
-using System.IO;
-using System.Diagnostics;
 
 namespace WebSGV.Views
 {
     public partial class BusquedaCPIC : System.Web.UI.Page
     {
+        // Configuración para archivos
+        private const long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+        private readonly string[] ALLOWED_EXTENSIONS = { ".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png" };
+
+        // Propiedad para controlar el modo de edición
+        protected bool ModoEdicionActivo
+        {
+            get
+            {
+                return ViewState["ModoEdicionActivo"] != null ? (bool)ViewState["ModoEdicionActivo"] : false;
+            }
+            set
+            {
+                ViewState["ModoEdicionActivo"] = value;
+            }
+        }
+
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!IsPostBack)
             {
-                // Inicializaciones necesarias
+                CrearDirectoriosUpload();
             }
         }
 
@@ -48,6 +66,11 @@ namespace WebSGV.Views
                     CargarDocumentosCPIC(cpic.IdCPIC);
                     pnlResultados.Visible = true;
                     pnlNoResultados.Visible = false;
+
+                    // Asegurar que el modo edición esté desactivado al buscar
+                    ModoEdicionActivo = false;
+                    pnlUploadDocumentos.Visible = false;
+
                     MostrarMensaje($"CPIC {numeroCPIC} encontrado correctamente.", "success");
                 }
                 else
@@ -246,11 +269,25 @@ namespace WebSGV.Views
             txtPesoNeto.ReadOnly = false;    // NUEVO
             txtPesoBruto.ReadOnly = false;   // NUEVO
 
+            // Activar modo de edición
+            ModoEdicionActivo = true;
+            pnlUploadDocumentos.Visible = true;
+
             // Mostrar el botón de guardar cambios
             btnHabilitarEdicion.Visible = false;
             btnGuardarCambios.Visible = true;
 
-            MostrarMensaje("Modo de edición activado. Realice los cambios necesarios y presione 'Guardar Cambios'.", "info");
+            // Rebind del GridView de documentos para mostrar botones de eliminar
+            if (!string.IsNullOrEmpty(txtNumCPIC.Text))
+            {
+                CPIC_Actualizado cpic = ObtenerCPIC(txtNumCPIC.Text);
+                if (cpic != null)
+                {
+                    CargarDocumentosCPIC(cpic.IdCPIC);
+                }
+            }
+
+            MostrarMensaje("Modo de edición activado. Puede editar los campos, agregar o eliminar documentos.", "info");
         }
 
         protected void GuardarCambios(object sender, EventArgs e)
@@ -293,13 +330,7 @@ namespace WebSGV.Views
                 if (actualizado)
                 {
                     // Volver al modo de sólo lectura
-                    txtNumFactura.ReadOnly = true;
-                    txtFechaEmision.ReadOnly = true;
-                    txtPesoNeto.ReadOnly = true;
-                    txtPesoBruto.ReadOnly = true;
-                    btnHabilitarEdicion.Visible = true;
-                    btnGuardarCambios.Visible = false;
-
+                    DesactivarModoEdicion();
                     MostrarMensaje("CPIC actualizado correctamente.", "success");
                 }
                 else
@@ -311,6 +342,33 @@ namespace WebSGV.Views
             {
                 MostrarMensaje("Error al guardar los cambios: " + ex.Message, "danger");
                 Debug.WriteLine("Error en GuardarCambios: " + ex.Message);
+            }
+        }
+
+        private void DesactivarModoEdicion()
+        {
+            txtNumFactura.ReadOnly = true;
+            txtFechaEmision.ReadOnly = true;
+            txtPesoNeto.ReadOnly = true;
+            txtPesoBruto.ReadOnly = true;
+
+            ModoEdicionActivo = false;
+            pnlUploadDocumentos.Visible = false;
+
+            btnHabilitarEdicion.Visible = true;
+            btnGuardarCambios.Visible = false;
+
+            // Limpiar campos de upload
+            txtDescripcionDoc.Text = "";
+
+            // Rebind del GridView de documentos para ocultar botones de eliminar
+            if (!string.IsNullOrEmpty(txtNumCPIC.Text))
+            {
+                CPIC_Actualizado cpic = ObtenerCPIC(txtNumCPIC.Text);
+                if (cpic != null)
+                {
+                    CargarDocumentosCPIC(cpic.IdCPIC);
+                }
             }
         }
 
@@ -383,12 +441,7 @@ namespace WebSGV.Views
         protected void Cancelar(object sender, EventArgs e)
         {
             // Volver al modo de solo lectura
-            txtNumFactura.ReadOnly = true;
-            txtFechaEmision.ReadOnly = true;
-            txtPesoNeto.ReadOnly = true;
-            txtPesoBruto.ReadOnly = true;
-            btnHabilitarEdicion.Visible = true;
-            btnGuardarCambios.Visible = false;
+            DesactivarModoEdicion();
             lblMensaje.Text = "";
             MostrarMensaje("Edición cancelada.", "info");
         }
@@ -399,10 +452,82 @@ namespace WebSGV.Views
             txtBuscarCPIC.Text = "";
             pnlResultados.Visible = false;
             pnlNoResultados.Visible = false;
+            pnlUploadDocumentos.Visible = false;
+            ModoEdicionActivo = false;
             lblMensaje.Text = "";
         }
 
-        // FUNCIONALIDAD DE DOCUMENTOS
+        // ============ FUNCIONALIDAD DE DOCUMENTOS ============
+
+        protected void SubirDocumento(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!fileUploadCPIC.HasFile)
+                {
+                    MostrarMensaje("Debe seleccionar un archivo para subir.", "warning");
+                    return;
+                }
+
+                // Validar archivo
+                string resultadoValidacion = ValidarArchivo();
+                if (!string.IsNullOrEmpty(resultadoValidacion))
+                {
+                    MostrarMensaje(resultadoValidacion, "danger");
+                    return;
+                }
+
+                // Obtener ID del CPIC actual
+                CPIC_Actualizado cpic = ObtenerCPIC(txtNumCPIC.Text);
+                if (cpic == null)
+                {
+                    MostrarMensaje("No se puede obtener el CPIC actual.", "danger");
+                    return;
+                }
+
+                // Procesar y guardar archivo
+                DocumentoInfo docInfo = ProcesarArchivo(cpic.IdCPIC, cpic.NumeroCPIC);
+                if (docInfo != null)
+                {
+                    string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                    using (SqlConnection connection = new SqlConnection(connectionString))
+                    {
+                        connection.Open();
+                        using (SqlTransaction transaction = connection.BeginTransaction())
+                        {
+                            try
+                            {
+                                GuardarDocumentoEnBD(cpic.IdCPIC, docInfo, connection, transaction);
+                                transaction.Commit();
+
+                                MostrarMensaje("Documento subido correctamente.", "success");
+
+                                // Limpiar campos de upload
+                                txtDescripcionDoc.Text = "";
+
+                                // Recargar documentos
+                                CargarDocumentosCPIC(cpic.IdCPIC);
+
+                                // Ejecutar JavaScript para limpiar archivo
+                                ScriptManager.RegisterStartupScript(this, GetType(), "clearFile",
+                                    "clearFileSelection();", true);
+                            }
+                            catch (Exception ex)
+                            {
+                                transaction.Rollback();
+                                throw new Exception("Error al guardar documento: " + ex.Message);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al subir documento: " + ex.Message, "danger");
+                Debug.WriteLine("Error en SubirDocumento: " + ex.Message);
+            }
+        }
+
         protected void gvDocumentos_RowCommand(object sender, GridViewCommandEventArgs e)
         {
             try
@@ -417,12 +542,90 @@ namespace WebSGV.Views
                     case "Ver":
                         VerDocumento(idDocumento);
                         break;
+                    case "Eliminar":
+                        EliminarDocumento(idDocumento);
+                        break;
                 }
             }
             catch (Exception ex)
             {
                 MostrarMensaje("Error al procesar documento: " + ex.Message, "danger");
                 Debug.WriteLine("Error en gvDocumentos_RowCommand: " + ex.Message);
+            }
+        }
+
+        private void EliminarDocumento(int idDocumento)
+        {
+            try
+            {
+                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    // Obtener información del documento antes de eliminarlo
+                    string queryInfo = "SELECT rutaArchivo FROM DocumentosCPIC WHERE idDocumento = @idDocumento";
+                    string rutaArchivo = "";
+
+                    using (SqlCommand cmd = new SqlCommand(queryInfo, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@idDocumento", idDocumento);
+                        object result = cmd.ExecuteScalar();
+                        if (result != null)
+                        {
+                            rutaArchivo = result.ToString();
+                        }
+                    }
+
+                    // Marcar como inactivo en lugar de eliminar físicamente
+                    string queryEliminar = @"
+                        UPDATE DocumentosCPIC 
+                        SET activo = 0, fechaEliminacion = @fechaEliminacion, usuarioEliminacion = @usuarioEliminacion
+                        WHERE idDocumento = @idDocumento";
+
+                    using (SqlCommand cmd = new SqlCommand(queryEliminar, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@idDocumento", idDocumento);
+                        cmd.Parameters.AddWithValue("@fechaEliminacion", DateTime.Now);
+                        cmd.Parameters.AddWithValue("@usuarioEliminacion", ObtenerUsuarioActual());
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        if (rowsAffected > 0)
+                        {
+                            // Opcional: Eliminar archivo físico (comentado por seguridad)
+                            /*
+                            if (!string.IsNullOrEmpty(rutaArchivo))
+                            {
+                                string rutaCompleta = Server.MapPath(rutaArchivo);
+                                if (File.Exists(rutaCompleta))
+                                {
+                                    File.Delete(rutaCompleta);
+                                }
+                            }
+                            */
+
+                            MostrarMensaje("Documento eliminado correctamente.", "success");
+
+                            // Recargar documentos
+                            CPIC_Actualizado cpic = ObtenerCPIC(txtNumCPIC.Text);
+                            if (cpic != null)
+                            {
+                                CargarDocumentosCPIC(cpic.IdCPIC);
+                            }
+                        }
+                        else
+                        {
+                            MostrarMensaje("No se pudo eliminar el documento.", "danger");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error al eliminar documento: " + ex.Message);
+                MostrarMensaje("Error al eliminar documento: " + ex.Message, "danger");
             }
         }
 
@@ -529,6 +732,162 @@ namespace WebSGV.Views
             return null;
         }
 
+        // ============ MÉTODOS DE ARCHIVOS (Reutilizados de AgregarCPIC) ============
+
+        private string ValidarArchivo()
+        {
+            if (!fileUploadCPIC.HasFile)
+            {
+                return ""; // No es obligatorio
+            }
+
+            var archivo = fileUploadCPIC.PostedFile;
+
+            // Validar tamaño
+            if (archivo.ContentLength > MAX_FILE_SIZE)
+            {
+                return "El archivo es demasiado grande. El tamaño máximo permitido es 50MB.";
+            }
+
+            if (archivo.ContentLength == 0)
+            {
+                return "El archivo está vacío.";
+            }
+
+            // Validar extensión
+            string extension = Path.GetExtension(archivo.FileName).ToLower();
+            if (!Array.Exists(ALLOWED_EXTENSIONS, ext => ext == extension))
+            {
+                return "Tipo de archivo no permitido. Use: PDF, DOC, DOCX, JPG, PNG.";
+            }
+
+            return ""; // Todo OK
+        }
+
+        private DocumentoInfo ProcesarArchivo(int idCPIC, string numeroCPIC)
+        {
+            try
+            {
+                var archivo = fileUploadCPIC.PostedFile;
+                string nombreOriginal = Path.GetFileName(archivo.FileName);
+                string extension = Path.GetExtension(nombreOriginal).ToLower();
+
+                // Generar nombre único para el archivo
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string nombreArchivo = $"CPIC_{numeroCPIC}_{timestamp}{extension}";
+
+                // Crear ruta de destino
+                string carpetaAno = DateTime.Now.Year.ToString();
+                string carpetaMes = DateTime.Now.ToString("MM");
+                string rutaCarpeta = Server.MapPath($"~/Uploads/CPIC/{carpetaAno}/{carpetaMes}/");
+
+                // Crear directorios si no existen
+                if (!Directory.Exists(rutaCarpeta))
+                {
+                    Directory.CreateDirectory(rutaCarpeta);
+                }
+
+                string rutaCompleta = Path.Combine(rutaCarpeta, nombreArchivo);
+
+                // Guardar archivo
+                archivo.SaveAs(rutaCompleta);
+
+                // Crear info del documento
+                return new DocumentoInfo
+                {
+                    NombreOriginal = nombreOriginal,
+                    NombreArchivo = nombreArchivo,
+                    RutaCompleta = $"~/Uploads/CPIC/{carpetaAno}/{carpetaMes}/{nombreArchivo}",
+                    TipoArchivo = extension,
+                    TamanoBytes = archivo.ContentLength,
+                    Descripcion = txtDescripcionDoc.Text.Trim()
+                };
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error al procesar archivo: " + ex.Message);
+                throw new Exception("Error al guardar el archivo: " + ex.Message);
+            }
+        }
+
+        private void GuardarDocumentoEnBD(int idCPIC, DocumentoInfo docInfo, SqlConnection connection, SqlTransaction transaction)
+        {
+            string queryInsertDoc = @"
+                INSERT INTO DocumentosCPIC 
+                (idCPIC, nombreOriginal, nombreArchivo, rutaArchivo, tipoArchivo, tamanoBytes, fechaSubida, usuarioSubida, descripcion, activo)
+                VALUES 
+                (@idCPIC, @nombreOriginal, @nombreArchivo, @rutaArchivo, @tipoArchivo, @tamanoBytes, @fechaSubida, @usuarioSubida, @descripcion, 1)";
+
+            using (SqlCommand cmd = new SqlCommand(queryInsertDoc, connection, transaction))
+            {
+                cmd.Parameters.AddWithValue("@idCPIC", idCPIC);
+                cmd.Parameters.AddWithValue("@nombreOriginal", docInfo.NombreOriginal);
+                cmd.Parameters.AddWithValue("@nombreArchivo", docInfo.NombreArchivo);
+                cmd.Parameters.AddWithValue("@rutaArchivo", docInfo.RutaCompleta);
+                cmd.Parameters.AddWithValue("@tipoArchivo", docInfo.TipoArchivo);
+                cmd.Parameters.AddWithValue("@tamanoBytes", docInfo.TamanoBytes);
+                cmd.Parameters.AddWithValue("@fechaSubida", DateTime.Now);
+                cmd.Parameters.AddWithValue("@usuarioSubida", ObtenerUsuarioActual());
+                cmd.Parameters.AddWithValue("@descripcion", string.IsNullOrEmpty(docInfo.Descripcion) ? DBNull.Value : (object)docInfo.Descripcion);
+
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        private void CrearDirectoriosUpload()
+        {
+            try
+            {
+                string carpetaBase = Server.MapPath("~/Uploads/CPIC/");
+                if (!Directory.Exists(carpetaBase))
+                {
+                    Directory.CreateDirectory(carpetaBase);
+                }
+
+                // Crear carpetas del año y mes actual
+                string carpetaAno = Path.Combine(carpetaBase, DateTime.Now.Year.ToString());
+                if (!Directory.Exists(carpetaAno))
+                {
+                    Directory.CreateDirectory(carpetaAno);
+                }
+
+                string carpetaMes = Path.Combine(carpetaAno, DateTime.Now.ToString("MM"));
+                if (!Directory.Exists(carpetaMes))
+                {
+                    Directory.CreateDirectory(carpetaMes);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error al crear directorios: " + ex.Message);
+            }
+        }
+
+        private string ObtenerUsuarioActual()
+        {
+            try
+            {
+                // Si usas Session para almacenar el usuario
+                if (Session["Usuario"] != null)
+                {
+                    return Session["Usuario"].ToString();
+                }
+
+                // Si usas autenticación de Windows
+                if (HttpContext.Current.User.Identity.IsAuthenticated)
+                {
+                    return HttpContext.Current.User.Identity.Name;
+                }
+
+                // Default si no hay usuario
+                return "Sistema";
+            }
+            catch
+            {
+                return "Usuario";
+            }
+        }
+
         private string ObtenerContentType(string extension)
         {
             switch (extension.ToLower())
@@ -543,7 +902,8 @@ namespace WebSGV.Views
             }
         }
 
-        // FUNCIONES AUXILIARES PARA LA VISTA
+        // ============ FUNCIONES AUXILIARES PARA LA VISTA ============
+
         protected string ObtenerIconoArchivo(string tipoArchivo)
         {
             switch (tipoArchivo.ToLower())
@@ -573,7 +933,8 @@ namespace WebSGV.Views
             return string.Format("{0:n1} {1}", number, suffixes[counter]);
         }
 
-        // FUNCIONALIDAD DE PRODUCTOS (actualizada sin peso)
+        // ============ FUNCIONALIDAD DE PRODUCTOS ============
+
         protected void gvProductos_RowEditing(object sender, GridViewEditEventArgs e)
         {
             gvProductos.EditIndex = e.NewEditIndex;
@@ -784,9 +1145,22 @@ namespace WebSGV.Views
             lblMensaje.CssClass = $"alert alert-{tipo}";
             lblMensaje.Visible = true;
         }
+
+        // ============ CLASES AUXILIARES ============
+
+        private class DocumentoInfo
+        {
+            public string NombreOriginal { get; set; }
+            public string NombreArchivo { get; set; }
+            public string RutaCompleta { get; set; }
+            public string TipoArchivo { get; set; }
+            public long TamanoBytes { get; set; }
+            public string Descripcion { get; set; }
+        }
     }
 
-    // CLASES ACTUALIZADAS CON NUEVOS CAMPOS
+    // ============ CLASES DE DATOS ACTUALIZADAS ============
+
     public class CPIC_Actualizado
     {
         public int IdCPIC { get; set; }

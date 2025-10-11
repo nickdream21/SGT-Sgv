@@ -85,9 +85,7 @@ namespace WebSGV.Views
 
                 // Guardar el conductor
                 GuardarConductor(numeroDocumento, txtNombres.Text.Trim(), txtApellidoPaterno.Text.Trim(),
-                                txtApellidoMaterno.Text.Trim(), txtFechaNacimiento.Text,
-                                txtDireccion.Text.Trim(), txtTelefono.Text.Trim(),
-                                txtCorreo.Text.Trim(), carnetExtranjeria);
+                                txtApellidoMaterno.Text.Trim(), txtTelefono.Text.Trim(), carnetExtranjeria);
 
                 // Mostrar mensaje de éxito
                 mensajeExito.Visible = true;
@@ -119,8 +117,7 @@ namespace WebSGV.Views
         }
 
         private void GuardarConductor(string dni, string nombre, string apPaterno, string apMaterno,
-                                    string fechaNacimiento, string direccion, string telefono,
-                                    string correo, string carnetExtranjeria)
+                                    string telefono, string carnetExtranjeria)
         {
             string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
             string query = @"INSERT INTO Conductor (DNI, nombre, apPaterno, apMaterno, fechaNacimiento, 
@@ -137,10 +134,10 @@ namespace WebSGV.Views
                     cmd.Parameters.AddWithValue("@nombre", nombre);
                     cmd.Parameters.AddWithValue("@apPaterno", apPaterno);
                     cmd.Parameters.AddWithValue("@apMaterno", apMaterno);
-                    cmd.Parameters.AddWithValue("@fechaNacimiento", DateTime.Parse(fechaNacimiento));
-                    cmd.Parameters.AddWithValue("@direccion", string.IsNullOrEmpty(direccion) ? DBNull.Value : (object)direccion);
+                    cmd.Parameters.AddWithValue("@fechaNacimiento", DBNull.Value); // Siempre NULL
+                    cmd.Parameters.AddWithValue("@direccion", DBNull.Value); // Siempre NULL
                     cmd.Parameters.AddWithValue("@telefono", string.IsNullOrEmpty(telefono) ? DBNull.Value : (object)telefono);
-                    cmd.Parameters.AddWithValue("@correo", string.IsNullOrEmpty(correo) ? DBNull.Value : (object)correo);
+                    cmd.Parameters.AddWithValue("@correo", DBNull.Value); // Siempre NULL
                     cmd.Parameters.AddWithValue("@carnetExtranjeria", string.IsNullOrEmpty(carnetExtranjeria) ? DBNull.Value : (object)carnetExtranjeria);
 
                     conn.Open();
@@ -157,10 +154,7 @@ namespace WebSGV.Views
             txtNombres.Text = string.Empty;
             txtApellidoPaterno.Text = string.Empty;
             txtApellidoMaterno.Text = string.Empty;
-            txtFechaNacimiento.Text = string.Empty;
-            txtDireccion.Text = string.Empty;
             txtTelefono.Text = string.Empty;
-            txtCorreo.Text = string.Empty;
         }
 
         private void mostrarError(string mensaje)

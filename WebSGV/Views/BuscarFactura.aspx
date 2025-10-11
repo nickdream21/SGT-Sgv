@@ -16,6 +16,93 @@
                 </div>
             </div>
 
+            <!-- NUEVA SECCIÓN: Tabla de Todas las Facturas -->
+            <div class="panel panel-info facturas-panel">
+                <div class="panel-heading">
+                    <h2><i class="fa fa-list"></i> Lista de Facturas Registradas</h2>
+                    <div class="panel-actions">
+                        <asp:Button ID="btnRefrescarLista" runat="server" CssClass="btn btn-sm btn-light" 
+                            Text="🔄 Refrescar" OnClick="RefrescarListaFacturas" ToolTip="Actualizar lista de facturas" />
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <asp:Panel ID="pnlListaFacturas" runat="server">
+                        <div class="table-responsive">
+                            <asp:GridView ID="gvFacturas" runat="server" AutoGenerateColumns="False" 
+                                CssClass="table table-bordered table-hover facturas-table"
+                                DataKeyNames="idFactura" OnRowCommand="gvFacturas_RowCommand" 
+                                EmptyDataText="No hay facturas registradas en el sistema."
+                                AllowPaging="true" PageSize="10" OnPageIndexChanging="gvFacturas_PageIndexChanging">
+                                <Columns>
+                                    <asp:BoundField DataField="numeroFactura" HeaderText="N° Factura" />
+                                    <asp:TemplateField HeaderText="Cliente">
+                                        <ItemTemplate>
+                                            <div class="cliente-info">
+                                                <strong><%# Eval("nombreCliente") %></strong>
+                                                <%# !string.IsNullOrEmpty(Eval("rucCliente").ToString()) ? 
+                                                    "<br/><small class='text-muted'>RUC: " + Eval("rucCliente") + "</small>" : "" %>
+                                            </div>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Fecha Emisión">
+                                        <ItemTemplate>
+                                            <span><%# Convert.ToDateTime(Eval("fechaEmision")).ToString("dd/MM/yyyy") %></span>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="N° Pedido">
+                                        <ItemTemplate>
+                                            <span><%# string.IsNullOrEmpty(Eval("numeroPedido").ToString()) ? 
+                                                "<em class='text-muted'>Sin pedido</em>" : Eval("numeroPedido").ToString() %></span>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Importe Total">
+                                        <ItemTemplate>
+                                            <span class="importe-total">S/ <%# Convert.ToDecimal(Eval("valorTotal")).ToString("N2") %></span>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="CPIC">
+                                        <ItemTemplate>
+                                            <div class="cpic-actions">
+                                                <asp:Panel ID="pnlSinCPIC" runat="server" Visible='<%# string.IsNullOrEmpty(Eval("numeroCPIC").ToString()) %>'>
+                                                    <asp:Button ID="btnCrearCPIC" runat="server" CssClass="btn btn-sm btn-warning" 
+                                                        Text="📄 Crear CPIC" CommandName="CrearCPIC" 
+                                                        CommandArgument='<%# Eval("idFactura") %>' 
+                                                        ToolTip="Crear CPIC para esta factura" />
+                                                </asp:Panel>
+                                                <asp:Panel ID="pnlConCPIC" runat="server" Visible='<%# !string.IsNullOrEmpty(Eval("numeroCPIC").ToString()) %>'>
+                                                    <span class="cpic-numero">
+                                                        <i class="fa fa-check-circle text-success"></i> 
+                                                        <%# Eval("numeroCPIC") %>
+                                                    </span>
+                                                </asp:Panel>
+                                            </div>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Acciones">
+                                        <ItemTemplate>
+                                            <asp:Button ID="btnEditarFactura" runat="server" CssClass="btn btn-sm btn-primary" 
+                                                Text="✏️ Editar" CommandName="EditarFactura" 
+                                                CommandArgument='<%# Eval("numeroFactura") %>' 
+                                                ToolTip="Editar esta factura" />
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                </Columns>
+                                <PagerStyle CssClass="pagination-ys" />
+                                <EmptyDataTemplate>
+                                    <div class="alert alert-info text-center">
+                                        <i class="fa fa-info-circle"></i>
+                                        <strong>No hay facturas registradas</strong><br />
+                                        <a href="AgregarFactura.aspx" class="btn btn-primary btn-sm mt-2">
+                                            <i class="fa fa-plus"></i> Registrar Primera Factura
+                                        </a>
+                                    </div>
+                                </EmptyDataTemplate>
+                            </asp:GridView>
+                        </div>
+                    </asp:Panel>
+                </div>
+            </div>
+
             <asp:Panel ID="pnlResultados" runat="server" Visible="false">
                 <!-- Información Principal de la Factura -->
                 <div class="panel panel-default">
@@ -44,7 +131,7 @@
                         <div class="row">
                             <div class="col-md-6 form-group">
                                 <label for="txtNumFactura">N° Factura:</label>
-                                <asp:TextBox ID="txtNumFactura" runat="server" CssClass="form-control" ReadOnly="true"></asp:TextBox>
+                                <asp:TextBox ID="txtNumFactura" runat="server" CssClass="form-control"></asp:TextBox>
                             </div>
                             <div class="col-md-6 form-group">
                                 <label for="txtNumPedido">N° Pedido:</label>
@@ -66,7 +153,48 @@
                     </div>
                 </div>
 
-                <!-- NUEVA SECCIÓN: Documentos Asociados -->
+                <!-- NUEVA SECCIÓN: Upload de Documento -->
+                <div class="panel panel-success upload-panel">
+                    <div class="panel-heading">
+                        <h2><i class="fa fa-upload"></i> Agregar Nuevo Documento</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="upload-container">
+                            <div class="row">
+                                <div class="col-md-8 form-group">
+                                    <label for="fileUploadFactura">Adjuntar Documento (PDF recomendado):</label>
+                                    <asp:FileUpload ID="fileUploadFactura" runat="server" CssClass="form-control file-input" 
+                                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" Enabled="false" />
+                                    <small class="text-muted">
+                                        <i class="fa fa-info-circle"></i> 
+                                        Formatos permitidos: PDF, DOC, DOCX, JPG, PNG. Tamaño máximo: 50MB
+                                    </small>
+                                </div>
+                                <div class="col-md-4 form-group">
+                                    <label for="txtDescripcionDoc">Descripción del documento:</label>
+                                    <asp:TextBox ID="txtDescripcionDoc" runat="server" CssClass="form-control" 
+                                        placeholder="Ej: Factura Original, Documento Escaneado" MaxLength="300" ReadOnly="true"></asp:TextBox>
+                                </div>
+                            </div>
+                            
+                            <!-- Vista previa del archivo seleccionado -->
+                            <div id="file-preview" class="file-preview" style="display: none;">
+                                <div class="alert alert-info">
+                                    <div>
+                                        <i class="fa fa-file"></i>
+                                        <span id="file-name"></span> 
+                                        <span id="file-size" class="text-muted"></span>
+                                    </div>
+                                    <button type="button" class="btn-link" onclick="clearFileSelection()">
+                                        <i class="fa fa-times"></i> Quitar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN: Documentos Asociados -->
                 <div class="panel panel-default documentos-panel">
                     <div class="panel-heading">
                         <h2><i class="fa fa-file-pdf-o"></i> Documentos Asociados</h2>
@@ -159,8 +287,9 @@
     </div>
     
     <script>
-        // Script para validar números de pedido al editar
+        // Script para validar números de pedido al editar y funcionalidad de upload
         document.addEventListener('DOMContentLoaded', function () {
+            // Funcionalidad existente para validación de números de pedido
             const inputNumPedido = document.getElementById('<%= txtNumPedido.ClientID %>');
             if (inputNumPedido) {
                 inputNumPedido.addEventListener('keypress', function (e) {
@@ -179,7 +308,79 @@
                     }
                 });
             }
+
+            // NUEVA: Funcionalidad para upload de archivos
+            setupFileUpload();
         });
+
+        // NUEVA FUNCIÓN: Configurar funcionalidad de upload de archivos
+        function setupFileUpload() {
+            const fileInput = document.getElementById('<%= fileUploadFactura.ClientID %>');
+
+            if (fileInput) {
+                fileInput.addEventListener('change', function (e) {
+                    const file = e.target.files[0];
+                    const preview = document.getElementById('file-preview');
+                    const fileName = document.getElementById('file-name');
+                    const fileSize = document.getElementById('file-size');
+
+                    if (file) {
+                        // Validar tamaño (50MB máximo)
+                        const maxSize = 50 * 1024 * 1024; // 50MB en bytes
+                        if (file.size > maxSize) {
+                            alert('El archivo es demasiado grande. El tamaño máximo permitido es 50MB.');
+                            clearFileSelection();
+                            return;
+                        }
+
+                        // Validar tipo de archivo
+                        const allowedTypes = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+                        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+                        if (!allowedTypes.includes(fileExtension)) {
+                            alert('Tipo de archivo no permitido. Use: PDF, DOC, DOCX, JPG, PNG');
+                            clearFileSelection();
+                            return;
+                        }
+
+                        // Mostrar información del archivo
+                        if (fileName && fileSize && preview) {
+                            fileName.textContent = file.name;
+                            fileSize.textContent = `(${formatFileSize(file.size)})`;
+                            preview.style.display = 'block';
+                        }
+                    } else {
+                        if (preview) {
+                            preview.style.display = 'none';
+                        }
+                    }
+                });
+            }
+        }
+
+        // NUEVA FUNCIÓN: Limpiar selección de archivo
+        function clearFileSelection() {
+            const fileInput = document.getElementById('<%= fileUploadFactura.ClientID %>');
+            const preview = document.getElementById('file-preview');
+
+            if (fileInput) {
+                fileInput.value = '';
+            }
+            if (preview) {
+                preview.style.display = 'none';
+            }
+        }
+
+        // NUEVA FUNCIÓN: Formatear tamaño de archivo
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
     </script>
 
     <style>
@@ -231,6 +432,177 @@
         .required {
             color: #dc3545;
             margin-left: 3px;
+        }
+
+        /* NUEVOS ESTILOS PARA LA TABLA DE FACTURAS */
+        .facturas-panel .panel-heading {
+            background-color: #5bc0de;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .facturas-panel .panel-heading h2 {
+            color: white;
+            margin: 0;
+            flex-grow: 1;
+        }
+
+        .panel-actions .btn {
+            margin-left: 10px;
+        }
+
+        .facturas-table {
+            font-size: 0.9em;
+        }
+
+        .facturas-table th {
+            background-color: #f8f9fa;
+            border-top: 2px solid #5bc0de;
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .facturas-table td {
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .cliente-info {
+            text-align: left;
+            padding: 5px;
+        }
+
+        .cliente-info strong {
+            color: #2c3e50;
+        }
+
+        .importe-total {
+            font-weight: bold;
+            color: #27ae60;
+            font-size: 1.1em;
+        }
+
+        .cpic-actions {
+            text-align: center;
+        }
+
+        .cpic-numero {
+            font-weight: bold;
+            color: #27ae60;
+            background-color: #d4edda;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.9em;
+        }
+
+        .cpic-numero i {
+            margin-right: 4px;
+        }
+
+        /* Estilos para botones en la tabla */
+        .facturas-table .btn-sm {
+            font-size: 0.8em;
+            padding: 3px 8px;
+            margin: 1px;
+        }
+
+        /* Paginación */
+        .pagination-ys {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .pagination-ys .pagination {
+            display: inline-block;
+            padding-left: 0;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .pagination-ys .pagination > li {
+            display: inline;
+        }
+
+        .pagination-ys .pagination > li > a,
+        .pagination-ys .pagination > li > span {
+            position: relative;
+            float: left;
+            padding: 6px 12px;
+            margin-left: -1px;
+            line-height: 1.42857143;
+            color: #337ab7;
+            text-decoration: none;
+            background-color: #fff;
+            border: 1px solid #ddd;
+        }
+
+        /* NUEVOS ESTILOS PARA UPLOAD */
+        .upload-panel .panel-heading {
+            background-color: #5cb85c;
+            color: white;
+        }
+
+        .upload-panel .panel-heading h2 {
+            color: white;
+            margin: 0;
+        }
+
+        .file-input {
+            border: 2px dashed #ced4da;
+            border-radius: 6px;
+            padding: 12px;
+            transition: all 0.3s ease;
+            background-color: #fafafa;
+            min-height: 45px;
+        }
+
+        .file-input:hover:not(:disabled) {
+            border-color: #007bff;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,123,255,0.1);
+        }
+
+        .file-input:disabled {
+            background-color: #e9ecef;
+            border-color: #ced4da;
+            opacity: 0.6;
+        }
+
+        .file-preview {
+            margin-top: 10px;
+        }
+
+        .file-preview .alert {
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            border-radius: 4px;
+        }
+
+        .btn-link {
+            background: none;
+            border: none;
+            color: #dc3545;
+            text-decoration: none;
+            padding: 2px 5px;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        .btn-link:hover {
+            text-decoration: underline;
+        }
+
+        .upload-container {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
         }
 
         /* NUEVOS ESTILOS PARA DOCUMENTOS */
@@ -373,6 +745,18 @@
             border-color: #d43f3a;
         }
 
+        .btn-warning {
+            color: #fff;
+            background-color: #f0ad4e;
+            border-color: #eea236;
+        }
+
+        .btn-light {
+            color: #333;
+            background-color: #f8f9fa;
+            border-color: #dae0e5;
+        }
+
         .btn-sm {
             padding: 5px 10px;
             font-size: 12px;
@@ -413,6 +797,10 @@
 
         .text-danger {
             color: #d9534f;
+        }
+
+        .text-success {
+            color: #5cb85c;
         }
 
         .form-control {
@@ -475,6 +863,11 @@
             text-align: center;
         }
 
+        .table-responsive {
+            overflow-x: auto;
+            min-height: 0.01%;
+        }
+
         /* Responsivo */
         @media (max-width: 768px) {
             .documento-info {
@@ -492,6 +885,19 @@
             .col-md-6, .col-md-8, .col-md-4 {
                 width: 100%;
                 float: none;
+            }
+
+            .facturas-table {
+                font-size: 0.8em;
+            }
+
+            .panel-actions {
+                margin-top: 10px;
+            }
+
+            .facturas-panel .panel-heading {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
     </style>
