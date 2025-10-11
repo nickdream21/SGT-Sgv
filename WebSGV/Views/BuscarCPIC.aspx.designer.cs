@@ -96,6 +96,42 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.TextBox txtPesoBruto;
 
         /// <summary>
+        /// Control pnlUploadDocumentos.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlUploadDocumentos;
+
+        /// <summary>
+        /// Control fileUploadCPIC.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.FileUpload fileUploadCPIC;
+
+        /// <summary>
+        /// Control txtDescripcionDoc.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtDescripcionDoc;
+
+        /// <summary>
+        /// Control btnSubirDocumento.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnSubirDocumento;
+
+        /// <summary>
         /// Control pnlDocumentos.
         /// </summary>
         /// <remarks>

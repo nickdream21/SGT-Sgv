@@ -1,892 +1,1505 @@
-﻿<%@ Page Title="" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="ListaDespachos.aspx.cs" Inherits="WebSGV.Views.ListaDespachos" %>
+﻿<%@ Page Title="Gestión de Viajes y Lotes" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="ListaDespachos.aspx.cs" Inherits="WebSGV.Views.ListaDespachos" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card main-card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-tasks"></i> Gestión de Viajes y Lotes de Despacho
+                            <asp:Label ID="lblContadorGeneral" runat="server" CssClass="badge bg-light text-dark ms-3"></asp:Label>
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <asp:UpdatePanel ID="UpdatePanelMain" runat="server" UpdateMode="Conditional">
+                            <ContentTemplate>
+                                
+                                <!-- Mensajes -->
+                                <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-3">
+                                    <asp:Label ID="lblMensaje" runat="server" CssClass="alert"></asp:Label>
+                                </asp:Panel>
+
+                                <!-- NAVEGACIÓN PRINCIPAL -->
+                                <div class="navigation-card mb-4">
+                                    <div class="nav-header">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-8">
+                                                <h6 class="mb-0 nav-title">
+                                                    <i class="fas fa-compass"></i> Navegación
+                                                </h6>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="nav-buttons">
+                                                    <asp:Button ID="btnMostrarViajes" runat="server" 
+                                                        Text="Viajes Activos" 
+                                                        CssClass="btn btn-outline-primary btn-nav"
+                                                        OnClick="btnMostrarViajes_Click"
+                                                        CausesValidation="false" />
+                                                    
+                                                    <asp:Button ID="btnMostrarLotes" runat="server" 
+                                                        Text="Lotes Registrados" 
+                                                        CssClass="btn btn-outline-success btn-nav"
+                                                        OnClick="btnMostrarLotes_Click"
+                                                        CausesValidation="false" />
+
+                                                    <asp:Button ID="btnVolver" runat="server" 
+                                                        Text="Volver al Registro" 
+                                                        CssClass="btn btn-outline-secondary btn-nav"
+                                                        OnClick="btnVolver_Click"
+                                                        CausesValidation="false" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- PANEL PRINCIPAL: LISTA DE VIAJES ACTIVOS -->
+                                <asp:Panel ID="pnlListaViajes" runat="server" Visible="true">
+                                    <div class="section-card viajes-section">
+                                        <div class="section-header">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-6">
+                                                    <h5 class="section-title">
+                                                        <i class="fas fa-route"></i> Viajes en Progreso
+                                                        <asp:Label ID="lblContadorViajes" runat="server" CssClass="badge bg-primary ms-2"></asp:Label>
+                                                    </h5>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="section-actions">
+                                                        <asp:Button ID="btnRefrescarViajes" runat="server" 
+                                                            Text="Refrescar" 
+                                                            CssClass="btn btn-outline-primary btn-action"
+                                                            OnClick="btnRefrescarViajes_Click"
+                                                            CausesValidation="false" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="section-content">
+                                            
+                                            <!-- Filtros para Viajes -->
+                                            <div class="filters-container">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Filtrar por Conductor:</label>
+                                                            <asp:DropDownList ID="ddlFiltroConductorViajes" runat="server" 
+                                                                CssClass="form-select"
+                                                                AutoPostBack="true"
+                                                                OnSelectedIndexChanged="ddlFiltroConductorViajes_SelectedIndexChanged">
+                                                                <asp:ListItem Value="" Text="-- Todos los conductores --"></asp:ListItem>
+                                                            </asp:DropDownList>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Filtrar por Tipo:</label>
+                                                            <asp:DropDownList ID="ddlFiltroTipoViajes" runat="server" 
+                                                                CssClass="form-select"
+                                                                AutoPostBack="true"
+                                                                OnSelectedIndexChanged="ddlFiltroTipoViajes_SelectedIndexChanged">
+                                                                <asp:ListItem Value="" Text="-- Todos los tipos --"></asp:ListItem>
+                                                                <asp:ListItem Value="1" Text="Internacional"></asp:ListItem>
+                                                                <asp:ListItem Value="0" Text="Nacional"></asp:ListItem>
+                                                            </asp:DropDownList>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Buscar por N° Viaje:</label>
+                                                            <div class="input-group">
+                                                                <asp:TextBox ID="txtBuscarViaje" runat="server" 
+                                                                    CssClass="form-control" 
+                                                                    placeholder="Ej: VP-2025-001"
+                                                                    MaxLength="20">
+                                                                </asp:TextBox>
+                                                                <asp:Button ID="btnBuscarViaje" runat="server" 
+                                                                    Text="Buscar" 
+                                                                    CssClass="btn btn-outline-secondary"
+                                                                    OnClick="btnBuscarViaje_Click"
+                                                                    CausesValidation="false" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Grid de Viajes -->
+                                            <div class="data-grid-container">
+                                                <asp:GridView ID="gvViajesActivos" runat="server" 
+                                                    CssClass="table data-table"
+                                                    AutoGenerateColumns="false"
+                                                    EmptyDataText="No se encontraron viajes activos"
+                                                    OnRowCommand="gvViajesActivos_RowCommand"
+                                                    DataKeyNames="IdViajeProgreso">
+                                                    <Columns>
+                                                        <asp:BoundField DataField="NumeroViajeProgreso" HeaderText="N° Viaje" 
+                                                            ItemStyle-CssClass="viaje-number" />
+                                                        
+                                                        <asp:BoundField DataField="NombreConductor" HeaderText="Conductor" />
+                                                        
+                                                        <asp:BoundField DataField="FechaInicio" HeaderText="Fecha Inicio" 
+                                                            DataFormatString="{0:dd/MM/yyyy HH:mm}" />
+                                                        
+                                                        <asp:BoundField DataField="CantidadDespachos" HeaderText="Despachos" 
+                                                            ItemStyle-CssClass="text-center" />
+                                                        
+                                                        <asp:TemplateField HeaderText="Tipo">
+                                                            <ItemTemplate>
+                                                                <asp:Label runat="server" 
+                                                                    Text='<%# Convert.ToBoolean(Eval("EsInternacional")) ? "Internacional" : "Nacional" %>'
+                                                                    CssClass='<%# Convert.ToBoolean(Eval("EsInternacional")) ? "badge tipo-internacional" : "badge tipo-nacional" %>'>
+                                                                </asp:Label>
+                                                            </ItemTemplate>
+                                                        </asp:TemplateField>
+                                                        
+                                                        <asp:BoundField DataField="FechaUltimaActividad" HeaderText="Última Actividad" 
+                                                            DataFormatString="{0:dd/MM/yyyy HH:mm}" />
+                                                        
+                                                        <asp:TemplateField HeaderText="Estado">
+                                                            <ItemTemplate>
+                                                                <asp:Label runat="server" 
+                                                                    Text='<%# Eval("EstadoViaje") %>'
+                                                                    CssClass="badge estado-abierto">
+                                                                </asp:Label>
+                                                            </ItemTemplate>
+                                                        </asp:TemplateField>
+                                                        
+                                                        <asp:TemplateField HeaderText="Acciones" ItemStyle-Width="200px">
+                                                            <ItemTemplate>
+                                                                <div class="action-buttons">
+                                                                    <asp:Button runat="server" 
+                                                                        Text="Ver Despachos" 
+                                                                        CssClass="btn btn-action btn-info"
+                                                                        CommandName="VerDespachos"
+                                                                        CommandArgument='<%# Eval("IdViajeProgreso") %>' />
+                                                                    
+                                                                    <asp:Button runat="server" 
+                                                                        Text="Finalizar" 
+                                                                        CssClass="btn btn-action btn-danger"
+                                                                        CommandName="FinalizarViaje"
+                                                                        CommandArgument='<%# Eval("IdViajeProgreso") %>'
+                                                                        OnClientClick="return confirm('¿Está seguro de finalizar este viaje? No podrá agregar más despachos.');" />
+                                                                </div>
+                                                            </ItemTemplate>
+                                                        </asp:TemplateField>
+                                                    </Columns>
+                                                    <EmptyDataTemplate>
+                                                        <div class="empty-data">
+                                                            <i class="fas fa-info-circle"></i>
+                                                            <p>No se encontraron viajes activos con los criterios seleccionados</p>
+                                                        </div>
+                                                    </EmptyDataTemplate>
+                                                </asp:GridView>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </asp:Panel>
+
+                                <!-- PANEL PRINCIPAL: LISTA DE LOTES REGISTRADOS -->
+                                <asp:Panel ID="pnlListaLotes" runat="server" Visible="false">
+                                    <div class="section-card lotes-section">
+                                        <div class="section-header">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-6">
+                                                    <h5 class="section-title">
+                                                        <i class="fas fa-layer-group"></i> Lotes de Despacho Registrados
+                                                        <asp:Label ID="lblContadorLotes" runat="server" CssClass="badge bg-success ms-2"></asp:Label>
+                                                    </h5>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="section-actions">
+                                                        <asp:Button ID="btnRefrescarLotes" runat="server" 
+                                                            Text="Refrescar" 
+                                                            CssClass="btn btn-outline-success btn-action"
+                                                            OnClick="btnRefrescarLotes_Click"
+                                                            CausesValidation="false" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="section-content">
+                                            
+                                            <!-- Filtros para Lotes -->
+                                            <div class="filters-container">
+                                                <div class="row mb-3">
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Filtrar por Cliente:</label>
+                                                            <asp:DropDownList ID="ddlFiltroClienteLotes" runat="server" 
+                                                                CssClass="form-select"
+                                                                AutoPostBack="true"
+                                                                OnSelectedIndexChanged="ddlFiltroClienteLotes_SelectedIndexChanged">
+                                                                <asp:ListItem Value="" Text="-- Todos los clientes --"></asp:ListItem>
+                                                            </asp:DropDownList>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Tipo Operación:</label>
+                                                            <asp:DropDownList ID="ddlFiltroOperacionLotes" runat="server" 
+                                                                CssClass="form-select"
+                                                                AutoPostBack="true"
+                                                                OnSelectedIndexChanged="ddlFiltroOperacionLotes_SelectedIndexChanged">
+                                                                <asp:ListItem Value="" Text="-- Todas las operaciones --"></asp:ListItem>
+                                                                <asp:ListItem Value="CARGA" Text="Carga"></asp:ListItem>
+                                                                <asp:ListItem Value="DESCARGA" Text="Descarga"></asp:ListItem>
+                                                            </asp:DropDownList>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Planta:</label>
+                                                            <asp:DropDownList ID="ddlFiltroPlantaLotes" runat="server" 
+                                                                CssClass="form-select"
+                                                                AutoPostBack="true"
+                                                                OnSelectedIndexChanged="ddlFiltroPlantaLotes_SelectedIndexChanged">
+                                                                <asp:ListItem Value="" Text="-- Todas las plantas --"></asp:ListItem>
+                                                                <asp:ListItem Value="Lima" Text="Lima"></asp:ListItem>
+                                                                <asp:ListItem Value="Guayaquil" Text="Guayaquil"></asp:ListItem>
+                                                                <asp:ListItem Value="Trujillo" Text="Trujillo"></asp:ListItem>
+                                                                <asp:ListItem Value="Quito" Text="Quito"></asp:ListItem>
+                                                                <asp:ListItem Value="Chiclayo" Text="Chiclayo"></asp:ListItem>
+                                                                <asp:ListItem Value="Manta" Text="Manta"></asp:ListItem>
+                                                            </asp:DropDownList>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Buscar por Pedido:</label>
+                                                            <div class="input-group">
+                                                                <asp:TextBox ID="txtBuscarLote" runat="server" 
+                                                                    CssClass="form-control" 
+                                                                    placeholder="N° Pedido"
+                                                                    MaxLength="20">
+                                                                </asp:TextBox>
+                                                                <asp:Button ID="btnBuscarLote" runat="server" 
+                                                                    Text="Buscar" 
+                                                                    CssClass="btn btn-outline-secondary"
+                                                                    OnClick="btnBuscarLote_Click"
+                                                                    CausesValidation="false" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Filtro por Fechas -->
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Fecha Desde:</label>
+                                                            <asp:TextBox ID="txtFechaDesde" runat="server" 
+                                                                CssClass="form-control" 
+                                                                TextMode="Date">
+                                                            </asp:TextBox>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Fecha Hasta:</label>
+                                                            <asp:TextBox ID="txtFechaHasta" runat="server" 
+                                                                CssClass="form-control" 
+                                                                TextMode="Date">
+                                                            </asp:TextBox>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group">
+                                                            <label class="form-label">&nbsp;</label>
+                                                            <div class="filter-buttons">
+                                                                <asp:Button ID="btnFiltrarFecha" runat="server" 
+                                                                    Text="Filtrar por Fecha" 
+                                                                    CssClass="btn btn-primary btn-action"
+                                                                    OnClick="btnFiltrarFecha_Click"
+                                                                    CausesValidation="false" />
+                                                                <asp:Button ID="btnLimpiarFiltros" runat="server" 
+                                                                    Text="Limpiar" 
+                                                                    CssClass="btn btn-secondary btn-action"
+                                                                    OnClick="btnLimpiarFiltros_Click"
+                                                                    CausesValidation="false" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Grid de Lotes -->
+                                            <div class="data-grid-container">
+                                                <asp:GridView ID="gvLotesRegistrados" runat="server" 
+                                                    CssClass="table data-table"
+                                                    AutoGenerateColumns="false"
+                                                    EmptyDataText="No se encontraron lotes registrados"
+                                                    OnRowCommand="gvLotesRegistrados_RowCommand">
+                                                    <Columns>
+                                                        <asp:BoundField DataField="FechaProgramacion" HeaderText="Fecha Prog." 
+                                                            DataFormatString="{0:dd/MM/yyyy}" />
+                                                        
+                                                        <asp:BoundField DataField="NombreCliente" HeaderText="Cliente" />
+                                                        
+                                                        <asp:BoundField DataField="NumeroPedido" HeaderText="N° Pedido" 
+                                                            ItemStyle-CssClass="pedido-number" />
+                                                        
+                                                        <asp:BoundField DataField="TipoOperacion" HeaderText="Operación" />
+                                                        
+                                                        <asp:TemplateField HeaderText="Ámbito">
+                                                            <ItemTemplate>
+                                                                <asp:Label runat="server" 
+                                                                    Text='<%# Convert.ToBoolean(Eval("EsInternacional")) ? "Internacional" : "Nacional" %>'
+                                                                    CssClass='<%# Convert.ToBoolean(Eval("EsInternacional")) ? "badge tipo-internacional" : "badge tipo-nacional" %>'>
+                                                                </asp:Label>
+                                                            </ItemTemplate>
+                                                        </asp:TemplateField>
+                                                        
+                                                        <asp:BoundField DataField="PlantaOperacion" HeaderText="Planta" />
+                                                        
+                                                        <asp:BoundField DataField="CantidadDespachos" HeaderText="Despachos" 
+                                                            ItemStyle-CssClass="text-center despachos-count" />
+                                                        
+                                                        <asp:BoundField DataField="NumeroFactura" HeaderText="N° Factura" />
+                                                        
+                                                        <asp:BoundField DataField="NumeroCPIC" HeaderText="N° CPIC" />
+                                                        
+                                                        <asp:BoundField DataField="FechaCreacion" HeaderText="Creado" 
+                                                            DataFormatString="{0:dd/MM/yyyy HH:mm}" />
+                                                        
+                                                        <asp:TemplateField HeaderText="Acciones" ItemStyle-Width="200px">
+                                                            <ItemTemplate>
+                                                                <div class="action-buttons">
+                                                                    <asp:Button runat="server" 
+                                                                        Text="Editar Lote" 
+                                                                        CssClass="btn btn-action btn-warning"
+                                                                        CommandName="EditarLote"
+                                                                        CommandArgument='<%# Eval("IdLoteVirtual") %>' />
+                                                                    
+                                                                    <asp:Button runat="server" 
+                                                                        Text="Ver Detalles" 
+                                                                        CssClass="btn btn-action btn-info"
+                                                                        CommandName="VerDetallesLote"
+                                                                        CommandArgument='<%# Eval("IdLoteVirtual") %>' />
+                                                                </div>
+                                                            </ItemTemplate>
+                                                        </asp:TemplateField>
+                                                    </Columns>
+                                                    <EmptyDataTemplate>
+                                                        <div class="empty-data">
+                                                            <i class="fas fa-info-circle"></i>
+                                                            <p>No se encontraron lotes registrados con los criterios seleccionados</p>
+                                                        </div>
+                                                    </EmptyDataTemplate>
+                                                </asp:GridView>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </asp:Panel>
+
+                                <!-- PANEL DETALLES: DESPACHOS DEL VIAJE -->
+                                <asp:Panel ID="pnlDetallesViaje" runat="server" Visible="false">
+                                    <div class="section-card detalle-section">
+                                        <div class="section-header">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-8">
+                                                    <h5 class="section-title">
+                                                        <i class="fas fa-clipboard-list"></i> Detalles del Viaje: 
+                                                        <asp:Label ID="lblNumeroViajeDetalle" runat="server" CssClass="detail-identifier"></asp:Label>
+                                                    </h5>
+                                                    <div class="detail-info">
+                                                        Conductor: <asp:Label ID="lblConductorDetalle" runat="server" CssClass="detail-value"></asp:Label> | 
+                                                        Inicio: <asp:Label ID="lblFechaInicioDetalle" runat="server" CssClass="detail-value"></asp:Label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="section-actions">
+                                                        <asp:Button ID="btnFinalizarViajeDetalle" runat="server" 
+                                                            Text="Finalizar Viaje" 
+                                                            CssClass="btn btn-danger btn-action"
+                                                            OnClick="btnFinalizarViajeDetalle_Click"
+                                                            OnClientClick="return confirm('¿Finalizar este viaje?');"
+                                                            CausesValidation="false" />
+                                                        
+                                                        <asp:Button ID="btnVolverViajes" runat="server" 
+                                                            Text="Volver a Viajes" 
+                                                            CssClass="btn btn-secondary btn-action"
+                                                            OnClick="btnVolverViajes_Click"
+                                                            CausesValidation="false" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="section-content">
+                                            
+                                            <!-- Resumen del Viaje -->
+                                            <div class="summary-cards">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <div class="summary-card">
+                                                            <div class="summary-value">
+                                                                <asp:Label ID="lblTotalDespachos" runat="server" Text="0"></asp:Label>
+                                                            </div>
+                                                            <div class="summary-label">Total Despachos</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="summary-card">
+                                                            <div class="summary-value">
+                                                                <asp:Label ID="lblTipoViajeDetalle" runat="server"></asp:Label>
+                                                            </div>
+                                                            <div class="summary-label">Tipo de Viaje</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="summary-card">
+                                                            <div class="summary-value">
+                                                                <asp:Label ID="lblEstadoViajeDetalle" runat="server"></asp:Label>
+                                                            </div>
+                                                            <div class="summary-label">Estado</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="summary-card">
+                                                            <div class="summary-value">
+                                                                <asp:Label ID="lblUltimaActividadDetalle" runat="server"></asp:Label>
+                                                            </div>
+                                                            <div class="summary-label">Última Actividad</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Grid de Despachos del Viaje -->
+                                            <div class="data-section">
+                                                <h6 class="data-section-title">
+                                                    <i class="fas fa-truck"></i> Despachos Asociados
+                                                </h6>
+                                                
+                                                <div class="data-grid-container">
+                                                    <asp:GridView ID="gvDespachosViaje" runat="server" 
+                                                        CssClass="table data-table detail-table"
+                                                        AutoGenerateColumns="false"
+                                                        EmptyDataText="No hay despachos asociados a este viaje">
+                                                        <Columns>
+                                                            <asp:BoundField DataField="NumeroDespacho" HeaderText="N° Despacho" 
+                                                                ItemStyle-CssClass="despacho-number" />
+                                                            
+                                                            <asp:BoundField DataField="FechaDespacho" HeaderText="Fecha" 
+                                                                DataFormatString="{0:dd/MM/yyyy}" />
+                                                            
+                                                            <asp:BoundField DataField="NombreCliente" HeaderText="Cliente" />
+                                                            
+                                                            <asp:BoundField DataField="PlacaTracto" HeaderText="Tracto" />
+                                                            
+                                                            <asp:BoundField DataField="PlacaCarreta" HeaderText="Carreta" />
+                                                            
+                                                            <asp:BoundField DataField="TipoOperacion" HeaderText="Operación" />
+                                                            
+                                                            <asp:BoundField DataField="LugarOperacion" HeaderText="Planta" />
+                                                            
+                                                            <asp:TemplateField HeaderText="Estado">
+                                                                <ItemTemplate>
+                                                                    <asp:Label runat="server" 
+                                                                        Text='<%# Eval("EstadoDespacho") %>'
+                                                                        CssClass='<%# GetEstadoDespachoClass(Eval("EstadoDespacho").ToString()) %>'>
+                                                                    </asp:Label>
+                                                                </ItemTemplate>
+                                                            </asp:TemplateField>
+                                                            
+                                                            <asp:BoundField DataField="GuiaRemitente" HeaderText="Guía Remitente" />
+                                                            
+                                                            <asp:BoundField DataField="GuiaTransportista" HeaderText="Guía Transportista" />
+                                                        </Columns>
+                                                        <EmptyDataTemplate>
+                                                            <div class="empty-data">
+                                                                <i class="fas fa-exclamation-circle"></i>
+                                                                <p>Este viaje no tiene despachos asociados</p>
+                                                            </div>
+                                                        </EmptyDataTemplate>
+                                                    </asp:GridView>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </asp:Panel>
+
+                                <!-- PANEL EDICIÓN DE LOTE -->
+                                <asp:Panel ID="pnlEdicionLote" runat="server" Visible="false">
+                                    <div class="section-card edit-section">
+                                        <div class="section-header">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-8">
+                                                    <h5 class="section-title">
+                                                        <i class="fas fa-edit"></i> Editar Datos Base del Lote
+                                                    </h5>
+                                                    <div class="detail-info">
+                                                        Lote: <asp:Label ID="lblIdentificadorLote" runat="server" CssClass="detail-value"></asp:Label> | 
+                                                        Despachos Afectados: <asp:Label ID="lblDespachosSAfectados" runat="server" CssClass="detail-value affected-count"></asp:Label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="section-actions">
+                                                        <asp:Button ID="btnCancelarEdicion" runat="server" 
+                                                            Text="Cancelar" 
+                                                            CssClass="btn btn-secondary btn-action"
+                                                            OnClick="btnCancelarEdicion_Click"
+                                                            CausesValidation="false" />
+                                                        
+                                                        <asp:Button ID="btnVolverLotes" runat="server" 
+                                                            Text="Volver a Lotes" 
+                                                            CssClass="btn btn-outline-secondary btn-action"
+                                                            OnClick="btnVolverLotes_Click"
+                                                            CausesValidation="false" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="section-content">
+                                            
+                                            <!-- Advertencia -->
+                                            <div class="alert alert-warning edit-warning">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                <strong>Importante:</strong> Los cambios afectarán a todos los despachos de este lote. 
+                                                Verifique cuidadosamente antes de guardar.
+                                            </div>
+
+                                            <div class="edit-form">
+                                                <div class="row">
+                                                    <!-- Columna Izquierda - Datos Básicos -->
+                                                    <div class="col-md-6">
+                                                        <div class="form-section">
+                                                            <h6 class="form-section-title">
+                                                                <i class="fas fa-cog"></i> Datos Básicos del Lote
+                                                            </h6>
+
+                                                            <!-- Fecha de Programación -->
+                                                            <div class="form-group">
+                                                                <label class="form-label required">Fecha de Programación:</label>
+                                                                <asp:TextBox ID="txtFechaProgramacionEdit" runat="server" 
+                                                                    CssClass="form-control" 
+                                                                    TextMode="Date">
+                                                                </asp:TextBox>
+                                                                <asp:RequiredFieldValidator ID="RequiredFieldValidator1" runat="server"
+                                                                    ControlToValidate="txtFechaProgramacionEdit"
+                                                                    ErrorMessage="Debe seleccionar una fecha de programación"
+                                                                    CssClass="field-error"
+                                                                    Display="Dynamic"
+                                                                    ValidationGroup="EdicionLote">
+                                                                </asp:RequiredFieldValidator>
+                                                            </div>
+
+                                                            <!-- Cliente -->
+                                                            <div class="form-group">
+                                                                <label class="form-label">Cliente:</label>
+                                                                <asp:TextBox ID="txtClienteEdit" runat="server" 
+                                                                    CssClass="form-control readonly-field" 
+                                                                    ReadOnly="true">
+                                                                </asp:TextBox>
+                                                                <small class="form-text">No se puede modificar el cliente</small>
+                                                            </div>
+
+                                                            <!-- Número de Pedido -->
+                                                            <div class="form-group">
+                                                                <label class="form-label">N° de Pedido:</label>
+                                                                <asp:TextBox ID="txtNumeroPedidoEdit" runat="server" 
+                                                                    CssClass="form-control" 
+                                                                    placeholder="Ej: 1234567890"
+                                                                    MaxLength="10">
+                                                                </asp:TextBox>
+                                                                <small class="form-text">Debe tener exactamente 10 dígitos numéricos</small>
+                                                            </div>
+
+                                                            <!-- Planta de Operación -->
+                                                            <div class="form-group">
+                                                                <label class="form-label required">Planta de Operación:</label>
+                                                                <asp:DropDownList ID="ddlPlantaEdit" runat="server" CssClass="form-select">
+                                                                    <asp:ListItem Value="" Text="-- Seleccione planta --"></asp:ListItem>
+                                                                    <asp:ListItem Value="Lima" Text="Lima"></asp:ListItem>
+                                                                    <asp:ListItem Value="Guayaquil" Text="Guayaquil"></asp:ListItem>
+                                                                    <asp:ListItem Value="Trujillo" Text="Trujillo"></asp:ListItem>
+                                                                    <asp:ListItem Value="Quito" Text="Quito"></asp:ListItem>
+                                                                    <asp:ListItem Value="Chiclayo" Text="Chiclayo"></asp:ListItem>
+                                                                    <asp:ListItem Value="Manta" Text="Manta"></asp:ListItem>
+                                                                </asp:DropDownList>
+                                                                <asp:RequiredFieldValidator ID="rfvPlantaEdit" runat="server"
+                                                                    ControlToValidate="ddlPlantaEdit"
+                                                                    InitialValue=""
+                                                                    ErrorMessage="Debe seleccionar una planta"
+                                                                    CssClass="field-error"
+                                                                    Display="Dynamic"
+                                                                    ValidationGroup="EdicionLote">
+                                                                </asp:RequiredFieldValidator>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Columna Derecha - Documentación -->
+                                                    <div class="col-md-6">
+                                                        <div class="form-section">
+                                                            <h6 class="form-section-title">
+                                                                <i class="fas fa-file-alt"></i> Documentación Base
+                                                            </h6>
+
+                                                            <!-- Panel Factura -->
+                                                            <asp:Panel ID="pnlFacturaEdit" runat="server" CssClass="doc-panel" Visible="false">
+                                                                <div class="doc-panel-header">
+                                                                    <i class="fas fa-receipt"></i> Datos de Factura
+                                                                </div>
+                                                                <div class="doc-panel-content">
+                                                                    <div class="form-group">
+                                                                        <label class="form-label">N° Factura:</label>
+                                                                        <asp:TextBox ID="txtNumeroFacturaEdit" runat="server" 
+                                                                            CssClass="form-control" 
+                                                                            placeholder="Ej: F222 - 00004267">
+                                                                        </asp:TextBox>
+                                                                    </div>
+
+                                                                    <div class="form-group">
+                                                                        <label class="form-label">Fecha Emisión:</label>
+                                                                        <asp:TextBox ID="txtFechaEmisionFacturaEdit" runat="server" 
+                                                                            CssClass="form-control" 
+                                                                            TextMode="Date">
+                                                                        </asp:TextBox>
+                                                                    </div>
+
+                                                                    <div class="form-group">
+                                                                        <label class="form-label">Valor Total:</label>
+                                                                        <asp:TextBox ID="txtValorTotalFacturaEdit" runat="server" 
+                                                                            CssClass="form-control" 
+                                                                            placeholder="0.00"
+                                                                            TextMode="Number"
+                                                                            step="0.01">
+                                                                        </asp:TextBox>
+                                                                    </div>
+                                                                </div>
+                                                            </asp:Panel>
+
+                                                            <!-- Panel CPIC -->
+                                                            <asp:Panel ID="pnlCPICEdit" runat="server" CssClass="doc-panel" Visible="false">
+                                                                <div class="doc-panel-header">
+                                                                    <i class="fas fa-shipping-fast"></i> Datos de CPIC
+                                                                </div>
+                                                                <div class="doc-panel-content">
+                                                                    <div class="form-group">
+                                                                        <label class="form-label">N° CPIC:</label>
+                                                                        <asp:TextBox ID="txtNumeroCPICEdit" runat="server" 
+                                                                            CssClass="form-control" 
+                                                                            placeholder="Ej: 1234567"
+                                                                            MaxLength="7">
+                                                                        </asp:TextBox>
+                                                                    </div>
+
+                                                                    <div class="form-group">
+                                                                        <label class="form-label">Fecha Emisión CPIC:</label>
+                                                                        <asp:TextBox ID="txtFechaEmisionCPICEdit" runat="server" 
+                                                                            CssClass="form-control" 
+                                                                            TextMode="Date">
+                                                                        </asp:TextBox>
+                                                                    </div>
+
+                                                                    <div class="form-group">
+                                                                        <label class="form-label">Valor Flete:</label>
+                                                                        <asp:TextBox ID="txtValorFleteEdit" runat="server" 
+                                                                            CssClass="form-control" 
+                                                                            placeholder="0.00"
+                                                                            TextMode="Number"
+                                                                            step="0.01">
+                                                                        </asp:TextBox>
+                                                                    </div>
+                                                                </div>
+                                                            </asp:Panel>
+
+                                                            <!-- Información no editable -->
+                                                            <div class="info-panel">
+                                                                <div class="info-title">Datos no editables:</div>
+                                                                <div class="info-content">
+                                                                    Tipo de Operación: <asp:Label ID="lblTipoOperacionEdit" runat="server" CssClass="info-value"></asp:Label><br>
+                                                                    Ámbito: <asp:Label ID="lblAmbitoEdit" runat="server" CssClass="info-value"></asp:Label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Botones de Acción -->
+                                                <div class="form-actions">
+                                                    <asp:Button ID="btnGuardarCambios" runat="server" 
+                                                        Text="Guardar Cambios" 
+                                                        CssClass="btn btn-warning btn-action btn-large"
+                                                        OnClick="btnGuardarCambios_Click"
+                                                        ValidationGroup="EdicionLote"
+                                                        OnClientClick="return confirm('¿Está seguro de aplicar estos cambios a todo el lote?');" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </asp:Panel>
+
+                                <!-- PANEL DETALLES DE LOTE -->
+                                <asp:Panel ID="pnlDetallesLote" runat="server" Visible="false">
+                                    <div class="section-card detalle-section">
+                                        <div class="section-header">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-8">
+                                                    <h5 class="section-title">
+                                                        <i class="fas fa-eye"></i> Detalles del Lote
+                                                    </h5>
+                                                    <div class="detail-info">
+                                                        Cliente: <asp:Label ID="lblClienteDetalleLote" runat="server" CssClass="detail-value"></asp:Label> | 
+                                                        Pedido: <asp:Label ID="lblPedidoDetalleLote" runat="server" CssClass="detail-value"></asp:Label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="section-actions">
+                                                        <asp:Button ID="btnEditarDesdeDetal" runat="server" 
+                                                            Text="Editar Lote" 
+                                                            CssClass="btn btn-warning btn-action"
+                                                            OnClick="btnEditarDesdeDetal_Click"
+                                                            CausesValidation="false" />
+                                                        
+                                                        <asp:Button ID="btnVolverLotesDetalle" runat="server" 
+                                                            Text="Volver a Lotes" 
+                                                            CssClass="btn btn-secondary btn-action"
+                                                            OnClick="btnVolverLotesDetalle_Click"
+                                                            CausesValidation="false" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="section-content">
+                                            
+                                            <!-- Información General del Lote -->
+                                            <div class="summary-cards">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <div class="summary-card">
+                                                            <div class="summary-value">
+                                                                <asp:Label ID="lblTotalDespachosLote" runat="server" Text="0"></asp:Label>
+                                                            </div>
+                                                            <div class="summary-label">Total Despachos</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="summary-card">
+                                                            <div class="summary-value">
+                                                                <asp:Label ID="lblOperacionDetalleLote" runat="server"></asp:Label>
+                                                            </div>
+                                                            <div class="summary-label">Operación</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="summary-card">
+                                                            <div class="summary-value">
+                                                                <asp:Label ID="lblPlantaDetalleLote" runat="server"></asp:Label>
+                                                            </div>
+                                                            <div class="summary-label">Planta</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="summary-card">
+                                                            <div class="summary-value">
+                                                                <asp:Label ID="lblFechaCreacionDetalle" runat="server"></asp:Label>
+                                                            </div>
+                                                            <div class="summary-label">Fecha Creación</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Grid de Despachos del Lote -->
+                                            <div class="data-section">
+                                                <h6 class="data-section-title">
+                                                    <i class="fas fa-truck"></i> Despachos del Lote
+                                                </h6>
+                                                
+                                                <div class="data-grid-container">
+                                                    <asp:GridView ID="gvDespachosLote" runat="server" 
+                                                        CssClass="table data-table detail-table"
+                                                        AutoGenerateColumns="false"
+                                                        EmptyDataText="No hay despachos asociados a este lote">
+                                                        <Columns>
+                                                            <asp:BoundField DataField="NumeroDespacho" HeaderText="N° Despacho" 
+                                                                ItemStyle-CssClass="despacho-number" />
+                                                            
+                                                            <asp:BoundField DataField="FechaDespacho" HeaderText="Fecha" 
+                                                                DataFormatString="{0:dd/MM/yyyy}" />
+                                                            
+                                                            <asp:BoundField DataField="NombreConductor" HeaderText="Conductor" />
+                                                            
+                                                            <asp:BoundField DataField="PlacaTracto" HeaderText="Tracto" />
+                                                            
+                                                            <asp:BoundField DataField="PlacaCarreta" HeaderText="Carreta" />
+                                                            
+                                                            <asp:TemplateField HeaderText="Estado">
+                                                                <ItemTemplate>
+                                                                    <asp:Label runat="server" 
+                                                                        Text='<%# Eval("EstadoDespacho") %>'
+                                                                        CssClass='<%# GetEstadoDespachoClass(Eval("EstadoDespacho").ToString()) %>'>
+                                                                    </asp:Label>
+                                                                </ItemTemplate>
+                                                            </asp:TemplateField>
+                                                            
+                                                            <asp:BoundField DataField="GuiaRemitente" HeaderText="Guía Remitente" />
+                                                            
+                                                            <asp:BoundField DataField="GuiaTransportista" HeaderText="Guía Transportista" />
+
+                                                            <asp:BoundField DataField="NumeroViaje" HeaderText="N° Viaje" />
+                                                        </Columns>
+                                                        <EmptyDataTemplate>
+                                                            <div class="empty-data">
+                                                                <i class="fas fa-exclamation-circle"></i>
+                                                                <p>Este lote no tiene despachos asociados</p>
+                                                            </div>
+                                                        </EmptyDataTemplate>
+                                                    </asp:GridView>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </asp:Panel>
+
+                            </ContentTemplate>
+                            <Triggers>
+                                <asp:AsyncPostBackTrigger ControlID="btnMostrarViajes" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnRefrescarViajes" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="ddlFiltroConductorViajes" EventName="SelectedIndexChanged" />
+                                <asp:AsyncPostBackTrigger ControlID="ddlFiltroTipoViajes" EventName="SelectedIndexChanged" />
+                                <asp:AsyncPostBackTrigger ControlID="btnBuscarViaje" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="gvViajesActivos" EventName="RowCommand" />
+                                <asp:AsyncPostBackTrigger ControlID="btnVolverViajes" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnFinalizarViajeDetalle" EventName="Click" />
+                                
+                                <asp:AsyncPostBackTrigger ControlID="btnMostrarLotes" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnRefrescarLotes" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="ddlFiltroClienteLotes" EventName="SelectedIndexChanged" />
+                                <asp:AsyncPostBackTrigger ControlID="ddlFiltroOperacionLotes" EventName="SelectedIndexChanged" />
+                                <asp:AsyncPostBackTrigger ControlID="ddlFiltroPlantaLotes" EventName="SelectedIndexChanged" />
+                                <asp:AsyncPostBackTrigger ControlID="btnBuscarLote" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnFiltrarFecha" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnLimpiarFiltros" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="gvLotesRegistrados" EventName="RowCommand" />
+                                
+                                <asp:AsyncPostBackTrigger ControlID="btnCancelarEdicion" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnVolverLotes" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnGuardarCambios" EventName="Click" />
+                                
+                                <asp:AsyncPostBackTrigger ControlID="btnEditarDesdeDetal" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnVolverLotesDetalle" EventName="Click" />
+                                
+                                <asp:PostBackTrigger ControlID="btnVolver" />
+                            </Triggers>
+                        </asp:UpdatePanel>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Panel -->
+    <asp:UpdateProgress ID="UpdateProgress1" runat="server" AssociatedUpdatePanelID="UpdatePanelMain">
+        <ProgressTemplate>
+            <div class="loading-overlay">
+                <div class="loading-content">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <div class="mt-2">Procesando...</div>
+                </div>
+            </div>
+        </ProgressTemplate>
+    </asp:UpdateProgress>
+
+</asp:Content>
+
+<asp:Content ID="Content2" ContentPlaceHolderID="ScriptsSection" runat="server">
+    <script type="text/javascript">
+        $(document).ready(function () {
+            autoHideMessages();
+            establecerFechasPorDefecto();
+        });
+
+        var prm = Sys.WebForms.PageRequestManager.getInstance();
+        prm.add_endRequest(function () {
+            autoHideMessages();
+        });
+
+        function autoHideMessages() {
+            setTimeout(function () {
+                $('.alert').fadeOut('slow');
+            }, 5000);
+        }
+
+        function establecerFechasPorDefecto() {
+            var hoy = new Date();
+            var primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+
+            var fechaDesde = document.getElementById('<%= txtFechaDesde.ClientID %>');
+            var fechaHasta = document.getElementById('<%= txtFechaHasta.ClientID %>');
+
+            if (fechaDesde && fechaDesde.value === '') {
+                fechaDesde.value = primerDiaMes.toISOString().substr(0, 10);
+            }
+
+            if (fechaHasta && fechaHasta.value === '') {
+                fechaHasta.value = hoy.toISOString().substr(0, 10);
+            }
+        }
+
+        function confirmarAccion(mensaje) {
+            return confirm(mensaje);
+        }
+
+        function validarNumeroPedido(input) {
+            var valor = input.value.replace(/[^0-9]/g, '');
+            input.value = valor;
+
+            if (valor.length > 0 && valor.length !== 10) {
+                input.style.borderColor = '#dc3545';
+                return false;
+            } else {
+                input.style.borderColor = '#ced4da';
+                return true;
+            }
+        }
+
+        $(document).on('input', '#<%= txtNumeroPedidoEdit.ClientID %>', function () {
+            validarNumeroPedido(this);
+        });
+    </script>
+    
     <style>
-        .main-container {
-            max-width: 1400px;
-            margin: 0 auto;
+        /* === RESET Y BASE === */
+        * {
+            box-sizing: border-box;
+        }
+        
+        /* === LAYOUT PRINCIPAL === */
+        .main-card {
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        
+        .container-fluid {
+            padding: 1rem;
         }
 
-        .page-header {
-            margin-bottom: 40px;
-            text-align: center;
+        /* === NAVEGACIÓN === */
+        .navigation-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 1rem;
         }
 
-        .page-title {
-            color: #1e293b;
-            font-size: 2.2rem;
-            font-weight: 700;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
+        .nav-header {
+            margin: 0;
         }
 
-        .page-subtitle {
-            color: #64748b;
-            font-size: 1.15rem;
-            font-weight: 400;
-        }
-
-        .filters-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-            border: 1px solid #e2e8f0;
-            margin-bottom: 32px;
-            overflow: hidden;
-        }
-
-        .filters-header {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            color: white;
-            padding: 24px 32px;
+        .nav-title {
+            color: #6c757d;
             font-weight: 600;
-            font-size: 1.15rem;
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            margin: 0;
         }
 
-        .filters-body {
-            padding: 32px;
-            background: #fafbfc;
+        .nav-buttons {
+            text-align: right;
         }
 
-        .filter-section {
+        .btn-nav {
+            margin-left: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 4px;
+        }
+
+        /* === SECCIONES === */
+        .section-card {
             background: white;
-            border-radius: 12px;
-            padding: 28px;
-            margin-bottom: 20px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
         }
 
-        .filter-section-title {
-            color: #374151;
-            font-size: 1rem;
+        .viajes-section {
+            border-left: 4px solid #007bff;
+        }
+
+        .lotes-section {
+            border-left: 4px solid #28a745;
+        }
+
+        .detalle-section {
+            border-left: 4px solid #17a2b8;
+        }
+
+        .edit-section {
+            border-left: 4px solid #ffc107;
+        }
+
+        .section-header {
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 1rem 1.25rem;
+            border-top-left-radius: 6px;
+            border-top-right-radius: 6px;
+        }
+
+        .section-title {
+            color: #495057;
             font-weight: 600;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #f1f5f9;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .filter-section-title i {
-            color: #2563eb;
+            margin: 0;
             font-size: 1.1rem;
         }
 
-        /* FILTROS ADICIONALES CORREGIDOS */
-        .additional-filters {
-            background: white;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            margin-bottom: 20px;
-            overflow: hidden;
+        .section-content {
+            padding: 1.25rem;
         }
 
-        .additional-filters-toggle {
-            background: #f8fafc;
-            padding: 20px 28px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            width: 100%;
-            text-align: left;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid #e2e8f0;
-            font-family: inherit;
-        }
-
-        .additional-filters-toggle:hover {
-            background: #f1f5f9;
-        }
-
-        .additional-filters-title {
-            color: #374151;
-            font-size: 1rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 0;
-        }
-
-        .toggle-icon {
-            color: #2563eb;
-            transition: transform 0.3s ease;
-            font-size: 1rem;
-        }
-
-        .toggle-icon.rotated {
-            transform: rotate(180deg);
-        }
-
-        .additional-filters-content {
-            padding: 0;
-            max-height: 0;
-            overflow: hidden;
-            transition: all 0.4s ease;
-            opacity: 0;
-        }
-
-        .additional-filters-content.show {
-            padding: 28px;
-            max-height: 500px;
-            opacity: 1;
-        }
-
-        .filter-label {
-            color: #374151;
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: block;
-        }
-
-        .form-control, .form-select {
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 12px 16px;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            background: white;
-            min-height: 48px;
-            width: 100%;
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-            outline: none;
-        }
-
-        .filter-field {
-            margin-bottom: 24px;
-        }
-
-        .buttons-section {
-            background: white;
-            border-radius: 12px;
-            padding: 24px 28px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        /* BOTONES SIMPLIFICADOS */
-        .btn-filter {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            border: none;
-            padding: 14px 28px;
-            font-weight: 600;
-            border-radius: 8px;
-            color: white !important;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            min-width: 140px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .btn-filter:hover {
-            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
-            color: white !important;
-            text-decoration: none;
-        }
-
-        .btn-clear {
-            background: #64748b;
-            border: none;
-            padding: 14px 28px;
-            font-weight: 600;
-            border-radius: 8px;
-            color: white !important;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            min-width: 140px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .btn-clear:hover {
-            background: #475569;
-            color: white !important;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(100, 116, 139, 0.3);
-            text-decoration: none;
-        }
-
-        .btn-nuevo {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
-            border: none;
-            padding: 14px 28px;
-            font-weight: 600;
-            border-radius: 8px;
-            color: white !important;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            min-width: 170px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .btn-nuevo:hover {
-            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
-            color: white !important;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(5, 150, 105, 0.3);
-            text-decoration: none;
-        }
-
-        .results-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-            border: 1px solid #e2e8f0;
-            overflow: hidden;
-        }
-
-        .results-header {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            color: white;
-            padding: 24px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .results-title {
-            font-weight: 600;
-            font-size: 1.15rem;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .results-count {
-            background: rgba(255,255,255,0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .table-container {
-            padding: 0;
-            overflow-x: auto;
-        }
-
-        .table {
-            margin: 0;
-            font-size: 0.95rem;
-        }
-
-        .table thead th {
-            background: #f8fafc;
-            border-bottom: 2px solid #e2e8f0;
-            color: #374151;
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 18px 16px;
-            border-top: none;
-            white-space: nowrap;
-        }
-
-        .table tbody td {
-            padding: 16px;
-            border-bottom: 1px solid #f1f5f9;
-            vertical-align: middle;
-        }
-
-        .table tbody tr:hover {
-            background: #f8fafc;
-            transition: background 0.3s ease;
-        }
-
-        .status-badge {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: inline-block;
-            min-width: 100px;
-            text-align: center;
-        }
-
-        .status-programado {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .status-en_proceso {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .status-completado {
-            background: #d1fae5;
-            color: #059669;
-        }
-
-        .status-cancelado {
-            background: #fee2e2;
-            color: #dc2626;
+        .section-actions {
+            text-align: right;
         }
 
         .btn-action {
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.85rem;
+            margin-left: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 4px;
+        }
+
+        /* === FILTROS === */
+        .filters-container {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
             font-weight: 500;
-            border: none;
-            margin: 3px;
-            transition: all 0.2s ease;
-            min-width: 40px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            color: #495057;
+            margin-bottom: 0.5rem;
+            display: block;
+            font-size: 0.875rem;
         }
 
-        .btn-view {
-            background: #e0f2fe;
-            color: #0369a1;
+        .form-control, .form-select {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
         }
 
-        .btn-view:hover {
-            background: #0369a1;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+        .form-control:focus, .form-select:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
         }
 
-        .btn-edit {
-            background: #fef3c7;
-            color: #d97706;
+        .input-group .btn {
+            border-color: #ced4da;
         }
 
-        .btn-edit:hover {
-            background: #d97706;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
         }
 
-        .btn-delete {
-            background: #fee2e2;
-            color: #dc2626;
+        /* === TABLAS === */
+        .data-grid-container {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            overflow-x: auto;
         }
 
-        .btn-delete:hover {
-            background: #dc2626;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        .data-table {
+            width: 100%;
+            margin: 0;
+            border-collapse: separate;
+            border-spacing: 0;
         }
 
-        .pagination-container {
-            padding: 24px 32px;
-            background: #fafbfc;
-            border-top: 1px solid #e2e8f0;
+        .data-table thead th {
+            background: #f8f9fa;
+            color: #495057;
+            font-weight: 600;
+            font-size: 0.875rem;
+            padding: 0.75rem;
+            border-bottom: 2px solid #dee2e6;
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+
+        .data-table tbody td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 0.875rem;
+            vertical-align: middle;
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .detail-table thead th {
+            background: #e9ecef;
+        }
+
+        /* === BADGES === */
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.35em 0.65em;
+            border-radius: 0.25rem;
+            font-weight: 500;
+        }
+
+        .tipo-internacional {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .tipo-nacional {
+            background-color: #0dcaf0;
+            color: #000;
+        }
+
+        .estado-abierto {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .estado-programado {
+            background-color: #17a2b8;
+            color: #fff;
+        }
+
+        .estado-enprogreso {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .estado-completado {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .estado-cancelado {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        /* === CAMPOS ESPECIALES === */
+        .viaje-number, .pedido-number, .despacho-number {
+            font-weight: 600;
+            color: #0d6efd;
+        }
+
+        .despachos-count {
+            font-weight: 600;
+            color: #28a745;
+        }
+
+        .affected-count {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        /* === BOTONES DE ACCIÓN === */
+        .action-buttons {
+            display: flex;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-info {
+            background-color: #0dcaf0;
+            border-color: #0dcaf0;
+            color: #000;
+        }
+
+        .btn-warning {
+            background-color: #ffc107;
+            border-color: #ffc107;
+            color: #000;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            color: #fff;
+        }
+
+        /* === EMPTY DATA === */
+        .empty-data {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+        }
+
+        .empty-data i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        /* === CARDS DE RESUMEN === */
+        .summary-cards {
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 1rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.25rem;
+        }
+
+        .summary-label {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        /* === DETALLES === */
+        .detail-info {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+
+        .detail-identifier, .detail-value {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .data-section {
+            margin-top: 1.5rem;
+        }
+
+        .data-section-title {
+            color: #495057;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        /* === FORMULARIOS DE EDICIÓN === */
+        .edit-form {
+            margin-top: 1rem;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-section-title {
+            color: #495057;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 0.5rem;
+        }
+
+        .required::after {
+            content: " *";
+            color: #dc3545;
+        }
+
+        .readonly-field {
+            background-color: #e9ecef !important;
+            cursor: not-allowed;
+        }
+
+        .form-text {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+
+        .field-error {
+            color: #dc3545;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            display: block;
+        }
+
+        /* === PANELES DE DOCUMENTOS === */
+        .doc-panel {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .doc-panel-header {
+            background: #f8f9fa;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #495057;
+        }
+
+        .doc-panel-content {
+            padding: 0.75rem;
+        }
+
+        .info-panel {
+            background: #d1ecf1;
+            border: 1px solid #b6d4da;
+            border-radius: 4px;
+            padding: 0.75rem;
+        }
+
+        .info-title {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #0c5460;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-content {
+            font-size: 0.875rem;
+            color: #0c5460;
+        }
+
+        .info-value {
+            font-weight: 600;
+        }
+
+        /* === ALERTAS === */
+        .alert {
+            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .edit-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        /* === ACCIONES DE FORMULARIO === */
+        .form-actions {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .btn-large {
+            padding: 0.5rem 1.5rem;
+            font-size: 1rem;
+        }
+
+        /* === LOADING === */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        .no-data {
+        .loading-content {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 6px;
             text-align: center;
-            padding: 80px 20px;
-            color: #64748b;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-        .no-data i {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            opacity: 0.4;
-            color: #94a3b8;
-        }
-
-        .no-data h5 {
-            font-size: 1.4rem;
-            margin-bottom: 12px;
-            color: #475569;
-        }
-
-        .no-data p {
-            font-size: 1rem;
-            opacity: 0.8;
-        }
-
-        .btn-orden {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-        }
-
-        .btn-orden:hover {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 992px) {
-            .filters-body {
-                padding: 24px;
-            }
-
-            .filter-section, .additional-filters-content.show {
-                padding: 20px;
-            }
-
-            .buttons-section {
-                padding: 20px;
-                justify-content: center;
-            }
-
-            .page-title {
-                font-size: 1.8rem;
-            }
-        }
-
+        /* === RESPONSIVE === */
         @media (max-width: 768px) {
-            .filters-body {
-                padding: 20px;
+            .nav-buttons, .section-actions {
+                text-align: left;
+                margin-top: 0.5rem;
             }
-
-            .filter-section, .additional-filters-content.show {
-                padding: 16px;
-                margin-bottom: 16px;
+            
+            .btn-nav, .btn-action {
+                margin-left: 0;
+                margin-right: 0.5rem;
+                margin-bottom: 0.5rem;
+                display: inline-block;
             }
-
-            .additional-filters-toggle {
-                padding: 16px 20px;
-            }
-
-            .buttons-section {
-                padding: 16px;
+            
+            .action-buttons {
                 flex-direction: column;
             }
-
-            .btn-filter, .btn-clear, .btn-nuevo {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .page-title {
-                font-size: 1.6rem;
+            
+            .filter-buttons {
                 flex-direction: column;
-                gap: 8px;
             }
-
-            .table-container {
-                font-size: 0.85rem;
+            
+            .data-grid-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
-
-            .table thead th,
-            .table tbody td {
-                padding: 12px 8px;
+            
+            .summary-card {
+                margin-bottom: 0.5rem;
+            }
+            
+            .form-section {
+                margin-bottom: 0.5rem;
             }
         }
+        
+        @media (max-width: 576px) {
+            .container-fluid {
+                padding: 0.5rem;
+            }
+            
+            .section-content {
+                padding: 0.75rem;
+            }
+            
+            .filters-container {
+                padding: 0.75rem;
+            }
+            
+            .data-table thead th,
+            .data-table tbody td {
+                padding: 0.5rem;
+            }
+        }
+
+        /* === UTILITIES === */
+        .text-center { text-align: center; }
+        .mb-0 { margin-bottom: 0; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 1rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .ms-2 { margin-left: 0.5rem; }
+        .ms-3 { margin-left: 1rem; }
     </style>
-
-    <div class="container-fluid">
-        <div class="main-container">
-
-            <!-- Header -->
-            <div class="page-header">
-                <h1 class="page-title">
-                    <i class="fas fa-list-alt"></i>
-                    Despachos Programados
-                </h1>
-                <p class="page-subtitle">Gestiona y supervisa todos los despachos del sistema</p>
-            </div>
-
-            <!-- Filtros -->
-            <div class="filters-card">
-                <div class="filters-header">
-                    <i class="fas fa-filter"></i>
-                    Filtros de Búsqueda
-                </div>
-                <div class="filters-body">
-
-                    <!-- Filtros Principales -->
-                    <div class="filter-section">
-                        <div class="filter-section-title">
-                            <i class="fas fa-calendar-alt"></i>
-                            Filtros Principales
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-3 col-md-6">
-                                <div class="filter-field">
-                                    <label class="filter-label">Estado</label>
-                                    <asp:DropDownList ID="ddlEstadoFiltro" runat="server" CssClass="form-select">
-                                        <asp:ListItem Value="" Selected="True">Todos los Estados</asp:ListItem>
-                                        <asp:ListItem Value="PROGRAMADO">Programado</asp:ListItem>
-                                        <asp:ListItem Value="EN_PROCESO">En Proceso</asp:ListItem>
-                                        <asp:ListItem Value="COMPLETADO">Completado</asp:ListItem>
-                                        <asp:ListItem Value="CANCELADO">Cancelado</asp:ListItem>
-                                    </asp:DropDownList>
-                                </div>
-                            </div>
-
-                            <div class="col-lg-3 col-md-6">
-                                <div class="filter-field">
-                                    <label class="filter-label">Fecha Desde</label>
-                                    <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
-                                </div>
-                            </div>
-
-                            <div class="col-lg-3 col-md-6">
-                                <div class="filter-field">
-                                    <label class="filter-label">Fecha Hasta</label>
-                                    <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
-                                </div>
-                            </div>
-
-                            <div class="col-lg-3 col-md-6">
-                                <div class="filter-field">
-                                    <label class="filter-label">Lugar</label>
-                                    <asp:DropDownList ID="ddlLugarFiltro" runat="server" CssClass="form-select">
-                                        <asp:ListItem Value="" Selected="True">Todos los Lugares</asp:ListItem>
-                                        <asp:ListItem Value="TRUJILLO">Trujillo</asp:ListItem>
-                                        <asp:ListItem Value="GUAYAQUIL">Guayaquil</asp:ListItem>
-                                        <asp:ListItem Value="LIMA">Lima</asp:ListItem>
-                                        <asp:ListItem Value="QUITO">Quito</asp:ListItem>
-                                        <asp:ListItem Value="PIURA">Piura</asp:ListItem>
-                                        <asp:ListItem Value="CHICLAYO">Chiclayo</asp:ListItem>
-                                        <asp:ListItem Value="MACHALA">Machala</asp:ListItem>
-                                    </asp:DropDownList>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Filtros Adicionales -->
-                    <div class="additional-filters">
-                        <button type="button" class="additional-filters-toggle" onclick="toggleAdditionalFilters()">
-                            <div class="additional-filters-title">
-                                <i class="fas fa-users"></i>
-                                Filtros Adicionales
-                            </div>
-                            <i class="fas fa-chevron-down toggle-icon" id="toggleIcon"></i>
-                        </button>
-                        <div class="additional-filters-content" id="additionalFiltersContent">
-                            <div class="row">
-                                <div class="col-lg-4 col-md-6">
-                                    <div class="filter-field">
-                                        <label class="filter-label">Conductor</label>
-                                        <asp:DropDownList ID="ddlConductorFiltro" runat="server" CssClass="form-select">
-                                            <asp:ListItem Value="" Selected="True">Todos los Conductores</asp:ListItem>
-                                        </asp:DropDownList>
-                                    </div>
-                                </div>
-
-                                <div class="col-lg-4 col-md-6">
-                                    <div class="filter-field">
-                                        <label class="filter-label">Cliente</label>
-                                        <asp:DropDownList ID="ddlClienteFiltro" runat="server" CssClass="form-select">
-                                            <asp:ListItem Value="" Selected="True">Todos los Clientes</asp:ListItem>
-                                        </asp:DropDownList>
-                                    </div>
-                                </div>
-
-                                <div class="col-lg-4 col-md-6">
-                                    <div class="filter-field">
-                                        <label class="filter-label">Operación</label>
-                                        <asp:DropDownList ID="ddlOperacionFiltro" runat="server" CssClass="form-select">
-                                            <asp:ListItem Value="" Selected="True">Todas las Operaciones</asp:ListItem>
-                                            <asp:ListItem Value="CARGA">Carga</asp:ListItem>
-                                            <asp:ListItem Value="DESCARGA">Descarga</asp:ListItem>
-                                        </asp:DropDownList>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Botones -->
-                    <div class="buttons-section">
-                        <asp:Button ID="btnBuscar" runat="server" CssClass="btn-filter"
-                            Text="🔍 Buscar" OnClick="btnBuscar_Click" />
-
-                        <asp:Button ID="btnLimpiar" runat="server" CssClass="btn-clear"
-                            Text="🧹 Limpiar" OnClick="btnLimpiar_Click" CausesValidation="false" />
-
-                        <asp:Button ID="btnNuevoDespacho" runat="server" CssClass="btn-nuevo"
-                            Text="➕ Nuevo Despacho" OnClick="btnNuevoDespacho_Click" CausesValidation="false" />
-                    </div>
-
-                </div>
-            </div>
-
-            <!-- Resultados -->
-            <div class="results-card">
-                <div class="results-header">
-                    <h5 class="results-title">
-                        <i class="fas fa-truck"></i>
-                        Lista de Despachos
-                    </h5>
-                    <div class="results-count">
-                        <asp:Literal ID="litTotalRegistros" runat="server" Text="0 registros"></asp:Literal>
-                    </div>
-                </div>
-
-                <div class="table-container">
-                    <asp:GridView ID="gvDespachos" runat="server"
-                        CssClass="table table-hover"
-                        AutoGenerateColumns="false"
-                        AllowPaging="true"
-                        PageSize="15"
-                        OnPageIndexChanging="gvDespachos_PageIndexChanging"
-                        OnRowCommand="gvDespachos_RowCommand"
-                        DataKeyNames="idDespacho"
-                        EmptyDataText="">
-                        <Columns>
-
-                            <asp:BoundField DataField="fechaDespacho" HeaderText="Fecha"
-                                DataFormatString="{0:dd/MM/yyyy}" ItemStyle-CssClass="fw-bold" />
-
-                            <asp:TemplateField HeaderText="Estado">
-                                <ItemTemplate>
-                                    <span class='status-badge status-<%# Eval("estadoDespacho").ToString().ToLower() %>'>
-                                        <%# ObtenerTextoEstado(Eval("estadoDespacho").ToString()) %>
-                                    </span>
-                                </ItemTemplate>
-                            </asp:TemplateField>
-
-                            <asp:BoundField DataField="conductorNombre" HeaderText="Conductor" />
-
-                            <asp:BoundField DataField="clienteNombre" HeaderText="Cliente" />
-
-                            <asp:BoundField DataField="tractoPlaca" HeaderText="Tracto"
-                                ItemStyle-Font-Names="Consolas,Monaco,monospace" ItemStyle-Font-Bold="true" />
-
-                            <asp:BoundField DataField="carretaPlaca" HeaderText="Carreta"
-                                ItemStyle-Font-Names="Consolas,Monaco,monospace" ItemStyle-Font-Bold="true" />
-
-                            <asp:BoundField DataField="lugarOperacion" HeaderText="Lugar" />
-
-                            <asp:BoundField DataField="tipoOperacion" HeaderText="Operación" />
-
-                            <asp:BoundField DataField="fechaCreacion" HeaderText="Creado"
-                                DataFormatString="{0:dd/MM/yyyy HH:mm}" ItemStyle-Font-Size="0.85em" ItemStyle-CssClass="text-muted" />
-
-                            <asp:TemplateField HeaderText="Acciones" ItemStyle-Width="150px" ItemStyle-CssClass="text-center">
-                                <ItemTemplate>
-                                    <asp:LinkButton ID="btnVer" runat="server" CssClass="btn-action btn-view"
-                                        CommandName="Ver" CommandArgument='<%# Eval("idDespacho") %>'
-                                        ToolTip="Ver detalles">
-                                        <i class="fas fa-eye"></i>
-                                    </asp:LinkButton>
-
-                                    <asp:LinkButton ID="btnEditar" runat="server" CssClass="btn-action btn-edit"
-                                        CommandName="Editar" CommandArgument='<%# Eval("idDespacho") %>'
-                                        Visible='<%# Eval("estadoDespacho").ToString() == "PROGRAMADO" %>'
-                                        ToolTip="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </asp:LinkButton>
-
-                                    <asp:LinkButton ID="btnCrearOrdenViaje" runat="server"
-                                        CssClass="btn-action btn-orden"
-                                        CommandName="CrearOrdenViaje"
-                                        CommandArgument='<%# Eval("idDespacho") %>'
-                                        Visible='<%# Eval("estadoDespacho").ToString() == "PROGRAMADO" %>'
-                                        ToolTip="Crear Orden de Viaje">
-                                        <i class="fas fa-route"></i>
-                                    </asp:LinkButton>
-                                </ItemTemplate>
-                            </asp:TemplateField>
-                        </Columns>
-
-                        <EmptyDataTemplate>
-                            <div class="no-data">
-                                <i class="fas fa-search"></i>
-                                <h5>No hay despachos</h5>
-                                <p>No se encontraron despachos con los criterios de búsqueda especificados.</p>
-                            </div>
-                        </EmptyDataTemplate>
-
-                        <PagerTemplate>
-                            <div class="pagination-container">
-                                <asp:LinkButton ID="lnkPrevious" runat="server" CssClass="btn btn-outline-secondary btn-sm me-3"
-                                    CommandName="Page" CommandArgument="Prev"
-                                    Visible='<%# ((GridView)Container.NamingContainer).PageIndex > 0 %>'>
-                                    <i class="fas fa-chevron-left"></i> Anterior
-                                </asp:LinkButton>
-
-                                <span class="mx-4 align-self-center text-muted fs-6">Página <%# ((GridView)Container.NamingContainer).PageIndex + 1 %> de 
-                                    <%# ((GridView)Container.NamingContainer).PageCount %>
-                                </span>
-
-                                <asp:LinkButton ID="lnkNext" runat="server" CssClass="btn btn-outline-secondary btn-sm ms-3"
-                                    CommandName="Page" CommandArgument="Next"
-                                    Visible='<%# ((GridView)Container.NamingContainer).PageIndex < ((GridView)Container.NamingContainer).PageCount - 1 %>'>
-                                    Siguiente <i class="fas fa-chevron-right"></i>
-                                </asp:LinkButton>
-                            </div>
-                        </PagerTemplate>
-
-                    </asp:GridView>
-                </div>
-
-            </div>
-
-            <!-- Panel de Mensajes -->
-            <asp:Panel ID="pnlMensaje" runat="server" Visible="false" CssClass="mt-4">
-                <div class="alert alert-dismissible fade show" role="alert" id="divMensaje" runat="server"
-                    style="border-radius: 12px; box-shadow: 0 6px 25px rgba(0,0,0,0.1);">
-                    <asp:Literal ID="litMensaje" runat="server"></asp:Literal>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            </asp:Panel>
-
-        </div>
-    </div>
-
-    <!-- Modal para Ver Detalles -->
-    <div class="modal fade" id="modalDetalles" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 15px 50px rgba(0,0,0,0.15);">
-                <div class="modal-header" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; border-radius: 16px 16px 0 0;">
-                    <h5 class="modal-title">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Detalles del Despacho
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" style="padding: 32px;">
-                    <asp:Panel ID="pnlDetallesDespacho" runat="server">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="filter-label">Estado</label>
-                                <div>
-                                    <asp:Literal ID="litEstadoDespacho" runat="server"></asp:Literal>
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="filter-label">Fecha</label>
-                                <div>
-                                    <asp:Literal ID="litFechaDespacho" runat="server"></asp:Literal>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="filter-label">Lugar</label>
-                                <div>
-                                    <asp:Literal ID="litLugarDetalle" runat="server"></asp:Literal>
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="filter-label">Operación</label>
-                                <div>
-                                    <asp:Literal ID="litOperacionDetalle" runat="server"></asp:Literal>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-12 mb-3">
-                                <label class="filter-label">Conductor</label>
-                                <div>
-                                    <asp:Literal ID="litConductorDetalle" runat="server"></asp:Literal>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="filter-label">Cliente</label>
-                                <div>
-                                    <asp:Literal ID="litClienteDetalle" runat="server"></asp:Literal>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="filter-label">Tracto</label>
-                                <div>
-                                    <asp:Literal ID="litTractoDetalle" runat="server"></asp:Literal>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="filter-label">Carreta</label>
-                                <div>
-                                    <asp:Literal ID="litCarretaDetalle" runat="server"></asp:Literal>
-                                </div>
-                            </div>
-                        </div>
-                    </asp:Panel>
-                </div>
-                <div class="modal-footer" style="border-top: 1px solid #e2e8f0; padding: 20px 32px;">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-2"></i>Cerrar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Toggle para filtros adicionales
-        function toggleAdditionalFilters() {
-            const content = document.getElementById('additionalFiltersContent');
-            const icon = document.getElementById('toggleIcon');
-
-            if (content && icon) {
-                content.classList.toggle('show');
-                icon.classList.toggle('rotated');
-            }
-        }
-
-        // Modal de detalles
-        function showDetallesModal() {
-            if (typeof bootstrap !== 'undefined') {
-                const modal = new bootstrap.Modal(document.getElementById('modalDetalles'));
-                modal.show();
-            }
-        }
-
-        // Auto-hide alerts
-        document.addEventListener('DOMContentLoaded', function () {
-            setTimeout(function () {
-                const alerts = document.querySelectorAll('.alert');
-                alerts.forEach(function (alert) {
-                    alert.style.transition = 'opacity 0.5s';
-                    alert.style.opacity = '0';
-                    setTimeout(function () {
-                        alert.style.display = 'none';
-                    }, 500);
-                });
-            }, 6000);
-        });
-    </script>
 </asp:Content>

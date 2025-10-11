@@ -60,12 +60,49 @@
                     </div>
                 </div>
 
-                <!-- NUEVA SECCIÓN: Documentos Asociados -->
+                <!-- SECCIÓN: Documentos Asociados -->
                 <div class="panel panel-default documentos-panel">
                     <div class="panel-heading">
                         <h2><i class="fa fa-file-pdf-o"></i> Documentos Asociados</h2>
                     </div>
                     <div class="panel-body">
+                        <!-- NUEVA SECCIÓN: Upload de Documentos (Solo visible en modo edición) -->
+                        <asp:Panel ID="pnlUploadDocumentos" runat="server" Visible="false" CssClass="document-upload-section">
+                            <h4><i class="fa fa-cloud-upload"></i> Agregar Nuevo Documento</h4>
+                            <div class="upload-container">
+                                <div class="col-md-8 form-group">
+                                    <label for="fileUploadCPIC">Adjuntar Documento (PDF recomendado):</label>
+                                    <asp:FileUpload ID="fileUploadCPIC" runat="server" CssClass="form-control file-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                                    <small class="text-muted">
+                                        <i class="fa fa-info-circle"></i> 
+                                        Formatos permitidos: PDF, DOC, DOCX, JPG, PNG. Tamaño máximo: 50MB
+                                    </small>
+                                </div>
+                                <div class="col-md-4 form-group">
+                                    <label for="txtDescripcionDoc">Descripción del documento:</label>
+                                    <asp:TextBox ID="txtDescripcionDoc" runat="server" CssClass="form-control" 
+                                        placeholder="Ej: CPIC Actualizado, Documento Corregido" MaxLength="300"></asp:TextBox>
+                                </div>
+                            </div>
+                            
+                            <!-- Vista previa del archivo seleccionado -->
+                            <div id="file-preview" class="file-preview" style="display: none;">
+                                <div class="alert alert-info">
+                                    <i class="fa fa-file"></i>
+                                    <span id="file-name"></span> 
+                                    <span id="file-size" class="text-muted"></span>
+                                    <button type="button" class="btn btn-sm btn-link" onclick="clearFileSelection()">
+                                        <i class="fa fa-times"></i> Quitar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <asp:Button ID="btnSubirDocumento" runat="server" CssClass="btn btn-success" 
+                                    Text="📤 Subir Documento" OnClick="SubirDocumento" />
+                            </div>
+                        </asp:Panel>
+
                         <asp:Panel ID="pnlDocumentos" runat="server">
                             <div class="table-responsive">
                                 <asp:GridView ID="gvDocumentos" runat="server" AutoGenerateColumns="False" CssClass="table table-bordered table-hover documentos-table"
@@ -110,6 +147,13 @@
                                                     Text="👁️ Ver" CommandName="Ver" 
                                                     CommandArgument='<%# Eval("idDocumento") %>' 
                                                     ToolTip="Abrir documento en nueva ventana" />
+                                                <asp:Panel ID="pnlEliminar" runat="server" Visible='<%# ModoEdicionActivo %>' style="display: inline;">
+                                                    <asp:Button ID="btnEliminar" runat="server" CssClass="btn btn-sm btn-danger" 
+                                                        Text="🗑️ Eliminar" CommandName="Eliminar" 
+                                                        CommandArgument='<%# Eval("idDocumento") %>' 
+                                                        ToolTip="Eliminar documento"
+                                                        OnClientClick="return confirm('¿Está seguro que desea eliminar este documento? Esta acción no se puede deshacer.');" />
+                                                </asp:Panel>
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                     </Columns>
@@ -188,6 +232,73 @@
             </asp:Panel>
         </div>
     </div>
+
+    <script>
+        // Inicializar funcionalidad de carga de archivos
+        document.addEventListener("DOMContentLoaded", function() {
+            initFileUpload();
+        });
+
+        function initFileUpload() {
+            const fileInput = document.getElementById('<%= fileUploadCPIC.ClientID %>');
+            
+            if (fileInput) {
+                fileInput.addEventListener('change', function (e) {
+                    const file = e.target.files[0];
+                    const preview = document.getElementById('file-preview');
+                    const fileName = document.getElementById('file-name');
+                    const fileSize = document.getElementById('file-size');
+
+                    if (file) {
+                        // Validar tamaño (50MB máximo)
+                        const maxSize = 50 * 1024 * 1024; // 50MB en bytes
+                        if (file.size > maxSize) {
+                            alert('El archivo es demasiado grande. El tamaño máximo permitido es 50MB.');
+                            clearFileSelection();
+                            return;
+                        }
+
+                        // Validar tipo de archivo
+                        const allowedTypes = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+                        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+                        if (!allowedTypes.includes(fileExtension)) {
+                            alert('Tipo de archivo no permitido. Use: PDF, DOC, DOCX, JPG, PNG');
+                            clearFileSelection();
+                            return;
+                        }
+
+                        // Mostrar información del archivo
+                        fileName.textContent = file.name;
+                        fileSize.textContent = `(${formatFileSize(file.size)})`;
+                        preview.style.display = 'block';
+                    } else {
+                        preview.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Limpiar selección de archivo
+        function clearFileSelection() {
+            const fileInput = document.getElementById('<%= fileUploadCPIC.ClientID %>');
+            const preview = document.getElementById('file-preview');
+
+            if (fileInput) fileInput.value = '';
+            if (preview) preview.style.display = 'none';
+        }
+
+        // Formatear tamaño de archivo
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
 
     <style>
         /* Estilos adicionales para la búsqueda mejorada */
@@ -276,6 +387,62 @@
             margin-right: 8px;
         }
 
+        /* NUEVOS ESTILOS PARA UPLOAD EN EDICIÓN */
+        .document-upload-section {
+            background-color: #e8f5e8;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #28a745;
+        }
+
+        .document-upload-section h4 {
+            color: #155724;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .document-upload-section h4 i {
+            color: #28a745;
+            margin-right: 8px;
+        }
+
+        .upload-container {
+            display: flex;
+            align-items: end;
+            gap: 15px;
+        }
+
+        .file-input {
+            border: 2px dashed #ced4da;
+            border-radius: 5px;
+            padding: 10px;
+            transition: border-color 0.3s;
+        }
+
+        .file-input:hover {
+            border-color: #28a745;
+        }
+
+        .file-preview {
+            margin-top: 10px;
+        }
+
+        .file-preview .alert {
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-preview .alert i {
+            margin-right: 8px;
+        }
+
+        .text-muted {
+            font-size: 0.875em;
+        }
+
         /* Responsivo */
         @media (max-width: 768px) {
             .documento-info {
@@ -288,6 +455,11 @@
                 display: block;
                 width: 100%;
                 margin-bottom: 5px;
+            }
+
+            .upload-container {
+                flex-direction: column;
+                align-items: stretch;
             }
         }
     </style>

@@ -69,30 +69,10 @@
 
                     <!-- Cuarta fila -->
                     <div class="row">
-                        <div class="col-md-6 form-group">
+                        <div class="col-md-12 form-group">
                             <label for="txtTelefono" class="form-label">Teléfono:</label>
                             <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control"></asp:TextBox>
                         </div>
-                        <div class="col-md-6 form-group">
-                            <label for="txtFechaNacimiento" class="form-label">Fecha de Nacimiento:</label>
-                            <asp:TextBox ID="txtFechaNacimiento" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
-                            <asp:RequiredFieldValidator ID="rfvFechaNacimiento" runat="server" ControlToValidate="txtFechaNacimiento" 
-                                ErrorMessage="La fecha de nacimiento es requerida" CssClass="text-danger" Display="Dynamic"></asp:RequiredFieldValidator>
-                        </div>
-                    </div>
-
-                    <!-- Dirección y correo -->
-                    <div class="form-group">
-                        <label for="txtDireccion" class="form-label">Dirección:</label>
-                        <asp:TextBox ID="txtDireccion" runat="server" CssClass="form-control"></asp:TextBox>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="txtCorreo" class="form-label">Correo:</label>
-                        <asp:TextBox ID="txtCorreo" runat="server" CssClass="form-control"></asp:TextBox>
-                        <asp:RegularExpressionValidator ID="revCorreo" runat="server" ControlToValidate="txtCorreo"
-                            ValidationExpression="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-                            ErrorMessage="Formato de correo inválido" CssClass="text-danger" Display="Dynamic"></asp:RegularExpressionValidator>
                     </div>
 
                     <!-- Mensaje de resultado -->

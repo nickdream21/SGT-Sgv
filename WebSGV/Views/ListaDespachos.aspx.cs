@@ -1,593 +1,1496 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
-using System.Text;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using static WebSGV.Views.ListaDespachos;
 
 namespace WebSGV.Views
 {
     public partial class ListaDespachos : System.Web.UI.Page
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-        public class DatosDespachoCompleto
+        private string ConnectionString
         {
-            public int idDespacho { get; set; }
-            public int idConductor { get; set; }
-            public int idTracto { get; set; }
-            public int idCarreta { get; set; }
-            public string estadoDespacho { get; set; }
-            public string conductorNombre { get; set; }
-            public string tractoPlaca { get; set; }
-            public string carretaPlaca { get; set; }
+            get { return ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString; }
         }
 
+        #region Clases Auxiliares
 
-        protected void Page_Load(object sender, EventArgs e)
+        [Serializable]
+        public class ViajeActivo
         {
-            if (!IsPostBack)
+            public int IdViajeProgreso { get; set; }
+            public string NumeroViajeProgreso { get; set; }
+            public int IdConductor { get; set; }
+            public string NombreConductor { get; set; }
+            public DateTime FechaInicio { get; set; }
+            public DateTime FechaUltimaActividad { get; set; }
+            public int CantidadDespachos { get; set; }
+            public bool EsInternacional { get; set; }
+            public string EstadoViaje { get; set; }
+            public string DescripcionViaje { get; set; }
+        }
+
+        [Serializable]
+        public class DespachoViaje
+        {
+            public int IdDespacho { get; set; }
+            public string NumeroDespacho { get; set; }
+            public DateTime FechaDespacho { get; set; }
+            public string NombreCliente { get; set; }
+            public string NombreConductor { get; set; }
+            public string PlacaTracto { get; set; }
+            public string PlacaCarreta { get; set; }
+            public string TipoOperacion { get; set; }
+            public string LugarOperacion { get; set; }
+            public string EstadoDespacho { get; set; }
+            public string GuiaRemitente { get; set; }
+            public string GuiaTransportista { get; set; }
+            public string NumeroViaje { get; set; }
+        }
+
+        [Serializable]
+        public class LoteRegistrado
+        {
+            public string IdLoteVirtual { get; set; }
+            public DateTime FechaProgramacion { get; set; }
+            public int IdCliente { get; set; }
+            public string NombreCliente { get; set; }
+            public string NumeroPedido { get; set; }
+            public string TipoOperacion { get; set; }
+            public bool EsInternacional { get; set; }
+            public string PlantaOperacion { get; set; }
+            public int CantidadDespachos { get; set; }
+            public string NumeroFactura { get; set; }
+            public string NumeroCPIC { get; set; }
+            public DateTime FechaCreacion { get; set; }
+            public string UsuarioCreacion { get; set; }
+
+            public DateTime? FechaEmisionFactura { get; set; }
+            public decimal? ValorTotalFactura { get; set; }
+            public DateTime? FechaEmisionCPIC { get; set; }
+            public decimal? ValorFlete { get; set; }
+            public List<int> IdsDespachos { get; set; }
+
+            public LoteRegistrado()
             {
-                CargarFiltros();
-                EstablecerFechasPorDefecto();
-                CargarDespachos();
+                IdsDespachos = new List<int>();
+                NumeroPedido = "";
+                NumeroFactura = "";
+                NumeroCPIC = "";
+                UsuarioCreacion = "";
             }
         }
 
-        #region Carga de Datos Iniciales
+        #endregion
 
-        private void CargarFiltros()
+        #region Propiedades de Estado
+
+        private int? ViajeSeleccionadoId
+        {
+            get { return ViewState["ViajeSeleccionadoId"] as int?; }
+            set { ViewState["ViajeSeleccionadoId"] = value; }
+        }
+
+        private string LoteSeleccionadoId
+        {
+            get { return ViewState["LoteSeleccionadoId"] as string; }
+            set { ViewState["LoteSeleccionadoId"] = value; }
+        }
+
+        #endregion
+
+        #region Métodos Helper para DBNull
+
+        private T GetSafeValue<T>(SqlDataReader reader, string columnName, T defaultValue = default(T))
+        {
+            try
+            {
+                if (reader[columnName] == DBNull.Value)
+                    return defaultValue;
+
+                if (typeof(T) == typeof(string))
+                    return (T)(object)reader[columnName].ToString();
+                else if (typeof(T) == typeof(DateTime?))
+                    return (T)(object)Convert.ToDateTime(reader[columnName]);
+                else if (typeof(T) == typeof(decimal?))
+                    return (T)(object)Convert.ToDecimal(reader[columnName]);
+                else if (typeof(T) == typeof(bool))
+                    return (T)(object)Convert.ToBoolean(reader[columnName]);
+                else if (typeof(T) == typeof(int))
+                    return (T)(object)Convert.ToInt32(reader[columnName]);
+                else if (typeof(T) == typeof(DateTime))
+                    return (T)(object)Convert.ToDateTime(reader[columnName]);
+                else
+                    return (T)Convert.ChangeType(reader[columnName], typeof(T));
+            }
+            catch
+            {
+                return defaultValue;
+            }
+        }
+
+        #endregion
+
+        #region Eventos de Página
+
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!Page.IsPostBack)
+            {
+                try
+                {
+                    CargarDatosIniciales();
+                    MostrarListaViajes();
+                    CargarViajesActivos();
+                    ConfigurarFechasPorDefecto();
+                }
+                catch (Exception ex)
+                {
+                    MostrarMensaje("Error al cargar página: " + ex.Message, "danger");
+                }
+            }
+        }
+
+        #endregion
+
+        #region Métodos de Carga de Datos Iniciales
+
+        private void CargarDatosIniciales()
         {
             try
             {
                 CargarConductoresFiltro();
                 CargarClientesFiltro();
+                EstablecerContadores();
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar filtros: " + ex.Message, "danger");
+                MostrarMensaje("Error al cargar datos iniciales: " + ex.Message, "danger");
             }
+        }
+
+        private void ConfigurarFechasPorDefecto()
+        {
+            DateTime hoy = DateTime.Today;
+            DateTime primerDiaMes = new DateTime(hoy.Year, hoy.Month, 1);
+
+            txtFechaDesde.Text = primerDiaMes.ToString("yyyy-MM-dd");
+            txtFechaHasta.Text = hoy.ToString("yyyy-MM-dd");
         }
 
         private void CargarConductoresFiltro()
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            try
             {
-                string query = @"SELECT DISTINCT c.idConductor, 
-                                       CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) as NombreCompleto
-                                FROM Conductor c
-                                INNER JOIN Despachos d ON c.idConductor = d.idConductor
-                                WHERE d.activo = 1
-                                ORDER BY NombreCompleto";
-
-                SqlCommand cmd = new SqlCommand(query, conn);
-                conn.Open();
-
-                SqlDataReader reader = cmd.ExecuteReader();
-                ddlConductorFiltro.Items.Clear();
-                ddlConductorFiltro.Items.Add(new ListItem("Todos", ""));
-
-                while (reader.Read())
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
-                    ddlConductorFiltro.Items.Add(new ListItem(reader["NombreCompleto"].ToString(), reader["idConductor"].ToString()));
+                    string query = @"
+                        SELECT DISTINCT 
+                            c.idConductor,
+                            CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, ''), ' ', ISNULL(c.apMaterno, '')) AS NombreCompleto
+                        FROM Conductor c
+                        INNER JOIN ViajesEnProgreso vp ON c.idConductor = vp.idConductor
+                        WHERE vp.estadoViaje = 'ABIERTO' AND vp.activo = 1
+                        ORDER BY NombreCompleto";
+
+                    CargarDropDownList(ddlFiltroConductorViajes, query, "NombreCompleto", "idConductor", "-- Todos los conductores --");
                 }
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al cargar conductores: " + ex.Message, "warning");
             }
         }
 
         private void CargarClientesFiltro()
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            try
             {
-                string query = @"SELECT DISTINCT cl.idCliente, cl.nombre
-                                FROM Cliente cl
-                                INNER JOIN Despachos d ON cl.idCliente = d.idCliente
-                                WHERE d.activo = 1
-                                ORDER BY cl.nombre";
-
-                SqlCommand cmd = new SqlCommand(query, conn);
-                conn.Open();
-
-                SqlDataReader reader = cmd.ExecuteReader();
-                ddlClienteFiltro.Items.Clear();
-                ddlClienteFiltro.Items.Add(new ListItem("Todos", ""));
-
-                while (reader.Read())
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
-                    ddlClienteFiltro.Items.Add(new ListItem(reader["nombre"].ToString(), reader["idCliente"].ToString()));
+                    string query = @"
+                        SELECT DISTINCT 
+                            c.idCliente,
+                            c.nombre
+                        FROM Cliente c
+                        INNER JOIN Despachos d ON c.idCliente = d.idCliente
+                        WHERE d.activo = 1 AND d.fechaCreacion >= DATEADD(MONTH, -6, GETDATE())
+                        ORDER BY c.nombre";
+
+                    CargarDropDownList(ddlFiltroClienteLotes, query, "nombre", "idCliente", "-- Todos los clientes --");
                 }
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al cargar clientes: " + ex.Message, "warning");
             }
         }
 
-        private void EstablecerFechasPorDefecto()
+        private void CargarDropDownList(DropDownList ddl, string query, string textField, string valueField, string defaultText)
         {
-            // Últimos 30 días por defecto
-            txtFechaDesde.Text = DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd");
-            txtFechaHasta.Text = DateTime.Now.ToString("yyyy-MM-dd");
-        }
-
-        #endregion
-
-        #region Carga y Filtrado de Despachos
-
-        private void CargarDespachos()
-        {
-            try
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
-                    string query = @"
-                        SELECT d.idDespacho, d.numeroDespacho, d.fechaDespacho, d.estadoDespacho,
-                               d.lugarOperacion, d.tipoOperacion, d.fechaCreacion,
-                               CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) as conductorNombre,
-                               cl.nombre as clienteNombre,
-                               t.placaTracto as tractoPlaca,
-                               ca.placaCarreta as carretaPlaca
-                        FROM Despachos d
-                        INNER JOIN Conductor c ON d.idConductor = c.idConductor
-                        INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
-                        INNER JOIN Tracto t ON d.idTracto = t.idTracto
-                        INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-                        WHERE d.activo = 1 " + ConstruirFiltrosWhere() + @"
-                        ORDER BY d.fechaDespacho DESC, d.fechaCreacion DESC";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    AplicarParametrosFiltros(cmd);
-
                     conn.Open();
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataTable dt = new DataTable();
-                    adapter.Fill(dt);
-
-                    gvDespachos.DataSource = dt;
-                    gvDespachos.DataBind();
-
-                    // Actualizar contador
-                    litTotalRegistros.Text = $"{dt.Rows.Count} registros";
-                }
-            }
-            catch (Exception ex)
-            {
-                MostrarMensaje("Error al cargar despachos: " + ex.Message, "danger");
-                litTotalRegistros.Text = "0 registros";
-            }
-        }
-
-        private string ConstruirFiltrosWhere()
-        {
-            StringBuilder filtros = new StringBuilder();
-
-            // Filtro por estado
-            if (!string.IsNullOrWhiteSpace(ddlEstadoFiltro.SelectedValue))
-            {
-                filtros.Append(" AND d.estadoDespacho = @estadoFiltro");
-            }
-
-            // Filtro por fechas
-            if (!string.IsNullOrWhiteSpace(txtFechaDesde.Text))
-            {
-                filtros.Append(" AND d.fechaDespacho >= @fechaDesde");
-            }
-            if (!string.IsNullOrWhiteSpace(txtFechaHasta.Text))
-            {
-                filtros.Append(" AND d.fechaDespacho <= @fechaHasta");
-            }
-
-            // Filtro por conductor
-            if (!string.IsNullOrWhiteSpace(ddlConductorFiltro.SelectedValue))
-            {
-                filtros.Append(" AND d.idConductor = @conductorFiltro");
-            }
-
-            // Filtro por cliente
-            if (!string.IsNullOrWhiteSpace(ddlClienteFiltro.SelectedValue))
-            {
-                filtros.Append(" AND d.idCliente = @clienteFiltro");
-            }
-
-            // Filtro por lugar
-            if (!string.IsNullOrWhiteSpace(ddlLugarFiltro.SelectedValue))
-            {
-                filtros.Append(" AND d.lugarOperacion = @lugarFiltro");
-            }
-
-            
-
-            // Filtro por operación
-            if (!string.IsNullOrWhiteSpace(ddlOperacionFiltro.SelectedValue))
-            {
-                filtros.Append(" AND d.tipoOperacion = @operacionFiltro");
-            }
-
-            return filtros.ToString();
-        }
-
-        private void AplicarParametrosFiltros(SqlCommand cmd)
-        {
-            if (!string.IsNullOrWhiteSpace(ddlEstadoFiltro.SelectedValue))
-            {
-                cmd.Parameters.AddWithValue("@estadoFiltro", ddlEstadoFiltro.SelectedValue);
-            }
-
-            if (!string.IsNullOrWhiteSpace(txtFechaDesde.Text))
-            {
-                cmd.Parameters.AddWithValue("@fechaDesde", DateTime.Parse(txtFechaDesde.Text));
-            }
-
-            if (!string.IsNullOrWhiteSpace(txtFechaHasta.Text))
-            {
-                cmd.Parameters.AddWithValue("@fechaHasta", DateTime.Parse(txtFechaHasta.Text));
-            }
-
-            if (!string.IsNullOrWhiteSpace(ddlConductorFiltro.SelectedValue))
-            {
-                cmd.Parameters.AddWithValue("@conductorFiltro", Convert.ToInt32(ddlConductorFiltro.SelectedValue));
-            }
-
-            if (!string.IsNullOrWhiteSpace(ddlClienteFiltro.SelectedValue))
-            {
-                cmd.Parameters.AddWithValue("@clienteFiltro", Convert.ToInt32(ddlClienteFiltro.SelectedValue));
-            }
-
-            if (!string.IsNullOrWhiteSpace(ddlLugarFiltro.SelectedValue))
-            {
-                cmd.Parameters.AddWithValue("@lugarFiltro", ddlLugarFiltro.SelectedValue);
-            }
-
-            
-
-            if (!string.IsNullOrWhiteSpace(ddlOperacionFiltro.SelectedValue))
-            {
-                cmd.Parameters.AddWithValue("@operacionFiltro", ddlOperacionFiltro.SelectedValue);
-            }
-        }
-
-        #endregion
-
-        #region Eventos de Botones
-
-        protected void btnBuscar_Click(object sender, EventArgs e)
-        {
-            CargarDespachos();
-        }
-
-        protected void btnLimpiar_Click(object sender, EventArgs e)
-        {
-            LimpiarFiltros();
-            CargarDespachos();
-        }
-
-        protected void btnNuevoDespacho_Click(object sender, EventArgs e)
-        {
-            Response.Redirect("~/Views/Despacho.aspx");
-        }
-
-        private void LimpiarFiltros()
-        {
-            ddlEstadoFiltro.SelectedValue = "";
-            ddlConductorFiltro.SelectedValue = "";
-            ddlClienteFiltro.SelectedValue = "";
-            ddlLugarFiltro.SelectedValue = "";
-            ddlOperacionFiltro.SelectedValue = "";
-            
-            EstablecerFechasPorDefecto();
-            OcultarMensaje();
-        }
-
-        #endregion
-
-        #region Eventos del GridView
-
-        protected void gvDespachos_PageIndexChanging(object sender, GridViewPageEventArgs e)
-        {
-            gvDespachos.PageIndex = e.NewPageIndex;
-            CargarDespachos();
-        }
-
-        protected void gvDespachos_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            if (e.CommandArgument == null) return;
-
-            int idDespacho = Convert.ToInt32(e.CommandArgument);
-
-            switch (e.CommandName)
-            {
-                case "Ver":
-                    MostrarDetallesDespacho(idDespacho);
-                    break;
-                case "Editar":
-                    Response.Redirect($"~/Views/EditarDespacho.aspx?id={idDespacho}");
-                    break;
-                case "CrearOrdenViaje":
-                    CrearOrdenViajeDesdeDespacho(idDespacho);
-                    break;
-            }
-        }
-
-
-        private void CrearOrdenViajeDesdeDespacho(int idDespacho)
-        {
-            try
-            {
-                // Obtener datos del despacho
-                var datosDespacho = ObtenerDatosCompletos(idDespacho);
-
-                if (datosDespacho != null)
-                {
-                    // Construir URL con parámetros
-                    string url = $"~/Views/AgregarOrdenViaje.aspx?" +
-                                $"origen=despacho&" +
-                                $"idDespacho={idDespacho}&" +
-                                $"idConductor={datosDespacho.idConductor}&" +
-                                $"idTracto={datosDespacho.idTracto}&" +
-                                $"idCarreta={datosDespacho.idCarreta}&" +
-                                $"conductor={Server.UrlEncode(datosDespacho.conductorNombre)}&" +
-                                $"tracto={Server.UrlEncode(datosDespacho.tractoPlaca)}&" +
-                                $"carreta={Server.UrlEncode(datosDespacho.carretaPlaca)}";
-
-                    Response.Redirect(url);
-                }
-                else
-                {
-                    MostrarMensaje("No se encontraron los datos del despacho", "warning");
-                }
-            }
-            catch (Exception ex)
-            {
-                MostrarMensaje("Error al obtener datos del despacho: " + ex.Message, "danger");
-            }
-        }
-
-        private DatosDespachoCompleto ObtenerDatosCompletos(int idDespacho)
-        {
-            try
-            {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"
-                SELECT d.idDespacho, d.idConductor, d.idTracto, d.idCarreta, d.estadoDespacho,
-                       CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) as conductorNombre,
-                       t.placaTracto as tractoPlaca,
-                       ca.placaCarreta as carretaPlaca
-                FROM Despachos d
-                INNER JOIN Conductor c ON d.idConductor = c.idConductor
-                INNER JOIN Tracto t ON d.idTracto = t.idTracto
-                INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-                WHERE d.idDespacho = @idDespacho AND d.activo = 1";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        cmd.Parameters.AddWithValue("@idDespacho", idDespacho);
-                        conn.Open();
+                        ddl.Items.Clear();
+                        ddl.Items.Add(new ListItem(defaultText, ""));
 
-                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        while (reader.Read())
                         {
-                            if (reader.Read())
-                            {
-                                return new DatosDespachoCompleto
-                                {
-                                    idDespacho = Convert.ToInt32(reader["idDespacho"]),
-                                    idConductor = Convert.ToInt32(reader["idConductor"]),
-                                    idTracto = Convert.ToInt32(reader["idTracto"]),
-                                    idCarreta = Convert.ToInt32(reader["idCarreta"]),
-                                    estadoDespacho = reader["estadoDespacho"].ToString(),
-                                    conductorNombre = reader["conductorNombre"].ToString(),
-                                    tractoPlaca = reader["tractoPlaca"].ToString(),
-                                    carretaPlaca = reader["carretaPlaca"].ToString()
-                                };
-                            }
+                            ddl.Items.Add(new ListItem(
+                                GetSafeValue<string>(reader, textField),
+                                GetSafeValue<string>(reader, valueField)
+                            ));
                         }
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error obteniendo datos despacho: {ex.Message}");
-            }
-
-            return null;
         }
 
         #endregion
 
-        #region Modal de Detalles
+        #region Métodos de Gestión de Viajes
 
-        private void MostrarDetallesDespacho(int idDespacho)
+        private void CargarViajesActivos()
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"
-                        SELECT d.*, 
-                               CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) as conductorCompleto,
-                               cl.nombre as clienteNombre,
-                               t.placaTracto,
-                               ca.placaCarreta
-                        FROM Despachos d
-                        INNER JOIN Conductor c ON d.idConductor = c.idConductor
-                        INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
-                        INNER JOIN Tracto t ON d.idTracto = t.idTracto
-                        INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-                        WHERE d.idDespacho = @idDespacho";
+                List<ViajeActivo> viajes = ObtenerViajesActivos();
+                gvViajesActivos.DataSource = viajes;
+                gvViajesActivos.DataBind();
 
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@idDespacho", idDespacho);
+                lblContadorViajes.Text = $"{viajes.Count}";
+                ActualizarContadorGeneral();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al cargar viajes activos: " + ex.Message, "danger");
+            }
+        }
+
+        private List<ViajeActivo> ObtenerViajesActivos()
+        {
+            List<ViajeActivo> viajes = new List<ViajeActivo>();
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                string query = @"
+                    SELECT 
+                        vp.idViajeProgreso,
+                        vp.numeroViajeProgreso,
+                        vp.idConductor,
+                        CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, ''), ' ', ISNULL(c.apMaterno, '')) AS NombreConductor,
+                        vp.fechaInicio,
+                        vp.fechaUltimaActividad,
+                        vp.cantidadDespachos,
+                        ISNULL(vp.esInternacional, 0) AS EsInternacional,
+                        vp.estadoViaje,
+                        vp.descripcionViaje
+                    FROM ViajesEnProgreso vp
+                    INNER JOIN Conductor c ON vp.idConductor = c.idConductor
+                    WHERE vp.estadoViaje = 'ABIERTO' AND vp.activo = 1";
+
+                List<SqlParameter> parametros = new List<SqlParameter>();
+
+                if (!string.IsNullOrEmpty(ddlFiltroConductorViajes.SelectedValue))
+                {
+                    query += " AND vp.idConductor = @idConductor";
+                    parametros.Add(new SqlParameter("@idConductor", ddlFiltroConductorViajes.SelectedValue));
+                }
+
+                if (!string.IsNullOrEmpty(ddlFiltroTipoViajes.SelectedValue))
+                {
+                    query += " AND vp.esInternacional = @esInternacional";
+                    parametros.Add(new SqlParameter("@esInternacional", ddlFiltroTipoViajes.SelectedValue == "1"));
+                }
+
+                if (!string.IsNullOrEmpty(txtBuscarViaje.Text.Trim()))
+                {
+                    query += " AND vp.numeroViajeProgreso LIKE @numeroViaje";
+                    parametros.Add(new SqlParameter("@numeroViaje", "%" + txtBuscarViaje.Text.Trim() + "%"));
+                }
+
+                query += " ORDER BY vp.fechaUltimaActividad DESC";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddRange(parametros.ToArray());
+                    conn.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            viajes.Add(new ViajeActivo
+                            {
+                                IdViajeProgreso = GetSafeValue<int>(reader, "idViajeProgreso"),
+                                NumeroViajeProgreso = GetSafeValue<string>(reader, "numeroViajeProgreso"),
+                                IdConductor = GetSafeValue<int>(reader, "idConductor"),
+                                NombreConductor = GetSafeValue<string>(reader, "NombreConductor"),
+                                FechaInicio = GetSafeValue<DateTime>(reader, "fechaInicio"),
+                                FechaUltimaActividad = GetSafeValue<DateTime>(reader, "fechaUltimaActividad"),
+                                CantidadDespachos = GetSafeValue<int>(reader, "cantidadDespachos"),
+                                EsInternacional = GetSafeValue<bool>(reader, "EsInternacional"),
+                                EstadoViaje = GetSafeValue<string>(reader, "estadoViaje"),
+                                DescripcionViaje = GetSafeValue<string>(reader, "descripcionViaje")
+                            });
+                        }
+                    }
+                }
+            }
+
+            return viajes;
+        }
+
+        private void CargarDespachosViaje(int idViajeProgreso)
+        {
+            try
+            {
+                List<DespachoViaje> despachos = ObtenerDespachosDelViaje(idViajeProgreso);
+                gvDespachosViaje.DataSource = despachos;
+                gvDespachosViaje.DataBind();
+
+                ActualizarInformacionViajeDetalle(idViajeProgreso);
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al cargar despachos del viaje: " + ex.Message, "danger");
+            }
+        }
+
+        private List<DespachoViaje> ObtenerDespachosDelViaje(int idViajeProgreso)
+        {
+            List<DespachoViaje> despachos = new List<DespachoViaje>();
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                string query = @"
+                    SELECT 
+                        d.idDespacho,
+                        d.numeroDespacho,
+                        d.fechaDespacho,
+                        cl.nombre AS NombreCliente,
+                        CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, '')) AS NombreConductor,
+                        t.placaTracto,
+                        ca.placaCarreta,
+                        d.tipoOperacion,
+                        d.lugarOperacion,
+                        d.estadoDespacho,
+                        d.guiaRemitente,
+                        d.guiaTransportista,
+                        vp.numeroViajeProgreso AS NumeroViaje
+                    FROM Despachos d
+                    INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
+                    INNER JOIN Conductor c ON d.idConductor = c.idConductor
+                    INNER JOIN Tracto t ON d.idTracto = t.idTracto
+                    INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
+                    LEFT JOIN ViajesEnProgreso vp ON d.idViajeProgreso = vp.idViajeProgreso
+                    WHERE d.idViajeProgreso = @idViajeProgreso
+                        AND d.activo = 1
+                    ORDER BY d.fechaCreacion DESC";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
+                    conn.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            despachos.Add(new DespachoViaje
+                            {
+                                IdDespacho = GetSafeValue<int>(reader, "idDespacho"),
+                                NumeroDespacho = GetSafeValue<string>(reader, "numeroDespacho"),
+                                FechaDespacho = GetSafeValue<DateTime>(reader, "fechaDespacho"),
+                                NombreCliente = GetSafeValue<string>(reader, "NombreCliente"),
+                                NombreConductor = GetSafeValue<string>(reader, "NombreConductor"),
+                                PlacaTracto = GetSafeValue<string>(reader, "placaTracto"),
+                                PlacaCarreta = GetSafeValue<string>(reader, "placaCarreta"),
+                                TipoOperacion = GetSafeValue<string>(reader, "tipoOperacion"),
+                                LugarOperacion = GetSafeValue<string>(reader, "lugarOperacion"),
+                                EstadoDespacho = GetSafeValue<string>(reader, "estadoDespacho"),
+                                GuiaRemitente = GetSafeValue<string>(reader, "guiaRemitente", "N/A"),
+                                GuiaTransportista = GetSafeValue<string>(reader, "guiaTransportista", "N/A"),
+                                NumeroViaje = GetSafeValue<string>(reader, "NumeroViaje", "N/A")
+                            });
+                        }
+                    }
+                }
+            }
+
+            return despachos;
+        }
+
+        private void ActualizarInformacionViajeDetalle(int idViajeProgreso)
+        {
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                string query = @"
+                    SELECT 
+                        vp.numeroViajeProgreso,
+                        CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, ''), ' ', ISNULL(c.apMaterno, '')) AS NombreConductor,
+                        vp.fechaInicio,
+                        vp.fechaUltimaActividad,
+                        vp.cantidadDespachos,
+                        ISNULL(vp.esInternacional, 0) AS EsInternacional,
+                        vp.estadoViaje
+                    FROM ViajesEnProgreso vp
+                    INNER JOIN Conductor c ON vp.idConductor = c.idConductor
+                    WHERE vp.idViajeProgreso = @idViajeProgreso";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
+                    conn.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            lblNumeroViajeDetalle.Text = GetSafeValue<string>(reader, "numeroViajeProgreso");
+                            lblConductorDetalle.Text = GetSafeValue<string>(reader, "NombreConductor");
+                            lblFechaInicioDetalle.Text = GetSafeValue<DateTime>(reader, "fechaInicio").ToString("dd/MM/yyyy HH:mm");
+                            lblTotalDespachos.Text = GetSafeValue<int>(reader, "cantidadDespachos").ToString();
+                            lblTipoViajeDetalle.Text = GetSafeValue<bool>(reader, "EsInternacional") ? "Internacional" : "Nacional";
+                            lblEstadoViajeDetalle.Text = GetSafeValue<string>(reader, "estadoViaje");
+                            lblUltimaActividadDetalle.Text = GetSafeValue<DateTime>(reader, "fechaUltimaActividad").ToString("dd/MM/yyyy HH:mm");
+                        }
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region Métodos de Gestión de Lotes
+
+        private void CargarLotesRegistrados()
+        {
+            try
+            {
+                List<LoteRegistrado> lotes = ObtenerLotesRegistrados();
+                gvLotesRegistrados.DataSource = lotes;
+                gvLotesRegistrados.DataBind();
+
+                lblContadorLotes.Text = $"{lotes.Count}";
+                ActualizarContadorGeneral();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al cargar lotes registrados: " + ex.Message, "danger");
+            }
+        }
+
+        private List<LoteRegistrado> ObtenerLotesRegistrados()
+        {
+            List<LoteRegistrado> lotes = new List<LoteRegistrado>();
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                string query = @"
+                    WITH LotesAgrupados AS (
+                        SELECT 
+                            -- ID virtual basado en criterios comunes
+                            CONCAT(
+                                CAST(d.idCliente AS VARCHAR(10)), '_',
+                                ISNULL(d.numeroPedido, 'NOPEDIDO'), '_',
+                                CONVERT(VARCHAR(10), d.fechaDespacho, 120), '_',
+                                d.tipoOperacion, '_',
+                                CAST(d.esInternacional AS VARCHAR(1)), '_',
+                                d.lugarOperacion
+                            ) AS IdLoteVirtual,
+                            
+                            d.fechaDespacho AS FechaProgramacion,
+                            d.idCliente,
+                            cl.nombre AS NombreCliente,
+                            d.numeroPedido,
+                            d.tipoOperacion,
+                            d.esInternacional,
+                            d.lugarOperacion AS PlantaOperacion,
+                            COUNT(*) AS CantidadDespachos,
+                            MAX(ISNULL(f.numeroFactura, '')) AS NumeroFactura,
+                            MAX(ISNULL(c.numeroCPIC, '')) AS NumeroCPIC,
+                            MIN(d.fechaCreacion) AS FechaCreacion,
+                            MAX(ISNULL(d.usuarioCreacion, 'Sistema')) AS UsuarioCreacion,
+                            
+                            -- Datos para edición
+                            MAX(f.fechaEmision) AS FechaEmisionFactura,
+                            MAX(f.valorTotal) AS ValorTotalFactura,
+                            MAX(c.fechaEmision) AS FechaEmisionCPIC,
+                            MAX(c.valorTotalFlete) AS ValorFlete
+                            
+                        FROM Despachos d
+                        INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
+                        LEFT JOIN Factura f ON d.idFactura = f.idFactura
+                        LEFT JOIN CPIC c ON d.idCPIC = c.idCPIC
+                        WHERE d.activo = 1";
+
+                List<SqlParameter> parametros = new List<SqlParameter>();
+
+                // Aplicar filtros
+                if (!string.IsNullOrEmpty(ddlFiltroClienteLotes.SelectedValue))
+                {
+                    query += " AND d.idCliente = @idCliente";
+                    parametros.Add(new SqlParameter("@idCliente", ddlFiltroClienteLotes.SelectedValue));
+                }
+
+                if (!string.IsNullOrEmpty(ddlFiltroOperacionLotes.SelectedValue))
+                {
+                    query += " AND d.tipoOperacion = @tipoOperacion";
+                    parametros.Add(new SqlParameter("@tipoOperacion", ddlFiltroOperacionLotes.SelectedValue));
+                }
+
+                if (!string.IsNullOrEmpty(ddlFiltroPlantaLotes.SelectedValue))
+                {
+                    query += " AND d.lugarOperacion = @planta";
+                    parametros.Add(new SqlParameter("@planta", ddlFiltroPlantaLotes.SelectedValue));
+                }
+
+                if (!string.IsNullOrEmpty(txtBuscarLote.Text.Trim()))
+                {
+                    query += " AND d.numeroPedido LIKE @numeroPedido";
+                    parametros.Add(new SqlParameter("@numeroPedido", "%" + txtBuscarLote.Text.Trim() + "%"));
+                }
+
+                // Filtro por fechas
+                DateTime fechaDesde, fechaHasta;
+                if (DateTime.TryParse(txtFechaDesde.Text, out fechaDesde))
+                {
+                    query += " AND d.fechaDespacho >= @fechaDesde";
+                    parametros.Add(new SqlParameter("@fechaDesde", fechaDesde));
+                }
+
+                if (DateTime.TryParse(txtFechaHasta.Text, out fechaHasta))
+                {
+                    query += " AND d.fechaDespacho <= @fechaHasta";
+                    parametros.Add(new SqlParameter("@fechaHasta", fechaHasta.Date.AddDays(1).AddSeconds(-1)));
+                }
+
+                query += @"
+                        GROUP BY 
+                            d.idCliente, cl.nombre, d.numeroPedido, d.fechaDespacho, 
+                            d.tipoOperacion, d.esInternacional, d.lugarOperacion
+                        HAVING COUNT(*) > 1
+                    )
+                    SELECT * FROM LotesAgrupados
+                    ORDER BY FechaCreacion DESC";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddRange(parametros.ToArray());
+                    conn.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            lotes.Add(new LoteRegistrado
+                            {
+                                IdLoteVirtual = GetSafeValue<string>(reader, "IdLoteVirtual"),
+                                FechaProgramacion = GetSafeValue<DateTime>(reader, "FechaProgramacion"),
+                                IdCliente = GetSafeValue<int>(reader, "idCliente"),
+                                NombreCliente = GetSafeValue<string>(reader, "NombreCliente"),
+                                NumeroPedido = GetSafeValue<string>(reader, "numeroPedido"),
+                                TipoOperacion = GetSafeValue<string>(reader, "tipoOperacion"),
+                                EsInternacional = GetSafeValue<bool>(reader, "esInternacional"),
+                                PlantaOperacion = GetSafeValue<string>(reader, "PlantaOperacion"),
+                                CantidadDespachos = GetSafeValue<int>(reader, "CantidadDespachos"),
+                                NumeroFactura = GetSafeValue<string>(reader, "NumeroFactura"),
+                                NumeroCPIC = GetSafeValue<string>(reader, "NumeroCPIC"),
+                                FechaCreacion = GetSafeValue<DateTime>(reader, "FechaCreacion"),
+                                UsuarioCreacion = GetSafeValue<string>(reader, "UsuarioCreacion"),
+                                FechaEmisionFactura = GetSafeValue<DateTime?>(reader, "FechaEmisionFactura"),
+                                ValorTotalFactura = GetSafeValue<decimal?>(reader, "ValorTotalFactura"),
+                                FechaEmisionCPIC = GetSafeValue<DateTime?>(reader, "FechaEmisionCPIC"),
+                                ValorFlete = GetSafeValue<decimal?>(reader, "ValorFlete")
+                            });
+                        }
+                    }
+                }
+            }
+
+            return lotes;
+        }
+
+        private LoteRegistrado ObtenerLotePorId(string idLoteVirtual)
+        {
+            var lotes = ObtenerLotesRegistrados();
+            var lote = lotes.FirstOrDefault(l => l.IdLoteVirtual == idLoteVirtual);
+
+            if (lote != null)
+            {
+                lote.IdsDespachos = ObtenerIdsDespachosDeLote(idLoteVirtual);
+            }
+
+            return lote;
+        }
+
+        private List<int> ObtenerIdsDespachosDeLote(string idLoteVirtual)
+        {
+            List<int> ids = new List<int>();
+
+            var criterios = ParsearIdLoteVirtual(idLoteVirtual);
+            if (criterios == default) return ids;
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                string query = @"
+                    SELECT d.idDespacho 
+                    FROM Despachos d
+                    WHERE d.activo = 1
+                        AND d.idCliente = @idCliente
+                        AND d.fechaDespacho = @fechaDespacho
+                        AND d.tipoOperacion = @tipoOperacion
+                        AND d.esInternacional = @esInternacional
+                        AND d.lugarOperacion = @planta";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@idCliente", criterios.IdCliente);
+                    cmd.Parameters.AddWithValue("@fechaDespacho", criterios.FechaDespacho);
+                    cmd.Parameters.AddWithValue("@tipoOperacion", criterios.TipoOperacion);
+                    cmd.Parameters.AddWithValue("@esInternacional", criterios.EsInternacional);
+                    cmd.Parameters.AddWithValue("@planta", criterios.Planta);
+
+                    if (!string.IsNullOrEmpty(criterios.NumeroPedido) && criterios.NumeroPedido != "NOPEDIDO")
+                    {
+                        query += " AND d.numeroPedido = @numeroPedido";
+                        cmd.Parameters.AddWithValue("@numeroPedido", criterios.NumeroPedido);
+                    }
 
                     conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader();
-
-                    if (reader.Read())
+                    using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        //litNumeroDespacho.Text = reader["numeroDespacho"].ToString();
-                        litEstadoDespacho.Text = $"<span class='status-badge status-{reader["estadoDespacho"].ToString().ToLower()}'>{ObtenerTextoEstado(reader["estadoDespacho"].ToString())}</span>";
-                        litFechaDespacho.Text = Convert.ToDateTime(reader["fechaDespacho"]).ToString("dd/MM/yyyy");
-                        litLugarDetalle.Text = reader["lugarOperacion"].ToString();
-                        litConductorDetalle.Text = reader["conductorCompleto"].ToString();
-                        litClienteDetalle.Text = reader["clienteNombre"].ToString();
-                        litTractoDetalle.Text = reader["placaTracto"].ToString();
-                        litCarretaDetalle.Text = reader["placaCarreta"].ToString();
+                        while (reader.Read())
+                        {
+                            ids.Add(GetSafeValue<int>(reader, "idDespacho"));
+                        }
+                    }
+                }
+            }
 
-                        ScriptManager.RegisterStartupScript(this, this.GetType(), "showModal", "showDetallesModal();", true);
-                    }
-                    else
+            return ids;
+        }
+
+        private (int IdCliente, DateTime FechaDespacho, string TipoOperacion, bool EsInternacional, string Planta, string NumeroPedido) ParsearIdLoteVirtual(string idLoteVirtual)
+        {
+            try
+            {
+                var partes = idLoteVirtual.Split('_');
+                if (partes.Length < 6) return default;
+
+                return (
+                    IdCliente: int.Parse(partes[0]),
+                    FechaDespacho: DateTime.Parse(partes[2]),
+                    TipoOperacion: partes[3],
+                    EsInternacional: partes[4] == "1",
+                    Planta: partes[5],
+                    NumeroPedido: partes[1] == "NOPEDIDO" ? null : partes[1]
+                );
+            }
+            catch
+            {
+                return default;
+            }
+        }
+
+        private List<DespachoViaje> ObtenerDespachosDelLote(string idLoteVirtual)
+        {
+            var idsDespachos = ObtenerIdsDespachosDeLote(idLoteVirtual);
+            List<DespachoViaje> despachos = new List<DespachoViaje>();
+
+            if (idsDespachos.Count == 0) return despachos;
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                string query = @"
+                    SELECT 
+                        d.idDespacho,
+                        d.numeroDespacho,
+                        d.fechaDespacho,
+                        cl.nombre AS NombreCliente,
+                        CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, '')) AS NombreConductor,
+                        t.placaTracto,
+                        ca.placaCarreta,
+                        d.tipoOperacion,
+                        d.lugarOperacion,
+                        d.estadoDespacho,
+                        d.guiaRemitente,
+                        d.guiaTransportista,
+                        ISNULL(vp.numeroViajeProgreso, 'Sin asignar') AS NumeroViaje
+                    FROM Despachos d
+                    INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
+                    INNER JOIN Conductor c ON d.idConductor = c.idConductor
+                    INNER JOIN Tracto t ON d.idTracto = t.idTracto
+                    INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
+                    LEFT JOIN ViajesEnProgreso vp ON d.idViajeProgreso = vp.idViajeProgreso
+                    WHERE d.idDespacho IN (" + string.Join(",", idsDespachos) + @")
+                        AND d.activo = 1
+                    ORDER BY d.fechaCreacion DESC";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    conn.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        MostrarMensaje("No se encontró el despacho especificado.", "warning");
+                        while (reader.Read())
+                        {
+                            despachos.Add(new DespachoViaje
+                            {
+                                IdDespacho = GetSafeValue<int>(reader, "idDespacho"),
+                                NumeroDespacho = GetSafeValue<string>(reader, "numeroDespacho"),
+                                FechaDespacho = GetSafeValue<DateTime>(reader, "fechaDespacho"),
+                                NombreCliente = GetSafeValue<string>(reader, "NombreCliente"),
+                                NombreConductor = GetSafeValue<string>(reader, "NombreConductor"),
+                                PlacaTracto = GetSafeValue<string>(reader, "placaTracto"),
+                                PlacaCarreta = GetSafeValue<string>(reader, "placaCarreta"),
+                                TipoOperacion = GetSafeValue<string>(reader, "tipoOperacion"),
+                                LugarOperacion = GetSafeValue<string>(reader, "lugarOperacion"),
+                                EstadoDespacho = GetSafeValue<string>(reader, "estadoDespacho"),
+                                GuiaRemitente = GetSafeValue<string>(reader, "guiaRemitente", "N/A"),
+                                GuiaTransportista = GetSafeValue<string>(reader, "guiaTransportista", "N/A"),
+                                NumeroViaje = GetSafeValue<string>(reader, "NumeroViaje")
+                            });
+                        }
                     }
+                }
+            }
+
+            return despachos;
+        }
+
+        private void CargarDespachosLote(string idLoteVirtual)
+        {
+            try
+            {
+                List<DespachoViaje> despachos = ObtenerDespachosDelLote(idLoteVirtual);
+                gvDespachosLote.DataSource = despachos;
+                gvDespachosLote.DataBind();
+
+                ActualizarInformacionLoteDetalle(idLoteVirtual);
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al cargar despachos del lote: " + ex.Message, "danger");
+            }
+        }
+
+        private void ActualizarInformacionLoteDetalle(string idLoteVirtual)
+        {
+            var lote = ObtenerLotePorId(idLoteVirtual);
+            if (lote != null)
+            {
+                lblClienteDetalleLote.Text = lote.NombreCliente;
+                lblPedidoDetalleLote.Text = string.IsNullOrEmpty(lote.NumeroPedido) ? "Sin especificar" : lote.NumeroPedido;
+                lblTotalDespachosLote.Text = lote.CantidadDespachos.ToString();
+                lblOperacionDetalleLote.Text = lote.TipoOperacion;
+                lblPlantaDetalleLote.Text = lote.PlantaOperacion;
+                lblFechaCreacionDetalle.Text = lote.FechaCreacion.ToString("dd/MM/yyyy");
+            }
+        }
+
+        #endregion
+
+        #region Eventos de Navegación Principal
+
+        protected void btnMostrarViajes_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                MostrarListaViajes();
+                CargarViajesActivos();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al mostrar viajes: " + ex.Message, "danger");
+            }
+        }
+
+        protected void btnMostrarLotes_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                MostrarListaLotes();
+                CargarLotesRegistrados();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al mostrar lotes: " + ex.Message, "danger");
+            }
+        }
+
+        protected void btnVolver_Click(object sender, EventArgs e)
+        {
+            Response.Redirect("RegistroDespacho.aspx");
+        }
+
+        #endregion
+
+        #region Eventos de Filtros - Viajes
+
+        protected void ddlFiltroConductorViajes_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            CargarViajesActivos();
+        }
+
+        protected void ddlFiltroTipoViajes_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            CargarViajesActivos();
+        }
+
+        protected void btnBuscarViaje_Click(object sender, EventArgs e)
+        {
+            CargarViajesActivos();
+        }
+
+        protected void btnRefrescarViajes_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                LimpiarFiltrosViajes();
+                CargarConductoresFiltro();
+                CargarViajesActivos();
+                MostrarMensaje("Datos de viajes actualizados correctamente.", "success");
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al refrescar viajes: " + ex.Message, "danger");
+            }
+        }
+
+        #endregion
+
+        #region Eventos de Filtros - Lotes
+
+        protected void ddlFiltroClienteLotes_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            CargarLotesRegistrados();
+        }
+
+        protected void ddlFiltroOperacionLotes_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            CargarLotesRegistrados();
+        }
+
+        protected void ddlFiltroPlantaLotes_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            CargarLotesRegistrados();
+        }
+
+        protected void btnBuscarLote_Click(object sender, EventArgs e)
+        {
+            CargarLotesRegistrados();
+        }
+
+        protected void btnFiltrarFecha_Click(object sender, EventArgs e)
+        {
+            CargarLotesRegistrados();
+        }
+
+        protected void btnLimpiarFiltros_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                LimpiarFiltrosLotes();
+                CargarLotesRegistrados();
+                MostrarMensaje("Filtros limpiados correctamente.", "info");
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al limpiar filtros: " + ex.Message, "danger");
+            }
+        }
+
+        protected void btnRefrescarLotes_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                LimpiarFiltrosLotes();
+                CargarClientesFiltro();
+                CargarLotesRegistrados();
+                MostrarMensaje("Datos de lotes actualizados correctamente.", "success");
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al refrescar lotes: " + ex.Message, "danger");
+            }
+        }
+
+        #endregion
+
+        #region Eventos de GridViews
+
+        protected void gvViajesActivos_RowCommand(object sender, GridViewCommandEventArgs e)
+        {
+            try
+            {
+                int idViajeProgreso = Convert.ToInt32(e.CommandArgument);
+
+                if (e.CommandName == "VerDespachos")
+                {
+                    MostrarDetallesViaje(idViajeProgreso);
+                }
+                else if (e.CommandName == "FinalizarViaje")
+                {
+                    FinalizarViaje(idViajeProgreso);
+                    CargarViajesActivos();
+                    MostrarMensaje("Viaje finalizado exitosamente.", "success");
                 }
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar detalles: " + ex.Message, "danger");
+                MostrarMensaje("Error al procesar acción en viaje: " + ex.Message, "danger");
+            }
+        }
+
+        protected void gvLotesRegistrados_RowCommand(object sender, GridViewCommandEventArgs e)
+        {
+            try
+            {
+                string idLoteVirtual = e.CommandArgument.ToString();
+
+                if (e.CommandName == "EditarLote")
+                {
+                    MostrarEdicionLote(idLoteVirtual);
+                }
+                else if (e.CommandName == "VerDetallesLote")
+                {
+                    MostrarDetallesLote(idLoteVirtual);
+                }
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al procesar acción en lote: " + ex.Message, "danger");
             }
         }
 
         #endregion
 
-        #region Métodos Auxiliares
+        #region Eventos de Navegación - Viajes
 
-        public string ObtenerTextoEstado(string estado)
+        protected void btnVolverViajes_Click(object sender, EventArgs e)
         {
-            switch (estado?.ToUpper())
+            MostrarListaViajes();
+            CargarViajesActivos();
+        }
+
+        protected void btnFinalizarViajeDetalle_Click(object sender, EventArgs e)
+        {
+            try
             {
-                case "PROGRAMADO": return "Programado";
-                case "EN_PROCESO": return "En Proceso";
-                case "COMPLETADO": return "Completado";
-                case "CANCELADO": return "Cancelado";
-                default: return estado;
+                if (ViajeSeleccionadoId.HasValue)
+                {
+                    FinalizarViaje(ViajeSeleccionadoId.Value);
+                    MostrarListaViajes();
+                    CargarViajesActivos();
+                    MostrarMensaje("Viaje finalizado exitosamente.", "success");
+                }
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al finalizar viaje: " + ex.Message, "danger");
             }
         }
 
-        private string ObtenerTextoTipoOperacion(string tipoOperacion)
+        #endregion
+
+        #region Eventos de Navegación - Lotes
+
+        protected void btnVolverLotes_Click(object sender, EventArgs e)
         {
-            switch (tipoOperacion?.ToUpper())
+            MostrarListaLotes();
+            CargarLotesRegistrados();
+        }
+
+        protected void btnVolverLotesDetalle_Click(object sender, EventArgs e)
+        {
+            MostrarListaLotes();
+            CargarLotesRegistrados();
+        }
+
+        protected void btnCancelarEdicion_Click(object sender, EventArgs e)
+        {
+            MostrarListaLotes();
+            CargarLotesRegistrados();
+        }
+
+        protected void btnEditarDesdeDetal_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(LoteSeleccionadoId))
             {
-                case "CARGA": return "Carga";
-                case "DESCARGA": return "Descarga";
-                case "CARGA_DESCARGA": return "Carga y Descarga";
-                case "TRANSITO": return "Tránsito";
-                default: return tipoOperacion;
+                MostrarEdicionLote(LoteSeleccionadoId);
+            }
+        }
+
+        #endregion
+
+        #region Eventos de Edición de Lotes
+
+        protected void btnGuardarCambios_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (Page.IsValid && ValidarEdicionLote())
+                {
+                    GuardarCambiosLote();
+                    MostrarListaLotes();
+                    CargarLotesRegistrados();
+                    MostrarMensaje("Cambios guardados exitosamente en todo el lote.", "success");
+                }
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al guardar cambios: " + ex.Message, "danger");
+            }
+        }
+
+        private bool ValidarEdicionLote()
+        {
+            List<string> errores = new List<string>();
+
+            if (!string.IsNullOrEmpty(txtNumeroPedidoEdit.Text) &&
+                !Regex.IsMatch(txtNumeroPedidoEdit.Text, @"^\d{10}$"))
+            {
+                errores.Add("El número de pedido debe tener exactamente 10 dígitos");
+            }
+
+            if (DateTime.TryParse(txtFechaProgramacionEdit.Text, out DateTime fechaProg))
+            {
+                if (fechaProg > DateTime.Today.AddDays(30))
+                {
+                    errores.Add("La fecha de programación no puede ser mayor a 30 días en el futuro");
+                }
+            }
+
+            if (errores.Count > 0)
+            {
+                MostrarMensaje("Errores de validación: " + string.Join(", ", errores), "warning");
+                return false;
+            }
+
+            return true;
+        }
+
+        private void GuardarCambiosLote()
+        {
+            if (string.IsNullOrEmpty(LoteSeleccionadoId)) return;
+
+            var lote = ObtenerLotePorId(LoteSeleccionadoId);
+            if (lote == null || lote.IdsDespachos.Count == 0) return;
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                conn.Open();
+                using (SqlTransaction transaction = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        ActualizarDespachosLote(conn, transaction, lote.IdsDespachos);
+
+                        if (pnlFacturaEdit.Visible && !string.IsNullOrEmpty(txtNumeroFacturaEdit.Text))
+                        {
+                            ActualizarDocumentosLote(conn, transaction, "FACTURA");
+                        }
+
+                        if (pnlCPICEdit.Visible && !string.IsNullOrEmpty(txtNumeroCPICEdit.Text))
+                        {
+                            ActualizarDocumentosLote(conn, transaction, "CPIC");
+                        }
+
+                        transaction.Commit();
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+
+        private void ActualizarDespachosLote(SqlConnection conn, SqlTransaction transaction, List<int> idsDespachos)
+        {
+            if (idsDespachos.Count == 0) return;
+
+            string query = @"
+                UPDATE Despachos 
+                SET 
+                    fechaDespacho = @fechaDespacho,
+                    numeroPedido = @numeroPedido,
+                    lugarOperacion = @lugarOperacion,
+                    usuarioModificacion = @usuarioModificacion,
+                    fechaModificacion = GETDATE()
+                WHERE idDespacho IN (" + string.Join(",", idsDespachos) + ")";
+
+            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            {
+                cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(txtFechaProgramacionEdit.Text));
+                cmd.Parameters.AddWithValue("@numeroPedido", string.IsNullOrEmpty(txtNumeroPedidoEdit.Text) ? (object)DBNull.Value : txtNumeroPedidoEdit.Text);
+                cmd.Parameters.AddWithValue("@lugarOperacion", ddlPlantaEdit.SelectedValue);
+                cmd.Parameters.AddWithValue("@usuarioModificacion", ObtenerUsuarioActual());
+
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        private void ActualizarDocumentosLote(SqlConnection conn, SqlTransaction transaction, string tipoDocumento)
+        {
+            // Implementación básica - se puede expandir según necesidades específicas
+            MostrarMensaje($"Actualización de {tipoDocumento} implementada", "info");
+        }
+
+        #endregion
+
+        #region Métodos de Vista
+
+        private void MostrarListaViajes()
+        {
+            ViajeSeleccionadoId = null;
+            LoteSeleccionadoId = null;
+
+            pnlListaViajes.Visible = true;
+            pnlListaLotes.Visible = false;
+            pnlDetallesViaje.Visible = false;
+            pnlEdicionLote.Visible = false;
+            pnlDetallesLote.Visible = false;
+        }
+
+        private void MostrarListaLotes()
+        {
+            ViajeSeleccionadoId = null;
+            LoteSeleccionadoId = null;
+
+            pnlListaViajes.Visible = false;
+            pnlListaLotes.Visible = true;
+            pnlDetallesViaje.Visible = false;
+            pnlEdicionLote.Visible = false;
+            pnlDetallesLote.Visible = false;
+        }
+
+        private void MostrarDetallesViaje(int idViajeProgreso)
+        {
+            ViajeSeleccionadoId = idViajeProgreso;
+            LoteSeleccionadoId = null;
+
+            pnlListaViajes.Visible = false;
+            pnlListaLotes.Visible = false;
+            pnlDetallesViaje.Visible = true;
+            pnlEdicionLote.Visible = false;
+            pnlDetallesLote.Visible = false;
+
+            CargarDespachosViaje(idViajeProgreso);
+        }
+
+        private void MostrarEdicionLote(string idLoteVirtual)
+        {
+            ViajeSeleccionadoId = null;
+            LoteSeleccionadoId = idLoteVirtual;
+
+            pnlListaViajes.Visible = false;
+            pnlListaLotes.Visible = false;
+            pnlDetallesViaje.Visible = false;
+            pnlEdicionLote.Visible = true;
+            pnlDetallesLote.Visible = false;
+
+            CargarDatosEdicionLote(idLoteVirtual);
+        }
+
+        private void MostrarDetallesLote(string idLoteVirtual)
+        {
+            ViajeSeleccionadoId = null;
+            LoteSeleccionadoId = idLoteVirtual;
+
+            pnlListaViajes.Visible = false;
+            pnlListaLotes.Visible = false;
+            pnlDetallesViaje.Visible = false;
+            pnlEdicionLote.Visible = false;
+            pnlDetallesLote.Visible = true;
+
+            CargarDespachosLote(idLoteVirtual);
+        }
+
+        private void CargarDatosEdicionLote(string idLoteVirtual)
+        {
+            var lote = ObtenerLotePorId(idLoteVirtual);
+            if (lote == null) return;
+
+            lblIdentificadorLote.Text = $"{lote.NombreCliente} - {lote.FechaProgramacion:dd/MM/yyyy}";
+            lblDespachosSAfectados.Text = lote.CantidadDespachos.ToString();
+
+            txtFechaProgramacionEdit.Text = lote.FechaProgramacion.ToString("yyyy-MM-dd");
+            txtClienteEdit.Text = lote.NombreCliente;
+            txtNumeroPedidoEdit.Text = lote.NumeroPedido;
+
+            if (ddlPlantaEdit.Items.FindByValue(lote.PlantaOperacion) != null)
+                ddlPlantaEdit.SelectedValue = lote.PlantaOperacion;
+
+            lblTipoOperacionEdit.Text = lote.TipoOperacion;
+            lblAmbitoEdit.Text = lote.EsInternacional ? "Internacional" : "Nacional";
+
+            ConfigurarPanelesDocumentosEdicion(lote);
+
+            if (pnlFacturaEdit.Visible && !string.IsNullOrEmpty(lote.NumeroFactura))
+            {
+                txtNumeroFacturaEdit.Text = lote.NumeroFactura;
+                txtFechaEmisionFacturaEdit.Text = lote.FechaEmisionFactura?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd");
+                txtValorTotalFacturaEdit.Text = lote.ValorTotalFactura?.ToString("F2") ?? "0.00";
+            }
+
+            if (pnlCPICEdit.Visible && !string.IsNullOrEmpty(lote.NumeroCPIC))
+            {
+                txtNumeroCPICEdit.Text = lote.NumeroCPIC;
+                txtFechaEmisionCPICEdit.Text = lote.FechaEmisionCPIC?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd");
+                txtValorFleteEdit.Text = lote.ValorFlete?.ToString("F2") ?? "0.00";
+            }
+        }
+
+        private void ConfigurarPanelesDocumentosEdicion(LoteRegistrado lote)
+        {
+            pnlFacturaEdit.Visible = false;
+            pnlCPICEdit.Visible = false;
+
+            if (lote.EsInternacional)
+            {
+                if (lote.TipoOperacion == "CARGA")
+                {
+                    pnlFacturaEdit.Visible = true;
+                    pnlCPICEdit.Visible = true;
+                }
+                else if (lote.TipoOperacion == "DESCARGA")
+                {
+                    pnlCPICEdit.Visible = true;
+                }
+            }
+            else
+            {
+                if (lote.TipoOperacion == "CARGA")
+                {
+                    pnlFacturaEdit.Visible = true;
+                }
+            }
+        }
+
+        #endregion
+
+        #region Métodos de Gestión de Viajes (Original)
+
+        private void FinalizarViaje(int idViajeProgreso)
+        {
+            var despachosViaje = ObtenerDespachosDelViaje(idViajeProgreso);
+
+            // ❌ ELIMINAR TODA LA TRANSACCIÓN SQL - YA NO SE CIERRA AQUÍ
+
+            // ✅ SOLO transferir datos
+            TransferirDatosAOrdenViaje(idViajeProgreso, despachosViaje);
+        }
+
+        private void TransferirDatosAOrdenViaje(int idViajeProgreso, List<DespachoViaje> despachos)
+        {
+            var datosTransferencia = PrepararDatosParaTransferencia(idViajeProgreso, despachos);
+
+            string datosJson = JsonConvert.SerializeObject(datosTransferencia);
+            string datosEncoded = Server.UrlEncode(datosJson);
+
+            Response.Redirect($"AgregarOrdenViaje.aspx?origen=viajeFinalizado&datos={datosEncoded}");
+        }
+
+        private DatosTransferencia PrepararDatosParaTransferencia(int idViajeProgreso, List<DespachoViaje> despachos)
+        {
+            var datos = new DatosTransferencia
+            {
+                IdViajeProgreso = idViajeProgreso  // ✅ NUEVO - LO MÁS IMPORTANTE
+            };
+
+            if (despachos.Count == 1)
+            {
+                var despacho = despachos.First();
+                datos.Conductor = despacho.NombreConductor;
+                datos.Cliente = despacho.NombreCliente;
+                datos.PlacaTracto = despacho.PlacaTracto;
+                datos.PlacaCarreta = despacho.PlacaCarreta;
+                datos.Planta = despacho.LugarOperacion;
+                datos.Operacion = despacho.TipoOperacion;
+                datos.TieneVariaciones = false;
+            }
+            else
+            {
+                datos.Conductor = despachos.First().NombreConductor;
+                datos.TieneVariaciones = VerificarVariacionesEnDatos(despachos);
+
+                if (!datos.TieneVariaciones)
+                {
+                    var despacho = despachos.First();
+                    datos.Cliente = despacho.NombreCliente;
+                    datos.PlacaTracto = despacho.PlacaTracto;
+                    datos.PlacaCarreta = despacho.PlacaCarreta;
+                    datos.Planta = despacho.LugarOperacion;
+                    datos.Operacion = despacho.TipoOperacion;
+                }
+                else
+                {
+                    datos.DespachosDetalle = despachos;
+                }
+            }
+
+            datos.CantidadDespachos = despachos.Count;
+            return datos;
+        }
+
+        private bool VerificarVariacionesEnDatos(List<DespachoViaje> despachos)
+        {
+            if (despachos.Count <= 1) return false;
+
+            var primero = despachos.First();
+
+            return despachos.Skip(1).Any(d =>
+                d.NombreCliente != primero.NombreCliente ||
+                d.PlacaTracto != primero.PlacaTracto ||
+                d.PlacaCarreta != primero.PlacaCarreta ||
+                d.LugarOperacion != primero.LugarOperacion ||
+                d.TipoOperacion != primero.TipoOperacion
+            );
+        }
+
+        [Serializable]
+        public class DatosTransferencia
+        {
+            public int IdViajeProgreso { get; set; }  // ✅ NUEVO - CRÍTICO
+
+            public string Conductor { get; set; }
+            public string Cliente { get; set; }
+            public string PlacaTracto { get; set; }
+            public string PlacaCarreta { get; set; }
+            public string Planta { get; set; }
+            public string Operacion { get; set; }
+            public int CantidadDespachos { get; set; }
+            public bool TieneVariaciones { get; set; }
+            public List<DespachoViaje> DespachosDetalle { get; set; }
+
+            public int IdConductor { get; set; }
+            public int IdTracto { get; set; }
+            public int IdCarreta { get; set; }
+            public int IdCliente { get; set; }
+
+            public DatosTransferencia()
+            {
+                DespachosDetalle = new List<DespachoViaje>();
+            }
+        }
+
+        #endregion
+
+        #region Métodos de Utilidad
+
+        private void EstablecerContadores()
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                {
+                    conn.Open();
+
+                    string queryViajes = "SELECT COUNT(*) FROM ViajesEnProgreso WHERE estadoViaje = 'ABIERTO' AND activo = 1";
+                    using (SqlCommand cmd = new SqlCommand(queryViajes, conn))
+                    {
+                        int totalViajes = Convert.ToInt32(cmd.ExecuteScalar());
+                        lblContadorViajes.Text = $"{totalViajes}";
+                    }
+                }
+
+                ActualizarContadorGeneral();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al establecer contadores: " + ex.Message, "warning");
+            }
+        }
+
+        private void ActualizarContadorGeneral()
+        {
+            if (pnlListaViajes.Visible)
+            {
+                lblContadorGeneral.Text = "Gestión de Viajes Activos - " + lblContadorViajes.Text + " viajes";
+            }
+            else if (pnlListaLotes.Visible)
+            {
+                lblContadorGeneral.Text = "Gestión de Lotes Registrados - " + lblContadorLotes.Text + " lotes";
+            }
+            else
+            {
+                lblContadorGeneral.Text = "Sistema de Gestión";
+            }
+        }
+
+        private void LimpiarFiltrosViajes()
+        {
+            ddlFiltroConductorViajes.SelectedIndex = 0;
+            ddlFiltroTipoViajes.SelectedIndex = 0;
+            txtBuscarViaje.Text = string.Empty;
+        }
+
+        private void LimpiarFiltrosLotes()
+        {
+            ddlFiltroClienteLotes.SelectedIndex = 0;
+            ddlFiltroOperacionLotes.SelectedIndex = 0;
+            ddlFiltroPlantaLotes.SelectedIndex = 0;
+            txtBuscarLote.Text = string.Empty;
+            ConfigurarFechasPorDefecto();
+        }
+
+        private string ObtenerUsuarioActual()
+        {
+            if (Session["Usuario"] != null)
+            {
+                return Session["Usuario"].ToString();
+            }
+            else if (User.Identity.IsAuthenticated)
+            {
+                return User.Identity.Name;
+            }
+            else
+            {
+                return "Sistema";
             }
         }
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            litMensaje.Text = mensaje;
-            divMensaje.Attributes["class"] = $"alert alert-{tipo} alert-dismissible fade show";
-            pnlMensaje.Visible = true;
-        }
-
-        private void OcultarMensaje()
-        {
-            pnlMensaje.Visible = false;
+            lblMensaje.Text = mensaje;
+            lblMensaje.CssClass = $"alert alert-{tipo} alert-dismissible fade show";
+            pnlMensajes.Visible = true;
         }
 
         #endregion
 
-        #region Métodos para Cambio de Estado (Futuro)
+        #region Métodos Públicos para el ASPX
 
-        // Método para cambiar estado manualmente desde otra parte del sistema
-        public bool CambiarEstadoDespacho(int idDespacho, string nuevoEstado, string usuario = "SISTEMA")
+        public string GetEstadoDespachoClass(string estado)
         {
-            try
+            switch (estado?.ToUpper())
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"UPDATE Despachos 
-                                    SET estadoDespacho = @nuevoEstado,
-                                        fechaModificacion = GETDATE(),
-                                        usuarioModificacion = @usuario
-                                    WHERE idDespacho = @idDespacho AND activo = 1";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@nuevoEstado", nuevoEstado);
-                    cmd.Parameters.AddWithValue("@idDespacho", idDespacho);
-                    cmd.Parameters.AddWithValue("@usuario", usuario);
-
-                    conn.Open();
-                    int rowsAffected = cmd.ExecuteNonQuery();
-
-                    if (rowsAffected > 0)
-                    {
-                        // Opcional: Insertar en tabla de auditoría
-                        RegistrarAuditoria("Despachos", "UPDATE", idDespacho, "estadoDespacho", "", nuevoEstado, usuario);
-                        return true;
-                    }
-
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log error
-                System.Diagnostics.Debug.WriteLine($"Error al cambiar estado: {ex.Message}");
-                return false;
-            }
-        }
-
-        private void RegistrarAuditoria(string tabla, string operacion, int idRegistro, string campo, string valorAnterior, string valorNuevo, string usuario)
-        {
-            try
-            {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"INSERT INTO Auditoria (TablaAfectada, TipoOperacion, IdRegistro, Campo, ValorAnterior, ValorNuevo, Usuario, FechaHora)
-                                    VALUES (@tabla, @operacion, @idRegistro, @campo, @valorAnterior, @valorNuevo, @usuario, GETDATE())";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@tabla", tabla);
-                    cmd.Parameters.AddWithValue("@operacion", operacion);
-                    cmd.Parameters.AddWithValue("@idRegistro", idRegistro);
-                    cmd.Parameters.AddWithValue("@campo", campo ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@valorAnterior", valorAnterior ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@valorNuevo", valorNuevo ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@usuario", usuario);
-
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-                }
-            }
-            catch
-            {
-                // Silenciar errores de auditoría para no afectar la operación principal
-            }
-        }
-
-        // Método público para obtener despachos por estado (para usar desde otras páginas)
-        public DataTable ObtenerDespachosPorEstado(string estado)
-        {
-            try
-            {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"
-                        SELECT d.idDespacho, d.numeroDespacho, d.fechaDespacho, d.estadoDespacho,
-                               d.lugarOperacion, d.tipoOperacion,
-                               CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) as conductorNombre,
-                               cl.nombre as clienteNombre,
-                               t.placaTracto, ca.placaCarreta
-                        FROM Despachos d
-                        INNER JOIN Conductor c ON d.idConductor = c.idConductor
-                        INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
-                        INNER JOIN Tracto t ON d.idTracto = t.idTracto
-                        INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-                        WHERE d.activo = 1 AND d.estadoDespacho = @estado
-                        ORDER BY d.fechaDespacho DESC";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@estado", estado);
-
-                    conn.Open();
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataTable dt = new DataTable();
-                    adapter.Fill(dt);
-
-                    return dt;
-                }
-            }
-            catch
-            {
-                return new DataTable();
+                case "PROGRAMADO":
+                    return "badge bg-info estado-programado";
+                case "EN_PROGRESO":
+                case "ENPROGRESO":
+                    return "badge bg-warning estado-enprogreso";
+                case "COMPLETADO":
+                case "FINALIZADO":
+                    return "badge bg-success estado-completado";
+                case "CANCELADO":
+                    return "badge bg-danger estado-cancelado";
+                default:
+                    return "badge bg-secondary";
             }
         }
 

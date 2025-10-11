@@ -11,160 +11,115 @@ namespace WebSGV.Views
 {
 
 
-    public partial class RegistroChoferes
+    public partial class EditarDespacho
     {
 
         /// <summary>
-        /// Control pnlFormulario.
+        /// Control txtFechaDespacho.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Panel pnlFormulario;
+        protected global::System.Web.UI.WebControls.TextBox txtFechaDespacho;
 
         /// <summary>
-        /// Control ddlTipoDocumento.
+        /// Control ddlLugar.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList ddlTipoDocumento;
+        protected global::System.Web.UI.WebControls.DropDownList ddlLugar;
 
         /// <summary>
-        /// Control txtDNI.
+        /// Control ddlTipoOperacion.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtDNI;
+        protected global::System.Web.UI.WebControls.DropDownList ddlTipoOperacion;
 
         /// <summary>
-        /// Control txtPasaporte.
+        /// Control ddlConductor.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtPasaporte;
+        protected global::System.Web.UI.WebControls.DropDownList ddlConductor;
 
         /// <summary>
-        /// Control btnBuscarDNI.
+        /// Control ddlCliente.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnBuscarDNI;
+        protected global::System.Web.UI.WebControls.DropDownList ddlCliente;
 
         /// <summary>
-        /// Control txtCarnetExtranjeria.
+        /// Control ddlTracto.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtCarnetExtranjeria;
+        protected global::System.Web.UI.WebControls.DropDownList ddlTracto;
 
         /// <summary>
-        /// Control txtNombres.
+        /// Control ddlCarreta.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtNombres;
+        protected global::System.Web.UI.WebControls.DropDownList ddlCarreta;
 
         /// <summary>
-        /// Control rfvNombres.
+        /// Control btnGuardar.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvNombres;
+        protected global::System.Web.UI.WebControls.Button btnGuardar;
 
         /// <summary>
-        /// Control txtApellidoPaterno.
+        /// Control btnCancelar.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtApellidoPaterno;
+        protected global::System.Web.UI.WebControls.Button btnCancelar;
 
         /// <summary>
-        /// Control rfvApellidoPaterno.
+        /// Control pnlMensaje.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvApellidoPaterno;
+        protected global::System.Web.UI.WebControls.Panel pnlMensaje;
 
         /// <summary>
-        /// Control txtApellidoMaterno.
+        /// Control divMensaje.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtApellidoMaterno;
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl divMensaje;
 
         /// <summary>
-        /// Control rfvApellidoMaterno.
+        /// Control litMensaje.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvApellidoMaterno;
-
-        /// <summary>
-        /// Control txtTelefono.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtTelefono;
-
-        /// <summary>
-        /// Control mensajeExito.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.HtmlControls.HtmlGenericControl mensajeExito;
-
-        /// <summary>
-        /// Control mensajeError.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.HtmlControls.HtmlGenericControl mensajeError;
-
-        /// <summary>
-        /// Control litError.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Literal litError;
-
-        /// <summary>
-        /// Control btnRegistrar.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnRegistrar;
+        protected global::System.Web.UI.WebControls.Literal litMensaje;
     }
 }

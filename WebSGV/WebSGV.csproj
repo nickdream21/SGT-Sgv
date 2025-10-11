@@ -59,11 +59,11 @@
     <Reference Include="DocumentFormat.OpenXml.Framework, Version=3.1.1.0, Culture=neutral, PublicKeyToken=8fb06cb64d019a17, processorArchitecture=MSIL">
       <HintPath>..\packages\DocumentFormat.OpenXml.Framework.3.1.1\lib\net46\DocumentFormat.OpenXml.Framework.dll</HintPath>
     </Reference>
-    <Reference Include="EPPlus, Version=4.5.3.0, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
-      <HintPath>..\packages\EPPlus.4.5.3\lib\net40\EPPlus.dll</HintPath>
+    <Reference Include="EPPlus, Version=8.1.1.0, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
+      <HintPath>..\packages\EPPlus.8.1.1\lib\net462\EPPlus.dll</HintPath>
     </Reference>
-    <Reference Include="EPPlus.Interfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=a694d7f3b0907a61, processorArchitecture=MSIL">
-      <HintPath>..\packages\EPPlus.Interfaces.8.0.0\lib\net462\EPPlus.Interfaces.dll</HintPath>
+    <Reference Include="EPPlus.Interfaces, Version=8.1.0.0, Culture=neutral, PublicKeyToken=a694d7f3b0907a61, processorArchitecture=MSIL">
+      <HintPath>..\packages\EPPlus.Interfaces.8.1.0\lib\net462\EPPlus.Interfaces.dll</HintPath>
     </Reference>
     <Reference Include="EPPlus.System.Drawing, Version=6.1.1.0, Culture=neutral, PublicKeyToken=2308d35469c9bac0, processorArchitecture=MSIL">
       <HintPath>..\packages\EPPlus.System.Drawing.6.1.1\lib\net462\EPPlus.System.Drawing.dll</HintPath>
@@ -284,6 +284,7 @@
     <Content Include="Views\CargarExcel.aspx" />
     <Content Include="Views\ConsultaAuditoria.aspx" />
     <Content Include="Views\Dashboard.aspx" />
+    <Content Include="Views\EditarDespacho.aspx" />
     <Content Include="Views\Inicio.aspx" />
     <Content Include="Views\ListaDespachos.aspx" />
     <Content Include="Views\Login.aspx" />
@@ -437,6 +438,13 @@
     </Compile>
     <Compile Include="Views\Dashboard.aspx.designer.cs">
       <DependentUpon>Dashboard.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\EditarDespacho.aspx.cs">
+      <DependentUpon>EditarDespacho.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\EditarDespacho.aspx.designer.cs">
+      <DependentUpon>EditarDespacho.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\Inicio.aspx.cs">
       <DependentUpon>Inicio.aspx</DependentUpon>
