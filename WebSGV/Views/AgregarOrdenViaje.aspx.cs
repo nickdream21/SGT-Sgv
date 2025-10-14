@@ -5,6 +5,7 @@ using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Web.UI;
 using System.Web.UI.WebControls;
 
 namespace WebSGV.Views
@@ -19,7 +20,7 @@ namespace WebSGV.Views
         [Serializable]
         public class DatosTransferencia
         {
-            public int IdViajeProgreso { get; set; }  // ✅ AGREGADO - CRÍTICO
+            public int IdViajeProgreso { get; set; }  // ✅ CRÍTICO
             public string Conductor { get; set; }
             public string Cliente { get; set; }
             public string PlacaTracto { get; set; }
@@ -35,6 +36,11 @@ namespace WebSGV.Views
             public int IdTracto { get; set; }
             public int IdCarreta { get; set; }
             public int IdCliente { get; set; }
+
+            // ✅ NUEVO: Datos para operaciones internacionales
+            public bool EsInternacional { get; set; }
+            public string NumeroCPIC { get; set; }
+            public int? IdCPIC { get; set; }  // ID en la tabla CPIC
 
             public DatosTransferencia()
             {
@@ -68,16 +74,35 @@ namespace WebSGV.Views
         /// </summary>
         public class GastoFinanciero
         {
-            public string categoria { get; set; }
-            public int id { get; set; }
-            public string estacion { get; set; }
-            public string lugar { get; set; }
-            public string tipo { get; set; }
-            public DateTime fecha { get; set; }
-            public string comprobante { get; set; }
-            public decimal soles { get; set; }
-            public decimal dolares { get; set; }
-            public string observaciones { get; set; }
+            [JsonProperty("categoria")]
+            public string Categoria { get; set; }
+
+            [JsonProperty("id")]
+            public int Id { get; set; }
+
+            [JsonProperty("estacion")]
+            public string Estacion { get; set; }
+
+            [JsonProperty("lugar")]
+            public string Lugar { get; set; }
+
+            [JsonProperty("tipo")]
+            public string Tipo { get; set; }
+
+            [JsonProperty("fecha")]
+            public DateTime Fecha { get; set; }
+
+            [JsonProperty("comprobante")]
+            public string Comprobante { get; set; }
+
+            [JsonProperty("soles")]
+            public decimal Soles { get; set; }
+
+            [JsonProperty("dolares")]
+            public decimal Dolares { get; set; }
+
+            [JsonProperty("observaciones")]
+            public string Observaciones { get; set; }
         }
 
         /// <summary>
@@ -85,20 +110,38 @@ namespace WebSGV.Views
         /// </summary>
         public class IngresoAdicionalData
         {
-            public string categoria { get; set; }
-            public string nombreCategoria { get; set; }
-            public string descripcion { get; set; }
-            public decimal? soles { get; set; }
-            public decimal? dolares { get; set; }
+            [JsonProperty("categoria")]
+            public string Categoria { get; set; }
+
+            [JsonProperty("nombreCategoria")]
+            public string NombreCategoria { get; set; }
+
+            [JsonProperty("descripcion")]
+            public string Descripcion { get; set; }
+
+            [JsonProperty("soles")]
+            public decimal? Soles { get; set; }
+
+            [JsonProperty("dolares")]
+            public decimal? Dolares { get; set; }
         }
 
         public class GastoAdicionalData
         {
-            public string categoria { get; set; }
-            public string nombreCategoria { get; set; }
-            public string descripcion { get; set; }
-            public decimal? soles { get; set; }
-            public decimal? dolares { get; set; }
+            [JsonProperty("categoria")]
+            public string Categoria { get; set; }
+
+            [JsonProperty("nombreCategoria")]
+            public string NombreCategoria { get; set; }
+
+            [JsonProperty("descripcion")]
+            public string Descripcion { get; set; }
+
+            [JsonProperty("soles")]
+            public decimal? Soles { get; set; }
+
+            [JsonProperty("dolares")]
+            public decimal? Dolares { get; set; }
         }
 
         #endregion
@@ -111,8 +154,24 @@ namespace WebSGV.Views
             {
                 InicializarSistema();
 
-                // Verificar origen
-                if (Request.QueryString["origen"] == "viajeFinalizado")
+                // ✅ NUEVO: Detectar modo edición
+                if (Request.QueryString["modo"] == "editar" && Request.QueryString["id"] != null)
+                {
+                    int idOrdenViaje = int.TryParse(Request.QueryString["id"], out int id) ? id : 0;
+
+                    if (idOrdenViaje > 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"=== MODO EDICIÓN: ID {idOrdenViaje} ===");
+                        CargarDatosOrdenExistente(idOrdenViaje);
+                    }
+                    else
+                    {
+                        MostrarMensaje("ID de orden inválido para edición.", "warning");
+                        CargarDatosNormales();
+                    }
+                }
+                // Verificar origen viaje finalizado
+                else if (Request.QueryString["origen"] == "viajeFinalizado")
                 {
                     CargarDatosDesdeViajeFinalizados();
                 }
@@ -149,6 +208,630 @@ namespace WebSGV.Views
             }
         }
 
+        private void CargarDatosOrdenExistente(int idOrdenViaje)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"--- Cargando datos de orden {idOrdenViaje} ---");
+
+                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    // ✅ CONSULTA CORREGIDA con nombres exactos de columnas
+                    string query = @"
+                SELECT 
+                    ov.*,
+                    c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS nombreConductor,
+                    t.placaTracto,
+                    ca.placaCarreta,
+                    
+                    -- Ingresos
+                    i.despachoSoles, i.despachoDolares, i.descDespacho,
+                    i.prestamoSoles, i.prestamosDolares, i.descPrestamo,
+                    i.mensualidadSoles, i.mensualidadDolares, i.descMensualidad,
+                    i.otrosSoles, i.otrosDolares, i.descOtrosAutorizados,
+                    
+                    -- Gastos
+                    e.peajesSoles, e.peajesDolares, e.descPeajes,
+                    e.alimentacionSoles, e.alimentacionDolares, e.descAlimentacion,
+                    e.apoyoseguridadSoles, e.apoyoseguridadDolares, e.descApoyoSeguridad,
+                    e.reparacionesVariosSoles, e.repacionesVariosDolares, e.descReparacionesVarios,
+                    e.movilidadSoles, e.movilidadDolares, e.descMovilidad,
+                    e.encarpada_desencarpadaSoles, e.encarpada_desencarpadaDolares, e.descEncarpadaDesencarpada,
+                    e.hospedajeSoles, e.hospedajeDolares, e.descHospedaje,
+                    e.combustibleSoles, e.combustibleDolares, e.descCombustible
+
+                FROM OrdenViaje ov
+                INNER JOIN Conductor c ON ov.idConductor = c.idConductor
+                INNER JOIN Tracto t ON ov.idTracto = t.idTracto
+                INNER JOIN Carreta ca ON ov.idCarreta = ca.idCarreta
+                LEFT JOIN Ingresos i ON ov.numeroOrdenViaje = i.numeroOrdenViaje
+                LEFT JOIN Egresos e ON ov.numeroOrdenViaje = e.numeroOrdenViaje
+                WHERE ov.idOrdenViaje = @idOrdenViaje";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@idOrdenViaje", idOrdenViaje);
+                        conn.Open();
+
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                string numeroOrdenViaje = reader["numeroOrdenViaje"].ToString();
+
+                                // === DATOS GENERALES ===
+                                txtNumeroOrdenViaje.Text = numeroOrdenViaje;
+                                txtNumeroOrdenViaje.ReadOnly = true; // ✅ Bloquear edición del número
+
+                                txtFechaSalida.Text = Convert.ToDateTime(reader["fechaSalida"]).ToString("yyyy-MM-dd");
+                                txtFechaLlegada.Text = Convert.ToDateTime(reader["fechaLlegada"]).ToString("yyyy-MM-dd");
+                                txtHoraSalida.Text = reader["horaSalida"]?.ToString() ?? "";
+                                txtHoraLlegada.Text = reader["horaLlegada"]?.ToString() ?? "";
+                                txtObservaciones.Text = reader["observaciones"]?.ToString() ?? "";
+
+                                // === CONDUCTOR Y VEHÍCULOS ===
+                                txtConductor.Text = reader["nombreConductor"].ToString();
+                                txtPlacaTracto.Text = reader["placaTracto"].ToString();
+                                txtPlacaCarreta.Text = reader["placaCarreta"].ToString();
+
+                                hfIdConductor.Value = reader["idConductor"].ToString();
+                                hfIdTracto.Value = reader["idTracto"].ToString();
+                                hfIdCarreta.Value = reader["idCarreta"].ToString();
+
+                                // === CARGAR INGRESOS Y GASTOS PRINCIPALES VÍA JAVASCRIPT ===
+                                string scriptDatos = $@"
+                            <script>
+                                $(document).ready(function() {{
+                                    // INGRESOS
+                                    $('input[name=""despachoSoles""]').val('{reader["despachoSoles"] ?? "0"}');
+                                    $('input[name=""despachoDolares""]').val('{reader["despachoDolares"] ?? "0"}');
+                                    $('input[name=""descDespacho""]').val('{reader["descDespacho"]?.ToString().Replace("'", "\\'")}');
+                                    
+                                    $('input[name=""prestamoSoles""]').val('{reader["prestamoSoles"] ?? "0"}');
+                                    $('input[name=""prestamoDolares""]').val('{reader["prestamosDolares"] ?? "0"}');
+                                    $('input[name=""descPrestamo""]').val('{reader["descPrestamo"]?.ToString().Replace("'", "\\'")}');
+                                    
+                                    $('input[name=""mensualidadSoles""]').val('{reader["mensualidadSoles"] ?? "0"}');
+                                    $('input[name=""mensualidadDolares""]').val('{reader["mensualidadDolares"] ?? "0"}');
+                                    $('input[name=""descMensualidad""]').val('{reader["descMensualidad"]?.ToString().Replace("'", "\\'")}');
+                                    
+                                    $('input[name=""otrosSoles""]').val('{reader["otrosSoles"] ?? "0"}');
+                                    $('input[name=""otrosDolares""]').val('{reader["otrosDolares"] ?? "0"}');
+                                    $('input[name=""descOtros""]').val('{reader["descOtrosAutorizados"]?.ToString().Replace("'", "\\'")}');
+                                    
+                                    // GASTOS
+                                    $('#peajesSoles').val('{reader["peajesSoles"] ?? "0"}');
+                                    $('#peajesDolares').val('{reader["peajesDolares"] ?? "0"}');
+                                    $('#descPeajes').val('{reader["descPeajes"]?.ToString().Replace("'", "\\'")}');
+                                    
+                                    $('input[name=""alimentacionSoles""]').val('{reader["alimentacionSoles"] ?? "0"}');
+                                    $('input[name=""alimentacionDolares""]').val('{reader["alimentacionDolares"] ?? "0"}');
+                                    $('input[name=""descAlimentacion""]').val('{reader["descAlimentacion"]?.ToString().Replace("'", "\\'")}');
+                                    
+                                    $('input[name=""apoyoSeguridadSoles""]').val('{reader["apoyoseguridadSoles"] ?? "0"}');
+                                    $('input[name=""apoyoSeguridadDolares""]').val('{reader["apoyoseguridadDolares"] ?? "0"}');
+                                    $('input[name=""descApoyoSeguridad""]').val('{reader["descApoyoSeguridad"]?.ToString().Replace("'", "\\'")}');
+                                    
+                                    $('#reparacionesSoles').val('{reader["reparacionesVariosSoles"] ?? "0"}');
+                                    $('#reparacionesDolares').val('{reader["repacionesVariosDolares"] ?? "0"}');
+                                    $('#descReparaciones').val('{reader["descReparacionesVarios"]?.ToString().Replace("'", "\\'")}');
+                                    
+                                    $('input[name=""movilidadSoles""]').val('{reader["movilidadSoles"] ?? "0"}');
+                                    $('input[name=""movilidadDolares""]').val('{reader["movilidadDolares"] ?? "0"}');
+                                    $('input[name=""descMovilidad""]').val('{reader["descMovilidad"]?.ToString().Replace("'", "\\'")}');
+                                    
+                                    $('input[name=""encapadaSoles""]').val('{reader["encarpada_desencarpadaSoles"] ?? "0"}');
+                                    $('input[name=""encapadaDolares""]').val('{reader["encarpada_desencarpadaDolares"] ?? "0"}');
+                                    $('input[name=""descEncapada""]').val('{reader["descEncarpadaDesencarpada"]?.ToString().Replace("'", "\\'")}');
+                                    
+                                    $('#hospedajeSoles').val('{reader["hospedajeSoles"] ?? "0"}');
+                                    $('#hospedajeDolares').val('{reader["hospedajeDolares"] ?? "0"}');
+                                    $('#descHospedaje').val('{reader["descHospedaje"]?.ToString().Replace("'", "\\'")}');
+                                    
+                                    $('#combustibleSoles').val('{reader["combustibleSoles"] ?? "0"}');
+                                    $('#combustibleDolares').val('{reader["combustibleDolares"] ?? "0"}');
+                                    $('#descCombustible').val('{reader["descCombustible"]?.ToString().Replace("'", "\\'")}');
+                                    
+                                    console.log('✅ Ingresos y gastos principales cargados');
+                                    calcularTotales();
+                                }});
+                            </script>
+                        ";
+
+                                ScriptManager.RegisterStartupScript(this, GetType(), "cargarDatosPrincipales", scriptDatos, false);
+
+                                reader.Close();
+
+                                // === CARGAR INGRESOS ADICIONALES ===
+                                CargarIngresosAdicionalesEdicion(conn, numeroOrdenViaje);
+
+                                // === CARGAR GASTOS ADICIONALES ===
+                                CargarGastosAdicionalesEdicion(conn, numeroOrdenViaje);
+
+                                // === CARGAR DATOS DE MODALES ===
+                                CargarDatosModalesEdicion(conn, numeroOrdenViaje);
+
+                                System.Diagnostics.Debug.WriteLine($"✅ Datos de orden {idOrdenViaje} cargados completamente");
+                                MostrarMensaje($"Orden <strong>{numeroOrdenViaje}</strong> cargada para edición. Modifica los datos necesarios y guarda los cambios.", "info");
+                            }
+                            else
+                            {
+                                MostrarMensaje($"No se encontró la orden con ID {idOrdenViaje}", "warning");
+                                CargarDatosNormales();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error cargando orden: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
+                MostrarMensaje($"Error al cargar la orden: {ex.Message}", "danger");
+                CargarDatosNormales();
+            }
+        }
+        
+
+
+        private void CargarIngresosAdicionalesEdicion(SqlConnection conn, string numeroOrden)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"--- Cargando ingresos adicionales de orden {numeroOrden} ---");
+
+                string query = @"
+            SELECT 
+                nombreCategoria,
+                descripcion,
+                soles,
+                dolares
+            FROM IngresosAdicionales
+            WHERE numeroOrdenViaje = @numeroOrden
+            ORDER BY idIngresoAdicional";
+
+                List<IngresoAdicionalData> ingresosAdicionales = new List<IngresoAdicionalData>();
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            ingresosAdicionales.Add(new IngresoAdicionalData
+                            {
+                                Categoria = reader["nombreCategoria"]?.ToString() ?? "",
+                                NombreCategoria = reader["nombreCategoria"]?.ToString() ?? "",
+                                Descripcion = reader["descripcion"]?.ToString() ?? "",
+                                Soles = reader["soles"] != DBNull.Value ? Convert.ToDecimal(reader["soles"]) : 0,
+                                Dolares = reader["dolares"] != DBNull.Value ? Convert.ToDecimal(reader["dolares"]) : 0
+                            });
+                        }
+                    }
+                }
+
+                if (ingresosAdicionales.Count > 0)
+                {
+                    string json = JsonConvert.SerializeObject(ingresosAdicionales);
+
+                    // ✅ Escapar comillas para JavaScript
+                    json = json.Replace("\"", "\\\"");
+
+                    // ✅ Inyectar JavaScript para cargar los datos
+                    string script = $@"
+                <script>
+                    $(document).ready(function() {{
+                        var ingresosJSON = '{json}';
+                        $('#hiddenIngresosAdicionales').val(ingresosJSON);
+                        
+                        console.log('✅ Ingresos adicionales cargados:', JSON.parse(ingresosJSON));
+                        
+                        // Reconstruir la tabla visualmente
+                        var ingresos = JSON.parse(ingresosJSON);
+                        ingresos.forEach(function(ingreso, index) {{
+                            contadorIngresosAdicionales++;
+                            var numeroFila = 4 + contadorIngresosAdicionales;
+                            
+                            $('#ingresosAdicionalesBody').append(`
+                                <tr id='ingresoAdicional_${{contadorIngresosAdicionales}}'>
+                                    <td class='text-center'>${{numeroFila}}</td>
+                                    <td>
+                                        <input type='text' class='form-control form-control-sm' 
+                                               name='conceptoIngreso_${{contadorIngresosAdicionales}}' 
+                                               value='${{ingreso.nombreCategoria || ingreso.categoria}}' required>
+                                    </td>
+                                    <td>
+                                        <input type='text' class='form-control form-control-sm' 
+                                               name='descIngreso_${{contadorIngresosAdicionales}}' 
+                                               value='${{ingreso.descripcion}}'>
+                                    </td>
+                                    <td>
+                                        <input type='number' class='form-control form-control-sm ingreso-soles' 
+                                               name='ingresoSoles_${{contadorIngresosAdicionales}}' 
+                                               value='${{ingreso.soles}}' step='0.01' onchange='calcularTotales()'>
+                                    </td>
+                                    <td>
+                                        <input type='number' class='form-control form-control-sm ingreso-dolares' 
+                                               name='ingresoDolares_${{contadorIngresosAdicionales}}' 
+                                               value='${{ingreso.dolares}}' step='0.01' onchange='calcularTotales()'>
+                                    </td>
+                                    <td class='text-center'>
+                                        <button type='button' class='btn btn-danger btn-sm' 
+                                                onclick='eliminarIngreso(${{contadorIngresosAdicionales}})'>
+                                            <i class='fas fa-trash'></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `);
+                        }});
+                        
+                        calcularTotales();
+                    }});
+                </script>
+            ";
+
+                    ScriptManager.RegisterStartupScript(this, GetType(), "cargarIngresosAdicionales", script, false);
+                    System.Diagnostics.Debug.WriteLine($"✅ {ingresosAdicionales.Count} ingresos adicionales cargados");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("ℹ️ No hay ingresos adicionales para esta orden");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error cargando ingresos adicionales: {ex.Message}");
+            }
+        }
+
+        private void CargarGastosAdicionalesEdicion(SqlConnection conn, string numeroOrden)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"--- Cargando gastos adicionales de orden {numeroOrden} ---");
+
+                string query = @"
+            SELECT 
+                nombreCategoria,
+                descripcion,
+                soles,
+                dolares
+            FROM CategoriasAdicionales
+            WHERE numeroOrdenViaje = @numeroOrden
+            ORDER BY idCategoriaAdicional";
+
+                List<GastoAdicionalData> gastosAdicionales = new List<GastoAdicionalData>();
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            gastosAdicionales.Add(new GastoAdicionalData
+                            {
+                                Categoria = reader["nombreCategoria"]?.ToString() ?? "",
+                                NombreCategoria = reader["nombreCategoria"]?.ToString() ?? "",
+                                Descripcion = reader["descripcion"]?.ToString() ?? "",
+                                Soles = reader["soles"] != DBNull.Value ? Convert.ToDecimal(reader["soles"]) : 0,
+                                Dolares = reader["dolares"] != DBNull.Value ? Convert.ToDecimal(reader["dolares"]) : 0
+                            });
+                        }
+                    }
+                }
+
+                if (gastosAdicionales.Count > 0)
+                {
+                    string json = JsonConvert.SerializeObject(gastosAdicionales);
+
+                    // ✅ Escapar comillas para JavaScript
+                    json = json.Replace("\"", "\\\"");
+
+                    // ✅ Inyectar JavaScript para cargar los datos
+                    string script = $@"
+                <script>
+                    $(document).ready(function() {{
+                        var gastosJSON = '{json}';
+                        $('#hiddenGastosAdicionales').val(gastosJSON);
+                        
+                        console.log('✅ Gastos adicionales cargados:', JSON.parse(gastosJSON));
+                        
+                        // Reconstruir la tabla visualmente
+                        var gastos = JSON.parse(gastosJSON);
+                        gastos.forEach(function(gasto, index) {{
+                            contadorGastosAdicionales++;
+                            var numeroFila = 8 + contadorGastosAdicionales;
+                            
+                            $('#gastosAdicionalesBody').append(`
+                                <tr id='gastoAdicional_${{contadorGastosAdicionales}}'>
+                                    <td class='text-center'>${{numeroFila}}</td>
+                                    <td>
+                                        <input type='text' class='form-control form-control-sm' 
+                                               name='conceptoGasto_${{contadorGastosAdicionales}}' 
+                                               value='${{gasto.nombreCategoria || gasto.categoria}}' required>
+                                    </td>
+                                    <td>
+                                        <input type='text' class='form-control form-control-sm' 
+                                               name='descGasto_${{contadorGastosAdicionales}}' 
+                                               value='${{gasto.descripcion}}'>
+                                    </td>
+                                    <td>
+                                        <input type='number' class='form-control form-control-sm gasto-soles' 
+                                               name='gastoSoles_${{contadorGastosAdicionales}}' 
+                                               value='${{gasto.soles}}' step='0.01' onchange='calcularTotales()'>
+                                    </td>
+                                    <td>
+                                        <input type='number' class='form-control form-control-sm gasto-dolares' 
+                                               name='gastoDolares_${{contadorGastosAdicionales}}' 
+                                               value='${{gasto.dolares}}' step='0.01' onchange='calcularTotales()'>
+                                    </td>
+                                    <td class='text-center'>
+                                        <button type='button' class='btn btn-danger btn-sm' 
+                                                onclick='eliminarGasto(${{contadorGastosAdicionales}})'>
+                                            <i class='fas fa-trash'></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `);
+                        }});
+                        
+                        calcularTotales();
+                    }});
+                </script>
+            ";
+
+                    ScriptManager.RegisterStartupScript(this, GetType(), "cargarGastosAdicionales", script, false);
+                    System.Diagnostics.Debug.WriteLine($"✅ {gastosAdicionales.Count} gastos adicionales cargados");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("ℹ️ No hay gastos adicionales para esta orden");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error cargando gastos adicionales: {ex.Message}");
+            }
+        }
+
+
+        private void CargarDatosModalesEdicion(SqlConnection conn, string numeroOrden)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"--- Cargando datos de modales de orden {numeroOrden} ---");
+
+                List<GastoFinanciero> todosLosGastos = new List<GastoFinanciero>();
+
+                // ========== PEAJES ==========
+                string queryPeajes = @"
+            SELECT 
+                estacion,
+                fecha,
+                numeroComprobante,
+                montoSoles,
+                montoDolares,
+                observaciones
+            FROM DetallePeajes
+            WHERE numeroOrdenViaje = @numeroOrden
+            ORDER BY fecha";
+
+                using (SqlCommand cmd = new SqlCommand(queryPeajes, conn))
+                {
+                    cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        int contador = 0;
+                        while (reader.Read())
+                        {
+                            contador++;
+                            todosLosGastos.Add(new GastoFinanciero
+                            {
+                                Categoria = "peajes",
+                                Id = contador,
+                                Estacion = reader["estacion"]?.ToString() ?? "",
+                                Lugar = reader["estacion"]?.ToString() ?? "",
+                                Fecha = reader["fecha"] != DBNull.Value ? Convert.ToDateTime(reader["fecha"]) : DateTime.Now,
+                                Comprobante = reader["numeroComprobante"]?.ToString() ?? "",
+                                Soles = reader["montoSoles"] != DBNull.Value ? Convert.ToDecimal(reader["montoSoles"]) : 0,
+                                Dolares = reader["montoDolares"] != DBNull.Value ? Convert.ToDecimal(reader["montoDolares"]) : 0,
+                                Observaciones = reader["observaciones"]?.ToString() ?? ""
+                            });
+                        }
+                        if (contador > 0)
+                            System.Diagnostics.Debug.WriteLine($"✅ {contador} peajes cargados");
+                    }
+                }
+
+                // ========== REPARACIONES ==========
+                string queryReparaciones = @"
+            SELECT 
+                fechaComprobante,
+                numeroComprobante,
+                montoSoles,
+                montoDolares,
+                observaciones
+            FROM DetalleReparacionesVarios
+            WHERE numeroOrdenViaje = @numeroOrden
+            ORDER BY fechaComprobante";
+
+                using (SqlCommand cmd = new SqlCommand(queryReparaciones, conn))
+                {
+                    cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        int contador = 0;
+                        while (reader.Read())
+                        {
+                            contador++;
+                            todosLosGastos.Add(new GastoFinanciero
+                            {
+                                Categoria = "reparaciones",
+                                Id = contador,
+                                Tipo = reader["observaciones"]?.ToString()?.Split('-')[0]?.Trim() ?? "Reparación",
+                                Fecha = reader["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(reader["fechaComprobante"]) : DateTime.Now,
+                                Comprobante = reader["numeroComprobante"]?.ToString() ?? "",
+                                Soles = reader["montoSoles"] != DBNull.Value ? Convert.ToDecimal(reader["montoSoles"]) : 0,
+                                Dolares = reader["montoDolares"] != DBNull.Value ? Convert.ToDecimal(reader["montoDolares"]) : 0,
+                                Observaciones = reader["observaciones"]?.ToString() ?? ""
+                            });
+                        }
+                        if (contador > 0)
+                            System.Diagnostics.Debug.WriteLine($"✅ {contador} reparaciones cargadas");
+                    }
+                }
+
+                // ========== HOSPEDAJE ==========
+                string queryHospedaje = @"
+            SELECT 
+                fechaComprobante,
+                numeroComprobante,
+                montoSoles,
+                montoDolares,
+                observaciones
+            FROM DetalleHospedaje
+            WHERE numeroOrdenViaje = @numeroOrden
+            ORDER BY fechaComprobante";
+
+                using (SqlCommand cmd = new SqlCommand(queryHospedaje, conn))
+                {
+                    cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        int contador = 0;
+                        while (reader.Read())
+                        {
+                            contador++;
+                            todosLosGastos.Add(new GastoFinanciero
+                            {
+                                Categoria = "hospedaje",
+                                Id = contador,
+                                Lugar = reader["observaciones"]?.ToString()?.Split('-')[0]?.Trim() ?? "Hotel",
+                                Fecha = reader["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(reader["fechaComprobante"]) : DateTime.Now,
+                                Comprobante = reader["numeroComprobante"]?.ToString() ?? "",
+                                Soles = reader["montoSoles"] != DBNull.Value ? Convert.ToDecimal(reader["montoSoles"]) : 0,
+                                Dolares = reader["montoDolares"] != DBNull.Value ? Convert.ToDecimal(reader["montoDolares"]) : 0,
+                                Observaciones = reader["observaciones"]?.ToString() ?? ""
+                            });
+                        }
+                        if (contador > 0)
+                            System.Diagnostics.Debug.WriteLine($"✅ {contador} hospedajes cargados");
+                    }
+                }
+
+                // ========== COMBUSTIBLE ==========
+                string queryCombustible = @"
+            SELECT 
+                fechaComprobante,
+                numeroComprobante,
+                montoSoles,
+                montoDolares,
+                observaciones
+            FROM DetalleCombustible
+            WHERE numeroOrdenViaje = @numeroOrden
+            ORDER BY fechaComprobante";
+
+                using (SqlCommand cmd = new SqlCommand(queryCombustible, conn))
+                {
+                    cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        int contador = 0;
+                        while (reader.Read())
+                        {
+                            contador++;
+                            todosLosGastos.Add(new GastoFinanciero
+                            {
+                                Categoria = "combustible",
+                                Id = contador,
+                                Lugar = reader["observaciones"]?.ToString()?.Split('-')[0]?.Trim() ?? "Grifo",
+                                Fecha = reader["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(reader["fechaComprobante"]) : DateTime.Now,
+                                Comprobante = reader["numeroComprobante"]?.ToString() ?? "",
+                                Soles = reader["montoSoles"] != DBNull.Value ? Convert.ToDecimal(reader["montoSoles"]) : 0,
+                                Dolares = reader["montoDolares"] != DBNull.Value ? Convert.ToDecimal(reader["montoDolares"]) : 0,
+                                Observaciones = reader["observaciones"]?.ToString() ?? ""
+                            });
+                        }
+                        if (contador > 0)
+                            System.Diagnostics.Debug.WriteLine($"✅ {contador} combustibles cargados");
+                    }
+                }
+
+                // ========== SERIALIZAR TODO A JSON ==========
+                if (todosLosGastos.Count > 0)
+                {
+                    string json = JsonConvert.SerializeObject(todosLosGastos);
+
+                    // ✅ Guardar en HiddenField
+                    hfGastosFinancieros.Value = json;
+
+                    // ✅ Escapar comillas para JavaScript
+                    json = json.Replace("\"", "\\\"");
+
+                    // ✅ Inyectar JavaScript para reconstruir los modales
+                    string script = $@"
+                <script>
+                    $(document).ready(function() {{
+                        var gastosJSON = '{json}';
+                        $('#hfGastosFinancieros').val(gastosJSON);
+                        
+                        console.log('✅ Datos de modales cargados:', JSON.parse(gastosJSON));
+                        
+                        var gastosDetallados = JSON.parse(gastosJSON);
+                        
+                        // Separar por categoría
+                        peajesData = gastosDetallados.filter(g => g.categoria === 'peajes');
+                        reparacionesData = gastosDetallados.filter(g => g.categoria === 'reparaciones');
+                        hospedajesData = gastosDetallados.filter(g => g.categoria === 'hospedaje');
+                        combustiblesData = gastosDetallados.filter(g => g.categoria === 'combustible');
+                        
+                        // Actualizar contadores
+                        contadorPeajes = peajesData.length > 0 ? Math.max(...peajesData.map(p => p.id)) : 0;
+                        contadorReparaciones = reparacionesData.length > 0 ? Math.max(...reparacionesData.map(r => r.id)) : 0;
+                        contadorHospedajes = hospedajesData.length > 0 ? Math.max(...hospedajesData.map(h => h.id)) : 0;
+                        contadorCombustibles = combustiblesData.length > 0 ? Math.max(...combustiblesData.map(c => c.id)) : 0;
+                        
+                        // Actualizar totales de modales
+                        actualizarTotalesPeajes();
+                        actualizarTotalesReparaciones();
+                        actualizarTotalesHospedajes();
+                        actualizarTotalesCombustibles();
+                        
+                        console.log('📊 Peajes:', peajesData.length);
+                        console.log('📊 Reparaciones:', reparacionesData.length);
+                        console.log('📊 Hospedajes:', hospedajesData.length);
+                        console.log('📊 Combustibles:', combustiblesData.length);
+                        
+                        calcularTotales();
+                    }});
+                </script>
+            ";
+
+                    ScriptManager.RegisterStartupScript(this, GetType(), "cargarDatosModales", script, false);
+                    System.Diagnostics.Debug.WriteLine($"✅ Total de gastos detallados cargados: {todosLosGastos.Count}");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("ℹ️ No hay datos de modales para esta orden");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error cargando datos de modales: {ex.Message}");
+            }
+        }
+
+
         private void CargarDatosDesdeViajeFinalizados()
         {
             try
@@ -183,7 +866,12 @@ namespace WebSGV.Views
                 hfIdTracto.Value = datosTransferencia.IdTracto.ToString();
                 hfIdCarreta.Value = datosTransferencia.IdCarreta.ToString();
                 hfIdCliente.Value = datosTransferencia.IdCliente.ToString();
-                hfIdViajeProgreso.Value = datosTransferencia.IdViajeProgreso.ToString();  // ✅ CRÍTICO
+                hfIdViajeProgreso.Value = datosTransferencia.IdViajeProgreso.ToString();
+
+                // ✅ NUEVO: Guardar datos internacionales
+                hfEsInternacional.Value = datosTransferencia.EsInternacional.ToString().ToLower();
+                hfIdCPIC.Value = datosTransferencia.IdCPIC?.ToString() ?? "0";
+
                 hfOrigenViaje.Value = "viajeFinalizado";
 
                 MostrarPanelesViajeOrigen(datosTransferencia);
@@ -236,6 +924,17 @@ namespace WebSGV.Views
                 txtClientePrincipal.Text = datos.Cliente ?? "";
                 txtTipoOperacion.Text = datos.Operacion ?? "";
                 txtPlantaPrincipal.Text = datos.Planta ?? "";
+
+                // ✅ NUEVO: Configurar tipo de viaje
+                //txtTipoViaje.Text = datos.EsInternacional ? "INTERNACIONAL" : "NACIONAL";
+
+                // ✅ NUEVO: Si es internacional, mostrar CPIC
+                if (datos.EsInternacional && !string.IsNullOrEmpty(datos.NumeroCPIC))
+                {
+                    pnlMostrarCPIC.Visible = true;
+                    txtCPICMostrar.Text = datos.NumeroCPIC;
+                    System.Diagnostics.Debug.WriteLine($"✅ CPIC mostrado: {datos.NumeroCPIC}");
+                }
 
                 DateTime hoy = DateTime.Today;
                 txtFechaSalida.Text = hoy.ToString("yyyy-MM-dd");
@@ -353,8 +1052,8 @@ namespace WebSGV.Views
                             // 5.1 Insertar orden de viaje
                             System.Diagnostics.Debug.WriteLine("Insertando orden de viaje...");
                             int idOrdenViaje = InsertarOrdenViaje(conn, transaction, numeroOrdenViaje,
-                                fechaSalida, fechaLlegada, horaSalida, horaLlegada,
-                                idConductor, idTracto, idCarreta, observaciones);
+    fechaSalida, fechaLlegada, horaSalida, horaLlegada,
+    idConductor, idTracto, idCarreta, observaciones);
                             System.Diagnostics.Debug.WriteLine($"Orden de viaje insertada: {idOrdenViaje}");
 
                             // 5.2 Insertar datos financieros completos
@@ -514,22 +1213,45 @@ namespace WebSGV.Views
 
         #region Métodos de Inserción en Base de Datos
 
-        private int InsertarOrdenViaje(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje,
-                                     DateTime fechaSalida, DateTime fechaLlegada, string horaSalida, string horaLlegada,
-                                     int idConductor, int idTracto, int idCarreta, string observaciones)
+        private int InsertarOrdenViaje(
+     SqlConnection conn,
+     SqlTransaction transaction,
+     string numeroOrdenViaje,
+     DateTime fechaSalida,
+     DateTime fechaLlegada,
+     string horaSalida,
+     string horaLlegada,
+     int idConductor,
+     int idTracto,
+     int idCarreta,
+     string observaciones
+ )
         {
             try
             {
+                // ✅ Obtener el IdCPIC que ya viene del despacho
+                int? idCPIC = null;
+                if (int.TryParse(hfIdCPIC.Value, out int cpicId) && cpicId > 0)
+                {
+                    idCPIC = cpicId;
+                }
+
+                // ✅ Determinar tipo de viaje desde el HiddenField
+                bool esInternacional = hfEsInternacional.Value == "true";
+                string tipoViaje = esInternacional ? "INTERNACIONAL" : "NACIONAL";
+
                 string queryOrdenViaje = @"
-                    INSERT INTO OrdenViaje (
-                        numeroOrdenViaje, fechaSalida, horaSalida, fechaLlegada, horaLlegada, 
-                        idConductor, idTracto, idCarreta, observaciones, estadoViaje, tipoViaje
-                    ) 
-                    VALUES (
-                        @numeroOrdenViaje, @fechaSalida, @horaSalida, @fechaLlegada, @horaLlegada, 
-                        @idConductor, @idTracto, @idCarreta, @observaciones, 'PENDIENTE', 'NACIONAL'
-                    );
-                    SELECT SCOPE_IDENTITY();";
+            INSERT INTO OrdenViaje (
+                numeroOrdenViaje, fechaSalida, horaSalida, fechaLlegada, horaLlegada, 
+                idConductor, idTracto, idCarreta, idCPIC, observaciones, 
+                estadoViaje, tipoViaje, esInternacional
+            ) 
+            VALUES (
+                @numeroOrdenViaje, @fechaSalida, @horaSalida, @fechaLlegada, @horaLlegada, 
+                @idConductor, @idTracto, @idCarreta, @idCPIC, @observaciones, 
+                'COMPLETADO', @tipoViaje, @esInternacional
+            );
+            SELECT SCOPE_IDENTITY();";
 
                 using (SqlCommand cmd = new SqlCommand(queryOrdenViaje, conn, transaction))
                 {
@@ -541,14 +1263,17 @@ namespace WebSGV.Views
                     cmd.Parameters.AddWithValue("@idConductor", idConductor > 0 ? (object)idConductor : DBNull.Value);
                     cmd.Parameters.AddWithValue("@idTracto", idTracto > 0 ? (object)idTracto : DBNull.Value);
                     cmd.Parameters.AddWithValue("@idCarreta", idCarreta > 0 ? (object)idCarreta : DBNull.Value);
+                    cmd.Parameters.AddWithValue("@idCPIC", idCPIC.HasValue ? (object)idCPIC.Value : DBNull.Value);
                     cmd.Parameters.AddWithValue("@observaciones", string.IsNullOrEmpty(observaciones) ? (object)DBNull.Value : observaciones);
+                    cmd.Parameters.AddWithValue("@tipoViaje", tipoViaje);
+                    cmd.Parameters.AddWithValue("@esInternacional", esInternacional);
 
                     object result = cmd.ExecuteScalar();
 
                     if (result != null && result != DBNull.Value)
                     {
                         int idOrdenViaje = Convert.ToInt32(result);
-                        System.Diagnostics.Debug.WriteLine($"OrdenViaje creada con ID: {idOrdenViaje}");
+                        System.Diagnostics.Debug.WriteLine($"✅ OrdenViaje creada: ID={idOrdenViaje}, Estado=COMPLETADO, Tipo={tipoViaje}");
                         return idOrdenViaje;
                     }
                     else
@@ -559,7 +1284,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error insertando orden de viaje: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ Error insertando orden: {ex.Message}");
                 throw;
             }
         }
@@ -734,21 +1459,21 @@ namespace WebSGV.Views
                 if (ingresosAdicionales.Count > 0)
                 {
                     string queryInsert = @"
-                        INSERT INTO IngresosAdicionales (
-                            numeroOrdenViaje, nombreCategoria, soles, dolares, descripcion
-                        ) VALUES (
-                            @numeroOrdenViaje, @nombreCategoria, @soles, @dolares, @descripcion
-                        )";
+                INSERT INTO IngresosAdicionales (
+                    numeroOrdenViaje, nombreCategoria, soles, dolares, descripcion
+                ) VALUES (
+                    @numeroOrdenViaje, @nombreCategoria, @soles, @dolares, @descripcion
+                )";
 
                     foreach (var ingreso in ingresosAdicionales)
                     {
                         using (SqlCommand cmd = new SqlCommand(queryInsert, conn, transaction))
                         {
                             cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                            cmd.Parameters.AddWithValue("@nombreCategoria", ingreso.categoria ?? ingreso.nombreCategoria ?? "");
-                            cmd.Parameters.AddWithValue("@soles", ingreso.soles ?? 0);
-                            cmd.Parameters.AddWithValue("@dolares", ingreso.dolares ?? 0);
-                            cmd.Parameters.AddWithValue("@descripcion", ingreso.descripcion ?? "");
+                            cmd.Parameters.AddWithValue("@nombreCategoria", ingreso.Categoria ?? ingreso.NombreCategoria ?? "");
+                            cmd.Parameters.AddWithValue("@soles", ingreso.Soles ?? 0);
+                            cmd.Parameters.AddWithValue("@dolares", ingreso.Dolares ?? 0);
+                            cmd.Parameters.AddWithValue("@descripcion", ingreso.Descripcion ?? "");
                             cmd.ExecuteNonQuery();
                         }
                     }
@@ -775,21 +1500,21 @@ namespace WebSGV.Views
                 if (gastosAdicionales.Count > 0)
                 {
                     string queryInsert = @"
-                        INSERT INTO CategoriasAdicionales (
-                            numeroOrdenViaje, nombreCategoria, soles, dolares, descripcion
-                        ) VALUES (
-                            @numeroOrdenViaje, @nombreCategoria, @soles, @dolares, @descripcion
-                        )";
+                INSERT INTO CategoriasAdicionales (
+                    numeroOrdenViaje, nombreCategoria, soles, dolares, descripcion
+                ) VALUES (
+                    @numeroOrdenViaje, @nombreCategoria, @soles, @dolares, @descripcion
+                )";
 
                     foreach (var gasto in gastosAdicionales)
                     {
                         using (SqlCommand cmd = new SqlCommand(queryInsert, conn, transaction))
                         {
                             cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                            cmd.Parameters.AddWithValue("@nombreCategoria", gasto.categoria ?? gasto.nombreCategoria ?? "");
-                            cmd.Parameters.AddWithValue("@soles", gasto.soles ?? 0);
-                            cmd.Parameters.AddWithValue("@dolares", gasto.dolares ?? 0);
-                            cmd.Parameters.AddWithValue("@descripcion", gasto.descripcion ?? "");
+                            cmd.Parameters.AddWithValue("@nombreCategoria", gasto.Categoria ?? gasto.NombreCategoria ?? "");
+                            cmd.Parameters.AddWithValue("@soles", gasto.Soles ?? 0);
+                            cmd.Parameters.AddWithValue("@dolares", gasto.Dolares ?? 0);
+                            cmd.Parameters.AddWithValue("@descripcion", gasto.Descripcion ?? "");
                             cmd.ExecuteNonQuery();
                         }
                     }
@@ -861,7 +1586,7 @@ namespace WebSGV.Views
             {
                 foreach (var gasto in gastos)
                 {
-                    string categoria = gasto.categoria?.ToLower() ?? "";
+                    string categoria = gasto.Categoria?.ToLower() ?? "";  // ✅ Mayúscula
 
                     switch (categoria)
                     {
@@ -890,24 +1615,24 @@ namespace WebSGV.Views
         private void InsertarPeajeDetallado(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
         {
             string query = @"
-                INSERT INTO DetallePeajes (
-                    numeroOrdenViaje, estacion, fecha, numeroComprobante, 
-                    montoSoles, montoDolares, observaciones
-                )
-                VALUES (
-                    @numeroOrdenViaje, @estacion, @fecha, @numeroComprobante,
-                    @montoSoles, @montoDolares, @observaciones
-                )";
+        INSERT INTO DetallePeajes (
+            numeroOrdenViaje, estacion, fecha, numeroComprobante, 
+            montoSoles, montoDolares, observaciones
+        )
+        VALUES (
+            @numeroOrdenViaje, @estacion, @fecha, @numeroComprobante,
+            @montoSoles, @montoDolares, @observaciones
+        )";
 
             using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
             {
                 cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@estacion", gasto.estacion ?? gasto.lugar ?? "");
-                cmd.Parameters.AddWithValue("@fecha", FechaSeguraSQL(gasto.fecha));
-                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles", gasto.soles);
-                cmd.Parameters.AddWithValue("@montoDolares", gasto.dolares);
-                cmd.Parameters.AddWithValue("@observaciones", gasto.observaciones ?? "");
+                cmd.Parameters.AddWithValue("@estacion", gasto.Estacion ?? gasto.Lugar ?? "");
+                cmd.Parameters.AddWithValue("@fecha", FechaSeguraSQL(gasto.Fecha));
+                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
+                cmd.Parameters.AddWithValue("@montoSoles", gasto.Soles);
+                cmd.Parameters.AddWithValue("@montoDolares", gasto.Dolares);
+                cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
                 cmd.ExecuteNonQuery();
             }
         }
@@ -915,23 +1640,23 @@ namespace WebSGV.Views
         private void InsertarReparacionDetallada(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
         {
             string query = @"
-                INSERT INTO DetalleReparacionesVarios (
-                    numeroOrdenViaje, fechaComprobante, numeroComprobante, 
-                    montoSoles, montoDolares, observaciones
-                )
-                VALUES (
-                    @numeroOrdenViaje, @fechaComprobante, @numeroComprobante,
-                    @montoSoles, @montoDolares, @observaciones
-                )";
+        INSERT INTO DetalleReparacionesVarios (
+            numeroOrdenViaje, fechaComprobante, numeroComprobante, 
+            montoSoles, montoDolares, observaciones
+        )
+        VALUES (
+            @numeroOrdenViaje, @fechaComprobante, @numeroComprobante,
+            @montoSoles, @montoDolares, @observaciones
+        )";
 
             using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
             {
                 cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.fecha));
-                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles", gasto.soles);
-                cmd.Parameters.AddWithValue("@montoDolares", gasto.dolares);
-                cmd.Parameters.AddWithValue("@observaciones", gasto.observaciones ?? "");
+                cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
+                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
+                cmd.Parameters.AddWithValue("@montoSoles", gasto.Soles);
+                cmd.Parameters.AddWithValue("@montoDolares", gasto.Dolares);
+                cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
                 cmd.ExecuteNonQuery();
             }
         }
@@ -939,23 +1664,23 @@ namespace WebSGV.Views
         private void InsertarHospedajeDetallado(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
         {
             string query = @"
-                INSERT INTO DetalleHospedaje (
-                    numeroOrdenViaje, fechaComprobante, numeroComprobante, 
-                    montoSoles, montoDolares, observaciones
-                )
-                VALUES (
-                    @numeroOrdenViaje, @fechaComprobante, @numeroComprobante,
-                    @montoSoles, @montoDolares, @observaciones
-                )";
+        INSERT INTO DetalleHospedaje (
+            numeroOrdenViaje, fechaComprobante, numeroComprobante, 
+            montoSoles, montoDolares, observaciones
+        )
+        VALUES (
+            @numeroOrdenViaje, @fechaComprobante, @numeroComprobante,
+            @montoSoles, @montoDolares, @observaciones
+        )";
 
             using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
             {
                 cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.fecha));
-                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles", gasto.soles);
-                cmd.Parameters.AddWithValue("@montoDolares", gasto.dolares);
-                cmd.Parameters.AddWithValue("@observaciones", gasto.observaciones ?? "");
+                cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
+                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
+                cmd.Parameters.AddWithValue("@montoSoles", gasto.Soles);
+                cmd.Parameters.AddWithValue("@montoDolares", gasto.Dolares);
+                cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
                 cmd.ExecuteNonQuery();
             }
         }
@@ -963,23 +1688,23 @@ namespace WebSGV.Views
         private void InsertarCombustibleDetallado(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
         {
             string query = @"
-                INSERT INTO DetalleCombustible (
-                    numeroOrdenViaje, fechaComprobante, numeroComprobante, 
-                    montoSoles, montoDolares, observaciones
-                )
-                VALUES (
-                    @numeroOrdenViaje, @fechaComprobante, @numeroComprobante,
-                    @montoSoles, @montoDolares, @observaciones
-                )";
+        INSERT INTO DetalleCombustible (
+            numeroOrdenViaje, fechaComprobante, numeroComprobante, 
+            montoSoles, montoDolares, observaciones
+        )
+        VALUES (
+            @numeroOrdenViaje, @fechaComprobante, @numeroComprobante,
+            @montoSoles, @montoDolares, @observaciones
+        )";
 
             using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
             {
                 cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.fecha));
-                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles", gasto.soles);
-                cmd.Parameters.AddWithValue("@montoDolares", gasto.dolares);
-                cmd.Parameters.AddWithValue("@observaciones", gasto.observaciones ?? "");
+                cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
+                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
+                cmd.Parameters.AddWithValue("@montoSoles", gasto.Soles);
+                cmd.Parameters.AddWithValue("@montoDolares", gasto.Dolares);
+                cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
                 cmd.ExecuteNonQuery();
             }
         }
