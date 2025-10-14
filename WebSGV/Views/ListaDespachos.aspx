@@ -595,6 +595,64 @@
                                                                 <small class="form-text">No se puede modificar el cliente</small>
                                                             </div>
 
+                                                            <!-- Conductores por Despacho -->
+                                                            <div class="form-group">
+                                                                <label class="form-label">👥 Conductores por Despacho: *</label>
+                                                                <div class="alert alert-info mb-2" style="font-size: 0.85rem; padding: 0.6rem;">
+                                                                    <i class="fas fa-info-circle"></i> <strong>Instrucciones:</strong>
+                                                                    <ul class="mb-0 mt-2" style="padding-left: 1.5rem; font-size: 0.8rem;">
+                                                                        <li>Puedes cambiar el conductor de cada despacho individualmente</li>
+                                                                        <li>Escribe en el campo para buscar un conductor rápidamente</li>
+                                                                        <li>Los cambios se aplicarán al presionar "Guardar Cambios"</li>
+                                                                    </ul>
+                                                                </div>
+                                                                
+                                                                <div class="conductores-edit-container">
+                                                                    <div class="tabla-scroll-wrapper">
+                                                                        <asp:GridView ID="gvConductoresLote" runat="server" 
+                                                                            CssClass="table table-hover"
+                                                                            AutoGenerateColumns="false"
+                                                                            DataKeyNames="IdDespacho"
+                                                                            OnRowDataBound="gvConductoresLote_RowDataBound"
+                                                                            GridLines="None">
+                                                                            <Columns>
+                                                                                <asp:BoundField DataField="IdDespacho" HeaderText="ID" Visible="false" />
+                                                                                
+                                                                                <asp:BoundField DataField="NumeroDespacho" HeaderText="N° Despacho" 
+                                                                                    ItemStyle-CssClass="despacho-number fw-bold" 
+                                                                                    ItemStyle-Width="180px"
+                                                                                    HeaderStyle-Width="180px" />
+                                                                                
+                                                                                <asp:BoundField DataField="FechaDespacho" HeaderText="Fecha" 
+                                                                                    DataFormatString="{0:dd/MM/yyyy}"
+                                                                                    ItemStyle-Width="120px"
+                                                                                    HeaderStyle-Width="120px" />
+                                                                                
+                                                                                <asp:TemplateField HeaderText="Conductor Actual">
+                                                                                    <ItemTemplate>
+                                                                                        <span class="conductor-badge-actual">
+                                                                                            <%# Eval("NombreConductorActual") %>
+                                                                                        </span>
+                                                                                    </ItemTemplate>
+                                                                                    <ItemStyle Width="280px" />
+                                                                                    <HeaderStyle Width="280px" />
+                                                                                </asp:TemplateField>
+                                                                                
+                                                                                <asp:TemplateField HeaderText="🔄 Seleccionar Nuevo Conductor">
+                                                                                    <ItemTemplate>
+                                                                                        <asp:DropDownList ID="ddlConductorDespacho" runat="server" 
+                                                                                            CssClass="form-select conductor-select">
+                                                                                        </asp:DropDownList>
+                                                                                    </ItemTemplate>
+                                                                                    <ItemStyle Width="320px" />
+                                                                                    <HeaderStyle Width="320px" />
+                                                                                </asp:TemplateField>
+                                                                            </Columns>
+                                                                        </asp:GridView>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
                                                             <!-- Número de Pedido -->
                                                             <div class="form-group">
                                                                 <label class="form-label">N° de Pedido:</label>
@@ -720,12 +778,24 @@
 
                                                 <!-- Botones de Acción -->
                                                 <div class="form-actions">
-                                                    <asp:Button ID="btnGuardarCambios" runat="server" 
-                                                        Text="Guardar Cambios" 
-                                                        CssClass="btn btn-warning btn-action btn-large"
-                                                        OnClick="btnGuardarCambios_Click"
-                                                        ValidationGroup="EdicionLote"
-                                                        OnClientClick="return confirm('¿Está seguro de aplicar estos cambios a todo el lote?');" />
+                                                    <div class="row">
+                                                        <div class="col-md-6 text-start">
+                                                            <asp:Button ID="btnEliminarLote" runat="server" 
+                                                                Text="🗑️ Eliminar Lote Completo" 
+                                                                CssClass="btn btn-danger btn-action btn-large"
+                                                                OnClick="btnEliminarLote_Click"
+                                                                CausesValidation="false"
+                                                                OnClientClick="return confirm('⚠️ ADVERTENCIA: Se eliminarán TODOS los despachos de este lote.\n\n¿Está COMPLETAMENTE seguro de eliminar este lote?');" />
+                                                        </div>
+                                                        <div class="col-md-6 text-end">
+                                                            <asp:Button ID="btnGuardarCambios" runat="server" 
+                                                                Text="💾 Guardar Cambios" 
+                                                                CssClass="btn btn-warning btn-action btn-large"
+                                                                OnClick="btnGuardarCambios_Click"
+                                                                ValidationGroup="EdicionLote"
+                                                                OnClientClick="return confirm('¿Está seguro de aplicar estos cambios a todo el lote?');" />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -879,6 +949,7 @@
                                 <asp:AsyncPostBackTrigger ControlID="btnCancelarEdicion" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnVolverLotes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnGuardarCambios" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnEliminarLote" EventName="Click" />
                                 
                                 <asp:AsyncPostBackTrigger ControlID="btnEditarDesdeDetal" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnVolverLotesDetalle" EventName="Click" />
@@ -909,14 +980,38 @@
 </asp:Content>
 
 <asp:Content ID="Content2" ContentPlaceHolderID="ScriptsSection" runat="server">
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
     <script type="text/javascript">
+        // Inicializar Select2 en los dropdowns de conductores
+        function inicializarSelect2Conductores() {
+            $('.conductor-select').select2({
+                width: '100%',
+                placeholder: 'Buscar conductor...',
+                allowClear: false,
+                language: {
+                    noResults: function() {
+                        return "No se encontraron conductores";
+                    },
+                    searching: function() {
+                        return "Buscando...";
+                    }
+                }
+            });
+        }
+
         $(document).ready(function () {
+            inicializarSelect2Conductores();
             autoHideMessages();
             establecerFechasPorDefecto();
         });
 
         var prm = Sys.WebForms.PageRequestManager.getInstance();
         prm.add_endRequest(function () {
+            inicializarSelect2Conductores();
             autoHideMessages();
         });
 
@@ -1346,6 +1441,110 @@
             display: block;
         }
 
+        /* === GRID DE CONDUCTORES EDITABLE === */
+        .conductores-edit-container {
+            margin: 1rem 0;
+            border: 2px solid #0d6efd;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f8f9ff;
+        }
+
+        .conductores-edit-container .table {
+            margin-bottom: 0;
+            font-size: 0.9rem;
+        }
+
+        .conductores-edit-container thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: #0d6efd !important;
+            color: white !important;
+        }
+
+        .conductores-edit-container thead th {
+            background: #0d6efd !important;
+            color: white !important;
+            font-weight: 600;
+            padding: 0.75rem;
+            border: none !important;
+        }
+
+        .conductores-edit-container tbody td {
+            padding: 0.75rem;
+            vertical-align: middle;
+            background: white;
+        }
+
+        .conductores-edit-container .form-select {
+            font-size: 0.9rem;
+            padding: 0.5rem;
+            min-width: 280px;
+        }
+
+        .conductor-badge-actual {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: #6c757d;
+            color: white;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .tabla-scroll-wrapper {
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 6px;
+        }
+
+        .tabla-scroll-wrapper::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .tabla-scroll-wrapper::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .tabla-scroll-wrapper::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .tabla-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* === SELECT2 PERSONALIZADO === */
+        .select2-container--default .select2-selection--single {
+            min-height: 38px !important;
+            border: 1px solid #ced4da !important;
+            border-radius: 4px !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            padding: 0.375rem 0.75rem !important;
+            line-height: 1.5 !important;
+        }
+
+        .select2-container--default .select2-dropdown {
+            border: 1px solid #ced4da !important;
+            border-radius: 4px !important;
+        }
+
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: #0d6efd !important;
+            color: white !important;
+        }
+
+        .select2-search--dropdown .select2-search__field {
+            border: 1px solid #ced4da !important;
+            border-radius: 4px !important;
+            padding: 0.5rem !important;
+        }
+
         /* === PANELES DE DOCUMENTOS === */
         .doc-panel {
             border: 1px solid #dee2e6;
@@ -1471,6 +1670,10 @@
             .form-section {
                 margin-bottom: 0.5rem;
             }
+
+            .conductores-edit-container .form-select {
+                min-width: 200px;
+            }
         }
         
         @media (max-width: 576px) {
@@ -1494,6 +1697,8 @@
 
         /* === UTILITIES === */
         .text-center { text-align: center; }
+        .text-start { text-align: left; }
+        .text-end { text-align: right; }
         .mb-0 { margin-bottom: 0; }
         .mb-1 { margin-bottom: 0.25rem; }
         .mb-2 { margin-bottom: 0.5rem; }
@@ -1501,5 +1706,6 @@
         .mt-2 { margin-top: 0.5rem; }
         .ms-2 { margin-left: 0.5rem; }
         .ms-3 { margin-left: 1rem; }
+        .fw-bold { font-weight: 600; }
     </style>
 </asp:Content>

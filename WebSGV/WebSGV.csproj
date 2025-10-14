@@ -47,11 +47,14 @@
     <Reference Include="AjaxControlToolkit, Version=20.1.0.0, Culture=neutral, PublicKeyToken=28f01b0e84b6d53e, processorArchitecture=MSIL">
       <HintPath>..\packages\AjaxControlToolkit.20.1.0\lib\net40\AjaxControlToolkit.dll</HintPath>
     </Reference>
+    <Reference Include="BouncyCastle.Cryptography, Version=2.0.0.0, Culture=neutral, PublicKeyToken=072edcf4a5328938, processorArchitecture=MSIL">
+      <HintPath>..\packages\BouncyCastle.Cryptography.2.4.0\lib\net461\BouncyCastle.Cryptography.dll</HintPath>
+    </Reference>
     <Reference Include="ClosedXML, Version=0.105.0.0, Culture=neutral, PublicKeyToken=fd1eb21b62ae805b, processorArchitecture=MSIL">
-      <HintPath>..\packages\ClosedXML.0.105.0-rc\lib\netstandard2.0\ClosedXML.dll</HintPath>
+      <HintPath>..\packages\ClosedXML.0.105.0\lib\netstandard2.0\ClosedXML.dll</HintPath>
     </Reference>
     <Reference Include="ClosedXML.Parser, Version=1.0.0.0, Culture=neutral, PublicKeyToken=1d5f7376574c51ec, processorArchitecture=MSIL">
-      <HintPath>..\packages\ClosedXML.Parser.2.0.0-preview1\lib\netstandard2.0\ClosedXML.Parser.dll</HintPath>
+      <HintPath>..\packages\ClosedXML.Parser.2.0.0\lib\netstandard2.0\ClosedXML.Parser.dll</HintPath>
     </Reference>
     <Reference Include="DocumentFormat.OpenXml, Version=3.1.1.0, Culture=neutral, PublicKeyToken=8fb06cb64d019a17, processorArchitecture=MSIL">
       <HintPath>..\packages\DocumentFormat.OpenXml.3.1.1\lib\net46\DocumentFormat.OpenXml.dll</HintPath>
@@ -70,6 +73,9 @@
     </Reference>
     <Reference Include="ExcelNumberFormat, Version=1.1.0.0, Culture=neutral, PublicKeyToken=23c6f5d73be07eca, processorArchitecture=MSIL">
       <HintPath>..\packages\ExcelNumberFormat.1.1.0\lib\net20\ExcelNumberFormat.dll</HintPath>
+    </Reference>
+    <Reference Include="itextsharp, Version=5.5.13.4, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+      <HintPath>..\packages\iTextSharp.5.5.13.4\lib\net461\itextsharp.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Bcl.HashCode, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Bcl.HashCode.1.1.1\lib\net461\Microsoft.Bcl.HashCode.dll</HintPath>
@@ -284,8 +290,10 @@
     <Content Include="Views\CargarExcel.aspx" />
     <Content Include="Views\ConsultaAuditoria.aspx" />
     <Content Include="Views\Dashboard.aspx" />
+    <Content Include="Views\DashboardConductor.aspx" />
     <Content Include="Views\EditarDespacho.aspx" />
     <Content Include="Views\Inicio.aspx" />
+    <Content Include="Views\LiquidacionesPendientes.aspx" />
     <Content Include="Views\ListaDespachos.aspx" />
     <Content Include="Views\Login.aspx" />
     <Content Include="Views\RegistroChoferes.aspx" />
@@ -297,6 +305,7 @@
     <Content Include="Views\RegistroTractos.aspx" />
     <Content Include="Views\ReporteResultado.aspx" />
     <Content Include="Views\Reportes.aspx" />
+    <Content Include="Views\ReportesOrdenesViaje.aspx" />
     <Content Include="Views\WebForm2.aspx" />
     <Content Include="Web.config" />
     <Content Include="Bundle.config" />
@@ -439,6 +448,13 @@
     <Compile Include="Views\Dashboard.aspx.designer.cs">
       <DependentUpon>Dashboard.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Views\DashboardConductor.aspx.cs">
+      <DependentUpon>DashboardConductor.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\DashboardConductor.aspx.designer.cs">
+      <DependentUpon>DashboardConductor.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Views\EditarDespacho.aspx.cs">
       <DependentUpon>EditarDespacho.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -452,6 +468,13 @@
     </Compile>
     <Compile Include="Views\Inicio.aspx.designer.cs">
       <DependentUpon>Inicio.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\LiquidacionesPendientes.aspx.cs">
+      <DependentUpon>LiquidacionesPendientes.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\LiquidacionesPendientes.aspx.designer.cs">
+      <DependentUpon>LiquidacionesPendientes.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\ListaDespachos.aspx.cs">
       <DependentUpon>ListaDespachos.aspx</DependentUpon>
@@ -530,6 +553,14 @@
     <Compile Include="Views\Reportes.aspx.designer.cs">
       <DependentUpon>Reportes.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Views\ReportesOrdenesViaje.aspx.cs">
+      <DependentUpon>ReportesOrdenesViaje.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\ReportesOrdenesViaje.aspx.designer.cs">
+      <DependentUpon>ReportesOrdenesViaje.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\RolesHelper.cs" />
     <Compile Include="Views\WebForm2.aspx.cs">
       <DependentUpon>WebForm2.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

@@ -4,7 +4,6 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Web;
 using System.Web.UI;
-using System.Web.UI.WebControls;
 
 namespace WebSGV.Views
 {
@@ -12,11 +11,19 @@ namespace WebSGV.Views
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            // Si el usuario ya ha iniciado sesión, redireccionar al inicio
+            // Si el usuario ya ha iniciado sesión, redireccionar según su rol
             if (Session["UsuarioID"] != null)
             {
-                Response.Redirect("~/Views/Inicio.aspx");
+                string rol = Session["Rol"]?.ToString() ?? "";
 
+                if (rol.ToUpper() == "CONDUCTOR")
+                {
+                    Response.Redirect("~/Views/DashboardConductor.aspx");
+                }
+                else
+                {
+                    Response.Redirect("~/Views/Inicio.aspx");
+                }
             }
         }
 
@@ -27,43 +34,65 @@ namespace WebSGV.Views
 
             if (string.IsNullOrEmpty(usuario) || string.IsNullOrEmpty(contrasena))
             {
-                // Mostrar mensaje de error si los campos están vacíos
-                ClientScript.RegisterStartupScript(this.GetType(), "alert",
-                    "alert('Por favor, ingrese usuario y contraseña.');", true);
+                MostrarMensaje("Por favor, ingrese usuario y contraseña.");
                 return;
             }
 
             // Verificar credenciales en la base de datos
-            if (ValidarUsuario(usuario, contrasena))
+            var resultado = ValidarUsuario(usuario, contrasena);
+
+            if (resultado.EsValido)
             {
                 // Si la opción "Recordarme" está marcada, guardar una cookie
                 if (chkRemember.Checked)
                 {
                     HttpCookie cookie = new HttpCookie("SGVUserInfo");
                     cookie.Values.Add("Usuario", usuario);
-                    cookie.Expires = DateTime.Now.AddDays(15); // La cookie expira en 15 días
+                    cookie.Expires = DateTime.Now.AddDays(15);
                     Response.Cookies.Add(cookie);
                 }
 
-                // ✅ CORRECCIÓN: Redirigir a la página de inicio con la ruta correcta
-                Response.Redirect("~/Views/Inicio.aspx");
+                // Redirigir según el rol
+                if (resultado.Rol.ToUpper() == "CONDUCTOR")
+                {
+                    System.Diagnostics.Debug.WriteLine($"✅ Login exitoso - CONDUCTOR: {resultado.Nombre}");
+                    Response.Redirect("~/Views/DashboardConductor.aspx");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"✅ Login exitoso - ADMIN: {resultado.Nombre}");
+                    Response.Redirect("~/Views/Inicio.aspx");
+                }
             }
             else
             {
-                // Mostrar mensaje de error para credenciales incorrectas
-                ClientScript.RegisterStartupScript(this.GetType(), "alert",
-                    "alert('Usuario o contraseña incorrectos. Por favor, intente nuevamente.');", true);
+                MostrarMensaje("Usuario o contraseña incorrectos. Por favor, intente nuevamente.");
             }
         }
 
-        private bool ValidarUsuario(string usuario, string contrasena)
+        private (bool EsValido, string Rol, string Nombre) ValidarUsuario(string usuario, string contrasena)
         {
             bool esValido = false;
+            string rol = "";
+            string nombre = "";
+
             string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                string query = "SELECT idUsuario, nombreUsuario, nombre, rol FROM Usuarios WHERE nombreUsuario = @Usuario AND contrasena = @Contrasena AND activo = 1";
+                // Query que incluye idConductor para conductores
+                string query = @"
+                    SELECT 
+                        u.idUsuario, 
+                        u.nombreUsuario, 
+                        u.nombre, 
+                        u.rol,
+                        u.idConductor
+                    FROM Usuarios u
+                    WHERE u.nombreUsuario = @Usuario 
+                        AND u.contrasena = @Contrasena 
+                        AND u.activo = 1";
+
                 SqlCommand command = new SqlCommand(query, connection);
                 command.Parameters.AddWithValue("@Usuario", usuario);
                 command.Parameters.AddWithValue("@Contrasena", contrasena);
@@ -77,9 +106,27 @@ namespace WebSGV.Views
                     {
                         // Guardar información del usuario en la sesión
                         Session["UsuarioID"] = reader["idUsuario"].ToString();
+                        Session["IdUsuario"] = Convert.ToInt32(reader["idUsuario"]); // Como int también
                         Session["NombreUsuario"] = reader["nombreUsuario"].ToString();
                         Session["Nombre"] = reader["nombre"].ToString();
                         Session["Rol"] = reader["rol"].ToString();
+
+                        rol = reader["rol"].ToString();
+                        nombre = reader["nombre"].ToString();
+
+                        // Si es conductor, guardar también el idConductor
+                        if (rol.ToUpper() == "CONDUCTOR" && reader["idConductor"] != DBNull.Value)
+                        {
+                            int idConductor = Convert.ToInt32(reader["idConductor"]);
+                            Session["IdConductor"] = idConductor;
+
+                            System.Diagnostics.Debug.WriteLine($"🚗 Conductor detectado: {nombre} (ID: {idConductor})");
+                        }
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine($"👨‍💼 Admin detectado: {nombre}");
+                        }
+
                         esValido = true;
                     }
 
@@ -87,12 +134,21 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    // Registrar el error en algún log
-                    System.Diagnostics.Debug.WriteLine("Error al validar usuario: " + ex.Message);
+                    System.Diagnostics.Debug.WriteLine($"❌ Error al validar usuario: {ex.Message}");
                 }
             }
 
-            return esValido;
+            return (esValido, rol, nombre);
+        }
+
+        private void MostrarMensaje(string mensaje)
+        {
+            ClientScript.RegisterStartupScript(
+                this.GetType(),
+                "alert",
+                $"alert('{mensaje}');",
+                true
+            );
         }
     }
 }
