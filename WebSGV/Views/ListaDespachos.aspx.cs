@@ -43,6 +43,8 @@ namespace WebSGV.Views
             public int IdDespacho { get; set; }
             public string NumeroDespacho { get; set; }
             public DateTime FechaDespacho { get; set; }
+
+            // Información básica
             public string NombreCliente { get; set; }
             public string NombreConductor { get; set; }
             public string PlacaTracto { get; set; }
@@ -53,6 +55,27 @@ namespace WebSGV.Views
             public string GuiaRemitente { get; set; }
             public string GuiaTransportista { get; set; }
             public string NumeroViaje { get; set; }
+
+            // ✅ NUEVOS: IDs necesarios para la Orden de Viaje
+            public int IdConductor { get; set; }
+            public int IdTracto { get; set; }
+            public int IdCarreta { get; set; }
+            public int IdCliente { get; set; }
+
+            // ✅ NUEVOS: Datos para operaciones internacionales
+            public bool EsInternacional { get; set; }
+            public string NumeroCPIC { get; set; }
+            public int? IdCPIC { get; set; }
+        }
+
+        [Serializable]
+        public class DespachoConConductor
+        {
+            public int IdDespacho { get; set; }
+            public string NumeroDespacho { get; set; }
+            public DateTime FechaDespacho { get; set; }
+            public int IdConductor { get; set; }
+            public string NombreConductorActual { get; set; }
         }
 
         [Serializable]
@@ -191,14 +214,15 @@ namespace WebSGV.Views
             {
                 using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
+                    // ✅ Filtrar solo conductores que tienen viajes activos
                     string query = @"
-                        SELECT DISTINCT 
-                            c.idConductor,
-                            CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, ''), ' ', ISNULL(c.apMaterno, '')) AS NombreCompleto
-                        FROM Conductor c
-                        INNER JOIN ViajesEnProgreso vp ON c.idConductor = vp.idConductor
-                        WHERE vp.estadoViaje = 'ABIERTO' AND vp.activo = 1
-                        ORDER BY NombreCompleto";
+                SELECT DISTINCT 
+                    c.idConductor,
+                    CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, ''), ' ', ISNULL(c.apMaterno, '')) AS NombreCompleto
+                FROM Conductor c
+                INNER JOIN ViajesEnProgreso vp ON c.idConductor = vp.idConductor
+                WHERE vp.estadoViaje = 'ABIERTO' AND vp.activo = 1
+                ORDER BY NombreCompleto";
 
                     CargarDropDownList(ddlFiltroConductorViajes, query, "NombreCompleto", "idConductor", "-- Todos los conductores --");
                 }
@@ -256,6 +280,10 @@ namespace WebSGV.Views
                 }
             }
         }
+
+
+        
+
 
         #endregion
 
@@ -375,29 +403,44 @@ namespace WebSGV.Views
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
                 string query = @"
-                    SELECT 
-                        d.idDespacho,
-                        d.numeroDespacho,
-                        d.fechaDespacho,
-                        cl.nombre AS NombreCliente,
-                        CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, '')) AS NombreConductor,
-                        t.placaTracto,
-                        ca.placaCarreta,
-                        d.tipoOperacion,
-                        d.lugarOperacion,
-                        d.estadoDespacho,
-                        d.guiaRemitente,
-                        d.guiaTransportista,
-                        vp.numeroViajeProgreso AS NumeroViaje
-                    FROM Despachos d
-                    INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
-                    INNER JOIN Conductor c ON d.idConductor = c.idConductor
-                    INNER JOIN Tracto t ON d.idTracto = t.idTracto
-                    INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-                    LEFT JOIN ViajesEnProgreso vp ON d.idViajeProgreso = vp.idViajeProgreso
-                    WHERE d.idViajeProgreso = @idViajeProgreso
-                        AND d.activo = 1
-                    ORDER BY d.fechaCreacion DESC";
+            SELECT 
+                d.idDespacho,
+                d.numeroDespacho,
+                d.fechaDespacho,
+                
+                -- Información básica
+                cl.nombre AS NombreCliente,
+                CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, '')) AS NombreConductor,
+                t.placaTracto,
+                ca.placaCarreta,
+                d.tipoOperacion,
+                d.lugarOperacion,
+                d.estadoDespacho,
+                d.guiaRemitente,
+                d.guiaTransportista,
+                vp.numeroViajeProgreso AS NumeroViaje,
+                
+                -- ✅ NUEVO: IDs necesarios
+                d.idConductor,
+                d.idTracto,
+                d.idCarreta,
+                d.idCliente,
+                
+                -- ✅ NUEVO: Datos internacionales
+                ISNULL(d.esInternacional, 0) AS EsInternacional,
+                cp.numeroCPIC,
+                d.idCPIC
+                
+            FROM Despachos d
+            INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
+            INNER JOIN Conductor c ON d.idConductor = c.idConductor
+            INNER JOIN Tracto t ON d.idTracto = t.idTracto
+            INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
+            LEFT JOIN ViajesEnProgreso vp ON d.idViajeProgreso = vp.idViajeProgreso
+            LEFT JOIN CPIC cp ON d.idCPIC = cp.idCPIC  -- ✅ NUEVO
+            WHERE d.idViajeProgreso = @idViajeProgreso
+                AND d.activo = 1
+            ORDER BY d.fechaCreacion DESC";
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
@@ -413,6 +456,8 @@ namespace WebSGV.Views
                                 IdDespacho = GetSafeValue<int>(reader, "idDespacho"),
                                 NumeroDespacho = GetSafeValue<string>(reader, "numeroDespacho"),
                                 FechaDespacho = GetSafeValue<DateTime>(reader, "fechaDespacho"),
+
+                                // Información básica
                                 NombreCliente = GetSafeValue<string>(reader, "NombreCliente"),
                                 NombreConductor = GetSafeValue<string>(reader, "NombreConductor"),
                                 PlacaTracto = GetSafeValue<string>(reader, "placaTracto"),
@@ -422,7 +467,18 @@ namespace WebSGV.Views
                                 EstadoDespacho = GetSafeValue<string>(reader, "estadoDespacho"),
                                 GuiaRemitente = GetSafeValue<string>(reader, "guiaRemitente", "N/A"),
                                 GuiaTransportista = GetSafeValue<string>(reader, "guiaTransportista", "N/A"),
-                                NumeroViaje = GetSafeValue<string>(reader, "NumeroViaje", "N/A")
+                                NumeroViaje = GetSafeValue<string>(reader, "NumeroViaje", "N/A"),
+
+                                // ✅ NUEVO: IDs
+                                IdConductor = GetSafeValue<int>(reader, "idConductor"),
+                                IdTracto = GetSafeValue<int>(reader, "idTracto"),
+                                IdCarreta = GetSafeValue<int>(reader, "idCarreta"),
+                                IdCliente = GetSafeValue<int>(reader, "idCliente"),
+
+                                // ✅ NUEVO: Internacional y CPIC
+                                EsInternacional = GetSafeValue<bool>(reader, "EsInternacional"),
+                                NumeroCPIC = GetSafeValue<string>(reader, "numeroCPIC"),
+                                IdCPIC = reader["idCPIC"] == DBNull.Value ? (int?)null : GetSafeValue<int>(reader, "idCPIC")
                             });
                         }
                     }
@@ -715,29 +771,42 @@ namespace WebSGV.Views
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
                 string query = @"
-                    SELECT 
-                        d.idDespacho,
-                        d.numeroDespacho,
-                        d.fechaDespacho,
-                        cl.nombre AS NombreCliente,
-                        CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, '')) AS NombreConductor,
-                        t.placaTracto,
-                        ca.placaCarreta,
-                        d.tipoOperacion,
-                        d.lugarOperacion,
-                        d.estadoDespacho,
-                        d.guiaRemitente,
-                        d.guiaTransportista,
-                        ISNULL(vp.numeroViajeProgreso, 'Sin asignar') AS NumeroViaje
-                    FROM Despachos d
-                    INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
-                    INNER JOIN Conductor c ON d.idConductor = c.idConductor
-                    INNER JOIN Tracto t ON d.idTracto = t.idTracto
-                    INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-                    LEFT JOIN ViajesEnProgreso vp ON d.idViajeProgreso = vp.idViajeProgreso
-                    WHERE d.idDespacho IN (" + string.Join(",", idsDespachos) + @")
-                        AND d.activo = 1
-                    ORDER BY d.fechaCreacion DESC";
+            SELECT 
+                d.idDespacho,
+                d.numeroDespacho,
+                d.fechaDespacho,
+                cl.nombre AS NombreCliente,
+                CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, '')) AS NombreConductor,
+                t.placaTracto,
+                ca.placaCarreta,
+                d.tipoOperacion,
+                d.lugarOperacion,
+                d.estadoDespacho,
+                d.guiaRemitente,
+                d.guiaTransportista,
+                ISNULL(vp.numeroViajeProgreso, 'Sin asignar') AS NumeroViaje,
+                
+                -- ✅ NUEVO: IDs necesarios
+                d.idConductor,
+                d.idTracto,
+                d.idCarreta,
+                d.idCliente,
+                
+                -- ✅ NUEVO: Datos internacionales
+                ISNULL(d.esInternacional, 0) AS EsInternacional,
+                cp.numeroCPIC,
+                d.idCPIC
+                
+            FROM Despachos d
+            INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
+            INNER JOIN Conductor c ON d.idConductor = c.idConductor
+            INNER JOIN Tracto t ON d.idTracto = t.idTracto
+            INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
+            LEFT JOIN ViajesEnProgreso vp ON d.idViajeProgreso = vp.idViajeProgreso
+            LEFT JOIN CPIC cp ON d.idCPIC = cp.idCPIC  -- ✅ NUEVO
+            WHERE d.idDespacho IN (" + string.Join(",", idsDespachos) + @")
+                AND d.activo = 1
+            ORDER BY d.fechaCreacion DESC";
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
@@ -760,7 +829,16 @@ namespace WebSGV.Views
                                 EstadoDespacho = GetSafeValue<string>(reader, "estadoDespacho"),
                                 GuiaRemitente = GetSafeValue<string>(reader, "guiaRemitente", "N/A"),
                                 GuiaTransportista = GetSafeValue<string>(reader, "guiaTransportista", "N/A"),
-                                NumeroViaje = GetSafeValue<string>(reader, "NumeroViaje")
+                                NumeroViaje = GetSafeValue<string>(reader, "NumeroViaje"),
+
+                                // ✅ NUEVO
+                                IdConductor = GetSafeValue<int>(reader, "idConductor"),
+                                IdTracto = GetSafeValue<int>(reader, "idTracto"),
+                                IdCarreta = GetSafeValue<int>(reader, "idCarreta"),
+                                IdCliente = GetSafeValue<int>(reader, "idCliente"),
+                                EsInternacional = GetSafeValue<bool>(reader, "EsInternacional"),
+                                NumeroCPIC = GetSafeValue<string>(reader, "numeroCPIC"),
+                                IdCPIC = reader["idCPIC"] == DBNull.Value ? (int?)null : GetSafeValue<int>(reader, "idCPIC")
                             });
                         }
                     }
@@ -799,6 +877,53 @@ namespace WebSGV.Views
                 lblFechaCreacionDetalle.Text = lote.FechaCreacion.ToString("dd/MM/yyyy");
             }
         }
+
+        private void CargarGridConductoresLote(List<int> idsDespachos)
+        {
+            if (idsDespachos.Count == 0) return;
+
+            List<DespachoConConductor> despachos = new List<DespachoConConductor>();
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                string query = @"
+            SELECT 
+                d.idDespacho,
+                d.numeroDespacho,
+                d.fechaDespacho,
+                d.idConductor,
+                CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, ''), ' ', ISNULL(c.apMaterno, '')) AS NombreConductorActual
+            FROM Despachos d
+            INNER JOIN Conductor c ON d.idConductor = c.idConductor
+            WHERE d.idDespacho IN (" + string.Join(",", idsDespachos) + @")
+                AND d.activo = 1
+            ORDER BY d.numeroDespacho";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    conn.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            despachos.Add(new DespachoConConductor
+                            {
+                                IdDespacho = GetSafeValue<int>(reader, "idDespacho"),
+                                NumeroDespacho = GetSafeValue<string>(reader, "numeroDespacho"),
+                                FechaDespacho = GetSafeValue<DateTime>(reader, "fechaDespacho"),
+                                IdConductor = GetSafeValue<int>(reader, "idConductor"),
+                                NombreConductorActual = GetSafeValue<string>(reader, "NombreConductorActual")
+                            });
+                        }
+                    }
+                }
+            }
+
+            gvConductoresLote.DataSource = despachos;
+            gvConductoresLote.DataBind();
+        }
+
+
 
         #endregion
 
@@ -975,6 +1100,63 @@ namespace WebSGV.Views
             }
         }
 
+        protected void gvConductoresLote_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            if (e.Row.RowType == DataControlRowType.DataRow)
+            {
+                // Encontrar el dropdown en la fila actual
+                DropDownList ddlConductor = (DropDownList)e.Row.FindControl("ddlConductorDespacho");
+
+                if (ddlConductor != null)
+                {
+                    // 1. PRIMERO llenar el dropdown con todos los conductores
+                    CargarConductoresEnDropDown(ddlConductor);
+
+                    // 2. Obtener el objeto DespachoConConductor (NO es DataRowView)
+                    DespachoConConductor despacho = (DespachoConConductor)e.Row.DataItem;
+
+                    if (despacho != null)
+                    {
+                        // 3. DESPUÉS seleccionar el conductor actual
+                        if (ddlConductor.Items.FindByValue(despacho.IdConductor.ToString()) != null)
+                        {
+                            ddlConductor.SelectedValue = despacho.IdConductor.ToString();
+                        }
+                    }
+                }
+            }
+        }
+
+        private void CargarConductoresEnDropDown(DropDownList ddl)
+        {
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                string query = @"
+            SELECT 
+                idConductor,
+                CONCAT(nombre, ' ', ISNULL(apPaterno, ''), ' ', ISNULL(apMaterno, '')) AS NombreCompleto
+            FROM Conductor
+            ORDER BY NombreCompleto";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    conn.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        ddl.Items.Clear();
+
+                        while (reader.Read())
+                        {
+                            ddl.Items.Add(new ListItem(
+                                reader["NombreCompleto"].ToString(),
+                                reader["idConductor"].ToString()
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+
         #endregion
 
         #region Eventos de Navegación - Viajes
@@ -1123,24 +1305,154 @@ namespace WebSGV.Views
         {
             if (idsDespachos.Count == 0) return;
 
-            string query = @"
-                UPDATE Despachos 
-                SET 
-                    fechaDespacho = @fechaDespacho,
-                    numeroPedido = @numeroPedido,
-                    lugarOperacion = @lugarOperacion,
-                    usuarioModificacion = @usuarioModificacion,
-                    fechaModificacion = GETDATE()
-                WHERE idDespacho IN (" + string.Join(",", idsDespachos) + ")";
+            // Obtener los nuevos conductores desde el GridView
+            Dictionary<int, int> cambiosConductores = ObtenerCambiosConductoresDesdeGrid();
 
-            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            foreach (int idDespacho in idsDespachos)
             {
-                cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(txtFechaProgramacionEdit.Text));
-                cmd.Parameters.AddWithValue("@numeroPedido", string.IsNullOrEmpty(txtNumeroPedidoEdit.Text) ? (object)DBNull.Value : txtNumeroPedidoEdit.Text);
-                cmd.Parameters.AddWithValue("@lugarOperacion", ddlPlantaEdit.SelectedValue);
-                cmd.Parameters.AddWithValue("@usuarioModificacion", ObtenerUsuarioActual());
+                string query = @"
+            UPDATE Despachos 
+            SET 
+                fechaDespacho = @fechaDespacho,
+                numeroPedido = @numeroPedido,
+                lugarOperacion = @lugarOperacion,";
 
-                cmd.ExecuteNonQuery();
+                // ✅ Agregar actualización de conductor si cambió
+                if (cambiosConductores.ContainsKey(idDespacho))
+                {
+                    query += " idConductor = @idConductor,";
+                }
+
+                query += @"
+                usuarioModificacion = @usuarioModificacion,
+                fechaModificacion = GETDATE()
+            WHERE idDespacho = @idDespacho";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(txtFechaProgramacionEdit.Text));
+                    cmd.Parameters.AddWithValue("@numeroPedido",
+                        string.IsNullOrEmpty(txtNumeroPedidoEdit.Text) ? (object)DBNull.Value : txtNumeroPedidoEdit.Text);
+                    cmd.Parameters.AddWithValue("@lugarOperacion", ddlPlantaEdit.SelectedValue);
+                    cmd.Parameters.AddWithValue("@usuarioModificacion", ObtenerUsuarioActual());
+                    cmd.Parameters.AddWithValue("@idDespacho", idDespacho);
+
+                    if (cambiosConductores.ContainsKey(idDespacho))
+                    {
+                        cmd.Parameters.AddWithValue("@idConductor", cambiosConductores[idDespacho]);
+                    }
+
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
+            // ✅ Actualizar ViajesEnProgreso si hubo cambios de conductor
+            if (cambiosConductores.Count > 0)
+            {
+                ActualizarViajesDespuesCambios(conn, transaction, idsDespachos);
+            }
+        }
+
+        private Dictionary<int, int> ObtenerCambiosConductoresDesdeGrid()
+        {
+            Dictionary<int, int> cambios = new Dictionary<int, int>();
+
+            foreach (GridViewRow row in gvConductoresLote.Rows)
+            {
+                if (row.RowType == DataControlRowType.DataRow)
+                {
+                    // Obtener ID del despacho (está oculto en la columna 0)
+                    int idDespacho = Convert.ToInt32(gvConductoresLote.DataKeys[row.RowIndex].Value);
+
+                    // Obtener el nuevo conductor seleccionado
+                    DropDownList ddlConductor = (DropDownList)row.FindControl("ddlConductorDespacho");
+
+                    if (ddlConductor != null && !string.IsNullOrEmpty(ddlConductor.SelectedValue))
+                    {
+                        int nuevoIdConductor = Convert.ToInt32(ddlConductor.SelectedValue);
+                        cambios[idDespacho] = nuevoIdConductor;
+                    }
+                }
+            }
+
+            return cambios;
+        }
+
+        private void ActualizarViajesDespuesCambios(SqlConnection conn, SqlTransaction transaction, List<int> idsDespachos)
+        {
+            // Obtener viajes afectados
+            string queryViajes = @"
+        SELECT DISTINCT idViajeProgreso 
+        FROM Despachos 
+        WHERE idDespacho IN (" + string.Join(",", idsDespachos) + @") 
+        AND idViajeProgreso IS NOT NULL";
+
+            List<int> viajesAfectados = new List<int>();
+
+            using (SqlCommand cmd = new SqlCommand(queryViajes, conn, transaction))
+            {
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        viajesAfectados.Add(reader.GetInt32(0));
+                    }
+                }
+            }
+
+            // Actualizar fecha de última actividad de cada viaje
+            foreach (int idViaje in viajesAfectados)
+            {
+                string updateViaje = @"
+            UPDATE ViajesEnProgreso 
+            SET fechaUltimaActividad = GETDATE()
+            WHERE idViajeProgreso = @idViajeProgreso";
+
+                using (SqlCommand cmd = new SqlCommand(updateViaje, conn, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViaje);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        private void ActualizarViajesConductor(SqlConnection conn, SqlTransaction transaction, List<int> idsDespachos, int nuevoConductorId)
+        {
+            // Obtener los viajes afectados
+            string queryViajes = @"
+        SELECT DISTINCT idViajeProgreso 
+        FROM Despachos 
+        WHERE idDespacho IN (" + string.Join(",", idsDespachos) + @") 
+        AND idViajeProgreso IS NOT NULL";
+
+            List<int> viajesAfectados = new List<int>();
+
+            using (SqlCommand cmd = new SqlCommand(queryViajes, conn, transaction))
+            {
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        viajesAfectados.Add(reader.GetInt32(0));
+                    }
+                }
+            }
+
+            // Actualizar cada viaje afectado
+            foreach (int idViaje in viajesAfectados)
+            {
+                string updateViaje = @"
+            UPDATE ViajesEnProgreso 
+            SET idConductor = @idConductor,
+                fechaUltimaActividad = GETDATE()
+            WHERE idViajeProgreso = @idViajeProgreso";
+
+                using (SqlCommand cmd = new SqlCommand(updateViaje, conn, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@idConductor", nuevoConductorId);
+                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViaje);
+                    cmd.ExecuteNonQuery();
+                }
             }
         }
 
@@ -1149,6 +1461,126 @@ namespace WebSGV.Views
             // Implementación básica - se puede expandir según necesidades específicas
             MostrarMensaje($"Actualización de {tipoDocumento} implementada", "info");
         }
+
+        protected void btnEliminarLote_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(LoteSeleccionadoId))
+                {
+                    MostrarMensaje("No se pudo identificar el lote a eliminar.", "danger");
+                    return;
+                }
+
+                var lote = ObtenerLotePorId(LoteSeleccionadoId);
+                if (lote == null || lote.IdsDespachos.Count == 0)
+                {
+                    MostrarMensaje("No se encontraron despachos para eliminar.", "warning");
+                    return;
+                }
+
+                EliminarLoteCompleto(lote.IdsDespachos);
+
+                MostrarListaLotes();
+                CargarLotesRegistrados();
+                MostrarMensaje($"✅ Lote eliminado exitosamente. Se eliminaron {lote.IdsDespachos.Count} despacho(s).", "success");
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("❌ Error al eliminar lote: " + ex.Message, "danger");
+            }
+        }
+
+        private void EliminarLoteCompleto(List<int> idsDespachos)
+        {
+            if (idsDespachos.Count == 0) return;
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                conn.Open();
+                using (SqlTransaction transaction = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        // 1. Obtener viajes afectados ANTES de eliminar
+                        List<int> viajesAfectados = ObtenerViajesAfectadosPorDespachos(conn, transaction, idsDespachos);
+
+                        // 2. Eliminación lógica de los despachos
+                        string queryDelete = @"
+                    UPDATE Despachos 
+                    SET activo = 0,
+                        usuarioModificacion = @usuario,
+                        fechaModificacion = GETDATE()
+                    WHERE idDespacho IN (" + string.Join(",", idsDespachos) + ")";
+
+                        using (SqlCommand cmd = new SqlCommand(queryDelete, conn, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@usuario", ObtenerUsuarioActual());
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // 3. Actualizar contadores de viajes afectados
+                        foreach (int idViaje in viajesAfectados)
+                        {
+                            ActualizarContadorDespachosViaje(conn, transaction, idViaje);
+                        }
+
+                        transaction.Commit();
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+
+        private List<int> ObtenerViajesAfectadosPorDespachos(SqlConnection conn, SqlTransaction transaction, List<int> idsDespachos)
+        {
+            List<int> viajes = new List<int>();
+
+            string query = @"
+        SELECT DISTINCT idViajeProgreso 
+        FROM Despachos 
+        WHERE idDespacho IN (" + string.Join(",", idsDespachos) + @") 
+        AND idViajeProgreso IS NOT NULL";
+
+            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            {
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        viajes.Add(reader.GetInt32(0));
+                    }
+                }
+            }
+
+            return viajes;
+        }
+
+        private void ActualizarContadorDespachosViaje(SqlConnection conn, SqlTransaction transaction, int idViajeProgreso)
+        {
+            string query = @"
+        UPDATE ViajesEnProgreso 
+        SET cantidadDespachos = (
+            SELECT COUNT(*) 
+            FROM Despachos 
+            WHERE idViajeProgreso = @idViajeProgreso 
+            AND activo = 1
+        ),
+        fechaUltimaActividad = GETDATE()
+        WHERE idViajeProgreso = @idViajeProgreso";
+
+            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            {
+                cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+
 
         #endregion
 
@@ -1253,6 +1685,10 @@ namespace WebSGV.Views
                 txtFechaEmisionCPICEdit.Text = lote.FechaEmisionCPIC?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd");
                 txtValorFleteEdit.Text = lote.ValorFlete?.ToString("F2") ?? "0.00";
             }
+
+            CargarGridConductoresLote(lote.IdsDespachos);
+
+
         }
 
         private void ConfigurarPanelesDocumentosEdicion(LoteRegistrado lote)
@@ -1307,43 +1743,63 @@ namespace WebSGV.Views
 
         private DatosTransferencia PrepararDatosParaTransferencia(int idViajeProgreso, List<DespachoViaje> despachos)
         {
+            if (despachos == null || despachos.Count == 0)
+            {
+                throw new Exception("No hay despachos para transferir");
+            }
+
             var datos = new DatosTransferencia
             {
-                IdViajeProgreso = idViajeProgreso  // ✅ NUEVO - LO MÁS IMPORTANTE
+                IdViajeProgreso = idViajeProgreso,
+                CantidadDespachos = despachos.Count
             };
+
+            var primerDespacho = despachos.First();
+
+            // ✅ Asignar IDs
+            datos.IdConductor = primerDespacho.IdConductor;
+            datos.IdTracto = primerDespacho.IdTracto;
+            datos.IdCarreta = primerDespacho.IdCarreta;
+            datos.IdCliente = primerDespacho.IdCliente;
+
+            // ✅ Asignar ID del CPIC (ya existe en BD)
+            datos.IdCPIC = primerDespacho.IdCPIC;  // Puede ser NULL
+
+            // ✅ Información para MOSTRAR solamente
+            datos.EsInternacional = primerDespacho.EsInternacional;
+            datos.NumeroCPIC = primerDespacho.NumeroCPIC;  // Solo para mostrar
+
+            // Información visible
+            datos.Conductor = primerDespacho.NombreConductor;
+            datos.PlacaTracto = primerDespacho.PlacaTracto;
+            datos.PlacaCarreta = primerDespacho.PlacaCarreta;
 
             if (despachos.Count == 1)
             {
-                var despacho = despachos.First();
-                datos.Conductor = despacho.NombreConductor;
-                datos.Cliente = despacho.NombreCliente;
-                datos.PlacaTracto = despacho.PlacaTracto;
-                datos.PlacaCarreta = despacho.PlacaCarreta;
-                datos.Planta = despacho.LugarOperacion;
-                datos.Operacion = despacho.TipoOperacion;
+                datos.Cliente = primerDespacho.NombreCliente;
+                datos.Planta = primerDespacho.LugarOperacion;
+                datos.Operacion = primerDespacho.TipoOperacion;
                 datos.TieneVariaciones = false;
             }
             else
             {
-                datos.Conductor = despachos.First().NombreConductor;
                 datos.TieneVariaciones = VerificarVariacionesEnDatos(despachos);
 
                 if (!datos.TieneVariaciones)
                 {
-                    var despacho = despachos.First();
-                    datos.Cliente = despacho.NombreCliente;
-                    datos.PlacaTracto = despacho.PlacaTracto;
-                    datos.PlacaCarreta = despacho.PlacaCarreta;
-                    datos.Planta = despacho.LugarOperacion;
-                    datos.Operacion = despacho.TipoOperacion;
+                    datos.Cliente = primerDespacho.NombreCliente;
+                    datos.Planta = primerDespacho.LugarOperacion;
+                    datos.Operacion = primerDespacho.TipoOperacion;
                 }
                 else
                 {
+                    datos.Cliente = $"{primerDespacho.NombreCliente} (+{despachos.Count - 1} más)";
+                    datos.Planta = $"{primerDespacho.LugarOperacion} (varía)";
+                    datos.Operacion = primerDespacho.TipoOperacion;
                     datos.DespachosDetalle = despachos;
                 }
             }
 
-            datos.CantidadDespachos = despachos.Count;
             return datos;
         }
 
@@ -1365,8 +1821,18 @@ namespace WebSGV.Views
         [Serializable]
         public class DatosTransferencia
         {
-            public int IdViajeProgreso { get; set; }  // ✅ NUEVO - CRÍTICO
+            public int IdViajeProgreso { get; set; }
 
+            // IDs necesarios
+            public int IdConductor { get; set; }
+            public int IdTracto { get; set; }
+            public int IdCarreta { get; set; }
+            public int IdCliente { get; set; }
+
+            // ✅ NUEVO: ID del CPIC (NO el número, el ID de la tabla)
+            public int? IdCPIC { get; set; }  // Puede ser NULL si es nacional
+
+            // Información visible
             public string Conductor { get; set; }
             public string Cliente { get; set; }
             public string PlacaTracto { get; set; }
@@ -1377,10 +1843,9 @@ namespace WebSGV.Views
             public bool TieneVariaciones { get; set; }
             public List<DespachoViaje> DespachosDetalle { get; set; }
 
-            public int IdConductor { get; set; }
-            public int IdTracto { get; set; }
-            public int IdCarreta { get; set; }
-            public int IdCliente { get; set; }
+            // ✅ Para mostrar solamente
+            public bool EsInternacional { get; set; }
+            public string NumeroCPIC { get; set; }  // Solo para mostrar
 
             public DatosTransferencia()
             {

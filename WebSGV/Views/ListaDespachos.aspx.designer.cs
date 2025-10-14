@@ -438,6 +438,15 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.TextBox txtClienteEdit;
 
         /// <summary>
+        /// Control gvConductoresLote.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.GridView gvConductoresLote;
+
+        /// <summary>
         /// Control txtNumeroPedidoEdit.
         /// </summary>
         /// <remarks>
@@ -553,6 +562,15 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Label lblAmbitoEdit;
+
+        /// <summary>
+        /// Control btnEliminarLote.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnEliminarLote;
 
         /// <summary>
         /// Control btnGuardarCambios.
