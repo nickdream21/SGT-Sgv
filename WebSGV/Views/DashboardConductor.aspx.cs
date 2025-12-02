@@ -13,9 +13,6 @@ namespace WebSGV.Views
     {
         #region Clases de Datos
 
-        /// <summary>
-        /// Clase para gastos financieros detallados (de modales)
-        /// </summary>
         public class GastoFinanciero
         {
             [JsonProperty("categoria")]
@@ -59,9 +56,6 @@ namespace WebSGV.Views
             public string Observaciones { get; set; }
         }
 
-        /// <summary>
-        /// Clases para ingresos y gastos adicionales dinámicos
-        /// </summary>
         public class IngresoAdicionalData
         {
             [JsonProperty("categoria")]
@@ -98,9 +92,6 @@ namespace WebSGV.Views
             public decimal? Dolares { get; set; }
         }
 
-        /// <summary>
-        /// Clase para datos del viaje activo
-        /// </summary>
         public class ViajeActivo
         {
             public int IdViajeProgreso { get; set; }
@@ -115,9 +106,6 @@ namespace WebSGV.Views
             public bool EsInternacional { get; set; }
         }
 
-        /// <summary>
-        /// Clase para despachos
-        /// </summary>
         public class DespachoInfo
         {
             public int IdDespacho { get; set; }
@@ -189,7 +177,6 @@ namespace WebSGV.Views
         {
             try
             {
-                // Verificar que exista sesión de conductor
                 if (Session["IdConductor"] == null || IdConductorActual == 0)
                 {
                     System.Diagnostics.Debug.WriteLine("❌ No hay sesión de conductor");
@@ -214,10 +201,7 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine("=== INICIALIZANDO DASHBOARD CONDUCTOR ===");
 
-                // 1. Cargar información del conductor
                 CargarDatosConductor();
-
-                // 2. Cargar viaje activo (si existe)
                 ViajeActivo viajeActivo = ObtenerViajeActivo();
 
                 if (viajeActivo != null)
@@ -226,6 +210,9 @@ namespace WebSGV.Views
                     MostrarViajeActivo(viajeActivo);
                     CargarDespachosViajeActivo(viajeActivo.IdViajeProgreso);
                     HabilitarLiquidacion(viajeActivo);
+
+                    // ✅ VERIFICAR SI HAY OBSERVACIONES DE RECHAZO
+                    VerificarObservacionesRechazo(viajeActivo.IdViajeProgreso);
                 }
                 else
                 {
@@ -233,7 +220,6 @@ namespace WebSGV.Views
                     MostrarSinViajes();
                 }
 
-                // 3. Cargar historial (siempre se muestra)
                 CargarHistorialLiquidaciones();
 
                 System.Diagnostics.Debug.WriteLine("✅ Dashboard inicializado correctamente");
@@ -288,6 +274,111 @@ namespace WebSGV.Views
 
         #endregion
 
+        #region Verificación de Observaciones de Rechazo
+
+        private void VerificarObservacionesRechazo(int idViajeProgreso)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"Verificando observaciones de rechazo para viaje: {idViajeProgreso}");
+
+                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    // Buscar la última orden rechazada de este viaje
+                    string query = @"
+                        SELECT TOP 1
+                            ov.numeroOrdenViaje,
+                            ov.observacionesRechazo,
+                            ov.fechaRechazo,
+                            u.nombre + ' ' + u.apellido AS rechazadoPor
+                        FROM OrdenViaje ov
+                        LEFT JOIN Usuarios u ON ov.idUsuarioAprobacion = u.idUsuario
+                        WHERE ov.idViajeProgreso = @idViajeProgreso
+                            AND ov.estadoAprobacion = 'REABIERTO'
+                            AND ov.observacionesRechazo IS NOT NULL
+                            AND ov.observacionesRechazo != ''
+                        ORDER BY ov.fechaRechazo DESC";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
+                        conn.Open();
+
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                string numeroOrden = reader["numeroOrdenViaje"].ToString();
+                                string observaciones = reader["observacionesRechazo"].ToString();
+                                DateTime fechaRechazo = reader["fechaRechazo"] != DBNull.Value
+                                    ? Convert.ToDateTime(reader["fechaRechazo"])
+                                    : DateTime.Now;
+                                string rechazadoPor = reader["rechazadoPor"]?.ToString() ?? "Administrador";
+
+                                System.Diagnostics.Debug.WriteLine($"⚠️ LIQUIDACIÓN RECHAZADA ENCONTRADA: {numeroOrden}");
+
+                                MostrarAlertaRechazo(numeroOrden, observaciones, fechaRechazo, rechazadoPor);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error verificando observaciones: {ex.Message}");
+            }
+        }
+
+        private void MostrarAlertaRechazo(string numeroOrden, string observaciones, DateTime fechaRechazo, string rechazadoPor)
+        {
+            string mensajeHtml = $@"
+                <div class='alert alert-warning alert-rechazo' role='alert'>
+                    <div class='d-flex align-items-start'>
+                        <div class='alert-icon'>
+                            <i class='fas fa-exclamation-triangle fa-2x'></i>
+                        </div>
+                        <div class='alert-content ml-3' style='flex: 1;'>
+                            <h5 class='alert-heading mb-2'>
+                                <i class='fas fa-undo-alt mr-2'></i>
+                                Liquidación Rechazada - Orden {numeroOrden}
+                            </h5>
+                            <p class='mb-2'>
+                                <strong>Tu liquidación fue rechazada el {fechaRechazo:dd/MM/yyyy HH:mm} por {rechazadoPor}.</strong>
+                            </p>
+                            <div class='rechazo-motivo'>
+                                <label class='font-weight-bold text-danger'>Motivo del rechazo:</label>
+                                <p class='mb-0'>{observaciones}</p>
+                            </div>
+                            <hr class='my-2' />
+                            <p class='mb-0 text-muted'>
+                                <i class='fas fa-info-circle mr-1'></i>
+                                Por favor, corrige los datos según las observaciones y vuelve a liquidar el viaje.
+                            </p>
+                        </div>
+                    </div>
+                </div>";
+
+            // Mostrar mensaje en el panel
+            lblMensaje.Text = mensajeHtml;
+            lblMensaje.CssClass = ""; // Sin clase adicional
+            pnlMensajes.Visible = true;
+
+            // Script para hacer scroll automático
+            string script = @"
+                $(document).ready(function() {
+                    $('#liquidarViaje-tab').tab('show');
+                    $('html, body').animate({
+                        scrollTop: $('.alert-rechazo').offset().top - 100
+                    }, 500);
+                });
+            ";
+            System.Web.UI.ScriptManager.RegisterStartupScript(this, GetType(), "ScrollToRechazo", script, true);
+        }
+
+        #endregion
+
         #region Métodos de Viaje Activo
 
         private ViajeActivo ObtenerViajeActivo()
@@ -298,7 +389,6 @@ namespace WebSGV.Views
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    // Consulta directa en lugar de SP
                     string query = @"
                         SELECT TOP 1
                             vp.idViajeProgreso,
@@ -357,28 +447,22 @@ namespace WebSGV.Views
         {
             try
             {
-                // Mostrar panel de viaje activo
                 pnlViajeActivo.Visible = true;
                 pnlSinViajes.Visible = false;
                 pnlDespachos.Visible = true;
 
-                // Llenar datos del viaje
                 lblNumeroViaje.Text = viaje.NumeroViajeProgreso;
                 lblFechaInicio.Text = viaje.FechaInicio.ToString("dd/MM/yyyy HH:mm");
                 lblCantidadDespachos.Text = viaje.CantidadDespachos.ToString();
 
-                // Calcular días en ruta
                 TimeSpan diasRuta = DateTime.Now - viaje.FechaInicio;
                 lblDiasRuta.Text = $"{diasRuta.Days} días";
 
-                // Actualizar estado
                 lblEstadoViaje.Text = $"Viaje Activo - {viaje.CantidadDespachos} despacho(s)";
                 pnlEstadoViaje.CssClass = "badge-status badge badge-success";
 
-                // Guardar ID del viaje en HiddenField
                 hfIdViajeActivo.Value = viaje.IdViajeProgreso.ToString();
 
-                // Mostrar badge de liquidación pendiente
                 pnlBadgeLiquidar.Visible = true;
                 pnlBadgeActivos.Visible = true;
                 lblCantidadActivos.Text = viaje.CantidadDespachos.ToString();
@@ -414,28 +498,27 @@ namespace WebSGV.Views
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    // ✅ CONSULTA CORREGIDA CON NOMBRES REALES DE COLUMNAS
                     string query = @"
-                SELECT 
-                    d.idDespacho,
-                    d.numeroDespacho,
-                    d.fechaDespacho,
-                    cl.nombre AS nombreCliente,
-                    d.tipoOperacion,
-                    d.lugarOperacion,
-                    t.placaTracto,
-                    ca.placaCarreta,
-                    d.estadoDespacho,
-                    ISNULL(d.guiaRemitente, '') AS guiaRemitente,
-                    ISNULL(d.guiaTransportista, '') AS guiaTransportista,
-                    ISNULL(CAST(d.idCPIC AS VARCHAR), '') AS numeroCPIC
-                FROM Despachos d
-                INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
-                INNER JOIN Tracto t ON d.idTracto = t.idTracto
-                INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-                WHERE d.idViajeProgreso = @idViajeProgreso
-                    AND d.activo = 1
-                ORDER BY d.fechaDespacho DESC";
+                        SELECT 
+                            d.idDespacho,
+                            d.numeroDespacho,
+                            d.fechaDespacho,
+                            cl.nombre AS nombreCliente,
+                            d.tipoOperacion,
+                            d.lugarOperacion,
+                            t.placaTracto,
+                            ca.placaCarreta,
+                            d.estadoDespacho,
+                            ISNULL(d.guiaRemitente, '') AS guiaRemitente,
+                            ISNULL(d.guiaTransportista, '') AS guiaTransportista,
+                            ISNULL(CAST(d.idCPIC AS VARCHAR), '') AS numeroCPIC
+                        FROM Despachos d
+                        INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
+                        INNER JOIN Tracto t ON d.idTracto = t.idTracto
+                        INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
+                        WHERE d.idViajeProgreso = @idViajeProgreso
+                            AND d.activo = 1
+                        ORDER BY d.fechaDespacho DESC";
 
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
@@ -469,7 +552,7 @@ namespace WebSGV.Views
                 gvDespachosActivos.DataSource = despachos;
                 gvDespachosActivos.DataBind();
 
-                System.Diagnostics.Debug.WriteLine($"✅ {despachos.Count} despachos cargados en GridView");
+                System.Diagnostics.Debug.WriteLine($"✅ {despachos.Count} despachos cargados");
             }
             catch (Exception ex)
             {
@@ -482,16 +565,13 @@ namespace WebSGV.Views
         {
             try
             {
-                // Habilitar formulario de liquidación
                 pnlSinViajeParaLiquidar.Visible = false;
                 pnlFormularioLiquidacion.Visible = true;
 
-                // Llenar resumen del viaje
                 lblNumeroViajeResumen.Text = viaje.NumeroViajeProgreso;
                 lblFechaInicioResumen.Text = viaje.FechaInicio.ToString("dd/MM/yyyy");
                 lblDespachosResumen.Text = viaje.CantidadDespachos.ToString();
 
-                // Configurar fechas por defecto
                 DateTime hoy = DateTime.Today;
                 txtFechaSalida.Text = viaje.FechaInicio.ToString("yyyy-MM-dd");
                 txtFechaLlegada.Text = hoy.ToString("yyyy-MM-dd");
@@ -517,7 +597,6 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine("=== INICIANDO ENVÍO DE LIQUIDACIÓN (CONDUCTOR) ===");
 
-                // 1. Obtener viaje activo
                 int idViajeProgreso = int.TryParse(hfIdViajeActivo.Value, out int ivp) ? ivp : 0;
 
                 if (idViajeProgreso == 0)
@@ -526,11 +605,9 @@ namespace WebSGV.Views
                     return;
                 }
 
-                // 2. Generar número de orden automático
                 string numeroOrdenViaje = GenerarNumeroOrden();
                 System.Diagnostics.Debug.WriteLine($"Número de orden generado: {numeroOrdenViaje}");
 
-                // 3. Validar datos generales
                 DateTime fechaSalida = DateTime.TryParse(txtFechaSalida.Text, out DateTime fs) ? fs : DateTime.MinValue;
                 DateTime fechaLlegada = DateTime.TryParse(txtFechaLlegada.Text, out DateTime fl) ? fl : DateTime.MinValue;
                 string horaSalida = txtHoraSalida.Text;
@@ -544,7 +621,6 @@ namespace WebSGV.Views
                     return;
                 }
 
-                // 4. Obtener datos del viaje para idConductor, idTracto, idCarreta
                 var datosViaje = ObtenerDatosViajeParaLiquidacion(idViajeProgreso);
                 if (datosViaje == null)
                 {
@@ -552,7 +628,6 @@ namespace WebSGV.Views
                     return;
                 }
 
-                // 5. Procesar en base de datos
                 System.Diagnostics.Debug.WriteLine("Iniciando transacción de base de datos...");
                 string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
 
@@ -567,7 +642,6 @@ namespace WebSGV.Views
                         {
                             System.Diagnostics.Debug.WriteLine("Transacción iniciada");
 
-                            // 5.1 Insertar orden de viaje (ESTADO PENDIENTE)
                             System.Diagnostics.Debug.WriteLine("Insertando orden de viaje con estado PENDIENTE...");
                             int idOrdenViaje = InsertarOrdenViajeConductor(
                                 conn, transaction, numeroOrdenViaje,
@@ -577,15 +651,12 @@ namespace WebSGV.Views
                             );
                             System.Diagnostics.Debug.WriteLine($"Orden de viaje insertada: {idOrdenViaje}");
 
-                            // 5.2 Insertar datos financieros completos
                             System.Diagnostics.Debug.WriteLine("Insertando datos financieros...");
                             InsertarDatosFinancierosCompletos(conn, transaction, numeroOrdenViaje);
 
-                            // 5.3 Insertar descuentos y reintegros
                             System.Diagnostics.Debug.WriteLine("Insertando descuentos y reintegros...");
                             InsertarDescuentosReintegros(conn, transaction, numeroOrdenViaje);
 
-                            // 5.4 Procesar datos detallados de modales
                             System.Diagnostics.Debug.WriteLine("Procesando datos detallados de modales...");
                             var gastosFinancieros = ObtenerGastosFinancierosDeSession();
                             if (gastosFinancieros.Count > 0)
@@ -593,21 +664,17 @@ namespace WebSGV.Views
                                 InsertarGastosFinancierosDetallados(conn, transaction, numeroOrdenViaje, gastosFinancieros);
                             }
 
-                            // 5.5 Cerrar el viaje en progreso
                             System.Diagnostics.Debug.WriteLine($"⚡ Cerrando viaje en progreso: {idViajeProgreso}");
                             CerrarViajeProgreso(conn, transaction, idViajeProgreso, numeroOrdenViaje);
 
-                            // 5.6 Commit
                             System.Diagnostics.Debug.WriteLine("Haciendo commit de toda la transacción...");
                             transaction.Commit();
                             System.Diagnostics.Debug.WriteLine("✅ Commit exitoso");
 
-                            // 6. Mostrar resultado exitoso
                             MostrarResultadoExitoso(numeroOrdenViaje);
 
-                            // 7. Recargar el dashboard
-                            System.Threading.Thread.Sleep(2000); // Esperar 2 segundos
-                            Response.Redirect(Request.RawUrl); // Recargar la página
+                            System.Threading.Thread.Sleep(2000);
+                            Response.Redirect(Request.RawUrl);
 
                             System.Diagnostics.Debug.WriteLine("=== LIQUIDACIÓN ENVIADA EXITOSAMENTE ===");
                         }
@@ -684,7 +751,7 @@ namespace WebSGV.Views
                     if (result != null && result != DBNull.Value)
                     {
                         int idOrdenViaje = Convert.ToInt32(result);
-                        System.Diagnostics.Debug.WriteLine($"✅ OrdenViaje creada por CONDUCTOR: ID={idOrdenViaje}, Estado=PENDIENTE, EstadoAprobacion=PENDIENTE");
+                        System.Diagnostics.Debug.WriteLine($"✅ OrdenViaje creada por CONDUCTOR: ID={idOrdenViaje}");
                         return idOrdenViaje;
                     }
                     else
@@ -702,16 +769,12 @@ namespace WebSGV.Views
 
         private void InsertarDatosFinancierosCompletos(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje)
         {
-            System.Diagnostics.Debug.WriteLine("=== INICIO DATOS FINANCIEROS ===");
-
             try
             {
                 InsertarIngresosPrincipales(conn, transaction, numeroOrdenViaje);
                 InsertarGastosPrincipales(conn, transaction, numeroOrdenViaje);
                 InsertarIngresosAdicionales(conn, transaction, numeroOrdenViaje);
                 InsertarGastosAdicionales(conn, transaction, numeroOrdenViaje);
-
-                System.Diagnostics.Debug.WriteLine("✅ DATOS FINANCIEROS COMPLETADOS");
             }
             catch (Exception ex)
             {
@@ -1124,9 +1187,6 @@ namespace WebSGV.Views
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"--- Iniciando cierre de viaje {idViajeProgreso} ---");
-
-                // 1. Cerrar el viaje en progreso
                 string queryCerrarViaje = @"
                     UPDATE ViajesEnProgreso 
                     SET estadoViaje = 'CERRADO',
@@ -1141,13 +1201,10 @@ namespace WebSGV.Views
 
                     if (filasAfectadas == 0)
                     {
-                        throw new Exception($"No se pudo cerrar el viaje {idViajeProgreso}. Puede que ya esté cerrado o no exista.");
+                        throw new Exception($"No se pudo cerrar el viaje {idViajeProgreso}");
                     }
-
-                    System.Diagnostics.Debug.WriteLine($"✓ Viaje {idViajeProgreso} marcado como CERRADO");
                 }
 
-                // 2. Actualizar estado de despachos asociados
                 string queryDespachos = @"
                     UPDATE Despachos 
                     SET estadoDespacho = 'COMPLETADO',
@@ -1158,17 +1215,13 @@ namespace WebSGV.Views
                 using (SqlCommand cmd = new SqlCommand(queryDespachos, conn, transaction))
                 {
                     cmd.Parameters.AddWithValue("@idViaje", idViajeProgreso);
-                    int despachosActualizados = cmd.ExecuteNonQuery();
-
-                    System.Diagnostics.Debug.WriteLine($"✓ {despachosActualizados} despachos actualizados a COMPLETADO");
+                    cmd.ExecuteNonQuery();
                 }
-
-                System.Diagnostics.Debug.WriteLine($"--- Cierre de viaje {idViajeProgreso} completado ---");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error en CerrarViajeProgreso: {ex.Message}");
-                throw new Exception($"Error al cerrar el viaje en progreso: {ex.Message}", ex);
+                throw;
             }
         }
 
@@ -1224,7 +1277,6 @@ namespace WebSGV.Views
                             da.Fill(dt);
                         }
 
-                        // Mapear columnas para el GridView
                         DataTable dtMapeado = new DataTable();
                         dtMapeado.Columns.Add("IdOrdenViaje", typeof(int));
                         dtMapeado.Columns.Add("NumeroViaje", typeof(string));
@@ -1256,7 +1308,7 @@ namespace WebSGV.Views
                             newRow["NumeroViaje"] = row["numeroOrdenViaje"];
                             newRow["FechaSalida"] = row["fechaSalida"];
                             newRow["FechaLlegada"] = row["fechaLlegada"];
-                            newRow["CantidadDespachos"] = 0; // Por calcular
+                            newRow["CantidadDespachos"] = 0;
                             newRow["BalanceSoles"] = balanceSoles;
                             newRow["BalanceDolares"] = balanceDolares;
                             newRow["Estado"] = estado;
@@ -1267,8 +1319,6 @@ namespace WebSGV.Views
                         gvHistorial.DataBind();
 
                         lblTotalHistorial.Text = $"{dtMapeado.Rows.Count} registros";
-
-                        System.Diagnostics.Debug.WriteLine($"✅ Historial cargado: {dtMapeado.Rows.Count} registros");
                     }
                 }
             }
@@ -1281,16 +1331,12 @@ namespace WebSGV.Views
 
         protected void gvHistorial_RowCommand(object sender, GridViewCommandEventArgs e)
         {
-            // Implementar acciones si es necesario
         }
 
         #endregion
 
         #region Métodos Auxiliares
 
-        /// <summary>
-        /// Método para obtener estaciones de peaje en formato JSON (llamado desde JavaScript)
-        /// </summary>
         public string ObtenerEstacionesPeajeJSON()
         {
             try
@@ -1300,7 +1346,11 @@ namespace WebSGV.Views
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    string query = "SELECT DISTINCT estacion AS nombre FROM DetallePeajes WHERE estacion IS NOT NULL AND estacion != '' ORDER BY estacion";
+                    string query = @"
+                SELECT nombre
+                FROM EstacionesPeaje 
+                WHERE activo = 1
+                ORDER BY nombre";
 
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
@@ -1311,18 +1361,21 @@ namespace WebSGV.Views
                             {
                                 estaciones.Add(new EstacionPeaje
                                 {
-                                    Nombre = reader["nombre"].ToString()
+                                    Nombre = reader["nombre"].ToString()  // ✅ Cambiado a 'nombre'
                                 });
                             }
                         }
                     }
                 }
 
-                return JsonConvert.SerializeObject(estaciones);
+                string json = JsonConvert.SerializeObject(estaciones);
+                System.Diagnostics.Debug.WriteLine($"✅ JSON generado con {estaciones.Count} peajes: {json}");
+                return json;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error obteniendo estaciones: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ Error obteniendo estaciones: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Stack: {ex.StackTrace}");
                 return "[]";
             }
         }
@@ -1346,12 +1399,11 @@ namespace WebSGV.Views
                         {
                             try
                             {
-                                // Obtener el último número
                                 string queryMax = @"
-                            SELECT TOP 1 numeroOrdenViaje 
-                            FROM OrdenViaje WITH (TABLOCKX)
-                            WHERE numeroOrdenViaje LIKE 'OV-' + CAST(YEAR(GETDATE()) AS VARCHAR) + '-%'
-                            ORDER BY numeroOrdenViaje DESC";
+                                    SELECT TOP 1 numeroOrdenViaje 
+                                    FROM OrdenViaje WITH (TABLOCKX)
+                                    WHERE numeroOrdenViaje LIKE 'OV-' + CAST(YEAR(GETDATE()) AS VARCHAR) + '-%'
+                                    ORDER BY numeroOrdenViaje DESC";
 
                                 string ultimoNumero = null;
                                 using (SqlCommand cmdMax = new SqlCommand(queryMax, conn, transaction))
@@ -1364,7 +1416,6 @@ namespace WebSGV.Views
 
                                 if (!string.IsNullOrEmpty(ultimoNumero))
                                 {
-                                    // Formato esperado: OV-2025-000001
                                     string[] partes = ultimoNumero.Split('-');
                                     if (partes.Length == 3)
                                     {
@@ -1375,11 +1426,9 @@ namespace WebSGV.Views
                                     }
                                 }
 
-                                // Generar nuevo número con formato OV-YYYY-NNNNNN
                                 int anioActual = DateTime.Now.Year;
                                 nuevoNumero = $"OV-{anioActual}-{siguienteSecuencial:D6}";
 
-                                // Verificar que no exista (por seguridad)
                                 string queryVerificar = "SELECT COUNT(*) FROM OrdenViaje WHERE numeroOrdenViaje = @numero";
                                 using (SqlCommand cmdVerificar = new SqlCommand(queryVerificar, conn, transaction))
                                 {
@@ -1388,20 +1437,17 @@ namespace WebSGV.Views
 
                                     if (existe > 0)
                                     {
-                                        // Si existe, incrementar y reintentar
                                         siguienteSecuencial++;
                                         nuevoNumero = $"OV-{anioActual}-{siguienteSecuencial:D6}";
                                     }
                                 }
 
                                 transaction.Commit();
-                                System.Diagnostics.Debug.WriteLine($"✅ Número de orden generado: {nuevoNumero}");
                                 return nuevoNumero;
                             }
                             catch (Exception ex)
                             {
                                 transaction.Rollback();
-                                System.Diagnostics.Debug.WriteLine($"⚠️ Intento {intentos + 1} fallido: {ex.Message}");
                                 intentos++;
 
                                 if (intentos >= maxIntentos)
@@ -1409,23 +1455,17 @@ namespace WebSGV.Views
                                     throw;
                                 }
 
-                                // Esperar un poco antes de reintentar
                                 System.Threading.Thread.Sleep(100 * intentos);
                             }
                         }
                     }
                 }
 
-                // Si todos los intentos fallan, usar fallback
-                throw new Exception("No se pudo generar número de orden después de varios intentos");
+                throw new Exception("No se pudo generar número de orden");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error generando número de orden: {ex.Message}");
-
-                // Fallback: usar timestamp para garantizar unicidad
                 string fallbackNumero = $"OV-{DateTime.Now:yyyyMMddHHmmss}-{IdConductorActual:D4}";
-                System.Diagnostics.Debug.WriteLine($"⚠️ Usando número de orden fallback: {fallbackNumero}");
                 return fallbackNumero;
             }
         }
@@ -1522,12 +1562,10 @@ namespace WebSGV.Views
                     <div class='alert alert-info mt-3'>
                         <i class='fas fa-info-circle mr-2'></i>
                         <strong>Estado:</strong> Pendiente de aprobación<br/>
-                        Tu liquidación ha sido enviada a la administración para su revisión. 
-                        Recibirás una notificación cuando sea aprobada o si requiere correcciones.
+                        Tu liquidación ha sido enviada a la administración para su revisión.
                     </div>";
 
                 MostrarMensaje(mensajeCompleto, "success");
-                System.Diagnostics.Debug.WriteLine($"Liquidación {numeroOrdenViaje} enviada por conductor");
             }
             catch (Exception ex)
             {
