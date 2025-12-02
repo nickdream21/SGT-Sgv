@@ -29,28 +29,27 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            // ✅ PROCESAR EXPORTACIONES ANTES DE CUALQUIER COSA
+            string action = Request.QueryString["action"];
+
+            if (!string.IsNullOrEmpty(action))
+            {
+                switch (action)
+                {
+                    case "exportarLiquidaciones":
+                        ExportarLiquidacionesExcel();
+                        return; // ✅ Salir inmediatamente
+                    case "exportarViajesActivos":
+                        ExportarViajesActivosExcel();
+                        return; // ✅ Salir inmediatamente
+                    case "generarPDF":
+                        GenerarPDFLiquidaciones();
+                        return; // ✅ Salir inmediatamente
+                }
+            }
+
             if (!IsPostBack)
             {
-                // Verificar si hay parámetros de exportación
-                string action = Request.QueryString["action"];
-
-                if (!string.IsNullOrEmpty(action))
-                {
-                    switch (action)
-                    {
-                        case "exportarLiquidaciones":
-                            ExportarLiquidacionesExcel();
-                            break;
-                        case "exportarViajesActivos":
-                            ExportarViajesActivosExcel();
-                            break;
-                        case "generarPDF":
-                            GenerarPDFLiquidaciones();
-                            break;
-                    }
-                    return;
-                }
-
                 // Establecer fechas por defecto
                 DateTime hoy = DateTime.Now;
                 DateTime primerDia = new DateTime(hoy.Year, hoy.Month, 1);
@@ -457,6 +456,8 @@ namespace WebSGV.Views
 
         #endregion
 
+
+
         #region EXPORTACIÓN EXCEL
 
         private void ExportarLiquidacionesExcel()
@@ -474,6 +475,13 @@ namespace WebSGV.Views
                 }
 
                 DataTable dt = ObtenerLiquidaciones(fechaDesde, fechaHasta);
+
+                // ✅ LIMPIAR RESPONSE COMPLETAMENTE
+                Response.Clear();
+                Response.ClearHeaders();
+                Response.ClearContent();
+                Response.Buffer = true;
+                Response.Charset = "";
 
                 using (XLWorkbook wb = new XLWorkbook())
                 {
@@ -632,26 +640,28 @@ namespace WebSGV.Views
                     // Ajustar columnas
                     ws.Columns().AdjustToContents();
 
-                    // Enviar archivo
-                    Response.Clear();
-                    Response.Buffer = true;
-                    Response.Charset = "";
-                    Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                    Response.AddHeader("content-disposition", $"attachment;filename=Liquidaciones_{DateTime.Now:yyyyMMddHHmmss}.xlsx");
-
+                    // ✅ GUARDAR EN MEMORYSTREAM Y ENVIAR
                     using (MemoryStream ms = new MemoryStream())
                     {
                         wb.SaveAs(ms);
-                        ms.WriteTo(Response.OutputStream);
-                    }
+                        byte[] fileBytes = ms.ToArray();
 
-                    Response.Flush();
-                    Response.End();
+                        Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        Response.AddHeader("content-disposition", $"attachment;filename=Liquidaciones_{DateTime.Now:yyyyMMddHHmmss}.xlsx");
+                        Response.BinaryWrite(fileBytes);
+                        Response.Flush();
+                    }
                 }
+
+                // ✅ USAR CompleteRequest EN LUGAR DE End()
+                HttpContext.Current.ApplicationInstance.CompleteRequest();
             }
             catch (Exception ex)
             {
-                Response.Write($"Error al exportar: {ex.Message}");
+                Response.Clear();
+                Response.ContentType = "text/html";
+                Response.Write($"<h3>Error al exportar:</h3><p>{ex.Message}</p><pre>{ex.StackTrace}</pre>");
+                HttpContext.Current.ApplicationInstance.CompleteRequest();
             }
         }
 
@@ -659,7 +669,17 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = ObtenerViajesActivos("", "");
+                string buscarConductor = Request.QueryString["buscarConductor"] ?? "";
+                string estadoViaje = Request.QueryString["estadoViaje"] ?? "";
+
+                DataTable dt = ObtenerViajesActivos(buscarConductor, estadoViaje);
+
+                // ✅ LIMPIAR RESPONSE COMPLETAMENTE
+                Response.Clear();
+                Response.ClearHeaders();
+                Response.ClearContent();
+                Response.Buffer = true;
+                Response.Charset = "";
 
                 using (XLWorkbook wb = new XLWorkbook())
                 {
@@ -697,45 +717,74 @@ namespace WebSGV.Views
                     int row = 5;
                     foreach (DataRow dr in dt.Rows)
                     {
-                        ws.Cell(row, 1).Value = dr["DNI"].ToString();
-                        ws.Cell(row, 2).Value = dr["Conductor"].ToString();
-                        ws.Cell(row, 3).Value = dr["PlacaTracto"].ToString();
-                        ws.Cell(row, 4).Value = dr["PlacaCarreta"].ToString();
-                        ws.Cell(row, 5).Value = dr["Cliente"].ToString();
-                        ws.Cell(row, 6).Value = Convert.ToDateTime(dr["FechaInicio"]).ToString("dd/MM/yyyy");
-                        ws.Cell(row, 7).Value = dr["DiasEnViaje"].ToString();
-                        ws.Cell(row, 8).Value = dr["Estado"].ToString();
+                        ws.Cell(row, 1).Value = dr["DNI"] != DBNull.Value ? dr["DNI"].ToString() : "";
+                        ws.Cell(row, 2).Value = dr["Conductor"] != DBNull.Value ? dr["Conductor"].ToString() : "";
+                        ws.Cell(row, 3).Value = dr["PlacaTracto"] != DBNull.Value ? dr["PlacaTracto"].ToString() : "N/A";
+                        ws.Cell(row, 4).Value = dr["PlacaCarreta"] != DBNull.Value ? dr["PlacaCarreta"].ToString() : "N/A";
+                        ws.Cell(row, 5).Value = dr["Cliente"] != DBNull.Value ? dr["Cliente"].ToString() : "N/A";
+
+                        if (dr["FechaInicio"] != DBNull.Value)
+                        {
+                            ws.Cell(row, 6).Value = Convert.ToDateTime(dr["FechaInicio"]).ToString("dd/MM/yyyy");
+                        }
+                        else
+                        {
+                            ws.Cell(row, 6).Value = "N/A";
+                        }
+
+                        if (dr["DiasEnViaje"] != DBNull.Value)
+                        {
+                            ws.Cell(row, 7).Value = Convert.ToInt32(dr["DiasEnViaje"]);
+                            ws.Cell(row, 7).Style.NumberFormat.Format = "0";
+                        }
+                        else
+                        {
+                            ws.Cell(row, 7).Value = 0;
+                        }
+
+                        ws.Cell(row, 8).Value = dr["Estado"] != DBNull.Value ? dr["Estado"].ToString() : "N/A";
 
                         row++;
                     }
 
+                    // Resumen
+                    ws.Cell(row + 1, 1).Value = "TOTAL DE VIAJES:";
+                    ws.Cell(row + 1, 1).Style.Font.Bold = true;
+                    ws.Range(row + 1, 1, row + 1, 6).Merge();
+                    ws.Cell(row + 1, 7).Value = dt.Rows.Count;
+                    ws.Cell(row + 1, 7).Style.Font.Bold = true;
+                    ws.Cell(row + 1, 7).Style.Fill.BackgroundColor = XLColor.LightGray;
+                    ws.Range(row + 1, 7, row + 1, 8).Merge();
+
                     // Ajustar columnas
                     ws.Columns().AdjustToContents();
 
-                    // Enviar archivo
-                    Response.Clear();
-                    Response.Buffer = true;
-                    Response.Charset = "";
-                    Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                    Response.AddHeader("content-disposition", $"attachment;filename=ViajesActivos_{DateTime.Now:yyyyMMddHHmmss}.xlsx");
-
+                    // ✅ GUARDAR Y ENVIAR
                     using (MemoryStream ms = new MemoryStream())
                     {
                         wb.SaveAs(ms);
-                        ms.WriteTo(Response.OutputStream);
-                    }
+                        byte[] fileBytes = ms.ToArray();
 
-                    Response.Flush();
-                    Response.End();
+                        Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        Response.AddHeader("content-disposition", $"attachment;filename=ViajesActivos_{DateTime.Now:yyyyMMddHHmmss}.xlsx");
+                        Response.BinaryWrite(fileBytes);
+                        Response.Flush();
+                    }
                 }
+
+                HttpContext.Current.ApplicationInstance.CompleteRequest();
             }
             catch (Exception ex)
             {
-                Response.Write($"Error al exportar: {ex.Message}");
+                Response.Clear();
+                Response.ContentType = "text/html";
+                Response.Write($"<h3>Error al exportar:</h3><p>{ex.Message}</p><pre>{ex.StackTrace}</pre>");
+                HttpContext.Current.ApplicationInstance.CompleteRequest();
             }
         }
 
         #endregion
+
 
         #region EXPORTACIÓN PDF
 

@@ -17,7 +17,7 @@
                 <div class="col-md-6 form-group">
                     <label for="txtNumCPIC">N° CPIC:</label>
                     <asp:TextBox ID="txtNumCPIC" runat="server" CssClass="form-control" placeholder="Ingrese el N° CPIC" MaxLength="7"></asp:TextBox>
-                </div>
+                </div> 
                 <div class="col-md-6 form-group">
                     <label for="txtNumFactura">N° Factura:</label>
                     <asp:TextBox ID="txtNumFactura" runat="server" CssClass="form-control" AutoPostBack="true" OnTextChanged="TxtNumFactura_TextChanged" placeholder="Ingrese el N° Factura"></asp:TextBox>
@@ -56,6 +56,7 @@
                         </div>
                     </div>
                     
+                    <!-- Vista previa del archivo seleccionado -->
                     <!-- Vista previa del archivo seleccionado -->
                     <div id="file-preview" class="file-preview" style="display: none;">
                         <div class="alert alert-info">

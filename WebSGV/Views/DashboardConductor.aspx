@@ -1,7 +1,7 @@
 ﻿<%@ Page Title="Mi Dashboard - Conductor" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="DashboardConductor.aspx.cs" Inherits="WebSGV.Views.DashboardConductor" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
-    
+
     <!-- HiddenFields para datos -->
     <asp:HiddenField ID="hfIdConductor" runat="server" ClientIDMode="Static" />
     <asp:HiddenField ID="hfIdViajeActivo" runat="server" ClientIDMode="Static" />
@@ -15,22 +15,24 @@
     </asp:Panel>
 
     <div class="container-fluid px-4">
-        
+
         <!-- Header con info del conductor -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="page-header">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap">
                         <div>
                             <h2 class="page-title mb-1">
                                 <i class="fas fa-tachometer-alt mr-2"></i>Mi Dashboard
                             </h2>
                             <p class="text-muted mb-0">
-                                Bienvenido, <strong><asp:Label ID="lblNombreConductor" runat="server"></asp:Label></strong>
-                                | DNI: <asp:Label ID="lblDNIConductor" runat="server"></asp:Label>
+                                Bienvenido, <strong>
+                                    <asp:Label ID="lblNombreConductor" runat="server"></asp:Label></strong>
+                                | DNI:
+                                <asp:Label ID="lblDNIConductor" runat="server"></asp:Label>
                             </p>
                         </div>
-                        <div class="conductor-status">
+                        <div class="conductor-status mt-2 mt-md-0">
                             <asp:Panel ID="pnlEstadoViaje" runat="server" CssClass="badge-status">
                                 <i class="fas fa-circle mr-1"></i>
                                 <asp:Label ID="lblEstadoViaje" runat="server" Text="Sin viajes activos"></asp:Label>
@@ -47,7 +49,7 @@
                 <ul class="nav nav-tabs-custom mb-0" id="conductorTabs" role="tablist">
                     <li class="nav-item">
                         <a class="nav-link active" id="viajesActivos-tab" data-toggle="tab" href="#viajesActivos" role="tab">
-                            <i class="fas fa-truck-loading mr-2"></i>Mis Viajes Activos
+                            <i class="fas fa-truck-loading mr-2"></i><span class="d-none d-sm-inline">Mis </span>Viajes
                             <asp:Panel ID="pnlBadgeActivos" runat="server" CssClass="badge badge-warning ml-2" Visible="false">
                                 <asp:Label ID="lblCantidadActivos" runat="server"></asp:Label>
                             </asp:Panel>
@@ -55,7 +57,7 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" id="liquidarViaje-tab" data-toggle="tab" href="#liquidarViaje" role="tab">
-                            <i class="fas fa-calculator mr-2"></i>Liquidar Mi Viaje
+                            <i class="fas fa-calculator mr-2"></i>Liquidar
                             <asp:Panel ID="pnlBadgeLiquidar" runat="server" CssClass="badge badge-danger ml-2" Visible="false">
                                 <i class="fas fa-exclamation"></i>
                             </asp:Panel>
@@ -63,7 +65,7 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" id="historial-tab" data-toggle="tab" href="#historial" role="tab">
-                            <i class="fas fa-history mr-2"></i>Mi Historial
+                            <i class="fas fa-history mr-2"></i>Historial
                         </a>
                     </li>
                 </ul>
@@ -74,39 +76,43 @@
                     <!-- TAB 1: MIS VIAJES ACTIVOS -->
                     <!-- ========================================== -->
                     <div class="tab-pane fade show active" id="viajesActivos" role="tabpanel">
-                        <div class="p-4">
+                        <div class="p-3 p-md-4">
 
                             <!-- Info del Viaje Activo -->
                             <asp:Panel ID="pnlViajeActivo" runat="server" Visible="false">
                                 <div class="alert alert-info-conductor mb-4">
                                     <div class="row align-items-center">
-                                        <div class="col-md-8">
+                                        <div class="col-12 col-md-8">
                                             <h5 class="mb-2">
                                                 <i class="fas fa-route mr-2"></i>Viaje en Progreso
                                             </h5>
                                             <div class="info-grid">
                                                 <div class="info-item">
                                                     <span class="info-label">N° Viaje:</span>
-                                                    <span class="info-value"><asp:Label ID="lblNumeroViaje" runat="server"></asp:Label></span>
+                                                    <span class="info-value">
+                                                        <asp:Label ID="lblNumeroViaje" runat="server"></asp:Label></span>
                                                 </div>
                                                 <div class="info-item">
                                                     <span class="info-label">Fecha Inicio:</span>
-                                                    <span class="info-value"><asp:Label ID="lblFechaInicio" runat="server"></asp:Label></span>
+                                                    <span class="info-value">
+                                                        <asp:Label ID="lblFechaInicio" runat="server"></asp:Label></span>
                                                 </div>
                                                 <div class="info-item">
                                                     <span class="info-label">Días en Ruta:</span>
-                                                    <span class="info-value"><asp:Label ID="lblDiasRuta" runat="server"></asp:Label></span>
+                                                    <span class="info-value">
+                                                        <asp:Label ID="lblDiasRuta" runat="server"></asp:Label></span>
                                                 </div>
                                                 <div class="info-item">
                                                     <span class="info-label">Despachos:</span>
-                                                    <span class="info-value"><asp:Label ID="lblCantidadDespachos" runat="server"></asp:Label></span>
+                                                    <span class="info-value">
+                                                        <asp:Label ID="lblCantidadDespachos" runat="server"></asp:Label></span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-md-4 text-right">
-                                            <asp:Button ID="btnIrLiquidar" runat="server" 
-                                                Text="Liquidar Ahora" 
-                                                CssClass="btn btn-success-custom btn-lg"
+                                        <div class="col-12 col-md-4 text-center text-md-right mt-3 mt-md-0">
+                                            <asp:Button ID="btnIrLiquidar" runat="server"
+                                                Text="Liquidar Ahora"
+                                                CssClass="btn btn-success-custom btn-lg btn-block btn-md-auto"
                                                 OnClientClick="$('#liquidarViaje-tab').tab('show'); return false;" />
                                         </div>
                                     </div>
@@ -137,12 +143,12 @@
                                                 AutoGenerateColumns="false"
                                                 EmptyDataText="No hay despachos registrados">
                                                 <Columns>
-                                                    <asp:BoundField DataField="NumeroDespacho" HeaderText="N° DESPACHO" 
+                                                    <asp:BoundField DataField="NumeroDespacho" HeaderText="N° DESPACHO"
                                                         ItemStyle-CssClass="font-weight-bold text-primary" />
-                                                    <asp:BoundField DataField="FechaDespacho" HeaderText="FECHA" 
+                                                    <asp:BoundField DataField="FechaDespacho" HeaderText="FECHA"
                                                         DataFormatString="{0:dd/MM/yyyy}" ItemStyle-CssClass="text-center" />
                                                     <asp:BoundField DataField="Cliente" HeaderText="CLIENTE" />
-                                                    <asp:BoundField DataField="TipoOperacion" HeaderText="OPERACIÓN" 
+                                                    <asp:BoundField DataField="TipoOperacion" HeaderText="OPERACIÓN"
                                                         ItemStyle-CssClass="text-center" />
                                                     <asp:BoundField DataField="LugarOperacion" HeaderText="PLANTA" />
                                                     <asp:TemplateField HeaderText="TRACTO">
@@ -183,7 +189,7 @@
                     <!-- TAB 2: LIQUIDAR MI VIAJE -->
                     <!-- ========================================== -->
                     <div class="tab-pane fade" id="liquidarViaje" role="tabpanel">
-                        <div class="p-4">
+                        <div class="p-3 p-md-4">
 
                             <!-- Verificación de viaje activo -->
                             <asp:Panel ID="pnlSinViajeParaLiquidar" runat="server" Visible="true">
@@ -206,19 +212,22 @@
                                     </div>
                                     <div class="section-body">
                                         <div class="row">
-                                            <div class="col-md-3">
+                                            <div class="col-6 col-md-3">
                                                 <label class="form-label-summary">N° de Viaje</label>
-                                                <p class="form-value-summary"><asp:Label ID="lblNumeroViajeResumen" runat="server"></asp:Label></p>
+                                                <p class="form-value-summary">
+                                                    <asp:Label ID="lblNumeroViajeResumen" runat="server"></asp:Label></p>
                                             </div>
-                                            <div class="col-md-3">
+                                            <div class="col-6 col-md-3">
                                                 <label class="form-label-summary">Fecha Inicio</label>
-                                                <p class="form-value-summary"><asp:Label ID="lblFechaInicioResumen" runat="server"></asp:Label></p>
+                                                <p class="form-value-summary">
+                                                    <asp:Label ID="lblFechaInicioResumen" runat="server"></asp:Label></p>
                                             </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label-summary">Despachos Realizados</label>
-                                                <p class="form-value-summary"><asp:Label ID="lblDespachosResumen" runat="server"></asp:Label></p>
+                                            <div class="col-6 col-md-3">
+                                                <label class="form-label-summary">Despachos</label>
+                                                <p class="form-value-summary">
+                                                    <asp:Label ID="lblDespachosResumen" runat="server"></asp:Label></p>
                                             </div>
-                                            <div class="col-md-3">
+                                            <div class="col-6 col-md-3">
                                                 <label class="form-label-summary">Estado</label>
                                                 <p class="form-value-summary"><span class="badge badge-info">En Progreso</span></p>
                                             </div>
@@ -230,30 +239,30 @@
                                 <div class="section-card mb-4">
                                     <div class="section-header">
                                         <h5 class="section-title">
-                                            <i class="fas fa-clipboard-list mr-2"></i>Datos Generales de la Liquidación
+                                            <i class="fas fa-clipboard-list mr-2"></i>Datos Generales
                                         </h5>
                                     </div>
                                     <div class="section-body">
                                         <div class="row">
-                                            <div class="col-md-3">
+                                            <div class="col-12 col-md-3">
                                                 <div class="form-group">
                                                     <label class="form-label">Fecha Salida <span class="text-danger">*</span></label>
                                                     <asp:TextBox ID="txtFechaSalida" runat="server" CssClass="form-control" TextMode="Date" required></asp:TextBox>
                                                 </div>
                                             </div>
-                                            <div class="col-md-3">
+                                            <div class="col-12 col-md-3">
                                                 <div class="form-group">
                                                     <label class="form-label">Fecha Llegada <span class="text-danger">*</span></label>
                                                     <asp:TextBox ID="txtFechaLlegada" runat="server" CssClass="form-control" TextMode="Date" required></asp:TextBox>
                                                 </div>
                                             </div>
-                                            <div class="col-md-3">
+                                            <div class="col-12 col-md-3">
                                                 <div class="form-group">
                                                     <label class="form-label">Hora Salida</label>
                                                     <asp:TextBox ID="txtHoraSalida" runat="server" CssClass="form-control" TextMode="Time"></asp:TextBox>
                                                 </div>
                                             </div>
-                                            <div class="col-md-3">
+                                            <div class="col-12 col-md-3">
                                                 <div class="form-group">
                                                     <label class="form-label">Hora Llegada</label>
                                                     <asp:TextBox ID="txtHoraLlegada" runat="server" CssClass="form-control" TextMode="Time"></asp:TextBox>
@@ -261,10 +270,10 @@
                                             </div>
                                         </div>
                                         <div class="row">
-                                            <div class="col-md-12">
+                                            <div class="col-12">
                                                 <div class="form-group">
                                                     <label class="form-label">Observaciones del Viaje</label>
-                                                    <asp:TextBox ID="txtObservaciones" runat="server" CssClass="form-control" 
+                                                    <asp:TextBox ID="txtObservaciones" runat="server" CssClass="form-control"
                                                         TextMode="MultiLine" Rows="2" placeholder="Describe cualquier eventualidad o comentario importante del viaje"></asp:TextBox>
                                                 </div>
                                             </div>
@@ -273,7 +282,7 @@
                                 </div>
 
                                 <!-- GESTIÓN FINANCIERA -->
-                                
+
                                 <!-- Ingresos -->
                                 <div class="section-card mb-4">
                                     <div class="section-header section-header-success">
@@ -303,15 +312,15 @@
                                                         <td class="text-center">1</td>
                                                         <td><strong>Despacho</strong></td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm" name="descDespacho" 
+                                                            <input type="text" class="form-control form-control-sm" name="descDespacho"
                                                                 placeholder="Adelanto o pago por despacho">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm ingreso-soles" 
+                                                            <input type="number" class="form-control form-control-sm ingreso-soles"
                                                                 name="despachoSoles" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm ingreso-dolares" 
+                                                            <input type="number" class="form-control form-control-sm ingreso-dolares"
                                                                 name="despachoDolares" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-fixed">Fijo</span></td>
@@ -320,15 +329,15 @@
                                                         <td class="text-center">2</td>
                                                         <td><strong>Mensualidad</strong></td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm" name="descMensualidad" 
+                                                            <input type="text" class="form-control form-control-sm" name="descMensualidad"
                                                                 placeholder="Pago de mensualidad del tracto">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm ingreso-soles" 
+                                                            <input type="number" class="form-control form-control-sm ingreso-soles"
                                                                 name="mensualidadSoles" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm ingreso-dolares" 
+                                                            <input type="number" class="form-control form-control-sm ingreso-dolares"
                                                                 name="mensualidadDolares" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-fixed">Fijo</span></td>
@@ -337,15 +346,15 @@
                                                         <td class="text-center">3</td>
                                                         <td><strong>Otros Autorizados</strong></td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm" name="descOtros" 
+                                                            <input type="text" class="form-control form-control-sm" name="descOtros"
                                                                 placeholder="Otros ingresos autorizados">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm ingreso-soles" 
+                                                            <input type="number" class="form-control form-control-sm ingreso-soles"
                                                                 name="otrosSoles" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm ingreso-dolares" 
+                                                            <input type="number" class="form-control form-control-sm ingreso-dolares"
                                                                 name="otrosDolares" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-fixed">Fijo</span></td>
@@ -354,15 +363,15 @@
                                                         <td class="text-center">4</td>
                                                         <td><strong>Préstamo</strong></td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm" name="descPrestamo" 
+                                                            <input type="text" class="form-control form-control-sm" name="descPrestamo"
                                                                 placeholder="Préstamos recibidos">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm ingreso-soles" 
+                                                            <input type="number" class="form-control form-control-sm ingreso-soles"
                                                                 name="prestamoSoles" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm ingreso-dolares" 
+                                                            <input type="number" class="form-control form-control-sm ingreso-dolares"
                                                                 name="prestamoDolares" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-fixed">Fijo</span></td>
@@ -420,19 +429,19 @@
                                                         <td>
                                                             <strong>Peajes</strong>
                                                             <button type="button" class="btn btn-detail-modal btn-sm ml-2" onclick="abrirModalPeajes()">
-                                                                <i class="fas fa-edit"></i> Detalle
+                                                                <i class="fas fa-edit"></i>Detalle
                                                             </button>
                                                         </td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm form-control-readonly" 
+                                                            <input type="text" class="form-control form-control-sm form-control-readonly"
                                                                 name="descPeajes" id="descPeajes" readonly placeholder="Sin peajes registrados">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-soles" 
+                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-soles"
                                                                 name="peajesSoles" id="peajesSoles" readonly placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-dolares" 
+                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-dolares"
                                                                 name="peajesDolares" id="peajesDolares" readonly placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-count" id="contadorPeajes">0</span></td>
@@ -443,15 +452,15 @@
                                                         <td class="text-center">2</td>
                                                         <td><strong>Alimentación</strong></td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm" name="descAlimentacion" 
+                                                            <input type="text" class="form-control form-control-sm" name="descAlimentacion"
                                                                 placeholder="Comidas durante el viaje">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm gasto-soles" 
+                                                            <input type="number" class="form-control form-control-sm gasto-soles"
                                                                 name="alimentacionSoles" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm gasto-dolares" 
+                                                            <input type="number" class="form-control form-control-sm gasto-dolares"
                                                                 name="alimentacionDolares" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-fixed">Manual</span></td>
@@ -462,15 +471,15 @@
                                                         <td class="text-center">3</td>
                                                         <td><strong>Apoyo-Seguridad</strong></td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm" name="descApoyoSeguridad" 
+                                                            <input type="text" class="form-control form-control-sm" name="descApoyoSeguridad"
                                                                 placeholder="Gastos de apoyo o seguridad">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm gasto-soles" 
+                                                            <input type="number" class="form-control form-control-sm gasto-soles"
                                                                 name="apoyoSeguridadSoles" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm gasto-dolares" 
+                                                            <input type="number" class="form-control form-control-sm gasto-dolares"
                                                                 name="apoyoSeguridadDolares" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-fixed">Manual</span></td>
@@ -482,19 +491,19 @@
                                                         <td>
                                                             <strong>Reparaciones Varios</strong>
                                                             <button type="button" class="btn btn-detail-modal btn-sm ml-2" onclick="abrirModalReparaciones()">
-                                                                <i class="fas fa-edit"></i> Detalle
+                                                                <i class="fas fa-edit"></i>Detalle
                                                             </button>
                                                         </td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm form-control-readonly" 
+                                                            <input type="text" class="form-control form-control-sm form-control-readonly"
                                                                 name="descReparaciones" id="descReparaciones" readonly placeholder="Sin reparaciones registradas">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-soles" 
+                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-soles"
                                                                 name="reparacionesSoles" id="reparacionesSoles" readonly placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-dolares" 
+                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-dolares"
                                                                 name="reparacionesDolares" id="reparacionesDolares" readonly placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-count" id="contadorReparaciones">0</span></td>
@@ -505,15 +514,15 @@
                                                         <td class="text-center">5</td>
                                                         <td><strong>Movilidad</strong></td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm" name="descMovilidad" 
+                                                            <input type="text" class="form-control form-control-sm" name="descMovilidad"
                                                                 placeholder="Gastos de movilidad">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm gasto-soles" 
+                                                            <input type="number" class="form-control form-control-sm gasto-soles"
                                                                 name="movilidadSoles" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm gasto-dolares" 
+                                                            <input type="number" class="form-control form-control-sm gasto-dolares"
                                                                 name="movilidadDolares" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-fixed">Manual</span></td>
@@ -524,15 +533,15 @@
                                                         <td class="text-center">6</td>
                                                         <td><strong>Encarpada/Desencarpada</strong></td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm" name="descEncapada" 
+                                                            <input type="text" class="form-control form-control-sm" name="descEncapada"
                                                                 placeholder="Gastos de encarpada/desencarpada">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm gasto-soles" 
+                                                            <input type="number" class="form-control form-control-sm gasto-soles"
                                                                 name="encapadaSoles" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm gasto-dolares" 
+                                                            <input type="number" class="form-control form-control-sm gasto-dolares"
                                                                 name="encapadaDolares" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-fixed">Manual</span></td>
@@ -544,19 +553,19 @@
                                                         <td>
                                                             <strong>Hospedaje</strong>
                                                             <button type="button" class="btn btn-detail-modal btn-sm ml-2" onclick="abrirModalHospedaje()">
-                                                                <i class="fas fa-edit"></i> Detalle
+                                                                <i class="fas fa-edit"></i>Detalle
                                                             </button>
                                                         </td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm form-control-readonly" 
+                                                            <input type="text" class="form-control form-control-sm form-control-readonly"
                                                                 name="descHospedaje" id="descHospedaje" readonly placeholder="Sin hospedajes registrados">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-soles" 
+                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-soles"
                                                                 name="hospedajeSoles" id="hospedajeSoles" readonly placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-dolares" 
+                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-dolares"
                                                                 name="hospedajeDolares" id="hospedajeDolares" readonly placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-count" id="contadorHospedaje">0</span></td>
@@ -568,19 +577,19 @@
                                                         <td>
                                                             <strong>Combustible</strong>
                                                             <button type="button" class="btn btn-detail-modal btn-sm ml-2" onclick="abrirModalCombustible()">
-                                                                <i class="fas fa-edit"></i> Detalle
+                                                                <i class="fas fa-edit"></i>Detalle
                                                             </button>
                                                         </td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm form-control-readonly" 
+                                                            <input type="text" class="form-control form-control-sm form-control-readonly"
                                                                 name="descCombustible" id="descCombustible" readonly placeholder="Sin combustibles registrados">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-soles" 
+                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-soles"
                                                                 name="combustibleSoles" id="combustibleSoles" readonly placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-dolares" 
+                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-dolares"
                                                                 name="combustibleDolares" id="combustibleDolares" readonly placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-count" id="contadorCombustible">0</span></td>
@@ -617,13 +626,13 @@
                                     <div class="section-body">
                                         <div class="balance-final">
                                             <div class="row">
-                                                <div class="col-md-6">
+                                                <div class="col-12 col-md-6 mb-3 mb-md-0">
                                                     <div class="balance-item">
                                                         <span class="balance-label">Balance en Soles:</span>
                                                         <span class="balance-amount" id="diferenciaSoles">S/ 0.00</span>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-6">
+                                                <div class="col-12 col-md-6">
                                                     <div class="balance-item">
                                                         <span class="balance-label">Balance en Dólares:</span>
                                                         <span class="balance-amount" id="diferenciaDolares">$ 0.00</span>
@@ -640,12 +649,12 @@
 
                                 <!-- Botón de Envío -->
                                 <div class="text-center mb-5">
-                                    <asp:Button ID="btnEnviarLiquidacion" runat="server" 
-                                        Text="Enviar Liquidación" 
-                                        CssClass="btn btn-primary-conductor btn-lg px-5"
+                                    <asp:Button ID="btnEnviarLiquidacion" runat="server"
+                                        Text="Enviar Liquidación"
+                                        CssClass="btn btn-primary-conductor btn-lg px-4 px-md-5 mb-2 mb-md-0"
                                         OnClick="btnEnviarLiquidacion_Click"
                                         OnClientClick="prepararDatosFinancieros(); return confirmarEnvioLiquidacion();" />
-                                    <button type="button" class="btn btn-secondary-custom btn-lg ml-3 px-4" onclick="limpiarFormulario()">
+                                    <button type="button" class="btn btn-secondary-custom btn-lg ml-0 ml-md-3 px-3 px-md-4" onclick="limpiarFormulario()">
                                         <i class="fas fa-times mr-2"></i>Limpiar
                                     </button>
                                 </div>
@@ -659,7 +668,7 @@
                     <!-- TAB 3: MI HISTORIAL -->
                     <!-- ========================================== -->
                     <div class="tab-pane fade" id="historial" role="tabpanel">
-                        <div class="p-4">
+                        <div class="p-3 p-md-4">
 
                             <!-- Filtros -->
                             <div class="section-card mb-4">
@@ -670,19 +679,19 @@
                                 </div>
                                 <div class="section-body">
                                     <div class="row">
-                                        <div class="col-md-3">
+                                        <div class="col-12 col-md-3">
                                             <div class="form-group">
                                                 <label class="form-label">Desde</label>
                                                 <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                             </div>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-12 col-md-3">
                                             <div class="form-group">
                                                 <label class="form-label">Hasta</label>
                                                 <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                             </div>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-12 col-md-3">
                                             <div class="form-group">
                                                 <label class="form-label">Estado</label>
                                                 <asp:DropDownList ID="ddlEstadoFiltro" runat="server" CssClass="form-control">
@@ -692,11 +701,11 @@
                                                 </asp:DropDownList>
                                             </div>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-12 col-md-3">
                                             <div class="form-group">
-                                                <label class="form-label">&nbsp;</label>
+                                                <label class="form-label d-none d-md-block">&nbsp;</label>
                                                 <div>
-                                                    <asp:Button ID="btnBuscarHistorial" runat="server" Text="Buscar" 
+                                                    <asp:Button ID="btnBuscarHistorial" runat="server" Text="Buscar"
                                                         CssClass="btn btn-primary-custom btn-block" OnClick="btnBuscarHistorial_Click" />
                                                 </div>
                                             </div>
@@ -708,8 +717,8 @@
                             <!-- Tabla de Historial -->
                             <div class="section-card">
                                 <div class="section-header section-header-info">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h5 class="section-title mb-0">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                                        <h5 class="section-title mb-2 mb-md-0">
                                             <i class="fas fa-list mr-2"></i>Mis Liquidaciones
                                         </h5>
                                         <span class="badge badge-primary-custom">
@@ -725,26 +734,24 @@
                                             EmptyDataText="No hay liquidaciones registradas"
                                             OnRowCommand="gvHistorial_RowCommand">
                                             <Columns>
-                                                <asp:BoundField DataField="NumeroViaje" HeaderText="N° VIAJE" 
+                                                <asp:BoundField DataField="NumeroViaje" HeaderText="N° VIAJE"
                                                     ItemStyle-CssClass="font-weight-bold text-primary" />
-                                                <asp:BoundField DataField="FechaSalida" HeaderText="FECHA SALIDA" 
+                                                <asp:BoundField DataField="FechaSalida" HeaderText="FECHA SALIDA"
                                                     DataFormatString="{0:dd/MM/yyyy}" ItemStyle-CssClass="text-center" />
-                                                <asp:BoundField DataField="FechaLlegada" HeaderText="FECHA LLEGADA" 
+                                                <asp:BoundField DataField="FechaLlegada" HeaderText="FECHA LLEGADA"
                                                     DataFormatString="{0:dd/MM/yyyy}" ItemStyle-CssClass="text-center" />
-                                                <asp:BoundField DataField="CantidadDespachos" HeaderText="DESPACHOS" 
+                                                <asp:BoundField DataField="CantidadDespachos" HeaderText="DESPACHOS"
                                                     ItemStyle-CssClass="text-center" />
                                                 <asp:TemplateField HeaderText="BALANCE S/">
                                                     <ItemTemplate>
-                                                        <span class='<%# ObtenerClaseBalance(Eval("BalanceSoles")) %>'>
-                                                            S/ <%# Eval("BalanceSoles", "{0:N2}") %>
+                                                        <span class='<%# ObtenerClaseBalance(Eval("BalanceSoles")) %>'>S/ <%# Eval("BalanceSoles", "{0:N2}") %>
                                                         </span>
                                                     </ItemTemplate>
                                                     <ItemStyle CssClass="text-right" />
                                                 </asp:TemplateField>
                                                 <asp:TemplateField HeaderText="BALANCE $">
                                                     <ItemTemplate>
-                                                        <span class='<%# ObtenerClaseBalance(Eval("BalanceDolares")) %>'>
-                                                            $ <%# Eval("BalanceDolares", "{0:N2}") %>
+                                                        <span class='<%# ObtenerClaseBalance(Eval("BalanceDolares")) %>'>$ <%# Eval("BalanceDolares", "{0:N2}") %>
                                                         </span>
                                                     </ItemTemplate>
                                                     <ItemStyle CssClass="text-right" />
@@ -759,7 +766,7 @@
                                                 </asp:TemplateField>
                                                 <asp:TemplateField HeaderText="ACCIONES">
                                                     <ItemTemplate>
-                                                        <button type="button" class="btn btn-info-custom btn-sm" 
+                                                        <button type="button" class="btn btn-info-custom btn-sm"
                                                             onclick='verDetalleLiquidacion(<%# Eval("IdOrdenViaje") %>)'>
                                                             <i class="fas fa-eye"></i>
                                                         </button>
@@ -785,7 +792,7 @@
 
     <!-- Modal Peajes -->
     <div class="modal fade" id="modalPeajes" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header modal-header-custom">
                     <h5 class="modal-title"><i class="fas fa-road mr-2"></i>Registrar Peajes</h5>
@@ -798,40 +805,36 @@
                         <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar Peaje</div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-12 col-md-4">
                                     <label class="form-label">Estación/Peaje <span class="text-danger">*</span></label>
-                                    <input type="text" 
-                                        class="form-control form-control-sm" 
-                                        id="nuevoPeajeEstacion" 
-                                        list="listaEstaciones"
-                                        placeholder="Escriba para buscar..." 
-                                        autocomplete="off">
-                                    <datalist id="listaEstaciones"></datalist>
+                                    <select class="form-control form-control-sm" id="nuevoPeajeEstacion">
+                                        <option value="">-- Seleccione un peaje --</option>
+                                    </select>
                                     <small class="form-text text-muted">
-                                        <i class="fas fa-search mr-1"></i>Escriba para buscar
+                                        <i class="fas fa-road mr-1"></i>Seleccione el peaje de la lista
                                     </small>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-12 col-md-4">
                                     <label class="form-label">Fecha <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control form-control-sm" id="nuevoPeajeFecha">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-12 col-md-4">
                                     <label class="form-label">N° Comprobante</label>
                                     <input type="text" class="form-control form-control-sm" id="nuevoPeajeComprobante" placeholder="001-123456">
                                 </div>
                             </div>
                             <div class="row mt-3">
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label">Monto Soles</label>
                                     <input type="number" class="form-control form-control-sm" id="nuevoPeajeSoles" placeholder="0.00" step="0.01">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label">Monto Dólares</label>
                                     <input type="number" class="form-control form-control-sm" id="nuevoPeajeDolares" placeholder="0.00" step="0.01">
                                 </div>
                             </div>
                             <div class="row mt-3">
-                                <div class="col-md-12">
+                                <div class="col-12">
                                     <label class="form-label">Observaciones</label>
                                     <input type="text" class="form-control form-control-sm" id="nuevoPeajeObservaciones" placeholder="Observaciones">
                                 </div>
@@ -888,7 +891,7 @@
 
     <!-- Modal Reparaciones -->
     <div class="modal fade" id="modalReparaciones" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header modal-header-custom">
                     <h5 class="modal-title"><i class="fas fa-wrench mr-2"></i>Registrar Reparaciones</h5>
@@ -899,31 +902,31 @@
                         <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar Reparación</div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label">Tipo de Reparación <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control form-control-sm" id="nuevaReparacionTipo" placeholder="Ej: Cambio de llanta">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label">Fecha <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control form-control-sm" id="nuevaReparacionFecha">
                                 </div>
                             </div>
                             <div class="row mt-3">
-                                <div class="col-md-4">
+                                <div class="col-12 col-md-4">
                                     <label class="form-label">N° Comprobante</label>
                                     <input type="text" class="form-control form-control-sm" id="nuevaReparacionComprobante" placeholder="001-123456">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-12 col-md-4">
                                     <label class="form-label">Monto Soles</label>
                                     <input type="number" class="form-control form-control-sm" id="nuevaReparacionSoles" placeholder="0.00" step="0.01">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-12 col-md-4">
                                     <label class="form-label">Monto Dólares</label>
                                     <input type="number" class="form-control form-control-sm" id="nuevaReparacionDolares" placeholder="0.00" step="0.01">
                                 </div>
                             </div>
                             <div class="row mt-3">
-                                <div class="col-md-12">
+                                <div class="col-12">
                                     <label class="form-label">Observaciones</label>
                                     <input type="text" class="form-control form-control-sm" id="nuevaReparacionObservaciones" placeholder="Detalles de la reparación">
                                 </div>
@@ -975,7 +978,7 @@
 
     <!-- Modal Hospedaje -->
     <div class="modal fade" id="modalHospedaje" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header modal-header-custom">
                     <h5 class="modal-title"><i class="fas fa-bed mr-2"></i>Registrar Hospedajes</h5>
@@ -986,31 +989,31 @@
                         <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar Hospedaje</div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label">Hotel/Lugar <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control form-control-sm" id="nuevoHospedajeLugar" placeholder="Ej: Hotel Pacifico">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label">Fecha <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control form-control-sm" id="nuevoHospedajeFecha">
                                 </div>
                             </div>
                             <div class="row mt-3">
-                                <div class="col-md-4">
+                                <div class="col-12 col-md-4">
                                     <label class="form-label">N° Comprobante</label>
                                     <input type="text" class="form-control form-control-sm" id="nuevoHospedajeComprobante" placeholder="001-123456">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-12 col-md-4">
                                     <label class="form-label">Monto Soles</label>
                                     <input type="number" class="form-control form-control-sm" id="nuevoHospedajeSoles" placeholder="0.00" step="0.01">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-12 col-md-4">
                                     <label class="form-label">Monto Dólares</label>
                                     <input type="number" class="form-control form-control-sm" id="nuevoHospedajeDolares" placeholder="0.00" step="0.01">
                                 </div>
                             </div>
                             <div class="row mt-3">
-                                <div class="col-md-12">
+                                <div class="col-12">
                                     <label class="form-label">Observaciones</label>
                                     <input type="text" class="form-control form-control-sm" id="nuevoHospedajeObservaciones" placeholder="Detalles del hospedaje">
                                 </div>
@@ -1062,7 +1065,7 @@
 
     <!-- Modal Combustible -->
     <div class="modal fade" id="modalCombustible" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header modal-header-custom">
                     <h5 class="modal-title"><i class="fas fa-gas-pump mr-2"></i>Registrar Combustible</h5>
@@ -1073,31 +1076,31 @@
                         <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar Combustible</div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label">Estación/Lugar <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control form-control-sm" id="nuevoCombustibleLugar" placeholder="Ej: Grifo Primax">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label">Fecha <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control form-control-sm" id="nuevoCombustibleFecha">
                                 </div>
                             </div>
                             <div class="row mt-3">
-                                <div class="col-md-4">
+                                <div class="col-12 col-md-4">
                                     <label class="form-label">N° Comprobante</label>
                                     <input type="text" class="form-control form-control-sm" id="nuevoCombustibleComprobante" placeholder="001-123456">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-12 col-md-4">
                                     <label class="form-label">Monto Soles</label>
                                     <input type="number" class="form-control form-control-sm" id="nuevoCombustibleSoles" placeholder="0.00" step="0.01">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-12 col-md-4">
                                     <label class="form-label">Monto Dólares</label>
                                     <input type="number" class="form-control form-control-sm" id="nuevoCombustibleDolares" placeholder="0.00" step="0.01">
                                 </div>
                             </div>
                             <div class="row mt-3">
-                                <div class="col-md-12">
+                                <div class="col-12">
                                     <label class="form-label">Observaciones</label>
                                     <input type="text" class="form-control form-control-sm" id="nuevoCombustibleObservaciones" placeholder="Tipo de combustible, galones, etc.">
                                 </div>
@@ -1147,7 +1150,7 @@
         </div>
     </div>
 
-    <!-- CSS PROFESIONAL -->
+    <!-- CSS PROFESIONAL CON RESPONSIVE -->
     <style>
         /* === VARIABLES DE COLOR === */
         :root {
@@ -1193,13 +1196,18 @@
             color: var(--text-secondary);
         }
 
-        .badge-status i {
-            animation: pulse 2s infinite;
-        }
+            .badge-status i {
+                animation: pulse 2s infinite;
+            }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
 
         /* === BOTONES === */
@@ -1211,12 +1219,12 @@
             transition: all 0.2s;
         }
 
-        .btn-primary-custom:hover {
-            background-color: var(--primary-dark);
-            border-color: var(--primary-dark);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
+            .btn-primary-custom:hover {
+                background-color: var(--primary-dark);
+                border-color: var(--primary-dark);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
 
         .btn-primary-conductor {
             background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
@@ -1227,11 +1235,11 @@
             box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
         }
 
-        .btn-primary-conductor:hover {
-            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
-        }
+            .btn-primary-conductor:hover {
+                background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+            }
 
         .btn-secondary-custom {
             background-color: white;
@@ -1303,7 +1311,7 @@
         /* === INFO GRID === */
         .info-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 1rem;
             margin-top: 1rem;
         }
@@ -1351,26 +1359,26 @@
             border-bottom: 2px solid var(--border-color);
         }
 
-        .nav-tabs-custom .nav-link {
-            color: var(--text-secondary);
-            background-color: transparent;
-            border: none;
-            border-bottom: 3px solid transparent;
-            padding: 1rem 1.5rem;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
+            .nav-tabs-custom .nav-link {
+                color: var(--text-secondary);
+                background-color: transparent;
+                border: none;
+                border-bottom: 3px solid transparent;
+                padding: 1rem 1.5rem;
+                font-weight: 500;
+                transition: all 0.2s;
+            }
 
-        .nav-tabs-custom .nav-link:hover {
-            color: var(--primary-color);
-            background-color: var(--light-gray);
-        }
+                .nav-tabs-custom .nav-link:hover {
+                    color: var(--primary-color);
+                    background-color: var(--light-gray);
+                }
 
-        .nav-tabs-custom .nav-link.active {
-            color: var(--primary-color);
-            background-color: white;
-            border-bottom-color: var(--primary-color);
-        }
+                .nav-tabs-custom .nav-link.active {
+                    color: var(--primary-color);
+                    background-color: white;
+                    border-bottom-color: var(--primary-color);
+                }
 
         .tab-content-custom {
             background-color: white;
@@ -1460,10 +1468,10 @@
             transition: all 0.2s;
         }
 
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
+            .form-control:focus {
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            }
 
         .form-control-readonly {
             background-color: var(--light-gray) !important;
@@ -1481,66 +1489,66 @@
             font-size: 0.875rem;
         }
 
-        .table-conductor thead th {
-            background-color: var(--light-gray);
-            color: var(--text-primary);
-            font-weight: 600;
-            font-size: 0.8125rem;
-            text-transform: uppercase;
-            letter-spacing: 0.025em;
-            padding: 0.875rem 0.75rem;
-            border-bottom: 2px solid var(--border-color);
-        }
+            .table-conductor thead th {
+                background-color: var(--light-gray);
+                color: var(--text-primary);
+                font-weight: 600;
+                font-size: 0.8125rem;
+                text-transform: uppercase;
+                letter-spacing: 0.025em;
+                padding: 0.875rem 0.75rem;
+                border-bottom: 2px solid var(--border-color);
+            }
 
-        .table-conductor tbody td {
-            vertical-align: middle;
-            padding: 0.75rem;
-            border-bottom: 1px solid var(--medium-gray);
-        }
+            .table-conductor tbody td {
+                vertical-align: middle;
+                padding: 0.75rem;
+                border-bottom: 1px solid var(--medium-gray);
+            }
 
-        .table-conductor tbody tr:hover {
-            background-color: var(--light-gray);
-        }
+            .table-conductor tbody tr:hover {
+                background-color: var(--light-gray);
+            }
 
         .table-financial {
             font-size: 0.875rem;
             margin-bottom: 0;
         }
 
-        .table-financial thead th {
-            background-color: var(--light-gray);
-            color: var(--text-primary);
-            font-weight: 600;
-            font-size: 0.8125rem;
-            padding: 0.75rem;
-            border-bottom: 2px solid var(--border-color);
-        }
+            .table-financial thead th {
+                background-color: var(--light-gray);
+                color: var(--text-primary);
+                font-weight: 600;
+                font-size: 0.8125rem;
+                padding: 0.75rem;
+                border-bottom: 2px solid var(--border-color);
+            }
 
-        .table-financial tbody td {
-            vertical-align: middle;
-            padding: 0.625rem;
-            border-bottom: 1px solid var(--medium-gray);
-        }
+            .table-financial tbody td {
+                vertical-align: middle;
+                padding: 0.625rem;
+                border-bottom: 1px solid var(--medium-gray);
+            }
 
-        .table-financial tfoot .total-row td {
-            background-color: var(--light-gray);
-            font-weight: 600;
-            padding: 1rem 0.75rem;
-            border-top: 2px solid var(--border-color);
-        }
+            .table-financial tfoot .total-row td {
+                background-color: var(--light-gray);
+                font-weight: 600;
+                padding: 1rem 0.75rem;
+                border-top: 2px solid var(--border-color);
+            }
 
         .table-modal {
             font-size: 0.8125rem;
         }
 
-        .table-modal thead th {
-            background-color: var(--light-gray);
-            color: var(--text-primary);
-            font-weight: 600;
-            padding: 0.625rem;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-        }
+            .table-modal thead th {
+                background-color: var(--light-gray);
+                color: var(--text-primary);
+                font-weight: 600;
+                padding: 0.625rem;
+                font-size: 0.75rem;
+                text-transform: uppercase;
+            }
 
         /* === BADGES === */
         .badge-vehicle {
@@ -1639,24 +1647,24 @@
             border-radius: 0.5rem;
         }
 
-        .card-form .card-header {
-            background-color: var(--light-gray);
-            border-bottom: 1px solid var(--border-color);
-            font-weight: 600;
-            padding: 0.75rem 1rem;
-        }
+            .card-form .card-header {
+                background-color: var(--light-gray);
+                border-bottom: 1px solid var(--border-color);
+                font-weight: 600;
+                padding: 0.75rem 1rem;
+            }
 
         .card-list {
             border: 1px solid var(--border-color);
             border-radius: 0.5rem;
         }
 
-        .card-list .card-header {
-            background-color: var(--light-gray);
-            border-bottom: 1px solid var(--border-color);
-            font-weight: 600;
-            padding: 0.75rem 1rem;
-        }
+            .card-list .card-header {
+                background-color: var(--light-gray);
+                border-bottom: 1px solid var(--border-color);
+                font-weight: 600;
+                padding: 0.75rem 1rem;
+            }
 
         .card-footer-totals {
             background-color: var(--light-gray);
@@ -1665,30 +1673,139 @@
             font-weight: 600;
         }
 
-        /* === RESPONSIVE === */
-        @media (max-width: 768px) {
-            .info-grid {
-                grid-template-columns: repeat(2, 1fr);
+        /* === ALERTA DE RECHAZO === */
+        .alert-rechazo {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+            border: 2px solid #ff9800;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.2);
+        }
+
+            .alert-rechazo .alert-icon {
+                color: #f57c00;
             }
 
+            .alert-rechazo .alert-heading {
+                color: #e65100;
+                font-weight: 700;
+                font-size: 1.25rem;
+            }
+
+        .rechazo-motivo {
+            background-color: rgba(255, 255, 255, 0.7);
+            border-left: 4px solid #f57c00;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            margin: 1rem 0;
+        }
+
+            .rechazo-motivo label {
+                color: #c62828;
+                font-size: 0.95rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .rechazo-motivo p {
+                color: #424242;
+                font-size: 1rem;
+                line-height: 1.6;
+            }
+
+        /* === RESPONSIVE MÓVIL === */
+        @media (max-width: 768px) {
             .page-title {
                 font-size: 1.375rem;
             }
+
+            .nav-tabs-custom .nav-link {
+                padding: 0.75rem 1rem;
+                font-size: 0.875rem;
+            }
+
+            .section-body {
+                padding: 1rem;
+            }
+
+            .info-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+
+            .info-value {
+                font-size: 1rem;
+            }
+
+            .balance-amount {
+                font-size: 1.25rem;
+            }
+
+            .balance-label {
+                font-size: 0.875rem;
+            }
+
+            .balance-item {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.5rem;
+            }
+
+            .table-conductor,
+            .table-financial,
+            .table-modal {
+                font-size: 0.75rem;
+            }
+
+                .table-conductor thead th,
+                .table-financial thead th,
+                .table-modal thead th {
+                    font-size: 0.7rem;
+                    padding: 0.5rem 0.25rem;
+                }
+
+                .table-conductor tbody td,
+                .table-financial tbody td {
+                    padding: 0.5rem 0.25rem;
+                }
+
+            .btn-detail-modal {
+                display: block;
+                width: 100%;
+                margin-top: 0.25rem;
+            }
+
+            .modal-dialog {
+                margin: 0.5rem;
+            }
+
+            .empty-state {
+                padding: 2rem 1rem;
+            }
+
+            .empty-icon {
+                font-size: 3rem;
+            }
+
+            .btn-md-auto {
+                width: 100%;
+            }
         }
 
-        /* === UTILIDADES === */
-        .text-muted { color: var(--text-secondary) !important; }
-        .mr-1 { margin-right: 0.25rem; }
-        .mr-2 { margin-right: 0.5rem; }
-        .ml-2 { margin-left: 0.5rem; }
-        .ml-3 { margin-left: 0.75rem; }
-        .mb-3 { margin-bottom: 0.75rem; }
-        .mb-4 { margin-bottom: 1rem; }
-        .mb-5 { margin-bottom: 1.25rem; }
-        .mt-3 { margin-top: 0.75rem; }
-        .mt-4 { margin-top: 1rem; }
-        .px-4 { padding-left: 1rem; padding-right: 1rem; }
-        .px-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
+        @media (max-width: 576px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-title {
+                font-size: 1rem;
+            }
+
+            .px-4 {
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+        }
     </style>
 
     <!-- JAVASCRIPT COMPLETO Y CORREGIDO -->
@@ -1736,40 +1853,39 @@
             }
         }
 
-        // === GESTIÓN DE INGRESOS Y GASTOS ===
-
+        // === GESTIÓN DE INGRESOS Y GASTOS
         function agregarIngreso() {
             contadorIngresosAdicionales++;
             const numeroFila = 4 + contadorIngresosAdicionales;
 
             $('#ingresosAdicionalesBody').append(`
-                <tr id="ingresoAdicional_${contadorIngresosAdicionales}">
-                    <td class="text-center">${numeroFila}</td>
-                    <td>
-                        <input type="text" class="form-control form-control-sm" name="conceptoIngreso_${contadorIngresosAdicionales}" 
-                               placeholder="Concepto de ingreso" required>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control form-control-sm" name="descIngreso_${contadorIngresosAdicionales}" 
-                               placeholder="Descripción del ingreso">
-                    </td>
-                    <td>
-                        <input type="number" class="form-control form-control-sm ingreso-soles" 
-                               name="ingresoSoles_${contadorIngresosAdicionales}" 
-                               placeholder="0.00" step="0.01" onchange="calcularTotales()">
-                    </td>
-                    <td>
-                        <input type="number" class="form-control form-control-sm ingreso-dolares" 
-                               name="ingresoDolares_${contadorIngresosAdicionales}" 
-                               placeholder="0.00" step="0.01" onchange="calcularTotales()">
-                    </td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarIngreso(${contadorIngresosAdicionales})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `);
+            <tr id="ingresoAdicional_${contadorIngresosAdicionales}">
+                <td class="text-center">${numeroFila}</td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="conceptoIngreso_${contadorIngresosAdicionales}" 
+                           placeholder="Concepto de ingreso" required>
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="descIngreso_${contadorIngresosAdicionales}" 
+                           placeholder="Descripción del ingreso">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm ingreso-soles" 
+                           name="ingresoSoles_${contadorIngresosAdicionales}" 
+                           placeholder="0.00" step="0.01" onchange="calcularTotales()">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm ingreso-dolares" 
+                           name="ingresoDolares_${contadorIngresosAdicionales}" 
+                           placeholder="0.00" step="0.01" onchange="calcularTotales()">
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="eliminarIngreso(${contadorIngresosAdicionales})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `);
         }
 
         function eliminarIngreso(id) {
@@ -1784,33 +1900,33 @@
             const numeroFila = 8 + contadorGastosAdicionales;
 
             $('#gastosAdicionalesBody').append(`
-                <tr id="gastoAdicional_${contadorGastosAdicionales}">
-                    <td class="text-center">${numeroFila}</td>
-                    <td>
-                        <input type="text" class="form-control form-control-sm" name="conceptoGasto_${contadorGastosAdicionales}" 
-                               placeholder="Concepto de gasto" required>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control form-control-sm" name="descGasto_${contadorGastosAdicionales}" 
-                               placeholder="Descripción del gasto">
-                    </td>
-                    <td>
-                        <input type="number" class="form-control form-control-sm gasto-soles" 
-                               name="gastoSoles_${contadorGastosAdicionales}" 
-                               placeholder="0.00" step="0.01" onchange="calcularTotales()">
-                    </td>
-                    <td>
-                        <input type="number" class="form-control form-control-sm gasto-dolares" 
-                               name="gastoDolares_${contadorGastosAdicionales}" 
-                               placeholder="0.00" step="0.01" onchange="calcularTotales()">
-                    </td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarGasto(${contadorGastosAdicionales})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `);
+            <tr id="gastoAdicional_${contadorGastosAdicionales}">
+                <td class="text-center">${numeroFila}</td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="conceptoGasto_${contadorGastosAdicionales}" 
+                           placeholder="Concepto de gasto" required>
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="descGasto_${contadorGastosAdicionales}" 
+                           placeholder="Descripción del gasto">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm gasto-soles" 
+                           name="gastoSoles_${contadorGastosAdicionales}" 
+                           placeholder="0.00" step="0.01" onchange="calcularTotales()">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm gasto-dolares" 
+                           name="gastoDolares_${contadorGastosAdicionales}" 
+                           placeholder="0.00" step="0.01" onchange="calcularTotales()">
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="eliminarGasto(${contadorGastosAdicionales})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `);
         }
 
         function eliminarGasto(id) {
@@ -1862,22 +1978,39 @@
         function cargarEstacionesPeaje() {
             try {
                 const json = '<%= ObtenerEstacionesPeajeJSON() %>';
-                if (json && json !== '[]') {
+                console.log('JSON recibido:', json);
+                console.log('Longitud del JSON:', json.length);
+
+                if (json && json !== '[]' && json !== '') {
                     estacionesPeaje = JSON.parse(json);
-                    llenarDatalistEstaciones();
-                    console.log(`✅ ${estacionesPeaje.length} estaciones cargadas`);
+                    console.log('Peajes parseados:', estacionesPeaje);
+                    console.log('Cantidad de peajes:', estacionesPeaje.length);
+                    llenarSelectEstaciones();
+                } else {
+                    console.error('❌ JSON vacío o inválido');
                 }
             } catch (e) {
-                console.error('Error cargando estaciones:', e);
+                console.error('❌ Error cargando estaciones:', e);
+                console.error('Stack:', e.stack);
             }
         }
 
-        function llenarDatalistEstaciones() {
-            const datalist = $('#listaEstaciones');
-            datalist.empty();
-            estacionesPeaje.forEach(est => {
-                datalist.append(`<option value="${est.nombre}">`);
-            });
+        function llenarSelectEstaciones() {
+            const select = $('#nuevoPeajeEstacion');
+            console.log('Llenando select, elemento encontrado:', select.length > 0);
+
+            select.empty();
+            select.append('<option value="">-- Seleccione un peaje --</option>');
+
+            if (estacionesPeaje && estacionesPeaje.length > 0) {
+                estacionesPeaje.forEach((est, index) => {
+                    console.log(`Agregando peaje ${index + 1}:`, est.nombre);
+                    select.append(`<option value="${est.nombre}">${est.nombre}</option>`);
+                });
+                console.log('✅ Select llenado con', estacionesPeaje.length, 'peajes');
+            } else {
+                console.error('❌ No hay estaciones para llenar');
+            }
         }
 
         function abrirModalPeajes() {
@@ -1893,16 +2026,29 @@
             const dolares = parseFloat($('#nuevoPeajeDolares').val()) || 0;
             const observaciones = $('#nuevoPeajeObservaciones').val().trim();
 
-            if (!estacion) { alert('⚠️ Seleccione una estación'); $('#nuevoPeajeEstacion').focus(); return; }
-            if (!fecha) { alert('⚠️ Seleccione una fecha'); $('#nuevoPeajeFecha').focus(); return; }
-            if (soles <= 0 && dolares <= 0) { alert('⚠️ Ingrese al menos un monto'); $('#nuevoPeajeSoles').focus(); return; }
+            if (!estacion || estacion === '') {
+                alert('⚠️ Debe seleccionar una estación de peaje');
+                $('#nuevoPeajeEstacion').focus();
+                return;
+            }
+            if (!fecha) {
+                alert('⚠️ Seleccione una fecha');
+                $('#nuevoPeajeFecha').focus();
+                return;
+            }
+            if (soles <= 0 && dolares <= 0) {
+                alert('⚠️ Ingrese al menos un monto');
+                $('#nuevoPeajeSoles').focus();
+                return;
+            }
 
             peajesData.push({
                 id: ++contadorPeajes,
                 estacion, fecha, comprobante, soles, dolares, observaciones
             });
 
-            $('#nuevoPeajeEstacion, #nuevoPeajeComprobante, #nuevoPeajeObservaciones').val('');
+            $('#nuevoPeajeEstacion').val('');
+            $('#nuevoPeajeComprobante, #nuevoPeajeObservaciones').val('');
             $('#nuevoPeajeSoles, #nuevoPeajeDolares').val('');
 
             actualizarTablaPeajes();
@@ -1922,19 +2068,19 @@
             tbody.empty();
             peajesData.forEach(p => {
                 tbody.append(`
-                    <tr>
-                        <td>${p.estacion}</td>
-                        <td>${p.fecha}</td>
-                        <td>${p.comprobante || 'N/A'}</td>
-                        <td>S/ ${p.soles.toFixed(2)}</td>
-                        <td>$ ${p.dolares.toFixed(2)}</td>
-                        <td class="text-center">
-                            <button type="button" class="btn btn-danger btn-sm" onclick="eliminarPeaje(${p.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `);
+                <tr>
+                    <td>${p.estacion}</td>
+                    <td>${p.fecha}</td>
+                    <td>${p.comprobante || 'N/A'}</td>
+                    <td>S/ ${p.soles.toFixed(2)}</td>
+                    <td>$ ${p.dolares.toFixed(2)}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarPeaje(${p.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `);
             });
             $('#totalPeajes').text(`${peajesData.length} peajes`);
         }
@@ -2001,19 +2147,19 @@
             tbody.empty();
             reparacionesData.forEach(r => {
                 tbody.append(`
-                    <tr>
-                        <td>${r.tipo}</td>
-                        <td>${r.fecha}</td>
-                        <td>${r.comprobante || 'N/A'}</td>
-                        <td>S/ ${r.soles.toFixed(2)}</td>
-                        <td>$ ${r.dolares.toFixed(2)}</td>
-                        <td class="text-center">
-                            <button type="button" class="btn btn-danger btn-sm" onclick="eliminarReparacion(${r.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `);
+                <tr>
+                    <td>${r.tipo}</td>
+                    <td>${r.fecha}</td>
+                    <td>${r.comprobante || 'N/A'}</td>
+                    <td>S/ ${r.soles.toFixed(2)}</td>
+                    <td>$ ${r.dolares.toFixed(2)}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarReparacion(${r.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `);
             });
             $('#totalReparaciones').text(`${reparacionesData.length} reparaciones`);
         }
@@ -2080,19 +2226,19 @@
             tbody.empty();
             hospedajesData.forEach(h => {
                 tbody.append(`
-                    <tr>
-                        <td>${h.lugar}</td>
-                        <td>${h.fecha}</td>
-                        <td>${h.comprobante || 'N/A'}</td>
-                        <td>S/ ${h.soles.toFixed(2)}</td>
-                        <td>$ ${h.dolares.toFixed(2)}</td>
-                        <td class="text-center">
-                            <button type="button" class="btn btn-danger btn-sm" onclick="eliminarHospedaje(${h.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `);
+                <tr>
+                    <td>${h.lugar}</td>
+                    <td>${h.fecha}</td>
+                    <td>${h.comprobante || 'N/A'}</td>
+                    <td>S/ ${h.soles.toFixed(2)}</td>
+                    <td>$ ${h.dolares.toFixed(2)}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarHospedaje(${h.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `);
             });
             $('#totalHospedajes').text(`${hospedajesData.length} hospedajes`);
         }
@@ -2159,19 +2305,19 @@
             tbody.empty();
             combustiblesData.forEach(c => {
                 tbody.append(`
-                    <tr>
-                        <td>${c.lugar}</td>
-                        <td>${c.fecha}</td>
-                        <td>${c.comprobante || 'N/A'}</td>
-                        <td>S/ ${c.soles.toFixed(2)}</td>
-                        <td>$ ${c.dolares.toFixed(2)}</td>
-                        <td class="text-center">
-                            <button type="button" class="btn btn-danger btn-sm" onclick="eliminarCombustible(${c.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `);
+                <tr>
+                    <td>${c.lugar}</td>
+                    <td>${c.fecha}</td>
+                    <td>${c.comprobante || 'N/A'}</td>
+                    <td>S/ ${c.soles.toFixed(2)}</td>
+                    <td>$ ${c.dolares.toFixed(2)}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarCombustible(${c.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `);
             });
             $('#totalCombustibles').text(`${combustiblesData.length} combustibles`);
         }
@@ -2250,5 +2396,4 @@
             window.location.href = `DetalleOrdenViaje.aspx?id=${idOrdenViaje}`;
         }
     </script>
-
-</asp:Content>
+    </asp:Content>
