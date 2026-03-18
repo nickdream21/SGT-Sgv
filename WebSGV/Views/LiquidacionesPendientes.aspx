@@ -18,10 +18,10 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h2 class="page-title mb-1">
-                                <i class="fas fa-clipboard-check mr-2"></i>Liquidaciones Pendientes de Aprobación
+                                <i class="fas fa-clipboard-check mr-2"></i>Gestión de Liquidaciones
                             </h2>
                             <p class="text-muted mb-0">
-                                Revisa y aprueba las liquidaciones registradas por los conductores
+                                Aprueba, revisa y controla las liquidaciones de los conductores
                             </p>
                         </div>
                         <div class="header-stats">
@@ -52,6 +52,23 @@
                 </div>
             </div>
         </div>
+
+        <!-- TABS DE NAVEGACIÓN -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="tabs-navigation">
+                    <button type="button" class="tab-btn tab-btn-active" id="tabPendientes" onclick="cambiarTab('pendientes')">
+                        <i class="fas fa-clock mr-2"></i>Pendientes de Aprobación
+                    </button>
+                    <button type="button" class="tab-btn" id="tabAprobadas" onclick="cambiarTab('aprobadas')">
+                        <i class="fas fa-shield-alt mr-2"></i>Control de Aprobadas
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN PENDIENTES -->
+        <div id="seccionPendientes">
 
         <div class="section-card mb-4">
             <div class="section-header">
@@ -232,14 +249,11 @@
                                             <i class="fas fa-edit"></i>
                                         </asp:LinkButton>
 
-                                        <asp:LinkButton ID="btnAprobar" runat="server"
-                                            CssClass="btn btn-success-action"
-                                            CommandName="Aprobar"
-                                            CommandArgument='<%# Eval("IdOrdenViaje") %>'
-                                            ToolTip="Aprobar Liquidación"
-                                            OnClientClick="return confirm('¿Está seguro de APROBAR esta liquidación?\n\nEsta acción completará el viaje y no se podrá deshacer.');">
+                                        <button type="button" class="btn btn-success-action"
+                                            onclick="abrirModalAprobar(<%# Eval("IdOrdenViaje") %>)"
+                                            title="Aprobar Liquidación">
                                             <i class="fas fa-check"></i>
-                                        </asp:LinkButton>
+                                        </button>
 
                                         <button type="button" class="btn btn-danger-action" 
                                             onclick="abrirModalRechazar(<%# Eval("IdOrdenViaje") %>, '<%# Eval("NumeroOrdenViaje") %>')"
@@ -273,6 +287,122 @@
             </div>
         </div>
 
+        </div><!-- /seccionPendientes -->
+
+        <!-- SECCIÓN CONTROL DE APROBADAS -->
+        <div id="seccionAprobadas" style="display:none;">
+
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="d-flex align-items-center" style="gap:1rem;">
+                        <div class="stat-card stat-success-custom">
+                            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Encontradas</span>
+                                <span class="stat-value" id="lblTotalAprobadas">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card mb-4">
+                <div class="section-header">
+                    <h5 class="section-title"><i class="fas fa-filter mr-2"></i>Filtros</h5>
+                </div>
+                <div class="section-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">Conductor</label>
+                                <select id="filtroCondAprobadas" class="form-control">
+                                    <option value="">-- Todos los conductores --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label class="form-label">Desde</label>
+                                <input type="date" id="filtroDesdeAprobadas" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label class="form-label">Hasta</label>
+                                <input type="date" id="filtroHastaAprobadas" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label class="form-label">N° Orden</label>
+                                <input type="text" id="filtroOrdenAprobadas" class="form-control" placeholder="Buscar..." />
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-flex">
+                                    <button type="button" class="btn btn-primary-custom btn-block mr-2" onclick="cargarLiquidacionesAprobadas()">Buscar</button>
+                                    <button type="button" class="btn btn-secondary-custom btn-block" onclick="limpiarFiltrosAprobadas()">Limpiar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-header section-header-success">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="section-title mb-0">
+                            <i class="fas fa-clipboard-check mr-2"></i>Liquidaciones Aprobadas
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-outline-success" onclick="cargarLiquidacionesAprobadas()">
+                            <i class="fas fa-sync-alt mr-1"></i>Actualizar
+                        </button>
+                    </div>
+                </div>
+                <div class="section-body p-0">
+                    <div id="loadingAprobadas" class="text-center py-4" style="display:none;">
+                        <div class="spinner-border text-success"><span class="sr-only">Cargando...</span></div>
+                        <p class="text-muted mt-2">Cargando liquidaciones aprobadas...</p>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-liquidaciones mb-0" id="tablaAprobadas">
+                            <thead>
+                                <tr>
+                                    <th>N° ORDEN</th>
+                                    <th>CONDUCTOR</th>
+                                    <th>PERIODO VIAJE</th>
+                                    <th class="text-right">DESCUENTO</th>
+                                    <th class="text-right">REINTEGRO</th>
+                                    <th class="text-right">BALANCE FINAL</th>
+                                    <th class="text-center">ACCIONES</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyAprobadas">
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        <i class="fas fa-search mr-2"></i>Haga clic en "Buscar" para cargar las liquidaciones aprobadas
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info-light mt-4">
+                <h6 class="mb-2"><i class="fas fa-info-circle mr-2"></i>Acciones disponibles:</h6>
+                <div class="d-flex flex-wrap" style="gap:0.75rem;">
+                    <span><i class="fas fa-eye text-info mr-1"></i><strong>Ver:</strong> Revisar el detalle completo de la liquidación</span>
+                    <span><i class="fas fa-edit text-warning mr-1"></i><strong>Corregir:</strong> Modificar descuentos y reintegros aplicados</span>
+                    <span><i class="fas fa-undo text-danger mr-1"></i><strong>Revertir:</strong> Devolver la liquidación a estado pendiente</span>
+                </div>
+            </div>
+
+        </div><!-- /seccionAprobadas -->
+
     </div>
 
     <div class="modal fade" id="modalDetalleLiquidacion" tabindex="-1">
@@ -288,7 +418,19 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    
+
+                    <div id="detalleLoading" class="text-center py-5" style="display:none;">
+                        <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+                            <span class="sr-only">Cargando...</span>
+                        </div>
+                        <p class="text-muted mt-3 mb-0">Cargando detalle de la liquidación...</p>
+                    </div>
+
+                    <div id="detalleError" class="text-center py-4" style="display:none;">
+                        <i class="fas fa-exclamation-triangle text-danger fa-3x mb-3 d-block"></i>
+                        <p class="text-muted">Error al cargar el detalle. Por favor, intente de nuevo.</p>
+                    </div>
+
                     <div class="detail-section">
                         <h6 class="detail-section-title">
                             <i class="fas fa-route mr-2"></i>Información del Viaje
@@ -385,6 +527,25 @@
 
                     <div class="detail-section">
                         <h6 class="detail-section-title">
+                            <i class="fas fa-hand-holding-usd mr-2"></i>Desglose de Ingresos
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-detail">
+                                <thead>
+                                    <tr>
+                                        <th>Concepto</th>
+                                        <th class="text-right">Soles (S/)</th>
+                                        <th class="text-right">Dólares ($)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detalleIngresosBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h6 class="detail-section-title">
                             <i class="fas fa-receipt mr-2"></i>Desglose de Gastos
                         </h6>
                         <div class="table-responsive">
@@ -402,11 +563,88 @@
                         </div>
                     </div>
 
+                    <div class="detail-section" id="sectionAjustes">
+                        <h6 class="detail-section-title">
+                            <i class="fas fa-sliders-h mr-2"></i>Ajustes Administrativos
+                            <span class="badge badge-warning ml-2" style="font-size:0.7rem;font-weight:600;">Solo Admin</span>
+                        </h6>
+                        <div class="alert-warning-light mb-3" style="font-size:0.85rem;padding:0.75rem;border:1px solid #fde68a;border-radius:0.375rem;background:#fffbeb;">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Registra descuentos o reintegros a aplicar al balance del conductor. Deja en cero si no aplica.
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="ajuste-card ajuste-descuento">
+                                    <div class="ajuste-header">
+                                        <i class="fas fa-arrow-down mr-2 text-danger"></i>Descuento al Conductor
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Soles (S/)</label>
+                                            <input type="number" id="ajusteDescuentoSoles" class="form-control form-control-sm"
+                                                placeholder="0.00" step="0.01" min="0" value=""
+                                                oninput="actualizarBalanceAjustado()">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Dólares ($)</label>
+                                            <input type="number" id="ajusteDescuentoDolares" class="form-control form-control-sm"
+                                                placeholder="0.00" step="0.01" min="0" value=""
+                                                oninput="actualizarBalanceAjustado()">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="ajuste-card ajuste-reintegro">
+                                    <div class="ajuste-header">
+                                        <i class="fas fa-arrow-up mr-2 text-success"></i>Reintegro al Conductor
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Soles (S/)</label>
+                                            <input type="number" id="ajusteReintegroSoles" class="form-control form-control-sm"
+                                                placeholder="0.00" step="0.01" min="0" value=""
+                                                oninput="actualizarBalanceAjustado()">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Dólares ($)</label>
+                                            <input type="number" id="ajusteReintegroDolares" class="form-control form-control-sm"
+                                                placeholder="0.00" step="0.01" min="0" value=""
+                                                oninput="actualizarBalanceAjustado()">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="balanceAjustadoPanel" class="mt-2" style="display:none;">
+                            <div class="financial-card financial-card-neutral">
+                                <div class="financial-header">
+                                    <i class="fas fa-balance-scale"></i>
+                                    <span>Balance Ajustado (con descuentos/reintegros)</span>
+                                </div>
+                                <div class="financial-amounts">
+                                    <div class="amount-row">
+                                        <span class="currency">S/</span>
+                                        <span class="amount balance-amount" id="balanceAjustadoSoles">0.00</span>
+                                    </div>
+                                    <div class="amount-row">
+                                        <span class="currency">$</span>
+                                        <span class="amount balance-amount" id="balanceAjustadoDolares">0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cerrar</button>
                     <button type="button" class="btn btn-primary-custom" onclick="imprimirDetalle()">
                         <i class="fas fa-print mr-1"></i>Imprimir
+                    </button>
+                    <button type="button" id="btnAprobarDesdeModal" class="btn btn-success-custom"
+                        onclick="aprobarDesdeModal()" style="display:none;">
+                        <i class="fas fa-check mr-1"></i>Aprobar Liquidación
                     </button>
                 </div>
             </div>
@@ -452,6 +690,156 @@
                         Text="Rechazar Liquidación"
                         OnClick="btnConfirmarRechazo_Click"
                         OnClientClick="return validarRechazo();" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Revertir Aprobación -->
+    <div class="modal fade" id="modalRevertir" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header modal-header-danger">
+                    <h5 class="modal-title">
+                        <i class="fas fa-undo mr-2"></i>Revertir Aprobación
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <strong>Atención:</strong> Esta acción devolverá la liquidación al estado
+                        <strong>Pendiente de Aprobación</strong>. Deberá ser revisada y aprobada nuevamente.
+                    </div>
+                    <input type="hidden" id="revertirIdOrden" />
+                    <div class="form-group">
+                        <label class="form-label">N° de Orden:</label>
+                        <input type="text" id="revertirNumeroOrden" class="form-control" readonly />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Conductor:</label>
+                        <input type="text" id="revertirConductor" class="form-control" readonly />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Motivo de la Reversión <span class="text-danger">*</span></label>
+                        <textarea id="revertirMotivo" class="form-control" rows="4"
+                            placeholder="Explique por qué se revierte esta aprobación...&#13;&#10;Ej: Se detectó que el descuento aplicado es incorrecto y necesita re-evaluación."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger-custom" id="btnConfirmarReversion" onclick="confirmarReversion()">
+                        <i class="fas fa-undo mr-1"></i>Confirmar Reversión
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Corregir Ajustes -->
+    <div class="modal fade" id="modalCorregirAjustes" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#fef3c7;border-bottom:2px solid #fbbf24;">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit mr-2"></i>Corregir Ajustes de Liquidación Aprobada
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Está modificando los ajustes de una liquidación <strong>ya aprobada</strong>.
+                        Los cambios se reflejarán inmediatamente en los reportes.
+                    </div>
+                    <input type="hidden" id="corregirIdOrden" />
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">N° Orden:</label>
+                            <input type="text" id="corregirNumeroOrden" class="form-control" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Conductor:</label>
+                            <input type="text" id="corregirConductor" class="form-control" readonly />
+                        </div>
+                    </div>
+
+                    <div class="detail-section mb-3" style="padding:1rem;">
+                        <h6 style="font-weight:600;margin-bottom:0.75rem;">
+                            <i class="fas fa-history mr-1"></i>Valores Actuales
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-3 text-center">
+                                <small class="text-muted d-block">Descuento S/</small>
+                                <strong id="corregirDescSolesActual">0.00</strong>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <small class="text-muted d-block">Descuento $</small>
+                                <strong id="corregirDescDolaresActual">0.00</strong>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <small class="text-muted d-block">Reintegro S/</small>
+                                <strong id="corregirReintSolesActual">0.00</strong>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <small class="text-muted d-block">Reintegro $</small>
+                                <strong id="corregirReintDolaresActual">0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="ajuste-card ajuste-descuento">
+                                <div class="ajuste-header">
+                                    <i class="fas fa-arrow-down mr-2 text-danger"></i>Nuevo Descuento
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-6">
+                                        <label class="form-label">Soles (S/)</label>
+                                        <input type="number" id="corregirDescSoles" class="form-control form-control-sm"
+                                            placeholder="0.00" step="0.01" min="0">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Dólares ($)</label>
+                                        <input type="number" id="corregirDescDolares" class="form-control form-control-sm"
+                                            placeholder="0.00" step="0.01" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="ajuste-card ajuste-reintegro">
+                                <div class="ajuste-header">
+                                    <i class="fas fa-arrow-up mr-2 text-success"></i>Nuevo Reintegro
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-6">
+                                        <label class="form-label">Soles (S/)</label>
+                                        <input type="number" id="corregirReintSoles" class="form-control form-control-sm"
+                                            placeholder="0.00" step="0.01" min="0">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Dólares ($)</label>
+                                        <input type="number" id="corregirReintDolares" class="form-control form-control-sm"
+                                            placeholder="0.00" step="0.01" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Motivo de la Corrección <span class="text-danger">*</span></label>
+                        <textarea id="corregirMotivo" class="form-control" rows="3"
+                            placeholder="Explique por qué se corrigen los ajustes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary-custom" id="btnConfirmarCorreccion" onclick="confirmarCorreccion()">
+                        <i class="fas fa-save mr-1"></i>Guardar Corrección
+                    </button>
                 </div>
             </div>
         </div>
@@ -934,14 +1322,176 @@
         .mt-2 { margin-top: 0.5rem; }
         .mt-3 { margin-top: 0.75rem; }
         .mt-4 { margin-top: 1rem; }
+
+        .btn-expand {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            padding: 0.1rem 0.4rem;
+            font-size: 0.7rem;
+            color: var(--neutral-color);
+            cursor: pointer;
+            margin-left: 0.5rem;
+            line-height: 1.2;
+            vertical-align: middle;
+            transition: all 0.15s;
+        }
+        .btn-expand:hover { background: var(--medium-gray); color: var(--primary-color); }
+
+        .detail-sub-content {
+            padding: 0.75rem 1rem;
+            background: #f8f9fa;
+            border-top: 1px solid var(--medium-gray);
+        }
+        .detail-desc {
+            font-size: 0.8125rem;
+            color: var(--neutral-color);
+            font-style: italic;
+            margin-bottom: 0.5rem;
+        }
+        .table-sub {
+            font-size: 0.8rem;
+            margin-bottom: 0 !important;
+        }
+        .table-sub thead th {
+            background: var(--medium-gray);
+            font-size: 0.75rem;
+            padding: 0.4rem 0.5rem;
+            font-weight: 600;
+        }
+        .table-sub tbody td {
+            padding: 0.35rem 0.5rem;
+            border-color: var(--medium-gray);
+        }
+
+        .ajuste-card {
+            border: 2px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            height: 100%;
+        }
+
+        .ajuste-descuento {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border-color: #fca5a5;
+        }
+
+        .ajuste-reintegro {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-color: #86efac;
+        }
+
+        .ajuste-header {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .btn-success-custom {
+            background: var(--success-color);
+            border: none;
+            color: white;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+        }
+
+        .btn-success-custom:hover {
+            background: #047857;
+            color: white;
+        }
+
+        /* === TABS DE NAVEGACIÓN === */
+        .tabs-navigation {
+            display: flex;
+            gap: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            border: none;
+            background: white;
+            color: var(--neutral-color);
+            font-weight: 600;
+            font-size: 0.9375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn:hover {
+            background: var(--light-gray);
+            color: var(--primary-color);
+        }
+
+        .tab-btn-active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background: #eff6ff;
+        }
+
+        .section-header-success {
+            background: #d1fae5;
+            border-bottom-color: #86efac;
+        }
+
+        .stat-card.stat-success-custom {
+            border-color: #86efac;
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        }
+
+        .stat-card.stat-success-custom .stat-icon {
+            color: #065f46;
+        }
+
+        .badge-aprobada {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .btn-revert-action {
+            padding: 0.5rem 0.75rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+            background: #7c3aed;
+        }
+
+        .btn-revert-action:hover {
+            background: #6d28d9;
+            transform: translateY(-1px);
+        }
     </style>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        let idOrdenParaAprobar = 0;
+        let modoAprobacion = false;
+        let _balanceSoles = 0;
+        let _balanceDolares = 0;
+
         function verDetalleLiquidacion(idOrdenViaje) {
             console.log('Ver detalle:', idOrdenViaje);
+
+            $('#btnAprobarDesdeModal').hide().prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar Liquidación');
+            $('#detalleLoading').show();
+            $('#detalleError').hide();
+            $('#modalDetalleLiquidacion .detail-section').hide();
+            $('#modalNumeroOrden').text('');
+            $('#modalDetalleLiquidacion').modal('show');
 
             $.ajax({
                 type: "POST",
@@ -952,16 +1502,93 @@
                 success: function (response) {
                     mostrarDetalle(response.d);
                 },
-                error: function (error) {
+                error: function (xhr, status, error) {
                     console.error('Error:', error);
-                    alert('Error al cargar el detalle de la liquidación');
+                    $('#detalleLoading').hide();
+                    $('#detalleError').show();
                 }
             });
         }
 
+        function toggleDetail(btn) {
+            var $btn = $(btn);
+            var $subRow = $btn.closest('tr').next('.detail-sub-row');
+            $subRow.toggle();
+            $btn.find('i').toggleClass('fa-chevron-down fa-chevron-up');
+        }
+
+        function buildSubTablePeajes(items) {
+            if (!items || items.length === 0) return '';
+            var html = '<table class="table table-sub table-bordered mb-0">' +
+                '<thead><tr><th>Estaci&oacute;n</th><th>Fecha</th><th>Comprobante</th>' +
+                '<th class="text-right">S/</th><th class="text-right">$</th><th>Observaciones</th></tr></thead><tbody>';
+            items.forEach(function (item) {
+                html += '<tr>' +
+                    '<td>' + (item.Estacion || '-') + '</td>' +
+                    '<td>' + (item.Fecha || '-') + '</td>' +
+                    '<td>' + (item.Comprobante || '-') + '</td>' +
+                    '<td class="text-right">' + parseFloat(item.Soles || 0).toFixed(2) + '</td>' +
+                    '<td class="text-right">' + parseFloat(item.Dolares || 0).toFixed(2) + '</td>' +
+                    '<td>' + (item.Observaciones || '-') + '</td>' +
+                    '</tr>';
+            });
+            html += '</tbody></table>';
+            return html;
+        }
+
+        function buildSubTableGenerica(items) {
+            if (!items || items.length === 0) return '';
+            var html = '<table class="table table-sub table-bordered mb-0">' +
+                '<thead><tr><th>Fecha</th><th>Comprobante</th>' +
+                '<th class="text-right">S/</th><th class="text-right">$</th><th>Observaciones</th></tr></thead><tbody>';
+            items.forEach(function (item) {
+                html += '<tr>' +
+                    '<td>' + (item.Fecha || '-') + '</td>' +
+                    '<td>' + (item.Comprobante || '-') + '</td>' +
+                    '<td class="text-right">' + parseFloat(item.Soles || 0).toFixed(2) + '</td>' +
+                    '<td class="text-right">' + parseFloat(item.Dolares || 0).toFixed(2) + '</td>' +
+                    '<td>' + (item.Observaciones || '-') + '</td>' +
+                    '</tr>';
+            });
+            html += '</tbody></table>';
+            return html;
+        }
+
+        function makeRow(icon, iconClass, label, soles, dolares, desc, subTable) {
+            var hasDetail = (desc && desc.trim()) || (subTable && subTable.trim());
+            var expandBtn = hasDetail
+                ? ' <button type="button" class="btn btn-expand ml-1" onclick="toggleDetail(this)" title="Ver detalle">' +
+                  '<i class="fas fa-chevron-down"></i></button>'
+                : '';
+
+            var mainRow = '<tr>' +
+                '<td><i class="fas ' + icon + ' ' + iconClass + ' mr-2"></i>' + label + expandBtn + '</td>' +
+                '<td class="text-right">S/ ' + parseFloat(soles || 0).toFixed(2) + '</td>' +
+                '<td class="text-right">$ ' + parseFloat(dolares || 0).toFixed(2) + '</td>' +
+                '</tr>';
+
+            if (!hasDetail) return mainRow;
+
+            var subContent = '';
+            if (desc && desc.trim()) {
+                subContent += '<div class="detail-desc"><strong>Descripci&oacute;n:</strong> ' +
+                    $('<span>').text(desc).html() + '</div>';
+            }
+            if (subTable && subTable.trim()) {
+                subContent += '<div class="detail-sub-content">' + subTable + '</div>';
+            }
+
+            var subRow = '<tr class="detail-sub-row" style="display:none;">' +
+                '<td colspan="3" class="p-0 border-top-0">' + subContent + '</td>' +
+                '</tr>';
+
+            return mainRow + subRow;
+        }
+
         function mostrarDetalle(datos) {
             if (!datos) {
-                alert('No se encontraron datos de la liquidación');
+                $('#detalleLoading').hide();
+                $('#detalleError').show();
                 return;
             }
 
@@ -983,38 +1610,108 @@
             $('#detalleGastosSoles').text(parseFloat(datos.TotalGastosSoles).toFixed(2));
             $('#detalleGastosDolares').text(parseFloat(datos.TotalGastosDolares).toFixed(2));
 
-            let balanceSoles = datos.TotalIngresosSoles - datos.TotalGastosSoles;
-            let balanceDolares = datos.TotalIngresosDolares - datos.TotalGastosDolares;
+            var balanceSoles = parseFloat(datos.TotalIngresosSoles) - parseFloat(datos.TotalGastosSoles);
+            var balanceDolares = parseFloat(datos.TotalIngresosDolares) - parseFloat(datos.TotalGastosDolares);
+
+            _balanceSoles = balanceSoles;
+            _balanceDolares = balanceDolares;
 
             $('#detalleBalanceSoles').text(balanceSoles.toFixed(2))
                 .css('color', balanceSoles >= 0 ? '#059669' : '#dc2626');
             $('#detalleBalanceDolares').text(balanceDolares.toFixed(2))
                 .css('color', balanceDolares >= 0 ? '#059669' : '#dc2626');
 
-            let gastosHtml = '';
-            const conceptos = ['Peajes', 'Alimentación', 'ApoyoSeguridad', 'Reparaciones', 'Movilidad', 'Encarpada', 'Hospedaje', 'Combustible'];
+            // --- Desglose de Ingresos ---
+            var ingresosItems = [
+                { key: 'Despacho',      label: 'Flete / Despacho', descKey: 'DescDespacho' },
+                { key: 'Prestamo',      label: 'Pr&eacute;stamo',  descKey: 'DescPrestamo' },
+                { key: 'Mensualidad',   label: 'Mensualidad',      descKey: 'DescMensualidad' },
+                { key: 'OtrosIngresos', label: 'Otros Ingresos',   descKey: 'DescOtros' }
+            ];
 
-            conceptos.forEach(concepto => {
-                let soles = parseFloat(datos['Gastos' + concepto + 'Soles'] || 0);
-                let dolares = parseFloat(datos['Gastos' + concepto + 'Dolares'] || 0);
-
+            var ingresosHtml = '';
+            ingresosItems.forEach(function (item) {
+                var soles = parseFloat(datos[item.key + 'Soles'] || 0);
+                var dolares = parseFloat(datos[item.key + 'Dolares'] || 0);
                 if (soles > 0 || dolares > 0) {
-                    gastosHtml += `
-                        <tr>
-                            <td><strong>${concepto}</strong></td>
-                            <td class="text-right">S/ ${soles.toFixed(2)}</td>
-                            <td class="text-right">$ ${dolares.toFixed(2)}</td>
-                        </tr>
-                    `;
+                    var desc = datos[item.descKey] || '';
+                    ingresosHtml += makeRow('fa-plus-circle', 'text-success', item.label, soles, dolares, desc, '');
                 }
             });
+
+            if (datos.DetallesIngresosAdicionales && datos.DetallesIngresosAdicionales.length > 0) {
+                datos.DetallesIngresosAdicionales.forEach(function (item) {
+                    var nombre = item.Nombre || 'Ingreso Adicional';
+                    ingresosHtml += makeRow('fa-plus-circle', 'text-success', nombre,
+                        item.Soles, item.Dolares, item.Descripcion || '', '');
+                });
+            }
+
+            if (!ingresosHtml) {
+                ingresosHtml = '<tr><td colspan="3" class="text-center text-muted">No hay ingresos registrados</td></tr>';
+            }
+            $('#detalleIngresosBody').html(ingresosHtml);
+
+            // --- Desglose de Gastos ---
+            var gastosItems = [
+                { key: 'Peajes',         label: 'Peajes',                   descKey: 'DescPeajes',         detailKey: 'DetallesPeajes',       detailType: 'peajes' },
+                { key: 'Alimentacion',   label: 'Alimentaci&oacute;n',      descKey: 'DescAlimentacion',   detailKey: '',                     detailType: '' },
+                { key: 'ApoyoSeguridad', label: 'Apoyo de Seguridad',       descKey: 'DescApoyoSeguridad', detailKey: '',                     detailType: '' },
+                { key: 'Reparaciones',   label: 'Reparaciones y Varios',    descKey: 'DescReparaciones',   detailKey: 'DetallesReparaciones', detailType: 'generica' },
+                { key: 'Movilidad',      label: 'Movilidad',                descKey: 'DescMovilidad',      detailKey: '',                     detailType: '' },
+                { key: 'Encarpada',      label: 'Encarpada / Desencarpada', descKey: 'DescEncarpada',      detailKey: '',                     detailType: '' },
+                { key: 'Hospedaje',      label: 'Hospedaje',                descKey: 'DescHospedaje',      detailKey: 'DetallesHospedaje',    detailType: 'generica' },
+                { key: 'Combustible',    label: 'Combustible',              descKey: 'DescCombustible',    detailKey: 'DetallesCombustible',  detailType: 'generica' }
+            ];
+
+            var gastosHtml = '';
+            gastosItems.forEach(function (item) {
+                var soles = parseFloat(datos['Gastos' + item.key + 'Soles'] || 0);
+                var dolares = parseFloat(datos['Gastos' + item.key + 'Dolares'] || 0);
+                if (soles > 0 || dolares > 0) {
+                    var desc = datos[item.descKey] || '';
+                    var subTable = '';
+                    if (item.detailKey && datos[item.detailKey] && datos[item.detailKey].length > 0) {
+                        subTable = item.detailType === 'peajes'
+                            ? buildSubTablePeajes(datos[item.detailKey])
+                            : buildSubTableGenerica(datos[item.detailKey]);
+                    }
+                    gastosHtml += makeRow('fa-minus-circle', 'text-danger', item.label, soles, dolares, desc, subTable);
+                }
+            });
+
+            if (datos.DetallesGastosAdicionales && datos.DetallesGastosAdicionales.length > 0) {
+                datos.DetallesGastosAdicionales.forEach(function (item) {
+                    var nombre = item.Nombre || 'Gasto Adicional';
+                    gastosHtml += makeRow('fa-minus-circle', 'text-danger', nombre,
+                        item.Soles, item.Dolares, item.Descripcion || '', '');
+                });
+            }
 
             if (!gastosHtml) {
                 gastosHtml = '<tr><td colspan="3" class="text-center text-muted">No hay gastos registrados</td></tr>';
             }
-
             $('#detalleGastosBody').html(gastosHtml);
-            $('#modalDetalleLiquidacion').modal('show');
+
+            // --- Ajustes Administrativos: pre-poblar inputs ---
+            var descSoles = parseFloat(datos.DescuentoSoles || 0);
+            var descDolares = parseFloat(datos.DescuentoDolares || 0);
+            var reintSoles = parseFloat(datos.ReintegroSoles || 0);
+            var reintDolares = parseFloat(datos.ReintegroDolares || 0);
+
+            $('#ajusteDescuentoSoles').val(descSoles > 0 ? descSoles.toFixed(2) : '');
+            $('#ajusteDescuentoDolares').val(descDolares > 0 ? descDolares.toFixed(2) : '');
+            $('#ajusteReintegroSoles').val(reintSoles > 0 ? reintSoles.toFixed(2) : '');
+            $('#ajusteReintegroDolares').val(reintDolares > 0 ? reintDolares.toFixed(2) : '');
+            actualizarBalanceAjustado();
+
+            $('#detalleLoading').hide();
+            $('#modalDetalleLiquidacion .detail-section').show();
+            $('#sectionAjustes').toggle(modoAprobacion);
+
+            if (modoAprobacion) {
+                $('#btnAprobarDesdeModal').show();
+            }
         }
 
         function abrirModalRechazar(idOrden, numeroOrden) {
@@ -1053,9 +1750,419 @@
             window.print();
         }
 
+        function abrirModalAprobar(idOrdenViaje) {
+            modoAprobacion = true;
+            idOrdenParaAprobar = idOrdenViaje;
+            verDetalleLiquidacion(idOrdenViaje);
+        }
+
+        function actualizarBalanceAjustado() {
+            var descS = parseFloat($('#ajusteDescuentoSoles').val()) || 0;
+            var descD = parseFloat($('#ajusteDescuentoDolares').val()) || 0;
+            var reintS = parseFloat($('#ajusteReintegroSoles').val()) || 0;
+            var reintD = parseFloat($('#ajusteReintegroDolares').val()) || 0;
+
+            if (descS > 0 || descD > 0 || reintS > 0 || reintD > 0) {
+                var balS = _balanceSoles - descS + reintS;
+                var balD = _balanceDolares - descD + reintD;
+                $('#balanceAjustadoSoles').text(balS.toFixed(2))
+                    .css('color', balS >= 0 ? '#059669' : '#dc2626');
+                $('#balanceAjustadoDolares').text(balD.toFixed(2))
+                    .css('color', balD >= 0 ? '#059669' : '#dc2626');
+                $('#balanceAjustadoPanel').show();
+            } else {
+                $('#balanceAjustadoPanel').hide();
+            }
+        }
+
+        function aprobarDesdeModal() {
+            if (!idOrdenParaAprobar) return;
+
+            var descS = parseFloat($('#ajusteDescuentoSoles').val()) || 0;
+            var descD = parseFloat($('#ajusteDescuentoDolares').val()) || 0;
+            var reintS = parseFloat($('#ajusteReintegroSoles').val()) || 0;
+            var reintD = parseFloat($('#ajusteReintegroDolares').val()) || 0;
+
+            var confirmMsg = '¿Está seguro de APROBAR esta liquidación?\n\n';
+            if (descS > 0 || descD > 0 || reintS > 0 || reintD > 0) {
+                confirmMsg += 'Se aplicarán los siguientes ajustes:\n';
+                if (descS > 0) confirmMsg += '  \u2022 Descuento S/: ' + descS.toFixed(2) + '\n';
+                if (descD > 0) confirmMsg += '  \u2022 Descuento $: ' + descD.toFixed(2) + '\n';
+                if (reintS > 0) confirmMsg += '  \u2022 Reintegro S/: ' + reintS.toFixed(2) + '\n';
+                if (reintD > 0) confirmMsg += '  \u2022 Reintegro $: ' + reintD.toFixed(2) + '\n';
+                confirmMsg += '\n';
+            }
+            confirmMsg += 'Esta acción completará el viaje y no se podrá deshacer.';
+
+            if (!confirm(confirmMsg)) return;
+
+            var $btn = $('#btnAprobarDesdeModal');
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Aprobando...');
+
+            $.ajax({
+                type: "POST",
+                url: "LiquidacionesPendientes.aspx/AprobarConAjustes",
+                data: JSON.stringify({
+                    idOrdenViaje: idOrdenParaAprobar,
+                    descuentoSoles: descS,
+                    descuentoDolares: descD,
+                    reintegroSoles: reintS,
+                    reintegroDolares: reintD
+                }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (response) {
+                    var result = response.d;
+                    if (result.success) {
+                        $('#modalDetalleLiquidacion').modal('hide');
+                        alert('\u2705 ' + result.message);
+                        location.reload();
+                    } else {
+                        alert('\u274c ' + result.message);
+                        $btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar Liquidación');
+                    }
+                },
+                error: function (xhr) {
+                    console.error('Error:', xhr.responseText);
+                    alert('Error al aprobar la liquidación. Por favor intente de nuevo.');
+                    $btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar Liquidación');
+                }
+            });
+        }
+
         $(document).ready(function () {
             console.log('LiquidacionesPendientes cargado');
+            $('#modalDetalleLiquidacion').on('hidden.bs.modal', function () {
+                modoAprobacion = false;
+                idOrdenParaAprobar = 0;
+                $('#btnAprobarDesdeModal').hide();
+            });
         });
+
+        // ============================================================
+        // === SECCIÓN CONTROL DE APROBADAS ===
+        // ============================================================
+
+        var _aprobadasData = {};
+        var _aprobadasCargadas = false;
+
+        function cambiarTab(tab) {
+            if (tab === 'pendientes') {
+                $('#seccionPendientes').show();
+                $('#seccionAprobadas').hide();
+                $('#tabPendientes').addClass('tab-btn-active');
+                $('#tabAprobadas').removeClass('tab-btn-active');
+            } else {
+                $('#seccionPendientes').hide();
+                $('#seccionAprobadas').show();
+                $('#tabPendientes').removeClass('tab-btn-active');
+                $('#tabAprobadas').addClass('tab-btn-active');
+                if (!_aprobadasCargadas) {
+                    inicializarFiltrosAprobadas();
+                    cargarLiquidacionesAprobadas();
+                    _aprobadasCargadas = true;
+                }
+            }
+        }
+
+        function inicializarFiltrosAprobadas() {
+            var opciones = '';
+            $('#<%= ddlConductorFiltro.ClientID %> option').each(function () {
+                opciones += '<option value="' + $(this).val() + '">' + $(this).text() + '</option>';
+            });
+            $('#filtroCondAprobadas').html(opciones);
+
+            var hoy = new Date();
+            var hace30 = new Date(hoy);
+            hace30.setDate(hace30.getDate() - 30);
+            $('#filtroDesdeAprobadas').val(hace30.toISOString().substr(0, 10));
+            $('#filtroHastaAprobadas').val(hoy.toISOString().substr(0, 10));
+        }
+
+        function limpiarFiltrosAprobadas() {
+            $('#filtroCondAprobadas').val('');
+            $('#filtroOrdenAprobadas').val('');
+            var hoy = new Date();
+            var hace30 = new Date(hoy);
+            hace30.setDate(hace30.getDate() - 30);
+            $('#filtroDesdeAprobadas').val(hace30.toISOString().substr(0, 10));
+            $('#filtroHastaAprobadas').val(hoy.toISOString().substr(0, 10));
+            cargarLiquidacionesAprobadas();
+        }
+
+        function cargarLiquidacionesAprobadas() {
+            var filtros = {
+                idConductor: parseInt($('#filtroCondAprobadas').val()) || 0,
+                fechaDesde: $('#filtroDesdeAprobadas').val() || '',
+                fechaHasta: $('#filtroHastaAprobadas').val() || '',
+                numeroOrden: $('#filtroOrdenAprobadas').val() || ''
+            };
+
+            $('#loadingAprobadas').show();
+            $('#tbodyAprobadas').html('');
+
+            $.ajax({
+                type: "POST",
+                url: "LiquidacionesPendientes.aspx/ObtenerLiquidacionesAprobadas",
+                data: JSON.stringify(filtros),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (response) {
+                    $('#loadingAprobadas').hide();
+                    var datos = response.d;
+                    if (!datos || datos.length === 0) {
+                        $('#tbodyAprobadas').html(
+                            '<tr><td colspan="7" class="text-center py-4">' +
+                            '<div class="empty-state-table" style="padding:2rem;">' +
+                            '<i class="fas fa-check-circle" style="font-size:2.5rem;color:#059669;display:block;margin-bottom:0.5rem;"></i>' +
+                            '<p class="text-muted mb-0">No se encontraron liquidaciones aprobadas en el rango seleccionado.</p>' +
+                            '</div></td></tr>'
+                        );
+                        $('#lblTotalAprobadas').text('0');
+                        return;
+                    }
+
+                    _aprobadasData = {};
+                    $('#lblTotalAprobadas').text(datos.length);
+                    var html = '';
+
+                    datos.forEach(function (item) {
+                        _aprobadasData[item.IdOrdenViaje] = item;
+
+                        html += '<tr>';
+
+                        // N° Orden
+                        html += '<td><div class="orden-info">';
+                        html += '<span class="orden-numero">' + htmlEncode(item.NumeroOrdenViaje) + '</span>';
+                        html += '<span class="orden-fecha">' + htmlEncode(item.FechaSalida) + '</span>';
+                        html += '</div></td>';
+
+                        // Conductor
+                        html += '<td><div class="conductor-info">';
+                        html += '<i class="fas fa-user-circle mr-2 text-success"></i><div>';
+                        html += '<strong>' + htmlEncode(item.NombreConductor) + '</strong><br/>';
+                        html += '<small class="text-muted">' + htmlEncode(item.PlacaTracto) + ' / ' + htmlEncode(item.PlacaCarreta) + '</small>';
+                        html += '</div></div></td>';
+
+                        // Periodo
+                        html += '<td class="text-center"><div class="viaje-periodo">';
+                        html += '<div class="fecha-item"><i class="fas fa-calendar-check text-success"></i><span>' + htmlEncode(item.FechaSalida) + '</span></div>';
+                        html += '<div class="fecha-item"><i class="fas fa-calendar-times text-danger"></i><span>' + htmlEncode(item.FechaLlegada) + '</span></div>';
+                        html += '</div></td>';
+
+                        // Descuento
+                        var descS = parseFloat(item.DescuentoSoles || 0);
+                        var descD = parseFloat(item.DescuentoDolares || 0);
+                        html += '<td class="text-right">';
+                        if (descS > 0 || descD > 0) {
+                            html += '<div class="balance-preview">';
+                            html += '<div class="balance-row"><span class="balance-moneda">S/</span><span class="balance-monto balance-negativo">' + descS.toFixed(2) + '</span></div>';
+                            html += '<div class="balance-row"><span class="balance-moneda">$</span><span class="balance-monto balance-negativo">' + descD.toFixed(2) + '</span></div>';
+                            html += '</div>';
+                        } else {
+                            html += '<span class="text-muted">-</span>';
+                        }
+                        html += '</td>';
+
+                        // Reintegro
+                        var reintS = parseFloat(item.ReintegroSoles || 0);
+                        var reintD = parseFloat(item.ReintegroDolares || 0);
+                        html += '<td class="text-right">';
+                        if (reintS > 0 || reintD > 0) {
+                            html += '<div class="balance-preview">';
+                            html += '<div class="balance-row"><span class="balance-moneda">S/</span><span class="balance-monto balance-positivo">' + reintS.toFixed(2) + '</span></div>';
+                            html += '<div class="balance-row"><span class="balance-moneda">$</span><span class="balance-monto balance-positivo">' + reintD.toFixed(2) + '</span></div>';
+                            html += '</div>';
+                        } else {
+                            html += '<span class="text-muted">-</span>';
+                        }
+                        html += '</td>';
+
+                        // Balance Final
+                        var bfS = parseFloat(item.BalanceSoles || 0);
+                        var bfD = parseFloat(item.BalanceDolares || 0);
+                        html += '<td class="text-right"><div class="balance-preview">';
+                        html += '<div class="balance-row"><span class="balance-moneda">S/</span><span class="balance-monto ' + (bfS >= 0 ? 'balance-positivo' : 'balance-negativo') + '">' + bfS.toFixed(2) + '</span></div>';
+                        html += '<div class="balance-row"><span class="balance-moneda">$</span><span class="balance-monto ' + (bfD >= 0 ? 'balance-positivo' : 'balance-negativo') + '">' + bfD.toFixed(2) + '</span></div>';
+                        html += '</div></td>';
+
+                        // Acciones
+                        html += '<td class="text-center"><div class="acciones-grupo">';
+                        html += '<button type="button" class="btn btn-info-action" onclick="verDetalleLiquidacion(' + item.IdOrdenViaje + ')" title="Ver Detalle"><i class="fas fa-eye"></i></button>';
+                        html += '<button type="button" class="btn btn-warning-action" onclick="abrirModalCorregir(' + item.IdOrdenViaje + ')" title="Corregir Ajustes"><i class="fas fa-edit"></i></button>';
+                        html += '<button type="button" class="btn btn-danger-action" onclick="abrirModalRevertir(' + item.IdOrdenViaje + ')" title="Revertir Aprobaci\u00f3n"><i class="fas fa-undo"></i></button>';
+                        html += '</div></td>';
+
+                        html += '</tr>';
+                    });
+
+                    $('#tbodyAprobadas').html(html);
+                },
+                error: function (xhr) {
+                    $('#loadingAprobadas').hide();
+                    console.error('Error cargando aprobadas:', xhr.responseText);
+                    $('#tbodyAprobadas').html(
+                        '<tr><td colspan="7" class="text-center text-danger py-4">' +
+                        '<i class="fas fa-exclamation-triangle mr-2"></i>Error al cargar las liquidaciones aprobadas</td></tr>'
+                    );
+                }
+            });
+        }
+
+        function htmlEncode(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(text));
+            return div.innerHTML;
+        }
+
+        // --- Modal Revertir ---
+        function abrirModalRevertir(idOrden) {
+            var item = _aprobadasData[idOrden];
+            if (!item) { alert('No se encontraron datos de la liquidaci\u00f3n.'); return; }
+            $('#revertirIdOrden').val(idOrden);
+            $('#revertirNumeroOrden').val(item.NumeroOrdenViaje);
+            $('#revertirConductor').val(item.NombreConductor);
+            $('#revertirMotivo').val('');
+            $('#modalRevertir').modal('show');
+        }
+
+        function confirmarReversion() {
+            var idOrden = parseInt($('#revertirIdOrden').val());
+            var motivo = $('#revertirMotivo').val().trim();
+
+            if (!motivo) {
+                alert('Debe ingresar el motivo de la reversi\u00f3n.');
+                $('#revertirMotivo').focus();
+                return;
+            }
+            if (motivo.length < 10) {
+                alert('El motivo debe tener al menos 10 caracteres.');
+                $('#revertirMotivo').focus();
+                return;
+            }
+
+            if (!confirm('\u26a0\ufe0f \u00bfEst\u00e1 seguro de REVERTIR esta aprobaci\u00f3n?\n\nLa liquidaci\u00f3n volver\u00e1 al estado PENDIENTE y deber\u00e1 ser revisada nuevamente.')) return;
+
+            var $btn = $('#btnConfirmarReversion');
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Procesando...');
+
+            $.ajax({
+                type: "POST",
+                url: "LiquidacionesPendientes.aspx/RevertirAprobacion",
+                data: JSON.stringify({ idOrdenViaje: idOrden, motivo: motivo }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (response) {
+                    var result = response.d;
+                    if (result.success) {
+                        $('#modalRevertir').modal('hide');
+                        alert('\u2705 ' + result.message);
+                        cargarLiquidacionesAprobadas();
+                    } else {
+                        alert('\u274c ' + result.message);
+                    }
+                    $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Confirmar Reversi\u00f3n');
+                },
+                error: function (xhr) {
+                    console.error('Error:', xhr.responseText);
+                    alert('Error al revertir la aprobaci\u00f3n.');
+                    $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Confirmar Reversi\u00f3n');
+                }
+            });
+        }
+
+        // --- Modal Corregir Ajustes ---
+        function abrirModalCorregir(idOrden) {
+            var item = _aprobadasData[idOrden];
+            if (!item) { alert('No se encontraron datos de la liquidaci\u00f3n.'); return; }
+
+            $('#corregirIdOrden').val(idOrden);
+            $('#corregirNumeroOrden').val(item.NumeroOrdenViaje);
+            $('#corregirConductor').val(item.NombreConductor);
+
+            var descS = parseFloat(item.DescuentoSoles || 0);
+            var descD = parseFloat(item.DescuentoDolares || 0);
+            var reintS = parseFloat(item.ReintegroSoles || 0);
+            var reintD = parseFloat(item.ReintegroDolares || 0);
+
+            $('#corregirDescSolesActual').text(descS.toFixed(2));
+            $('#corregirDescDolaresActual').text(descD.toFixed(2));
+            $('#corregirReintSolesActual').text(reintS.toFixed(2));
+            $('#corregirReintDolaresActual').text(reintD.toFixed(2));
+
+            $('#corregirDescSoles').val(descS > 0 ? descS.toFixed(2) : '');
+            $('#corregirDescDolares').val(descD > 0 ? descD.toFixed(2) : '');
+            $('#corregirReintSoles').val(reintS > 0 ? reintS.toFixed(2) : '');
+            $('#corregirReintDolares').val(reintD > 0 ? reintD.toFixed(2) : '');
+            $('#corregirMotivo').val('');
+
+            $('#modalCorregirAjustes').modal('show');
+        }
+
+        function confirmarCorreccion() {
+            var idOrden = parseInt($('#corregirIdOrden').val());
+            var motivo = $('#corregirMotivo').val().trim();
+            var descS = parseFloat($('#corregirDescSoles').val()) || 0;
+            var descD = parseFloat($('#corregirDescDolares').val()) || 0;
+            var reintS = parseFloat($('#corregirReintSoles').val()) || 0;
+            var reintD = parseFloat($('#corregirReintDolares').val()) || 0;
+
+            if (!motivo) {
+                alert('Debe ingresar el motivo de la correcci\u00f3n.');
+                $('#corregirMotivo').focus();
+                return;
+            }
+            if (motivo.length < 10) {
+                alert('El motivo debe tener al menos 10 caracteres.');
+                $('#corregirMotivo').focus();
+                return;
+            }
+
+            var msg = '\u00bfEst\u00e1 seguro de CORREGIR los ajustes?\n\n';
+            msg += 'Nuevos valores:\n';
+            msg += '  \u2022 Descuento S/: ' + descS.toFixed(2) + '\n';
+            msg += '  \u2022 Descuento $: ' + descD.toFixed(2) + '\n';
+            msg += '  \u2022 Reintegro S/: ' + reintS.toFixed(2) + '\n';
+            msg += '  \u2022 Reintegro $: ' + reintD.toFixed(2) + '\n';
+
+            if (!confirm(msg)) return;
+
+            var $btn = $('#btnConfirmarCorreccion');
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Guardando...');
+
+            $.ajax({
+                type: "POST",
+                url: "LiquidacionesPendientes.aspx/CorregirAjustesAprobada",
+                data: JSON.stringify({
+                    idOrdenViaje: idOrden,
+                    descuentoSoles: descS,
+                    descuentoDolares: descD,
+                    reintegroSoles: reintS,
+                    reintegroDolares: reintD,
+                    motivo: motivo
+                }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (response) {
+                    var result = response.d;
+                    if (result.success) {
+                        $('#modalCorregirAjustes').modal('hide');
+                        alert('\u2705 ' + result.message);
+                        _aprobadasCargadas = false;
+                        cargarLiquidacionesAprobadas();
+                    } else {
+                        alert('\u274c ' + result.message);
+                    }
+                    $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar Correcci\u00f3n');
+                },
+                error: function (xhr) {
+                    console.error('Error:', xhr.responseText);
+                    alert('Error al guardar la correcci\u00f3n.');
+                    $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar Correcci\u00f3n');
+                }
+            });
+        }
     </script>
 
 </asp:Content>

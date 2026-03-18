@@ -9,13 +9,14 @@
     <asp:HiddenField ID="hfIdCliente" runat="server" ClientIDMode="Static" />
     <asp:HiddenField ID="hfEsInternacional" runat="server" ClientIDMode="Static" />
     <asp:HiddenField ID="hfIdCPIC" runat="server" ClientIDMode="Static" />
+    <asp:HiddenField ID="hfIdOrdenViaje" runat="server" ClientIDMode="Static" Value="0" />
     <asp:HiddenField ID="hfProductosDescarga" runat="server" ClientIDMode="Static" />
     <asp:HiddenField ID="hfProductosCarga" runat="server" ClientIDMode="Static" Value="[]" />
     <asp:HiddenField ID="hfGastosFinancieros" runat="server" ClientIDMode="Static" Value="[]" />
     <asp:HiddenField ID="hfOrigenViaje" runat="server" ClientIDMode="Static" />
     <asp:HiddenField ID="HiddenField1" runat="server" Value="0" />
-    <input type="hidden" id="hiddenIngresosAdicionales" name="hiddenIngresosAdicionales" value="[]" />
-    <input type="hidden" id="hiddenGastosAdicionales" name="hiddenGastosAdicionales" value="[]" />
+    <asp:HiddenField ID="hfIngresosAdicionales" runat="server" ClientIDMode="Static" Value="[]" />
+    <asp:HiddenField ID="hfGastosAdicionales" runat="server" ClientIDMode="Static" Value="[]" />
 
     <!-- Panel de mensajes -->
     <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-4">
@@ -1126,7 +1127,7 @@
 
         .btn-danger-custom {
             background-color: var(--danger-color);
-            border-color: var(--danger-color);
+            border-color: var (--danger-color);
             color: white;
             font-weight: 500;
         }
@@ -2046,7 +2047,7 @@
                     ingresosAdicionales.push({ categoria: concepto, nombreCategoria: concepto, descripcion: desc, soles, dolares });
                 }
             });
-            $('#hiddenIngresosAdicionales').val(JSON.stringify(ingresosAdicionales));
+            $('#hfIngresosAdicionales').val(JSON.stringify(ingresosAdicionales));
 
             const gastosAdicionales = [];
             $('#gastosAdicionalesBody tr').each(function () {
@@ -2058,7 +2059,7 @@
                     gastosAdicionales.push({ categoria: concepto, nombreCategoria: concepto, descripcion: desc, soles, dolares });
                 }
             });
-            $('#hiddenGastosAdicionales').val(JSON.stringify(gastosAdicionales));
+            $('#hfGastosAdicionales').val(JSON.stringify(gastosAdicionales));
         }
     </script>
 </asp:Content>

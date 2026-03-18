@@ -6,8 +6,9 @@
     <asp:HiddenField ID="hfIdConductor" runat="server" ClientIDMode="Static" />
     <asp:HiddenField ID="hfIdViajeActivo" runat="server" ClientIDMode="Static" />
     <asp:HiddenField ID="hfGastosFinancieros" runat="server" ClientIDMode="Static" Value="[]" />
-    <input type="hidden" id="hiddenIngresosAdicionales" name="hiddenIngresosAdicionales" value="[]" />
-    <input type="hidden" id="hiddenGastosAdicionales" name="hiddenGastosAdicionales" value="[]" />
+    <asp:HiddenField ID="hfIngresosAdicionales" runat="server" ClientIDMode="Static" Value="[]" />
+    <asp:HiddenField ID="hfGastosAdicionales" runat="server" ClientIDMode="Static" Value="[]" />
+    <asp:HiddenField ID="hfNumeroOrdenExistente" runat="server" ClientIDMode="Static" Value="" />
 
     <!-- Panel de mensajes -->
     <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-4">
@@ -215,17 +216,20 @@
                                             <div class="col-6 col-md-3">
                                                 <label class="form-label-summary">N° de Viaje</label>
                                                 <p class="form-value-summary">
-                                                    <asp:Label ID="lblNumeroViajeResumen" runat="server"></asp:Label></p>
+                                                    <asp:Label ID="lblNumeroViajeResumen" runat="server"></asp:Label>
+                                                </p>
                                             </div>
                                             <div class="col-6 col-md-3">
                                                 <label class="form-label-summary">Fecha Inicio</label>
                                                 <p class="form-value-summary">
-                                                    <asp:Label ID="lblFechaInicioResumen" runat="server"></asp:Label></p>
+                                                    <asp:Label ID="lblFechaInicioResumen" runat="server"></asp:Label>
+                                                </p>
                                             </div>
                                             <div class="col-6 col-md-3">
                                                 <label class="form-label-summary">Despachos</label>
                                                 <p class="form-value-summary">
-                                                    <asp:Label ID="lblDespachosResumen" runat="server"></asp:Label></p>
+                                                    <asp:Label ID="lblDespachosResumen" runat="server"></asp:Label>
+                                                </p>
                                             </div>
                                             <div class="col-6 col-md-3">
                                                 <label class="form-label-summary">Estado</label>
@@ -770,6 +774,13 @@
                                                             onclick='verDetalleLiquidacion(<%# Eval("IdOrdenViaje") %>)'>
                                                             <i class="fas fa-eye"></i>
                                                         </button>
+                                                        <asp:Panel runat="server" Visible='<%# Eval("Estado").ToString() == "PENDIENTE" %>' style="display:inline-block;">
+                                                            <button type="button" class="btn btn-sm ml-1 btn-retirar-liq"
+                                                                onclick='abrirModalRetirar(<%# Eval("IdOrdenViaje") %>)'
+                                                                title="Retirar liquidación para corregir">
+                                                                <i class="fas fa-undo mr-1"></i>Retirar
+                                                            </button>
+                                                        </asp:Panel>
                                                     </ItemTemplate>
                                                     <ItemStyle CssClass="text-center" />
                                                 </asp:TemplateField>
@@ -807,11 +818,16 @@
                             <div class="row">
                                 <div class="col-12 col-md-4">
                                     <label class="form-label">Estación/Peaje <span class="text-danger">*</span></label>
-                                    <select class="form-control form-control-sm" id="nuevoPeajeEstacion">
-                                        <option value="">-- Seleccione un peaje --</option>
-                                    </select>
+                                    <div class="peaje-autocomplete-wrapper">
+                                        <div class="peaje-input-container">
+                                            <input type="text" class="form-control form-control-sm" id="nuevoPeajeEstacion"
+                                                placeholder="Buscar peaje..." autocomplete="off">
+                                            <i class="fas fa-search peaje-search-icon"></i>
+                                        </div>
+                                        <div id="peajeDropdown" class="peaje-dropdown" style="display:none;"></div>
+                                    </div>
                                     <small class="form-text text-muted">
-                                        <i class="fas fa-road mr-1"></i>Seleccione el peaje de la lista
+                                        <i class="fas fa-keyboard mr-1"></i>Escriba para filtrar y seleccione de la lista
                                     </small>
                                 </div>
                                 <div class="col-12 col-md-4">
@@ -1270,6 +1286,19 @@
             font-weight: 500;
             padding: 0.375rem 0.75rem;
         }
+
+        .btn-retirar-liq {
+            background-color: #d97706;
+            border-color: #d97706;
+            color: white;
+            font-weight: 500;
+        }
+
+            .btn-retirar-liq:hover {
+                background-color: #b45309;
+                border-color: #b45309;
+                color: white;
+            }
 
         .btn-detail-modal {
             background-color: transparent;
@@ -1751,28 +1780,24 @@
                 gap: 0.5rem;
             }
 
-            .table-conductor,
-            .table-financial,
-            .table-modal {
+            .table-conductor {
                 font-size: 0.75rem;
             }
 
-                .table-conductor thead th,
-                .table-financial thead th,
-                .table-modal thead th {
+                .table-conductor thead th {
                     font-size: 0.7rem;
                     padding: 0.5rem 0.25rem;
                 }
 
-                .table-conductor tbody td,
-                .table-financial tbody td {
+                .table-conductor tbody td {
                     padding: 0.5rem 0.25rem;
                 }
 
             .btn-detail-modal {
-                display: block;
-                width: 100%;
+                display: inline-block;
                 margin-top: 0.25rem;
+                font-size: 0.7rem;
+                padding: 0.2rem 0.5rem;
             }
 
             .modal-dialog {
@@ -1790,27 +1815,350 @@
             .btn-md-auto {
                 width: 100%;
             }
+
+            /* Ocultar columnas menos importantes en tabla despachos */
+            .table-conductor th:nth-child(5),
+            .table-conductor td:nth-child(5),
+            .table-conductor th:nth-child(6),
+            .table-conductor td:nth-child(6) {
+                display: none;
+            }
+
+            /* Tabs scrollables */
+            .nav-tabs-custom {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+
+                .nav-tabs-custom::-webkit-scrollbar {
+                    display: none;
+                }
+
+                .nav-tabs-custom .nav-item {
+                    flex-shrink: 0;
+                }
+
+            /* Cards de resumen viaje apiladas */
+            .alert-info-conductor .row {
+                flex-direction: column;
+            }
+
+            .alert-info-conductor .col-12.col-md-4 {
+                margin-top: 1rem;
+            }
+
+            /* =============================================
+               TABLAS FINANCIERAS → Card layout en móvil
+               ============================================= */
+            .table-financial {
+                border-collapse: separate;
+                border-spacing: 0;
+                border: 0;
+            }
+
+                .table-financial thead {
+                    display: none;
+                }
+
+                .table-financial,
+                .table-financial tbody,
+                .table-financial tfoot {
+                    display: block;
+                    width: 100%;
+                }
+
+                    .table-financial tbody tr {
+                        display: block;
+                        border: 1px solid var(--border-color);
+                        border-radius: 0.5rem;
+                        padding: 0.75rem;
+                        margin-bottom: 0.75rem;
+                        background: #fff;
+                        position: relative;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+                    }
+
+                    .table-financial tbody td {
+                        display: block;
+                        border: none !important;
+                        padding: 0.25rem 0;
+                        width: 100% !important;
+                        text-align: left !important;
+                    }
+
+                        /* Ocultar columna # */
+                        .table-financial tbody td:first-child {
+                            display: none;
+                        }
+
+                        /* Concepto → título de la card */
+                        .table-financial tbody td:nth-child(2) {
+                            border-bottom: 1px solid var(--medium-gray) !important;
+                            padding-bottom: 0.5rem;
+                            margin-bottom: 0.5rem;
+                            padding-right: 70px;
+                            font-size: 0.9rem;
+                        }
+
+                        /* Descripción → ancho completo */
+                        .table-financial tbody td:nth-child(3) {
+                            margin-bottom: 0.5rem;
+                        }
+
+                            .table-financial tbody td:nth-child(3)::before {
+                                content: 'Descripción';
+                                display: block;
+                                font-size: 0.7rem;
+                                font-weight: 600;
+                                color: var(--text-secondary);
+                                text-transform: uppercase;
+                                letter-spacing: 0.03em;
+                                margin-bottom: 0.15rem;
+                            }
+
+                        /* Soles y Dólares lado a lado */
+                        .table-financial tbody td:nth-child(4),
+                        .table-financial tbody td:nth-child(5) {
+                            display: inline-block !important;
+                            width: 48% !important;
+                            vertical-align: top;
+                        }
+
+                        .table-financial tbody td:nth-child(4) {
+                            margin-right: 3%;
+                        }
+
+                            .table-financial tbody td:nth-child(4)::before {
+                                content: 'Soles (S/)';
+                                display: block;
+                                font-size: 0.7rem;
+                                font-weight: 600;
+                                color: var(--text-secondary);
+                                text-transform: uppercase;
+                                letter-spacing: 0.03em;
+                                margin-bottom: 0.15rem;
+                            }
+
+                        .table-financial tbody td:nth-child(5)::before {
+                            content: 'Dólares ($)';
+                            display: block;
+                            font-size: 0.7rem;
+                            font-weight: 600;
+                            color: var(--text-secondary);
+                            text-transform: uppercase;
+                            letter-spacing: 0.03em;
+                            margin-bottom: 0.15rem;
+                        }
+
+                        /* Badge/Acción → esquina superior derecha */
+                        .table-financial tbody td:nth-child(6) {
+                            position: absolute;
+                            top: 0.6rem;
+                            right: 0.75rem;
+                            width: auto !important;
+                            padding: 0;
+                        }
+
+                    /* Inputs táctiles más grandes */
+                    .table-financial .form-control-sm {
+                        font-size: 0.875rem;
+                        padding: 0.5rem 0.625rem;
+                        min-height: 38px;
+                    }
+
+                    /* Footer de tabla financiera */
+                    .table-financial tfoot tr {
+                        display: block;
+                    }
+
+                        .table-financial tfoot tr td {
+                            display: block;
+                            border: none !important;
+                        }
+
+                        .table-financial tfoot tr.total-row {
+                            background: var(--light-gray);
+                            border-radius: 0.5rem;
+                            padding: 0.75rem;
+                            margin-top: 0.5rem;
+                            text-align: center;
+                        }
+
+                            .table-financial tfoot tr.total-row td:last-child:empty {
+                                display: none;
+                            }
+
+            /* =============================================
+               TABLAS DE MODALES → Card layout en móvil
+               ============================================= */
+            .table-modal thead {
+                display: none;
+            }
+
+            .table-modal,
+            .table-modal tbody {
+                display: block;
+                width: 100%;
+            }
+
+                .table-modal tbody tr {
+                    display: block;
+                    border: 1px solid var(--border-color);
+                    border-radius: 0.5rem;
+                    padding: 0.75rem;
+                    margin: 0.5rem 0.25rem;
+                    background: #fff;
+                    position: relative;
+                }
+
+                .table-modal tbody td {
+                    display: block;
+                    border: none !important;
+                    padding: 0.2rem 0;
+                }
+
+                    /* Primera columna (nombre/estación) → título de card */
+                    .table-modal tbody td:first-child {
+                        font-weight: 600;
+                        color: var(--primary-color);
+                        border-bottom: 1px solid var(--medium-gray);
+                        padding-bottom: 0.4rem;
+                        margin-bottom: 0.4rem;
+                        padding-right: 50px;
+                    }
+
+                    .table-modal tbody td:nth-child(2)::before {
+                        content: 'Fecha: ';
+                        font-weight: 600;
+                        color: var(--text-secondary);
+                        font-size: 0.75rem;
+                    }
+
+                    .table-modal tbody td:nth-child(3)::before {
+                        content: 'Comprobante: ';
+                        font-weight: 600;
+                        color: var(--text-secondary);
+                        font-size: 0.75rem;
+                    }
+
+                    /* Montos lado a lado */
+                    .table-modal tbody td:nth-child(4),
+                    .table-modal tbody td:nth-child(5) {
+                        display: inline-block;
+                        width: 48%;
+                        vertical-align: top;
+                    }
+
+                    .table-modal tbody td:nth-child(4) {
+                        margin-right: 3%;
+                    }
+
+                        .table-modal tbody td:nth-child(4)::before {
+                            content: 'Soles: ';
+                            font-weight: 600;
+                            color: var(--text-secondary);
+                            font-size: 0.75rem;
+                        }
+
+                    .table-modal tbody td:nth-child(5)::before {
+                        content: 'Dólares: ';
+                        font-weight: 600;
+                        color: var(--text-secondary);
+                        font-size: 0.75rem;
+                    }
+
+                    /* Botón eliminar → esquina superior derecha */
+                    .table-modal tbody td:last-child {
+                        position: absolute;
+                        top: 0.5rem;
+                        right: 0.5rem;
+                    }
         }
 
-        @media (max-width: 576px) {
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
+        /* === AUTOCOMPLETE PEAJES === */
+        .peaje-autocomplete-wrapper {
+            position: relative;
+        }
 
-            .section-title {
-                font-size: 1rem;
-            }
+        .peaje-input-container {
+            position: relative;
+        }
 
-            .px-4 {
-                padding-left: 0.5rem !important;
-                padding-right: 0.5rem !important;
-            }
+        .peaje-input-container input {
+            padding-right: 2rem;
+        }
+
+        .peaje-search-icon {
+            position: absolute;
+            right: 0.625rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            pointer-events: none;
+        }
+
+        .peaje-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .peaje-dropdown-item {
+            padding: 0.6rem 0.75rem;
+            cursor: pointer;
+            font-size: 0.8125rem;
+            border-bottom: 1px solid var(--light-gray);
+            transition: background 0.1s;
+        }
+
+        .peaje-dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .peaje-dropdown-item:hover,
+        .peaje-dropdown-item.highlighted {
+            background-color: #dbeafe;
+            color: var(--primary-dark);
+        }
+
+        .peaje-dropdown-item strong {
+            color: var(--primary-color);
+        }
+
+        .peaje-dropdown-empty {
+            padding: 0.75rem;
+            color: var(--text-secondary);
+            font-size: 0.8125rem;
+            text-align: center;
+        }
+
+        .peaje-selected-indicator {
+            position: absolute;
+            right: 0.625rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--success-color);
+            font-size: 0.75rem;
+            pointer-events: none;
+            display: none;
         }
     </style>
 
     <!-- JAVASCRIPT COMPLETO Y CORREGIDO -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+
 
     <script>
         // === VARIABLES GLOBALES ===
@@ -1818,6 +2166,7 @@
         let contadorGastosAdicionales = 0;
 
         // Datos de modales
+        let _peajeSeleccionado = '';
         let peajesData = [];
         let reparacionesData = [];
         let hospedajesData = [];
@@ -1996,38 +2345,124 @@
         }
 
         function llenarSelectEstaciones() {
-            const select = $('#nuevoPeajeEstacion');
-            console.log('Llenando select, elemento encontrado:', select.length > 0);
+            if (!estacionesPeaje || estacionesPeaje.length === 0) {
+                console.error('❌ No hay estaciones para configurar');
+                return;
+            }
+            console.log('✅ Autocomplete configurado con', estacionesPeaje.length, 'peajes');
 
-            select.empty();
-            select.append('<option value="">-- Seleccione un peaje --</option>');
+            const input = $('#nuevoPeajeEstacion');
 
-            if (estacionesPeaje && estacionesPeaje.length > 0) {
-                estacionesPeaje.forEach((est, index) => {
-                    console.log(`Agregando peaje ${index + 1}:`, est.nombre);
-                    select.append(`<option value="${est.nombre}">${est.nombre}</option>`);
-                });
-                console.log('✅ Select llenado con', estacionesPeaje.length, 'peajes');
+            input.off('input.peaje').on('input.peaje', function () {
+                _peajeSeleccionado = '';
+                actualizarIconoPeaje(false);
+                const q = $(this).val().trim();
+                if (q.length === 0) {
+                    mostrarDropdownPeajes(estacionesPeaje, '');
+                } else {
+                    const filtrados = estacionesPeaje.filter(e =>
+                        e.nombre.toLowerCase().includes(q.toLowerCase())
+                    );
+                    mostrarDropdownPeajes(filtrados, q);
+                }
+            });
+
+            input.off('focus.peaje').on('focus.peaje', function () {
+                const q = $(this).val().trim();
+                const filtrados = q
+                    ? estacionesPeaje.filter(e => e.nombre.toLowerCase().includes(q.toLowerCase()))
+                    : estacionesPeaje;
+                mostrarDropdownPeajes(filtrados, q);
+            });
+
+            input.off('keydown.peaje').on('keydown.peaje', function (e) {
+                const items = $('#peajeDropdown .peaje-dropdown-item');
+                const current = $('#peajeDropdown .peaje-dropdown-item.highlighted');
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (!current.length) items.first().addClass('highlighted');
+                    else { current.removeClass('highlighted'); current.next('.peaje-dropdown-item').addClass('highlighted'); }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (current.length) { current.removeClass('highlighted'); current.prev('.peaje-dropdown-item').addClass('highlighted'); }
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (current.length) current.trigger('click');
+                } else if (e.key === 'Escape') {
+                    $('#peajeDropdown').hide();
+                }
+            });
+
+            $(document).off('click.peaje').on('click.peaje', function (e) {
+                if (!$(e.target).closest('.peaje-autocomplete-wrapper').length) {
+                    $('#peajeDropdown').hide();
+                }
+            });
+        }
+
+        function mostrarDropdownPeajes(items, query) {
+            const dropdown = $('#peajeDropdown');
+            dropdown.empty();
+
+            if (items.length === 0) {
+                dropdown.append('<div class="peaje-dropdown-empty"><i class="fas fa-search mr-1"></i>No se encontraron peajes</div>');
             } else {
-                console.error('❌ No hay estaciones para llenar');
+                items.forEach(item => {
+                    let label = item.nombre;
+                    if (query) {
+                        const regex = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+                        label = item.nombre.replace(regex, '<strong>$1</strong>');
+                    }
+                    const div = $('<div class="peaje-dropdown-item"></div>')
+                        .html(label)
+                        .on('click', function () { seleccionarPeaje(item.nombre); });
+                    dropdown.append(div);
+                });
+            }
+
+            dropdown.show();
+        }
+
+        function seleccionarPeaje(nombre) {
+            _peajeSeleccionado = nombre;
+            $('#nuevoPeajeEstacion').val(nombre);
+            $('#peajeDropdown').hide();
+            actualizarIconoPeaje(true);
+        }
+
+        function actualizarIconoPeaje(seleccionado) {
+            const wrapper = $('#nuevoPeajeEstacion').closest('.peaje-input-container');
+            wrapper.find('.peaje-search-icon').toggle(!seleccionado);
+            if (seleccionado) {
+                if (!wrapper.find('.peaje-selected-indicator').length) {
+                    wrapper.append('<i class="fas fa-check-circle peaje-selected-indicator" style="display:block;"></i>');
+                } else {
+                    wrapper.find('.peaje-selected-indicator').show();
+                }
+            } else {
+                wrapper.find('.peaje-selected-indicator').hide();
             }
         }
 
         function abrirModalPeajes() {
+            _peajeSeleccionado = '';
+            $('#nuevoPeajeEstacion').val('');
+            actualizarIconoPeaje(false);
+            $('#peajeDropdown').hide();
             $('#modalPeajes').modal('show');
             actualizarTablaPeajes();
         }
 
         function agregarPeaje() {
-            const estacion = $('#nuevoPeajeEstacion').val().trim();
+            const estacion = _peajeSeleccionado || '';
             const fecha = $('#nuevoPeajeFecha').val();
             const comprobante = $('#nuevoPeajeComprobante').val().trim();
             const soles = parseFloat($('#nuevoPeajeSoles').val()) || 0;
             const dolares = parseFloat($('#nuevoPeajeDolares').val()) || 0;
             const observaciones = $('#nuevoPeajeObservaciones').val().trim();
 
-            if (!estacion || estacion === '') {
-                alert('⚠️ Debe seleccionar una estación de peaje');
+            if (!estacion) {
+                alert('⚠️ Debe seleccionar una estación de peaje de la lista');
                 $('#nuevoPeajeEstacion').focus();
                 return;
             }
@@ -2047,7 +2482,9 @@
                 estacion, fecha, comprobante, soles, dolares, observaciones
             });
 
+            _peajeSeleccionado = '';
             $('#nuevoPeajeEstacion').val('');
+            actualizarIconoPeaje(false);
             $('#nuevoPeajeComprobante, #nuevoPeajeObservaciones').val('');
             $('#nuevoPeajeSoles, #nuevoPeajeDolares').val('');
 
@@ -2361,7 +2798,7 @@
                     ingresosAdicionales.push({ categoria: concepto, nombreCategoria: concepto, descripcion: desc, soles, dolares });
                 }
             });
-            $('#hiddenIngresosAdicionales').val(JSON.stringify(ingresosAdicionales));
+            $('#hfIngresosAdicionales').val(JSON.stringify(ingresosAdicionales));
 
             const gastosAdicionales = [];
             $('#gastosAdicionalesBody tr').each(function () {
@@ -2373,7 +2810,7 @@
                     gastosAdicionales.push({ categoria: concepto, nombreCategoria: concepto, descripcion: desc, soles, dolares });
                 }
             });
-            $('#hiddenGastosAdicionales').val(JSON.stringify(gastosAdicionales));
+            $('#hfGastosAdicionales').val(JSON.stringify(gastosAdicionales));
         }
 
         // === FUNCIONES AUXILIARES ===
@@ -2395,5 +2832,151 @@
         function verDetalleLiquidacion(idOrdenViaje) {
             window.location.href = `DetalleOrdenViaje.aspx?id=${idOrdenViaje}`;
         }
+
+        // === Retirar Liquidación ===
+        var idOrdenViajeARetirar = 0;
+
+        function abrirModalRetirar(idOrdenViaje) {
+            idOrdenViajeARetirar = idOrdenViaje;
+            $('#modalRetirarLiquidacion').modal('show');
+        }
+
+        function confirmarRetirar() {
+            if (idOrdenViajeARetirar === 0) return;
+
+            var btnConfirmar = $('#btnConfirmarRetirar');
+            btnConfirmar.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Procesando...');
+
+            $.ajax({
+                type: 'POST',
+                url: 'DashboardConductor.aspx/RetirarLiquidacion',
+                data: JSON.stringify({ idOrdenViaje: idOrdenViajeARetirar }),
+                contentType: 'application/json; charset=utf-8',
+                dataType: 'json',
+                success: function (response) {
+                    var data = response.d;
+                    $('#modalRetirarLiquidacion').modal('hide');
+
+                    if (data.success) {
+                        alert('✅ ' + data.message);
+                        location.reload();
+                    } else {
+                        alert('⚠️ ' + data.message);
+                    }
+                },
+                error: function (xhr) {
+                    $('#modalRetirarLiquidacion').modal('hide');
+                    alert('❌ Error de comunicación. Intente nuevamente.');
+                    console.error(xhr.responseText);
+                },
+                complete: function () {
+                    btnConfirmar.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Sí, Retirar');
+                    idOrdenViajeARetirar = 0;
+                }
+            });
+        }
+
+        function validarFormContrasena() {
+            const actual = document.getElementById('<%= txtContrasenaActual.ClientID %>').value;
+            const nueva = document.getElementById('<%= txtNuevaContrasena.ClientID %>').value;
+            const confirmar = document.getElementById('<%= txtConfirmarContrasena.ClientID %>').value;
+
+            if (!actual) {
+                alert('Por favor ingresa tu contraseña actual.');
+                return false;
+            }
+            if (!nueva || nueva.length < 6) {
+                alert('La nueva contraseña debe tener al menos 6 caracteres.');
+                return false;
+            }
+            if (nueva !== confirmar) {
+                alert('Las contraseñas nuevas no coinciden.');
+                return false;
+            }
+            return true;
+        }
     </script>
-    </asp:Content>
+
+    <!-- Modal Retirar Liquidación -->
+    <div class="modal fade" id="modalRetirarLiquidacion" tabindex="-1" role="dialog" aria-labelledby="modalRetirarLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#d97706;color:white;">
+                    <h5 class="modal-title" id="modalRetirarLabel">
+                        <i class="fas fa-undo mr-2"></i>Retirar Liquidación
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar" style="color:white;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning mb-3">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <strong>¿Está seguro de retirar esta liquidación?</strong>
+                    </div>
+                    <p>Al retirar la liquidación:</p>
+                    <ul class="mb-0">
+                        <li>Se <strong>eliminará</strong> la orden de viaje y todos sus datos financieros.</li>
+                        <li>El viaje será <strong>reabierto</strong> y aparecerá nuevamente en la pestaña "Mis Viajes".</li>
+                        <li>Podrá volver a completar y enviar la liquidación.</li>
+                    </ul>
+                    <hr />
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Solo puede retirar liquidaciones que aún no hayan sido revisadas por la administración.
+                    </small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnConfirmarRetirar" class="btn" style="background:#d97706;color:white;border-color:#d97706;" onclick="confirmarRetirar()">
+                        <i class="fas fa-undo mr-1"></i>Sí, Retirar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cambiar Contraseña -->
+    <div class="modal fade" id="modalCambiarContrasena" tabindex="-1" role="dialog" aria-labelledby="modalCambiarContrasenaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title" id="modalCambiarContrasenaLabel">
+                        <i class="fas fa-key mr-2"></i>Cambiar Contraseña
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <asp:Panel ID="pnlMensajeContrasena" runat="server" Visible="false" CssClass="mb-3">
+                        <asp:Label ID="lblMensajeContrasena" runat="server"></asp:Label>
+                    </asp:Panel>
+                    <div class="form-group">
+                        <label class="form-label">Contraseña Actual <span class="text-danger">*</span></label>
+                        <asp:TextBox ID="txtContrasenaActual" runat="server" CssClass="form-control"
+                            TextMode="Password" placeholder="Ingresa tu contraseña actual"></asp:TextBox>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nueva Contraseña <span class="text-danger">*</span></label>
+                        <asp:TextBox ID="txtNuevaContrasena" runat="server" CssClass="form-control"
+                            TextMode="Password" placeholder="Mínimo 6 caracteres"></asp:TextBox>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">Confirmar Nueva Contraseña <span class="text-danger">*</span></label>
+                        <asp:TextBox ID="txtConfirmarContrasena" runat="server" CssClass="form-control"
+                            TextMode="Password" placeholder="Repite la nueva contraseña"></asp:TextBox>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cancelar</button>
+                    <asp:Button ID="btnCambiarContrasena" runat="server"
+                        Text="Cambiar Contraseña"
+                        CssClass="btn btn-primary-custom"
+                        OnClick="btnCambiarContrasena_Click"
+                        OnClientClick="return validarFormContrasena();" />
+                </div>
+            </div>
+        </div>
+    </div>
+</asp:Content>

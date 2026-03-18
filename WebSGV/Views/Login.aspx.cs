@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Web;
 using System.Web.UI;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -43,12 +44,29 @@ namespace WebSGV.Views
 
             if (resultado.EsValido)
             {
+                // ✅ Limpiar sesión anterior sin abandonarla (mantiene el SessionID
+                // para que ViewStateUserKey no entre en conflicto)
+                Session.Clear();
+
+                // Guardar datos directamente en la sesión actual
+                Session["UsuarioID"] = resultado.IdUsuario.ToString();
+                Session["IdUsuario"] = resultado.IdUsuario;
+                Session["Rol"] = resultado.Rol;
+                Session["Nombre"] = resultado.Nombre;
+                Session["NombreUsuario"] = resultado.NombreUsuario;
+
+                if (resultado.Rol.ToUpper() == "CONDUCTOR" && resultado.IdConductor.HasValue)
+                {
+                    Session["IdConductor"] = resultado.IdConductor.Value;
+                }
+
                 // Si la opción "Recordarme" está marcada, guardar una cookie
                 if (chkRemember.Checked)
                 {
                     HttpCookie cookie = new HttpCookie("SGVUserInfo");
                     cookie.Values.Add("Usuario", usuario);
                     cookie.Expires = DateTime.Now.AddDays(15);
+                    cookie.HttpOnly = true;
                     Response.Cookies.Add(cookie);
                 }
 
@@ -70,32 +88,35 @@ namespace WebSGV.Views
             }
         }
 
-        private (bool EsValido, string Rol, string Nombre) ValidarUsuario(string usuario, string contrasena)
+        private (bool EsValido, string Rol, string Nombre, string NombreUsuario, 
+                 int IdUsuario, int? IdConductor) ValidarUsuario(string usuario, string contrasena)
         {
             bool esValido = false;
             string rol = "";
             string nombre = "";
+            string nombreUsuario = "";
+            int idUsuario = 0;
+            int? idConductor = null;
 
             string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                // Query que incluye idConductor para conductores
+                // 1. Obtener el hash almacenado (ya NO comparamos en el WHERE)
                 string query = @"
                     SELECT 
                         u.idUsuario, 
                         u.nombreUsuario, 
                         u.nombre, 
                         u.rol,
-                        u.idConductor
+                        u.idConductor,
+                        u.contrasena
                     FROM Usuarios u
                     WHERE u.nombreUsuario = @Usuario 
-                        AND u.contrasena = @Contrasena 
                         AND u.activo = 1";
 
                 SqlCommand command = new SqlCommand(query, connection);
                 command.Parameters.AddWithValue("@Usuario", usuario);
-                command.Parameters.AddWithValue("@Contrasena", contrasena);
 
                 try
                 {
@@ -104,33 +125,41 @@ namespace WebSGV.Views
 
                     if (reader.Read())
                     {
-                        // Guardar información del usuario en la sesión
-                        Session["UsuarioID"] = reader["idUsuario"].ToString();
-                        Session["IdUsuario"] = Convert.ToInt32(reader["idUsuario"]); // Como int también
-                        Session["NombreUsuario"] = reader["nombreUsuario"].ToString();
-                        Session["Nombre"] = reader["nombre"].ToString();
-                        Session["Rol"] = reader["rol"].ToString();
+                        string storedHash = reader["contrasena"].ToString();
+                        idUsuario = Convert.ToInt32(reader["idUsuario"]);
 
-                        rol = reader["rol"].ToString();
-                        nombre = reader["nombre"].ToString();
-
-                        // Si es conductor, guardar también el idConductor
-                        if (rol.ToUpper() == "CONDUCTOR" && reader["idConductor"] != DBNull.Value)
+                        // 2. Verificar contraseña con PasswordHelper
+                        if (PasswordHelper.VerifyPassword(contrasena, storedHash))
                         {
-                            int idConductor = Convert.ToInt32(reader["idConductor"]);
-                            Session["IdConductor"] = idConductor;
+                            nombreUsuario = reader["nombreUsuario"].ToString();
+                            nombre = reader["nombre"].ToString();
+                            rol = reader["rol"].ToString();
 
-                            System.Diagnostics.Debug.WriteLine($"🚗 Conductor detectado: {nombre} (ID: {idConductor})");
-                        }
-                        else
-                        {
-                            System.Diagnostics.Debug.WriteLine($"👨‍💼 Admin detectado: {nombre}");
-                        }
+                            if (rol.ToUpper() == "CONDUCTOR" && reader["idConductor"] != DBNull.Value)
+                            {
+                                idConductor = Convert.ToInt32(reader["idConductor"]);
+                                System.Diagnostics.Debug.WriteLine($"🚗 Conductor detectado: {nombre} (ID: {idConductor})");
+                            }
+                            else
+                            {
+                                System.Diagnostics.Debug.WriteLine($"👨‍💼 Admin detectado: {nombre}");
+                            }
 
-                        esValido = true;
+                            esValido = true;
+
+                            // Cerrar reader antes de ejecutar UPDATE
+                            reader.Close();
+
+                            // 3. Migrar contraseña antigua a hash si es necesario
+                            if (PasswordHelper.NeedsMigration(storedHash))
+                            {
+                                MigrarContrasena(connection, idUsuario, contrasena);
+                            }
+                        }
                     }
 
-                    reader.Close();
+                    if (!reader.IsClosed)
+                        reader.Close();
                 }
                 catch (Exception ex)
                 {
@@ -138,7 +167,34 @@ namespace WebSGV.Views
                 }
             }
 
-            return (esValido, rol, nombre);
+            return (esValido, rol, nombre, nombreUsuario, idUsuario, idConductor);
+        }
+
+        /// <summary>
+        /// Migra automáticamente una contraseña en texto plano al formato hash PBKDF2.
+        /// Se ejecuta una sola vez por usuario al hacer login exitoso con contraseña antigua.
+        /// </summary>
+        private void MigrarContrasena(SqlConnection connection, int idUsuario, string contrasenaPlana)
+        {
+            try
+            {
+                string nuevoHash = PasswordHelper.HashPassword(contrasenaPlana);
+
+                string queryUpdate = "UPDATE Usuarios SET contrasena = @NuevoHash WHERE idUsuario = @IdUsuario";
+
+                using (SqlCommand cmdUpdate = new SqlCommand(queryUpdate, connection))
+                {
+                    cmdUpdate.Parameters.AddWithValue("@NuevoHash", nuevoHash);
+                    cmdUpdate.Parameters.AddWithValue("@IdUsuario", idUsuario);
+                    cmdUpdate.ExecuteNonQuery();
+                }
+
+                System.Diagnostics.Debug.WriteLine($"🔒 Contraseña migrada a hash para usuario ID: {idUsuario}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"⚠️ Error migrando contraseña: {ex.Message}");
+            }
         }
 
         private void MostrarMensaje(string mensaje)
@@ -146,9 +202,14 @@ namespace WebSGV.Views
             ClientScript.RegisterStartupScript(
                 this.GetType(),
                 "alert",
-                $"alert('{mensaje}');",
+                $"alert('{HttpUtility.JavaScriptStringEncode(mensaje)}');",
                 true
             );
+        }
+
+        protected void lnkForgotPassword_Click(object sender, EventArgs e)
+        {
+            Response.Redirect("~/Views/RecuperarContrasena.aspx");
         }
     }
 }
