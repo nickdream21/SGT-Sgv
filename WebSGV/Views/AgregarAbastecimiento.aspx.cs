@@ -8,6 +8,7 @@ using System.Linq;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -435,8 +436,8 @@ namespace WebSGV.Views
                         cmd.Parameters.Add("@idLugarAbastecimiento", SqlDbType.Int).Value = idLugarAbastecimiento;
 
                         // Fecha y hora
-                        DateTime fecha = DateTime.Now.Date;
-                        TimeSpan hora = DateTime.Now.TimeOfDay;
+                        DateTime fecha = FechaHelper.Hoy();
+                        TimeSpan hora = FechaHelper.Ahora().TimeOfDay;
 
                         try { if (!string.IsNullOrEmpty(txtFecha.Text)) fecha = Convert.ToDateTime(txtFecha.Text).Date; }
                         catch { RegistrarError("Error al convertir fecha, usando fecha actual"); }

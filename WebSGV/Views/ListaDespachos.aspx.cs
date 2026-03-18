@@ -10,6 +10,7 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using static WebSGV.Views.ListaDespachos;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -100,6 +101,7 @@ namespace WebSGV.Views
             public DateTime? FechaEmisionCPIC { get; set; }
             public decimal? ValorFlete { get; set; }
             public List<int> IdsDespachos { get; set; }
+            public string EstadoLote { get; set; }
 
             public LoteRegistrado()
             {
@@ -108,6 +110,7 @@ namespace WebSGV.Views
                 NumeroFactura = "";
                 NumeroCPIC = "";
                 UsuarioCreacion = "";
+                EstadoLote = "ACTIVO";
             }
         }
 
@@ -326,7 +329,12 @@ namespace WebSGV.Views
                         vp.descripcionViaje
                     FROM ViajesEnProgreso vp
                     INNER JOIN Conductor c ON vp.idConductor = c.idConductor
-                    WHERE vp.estadoViaje = 'ABIERTO' AND vp.activo = 1";
+                    WHERE vp.estadoViaje = 'ABIERTO' AND vp.activo = 1
+                        AND EXISTS (
+                            SELECT 1 FROM Despachos
+                            WHERE idViajeProgreso = vp.idViajeProgreso
+                              AND activo = 1
+                        )";
 
                 List<SqlParameter> parametros = new List<SqlParameter>();
 
@@ -579,13 +587,17 @@ namespace WebSGV.Views
                             MAX(ISNULL(c.numeroCPIC, '')) AS NumeroCPIC,
                             MIN(d.fechaCreacion) AS FechaCreacion,
                             MAX(ISNULL(d.usuarioCreacion, 'Sistema')) AS UsuarioCreacion,
-                            
+
                             -- Datos para edición
                             MAX(f.fechaEmision) AS FechaEmisionFactura,
                             MAX(f.valorTotal) AS ValorTotalFactura,
                             MAX(c.fechaEmision) AS FechaEmisionCPIC,
-                            MAX(c.valorTotalFlete) AS ValorFlete
-                            
+                            MAX(c.valorTotalFlete) AS ValorFlete,
+
+                            -- Estado derivado del lote
+                            CASE WHEN SUM(CASE WHEN d.estadoDespacho = 'ANULADO' THEN 1 ELSE 0 END) = COUNT(*)
+                                 THEN 'ANULADO' ELSE 'ACTIVO' END AS EstadoLote
+
                         FROM Despachos d
                         INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
                         LEFT JOIN Factura f ON d.idFactura = f.idFactura
@@ -633,6 +645,10 @@ namespace WebSGV.Views
                     parametros.Add(new SqlParameter("@fechaHasta", fechaHasta.Date.AddDays(1).AddSeconds(-1)));
                 }
 
+                string estadoFiltro = ddlFiltroEstadoLotes.SelectedValue;
+                if (!string.IsNullOrEmpty(estadoFiltro))
+                    parametros.Add(new SqlParameter("@estadoFiltro", estadoFiltro));
+
                 query += @"
                         GROUP BY 
                             d.idCliente, cl.nombre, d.numeroPedido, d.fechaDespacho, 
@@ -640,7 +656,11 @@ namespace WebSGV.Views
                         HAVING COUNT(*) > 1
                     )
                     SELECT * FROM LotesAgrupados
+                    WHERE (@estadoFiltro = '' OR EstadoLote = @estadoFiltro)
                     ORDER BY FechaCreacion DESC";
+
+                if (string.IsNullOrEmpty(estadoFiltro))
+                    parametros.Add(new SqlParameter("@estadoFiltro", ""));
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
@@ -669,7 +689,8 @@ namespace WebSGV.Views
                                 FechaEmisionFactura = GetSafeValue<DateTime?>(reader, "FechaEmisionFactura"),
                                 ValorTotalFactura = GetSafeValue<decimal?>(reader, "ValorTotalFactura"),
                                 FechaEmisionCPIC = GetSafeValue<DateTime?>(reader, "FechaEmisionCPIC"),
-                                ValorFlete = GetSafeValue<decimal?>(reader, "ValorFlete")
+                                ValorFlete = GetSafeValue<decimal?>(reader, "ValorFlete"),
+                                EstadoLote = GetSafeValue<string>(reader, "EstadoLote", "ACTIVO")
                             });
                         }
                     }
@@ -1013,6 +1034,11 @@ namespace WebSGV.Views
             CargarLotesRegistrados();
         }
 
+        protected void ddlFiltroEstadoLotes_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            CargarLotesRegistrados();
+        }
+
         protected void btnBuscarLote_Click(object sender, EventArgs e)
         {
             CargarLotesRegistrados();
@@ -1215,6 +1241,16 @@ namespace WebSGV.Views
             }
         }
 
+        protected void ddlTipoOperacionEdit_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ConfigurarPanelesDocumentosEdicion();
+        }
+
+        protected void rblAmbitoEdit_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ConfigurarPanelesDocumentosEdicion();
+        }
+
         #endregion
 
         #region Eventos de Edición de Lotes
@@ -1240,6 +1276,12 @@ namespace WebSGV.Views
         private bool ValidarEdicionLote()
         {
             List<string> errores = new List<string>();
+
+            if (string.IsNullOrEmpty(ddlTipoOperacionEdit.SelectedValue))
+                errores.Add("Debe seleccionar el tipo de operación");
+
+            if (string.IsNullOrEmpty(rblAmbitoEdit.SelectedValue))
+                errores.Add("Debe seleccionar el ámbito de operación");
 
             if (!string.IsNullOrEmpty(txtNumeroPedidoEdit.Text) &&
                 !Regex.IsMatch(txtNumeroPedidoEdit.Text, @"^\d{10}$"))
@@ -1282,12 +1324,20 @@ namespace WebSGV.Views
 
                         if (pnlFacturaEdit.Visible && !string.IsNullOrEmpty(txtNumeroFacturaEdit.Text))
                         {
-                            ActualizarDocumentosLote(conn, transaction, "FACTURA");
+                            ActualizarDocumentosLote(conn, transaction, "FACTURA", lote.IdsDespachos);
+                        }
+                        else if (!pnlFacturaEdit.Visible)
+                        {
+                            DesvinculaDocumentoLote(conn, transaction, "FACTURA", lote.IdsDespachos);
                         }
 
                         if (pnlCPICEdit.Visible && !string.IsNullOrEmpty(txtNumeroCPICEdit.Text))
                         {
-                            ActualizarDocumentosLote(conn, transaction, "CPIC");
+                            ActualizarDocumentosLote(conn, transaction, "CPIC", lote.IdsDespachos);
+                        }
+                        else if (!pnlCPICEdit.Visible)
+                        {
+                            DesvinculaDocumentoLote(conn, transaction, "CPIC", lote.IdsDespachos);
                         }
 
                         transaction.Commit();
@@ -1315,7 +1365,9 @@ namespace WebSGV.Views
             SET 
                 fechaDespacho = @fechaDespacho,
                 numeroPedido = @numeroPedido,
-                lugarOperacion = @lugarOperacion,";
+                lugarOperacion = @lugarOperacion,
+                tipoOperacion = @tipoOperacion,
+                esInternacional = @esInternacional,";
 
                 // ✅ Agregar actualización de conductor si cambió
                 if (cambiosConductores.ContainsKey(idDespacho))
@@ -1325,15 +1377,18 @@ namespace WebSGV.Views
 
                 query += @"
                 usuarioModificacion = @usuarioModificacion,
-                fechaModificacion = GETDATE()
+                fechaModificacion = @fechaActual
             WHERE idDespacho = @idDespacho";
 
                 using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
                 {
+                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
                     cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(txtFechaProgramacionEdit.Text));
                     cmd.Parameters.AddWithValue("@numeroPedido",
                         string.IsNullOrEmpty(txtNumeroPedidoEdit.Text) ? (object)DBNull.Value : txtNumeroPedidoEdit.Text);
                     cmd.Parameters.AddWithValue("@lugarOperacion", ddlPlantaEdit.SelectedValue);
+                    cmd.Parameters.AddWithValue("@tipoOperacion", ddlTipoOperacionEdit.SelectedValue);
+                    cmd.Parameters.AddWithValue("@esInternacional", rblAmbitoEdit.SelectedValue == "1");
                     cmd.Parameters.AddWithValue("@usuarioModificacion", ObtenerUsuarioActual());
                     cmd.Parameters.AddWithValue("@idDespacho", idDespacho);
 
@@ -1400,16 +1455,40 @@ namespace WebSGV.Views
                 }
             }
 
-            // Actualizar fecha de última actividad de cada viaje
+            // Para cada viaje, determinar el conductor dominante (el que tenga más despachos activos)
+            // y actualizar tanto idConductor como fechaUltimaActividad
             foreach (int idViaje in viajesAfectados)
             {
-                string updateViaje = @"
-            UPDATE ViajesEnProgreso 
-            SET fechaUltimaActividad = GETDATE()
-            WHERE idViajeProgreso = @idViajeProgreso";
+                // Obtener el conductor con más despachos activos en este viaje (ya con los cambios aplicados)
+                string queryConductorDominante = @"
+            SELECT TOP 1 idConductor
+            FROM Despachos
+            WHERE idViajeProgreso = @idViajeProgreso AND activo = 1
+            GROUP BY idConductor
+            ORDER BY COUNT(*) DESC";
+
+                int? idConductorDominante = null;
+                using (SqlCommand cmd = new SqlCommand(queryConductorDominante, conn, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViaje);
+                    var result = cmd.ExecuteScalar();
+                    if (result != null && result != DBNull.Value)
+                        idConductorDominante = Convert.ToInt32(result);
+                }
+
+                string updateViaje = idConductorDominante.HasValue
+                    ? @"UPDATE ViajesEnProgreso 
+                        SET idConductor = @idConductor, fechaUltimaActividad = @fechaActual
+                        WHERE idViajeProgreso = @idViajeProgreso"
+                    : @"UPDATE ViajesEnProgreso 
+                        SET fechaUltimaActividad = @fechaActual
+                        WHERE idViajeProgreso = @idViajeProgreso";
 
                 using (SqlCommand cmd = new SqlCommand(updateViaje, conn, transaction))
                 {
+                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
+                    if (idConductorDominante.HasValue)
+                        cmd.Parameters.AddWithValue("@idConductor", idConductorDominante.Value);
                     cmd.Parameters.AddWithValue("@idViajeProgreso", idViaje);
                     cmd.ExecuteNonQuery();
                 }
@@ -1444,11 +1523,12 @@ namespace WebSGV.Views
                 string updateViaje = @"
             UPDATE ViajesEnProgreso 
             SET idConductor = @idConductor,
-                fechaUltimaActividad = GETDATE()
+                fechaUltimaActividad = @fechaActual
             WHERE idViajeProgreso = @idViajeProgreso";
 
                 using (SqlCommand cmd = new SqlCommand(updateViaje, conn, transaction))
                 {
+                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
                     cmd.Parameters.AddWithValue("@idConductor", nuevoConductorId);
                     cmd.Parameters.AddWithValue("@idViajeProgreso", idViaje);
                     cmd.ExecuteNonQuery();
@@ -1456,10 +1536,227 @@ namespace WebSGV.Views
             }
         }
 
-        private void ActualizarDocumentosLote(SqlConnection conn, SqlTransaction transaction, string tipoDocumento)
+        private void ActualizarDocumentosLote(SqlConnection conn, SqlTransaction transaction, string tipoDocumento, List<int> idsDespachos)
         {
-            // Implementación básica - se puede expandir según necesidades específicas
-            MostrarMensaje($"Actualización de {tipoDocumento} implementada", "info");
+            if (idsDespachos == null || idsDespachos.Count == 0) return;
+
+            string idsStr = string.Join(",", idsDespachos);
+
+            if (tipoDocumento == "FACTURA")
+            {
+                int? idFactura = null;
+                using (SqlCommand cmd = new SqlCommand("SELECT TOP 1 idFactura FROM Despachos WHERE idDespacho IN (" + idsStr + ") AND idFactura IS NOT NULL", conn, transaction))
+                {
+                    var result = cmd.ExecuteScalar();
+                    if (result != null && result != DBNull.Value)
+                        idFactura = Convert.ToInt32(result);
+                }
+
+                DateTime fechaEmision = DateTime.Today;
+                DateTime.TryParse(txtFechaEmisionFacturaEdit.Text, out fechaEmision);
+                decimal valorTotal = 0;
+                decimal.TryParse(txtValorTotalFacturaEdit.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorTotal);
+
+                if (idFactura.HasValue)
+                {
+                    using (SqlCommand cmd = new SqlCommand("UPDATE Factura SET numeroFactura = @numero, fechaEmision = @fecha, valorTotal = @valor WHERE idFactura = @id", conn, transaction))
+                    {
+                        cmd.Parameters.AddWithValue("@numero", txtNumeroFacturaEdit.Text);
+                        cmd.Parameters.AddWithValue("@fecha", fechaEmision);
+                        cmd.Parameters.AddWithValue("@valor", valorTotal);
+                        cmd.Parameters.AddWithValue("@id", idFactura.Value);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                else
+                {
+                    int nuevoId;
+                    using (SqlCommand cmd = new SqlCommand("INSERT INTO Factura (numeroFactura, fechaEmision, valorTotal) OUTPUT INSERTED.idFactura VALUES (@numero, @fecha, @valor)", conn, transaction))
+                    {
+                        cmd.Parameters.AddWithValue("@numero", txtNumeroFacturaEdit.Text);
+                        cmd.Parameters.AddWithValue("@fecha", fechaEmision);
+                        cmd.Parameters.AddWithValue("@valor", valorTotal);
+                        nuevoId = (int)cmd.ExecuteScalar();
+                    }
+                    using (SqlCommand cmd = new SqlCommand("UPDATE Despachos SET idFactura = @id WHERE idDespacho IN (" + idsStr + ")", conn, transaction))
+                    {
+                        cmd.Parameters.AddWithValue("@id", nuevoId);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            else if (tipoDocumento == "CPIC")
+            {
+                int? idCPIC = null;
+                using (SqlCommand cmd = new SqlCommand("SELECT TOP 1 idCPIC FROM Despachos WHERE idDespacho IN (" + idsStr + ") AND idCPIC IS NOT NULL", conn, transaction))
+                {
+                    var result = cmd.ExecuteScalar();
+                    if (result != null && result != DBNull.Value)
+                        idCPIC = Convert.ToInt32(result);
+                }
+
+                DateTime fechaEmision = DateTime.Today;
+                DateTime.TryParse(txtFechaEmisionCPICEdit.Text, out fechaEmision);
+                decimal valorFlete = 0;
+                decimal.TryParse(txtValorFleteEdit.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorFlete);
+
+                if (idCPIC.HasValue)
+                {
+                    using (SqlCommand cmd = new SqlCommand("UPDATE CPIC SET numeroCPIC = @numero, fechaEmision = @fecha, valorTotalFlete = @valor WHERE idCPIC = @id", conn, transaction))
+                    {
+                        cmd.Parameters.AddWithValue("@numero", txtNumeroCPICEdit.Text);
+                        cmd.Parameters.AddWithValue("@fecha", fechaEmision);
+                        cmd.Parameters.AddWithValue("@valor", valorFlete);
+                        cmd.Parameters.AddWithValue("@id", idCPIC.Value);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                else
+                {
+                    int nuevoId;
+                    using (SqlCommand cmd = new SqlCommand("INSERT INTO CPIC (numeroCPIC, fechaEmision, valorTotalFlete) OUTPUT INSERTED.idCPIC VALUES (@numero, @fecha, @valor)", conn, transaction))
+                    {
+                        cmd.Parameters.AddWithValue("@numero", txtNumeroCPICEdit.Text);
+                        cmd.Parameters.AddWithValue("@fecha", fechaEmision);
+                        cmd.Parameters.AddWithValue("@valor", valorFlete);
+                        nuevoId = (int)cmd.ExecuteScalar();
+                    }
+                    using (SqlCommand cmd = new SqlCommand("UPDATE Despachos SET idCPIC = @id WHERE idDespacho IN (" + idsStr + ")", conn, transaction))
+                    {
+                        cmd.Parameters.AddWithValue("@id", nuevoId);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+
+        private void DesvinculaDocumentoLote(SqlConnection conn, SqlTransaction transaction, string tipoDocumento, List<int> idsDespachos)
+        {
+            if (idsDespachos == null || idsDespachos.Count == 0) return;
+            string idsStr = string.Join(",", idsDespachos);
+            string campo = tipoDocumento == "FACTURA" ? "idFactura" : "idCPIC";
+            string query = $"UPDATE Despachos SET {campo} = NULL WHERE idDespacho IN ({idsStr})";
+            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            {
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        protected void btnAnularLote_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(LoteSeleccionadoId))
+                {
+                    MostrarMensaje("No se pudo identificar el lote a anular.", "danger");
+                    return;
+                }
+
+                var lote = ObtenerLotePorId(LoteSeleccionadoId);
+                if (lote == null || lote.IdsDespachos.Count == 0)
+                {
+                    MostrarMensaje("No se encontraron despachos para anular.", "warning");
+                    return;
+                }
+
+                if (lote.EstadoLote == "ANULADO")
+                {
+                    MostrarMensaje("Este lote ya se encuentra anulado.", "warning");
+                    return;
+                }
+
+                int viajesAnulados = AnularLoteCompleto(lote.IdsDespachos);
+
+                MostrarListaLotes();
+                CargarLotesRegistrados();
+                string msgViajes = viajesAnulados > 0 ? $" Se anularon {viajesAnulados} viaje(s) activo(s) asociado(s)." : "";
+                MostrarMensaje($"✅ Lote anulado exitosamente. {lote.IdsDespachos.Count} despacho(s) marcado(s) como ANULADO.{msgViajes}", "success");
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("❌ Error al anular lote: " + ex.Message, "danger");
+            }
+        }
+
+        private int AnularLoteCompleto(List<int> idsDespachos)
+        {
+            if (idsDespachos == null || idsDespachos.Count == 0) return 0;
+
+            int viajesAnulados = 0;
+            string idsStr = string.Join(",", idsDespachos);
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                conn.Open();
+                using (SqlTransaction transaction = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        // 1. Marcar despachos como ANULADO
+                        string queryAnular = $@"
+                            UPDATE Despachos
+                            SET estadoDespacho = 'ANULADO',
+                                usuarioModificacion = @usuario,
+                                fechaModificacion = @fechaActual
+                            WHERE idDespacho IN ({idsStr})";
+
+                        using (SqlCommand cmd = new SqlCommand(queryAnular, conn, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
+                            cmd.Parameters.AddWithValue("@usuario", ObtenerUsuarioActual());
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // 2. Obtener viajes afectados por estos despachos
+                        List<int> viajesAfectados = ObtenerViajesAfectadosPorDespachos(conn, transaction, idsDespachos);
+
+                        // 3. Anular viajes que ya no tienen despachos activos no-ANULADOS
+                        foreach (int idViaje in viajesAfectados)
+                        {
+                            string queryChequeo = @"
+                                SELECT COUNT(*)
+                                FROM Despachos
+                                WHERE idViajeProgreso = @idViajeProgreso
+                                  AND activo = 1
+                                  AND estadoDespacho <> 'ANULADO'";
+
+                            int despachosActivos;
+                            using (SqlCommand cmd = new SqlCommand(queryChequeo, conn, transaction))
+                            {
+                                cmd.Parameters.AddWithValue("@idViajeProgreso", idViaje);
+                                despachosActivos = (int)cmd.ExecuteScalar();
+                            }
+
+                            if (despachosActivos == 0)
+                            {
+                                string queryAnularViaje = @"
+                                    UPDATE ViajesEnProgreso
+                                    SET estadoViaje = 'ANULADO',
+                                        fechaUltimaActividad = @fechaActual
+                                    WHERE idViajeProgreso = @idViajeProgreso
+                                      AND estadoViaje = 'ABIERTO'";
+
+                                using (SqlCommand cmd = new SqlCommand(queryAnularViaje, conn, transaction))
+                                {
+                                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
+                                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViaje);
+                                    int rows = cmd.ExecuteNonQuery();
+                                    viajesAnulados += rows;
+                                }
+                            }
+                        }
+
+                        transaction.Commit();
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
+            }
+
+            return viajesAnulados;
         }
 
         protected void btnEliminarLote_Click(object sender, EventArgs e)
@@ -1510,11 +1807,12 @@ namespace WebSGV.Views
                     UPDATE Despachos 
                     SET activo = 0,
                         usuarioModificacion = @usuario,
-                        fechaModificacion = GETDATE()
+                        fechaModificacion = @fechaActual
                     WHERE idDespacho IN (" + string.Join(",", idsDespachos) + ")";
 
                         using (SqlCommand cmd = new SqlCommand(queryDelete, conn, transaction))
                         {
+                            cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
                             cmd.Parameters.AddWithValue("@usuario", ObtenerUsuarioActual());
                             cmd.ExecuteNonQuery();
                         }
@@ -1570,11 +1868,12 @@ namespace WebSGV.Views
             WHERE idViajeProgreso = @idViajeProgreso 
             AND activo = 1
         ),
-        fechaUltimaActividad = GETDATE()
+        fechaUltimaActividad = @fechaActual
         WHERE idViajeProgreso = @idViajeProgreso";
 
             using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
             {
+                cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
                 cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
                 cmd.ExecuteNonQuery();
             }
@@ -1667,23 +1966,25 @@ namespace WebSGV.Views
             if (ddlPlantaEdit.Items.FindByValue(lote.PlantaOperacion) != null)
                 ddlPlantaEdit.SelectedValue = lote.PlantaOperacion;
 
-            lblTipoOperacionEdit.Text = lote.TipoOperacion;
-            lblAmbitoEdit.Text = lote.EsInternacional ? "Internacional" : "Nacional";
+            if (ddlTipoOperacionEdit.Items.FindByValue(lote.TipoOperacion) != null)
+                ddlTipoOperacionEdit.SelectedValue = lote.TipoOperacion;
 
-            ConfigurarPanelesDocumentosEdicion(lote);
+            rblAmbitoEdit.SelectedValue = lote.EsInternacional ? "1" : "0";
 
-            if (pnlFacturaEdit.Visible && !string.IsNullOrEmpty(lote.NumeroFactura))
+            ConfigurarPanelesDocumentosEdicion();
+
+            if (pnlFacturaEdit.Visible)
             {
-                txtNumeroFacturaEdit.Text = lote.NumeroFactura;
-                txtFechaEmisionFacturaEdit.Text = lote.FechaEmisionFactura?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd");
-                txtValorTotalFacturaEdit.Text = lote.ValorTotalFactura?.ToString("F2") ?? "0.00";
+                txtNumeroFacturaEdit.Text = lote.NumeroFactura ?? "";
+                txtFechaEmisionFacturaEdit.Text = lote.FechaEmisionFactura?.ToString("yyyy-MM-dd") ?? "";
+                txtValorTotalFacturaEdit.Text = lote.ValorTotalFactura?.ToString("F2") ?? "";
             }
 
-            if (pnlCPICEdit.Visible && !string.IsNullOrEmpty(lote.NumeroCPIC))
+            if (pnlCPICEdit.Visible)
             {
-                txtNumeroCPICEdit.Text = lote.NumeroCPIC;
-                txtFechaEmisionCPICEdit.Text = lote.FechaEmisionCPIC?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd");
-                txtValorFleteEdit.Text = lote.ValorFlete?.ToString("F2") ?? "0.00";
+                txtNumeroCPICEdit.Text = lote.NumeroCPIC ?? "";
+                txtFechaEmisionCPICEdit.Text = lote.FechaEmisionCPIC?.ToString("yyyy-MM-dd") ?? "";
+                txtValorFleteEdit.Text = lote.ValorFlete?.ToString("F2") ?? "";
             }
 
             CargarGridConductoresLote(lote.IdsDespachos);
@@ -1691,26 +1992,31 @@ namespace WebSGV.Views
 
         }
 
-        private void ConfigurarPanelesDocumentosEdicion(LoteRegistrado lote)
+        private void ConfigurarPanelesDocumentosEdicion()
         {
             pnlFacturaEdit.Visible = false;
             pnlCPICEdit.Visible = false;
 
-            if (lote.EsInternacional)
+            string tipoOp = ddlTipoOperacionEdit.SelectedValue;
+            bool esInternacional = rblAmbitoEdit.SelectedValue == "1";
+
+            if (string.IsNullOrEmpty(tipoOp)) return;
+
+            if (esInternacional)
             {
-                if (lote.TipoOperacion == "CARGA")
+                if (tipoOp == "CARGA")
                 {
                     pnlFacturaEdit.Visible = true;
                     pnlCPICEdit.Visible = true;
                 }
-                else if (lote.TipoOperacion == "DESCARGA")
+                else if (tipoOp == "DESCARGA")
                 {
                     pnlCPICEdit.Visible = true;
                 }
             }
             else
             {
-                if (lote.TipoOperacion == "CARGA")
+                if (tipoOp == "CARGA")
                 {
                     pnlFacturaEdit.Visible = true;
                 }
@@ -1910,6 +2216,8 @@ namespace WebSGV.Views
             ddlFiltroOperacionLotes.SelectedIndex = 0;
             ddlFiltroPlantaLotes.SelectedIndex = 0;
             txtBuscarLote.Text = string.Empty;
+            if (ddlFiltroEstadoLotes.Items.FindByValue("ACTIVO") != null)
+                ddlFiltroEstadoLotes.SelectedValue = "ACTIVO";
             ConfigurarFechasPorDefecto();
         }
 

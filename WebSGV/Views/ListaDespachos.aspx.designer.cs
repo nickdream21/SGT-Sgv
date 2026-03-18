@@ -267,6 +267,15 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.GridView gvLotesRegistrados;
 
         /// <summary>
+        /// Control ddlFiltroEstadoLotes.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlFiltroEstadoLotes;
+
+        /// <summary>
         /// Control pnlDetallesViaje.
         /// </summary>
         /// <remarks>
@@ -546,22 +555,22 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.TextBox txtValorFleteEdit;
 
         /// <summary>
-        /// Control lblTipoOperacionEdit.
+        /// Control ddlTipoOperacionEdit.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblTipoOperacionEdit;
+        protected global::System.Web.UI.WebControls.DropDownList ddlTipoOperacionEdit;
 
         /// <summary>
-        /// Control lblAmbitoEdit.
+        /// Control rblAmbitoEdit.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblAmbitoEdit;
+        protected global::System.Web.UI.WebControls.RadioButtonList rblAmbitoEdit;
 
         /// <summary>
         /// Control btnEliminarLote.
@@ -571,6 +580,15 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnEliminarLote;
+
+        /// <summary>
+        /// Control btnAnularLote.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnAnularLote;
 
         /// <summary>
         /// Control btnGuardarCambios.

@@ -78,6 +78,15 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.HiddenField hfIdCPIC;
 
         /// <summary>
+        /// Control hfIdOrdenViaje.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfIdOrdenViaje;
+
+        /// <summary>
         /// Control hfProductosDescarga.
         /// </summary>
         /// <remarks>
@@ -121,6 +130,24 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.HiddenField HiddenField1;
+
+        /// <summary>
+        /// Control hfIngresosAdicionales.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfIngresosAdicionales;
+
+        /// <summary>
+        /// Control hfGastosAdicionales.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfGastosAdicionales;
 
         /// <summary>
         /// Control pnlMensajes.

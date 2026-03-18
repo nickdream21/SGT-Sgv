@@ -7,6 +7,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -265,6 +266,8 @@ namespace WebSGV.Views
                                 txtNumeroOrdenViaje.Text = numeroOrdenViaje;
                                 txtNumeroOrdenViaje.ReadOnly = true; // ✅ Bloquear edición del número
 
+                                hfIdOrdenViaje.Value = idOrdenViaje.ToString();
+
                                 txtFechaSalida.Text = Convert.ToDateTime(reader["fechaSalida"]).ToString("yyyy-MM-dd");
                                 txtFechaLlegada.Text = Convert.ToDateTime(reader["fechaLlegada"]).ToString("yyyy-MM-dd");
                                 txtHoraSalida.Text = reader["horaSalida"]?.ToString() ?? "";
@@ -373,7 +376,7 @@ namespace WebSGV.Views
                 CargarDatosNormales();
             }
         }
-        
+
 
 
         private void CargarIngresosAdicionalesEdicion(SqlConnection conn, string numeroOrden)
@@ -979,24 +982,42 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine("=== INICIANDO GUARDADO DE ORDEN DE VIAJE ===");
 
-                // 1. Validar número de orden
+                // ✅ DETECTAR MODO EDICIÓN
+                int idOrdenExistente = int.TryParse(hfIdOrdenViaje.Value, out int idOrd) ? idOrd : 0;
+                bool esEdicion = idOrdenExistente > 0;
+
+                System.Diagnostics.Debug.WriteLine($"Modo: {(esEdicion ? "EDICIÓN" : "CREACIÓN")} | ID: {idOrdenExistente}");
+
+                // 1. Obtener número de orden
                 string numeroOrdenViaje = txtNumeroOrdenViaje.Text?.Trim();
-                System.Diagnostics.Debug.WriteLine($"Número de orden recibido: '{numeroOrdenViaje}'");
+                string numeroOrdenViajeOriginal = numeroOrdenViaje; // Guardar formato completo
 
-                string errorFormato = ValidarFormatoNumeroOrden(numeroOrdenViaje);
-                if (!string.IsNullOrEmpty(errorFormato))
+                // 2. Validar y procesar según modo
+                if (!esEdicion)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Error de formato: {errorFormato}");
-                    MostrarMensaje(errorFormato, "danger");
-                    return;
+                    // MODO CREACIÓN: Validar formato de 6 dígitos
+                    System.Diagnostics.Debug.WriteLine($"Número recibido (creación): '{numeroOrdenViaje}'");
+
+                    string errorFormato = ValidarFormatoNumeroOrden(numeroOrdenViaje);
+                    if (!string.IsNullOrEmpty(errorFormato))
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error de formato: {errorFormato}");
+                        MostrarMensaje(errorFormato, "danger");
+                        return;
+                    }
+
+                    if (NumeroOrdenExiste(numeroOrdenViaje))
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Número ya existe: {numeroOrdenViaje}");
+                        MostrarMensaje($"El número {numeroOrdenViaje} ya existe.", "danger");
+                        return;
+                    }
                 }
-
-                // 2. Verificar existencia
-                if (NumeroOrdenExiste(numeroOrdenViaje))
+                else
                 {
-                    System.Diagnostics.Debug.WriteLine($"Número ya existe: {numeroOrdenViaje}");
-                    MostrarMensaje($"El número {numeroOrdenViaje} ya existe.", "danger");
-                    return;
+                    // MODO EDICIÓN: Usar el número completo tal como está
+                    System.Diagnostics.Debug.WriteLine($"Editando orden con número: {numeroOrdenViaje}");
+                    // NO normalizar - usar el formato completo "OV-2025-000005"
                 }
 
                 // 3. Validar datos generales
@@ -1008,7 +1029,6 @@ namespace WebSGV.Views
                 string horaLlegada = txtHoraLlegada.Text;
                 string observaciones = txtObservaciones.Text;
 
-                // Obtener IDs de HiddenFields
                 int idConductor = int.TryParse(hfIdConductor.Value, out int ic) ? ic : 0;
                 int idTracto = int.TryParse(hfIdTracto.Value, out int it) ? it : 0;
                 int idCarreta = int.TryParse(hfIdCarreta.Value, out int icar) ? icar : 0;
@@ -1021,20 +1041,13 @@ namespace WebSGV.Views
                     return;
                 }
 
-                // 4. Validar fechas SQL
-                if (!EsFechaValidaSQL(fechaSalida))
+                if (!EsFechaValidaSQL(fechaSalida) || !EsFechaValidaSQL(fechaLlegada))
                 {
-                    MostrarMensaje("La fecha de salida es inválida. Debe estar entre 1753 y 9999.", "danger");
+                    MostrarMensaje("Las fechas son inválidas. Deben estar entre 1753 y 9999.", "danger");
                     return;
                 }
 
-                if (!EsFechaValidaSQL(fechaLlegada))
-                {
-                    MostrarMensaje("La fecha de llegada es inválida. Debe estar entre 1753 y 9999.", "danger");
-                    return;
-                }
-
-                // 5. Procesar en base de datos
+                // 4. Procesar en base de datos
                 System.Diagnostics.Debug.WriteLine("Iniciando transacción de base de datos...");
                 string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
 
@@ -1049,69 +1062,71 @@ namespace WebSGV.Views
                         {
                             System.Diagnostics.Debug.WriteLine("Transacción iniciada");
 
-                            // 5.1 Insertar orden de viaje
-                            System.Diagnostics.Debug.WriteLine("Insertando orden de viaje...");
-                            int idOrdenViaje = InsertarOrdenViaje(conn, transaction, numeroOrdenViaje,
-    fechaSalida, fechaLlegada, horaSalida, horaLlegada,
-    idConductor, idTracto, idCarreta, observaciones);
-                            System.Diagnostics.Debug.WriteLine($"Orden de viaje insertada: {idOrdenViaje}");
+                            if (esEdicion)
+                            {
+                                // ✅ MODO EDICIÓN
+                                System.Diagnostics.Debug.WriteLine($"Actualizando orden {idOrdenExistente} con número {numeroOrdenViaje}...");
 
-                            // 5.2 Insertar datos financieros completos
-                            System.Diagnostics.Debug.WriteLine("Insertando datos financieros...");
+                                ActualizarOrdenViaje(conn, transaction, idOrdenExistente, numeroOrdenViaje,
+                                    fechaSalida, fechaLlegada, horaSalida, horaLlegada,
+                                    idConductor, idTracto, idCarreta, observaciones);
+
+                                // Eliminar datos financieros anteriores
+                                System.Diagnostics.Debug.WriteLine($"Eliminando datos financieros anteriores de {numeroOrdenViaje}...");
+                                EliminarDatosFinancierosAnteriores(conn, transaction, numeroOrdenViaje);
+                            }
+                            else
+                            {
+                                // ✅ MODO CREACIÓN
+                                System.Diagnostics.Debug.WriteLine("Insertando nueva orden...");
+                                int idOrdenViaje = InsertarOrdenViaje(conn, transaction, numeroOrdenViaje,
+                                    fechaSalida, fechaLlegada, horaSalida, horaLlegada,
+                                    idConductor, idTracto, idCarreta, observaciones);
+                                System.Diagnostics.Debug.WriteLine($"Orden creada: {idOrdenViaje}");
+                            }
+
+                            // 5. Insertar datos financieros (con el número COMPLETO)
+                            System.Diagnostics.Debug.WriteLine($"Insertando datos financieros con número: {numeroOrdenViaje}");
                             InsertarDatosFinancierosCompletos(conn, transaction, numeroOrdenViaje);
-                            System.Diagnostics.Debug.WriteLine("Datos financieros insertados");
-
-                            // 5.3 Insertar descuentos y reintegros
-                            System.Diagnostics.Debug.WriteLine("Insertando descuentos y reintegros...");
                             InsertarDescuentosReintegros(conn, transaction, numeroOrdenViaje);
-                            System.Diagnostics.Debug.WriteLine("Descuentos y reintegros insertados");
 
-                            // 5.4 Procesar datos detallados de modales
-                            System.Diagnostics.Debug.WriteLine("Procesando datos detallados de modales...");
                             var gastosFinancieros = ObtenerGastosFinancierosDeSession();
                             if (gastosFinancieros.Count > 0)
                             {
                                 InsertarGastosFinancierosDetallados(conn, transaction, numeroOrdenViaje, gastosFinancieros);
                             }
 
-                            // ✅ 5.5 NUEVO: Si viene de viaje finalizado, cerrar el viaje DENTRO de esta transacción
-                            if (hfOrigenViaje.Value == "viajeFinalizado")
+                            // 6. Si viene de viaje finalizado, cerrar el viaje (solo en creación)
+                            if (!esEdicion && hfOrigenViaje.Value == "viajeFinalizado")
                             {
                                 int idViajeProgreso = int.TryParse(hfIdViajeProgreso.Value, out int ivp) ? ivp : 0;
-
                                 if (idViajeProgreso > 0)
                                 {
-                                    System.Diagnostics.Debug.WriteLine($"⚡ Cerrando viaje en progreso: {idViajeProgreso}");
+                                    System.Diagnostics.Debug.WriteLine($"Cerrando viaje en progreso: {idViajeProgreso}");
                                     CerrarViajeProgreso(conn, transaction, idViajeProgreso, numeroOrdenViaje);
-                                    System.Diagnostics.Debug.WriteLine("✅ Viaje cerrado y vinculado exitosamente");
-                                }
-                                else
-                                {
-                                    System.Diagnostics.Debug.WriteLine("⚠️ Advertencia: No se encontró ID de viaje para cerrar");
                                 }
                             }
 
-                            // 5.6 Commit
-                            System.Diagnostics.Debug.WriteLine("Haciendo commit de toda la transacción...");
+                            // 7. Commit
+                            System.Diagnostics.Debug.WriteLine("Haciendo commit...");
                             transaction.Commit();
-                            System.Diagnostics.Debug.WriteLine("✅ Commit exitoso - Todo guardado correctamente");
+                            System.Diagnostics.Debug.WriteLine("✅ Commit exitoso");
 
-                            // 6. Mostrar resultado
-                            MostrarResultadoExitoso(numeroOrdenViaje);
+                            // 8. Mostrar resultado
+                            string accion = esEdicion ? "actualizada" : "guardada";
+                            MostrarResultadoExitoso(numeroOrdenViaje, accion);
 
-                            System.Diagnostics.Debug.WriteLine("=== GUARDADO COMPLETADO EXITOSAMENTE ===");
+                            // Limpiar HiddenField
+                            hfIdOrdenViaje.Value = "0";
+
+                            System.Diagnostics.Debug.WriteLine($"=== ORDEN {accion.ToUpper()} EXITOSAMENTE ===");
                         }
                         catch (Exception ex)
                         {
-                            System.Diagnostics.Debug.WriteLine($"❌ ERROR EN TRANSACCIÓN: {ex.Message}");
+                            System.Diagnostics.Debug.WriteLine($"❌ ERROR: {ex.Message}");
                             System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
                             transaction.Rollback();
-                            System.Diagnostics.Debug.WriteLine("⚠️ Rollback ejecutado - Ningún cambio aplicado");
-
-                            MostrarMensaje($@"Error al guardar: {ex.Message}<br/>
-                                <strong>Tipo:</strong> {ex.GetType().Name}<br/>
-                                {(ex.InnerException != null ? $"<strong>Error interno:</strong> {ex.InnerException.Message}" : "")}",
-                                "danger");
+                            MostrarMensaje($"Error al guardar: {ex.Message}", "danger");
                         }
                     }
                 }
@@ -1119,12 +1134,128 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ ERROR GENERAL: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
+                MostrarMensaje($"Error del sistema: {ex.Message}", "danger");
+            }
+        }
 
-                MostrarMensaje($@"Error general del sistema: {ex.Message}<br/>
-                    <strong>Tipo:</strong> {ex.GetType().Name}<br/>
-                    {(ex.InnerException != null ? $"<strong>Error interno:</strong> {ex.InnerException.Message}" : "")}",
-                    "danger");
+
+        private void ActualizarOrdenViaje(
+            SqlConnection conn,
+            SqlTransaction transaction,
+            int idOrdenViaje,
+            string numeroOrdenViaje,
+            DateTime fechaSalida,
+            DateTime fechaLlegada,
+            string horaSalida,
+            string horaLlegada,
+            int idConductor,
+            int idTracto,
+            int idCarreta,
+            string observaciones)
+        {
+            try
+            {
+                int? idCPIC = null;
+                if (int.TryParse(hfIdCPIC.Value, out int cpicId) && cpicId > 0)
+                {
+                    idCPIC = cpicId;
+                }
+
+                bool esInternacional = hfEsInternacional.Value == "true";
+                string tipoViaje = esInternacional ? "INTERNACIONAL" : "NACIONAL";
+
+                // ✅ OBTENER ID DEL USUARIO ACTUAL
+                int idUsuarioAprobacion = ObtenerIdUsuarioActual();
+
+                // ✅ QUERY CORREGIDO: Actualiza estado y aprobación automáticamente
+                string query = @"
+                    UPDATE OrdenViaje 
+                    SET fechaSalida = @fechaSalida,
+                        horaSalida = @horaSalida,
+                        fechaLlegada = @fechaLlegada,
+                        horaLlegada = @horaLlegada,
+                        idConductor = @idConductor,
+                        idTracto = @idTracto,
+                        idCarreta = @idCarreta,
+                        idCPIC = @idCPIC,
+                        observaciones = @observaciones,
+                        tipoViaje = @tipoViaje,
+                        esInternacional = @esInternacional,
+                        estadoViaje = 'COMPLETADO',
+                        estadoAprobacion = 'APROBADO',
+                        fechaAprobacion = @fechaActual,
+                        idUsuarioAprobacion = @idUsuarioAprobacion
+                    WHERE idOrdenViaje = @idOrdenViaje";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
+                    cmd.Parameters.AddWithValue("@idOrdenViaje", idOrdenViaje);
+                    cmd.Parameters.AddWithValue("@fechaSalida", FechaSeguraSQL(fechaSalida));
+                    cmd.Parameters.AddWithValue("@horaSalida", string.IsNullOrEmpty(horaSalida) ? (object)DBNull.Value : horaSalida);
+                    cmd.Parameters.AddWithValue("@fechaLlegada", FechaSeguraSQL(fechaLlegada));
+                    cmd.Parameters.AddWithValue("@horaLlegada", string.IsNullOrEmpty(horaLlegada) ? (object)DBNull.Value : horaLlegada);
+                    cmd.Parameters.AddWithValue("@idConductor", idConductor > 0 ? (object)idConductor : DBNull.Value);
+                    cmd.Parameters.AddWithValue("@idTracto", idTracto > 0 ? (object)idTracto : DBNull.Value);
+                    cmd.Parameters.AddWithValue("@idCarreta", idCarreta > 0 ? (object)idCarreta : DBNull.Value);
+                    cmd.Parameters.AddWithValue("@idCPIC", idCPIC.HasValue ? (object)idCPIC.Value : DBNull.Value);
+                    cmd.Parameters.AddWithValue("@observaciones", string.IsNullOrEmpty(observaciones) ? (object)DBNull.Value : observaciones);
+                    cmd.Parameters.AddWithValue("@tipoViaje", tipoViaje);
+                    cmd.Parameters.AddWithValue("@esInternacional", esInternacional);
+                    cmd.Parameters.AddWithValue("@idUsuarioAprobacion", idUsuarioAprobacion > 0 ? (object)idUsuarioAprobacion : DBNull.Value);
+
+                    int filasAfectadas = cmd.ExecuteNonQuery();
+
+                    if (filasAfectadas == 0)
+                    {
+                        throw new Exception($"No se pudo actualizar la orden {idOrdenViaje}");
+                    }
+
+                    System.Diagnostics.Debug.WriteLine($"✅ Orden {idOrdenViaje} actualizada correctamente");
+                    System.Diagnostics.Debug.WriteLine($"✅ Estado: COMPLETADO | Aprobación: APROBADO | Usuario: {idUsuarioAprobacion}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error actualizando orden: {ex.Message}");
+                throw;
+            }
+        }
+
+        private void EliminarDatosFinancierosAnteriores(SqlConnection conn, SqlTransaction transaction, string numeroOrden)
+        {
+            try
+            {
+                string[] tablas = {
+                    "Ingresos",
+                    "Egresos",
+                    "IngresosAdicionales",
+                    "CategoriasAdicionales",
+                    "DescuentosReintegros",
+                    "DetallePeajes",
+                    "DetalleReparacionesVarios",
+                    "DetalleHospedaje",
+                    "DetalleCombustible"
+                };
+
+                foreach (string tabla in tablas)
+                {
+                    string query = $"DELETE FROM {tabla} WHERE numeroOrdenViaje = @numeroOrden";
+                    using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+                    {
+                        cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
+                        int deleted = cmd.ExecuteNonQuery();
+                        if (deleted > 0)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"✓ Eliminados {deleted} registros de {tabla}");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error eliminando datos anteriores: {ex.Message}");
+                throw;
             }
         }
 
@@ -1143,12 +1274,13 @@ namespace WebSGV.Views
                 string queryCerrarViaje = @"
                     UPDATE ViajesEnProgreso 
                     SET estadoViaje = 'CERRADO',
-                        fechaCierre = GETDATE()
+                        fechaCierre = @fechaActual
                     WHERE idViajeProgreso = @idViaje 
                         AND estadoViaje = 'ABIERTO'";
 
                 using (SqlCommand cmd = new SqlCommand(queryCerrarViaje, conn, transaction))
                 {
+                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
                     cmd.Parameters.AddWithValue("@idViaje", idViajeProgreso);
                     int filasAfectadas = cmd.ExecuteNonQuery();
 
@@ -1188,12 +1320,13 @@ namespace WebSGV.Views
                         WHEN estadoDespacho = 'PROGRAMADO' THEN 'EN_PROCESO'
                         ELSE estadoDespacho 
                     END,
-                    fechaModificacion = GETDATE()
+                    fechaModificacion = @fechaActual
                     WHERE idViajeProgreso = @idViaje 
                         AND activo = 1";
 
                 using (SqlCommand cmd = new SqlCommand(queryDespachos, conn, transaction))
                 {
+                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
                     cmd.Parameters.AddWithValue("@idViaje", idViajeProgreso);
                     int despachosActualizados = cmd.ExecuteNonQuery();
 
@@ -1214,18 +1347,18 @@ namespace WebSGV.Views
         #region Métodos de Inserción en Base de Datos
 
         private int InsertarOrdenViaje(
-     SqlConnection conn,
-     SqlTransaction transaction,
-     string numeroOrdenViaje,
-     DateTime fechaSalida,
-     DateTime fechaLlegada,
-     string horaSalida,
-     string horaLlegada,
-     int idConductor,
-     int idTracto,
-     int idCarreta,
-     string observaciones
- )
+            SqlConnection conn,
+            SqlTransaction transaction,
+            string numeroOrdenViaje,
+            DateTime fechaSalida,
+            DateTime fechaLlegada,
+            string horaSalida,
+            string horaLlegada,
+            int idConductor,
+            int idTracto,
+            int idCarreta,
+            string observaciones
+        )
         {
             try
             {
@@ -1240,21 +1373,28 @@ namespace WebSGV.Views
                 bool esInternacional = hfEsInternacional.Value == "true";
                 string tipoViaje = esInternacional ? "INTERNACIONAL" : "NACIONAL";
 
+                // ✅ OBTENER ID DEL USUARIO ACTUAL
+                int idUsuarioAprobacion = ObtenerIdUsuarioActual();
+
+                // ✅ QUERY CORREGIDO: Incluye campos de aprobación al crear
                 string queryOrdenViaje = @"
-            INSERT INTO OrdenViaje (
-                numeroOrdenViaje, fechaSalida, horaSalida, fechaLlegada, horaLlegada, 
-                idConductor, idTracto, idCarreta, idCPIC, observaciones, 
-                estadoViaje, tipoViaje, esInternacional
-            ) 
-            VALUES (
-                @numeroOrdenViaje, @fechaSalida, @horaSalida, @fechaLlegada, @horaLlegada, 
-                @idConductor, @idTracto, @idCarreta, @idCPIC, @observaciones, 
-                'COMPLETADO', @tipoViaje, @esInternacional
-            );
-            SELECT SCOPE_IDENTITY();";
+                    INSERT INTO OrdenViaje (
+                        numeroOrdenViaje, fechaSalida, horaSalida, fechaLlegada, horaLlegada, 
+                        idConductor, idTracto, idCarreta, idCPIC, observaciones, 
+                        estadoViaje, tipoViaje, esInternacional,
+                        estadoAprobacion, fechaAprobacion, idUsuarioAprobacion
+                    ) 
+                    VALUES (
+                        @numeroOrdenViaje, @fechaSalida, @horaSalida, @fechaLlegada, @horaLlegada, 
+                        @idConductor, @idTracto, @idCarreta, @idCPIC, @observaciones, 
+                        'COMPLETADO', @tipoViaje, @esInternacional,
+                        'APROBADO', @fechaActual, @idUsuarioAprobacion
+                    );
+                    SELECT SCOPE_IDENTITY();";
 
                 using (SqlCommand cmd = new SqlCommand(queryOrdenViaje, conn, transaction))
                 {
+                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
                     cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                     cmd.Parameters.AddWithValue("@fechaSalida", FechaSeguraSQL(fechaSalida));
                     cmd.Parameters.AddWithValue("@horaSalida", string.IsNullOrEmpty(horaSalida) ? (object)DBNull.Value : horaSalida);
@@ -1267,13 +1407,14 @@ namespace WebSGV.Views
                     cmd.Parameters.AddWithValue("@observaciones", string.IsNullOrEmpty(observaciones) ? (object)DBNull.Value : observaciones);
                     cmd.Parameters.AddWithValue("@tipoViaje", tipoViaje);
                     cmd.Parameters.AddWithValue("@esInternacional", esInternacional);
+                    cmd.Parameters.AddWithValue("@idUsuarioAprobacion", idUsuarioAprobacion > 0 ? (object)idUsuarioAprobacion : DBNull.Value);
 
                     object result = cmd.ExecuteScalar();
 
                     if (result != null && result != DBNull.Value)
                     {
                         int idOrdenViaje = Convert.ToInt32(result);
-                        System.Diagnostics.Debug.WriteLine($"✅ OrdenViaje creada: ID={idOrdenViaje}, Estado=COMPLETADO, Tipo={tipoViaje}");
+                        System.Diagnostics.Debug.WriteLine($"✅ OrdenViaje creada: ID={idOrdenViaje}, Estado=COMPLETADO, Aprobación=APROBADO, Tipo={tipoViaje}");
                         return idOrdenViaje;
                     }
                     else
@@ -1449,7 +1590,8 @@ namespace WebSGV.Views
         {
             try
             {
-                string ingresosAdicionalesJson = Request.Form["hiddenIngresosAdicionales"] ?? "[]";
+                // ✅ Leer desde el HiddenField protegido por ViewState MAC
+                string ingresosAdicionalesJson = hfIngresosAdicionales.Value ?? "[]";
 
                 if (string.IsNullOrEmpty(ingresosAdicionalesJson) || ingresosAdicionalesJson == "[]")
                     return;
@@ -1486,11 +1628,13 @@ namespace WebSGV.Views
             }
         }
 
+
         private void InsertarGastosAdicionales(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje)
         {
             try
             {
-                string gastosAdicionalesJson = Request.Form["hiddenGastosAdicionales"] ?? "[]";
+                // ✅ Leer desde el HiddenField protegido por ViewState MAC
+                string gastosAdicionalesJson = hfGastosAdicionales.Value ?? "[]";
 
                 if (string.IsNullOrEmpty(gastosAdicionalesJson) || gastosAdicionalesJson == "[]")
                     return;
@@ -1531,22 +1675,37 @@ namespace WebSGV.Views
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine("--- Insertando Descuentos y Reintegros ---");
+
+                // Obtener valores del formulario
                 decimal descuentoSoles = decimal.TryParse(Request.Form["descuentoSoles"], out decimal ds) ? ds : 0;
                 decimal descuentoDolares = decimal.TryParse(Request.Form["descuentoDolares"], out decimal dd) ? dd : 0;
                 decimal reintegroSoles = decimal.TryParse(Request.Form["reintegroSoles"], out decimal rs) ? rs : 0;
                 decimal reintegroDolares = decimal.TryParse(Request.Form["reintegroDolares"], out decimal rd) ? rd : 0;
 
-                if (descuentoSoles > 0 || descuentoDolares > 0 || reintegroSoles > 0 || reintegroDolares > 0)
+                System.Diagnostics.Debug.WriteLine($"Descuento: S/ {descuentoSoles} | $ {descuentoDolares}");
+                System.Diagnostics.Debug.WriteLine($"Reintegro: S/ {reintegroSoles} | $ {reintegroDolares}");
+
+                // ✅ Solo insertar si al menos uno de los valores es diferente de cero
+                if (descuentoSoles != 0 || descuentoDolares != 0 || reintegroSoles != 0 || reintegroDolares != 0)
                 {
                     string query = @"
-                        INSERT INTO DescuentosReintegros (
-                            numeroOrdenViaje, descuentoSoles, descuentoDolares, 
-                            reintegroSoles, reintegroDolares
-                        )
-                        VALUES (
-                            @numeroOrdenViaje, @descuentoSoles, @descuentoDolares,
-                            @reintegroSoles, @reintegroDolares
-                        )";
+                INSERT INTO DescuentosReintegros (
+                    numeroOrdenViaje, 
+                    descuentoSoles, 
+                    descuentoDolares, 
+                    reintegroSoles, 
+                    reintegroDolares,
+                    activo
+                )
+                VALUES (
+                    @numeroOrdenViaje, 
+                    @descuentoSoles, 
+                    @descuentoDolares,
+                    @reintegroSoles, 
+                    @reintegroDolares,
+                    1
+                )";
 
                     using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
                     {
@@ -1555,14 +1714,31 @@ namespace WebSGV.Views
                         cmd.Parameters.AddWithValue("@descuentoDolares", descuentoDolares);
                         cmd.Parameters.AddWithValue("@reintegroSoles", reintegroSoles);
                         cmd.Parameters.AddWithValue("@reintegroDolares", reintegroDolares);
-                        cmd.ExecuteNonQuery();
+
+                        int filasAfectadas = cmd.ExecuteNonQuery();
+
+                        if (filasAfectadas > 0)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"✅ Descuentos/Reintegros insertados correctamente");
+                            System.Diagnostics.Debug.WriteLine($"   Descuento: S/ {descuentoSoles} | $ {descuentoDolares}");
+                            System.Diagnostics.Debug.WriteLine($"   Reintegro: S/ {reintegroSoles} | $ {reintegroDolares}");
+                        }
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine("⚠️ No se insertaron descuentos/reintegros");
+                        }
                     }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("ℹ️ No se insertaron descuentos/reintegros (todos los valores son 0)");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error insertando descuentos/reintegros: {ex.Message}");
-                throw;
+                System.Diagnostics.Debug.WriteLine($"❌ Error insertando descuentos/reintegros: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
+                throw new Exception($"Error al insertar descuentos y reintegros: {ex.Message}", ex);
             }
         }
 
@@ -1795,6 +1971,87 @@ namespace WebSGV.Views
             return EsFechaValidaSQL(fecha) ? (object)fecha : DBNull.Value;
         }
 
+        /// <summary>
+        /// ✅ NUEVO MÉTODO: Obtiene el ID del usuario actual desde la sesión
+        /// </summary>
+        private int ObtenerIdUsuarioActual()
+        {
+            try
+            {
+                // Primero intenta obtener desde Session["IdUsuario"]
+                if (Session["IdUsuario"] != null)
+                {
+                    if (int.TryParse(Session["IdUsuario"].ToString(), out int idUsuario))
+                    {
+                        System.Diagnostics.Debug.WriteLine($"✅ ID Usuario obtenido de sesión: {idUsuario}");
+                        return idUsuario;
+                    }
+                }
+
+                // Si no existe en sesión, intenta buscar por nombre de usuario
+                string nombreUsuario = ObtenerUsuarioActual();
+                if (!string.IsNullOrEmpty(nombreUsuario) && nombreUsuario != "Sistema")
+                {
+                    int idUsuario = BuscarIdUsuarioPorNombre(nombreUsuario);
+                    if (idUsuario > 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"✅ ID Usuario obtenido por nombre: {idUsuario}");
+                        return idUsuario;
+                    }
+                }
+
+                // Si no se encuentra, devuelve 0 (se guardará como NULL en DB)
+                System.Diagnostics.Debug.WriteLine("⚠️ No se pudo obtener ID de usuario, se usará NULL");
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error obteniendo ID usuario: {ex.Message}");
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUEVO MÉTODO: Busca el ID del usuario en la base de datos por su nombre
+        /// </summary>
+        private int BuscarIdUsuarioPorNombre(string nombreUsuario)
+        {
+            try
+            {
+                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    // Ajusta esta query según tu estructura de tabla de usuarios
+                    string query = @"
+                        SELECT idUsuario 
+                        FROM Usuarios 
+                        WHERE nombreUsuario = @nombreUsuario 
+                           OR usuario = @nombreUsuario
+                           OR email = @nombreUsuario";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@nombreUsuario", nombreUsuario);
+                        conn.Open();
+
+                        object result = cmd.ExecuteScalar();
+                        if (result != null && result != DBNull.Value)
+                        {
+                            return Convert.ToInt32(result);
+                        }
+                    }
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error buscando usuario: {ex.Message}");
+                return 0;
+            }
+        }
+
         private string ObtenerUsuarioActual()
         {
             if (Session["Usuario"] != null)
@@ -1812,23 +2069,23 @@ namespace WebSGV.Views
             pnlMensajes.Visible = true;
         }
 
-        private void MostrarResultadoExitoso(string numeroOrdenViaje)
+        private void MostrarResultadoExitoso(string numeroOrdenViaje, string accion = "guardada")
         {
             try
             {
-                string mensajeCompleto = $@"¡Orden de viaje guardada exitosamente!<br/>
-                    <strong>Número de orden:</strong> {numeroOrdenViaje}<br/>
-                    <div class='mt-3'>
-                        <a href='ListaDespachos.aspx' class='btn btn-primary btn-sm me-2'>
-                            <i class='fas fa-list'></i> Ver Lista de Despachos
-                        </a>
-                        <button type='button' class='btn btn-secondary btn-sm' onclick='location.reload()'>
-                            <i class='fas fa-plus'></i> Nueva Orden de Viaje
-                        </button>
-                    </div>";
+                string mensajeCompleto = $@"¡Orden de viaje {accion} exitosamente!<br/>
+            <strong>Número de orden:</strong> {numeroOrdenViaje}<br/>
+            <div class='mt-3'>
+                <a href='ListaDespachos.aspx' class='btn btn-primary btn-sm me-2'>
+                    <i class='fas fa-list'></i> Ver Lista de Despachos
+                </a>
+                <button type='button' class='btn btn-secondary btn-sm' onclick='location.reload()'>
+                    <i class='fas fa-plus'></i> Nueva Orden de Viaje
+                </button>
+            </div>";
 
                 MostrarMensaje(mensajeCompleto, "success");
-                System.Diagnostics.Debug.WriteLine($"Orden {numeroOrdenViaje} guardada exitosamente");
+                System.Diagnostics.Debug.WriteLine($"Orden {numeroOrdenViaje} {accion} exitosamente");
             }
             catch (Exception ex)
             {

@@ -12,15 +12,15 @@
         <!-- Header -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="page-header d-flex justify-content-between align-items-center">
+                <div class="page-header-box">
                     <div>
-                        <h2 class="page-title mb-1">
-                            <i class="fas fa-file-invoice-dollar mr-2"></i>Reportes de Órdenes de Viaje
+                        <h2 class="page-title">
+                            <i class="fas fa-file-invoice-dollar"></i> Reportes de Órdenes de Viaje
                         </h2>
-                        <p class="text-muted mb-0">Consulte liquidaciones y viajes activos del sistema</p>
+                        <p class="page-subtitle">Consulte liquidaciones y viajes activos del sistema</p>
                     </div>
-                    <a href="ListaDespachos.aspx" class="btn btn-outline-secondary btn-back">
-                        <i class="fas fa-arrow-left mr-2"></i>Volver
+                    <a href="ListaDespachos.aspx" class="btn btn-outline-light">
+                        <i class="fas fa-arrow-left"></i> Volver
                     </a>
                 </div>
             </div>
@@ -29,33 +29,35 @@
         <!-- PESTAÑAS PRINCIPALES -->
         <div class="row">
             <div class="col-12">
-                <ul class="nav nav-tabs-custom mb-0" id="reportesTabs" role="tablist">
+                <ul class="nav nav-tabs nav-tabs-modern mb-0" id="reportesTabs" role="tablist">
                     <li class="nav-item">
                         <a class="nav-link active" id="liquidaciones-tab" data-toggle="tab" href="#liquidaciones" role="tab">
-                            <i class="fas fa-money-check-alt mr-2"></i>Liquidaciones
+                            <i class="fas fa-money-check-alt"></i> Liquidaciones
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" id="viajesActivos-tab" data-toggle="tab" href="#viajesActivos" role="tab">
-                            <i class="fas fa-truck-loading mr-2"></i>Viajes Activos
+                            <i class="fas fa-truck-loading"></i> Viajes Activos Sin Liquidación
                         </a>
                     </li>
                 </ul>
 
-                <div class="tab-content tab-content-custom" id="reportesTabsContent">
+                <div class="tab-content tab-content-modern" id="reportesTabsContent">
 
+                    <!-- ============================================ -->
                     <!-- TAB 1: LIQUIDACIONES -->
+                    <!-- ============================================ -->
                     <div class="tab-pane fade show active" id="liquidaciones" role="tabpanel">
                         <div class="p-4">
 
                             <!-- Filtros -->
-                            <div class="section-card mb-4">
-                                <div class="section-header">
-                                    <h5 class="section-title">
-                                        <i class="fas fa-filter mr-2"></i>Filtros de Búsqueda
+                            <div class="card card-modern mb-4">
+                                <div class="card-header card-header-primary">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-filter"></i> Filtros de Búsqueda
                                     </h5>
                                 </div>
-                                <div class="section-body">
+                                <div class="card-body">
                                     <div class="row">
                                         <div class="col-md-3">
                                             <div class="form-group">
@@ -76,160 +78,149 @@
                                                     <div class="input-group-prepend">
                                                         <span class="input-group-text">S/</span>
                                                     </div>
-                                                    <asp:TextBox ID="txtFactorConversion" runat="server" CssClass="form-control"
-                                                        Text="3.75" step="0.01" placeholder="3.75"></asp:TextBox>
+                                                    <asp:TextBox ID="txtFactorConversion" runat="server" CssClass="form-control" Text="3.75" step="0.01"></asp:TextBox>
                                                 </div>
-                                                <small class="form-text text-muted">Tipo de cambio para conversión a soles</small>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="form-group">
                                                 <label class="form-label">&nbsp;</label>
                                                 <div>
-                                                    <asp:Button ID="btnBuscarLiquidaciones" runat="server" Text="Buscar"
-                                                        CssClass="btn btn-primary-custom btn-block" OnClick="btnBuscarLiquidaciones_Click" />
+                                                    <asp:Button ID="btnBuscarLiquidaciones" runat="server" Text="Buscar" 
+                                                        CssClass="btn btn-primary btn-block" OnClick="btnBuscarLiquidaciones_Click" />
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-12">
-                                            <button type="button" class="btn btn-success-custom btn-sm mr-2" onclick="exportarLiquidaciones()">
-                                                <i class="fas fa-file-excel mr-1"></i>Exportar a Excel
+                                            <button type="button" class="btn btn-success btn-sm mr-2" onclick="exportarLiquidaciones()">
+                                                <i class="fas fa-file-excel"></i> Exportar Excel
                                             </button>
-                                            <button type="button" class="btn btn-danger-custom btn-sm" onclick="generarPDFLiquidaciones()">
-                                                <i class="fas fa-file-pdf mr-1"></i>Exportar a PDF
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="generarPDFLiquidaciones()">
+                                                <i class="fas fa-file-pdf"></i> Exportar PDF
                                             </button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Tabla de Liquidaciones -->
-                            <div class="section-card mb-4">
-                                <div class="section-header section-header-info">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h5 class="section-title mb-0">
-                                            <i class="fas fa-table mr-2"></i>Liquidaciones Registradas
-                                        </h5>
-                                        <span class="badge badge-primary-custom">
-                                            <asp:Label ID="lblTotalRegistros" runat="server" Text="0 registros"></asp:Label>
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="section-body p-0">
-                                    <div class="table-responsive">
-                                        <asp:GridView ID="gvLiquidaciones" runat="server"
-                                            CssClass="table table-report mb-0"
-                                            AutoGenerateColumns="false"
-                                            EmptyDataText="No hay liquidaciones para mostrar"
-                                            OnRowDataBound="gvLiquidaciones_RowDataBound"
-                                            ShowFooter="true">
-                                            <Columns>
-                                                <asp:BoundField DataField="DNI" HeaderText="DNI" ItemStyle-CssClass="text-center" />
-                                                <asp:BoundField DataField="Conductor" HeaderText="CONDUCTOR" ItemStyle-CssClass="font-weight-bold" />
-                                                <asp:BoundField DataField="FechaSalida" HeaderText="FECHA" DataFormatString="{0:dd/MM/yyyy}" ItemStyle-CssClass="text-center" />
-                                                <asp:BoundField DataField="NumeroLiquidacion" HeaderText="N° DE LIQ" ItemStyle-CssClass="text-center font-weight-bold" />
-                                                <asp:TemplateField HeaderText="MONTO S/">
-                                                    <ItemTemplate>
-                                                        <span class='<%# ObtenerClaseMontoSoles(Eval("MontoSoles")) %>'>
-                                                            <%# FormatearMontoSoles(Eval("MontoSoles")) %>
-                                                        </span>
-                                                    </ItemTemplate>
-                                                    <FooterTemplate>
-                                                        <strong>TOTAL:
-                                                            <asp:Label ID="lblTotalSoles" runat="server"></asp:Label></strong>
-                                                    </FooterTemplate>
-                                                    <ItemStyle CssClass="text-right" />
-                                                    <FooterStyle CssClass="text-right font-weight-bold bg-light" />
-                                                </asp:TemplateField>
-                                                <asp:TemplateField HeaderText="MONTO $">
-                                                    <ItemTemplate>
-                                                        <span class='<%# ObtenerClaseMontoDolares(Eval("MontoDolares")) %>'>
-                                                            <%# FormatearMontoDolares(Eval("MontoDolares")) %>
-                                                        </span>
-                                                    </ItemTemplate>
-                                                    <FooterTemplate>
-                                                        <strong>TOTAL:
-                                                            <asp:Label ID="lblTotalDolares" runat="server"></asp:Label></strong>
-                                                    </FooterTemplate>
-                                                    <ItemStyle CssClass="text-right" />
-                                                    <FooterStyle CssClass="text-right font-weight-bold bg-light" />
-                                                </asp:TemplateField>
-                                                <asp:TemplateField HeaderText="ACCIONES">
-                                                    <ItemTemplate>
-                                                        <button type="button" class="btn btn-info-custom btn-sm"
-                                                            onclick='verDetalleOrden(<%# Eval("IdOrdenViaje") %>)'>
-                                                            <i class="fas fa-eye"></i>
-                                                        </button>
-                                                    </ItemTemplate>
-                                                    <ItemStyle CssClass="text-center" />
-                                                </asp:TemplateField>
-                                            </Columns>
-                                            <HeaderStyle CssClass="bg-info text-white" />
-                                        </asp:GridView>
-                                    </div>
-                                </div>
-                            </div>
-
                             <!-- Resumen Financiero -->
-                            <div class="section-card">
-                                <div class="section-header section-header-success">
-                                    <h5 class="section-title">
-                                        <i class="fas fa-calculator mr-2"></i>Resumen Total en Soles
+                            <div class="card card-modern mb-4">
+                                <div class="card-header card-header-success">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-calculator"></i> Resumen Total en Soles
                                     </h5>
                                 </div>
-                                <div class="section-body">
+                                <div class="card-body">
                                     <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="resumen-financiero">
-                                                <div class="row">
-                                                    <div class="col-md-3">
-                                                        <div class="resumen-item">
-                                                            <div class="resumen-label">Total en Soles (S/)</div>
-                                                            <div class="resumen-value text-primary">
-                                                                <asp:Label ID="lblResumenTotalSoles" runat="server" Text="S/ 0.00"></asp:Label>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="resumen-item">
-                                                            <div class="resumen-label">Total en Dólares ($)</div>
-                                                            <div class="resumen-value text-success">
-                                                                <asp:Label ID="lblResumenTotalDolares" runat="server" Text="$ 0.00"></asp:Label>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="resumen-item">
-                                                            <div class="resumen-label">Conversión a Soles</div>
-                                                            <div class="resumen-value text-info">
-                                                                <asp:Label ID="lblResumenConversion" runat="server" Text="S/ 0.00"></asp:Label>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="resumen-item resumen-total">
-                                                            <div class="resumen-label">TOTAL GENERAL</div>
-                                                            <div class="resumen-value-total">
-                                                                <asp:Label ID="lblResumenTotal" runat="server" Text="S/ 0.00"></asp:Label>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                        <div class="col-md-3">
+                                            <div class="summary-box summary-box-primary">
+                                                <div class="summary-label">Total en Soles</div>
+                                                <div class="summary-value">
+                                                    <asp:Label ID="lblResumenTotalSoles" runat="server" Text="S/ 0.00"></asp:Label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="summary-box summary-box-success">
+                                                <div class="summary-label">Total en Dólares</div>
+                                                <div class="summary-value">
+                                                    <asp:Label ID="lblResumenTotalDolares" runat="server" Text="$ 0.00"></asp:Label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="summary-box summary-box-info">
+                                                <div class="summary-label">Conversión a Soles</div>
+                                                <div class="summary-value">
+                                                    <asp:Label ID="lblResumenConversion" runat="server" Text="S/ 0.00"></asp:Label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="summary-box summary-box-total">
+                                                <div class="summary-label">TOTAL GENERAL</div>
+                                                <div class="summary-value-total">
+                                                    <asp:Label ID="lblResumenTotal" runat="server" Text="S/ 0.00"></asp:Label>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="row mt-3">
                                         <div class="col-md-12">
-                                            <div class="alert alert-info-light mb-0">
-                                                <i class="fas fa-info-circle mr-2"></i>
+                                            <div class="alert alert-info mb-0">
+                                                <i class="fas fa-info-circle"></i>
                                                 <strong>Leyenda:</strong>
-                                                <span class="ml-3 text-danger font-weight-bold">■ Rojo = Descuento</span>
-                                                <span class="ml-3 text-primary font-weight-bold">■ Azul = Reintegro</span>
-                                                <span class="ml-3">■ Negro = Monto Normal</span>
+                                                <span class="ml-3 text-danger font-weight-bold">● Rojo = Descuento Neto</span>
+                                                <span class="ml-3 text-primary font-weight-bold">● Azul = Reintegro Neto</span>
+                                                <span class="ml-3">● Negro = Cero</span>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tabla de Liquidaciones -->
+                            <div class="card card-modern mb-4">
+                                <div class="card-header card-header-info">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="card-title mb-0">
+                                            <i class="fas fa-table"></i> Liquidaciones Registradas
+                                        </h5>
+                                        <span class="badge badge-light badge-lg">
+                                            <asp:Label ID="lblTotalRegistros" runat="server" Text="0 registros"></asp:Label>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <asp:GridView ID="gvLiquidaciones" runat="server"
+                                            CssClass="table table-modern table-hover mb-0"
+                                            AutoGenerateColumns="false"
+                                            EmptyDataText="No hay liquidaciones para mostrar"
+                                            OnRowDataBound="gvLiquidaciones_RowDataBound"
+                                            ShowFooter="true">
+                                            <Columns>
+                                                <asp:BoundField DataField="DNI" HeaderText="DNI" />
+                                                <asp:BoundField DataField="Conductor" HeaderText="CONDUCTOR" />
+                                                <asp:BoundField DataField="FechaSalida" HeaderText="FECHA" DataFormatString="{0:dd/MM/yyyy}" />
+                                                <asp:BoundField DataField="NumeroLiquidacion" HeaderText="N° DE LIQ" />
+                                                <asp:TemplateField HeaderText="MONTO S/ (Reintegro-Descuento)">
+                                                    <ItemTemplate>
+                                                        <span class='<%# ObtenerClaseMontoSoles(Eval("MontoSoles")) %>'>
+                                                            <%# FormatearMontoSoles(Eval("MontoSoles")) %>
+                                                        </span>
+                                                    </ItemTemplate>
+                                                    <FooterTemplate>
+                                                        <strong>TOTAL: <asp:Label ID="lblTotalSoles" runat="server"></asp:Label></strong>
+                                                    </FooterTemplate>
+                                                    <ItemStyle CssClass="text-right" />
+                                                    <FooterStyle CssClass="text-right bg-light" />
+                                                </asp:TemplateField>
+                                                <asp:TemplateField HeaderText="MONTO $ (Reintegro-Descuento)">
+                                                    <ItemTemplate>
+                                                        <span class='<%# ObtenerClaseMontoDolares(Eval("MontoDolares")) %>'>
+                                                            <%# FormatearMontoDolares(Eval("MontoDolares")) %>
+                                                        </span>
+                                                    </ItemTemplate>
+                                                    <FooterTemplate>
+                                                        <strong>TOTAL: <asp:Label ID="lblTotalDolares" runat="server"></asp:Label></strong>
+                                                    </FooterTemplate>
+                                                    <ItemStyle CssClass="text-right" />
+                                                    <FooterStyle CssClass="text-right bg-light" />
+                                                </asp:TemplateField>
+                                                <asp:TemplateField HeaderText="ACCIONES">
+                                                    <ItemTemplate>
+                                                        <button type="button" class="btn btn-info btn-sm" onclick='verDetalleOrden(<%# Eval("IdOrdenViaje") %>)'>
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </ItemTemplate>
+                                                    <ItemStyle CssClass="text-center" />
+                                                </asp:TemplateField>
+                                            </Columns>
+                                            <HeaderStyle CssClass="thead-dark" />
+                                        </asp:GridView>
                                     </div>
                                 </div>
                             </div>
@@ -237,50 +228,52 @@
                         </div>
                     </div>
 
-                    <!-- TAB 2: VIAJES ACTIVOS -->
+                    <!-- ============================================ -->
+                    <!-- TAB 2: VIAJES ACTIVOS SIN LIQUIDACIÓN -->
+                    <!-- ============================================ -->
                     <div class="tab-pane fade" id="viajesActivos" role="tabpanel">
                         <div class="p-4">
 
                             <!-- Filtros Viajes Activos -->
-                            <div class="section-card mb-4">
-                                <div class="section-header">
-                                    <h5 class="section-title">
-                                        <i class="fas fa-search mr-2"></i>Búsqueda de Viajes Activos
+                            <div class="card card-modern mb-4">
+                                <div class="card-header card-header-warning">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-search"></i> Búsqueda de Viajes Activos
                                     </h5>
                                 </div>
-                                <div class="section-body">
+                                <div class="card-body">
                                     <div class="row">
-                                        <div class="col-md-4">
+                                        <div class="col-md-5">
                                             <div class="form-group">
                                                 <label class="form-label">Buscar Conductor</label>
-                                                <asp:TextBox ID="txtBuscarConductor" runat="server" CssClass="form-control"
-                                                    placeholder="Nombre o DNI del conductor"></asp:TextBox>
+                                                <asp:TextBox ID="txtBuscarConductor" runat="server" CssClass="form-control" 
+                                                    placeholder="Nombre, apellido o DNI"></asp:TextBox>
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="form-group">
                                                 <label class="form-label">Estado del Viaje</label>
                                                 <asp:DropDownList ID="ddlEstadoViaje" runat="server" CssClass="form-control">
-                                                    <asp:ListItem Value="" Text="-- Todos los estados --"></asp:ListItem>
-                                                    <asp:ListItem Value="EnProgreso" Text="En Progreso"></asp:ListItem>
-                                                    <asp:ListItem Value="Iniciado" Text="Iniciado"></asp:ListItem>
+                                                    <asp:ListItem Value="TODOS" Text="Todos los estados"></asp:ListItem>
+                                                    <asp:ListItem Value="ABIERTO" Text="Abierto" Selected="True"></asp:ListItem>
+                                                    <asp:ListItem Value="CERRADO" Text="Cerrado"></asp:ListItem>
                                                 </asp:DropDownList>
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
                                             <div class="form-group">
                                                 <label class="form-label">&nbsp;</label>
                                                 <div>
-                                                    <asp:Button ID="btnBuscarViajesActivos" runat="server" Text="Buscar Viajes Activos"
-                                                        CssClass="btn btn-primary-custom btn-block" OnClick="btnBuscarViajesActivos_Click" />
+                                                    <asp:Button ID="btnBuscarViajesActivos" runat="server" Text="Buscar" 
+                                                        CssClass="btn btn-warning btn-block" OnClick="btnBuscarViajesActivos_Click" />
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-12">
-                                            <button type="button" class="btn btn-success-custom btn-sm mr-2" onclick="exportarViajesActivos()">
-                                                <i class="fas fa-file-excel mr-1"></i>Exportar a Excel
+                                            <button type="button" class="btn btn-success btn-sm" onclick="exportarViajesActivos()">
+                                                <i class="fas fa-file-excel"></i> Exportar Excel
                                             </button>
                                         </div>
                                     </div>
@@ -288,63 +281,56 @@
                             </div>
 
                             <!-- Alerta de Resumen -->
-                            <div class="alert alert-warning-custom mb-4">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <i class="fas fa-exclamation-triangle mr-2"></i>
-                                        <strong>Viajes sin liquidar:</strong>
-                                        <asp:Label ID="lblTotalViajesActivos" runat="server" Text="0 conductores"></asp:Label>
-                                        tienen viajes activos pendientes de liquidación.
-                                    </div>
-                                </div>
+                            <div class="alert alert-warning alert-modern mb-4">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>Conductores con viajes sin liquidar:</strong>
+                                <asp:Label ID="lblTotalViajesActivos" runat="server" Text="0 conductores"></asp:Label>
+                                tienen viajes activos pendientes de liquidación.
                             </div>
 
                             <!-- Tabla de Viajes Activos -->
-                            <div class="section-card">
-                                <div class="section-header section-header-warning">
+                            <div class="card card-modern">
+                                <div class="card-header card-header-warning">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <h5 class="section-title mb-0">
-                                            <i class="fas fa-truck mr-2"></i>Conductores con Viajes Activos
+                                        <h5 class="card-title mb-0">
+                                            <i class="fas fa-truck"></i> Conductores con Viajes Sin Liquidación
                                         </h5>
-                                        <span class="badge badge-warning-custom">
+                                        <span class="badge badge-light badge-lg">
                                             <asp:Label ID="lblCountViajesActivos" runat="server" Text="0 viajes"></asp:Label>
                                         </span>
                                     </div>
                                 </div>
-                                <div class="section-body p-0">
+                                <div class="card-body p-0">
                                     <div class="table-responsive">
                                         <asp:GridView ID="gvViajesActivos" runat="server"
-                                            CssClass="table table-report mb-0"
+                                            CssClass="table table-modern table-hover mb-0"
                                             AutoGenerateColumns="false"
-                                            EmptyDataText="No hay viajes activos para mostrar"
+                                            EmptyDataText="No hay viajes activos sin liquidación"
                                             OnRowDataBound="gvViajesActivos_RowDataBound">
                                             <Columns>
-                                                <asp:BoundField DataField="DNI" HeaderText="DNI" ItemStyle-CssClass="text-center" />
-                                                <asp:BoundField DataField="Conductor" HeaderText="CONDUCTOR" ItemStyle-CssClass="font-weight-bold" />
-                                                <asp:BoundField DataField="PlacaTracto" HeaderText="TRACTO" ItemStyle-CssClass="text-center" />
-                                                <asp:BoundField DataField="PlacaCarreta" HeaderText="CARRETA" ItemStyle-CssClass="text-center" />
+                                                <asp:BoundField DataField="DNI" HeaderText="DNI" />
+                                                <asp:BoundField DataField="Conductor" HeaderText="CONDUCTOR" />
+                                                <asp:BoundField DataField="PlacaTracto" HeaderText="TRACTO" />
+                                                <asp:BoundField DataField="PlacaCarreta" HeaderText="CARRETA" />
                                                 <asp:BoundField DataField="Cliente" HeaderText="CLIENTE" />
-                                                <asp:BoundField DataField="FechaInicio" HeaderText="FECHA INICIO" DataFormatString="{0:dd/MM/yyyy}" ItemStyle-CssClass="text-center" />
-                                                <asp:BoundField DataField="DiasEnViaje" HeaderText="DÍAS EN VIAJE" ItemStyle-CssClass="text-center" />
+                                                <asp:BoundField DataField="Destino" HeaderText="DESTINO" />
+                                                <asp:TemplateField HeaderText="FECHA PROGRAMACIÓN">
+                                                    <ItemTemplate>
+                                                        <%# Eval("FechaProgramacion") != DBNull.Value ? Convert.ToDateTime(Eval("FechaProgramacion")).ToString("dd/MM/yyyy") : "N/A" %>
+                                                    </ItemTemplate>
+                                                    <ItemStyle CssClass="text-center" />
+                                                </asp:TemplateField>
+                                                <asp:BoundField DataField="DiasEnViaje" HeaderText="DÍAS EN VIAJE" />
                                                 <asp:TemplateField HeaderText="ESTADO">
                                                     <ItemTemplate>
-                                                        <span class='<%# ObtenerClaseEstado(Eval("Estado")) %>'>
+                                                        <span class='<%# "badge " + ObtenerClaseEstado(Eval("Estado")) %>'>
                                                             <%# Eval("Estado") %>
                                                         </span>
                                                     </ItemTemplate>
                                                     <ItemStyle CssClass="text-center" />
                                                 </asp:TemplateField>
-                                                <asp:TemplateField HeaderText="ACCIONES">
-                                                    <ItemTemplate>
-                                                        <button type="button" class="btn btn-primary-custom btn-sm"
-                                                            onclick='finalizarViaje(<%# Eval("IdViaje") %>)'>
-                                                            <i class="fas fa-flag-checkered mr-1"></i>Finalizar
-                                                        </button>
-                                                    </ItemTemplate>
-                                                    <ItemStyle CssClass="text-center" />
-                                                </asp:TemplateField>
                                             </Columns>
-                                            <HeaderStyle CssClass="bg-warning text-dark" />
+                                            <HeaderStyle CssClass="thead-dark" />
                                         </asp:GridView>
                                     </div>
                                 </div>
@@ -360,15 +346,15 @@
     </div>
 
     <!-- Modal Detalle de Orden -->
-    <div class="modal fade" id="modalDetalleOrden" tabindex="-1">
-        <div class="modal-dialog modal-xl">
+    <div class="modal fade" id="modalDetalleOrden" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content">
-                <div class="modal-header modal-header-custom">
+                <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title">
-                        <i class="fas fa-file-invoice mr-2"></i>Detalle de Orden de Viaje
+                        <i class="fas fa-file-invoice"></i> Detalle de Orden de Viaje
                     </h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
@@ -382,400 +368,391 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary-custom" onclick="imprimirOrden()">
-                        <i class="fas fa-print mr-1"></i>Imprimir
-                    </button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- CSS Profesional -->
+    <!-- CSS MODERNO Y FUNCIONAL -->
     <style>
-        /* === VARIABLES === */
-        :root {
-            --primary-color: #2563eb;
-            --primary-dark: #1e40af;
-            --success-color: #059669;
-            --danger-color: #dc2626;
-            --warning-color: #d97706;
-            --info-color: #0891b2;
-            --neutral-color: #475569;
-            --light-gray: #f8fafc;
-            --medium-gray: #e2e8f0;
-            --dark-gray: #64748b;
-            --border-color: #cbd5e1;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-        }
-
-        /* === LAYOUT === */
-        .page-header {
-            padding-bottom: 1rem;
-            border-bottom: 2px solid var(--border-color);
+        /* === PAGE HEADER === */
+        .page-header-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            margin-bottom: 2rem;
         }
 
         .page-title {
-            color: var(--text-primary);
-            font-weight: 600;
+            color: white;
             font-size: 1.75rem;
+            font-weight: 700;
             margin: 0;
         }
 
-        /* === BOTONES === */
-        .btn-back {
-            border-color: var(--border-color);
-            color: var(--text-secondary);
-            padding: 0.5rem 1.25rem;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-            .btn-back:hover {
-                background-color: var(--light-gray);
-                border-color: var(--dark-gray);
-                color: var(--text-primary);
-            }
-
-        .btn-primary-custom {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-            color: white;
-            font-weight: 500;
-        }
-
-            .btn-primary-custom:hover {
-                background-color: var(--primary-dark);
-                border-color: var(--primary-dark);
-            }
-
-        .btn-secondary-custom {
-            background-color: white;
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .btn-success-custom {
-            background-color: var(--success-color);
-            border-color: var(--success-color);
-            color: white;
-        }
-
-        .btn-danger-custom {
-            background-color: var(--danger-color);
-            border-color: var(--danger-color);
-            color: white;
-        }
-
-        .btn-info-custom {
-            background-color: var(--info-color);
-            border-color: var(--info-color);
-            color: white;
-        }
-
-        /* === ALERTAS === */
-        .alert-warning-custom {
-            background-color: #fef3c7;
-            border: 1px solid #fbbf24;
-            border-radius: 0.5rem;
-            color: #78350f;
-            padding: 1rem;
-        }
-
-        .alert-info-light {
-            background-color: #f0f9ff;
-            border: 1px solid #bae6fd;
-            border-radius: 0.5rem;
-            padding: 1rem;
+        .page-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            margin: 0.25rem 0 0 0;
         }
 
         /* === PESTAÑAS === */
-        .nav-tabs-custom {
-            border-bottom: 2px solid var(--border-color);
+        .nav-tabs-modern {
+            border-bottom: 3px solid #e9ecef;
+            background-color: #f8f9fa;
+            border-radius: 8px 8px 0 0;
+            padding: 0.5rem 1rem 0 1rem;
         }
 
-            .nav-tabs-custom .nav-link {
-                color: var(--text-secondary);
-                background-color: transparent;
-                border: none;
-                border-bottom: 3px solid transparent;
-                padding: 1rem 1.5rem;
-                font-weight: 500;
-                transition: all 0.2s;
-            }
+        .nav-tabs-modern .nav-link {
+            color: #6c757d;
+            background-color: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
 
-                .nav-tabs-custom .nav-link:hover {
-                    color: var(--primary-color);
-                    background-color: var(--light-gray);
-                }
+        .nav-tabs-modern .nav-link:hover {
+            color: #495057;
+            background-color: #e9ecef;
+            border-bottom-color: #dee2e6;
+        }
 
-                .nav-tabs-custom .nav-link.active {
-                    color: var(--primary-color);
-                    background-color: white;
-                    border-bottom-color: var(--primary-color);
-                }
-
-        .tab-content-custom {
+        .nav-tabs-modern .nav-link.active {
+            color: #495057;
             background-color: white;
-            border: 1px solid var(--border-color);
+            border-bottom-color: #007bff;
+        }
+
+        .tab-content-modern {
+            background-color: white;
+            border: 1px solid #dee2e6;
             border-top: none;
+            border-radius: 0 0 8px 8px;
             min-height: 500px;
         }
 
-        /* === SECCIONES === */
-        .section-card {
-            background-color: white;
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
+        /* === CARDS === */
+        .card-modern {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             overflow: hidden;
         }
 
-        .section-header {
-            background-color: var(--light-gray);
-            padding: 1rem 1.25rem;
-            border-bottom: 1px solid var(--border-color);
+        .card-header {
+            border-bottom: 2px solid #dee2e6;
+            padding: 1rem 1.5rem;
         }
 
-        .section-header-info {
-            background-color: #e0f2fe;
-            border-bottom-color: #7dd3fc;
+        .card-header-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
         }
 
-        .section-header-success {
-            background-color: #f0fdf4;
-            border-bottom-color: #86efac;
+        .card-header-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+            color: white;
         }
 
-        .section-header-warning {
-            background-color: #fef3c7;
-            border-bottom-color: #fbbf24;
+        .card-header-info {
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            color: white;
         }
 
-        .section-title {
-            color: var(--text-primary);
+        .card-header-warning {
+            background: linear-gradient(135deg, #f09819 0%, #ff512f 100%);
+            color: white;
+        }
+
+        .card-title {
+            margin: 0;
             font-size: 1.125rem;
             font-weight: 600;
-            margin: 0;
         }
 
-        .section-body {
+        .card-body {
             padding: 1.5rem;
         }
 
-        /* === FORMULARIOS === */
-        .form-label {
-            color: var(--text-primary);
+        /* === BOTONES === */
+        .btn {
             font-weight: 500;
-            font-size: 0.875rem;
-            margin-bottom: 0.375rem;
+            padding: 0.5rem 1.25rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
         }
 
-        .form-control {
-            border: 1px solid var(--border-color);
-            font-size: 0.875rem;
-            padding: 0.5rem 0.75rem;
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-            .form-control:focus {
-                border-color: var(--primary-color);
-                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-            }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+            border: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            border: none;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f09819 0%, #ff512f 100%);
+            border: none;
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            border: none;
+        }
 
         /* === TABLAS === */
-        .table-report {
+        .table-modern {
             font-size: 0.875rem;
+            margin-bottom: 0;
         }
 
-            .table-report thead th {
-                background-color: var(--light-gray);
-                color: var(--text-primary);
-                font-weight: 600;
-                font-size: 0.8125rem;
-                text-transform: uppercase;
-                letter-spacing: 0.025em;
-                padding: 0.875rem 0.75rem;
-                border-bottom: 2px solid var(--border-color);
-            }
+        .table-modern thead th {
+            background-color: #343a40 !important;
+            color: white !important;
+            font-weight: 600 !important;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            padding: 1rem 0.75rem !important;
+            border: none !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
 
-            .table-report tbody td {
-                vertical-align: middle;
-                padding: 0.75rem;
-                border-bottom: 1px solid var(--medium-gray);
-            }
+        .table-modern tbody td {
+            padding: 0.875rem 0.75rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #e9ecef;
+        }
 
-            .table-report tbody tr:hover {
-                background-color: var(--light-gray);
-            }
+        .table-modern tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .table-modern tfoot td {
+            background-color: #f8f9fa;
+            font-weight: 700;
+            padding: 1rem 0.75rem;
+            border-top: 2px solid #dee2e6;
+        }
+
+        /* === THEAD-DARK OVERRIDE === */
+        .thead-dark th {
+            background-color: #343a40 !important;
+            color: white !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            font-size: 0.75rem !important;
+            letter-spacing: 0.5px !important;
+            padding: 1rem 0.75rem !important;
+            border: none !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
 
         /* === CLASES DE MONTOS === */
         .monto-descuento {
-            color: var(--danger-color);
-            font-weight: 600;
+            color: #dc3545 !important;
+            font-weight: 700 !important;
+            font-size: 1rem;
         }
 
         .monto-reintegro {
-            color: var(--primary-color);
-            font-weight: 600;
+            color: #007bff !important;
+            font-weight: 700 !important;
+            font-size: 1rem;
         }
 
         .monto-normal {
-            color: var(--text-primary);
+            color: #212529;
             font-weight: 500;
         }
 
         /* === BADGES === */
-        .badge-primary-custom {
-            background-color: var(--primary-color);
-            color: white;
-            font-weight: 500;
-            padding: 0.5rem 0.875rem;
+        .badge-lg {
+            padding: 0.5rem 1rem;
             font-size: 0.875rem;
-        }
-
-        .badge-warning-custom {
-            background-color: var(--warning-color);
-            color: white;
-            font-weight: 500;
-            padding: 0.5rem 0.875rem;
-            font-size: 0.875rem;
+            font-weight: 600;
         }
 
         .badge-estado-activo {
-            background-color: #fbbf24;
-            color: #78350f;
+            background-color: #ffc107;
+            color: #212529;
             padding: 0.375rem 0.75rem;
-            border-radius: 0.25rem;
+            border-radius: 20px;
             font-weight: 600;
             font-size: 0.75rem;
         }
 
-        .badge-estado-progreso {
-            background-color: #3b82f6;
+        .badge-estado-cerrado {
+            background-color: #6c757d;
             color: white;
             padding: 0.375rem 0.75rem;
-            border-radius: 0.25rem;
+            border-radius: 20px;
             font-weight: 600;
             font-size: 0.75rem;
         }
 
         /* === RESUMEN FINANCIERO === */
-        .resumen-financiero {
-            background-color: var(--light-gray);
-            border: 2px solid var(--border-color);
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-        }
-
-        .resumen-item {
+        .summary-box {
             background-color: white;
-            border: 1px solid var(--border-color);
-            border-radius: 0.375rem;
-            padding: 1.25rem;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1.5rem;
             text-align: center;
+            transition: all 0.3s ease;
         }
 
-        .resumen-total {
-            background-color: #f0fdf4;
-            border: 2px solid var(--success-color);
+        .summary-box:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
         }
 
-        .resumen-label {
+        .summary-box-primary {
+            border-color: #007bff;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        }
+
+        .summary-box-success {
+            border-color: #28a745;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        }
+
+        .summary-box-info {
+            border-color: #17a2b8;
+            background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+        }
+
+        .summary-box-total {
+            border-color: #28a745;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-width: 3px;
+        }
+
+        .summary-label {
             font-size: 0.875rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-            margin-bottom: 0.5rem;
+            color: #6c757d;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.025em;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.5px;
         }
 
-        .resumen-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .resumen-value-total {
+        .summary-value {
             font-size: 1.75rem;
             font-weight: 800;
-            color: var(--success-color);
+            color: #212529;
         }
 
-        /* === MODAL === */
-        .modal-header-custom {
-            background-color: var(--light-gray);
-            border-bottom: 2px solid var(--border-color);
+        .summary-value-total {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #28a745;
+        }
+
+        /* === ALERTAS === */
+        .alert-modern {
+            border-radius: 8px;
+            border-left: 4px solid;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .alert-warning {
+            border-left-color: #ffc107;
+            background-color: #fff3cd;
+        }
+
+        .alert-info {
+            border-left-color: #17a2b8;
+            background-color: #d1ecf1;
+        }
+
+        /* === FORMULARIOS === */
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-control {
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        .input-group-text {
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            font-weight: 600;
         }
 
         /* === UTILIDADES === */
-        .text-muted {
-            color: var(--text-secondary) !important;
+        .text-right {
+            text-align: right !important;
         }
 
-        .mr-1 {
-            margin-right: 0.25rem;
+        .text-center {
+            text-align: center !important;
         }
 
-        .mr-2 {
-            margin-right: 0.5rem;
-        }
-
-        .ml-2 {
-            margin-left: 0.5rem;
-        }
-
-        .ml-3 {
-            margin-left: 0.75rem;
+        .bg-light {
+            background-color: #f8f9fa !important;
         }
 
         .mb-0 {
-            margin-bottom: 0;
+            margin-bottom: 0 !important;
         }
 
-        .mb-3 {
-            margin-bottom: 0.75rem;
-        }
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .page-header-box {
+                flex-direction: column;
+                text-align: center;
+            }
 
-        .mb-4 {
-            margin-bottom: 1rem;
-        }
+            .summary-box {
+                margin-bottom: 1rem;
+            }
 
-        .mt-3 {
-            margin-top: 0.75rem;
-        }
+            .table-modern {
+                font-size: 0.75rem;
+            }
 
-        .px-4 {
-            padding-left: 1rem;
-            padding-right: 1rem;
-        }
-
-        .py-5 {
-            padding-top: 1.25rem;
-            padding-bottom: 1.25rem;
-        }
-
-
-        /* === FIX: CABECERAS INVISIBLES - FORZAR CONTRASTE === */
-        #MainContent_gvLiquidaciones thead th,
-        #MainContent_gvLiquidaciones th,
-        .table-report thead th {
-            background-color: #17a2b8 !important; /* bg-info de Bootstrap */
-            color: #ffffff !important;
-            font-weight: 600 !important;
-            text-align: center !important;
-            vertical-align: middle !important;
-            border: 1px solid #dee2e6 !important;
-        }
-
-        /* También para el GridView de Viajes Activos */
-        #MainContent_gvViajesActivos thead th,
-        #MainContent_gvViajesActivos th {
-            background-color: #ffc107 !important; /* bg-warning de Bootstrap */
-            color: #212529 !important; /* texto oscuro para fondo amarillo */
-            font-weight: 600 !important;
-            text-align: center !important;
-            vertical-align: middle !important;
-            border: 1px solid #dee2e6 !important;
+            .table-modern thead th {
+                font-size: 0.6875rem;
+                padding: 0.75rem 0.5rem !important;
+            }
         }
     </style>
 
@@ -785,9 +762,7 @@
 
     <script>
         $(document).ready(function () {
-            console.log('Sistema de Reportes iniciado');
-
-            // Establecer fechas por defecto
+            console.log('Sistema de Reportes iniciado correctamente');
             establecerFechasPorDefecto();
         });
 
@@ -795,12 +770,10 @@
             const hoy = new Date();
             const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
 
-            // Establecer desde el primer día del mes actual
             if (!$('#<%= txtFechaDesde.ClientID %>').val()) {
                 $('#<%= txtFechaDesde.ClientID %>').val(primerDia.toISOString().split('T')[0]);
             }
 
-            // Establecer hasta hoy
             if (!$('#<%= txtFechaHasta.ClientID %>').val()) {
                 $('#<%= txtFechaHasta.ClientID %>').val(hoy.toISOString().split('T')[0]);
             }
@@ -808,8 +781,8 @@
 
         function verDetalleOrden(idOrden) {
             $('#modalDetalleOrden').modal('show');
+            $('#detalleOrdenContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div><p class="mt-3">Cargando información...</p></div>');
 
-            // Llamada AJAX para obtener detalle
             $.ajax({
                 url: 'ReportesOrdenesViaje.aspx/ObtenerDetalleOrden',
                 type: 'POST',
@@ -818,16 +791,10 @@
                 success: function (response) {
                     $('#detalleOrdenContent').html(response.d);
                 },
-                error: function () {
-                    $('#detalleOrdenContent').html('<div class="alert alert-danger">Error al cargar el detalle</div>');
+                error: function (xhr, status, error) {
+                    $('#detalleOrdenContent').html('<div class="alert alert-danger">Error al cargar el detalle: ' + error + '</div>');
                 }
             });
-        }
-
-        function finalizarViaje(idViaje) {
-            if (confirm('¿Está seguro que desea finalizar este viaje y proceder a crear la orden de viaje?')) {
-                window.location.href = 'AgregarOrdenViaje.aspx?idViaje=' + idViaje + '&origen=viajeFinalizado';
-            }
         }
 
         function exportarLiquidaciones() {
@@ -835,11 +802,19 @@
             const fechaHasta = $('#<%= txtFechaHasta.ClientID %>').val();
             const factorConversion = $('#<%= txtFactorConversion.ClientID %>').val() || '3.75';
 
+            if (!fechaDesde || !fechaHasta) {
+                alert('Por favor seleccione el rango de fechas');
+                return;
+            }
+
             window.location.href = 'ReportesOrdenesViaje.aspx?action=exportarLiquidaciones&fechaDesde=' + fechaDesde + '&fechaHasta=' + fechaHasta + '&factor=' + factorConversion;
         }
 
         function exportarViajesActivos() {
-            window.location.href = 'ReportesOrdenesViaje.aspx?action=exportarViajesActivos';
+            const buscarConductor = $('#<%= txtBuscarConductor.ClientID %>').val();
+            const estadoViaje = $('#<%= ddlEstadoViaje.ClientID %>').val();
+
+            window.location.href = 'ReportesOrdenesViaje.aspx?action=exportarViajesActivos&buscarConductor=' + encodeURIComponent(buscarConductor) + '&estadoViaje=' + estadoViaje;
         }
 
         function generarPDFLiquidaciones() {
@@ -847,19 +822,12 @@
             const fechaHasta = $('#<%= txtFechaHasta.ClientID %>').val();
             const factorConversion = $('#<%= txtFactorConversion.ClientID %>').val() || '3.75';
 
-            window.open('ReportesOrdenesViaje.aspx?action=generarPDF&fechaDesde=' + fechaDesde + '&fechaHasta=' + fechaHasta + '&factor=' + factorConversion, '_blank');
-        }
+            if (!fechaDesde || !fechaHasta) {
+                alert('Por favor seleccione el rango de fechas');
+                return;
+            }
 
-        function imprimirOrden() {
-            const contenido = document.getElementById('detalleOrdenContent').innerHTML;
-            const ventana = window.open('', '', 'width=800,height=600');
-            ventana.document.write('<html><head><title>Orden de Viaje</title>');
-            ventana.document.write('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">');
-            ventana.document.write('</head><body>');
-            ventana.document.write(contenido);
-            ventana.document.write('</body></html>');
-            ventana.document.close();
-            ventana.print();
+            window.location.href = 'ReportesOrdenesViaje.aspx?action=generarPDF&fechaDesde=' + fechaDesde + '&fechaHasta=' + fechaHasta + '&factor=' + factorConversion;
         }
     </script>
 

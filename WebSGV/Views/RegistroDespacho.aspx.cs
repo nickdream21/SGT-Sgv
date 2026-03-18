@@ -15,6 +15,7 @@ using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -188,6 +189,7 @@ namespace WebSGV.Views
                 CargarTractos();
                 CargarCarretas();
                 CargarClientes();
+                ActualizarPlantasPorAmbito();
             }
             catch (Exception ex)
             {
@@ -313,6 +315,31 @@ namespace WebSGV.Views
                     }
                 }
             }
+        }
+
+        private void ActualizarPlantasPorAmbito()
+        {
+            bool esInternacional = rblAmbitoOperacionBase.SelectedValue == "1";
+            string selectedValue = ddlLugarOperacionBase.SelectedValue;
+
+            ddlLugarOperacionBase.Items.Clear();
+            ddlLugarOperacionBase.Items.Add(new ListItem("-- Seleccione planta --", ""));
+
+            if (esInternacional)
+            {
+                ddlLugarOperacionBase.Items.Add(new ListItem("Manta", "Manta"));
+                ddlLugarOperacionBase.Items.Add(new ListItem("Guayaquil", "Guayaquil"));
+                ddlLugarOperacionBase.Items.Add(new ListItem("Quito", "Quito"));
+            }
+            else
+            {
+                ddlLugarOperacionBase.Items.Add(new ListItem("Lima", "Lima"));
+                ddlLugarOperacionBase.Items.Add(new ListItem("Trujillo", "Trujillo"));
+                ddlLugarOperacionBase.Items.Add(new ListItem("Chiclayo", "Chiclayo"));
+            }
+
+            if (ddlLugarOperacionBase.Items.FindByValue(selectedValue) != null)
+                ddlLugarOperacionBase.SelectedValue = selectedValue;
         }
 
         #endregion
@@ -458,7 +485,8 @@ namespace WebSGV.Views
         protected void rblAmbitoOperacionBase_SelectedIndexChanged(object sender, EventArgs e)
         {
             MostrarOcultarPanelesBase();
-            ActualizarVisibilidadNumeroPedido(); // NUEVO: Controlar visibilidad de N° Pedido
+            ActualizarVisibilidadNumeroPedido();
+            ActualizarPlantasPorAmbito();
         }
 
         private void MostrarOcultarPanelesBase()
@@ -898,7 +926,7 @@ namespace WebSGV.Views
 
                         cmd.Parameters.AddWithValue("@numero", lote.Documentacion.NumeroFactura);
                         cmd.Parameters.AddWithValue("@valor", lote.Documentacion.ValorTotalFactura ?? 0);
-                        cmd.Parameters.AddWithValue("@fecha", lote.Documentacion.FechaEmisionFactura ?? DateTime.Now);
+                        cmd.Parameters.AddWithValue("@fecha", lote.Documentacion.FechaEmisionFactura ?? FechaHelper.Ahora());
                         cmd.Parameters.AddWithValue("@pedido", (object)lote.NumeroPedido ?? DBNull.Value);
                         cmd.Parameters.AddWithValue("@cliente", lote.IdCliente);
 
@@ -915,7 +943,7 @@ namespace WebSGV.Views
                         cmd.Parameters.AddWithValue("@numero", lote.Documentacion.NumeroCPIC);
                         cmd.Parameters.AddWithValue("@factura", (object)idFactura ?? DBNull.Value);
                         cmd.Parameters.AddWithValue("@flete", lote.Documentacion.ValorFlete ?? 0);
-                        cmd.Parameters.AddWithValue("@fecha", lote.Documentacion.FechaEmisionCPIC ?? DateTime.Now);
+                        cmd.Parameters.AddWithValue("@fecha", lote.Documentacion.FechaEmisionCPIC ?? FechaHelper.Ahora());
 
                         return Convert.ToInt32(cmd.ExecuteScalar());
                     }
@@ -995,6 +1023,16 @@ namespace WebSGV.Views
                             cmd.Transaction = transaction;
                             cmd.CommandTimeout = 120;
 
+                            // Crear viaje en progreso si el conductor no tiene uno aún.
+                            // La creación ocurre aquí (dentro de la transacción) para que un
+                            // viaje huérfano (sin despacho) sea imposible: si algo falla se hace rollback.
+                            if (!conductor.IdViajeProgreso.HasValue)
+                            {
+                                conductor.IdViajeProgreso = CrearNuevoViajeProgresoEnTransaccion(
+                                    conn, transaction, conductor.IdConductor,
+                                    lote.EsInternacional, lote.TipoOperacion, lote.UsuarioCreacion);
+                            }
+
                             // Crear despacho
                             cmd.CommandText = @"
                                 INSERT INTO Despachos (
@@ -1012,7 +1050,7 @@ namespace WebSGV.Views
 
                             cmd.Parameters.AddWithValue("@numeroDespacho", GenerarNumeroDespacho());
                             cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(lote.FechaProgramacion).Date);
-                            cmd.Parameters.AddWithValue("@horaDespacho", DateTime.Now.TimeOfDay);
+                            cmd.Parameters.AddWithValue("@horaDespacho", FechaHelper.Ahora().TimeOfDay);
                             cmd.Parameters.AddWithValue("@idConductor", conductor.IdConductor);
                             cmd.Parameters.AddWithValue("@idTracto", conductor.IdTracto);
                             cmd.Parameters.AddWithValue("@idCarreta", conductor.IdCarreta);
@@ -1020,7 +1058,7 @@ namespace WebSGV.Views
                             cmd.Parameters.AddWithValue("@lugarOperacion", lote.PlantaOperacion);
                             cmd.Parameters.AddWithValue("@tipoOperacion", lote.TipoOperacion);
                             cmd.Parameters.AddWithValue("@estadoDespacho", "PROGRAMADO");
-                            cmd.Parameters.AddWithValue("@fechaCreacion", DateTime.Now);
+                            cmd.Parameters.AddWithValue("@fechaCreacion", FechaHelper.Ahora());
                             cmd.Parameters.AddWithValue("@usuarioCreacion", lote.UsuarioCreacion);
                             cmd.Parameters.AddWithValue("@activo", true);
                             cmd.Parameters.AddWithValue("@numeroPedido", (object)lote.NumeroPedido ?? DBNull.Value);
@@ -1039,10 +1077,10 @@ namespace WebSGV.Views
                                 cmd.CommandText = @"
                                     UPDATE ViajesEnProgreso 
                                     SET cantidadDespachos = cantidadDespachos + 1,
-                                        fechaUltimaActividad = GETDATE()
+                                        fechaUltimaActividad = @fechaActual
                                     WHERE idViajeProgreso = @idViaje";
-
                                 cmd.Parameters.Clear();
+                                cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
                                 cmd.Parameters.AddWithValue("@idViaje", conductor.IdViajeProgreso.Value);
                                 cmd.ExecuteNonQuery();
                             }
@@ -1062,7 +1100,7 @@ namespace WebSGV.Views
 
         private string GenerarNumeroDespacho()
         {
-            return "DESP-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString().Substring(0, 4);
+            return "DESP-" + FechaHelper.Ahora().ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString().Substring(0, 4);
         }
 
         #endregion
@@ -1161,26 +1199,27 @@ namespace WebSGV.Views
                 string query = @"
                     DECLARE @contador INT;
                     DECLARE @numeroViaje VARCHAR(20);
-                    
+
                     SELECT @contador = ISNULL(COUNT(*), 0) + 1 
                     FROM ViajesEnProgreso 
                     WHERE YEAR(fechaCreacion) = YEAR(GETDATE());
-                    
+
                     SET @numeroViaje = 'VP-' + CAST(YEAR(GETDATE()) AS VARCHAR(4)) + '-' + RIGHT('000' + CAST(@contador AS VARCHAR(3)), 3);
-                    
+
                     INSERT INTO ViajesEnProgreso (
                         numeroViajeProgreso, idConductor, fechaInicio, fechaUltimaActividad,
                         descripcionViaje, usuarioCreacion, estadoViaje, activo, cantidadDespachos
                     )
                     VALUES (
-                        @numeroViaje, @idConductor, GETDATE(), GETDATE(),
+                        @numeroViaje, @idConductor, @fechaActual, @fechaActual,
                         @descripcion, @usuario, 'ABIERTO', 1, 0
                     );
-                    
+
                     SELECT SCOPE_IDENTITY();";
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
+                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
                     cmd.Parameters.AddWithValue("@idConductor", idConductor);
                     cmd.Parameters.AddWithValue("@descripcion", string.IsNullOrEmpty(descripcion) ? (object)DBNull.Value : descripcion);
                     cmd.Parameters.AddWithValue("@usuario", ObtenerUsuarioActual());
@@ -1191,15 +1230,51 @@ namespace WebSGV.Views
             }
         }
 
+        private int CrearNuevoViajeProgresoEnTransaccion(
+            SqlConnection conn, SqlTransaction transaction,
+            int idConductor, bool esInternacional, string tipoOperacion, string usuario)
+        {
+            string query = @"
+                    DECLARE @contador INT;
+                    DECLARE @numeroViaje VARCHAR(20);
+
+                    SELECT @contador = ISNULL(COUNT(*), 0) + 1 
+                    FROM ViajesEnProgreso 
+                    WHERE YEAR(fechaCreacion) = YEAR(GETDATE());
+
+                    SET @numeroViaje = 'VP-' + CAST(YEAR(GETDATE()) AS VARCHAR(4)) + '-' + RIGHT('000' + CAST(@contador AS VARCHAR(3)), 3);
+
+                    INSERT INTO ViajesEnProgreso (
+                        numeroViajeProgreso, idConductor, fechaInicio, fechaUltimaActividad,
+                        descripcionViaje, usuarioCreacion, estadoViaje, activo, cantidadDespachos
+                    )
+                    VALUES (
+                        @numeroViaje, @idConductor, @fechaActual, @fechaActual,
+                        @descripcion, @usuario, 'ABIERTO', 1, 0
+                    );
+
+                    SELECT SCOPE_IDENTITY();";
+
+            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            {
+                string descripcion = $"Viaje {(esInternacional ? "Internacional" : "Nacional")} - {tipoOperacion}";
+                cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
+                cmd.Parameters.AddWithValue("@idConductor", idConductor);
+                cmd.Parameters.AddWithValue("@descripcion", descripcion);
+                cmd.Parameters.AddWithValue("@usuario", usuario);
+                return Convert.ToInt32(cmd.ExecuteScalar());
+            }
+        }
+
         private int? DeterminarViajeProgreso(int idConductor, bool esInternacional, string tipoOperacion)
         {
             var viajesAbiertos = ObtenerViajesAbiertosConductor(idConductor);
 
             if (viajesAbiertos.Count == 0)
             {
-                // No hay viajes abiertos, crear uno nuevo
-                string descripcion = $"Viaje {(esInternacional ? "Internacional" : "Nacional")} - {tipoOperacion}";
-                return CrearNuevoViajeProgreso(idConductor, descripcion);
+                // Sin viajes abiertos: se creará dentro de la transacción al finalizar el lote.
+                // No se crea aquí para evitar viajes huérfanos si el usuario cancela.
+                return null;
             }
             else if (viajesAbiertos.Count == 1)
             {

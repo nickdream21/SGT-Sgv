@@ -1,14 +1,40 @@
 ﻿<%@ Page Title="Gestión de Viajes y Lotes" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="ListaDespachos.aspx.cs" Inherits="WebSGV.Views.ListaDespachos" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
+
+<style type="text/css">
+/* ---- Lista Despachos - Minimal Professional ---- */
+.ld-page-header { background: #1e293b; color: #f8fafc; border-radius: 5px 5px 0 0; padding: .85rem 1.25rem; }
+.ld-page-header h4 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: .01em; }
+.ld-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; padding: .65rem 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 1.25rem; }
+.ld-toolbar-nav { display: flex; gap: .3rem; flex-wrap: wrap; }
+.ld-toolbar-nav .btn, .ld-toolbar-back { font-size: .82rem; padding: .32rem .8rem; font-weight: 500; }
+.viajes-section { border-left: none !important; border-top: 3px solid #1e40af !important; }
+.lotes-section { border-left: none !important; border-top: 3px solid #16a34a !important; }
+.detalle-section { border-left: none !important; border-top: 3px solid #374151 !important; }
+.edit-section { border-left: none !important; border-top: 3px solid #374151 !important; }
+.section-title { font-size: .9rem !important; font-weight: 600 !important; }
+.tipo-internacional { background-color: #e0e7ff !important; color: #3730a3 !important; font-weight: 500; }
+.tipo-nacional { background-color: #f0fdf4 !important; color: #166534 !important; border: 1px solid #bbf7d0 !important; font-weight: 500; }
+.estado-abierto { background-color: #dcfce7 !important; color: #166534 !important; }
+.edit-warning { background: #fffbeb !important; border-color: #fde68a !important; color: #92400e !important; }
+.info-panel { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; }
+.info-title { color: #374151 !important; }
+.info-content { color: #374151 !important; }
+.conductores-edit-container { border: 1px solid #e2e8f0 !important; background: #f8fafc !important; }
+.conductores-edit-container thead th { background: #f1f5f9 !important; color: #1e293b !important; }
+.data-table thead th { background: #f1f5f9 !important; color: #374151 !important; font-weight: 600 !important; border-bottom: 2px solid #e2e8f0 !important; }
+.card:hover { transform: none !important; box-shadow: 0 2px 8px rgba(0,0,0,.1) !important; }
+</style>
+
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-12">
                 <div class="card main-card">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0">
-                            <i class="fas fa-tasks"></i> Gestión de Viajes y Lotes de Despacho
-                            <asp:Label ID="lblContadorGeneral" runat="server" CssClass="badge bg-light text-dark ms-3"></asp:Label>
+                    <div class="ld-page-header">
+                        <h4>
+                            <i class="fas fa-tasks mr-2"></i> Gestión de Viajes y Lotes
+                            <asp:Label ID="lblContadorGeneral" runat="server" CssClass="badge ml-3" style="background:#334155;font-size:.68rem;font-weight:600;"></asp:Label>
                         </h4>
                     </div>
                     <div class="card-body">
@@ -21,37 +47,24 @@
                                 </asp:Panel>
 
                                 <!-- NAVEGACIÓN PRINCIPAL -->
-                                <div class="navigation-card mb-4">
-                                    <div class="nav-header">
-                                        <div class="row align-items-center">
-                                            <div class="col-md-8">
-                                                <h6 class="mb-0 nav-title">
-                                                    <i class="fas fa-compass"></i> Navegación
-                                                </h6>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="nav-buttons">
-                                                    <asp:Button ID="btnMostrarViajes" runat="server" 
-                                                        Text="Viajes Activos" 
-                                                        CssClass="btn btn-outline-primary btn-nav"
-                                                        OnClick="btnMostrarViajes_Click"
-                                                        CausesValidation="false" />
-                                                    
-                                                    <asp:Button ID="btnMostrarLotes" runat="server" 
-                                                        Text="Lotes Registrados" 
-                                                        CssClass="btn btn-outline-success btn-nav"
-                                                        OnClick="btnMostrarLotes_Click"
-                                                        CausesValidation="false" />
-
-                                                    <asp:Button ID="btnVolver" runat="server" 
-                                                        Text="Volver al Registro" 
-                                                        CssClass="btn btn-outline-secondary btn-nav"
-                                                        OnClick="btnVolver_Click"
-                                                        CausesValidation="false" />
-                                                </div>
-                                            </div>
-                                        </div>
+                                <div class="ld-toolbar mb-4">
+                                    <div class="ld-toolbar-nav">
+                                        <asp:Button ID="btnMostrarViajes" runat="server" 
+                                            Text="Viajes Activos" 
+                                            CssClass="btn btn-outline-secondary btn-nav"
+                                            OnClick="btnMostrarViajes_Click"
+                                            CausesValidation="false" />
+                                        <asp:Button ID="btnMostrarLotes" runat="server" 
+                                            Text="Lotes Registrados" 
+                                            CssClass="btn btn-outline-secondary btn-nav"
+                                            OnClick="btnMostrarLotes_Click"
+                                            CausesValidation="false" />
                                     </div>
+                                    <asp:Button ID="btnVolver" runat="server" 
+                                        Text="← Nuevo Registro" 
+                                        CssClass="btn btn-outline-secondary ld-toolbar-back"
+                                        OnClick="btnVolver_Click"
+                                        CausesValidation="false" />
                                 </div>
 
                                 <!-- PANEL PRINCIPAL: LISTA DE VIAJES ACTIVOS -->
@@ -61,9 +74,9 @@
                                             <div class="row align-items-center">
                                                 <div class="col-md-6">
                                                     <h5 class="section-title">
-                                                        <i class="fas fa-route"></i> Viajes en Progreso
-                                                        <asp:Label ID="lblContadorViajes" runat="server" CssClass="badge bg-primary ms-2"></asp:Label>
-                                                    </h5>
+                                                            <i class="fas fa-route mr-2"></i> Viajes en Progreso
+                                                            <asp:Label ID="lblContadorViajes" runat="server" CssClass="badge badge-secondary ml-2"></asp:Label>
+                                                        </h5>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="section-actions">
@@ -170,17 +183,17 @@
                                                             <ItemTemplate>
                                                                 <div class="action-buttons">
                                                                     <asp:Button runat="server" 
-                                                                        Text="Ver Despachos" 
-                                                                        CssClass="btn btn-action btn-info"
-                                                                        CommandName="VerDespachos"
-                                                                        CommandArgument='<%# Eval("IdViajeProgreso") %>' />
-                                                                    
+                                                                       Text="Ver" 
+                                                                       CssClass="btn btn-sm btn-outline-primary"
+                                                                       CommandName="VerDespachos"
+                                                                       CommandArgument='<%# Eval("IdViajeProgreso") %>' />
+
                                                                     <asp:Button runat="server" 
-                                                                        Text="Finalizar" 
-                                                                        CssClass="btn btn-action btn-danger"
-                                                                        CommandName="FinalizarViaje"
-                                                                        CommandArgument='<%# Eval("IdViajeProgreso") %>'
-                                                                        OnClientClick="return confirm('¿Está seguro de finalizar este viaje? No podrá agregar más despachos.');" />
+                                                                       Text="Finalizar" 
+                                                                       CssClass="btn btn-sm btn-outline-danger"
+                                                                       CommandName="FinalizarViaje"
+                                                                       CommandArgument='<%# Eval("IdViajeProgreso") %>'
+                                                                       OnClientClick="return confirm('¿Está seguro de finalizar este viaje? No podrá agregar más despachos.');" />
                                                                 </div>
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
@@ -204,9 +217,9 @@
                                             <div class="row align-items-center">
                                                 <div class="col-md-6">
                                                     <h5 class="section-title">
-                                                        <i class="fas fa-layer-group"></i> Lotes de Despacho Registrados
-                                                        <asp:Label ID="lblContadorLotes" runat="server" CssClass="badge bg-success ms-2"></asp:Label>
-                                                    </h5>
+                                                            <i class="fas fa-layer-group mr-2"></i> Lotes de Despacho
+                                                            <asp:Label ID="lblContadorLotes" runat="server" CssClass="badge badge-secondary ml-2"></asp:Label>
+                                                        </h5>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="section-actions">
@@ -286,7 +299,7 @@
 
                                                 <!-- Filtro por Fechas -->
                                                 <div class="row">
-                                                    <div class="col-md-4">
+                                                    <div class="col-md-3">
                                                         <div class="form-group">
                                                             <label class="form-label">Fecha Desde:</label>
                                                             <asp:TextBox ID="txtFechaDesde" runat="server" 
@@ -295,7 +308,7 @@
                                                             </asp:TextBox>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-4">
+                                                    <div class="col-md-3">
                                                         <div class="form-group">
                                                             <label class="form-label">Fecha Hasta:</label>
                                                             <asp:TextBox ID="txtFechaHasta" runat="server" 
@@ -304,7 +317,20 @@
                                                             </asp:TextBox>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-4">
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Estado del Lote:</label>
+                                                            <asp:DropDownList ID="ddlFiltroEstadoLotes" runat="server"
+                                                                CssClass="form-select"
+                                                                AutoPostBack="true"
+                                                                OnSelectedIndexChanged="ddlFiltroEstadoLotes_SelectedIndexChanged">
+                                                                <asp:ListItem Value="" Text="-- Todos --"></asp:ListItem>
+                                                                <asp:ListItem Value="ACTIVO" Text="Activos" Selected="True"></asp:ListItem>
+                                                                <asp:ListItem Value="ANULADO" Text="Anulados"></asp:ListItem>
+                                                            </asp:DropDownList>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
                                                         <div class="form-group">
                                                             <label class="form-label">&nbsp;</label>
                                                             <div class="filter-buttons">
@@ -362,19 +388,28 @@
                                                         
                                                         <asp:BoundField DataField="FechaCreacion" HeaderText="Creado" 
                                                             DataFormatString="{0:dd/MM/yyyy HH:mm}" />
-                                                        
-                                                        <asp:TemplateField HeaderText="Acciones" ItemStyle-Width="200px">
+
+                                                        <asp:TemplateField HeaderText="Estado" ItemStyle-CssClass="text-center">
+                                                            <ItemTemplate>
+                                                                <asp:Label runat="server"
+                                                                    Text='<%# Eval("EstadoLote") %>'
+                                                                    CssClass='<%# (string)Eval("EstadoLote") == "ANULADO" ? "badge badge-danger" : "badge badge-success" %>'>
+                                                                </asp:Label>
+                                                            </ItemTemplate>
+                                                        </asp:TemplateField>
+
+                                                        <asp:TemplateField HeaderText="Acciones" ItemStyle-Width="160px">
                                                             <ItemTemplate>
                                                                 <div class="action-buttons">
                                                                     <asp:Button runat="server" 
-                                                                        Text="Editar Lote" 
-                                                                        CssClass="btn btn-action btn-warning"
+                                                                        Text="Editar" 
+                                                                        CssClass="btn btn-sm btn-outline-secondary"
                                                                         CommandName="EditarLote"
                                                                         CommandArgument='<%# Eval("IdLoteVirtual") %>' />
-                                                                    
+
                                                                     <asp:Button runat="server" 
-                                                                        Text="Ver Detalles" 
-                                                                        CssClass="btn btn-action btn-info"
+                                                                        Text="Ver" 
+                                                                        CssClass="btn btn-sm btn-outline-primary"
                                                                         CommandName="VerDetallesLote"
                                                                         CommandArgument='<%# Eval("IdLoteVirtual") %>' />
                                                                 </div>
@@ -412,7 +447,7 @@
                                                     <div class="section-actions">
                                                         <asp:Button ID="btnFinalizarViajeDetalle" runat="server" 
                                                             Text="Finalizar Viaje" 
-                                                            CssClass="btn btn-danger btn-action"
+                                                            CssClass="btn btn-outline-danger btn-action"
                                                             OnClick="btnFinalizarViajeDetalle_Click"
                                                             OnClientClick="return confirm('¿Finalizar este viaje?');"
                                                             CausesValidation="false" />
@@ -561,215 +596,206 @@
                                             </div>
 
                                             <div class="edit-form">
-                                                <div class="row">
-                                                    <!-- Columna Izquierda - Datos Básicos -->
-                                                    <div class="col-md-6">
-                                                        <div class="form-section">
-                                                            <h6 class="form-section-title">
-                                                                <i class="fas fa-cog"></i> Datos Básicos del Lote
-                                                            </h6>
 
-                                                            <!-- Fecha de Programación -->
-                                                            <div class="form-group">
-                                                                <label class="form-label required">Fecha de Programación:</label>
-                                                                <asp:TextBox ID="txtFechaProgramacionEdit" runat="server" 
-                                                                    CssClass="form-control" 
-                                                                    TextMode="Date">
-                                                                </asp:TextBox>
-                                                                <asp:RequiredFieldValidator ID="RequiredFieldValidator1" runat="server"
-                                                                    ControlToValidate="txtFechaProgramacionEdit"
-                                                                    ErrorMessage="Debe seleccionar una fecha de programación"
-                                                                    CssClass="field-error"
-                                                                    Display="Dynamic"
-                                                                    ValidationGroup="EdicionLote">
-                                                                </asp:RequiredFieldValidator>
-                                                            </div>
-
-                                                            <!-- Cliente -->
-                                                            <div class="form-group">
-                                                                <label class="form-label">Cliente:</label>
-                                                                <asp:TextBox ID="txtClienteEdit" runat="server" 
-                                                                    CssClass="form-control readonly-field" 
-                                                                    ReadOnly="true">
-                                                                </asp:TextBox>
-                                                                <small class="form-text">No se puede modificar el cliente</small>
-                                                            </div>
-
-                                                            <!-- Conductores por Despacho -->
-                                                            <div class="form-group">
-                                                                <label class="form-label">👥 Conductores por Despacho: *</label>
-                                                                <div class="alert alert-info mb-2" style="font-size: 0.85rem; padding: 0.6rem;">
-                                                                    <i class="fas fa-info-circle"></i> <strong>Instrucciones:</strong>
-                                                                    <ul class="mb-0 mt-2" style="padding-left: 1.5rem; font-size: 0.8rem;">
-                                                                        <li>Puedes cambiar el conductor de cada despacho individualmente</li>
-                                                                        <li>Escribe en el campo para buscar un conductor rápidamente</li>
-                                                                        <li>Los cambios se aplicarán al presionar "Guardar Cambios"</li>
-                                                                    </ul>
-                                                                </div>
-                                                                
-                                                                <div class="conductores-edit-container">
-                                                                    <div class="tabla-scroll-wrapper">
-                                                                        <asp:GridView ID="gvConductoresLote" runat="server" 
-                                                                            CssClass="table table-hover"
-                                                                            AutoGenerateColumns="false"
-                                                                            DataKeyNames="IdDespacho"
-                                                                            OnRowDataBound="gvConductoresLote_RowDataBound"
-                                                                            GridLines="None">
-                                                                            <Columns>
-                                                                                <asp:BoundField DataField="IdDespacho" HeaderText="ID" Visible="false" />
-                                                                                
-                                                                                <asp:BoundField DataField="NumeroDespacho" HeaderText="N° Despacho" 
-                                                                                    ItemStyle-CssClass="despacho-number fw-bold" 
-                                                                                    ItemStyle-Width="180px"
-                                                                                    HeaderStyle-Width="180px" />
-                                                                                
-                                                                                <asp:BoundField DataField="FechaDespacho" HeaderText="Fecha" 
-                                                                                    DataFormatString="{0:dd/MM/yyyy}"
-                                                                                    ItemStyle-Width="120px"
-                                                                                    HeaderStyle-Width="120px" />
-                                                                                
-                                                                                <asp:TemplateField HeaderText="Conductor Actual">
-                                                                                    <ItemTemplate>
-                                                                                        <span class="conductor-badge-actual">
-                                                                                            <%# Eval("NombreConductorActual") %>
-                                                                                        </span>
-                                                                                    </ItemTemplate>
-                                                                                    <ItemStyle Width="280px" />
-                                                                                    <HeaderStyle Width="280px" />
-                                                                                </asp:TemplateField>
-                                                                                
-                                                                                <asp:TemplateField HeaderText="🔄 Seleccionar Nuevo Conductor">
-                                                                                    <ItemTemplate>
-                                                                                        <asp:DropDownList ID="ddlConductorDespacho" runat="server" 
-                                                                                            CssClass="form-select conductor-select">
-                                                                                        </asp:DropDownList>
-                                                                                    </ItemTemplate>
-                                                                                    <ItemStyle Width="320px" />
-                                                                                    <HeaderStyle Width="320px" />
-                                                                                </asp:TemplateField>
-                                                                            </Columns>
-                                                                        </asp:GridView>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <!-- Número de Pedido -->
-                                                            <div class="form-group">
-                                                                <label class="form-label">N° de Pedido:</label>
-                                                                <asp:TextBox ID="txtNumeroPedidoEdit" runat="server" 
-                                                                    CssClass="form-control" 
-                                                                    placeholder="Ej: 1234567890"
-                                                                    MaxLength="10">
-                                                                </asp:TextBox>
-                                                                <small class="form-text">Debe tener exactamente 10 dígitos numéricos</small>
-                                                            </div>
-
-                                                            <!-- Planta de Operación -->
-                                                            <div class="form-group">
-                                                                <label class="form-label required">Planta de Operación:</label>
-                                                                <asp:DropDownList ID="ddlPlantaEdit" runat="server" CssClass="form-select">
-                                                                    <asp:ListItem Value="" Text="-- Seleccione planta --"></asp:ListItem>
-                                                                    <asp:ListItem Value="Lima" Text="Lima"></asp:ListItem>
-                                                                    <asp:ListItem Value="Guayaquil" Text="Guayaquil"></asp:ListItem>
-                                                                    <asp:ListItem Value="Trujillo" Text="Trujillo"></asp:ListItem>
-                                                                    <asp:ListItem Value="Quito" Text="Quito"></asp:ListItem>
-                                                                    <asp:ListItem Value="Chiclayo" Text="Chiclayo"></asp:ListItem>
-                                                                    <asp:ListItem Value="Manta" Text="Manta"></asp:ListItem>
-                                                                </asp:DropDownList>
-                                                                <asp:RequiredFieldValidator ID="rfvPlantaEdit" runat="server"
-                                                                    ControlToValidate="ddlPlantaEdit"
-                                                                    InitialValue=""
-                                                                    ErrorMessage="Debe seleccionar una planta"
-                                                                    CssClass="field-error"
-                                                                    Display="Dynamic"
-                                                                    ValidationGroup="EdicionLote">
-                                                                </asp:RequiredFieldValidator>
-                                                            </div>
+                                                <!-- Fila 1: Campos básicos en 4 columnas -->
+                                                <div class="row mb-3">
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label class="form-label required">Fecha de Programación:</label>
+                                                            <asp:TextBox ID="txtFechaProgramacionEdit" runat="server" 
+                                                                CssClass="form-control" 
+                                                                TextMode="Date">
+                                                            </asp:TextBox>
+                                                            <asp:RequiredFieldValidator ID="RequiredFieldValidator1" runat="server"
+                                                                ControlToValidate="txtFechaProgramacionEdit"
+                                                                ErrorMessage="Debe seleccionar una fecha de programación"
+                                                                CssClass="field-error"
+                                                                Display="Dynamic"
+                                                                ValidationGroup="EdicionLote">
+                                                            </asp:RequiredFieldValidator>
                                                         </div>
                                                     </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Cliente:</label>
+                                                            <asp:TextBox ID="txtClienteEdit" runat="server" 
+                                                                CssClass="form-control readonly-field" 
+                                                                ReadOnly="true">
+                                                            </asp:TextBox>
+                                                            <small class="form-text">No se puede modificar el cliente</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label class="form-label">N° de Pedido:</label>
+                                                            <asp:TextBox ID="txtNumeroPedidoEdit" runat="server" 
+                                                                CssClass="form-control" 
+                                                                placeholder="Ej: 1234567890"
+                                                                MaxLength="10">
+                                                            </asp:TextBox>
+                                                            <small class="form-text">Exactamente 10 dígitos numéricos</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label class="form-label required">Planta de Operación:</label>
+                                                            <asp:DropDownList ID="ddlPlantaEdit" runat="server" CssClass="form-select">
+                                                                <asp:ListItem Value="" Text="-- Seleccione planta --"></asp:ListItem>
+                                                                <asp:ListItem Value="Lima" Text="Lima"></asp:ListItem>
+                                                                <asp:ListItem Value="Guayaquil" Text="Guayaquil"></asp:ListItem>
+                                                                <asp:ListItem Value="Trujillo" Text="Trujillo"></asp:ListItem>
+                                                                <asp:ListItem Value="Quito" Text="Quito"></asp:ListItem>
+                                                                <asp:ListItem Value="Chiclayo" Text="Chiclayo"></asp:ListItem>
+                                                                <asp:ListItem Value="Manta" Text="Manta"></asp:ListItem>
+                                                            </asp:DropDownList>
+                                                            <asp:RequiredFieldValidator ID="rfvPlantaEdit" runat="server"
+                                                                ControlToValidate="ddlPlantaEdit"
+                                                                InitialValue=""
+                                                                ErrorMessage="Debe seleccionar una planta"
+                                                                CssClass="field-error"
+                                                                Display="Dynamic"
+                                                                ValidationGroup="EdicionLote">
+                                                            </asp:RequiredFieldValidator>
+                                                        </div>
+                                                    </div>
+                                                </div>
 
-                                                    <!-- Columna Derecha - Documentación -->
-                                                    <div class="col-md-6">
+                                                <!-- Fila 2: Info no editable + Documentación -->
+                                                <div class="row mb-3">
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label class="form-label required">Tipo de Operación:</label>
+                                                            <asp:DropDownList ID="ddlTipoOperacionEdit" runat="server" CssClass="form-select"
+                                                                AutoPostBack="true" OnSelectedIndexChanged="ddlTipoOperacionEdit_SelectedIndexChanged">
+                                                                <asp:ListItem Value="" Text="-- Seleccione --"></asp:ListItem>
+                                                                <asp:ListItem Value="CARGA" Text="Carga"></asp:ListItem>
+                                                                <asp:ListItem Value="DESCARGA" Text="Descarga"></asp:ListItem>
+                                                            </asp:DropDownList>
+                                                        </div>
+                                                        <div class="form-group mt-2">
+                                                            <label class="form-label required">Ámbito:</label>
+                                                            <asp:RadioButtonList ID="rblAmbitoEdit" runat="server" CssClass="rbl-inline"
+                                                                AutoPostBack="true" OnSelectedIndexChanged="rblAmbitoEdit_SelectedIndexChanged"
+                                                                RepeatDirection="Horizontal" RepeatLayout="Flow">
+                                                                <asp:ListItem Value="0" Text="Nacional &nbsp;"></asp:ListItem>
+                                                                <asp:ListItem Value="1" Text="Internacional"></asp:ListItem>
+                                                            </asp:RadioButtonList>
+                                                        </div>
+                                                        <small class="form-text text-warning mt-1">
+                                                            <i class="fas fa-exclamation-triangle"></i> Al cambiar estos valores los paneles de documentos se actualizan automáticamente.
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <!-- Panel Factura -->
+                                                        <asp:Panel ID="pnlFacturaEdit" runat="server" CssClass="doc-panel h-100" Visible="false">
+                                                            <div class="doc-panel-header">
+                                                                <i class="fas fa-receipt"></i> Datos de Factura
+                                                            </div>
+                                                            <div class="doc-panel-content">
+                                                                <div class="form-group">
+                                                                    <label class="form-label">N° Factura:</label>
+                                                                    <asp:TextBox ID="txtNumeroFacturaEdit" runat="server" 
+                                                                        CssClass="form-control" 
+                                                                        placeholder="Ej: F222 - 00004267">
+                                                                    </asp:TextBox>
+                                                                </div>
+                                                                <div class="form-group">
+                                                                    <label class="form-label">Fecha Emisión:</label>
+                                                                    <asp:TextBox ID="txtFechaEmisionFacturaEdit" runat="server" 
+                                                                        CssClass="form-control" 
+                                                                        TextMode="Date">
+                                                                    </asp:TextBox>
+                                                                </div>
+                                                                <div class="form-group">
+                                                                    <label class="form-label">Valor Total:</label>
+                                                                    <asp:TextBox ID="txtValorTotalFacturaEdit" runat="server" 
+                                                                        CssClass="form-control" 
+                                                                        placeholder="0.00"
+                                                                        TextMode="Number"
+                                                                        step="0.01">
+                                                                    </asp:TextBox>
+                                                                </div>
+                                                            </div>
+                                                        </asp:Panel>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <!-- Panel CPIC -->
+                                                        <asp:Panel ID="pnlCPICEdit" runat="server" CssClass="doc-panel h-100" Visible="false">
+                                                            <div class="doc-panel-header">
+                                                                <i class="fas fa-shipping-fast"></i> Datos de CPIC
+                                                            </div>
+                                                            <div class="doc-panel-content">
+                                                                <div class="form-group">
+                                                                    <label class="form-label">N° CPIC:</label>
+                                                                    <asp:TextBox ID="txtNumeroCPICEdit" runat="server" 
+                                                                        CssClass="form-control" 
+                                                                        placeholder="Ej: 1234567"
+                                                                        MaxLength="7">
+                                                                    </asp:TextBox>
+                                                                </div>
+                                                                <div class="form-group">
+                                                                    <label class="form-label">Fecha Emisión CPIC:</label>
+                                                                    <asp:TextBox ID="txtFechaEmisionCPICEdit" runat="server" 
+                                                                        CssClass="form-control" 
+                                                                        TextMode="Date">
+                                                                    </asp:TextBox>
+                                                                </div>
+                                                                <div class="form-group">
+                                                                    <label class="form-label">Valor Flete:</label>
+                                                                    <asp:TextBox ID="txtValorFleteEdit" runat="server" 
+                                                                        CssClass="form-control" 
+                                                                        placeholder="0.00"
+                                                                        TextMode="Number"
+                                                                        step="0.01">
+                                                                    </asp:TextBox>
+                                                                </div>
+                                                            </div>
+                                                        </asp:Panel>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Fila 3: Conductores (ancho completo) -->
+                                                <div class="row mb-3">
+                                                    <div class="col-12">
                                                         <div class="form-section">
                                                             <h6 class="form-section-title">
-                                                                <i class="fas fa-file-alt"></i> Documentación Base
+                                                                <i class="fas fa-users"></i> Conductores por Despacho
                                                             </h6>
+                                                            <p class="form-text mb-2">Puede cambiar el conductor de cada despacho individualmente. Los cambios se aplican al guardar.</p>
+                                                            <div class="conductores-edit-container">
+                                                                <div class="tabla-scroll-wrapper">
+                                                                    <asp:GridView ID="gvConductoresLote" runat="server" 
+                                                                        CssClass="table table-hover"
+                                                                        AutoGenerateColumns="false"
+                                                                        DataKeyNames="IdDespacho"
+                                                                        OnRowDataBound="gvConductoresLote_RowDataBound"
+                                                                        GridLines="None">
+                                                                        <Columns>
+                                                                            <asp:BoundField DataField="IdDespacho" HeaderText="ID" Visible="false" />
 
-                                                            <!-- Panel Factura -->
-                                                            <asp:Panel ID="pnlFacturaEdit" runat="server" CssClass="doc-panel" Visible="false">
-                                                                <div class="doc-panel-header">
-                                                                    <i class="fas fa-receipt"></i> Datos de Factura
-                                                                </div>
-                                                                <div class="doc-panel-content">
-                                                                    <div class="form-group">
-                                                                        <label class="form-label">N° Factura:</label>
-                                                                        <asp:TextBox ID="txtNumeroFacturaEdit" runat="server" 
-                                                                            CssClass="form-control" 
-                                                                            placeholder="Ej: F222 - 00004267">
-                                                                        </asp:TextBox>
-                                                                    </div>
+                                                                            <asp:BoundField DataField="NumeroDespacho" HeaderText="N° Despacho" 
+                                                                                ItemStyle-CssClass="despacho-number fw-bold" />
 
-                                                                    <div class="form-group">
-                                                                        <label class="form-label">Fecha Emisión:</label>
-                                                                        <asp:TextBox ID="txtFechaEmisionFacturaEdit" runat="server" 
-                                                                            CssClass="form-control" 
-                                                                            TextMode="Date">
-                                                                        </asp:TextBox>
-                                                                    </div>
+                                                                            <asp:BoundField DataField="FechaDespacho" HeaderText="Fecha" 
+                                                                                DataFormatString="{0:dd/MM/yyyy}" />
 
-                                                                    <div class="form-group">
-                                                                        <label class="form-label">Valor Total:</label>
-                                                                        <asp:TextBox ID="txtValorTotalFacturaEdit" runat="server" 
-                                                                            CssClass="form-control" 
-                                                                            placeholder="0.00"
-                                                                            TextMode="Number"
-                                                                            step="0.01">
-                                                                        </asp:TextBox>
-                                                                    </div>
-                                                                </div>
-                                                            </asp:Panel>
+                                                                            <asp:TemplateField HeaderText="Conductor Actual">
+                                                                                <ItemTemplate>
+                                                                                    <span class="conductor-badge-actual">
+                                                                                        <%# Eval("NombreConductorActual") %>
+                                                                                    </span>
+                                                                                </ItemTemplate>
+                                                                            </asp:TemplateField>
 
-                                                            <!-- Panel CPIC -->
-                                                            <asp:Panel ID="pnlCPICEdit" runat="server" CssClass="doc-panel" Visible="false">
-                                                                <div class="doc-panel-header">
-                                                                    <i class="fas fa-shipping-fast"></i> Datos de CPIC
-                                                                </div>
-                                                                <div class="doc-panel-content">
-                                                                    <div class="form-group">
-                                                                        <label class="form-label">N° CPIC:</label>
-                                                                        <asp:TextBox ID="txtNumeroCPICEdit" runat="server" 
-                                                                            CssClass="form-control" 
-                                                                            placeholder="Ej: 1234567"
-                                                                            MaxLength="7">
-                                                                        </asp:TextBox>
-                                                                    </div>
-
-                                                                    <div class="form-group">
-                                                                        <label class="form-label">Fecha Emisión CPIC:</label>
-                                                                        <asp:TextBox ID="txtFechaEmisionCPICEdit" runat="server" 
-                                                                            CssClass="form-control" 
-                                                                            TextMode="Date">
-                                                                        </asp:TextBox>
-                                                                    </div>
-
-                                                                    <div class="form-group">
-                                                                        <label class="form-label">Valor Flete:</label>
-                                                                        <asp:TextBox ID="txtValorFleteEdit" runat="server" 
-                                                                            CssClass="form-control" 
-                                                                            placeholder="0.00"
-                                                                            TextMode="Number"
-                                                                            step="0.01">
-                                                                        </asp:TextBox>
-                                                                    </div>
-                                                                </div>
-                                                            </asp:Panel>
-
-                                                            <!-- Información no editable -->
-                                                            <div class="info-panel">
-                                                                <div class="info-title">Datos no editables:</div>
-                                                                <div class="info-content">
-                                                                    Tipo de Operación: <asp:Label ID="lblTipoOperacionEdit" runat="server" CssClass="info-value"></asp:Label><br>
-                                                                    Ámbito: <asp:Label ID="lblAmbitoEdit" runat="server" CssClass="info-value"></asp:Label>
+                                                                            <asp:TemplateField HeaderText="Cambiar Conductor">
+                                                                                <ItemTemplate>
+                                                                                    <asp:DropDownList ID="ddlConductorDespacho" runat="server" 
+                                                                                        CssClass="form-select conductor-select">
+                                                                                    </asp:DropDownList>
+                                                                                </ItemTemplate>
+                                                                            </asp:TemplateField>
+                                                                        </Columns>
+                                                                    </asp:GridView>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -781,16 +807,22 @@
                                                     <div class="row">
                                                         <div class="col-md-6 text-start">
                                                             <asp:Button ID="btnEliminarLote" runat="server" 
-                                                                Text="🗑️ Eliminar Lote Completo" 
-                                                                CssClass="btn btn-danger btn-action btn-large"
+                                                                Text="Eliminar Lote" 
+                                                                CssClass="btn btn-outline-danger"
                                                                 OnClick="btnEliminarLote_Click"
                                                                 CausesValidation="false"
                                                                 OnClientClick="return confirm('⚠️ ADVERTENCIA: Se eliminarán TODOS los despachos de este lote.\n\n¿Está COMPLETAMENTE seguro de eliminar este lote?');" />
+                                                            <asp:Button ID="btnAnularLote" runat="server"
+                                                                Text="Anular Lote"
+                                                                CssClass="btn btn-warning ml-2"
+                                                                OnClick="btnAnularLote_Click"
+                                                                CausesValidation="false"
+                                                                OnClientClick="return confirm('⚠️ ¿Anular este lote?\n\nTodos sus despachos y viajes activos quedarán como ANULADO.\nLos registros se conservan para auditoría.');" />
                                                         </div>
                                                         <div class="col-md-6 text-end">
                                                             <asp:Button ID="btnGuardarCambios" runat="server" 
-                                                                Text="💾 Guardar Cambios" 
-                                                                CssClass="btn btn-warning btn-action btn-large"
+                                                                Text="Guardar Cambios" 
+                                                                CssClass="btn btn-primary"
                                                                 OnClick="btnGuardarCambios_Click"
                                                                 ValidationGroup="EdicionLote"
                                                                 OnClientClick="return confirm('¿Está seguro de aplicar estos cambios a todo el lote?');" />
@@ -820,7 +852,7 @@
                                                     <div class="section-actions">
                                                         <asp:Button ID="btnEditarDesdeDetal" runat="server" 
                                                             Text="Editar Lote" 
-                                                            CssClass="btn btn-warning btn-action"
+                                                            CssClass="btn btn-outline-secondary btn-action"
                                                             OnClick="btnEditarDesdeDetal_Click"
                                                             CausesValidation="false" />
                                                         
@@ -950,7 +982,11 @@
                                 <asp:AsyncPostBackTrigger ControlID="btnVolverLotes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnGuardarCambios" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnEliminarLote" EventName="Click" />
-                                
+                                <asp:AsyncPostBackTrigger ControlID="btnAnularLote" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="ddlFiltroEstadoLotes" EventName="SelectedIndexChanged" />
+                                <asp:AsyncPostBackTrigger ControlID="ddlTipoOperacionEdit" EventName="SelectedIndexChanged" />
+                                <asp:AsyncPostBackTrigger ControlID="rblAmbitoEdit" EventName="SelectedIndexChanged" />
+
                                 <asp:AsyncPostBackTrigger ControlID="btnEditarDesdeDetal" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnVolverLotesDetalle" EventName="Click" />
                                 
@@ -1444,10 +1480,10 @@
         /* === GRID DE CONDUCTORES EDITABLE === */
         .conductores-edit-container {
             margin: 1rem 0;
-            border: 2px solid #0d6efd;
-            border-radius: 8px;
-            padding: 1rem;
-            background: #f8f9ff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 0;
+            background: #f8fafc;
         }
 
         .conductores-edit-container .table {
@@ -1456,19 +1492,15 @@
         }
 
         .conductores-edit-container thead {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background: #0d6efd !important;
-            color: white !important;
+            background: #f1f5f9;
         }
 
         .conductores-edit-container thead th {
-            background: #0d6efd !important;
-            color: white !important;
+            background: #f1f5f9 !important;
+            color: #1e293b !important;
             font-weight: 600;
             padding: 0.75rem;
-            border: none !important;
+            border-bottom: 2px solid #e2e8f0 !important;
         }
 
         .conductores-edit-container tbody td {
@@ -1478,9 +1510,8 @@
         }
 
         .conductores-edit-container .form-select {
-            font-size: 0.9rem;
-            padding: 0.5rem;
-            min-width: 280px;
+            font-size: 0.875rem;
+            padding: 0.375rem 0.75rem;
         }
 
         .conductor-badge-actual {
@@ -1494,8 +1525,7 @@
         }
 
         .tabla-scroll-wrapper {
-            max-height: 400px;
-            overflow-y: auto;
+            overflow-x: auto;
             border-radius: 6px;
         }
 
