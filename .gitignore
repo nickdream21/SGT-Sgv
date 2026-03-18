@@ -261,6 +261,12 @@ UpgradeLog*.htm
 ServiceFabricBackup/
 *.rptproj.bak
 
+# ============================================================
+# Archivos de CREDENCIALES - NUNCA subir al repositorio
+# ============================================================
+**/connectionStrings.config
+**/appSettings.Secrets.config
+
 # SQL Server files
 *.mdf
 *.ldf

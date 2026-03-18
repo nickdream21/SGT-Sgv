@@ -1,14 +1,38 @@
 ﻿<%@ Page Title="Registro de Despachos Unificado" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistroDespacho.aspx.cs" Inherits="WebSGV.Views.RegistroDespacho" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
+
+<style type="text/css">
+/* ---- Registro Despacho - Minimal Professional ---- */
+.rd-page-header { background: #1e293b; color: #f8fafc; border-radius: 5px 5px 0 0; padding: .85rem 1.25rem; }
+.rd-page-header h4 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: .01em; }
+.rd-step-header { background: #f8fafc; border-bottom: 1px solid #e2e8f0; border-radius: 5px 5px 0 0; padding: .85rem 1.25rem; }
+.rd-step-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: .45rem; }
+.rd-step-header .rd-subtitle { font-size: .77rem; color: #64748b; margin-top: 3px; margin-left: 2rem; }
+.rd-step-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #1e40af; color: #fff; font-size: .72rem; font-weight: 700; flex-shrink: 0; }
+.rd-summary-header { background: #f0fdf4; border-bottom: 1px solid #bbf7d0; border-radius: 5px 5px 0 0; padding: .85rem 1.25rem; }
+.rd-summary-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: #166534; display: flex; align-items: center; gap: .45rem; }
+.rd-section-label { font-size: .77rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: .4rem; margin-bottom: 1rem; }
+.rd-doc-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 5px; padding: 1rem; }
+.rd-doc-box .rd-doc-title { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #374151; margin-bottom: .75rem; }
+.rd-notice { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 5px; padding: .7rem 1rem; font-size: .84rem; color: #374151; }
+.rd-notice-ok { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+.rd-notice-warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.rd-viaje-header { background: #f5f3ff; border-bottom: 1px solid #ddd6fe; border-radius: 5px 5px 0 0; padding: .85rem 1.25rem; }
+.rd-viaje-header h6 { margin: 0; font-size: .88rem; font-weight: 600; color: #4c1d95; display: flex; align-items: center; gap: .45rem; }
+.rd-list-header { background: #f8fafc; border-bottom: 1px solid #e2e8f0; border-radius: 5px 5px 0 0; padding: .85rem 1.25rem; }
+.rd-list-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: #1e293b; }
+.loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,.75); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+</style>
+
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-12">
                 <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0">
-                            <i class="fas fa-truck"></i> Registro de Despachos Unificado
-                            <asp:Label ID="lblEstadoLote" runat="server" CssClass="badge bg-success ms-3" Visible="false"></asp:Label>
+                    <div class="rd-page-header">
+                        <h4>
+                            <i class="fas fa-truck mr-2"></i> Registro de Despachos
+                            <asp:Label ID="lblEstadoLote" runat="server" CssClass="badge ml-3" style="background:#16a34a;font-size:.68rem;font-weight:600;" Visible="false"></asp:Label>
                         </h4>
                     </div>
                     <div class="card-body">
@@ -22,12 +46,10 @@
 
                                 <!-- ====== FASE 1: CONFIGURACIÓN BASE DEL LOTE ====== -->
                                 <asp:Panel ID="pnlConfiguracionBase" runat="server">
-                                    <div class="card mb-4" style="border-left: 4px solid #007bff;">
-                                        <div class="card-header bg-primary text-white">
-                                            <h5 class="mb-0">
-                                                <i class="fas fa-cogs"></i> PASO 1: Configuración Base del Lote
-                                            </h5>
-                                            <small>Complete los datos comunes que aplicarán a todos los despachos de este lote</small>
+                                    <div class="card mb-4" style="border-top: 3px solid #1e40af;">
+                                        <div class="rd-step-header">
+                                            <h5><span class="rd-step-num">1</span> Configuración Base del Lote</h5>
+                                            <div class="rd-subtitle">Complete los datos comunes que aplicarán a todos los despachos de este lote</div>
                                         </div>
                                         <div class="card-body">
                                             <div class="row">
@@ -144,13 +166,6 @@
                                                             <span class="text-danger">*</span>
                                                         </label>
                                                         <asp:DropDownList ID="ddlLugarOperacionBase" runat="server" CssClass="form-select">
-                                                            <asp:ListItem Value="" Text="-- Seleccione planta --"></asp:ListItem>
-                                                            <asp:ListItem Value="Lima" Text="Lima"></asp:ListItem>
-                                                            <asp:ListItem Value="Guayaquil" Text="Guayaquil"></asp:ListItem>
-                                                            <asp:ListItem Value="Trujillo" Text="Trujillo"></asp:ListItem>
-                                                            <asp:ListItem Value="Quito" Text="Quito"></asp:ListItem>
-                                                            <asp:ListItem Value="Chiclayo" Text="Chiclayo"></asp:ListItem>
-                                                            <asp:ListItem Value="Manta" Text="Manta"></asp:ListItem>
                                                         </asp:DropDownList>
                                                         <asp:RequiredFieldValidator ID="rfvLugarOperacionBase" runat="server"
                                                             ControlToValidate="ddlLugarOperacionBase"
@@ -167,20 +182,18 @@
                                             <!-- DOCUMENTACIÓN BASE -->
                                             <div class="row mt-4">
                                                 <div class="col-12">
-                                                    <h6 class="text-primary mb-3">
-                                                        <i class="fas fa-file-alt"></i> Documentación Base del Lote
-                                                    </h6>
+                                                    <div class="rd-section-label"><i class="fas fa-file-alt mr-1"></i> Documentación Base del Lote</div>
                                                     
                                                     <!-- Panel de Ayuda de Documentos -->
-                                                    <asp:Panel ID="pnlAyudaDocumentosBase" runat="server" CssClass="alert alert-info mb-3">
+                                                    <asp:Panel ID="pnlAyudaDocumentosBase" runat="server" CssClass="rd-notice mb-3">
                                                         <asp:Label ID="lblAyudaDocumentosBase" runat="server" Text="Seleccione el tipo de operación y ámbito para ver los documentos requeridos."></asp:Label>
                                                     </asp:Panel>
 
                                                     <div class="row">
                                                         <!-- FACTURA BASE -->
                                                         <div class="col-md-6">
-                                                            <asp:Panel ID="pnlFacturaBase" runat="server" CssClass="border p-3 mb-3" Visible="false">
-                                                                <h6 class="text-primary"><i class="fas fa-receipt"></i> Datos de Factura</h6>
+                                                            <asp:Panel ID="pnlFacturaBase" runat="server" CssClass="rd-doc-box mb-3" Visible="false">
+                                                                <div class="rd-doc-title"><i class="fas fa-receipt mr-1"></i> Datos de Factura</div>
                                                                 
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtNumeroFacturaBase" class="form-label">
@@ -221,8 +234,8 @@
 
                                                         <!-- CPIC BASE -->
                                                         <div class="col-md-6">
-                                                            <asp:Panel ID="pnlCPICBase" runat="server" CssClass="border p-3 mb-3" Visible="false">
-                                                                <h6 class="text-success"><i class="fas fa-shipping-fast"></i> Datos de CPIC</h6>
+                                                            <asp:Panel ID="pnlCPICBase" runat="server" CssClass="rd-doc-box mb-3" Visible="false">
+                                                                <div class="rd-doc-title"><i class="fas fa-shipping-fast mr-1"></i> Datos de CPIC</div>
                                                                 
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtNumeroCPICBase" class="form-label">
@@ -283,13 +296,11 @@
 
                                 <!-- ====== RESUMEN DEL LOTE ACTIVO ====== -->
                                 <asp:Panel ID="pnlResumenLote" runat="server" Visible="false">
-                                    <div class="card mb-4" style="border-left: 4px solid #28a745;">
-                                        <div class="card-header bg-success text-white">
-                                            <h5 class="mb-0">
-                                                <i class="fas fa-clipboard-list"></i> Lote Activo - Resumen de Configuración
-                                            </h5>
+                                    <div class="card mb-4" style="border-top: 3px solid #16a34a;">
+                                        <div class="rd-summary-header">
+                                            <h5><i class="fas fa-clipboard-check mr-2"></i> Lote Activo</h5>
                                         </div>
-                                        <div class="card-body bg-light">
+                                        <div class="card-body">
                                             <div class="row">
                                                 <div class="col-md-4">
                                                     <p class="mb-1"><strong>Fecha:</strong> <asp:Label ID="lblResumenFecha" runat="server"></asp:Label></p>
@@ -326,28 +337,24 @@
 
                                 <!-- ====== FASE 2: ADICIÓN DE CONDUCTORES ====== -->
                                 <asp:Panel ID="pnlAdicionConductores" runat="server" Visible="false">
-                                    <div class="card mb-4" style="border-left: 4px solid #ffc107;">
-                                        <div class="card-header bg-warning text-dark">
-                                            <h5 class="mb-0">
-                                                <i class="fas fa-user-plus"></i> PASO 2: Agregar Conductores al Lote
-                                            </h5>
-                                            <small>Complete los datos específicos para cada conductor</small>
+                                    <div class="card mb-4" style="border-top: 3px solid #1e40af;">
+                                        <div class="rd-step-header">
+                                            <h5><span class="rd-step-num">2</span> Agregar Conductores al Lote</h5>
+                                            <div class="rd-subtitle">Complete los datos específicos para cada conductor</div>
                                         </div>
                                         <div class="card-body">
 
                                             <!-- INFORMACIÓN DE VIAJES EN PROGRESO -->
-                                            <asp:Panel ID="pnlViajesProgreso" runat="server" CssClass="card mb-4" style="border-left: 4px solid #6f42c1;" Visible="false">
-                                                <div class="card-header" style="background: linear-gradient(90deg, #6f42c1, #8e44ad); color: white;">
-                                                    <h6 class="mb-0">
-                                                        <i class="fas fa-route"></i> Viajes en Progreso - <span id="spanNombreConductor" runat="server"></span>
-                                                    </h6>
+                                            <asp:Panel ID="pnlViajesProgreso" runat="server" CssClass="card mb-4" style="border-top: 2px solid #6d28d9;" Visible="false">
+                                                <div class="rd-viaje-header">
+                                                    <h6><i class="fas fa-route mr-1"></i> Viajes en Progreso — <span id="spanNombreConductor" runat="server"></span></h6>
                                                 </div>
                                                 <div class="card-body">
                                                     <div class="row">
                                                         <div class="col-md-8">
                                                             <asp:Panel ID="pnlSinViajes" runat="server" Visible="true">
-                                                                <div class="alert alert-info mb-0">
-                                                                    <i class="fas fa-info-circle"></i> 
+                                                                <div class="rd-notice mb-0">
+                                                                    <i class="fas fa-info-circle mr-1"></i>
                                                                     <strong>Sin viajes activos:</strong> Se creará automáticamente un nuevo viaje en progreso para este conductor.
                                                                 </div>
                                                             </asp:Panel>
@@ -356,9 +363,9 @@
                                                                 <label class="form-label">
                                                                     <strong>Viaje activo encontrado:</strong>
                                                                 </label>
-                                                                <div class="alert alert-success">
+                                                                <div class="rd-notice rd-notice-ok">
                                                                     <div class="row align-items-center">
-                                                                        <div class="col-md-10">
+                                                                        <div class="col-md-12">
                                                                             <strong><i class="fas fa-clipboard-list"></i> <asp:Label ID="lblNumeroViaje" runat="server"></asp:Label></strong><br>
                                                                             <small class="text-muted">
                                                                                 Iniciado: <asp:Label ID="lblFechaInicio" runat="server"></asp:Label> | 
@@ -366,21 +373,13 @@
                                                                                 Tipo: <asp:Label ID="lblTipoViaje" runat="server"></asp:Label>
                                                                             </small>
                                                                         </div>
-                                                                        <div class="col-md-2 text-end">
-                                                                            <asp:Button ID="btnFinalizarViajeUnico" runat="server" 
-                                                                                Text="Finalizar" 
-                                                                                CssClass="btn btn-outline-danger btn-sm"
-                                                                                OnClick="btnFinalizarViajeUnico_Click"
-                                                                                OnClientClick="return confirm('¿Está seguro de finalizar este viaje? No podrá agregar más despachos.');"
-                                                                                CausesValidation="false" />
-                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </asp:Panel>
                                                             
                                                             <asp:Panel ID="pnlMultiplesViajes" runat="server" Visible="false">
-                                                                <div class="alert alert-warning">
-                                                                    <i class="fas fa-exclamation-triangle"></i> 
+                                                                <div class="rd-notice rd-notice-warn mb-3">
+                                                                    <i class="fas fa-exclamation-triangle mr-1"></i>
                                                                     <strong>Múltiples viajes activos:</strong> Seleccione en cuál desea agregar este despacho.
                                                                 </div>
                                                                 <div class="row align-items-end">
@@ -493,9 +492,7 @@
 
                                                 <!-- Columna Derecha - Guías Específicas -->
                                                 <div class="col-md-6">
-                                                    <h6 class="text-secondary mb-3">
-                                                        <i class="fas fa-file-alt"></i> Documentos Específicos del Conductor
-                                                    </h6>
+                                                    <div class="rd-section-label mt-3"><i class="fas fa-file-alt mr-1"></i> Documentos del Conductor</div>
 
                                                     <!-- Guía Remitente -->
                                                     <asp:Panel ID="pnlGuiaRemitenteConductor" runat="server" Visible="false">
@@ -540,9 +537,9 @@
                                                     </asp:Panel>
 
                                                     <!-- Información de documentos que se reutilizan -->
-                                                    <div class="alert alert-info">
+                                                    <div class="rd-notice">
                                                         <small>
-                                                            <i class="fas fa-info-circle"></i> 
+                                                            <i class="fas fa-info-circle mr-1"></i>
                                                             <strong>Se reutilizan del lote:</strong><br>
                                                             <asp:Label ID="lblDocumentosReutilizados" runat="server"></asp:Label>
                                                         </small>
@@ -555,14 +552,14 @@
                                                 <div class="col-md-12">
                                                     <div class="d-flex justify-content-end gap-2">
                                                         <asp:Button ID="btnLimpiarConductor" runat="server" 
-                                                            Text="Limpiar Datos" 
-                                                            CssClass="btn btn-secondary"
+                                                            Text="Limpiar" 
+                                                            CssClass="btn btn-outline-secondary"
                                                             CausesValidation="false"
                                                             OnClick="btnLimpiarConductor_Click" />
-                                                        
+
                                                         <asp:Button ID="btnAgregarConductor" runat="server" 
-                                                            Text="Agregar Conductor al Lote" 
-                                                            CssClass="btn btn-warning btn-lg"
+                                                            Text="Agregar Conductor" 
+                                                            CssClass="btn btn-primary"
                                                             OnClick="btnAgregarConductor_Click"
                                                             ValidationGroup="AgregarConductor" />
                                                     </div>
@@ -575,10 +572,8 @@
                                 <!-- ====== LISTA DE CONDUCTORES AGREGADOS AL LOTE ====== -->
                                 <asp:Panel ID="pnlListaConductores" runat="server" Visible="false">
                                     <div class="card mb-4">
-                                        <div class="card-header bg-info text-white">
-                                            <h5 class="mb-0">
-                                                <i class="fas fa-list"></i> Conductores Agregados al Lote
-                                            </h5>
+                                        <div class="rd-list-header">
+                                            <h5><i class="fas fa-list mr-2"></i> Conductores del Lote</h5>
                                         </div>
                                         <div class="card-body">
                                             <asp:GridView ID="gvConductoresLote" runat="server" 
@@ -620,7 +615,6 @@
                                 <asp:AsyncPostBackTrigger ControlID="rblAmbitoOperacionBase" EventName="SelectedIndexChanged" />
                                 <asp:AsyncPostBackTrigger ControlID="ddlConductor" EventName="SelectedIndexChanged" />
                                 <asp:AsyncPostBackTrigger ControlID="btnCrearNuevoViaje" EventName="Click" />
-                                <asp:AsyncPostBackTrigger ControlID="btnFinalizarViajeUnico" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnVerHistorialViajes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="gvConductoresLote" EventName="RowCommand" />
                             </Triggers>

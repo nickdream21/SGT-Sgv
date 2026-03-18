@@ -9,6 +9,7 @@ using System.Web.Services;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using System.IO;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -353,7 +354,7 @@ namespace WebSGV.Views
                 cmd.Parameters.AddWithValue("@rutaArchivo", docInfo.RutaCompleta);
                 cmd.Parameters.AddWithValue("@tipoArchivo", docInfo.TipoArchivo);
                 cmd.Parameters.AddWithValue("@tamanoBytes", docInfo.TamanoBytes);
-                cmd.Parameters.AddWithValue("@fechaSubida", DateTime.Now);
+                cmd.Parameters.AddWithValue("@fechaSubida", FechaHelper.Ahora());
                 cmd.Parameters.AddWithValue("@usuarioSubida", ObtenerUsuarioActual());
                 cmd.Parameters.AddWithValue("@descripcion", string.IsNullOrEmpty(docInfo.Descripcion) ? DBNull.Value : (object)docInfo.Descripcion);
 

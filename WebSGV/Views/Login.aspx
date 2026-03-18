@@ -84,6 +84,46 @@
         .login-btn:hover {
             background-color: #0069d9;
         }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .forgot-password a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-wrapper .form-control {
+            padding-right: 42px;
+        }
+
+        .btn-toggle-pass {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0;
+            font-size: 15px;
+            line-height: 1;
+        }
+
+        .btn-toggle-pass:hover {
+            color: #343a40;
+        }
     </style>
     <div class="main-container">
         <img src="/Content/favicon.png" alt="Logo" class="logo" />
@@ -97,13 +137,35 @@
             </div>
             <div class="form-group">
                 <label for="password">Contraseña:</label>
-                <asp:TextBox ID="txtPassword" runat="server" TextMode="Password" CssClass="form-control" placeholder="Ingrese su contraseña"></asp:TextBox>
+                <div class="password-wrapper">
+                    <asp:TextBox ID="txtPassword" runat="server" TextMode="Password" CssClass="form-control" placeholder="Ingrese su contraseña"></asp:TextBox>
+                    <button type="button" class="btn-toggle-pass" onclick="togglePassword()" title="Mostrar/ocultar contraseña" tabindex="-1">
+                        <i id="iconTogglePass" class="fas fa-eye"></i>
+                    </button>
+                </div>
             </div>
             <div class="form-group checkbox">
                 <asp:CheckBox ID="chkRemember" runat="server" />
                 <label for="chkRemember">Recordarme</label>
             </div>
             <asp:Button ID="btnLogin" runat="server" CssClass="login-btn" Text="Acceder"  OnClick="btnLogin_Click" />
+            <div class="forgot-password">
+                <a href="RecuperarContrasena.aspx">¿Olvidó su contraseña?</a>
+            </div>
         </div>
     </div>
+
+    <script>
+        function togglePassword() {
+            var input = document.getElementById('<%=txtPassword.ClientID%>');
+            var icon = document.getElementById('iconTogglePass');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+    </script>
 </asp:Content>

@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -374,11 +375,12 @@ namespace WebSGV.Views
                                         idCarreta = @idCarreta,
                                         lugarOperacion = @lugarOperacion,
                                         tipoOperacion = @tipoOperacion,
-                                        fechaModificacion = GETDATE(),
+                                        fechaModificacion = @fechaActual,
                                         usuarioModificacion = @usuario
                                     WHERE idDespacho = @idDespacho";
 
                     SqlCommand cmd = new SqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
                     cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(txtFechaDespacho.Text));
                     cmd.Parameters.AddWithValue("@idConductor", Convert.ToInt32(ddlConductor.SelectedValue));
                     cmd.Parameters.AddWithValue("@idCliente", Convert.ToInt32(ddlCliente.SelectedValue));
@@ -434,9 +436,10 @@ namespace WebSGV.Views
                     string query = @"INSERT INTO Auditoria (TablaAfectada, TipoOperacion, IdRegistro, Campo, 
                                         ValorAnterior, ValorNuevo, Usuario, FechaHora)
                                     VALUES (@tabla, @operacion, @idRegistro, @campo, @valorAnterior, 
-                                        @valorNuevo, @usuario, GETDATE())";
+                                        @valorNuevo, @usuario, @fechaActual)";
 
                     SqlCommand cmd = new SqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
                     cmd.Parameters.AddWithValue("@tabla", tabla);
                     cmd.Parameters.AddWithValue("@operacion", operacion);
                     cmd.Parameters.AddWithValue("@idRegistro", idRegistro);
