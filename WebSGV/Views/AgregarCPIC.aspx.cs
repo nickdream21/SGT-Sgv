@@ -183,6 +183,9 @@ namespace WebSGV.Views
                 // Guardar el CPIC (SIN productos)
                 GuardarCPICEnBaseDeDatos(numeroCPIC, idFactura.Value, valorTotalFlete, fechaEmision, pesoNeto, pesoBruto);
 
+                AuditoriaHelper.Registrar("INSERT", "CPIC", numeroCPIC,
+                    $"CPIC registrado - Numero: {numeroCPIC}, Factura: {numeroFactura}, Flete: {valorTotalFlete}");
+
                 // Mostrar mensaje de éxito
                 MostrarMensaje("CPIC registrado correctamente.", "success");
 

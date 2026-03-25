@@ -3,6 +3,7 @@ using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -193,6 +194,9 @@ namespace WebSGV.Views
 
                             // Limpiar el formulario
                             LimpiarFormulario();
+
+                            AuditoriaHelper.Registrar("INSERT", "Indicadores", idIndicador,
+                                $"Indicador registrado - Pedido: {txtNumeroPedido.Text.Trim()}, ID: {idIndicador}");
 
                             // Mostrar mensaje de éxito
                             MostrarAlerta($"Indicador guardado correctamente. ID: {idIndicador}", "success");

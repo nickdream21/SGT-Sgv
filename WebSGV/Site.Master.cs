@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Configuration;
+using System.Data.SqlClient;
 using System.Web;
 using System.Web.UI;
 using WebSGV.Helpers;
+
 
 namespace WebSGV
 {
@@ -12,6 +15,7 @@ namespace WebSGV
         public string NombreUsuario { get; set; }
         public bool EsAdmin { get; set; }
         public bool EsConductor { get; set; }
+        public bool EsAdminSistema { get; set; }
 
         /// <summary>
         /// Page_Init: Vincula el ViewState a la sesión del usuario.
@@ -150,6 +154,7 @@ namespace WebSGV
             NombreUsuario = "";
             EsAdmin = false;
             EsConductor = false;
+            EsAdminSistema = false;
         }
 
         private void CargarInformacionUsuario()
@@ -160,6 +165,7 @@ namespace WebSGV
                 NombreUsuario = RolesHelper.ObtenerNombreUsuario() ?? "Usuario";
                 EsAdmin = RolesHelper.EsAdmin();
                 EsConductor = RolesHelper.EsConductor();
+                EsAdminSistema = RolesHelper.EsAdminSistema();
             }
             catch (Exception ex)
             {
@@ -168,10 +174,128 @@ namespace WebSGV
             }
         }
 
+        private int IdUsuarioActual
+        {
+            get
+            {
+                if (Session["IdUsuario"] != null)
+                    return Convert.ToInt32(Session["IdUsuario"]);
+                return 0;
+            }
+        }
+
+        protected void btnCambiarContrasena_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string contrasenaActual = txtContrasenaActual.Text;
+                string nuevaContrasena = txtNuevaContrasena.Text;
+                string confirmarContrasena = txtConfirmarContrasena.Text;
+
+                if (string.IsNullOrEmpty(contrasenaActual) || string.IsNullOrEmpty(nuevaContrasena) || string.IsNullOrEmpty(confirmarContrasena))
+                {
+                    MostrarMensajeContrasena("Todos los campos son obligatorios.", "danger");
+                    AbrirModalContrasena();
+                    return;
+                }
+
+                if (nuevaContrasena.Length < 6)
+                {
+                    MostrarMensajeContrasena("La nueva contraseña debe tener al menos 6 caracteres.", "danger");
+                    AbrirModalContrasena();
+                    return;
+                }
+
+                if (nuevaContrasena != confirmarContrasena)
+                {
+                    MostrarMensajeContrasena("Las contraseñas nuevas no coinciden.", "danger");
+                    AbrirModalContrasena();
+                    return;
+                }
+
+                if (IdUsuarioActual == 0)
+                {
+                    MostrarMensajeContrasena("No se encontró la cuenta de usuario activa.", "danger");
+                    AbrirModalContrasena();
+                    return;
+                }
+
+                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+
+                    string storedHash = null;
+                    using (SqlCommand cmd = new SqlCommand("SELECT contrasena FROM Usuarios WHERE idUsuario = @idUsuario AND activo = 1", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@idUsuario", IdUsuarioActual);
+                        object result = cmd.ExecuteScalar();
+                        if (result != null && result != DBNull.Value)
+                            storedHash = result.ToString();
+                    }
+
+                    if (storedHash == null)
+                    {
+                        MostrarMensajeContrasena("No se encontró la cuenta de usuario.", "danger");
+                        AbrirModalContrasena();
+                        return;
+                    }
+
+                    if (!PasswordHelper.VerifyPassword(contrasenaActual, storedHash))
+                    {
+                        MostrarMensajeContrasena("La contraseña actual es incorrecta.", "danger");
+                        AbrirModalContrasena();
+                        return;
+                    }
+
+                    string nuevoHash = PasswordHelper.HashPassword(nuevaContrasena);
+                    using (SqlCommand cmd = new SqlCommand("UPDATE Usuarios SET contrasena = @contrasena WHERE idUsuario = @idUsuario", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@contrasena", nuevoHash);
+                        cmd.Parameters.AddWithValue("@idUsuario", IdUsuarioActual);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                txtContrasenaActual.Text = "";
+                txtNuevaContrasena.Text = "";
+                txtConfirmarContrasena.Text = "";
+                pnlMensajeContrasena.Visible = false;
+
+                AuditoriaHelper.Registrar("UPDATE", "Usuarios", IdUsuarioActual, "Contrasena cambiada por el usuario");
+
+                ScriptManager.RegisterStartupScript(this, GetType(), "SuccessContrasena",
+                    "$('#modalCambiarContrasena').modal('hide'); alert('✅ Contraseña cambiada exitosamente.');", true);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error cambiando contraseña: {ex.Message}");
+                MostrarMensajeContrasena("Ocurrió un error al cambiar la contraseña. Inténtalo de nuevo.", "danger");
+                AbrirModalContrasena();
+            }
+        }
+
+        private void MostrarMensajeContrasena(string mensaje, string tipo)
+        {
+            lblMensajeContrasena.Text = mensaje;
+            lblMensajeContrasena.CssClass = $"alert alert-{tipo} mb-0";
+            pnlMensajeContrasena.Visible = true;
+        }
+
+        private void AbrirModalContrasena()
+        {
+            ScriptManager.RegisterStartupScript(this, GetType(), "AbrirModalContrasena", "$('#modalCambiarContrasena').modal('show');", true);
+        }
+
         protected void btnCerrarSesion_Click(object sender, EventArgs e)
         {
             try
             {
+                // Registrar auditoría de logout antes de limpiar sesión
+                AuditoriaHelper.Registrar("LOGOUT", "Usuarios",
+                    descripcion: $"Cierre de sesión - Usuario: {NombreUsuario}, Rol: {RolUsuario}");
+
                 // Limpiar sesión
                 Session.Clear();
                 Session.Abandon();

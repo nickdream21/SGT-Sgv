@@ -14,6 +14,7 @@ namespace WebSGV.Helpers
         public const string ROL_ADMIN = "ADMIN";
         public const string ROL_CONDUCTOR = "CONDUCTOR";
         public const string ROL_SUPERVISOR = "SUPERVISOR"; // Por si lo necesitas en el futuro
+        public const string ROL_ADMIN_SISTEMA = "ADMINISTRADOR DE SISTEMA";
 
         /// <summary>
         /// Obtiene el rol del usuario actual desde la sesión
@@ -29,12 +30,21 @@ namespace WebSGV.Helpers
 
         /// <summary>
         /// Verifica si el usuario actual es Admin
-        /// Acepta tanto "ADMIN" como "ADMINISTRADOR"
+        /// Acepta tanto "ADMIN" como "ADMINISTRADOR" o "ADMINISTRADOR DE SISTEMA"
         /// </summary>
         public static bool EsAdmin()
         {
             string rolActual = ObtenerRolActual();
-            return rolActual == ROL_ADMIN || rolActual == "ADMINISTRADOR";
+            return rolActual == ROL_ADMIN || rolActual == "ADMINISTRADOR" || rolActual == ROL_ADMIN_SISTEMA;
+        }
+
+        /// <summary>
+        /// Verifica si el usuario actual es Administrador de Sistema
+        /// </summary>
+        public static bool EsAdminSistema()
+        {
+            string rolActual = ObtenerRolActual();
+            return rolActual == ROL_ADMIN_SISTEMA;
         }
 
         /// <summary>
@@ -73,8 +83,11 @@ namespace WebSGV.Helpers
                 case "REGISTRO":
                 case "CONSULTAS":
                 case "INDICADORES":
-                case "AUDITORIA":
                     return EsAdmin() || rol == ROL_SUPERVISOR;
+
+                // Auditoría: solo ADMINISTRADOR DE SISTEMA
+                case "AUDITORIA":
+                    return EsAdminSistema();
 
                 // Páginas accesibles para CONDUCTOR
                 case "DASHBOARD_CONDUCTOR":

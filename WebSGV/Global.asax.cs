@@ -7,6 +7,7 @@ using System.Web.Optimization;
 using System.Web.Routing;
 using System.Web.Security;
 using System.Web.SessionState;
+using WebSGV.Helpers;
 
 namespace WebSGV
 {
@@ -18,6 +19,9 @@ namespace WebSGV
             AreaRegistration.RegisterAllAreas();
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
+
+            // Crear tabla de auditoría si no existe
+            AuditoriaHelper.CrearTablaAuditoriaSiNoExiste();
         }
 
         void Application_Error(object sender, EventArgs e)

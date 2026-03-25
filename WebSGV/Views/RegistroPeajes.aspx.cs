@@ -1,9 +1,10 @@
-using System;
+﻿using System;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -80,6 +81,9 @@ namespace WebSGV.Views
                     }
                 }
 
+                AuditoriaHelper.Registrar("INSERT", "EstacionesPeaje",
+                    descripcion: $"Estacion de peaje registrada - Nombre: {nombre}");
+
                 txtNombre.Text = "";
                 MostrarMensaje("Estación de peaje registrada correctamente.", true);
                 CargarPeajes();
@@ -106,12 +110,16 @@ namespace WebSGV.Views
                             WHERE idEstacion = @id";
                         using (SqlCommand cmd = new SqlCommand(query, conn))
                         {
-                            cmd.Parameters.AddWithValue("@id", idEstacion);
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
-                    CargarPeajes();
+                                 cmd.Parameters.AddWithValue("@id", idEstacion);
+                                    conn.Open();
+                                    cmd.ExecuteNonQuery();
+                                }
+                            }
+
+                            AuditoriaHelper.Registrar("UPDATE", "EstacionesPeaje", idEstacion,
+                                $"Estado de estacion de peaje actualizado (activar/desactivar)");
+
+                            CargarPeajes();
                 }
                 catch (Exception ex)
                 {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
@@ -8,7 +8,7 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RegistroSemiremolques : System.Web.UI.Page
+    public partial class RegistroPlantas : System.Web.UI.Page
     {
         private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
 
@@ -16,43 +16,42 @@ namespace WebSGV.Views
         {
             if (!IsPostBack)
             {
-                CargarSemiremolques();
+                CargarPlantas();
             }
         }
 
-        private void CargarSemiremolques()
+        private void CargarPlantas()
         {
             try
             {
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    string query = "SELECT idCarreta, placaCarreta, marca, modelo, activo FROM Carreta ORDER BY placaCarreta";
+                    string query = "SELECT idPlanta, nombre, esInternacional, activo FROM Planta ORDER BY esInternacional, nombre";
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
                         conn.Open();
                         DataTable dt = new DataTable();
                         dt.Load(cmd.ExecuteReader());
-                        gvSemiremolques.DataSource = dt;
-                        gvSemiremolques.DataBind();
-                        lblTotalSemiremolques.Text = dt.Rows.Count + " registro(s)";
+                        gvPlantas.DataSource = dt;
+                        gvPlantas.DataBind();
+                        lblTotalPlantas.Text = dt.Rows.Count + " registro(s)";
                     }
                 }
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar los semiremolques: " + ex.Message);
+                MostrarMensaje("Error al cargar las plantas: " + ex.Message);
             }
         }
 
         protected void btnRegistrar_Click(object sender, EventArgs e)
         {
-            string placa = txtPlaca.Text.Trim().ToUpper();
-            string marca = txtMarca.Text.Trim().ToUpper();
-            string modelo = txtModelo.Text.Trim().ToUpper();
+            string nombre = txtNombre.Text.Trim().ToUpper();
+            bool esInternacional = ddlAmbito.SelectedValue == "1";
 
-            if (string.IsNullOrWhiteSpace(placa) || string.IsNullOrWhiteSpace(marca) || string.IsNullOrWhiteSpace(modelo))
+            if (string.IsNullOrWhiteSpace(nombre))
             {
-                MostrarMensaje("Debe completar todos los campos requeridos.");
+                MostrarMensaje("Debe ingresar el nombre de la planta.");
                 return;
             }
 
@@ -62,73 +61,84 @@ namespace WebSGV.Views
                 {
                     conn.Open();
 
-                    string checkQuery = "SELECT COUNT(*) FROM Carreta WHERE UPPER(placaCarreta) = @placa";
+                    string checkQuery = "SELECT COUNT(*) FROM Planta WHERE UPPER(nombre) = @nombre AND esInternacional = @esInternacional";
                     using (SqlCommand checkCmd = new SqlCommand(checkQuery, conn))
                     {
-                        checkCmd.Parameters.AddWithValue("@placa", placa);
+                        checkCmd.Parameters.AddWithValue("@nombre", nombre);
+                        checkCmd.Parameters.AddWithValue("@esInternacional", esInternacional);
                         int existe = (int)checkCmd.ExecuteScalar();
                         if (existe > 0)
                         {
-                            MostrarMensaje("Ya existe un semiremolque registrado con esa placa.");
+                            MostrarMensaje("Ya existe una planta con ese nombre en el mismo ámbito.");
                             return;
                         }
                     }
 
-                    string insertQuery = "INSERT INTO Carreta (placaCarreta, marca, modelo, activo) VALUES (@placa, @marca, @modelo, 1)";
+                    string insertQuery = "INSERT INTO Planta (nombre, esInternacional, activo) VALUES (@nombre, @esInternacional, 1)";
                     using (SqlCommand insertCmd = new SqlCommand(insertQuery, conn))
                     {
-                        insertCmd.Parameters.AddWithValue("@placa", placa);
-                        insertCmd.Parameters.AddWithValue("@marca", marca);
-                        insertCmd.Parameters.AddWithValue("@modelo", modelo);
+                        insertCmd.Parameters.AddWithValue("@nombre", nombre);
+                        insertCmd.Parameters.AddWithValue("@esInternacional", esInternacional);
                         insertCmd.ExecuteNonQuery();
                     }
                 }
 
-                AuditoriaHelper.Registrar("INSERT", "Carreta",
-                    descripcion: $"Semiremolque registrado - Placa: {placa}, Marca: {marca}, Modelo: {modelo}");
+                AuditoriaHelper.Registrar("INSERT", "Planta",
+                    descripcion: $"Planta registrada - Nombre: {nombre}, Ámbito: {(esInternacional ? "Internacional" : "Nacional")}");
 
-                txtPlaca.Text = "";
-                txtMarca.Text = "";
-                txtModelo.Text = "";
-                MostrarMensaje("Semiremolque registrado correctamente.", true);
-                CargarSemiremolques();
+                txtNombre.Text = "";
+                ddlAmbito.SelectedIndex = 0;
+                MostrarMensaje("Planta registrada correctamente.", true);
+                CargarPlantas();
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al registrar el semiremolque: " + ex.Message);
+                MostrarMensaje("Error al registrar la planta: " + ex.Message);
             }
         }
 
-        protected void gvSemiremolques_RowCommand(object sender, GridViewCommandEventArgs e)
+        protected void gvPlantas_RowCommand(object sender, GridViewCommandEventArgs e)
         {
             if (e.CommandName == "ToggleActivo")
             {
-                int idCarreta = Convert.ToInt32(e.CommandArgument);
+                int idPlanta = Convert.ToInt32(e.CommandArgument);
                 try
                 {
                     using (SqlConnection conn = new SqlConnection(connectionString))
                     {
-                        string query = @"UPDATE Carreta 
+                        string query = @"UPDATE Planta 
                             SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
-                            WHERE idCarreta = @id";
+                            WHERE idPlanta = @id";
                         using (SqlCommand cmd = new SqlCommand(query, conn))
                         {
-                            cmd.Parameters.AddWithValue("@id", idCarreta);
+                            cmd.Parameters.AddWithValue("@id", idPlanta);
                             conn.Open();
                             cmd.ExecuteNonQuery();
                         }
                     }
 
-                    AuditoriaHelper.Registrar("UPDATE", "Carreta", idCarreta,
-                        "Estado de semiremolque actualizado (activar/desactivar)");
+                    AuditoriaHelper.Registrar("UPDATE", "Planta", idPlanta,
+                        "Estado de planta actualizado (activar/desactivar)");
 
-                    CargarSemiremolques();
+                    CargarPlantas();
                 }
                 catch (Exception ex)
                 {
                     MostrarMensaje("Error al actualizar el estado: " + ex.Message);
                 }
             }
+        }
+
+        protected string ObtenerClaseAmbito(object esInternacional)
+        {
+            bool esInt = esInternacional != null && esInternacional != DBNull.Value && Convert.ToBoolean(esInternacional);
+            return esInt ? "badge-info" : "badge-primary";
+        }
+
+        protected string ObtenerTextoAmbito(object esInternacional)
+        {
+            bool esInt = esInternacional != null && esInternacional != DBNull.Value && Convert.ToBoolean(esInternacional);
+            return esInt ? "Internacional" : "Nacional";
         }
 
         protected string ObtenerClaseEstado(object activo)

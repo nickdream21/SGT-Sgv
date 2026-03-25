@@ -1112,8 +1112,13 @@ namespace WebSGV.Views
                             transaction.Commit();
                             System.Diagnostics.Debug.WriteLine("✅ Commit exitoso");
 
-                            // 8. Mostrar resultado
+                            // 8. Registrar auditoría
                             string accion = esEdicion ? "actualizada" : "guardada";
+                            AuditoriaHelper.Registrar(
+                                esEdicion ? "UPDATE" : "INSERT", "OrdenViaje", numeroOrdenViaje,
+                                $"Orden de viaje {accion} - Número: {numeroOrdenViaje}, Conductor ID: {idConductor}, Tracto ID: {idTracto}");
+
+                            // 9. Mostrar resultado
                             MostrarResultadoExitoso(numeroOrdenViaje, accion);
 
                             // Limpiar HiddenField
