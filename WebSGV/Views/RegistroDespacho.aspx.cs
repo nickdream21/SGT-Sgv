@@ -216,16 +216,9 @@ namespace WebSGV.Views
         {
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = @"
-                SELECT 
-                    idConductor,
-                    CONCAT(nombre, ' ', apPaterno, ' ', apMaterno, ' - DNI: ', ISNULL(DNI, carnetExtranjeria)) AS NombreCompleto
-                FROM Conductor
-                WHERE activo = 1
-                ORDER BY nombre, apPaterno, apMaterno";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand("sp_ObtenerConductoresActivos", conn))
                 {
+                    cmd.CommandType = CommandType.StoredProcedure;
                     conn.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
@@ -247,10 +240,9 @@ namespace WebSGV.Views
         {
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = "SELECT idTracto, placaTracto FROM Tracto WHERE activo = 1 ORDER BY placaTracto";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand("sp_ObtenerTractosActivos", conn))
                 {
+                    cmd.CommandType = CommandType.StoredProcedure;
                     conn.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
@@ -272,10 +264,9 @@ namespace WebSGV.Views
         {
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = "SELECT idCarreta, placaCarreta FROM Carreta WHERE activo = 1 ORDER BY placaCarreta";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand("sp_ObtenerCarretasActivas", conn))
                 {
+                    cmd.CommandType = CommandType.StoredProcedure;
                     conn.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
@@ -297,10 +288,9 @@ namespace WebSGV.Views
         {
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = "SELECT idCliente, nombre FROM Cliente WHERE activo = 1 ORDER BY nombre";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand("sp_ObtenerClientesActivos", conn))
                 {
+                    cmd.CommandType = CommandType.StoredProcedure;
                     conn.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
@@ -330,10 +320,10 @@ namespace WebSGV.Views
             {
                 using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
-                    string query = "SELECT nombre FROM Planta WHERE esInternacional = @esInternacional AND activo = 1 ORDER BY nombre";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_ObtenerPlantasPorAmbito", conn))
                     {
-                        cmd.Parameters.AddWithValue("@esInternacional", esInternacional ? 1 : 0);
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@esInternacional", esInternacional);
                         conn.Open();
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
@@ -938,46 +928,45 @@ namespace WebSGV.Views
         {
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                conn.Open();
                 using (SqlCommand cmd = new SqlCommand())
                 {
                     cmd.Connection = conn;
+                    cmd.CommandType = CommandType.StoredProcedure;
                     cmd.CommandTimeout = 120;
+
+                    SqlParameter pId;
 
                     if (tipo == "FACTURA")
                     {
-                        // Ya validamos antes que no existe, así que creamos directamente
-                        cmd.CommandText = @"
-                    INSERT INTO Factura (numeroFactura, valorTotal, fechaEmision, numeroPedido, idCliente)
-                    VALUES (@numero, @valor, @fecha, @pedido, @cliente);
-                    SELECT SCOPE_IDENTITY();";
-
-                        cmd.Parameters.AddWithValue("@numero", lote.Documentacion.NumeroFactura);
-                        cmd.Parameters.AddWithValue("@valor", lote.Documentacion.ValorTotalFactura ?? 0);
-                        cmd.Parameters.AddWithValue("@fecha", lote.Documentacion.FechaEmisionFactura ?? FechaHelper.Ahora());
-                        cmd.Parameters.AddWithValue("@pedido", (object)lote.NumeroPedido ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@cliente", lote.IdCliente);
-
-                        return Convert.ToInt32(cmd.ExecuteScalar());
+                        cmd.CommandText = "sp_CrearFactura";
+                        cmd.Parameters.AddWithValue("@numeroFactura", lote.Documentacion.NumeroFactura);
+                        cmd.Parameters.AddWithValue("@valorTotal", lote.Documentacion.ValorTotalFactura ?? 0);
+                        cmd.Parameters.AddWithValue("@fechaEmision", (lote.Documentacion.FechaEmisionFactura ?? FechaHelper.Ahora()).Date);
+                        cmd.Parameters.AddWithValue("@numeroPedido", (object)lote.NumeroPedido ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@idCliente", lote.IdCliente);
+                        pId = cmd.Parameters.Add("@idFactura", SqlDbType.Int);
                     }
                     else if (tipo == "CPIC")
                     {
-                        // Ya validamos antes que no existe, así que creamos directamente
-                        cmd.CommandText = @"
-                    INSERT INTO CPIC (numeroCPIC, idFactura, valorTotalFlete, fechaEmision, pesoNeto, pesoBruto)
-                    VALUES (@numero, @factura, @flete, @fecha, 0, 0);
-                    SELECT SCOPE_IDENTITY();";
-
-                        cmd.Parameters.AddWithValue("@numero", lote.Documentacion.NumeroCPIC);
-                        cmd.Parameters.AddWithValue("@factura", (object)idFactura ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@flete", lote.Documentacion.ValorFlete ?? 0);
-                        cmd.Parameters.AddWithValue("@fecha", lote.Documentacion.FechaEmisionCPIC ?? FechaHelper.Ahora());
-
-                        return Convert.ToInt32(cmd.ExecuteScalar());
+                        cmd.CommandText = "sp_CrearCPIC";
+                        cmd.Parameters.AddWithValue("@numeroCPIC", lote.Documentacion.NumeroCPIC);
+                        cmd.Parameters.AddWithValue("@idFactura", (object)idFactura ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@valorTotalFlete", lote.Documentacion.ValorFlete ?? 0);
+                        cmd.Parameters.AddWithValue("@fechaEmision", (lote.Documentacion.FechaEmisionCPIC ?? FechaHelper.Ahora()).Date);
+                        pId = cmd.Parameters.Add("@idCPIC", SqlDbType.Int);
                     }
+                    else
+                    {
+                        return null;
+                    }
+
+                    pId.Direction = ParameterDirection.Output;
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+
+                    return pId.Value != DBNull.Value ? Convert.ToInt32(pId.Value) : (int?)null;
                 }
             }
-            return null;
         }
 
 
@@ -986,44 +975,34 @@ namespace WebSGV.Views
             mensajeError = string.Empty;
             List<string> errores = new List<string>();
 
+            string numeroFactura = (pnlFacturaBase.Visible && !string.IsNullOrEmpty(txtNumeroFacturaBase.Text))
+                ? txtNumeroFacturaBase.Text.Trim() : null;
+            string numeroCPIC = (pnlCPICBase.Visible && !string.IsNullOrEmpty(txtNumeroCPICBase.Text))
+                ? txtNumeroCPICBase.Text.Trim() : null;
+
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                conn.Open();
-
-                // Validar Factura si está visible y tiene valor
-                if (pnlFacturaBase.Visible && !string.IsNullOrEmpty(txtNumeroFacturaBase.Text))
+                using (SqlCommand cmd = new SqlCommand("sp_ValidarDocumentosDuplicados", conn))
                 {
-                    string numeroFactura = txtNumeroFacturaBase.Text.Trim();
+                    cmd.CommandType = CommandType.StoredProcedure;
 
-                    string queryFactura = "SELECT COUNT(*) FROM Factura WHERE numeroFactura = @numero";
-                    using (SqlCommand cmd = new SqlCommand(queryFactura, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@numero", numeroFactura);
-                        int count = Convert.ToInt32(cmd.ExecuteScalar());
+                    cmd.Parameters.AddWithValue("@numeroFactura", (object)numeroFactura ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@numeroCPIC", (object)numeroCPIC ?? DBNull.Value);
 
-                        if (count > 0)
-                        {
-                            errores.Add($"El número de factura '{numeroFactura}' ya está registrado en el sistema");
-                        }
-                    }
-                }
+                    SqlParameter pFacturaExiste = cmd.Parameters.Add("@facturaExiste", SqlDbType.Bit);
+                    pFacturaExiste.Direction = ParameterDirection.Output;
 
-                // Validar CPIC si está visible y tiene valor
-                if (pnlCPICBase.Visible && !string.IsNullOrEmpty(txtNumeroCPICBase.Text))
-                {
-                    string numeroCPIC = txtNumeroCPICBase.Text.Trim();
+                    SqlParameter pCpicExiste = cmd.Parameters.Add("@cpicExiste", SqlDbType.Bit);
+                    pCpicExiste.Direction = ParameterDirection.Output;
 
-                    string queryCPIC = "SELECT COUNT(*) FROM CPIC WHERE numeroCPIC = @numero";
-                    using (SqlCommand cmd = new SqlCommand(queryCPIC, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@numero", numeroCPIC);
-                        int count = Convert.ToInt32(cmd.ExecuteScalar());
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
 
-                        if (count > 0)
-                        {
-                            errores.Add($"El número de CPIC '{numeroCPIC}' ya está registrado en el sistema");
-                        }
-                    }
+                    if (numeroFactura != null && pFacturaExiste.Value != DBNull.Value && (bool)pFacturaExiste.Value)
+                        errores.Add($"El número de factura '{numeroFactura}' ya está registrado en el sistema");
+
+                    if (numeroCPIC != null && pCpicExiste.Value != DBNull.Value && (bool)pCpicExiste.Value)
+                        errores.Add($"El número de CPIC '{numeroCPIC}' ya está registrado en el sistema");
                 }
             }
 
@@ -1040,95 +1019,43 @@ namespace WebSGV.Views
         {
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                conn.Open();
-                using (SqlTransaction transaction = conn.BeginTransaction())
+                using (SqlCommand cmd = new SqlCommand("sp_CrearDespacho", conn))
                 {
-                    try
-                    {
-                        using (SqlCommand cmd = new SqlCommand())
-                        {
-                            cmd.Connection = conn;
-                            cmd.Transaction = transaction;
-                            cmd.CommandTimeout = 120;
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandTimeout = 120;
 
-                            // Crear viaje en progreso si el conductor no tiene uno aún.
-                            // La creación ocurre aquí (dentro de la transacción) para que un
-                            // viaje huérfano (sin despacho) sea imposible: si algo falla se hace rollback.
-                            if (!conductor.IdViajeProgreso.HasValue)
-                            {
-                                conductor.IdViajeProgreso = CrearNuevoViajeProgresoEnTransaccion(
-                                    conn, transaction, conductor.IdConductor,
-                                    lote.EsInternacional, lote.TipoOperacion, lote.UsuarioCreacion);
-                            }
+                    DateTime fechaCreacion = FechaHelper.Ahora();
+                    string descripcionViaje = conductor.IdViajeProgreso.HasValue ? null
+                        : $"Viaje {(lote.EsInternacional ? "Internacional" : "Nacional")} - {lote.TipoOperacion}";
 
-                            // Crear despacho
-                            cmd.CommandText = @"
-                                INSERT INTO Despachos (
-                                    numeroDespacho, fechaDespacho, horaDespacho, idConductor, idTracto, idCarreta, 
-                                    idCliente, lugarOperacion, tipoOperacion, estadoDespacho, fechaCreacion, 
-                                    usuarioCreacion, activo, numeroPedido, idFactura, idCPIC, guiaRemitente, 
-                                    guiaTransportista, esInternacional, idViajeProgreso
-                                ) VALUES (
-                                    @numeroDespacho, @fechaDespacho, @horaDespacho, @idConductor, @idTracto, @idCarreta,
-                                    @idCliente, @lugarOperacion, @tipoOperacion, @estadoDespacho, @fechaCreacion,
-                                    @usuarioCreacion, @activo, @numeroPedido, @idFactura, @idCPIC, @guiaRemitente,
-                                    @guiaTransportista, @esInternacional, @idViajeProgreso
-                                );
-                                SELECT SCOPE_IDENTITY();";
+                    cmd.Parameters.AddWithValue("@idConductor", conductor.IdConductor);
+                    cmd.Parameters.AddWithValue("@idTracto", conductor.IdTracto);
+                    cmd.Parameters.AddWithValue("@idCarreta", conductor.IdCarreta);
+                    cmd.Parameters.AddWithValue("@idCliente", lote.IdCliente);
+                    cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(lote.FechaProgramacion).Date);
+                    cmd.Parameters.AddWithValue("@horaDespacho", fechaCreacion.TimeOfDay);
+                    cmd.Parameters.AddWithValue("@fechaCreacion", fechaCreacion);
+                    cmd.Parameters.AddWithValue("@lugarOperacion", lote.PlantaOperacion);
+                    cmd.Parameters.AddWithValue("@tipoOperacion", lote.TipoOperacion);
+                    cmd.Parameters.AddWithValue("@numeroPedido", (object)lote.NumeroPedido ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@idFactura", (object)idFactura ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@idCPIC", (object)idCPIC ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@guiaRemitente", (object)conductor.GuiaRemitente ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@guiaTransportista", (object)conductor.GuiaTransportista ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@esInternacional", lote.EsInternacional);
+                    cmd.Parameters.AddWithValue("@usuarioCreacion", lote.UsuarioCreacion);
+                    cmd.Parameters.AddWithValue("@idViajeProgreso", (object)conductor.IdViajeProgreso ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@descripcionViaje", (object)descripcionViaje ?? DBNull.Value);
 
-                            cmd.Parameters.AddWithValue("@numeroDespacho", GenerarNumeroDespacho());
-                            cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(lote.FechaProgramacion).Date);
-                            cmd.Parameters.AddWithValue("@horaDespacho", FechaHelper.Ahora().TimeOfDay);
-                            cmd.Parameters.AddWithValue("@idConductor", conductor.IdConductor);
-                            cmd.Parameters.AddWithValue("@idTracto", conductor.IdTracto);
-                            cmd.Parameters.AddWithValue("@idCarreta", conductor.IdCarreta);
-                            cmd.Parameters.AddWithValue("@idCliente", lote.IdCliente);
-                            cmd.Parameters.AddWithValue("@lugarOperacion", lote.PlantaOperacion);
-                            cmd.Parameters.AddWithValue("@tipoOperacion", lote.TipoOperacion);
-                            cmd.Parameters.AddWithValue("@estadoDespacho", "PROGRAMADO");
-                            cmd.Parameters.AddWithValue("@fechaCreacion", FechaHelper.Ahora());
-                            cmd.Parameters.AddWithValue("@usuarioCreacion", lote.UsuarioCreacion);
-                            cmd.Parameters.AddWithValue("@activo", true);
-                            cmd.Parameters.AddWithValue("@numeroPedido", (object)lote.NumeroPedido ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("@idFactura", (object)idFactura ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("@idCPIC", (object)idCPIC ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("@guiaRemitente", (object)conductor.GuiaRemitente ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("@guiaTransportista", (object)conductor.GuiaTransportista ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("@esInternacional", lote.EsInternacional);
-                            cmd.Parameters.AddWithValue("@idViajeProgreso", (object)conductor.IdViajeProgreso ?? DBNull.Value);
+                    SqlParameter pIdDespacho = cmd.Parameters.Add("@idDespacho", SqlDbType.Int);
+                    pIdDespacho.Direction = ParameterDirection.Output;
 
-                            int idDespacho = Convert.ToInt32(cmd.ExecuteScalar());
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
 
-                            // Actualizar viaje si existe
-                            if (conductor.IdViajeProgreso.HasValue)
-                            {
-                                cmd.CommandText = @"
-                                    UPDATE ViajesEnProgreso 
-                                    SET cantidadDespachos = cantidadDespachos + 1,
-                                        fechaUltimaActividad = @fechaActual
-                                    WHERE idViajeProgreso = @idViaje";
-                                cmd.Parameters.Clear();
-                                cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-                                cmd.Parameters.AddWithValue("@idViaje", conductor.IdViajeProgreso.Value);
-                                cmd.ExecuteNonQuery();
-                            }
-
-                            transaction.Commit();
-                            return idDespacho;
-                        }
-                    }
-                    catch
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
+                    return Convert.ToInt32(pIdDespacho.Value);
                 }
             }
-        }
-
-        private string GenerarNumeroDespacho()
-        {
-            return "DESP-" + FechaHelper.Ahora().ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString().Substring(0, 4);
         }
 
         #endregion
@@ -1141,23 +1068,9 @@ namespace WebSGV.Views
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = @"
-                    SELECT 
-                        vp.idViajeProgreso,
-                        vp.numeroViajeProgreso,
-                        vp.fechaInicio,
-                        vp.cantidadDespachos,
-                        vp.esInternacional,
-                        vp.descripcionViaje,
-                        vp.estadoViaje
-                    FROM ViajesEnProgreso vp
-                    WHERE vp.idConductor = @idConductor 
-                        AND vp.estadoViaje = 'ABIERTO' 
-                        AND vp.activo = 1
-                    ORDER BY vp.fechaUltimaActividad DESC";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand("sp_ObtenerViajesAbiertosConductor", conn))
                 {
+                    cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@idConductor", idConductor);
                     conn.Open();
 
@@ -1187,16 +1100,10 @@ namespace WebSGV.Views
         {
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = @"
-                    SELECT 
-                        idViajeProgreso, numeroViajeProgreso, fechaInicio, cantidadDespachos,
-                        esInternacional, descripcionViaje, estadoViaje
-                    FROM ViajesEnProgreso 
-                    WHERE idViajeProgreso = @id";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand("sp_ObtenerInfoViaje", conn))
                 {
-                    cmd.Parameters.AddWithValue("@id", idViajeProgreso);
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
                     conn.Open();
 
                     using (SqlDataReader reader = cmd.ExecuteReader())
@@ -1224,73 +1131,23 @@ namespace WebSGV.Views
         {
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = @"
-                    DECLARE @contador INT;
-                    DECLARE @numeroViaje VARCHAR(20);
-
-                    SELECT @contador = ISNULL(COUNT(*), 0) + 1 
-                    FROM ViajesEnProgreso 
-                    WHERE YEAR(fechaCreacion) = YEAR(GETDATE());
-
-                    SET @numeroViaje = 'VP-' + CAST(YEAR(GETDATE()) AS VARCHAR(4)) + '-' + RIGHT('000' + CAST(@contador AS VARCHAR(3)), 3);
-
-                    INSERT INTO ViajesEnProgreso (
-                        numeroViajeProgreso, idConductor, fechaInicio, fechaUltimaActividad,
-                        descripcionViaje, usuarioCreacion, estadoViaje, activo, cantidadDespachos
-                    )
-                    VALUES (
-                        @numeroViaje, @idConductor, @fechaActual, @fechaActual,
-                        @descripcion, @usuario, 'ABIERTO', 1, 0
-                    );
-
-                    SELECT SCOPE_IDENTITY();";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand("sp_CrearViajeProgreso", conn))
                 {
-                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
+                    cmd.CommandType = CommandType.StoredProcedure;
+
                     cmd.Parameters.AddWithValue("@idConductor", idConductor);
                     cmd.Parameters.AddWithValue("@descripcion", string.IsNullOrEmpty(descripcion) ? (object)DBNull.Value : descripcion);
                     cmd.Parameters.AddWithValue("@usuario", ObtenerUsuarioActual());
+                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
+
+                    SqlParameter pId = cmd.Parameters.Add("@idViajeProgreso", SqlDbType.Int);
+                    pId.Direction = ParameterDirection.Output;
 
                     conn.Open();
-                    return Convert.ToInt32(cmd.ExecuteScalar());
+                    cmd.ExecuteNonQuery();
+
+                    return Convert.ToInt32(pId.Value);
                 }
-            }
-        }
-
-        private int CrearNuevoViajeProgresoEnTransaccion(
-            SqlConnection conn, SqlTransaction transaction,
-            int idConductor, bool esInternacional, string tipoOperacion, string usuario)
-        {
-            string query = @"
-                    DECLARE @contador INT;
-                    DECLARE @numeroViaje VARCHAR(20);
-
-                    SELECT @contador = ISNULL(COUNT(*), 0) + 1 
-                    FROM ViajesEnProgreso 
-                    WHERE YEAR(fechaCreacion) = YEAR(GETDATE());
-
-                    SET @numeroViaje = 'VP-' + CAST(YEAR(GETDATE()) AS VARCHAR(4)) + '-' + RIGHT('000' + CAST(@contador AS VARCHAR(3)), 3);
-
-                    INSERT INTO ViajesEnProgreso (
-                        numeroViajeProgreso, idConductor, fechaInicio, fechaUltimaActividad,
-                        descripcionViaje, usuarioCreacion, estadoViaje, activo, cantidadDespachos
-                    )
-                    VALUES (
-                        @numeroViaje, @idConductor, @fechaActual, @fechaActual,
-                        @descripcion, @usuario, 'ABIERTO', 1, 0
-                    );
-
-                    SELECT SCOPE_IDENTITY();";
-
-            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
-            {
-                string descripcion = $"Viaje {(esInternacional ? "Internacional" : "Nacional")} - {tipoOperacion}";
-                cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-                cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                cmd.Parameters.AddWithValue("@descripcion", descripcion);
-                cmd.Parameters.AddWithValue("@usuario", usuario);
-                return Convert.ToInt32(cmd.ExecuteScalar());
             }
         }
 
