@@ -3,6 +3,7 @@ using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -91,6 +92,9 @@ namespace WebSGV.Views
                     insertCmd.Parameters.AddWithValue("@idCliente", ddlCliente.SelectedValue);
 
                     insertCmd.ExecuteNonQuery();
+
+                    AuditoriaHelper.Registrar("INSERT", "Producto",
+                        descripcion: $"Producto registrado - Nombre: {txtNombre.Text.Trim()}, Cliente: {ddlCliente.SelectedItem?.Text}");
 
                     // Limpiar el formulario
                     LimpiarFormulario();

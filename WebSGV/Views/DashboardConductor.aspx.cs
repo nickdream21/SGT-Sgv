@@ -8,6 +8,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Web.UI.WebControls;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -221,20 +222,24 @@ namespace WebSGV.Views
                 System.Diagnostics.Debug.WriteLine("=== INICIALIZANDO DASHBOARD CONDUCTOR ===");
 
                 CargarDatosConductor();
-                ViajeActivo viajeActivo = ObtenerViajeActivo();
+                List<ViajeActivo> viajesActivos = ObtenerViajesActivos();
 
-                if (viajeActivo != null)
+                if (viajesActivos.Count > 0)
                 {
-                    System.Diagnostics.Debug.WriteLine($"✅ Viaje activo encontrado: {viajeActivo.NumeroViajeProgreso}");
-                    MostrarViajeActivo(viajeActivo);
-                    CargarDespachosViajeActivo(viajeActivo.IdViajeProgreso);
-                    HabilitarLiquidacion(viajeActivo);
+                    ViajeActivo viajePrimario = viajesActivos[0]; // el más antiguo (ASC)
+                    List<int> idsViajes = viajesActivos.Select(v => v.IdViajeProgreso).ToList();
+                    int totalDespachos = viajesActivos.Sum(v => v.CantidadDespachos);
+
+                    System.Diagnostics.Debug.WriteLine($"✅ {viajesActivos.Count} viaje(s) activo(s) encontrado(s): {string.Join(", ", viajesActivos.Select(v => v.NumeroViajeProgreso))}");
+                    MostrarViajesActivos(viajesActivos, totalDespachos);
+                    CargarDespachosViajesActivos(idsViajes);
+                    HabilitarLiquidacion(viajesActivos, totalDespachos);
 
                     // ✅ VERIFICAR SI HAY OBSERVACIONES DE RECHAZO
-                    VerificarObservacionesRechazo(viajeActivo.IdViajeProgreso);
+                    VerificarObservacionesRechazo(idsViajes);
 
                     // ✅ PRE-CARGAR DATOS DE ORDEN RECHAZADA SI EXISTE
-                    CargarDatosOrdenRechazada(viajeActivo.IdViajeProgreso);
+                    CargarDatosOrdenRechazada(idsViajes);
                 }
                 else
                 {
@@ -298,18 +303,18 @@ namespace WebSGV.Views
 
         #region Verificación de Observaciones de Rechazo
 
-        private void VerificarObservacionesRechazo(int idViajeProgreso)
+        private void VerificarObservacionesRechazo(List<int> idsViajes)
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"Verificando observaciones de rechazo para viaje: {idViajeProgreso}");
+                System.Diagnostics.Debug.WriteLine($"Verificando observaciones de rechazo para {idsViajes.Count} viaje(s)");
 
                 string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    // Buscar la última orden rechazada de este viaje
-                    string query = @"
+                    string paramNames = string.Join(",", idsViajes.Select((id, i) => $"@id{i}"));
+                    string query = $@"
                         SELECT TOP 1
                             ov.numeroOrdenViaje,
                             ov.observacionesRechazo,
@@ -317,7 +322,7 @@ namespace WebSGV.Views
                             u.nombre + ' ' + u.apellido AS rechazadoPor
                         FROM OrdenViaje ov
                         LEFT JOIN Usuarios u ON ov.idUsuarioAprobacion = u.idUsuario
-                        WHERE ov.idViajeProgreso = @idViajeProgreso
+                        WHERE ov.idViajeProgreso IN ({paramNames})
                             AND ov.estadoAprobacion = 'REABIERTO'
                             AND ov.observacionesRechazo IS NOT NULL
                             AND ov.observacionesRechazo != ''
@@ -325,7 +330,8 @@ namespace WebSGV.Views
 
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
-                        cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
+                        for (int i = 0; i < idsViajes.Count; i++)
+                            cmd.Parameters.AddWithValue($"@id{i}", idsViajes[i]);
                         conn.Open();
 
                         using (SqlDataReader reader = cmd.ExecuteReader())
@@ -420,7 +426,7 @@ namespace WebSGV.Views
             catch { return ""; }
         }
 
-        private void CargarDatosOrdenRechazada(int idViajeProgreso)
+        private void CargarDatosOrdenRechazada(List<int> idsViajes)
         {
             try
             {
@@ -429,20 +435,22 @@ namespace WebSGV.Views
                 {
                     conn.Open();
 
-                    // 1. Find the REABIERTO order for this trip
+                    // 1. Find the REABIERTO order for these trips
                     string ordenNumero = null;
                     DateTime fechaSal = DateTime.MinValue, fechaLleg = DateTime.MinValue;
                     string horaSal = "", horaLleg = "", obs = "";
 
-                    using (SqlCommand cmd = new SqlCommand(@"
+                    string paramNames = string.Join(",", idsViajes.Select((id, i) => $"@idV{i}"));
+                    using (SqlCommand cmd = new SqlCommand($@"
                         SELECT TOP 1 numeroOrdenViaje, fechaSalida, fechaLlegada, horaSalida, horaLlegada, observaciones
                         FROM OrdenViaje
-                        WHERE idViajeProgreso = @idViaje
+                        WHERE idViajeProgreso IN ({paramNames})
                           AND estadoAprobacion = 'REABIERTO'
                           AND registradoPor = 'CONDUCTOR'
                         ORDER BY fechaRegistro DESC", conn))
                     {
-                        cmd.Parameters.AddWithValue("@idViaje", idViajeProgreso);
+                        for (int i = 0; i < idsViajes.Count; i++)
+                            cmd.Parameters.AddWithValue($"@idV{i}", idsViajes[i]);
                         using (SqlDataReader r = cmd.ExecuteReader())
                         {
                             if (!r.Read()) return;
@@ -793,8 +801,9 @@ namespace WebSGV.Views
 
         #region Métodos de Viaje Activo
 
-        private ViajeActivo ObtenerViajeActivo()
+        private List<ViajeActivo> ObtenerViajesActivos()
         {
+            List<ViajeActivo> viajes = new List<ViajeActivo>();
             try
             {
                 string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
@@ -802,10 +811,10 @@ namespace WebSGV.Views
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     string query = @"
-                        SELECT TOP 1
+                        SELECT 
                             vp.idViajeProgreso,
                             vp.numeroViajeProgreso,
-                            vp.idConductor,
+                            c.idConductor,
                             c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS nombreConductor,
                             vp.fechaInicio,
                             vp.fechaUltimaActividad,
@@ -814,10 +823,19 @@ namespace WebSGV.Views
                             (SELECT COUNT(*) FROM Despachos WHERE idViajeProgreso = vp.idViajeProgreso AND activo = 1) AS cantidadDespachos,
                             CAST(0 AS BIT) AS esInternacional
                         FROM ViajesEnProgreso vp
-                        INNER JOIN Conductor c ON vp.idConductor = c.idConductor
-                        WHERE vp.idConductor = @idConductor 
+                        CROSS JOIN Conductor c
+                        WHERE c.idConductor = @idConductor
                             AND vp.estadoViaje = 'ABIERTO'
-                        ORDER BY vp.fechaInicio DESC";
+                            AND (
+                                vp.idConductor = @idConductor
+                                OR EXISTS (
+                                    SELECT 1 FROM Despachos d 
+                                    WHERE d.idViajeProgreso = vp.idViajeProgreso 
+                                    AND d.idConductor = @idConductor 
+                                    AND d.activo = 1
+                                )
+                            )
+                        ORDER BY vp.fechaInicio ASC";
 
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
@@ -826,9 +844,9 @@ namespace WebSGV.Views
 
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
-                            if (reader.Read())
+                            while (reader.Read())
                             {
-                                return new ViajeActivo
+                                viajes.Add(new ViajeActivo
                                 {
                                     IdViajeProgreso = Convert.ToInt32(reader["idViajeProgreso"]),
                                     NumeroViajeProgreso = reader["numeroViajeProgreso"].ToString(),
@@ -840,50 +858,55 @@ namespace WebSGV.Views
                                     DescripcionViaje = reader["descripcionViaje"]?.ToString() ?? "",
                                     CantidadDespachos = Convert.ToInt32(reader["cantidadDespachos"]),
                                     EsInternacional = reader["esInternacional"] != DBNull.Value && Convert.ToBoolean(reader["esInternacional"])
-                                };
+                                });
                             }
                         }
                     }
                 }
 
-                return null;
+                return viajes;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error obteniendo viaje activo: {ex.Message}");
-                return null;
+                System.Diagnostics.Debug.WriteLine($"❌ Error obteniendo viajes activos: {ex.Message}");
+                return viajes;
             }
         }
 
-        private void MostrarViajeActivo(ViajeActivo viaje)
+        private void MostrarViajesActivos(List<ViajeActivo> viajes, int totalDespachos)
         {
             try
             {
+                ViajeActivo viajePrimario = viajes[0];
+                List<int> ids = viajes.Select(v => v.IdViajeProgreso).ToList();
+
                 pnlViajeActivo.Visible = true;
                 pnlSinViajes.Visible = false;
                 pnlDespachos.Visible = true;
 
-                lblNumeroViaje.Text = viaje.NumeroViajeProgreso;
-                lblFechaInicio.Text = viaje.FechaInicio.ToString("dd/MM/yyyy HH:mm");
-                lblCantidadDespachos.Text = viaje.CantidadDespachos.ToString();
+                string numerosViaje = string.Join(", ", viajes.Select(v => v.NumeroViajeProgreso));
+                lblNumeroViaje.Text = numerosViaje;
+                lblFechaInicio.Text = viajePrimario.FechaInicio.ToString("dd/MM/yyyy HH:mm");
+                lblCantidadDespachos.Text = totalDespachos.ToString();
 
-                TimeSpan diasRuta = DateTime.Now - viaje.FechaInicio;
+                TimeSpan diasRuta = DateTime.Now - viajePrimario.FechaInicio;
                 lblDiasRuta.Text = $"{diasRuta.Days} días";
 
-                lblEstadoViaje.Text = $"Viaje Activo - {viaje.CantidadDespachos} despacho(s)";
+                lblEstadoViaje.Text = $"Viaje Activo - {totalDespachos} despacho(s)";
                 pnlEstadoViaje.CssClass = "badge-status badge badge-success";
 
-                hfIdViajeActivo.Value = viaje.IdViajeProgreso.ToString();
+                hfIdViajeActivo.Value = viajePrimario.IdViajeProgreso.ToString();
+                hfIdsViajesActivos.Value = string.Join(",", ids);
 
                 pnlBadgeLiquidar.Visible = true;
                 pnlBadgeActivos.Visible = true;
-                lblCantidadActivos.Text = viaje.CantidadDespachos.ToString();
+                lblCantidadActivos.Text = totalDespachos.ToString();
 
-                System.Diagnostics.Debug.WriteLine($"✅ Viaje activo mostrado: {viaje.NumeroViajeProgreso}");
+                System.Diagnostics.Debug.WriteLine($"✅ {viajes.Count} viaje(s) activo(s) mostrado(s): {numerosViaje}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error mostrando viaje activo: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ Error mostrando viajes activos: {ex.Message}");
                 throw;
             }
         }
@@ -901,7 +924,7 @@ namespace WebSGV.Views
             pnlBadgeActivos.Visible = false;
         }
 
-        private void CargarDespachosViajeActivo(int idViajeProgreso)
+        private void CargarDespachosViajesActivos(List<int> idsViajes)
         {
             try
             {
@@ -910,7 +933,8 @@ namespace WebSGV.Views
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    string query = @"
+                    string paramNames = string.Join(",", idsViajes.Select((id, i) => $"@id{i}"));
+                    string query = $@"
                         SELECT 
                             d.idDespacho,
                             d.numeroDespacho,
@@ -928,13 +952,14 @@ namespace WebSGV.Views
                         INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
                         INNER JOIN Tracto t ON d.idTracto = t.idTracto
                         INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-                        WHERE d.idViajeProgreso = @idViajeProgreso
+                        WHERE d.idViajeProgreso IN ({paramNames})
                             AND d.activo = 1
                         ORDER BY d.fechaDespacho DESC";
 
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
-                        cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
+                        for (int i = 0; i < idsViajes.Count; i++)
+                            cmd.Parameters.AddWithValue($"@id{i}", idsViajes[i]);
                         conn.Open();
 
                         using (SqlDataReader reader = cmd.ExecuteReader())
@@ -964,7 +989,7 @@ namespace WebSGV.Views
                 gvDespachosActivos.DataSource = despachos;
                 gvDespachosActivos.DataBind();
 
-                System.Diagnostics.Debug.WriteLine($"✅ {despachos.Count} despachos cargados");
+                System.Diagnostics.Debug.WriteLine($"✅ {despachos.Count} despachos cargados de {idsViajes.Count} viaje(s)");
             }
             catch (Exception ex)
             {
@@ -973,19 +998,22 @@ namespace WebSGV.Views
             }
         }
 
-        private void HabilitarLiquidacion(ViajeActivo viaje)
+        private void HabilitarLiquidacion(List<ViajeActivo> viajes, int totalDespachos)
         {
             try
             {
+                ViajeActivo viajePrimario = viajes[0];
+
                 pnlSinViajeParaLiquidar.Visible = false;
                 pnlFormularioLiquidacion.Visible = true;
 
-                lblNumeroViajeResumen.Text = viaje.NumeroViajeProgreso;
-                lblFechaInicioResumen.Text = viaje.FechaInicio.ToString("dd/MM/yyyy");
-                lblDespachosResumen.Text = viaje.CantidadDespachos.ToString();
+                string numerosViaje = string.Join(", ", viajes.Select(v => v.NumeroViajeProgreso));
+                lblNumeroViajeResumen.Text = numerosViaje;
+                lblFechaInicioResumen.Text = viajePrimario.FechaInicio.ToString("dd/MM/yyyy");
+                lblDespachosResumen.Text = totalDespachos.ToString();
 
                 DateTime hoy = DateTime.Today;
-                txtFechaSalida.Text = viaje.FechaInicio.ToString("yyyy-MM-dd");
+                txtFechaSalida.Text = viajePrimario.FechaInicio.ToString("yyyy-MM-dd");
                 txtFechaLlegada.Text = hoy.ToString("yyyy-MM-dd");
                 txtHoraSalida.Text = "08:00";
                 txtHoraLlegada.Text = "18:00";
@@ -1024,6 +1052,21 @@ namespace WebSGV.Views
                     MostrarMensaje("No se encontró un viaje activo para liquidar. Recarga la página e intenta nuevamente.", "warning");
                     return;
                 }
+
+                // Obtener todos los IDs de viajes activos para cerrarlos todos
+                List<int> idsViajesActivos = new List<int>();
+                string idsStr = hfIdsViajesActivos.Value;
+                if (!string.IsNullOrEmpty(idsStr))
+                {
+                    foreach (string s in idsStr.Split(','))
+                    {
+                        if (int.TryParse(s.Trim(), out int id) && id > 0)
+                            idsViajesActivos.Add(id);
+                    }
+                }
+                if (idsViajesActivos.Count == 0)
+                    idsViajesActivos.Add(idViajeProgreso);
+                System.Diagnostics.Debug.WriteLine($"Viajes a cerrar: {string.Join(", ", idsViajesActivos)}");
 
                 // ✅ Detectar si es una re-liquidación de orden rechazada
                 bool esReliquidacion = !string.IsNullOrEmpty(hfNumeroOrdenExistente.Value);
@@ -1106,8 +1149,8 @@ namespace WebSGV.Views
                                 InsertarGastosFinancierosDetallados(conn, transaction, numeroOrdenViaje, gastosFinancieros);
                             }
 
-                            System.Diagnostics.Debug.WriteLine($"⚡ Cerrando viaje en progreso: {idViajeProgreso}");
-                            CerrarViajeProgreso(conn, transaction, idViajeProgreso, numeroOrdenViaje);
+                            System.Diagnostics.Debug.WriteLine($"⚡ Cerrando {idsViajesActivos.Count} viaje(s) en progreso: {string.Join(", ", idsViajesActivos)}");
+                            CerrarViajesProgreso(conn, transaction, idsViajesActivos, numeroOrdenViaje);
 
                             System.Diagnostics.Debug.WriteLine("Haciendo commit de toda la transacción...");
                             transaction.Commit();
@@ -1137,6 +1180,9 @@ namespace WebSGV.Views
                 // Post-commit: mostrar resultado y programar redirect (fuera del using de la transacción)
                 if (transaccionExitosa)
                 {
+                    AuditoriaHelper.Registrar("LIQUIDAR", "OrdenViaje", numeroOrdenViaje,
+                        $"Conductor envió liquidación - Orden: {numeroOrdenViaje}, Viajes: {string.Join(", ", idsViajesActivos)}");
+
                     MostrarResultadoExitoso(numeroOrdenViaje);
 
                     string redirectScript = $@"
@@ -1698,44 +1744,50 @@ namespace WebSGV.Views
             }
         }
 
-        private void CerrarViajeProgreso(SqlConnection conn, SqlTransaction transaction, int idViajeProgreso, string numeroOrdenViaje)
+        private void CerrarViajesProgreso(SqlConnection conn, SqlTransaction transaction, List<int> idsViajes, string numeroOrdenViaje)
         {
             try
             {
-                string queryCerrarViaje = @"
+                string paramNames = string.Join(",", idsViajes.Select((id, i) => $"@idViaje{i}"));
+
+                string queryCerrarViajes = $@"
                     UPDATE ViajesEnProgreso 
                     SET estadoViaje = 'CERRADO',
                         fechaCierre = GETDATE()
-                    WHERE idViajeProgreso = @idViaje 
+                    WHERE idViajeProgreso IN ({paramNames}) 
                         AND estadoViaje = 'ABIERTO'";
 
-                using (SqlCommand cmd = new SqlCommand(queryCerrarViaje, conn, transaction))
+                using (SqlCommand cmd = new SqlCommand(queryCerrarViajes, conn, transaction))
                 {
-                    cmd.Parameters.AddWithValue("@idViaje", idViajeProgreso);
+                    for (int i = 0; i < idsViajes.Count; i++)
+                        cmd.Parameters.AddWithValue($"@idViaje{i}", idsViajes[i]);
                     int filasAfectadas = cmd.ExecuteNonQuery();
 
                     if (filasAfectadas == 0)
                     {
-                        throw new Exception($"No se pudo cerrar el viaje {idViajeProgreso}");
+                        throw new Exception($"No se pudo cerrar ninguno de los viajes: {string.Join(", ", idsViajes)}");
                     }
+                    System.Diagnostics.Debug.WriteLine($"✅ {filasAfectadas} viaje(s) cerrado(s)");
                 }
 
-                string queryDespachos = @"
+                string queryDespachos = $@"
                     UPDATE Despachos 
                     SET estadoDespacho = 'COMPLETADO',
                         fechaModificacion = GETDATE()
-                    WHERE idViajeProgreso = @idViaje 
+                    WHERE idViajeProgreso IN ({paramNames}) 
                         AND activo = 1";
 
                 using (SqlCommand cmd = new SqlCommand(queryDespachos, conn, transaction))
                 {
-                    cmd.Parameters.AddWithValue("@idViaje", idViajeProgreso);
-                    cmd.ExecuteNonQuery();
+                    for (int i = 0; i < idsViajes.Count; i++)
+                        cmd.Parameters.AddWithValue($"@idViaje{i}", idsViajes[i]);
+                    int despachosActualizados = cmd.ExecuteNonQuery();
+                    System.Diagnostics.Debug.WriteLine($"✅ {despachosActualizados} despacho(s) marcado(s) como COMPLETADO");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error en CerrarViajeProgreso: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ Error en CerrarViajesProgreso: {ex.Message}");
                 throw;
             }
         }
@@ -1994,6 +2046,9 @@ namespace WebSGV.Views
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
+                    conn.Open();
+
+                    // Primero intentar obtener datos desde Despachos
                     string query = @"
                         SELECT TOP 1
                             d.idConductor,
@@ -2006,7 +2061,6 @@ namespace WebSGV.Views
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
-                        conn.Open();
 
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
@@ -2028,9 +2082,39 @@ namespace WebSGV.Views
                                     IdCarreta = idCarreta
                                 };
                             }
-                            else
+                        }
+                    }
+
+                    // Si no hay despachos, obtener datos desde ViajesEnProgreso
+                    System.Diagnostics.Debug.WriteLine($"⚠️ No se encontraron despachos activos para idViajeProgreso={idViajeProgreso}, intentando desde ViajesEnProgreso...");
+                    string queryViaje = @"
+                        SELECT 
+                            vp.idConductor,
+                            ISNULL((SELECT TOP 1 idTracto FROM Despachos WHERE idConductor = vp.idConductor AND activo = 1 ORDER BY fechaDespacho DESC), 0) AS idTracto,
+                            ISNULL((SELECT TOP 1 idCarreta FROM Despachos WHERE idConductor = vp.idConductor AND activo = 1 ORDER BY fechaDespacho DESC), 0) AS idCarreta
+                        FROM ViajesEnProgreso vp
+                        WHERE vp.idViajeProgreso = @idViajeProgreso";
+
+                    using (SqlCommand cmd = new SqlCommand(queryViaje, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
+
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
                             {
-                                System.Diagnostics.Debug.WriteLine($"⚠️ No se encontraron despachos activos para idViajeProgreso={idViajeProgreso}");
+                                int idConductor = reader["idConductor"] != DBNull.Value ? Convert.ToInt32(reader["idConductor"]) : IdConductorActual;
+                                int idTracto = reader["idTracto"] != DBNull.Value ? Convert.ToInt32(reader["idTracto"]) : 0;
+                                int idCarreta = reader["idCarreta"] != DBNull.Value ? Convert.ToInt32(reader["idCarreta"]) : 0;
+
+                                System.Diagnostics.Debug.WriteLine($"✅ Datos obtenidos desde ViajesEnProgreso: Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
+
+                                return new DatosViajeParaLiquidacion
+                                {
+                                    IdConductor = idConductor > 0 ? idConductor : IdConductorActual,
+                                    IdTracto = idTracto,
+                                    IdCarreta = idCarreta
+                                };
                             }
                         }
                     }
@@ -2101,118 +2185,6 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine($"Error mostrando resultado: {ex.Message}");
             }
-        }
-
-        #endregion
-
-        #region Cambiar Contraseña
-
-        protected void btnCambiarContrasena_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                string contrasenaActual = txtContrasenaActual.Text;
-                string nuevaContrasena = txtNuevaContrasena.Text;
-                string confirmarContrasena = txtConfirmarContrasena.Text;
-
-                if (string.IsNullOrEmpty(contrasenaActual) || string.IsNullOrEmpty(nuevaContrasena) || string.IsNullOrEmpty(confirmarContrasena))
-                {
-                    MostrarMensajeContrasena("Todos los campos son obligatorios.", "danger");
-                    AbrirModalContrasena();
-                    return;
-                }
-
-                if (nuevaContrasena.Length < 6)
-                {
-                    MostrarMensajeContrasena("La nueva contraseña debe tener al menos 6 caracteres.", "danger");
-                    AbrirModalContrasena();
-                    return;
-                }
-
-                if (nuevaContrasena != confirmarContrasena)
-                {
-                    MostrarMensajeContrasena("Las contraseñas nuevas no coinciden.", "danger");
-                    AbrirModalContrasena();
-                    return;
-                }
-
-                if (IdUsuarioActual == 0)
-                {
-                    MostrarMensajeContrasena("No se encontró la cuenta de usuario activa.", "danger");
-                    AbrirModalContrasena();
-                    return;
-                }
-
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    conn.Open();
-
-                    string querySelect = "SELECT contrasena FROM Usuarios WHERE idUsuario = @idUsuario AND activo = 1";
-                    string storedHash = null;
-
-                    using (SqlCommand cmd = new SqlCommand(querySelect, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@idUsuario", IdUsuarioActual);
-                        object result = cmd.ExecuteScalar();
-                        if (result != null && result != DBNull.Value)
-                            storedHash = result.ToString();
-                    }
-
-                    if (storedHash == null)
-                    {
-                        MostrarMensajeContrasena("No se encontró la cuenta de usuario.", "danger");
-                        AbrirModalContrasena();
-                        return;
-                    }
-
-                    if (!Helpers.PasswordHelper.VerifyPassword(contrasenaActual, storedHash))
-                    {
-                        MostrarMensajeContrasena("La contraseña actual es incorrecta.", "danger");
-                        AbrirModalContrasena();
-                        return;
-                    }
-
-                    string nuevoHash = Helpers.PasswordHelper.HashPassword(nuevaContrasena);
-                    string queryUpdate = "UPDATE Usuarios SET contrasena = @contrasena WHERE idUsuario = @idUsuario";
-
-                    using (SqlCommand cmd = new SqlCommand(queryUpdate, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@contrasena", nuevoHash);
-                        cmd.Parameters.AddWithValue("@idUsuario", IdUsuarioActual);
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-
-                txtContrasenaActual.Text = "";
-                txtNuevaContrasena.Text = "";
-                txtConfirmarContrasena.Text = "";
-                pnlMensajeContrasena.Visible = false;
-
-                MostrarMensaje("✅ Contraseña cambiada exitosamente. La próxima vez que inicies sesión deberás usar tu nueva contraseña.", "success");
-                ScriptManager.RegisterStartupScript(this, GetType(), "CerrarModalContrasena", "$('#modalCambiarContrasena').modal('hide');", true);
-
-                System.Diagnostics.Debug.WriteLine($"✅ Contraseña cambiada para usuario: {IdUsuarioActual}");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"❌ Error cambiando contraseña: {ex.Message}");
-                MostrarMensajeContrasena("Ocurrió un error al cambiar la contraseña. Inténtalo de nuevo.", "danger");
-                AbrirModalContrasena();
-            }
-        }
-
-        private void MostrarMensajeContrasena(string mensaje, string tipo)
-        {
-            lblMensajeContrasena.Text = mensaje;
-            lblMensajeContrasena.CssClass = $"alert alert-{tipo} mb-0";
-            pnlMensajeContrasena.Visible = true;
-        }
-
-        private void AbrirModalContrasena()
-        {
-            ScriptManager.RegisterStartupScript(this, GetType(), "AbrirModalContrasena", "$('#modalCambiarContrasena').modal('show');", true);
         }
 
         #endregion
@@ -2377,6 +2349,9 @@ namespace WebSGV.Views
                             }
 
                             transaction.Commit();
+
+                            AuditoriaHelper.Registrar("RETIRAR", "OrdenViaje", idOrdenViaje,
+                                $"Conductor retiró liquidación - OrdenViaje ID: {idOrdenViaje}, Número: {numeroOrdenViaje}, Viaje reabierto: {idViajeProgreso}");
 
                             System.Diagnostics.Debug.WriteLine($"✅ Liquidación retirada: OrdenViaje {idOrdenViaje}, Viaje {idViajeProgreso} reabierto");
 

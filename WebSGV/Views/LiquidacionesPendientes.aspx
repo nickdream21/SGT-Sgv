@@ -81,9 +81,12 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label class="form-label">Conductor</label>
-                            <asp:DropDownList ID="ddlConductorFiltro" runat="server" CssClass="form-control">
-                                <asp:ListItem Value="">-- Todos los conductores --</asp:ListItem>
-                            </asp:DropDownList>
+                            <div class="conductor-autocomplete-wrap">
+                                <input type="text" id="txtConductorBuscar" class="form-control"
+                                    placeholder="Buscar conductor..." autocomplete="off" />
+                                <asp:HiddenField ID="hfConductorId" runat="server" ClientIDMode="Static" />
+                                <div id="conductorPendientesSugg" class="conductor-autocomplete-dropdown"></div>
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -315,9 +318,12 @@
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="form-label">Conductor</label>
-                                <select id="filtroCondAprobadas" class="form-control">
-                                    <option value="">-- Todos los conductores --</option>
-                                </select>
+                                <div class="conductor-autocomplete-wrap">
+                                    <input type="text" id="txtConductorAprobadas" class="form-control"
+                                        placeholder="Buscar conductor..." autocomplete="off" />
+                                    <input type="hidden" id="filtroCondAprobadasId" value="" />
+                                    <div id="conductorAprobadasSugg" class="conductor-autocomplete-dropdown"></div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-2">
@@ -1472,6 +1478,72 @@
             background: #6d28d9;
             transform: translateY(-1px);
         }
+
+        /* === AUTOCOMPLETE CONDUCTOR === */
+        .conductor-autocomplete-wrap {
+            position: relative;
+        }
+
+        .conductor-autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            z-index: 1050;
+            max-height: 220px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .conductor-autocomplete-dropdown .autocomplete-item {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: #1e293b;
+            border-bottom: 1px solid var(--medium-gray);
+            transition: background 0.15s;
+        }
+
+        .conductor-autocomplete-dropdown .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .conductor-autocomplete-dropdown .autocomplete-item:hover,
+        .conductor-autocomplete-dropdown .autocomplete-item.active {
+            background: #eff6ff;
+            color: var(--primary-color);
+        }
+
+        .conductor-autocomplete-dropdown .autocomplete-no-results {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            color: var(--neutral-color);
+            font-style: italic;
+        }
+
+        .conductor-selected-badge {
+            display: inline-flex;
+            align-items: center;
+            background: #dbeafe;
+            color: #1e40af;
+            border-radius: 0.25rem;
+            padding: 0.1rem 0.4rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+
+        .conductor-selected-badge .clear-selection {
+            cursor: pointer;
+            margin-left: 0.35rem;
+            font-size: 0.85rem;
+            line-height: 1;
+        }
     </style>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -1866,12 +1938,6 @@
         }
 
         function inicializarFiltrosAprobadas() {
-            var opciones = '';
-            $('#<%= ddlConductorFiltro.ClientID %> option').each(function () {
-                opciones += '<option value="' + $(this).val() + '">' + $(this).text() + '</option>';
-            });
-            $('#filtroCondAprobadas').html(opciones);
-
             var hoy = new Date();
             var hace30 = new Date(hoy);
             hace30.setDate(hace30.getDate() - 30);
@@ -1880,7 +1946,8 @@
         }
 
         function limpiarFiltrosAprobadas() {
-            $('#filtroCondAprobadas').val('');
+            $('#txtConductorAprobadas').val('');
+            $('#filtroCondAprobadasId').val('');
             $('#filtroOrdenAprobadas').val('');
             var hoy = new Date();
             var hace30 = new Date(hoy);
@@ -1892,7 +1959,7 @@
 
         function cargarLiquidacionesAprobadas() {
             var filtros = {
-                idConductor: parseInt($('#filtroCondAprobadas').val()) || 0,
+                idConductor: parseInt($('#filtroCondAprobadasId').val()) || 0,
                 fechaDesde: $('#filtroDesdeAprobadas').val() || '',
                 fechaHasta: $('#filtroHastaAprobadas').val() || '',
                 numeroOrden: $('#filtroOrdenAprobadas').val() || ''
@@ -2163,6 +2230,106 @@
                 }
             });
         }
+
+        // ============================================================
+        // === AUTOCOMPLETE DE CONDUCTOR ===
+        // ============================================================
+
+        function initConductorAutocomplete(inputId, suggestionsId, hiddenId) {
+            var timer = null;
+            var activeIndex = -1;
+
+            var $input = $('#' + inputId);
+            var $sugg = $('#' + suggestionsId);
+            var $hidden = $('#' + hiddenId);
+
+            $input.on('input', function () {
+                var term = $(this).val().trim();
+                activeIndex = -1;
+                $hidden.val('');
+
+                if (term.length < 2) {
+                    $sugg.hide().empty();
+                    return;
+                }
+
+                clearTimeout(timer);
+                timer = setTimeout(function () {
+                    $.ajax({
+                        type: 'POST',
+                        url: 'LiquidacionesPendientes.aspx/BuscarConductores',
+                        data: JSON.stringify({ term: term }),
+                        contentType: 'application/json; charset=utf-8',
+                        dataType: 'json',
+                        success: function (response) {
+                            var items = JSON.parse(response.d);
+                            $sugg.empty();
+                            if (items.length === 0) {
+                                $sugg.append('<div class="autocomplete-no-results">Sin resultados</div>').show();
+                                return;
+                            }
+                            items.forEach(function (item) {
+                                var $item = $('<div class="autocomplete-item"></div>')
+                                    .text(item.text)
+                                    .attr('data-id', item.id)
+                                    .attr('data-text', item.text);
+                                $sugg.append($item);
+                            });
+                            $sugg.show();
+                        }
+                    });
+                }, 280);
+            });
+
+            $input.on('keydown', function (e) {
+                var $items = $sugg.find('.autocomplete-item');
+                if (!$sugg.is(':visible') || $items.length === 0) return;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    activeIndex = Math.min(activeIndex + 1, $items.length - 1);
+                    $items.removeClass('active').eq(activeIndex).addClass('active');
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    activeIndex = Math.max(activeIndex - 1, 0);
+                    $items.removeClass('active').eq(activeIndex).addClass('active');
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (activeIndex >= 0) {
+                        $items.eq(activeIndex).trigger('click');
+                    }
+                } else if (e.key === 'Escape') {
+                    $sugg.hide().empty();
+                    $hidden.val('');
+                }
+            });
+
+            $(document).on('click', '#' + suggestionsId + ' .autocomplete-item', function () {
+                $input.val($(this).attr('data-text'));
+                $hidden.val($(this).attr('data-id'));
+                $sugg.hide().empty();
+                activeIndex = -1;
+            });
+
+            // Limpiar selección si el usuario borra el texto manualmente
+            $input.on('change', function () {
+                if ($(this).val().trim() === '') {
+                    $hidden.val('');
+                }
+            });
+
+            // Cerrar al hacer clic fuera
+            $(document).on('click', function (e) {
+                if (!$(e.target).closest('#' + inputId + ', #' + suggestionsId).length) {
+                    $sugg.hide();
+                }
+            });
+        }
+
+        $(document).ready(function () {
+            initConductorAutocomplete('txtConductorBuscar', 'conductorPendientesSugg', 'hfConductorId');
+            initConductorAutocomplete('txtConductorAprobadas', 'conductorAprobadasSugg', 'filtroCondAprobadasId');
+        });
     </script>
 
 </asp:Content>

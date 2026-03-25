@@ -220,7 +220,8 @@ namespace WebSGV.Views
                 SELECT 
                     idConductor,
                     CONCAT(nombre, ' ', apPaterno, ' ', apMaterno, ' - DNI: ', ISNULL(DNI, carnetExtranjeria)) AS NombreCompleto
-                FROM Conductor 
+                FROM Conductor
+                WHERE activo = 1
                 ORDER BY nombre, apPaterno, apMaterno";
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
@@ -246,7 +247,7 @@ namespace WebSGV.Views
         {
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = "SELECT idTracto, placaTracto FROM Tracto ORDER BY placaTracto";
+                string query = "SELECT idTracto, placaTracto FROM Tracto WHERE activo = 1 ORDER BY placaTracto";
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
@@ -271,7 +272,7 @@ namespace WebSGV.Views
         {
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = "SELECT idCarreta, placaCarreta FROM Carreta ORDER BY placaCarreta";
+                string query = "SELECT idCarreta, placaCarreta FROM Carreta WHERE activo = 1 ORDER BY placaCarreta";
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
@@ -296,7 +297,7 @@ namespace WebSGV.Views
         {
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = "SELECT idCliente, nombre FROM Cliente ORDER BY nombre";
+                string query = "SELECT idCliente, nombre FROM Cliente WHERE activo = 1 ORDER BY nombre";
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
@@ -325,17 +326,41 @@ namespace WebSGV.Views
             ddlLugarOperacionBase.Items.Clear();
             ddlLugarOperacionBase.Items.Add(new ListItem("-- Seleccione planta --", ""));
 
-            if (esInternacional)
+            try
             {
-                ddlLugarOperacionBase.Items.Add(new ListItem("Manta", "Manta"));
-                ddlLugarOperacionBase.Items.Add(new ListItem("Guayaquil", "Guayaquil"));
-                ddlLugarOperacionBase.Items.Add(new ListItem("Quito", "Quito"));
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                {
+                    string query = "SELECT nombre FROM Planta WHERE esInternacional = @esInternacional AND activo = 1 ORDER BY nombre";
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@esInternacional", esInternacional ? 1 : 0);
+                        conn.Open();
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                string nombre = reader["nombre"].ToString();
+                                ddlLugarOperacionBase.Items.Add(new ListItem(nombre, nombre));
+                            }
+                        }
+                    }
+                }
             }
-            else
+            catch
             {
-                ddlLugarOperacionBase.Items.Add(new ListItem("Lima", "Lima"));
-                ddlLugarOperacionBase.Items.Add(new ListItem("Trujillo", "Trujillo"));
-                ddlLugarOperacionBase.Items.Add(new ListItem("Chiclayo", "Chiclayo"));
+                // Fallback a valores por defecto si la tabla Planta no existe aún
+                if (esInternacional)
+                {
+                    ddlLugarOperacionBase.Items.Add(new ListItem("Manta", "Manta"));
+                    ddlLugarOperacionBase.Items.Add(new ListItem("Guayaquil", "Guayaquil"));
+                    ddlLugarOperacionBase.Items.Add(new ListItem("Quito", "Quito"));
+                }
+                else
+                {
+                    ddlLugarOperacionBase.Items.Add(new ListItem("Lima", "Lima"));
+                    ddlLugarOperacionBase.Items.Add(new ListItem("Trujillo", "Trujillo"));
+                    ddlLugarOperacionBase.Items.Add(new ListItem("Chiclayo", "Chiclayo"));
+                }
             }
 
             if (ddlLugarOperacionBase.Items.FindByValue(selectedValue) != null)
@@ -827,6 +852,9 @@ namespace WebSGV.Views
 
                 if (resultado.exitoso)
                 {
+                    AuditoriaHelper.Registrar("INSERT", "Despachos", null,
+                        $"Lote de {resultado.despachosCreados} despacho(s) registrado - Cliente: {LoteActual?.NombreCliente}, Operación: {LoteActual?.TipoOperacion}, Planta: {LoteActual?.PlantaOperacion}");
+
                     MostrarMensaje($"Lote finalizado exitosamente. Se crearon {resultado.despachosCreados} despachos.", "success");
 
                     // Limpiar lote y resetear página

@@ -396,8 +396,8 @@ namespace WebSGV.Views
 
                     if (rowsAffected > 0)
                     {
-                        RegistrarAuditoria("Despachos", "UPDATE", idDespacho, "Edición completa", "", "",
-                            Session["Usuario"]?.ToString() ?? "SISTEMA");
+                        AuditoriaHelper.Registrar("UPDATE", "Despachos", idDespacho,
+                            $"Despacho editado - Conductor: {ddlConductor.SelectedItem?.Text}, Cliente: {ddlCliente.SelectedItem?.Text}, Lugar: {ddlLugar.SelectedValue}, Operación: {ddlTipoOperacion.SelectedValue}");
                         return true;
                     }
                     else
@@ -424,38 +424,6 @@ namespace WebSGV.Views
             litMensaje.Text = mensaje;
             divMensaje.Attributes["class"] = $"alert alert-{tipo} alert-dismissible fade show";
             pnlMensaje.Visible = true;
-        }
-
-        private void RegistrarAuditoria(string tabla, string operacion, int idRegistro, string campo,
-            string valorAnterior, string valorNuevo, string usuario)
-        {
-            try
-            {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"INSERT INTO Auditoria (TablaAfectada, TipoOperacion, IdRegistro, Campo, 
-                                        ValorAnterior, ValorNuevo, Usuario, FechaHora)
-                                    VALUES (@tabla, @operacion, @idRegistro, @campo, @valorAnterior, 
-                                        @valorNuevo, @usuario, @fechaActual)";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-                    cmd.Parameters.AddWithValue("@tabla", tabla);
-                    cmd.Parameters.AddWithValue("@operacion", operacion);
-                    cmd.Parameters.AddWithValue("@idRegistro", idRegistro);
-                    cmd.Parameters.AddWithValue("@campo", campo ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@valorAnterior", valorAnterior ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@valorNuevo", valorNuevo ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@usuario", usuario);
-
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-                }
-            }
-            catch
-            {
-                // Silenciar errores de auditoría
-            }
         }
 
         #endregion

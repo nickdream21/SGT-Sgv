@@ -7,6 +7,7 @@ using System.Data.SqlClient;
 using System.Web.Services;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -204,10 +205,6 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine("=== INICIALIZANDO LIQUIDACIONES PENDIENTES ===");
 
-                // 1. Cargar lista de conductores para filtro
-                CargarConductoresFiltro();
-
-                // 2. Cargar liquidaciones pendientes
                 CargarLiquidacionesPendientes();
 
                 System.Diagnostics.Debug.WriteLine("✅ Página inicializada correctamente");
@@ -216,51 +213,6 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error inicializando página: {ex.Message}");
                 MostrarMensaje($"Error al cargar la página: {ex.Message}", "danger");
-            }
-        }
-
-        private void CargarConductoresFiltro()
-        {
-            try
-            {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"
-                        SELECT DISTINCT 
-                            c.idConductor,
-                            c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS nombreCompleto
-                        FROM Conductor c
-                        INNER JOIN Usuarios u ON c.idConductor = u.idConductor
-                        WHERE c.activo = 1
-                        ORDER BY nombreCompleto";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        conn.Open();
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            ddlConductorFiltro.Items.Clear();
-                            ddlConductorFiltro.Items.Add(new ListItem("-- Todos los conductores --", ""));
-
-                            while (reader.Read())
-                            {
-                                ddlConductorFiltro.Items.Add(new ListItem(
-                                    reader["nombreCompleto"].ToString(),
-                                    reader["idConductor"].ToString()
-                                ));
-                            }
-                        }
-                    }
-                }
-
-                System.Diagnostics.Debug.WriteLine($"✅ {ddlConductorFiltro.Items.Count - 1} conductores cargados en filtro");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"❌ Error cargando conductores: {ex.Message}");
             }
         }
 
@@ -283,9 +235,9 @@ namespace WebSGV.Views
                         cmd.CommandType = CommandType.StoredProcedure;
 
                         // Parámetros opcionales de filtro
-                        if (!string.IsNullOrEmpty(ddlConductorFiltro.SelectedValue))
+                        if (!string.IsNullOrEmpty(hfConductorId.Value))
                         {
-                            cmd.Parameters.AddWithValue("@idConductor", Convert.ToInt32(ddlConductorFiltro.SelectedValue));
+                            cmd.Parameters.AddWithValue("@idConductor", Convert.ToInt32(hfConductorId.Value));
                         }
 
                         if (!string.IsNullOrEmpty(txtFechaDesde.Text))
@@ -446,6 +398,9 @@ namespace WebSGV.Views
                     }
                 }
 
+                AuditoriaHelper.Registrar("APROBAR", "OrdenViaje", idOrdenViaje,
+                    $"Liquidación aprobada - Orden: {numeroOrdenViaje}");
+
                 MostrarMensaje(
                     $"Liquidación <strong>{System.Web.HttpUtility.HtmlEncode(numeroOrdenViaje)}</strong> aprobada exitosamente. El viaje ha sido completado.",
                     "success"
@@ -559,6 +514,9 @@ namespace WebSGV.Views
                     }
                 }
 
+                AuditoriaHelper.Registrar("RECHAZAR", "OrdenViaje", idOrdenViaje,
+                    $"Liquidación rechazada - Orden: {numeroOrdenViaje}, Motivo: {observaciones}");
+
                 MostrarMensaje(
                     $"Liquidación <strong>{System.Web.HttpUtility.HtmlEncode(numeroOrdenViaje)}</strong> rechazada exitosamente. El viaje ha sido reabierto para correcciones del conductor.",
                     "warning"
@@ -616,6 +574,61 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error obteniendo número de orden: {ex.Message}");
                 return null;
+            }
+        }
+
+        #endregion
+
+        #region WebMethod - Buscar Conductores
+
+        [WebMethod]
+        public static string BuscarConductores(string term)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(term) || term.Trim().Length < 2)
+                    return "[]";
+
+                var results = new List<object>();
+                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    string query = @"
+                        SELECT TOP 15
+                            c.idConductor,
+                            c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS nombreCompleto
+                        FROM Conductor c
+                        INNER JOIN Usuarios u ON c.idConductor = u.idConductor
+                        WHERE c.activo = 1
+                          AND (c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '')) LIKE @term
+                        ORDER BY nombreCompleto";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@term", "%" + term.Trim() + "%");
+                        conn.Open();
+
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                results.Add(new
+                                {
+                                    id = reader["idConductor"].ToString(),
+                                    text = reader["nombreCompleto"].ToString().Trim()
+                                });
+                            }
+                        }
+                    }
+                }
+
+                return JsonConvert.SerializeObject(results);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error en BuscarConductores: {ex.Message}");
+                return "[]";
             }
         }
 
@@ -1084,12 +1097,15 @@ namespace WebSGV.Views
 
         protected void btnLimpiar_Click(object sender, EventArgs e)
         {
-            ddlConductorFiltro.SelectedIndex = 0;
+            hfConductorId.Value = "";
             ddlPrioridad.SelectedIndex = 0;
             txtFechaDesde.Text = "";
             txtFechaHasta.Text = "";
 
             CargarLiquidacionesPendientes();
+
+            ScriptManager.RegisterStartupScript(this, GetType(), "LimpiarAutocomplete",
+                "$('#txtConductorBuscar').val('');", true);
         }
 
         #endregion

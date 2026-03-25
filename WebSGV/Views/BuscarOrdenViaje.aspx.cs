@@ -5,6 +5,7 @@ using System.Configuration;
 using System.Web.UI.WebControls;
 using System.Collections.Generic;
 using System.Linq;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -577,6 +578,9 @@ namespace WebSGV.Views
 
                 // Guardar los cambios en la base de datos
                 GuardarCambios();
+
+                AuditoriaHelper.Registrar("UPDATE", "OrdenViaje", txtOrdenViaje.Text,
+                    $"Orden de viaje editada desde busqueda - Numero: {txtOrdenViaje.Text}");
 
                 // Recargar los datos para mostrar la información actualizada
                 CargarDatosOrdenViaje(txtOrdenViaje.Text);

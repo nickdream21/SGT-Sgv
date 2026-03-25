@@ -83,8 +83,9 @@ namespace WebSGV.Views
                 gvLiquidaciones.DataSource = dt;
                 gvLiquidaciones.DataBind();
 
-                // Actualizar contador
-                lblTotalRegistros.Text = $"{dt.Rows.Count} registros";
+                // Actualizar contadores
+                lblTotalRegistros.Text = dt.Rows.Count.ToString();
+                lblTotalRegistrosTabla.Text = $"{dt.Rows.Count} registros";
 
                 // Calcular y mostrar totales
                 CalcularTotalesLiquidaciones(dt);
@@ -180,43 +181,15 @@ namespace WebSGV.Views
         {
             if (e.Row.RowType == DataControlRowType.Footer)
             {
-                // Calcular totales para el footer
                 decimal totalSoles = 0;
                 decimal totalDolares = 0;
 
-                foreach (GridViewRow row in gvLiquidaciones.Rows)
+                if (gvLiquidaciones.DataSource is DataTable dt)
                 {
-                    if (row.Cells.Count > 5)
+                    foreach (DataRow row in dt.Rows)
                     {
-                        // Obtener valores de las celdas
-                        Label lblSoles = row.Cells[4].Controls.OfType<Label>().FirstOrDefault();
-                        Label lblDolares = row.Cells[5].Controls.OfType<Label>().FirstOrDefault();
-
-                        if (lblSoles != null)
-                        {
-                            string solesText = lblSoles.Text.Replace("S/", "").Replace("-", "").Replace("$", "").Trim();
-                            decimal soles;
-                            if (decimal.TryParse(solesText, out soles))
-                            {
-                                // Considerar si es negativo (empieza con -)
-                                if (lblSoles.Text.StartsWith("-"))
-                                    soles = -soles;
-                                totalSoles += soles;
-                            }
-                        }
-
-                        if (lblDolares != null)
-                        {
-                            string dolaresText = lblDolares.Text.Replace("S/", "").Replace("-", "").Replace("$", "").Trim();
-                            decimal dolares;
-                            if (decimal.TryParse(dolaresText, out dolares))
-                            {
-                                // Considerar si es negativo (empieza con -)
-                                if (lblDolares.Text.StartsWith("-"))
-                                    dolares = -dolares;
-                                totalDolares += dolares;
-                            }
-                        }
+                        totalSoles += Convert.ToDecimal(row["MontoSoles"]);
+                        totalDolares += Convert.ToDecimal(row["MontoDolares"]);
                     }
                 }
 
@@ -311,7 +284,8 @@ namespace WebSGV.Views
 
                 // Actualizar contadores
                 lblTotalViajesActivos.Text = $"{dt.Rows.Count} conductores";
-                lblCountViajesActivos.Text = $"{dt.Rows.Count} viajes";
+                lblCountViajesActivos.Text = dt.Rows.Count.ToString();
+                lblCountViajesActivosTabla.Text = $"{dt.Rows.Count} viajes";
             }
             catch (Exception ex)
             {
@@ -430,32 +404,53 @@ namespace WebSGV.Views
                 {
                     var ws = wb.Worksheets.Add("Liquidaciones");
 
-                    ws.Cell(1, 1).Value = "REPORTE DE LIQUIDACIONES (Descuentos y Reintegros)";
+                    ws.Cell(1, 1).Value = "SISTEMA SGV";
                     ws.Range(1, 1, 1, 6).Merge();
                     ws.Cell(1, 1).Style.Font.Bold = true;
-                    ws.Cell(1, 1).Style.Font.FontSize = 16;
+                    ws.Cell(1, 1).Style.Font.FontSize = 14;
+                    ws.Cell(1, 1).Style.Font.FontColor = XLColor.White;
+                    ws.Cell(1, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#1e40af");
                     ws.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    ws.Cell(1, 1).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                    ws.Row(1).Height = 30;
 
-                    ws.Cell(2, 1).Value = $"Período: {fechaDesde:dd/MM/yyyy} - {fechaHasta:dd/MM/yyyy}";
+                    ws.Cell(2, 1).Value = "REPORTE DE LIQUIDACIONES (Descuentos y Reintegros)";
                     ws.Range(2, 1, 2, 6).Merge();
                     ws.Cell(2, 1).Style.Font.Bold = true;
+                    ws.Cell(2, 1).Style.Font.FontSize = 12;
+                    ws.Cell(2, 1).Style.Font.FontColor = XLColor.FromHtml("#1e293b");
+                    ws.Cell(2, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#e2e8f0");
                     ws.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                    ws.Cell(4, 1).Value = "DNI";
-                    ws.Cell(4, 2).Value = "CONDUCTOR";
-                    ws.Cell(4, 3).Value = "FECHA";
-                    ws.Cell(4, 4).Value = "N° DE LIQ";
-                    ws.Cell(4, 5).Value = "MONTO S/ (Reintegro-Descuento)";
-                    ws.Cell(4, 6).Value = "MONTO $ (Reintegro-Descuento)";
+                    ws.Cell(3, 1).Value = $"Período: {fechaDesde:dd/MM/yyyy} - {fechaHasta:dd/MM/yyyy}  |  Generado: {DateTime.Now:dd/MM/yyyy HH:mm}";
+                    ws.Range(3, 1, 3, 6).Merge();
+                    ws.Cell(3, 1).Style.Font.Italic = true;
+                    ws.Cell(3, 1).Style.Font.FontSize = 10;
+                    ws.Cell(3, 1).Style.Font.FontColor = XLColor.FromHtml("#64748b");
+                    ws.Cell(3, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                    var headerRange = ws.Range(4, 1, 4, 6);
+                    // Encabezados
+                    string[] headers = { "DNI", "CONDUCTOR", "FECHA", "N° DE LIQ", "MONTO S/ (Reintegro-Descuento)", "MONTO $ (Reintegro-Descuento)" };
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+                        ws.Cell(5, i + 1).Value = headers[i];
+                    }
+
+                    var headerRange = ws.Range(5, 1, 5, 6);
                     headerRange.Style.Font.Bold = true;
-                    headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
+                    headerRange.Style.Font.FontSize = 10;
+                    headerRange.Style.Font.FontColor = XLColor.White;
+                    headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#334155");
                     headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    headerRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                    headerRange.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+                    headerRange.Style.Border.BottomBorderColor = XLColor.FromHtml("#1e293b");
+                    ws.Row(5).Height = 25;
 
-                    int row = 5;
+                    int row = 6;
                     decimal totalSoles = 0;
                     decimal totalDolares = 0;
+                    bool isAlternate = false;
 
                     foreach (DataRow dr in dt.Rows)
                     {
@@ -471,92 +466,118 @@ namespace WebSGV.Views
                         ws.Cell(row, 6).Value = montoDolares;
                         ws.Cell(row, 5).Style.NumberFormat.Format = "#,##0.00";
                         ws.Cell(row, 6).Style.NumberFormat.Format = "#,##0.00";
+                        ws.Cell(row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                        ws.Cell(row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
 
                         if (montoSoles < 0)
-                            ws.Cell(row, 5).Style.Font.FontColor = XLColor.Red;
+                            ws.Cell(row, 5).Style.Font.FontColor = XLColor.FromHtml("#dc2626");
                         else if (montoSoles > 0)
-                            ws.Cell(row, 5).Style.Font.FontColor = XLColor.Blue;
+                            ws.Cell(row, 5).Style.Font.FontColor = XLColor.FromHtml("#2563eb");
 
                         if (montoDolares < 0)
-                            ws.Cell(row, 6).Style.Font.FontColor = XLColor.Red;
+                            ws.Cell(row, 6).Style.Font.FontColor = XLColor.FromHtml("#dc2626");
                         else if (montoDolares > 0)
-                            ws.Cell(row, 6).Style.Font.FontColor = XLColor.Blue;
+                            ws.Cell(row, 6).Style.Font.FontColor = XLColor.FromHtml("#2563eb");
+
+                        // Filas alternadas
+                        if (isAlternate)
+                        {
+                            ws.Range(row, 1, row, 6).Style.Fill.BackgroundColor = XLColor.FromHtml("#f8fafc");
+                        }
+                        isAlternate = !isAlternate;
+
+                        // Bordes
+                        ws.Range(row, 1, row, 6).Style.Border.BottomBorder = XLBorderStyleValues.Hair;
+                        ws.Range(row, 1, row, 6).Style.Border.BottomBorderColor = XLColor.FromHtml("#e2e8f0");
 
                         totalSoles += montoSoles;
                         totalDolares += montoDolares;
                         row++;
                     }
 
+                    // Fila de totales
+                    var totalRange = ws.Range(row, 1, row, 6);
+                    totalRange.Style.Font.Bold = true;
+                    totalRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#f1f5f9");
+                    totalRange.Style.Border.TopBorder = XLBorderStyleValues.Medium;
+                    totalRange.Style.Border.TopBorderColor = XLColor.FromHtml("#334155");
+                    totalRange.Style.Border.BottomBorder = XLBorderStyleValues.Medium;
+                    totalRange.Style.Border.BottomBorderColor = XLColor.FromHtml("#334155");
+
                     ws.Cell(row, 4).Value = "TOTAL:";
-                    ws.Cell(row, 4).Style.Font.Bold = true;
+                    ws.Cell(row, 4).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
                     ws.Cell(row, 5).Value = totalSoles;
                     ws.Cell(row, 5).Style.NumberFormat.Format = "#,##0.00";
-                    ws.Cell(row, 5).Style.Font.Bold = true;
+                    ws.Cell(row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
                     ws.Cell(row, 6).Value = totalDolares;
                     ws.Cell(row, 6).Style.NumberFormat.Format = "#,##0.00";
-                    ws.Cell(row, 6).Style.Font.Bold = true;
+                    ws.Cell(row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
 
+                    // Resumen
                     row += 2;
                     ws.Cell(row, 1).Value = "RESUMEN TOTAL EN SOLES";
                     ws.Range(row, 1, row, 6).Merge();
                     ws.Cell(row, 1).Style.Font.Bold = true;
-                    ws.Cell(row, 1).Style.Font.FontSize = 14;
-                    ws.Cell(row, 1).Style.Fill.BackgroundColor = XLColor.LightGreen;
+                    ws.Cell(row, 1).Style.Font.FontSize = 12;
+                    ws.Cell(row, 1).Style.Font.FontColor = XLColor.White;
+                    ws.Cell(row, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#059669");
                     ws.Cell(row, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    ws.Row(row).Height = 25;
                     row++;
 
-                    ws.Cell(row, 1).Value = "Factor de Conversión ($ a S/):";
-                    ws.Cell(row, 1).Style.Font.Bold = true;
-                    ws.Range(row, 1, row, 4).Merge();
-                    ws.Cell(row, 5).Value = factorConversion;
-                    ws.Cell(row, 5).Style.NumberFormat.Format = "0.00";
-                    ws.Cell(row, 5).Style.Font.Bold = true;
-                    ws.Cell(row, 5).Style.Fill.BackgroundColor = XLColor.LightYellow;
-                    ws.Range(row, 5, row, 6).Merge();
-                    row++;
+                    // Resumen filas
+                    string[][] resumenData = new string[][]
+                    {
+                        new[] { "Factor de Conversión ($ a S/):", factorConversion.ToString("0.00"), "#fef3c7" },
+                        new[] { "Total en Soles (S/):", $"S/ {totalSoles:N2}", "#f0fdf4" },
+                        new[] { "Total en Dólares ($):", $"$ {totalDolares:N2}", "#f0fdf4" },
+                        new[] { "Conversión a Soles ($ × Factor):", $"S/ {(totalDolares * factorConversion):N2}", "#ecfeff" }
+                    };
 
-                    ws.Cell(row, 1).Value = "Total en Soles (S/):";
-                    ws.Cell(row, 1).Style.Font.Bold = true;
-                    ws.Range(row, 1, row, 4).Merge();
-                    ws.Cell(row, 5).Value = totalSoles;
-                    ws.Cell(row, 5).Style.NumberFormat.Format = "#,##0.00";
-                    ws.Cell(row, 5).Style.Font.Bold = true;
-                    ws.Range(row, 5, row, 6).Merge();
-                    row++;
-
-                    ws.Cell(row, 1).Value = "Total en Dólares ($):";
-                    ws.Cell(row, 1).Style.Font.Bold = true;
-                    ws.Range(row, 1, row, 4).Merge();
-                    ws.Cell(row, 5).Value = totalDolares;
-                    ws.Cell(row, 5).Style.NumberFormat.Format = "#,##0.00";
-                    ws.Cell(row, 5).Style.Font.Bold = true;
-                    ws.Range(row, 5, row, 6).Merge();
-                    row++;
+                    foreach (var item in resumenData)
+                    {
+                        ws.Cell(row, 1).Value = item[0];
+                        ws.Cell(row, 1).Style.Font.Bold = true;
+                        ws.Range(row, 1, row, 4).Merge();
+                        ws.Cell(row, 5).Value = item[1];
+                        ws.Cell(row, 5).Style.Font.Bold = true;
+                        ws.Cell(row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                        ws.Range(row, 5, row, 6).Merge();
+                        ws.Range(row, 1, row, 6).Style.Fill.BackgroundColor = XLColor.FromHtml(item[2]);
+                        ws.Range(row, 1, row, 6).Style.Border.BottomBorder = XLBorderStyleValues.Hair;
+                        ws.Range(row, 1, row, 6).Style.Border.BottomBorderColor = XLColor.FromHtml("#cbd5e1");
+                        row++;
+                    }
 
                     decimal totalDolaresConvertido = totalDolares * factorConversion;
-                    ws.Cell(row, 1).Value = "Conversión a Soles ($ × Factor):";
-                    ws.Cell(row, 1).Style.Font.Bold = true;
-                    ws.Range(row, 1, row, 4).Merge();
-                    ws.Cell(row, 5).Value = totalDolaresConvertido;
-                    ws.Cell(row, 5).Style.NumberFormat.Format = "#,##0.00";
-                    ws.Cell(row, 5).Style.Font.Bold = true;
-                    ws.Cell(row, 5).Style.Fill.BackgroundColor = XLColor.LightCyan;
-                    ws.Range(row, 5, row, 6).Merge();
-                    row++;
-
                     decimal totalGeneral = totalSoles + totalDolaresConvertido;
                     ws.Cell(row, 1).Value = "TOTAL GENERAL EN SOLES:";
                     ws.Cell(row, 1).Style.Font.Bold = true;
                     ws.Cell(row, 1).Style.Font.FontSize = 12;
                     ws.Range(row, 1, row, 4).Merge();
-                    ws.Cell(row, 5).Value = totalGeneral;
-                    ws.Cell(row, 5).Style.NumberFormat.Format = "#,##0.00";
+                    ws.Cell(row, 5).Value = $"S/ {totalGeneral:N2}";
                     ws.Cell(row, 5).Style.Font.Bold = true;
                     ws.Cell(row, 5).Style.Font.FontSize = 12;
-                    ws.Cell(row, 5).Style.Fill.BackgroundColor = XLColor.LightGreen;
+                    ws.Cell(row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
                     ws.Range(row, 5, row, 6).Merge();
+                    ws.Range(row, 1, row, 6).Style.Fill.BackgroundColor = XLColor.FromHtml("#d1fae5");
+                    ws.Range(row, 1, row, 6).Style.Border.TopBorder = XLBorderStyleValues.Medium;
+                    ws.Range(row, 1, row, 6).Style.Border.TopBorderColor = XLColor.FromHtml("#059669");
+                    ws.Range(row, 1, row, 6).Style.Border.BottomBorder = XLBorderStyleValues.Medium;
+                    ws.Range(row, 1, row, 6).Style.Border.BottomBorderColor = XLColor.FromHtml("#059669");
+
+                    // Leyenda de colores
+                    row += 2;
+                    ws.Cell(row, 1).Value = "Leyenda: Rojo = Descuento Neto  |  Azul = Reintegro Neto  |  Negro = Cero";
+                    ws.Range(row, 1, row, 6).Merge();
+                    ws.Cell(row, 1).Style.Font.Italic = true;
+                    ws.Cell(row, 1).Style.Font.FontSize = 9;
+                    ws.Cell(row, 1).Style.Font.FontColor = XLColor.FromHtml("#64748b");
 
                     ws.Columns().AdjustToContents();
+                    ws.Column(2).Width = 30;
+                    ws.Column(5).Width = 22;
+                    ws.Column(6).Width = 22;
 
                     using (MemoryStream ms = new MemoryStream())
                     {
@@ -603,33 +624,49 @@ namespace WebSGV.Views
                 {
                     var ws = wb.Worksheets.Add("Viajes Activos");
 
-                    ws.Cell(1, 1).Value = "REPORTE DE VIAJES ACTIVOS SIN LIQUIDACIÓN";
+                    ws.Cell(1, 1).Value = "SISTEMA SGV";
                     ws.Range(1, 1, 1, 9).Merge();
                     ws.Cell(1, 1).Style.Font.Bold = true;
-                    ws.Cell(1, 1).Style.Font.FontSize = 16;
+                    ws.Cell(1, 1).Style.Font.FontSize = 14;
+                    ws.Cell(1, 1).Style.Font.FontColor = XLColor.White;
+                    ws.Cell(1, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#92400e");
                     ws.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    ws.Row(1).Height = 30;
 
-                    ws.Cell(2, 1).Value = $"Fecha: {DateTime.Now:dd/MM/yyyy HH:mm}";
+                    ws.Cell(2, 1).Value = "REPORTE DE VIAJES ACTIVOS SIN LIQUIDACIÓN";
                     ws.Range(2, 1, 2, 9).Merge();
                     ws.Cell(2, 1).Style.Font.Bold = true;
+                    ws.Cell(2, 1).Style.Font.FontSize = 12;
+                    ws.Cell(2, 1).Style.Font.FontColor = XLColor.FromHtml("#1e293b");
+                    ws.Cell(2, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#fef3c7");
                     ws.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                    ws.Cell(4, 1).Value = "DNI";
-                    ws.Cell(4, 2).Value = "CONDUCTOR";
-                    ws.Cell(4, 3).Value = "TRACTO";
-                    ws.Cell(4, 4).Value = "CARRETA";
-                    ws.Cell(4, 5).Value = "CLIENTE";
-                    ws.Cell(4, 6).Value = "DESTINO";
-                    ws.Cell(4, 7).Value = "FECHA PROGRAMACIÓN";
-                    ws.Cell(4, 8).Value = "DÍAS EN VIAJE";
-                    ws.Cell(4, 9).Value = "ESTADO";
+                    ws.Cell(3, 1).Value = $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}";
+                    ws.Range(3, 1, 3, 9).Merge();
+                    ws.Cell(3, 1).Style.Font.Italic = true;
+                    ws.Cell(3, 1).Style.Font.FontSize = 10;
+                    ws.Cell(3, 1).Style.Font.FontColor = XLColor.FromHtml("#64748b");
+                    ws.Cell(3, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                    var headerRange = ws.Range(4, 1, 4, 9);
+                    string[] vHeaders = { "DNI", "CONDUCTOR", "TRACTO", "CARRETA", "CLIENTE", "DESTINO", "FECHA PROGRAMACIÓN", "DÍAS EN VIAJE", "ESTADO" };
+                    for (int i = 0; i < vHeaders.Length; i++)
+                    {
+                        ws.Cell(5, i + 1).Value = vHeaders[i];
+                    }
+
+                    var headerRange = ws.Range(5, 1, 5, 9);
                     headerRange.Style.Font.Bold = true;
-                    headerRange.Style.Fill.BackgroundColor = XLColor.Orange;
+                    headerRange.Style.Font.FontSize = 10;
+                    headerRange.Style.Font.FontColor = XLColor.White;
+                    headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#334155");
                     headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    headerRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                    headerRange.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+                    headerRange.Style.Border.BottomBorderColor = XLColor.FromHtml("#1e293b");
+                    ws.Row(5).Height = 25;
 
-                    int row = 5;
+                    int row = 6;
+                    bool isAlternate = false;
                     foreach (DataRow dr in dt.Rows)
                     {
                         ws.Cell(row, 1).Value = dr["DNI"] != DBNull.Value ? dr["DNI"].ToString() : "";
@@ -639,21 +676,52 @@ namespace WebSGV.Views
                         ws.Cell(row, 5).Value = dr["Cliente"] != DBNull.Value ? dr["Cliente"].ToString() : "N/A";
                         ws.Cell(row, 6).Value = dr["Destino"] != DBNull.Value ? dr["Destino"].ToString() : "N/A";
                         ws.Cell(row, 7).Value = dr["FechaProgramacion"] != DBNull.Value ? Convert.ToDateTime(dr["FechaProgramacion"]).ToString("dd/MM/yyyy") : "N/A";
-                        ws.Cell(row, 8).Value = dr["DiasEnViaje"] != DBNull.Value ? Convert.ToInt32(dr["DiasEnViaje"]) : 0;
+                        ws.Cell(row, 7).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                        int diasViaje = dr["DiasEnViaje"] != DBNull.Value ? Convert.ToInt32(dr["DiasEnViaje"]) : 0;
+                        ws.Cell(row, 8).Value = diasViaje;
                         ws.Cell(row, 8).Style.NumberFormat.Format = "0";
+                        ws.Cell(row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                        if (diasViaje > 7)
+                        {
+                            ws.Cell(row, 8).Style.Font.FontColor = XLColor.FromHtml("#dc2626");
+                            ws.Cell(row, 8).Style.Font.Bold = true;
+                        }
+
                         ws.Cell(row, 9).Value = dr["Estado"] != DBNull.Value ? dr["Estado"].ToString() : "N/A";
+                        ws.Cell(row, 9).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                        if (isAlternate)
+                        {
+                            ws.Range(row, 1, row, 9).Style.Fill.BackgroundColor = XLColor.FromHtml("#f8fafc");
+                        }
+                        isAlternate = !isAlternate;
+
+                        ws.Range(row, 1, row, 9).Style.Border.BottomBorder = XLBorderStyleValues.Hair;
+                        ws.Range(row, 1, row, 9).Style.Border.BottomBorderColor = XLColor.FromHtml("#e2e8f0");
+
                         row++;
                     }
 
-                    ws.Cell(row + 1, 1).Value = "TOTAL DE VIAJES SIN LIQUIDACIÓN:";
-                    ws.Cell(row + 1, 1).Style.Font.Bold = true;
-                    ws.Range(row + 1, 1, row + 1, 7).Merge();
-                    ws.Cell(row + 1, 8).Value = dt.Rows.Count;
-                    ws.Cell(row + 1, 8).Style.Font.Bold = true;
-                    ws.Cell(row + 1, 8).Style.Fill.BackgroundColor = XLColor.LightGray;
-                    ws.Range(row + 1, 8, row + 1, 9).Merge();
+                    // Total
+                    var totalRange = ws.Range(row, 1, row, 9);
+                    totalRange.Style.Font.Bold = true;
+                    totalRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#fef3c7");
+                    totalRange.Style.Border.TopBorder = XLBorderStyleValues.Medium;
+                    totalRange.Style.Border.TopBorderColor = XLColor.FromHtml("#d97706");
+                    totalRange.Style.Border.BottomBorder = XLBorderStyleValues.Medium;
+                    totalRange.Style.Border.BottomBorderColor = XLColor.FromHtml("#d97706");
+
+                    ws.Cell(row, 1).Value = "TOTAL DE VIAJES SIN LIQUIDACIÓN:";
+                    ws.Range(row, 1, row, 7).Merge();
+                    ws.Cell(row, 8).Value = dt.Rows.Count;
+                    ws.Cell(row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    ws.Range(row, 8, row, 9).Merge();
 
                     ws.Columns().AdjustToContents();
+                    ws.Column(2).Width = 30;
+                    ws.Column(5).Width = 20;
+                    ws.Column(6).Width = 20;
 
                     using (MemoryStream ms = new MemoryStream())
                     {
@@ -711,102 +779,236 @@ namespace WebSGV.Views
 
                     document.Open();
 
-                    iTextFont titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18);
+                    // Colores del tema
+                    BaseColor headerBg = new BaseColor(30, 41, 59);   // slate-800
+                    BaseColor headerText = BaseColor.WHITE;
+                    BaseColor altRow = new BaseColor(248, 250, 252);   // slate-50
+                    BaseColor borderColor = new BaseColor(226, 232, 240); // slate-200
+                    BaseColor accentGreen = new BaseColor(5, 150, 105); // emerald-600
+                    BaseColor accentBlue = new BaseColor(30, 64, 175);  // blue-800
+                    BaseColor redColor = new BaseColor(220, 38, 38);    // red-600
+                    BaseColor blueColor = new BaseColor(37, 99, 235);   // blue-600
+
+                    // Header del documento
+                    PdfPTable headerTable = new PdfPTable(1);
+                    headerTable.WidthPercentage = 100;
+                    PdfPCell brandCell = new PdfPCell(new Phrase("SISTEMA SGV", FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, headerText)));
+                    brandCell.BackgroundColor = accentBlue;
+                    brandCell.HorizontalAlignment = Element.ALIGN_CENTER;
+                    brandCell.Padding = 12;
+                    brandCell.Border = 0;
+                    headerTable.AddCell(brandCell);
+                    document.Add(headerTable);
+
+                    iTextFont titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 14, new BaseColor(30, 41, 59));
                     iTextParagraph title = new iTextParagraph("REPORTE DE LIQUIDACIONES (Descuentos y Reintegros)", titleFont);
                     title.Alignment = Element.ALIGN_CENTER;
+                    title.SpacingBefore = 12;
                     document.Add(title);
 
-                    iTextFont subtitleFont = FontFactory.GetFont(FontFactory.HELVETICA, 12);
-                    iTextParagraph subtitle = new iTextParagraph($"Período: {fechaDesde:dd/MM/yyyy} - {fechaHasta:dd/MM/yyyy}", subtitleFont);
+                    iTextFont subtitleFont = FontFactory.GetFont(FontFactory.HELVETICA, 10, new BaseColor(100, 116, 139));
+                    iTextParagraph subtitle = new iTextParagraph($"Período: {fechaDesde:dd/MM/yyyy} - {fechaHasta:dd/MM/yyyy}  |  Generado: {DateTime.Now:dd/MM/yyyy HH:mm}", subtitleFont);
                     subtitle.Alignment = Element.ALIGN_CENTER;
-                    subtitle.SpacingAfter = 20;
+                    subtitle.SpacingAfter = 15;
                     document.Add(subtitle);
 
+                    // Línea separadora
+                    PdfPTable lineTable = new PdfPTable(1);
+                    lineTable.WidthPercentage = 100;
+                    PdfPCell lineCell = new PdfPCell();
+                    lineCell.Border = PdfPCell.BOTTOM_BORDER;
+                    lineCell.BorderColor = borderColor;
+                    lineCell.BorderWidth = 2;
+                    lineCell.FixedHeight = 5;
+                    lineTable.AddCell(lineCell);
+                    lineTable.SpacingAfter = 15;
+                    document.Add(lineTable);
+
+                    // Tabla principal
                     PdfPTable table = new PdfPTable(6);
                     table.WidthPercentage = 100;
-                    table.SetWidths(new float[] { 15f, 30f, 15f, 15f, 12.5f, 12.5f });
+                    table.SetWidths(new float[] { 12f, 28f, 12f, 13f, 17.5f, 17.5f });
 
-                    iTextFont headerFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10);
-                    BaseColor headerColor = new BaseColor(173, 216, 230);
-
-                    string[] headers = { "DNI", "CONDUCTOR", "FECHA", "N° DE LIQ", "MONTO S/", "MONTO $" };
+                    iTextFont headerFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, headerText);
+                    string[] headers = { "DNI", "CONDUCTOR", "FECHA", "N° DE LIQ", "MONTO S/ (Reint.-Desc.)", "MONTO $ (Reint.-Desc.)" };
                     foreach (string header in headers)
                     {
-                        PdfPCell headerCell = new PdfPCell(new Phrase(header, headerFont));
-                        headerCell.BackgroundColor = headerColor;
-                        headerCell.HorizontalAlignment = Element.ALIGN_CENTER;
-                        headerCell.Padding = 5;
-                        table.AddCell(headerCell);
+                        PdfPCell hCell = new PdfPCell(new Phrase(header, headerFont));
+                        hCell.BackgroundColor = headerBg;
+                        hCell.HorizontalAlignment = Element.ALIGN_CENTER;
+                        hCell.VerticalAlignment = Element.ALIGN_MIDDLE;
+                        hCell.Padding = 8;
+                        hCell.BorderColor = headerBg;
+                        table.AddCell(hCell);
                     }
 
                     iTextFont dataFont = FontFactory.GetFont(FontFactory.HELVETICA, 9);
                     decimal totalSoles = 0;
                     decimal totalDolares = 0;
+                    bool isAlt = false;
 
                     foreach (DataRow dr in dt.Rows)
                     {
-                        table.AddCell(new PdfPCell(new Phrase(dr["DNI"].ToString(), dataFont)) { HorizontalAlignment = Element.ALIGN_CENTER, Padding = 5 });
-                        table.AddCell(new PdfPCell(new Phrase(dr["Conductor"].ToString(), dataFont)) { Padding = 5 });
-                        table.AddCell(new PdfPCell(new Phrase(Convert.ToDateTime(dr["FechaSalida"]).ToString("dd/MM/yyyy"), dataFont)) { HorizontalAlignment = Element.ALIGN_CENTER, Padding = 5 });
-                        table.AddCell(new PdfPCell(new Phrase(dr["NumeroLiquidacion"].ToString(), dataFont)) { HorizontalAlignment = Element.ALIGN_CENTER, Padding = 5 });
+                        BaseColor rowBg = isAlt ? altRow : BaseColor.WHITE;
+
+                        PdfPCell c1 = new PdfPCell(new Phrase(dr["DNI"].ToString(), dataFont));
+                        c1.HorizontalAlignment = Element.ALIGN_CENTER;
+                        c1.Padding = 6;
+                        c1.BackgroundColor = rowBg;
+                        c1.BorderColor = borderColor;
+                        table.AddCell(c1);
+
+                        PdfPCell c2 = new PdfPCell(new Phrase(dr["Conductor"].ToString(), dataFont));
+                        c2.Padding = 6;
+                        c2.BackgroundColor = rowBg;
+                        c2.BorderColor = borderColor;
+                        table.AddCell(c2);
+
+                        PdfPCell c3 = new PdfPCell(new Phrase(Convert.ToDateTime(dr["FechaSalida"]).ToString("dd/MM/yyyy"), dataFont));
+                        c3.HorizontalAlignment = Element.ALIGN_CENTER;
+                        c3.Padding = 6;
+                        c3.BackgroundColor = rowBg;
+                        c3.BorderColor = borderColor;
+                        table.AddCell(c3);
+
+                        PdfPCell c4 = new PdfPCell(new Phrase(dr["NumeroLiquidacion"].ToString(), dataFont));
+                        c4.HorizontalAlignment = Element.ALIGN_CENTER;
+                        c4.Padding = 6;
+                        c4.BackgroundColor = rowBg;
+                        c4.BorderColor = borderColor;
+                        table.AddCell(c4);
 
                         decimal montoSoles = Convert.ToDecimal(dr["MontoSoles"]);
                         decimal montoDolares = Convert.ToDecimal(dr["MontoDolares"]);
 
-                        table.AddCell(new PdfPCell(new Phrase($"S/ {montoSoles:N2}", dataFont)) { HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 5 });
-                        table.AddCell(new PdfPCell(new Phrase($"$ {montoDolares:N2}", dataFont)) { HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 5 });
+                        // Color coding for amounts
+                        BaseColor solesColor = montoSoles < 0 ? redColor : (montoSoles > 0 ? blueColor : new BaseColor(30, 41, 59));
+                        BaseColor dolaresColor = montoDolares < 0 ? redColor : (montoDolares > 0 ? blueColor : new BaseColor(30, 41, 59));
+
+                        iTextFont solesFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, solesColor);
+                        iTextFont dolaresFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, dolaresColor);
+
+                        string solesText = montoSoles < 0 ? $"-S/ {Math.Abs(montoSoles):N2}" : $"S/ {montoSoles:N2}";
+                        string dolaresText = montoDolares < 0 ? $"-$ {Math.Abs(montoDolares):N2}" : $"$ {montoDolares:N2}";
+
+                        PdfPCell c5 = new PdfPCell(new Phrase(solesText, solesFont));
+                        c5.HorizontalAlignment = Element.ALIGN_RIGHT;
+                        c5.Padding = 6;
+                        c5.BackgroundColor = rowBg;
+                        c5.BorderColor = borderColor;
+                        table.AddCell(c5);
+
+                        PdfPCell c6 = new PdfPCell(new Phrase(dolaresText, dolaresFont));
+                        c6.HorizontalAlignment = Element.ALIGN_RIGHT;
+                        c6.Padding = 6;
+                        c6.BackgroundColor = rowBg;
+                        c6.BorderColor = borderColor;
+                        table.AddCell(c6);
 
                         totalSoles += montoSoles;
                         totalDolares += montoDolares;
+                        isAlt = !isAlt;
                     }
 
-                    iTextFont totalFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10);
+                    // Fila de totales
+                    iTextFont totalFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, new BaseColor(30, 41, 59));
+                    BaseColor totalBg = new BaseColor(241, 245, 249); // slate-100
+
                     PdfPCell totalLabelCell = new PdfPCell(new Phrase("TOTAL:", totalFont));
                     totalLabelCell.Colspan = 4;
                     totalLabelCell.HorizontalAlignment = Element.ALIGN_RIGHT;
-                    totalLabelCell.Padding = 5;
-                    totalLabelCell.BackgroundColor = new BaseColor(240, 240, 240);
+                    totalLabelCell.Padding = 8;
+                    totalLabelCell.BackgroundColor = totalBg;
+                    totalLabelCell.BorderColor = headerBg;
+                    totalLabelCell.BorderWidthTop = 2;
+                    totalLabelCell.BorderWidthBottom = 2;
                     table.AddCell(totalLabelCell);
-                    table.AddCell(new PdfPCell(new Phrase($"S/ {totalSoles:N2}", totalFont)) { HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 5, BackgroundColor = new BaseColor(240, 240, 240) });
-                    table.AddCell(new PdfPCell(new Phrase($"$ {totalDolares:N2}", totalFont)) { HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 5, BackgroundColor = new BaseColor(240, 240, 240) });
+
+                    PdfPCell totalSolesCell = new PdfPCell(new Phrase($"S/ {totalSoles:N2}", totalFont));
+                    totalSolesCell.HorizontalAlignment = Element.ALIGN_RIGHT;
+                    totalSolesCell.Padding = 8;
+                    totalSolesCell.BackgroundColor = totalBg;
+                    totalSolesCell.BorderColor = headerBg;
+                    totalSolesCell.BorderWidthTop = 2;
+                    totalSolesCell.BorderWidthBottom = 2;
+                    table.AddCell(totalSolesCell);
+
+                    PdfPCell totalDolaresCell = new PdfPCell(new Phrase($"$ {totalDolares:N2}", totalFont));
+                    totalDolaresCell.HorizontalAlignment = Element.ALIGN_RIGHT;
+                    totalDolaresCell.Padding = 8;
+                    totalDolaresCell.BackgroundColor = totalBg;
+                    totalDolaresCell.BorderColor = headerBg;
+                    totalDolaresCell.BorderWidthTop = 2;
+                    totalDolaresCell.BorderWidthBottom = 2;
+                    table.AddCell(totalDolaresCell);
 
                     document.Add(table);
                     document.Add(new iTextParagraph("\n"));
 
-                    iTextFont resumenTitleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 14);
-                    iTextParagraph resumenTitle = new iTextParagraph("RESUMEN TOTAL EN SOLES", resumenTitleFont);
-                    resumenTitle.Alignment = Element.ALIGN_CENTER;
-                    resumenTitle.SpacingBefore = 10;
-                    resumenTitle.SpacingAfter = 10;
-                    document.Add(resumenTitle);
+                    // Resumen
+                    iTextFont resumenTitleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, BaseColor.WHITE);
+                    PdfPTable resumenHeaderTable = new PdfPTable(1);
+                    resumenHeaderTable.WidthPercentage = 60;
+                    resumenHeaderTable.HorizontalAlignment = Element.ALIGN_CENTER;
+                    PdfPCell resumenHeaderCell = new PdfPCell(new Phrase("RESUMEN TOTAL EN SOLES", resumenTitleFont));
+                    resumenHeaderCell.BackgroundColor = accentGreen;
+                    resumenHeaderCell.HorizontalAlignment = Element.ALIGN_CENTER;
+                    resumenHeaderCell.Padding = 10;
+                    resumenHeaderCell.Border = 0;
+                    resumenHeaderTable.AddCell(resumenHeaderCell);
+                    resumenHeaderTable.SpacingAfter = 5;
+                    document.Add(resumenHeaderTable);
 
                     PdfPTable resumenTable = new PdfPTable(2);
                     resumenTable.WidthPercentage = 60;
                     resumenTable.HorizontalAlignment = Element.ALIGN_CENTER;
                     resumenTable.SetWidths(new float[] { 60f, 40f });
 
-                    iTextFont resumenLabelFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11);
-                    iTextFont resumenValueFont = FontFactory.GetFont(FontFactory.HELVETICA, 11);
-                    iTextFont resumenTotalFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12);
+                    iTextFont resumenLabelFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, new BaseColor(30, 41, 59));
+                    iTextFont resumenValueFont = FontFactory.GetFont(FontFactory.HELVETICA, 10, new BaseColor(30, 41, 59));
+                    iTextFont resumenTotalValueFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, accentGreen);
 
-                    resumenTable.AddCell(new PdfPCell(new Phrase("Factor de Conversión ($ a S/):", resumenLabelFont)) { BackgroundColor = new BaseColor(255, 255, 224), Padding = 8 });
-                    resumenTable.AddCell(new PdfPCell(new Phrase(factorConversion.ToString("0.00"), resumenValueFont)) { BackgroundColor = new BaseColor(255, 255, 224), HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 8 });
+                    BaseColor rowLight1 = new BaseColor(254, 243, 199); // amber-100
+                    BaseColor rowLight2 = new BaseColor(240, 253, 244); // green-50
+                    BaseColor rowLight3 = new BaseColor(236, 254, 255); // cyan-50
+                    BaseColor rowTotal = new BaseColor(209, 250, 229);  // emerald-100
 
-                    resumenTable.AddCell(new PdfPCell(new Phrase("Total en Soles (S/):", resumenLabelFont)) { BackgroundColor = new BaseColor(240, 255, 240), Padding = 8 });
-                    resumenTable.AddCell(new PdfPCell(new Phrase($"S/ {totalSoles:N2}", resumenValueFont)) { BackgroundColor = new BaseColor(240, 255, 240), HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 8 });
+                    PdfPCell rlc1 = new PdfPCell(new Phrase("Factor de Conversión ($ a S/):", resumenLabelFont)) { BackgroundColor = rowLight1, Padding = 8, BorderColor = borderColor };
+                    PdfPCell rvc1 = new PdfPCell(new Phrase(factorConversion.ToString("0.00"), resumenValueFont)) { BackgroundColor = rowLight1, HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 8, BorderColor = borderColor };
+                    resumenTable.AddCell(rlc1);
+                    resumenTable.AddCell(rvc1);
 
-                    resumenTable.AddCell(new PdfPCell(new Phrase("Total en Dólares ($):", resumenLabelFont)) { BackgroundColor = new BaseColor(240, 255, 240), Padding = 8 });
-                    resumenTable.AddCell(new PdfPCell(new Phrase($"$ {totalDolares:N2}", resumenValueFont)) { BackgroundColor = new BaseColor(240, 255, 240), HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 8 });
+                    PdfPCell rlc2 = new PdfPCell(new Phrase("Total en Soles (S/):", resumenLabelFont)) { BackgroundColor = rowLight2, Padding = 8, BorderColor = borderColor };
+                    PdfPCell rvc2 = new PdfPCell(new Phrase($"S/ {totalSoles:N2}", resumenValueFont)) { BackgroundColor = rowLight2, HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 8, BorderColor = borderColor };
+                    resumenTable.AddCell(rlc2);
+                    resumenTable.AddCell(rvc2);
+
+                    PdfPCell rlc3 = new PdfPCell(new Phrase("Total en Dólares ($):", resumenLabelFont)) { BackgroundColor = rowLight2, Padding = 8, BorderColor = borderColor };
+                    PdfPCell rvc3 = new PdfPCell(new Phrase($"$ {totalDolares:N2}", resumenValueFont)) { BackgroundColor = rowLight2, HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 8, BorderColor = borderColor };
+                    resumenTable.AddCell(rlc3);
+                    resumenTable.AddCell(rvc3);
 
                     decimal totalDolaresConvertido = totalDolares * factorConversion;
-                    resumenTable.AddCell(new PdfPCell(new Phrase("Conversión a Soles ($ × Factor):", resumenLabelFont)) { BackgroundColor = new BaseColor(224, 255, 255), Padding = 8 });
-                    resumenTable.AddCell(new PdfPCell(new Phrase($"S/ {totalDolaresConvertido:N2}", resumenValueFont)) { BackgroundColor = new BaseColor(224, 255, 255), HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 8 });
+                    PdfPCell rlc4 = new PdfPCell(new Phrase("Conversión a Soles ($ × Factor):", resumenLabelFont)) { BackgroundColor = rowLight3, Padding = 8, BorderColor = borderColor };
+                    PdfPCell rvc4 = new PdfPCell(new Phrase($"S/ {totalDolaresConvertido:N2}", resumenValueFont)) { BackgroundColor = rowLight3, HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 8, BorderColor = borderColor };
+                    resumenTable.AddCell(rlc4);
+                    resumenTable.AddCell(rvc4);
 
                     decimal totalGeneral = totalSoles + totalDolaresConvertido;
-                    resumenTable.AddCell(new PdfPCell(new Phrase("TOTAL GENERAL EN SOLES:", resumenTotalFont)) { BackgroundColor = new BaseColor(144, 238, 144), Padding = 10 });
-                    resumenTable.AddCell(new PdfPCell(new Phrase($"S/ {totalGeneral:N2}", resumenTotalFont)) { BackgroundColor = new BaseColor(144, 238, 144), HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 10 });
+                    PdfPCell rlc5 = new PdfPCell(new Phrase("TOTAL GENERAL EN SOLES:", FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11, new BaseColor(30, 41, 59)))) { BackgroundColor = rowTotal, Padding = 10, BorderColor = accentGreen, BorderWidthTop = 2 };
+                    PdfPCell rvc5 = new PdfPCell(new Phrase($"S/ {totalGeneral:N2}", resumenTotalValueFont)) { BackgroundColor = rowTotal, HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 10, BorderColor = accentGreen, BorderWidthTop = 2 };
+                    resumenTable.AddCell(rlc5);
+                    resumenTable.AddCell(rvc5);
 
                     document.Add(resumenTable);
+
+                    // Leyenda
+                    iTextFont legendFont = FontFactory.GetFont(FontFactory.HELVETICA_OBLIQUE, 8, new BaseColor(100, 116, 139));
+                    iTextParagraph legend = new iTextParagraph("Leyenda: Rojo = Descuento Neto  |  Azul = Reintegro Neto  |  Negro = Cero", legendFont);
+                    legend.Alignment = Element.ALIGN_CENTER;
+                    legend.SpacingBefore = 15;
+                    document.Add(legend);
+
                     document.Close();
                     writer.Close();
 
