@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -100,6 +101,9 @@ namespace WebSGV.Views
                     insertCmd.Parameters.AddWithValue("@idCliente", Convert.ToInt32(ddlCliente.SelectedValue));
 
                     insertCmd.ExecuteNonQuery();
+
+                    AuditoriaHelper.Registrar("INSERT", "Ruta",
+                        descripcion: $"Ruta registrada - Nombre: {txtNombreRuta.Text.Trim()}, Cliente: {ddlCliente.SelectedItem.Text}");
 
                     // Limpiar el formulario
                     LimpiarFormulario();

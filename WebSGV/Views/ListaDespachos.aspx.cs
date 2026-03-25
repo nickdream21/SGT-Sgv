@@ -507,11 +507,15 @@ namespace WebSGV.Views
                         vp.fechaInicio,
                         vp.fechaUltimaActividad,
                         vp.cantidadDespachos,
-                        ISNULL(vp.esInternacional, 0) AS EsInternacional,
-                        vp.estadoViaje
+                        vp.estadoViaje,
+                        SUM(CASE WHEN d.esInternacional = 1 THEN 1 ELSE 0 END) AS DespachoInternacionales,
+                        SUM(CASE WHEN ISNULL(d.esInternacional, 0) = 0 THEN 1 ELSE 0 END) AS DespachosNacionales
                     FROM ViajesEnProgreso vp
                     INNER JOIN Conductor c ON vp.idConductor = c.idConductor
-                    WHERE vp.idViajeProgreso = @idViajeProgreso";
+                    LEFT JOIN Despachos d ON d.idViajeProgreso = vp.idViajeProgreso AND d.activo = 1
+                    WHERE vp.idViajeProgreso = @idViajeProgreso
+                    GROUP BY vp.numeroViajeProgreso, c.nombre, c.apPaterno, c.apMaterno,
+                             vp.fechaInicio, vp.fechaUltimaActividad, vp.cantidadDespachos, vp.estadoViaje";
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
@@ -526,9 +530,18 @@ namespace WebSGV.Views
                             lblConductorDetalle.Text = GetSafeValue<string>(reader, "NombreConductor");
                             lblFechaInicioDetalle.Text = GetSafeValue<DateTime>(reader, "fechaInicio").ToString("dd/MM/yyyy HH:mm");
                             lblTotalDespachos.Text = GetSafeValue<int>(reader, "cantidadDespachos").ToString();
-                            lblTipoViajeDetalle.Text = GetSafeValue<bool>(reader, "EsInternacional") ? "Internacional" : "Nacional";
                             lblEstadoViajeDetalle.Text = GetSafeValue<string>(reader, "estadoViaje");
                             lblUltimaActividadDetalle.Text = GetSafeValue<DateTime>(reader, "fechaUltimaActividad").ToString("dd/MM/yyyy HH:mm");
+
+                            int internacionales = GetSafeValue<int>(reader, "DespachoInternacionales");
+                            int nacionales = GetSafeValue<int>(reader, "DespachosNacionales");
+
+                            if (internacionales > 0 && nacionales > 0)
+                                lblTipoViajeDetalle.Text = "Nacional e Internacional";
+                            else if (internacionales > 0)
+                                lblTipoViajeDetalle.Text = "Internacional";
+                            else
+                                lblTipoViajeDetalle.Text = "Nacional";
                         }
                     }
                 }
@@ -1666,6 +1679,9 @@ namespace WebSGV.Views
                 }
 
                 int viajesAnulados = AnularLoteCompleto(lote.IdsDespachos);
+
+                AuditoriaHelper.Registrar("DELETE", "Despachos", LoteSeleccionadoId,
+                    $"Lote anulado - {lote.IdsDespachos.Count} despacho(s), {viajesAnulados} viaje(s) anulado(s)");
 
                 MostrarListaLotes();
                 CargarLotesRegistrados();

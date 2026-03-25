@@ -3,112 +3,163 @@ using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI;
+using System.Web.UI.WebControls;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
     public partial class RegistroTractos : System.Web.UI.Page
     {
+        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!IsPostBack)
             {
-                // Inicializar formulario
-                mensajeExito.Visible = false;
-                mensajeError.Visible = false;
+                CargarTractos();
+            }
+        }
+
+        private void CargarTractos()
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    string query = "SELECT idTracto, placaTracto, marca, modelo, activo FROM Tracto ORDER BY placaTracto";
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        conn.Open();
+                        DataTable dt = new DataTable();
+                        dt.Load(cmd.ExecuteReader());
+                        gvTractos.DataSource = dt;
+                        gvTractos.DataBind();
+                        lblTotalTractos.Text = dt.Rows.Count + " registro(s)";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al cargar los tractos: " + ex.Message);
             }
         }
 
         protected void btnRegistrar_Click(object sender, EventArgs e)
         {
+            string placa = txtPlaca.Text.Trim().ToUpper();
+            string marca = txtMarca.Text.Trim().ToUpper();
+            string modelo = txtModelo.Text.Trim().ToUpper();
+
+            if (string.IsNullOrWhiteSpace(placa) || string.IsNullOrWhiteSpace(marca) || string.IsNullOrWhiteSpace(modelo))
+            {
+                MostrarMensaje("Debe completar todos los campos requeridos.");
+                return;
+            }
+
             try
             {
-                // Ocultar mensajes previos
-                mensajeExito.Visible = false;
-                mensajeError.Visible = false;
-
-                // Validar el formulario
-                if (!Page.IsValid)
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    mostrarError("Por favor, complete los campos requeridos correctamente.");
-                    return;
+                    conn.Open();
+
+                    string checkQuery = "SELECT COUNT(*) FROM Tracto WHERE UPPER(placaTracto) = @placa";
+                    using (SqlCommand checkCmd = new SqlCommand(checkQuery, conn))
+                    {
+                        checkCmd.Parameters.AddWithValue("@placa", placa);
+                        int existe = (int)checkCmd.ExecuteScalar();
+                        if (existe > 0)
+                        {
+                            MostrarMensaje("Ya existe un tracto registrado con esa placa.");
+                            return;
+                        }
+                    }
+
+                    string insertQuery = "INSERT INTO Tracto (placaTracto, marca, modelo, activo) VALUES (@placa, @marca, @modelo, 1)";
+                    using (SqlCommand insertCmd = new SqlCommand(insertQuery, conn))
+                    {
+                        insertCmd.Parameters.AddWithValue("@placa", placa);
+                        insertCmd.Parameters.AddWithValue("@marca", marca);
+                        insertCmd.Parameters.AddWithValue("@modelo", modelo);
+                        insertCmd.ExecuteNonQuery();
+                    }
                 }
 
-                // Obtener los valores del formulario
-                string placa = txtPlaca.Text.Trim();
-                string modelo = txtModelo.Text.Trim();
-                string marca = txtMarca.Text.Trim();
+                AuditoriaHelper.Registrar("INSERT", "Tracto",
+                    descripcion: $"Tracto registrado - Placa: {placa}, Marca: {marca}, Modelo: {modelo}");
 
-                // Verificar si ya existe un tracto con esa placa
-                if (TractoExiste(placa))
-                {
-                    mostrarError("Ya existe un tracto registrado con esta placa.");
-                    return;
-                }
-
-                // Guardar el tracto
-                GuardarTracto(placa, modelo, marca);
-
-                // Mostrar mensaje de éxito
-                mensajeExito.Visible = true;
-                LimpiarFormulario();
+                txtPlaca.Text = "";
+                txtMarca.Text = "";
+                txtModelo.Text = "";
+                MostrarMensaje("Tracto registrado correctamente.", true);
+                CargarTractos();
             }
             catch (Exception ex)
             {
-                // Registrar el error y mostrar mensaje
-                System.Diagnostics.Debug.WriteLine("Error en btnRegistrar_Click: " + ex.Message);
-                mostrarError("Ocurrió un error al registrar el tracto: " + ex.Message);
+                MostrarMensaje("Error al registrar el tracto: " + ex.Message);
             }
         }
 
-        private bool TractoExiste(string placa)
+        protected void gvTractos_RowCommand(object sender, GridViewCommandEventArgs e)
         {
-            string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-            string query = "SELECT COUNT(*) FROM Tracto WHERE placaTracto = @placaTracto";
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            if (e.CommandName == "ToggleActivo")
             {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                int idTracto = Convert.ToInt32(e.CommandArgument);
+                try
                 {
-                    cmd.Parameters.AddWithValue("@placaTracto", placa);
-                    conn.Open();
-                    int count = (int)cmd.ExecuteScalar();
-                    return count > 0;
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    {
+                        string query = @"UPDATE Tracto 
+                            SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
+                            WHERE idTracto = @id";
+                        using (SqlCommand cmd = new SqlCommand(query, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@id", idTracto);
+                            conn.Open();
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    AuditoriaHelper.Registrar("UPDATE", "Tracto", idTracto,
+                        "Estado de tracto actualizado (activar/desactivar)");
+
+                    CargarTractos();
+                }
+                catch (Exception ex)
+                {
+                    MostrarMensaje("Error al actualizar el estado: " + ex.Message);
                 }
             }
         }
 
-        private void GuardarTracto(string placa, string modelo, string marca)
+        protected string ObtenerClaseEstado(object activo)
         {
-            string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-            string query = @"INSERT INTO Tracto (placaTracto, modelo, marca)
-                           VALUES (@placaTracto, @modelo, @marca)";
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    // Configurar parámetros
-                    cmd.Parameters.AddWithValue("@placaTracto", placa);
-                    cmd.Parameters.AddWithValue("@modelo", modelo);
-                    cmd.Parameters.AddWithValue("@marca", marca);
-
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-                }
-            }
+            bool esActivo = activo != null && activo != DBNull.Value && Convert.ToBoolean(activo);
+            return esActivo ? "badge-success" : "badge-secondary";
         }
 
-        private void LimpiarFormulario()
+        protected string ObtenerTextoEstado(object activo)
         {
-            txtPlaca.Text = string.Empty;
-            txtModelo.Text = string.Empty;
-            txtMarca.Text = string.Empty;
+            bool esActivo = activo != null && activo != DBNull.Value && Convert.ToBoolean(activo);
+            return esActivo ? "Activo" : "Inactivo";
         }
 
-        private void mostrarError(string mensaje)
+        protected string ObtenerTextoBoton(object activo)
         {
-            mensajeError.Visible = true;
-            litError.Text = mensaje;
+            bool esActivo = activo != null && activo != DBNull.Value && Convert.ToBoolean(activo);
+            return esActivo ? "Desactivar" : "Activar";
+        }
+
+        protected string ObtenerClaseBoton(object activo)
+        {
+            bool esActivo = activo != null && activo != DBNull.Value && Convert.ToBoolean(activo);
+            return esActivo ? "btn btn-warning btn-sm" : "btn btn-success btn-sm";
+        }
+
+        private void MostrarMensaje(string mensaje, bool esExito = false)
+        {
+            pnlMensaje.Visible = true;
+            string css = esExito ? "alert alert-success" : "alert alert-danger";
+            lblMensaje.Text = $"<div class='{css}'>{mensaje}</div>";
         }
     }
 }

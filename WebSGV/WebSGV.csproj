@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.Net.Compilers.4.2.0\build\Microsoft.Net.Compilers.props" Condition="Exists('..\packages\Microsoft.Net.Compilers.4.2.0\build\Microsoft.Net.Compilers.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -258,6 +258,7 @@
     <Content Include="Scripts\OrdenViaje.js" />
     <Content Include="Scripts\responsive-mobile.js" />
     <Content Include="Scripts\SGVScripts.js" />
+    <Content Include="Scripts\SQL\AgregarColumnaActivo.sql" />
     <Content Include="Scripts\WebForms\DetailsView.js" />
     <Content Include="Scripts\WebForms\Focus.js" />
     <Content Include="Scripts\WebForms\GridView.js" />
@@ -287,6 +288,7 @@
     <Content Include="Views\AgregarFactura.aspx" />
     <Content Include="Views\AgregarIndicadores.aspx" />
     <Content Include="Views\AgregarOrdenViaje.aspx" />
+    <Content Include="Views\Auditoria.aspx" />
     <Content Include="Views\BuscarAbastecimiento.aspx" />
     <Content Include="Views\BuscarCPIC.aspx" />
     <Content Include="Views\BuscarFactura.aspx" />
@@ -308,6 +310,7 @@
     <Content Include="Views\RegistroClientes.aspx" />
     <Content Include="Views\RegistroDespacho.aspx" />
     <Content Include="Views\RegistroPeajes.aspx" />
+    <Content Include="Views\RegistroPlantas.aspx" />
     <Content Include="Views\RegistroProductos.aspx" />
     <Content Include="Views\RegistroRutas.aspx" />
     <Content Include="Views\RegistroSemiremolques.aspx" />
@@ -349,6 +352,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Helpers\AuditoriaHelper.cs" />
     <Compile Include="Helpers\FechaHelper.cs" />
     <Compile Include="Helpers\PasswordHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -411,6 +415,13 @@
     </Compile>
     <Compile Include="Models\DniResponse.cs" />
     <Compile Include="Models\DniService.cs" />
+    <Compile Include="Views\Auditoria.aspx.cs">
+      <DependentUpon>Auditoria.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Auditoria.aspx.designer.cs">
+      <DependentUpon>Auditoria.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Views\BuscarAbastecimiento.aspx.cs">
       <DependentUpon>BuscarAbastecimiento.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -543,11 +554,18 @@
       <DependentUpon>RegistroDespacho.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\RegistroPeajes.aspx.cs">
-      <SubType>ASPXCodeBehind</SubType>
       <DependentUpon>RegistroPeajes.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Views\RegistroPeajes.aspx.designer.cs">
       <DependentUpon>RegistroPeajes.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\RegistroPlantas.aspx.cs">
+      <DependentUpon>RegistroPlantas.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\RegistroPlantas.aspx.designer.cs">
+      <DependentUpon>RegistroPlantas.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\RegistroProductos.aspx.cs">
       <DependentUpon>RegistroProductos.aspx</DependentUpon>
@@ -654,7 +672,7 @@
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.4.1.0\build\net472\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.targets" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.4.1.0\build\net472\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
-      <ErrorText>Este proyecto hace referencia a los paquetes NuGet que faltan en este equipo. Use la restauración de paquetes NuGet para descargarlos. Para obtener más información, consulte http://go.microsoft.com/fwlink/?LinkID=322105. El archivo que falta es {0}.</ErrorText>
+      <ErrorText>Este proyecto hace referencia a los paquetes NuGet que faltan en este equipo. Use la restauraci�n de paquetes NuGet para descargarlos. Para obtener m�s informaci�n, consulte http://go.microsoft.com/fwlink/?LinkID=322105. El archivo que falta es {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.4.1.0\build\net472\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.4.1.0\build\net472\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.targets'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Net.Compilers.4.2.0\build\Microsoft.Net.Compilers.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Net.Compilers.4.2.0\build\Microsoft.Net.Compilers.props'))" />

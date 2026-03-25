@@ -9,6 +9,7 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -245,6 +246,10 @@ namespace WebSGV.Views
                 if (ValidarDatos())
                 {
                     GuardarAbastecimiento();
+
+                    AuditoriaHelper.Registrar("INSERT", "Abastecimiento",
+                        descripcion: $"Abastecimiento registrado - Placa: {ddlPlaca.SelectedItem?.Text}, Conductor: {ddlConductor.SelectedItem?.Text}, Producto: {txtProducto.Text}");
+
                     LimpiarFormulario();
 
                     // Mensaje de éxito con alerta

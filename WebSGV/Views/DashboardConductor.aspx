@@ -5,6 +5,7 @@
     <!-- HiddenFields para datos -->
     <asp:HiddenField ID="hfIdConductor" runat="server" ClientIDMode="Static" />
     <asp:HiddenField ID="hfIdViajeActivo" runat="server" ClientIDMode="Static" />
+    <asp:HiddenField ID="hfIdsViajesActivos" runat="server" ClientIDMode="Static" Value="" />
     <asp:HiddenField ID="hfGastosFinancieros" runat="server" ClientIDMode="Static" Value="[]" />
     <asp:HiddenField ID="hfIngresosAdicionales" runat="server" ClientIDMode="Static" Value="[]" />
     <asp:HiddenField ID="hfGastosAdicionales" runat="server" ClientIDMode="Static" Value="[]" />
@@ -329,7 +330,7 @@
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-fixed">Fijo</span></td>
                                                     </tr>
-                                                    <tr>
+                                                    <tr style="display:none">
                                                         <td class="text-center">2</td>
                                                         <td><strong>Mensualidad</strong></td>
                                                         <td>
@@ -346,7 +347,7 @@
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-fixed">Fijo</span></td>
                                                     </tr>
-                                                    <tr>
+                                                    <tr style="display:none">
                                                         <td class="text-center">3</td>
                                                         <td><strong>Otros Autorizados</strong></td>
                                                         <td>
@@ -363,7 +364,7 @@
                                                         </td>
                                                         <td class="text-center"><span class="badge badge-fixed">Fijo</span></td>
                                                     </tr>
-                                                    <tr>
+                                                    <tr style="display:none">
                                                         <td class="text-center">4</td>
                                                         <td><strong>Préstamo</strong></td>
                                                         <td>
@@ -2875,26 +2876,6 @@
                 }
             });
         }
-
-        function validarFormContrasena() {
-            const actual = document.getElementById('<%= txtContrasenaActual.ClientID %>').value;
-            const nueva = document.getElementById('<%= txtNuevaContrasena.ClientID %>').value;
-            const confirmar = document.getElementById('<%= txtConfirmarContrasena.ClientID %>').value;
-
-            if (!actual) {
-                alert('Por favor ingresa tu contraseña actual.');
-                return false;
-            }
-            if (!nueva || nueva.length < 6) {
-                alert('La nueva contraseña debe tener al menos 6 caracteres.');
-                return false;
-            }
-            if (nueva !== confirmar) {
-                alert('Las contraseñas nuevas no coinciden.');
-                return false;
-            }
-            return true;
-        }
     </script>
 
     <!-- Modal Retirar Liquidación -->
@@ -2936,47 +2917,4 @@
         </div>
     </div>
 
-    <!-- Modal Cambiar Contraseña -->
-    <div class="modal fade" id="modalCambiarContrasena" tabindex="-1" role="dialog" aria-labelledby="modalCambiarContrasenaLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header modal-header-custom">
-                    <h5 class="modal-title" id="modalCambiarContrasenaLabel">
-                        <i class="fas fa-key mr-2"></i>Cambiar Contraseña
-                    </h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <asp:Panel ID="pnlMensajeContrasena" runat="server" Visible="false" CssClass="mb-3">
-                        <asp:Label ID="lblMensajeContrasena" runat="server"></asp:Label>
-                    </asp:Panel>
-                    <div class="form-group">
-                        <label class="form-label">Contraseña Actual <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtContrasenaActual" runat="server" CssClass="form-control"
-                            TextMode="Password" placeholder="Ingresa tu contraseña actual"></asp:TextBox>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Nueva Contraseña <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtNuevaContrasena" runat="server" CssClass="form-control"
-                            TextMode="Password" placeholder="Mínimo 6 caracteres"></asp:TextBox>
-                    </div>
-                    <div class="form-group mb-0">
-                        <label class="form-label">Confirmar Nueva Contraseña <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtConfirmarContrasena" runat="server" CssClass="form-control"
-                            TextMode="Password" placeholder="Repite la nueva contraseña"></asp:TextBox>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cancelar</button>
-                    <asp:Button ID="btnCambiarContrasena" runat="server"
-                        Text="Cambiar Contraseña"
-                        CssClass="btn btn-primary-custom"
-                        OnClick="btnCambiarContrasena_Click"
-                        OnClientClick="return validarFormContrasena();" />
-                </div>
-            </div>
-        </div>
-    </div>
 </asp:Content>

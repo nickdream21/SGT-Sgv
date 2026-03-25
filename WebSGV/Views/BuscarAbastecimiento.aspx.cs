@@ -6,6 +6,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -447,6 +448,9 @@ namespace WebSGV.Views
 
                     btnHabilitarEdicion.Visible = true;
                     btnGuardarCambios.Visible = false;
+
+                    AuditoriaHelper.Registrar("UPDATE", "AbastecimientoCombustible", numeroAbastecimiento,
+                        $"Abastecimiento editado - Numero: {numeroAbastecimiento}, Galones: {galonesTotalAbastecidos}, Monto: {montoTotal}");
 
                     MostrarMensaje("Abastecimiento actualizado correctamente.", "success");
 
