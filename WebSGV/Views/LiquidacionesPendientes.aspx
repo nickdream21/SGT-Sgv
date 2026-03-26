@@ -1819,7 +1819,218 @@
         }
 
         function imprimirDetalle() {
-            window.print();
+            // Recopilar datos del modal actual
+            var numeroOrden = $('#modalNumeroOrden').text();
+            var conductor = $('#detalleConductor').text();
+            var tracto = $('#detalleTracto').text();
+            var carreta = $('#detalleCarreta').text();
+            var periodo = $('#detallePeriodo').text();
+            var observaciones = $('#detalleObservaciones').text() || '';
+
+            var ingresosSoles = $('#detalleIngresosSoles').text();
+            var ingresosDolares = $('#detalleIngresosDolares').text();
+            var gastosSoles = $('#detalleGastosSoles').text();
+            var gastosDolares = $('#detalleGastosDolares').text();
+            var balanceSoles = $('#detalleBalanceSoles').text();
+            var balanceDolares = $('#detalleBalanceDolares').text();
+            var balSolesColor = parseFloat(balanceSoles) >= 0 ? '#059669' : '#dc2626';
+            var balDolaresColor = parseFloat(balanceDolares) >= 0 ? '#059669' : '#dc2626';
+
+            // Recopilar filas de ingresos
+            var ingresosRows = '';
+            $('#detalleIngresosBody tr:not(.detail-sub-row)').each(function () {
+                var cols = $(this).find('td');
+                if (cols.length >= 3) {
+                    var concepto = $(cols[0]).clone();
+                    concepto.find('.btn-expand').remove();
+                    ingresosRows += '<tr>' +
+                        '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;">' + concepto.html() + '</td>' +
+                        '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;font-size:13px;">' + $(cols[1]).text() + '</td>' +
+                        '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;font-size:13px;">' + $(cols[2]).text() + '</td></tr>';
+
+                    // Incluir sub-detalle si existe
+                    var $subRow = $(this).next('.detail-sub-row');
+                    if ($subRow.length) {
+                        ingresosRows += '<tr><td colspan="3" style="padding:4px 20px 10px;border-bottom:1px solid #e2e8f0;background:#f8fafc;font-size:12px;">' + $subRow.find('td').html() + '</td></tr>';
+                    }
+                }
+            });
+
+            // Recopilar filas de gastos
+            var gastosRows = '';
+            $('#detalleGastosBody tr:not(.detail-sub-row)').each(function () {
+                var cols = $(this).find('td');
+                if (cols.length >= 3) {
+                    var concepto = $(cols[0]).clone();
+                    concepto.find('.btn-expand').remove();
+                    gastosRows += '<tr>' +
+                        '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;">' + concepto.html() + '</td>' +
+                        '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;font-size:13px;">' + $(cols[1]).text() + '</td>' +
+                        '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;font-size:13px;">' + $(cols[2]).text() + '</td></tr>';
+
+                    var $subRow = $(this).next('.detail-sub-row');
+                    if ($subRow.length) {
+                        gastosRows += '<tr><td colspan="3" style="padding:4px 20px 10px;border-bottom:1px solid #e2e8f0;background:#f8fafc;font-size:12px;">' + $subRow.find('td').html() + '</td></tr>';
+                    }
+                }
+            });
+
+            var fechaImpresion = new Date().toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            var logoUrl = window.location.origin + '/Content/favicon.png';
+
+            var printHtml = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"/>' +
+                '<title>Liquidaci\u00f3n ' + htmlEncode(numeroOrden) + '</title>' +
+                '<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet"/>' +
+                '<style>' +
+                '@page { size: A4; margin: 15mm 12mm 15mm 12mm; }' +
+                '*, *::before, *::after { box-sizing: border-box; }' +
+                'body { font-family: "Segoe UI", Arial, sans-serif; color: #1e293b; margin: 0; padding: 0; font-size: 13px; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }' +
+                '.print-page { max-width: 210mm; margin: 0 auto; padding: 0; }' +
+                '.header-empresa { display: flex; align-items: center; border-bottom: 3px solid #1e40af; padding-bottom: 12px; margin-bottom: 16px; }' +
+                '.header-logo { width: 90px; height: 90px; margin-right: 18px; flex-shrink: 0; }' +
+                '.header-logo img { width: 100%; height: 100%; object-fit: contain; }' +
+                '.header-info { flex: 1; }' +
+                '.header-info h1 { margin: 0 0 2px 0; font-size: 20px; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 1px; }' +
+                '.header-info h2 { margin: 0 0 2px 0; font-size: 13px; font-weight: 600; color: #475569; }' +
+                '.header-info p { margin: 0; font-size: 11px; color: #64748b; }' +
+                '.header-doc { text-align: right; flex-shrink: 0; }' +
+                '.header-doc .doc-title { font-size: 16px; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }' +
+                '.header-doc .doc-number { font-size: 18px; font-weight: 700; color: #dc2626; background: #fef2f2; border: 2px solid #fca5a5; border-radius: 6px; padding: 4px 14px; display: inline-block; }' +
+                '.header-doc .doc-date { font-size: 11px; color: #64748b; margin-top: 6px; }' +
+                '.section { margin-bottom: 14px; }' +
+                '.section-title { font-size: 13px; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 10px; background: #eff6ff; border-left: 4px solid #2563eb; margin-bottom: 8px; }' +
+                '.info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 4px; }' +
+                '.info-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 8px 10px; }' +
+                '.info-item .label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 2px; }' +
+                '.info-item .value { font-size: 14px; font-weight: 700; color: #1e293b; }' +
+                '.obs-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 8px 10px; font-style: italic; font-size: 12px; color: #78350f; margin-top: 6px; }' +
+                'table.report-table { width: 100%; border-collapse: collapse; font-size: 13px; }' +
+                'table.report-table thead th { background: #1e40af; color: white; padding: 8px 10px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }' +
+                'table.report-table thead th:first-child { text-align: left; }' +
+                'table.report-table thead th.text-right { text-align: right; }' +
+                'table.report-table tfoot td { background: #f1f5f9; font-weight: 700; padding: 10px; border-top: 2px solid #1e40af; font-size: 14px; }' +
+                '.resumen-financiero { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }' +
+                '.resumen-card { border: 2px solid #e2e8f0; border-radius: 6px; padding: 12px 14px; }' +
+                '.resumen-card.ingresos { background: #f0fdf4; border-color: #86efac; }' +
+                '.resumen-card.gastos { background: #fef2f2; border-color: #fca5a5; }' +
+                '.resumen-card .card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }' +
+                '.resumen-card.ingresos .card-title { color: #065f46; }' +
+                '.resumen-card.gastos .card-title { color: #991b1b; }' +
+                '.resumen-card .amount { font-size: 20px; font-weight: 700; color: #1e293b; }' +
+                '.resumen-card .amount-sub { font-size: 15px; font-weight: 600; color: #475569; margin-top: 2px; }' +
+                '.balance-box { background: #eff6ff; border: 2px solid #2563eb; border-radius: 6px; padding: 14px; text-align: center; margin-bottom: 14px; }' +
+                '.balance-box .title { font-size: 14px; font-weight: 700; color: #1e40af; text-transform: uppercase; margin-bottom: 8px; }' +
+                '.balance-amounts { display: flex; justify-content: center; gap: 40px; }' +
+                '.balance-amounts .bal-item { text-align: center; }' +
+                '.balance-amounts .bal-label { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; }' +
+                '.balance-amounts .bal-value { font-size: 24px; font-weight: 800; }' +
+                '.footer-print { border-top: 2px solid #e2e8f0; padding-top: 12px; margin-top: 20px; display: flex; justify-content: space-between; align-items: flex-end; }' +
+                '.footer-print .firma { text-align: center; min-width: 200px; }' +
+                '.footer-print .firma .linea { border-top: 1px solid #1e293b; margin-top: 40px; padding-top: 4px; font-size: 11px; font-weight: 600; color: #475569; }' +
+                '.footer-print .legal { font-size: 10px; color: #94a3b8; max-width: 280px; }' +
+                '.table-sub { font-size: 11px !important; }' +
+                '.table-sub thead th { background: #e2e8f0 !important; color: #1e293b !important; font-size: 10px !important; padding: 4px 6px !important; }' +
+                '.table-sub tbody td { padding: 3px 6px !important; font-size: 11px !important; }' +
+                '.detail-desc { font-size: 11px; color: #64748b; font-style: italic; margin-bottom: 4px; }' +
+                '.detail-sub-content { padding: 4px 8px; }' +
+                '</style></head><body>' +
+                '<div class="print-page">' +
+
+                // === HEADER ===
+                '<div class="header-empresa">' +
+                '<div class="header-logo"><img src="' + logoUrl + '" alt="Logo"/></div>' +
+                '<div class="header-info">' +
+                '<h1>Servicios Generales Viviana E.I.R.L.</h1>' +
+                '<h2>Transporte y Construcci\u00f3n</h2>' +
+                '<p>RUC: 20XXXXXXXXX | Direcci\u00f3n Fiscal</p>' +
+                '</div>' +
+                '<div class="header-doc">' +
+                '<div class="doc-title">Liquidaci\u00f3n de Viaje</div>' +
+                '<div class="doc-number">' + htmlEncode(numeroOrden) + '</div>' +
+                '<div class="doc-date">Impreso: ' + fechaImpresion + '</div>' +
+                '</div>' +
+                '</div>' +
+
+                // === INFORMACION DEL VIAJE ===
+                '<div class="section">' +
+                '<div class="section-title"><i class="fas fa-route mr-2"></i>Informaci\u00f3n del Viaje</div>' +
+                '<div class="info-grid">' +
+                '<div class="info-item"><div class="label">Conductor</div><div class="value">' + htmlEncode(conductor) + '</div></div>' +
+                '<div class="info-item"><div class="label">Tracto</div><div class="value">' + htmlEncode(tracto) + '</div></div>' +
+                '<div class="info-item"><div class="label">Carreta</div><div class="value">' + htmlEncode(carreta) + '</div></div>' +
+                '<div class="info-item"><div class="label">Periodo</div><div class="value">' + htmlEncode(periodo) + '</div></div>' +
+                '</div>' +
+                (observaciones ? '<div class="obs-box"><strong>Observaciones:</strong> ' + htmlEncode(observaciones) + '</div>' : '') +
+                '</div>' +
+
+                // === RESUMEN FINANCIERO ===
+                '<div class="section">' +
+                '<div class="section-title"><i class="fas fa-calculator mr-2"></i>Resumen Financiero</div>' +
+                '<div class="resumen-financiero">' +
+                '<div class="resumen-card ingresos">' +
+                '<div class="card-title"><i class="fas fa-plus-circle mr-1"></i>Total Ingresos</div>' +
+                '<div class="amount">S/ ' + ingresosSoles + '</div>' +
+                '<div class="amount-sub">$ ' + ingresosDolares + '</div>' +
+                '</div>' +
+                '<div class="resumen-card gastos">' +
+                '<div class="card-title"><i class="fas fa-minus-circle mr-1"></i>Total Gastos</div>' +
+                '<div class="amount">S/ ' + gastosSoles + '</div>' +
+                '<div class="amount-sub">$ ' + gastosDolares + '</div>' +
+                '</div>' +
+                '</div>' +
+                '</div>' +
+
+                // === BALANCE ===
+                '<div class="balance-box">' +
+                '<div class="title"><i class="fas fa-balance-scale mr-2"></i>Balance Final del Viaje</div>' +
+                '<div class="balance-amounts">' +
+                '<div class="bal-item"><div class="bal-label">Soles</div><div class="bal-value" style="color:' + balSolesColor + '">S/ ' + balanceSoles + '</div></div>' +
+                '<div class="bal-item"><div class="bal-label">D\u00f3lares</div><div class="bal-value" style="color:' + balDolaresColor + '">$ ' + balanceDolares + '</div></div>' +
+                '</div>' +
+                '</div>' +
+
+                // === DESGLOSE DE INGRESOS ===
+                '<div class="section">' +
+                '<div class="section-title"><i class="fas fa-hand-holding-usd mr-2"></i>Desglose de Ingresos</div>' +
+                '<table class="report-table">' +
+                '<thead><tr><th>Concepto</th><th class="text-right">Soles (S/)</th><th class="text-right">D\u00f3lares ($)</th></tr></thead>' +
+                '<tbody>' + ingresosRows + '</tbody>' +
+                '<tfoot><tr><td>Total Ingresos</td><td style="text-align:right;">S/ ' + ingresosSoles + '</td><td style="text-align:right;">$ ' + ingresosDolares + '</td></tr></tfoot>' +
+                '</table></div>' +
+
+                // === DESGLOSE DE GASTOS ===
+                '<div class="section">' +
+                '<div class="section-title"><i class="fas fa-receipt mr-2"></i>Desglose de Gastos</div>' +
+                '<table class="report-table">' +
+                '<thead><tr><th>Concepto</th><th class="text-right">Soles (S/)</th><th class="text-right">D\u00f3lares ($)</th></tr></thead>' +
+                '<tbody>' + gastosRows + '</tbody>' +
+                '<tfoot><tr><td>Total Gastos</td><td style="text-align:right;">S/ ' + gastosSoles + '</td><td style="text-align:right;">$ ' + gastosDolares + '</td></tr></tfoot>' +
+                '</table></div>' +
+
+                // === FOOTER ===
+                '<div class="footer-print">' +
+                '<div class="legal">' +
+                '<strong>Nota:</strong> Este documento es un reporte interno de liquidaci\u00f3n de viaje. Los comprobantes f\u00edsicos deben ser adjuntados como sustento.' +
+                '</div>' +
+                '<div class="firma"><div class="linea">Firma del Administrador</div></div>' +
+                '<div class="firma"><div class="linea">Firma del Conductor</div></div>' +
+                '</div>' +
+
+                '</div></body></html>';
+
+            var printWindow = window.open('', '_blank', 'width=900,height=700');
+            if (printWindow) {
+                printWindow.document.write(printHtml);
+                printWindow.document.close();
+                printWindow.onload = function () {
+                    setTimeout(function () {
+                        printWindow.print();
+                    }, 400);
+                };
+            } else {
+                alert('El navegador bloque\u00f3 la ventana emergente. Por favor, permita las ventanas emergentes para este sitio.');
+            }
         }
 
         function abrirModalAprobar(idOrdenViaje) {

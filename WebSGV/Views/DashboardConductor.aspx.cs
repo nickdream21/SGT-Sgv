@@ -142,6 +142,11 @@ namespace WebSGV.Views
 
         #region Variables Globales
 
+        private string ConnectionString
+        {
+            get { return ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString; }
+        }
+
         private int IdConductorActual
         {
             get
@@ -262,19 +267,11 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
-                    string query = @"
-                        SELECT 
-                            nombre + ' ' + apPaterno + ' ' + ISNULL(apMaterno, '') AS nombreCompleto,
-                            DNI
-                        FROM Conductor
-                        WHERE idConductor = @idConductor";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerDatosConductor", conn))
                     {
+                        cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@idConductor", IdConductorActual);
                         conn.Open();
 
@@ -309,29 +306,12 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine($"Verificando observaciones de rechazo para {idsViajes.Count} viaje(s)");
 
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
-                    string paramNames = string.Join(",", idsViajes.Select((id, i) => $"@id{i}"));
-                    string query = $@"
-                        SELECT TOP 1
-                            ov.numeroOrdenViaje,
-                            ov.observacionesRechazo,
-                            ov.fechaRechazo,
-                            u.nombre + ' ' + u.apellido AS rechazadoPor
-                        FROM OrdenViaje ov
-                        LEFT JOIN Usuarios u ON ov.idUsuarioAprobacion = u.idUsuario
-                        WHERE ov.idViajeProgreso IN ({paramNames})
-                            AND ov.estadoAprobacion = 'REABIERTO'
-                            AND ov.observacionesRechazo IS NOT NULL
-                            AND ov.observacionesRechazo != ''
-                        ORDER BY ov.fechaRechazo DESC";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_DC_VerificarObservacionesRechazo", conn))
                     {
-                        for (int i = 0; i < idsViajes.Count; i++)
-                            cmd.Parameters.AddWithValue($"@id{i}", idsViajes[i]);
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@idsViajes", string.Join(",", idsViajes));
                         conn.Open();
 
                         using (SqlDataReader reader = cmd.ExecuteReader())
@@ -430,7 +410,7 @@ namespace WebSGV.Views
         {
             try
             {
-                string connStr = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                string connStr = ConnectionString;
                 using (SqlConnection conn = new SqlConnection(connStr))
                 {
                     conn.Open();
@@ -440,17 +420,10 @@ namespace WebSGV.Views
                     DateTime fechaSal = DateTime.MinValue, fechaLleg = DateTime.MinValue;
                     string horaSal = "", horaLleg = "", obs = "";
 
-                    string paramNames = string.Join(",", idsViajes.Select((id, i) => $"@idV{i}"));
-                    using (SqlCommand cmd = new SqlCommand($@"
-                        SELECT TOP 1 numeroOrdenViaje, fechaSalida, fechaLlegada, horaSalida, horaLlegada, observaciones
-                        FROM OrdenViaje
-                        WHERE idViajeProgreso IN ({paramNames})
-                          AND estadoAprobacion = 'REABIERTO'
-                          AND registradoPor = 'CONDUCTOR'
-                        ORDER BY fechaRegistro DESC", conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerOrdenRechazada", conn))
                     {
-                        for (int i = 0; i < idsViajes.Count; i++)
-                            cmd.Parameters.AddWithValue($"@idV{i}", idsViajes[i]);
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@idsViajes", string.Join(",", idsViajes));
                         using (SqlDataReader r = cmd.ExecuteReader())
                         {
                             if (!r.Read()) return;
@@ -475,16 +448,28 @@ namespace WebSGV.Views
                     txtHoraLlegada.Text = horaLleg;
                     txtObservaciones.Text = obs;
 
-                    // 3. Read Ingresos
+                    // 3-11. Read all financial data via single multi-resultset SP
                     decimal despachoS = 0, despachoD = 0, prestamoS = 0, prestamoD = 0;
                     decimal mensualS = 0, mensualD = 0, otrosS = 0, otrosD = 0;
                     string descDespacho = "", descPrestamo = "", descMensual = "", descOtros = "";
+                    decimal alimentS = 0, alimentD = 0, apoyoS = 0, apoyoD = 0;
+                    decimal movilS = 0, movilD = 0, encapS = 0, encapD = 0;
+                    string descAliment = "", descApoyo = "", descMovil = "", descEncap = "";
+                    var peajesList = new List<object>();
+                    var repList = new List<object>();
+                    var hospList = new List<object>();
+                    var combList = new List<object>();
+                    var ingAdList = new List<object>();
+                    var gastAdList = new List<object>();
+                    decimal descS = 0, descD = 0, reintS = 0, reintD = 0;
 
-                    using (SqlCommand cmd = new SqlCommand("SELECT * FROM Ingresos WHERE numeroOrdenViaje = @n", conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerDatosFinancierosOrden", conn))
                     {
-                        cmd.Parameters.AddWithValue("@n", ordenNumero);
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@numeroOrdenViaje", ordenNumero);
                         using (SqlDataReader r = cmd.ExecuteReader())
                         {
+                            // ResultSet 1: Ingresos
                             if (r.Read())
                             {
                                 despachoS = DecimalOrZero(r, "despachoSoles");
@@ -500,19 +485,9 @@ namespace WebSGV.Views
                                 descMensual = StringOrEmpty(r, "descMensualidad");
                                 descOtros = StringOrEmpty(r, "descOtrosAutorizados");
                             }
-                        }
-                    }
 
-                    // 4. Read Egresos
-                    decimal alimentS = 0, alimentD = 0, apoyoS = 0, apoyoD = 0;
-                    decimal movilS = 0, movilD = 0, encapS = 0, encapD = 0;
-                    string descAliment = "", descApoyo = "", descMovil = "", descEncap = "";
-
-                    using (SqlCommand cmd = new SqlCommand("SELECT * FROM Egresos WHERE numeroOrdenViaje = @n", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@n", ordenNumero);
-                        using (SqlDataReader r = cmd.ExecuteReader())
-                        {
+                            // ResultSet 2: Egresos
+                            r.NextResult();
                             if (r.Read())
                             {
                                 alimentS = DecimalOrZero(r, "alimentacionSoles");
@@ -528,17 +503,9 @@ namespace WebSGV.Views
                                 descMovil = StringOrEmpty(r, "descMovilidad");
                                 descEncap = StringOrEmpty(r, "descEncarpadaDesencarpada");
                             }
-                        }
-                    }
 
-                    // 5. Read DetallePeajes → JS peajesData
-                    var peajesList = new List<object>();
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT estacion, fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetallePeajes WHERE numeroOrdenViaje = @n ORDER BY fecha", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@n", ordenNumero);
-                        using (SqlDataReader r = cmd.ExecuteReader())
-                        {
+                            // ResultSet 3: DetallePeajes
+                            r.NextResult();
                             int idx = 1;
                             while (r.Read())
                             {
@@ -553,18 +520,10 @@ namespace WebSGV.Views
                                     observaciones = StringOrEmpty(r, "observaciones")
                                 });
                             }
-                        }
-                    }
 
-                    // 6. Read DetalleReparacionesVarios → JS reparacionesData
-                    var repList = new List<object>();
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT fechaComprobante, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleReparacionesVarios WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@n", ordenNumero);
-                        using (SqlDataReader r = cmd.ExecuteReader())
-                        {
-                            int idx = 1;
+                            // ResultSet 4: DetalleReparacionesVarios
+                            r.NextResult();
+                            idx = 1;
                             while (r.Read())
                             {
                                 repList.Add(new
@@ -578,18 +537,10 @@ namespace WebSGV.Views
                                     observaciones = StringOrEmpty(r, "observaciones")
                                 });
                             }
-                        }
-                    }
 
-                    // 7. Read DetalleHospedaje → JS hospedajesData
-                    var hospList = new List<object>();
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT fechaComprobante, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleHospedaje WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@n", ordenNumero);
-                        using (SqlDataReader r = cmd.ExecuteReader())
-                        {
-                            int idx = 1;
+                            // ResultSet 5: DetalleHospedaje
+                            r.NextResult();
+                            idx = 1;
                             while (r.Read())
                             {
                                 hospList.Add(new
@@ -603,18 +554,10 @@ namespace WebSGV.Views
                                     observaciones = StringOrEmpty(r, "observaciones")
                                 });
                             }
-                        }
-                    }
 
-                    // 8. Read DetalleCombustible → JS combustiblesData
-                    var combList = new List<object>();
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT fechaComprobante, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleCombustible WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@n", ordenNumero);
-                        using (SqlDataReader r = cmd.ExecuteReader())
-                        {
-                            int idx = 1;
+                            // ResultSet 6: DetalleCombustible
+                            r.NextResult();
+                            idx = 1;
                             while (r.Read())
                             {
                                 combList.Add(new
@@ -628,17 +571,9 @@ namespace WebSGV.Views
                                     observaciones = StringOrEmpty(r, "observaciones")
                                 });
                             }
-                        }
-                    }
 
-                    // 9. Read IngresosAdicionales
-                    var ingAdList = new List<object>();
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT nombreCategoria, soles, dolares, descripcion FROM IngresosAdicionales WHERE numeroOrdenViaje = @n ORDER BY idIngresoAdicional", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@n", ordenNumero);
-                        using (SqlDataReader r = cmd.ExecuteReader())
-                        {
+                            // ResultSet 7: IngresosAdicionales
+                            r.NextResult();
                             while (r.Read())
                             {
                                 ingAdList.Add(new
@@ -649,17 +584,9 @@ namespace WebSGV.Views
                                     dolares = DecimalOrZero(r, "dolares")
                                 });
                             }
-                        }
-                    }
 
-                    // 10. Read CategoriasAdicionales (gastos adicionales)
-                    var gastAdList = new List<object>();
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT nombreCategoria, soles, dolares, descripcion FROM CategoriasAdicionales WHERE numeroOrdenViaje = @n ORDER BY idCategoriaAdicional", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@n", ordenNumero);
-                        using (SqlDataReader r = cmd.ExecuteReader())
-                        {
+                            // ResultSet 8: CategoriasAdicionales
+                            r.NextResult();
                             while (r.Read())
                             {
                                 gastAdList.Add(new
@@ -670,17 +597,9 @@ namespace WebSGV.Views
                                     dolares = DecimalOrZero(r, "dolares")
                                 });
                             }
-                        }
-                    }
 
-                    // 11. Read DescuentosReintegros
-                    decimal descS = 0, descD = 0, reintS = 0, reintD = 0;
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares FROM DescuentosReintegros WHERE numeroOrdenViaje = @n", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@n", ordenNumero);
-                        using (SqlDataReader r = cmd.ExecuteReader())
-                        {
+                            // ResultSet 9: DescuentosReintegros
+                            r.NextResult();
                             if (r.Read())
                             {
                                 descS = DecimalOrZero(r, "descuentoSoles");
@@ -806,39 +725,11 @@ namespace WebSGV.Views
             List<ViajeActivo> viajes = new List<ViajeActivo>();
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
-                    string query = @"
-                        SELECT 
-                            vp.idViajeProgreso,
-                            vp.numeroViajeProgreso,
-                            c.idConductor,
-                            c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS nombreConductor,
-                            vp.fechaInicio,
-                            vp.fechaUltimaActividad,
-                            vp.estadoViaje,
-                            vp.descripcionViaje,
-                            (SELECT COUNT(*) FROM Despachos WHERE idViajeProgreso = vp.idViajeProgreso AND activo = 1) AS cantidadDespachos,
-                            CAST(0 AS BIT) AS esInternacional
-                        FROM ViajesEnProgreso vp
-                        CROSS JOIN Conductor c
-                        WHERE c.idConductor = @idConductor
-                            AND vp.estadoViaje = 'ABIERTO'
-                            AND (
-                                vp.idConductor = @idConductor
-                                OR EXISTS (
-                                    SELECT 1 FROM Despachos d 
-                                    WHERE d.idViajeProgreso = vp.idViajeProgreso 
-                                    AND d.idConductor = @idConductor 
-                                    AND d.activo = 1
-                                )
-                            )
-                        ORDER BY vp.fechaInicio ASC";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerViajesActivosConductor", conn))
                     {
+                        cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@idConductor", IdConductorActual);
                         conn.Open();
 
@@ -928,38 +819,14 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
                 List<DespachoInfo> despachos = new List<DespachoInfo>();
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
-                    string paramNames = string.Join(",", idsViajes.Select((id, i) => $"@id{i}"));
-                    string query = $@"
-                        SELECT 
-                            d.idDespacho,
-                            d.numeroDespacho,
-                            d.fechaDespacho,
-                            cl.nombre AS nombreCliente,
-                            d.tipoOperacion,
-                            d.lugarOperacion,
-                            t.placaTracto,
-                            ca.placaCarreta,
-                            d.estadoDespacho,
-                            ISNULL(d.guiaRemitente, '') AS guiaRemitente,
-                            ISNULL(d.guiaTransportista, '') AS guiaTransportista,
-                            ISNULL(CAST(d.idCPIC AS VARCHAR), '') AS numeroCPIC
-                        FROM Despachos d
-                        INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
-                        INNER JOIN Tracto t ON d.idTracto = t.idTracto
-                        INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-                        WHERE d.idViajeProgreso IN ({paramNames})
-                            AND d.activo = 1
-                        ORDER BY d.fechaDespacho DESC";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerDespachosViajesActivos", conn))
                     {
-                        for (int i = 0; i < idsViajes.Count; i++)
-                            cmd.Parameters.AddWithValue($"@id{i}", idsViajes[i]);
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@idsViajes", string.Join(",", idsViajes));
                         conn.Open();
 
                         using (SqlDataReader reader = cmd.ExecuteReader())
@@ -1101,10 +968,9 @@ namespace WebSGV.Views
                 System.Diagnostics.Debug.WriteLine($"Datos del viaje: Conductor={datosViaje.IdConductor}, Tracto={datosViaje.IdTracto}, Carreta={datosViaje.IdCarreta}");
 
                 System.Diagnostics.Debug.WriteLine("Iniciando transacción de base de datos...");
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
                 bool transaccionExitosa = false;
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
                     conn.Open();
                     System.Diagnostics.Debug.WriteLine("Conexión abierta");
@@ -1208,20 +1074,11 @@ namespace WebSGV.Views
 
         private void EliminarDatosFinancierosOrdenExistente(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje)
         {
-            string[] tablas = new[]
+            using (SqlCommand cmd = new SqlCommand("sp_DC_EliminarDatosFinancierosOrden", conn, transaction))
             {
-                "Ingresos", "Egresos", "IngresosAdicionales", "CategoriasAdicionales",
-                "DescuentosReintegros", "DetallePeajes", "DetalleReparacionesVarios",
-                "DetalleHospedaje", "DetalleCombustible"
-            };
-
-            foreach (string tabla in tablas)
-            {
-                using (SqlCommand cmd = new SqlCommand($"DELETE FROM {tabla} WHERE numeroOrdenViaje = @n", conn, transaction))
-                {
-                    cmd.Parameters.AddWithValue("@n", numeroOrdenViaje);
-                    cmd.ExecuteNonQuery();
-                }
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
+                cmd.ExecuteNonQuery();
             }
 
             System.Diagnostics.Debug.WriteLine($"✅ Datos financieros eliminados para re-liquidación: {numeroOrdenViaje}");
@@ -1232,20 +1089,9 @@ namespace WebSGV.Views
             DateTime fechaSalida, DateTime fechaLlegada, string horaSalida, string horaLlegada,
             string observaciones)
         {
-            string query = @"
-                UPDATE OrdenViaje SET
-                    fechaSalida       = @fechaSalida,
-                    horaSalida        = @horaSalida,
-                    fechaLlegada      = @fechaLlegada,
-                    horaLlegada       = @horaLlegada,
-                    observaciones     = @observaciones,
-                    estadoAprobacion  = 'PENDIENTE',
-                    idUsuarioRegistro = @idUsuarioRegistro,
-                    fechaRegistro     = GETDATE()
-                WHERE numeroOrdenViaje = @numeroOrdenViaje";
-
-            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            using (SqlCommand cmd = new SqlCommand("sp_DC_ActualizarOrdenViajeConductor", conn, transaction))
             {
+                cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                 cmd.Parameters.AddWithValue("@fechaSalida", FechaSeguraSQL(fechaSalida));
                 cmd.Parameters.AddWithValue("@horaSalida", string.IsNullOrEmpty(horaSalida) ? (object)DBNull.Value : horaSalida);
@@ -1276,23 +1122,9 @@ namespace WebSGV.Views
         {
             try
             {
-                string queryOrdenViaje = @"
-                    INSERT INTO OrdenViaje (
-                        numeroOrdenViaje, fechaSalida, horaSalida, fechaLlegada, horaLlegada, 
-                        idConductor, idTracto, idCarreta, observaciones, 
-                        estadoViaje, tipoViaje, idViajeProgreso,
-                        registradoPor, idUsuarioRegistro, estadoAprobacion, fechaRegistro
-                    ) 
-                    VALUES (
-                        @numeroOrdenViaje, @fechaSalida, @horaSalida, @fechaLlegada, @horaLlegada, 
-                        @idConductor, @idTracto, @idCarreta, @observaciones, 
-                        'PENDIENTE', 'NACIONAL', @idViajeProgreso,
-                        'CONDUCTOR', @idUsuarioRegistro, 'PENDIENTE', GETDATE()
-                    );
-                    SELECT SCOPE_IDENTITY();";
-
-                using (SqlCommand cmd = new SqlCommand(queryOrdenViaje, conn, transaction))
+                using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarOrdenViajeConductor", conn, transaction))
                 {
+                    cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                     cmd.Parameters.AddWithValue("@fechaSalida", FechaSeguraSQL(fechaSalida));
                     cmd.Parameters.AddWithValue("@horaSalida", string.IsNullOrEmpty(horaSalida) ? (object)DBNull.Value : horaSalida);
@@ -1361,20 +1193,9 @@ namespace WebSGV.Views
             if (despachoSoles > 0 || despachoDolares > 0 || prestamoSoles > 0 || prestamoDolares > 0 ||
                 mensualidadSoles > 0 || mensualidadDolares > 0 || otrosSoles > 0 || otrosDolares > 0)
             {
-                string queryIngresos = @"
-                    INSERT INTO Ingresos (
-                        numeroOrdenViaje, despachoSoles, despachoDolares, prestamoSoles, prestamosDolares,
-                        mensualidadSoles, mensualidadDolares, otrosSoles, otrosDolares, 
-                        totalSoles, totalDolares, descDespacho, descMensualidad, descOtrosAutorizados, descPrestamo
-                    )
-                    VALUES (
-                        @numeroOrdenViaje, @despachoSoles, @despachoDolares, @prestamoSoles, @prestamoDolares,
-                        @mensualidadSoles, @mensualidadDolares, @otrosSoles, @otrosDolares,
-                        @totalSoles, @totalDolares, @descDespacho, @descMensualidad, @descOtros, @descPrestamo
-                    )";
-
-                using (SqlCommand cmd = new SqlCommand(queryIngresos, conn, transaction))
+                using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarIngresos", conn, transaction))
                 {
+                    cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                     cmd.Parameters.AddWithValue("@despachoSoles", despachoSoles);
                     cmd.Parameters.AddWithValue("@despachoDolares", despachoDolares);
@@ -1384,13 +1205,10 @@ namespace WebSGV.Views
                     cmd.Parameters.AddWithValue("@mensualidadDolares", mensualidadDolares);
                     cmd.Parameters.AddWithValue("@otrosSoles", otrosSoles);
                     cmd.Parameters.AddWithValue("@otrosDolares", otrosDolares);
-                    cmd.Parameters.AddWithValue("@totalSoles", despachoSoles + prestamoSoles + mensualidadSoles + otrosSoles);
-                    cmd.Parameters.AddWithValue("@totalDolares", despachoDolares + prestamoDolares + mensualidadDolares + otrosDolares);
                     cmd.Parameters.AddWithValue("@descDespacho", string.IsNullOrEmpty(descDespacho) ? (object)DBNull.Value : descDespacho);
                     cmd.Parameters.AddWithValue("@descMensualidad", string.IsNullOrEmpty(descMensualidad) ? (object)DBNull.Value : descMensualidad);
                     cmd.Parameters.AddWithValue("@descOtros", string.IsNullOrEmpty(descOtros) ? (object)DBNull.Value : descOtros);
                     cmd.Parameters.AddWithValue("@descPrestamo", string.IsNullOrEmpty(descPrestamo) ? (object)DBNull.Value : descPrestamo);
-
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -1424,30 +1242,9 @@ namespace WebSGV.Views
             string descHospedaje = Request.Form["descHospedaje"] ?? "";
             string descCombustible = Request.Form["descCombustible"] ?? "";
 
-            string queryEgresos = @"
-                INSERT INTO Egresos (
-                    numeroOrdenViaje, peajesSoles, peajesDolares, descPeajes,
-                    alimentacionSoles, alimentacionDolares, descAlimentacion,
-                    apoyoseguridadSoles, apoyoseguridadDolares, descApoyoSeguridad,
-                    reparacionesVariosSoles, repacionesVariosDolares, descReparacionesVarios,
-                    movilidadSoles, movilidadDolares, descMovilidad,
-                    encarpada_desencarpadaSoles, encarpada_desencarpadaDolares, descEncarpadaDesencarpada,
-                    hospedajeSoles, hospedajeDolares, descHospedaje,
-                    combustibleSoles, combustibleDolares, descCombustible
-                )
-                VALUES (
-                    @numeroOrdenViaje, @peajesSoles, @peajesDolares, @descPeajes,
-                    @alimentacionSoles, @alimentacionDolares, @descAlimentacion,
-                    @apoyoSeguridadSoles, @apoyoSeguridadDolares, @descApoyoSeguridad,
-                    @reparacionesSoles, @reparacionesDolares, @descReparaciones,
-                    @movilidadSoles, @movilidadDolares, @descMovilidad,
-                    @encapadaSoles, @encapadaDolares, @descEncapada,
-                    @hospedajeSoles, @hospedajeDolares, @descHospedaje,
-                    @combustibleSoles, @combustibleDolares, @descCombustible
-                )";
-
-            using (SqlCommand cmd = new SqlCommand(queryEgresos, conn, transaction))
+            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarEgresos", conn, transaction))
             {
+                cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                 cmd.Parameters.AddWithValue("@peajesSoles", peajesSoles);
                 cmd.Parameters.AddWithValue("@peajesDolares", peajesDolares);
@@ -1473,7 +1270,6 @@ namespace WebSGV.Views
                 cmd.Parameters.AddWithValue("@combustibleSoles", combustibleSoles);
                 cmd.Parameters.AddWithValue("@combustibleDolares", combustibleDolares);
                 cmd.Parameters.AddWithValue("@descCombustible", string.IsNullOrEmpty(descCombustible) ? (object)DBNull.Value : descCombustible);
-
                 cmd.ExecuteNonQuery();
             }
         }
@@ -1482,7 +1278,6 @@ namespace WebSGV.Views
         {
             try
             {
-                // ✅ Leer desde el HiddenField protegido por ViewState MAC
                 string ingresosAdicionalesJson = hfIngresosAdicionales.Value ?? "[]";
 
                 if (string.IsNullOrEmpty(ingresosAdicionalesJson) || ingresosAdicionalesJson == "[]")
@@ -1490,26 +1285,17 @@ namespace WebSGV.Views
 
                 List<IngresoAdicionalData> ingresosAdicionales = JsonConvert.DeserializeObject<List<IngresoAdicionalData>>(ingresosAdicionalesJson) ?? new List<IngresoAdicionalData>();
 
-                if (ingresosAdicionales.Count > 0)
+                foreach (var ingreso in ingresosAdicionales)
                 {
-                    string queryInsert = @"
-                        INSERT INTO IngresosAdicionales (
-                            numeroOrdenViaje, nombreCategoria, soles, dolares, descripcion
-                        ) VALUES (
-                            @numeroOrdenViaje, @nombreCategoria, @soles, @dolares, @descripcion
-                        )";
-
-                    foreach (var ingreso in ingresosAdicionales)
+                    using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarIngresoAdicional", conn, transaction))
                     {
-                        using (SqlCommand cmd = new SqlCommand(queryInsert, conn, transaction))
-                        {
-                            cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                            cmd.Parameters.AddWithValue("@nombreCategoria", ingreso.Categoria ?? ingreso.NombreCategoria ?? "");
-                            cmd.Parameters.AddWithValue("@soles", ingreso.Soles ?? 0);
-                            cmd.Parameters.AddWithValue("@dolares", ingreso.Dolares ?? 0);
-                            cmd.Parameters.AddWithValue("@descripcion", ingreso.Descripcion ?? "");
-                            cmd.ExecuteNonQuery();
-                        }
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
+                        cmd.Parameters.AddWithValue("@nombreCategoria", ingreso.Categoria ?? ingreso.NombreCategoria ?? "");
+                        cmd.Parameters.AddWithValue("@soles", ingreso.Soles ?? 0);
+                        cmd.Parameters.AddWithValue("@dolares", ingreso.Dolares ?? 0);
+                        cmd.Parameters.AddWithValue("@descripcion", ingreso.Descripcion ?? "");
+                        cmd.ExecuteNonQuery();
                     }
                 }
             }
@@ -1524,7 +1310,6 @@ namespace WebSGV.Views
         {
             try
             {
-                // ✅ Leer desde el HiddenField protegido por ViewState MAC
                 string gastosAdicionalesJson = hfGastosAdicionales.Value ?? "[]";
 
                 if (string.IsNullOrEmpty(gastosAdicionalesJson) || gastosAdicionalesJson == "[]")
@@ -1532,26 +1317,17 @@ namespace WebSGV.Views
 
                 List<GastoAdicionalData> gastosAdicionales = JsonConvert.DeserializeObject<List<GastoAdicionalData>>(gastosAdicionalesJson) ?? new List<GastoAdicionalData>();
 
-                if (gastosAdicionales.Count > 0)
+                foreach (var gasto in gastosAdicionales)
                 {
-                    string queryInsert = @"
-                        INSERT INTO CategoriasAdicionales (
-                            numeroOrdenViaje, nombreCategoria, soles, dolares, descripcion
-                        ) VALUES (
-                            @numeroOrdenViaje, @nombreCategoria, @soles, @dolares, @descripcion
-                        )";
-
-                    foreach (var gasto in gastosAdicionales)
+                    using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarGastoAdicional", conn, transaction))
                     {
-                        using (SqlCommand cmd = new SqlCommand(queryInsert, conn, transaction))
-                        {
-                            cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                            cmd.Parameters.AddWithValue("@nombreCategoria", gasto.Categoria ?? gasto.NombreCategoria ?? "");
-                            cmd.Parameters.AddWithValue("@soles", gasto.Soles ?? 0);
-                            cmd.Parameters.AddWithValue("@dolares", gasto.Dolares ?? 0);
-                            cmd.Parameters.AddWithValue("@descripcion", gasto.Descripcion ?? "");
-                            cmd.ExecuteNonQuery();
-                        }
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
+                        cmd.Parameters.AddWithValue("@nombreCategoria", gasto.Categoria ?? gasto.NombreCategoria ?? "");
+                        cmd.Parameters.AddWithValue("@soles", gasto.Soles ?? 0);
+                        cmd.Parameters.AddWithValue("@dolares", gasto.Dolares ?? 0);
+                        cmd.Parameters.AddWithValue("@descripcion", gasto.Descripcion ?? "");
+                        cmd.ExecuteNonQuery();
                     }
                 }
             }
@@ -1573,18 +1349,9 @@ namespace WebSGV.Views
 
                 if (descuentoSoles > 0 || descuentoDolares > 0 || reintegroSoles > 0 || reintegroDolares > 0)
                 {
-                    string query = @"
-                        INSERT INTO DescuentosReintegros (
-                            numeroOrdenViaje, descuentoSoles, descuentoDolares, 
-                            reintegroSoles, reintegroDolares
-                        )
-                        VALUES (
-                            @numeroOrdenViaje, @descuentoSoles, @descuentoDolares,
-                            @reintegroSoles, @reintegroDolares
-                        )";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+                    using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDescuentosReintegros", conn, transaction))
                     {
+                        cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                         cmd.Parameters.AddWithValue("@descuentoSoles", descuentoSoles);
                         cmd.Parameters.AddWithValue("@descuentoDolares", descuentoDolares);
@@ -1649,18 +1416,9 @@ namespace WebSGV.Views
 
         private void InsertarPeajeDetallado(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
         {
-            string query = @"
-                INSERT INTO DetallePeajes (
-                    numeroOrdenViaje, estacion, fecha, numeroComprobante, 
-                    montoSoles, montoDolares, observaciones
-                )
-                VALUES (
-                    @numeroOrdenViaje, @estacion, @fecha, @numeroComprobante,
-                    @montoSoles, @montoDolares, @observaciones
-                )";
-
-            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDetallePeaje", conn, transaction))
             {
+                cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                 cmd.Parameters.AddWithValue("@estacion", gasto.Estacion ?? gasto.Lugar ?? "");
                 cmd.Parameters.AddWithValue("@fecha", FechaSeguraSQL(gasto.Fecha));
@@ -1674,18 +1432,9 @@ namespace WebSGV.Views
 
         private void InsertarReparacionDetallada(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
         {
-            string query = @"
-                INSERT INTO DetalleReparacionesVarios (
-                    numeroOrdenViaje, fechaComprobante, numeroComprobante, 
-                    montoSoles, montoDolares, observaciones
-                )
-                VALUES (
-                    @numeroOrdenViaje, @fechaComprobante, @numeroComprobante,
-                    @montoSoles, @montoDolares, @observaciones
-                )";
-
-            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDetalleReparacion", conn, transaction))
             {
+                cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                 cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
                 cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
@@ -1698,18 +1447,9 @@ namespace WebSGV.Views
 
         private void InsertarHospedajeDetallado(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
         {
-            string query = @"
-                INSERT INTO DetalleHospedaje (
-                    numeroOrdenViaje, fechaComprobante, numeroComprobante, 
-                    montoSoles, montoDolares, observaciones
-                )
-                VALUES (
-                    @numeroOrdenViaje, @fechaComprobante, @numeroComprobante,
-                    @montoSoles, @montoDolares, @observaciones
-                )";
-
-            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDetalleHospedaje", conn, transaction))
             {
+                cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                 cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
                 cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
@@ -1722,18 +1462,9 @@ namespace WebSGV.Views
 
         private void InsertarCombustibleDetallado(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
         {
-            string query = @"
-                INSERT INTO DetalleCombustible (
-                    numeroOrdenViaje, fechaComprobante, numeroComprobante, 
-                    montoSoles, montoDolares, observaciones
-                )
-                VALUES (
-                    @numeroOrdenViaje, @fechaComprobante, @numeroComprobante,
-                    @montoSoles, @montoDolares, @observaciones
-                )";
-
-            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDetalleCombustible", conn, transaction))
             {
+                cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                 cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
                 cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
@@ -1748,40 +1479,26 @@ namespace WebSGV.Views
         {
             try
             {
-                string paramNames = string.Join(",", idsViajes.Select((id, i) => $"@idViaje{i}"));
-
-                string queryCerrarViajes = $@"
-                    UPDATE ViajesEnProgreso 
-                    SET estadoViaje = 'CERRADO',
-                        fechaCierre = GETDATE()
-                    WHERE idViajeProgreso IN ({paramNames}) 
-                        AND estadoViaje = 'ABIERTO'";
-
-                using (SqlCommand cmd = new SqlCommand(queryCerrarViajes, conn, transaction))
+                using (SqlCommand cmd = new SqlCommand("sp_DC_CerrarViajesProgreso", conn, transaction))
                 {
-                    for (int i = 0; i < idsViajes.Count; i++)
-                        cmd.Parameters.AddWithValue($"@idViaje{i}", idsViajes[i]);
-                    int filasAfectadas = cmd.ExecuteNonQuery();
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@idsViajes", string.Join(",", idsViajes));
+
+                    SqlParameter pViajesCerrados = new SqlParameter("@filasViajesCerrados", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                    SqlParameter pDespachosCerrados = new SqlParameter("@filasDespachosCerrados", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                    cmd.Parameters.Add(pViajesCerrados);
+                    cmd.Parameters.Add(pDespachosCerrados);
+
+                    cmd.ExecuteNonQuery();
+
+                    int filasAfectadas = (int)pViajesCerrados.Value;
+                    int despachosActualizados = (int)pDespachosCerrados.Value;
 
                     if (filasAfectadas == 0)
                     {
                         throw new Exception($"No se pudo cerrar ninguno de los viajes: {string.Join(", ", idsViajes)}");
                     }
                     System.Diagnostics.Debug.WriteLine($"✅ {filasAfectadas} viaje(s) cerrado(s)");
-                }
-
-                string queryDespachos = $@"
-                    UPDATE Despachos 
-                    SET estadoDespacho = 'COMPLETADO',
-                        fechaModificacion = GETDATE()
-                    WHERE idViajeProgreso IN ({paramNames}) 
-                        AND activo = 1";
-
-                using (SqlCommand cmd = new SqlCommand(queryDespachos, conn, transaction))
-                {
-                    for (int i = 0; i < idsViajes.Count; i++)
-                        cmd.Parameters.AddWithValue($"@idViaje{i}", idsViajes[i]);
-                    int despachosActualizados = cmd.ExecuteNonQuery();
                     System.Diagnostics.Debug.WriteLine($"✅ {despachosActualizados} despacho(s) marcado(s) como COMPLETADO");
                 }
             }
@@ -1805,36 +1522,11 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
-                    string query = @"
-                        SELECT 
-                            ov.idOrdenViaje,
-                            ov.numeroOrdenViaje,
-                            ov.fechaSalida,
-                            ov.fechaLlegada,
-                            ov.estadoAprobacion,
-                            ISNULL(ing.totalSoles, 0) AS totalIngresosSoles,
-                            ISNULL(ing.totalDolares, 0) AS totalIngresosDolares,
-                            (ISNULL(eg.peajesSoles, 0) + ISNULL(eg.alimentacionSoles, 0) + 
-                             ISNULL(eg.apoyoseguridadSoles, 0) + ISNULL(eg.reparacionesVariosSoles, 0) + 
-                             ISNULL(eg.movilidadSoles, 0) + ISNULL(eg.encarpada_desencarpadaSoles, 0) + 
-                             ISNULL(eg.hospedajeSoles, 0) + ISNULL(eg.combustibleSoles, 0)) AS totalGastosSoles,
-                            (ISNULL(eg.peajesDolares, 0) + ISNULL(eg.alimentacionDolares, 0) + 
-                             ISNULL(eg.apoyoseguridadDolares, 0) + ISNULL(eg.repacionesVariosDolares, 0) + 
-                             ISNULL(eg.movilidadDolares, 0) + ISNULL(eg.encarpada_desencarpadaDolares, 0) + 
-                             ISNULL(eg.hospedajeDolares, 0) + ISNULL(eg.combustibleDolares, 0)) AS totalGastosDolares
-                        FROM OrdenViaje ov
-                        LEFT JOIN Ingresos ing ON ov.numeroOrdenViaje = ing.numeroOrdenViaje
-                        LEFT JOIN Egresos eg ON ov.numeroOrdenViaje = eg.numeroOrdenViaje
-                        WHERE ov.idConductor = @idConductor
-                            AND ov.registradoPor = 'CONDUCTOR'
-                        ORDER BY ov.fechaRegistro DESC";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerHistorialLiquidaciones", conn))
                     {
+                        cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@idConductor", IdConductorActual);
                         conn.Open();
 
@@ -1864,11 +1556,9 @@ namespace WebSGV.Views
                             decimal balanceSoles = ingrSoles - gastSoles;
                             decimal balanceDolares = ingrDolares - gastDolares;
 
-                            string estado = "PENDIENTE";
-                            if (row["estadoAprobacion"] != DBNull.Value)
-                            {
-                                estado = row["estadoAprobacion"].ToString();
-                            }
+                            string estado = row["estadoAprobacion"] != DBNull.Value
+                                ? row["estadoAprobacion"].ToString()
+                                : "PENDIENTE";
 
                             DataRow newRow = dtMapeado.NewRow();
                             newRow["IdOrdenViaje"] = row["idOrdenViaje"];
@@ -1908,19 +1598,13 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
                 List<EstacionPeaje> estaciones = new List<EstacionPeaje>();
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
-                    string query = @"
-                SELECT nombre
-                FROM EstacionesPeaje 
-                WHERE activo = 1
-                ORDER BY nombre";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerEstacionesPeaje", conn))
                     {
+                        cmd.CommandType = CommandType.StoredProcedure;
                         conn.Open();
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
@@ -1928,7 +1612,7 @@ namespace WebSGV.Views
                             {
                                 estaciones.Add(new EstacionPeaje
                                 {
-                                    Nombre = reader["nombre"].ToString()  // ✅ Cambiado a 'nombre'
+                                    Nombre = reader["nombre"].ToString()
                                 });
                             }
                         }
@@ -1951,87 +1635,36 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-                string nuevoNumero = "";
-                int intentos = 0;
-                int maxIntentos = 5;
-
-                while (intentos < maxIntentos)
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    using (SqlCommand cmd = new SqlCommand("sp_DC_GenerarNumeroOrden", conn))
                     {
-                        conn.Open();
+                        cmd.CommandType = CommandType.StoredProcedure;
 
-                        using (SqlTransaction transaction = conn.BeginTransaction(System.Data.IsolationLevel.Serializable))
+                        SqlParameter pNumeroGenerado = new SqlParameter("@numeroGenerado", SqlDbType.VarChar, 50)
                         {
-                            try
-                            {
-                                string queryMax = @"
-                                    SELECT TOP 1 numeroOrdenViaje 
-                                    FROM OrdenViaje WITH (TABLOCKX)
-                                    WHERE numeroOrdenViaje LIKE 'OV-' + CAST(YEAR(GETDATE()) AS VARCHAR) + '-%'
-                                    ORDER BY numeroOrdenViaje DESC";
+                            Direction = ParameterDirection.Output
+                        };
+                        cmd.Parameters.Add(pNumeroGenerado);
 
-                                string ultimoNumero = null;
-                                using (SqlCommand cmdMax = new SqlCommand(queryMax, conn, transaction))
-                                {
-                                    object result = cmdMax.ExecuteScalar();
-                                    ultimoNumero = result?.ToString();
-                                }
+                        conn.Open();
+                        cmd.ExecuteNonQuery();
 
-                                int siguienteSecuencial = 1;
+                        string nuevoNumero = pNumeroGenerado.Value?.ToString();
 
-                                if (!string.IsNullOrEmpty(ultimoNumero))
-                                {
-                                    string[] partes = ultimoNumero.Split('-');
-                                    if (partes.Length == 3)
-                                    {
-                                        if (int.TryParse(partes[2], out int numeroActual))
-                                        {
-                                            siguienteSecuencial = numeroActual + 1;
-                                        }
-                                    }
-                                }
-
-                                int anioActual = DateTime.Now.Year;
-                                nuevoNumero = $"OV-{anioActual}-{siguienteSecuencial:D6}";
-
-                                string queryVerificar = "SELECT COUNT(*) FROM OrdenViaje WHERE numeroOrdenViaje = @numero";
-                                using (SqlCommand cmdVerificar = new SqlCommand(queryVerificar, conn, transaction))
-                                {
-                                    cmdVerificar.Parameters.AddWithValue("@numero", nuevoNumero);
-                                    int existe = Convert.ToInt32(cmdVerificar.ExecuteScalar());
-
-                                    if (existe > 0)
-                                    {
-                                        siguienteSecuencial++;
-                                        nuevoNumero = $"OV-{anioActual}-{siguienteSecuencial:D6}";
-                                    }
-                                }
-
-                                transaction.Commit();
-                                return nuevoNumero;
-                            }
-                            catch (Exception ex)
-                            {
-                                transaction.Rollback();
-                                intentos++;
-
-                                if (intentos >= maxIntentos)
-                                {
-                                    throw;
-                                }
-
-                                System.Threading.Thread.Sleep(100 * intentos);
-                            }
+                        if (!string.IsNullOrEmpty(nuevoNumero))
+                        {
+                            System.Diagnostics.Debug.WriteLine($"✅ Número de orden generado: {nuevoNumero}");
+                            return nuevoNumero;
                         }
+
+                        throw new Exception("El SP no retornó un número de orden");
                     }
                 }
-
-                throw new Exception("No se pudo generar número de orden");
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"❌ Error generando número de orden: {ex.Message}");
                 string fallbackNumero = $"OV-{DateTime.Now:yyyyMMddHHmmss}-{IdConductorActual:D4}";
                 return fallbackNumero;
             }
@@ -2042,62 +1675,15 @@ namespace WebSGV.Views
             try
             {
                 System.Diagnostics.Debug.WriteLine($"Obteniendo datos del viaje para idViajeProgreso={idViajeProgreso}");
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
-                    conn.Open();
-
-                    // Primero intentar obtener datos desde Despachos
-                    string query = @"
-                        SELECT TOP 1
-                            d.idConductor,
-                            d.idTracto,
-                            d.idCarreta
-                        FROM Despachos d
-                        WHERE d.idViajeProgreso = @idViajeProgreso
-                            AND d.activo = 1";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerDatosViajeParaLiquidacion", conn))
                     {
+                        cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                int idConductor = reader["idConductor"] != DBNull.Value ? Convert.ToInt32(reader["idConductor"]) : 0;
-                                int idTracto = reader["idTracto"] != DBNull.Value ? Convert.ToInt32(reader["idTracto"]) : 0;
-                                int idCarreta = reader["idCarreta"] != DBNull.Value ? Convert.ToInt32(reader["idCarreta"]) : 0;
-
-                                if (idConductor == 0 || idTracto == 0 || idCarreta == 0)
-                                {
-                                    System.Diagnostics.Debug.WriteLine($"⚠️ Datos incompletos del despacho: Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
-                                }
-
-                                return new DatosViajeParaLiquidacion
-                                {
-                                    IdConductor = idConductor,
-                                    IdTracto = idTracto,
-                                    IdCarreta = idCarreta
-                                };
-                            }
-                        }
-                    }
-
-                    // Si no hay despachos, obtener datos desde ViajesEnProgreso
-                    System.Diagnostics.Debug.WriteLine($"⚠️ No se encontraron despachos activos para idViajeProgreso={idViajeProgreso}, intentando desde ViajesEnProgreso...");
-                    string queryViaje = @"
-                        SELECT 
-                            vp.idConductor,
-                            ISNULL((SELECT TOP 1 idTracto FROM Despachos WHERE idConductor = vp.idConductor AND activo = 1 ORDER BY fechaDespacho DESC), 0) AS idTracto,
-                            ISNULL((SELECT TOP 1 idCarreta FROM Despachos WHERE idConductor = vp.idConductor AND activo = 1 ORDER BY fechaDespacho DESC), 0) AS idCarreta
-                        FROM ViajesEnProgreso vp
-                        WHERE vp.idViajeProgreso = @idViajeProgreso";
-
-                    using (SqlCommand cmd = new SqlCommand(queryViaje, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
+                        cmd.Parameters.AddWithValue("@idConductorFallback", IdConductorActual);
+                        conn.Open();
 
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
@@ -2106,8 +1692,16 @@ namespace WebSGV.Views
                                 int idConductor = reader["idConductor"] != DBNull.Value ? Convert.ToInt32(reader["idConductor"]) : IdConductorActual;
                                 int idTracto = reader["idTracto"] != DBNull.Value ? Convert.ToInt32(reader["idTracto"]) : 0;
                                 int idCarreta = reader["idCarreta"] != DBNull.Value ? Convert.ToInt32(reader["idCarreta"]) : 0;
+                                string origen = reader["origen"]?.ToString() ?? "";
 
-                                System.Diagnostics.Debug.WriteLine($"✅ Datos obtenidos desde ViajesEnProgreso: Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
+                                if (idConductor == 0 || idTracto == 0 || idCarreta == 0)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"⚠️ Datos incompletos ({origen}): Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
+                                }
+                                else
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"✅ Datos obtenidos desde {origen}: Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
+                                }
 
                                 return new DatosViajeParaLiquidacion
                                 {
@@ -2237,131 +1831,42 @@ namespace WebSGV.Views
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    conn.Open();
-
-                    // 1. Verificar que la liquidación existe, está PENDIENTE y fue registrada por el conductor
-                    string queryVerificar = @"
-                        SELECT numeroOrdenViaje, idViajeProgreso, idConductor
-                        FROM OrdenViaje 
-                        WHERE idOrdenViaje = @idOrdenViaje 
-                          AND estadoAprobacion = 'PENDIENTE' 
-                          AND registradoPor = 'CONDUCTOR'";
-
-                    string numeroOrdenViaje = null;
-                    int idViajeProgreso = 0;
-                    int idConductorOrden = 0;
-
-                    using (SqlCommand cmd = new SqlCommand(queryVerificar, conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_DC_RetirarLiquidacion", conn))
                     {
+                        cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@idOrdenViaje", idOrdenViaje);
-                        using (SqlDataReader reader = cmd.ExecuteReader())
+
+                        SqlParameter pResultado = new SqlParameter("@resultado", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                        SqlParameter pMensaje = new SqlParameter("@mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+                        SqlParameter pNumeroOrden = new SqlParameter("@numeroOrdenViajeSalida", SqlDbType.VarChar, 50) { Direction = ParameterDirection.Output };
+                        SqlParameter pIdViaje = new SqlParameter("@idViajeProgresoSalida", SqlDbType.Int) { Direction = ParameterDirection.Output };
+
+                        cmd.Parameters.Add(pResultado);
+                        cmd.Parameters.Add(pMensaje);
+                        cmd.Parameters.Add(pNumeroOrden);
+                        cmd.Parameters.Add(pIdViaje);
+
+                        conn.Open();
+                        cmd.ExecuteNonQuery();
+
+                        int resultado = (int)pResultado.Value;
+                        string mensaje = pMensaje.Value?.ToString() ?? "";
+                        string numeroOrdenViaje = pNumeroOrden.Value?.ToString() ?? "";
+                        int idViajeProgreso = pIdViaje.Value != DBNull.Value ? (int)pIdViaje.Value : 0;
+
+                        if (resultado == 1)
                         {
-                            if (reader.Read())
-                            {
-                                numeroOrdenViaje = reader["numeroOrdenViaje"].ToString();
-                                idViajeProgreso = reader["idViajeProgreso"] != DBNull.Value ? Convert.ToInt32(reader["idViajeProgreso"]) : 0;
-                                idConductorOrden = reader["idConductor"] != DBNull.Value ? Convert.ToInt32(reader["idConductor"]) : 0;
-                            }
-                        }
-                    }
-
-                    if (string.IsNullOrEmpty(numeroOrdenViaje))
-                    {
-                        return new { success = false, message = "No se puede retirar esta liquidación. Es posible que ya haya sido revisada por la administración." };
-                    }
-
-                    // Fallback: si idViajeProgreso es 0 o NULL en OrdenViaje, buscarlo por conductor
-                    if (idViajeProgreso == 0 && idConductorOrden > 0)
-                    {
-                        using (SqlCommand cmd = new SqlCommand(
-                            "SELECT TOP 1 idViajeProgreso FROM ViajesEnProgreso WHERE idConductor = @idConductor AND estadoViaje = 'CERRADO' ORDER BY fechaCierre DESC",
-                            conn))
-                        {
-                            cmd.Parameters.AddWithValue("@idConductor", idConductorOrden);
-                            object fallback = cmd.ExecuteScalar();
-                            if (fallback != null && fallback != DBNull.Value)
-                                idViajeProgreso = Convert.ToInt32(fallback);
-                        }
-                    }
-
-                    System.Diagnostics.Debug.WriteLine($"RetirarLiquidacion: idOrdenViaje={idOrdenViaje}, idViajeProgreso={idViajeProgreso}, idConductor={idConductorOrden}");
-
-                    using (SqlTransaction transaction = conn.BeginTransaction())
-                    {
-                        try
-                        {
-                            // 2. Eliminar datos financieros (9 tablas)
-                            string[] tablas = new[]
-                            {
-                                "Ingresos", "Egresos", "IngresosAdicionales", "CategoriasAdicionales",
-                                "DescuentosReintegros", "DetallePeajes", "DetalleReparacionesVarios",
-                                "DetalleHospedaje", "DetalleCombustible"
-                            };
-
-                            foreach (string tabla in tablas)
-                            {
-                                using (SqlCommand cmd = new SqlCommand($"DELETE FROM {tabla} WHERE numeroOrdenViaje = @n", conn, transaction))
-                                {
-                                    cmd.Parameters.AddWithValue("@n", numeroOrdenViaje);
-                                    cmd.ExecuteNonQuery();
-                                }
-                            }
-
-                            // 3. Eliminar la OrdenViaje
-                            using (SqlCommand cmd = new SqlCommand(
-                                "DELETE FROM OrdenViaje WHERE idOrdenViaje = @idOrdenViaje AND estadoAprobacion = 'PENDIENTE'",
-                                conn, transaction))
-                            {
-                                cmd.Parameters.AddWithValue("@idOrdenViaje", idOrdenViaje);
-                                int deleted = cmd.ExecuteNonQuery();
-                                if (deleted == 0)
-                                    throw new Exception("La liquidación ya fue procesada por la administración.");
-                            }
-
-                            // 4. Re-abrir el viaje en progreso
-                            if (idViajeProgreso == 0)
-                                throw new Exception("No se pudo determinar el viaje a reabrir. Contacte con la administración.");
-
-                            using (SqlCommand cmd = new SqlCommand(@"
-                                UPDATE ViajesEnProgreso 
-                                SET estadoViaje = 'ABIERTO',
-                                    fechaCierre = NULL
-                                WHERE idViajeProgreso = @idViaje",
-                                conn, transaction))
-                            {
-                                cmd.Parameters.AddWithValue("@idViaje", idViajeProgreso);
-                                int filasAfectadas = cmd.ExecuteNonQuery();
-                                if (filasAfectadas == 0)
-                                    throw new Exception($"No se pudo reabrir el viaje {idViajeProgreso}. El viaje no existe o ya estaba abierto.");
-                            }
-
-                            // 5. Revertir despachos a PROGRAMADO
-                            using (SqlCommand cmd = new SqlCommand(@"
-                                UPDATE Despachos 
-                                SET estadoDespacho = 'PROGRAMADO',
-                                    fechaModificacion = GETDATE()
-                                WHERE idViajeProgreso = @idViaje 
-                                    AND activo = 1",
-                                conn, transaction))
-                            {
-                                cmd.Parameters.AddWithValue("@idViaje", idViajeProgreso);
-                                cmd.ExecuteNonQuery();
-                            }
-
-                            transaction.Commit();
-
                             AuditoriaHelper.Registrar("RETIRAR", "OrdenViaje", idOrdenViaje,
                                 $"Conductor retiró liquidación - OrdenViaje ID: {idOrdenViaje}, Número: {numeroOrdenViaje}, Viaje reabierto: {idViajeProgreso}");
 
                             System.Diagnostics.Debug.WriteLine($"✅ Liquidación retirada: OrdenViaje {idOrdenViaje}, Viaje {idViajeProgreso} reabierto");
-
-                            return new { success = true, message = "Liquidación retirada exitosamente. El viaje ha sido reabierto y puede volver a liquidar." };
                         }
-                        catch (Exception)
+                        else
                         {
-                            transaction.Rollback();
-                            throw;
+                            System.Diagnostics.Debug.WriteLine($"⚠️ RetirarLiquidacion falló: {mensaje}");
                         }
+
+                        return new { success = resultado == 1, message = mensaje };
                     }
                 }
             }
