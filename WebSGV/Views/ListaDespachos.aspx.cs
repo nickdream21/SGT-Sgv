@@ -215,20 +215,7 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
-                {
-                    // ✅ Filtrar solo conductores que tienen viajes activos
-                    string query = @"
-                SELECT DISTINCT 
-                    c.idConductor,
-                    CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, ''), ' ', ISNULL(c.apMaterno, '')) AS NombreCompleto
-                FROM Conductor c
-                INNER JOIN ViajesEnProgreso vp ON c.idConductor = vp.idConductor
-                WHERE vp.estadoViaje = 'ABIERTO' AND vp.activo = 1
-                ORDER BY NombreCompleto";
-
-                    CargarDropDownList(ddlFiltroConductorViajes, query, "NombreCompleto", "idConductor", "-- Todos los conductores --");
-                }
+                CargarDropDownListSP(ddlFiltroConductorViajes, "sp_LD_ObtenerConductoresConViajes", null, "NombreCompleto", "idConductor", "-- Todos los conductores --");
             }
             catch (Exception ex)
             {
@@ -240,19 +227,7 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
-                {
-                    string query = @"
-                        SELECT DISTINCT 
-                            c.idCliente,
-                            c.nombre
-                        FROM Cliente c
-                        INNER JOIN Despachos d ON c.idCliente = d.idCliente
-                        WHERE d.activo = 1 AND d.fechaCreacion >= DATEADD(MONTH, -6, GETDATE())
-                        ORDER BY c.nombre";
-
-                    CargarDropDownList(ddlFiltroClienteLotes, query, "nombre", "idCliente", "-- Todos los clientes --");
-                }
+                CargarDropDownListSP(ddlFiltroClienteLotes, "sp_LD_ObtenerClientesRecientes", null, "nombre", "idCliente", "-- Todos los clientes --");
             }
             catch (Exception ex)
             {
@@ -260,12 +235,16 @@ namespace WebSGV.Views
             }
         }
 
-        private void CargarDropDownList(DropDownList ddl, string query, string textField, string valueField, string defaultText)
+        private void CargarDropDownListSP(DropDownList ddl, string spName, SqlParameter[] parametros, string textField, string valueField, string defaultText)
         {
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand(spName, conn))
                 {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    if (parametros != null)
+                        cmd.Parameters.AddRange(parametros);
+
                     conn.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
@@ -284,9 +263,37 @@ namespace WebSGV.Views
             }
         }
 
+        private DespachoViaje LeerDespachoDesdeReader(SqlDataReader reader)
+        {
+            return new DespachoViaje
+            {
+                IdDespacho = GetSafeValue<int>(reader, "idDespacho"),
+                NumeroDespacho = GetSafeValue<string>(reader, "numeroDespacho"),
+                FechaDespacho = GetSafeValue<DateTime>(reader, "fechaDespacho"),
+                NombreCliente = GetSafeValue<string>(reader, "NombreCliente"),
+                NombreConductor = GetSafeValue<string>(reader, "NombreConductor"),
+                PlacaTracto = GetSafeValue<string>(reader, "placaTracto"),
+                PlacaCarreta = GetSafeValue<string>(reader, "placaCarreta"),
+                TipoOperacion = GetSafeValue<string>(reader, "tipoOperacion"),
+                LugarOperacion = GetSafeValue<string>(reader, "lugarOperacion"),
+                EstadoDespacho = GetSafeValue<string>(reader, "estadoDespacho"),
+                GuiaRemitente = GetSafeValue<string>(reader, "guiaRemitente", "N/A"),
+                GuiaTransportista = GetSafeValue<string>(reader, "guiaTransportista", "N/A"),
+                NumeroViaje = GetSafeValue<string>(reader, "NumeroViaje", "N/A"),
+                IdConductor = GetSafeValue<int>(reader, "idConductor"),
+                IdTracto = GetSafeValue<int>(reader, "idTracto"),
+                IdCarreta = GetSafeValue<int>(reader, "idCarreta"),
+                IdCliente = GetSafeValue<int>(reader, "idCliente"),
+                EsInternacional = GetSafeValue<bool>(reader, "EsInternacional"),
+                NumeroCPIC = GetSafeValue<string>(reader, "numeroCPIC"),
+                IdCPIC = reader["idCPIC"] == DBNull.Value ? (int?)null : GetSafeValue<int>(reader, "idCPIC")
+            };
+        }
 
-        
-
+        private string IdsACsv(List<int> ids)
+        {
+            return string.Join(",", ids);
+        }
 
         #endregion
 
@@ -315,54 +322,18 @@ namespace WebSGV.Views
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = @"
-                    SELECT 
-                        vp.idViajeProgreso,
-                        vp.numeroViajeProgreso,
-                        vp.idConductor,
-                        CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, ''), ' ', ISNULL(c.apMaterno, '')) AS NombreConductor,
-                        vp.fechaInicio,
-                        vp.fechaUltimaActividad,
-                        vp.cantidadDespachos,
-                        ISNULL(vp.esInternacional, 0) AS EsInternacional,
-                        vp.estadoViaje,
-                        vp.descripcionViaje
-                    FROM ViajesEnProgreso vp
-                    INNER JOIN Conductor c ON vp.idConductor = c.idConductor
-                    WHERE vp.estadoViaje = 'ABIERTO' AND vp.activo = 1
-                        AND EXISTS (
-                            SELECT 1 FROM Despachos
-                            WHERE idViajeProgreso = vp.idViajeProgreso
-                              AND activo = 1
-                        )";
-
-                List<SqlParameter> parametros = new List<SqlParameter>();
-
-                if (!string.IsNullOrEmpty(ddlFiltroConductorViajes.SelectedValue))
+                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerViajesActivos", conn))
                 {
-                    query += " AND vp.idConductor = @idConductor";
-                    parametros.Add(new SqlParameter("@idConductor", ddlFiltroConductorViajes.SelectedValue));
-                }
+                    cmd.CommandType = CommandType.StoredProcedure;
 
-                if (!string.IsNullOrEmpty(ddlFiltroTipoViajes.SelectedValue))
-                {
-                    query += " AND vp.esInternacional = @esInternacional";
-                    parametros.Add(new SqlParameter("@esInternacional", ddlFiltroTipoViajes.SelectedValue == "1"));
-                }
+                    cmd.Parameters.AddWithValue("@idConductor",
+                        string.IsNullOrEmpty(ddlFiltroConductorViajes.SelectedValue) ? (object)DBNull.Value : Convert.ToInt32(ddlFiltroConductorViajes.SelectedValue));
+                    cmd.Parameters.AddWithValue("@esInternacional",
+                        string.IsNullOrEmpty(ddlFiltroTipoViajes.SelectedValue) ? (object)DBNull.Value : (ddlFiltroTipoViajes.SelectedValue == "1"));
+                    cmd.Parameters.AddWithValue("@numeroViaje",
+                        string.IsNullOrEmpty(txtBuscarViaje.Text.Trim()) ? (object)DBNull.Value : txtBuscarViaje.Text.Trim());
 
-                if (!string.IsNullOrEmpty(txtBuscarViaje.Text.Trim()))
-                {
-                    query += " AND vp.numeroViajeProgreso LIKE @numeroViaje";
-                    parametros.Add(new SqlParameter("@numeroViaje", "%" + txtBuscarViaje.Text.Trim() + "%"));
-                }
-
-                query += " ORDER BY vp.fechaUltimaActividad DESC";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddRange(parametros.ToArray());
                     conn.Open();
-
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
@@ -410,48 +381,9 @@ namespace WebSGV.Views
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = @"
-            SELECT 
-                d.idDespacho,
-                d.numeroDespacho,
-                d.fechaDespacho,
-                
-                -- Información básica
-                cl.nombre AS NombreCliente,
-                CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, '')) AS NombreConductor,
-                t.placaTracto,
-                ca.placaCarreta,
-                d.tipoOperacion,
-                d.lugarOperacion,
-                d.estadoDespacho,
-                d.guiaRemitente,
-                d.guiaTransportista,
-                vp.numeroViajeProgreso AS NumeroViaje,
-                
-                -- ✅ NUEVO: IDs necesarios
-                d.idConductor,
-                d.idTracto,
-                d.idCarreta,
-                d.idCliente,
-                
-                -- ✅ NUEVO: Datos internacionales
-                ISNULL(d.esInternacional, 0) AS EsInternacional,
-                cp.numeroCPIC,
-                d.idCPIC
-                
-            FROM Despachos d
-            INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
-            INNER JOIN Conductor c ON d.idConductor = c.idConductor
-            INNER JOIN Tracto t ON d.idTracto = t.idTracto
-            INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-            LEFT JOIN ViajesEnProgreso vp ON d.idViajeProgreso = vp.idViajeProgreso
-            LEFT JOIN CPIC cp ON d.idCPIC = cp.idCPIC  -- ✅ NUEVO
-            WHERE d.idViajeProgreso = @idViajeProgreso
-                AND d.activo = 1
-            ORDER BY d.fechaCreacion DESC";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerDespachosViaje", conn))
                 {
+                    cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
                     conn.Open();
 
@@ -459,35 +391,7 @@ namespace WebSGV.Views
                     {
                         while (reader.Read())
                         {
-                            despachos.Add(new DespachoViaje
-                            {
-                                IdDespacho = GetSafeValue<int>(reader, "idDespacho"),
-                                NumeroDespacho = GetSafeValue<string>(reader, "numeroDespacho"),
-                                FechaDespacho = GetSafeValue<DateTime>(reader, "fechaDespacho"),
-
-                                // Información básica
-                                NombreCliente = GetSafeValue<string>(reader, "NombreCliente"),
-                                NombreConductor = GetSafeValue<string>(reader, "NombreConductor"),
-                                PlacaTracto = GetSafeValue<string>(reader, "placaTracto"),
-                                PlacaCarreta = GetSafeValue<string>(reader, "placaCarreta"),
-                                TipoOperacion = GetSafeValue<string>(reader, "tipoOperacion"),
-                                LugarOperacion = GetSafeValue<string>(reader, "lugarOperacion"),
-                                EstadoDespacho = GetSafeValue<string>(reader, "estadoDespacho"),
-                                GuiaRemitente = GetSafeValue<string>(reader, "guiaRemitente", "N/A"),
-                                GuiaTransportista = GetSafeValue<string>(reader, "guiaTransportista", "N/A"),
-                                NumeroViaje = GetSafeValue<string>(reader, "NumeroViaje", "N/A"),
-
-                                // ✅ NUEVO: IDs
-                                IdConductor = GetSafeValue<int>(reader, "idConductor"),
-                                IdTracto = GetSafeValue<int>(reader, "idTracto"),
-                                IdCarreta = GetSafeValue<int>(reader, "idCarreta"),
-                                IdCliente = GetSafeValue<int>(reader, "idCliente"),
-
-                                // ✅ NUEVO: Internacional y CPIC
-                                EsInternacional = GetSafeValue<bool>(reader, "EsInternacional"),
-                                NumeroCPIC = GetSafeValue<string>(reader, "numeroCPIC"),
-                                IdCPIC = reader["idCPIC"] == DBNull.Value ? (int?)null : GetSafeValue<int>(reader, "idCPIC")
-                            });
+                            despachos.Add(LeerDespachoDesdeReader(reader));
                         }
                     }
                 }
@@ -500,25 +404,9 @@ namespace WebSGV.Views
         {
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = @"
-                    SELECT 
-                        vp.numeroViajeProgreso,
-                        CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, ''), ' ', ISNULL(c.apMaterno, '')) AS NombreConductor,
-                        vp.fechaInicio,
-                        vp.fechaUltimaActividad,
-                        vp.cantidadDespachos,
-                        vp.estadoViaje,
-                        SUM(CASE WHEN d.esInternacional = 1 THEN 1 ELSE 0 END) AS DespachoInternacionales,
-                        SUM(CASE WHEN ISNULL(d.esInternacional, 0) = 0 THEN 1 ELSE 0 END) AS DespachosNacionales
-                    FROM ViajesEnProgreso vp
-                    INNER JOIN Conductor c ON vp.idConductor = c.idConductor
-                    LEFT JOIN Despachos d ON d.idViajeProgreso = vp.idViajeProgreso AND d.activo = 1
-                    WHERE vp.idViajeProgreso = @idViajeProgreso
-                    GROUP BY vp.numeroViajeProgreso, c.nombre, c.apPaterno, c.apMaterno,
-                             vp.fechaInicio, vp.fechaUltimaActividad, vp.cantidadDespachos, vp.estadoViaje";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerInfoViajeDetalle", conn))
                 {
+                    cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
                     conn.Open();
 
@@ -533,7 +421,7 @@ namespace WebSGV.Views
                             lblEstadoViajeDetalle.Text = GetSafeValue<string>(reader, "estadoViaje");
                             lblUltimaActividadDetalle.Text = GetSafeValue<DateTime>(reader, "fechaUltimaActividad").ToString("dd/MM/yyyy HH:mm");
 
-                            int internacionales = GetSafeValue<int>(reader, "DespachoInternacionales");
+                            int internacionales = GetSafeValue<int>(reader, "DespachosInternacionales");
                             int nacionales = GetSafeValue<int>(reader, "DespachosNacionales");
 
                             if (internacionales > 0 && nacionales > 0)
@@ -575,111 +463,28 @@ namespace WebSGV.Views
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = @"
-                    WITH LotesAgrupados AS (
-                        SELECT 
-                            -- ID virtual basado en criterios comunes
-                            CONCAT(
-                                CAST(d.idCliente AS VARCHAR(10)), '_',
-                                ISNULL(d.numeroPedido, 'NOPEDIDO'), '_',
-                                CONVERT(VARCHAR(10), d.fechaDespacho, 120), '_',
-                                d.tipoOperacion, '_',
-                                CAST(d.esInternacional AS VARCHAR(1)), '_',
-                                d.lugarOperacion
-                            ) AS IdLoteVirtual,
-                            
-                            d.fechaDespacho AS FechaProgramacion,
-                            d.idCliente,
-                            cl.nombre AS NombreCliente,
-                            d.numeroPedido,
-                            d.tipoOperacion,
-                            d.esInternacional,
-                            d.lugarOperacion AS PlantaOperacion,
-                            COUNT(*) AS CantidadDespachos,
-                            MAX(ISNULL(f.numeroFactura, '')) AS NumeroFactura,
-                            MAX(ISNULL(c.numeroCPIC, '')) AS NumeroCPIC,
-                            MIN(d.fechaCreacion) AS FechaCreacion,
-                            MAX(ISNULL(d.usuarioCreacion, 'Sistema')) AS UsuarioCreacion,
-
-                            -- Datos para edición
-                            MAX(f.fechaEmision) AS FechaEmisionFactura,
-                            MAX(f.valorTotal) AS ValorTotalFactura,
-                            MAX(c.fechaEmision) AS FechaEmisionCPIC,
-                            MAX(c.valorTotalFlete) AS ValorFlete,
-
-                            -- Estado derivado del lote
-                            CASE WHEN SUM(CASE WHEN d.estadoDespacho = 'ANULADO' THEN 1 ELSE 0 END) = COUNT(*)
-                                 THEN 'ANULADO' ELSE 'ACTIVO' END AS EstadoLote
-
-                        FROM Despachos d
-                        INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
-                        LEFT JOIN Factura f ON d.idFactura = f.idFactura
-                        LEFT JOIN CPIC c ON d.idCPIC = c.idCPIC
-                        WHERE d.activo = 1";
-
-                List<SqlParameter> parametros = new List<SqlParameter>();
-
-                // Aplicar filtros
-                if (!string.IsNullOrEmpty(ddlFiltroClienteLotes.SelectedValue))
+                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerLotesRegistrados", conn))
                 {
-                    query += " AND d.idCliente = @idCliente";
-                    parametros.Add(new SqlParameter("@idCliente", ddlFiltroClienteLotes.SelectedValue));
-                }
+                    cmd.CommandType = CommandType.StoredProcedure;
 
-                if (!string.IsNullOrEmpty(ddlFiltroOperacionLotes.SelectedValue))
-                {
-                    query += " AND d.tipoOperacion = @tipoOperacion";
-                    parametros.Add(new SqlParameter("@tipoOperacion", ddlFiltroOperacionLotes.SelectedValue));
-                }
+                    cmd.Parameters.AddWithValue("@idCliente",
+                        string.IsNullOrEmpty(ddlFiltroClienteLotes.SelectedValue) ? (object)DBNull.Value : Convert.ToInt32(ddlFiltroClienteLotes.SelectedValue));
+                    cmd.Parameters.AddWithValue("@tipoOperacion",
+                        string.IsNullOrEmpty(ddlFiltroOperacionLotes.SelectedValue) ? (object)DBNull.Value : ddlFiltroOperacionLotes.SelectedValue);
+                    cmd.Parameters.AddWithValue("@planta",
+                        string.IsNullOrEmpty(ddlFiltroPlantaLotes.SelectedValue) ? (object)DBNull.Value : ddlFiltroPlantaLotes.SelectedValue);
+                    cmd.Parameters.AddWithValue("@numeroPedido",
+                        string.IsNullOrEmpty(txtBuscarLote.Text.Trim()) ? (object)DBNull.Value : txtBuscarLote.Text.Trim());
 
-                if (!string.IsNullOrEmpty(ddlFiltroPlantaLotes.SelectedValue))
-                {
-                    query += " AND d.lugarOperacion = @planta";
-                    parametros.Add(new SqlParameter("@planta", ddlFiltroPlantaLotes.SelectedValue));
-                }
+                    DateTime fechaDesde, fechaHasta;
+                    cmd.Parameters.AddWithValue("@fechaDesde",
+                        DateTime.TryParse(txtFechaDesde.Text, out fechaDesde) ? (object)fechaDesde : DBNull.Value);
+                    cmd.Parameters.AddWithValue("@fechaHasta",
+                        DateTime.TryParse(txtFechaHasta.Text, out fechaHasta) ? (object)fechaHasta : DBNull.Value);
+                    cmd.Parameters.AddWithValue("@estadoFiltro",
+                        string.IsNullOrEmpty(ddlFiltroEstadoLotes.SelectedValue) ? (object)DBNull.Value : ddlFiltroEstadoLotes.SelectedValue);
 
-                if (!string.IsNullOrEmpty(txtBuscarLote.Text.Trim()))
-                {
-                    query += " AND d.numeroPedido LIKE @numeroPedido";
-                    parametros.Add(new SqlParameter("@numeroPedido", "%" + txtBuscarLote.Text.Trim() + "%"));
-                }
-
-                // Filtro por fechas
-                DateTime fechaDesde, fechaHasta;
-                if (DateTime.TryParse(txtFechaDesde.Text, out fechaDesde))
-                {
-                    query += " AND d.fechaDespacho >= @fechaDesde";
-                    parametros.Add(new SqlParameter("@fechaDesde", fechaDesde));
-                }
-
-                if (DateTime.TryParse(txtFechaHasta.Text, out fechaHasta))
-                {
-                    query += " AND d.fechaDespacho <= @fechaHasta";
-                    parametros.Add(new SqlParameter("@fechaHasta", fechaHasta.Date.AddDays(1).AddSeconds(-1)));
-                }
-
-                string estadoFiltro = ddlFiltroEstadoLotes.SelectedValue;
-                if (!string.IsNullOrEmpty(estadoFiltro))
-                    parametros.Add(new SqlParameter("@estadoFiltro", estadoFiltro));
-
-                query += @"
-                        GROUP BY 
-                            d.idCliente, cl.nombre, d.numeroPedido, d.fechaDespacho, 
-                            d.tipoOperacion, d.esInternacional, d.lugarOperacion
-                        HAVING COUNT(*) > 1
-                    )
-                    SELECT * FROM LotesAgrupados
-                    WHERE (@estadoFiltro = '' OR EstadoLote = @estadoFiltro)
-                    ORDER BY FechaCreacion DESC";
-
-                if (string.IsNullOrEmpty(estadoFiltro))
-                    parametros.Add(new SqlParameter("@estadoFiltro", ""));
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddRange(parametros.ToArray());
                     conn.Open();
-
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
@@ -735,29 +540,17 @@ namespace WebSGV.Views
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = @"
-                    SELECT d.idDespacho 
-                    FROM Despachos d
-                    WHERE d.activo = 1
-                        AND d.idCliente = @idCliente
-                        AND d.fechaDespacho = @fechaDespacho
-                        AND d.tipoOperacion = @tipoOperacion
-                        AND d.esInternacional = @esInternacional
-                        AND d.lugarOperacion = @planta";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerIdsDespachosDeLote", conn))
                 {
+                    cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@idCliente", criterios.IdCliente);
                     cmd.Parameters.AddWithValue("@fechaDespacho", criterios.FechaDespacho);
                     cmd.Parameters.AddWithValue("@tipoOperacion", criterios.TipoOperacion);
                     cmd.Parameters.AddWithValue("@esInternacional", criterios.EsInternacional);
                     cmd.Parameters.AddWithValue("@planta", criterios.Planta);
-
-                    if (!string.IsNullOrEmpty(criterios.NumeroPedido) && criterios.NumeroPedido != "NOPEDIDO")
-                    {
-                        query += " AND d.numeroPedido = @numeroPedido";
-                        cmd.Parameters.AddWithValue("@numeroPedido", criterios.NumeroPedido);
-                    }
+                    cmd.Parameters.AddWithValue("@numeroPedido",
+                        string.IsNullOrEmpty(criterios.NumeroPedido) || criterios.NumeroPedido == "NOPEDIDO"
+                            ? (object)DBNull.Value : criterios.NumeroPedido);
 
                     conn.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
@@ -804,76 +597,17 @@ namespace WebSGV.Views
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = @"
-            SELECT 
-                d.idDespacho,
-                d.numeroDespacho,
-                d.fechaDespacho,
-                cl.nombre AS NombreCliente,
-                CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, '')) AS NombreConductor,
-                t.placaTracto,
-                ca.placaCarreta,
-                d.tipoOperacion,
-                d.lugarOperacion,
-                d.estadoDespacho,
-                d.guiaRemitente,
-                d.guiaTransportista,
-                ISNULL(vp.numeroViajeProgreso, 'Sin asignar') AS NumeroViaje,
-                
-                -- ✅ NUEVO: IDs necesarios
-                d.idConductor,
-                d.idTracto,
-                d.idCarreta,
-                d.idCliente,
-                
-                -- ✅ NUEVO: Datos internacionales
-                ISNULL(d.esInternacional, 0) AS EsInternacional,
-                cp.numeroCPIC,
-                d.idCPIC
-                
-            FROM Despachos d
-            INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
-            INNER JOIN Conductor c ON d.idConductor = c.idConductor
-            INNER JOIN Tracto t ON d.idTracto = t.idTracto
-            INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-            LEFT JOIN ViajesEnProgreso vp ON d.idViajeProgreso = vp.idViajeProgreso
-            LEFT JOIN CPIC cp ON d.idCPIC = cp.idCPIC  -- ✅ NUEVO
-            WHERE d.idDespacho IN (" + string.Join(",", idsDespachos) + @")
-                AND d.activo = 1
-            ORDER BY d.fechaCreacion DESC";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerDespachosPorIds", conn))
                 {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@idsDespachos", IdsACsv(idsDespachos));
                     conn.Open();
+
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            despachos.Add(new DespachoViaje
-                            {
-                                IdDespacho = GetSafeValue<int>(reader, "idDespacho"),
-                                NumeroDespacho = GetSafeValue<string>(reader, "numeroDespacho"),
-                                FechaDespacho = GetSafeValue<DateTime>(reader, "fechaDespacho"),
-                                NombreCliente = GetSafeValue<string>(reader, "NombreCliente"),
-                                NombreConductor = GetSafeValue<string>(reader, "NombreConductor"),
-                                PlacaTracto = GetSafeValue<string>(reader, "placaTracto"),
-                                PlacaCarreta = GetSafeValue<string>(reader, "placaCarreta"),
-                                TipoOperacion = GetSafeValue<string>(reader, "tipoOperacion"),
-                                LugarOperacion = GetSafeValue<string>(reader, "lugarOperacion"),
-                                EstadoDespacho = GetSafeValue<string>(reader, "estadoDespacho"),
-                                GuiaRemitente = GetSafeValue<string>(reader, "guiaRemitente", "N/A"),
-                                GuiaTransportista = GetSafeValue<string>(reader, "guiaTransportista", "N/A"),
-                                NumeroViaje = GetSafeValue<string>(reader, "NumeroViaje"),
-
-                                // ✅ NUEVO
-                                IdConductor = GetSafeValue<int>(reader, "idConductor"),
-                                IdTracto = GetSafeValue<int>(reader, "idTracto"),
-                                IdCarreta = GetSafeValue<int>(reader, "idCarreta"),
-                                IdCliente = GetSafeValue<int>(reader, "idCliente"),
-                                EsInternacional = GetSafeValue<bool>(reader, "EsInternacional"),
-                                NumeroCPIC = GetSafeValue<string>(reader, "numeroCPIC"),
-                                IdCPIC = reader["idCPIC"] == DBNull.Value ? (int?)null : GetSafeValue<int>(reader, "idCPIC")
-                            });
+                            despachos.Add(LeerDespachoDesdeReader(reader));
                         }
                     }
                 }
@@ -920,22 +654,12 @@ namespace WebSGV.Views
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = @"
-            SELECT 
-                d.idDespacho,
-                d.numeroDespacho,
-                d.fechaDespacho,
-                d.idConductor,
-                CONCAT(c.nombre, ' ', ISNULL(c.apPaterno, ''), ' ', ISNULL(c.apMaterno, '')) AS NombreConductorActual
-            FROM Despachos d
-            INNER JOIN Conductor c ON d.idConductor = c.idConductor
-            WHERE d.idDespacho IN (" + string.Join(",", idsDespachos) + @")
-                AND d.activo = 1
-            ORDER BY d.numeroDespacho";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerDespachosConductoresLote", conn))
                 {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@idsDespachos", IdsACsv(idsDespachos));
                     conn.Open();
+
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
@@ -1170,16 +894,11 @@ namespace WebSGV.Views
         {
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                string query = @"
-            SELECT 
-                idConductor,
-                CONCAT(nombre, ' ', ISNULL(apPaterno, ''), ' ', ISNULL(apMaterno, '')) AS NombreCompleto
-            FROM Conductor
-            ORDER BY NombreCompleto";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerTodosConductores", conn))
                 {
+                    cmd.CommandType = CommandType.StoredProcedure;
                     conn.Open();
+
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         ddl.Items.Clear();
@@ -1326,6 +1045,12 @@ namespace WebSGV.Views
             var lote = ObtenerLotePorId(LoteSeleccionadoId);
             if (lote == null || lote.IdsDespachos.Count == 0) return;
 
+            string idsStr = IdsACsv(lote.IdsDespachos);
+            DateTime fechaActual = FechaHelper.Ahora();
+            string usuario = ObtenerUsuarioActual();
+
+            Dictionary<int, int> cambiosConductores = ObtenerCambiosConductoresDesdeGrid();
+
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
                 conn.Open();
@@ -1333,24 +1058,95 @@ namespace WebSGV.Views
                 {
                     try
                     {
-                        ActualizarDespachosLote(conn, transaction, lote.IdsDespachos);
+                        // 1. Actualizar cada despacho del lote
+                        foreach (int idDespacho in lote.IdsDespachos)
+                        {
+                            using (SqlCommand cmd = new SqlCommand("sp_LD_ActualizarDespachoEnLote", conn, transaction))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@idDespacho", idDespacho);
+                                cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(txtFechaProgramacionEdit.Text));
+                                cmd.Parameters.AddWithValue("@numeroPedido",
+                                    string.IsNullOrEmpty(txtNumeroPedidoEdit.Text) ? (object)DBNull.Value : txtNumeroPedidoEdit.Text);
+                                cmd.Parameters.AddWithValue("@lugarOperacion", ddlPlantaEdit.SelectedValue);
+                                cmd.Parameters.AddWithValue("@tipoOperacion", ddlTipoOperacionEdit.SelectedValue);
+                                cmd.Parameters.AddWithValue("@esInternacional", rblAmbitoEdit.SelectedValue == "1");
+                                cmd.Parameters.AddWithValue("@idConductor",
+                                    cambiosConductores.ContainsKey(idDespacho) ? (object)cambiosConductores[idDespacho] : DBNull.Value);
+                                cmd.Parameters.AddWithValue("@usuarioModificacion", usuario);
+                                cmd.Parameters.AddWithValue("@fechaActual", fechaActual);
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
 
+                        // 2. Recalcular conductor dominante de viajes afectados
+                        if (cambiosConductores.Count > 0)
+                        {
+                            using (SqlCommand cmd = new SqlCommand("sp_LD_ActualizarConductorDominanteViajes", conn, transaction))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
+                                cmd.Parameters.AddWithValue("@fechaActual", fechaActual);
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+
+                        // 3. Gestionar Factura
                         if (pnlFacturaEdit.Visible && !string.IsNullOrEmpty(txtNumeroFacturaEdit.Text))
                         {
-                            ActualizarDocumentosLote(conn, transaction, "FACTURA", lote.IdsDespachos);
+                            DateTime fechaEmisionFactura = DateTime.Today;
+                            DateTime.TryParse(txtFechaEmisionFacturaEdit.Text, out fechaEmisionFactura);
+                            decimal valorTotal = 0;
+                            decimal.TryParse(txtValorTotalFacturaEdit.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorTotal);
+
+                            using (SqlCommand cmd = new SqlCommand("sp_LD_GestionarFacturaLote", conn, transaction))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
+                                cmd.Parameters.AddWithValue("@numeroFactura", txtNumeroFacturaEdit.Text);
+                                cmd.Parameters.AddWithValue("@fechaEmision", fechaEmisionFactura);
+                                cmd.Parameters.AddWithValue("@valorTotal", valorTotal);
+                                cmd.ExecuteNonQuery();
+                            }
                         }
                         else if (!pnlFacturaEdit.Visible)
                         {
-                            DesvinculaDocumentoLote(conn, transaction, "FACTURA", lote.IdsDespachos);
+                            using (SqlCommand cmd = new SqlCommand("sp_LD_DesvincularDocumentoLote", conn, transaction))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
+                                cmd.Parameters.AddWithValue("@tipoDocumento", "FACTURA");
+                                cmd.ExecuteNonQuery();
+                            }
                         }
 
+                        // 4. Gestionar CPIC
                         if (pnlCPICEdit.Visible && !string.IsNullOrEmpty(txtNumeroCPICEdit.Text))
                         {
-                            ActualizarDocumentosLote(conn, transaction, "CPIC", lote.IdsDespachos);
+                            DateTime fechaEmisionCPIC = DateTime.Today;
+                            DateTime.TryParse(txtFechaEmisionCPICEdit.Text, out fechaEmisionCPIC);
+                            decimal valorFlete = 0;
+                            decimal.TryParse(txtValorFleteEdit.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorFlete);
+
+                            using (SqlCommand cmd = new SqlCommand("sp_LD_GestionarCPICLote", conn, transaction))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
+                                cmd.Parameters.AddWithValue("@numeroCPIC", txtNumeroCPICEdit.Text);
+                                cmd.Parameters.AddWithValue("@fechaEmision", fechaEmisionCPIC);
+                                cmd.Parameters.AddWithValue("@valorTotalFlete", valorFlete);
+                                cmd.ExecuteNonQuery();
+                            }
                         }
                         else if (!pnlCPICEdit.Visible)
                         {
-                            DesvinculaDocumentoLote(conn, transaction, "CPIC", lote.IdsDespachos);
+                            using (SqlCommand cmd = new SqlCommand("sp_LD_DesvincularDocumentoLote", conn, transaction))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
+                                cmd.Parameters.AddWithValue("@tipoDocumento", "CPIC");
+                                cmd.ExecuteNonQuery();
+                            }
                         }
 
                         transaction.Commit();
@@ -1364,63 +1160,6 @@ namespace WebSGV.Views
             }
         }
 
-        private void ActualizarDespachosLote(SqlConnection conn, SqlTransaction transaction, List<int> idsDespachos)
-        {
-            if (idsDespachos.Count == 0) return;
-
-            // Obtener los nuevos conductores desde el GridView
-            Dictionary<int, int> cambiosConductores = ObtenerCambiosConductoresDesdeGrid();
-
-            foreach (int idDespacho in idsDespachos)
-            {
-                string query = @"
-            UPDATE Despachos 
-            SET 
-                fechaDespacho = @fechaDespacho,
-                numeroPedido = @numeroPedido,
-                lugarOperacion = @lugarOperacion,
-                tipoOperacion = @tipoOperacion,
-                esInternacional = @esInternacional,";
-
-                // ✅ Agregar actualización de conductor si cambió
-                if (cambiosConductores.ContainsKey(idDespacho))
-                {
-                    query += " idConductor = @idConductor,";
-                }
-
-                query += @"
-                usuarioModificacion = @usuarioModificacion,
-                fechaModificacion = @fechaActual
-            WHERE idDespacho = @idDespacho";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
-                {
-                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-                    cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(txtFechaProgramacionEdit.Text));
-                    cmd.Parameters.AddWithValue("@numeroPedido",
-                        string.IsNullOrEmpty(txtNumeroPedidoEdit.Text) ? (object)DBNull.Value : txtNumeroPedidoEdit.Text);
-                    cmd.Parameters.AddWithValue("@lugarOperacion", ddlPlantaEdit.SelectedValue);
-                    cmd.Parameters.AddWithValue("@tipoOperacion", ddlTipoOperacionEdit.SelectedValue);
-                    cmd.Parameters.AddWithValue("@esInternacional", rblAmbitoEdit.SelectedValue == "1");
-                    cmd.Parameters.AddWithValue("@usuarioModificacion", ObtenerUsuarioActual());
-                    cmd.Parameters.AddWithValue("@idDespacho", idDespacho);
-
-                    if (cambiosConductores.ContainsKey(idDespacho))
-                    {
-                        cmd.Parameters.AddWithValue("@idConductor", cambiosConductores[idDespacho]);
-                    }
-
-                    cmd.ExecuteNonQuery();
-                }
-            }
-
-            // ✅ Actualizar ViajesEnProgreso si hubo cambios de conductor
-            if (cambiosConductores.Count > 0)
-            {
-                ActualizarViajesDespuesCambios(conn, transaction, idsDespachos);
-            }
-        }
-
         private Dictionary<int, int> ObtenerCambiosConductoresDesdeGrid()
         {
             Dictionary<int, int> cambios = new Dictionary<int, int>();
@@ -1429,10 +1168,7 @@ namespace WebSGV.Views
             {
                 if (row.RowType == DataControlRowType.DataRow)
                 {
-                    // Obtener ID del despacho (está oculto en la columna 0)
                     int idDespacho = Convert.ToInt32(gvConductoresLote.DataKeys[row.RowIndex].Value);
-
-                    // Obtener el nuevo conductor seleccionado
                     DropDownList ddlConductor = (DropDownList)row.FindControl("ddlConductorDespacho");
 
                     if (ddlConductor != null && !string.IsNullOrEmpty(ddlConductor.SelectedValue))
@@ -1444,215 +1180,6 @@ namespace WebSGV.Views
             }
 
             return cambios;
-        }
-
-        private void ActualizarViajesDespuesCambios(SqlConnection conn, SqlTransaction transaction, List<int> idsDespachos)
-        {
-            // Obtener viajes afectados
-            string queryViajes = @"
-        SELECT DISTINCT idViajeProgreso 
-        FROM Despachos 
-        WHERE idDespacho IN (" + string.Join(",", idsDespachos) + @") 
-        AND idViajeProgreso IS NOT NULL";
-
-            List<int> viajesAfectados = new List<int>();
-
-            using (SqlCommand cmd = new SqlCommand(queryViajes, conn, transaction))
-            {
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        viajesAfectados.Add(reader.GetInt32(0));
-                    }
-                }
-            }
-
-            // Para cada viaje, determinar el conductor dominante (el que tenga más despachos activos)
-            // y actualizar tanto idConductor como fechaUltimaActividad
-            foreach (int idViaje in viajesAfectados)
-            {
-                // Obtener el conductor con más despachos activos en este viaje (ya con los cambios aplicados)
-                string queryConductorDominante = @"
-            SELECT TOP 1 idConductor
-            FROM Despachos
-            WHERE idViajeProgreso = @idViajeProgreso AND activo = 1
-            GROUP BY idConductor
-            ORDER BY COUNT(*) DESC";
-
-                int? idConductorDominante = null;
-                using (SqlCommand cmd = new SqlCommand(queryConductorDominante, conn, transaction))
-                {
-                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViaje);
-                    var result = cmd.ExecuteScalar();
-                    if (result != null && result != DBNull.Value)
-                        idConductorDominante = Convert.ToInt32(result);
-                }
-
-                string updateViaje = idConductorDominante.HasValue
-                    ? @"UPDATE ViajesEnProgreso 
-                        SET idConductor = @idConductor, fechaUltimaActividad = @fechaActual
-                        WHERE idViajeProgreso = @idViajeProgreso"
-                    : @"UPDATE ViajesEnProgreso 
-                        SET fechaUltimaActividad = @fechaActual
-                        WHERE idViajeProgreso = @idViajeProgreso";
-
-                using (SqlCommand cmd = new SqlCommand(updateViaje, conn, transaction))
-                {
-                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-                    if (idConductorDominante.HasValue)
-                        cmd.Parameters.AddWithValue("@idConductor", idConductorDominante.Value);
-                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViaje);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        private void ActualizarViajesConductor(SqlConnection conn, SqlTransaction transaction, List<int> idsDespachos, int nuevoConductorId)
-        {
-            // Obtener los viajes afectados
-            string queryViajes = @"
-        SELECT DISTINCT idViajeProgreso 
-        FROM Despachos 
-        WHERE idDespacho IN (" + string.Join(",", idsDespachos) + @") 
-        AND idViajeProgreso IS NOT NULL";
-
-            List<int> viajesAfectados = new List<int>();
-
-            using (SqlCommand cmd = new SqlCommand(queryViajes, conn, transaction))
-            {
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        viajesAfectados.Add(reader.GetInt32(0));
-                    }
-                }
-            }
-
-            // Actualizar cada viaje afectado
-            foreach (int idViaje in viajesAfectados)
-            {
-                string updateViaje = @"
-            UPDATE ViajesEnProgreso 
-            SET idConductor = @idConductor,
-                fechaUltimaActividad = @fechaActual
-            WHERE idViajeProgreso = @idViajeProgreso";
-
-                using (SqlCommand cmd = new SqlCommand(updateViaje, conn, transaction))
-                {
-                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-                    cmd.Parameters.AddWithValue("@idConductor", nuevoConductorId);
-                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViaje);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        private void ActualizarDocumentosLote(SqlConnection conn, SqlTransaction transaction, string tipoDocumento, List<int> idsDespachos)
-        {
-            if (idsDespachos == null || idsDespachos.Count == 0) return;
-
-            string idsStr = string.Join(",", idsDespachos);
-
-            if (tipoDocumento == "FACTURA")
-            {
-                int? idFactura = null;
-                using (SqlCommand cmd = new SqlCommand("SELECT TOP 1 idFactura FROM Despachos WHERE idDespacho IN (" + idsStr + ") AND idFactura IS NOT NULL", conn, transaction))
-                {
-                    var result = cmd.ExecuteScalar();
-                    if (result != null && result != DBNull.Value)
-                        idFactura = Convert.ToInt32(result);
-                }
-
-                DateTime fechaEmision = DateTime.Today;
-                DateTime.TryParse(txtFechaEmisionFacturaEdit.Text, out fechaEmision);
-                decimal valorTotal = 0;
-                decimal.TryParse(txtValorTotalFacturaEdit.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorTotal);
-
-                if (idFactura.HasValue)
-                {
-                    using (SqlCommand cmd = new SqlCommand("UPDATE Factura SET numeroFactura = @numero, fechaEmision = @fecha, valorTotal = @valor WHERE idFactura = @id", conn, transaction))
-                    {
-                        cmd.Parameters.AddWithValue("@numero", txtNumeroFacturaEdit.Text);
-                        cmd.Parameters.AddWithValue("@fecha", fechaEmision);
-                        cmd.Parameters.AddWithValue("@valor", valorTotal);
-                        cmd.Parameters.AddWithValue("@id", idFactura.Value);
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-                else
-                {
-                    int nuevoId;
-                    using (SqlCommand cmd = new SqlCommand("INSERT INTO Factura (numeroFactura, fechaEmision, valorTotal) OUTPUT INSERTED.idFactura VALUES (@numero, @fecha, @valor)", conn, transaction))
-                    {
-                        cmd.Parameters.AddWithValue("@numero", txtNumeroFacturaEdit.Text);
-                        cmd.Parameters.AddWithValue("@fecha", fechaEmision);
-                        cmd.Parameters.AddWithValue("@valor", valorTotal);
-                        nuevoId = (int)cmd.ExecuteScalar();
-                    }
-                    using (SqlCommand cmd = new SqlCommand("UPDATE Despachos SET idFactura = @id WHERE idDespacho IN (" + idsStr + ")", conn, transaction))
-                    {
-                        cmd.Parameters.AddWithValue("@id", nuevoId);
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-            }
-            else if (tipoDocumento == "CPIC")
-            {
-                int? idCPIC = null;
-                using (SqlCommand cmd = new SqlCommand("SELECT TOP 1 idCPIC FROM Despachos WHERE idDespacho IN (" + idsStr + ") AND idCPIC IS NOT NULL", conn, transaction))
-                {
-                    var result = cmd.ExecuteScalar();
-                    if (result != null && result != DBNull.Value)
-                        idCPIC = Convert.ToInt32(result);
-                }
-
-                DateTime fechaEmision = DateTime.Today;
-                DateTime.TryParse(txtFechaEmisionCPICEdit.Text, out fechaEmision);
-                decimal valorFlete = 0;
-                decimal.TryParse(txtValorFleteEdit.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorFlete);
-
-                if (idCPIC.HasValue)
-                {
-                    using (SqlCommand cmd = new SqlCommand("UPDATE CPIC SET numeroCPIC = @numero, fechaEmision = @fecha, valorTotalFlete = @valor WHERE idCPIC = @id", conn, transaction))
-                    {
-                        cmd.Parameters.AddWithValue("@numero", txtNumeroCPICEdit.Text);
-                        cmd.Parameters.AddWithValue("@fecha", fechaEmision);
-                        cmd.Parameters.AddWithValue("@valor", valorFlete);
-                        cmd.Parameters.AddWithValue("@id", idCPIC.Value);
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-                else
-                {
-                    int nuevoId;
-                    using (SqlCommand cmd = new SqlCommand("INSERT INTO CPIC (numeroCPIC, fechaEmision, valorTotalFlete) OUTPUT INSERTED.idCPIC VALUES (@numero, @fecha, @valor)", conn, transaction))
-                    {
-                        cmd.Parameters.AddWithValue("@numero", txtNumeroCPICEdit.Text);
-                        cmd.Parameters.AddWithValue("@fecha", fechaEmision);
-                        cmd.Parameters.AddWithValue("@valor", valorFlete);
-                        nuevoId = (int)cmd.ExecuteScalar();
-                    }
-                    using (SqlCommand cmd = new SqlCommand("UPDATE Despachos SET idCPIC = @id WHERE idDespacho IN (" + idsStr + ")", conn, transaction))
-                    {
-                        cmd.Parameters.AddWithValue("@id", nuevoId);
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-            }
-        }
-
-        private void DesvinculaDocumentoLote(SqlConnection conn, SqlTransaction transaction, string tipoDocumento, List<int> idsDespachos)
-        {
-            if (idsDespachos == null || idsDespachos.Count == 0) return;
-            string idsStr = string.Join(",", idsDespachos);
-            string campo = tipoDocumento == "FACTURA" ? "idFactura" : "idCPIC";
-            string query = $"UPDATE Despachos SET {campo} = NULL WHERE idDespacho IN ({idsStr})";
-            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
-            {
-                cmd.ExecuteNonQuery();
-            }
         }
 
         protected void btnAnularLote_Click(object sender, EventArgs e)
@@ -1698,81 +1225,27 @@ namespace WebSGV.Views
         {
             if (idsDespachos == null || idsDespachos.Count == 0) return 0;
 
-            int viajesAnulados = 0;
-            string idsStr = string.Join(",", idsDespachos);
-
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                conn.Open();
-                using (SqlTransaction transaction = conn.BeginTransaction())
+                using (SqlCommand cmd = new SqlCommand("sp_LD_AnularLote", conn))
                 {
-                    try
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@idsDespachos", IdsACsv(idsDespachos));
+                    cmd.Parameters.AddWithValue("@usuario", ObtenerUsuarioActual());
+                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
+
+                    SqlParameter outputParam = new SqlParameter("@viajesAnulados", SqlDbType.Int)
                     {
-                        // 1. Marcar despachos como ANULADO
-                        string queryAnular = $@"
-                            UPDATE Despachos
-                            SET estadoDespacho = 'ANULADO',
-                                usuarioModificacion = @usuario,
-                                fechaModificacion = @fechaActual
-                            WHERE idDespacho IN ({idsStr})";
+                        Direction = ParameterDirection.Output
+                    };
+                    cmd.Parameters.Add(outputParam);
 
-                        using (SqlCommand cmd = new SqlCommand(queryAnular, conn, transaction))
-                        {
-                            cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-                            cmd.Parameters.AddWithValue("@usuario", ObtenerUsuarioActual());
-                            cmd.ExecuteNonQuery();
-                        }
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
 
-                        // 2. Obtener viajes afectados por estos despachos
-                        List<int> viajesAfectados = ObtenerViajesAfectadosPorDespachos(conn, transaction, idsDespachos);
-
-                        // 3. Anular viajes que ya no tienen despachos activos no-ANULADOS
-                        foreach (int idViaje in viajesAfectados)
-                        {
-                            string queryChequeo = @"
-                                SELECT COUNT(*)
-                                FROM Despachos
-                                WHERE idViajeProgreso = @idViajeProgreso
-                                  AND activo = 1
-                                  AND estadoDespacho <> 'ANULADO'";
-
-                            int despachosActivos;
-                            using (SqlCommand cmd = new SqlCommand(queryChequeo, conn, transaction))
-                            {
-                                cmd.Parameters.AddWithValue("@idViajeProgreso", idViaje);
-                                despachosActivos = (int)cmd.ExecuteScalar();
-                            }
-
-                            if (despachosActivos == 0)
-                            {
-                                string queryAnularViaje = @"
-                                    UPDATE ViajesEnProgreso
-                                    SET estadoViaje = 'ANULADO',
-                                        fechaUltimaActividad = @fechaActual
-                                    WHERE idViajeProgreso = @idViajeProgreso
-                                      AND estadoViaje = 'ABIERTO'";
-
-                                using (SqlCommand cmd = new SqlCommand(queryAnularViaje, conn, transaction))
-                                {
-                                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-                                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViaje);
-                                    int rows = cmd.ExecuteNonQuery();
-                                    viajesAnulados += rows;
-                                }
-                            }
-                        }
-
-                        transaction.Commit();
-                    }
-                    catch
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
+                    return (int)outputParam.Value;
                 }
             }
-
-            return viajesAnulados;
         }
 
         protected void btnEliminarLote_Click(object sender, EventArgs e)
@@ -1810,88 +1283,16 @@ namespace WebSGV.Views
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                conn.Open();
-                using (SqlTransaction transaction = conn.BeginTransaction())
+                using (SqlCommand cmd = new SqlCommand("sp_LD_EliminarLote", conn))
                 {
-                    try
-                    {
-                        // 1. Obtener viajes afectados ANTES de eliminar
-                        List<int> viajesAfectados = ObtenerViajesAfectadosPorDespachos(conn, transaction, idsDespachos);
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@idsDespachos", IdsACsv(idsDespachos));
+                    cmd.Parameters.AddWithValue("@usuario", ObtenerUsuarioActual());
+                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
 
-                        // 2. Eliminación lógica de los despachos
-                        string queryDelete = @"
-                    UPDATE Despachos 
-                    SET activo = 0,
-                        usuarioModificacion = @usuario,
-                        fechaModificacion = @fechaActual
-                    WHERE idDespacho IN (" + string.Join(",", idsDespachos) + ")";
-
-                        using (SqlCommand cmd = new SqlCommand(queryDelete, conn, transaction))
-                        {
-                            cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-                            cmd.Parameters.AddWithValue("@usuario", ObtenerUsuarioActual());
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        // 3. Actualizar contadores de viajes afectados
-                        foreach (int idViaje in viajesAfectados)
-                        {
-                            ActualizarContadorDespachosViaje(conn, transaction, idViaje);
-                        }
-
-                        transaction.Commit();
-                    }
-                    catch
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
                 }
-            }
-        }
-
-        private List<int> ObtenerViajesAfectadosPorDespachos(SqlConnection conn, SqlTransaction transaction, List<int> idsDespachos)
-        {
-            List<int> viajes = new List<int>();
-
-            string query = @"
-        SELECT DISTINCT idViajeProgreso 
-        FROM Despachos 
-        WHERE idDespacho IN (" + string.Join(",", idsDespachos) + @") 
-        AND idViajeProgreso IS NOT NULL";
-
-            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
-            {
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        viajes.Add(reader.GetInt32(0));
-                    }
-                }
-            }
-
-            return viajes;
-        }
-
-        private void ActualizarContadorDespachosViaje(SqlConnection conn, SqlTransaction transaction, int idViajeProgreso)
-        {
-            string query = @"
-        UPDATE ViajesEnProgreso 
-        SET cantidadDespachos = (
-            SELECT COUNT(*) 
-            FROM Despachos 
-            WHERE idViajeProgreso = @idViajeProgreso 
-            AND activo = 1
-        ),
-        fechaUltimaActividad = @fechaActual
-        WHERE idViajeProgreso = @idViajeProgreso";
-
-            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
-            {
-                cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-                cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
-                cmd.ExecuteNonQuery();
             }
         }
 
@@ -2185,11 +1586,11 @@ namespace WebSGV.Views
             {
                 using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
-                    conn.Open();
-
-                    string queryViajes = "SELECT COUNT(*) FROM ViajesEnProgreso WHERE estadoViaje = 'ABIERTO' AND activo = 1";
-                    using (SqlCommand cmd = new SqlCommand(queryViajes, conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_LD_ContarViajesActivos", conn))
                     {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        conn.Open();
+
                         int totalViajes = Convert.ToInt32(cmd.ExecuteScalar());
                         lblContadorViajes.Text = $"{totalViajes}";
                     }
