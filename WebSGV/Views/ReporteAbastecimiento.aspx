@@ -121,21 +121,36 @@
 
         .btn-export {
             height: 36px;
-            padding: 0 16px;
+            padding: 0 18px;
             font-size: 0.85rem;
             border-radius: 4px;
-            font-weight: 500;
+            font-weight: 600;
             background-color: #217346;
-            border: 1px solid #217346;
+            border: 1px solid #1a5c38;
             color: white;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
+            text-decoration: none;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+            line-height: 36px;
+            white-space: nowrap;
         }
 
         .btn-export:hover {
             background-color: #1a5c38;
+            color: white;
+            text-decoration: none;
+            box-shadow: 0 2px 6px rgba(33, 115, 70, 0.35);
+        }
+
+        .btn-export:active {
+            background-color: #155d2e;
+        }
+
+        .btn-export i {
+            font-size: 0.9rem;
         }
 
         .filter-separator {
@@ -247,6 +262,21 @@
         .tipo-camion { background-color: #e8f5e9; color: #2e7d32; }
         .tipo-otro { background-color: #f5f5f5; color: #616161; }
 
+        /* Badge motivo salida */
+        .motivo-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .motivo-viaje { background-color: #e3f2fd; color: #1565c0; }
+        .motivo-abastecimiento { background-color: #e8f5e9; color: #2e7d32; }
+        .motivo-mantenimiento { background-color: #fff3e0; color: #e65100; }
+        .motivo-otro { background-color: #f5f5f5; color: #616161; }
+
         /* Estado vacio */
         .empty-state {
             text-align: center;
@@ -332,18 +362,24 @@
             </div>
             <div class="filter-group">
                 <label>Conductor</label>
-                <asp:TextBox ID="txtBuscarConductor" runat="server" CssClass="form-control" placeholder="Nombre o DNI..." style="min-width:160px;"></asp:TextBox>
+                <asp:TextBox ID="txtBuscarConductor" runat="server" CssClass="form-control" placeholder="Nombre o DNI..." style="min-width:160px;" autocomplete="off"></asp:TextBox>
             </div>
             <div class="filter-group">
-                <label>Ruta</label>
-                <asp:DropDownList ID="ddlRuta" runat="server" CssClass="form-control" style="min-width:140px;">
-                    <asp:ListItem Value="" Text="Todas"></asp:ListItem>
+                <label>Motivo</label>
+                <asp:DropDownList ID="ddlTipoAbastecimiento" runat="server" CssClass="form-control" style="min-width:150px;">
+                    <asp:ListItem Value="" Text="Todos"></asp:ListItem>
+                    <asp:ListItem Value="VIAJE PROGRAMADO" Text="📦 Viaje Programado"></asp:ListItem>
+                    <asp:ListItem Value="ABASTECIMIENTO" Text="🚛 Abastecimiento"></asp:ListItem>
+                    <asp:ListItem Value="MANTENIMIENTO" Text="🔧 Mantenimiento"></asp:ListItem>
+                    <asp:ListItem Value="OTRO" Text="📋 Otro"></asp:ListItem>
                 </asp:DropDownList>
             </div>
             <asp:Button ID="btnBuscar" runat="server" CssClass="btn-filter btn-filter-primary" Text="Buscar" OnClick="btnBuscar_Click" />
             <asp:Button ID="btnLimpiar" runat="server" CssClass="btn-filter btn-filter-outline" Text="Limpiar" OnClick="btnLimpiar_Click" />
             <div class="filter-separator"></div>
-            <asp:Button ID="btnExportarExcel" runat="server" CssClass="btn-export" Text="&#xf1c3; Excel" OnClick="btnExportarExcel_Click" />
+            <asp:LinkButton ID="btnExportarExcel" runat="server" CssClass="btn-export" OnClick="btnExportarExcel_Click" CausesValidation="false">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </asp:LinkButton>
         </div>
 
         <!-- Resumen -->
@@ -383,6 +419,11 @@
                         <Columns>
                             <asp:BoundField DataField="NumeroFormato" HeaderText="Nro. Formato" />
                             <asp:BoundField DataField="Fecha" HeaderText="Fecha" DataFormatString="{0:dd/MM/yyyy}" />
+                            <asp:TemplateField HeaderText="Motivo">
+                                <ItemTemplate>
+                                    <%# FormatTipoAbastecimiento(Eval("TipoAbastecimiento")) %>
+                                </ItemTemplate>
+                            </asp:TemplateField>
                             <asp:TemplateField HeaderText="Tipo Vehiculo">
                                 <ItemTemplate>
                                     <%# FormatTipoVehiculo(Eval("TipoVehiculo")) %>
@@ -421,14 +462,4 @@
             </div>
         </asp:Panel>
     </div>
-
-    <script type="text/javascript">
-        // Ajustar el boton de Excel con icono Font Awesome
-        $(document).ready(function () {
-            var btnExcel = $('[id$="btnExportarExcel"]');
-            if (btnExcel.length) {
-                btnExcel.html('<i class="fas fa-file-excel"></i> Excel');
-            }
-        });
-    </script>
 </asp:Content>

@@ -8,11 +8,12 @@
 
 ## 👥 Roles del Sistema
 
-El sistema maneja **3 roles** definidos en `RolesHelper.cs`:
+El sistema maneja **4 roles** definidos en `RolesHelper.cs`:
 
 | Rol | Constante | Descripción |
 |-----|-----------|-------------|
 | **Administrador de Transporte** | `ADMIN` / `ADMINISTRADOR` | Gestión operativa completa: despachos, viajes, liquidaciones, registros y reportes |
+| **Administrador de Grifo** | `ADMINISTRADOR DE GRIFO` | Gestión de abastecimiento de combustible: registro, búsqueda, reportes, anulación/eliminación y registro de conductores |
 | **Conductor** | `CONDUCTOR` / `CHOFER` | Liquidación de viajes asignados y consulta de historial |
 | **Administrador de Sistema** | `ADMINISTRADOR DE SISTEMA` | Acceso total (incluye todo lo del Admin de Transporte) + Auditoría del sistema |
 
@@ -20,6 +21,7 @@ El sistema maneja **3 roles** definidos en `RolesHelper.cs`:
 
 ## 🔄 Flujo de Trabajo General
 
+### Flujo de Transporte (Admin de Transporte)
 ```
 Programación de Despacho (Admin)
         │
@@ -40,6 +42,30 @@ Admin Revisa: Aprobar / Rechazar / Editar
         │
         ├── Si Aprueba → Se generan Descuentos y Reintegros → Pasa a Historial/Reportes
         └── Si Rechaza → Regresa al Conductor para corrección
+```
+
+### Flujo de Abastecimiento (Admin de Grifo)
+```
+Registro de Abastecimiento (Admin Grifo)
+        │
+        ├── Modo Manual: Selección de conductor, placa, carreta, ruta, producto
+        └── Modo Viaje: Datos prellenados desde orden de viaje activa
+        │
+        ▼
+Registro de Tickets de Combustible (costo USD + galones)
+        │
+        ▼
+Cálculos Automáticos: GL totales, GL consumidos, rendimiento KM/GL
+        │
+        ▼
+Guardar Abastecimiento → Número correlativo generado
+        │
+        ▼
+Gestión Posterior (BuscarAbastecimiento.aspx):
+        ├── ✏️ Editar datos (GL, montos, producto, ruta, tipo)
+        ├── 🔄 Cambiar Tipo (Abastecimiento ↔ Mantenimiento ↔ Otro)
+        ├── 🚫 Anular → Marca como ANULADO (no editable)
+        └── 🗑️ Eliminar → Eliminación permanente con confirmación
 ```
 
 ---
@@ -104,12 +130,80 @@ Desde `ReportesOrdenesViaje.aspx` (pestaña Liquidaciones), el administrador pue
 | Página | Función |
 |--------|---------|
 | `AgregarCPIC.aspx` | Gestión de documentos CPIC (operaciones internacionales) |
-| `AgregarAbastecimiento.aspx` | Registro de abastecimientos de combustible |
-| `BuscarAbastecimiento.aspx` | Búsqueda de abastecimientos registrados |
 | `BuscarOrdenViaje.aspx` | Búsqueda de órdenes de viaje por múltiples criterios |
 | `AgregarIndicadores.aspx` | Registro de indicadores de tiempo en operaciones (horas de salida, llegada, carga, descarga, etc.) |
 | `RegistroRutas.aspx` | Gestión de rutas de transporte |
 | `RegistroProductos.aspx` | Gestión de productos transportados |
+
+---
+
+## ⛽ Rol: Administrador de Grifo (`ADMINISTRADOR DE GRIFO`)
+
+El Administrador de Grifo es responsable de la gestión integral del abastecimiento de combustible para la flota de vehículos.
+
+### 1. Dashboard (`DashboardGrifo.aspx`)
+
+Pantalla de inicio con visión general de la operación de abastecimiento:
+- Viajes activos pendientes de abastecimiento
+- Acceso rápido a registro y búsqueda de abastecimientos
+
+### 2. Registro de Abastecimiento (`AgregarAbastecimiento.aspx`)
+
+| Función | Descripción |
+|---------|-------------|
+| **Modo Manual** | Selección libre de conductor, placa tracto, carreta, tipo de vehículo, ruta y producto |
+| **Modo Viaje** | Datos prellenados desde un viaje activo (conductor, placas, ruta, GL asignados) |
+| **Tipo de Registro** | `ABASTECIMIENTO` (rutina), `MANTENIMIENTO` (servicio técnico), `OTRO` (especial) |
+| **Tickets** | Tabla dinámica de tickets con costo USD y galones por ticket |
+| **Cálculos automáticos** | GL Total = GL Ruta + GL Comprados, GL Consumidos, Rendimiento KM/GL |
+| **Sincronización** | GL Comprados y Monto Total se sincronizan automáticamente desde tickets |
+
+**Validación condicional por tipo:**
+- **VIAJE PROGRAMADO**: Todos los campos obligatorios
+- **ABASTECIMIENTO**: Placa y conductor obligatorios; producto, GL Ruta y tickets opcionales
+- **MANTENIMIENTO / OTRO**: Solo fecha, hora y lugar son obligatorios; detalle en observaciones
+
+### 3. Búsqueda y Gestión (`BuscarAbastecimiento.aspx`)
+
+| Acción | Descripción |
+|--------|-------------|
+| **Buscar** | Búsqueda por número de abastecimiento (exacta y LIKE) |
+| **Ver** | Visualización completa: datos del vehículo, combustible, rendimiento, observaciones |
+| **Editar** | Modo edición: modificar GL, montos, producto, ruta, observaciones |
+| **Cambiar Tipo** | Dropdown para cambiar entre ABASTECIMIENTO, MANTENIMIENTO, OTRO (no aplica a VIAJE PROGRAMADO) |
+| **Anular** | Marca el registro como `ANULADO` — banner rojo, edición bloqueada, auditoría registrada |
+| **Eliminar** | Eliminación permanente con doble confirmación — auditoría registrada |
+
+**Estados del registro:**
+| Estado | Badge | Editable | Descripción |
+|--------|-------|----------|-------------|
+| ABASTECIMIENTO | 🟢 Verde | ✅ | Rutina operativa |
+| VIAJE PROGRAMADO | 🔵 Azul | ✅ (tipo no cambiable) | Asociado a orden de viaje |
+| MANTENIMIENTO | 🟠 Naranja | ✅ | Servicio técnico |
+| OTRO | ⚫ Gris | ✅ | Uso especial |
+| ANULADO | 🔴 Rojo | ❌ | Registro anulado, solo eliminar |
+
+### 4. Reportes (`ReporteAbastecimiento.aspx`)
+
+| Función | Descripción |
+|---------|-------------|
+| **Filtros** | Por rango de fechas, conductor, placa |
+| **Vista** | Tabla con todos los abastecimientos registrados |
+| **Exportar Excel** | Exportación con detección dinámica de columnas (tipoAbastecimiento, rutaDescripcion) |
+
+### 5. Registro de Conductores
+
+El Admin de Grifo también puede registrar y gestionar conductores desde `RegistroChoferes.aspx`, permitiéndole mantener actualizada la base de datos de personal sin depender del Admin de Transporte.
+
+### Permisos (`RolesHelper.cs`)
+
+| Sección | Acceso |
+|---------|--------|
+| `ABASTECIMIENTO` | ✅ |
+| `DASHBOARD_GRIFO` | ✅ |
+| `REGISTRO_CONDUCTORES` | ✅ |
+| `DESPACHO`, `ORDEN_VIAJE`, `REGISTRO` (completo) | ❌ |
+| `AUDITORIA` | ❌ |
 
 ---
 
@@ -166,6 +260,7 @@ Tiene **todos los permisos del Administrador de Transporte** más acceso exclusi
 - `INSERT` — Creación de registros
 - `UPDATE` — Modificación de registros
 - `DELETE` — Eliminación de registros
+- `ANULAR` — Anulación de registros (ej: abastecimiento)
 - `LOGIN` — Inicio de sesión exitoso
 - `LOGIN_FALLIDO` — Intento de login fallido
 - `LOGOUT` — Cierre de sesión
@@ -209,6 +304,19 @@ Tiene **todos los permisos del Administrador de Transporte** más acceso exclusi
     └── Auditoría del Sistema (solo Admin Sistema)
 ```
 
+### Menú Administrador de Grifo
+```
+├── Inicio (DashboardGrifo)
+├── Abastecimiento
+│   ├── Registrar Abastecimiento
+│   ├── Buscar Abastecimiento
+│   └── Reporte
+├── Registro
+│   └── Conductores
+└── Configuración
+    └── Cambiar Contraseña
+```
+
 ### Menú Conductor
 ```
 ├── Inicio (Dashboard)
@@ -245,7 +353,7 @@ Admin revisa liquidación pendiente:
 | Lenguaje | C# 7.3 |
 | Base de datos | SQL Server |
 | ORM/Acceso a datos | ADO.NET (SqlConnection, SqlCommand, DataTable) |
-| Frontend | Bootstrap 4.6, jQuery 3.6, Font Awesome 5 |
+| Frontend | Bootstrap 4.6, jQuery 3.6, Font Awesome 5, Select2 4.1 |
 | Exportación | ClosedXML (Excel), iTextSharp (PDF), EPPlus |
 | Serialización | Newtonsoft.Json |
 | Autenticación | Sesión ASP.NET con cookie temporal + anti-fijación de sesión |
@@ -253,4 +361,15 @@ Admin revisa liquidación pendiente:
 
 ---
 
-*Documento generado como referencia del flujo de trabajo actual del sistema SGV.*
+## 🗄️ Columnas Dinámicas (Migraciones)
+
+El sistema utiliza detección dinámica de columnas mediante `ColumnaExisteEnTabla()` (consulta `sys.columns`) para soportar columnas que pueden no existir si la migración SQL aún no se ha ejecutado:
+
+| Tabla | Columna | Script de Migración | Descripción |
+|-------|---------|--------------------|--------------|
+| `AbastecimientoCombustible` | `tipoAbastecimiento` | `script_AgregarColumnaTipoAbastecimiento.sql` | Tipo: ABASTECIMIENTO, MANTENIMIENTO, OTRO, VIAJE PROGRAMADO, ANULADO |
+| `AbastecimientoCombustible` | `rutaDescripcion` | `script_AgregarColumnaRutaDescripcion.sql` | Descripción libre de la ruta del viaje |
+
+---
+
+*Documento actualizado como referencia del flujo de trabajo actual del sistema SGV.*

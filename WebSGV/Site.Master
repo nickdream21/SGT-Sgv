@@ -302,6 +302,17 @@
                         </div>
                     </li>
 
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownRegistroGrifo" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-database"></i>Registro
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownRegistroGrifo">
+                            <a class="dropdown-item" href="RegistroChoferes.aspx">
+                                <i class="fas fa-user-tie"></i>Conductores
+                            </a>
+                        </div>
+                    </li>
+
                     <% } %>
 
                     <!-- ==================== MENÚ PARA CONDUCTOR ==================== -->

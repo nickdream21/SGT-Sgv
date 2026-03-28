@@ -110,8 +110,14 @@ namespace WebSGV.Views
                 {
                     connection.Open();
 
-                    // Consulta SQL modificada para tratar correctamente el campo char(6)
-                    string query = @"
+                    // Detectar columnas dinámicas
+                    bool tieneTipoAbast = ColumnaExisteEnTabla(connection, "AbastecimientoCombustible", "tipoAbastecimiento");
+                    bool tieneRutaDesc = ColumnaExisteEnTabla(connection, "AbastecimientoCombustible", "rutaDescripcion");
+                    string columnasExtra = "";
+                    if (tieneTipoAbast) columnasExtra += ", a.tipoAbastecimiento";
+                    if (tieneRutaDesc) columnasExtra += ", a.rutaDescripcion";
+
+                    string baseSelect = @"
                 SELECT a.idAbastecimientoCombustible, a.numeroAbastecimientoCombustible, 
                        a.producto, a.fechaHora, a.galonesRutaAsignada, a.galonesCompradosRuta, 
                        a.galonesTotalAbastecidos, a.galonesAlFinalizar, a.galonesTotalConsumidos, 
@@ -122,14 +128,17 @@ namespace WebSGV.Views
                        c.nombre + ' ' + c.apPaterno + ' ' + c.apMaterno AS nombreConductor, c.idConductor,
                        r.nombre AS nombreRuta, r.idRuta,
                        la.nombreAbastecimiento AS lugarAbastecimiento, la.idLugarAbastecimiento,
-                       tc.idTipoCarro
+                       tc.idTipoCarro" + columnasExtra + @"
                 FROM AbastecimientoCombustible a
                 LEFT JOIN Tracto t ON a.idTracto = t.idTracto
                 LEFT JOIN Carreta cr ON a.idCarreta = cr.idCarreta
                 LEFT JOIN Conductor c ON a.idConductor = c.idConductor
                 LEFT JOIN Ruta r ON a.idRuta = r.idRuta
                 LEFT JOIN LugarAbastecimiento la ON a.idLugarAbastecimiento = la.idLugarAbastecimiento
-                LEFT JOIN TipoCarro tc ON a.idTipoCarro = tc.idTipoCarro
+                LEFT JOIN TipoCarro tc ON a.idTipoCarro = tc.idTipoCarro";
+
+                    // Búsqueda exacta
+                    string query = baseSelect + @"
                 WHERE RTRIM(a.numeroAbastecimientoCombustible) = @numeroAbastecimiento";
 
                     using (SqlCommand command = new SqlCommand(query, connection))
@@ -176,6 +185,12 @@ namespace WebSGV.Views
                                     RendimientoPromedio = reader["rendimientoPromedio"] != DBNull.Value ? Convert.ToDecimal(reader["rendimientoPromedio"]) : 0,
                                     IdTipoCarro = reader["idTipoCarro"] != DBNull.Value ? Convert.ToInt32(reader["idTipoCarro"]) : 0
                                 };
+
+                                // Columnas dinámicas
+                                if (tieneTipoAbast)
+                                    abastecimiento.TipoAbastecimiento = reader["tipoAbastecimiento"] != DBNull.Value ? reader["tipoAbastecimiento"].ToString() : "";
+                                if (tieneRutaDesc)
+                                    abastecimiento.RutaDescripcion = reader["rutaDescripcion"] != DBNull.Value ? reader["rutaDescripcion"].ToString() : "";
                             }
                         }
 
@@ -184,25 +199,7 @@ namespace WebSGV.Views
                         {
                             System.Diagnostics.Debug.WriteLine("No se encontró con búsqueda exacta, intentando con LIKE");
 
-                            string queryLike = @"
-                        SELECT a.idAbastecimientoCombustible, a.numeroAbastecimientoCombustible, 
-                               a.producto, a.fechaHora, a.galonesRutaAsignada, a.galonesCompradosRuta, 
-                               a.galonesTotalAbastecidos, a.galonesAlFinalizar, a.galonesTotalConsumidos, 
-                               a.precioDolar, a.montoTotalGalonesComprados, a.distanciaRutaKM, 
-                               a.consumoComputador, a.observaciones, a.horaRetorno, a.rendimientoPromedio,
-                               t.placaTracto, t.idTracto, 
-                               cr.placaCarreta, cr.idCarreta,
-                               c.nombre + ' ' + c.apPaterno + ' ' + c.apMaterno AS nombreConductor, c.idConductor,
-                               r.nombre AS nombreRuta, r.idRuta,
-                               la.nombreAbastecimiento AS lugarAbastecimiento, la.idLugarAbastecimiento,
-                               tc.idTipoCarro
-                        FROM AbastecimientoCombustible a
-                        LEFT JOIN Tracto t ON a.idTracto = t.idTracto
-                        LEFT JOIN Carreta cr ON a.idCarreta = cr.idCarreta
-                        LEFT JOIN Conductor c ON a.idConductor = c.idConductor
-                        LEFT JOIN Ruta r ON a.idRuta = r.idRuta
-                        LEFT JOIN LugarAbastecimiento la ON a.idLugarAbastecimiento = la.idLugarAbastecimiento
-                        LEFT JOIN TipoCarro tc ON a.idTipoCarro = tc.idTipoCarro
+                            string queryLike = baseSelect + @"
                         WHERE a.numeroAbastecimientoCombustible LIKE @numeroAbastecimientoLike";
 
                             using (SqlCommand cmdLike = new SqlCommand(queryLike, connection))
@@ -245,6 +242,12 @@ namespace WebSGV.Views
                                             RendimientoPromedio = readerLike["rendimientoPromedio"] != DBNull.Value ? Convert.ToDecimal(readerLike["rendimientoPromedio"]) : 0,
                                             IdTipoCarro = readerLike["idTipoCarro"] != DBNull.Value ? Convert.ToInt32(readerLike["idTipoCarro"]) : 0
                                         };
+
+                                        // Columnas dinámicas
+                                        if (tieneTipoAbast)
+                                            abastecimiento.TipoAbastecimiento = readerLike["tipoAbastecimiento"] != DBNull.Value ? readerLike["tipoAbastecimiento"].ToString() : "";
+                                        if (tieneRutaDesc)
+                                            abastecimiento.RutaDescripcion = readerLike["rutaDescripcion"] != DBNull.Value ? readerLike["rutaDescripcion"].ToString() : "";
                                     }
                                 }
                             }
@@ -276,6 +279,18 @@ namespace WebSGV.Views
                     return "camion"; // Valor predeterminado
             }
         }
+
+        private bool ColumnaExisteEnTabla(SqlConnection connection, string tabla, string columna)
+        {
+            string query = "SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID(@tabla) AND name = @columna";
+            using (SqlCommand cmd = new SqlCommand(query, connection))
+            {
+                cmd.Parameters.AddWithValue("@tabla", tabla);
+                cmd.Parameters.AddWithValue("@columna", columna);
+                return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+            }
+        }
+
         private void MostrarDatosAbastecimiento(AbastecimientoModel abastecimiento)
         {
             // Mostrar datos generales
@@ -341,6 +356,44 @@ namespace WebSGV.Views
             // Observaciones
             txtObservaciones.Text = abastecimiento.Observaciones;
 
+            // Tipo de abastecimiento
+            string tipo = !string.IsNullOrEmpty(abastecimiento.TipoAbastecimiento) ? abastecimiento.TipoAbastecimiento : "ABASTECIMIENTO";
+            hdnTipoAbastecimiento.Value = tipo;
+            lblTipoAbastecimiento.Text = tipo;
+            lblTipoAbastecimiento.Visible = true;
+            ddlTipoAbastecimientoEdit.Visible = false;
+            switch (tipo)
+            {
+                case "VIAJE PROGRAMADO":
+                    lblTipoAbastecimiento.CssClass = "tipo-badge tipo-viaje-programado";
+                    break;
+                case "MANTENIMIENTO":
+                    lblTipoAbastecimiento.CssClass = "tipo-badge tipo-mantenimiento";
+                    break;
+                case "OTRO":
+                    lblTipoAbastecimiento.CssClass = "tipo-badge tipo-otro";
+                    break;
+                case "ANULADO":
+                    lblTipoAbastecimiento.CssClass = "tipo-badge tipo-anulado";
+                    break;
+                default:
+                    lblTipoAbastecimiento.CssClass = "tipo-badge tipo-abastecimiento";
+                    break;
+            }
+
+            // Estado ANULADO: mostrar banner y deshabilitar edición/anulación
+            bool esAnulado = (tipo == "ANULADO");
+            pnlAnuladoBanner.Visible = esAnulado;
+            btnHabilitarEdicion.Visible = !esAnulado;
+            btnAnular.Visible = !esAnulado;
+            btnEliminar.Visible = true;
+
+            // Ruta descripción (si existe, preferir sobre nombreRuta)
+            if (!string.IsNullOrEmpty(abastecimiento.RutaDescripcion))
+            {
+                txtRuta.Text = abastecimiento.RutaDescripcion;
+            }
+
             // Actualizar visualización del nivel de combustible (se hará vía JavaScript)
             ScriptManager.RegisterStartupScript(this, this.GetType(), "actualizarNivel",
                 $"actualizarNivelCombustible({abastecimiento.GalonesAlFinalizar}, {abastecimiento.GalonesTotalAbastecidos});", true);
@@ -348,7 +401,7 @@ namespace WebSGV.Views
 
         protected void HabilitarEdicion(object sender, EventArgs e)
         {
-            // Habilitar la edición de campos que se pueden modificar
+            // Habilitar la edición de campos de combustible
             txtGLRuta.ReadOnly = false;
             txtGLComprados.ReadOnly = false;
             txtGLFinal.ReadOnly = false;
@@ -359,19 +412,34 @@ namespace WebSGV.Views
             txtHoraRetorno.ReadOnly = false;
             txtObservaciones.ReadOnly = false;
 
+            // Habilitar edición de producto y ruta
+            txtProducto.ReadOnly = false;
+            txtRuta.ReadOnly = false;
+
+            // Mostrar dropdown de tipo y ocultar label
+            string tipoActual = hdnTipoAbastecimiento.Value;
+            if (tipoActual != "VIAJE PROGRAMADO") // No permitir cambiar tipo de viaje programado
+            {
+                lblTipoAbastecimiento.Visible = false;
+                ddlTipoAbastecimientoEdit.Visible = true;
+                try { ddlTipoAbastecimientoEdit.SelectedValue = tipoActual; } catch { ddlTipoAbastecimientoEdit.SelectedIndex = 0; }
+            }
+
             // Agregar scripts para recalcular totales cuando cambien los valores
             txtGLRuta.Attributes.Add("onchange", "calcularTotales()");
             txtGLComprados.Attributes.Add("onchange", "calcularTotales()");
             txtGLFinal.Attributes.Add("onchange", "calcularTotales()");
             txtDistancia.Attributes.Add("onchange", "calcularRendimiento()");
 
-            // Agregar clase para estilo de edición
+            // Agregar clase para estilo de edición y mostrar indicadores
             Page.ClientScript.RegisterStartupScript(this.GetType(), "addEditClass",
-                "$('.card-body').addClass('edit-mode');", true);
+                "$('.card-body').addClass('edit-mode'); aplicarIndicadoresEdicion(); initTipoDropdownChange();", true);
 
-            // Mostrar el botón de guardar cambios
+            // Mostrar el botón de guardar cambios y ocultar anular/eliminar en modo edición
             btnHabilitarEdicion.Visible = false;
             btnGuardarCambios.Visible = true;
+            btnAnular.Visible = false;
+            btnEliminar.Visible = false;
 
             MostrarMensaje("Modo de edición activado. Realice los cambios necesarios y presione 'Guardar Cambios'.", "info");
         }
@@ -388,14 +456,30 @@ namespace WebSGV.Views
 
                 // Recolectar datos actualizados
                 string numeroAbastecimiento = txtNumAbastecimiento.Text;
-                decimal galonesRutaAsignada = Convert.ToDecimal(txtGLRuta.Text);
-                decimal galonesCompradosRuta = Convert.ToDecimal(txtGLComprados.Text);
-                decimal galonesAlFinalizar = Convert.ToDecimal(txtGLFinal.Text);
-                decimal precioDolar = Convert.ToDecimal(txtPrecioDolar.Text);
-                decimal montoTotal = Convert.ToDecimal(txtMontoTotal.Text);
-                decimal distanciaRuta = Convert.ToDecimal(txtDistancia.Text);
-                decimal consumoComputador = Convert.ToDecimal(txtConsumoComputador.Text);
+                decimal galonesRutaAsignada = 0;
+                decimal.TryParse(txtGLRuta.Text, out galonesRutaAsignada);
+                decimal galonesCompradosRuta = 0;
+                decimal.TryParse(txtGLComprados.Text, out galonesCompradosRuta);
+                decimal galonesAlFinalizar = 0;
+                decimal.TryParse(txtGLFinal.Text, out galonesAlFinalizar);
+                decimal precioDolar = 0;
+                decimal.TryParse(txtPrecioDolar.Text, out precioDolar);
+                decimal montoTotal = 0;
+                decimal.TryParse(txtMontoTotal.Text, out montoTotal);
+                decimal distanciaRuta = 0;
+                decimal.TryParse(txtDistancia.Text, out distanciaRuta);
+                decimal consumoComputador = 0;
+                decimal.TryParse(txtConsumoComputador.Text, out consumoComputador);
                 string observaciones = txtObservaciones.Text;
+                string producto = txtProducto.Text;
+                string rutaDescripcion = txtRuta.Text;
+
+                // Leer tipo de abastecimiento del dropdown si es visible
+                string tipoAbastecimiento = hdnTipoAbastecimiento.Value;
+                if (ddlTipoAbastecimientoEdit.Visible)
+                {
+                    tipoAbastecimiento = ddlTipoAbastecimientoEdit.SelectedValue;
+                }
 
                 // Calcular valores derivados
                 decimal galonesTotalAbastecidos = galonesRutaAsignada + galonesCompradosRuta;
@@ -427,7 +511,10 @@ namespace WebSGV.Views
                     consumoComputador,
                     rendimientoPromedio,
                     horaRetorno,
-                    observaciones);
+                    observaciones,
+                    producto,
+                    rutaDescripcion,
+                    tipoAbastecimiento);
 
                 if (actualizado)
                 {
@@ -441,6 +528,22 @@ namespace WebSGV.Views
                     txtConsumoComputador.ReadOnly = true;
                     txtHoraRetorno.ReadOnly = true;
                     txtObservaciones.ReadOnly = true;
+                    txtProducto.ReadOnly = true;
+                    txtRuta.ReadOnly = true;
+
+                    // Restaurar label de tipo y ocultar dropdown
+                    lblTipoAbastecimiento.Visible = true;
+                    ddlTipoAbastecimientoEdit.Visible = false;
+                    lblTipoAbastecimiento.Text = tipoAbastecimiento;
+                    hdnTipoAbastecimiento.Value = tipoAbastecimiento;
+                    switch (tipoAbastecimiento)
+                    {
+                        case "VIAJE PROGRAMADO": lblTipoAbastecimiento.CssClass = "tipo-badge tipo-viaje-programado"; break;
+                        case "MANTENIMIENTO": lblTipoAbastecimiento.CssClass = "tipo-badge tipo-mantenimiento"; break;
+                        case "OTRO": lblTipoAbastecimiento.CssClass = "tipo-badge tipo-otro"; break;
+                        case "ANULADO": lblTipoAbastecimiento.CssClass = "tipo-badge tipo-anulado"; break;
+                        default: lblTipoAbastecimiento.CssClass = "tipo-badge tipo-abastecimiento"; break;
+                    }
 
                     // Quitar eventos de recálculo
                     txtGLRuta.Attributes.Remove("onchange");
@@ -448,15 +551,17 @@ namespace WebSGV.Views
                     txtGLFinal.Attributes.Remove("onchange");
                     txtDistancia.Attributes.Remove("onchange");
 
-                    // Quitar clase de edición
+                    // Quitar clase de edición y ocultar hint
                     Page.ClientScript.RegisterStartupScript(this.GetType(), "removeEditClass",
-                        "$('.card-body').removeClass('edit-mode');", true);
+                        "$('.card-body').removeClass('edit-mode'); var h = document.getElementById('divMotivoHint'); if(h) h.style.display='none';", true);
 
                     btnHabilitarEdicion.Visible = true;
                     btnGuardarCambios.Visible = false;
+                    btnAnular.Visible = true;
+                    btnEliminar.Visible = true;
 
                     AuditoriaHelper.Registrar("UPDATE", "AbastecimientoCombustible", numeroAbastecimiento,
-                        $"Abastecimiento editado - Numero: {numeroAbastecimiento}, Galones: {galonesTotalAbastecidos}, Monto: {montoTotal}");
+                        $"Abastecimiento editado - Numero: {numeroAbastecimiento}, Tipo: {tipoAbastecimiento}, Galones: {galonesTotalAbastecidos}, Monto: {montoTotal}");
 
                     MostrarMensaje("Abastecimiento actualizado correctamente.", "success");
 
@@ -482,47 +587,84 @@ namespace WebSGV.Views
 
         private bool ValidarDatos()
         {
-            // Validar campos numéricos
-            if (!decimal.TryParse(txtGLRuta.Text, out decimal glRuta) || glRuta < 0)
+            // Determinar el tipo de registro para validación condicional
+            string tipo = ddlTipoAbastecimientoEdit.Visible ? ddlTipoAbastecimientoEdit.SelectedValue : hdnTipoAbastecimiento.Value;
+            if (string.IsNullOrEmpty(tipo)) tipo = "ABASTECIMIENTO";
+            bool esViajeProgramado = (tipo == "VIAJE PROGRAMADO");
+
+            // GL Ruta: obligatorio solo para VIAJE PROGRAMADO
+            if (!string.IsNullOrEmpty(txtGLRuta.Text))
             {
-                MostrarMensaje("Ingrese un valor válido para Galones Ruta Asignada", "warning");
+                if (!decimal.TryParse(txtGLRuta.Text, out decimal glRuta) || glRuta < 0)
+                {
+                    MostrarMensaje("Ingrese un valor válido para Galones Ruta Asignada", "warning");
+                    return false;
+                }
+            }
+            else if (esViajeProgramado)
+            {
+                MostrarMensaje("GL Ruta Asignada es obligatorio para Viaje Programado", "warning");
                 return false;
             }
 
-            if (!decimal.TryParse(txtGLComprados.Text, out decimal glComprados) || glComprados < 0)
+            // GL Comprados: validar formato si tiene contenido
+            if (!string.IsNullOrEmpty(txtGLComprados.Text))
             {
-                MostrarMensaje("Ingrese un valor válido para Galones Comprados en Ruta", "warning");
-                return false;
+                if (!decimal.TryParse(txtGLComprados.Text, out decimal glComprados) || glComprados < 0)
+                {
+                    MostrarMensaje("Ingrese un valor válido para Galones Comprados en Ruta", "warning");
+                    return false;
+                }
             }
 
-            if (!decimal.TryParse(txtGLFinal.Text, out decimal glFinal) || glFinal < 0)
+            // GL al Finalizar: validar formato si tiene contenido
+            if (!string.IsNullOrEmpty(txtGLFinal.Text))
             {
-                MostrarMensaje("Ingrese un valor válido para Galones al Finalizar", "warning");
-                return false;
+                if (!decimal.TryParse(txtGLFinal.Text, out decimal glFinal) || glFinal < 0)
+                {
+                    MostrarMensaje("Ingrese un valor válido para Galones al Finalizar", "warning");
+                    return false;
+                }
             }
 
-            if (!decimal.TryParse(txtPrecioDolar.Text, out decimal precioDolar) || precioDolar <= 0)
+            // Precio Dólar: validar formato si tiene contenido (ya no exige > 0)
+            if (!string.IsNullOrEmpty(txtPrecioDolar.Text))
             {
-                MostrarMensaje("Ingrese un valor válido para Precio del Dólar", "warning");
-                return false;
+                if (!decimal.TryParse(txtPrecioDolar.Text, out decimal precioDolar) || precioDolar < 0)
+                {
+                    MostrarMensaje("Ingrese un valor válido para Precio del Dólar", "warning");
+                    return false;
+                }
             }
 
-            if (!decimal.TryParse(txtMontoTotal.Text, out decimal montoTotal) || montoTotal < 0)
+            // Monto Total: validar formato si tiene contenido
+            if (!string.IsNullOrEmpty(txtMontoTotal.Text))
             {
-                MostrarMensaje("Ingrese un valor válido para Monto Total", "warning");
-                return false;
+                if (!decimal.TryParse(txtMontoTotal.Text, out decimal montoTotal) || montoTotal < 0)
+                {
+                    MostrarMensaje("Ingrese un valor válido para Monto Total", "warning");
+                    return false;
+                }
             }
 
-            if (!decimal.TryParse(txtDistancia.Text, out decimal distancia) || distancia < 0)
+            // Distancia: validar formato si tiene contenido
+            if (!string.IsNullOrEmpty(txtDistancia.Text))
             {
-                MostrarMensaje("Ingrese un valor válido para Distancia en KM", "warning");
-                return false;
+                if (!decimal.TryParse(txtDistancia.Text, out decimal distancia) || distancia < 0)
+                {
+                    MostrarMensaje("Ingrese un valor válido para Distancia en KM", "warning");
+                    return false;
+                }
             }
 
-            if (!decimal.TryParse(txtConsumoComputador.Text, out decimal consumo) || consumo < 0)
+            // Consumo Computador: validar formato si tiene contenido
+            if (!string.IsNullOrEmpty(txtConsumoComputador.Text))
             {
-                MostrarMensaje("Ingrese un valor válido para Consumo Computador", "warning");
-                return false;
+                if (!decimal.TryParse(txtConsumoComputador.Text, out decimal consumo) || consumo < 0)
+                {
+                    MostrarMensaje("Ingrese un valor válido para Consumo Computador", "warning");
+                    return false;
+                }
             }
 
             // Validar hora de retorno si se ingresó
@@ -555,7 +697,10 @@ namespace WebSGV.Views
             decimal consumoComputador,
             decimal rendimientoPromedio,
             TimeSpan horaRetorno,
-            string observaciones)
+            string observaciones,
+            string producto,
+            string rutaDescripcion,
+            string tipoAbastecimiento)
         {
             bool actualizado = false;
 
@@ -566,6 +711,12 @@ namespace WebSGV.Views
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
+
+                    // Detectar columnas dinámicas
+                    bool tieneRutaDesc = ColumnaExisteEnTabla(connection, "AbastecimientoCombustible", "rutaDescripcion");
+                    bool tieneTipoAbast = ColumnaExisteEnTabla(connection, "AbastecimientoCombustible", "tipoAbastecimiento");
+                    string setRutaDesc = tieneRutaDesc ? ", rutaDescripcion = @rutaDescripcion" : "";
+                    string setTipoAbast = tieneTipoAbast ? ", tipoAbastecimiento = @tipoAbastecimiento" : "";
 
                     string query = @"
                         UPDATE AbastecimientoCombustible
@@ -580,7 +731,8 @@ namespace WebSGV.Views
                             consumoComputador = @consumoComputador,
                             rendimientoPromedio = @rendimientoPromedio,
                             horaRetorno = @horaRetorno,
-                            observaciones = @observaciones
+                            observaciones = @observaciones,
+                            producto = @producto" + setRutaDesc + setTipoAbast + @"
                         WHERE numeroAbastecimientoCombustible = @numeroAbastecimiento";
 
                     using (SqlCommand command = new SqlCommand(query, connection))
@@ -607,6 +759,12 @@ namespace WebSGV.Views
                         }
 
                         command.Parameters.AddWithValue("@observaciones", string.IsNullOrEmpty(observaciones) ? (object)DBNull.Value : observaciones);
+
+                        command.Parameters.AddWithValue("@producto", string.IsNullOrEmpty(producto) ? "N/A" : producto);
+                        if (tieneRutaDesc)
+                            command.Parameters.AddWithValue("@rutaDescripcion", string.IsNullOrEmpty(rutaDescripcion) ? (object)DBNull.Value : rutaDescripcion);
+                        if (tieneTipoAbast)
+                            command.Parameters.AddWithValue("@tipoAbastecimiento", string.IsNullOrEmpty(tipoAbastecimiento) ? "ABASTECIMIENTO" : tipoAbastecimiento);
 
                         int rowsAffected = command.ExecuteNonQuery();
                         actualizado = rowsAffected > 0;
@@ -639,6 +797,8 @@ namespace WebSGV.Views
                 txtConsumoComputador.ReadOnly = true;
                 txtHoraRetorno.ReadOnly = true;
                 txtObservaciones.ReadOnly = true;
+                txtProducto.ReadOnly = true;
+                txtRuta.ReadOnly = true;
 
                 // Quitar atributos de edición
                 txtGLRuta.Attributes.Remove("onchange");
@@ -646,12 +806,18 @@ namespace WebSGV.Views
                 txtGLFinal.Attributes.Remove("onchange");
                 txtDistancia.Attributes.Remove("onchange");
 
-                // Quitar clase de edición
+                // Quitar clase de edición y ocultar hint
                 Page.ClientScript.RegisterStartupScript(this.GetType(), "removeEditClass",
-                    "$('.card-body').removeClass('edit-mode');", true);
+                    "$('.card-body').removeClass('edit-mode'); var h = document.getElementById('divMotivoHint'); if(h) h.style.display='none';", true);
+
+                // Restaurar label de tipo y ocultar dropdown
+                lblTipoAbastecimiento.Visible = true;
+                ddlTipoAbastecimientoEdit.Visible = false;
 
                 btnHabilitarEdicion.Visible = true;
                 btnGuardarCambios.Visible = false;
+                btnAnular.Visible = true;
+                btnEliminar.Visible = true;
 
                 MostrarMensaje("Edición cancelada.", "info");
             }
@@ -662,6 +828,115 @@ namespace WebSGV.Views
                 pnlResultados.Visible = false;
                 pnlNoResultados.Visible = false;
                 lblMensaje.Text = "";
+            }
+        }
+
+        protected void AnularAbastecimiento(object sender, EventArgs e)
+        {
+            try
+            {
+                string numeroAbastecimiento = txtNumAbastecimiento.Text.Trim();
+                if (string.IsNullOrEmpty(numeroAbastecimiento))
+                {
+                    MostrarMensaje("No se pudo identificar el registro a anular.", "danger");
+                    return;
+                }
+
+                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    bool tieneTipoAbast = ColumnaExisteEnTabla(connection, "AbastecimientoCombustible", "tipoAbastecimiento");
+                    if (!tieneTipoAbast)
+                    {
+                        MostrarMensaje("La columna tipoAbastecimiento no existe en la base de datos. Ejecute la migración primero.", "danger");
+                        return;
+                    }
+
+                    string query = @"UPDATE AbastecimientoCombustible 
+                                     SET tipoAbastecimiento = 'ANULADO' 
+                                     WHERE numeroAbastecimientoCombustible = @numero";
+                    using (SqlCommand cmd = new SqlCommand(query, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@numero", numeroAbastecimiento);
+                        int rows = cmd.ExecuteNonQuery();
+                        if (rows > 0)
+                        {
+                            AuditoriaHelper.Registrar("ANULAR", "AbastecimientoCombustible", numeroAbastecimiento,
+                                $"Abastecimiento ANULADO - Numero: {numeroAbastecimiento}");
+
+                            // Actualizar la vista
+                            hdnTipoAbastecimiento.Value = "ANULADO";
+                            lblTipoAbastecimiento.Text = "ANULADO";
+                            lblTipoAbastecimiento.CssClass = "tipo-badge tipo-anulado";
+                            lblTipoAbastecimiento.Visible = true;
+                            ddlTipoAbastecimientoEdit.Visible = false;
+                            pnlAnuladoBanner.Visible = true;
+                            btnHabilitarEdicion.Visible = false;
+                            btnAnular.Visible = false;
+                            btnGuardarCambios.Visible = false;
+                            btnEliminar.Visible = true;
+
+                            MostrarMensaje("El registro de abastecimiento ha sido ANULADO exitosamente.", "success");
+                        }
+                        else
+                        {
+                            MostrarMensaje("No se encontró el registro para anular.", "danger");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al anular el abastecimiento: " + ex.Message, "danger");
+            }
+        }
+
+        protected void EliminarAbastecimiento(object sender, EventArgs e)
+        {
+            try
+            {
+                string numeroAbastecimiento = txtNumAbastecimiento.Text.Trim();
+                if (string.IsNullOrEmpty(numeroAbastecimiento))
+                {
+                    MostrarMensaje("No se pudo identificar el registro a eliminar.", "danger");
+                    return;
+                }
+
+                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    string query = @"DELETE FROM AbastecimientoCombustible 
+                                     WHERE numeroAbastecimientoCombustible = @numero";
+                    using (SqlCommand cmd = new SqlCommand(query, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@numero", numeroAbastecimiento);
+                        int rows = cmd.ExecuteNonQuery();
+                        if (rows > 0)
+                        {
+                            AuditoriaHelper.Registrar("DELETE", "AbastecimientoCombustible", numeroAbastecimiento,
+                                $"Abastecimiento ELIMINADO - Numero: {numeroAbastecimiento}");
+
+                            // Ocultar resultados y mostrar mensaje
+                            pnlResultados.Visible = false;
+                            pnlNoResultados.Visible = false;
+                            txtBuscarAbastecimiento.Text = "";
+
+                            MostrarMensaje($"El registro de abastecimiento N° {numeroAbastecimiento} ha sido ELIMINADO permanentemente.", "success");
+                        }
+                        else
+                        {
+                            MostrarMensaje("No se encontró el registro para eliminar.", "danger");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al eliminar el abastecimiento: " + ex.Message, "danger");
             }
         }
 
@@ -708,5 +983,7 @@ namespace WebSGV.Views
         public TimeSpan HoraRetorno { get; set; }
         public decimal RendimientoPromedio { get; set; }
         public int IdTipoCarro { get; set; }
+        public string TipoAbastecimiento { get; set; }
+        public string RutaDescripcion { get; set; }
     }
 }

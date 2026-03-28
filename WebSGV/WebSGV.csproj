@@ -211,6 +211,8 @@
     <Content Include="Content\favicon.png" />
     <Content Include="Content\responsive-mobile.css" />
     <Content Include="Content\Site.css" />
+    <Content Include="Database\Scripts\script_AgregarColumnaRutaDescripcion.sql" />
+    <Content Include="Database\Scripts\script_AgregarColumnaTipoAbastecimiento.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminGrifo.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearCPIC.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearDespacho.sql" />
@@ -240,6 +242,7 @@
     <Content Include="Database\StoredProcedures\sp_DC_ObtenerViajesActivosConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_RetirarLiquidacion.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_VerificarObservacionesRechazo.sql" />
+    <Content Include="Database\StoredProcedures\sp_InsertarAbastecimientoCombustible_ALTER.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ActualizarConductorDominanteViajes.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ActualizarDespachoEnLote.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_AnularLote.sql" />

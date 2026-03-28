@@ -22,7 +22,6 @@ namespace WebSGV.Views
                 CargarPlacasTracto();
                 CargarPlacasCarreta();
                 CargarConductores();
-                CargarRutas();
                 CargarLugaresAbastecimiento();
                 CargarTiposCarro(); // Añadir esta línea
 
@@ -316,27 +315,6 @@ namespace WebSGV.Views
             }
         }
 
-        private void CargarRutas()
-        {
-            try
-            {
-                string query = "SELECT idRuta, nombre FROM Ruta";
-                DataTable dt = ObtenerDatosDeBD(query);
-                if (dt.Rows.Count > 0)
-                {
-                    ddlRuta.DataSource = dt;
-                    ddlRuta.DataTextField = "nombre";
-                    ddlRuta.DataValueField = "idRuta";
-                    ddlRuta.DataBind();
-                }
-                ddlRuta.Items.Insert(0, new ListItem("Seleccione una ruta", ""));
-            }
-            catch (Exception ex)
-            {
-                RegistrarError("Error al cargar rutas: " + ex.Message);
-            }
-        }
-
         private DataTable ObtenerDatosDeBD(string query)
         {
             DataTable dt = new DataTable();
@@ -425,34 +403,54 @@ namespace WebSGV.Views
                 // Cultura invariable para manejar puntos decimales correctamente
                 CultureInfo culture = CultureInfo.InvariantCulture;
 
-                // Validar campos obligatorios
-                if (ddlPlaca.SelectedIndex == 0)
+                // Determinar el tipo de registro para aplicar validación correspondiente
+                bool esModoViaje = hdnModoViaje.Value == "1";
+                string motivo = esModoViaje ? "VIAJE PROGRAMADO" : (ddlMotivoSalida.SelectedValue ?? "ABASTECIMIENTO");
+                bool esViajeProgramado = (motivo == "VIAJE PROGRAMADO");
+                bool esRegistroFlexible = (motivo == "MANTENIMIENTO" || motivo == "OTRO");
+
+                // Placa: obligatoria para viajes programados y abastecimiento, opcional para mantenimiento/otro
+                if (!esRegistroFlexible && ddlPlaca.SelectedIndex == 0)
                 {
                     MostrarMensaje("Debe seleccionar una placa", "error");
                     return false;
                 }
 
-                if (ddlConductor.SelectedIndex == 0)
+                // Conductor: obligatorio para viajes programados y abastecimiento, opcional para mantenimiento/otro
+                if (!esRegistroFlexible && ddlConductor.SelectedIndex == 0)
                 {
                     MostrarMensaje("Debe seleccionar un conductor", "error");
                     return false;
                 }
 
-                string productoText = hdnModoViaje.Value == "1" ? txtProductoViaje.Text : txtProducto.Text;
-                if (string.IsNullOrEmpty(productoText))
+                // Producto: obligatorio SOLO para viaje programado, opcional para todos los demás
+                string productoText = esModoViaje ? txtProductoViaje.Text : txtProducto.Text;
+                if (esViajeProgramado && string.IsNullOrEmpty(productoText))
                 {
                     MostrarMensaje("Debe ingresar el producto", "error");
                     return false;
                 }
 
-                // Validar campos numéricos con TryParse y cultura invariable
-                // Reemplazar comas por puntos para manejar posibles problemas de formato regional
-                decimal glRuta;
-                if (!decimal.TryParse(txtGLRuta.Text.Replace(',', '.'), NumberStyles.Any,
-                    culture, out glRuta) || glRuta < 0)
+                // GL Ruta Asignada: obligatorio SOLO para viaje programado, opcional para todos los demás
+                if (esViajeProgramado)
                 {
-                    MostrarMensaje("Ingrese un valor válido para Galones Ruta Asignada", "error");
-                    return false;
+                    decimal glRuta;
+                    if (!decimal.TryParse(txtGLRuta.Text.Replace(',', '.'), NumberStyles.Any,
+                        culture, out glRuta) || glRuta < 0)
+                    {
+                        MostrarMensaje("Ingrese un valor válido para Galones Ruta Asignada", "error");
+                        return false;
+                    }
+                }
+                else if (!string.IsNullOrEmpty(txtGLRuta.Text))
+                {
+                    decimal glRuta;
+                    if (!decimal.TryParse(txtGLRuta.Text.Replace(',', '.'), NumberStyles.Any,
+                        culture, out glRuta) || glRuta < 0)
+                    {
+                        MostrarMensaje("Ingrese un valor válido para Galones Ruta Asignada", "error");
+                        return false;
+                    }
                 }
 
                 decimal glComprados = 0;
@@ -466,28 +464,40 @@ namespace WebSGV.Views
                     }
                 }
 
-                decimal glFinal;
-                if (!decimal.TryParse(txtGLFinal.Text.Replace(',', '.'), NumberStyles.Any,
-                    culture, out glFinal) || glFinal < 0)
+                // GL al Finalizar (opcional - puede estar vacío en abastecimiento simple)
+                if (!string.IsNullOrEmpty(txtGLFinal.Text))
                 {
-                    MostrarMensaje("Ingrese un valor válido para Galones al Finalizar", "error");
-                    return false;
+                    decimal glFinal;
+                    if (!decimal.TryParse(txtGLFinal.Text.Replace(',', '.'), NumberStyles.Any,
+                        culture, out glFinal) || glFinal < 0)
+                    {
+                        MostrarMensaje("Ingrese un valor válido para Galones al Finalizar", "error");
+                        return false;
+                    }
                 }
 
-                decimal distancia;
-                if (!decimal.TryParse(txtDistancia.Text.Replace(',', '.'), NumberStyles.Any,
-                    culture, out distancia) || distancia < 0)
+                // Distancia KM (opcional - puede estar vacío en abastecimiento simple)
+                if (!string.IsNullOrEmpty(txtDistancia.Text))
                 {
-                    MostrarMensaje("Ingrese un valor válido para Distancia en KM", "error");
-                    return false;
+                    decimal distancia;
+                    if (!decimal.TryParse(txtDistancia.Text.Replace(',', '.'), NumberStyles.Any,
+                        culture, out distancia) || distancia < 0)
+                    {
+                        MostrarMensaje("Ingrese un valor válido para Distancia en KM", "error");
+                        return false;
+                    }
                 }
 
-                decimal precioDolar;
-                if (!decimal.TryParse(txtPrecioDolar.Text.Replace(',', '.'), NumberStyles.Any,
-                    culture, out precioDolar) || precioDolar <= 0)
+                // Precio del Dólar (opcional - puede estar vacío en abastecimiento simple sin compra)
+                if (!string.IsNullOrEmpty(txtPrecioDolar.Text))
                 {
-                    MostrarMensaje("Ingrese un valor válido para Precio del Dólar", "error");
-                    return false;
+                    decimal precioDolar;
+                    if (!decimal.TryParse(txtPrecioDolar.Text.Replace(',', '.'), NumberStyles.Any,
+                        culture, out precioDolar) || precioDolar < 0)
+                    {
+                        MostrarMensaje("Ingrese un valor válido para Precio del Dólar", "error");
+                        return false;
+                    }
                 }
 
                 decimal montoTotal = 0;
@@ -533,27 +543,21 @@ namespace WebSGV.Views
             {
                 try
                 {
+                    conn.Open();
+
+                    // Generar número de abastecimiento automáticamente (siguiente correlativo)
+                    string numAbast = "000001";
+                    using (SqlCommand cmdNum = new SqlCommand(
+                        "SELECT ISNULL(MAX(CAST(RTRIM(numeroAbastecimientoCombustible) AS INT)), 0) + 1 FROM AbastecimientoCombustible", conn))
+                    {
+                        int siguiente = Convert.ToInt32(cmdNum.ExecuteScalar());
+                        numAbast = siguiente.ToString().PadLeft(6, '0');
+                    }
+
                     using (SqlCommand cmd = new SqlCommand("sp_InsertarAbastecimientoCombustible", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
 
-                        // Número de abastecimiento (exactamente 6 caracteres)
-                        string numAbast = "000000";
-                        //if (!string.IsNullOrEmpty(numeroAbastecimiento.Text))
-                        {
-                            // Limpiar el input para asegurar que solo haya dígitos
-                           // string cleanInput = new string(numeroAbastecimiento.Text.Where(c => char.IsDigit(c)).ToArray());
-
-                           // if (!string.IsNullOrEmpty(cleanInput))
-                            {
-                                // Rellenar con ceros a la IZQUIERDA (no derecha)
-                             //   numAbast = cleanInput.PadLeft(6, '0');
-                                // Si es más largo que 6, tomar los ÚLTIMOS 6 dígitos (no los primeros)
-                                if (numAbast.Length > 6)
-                                    numAbast = numAbast.Substring(numAbast.Length - 6, 6);
-                            }
-                        }
-                    
                         cmd.Parameters.Add("@numeroAbastecimientoCombustible", SqlDbType.Char, 6).Value = numAbast;
 
                         // Tracto
@@ -577,18 +581,46 @@ namespace WebSGV.Views
                             conductorValue = idConductor;
                         cmd.Parameters.Add("@idConductor", SqlDbType.Int).Value = conductorValue;
 
-                        // Ruta (opcional)
-                        object rutaValue = DBNull.Value;
-                        int idRuta = 0;
-                        if (ddlRuta.SelectedIndex > 0 && int.TryParse(ddlRuta.SelectedValue, out idRuta))
-                            rutaValue = idRuta;
-                        cmd.Parameters.Add("@idRuta", SqlDbType.Int).Value = rutaValue;
+                        // Ruta descripción (texto libre en manual, auto-generada en viaje)
+                        string rutaDescripcion = "";
+                        if (hdnModoViaje.Value == "1")
+                        {
+                            // Modo viaje: usar la ruta auto-generada desde despachos
+                            rutaDescripcion = litRutaViaje.Text;
+                        }
+                        else
+                        {
+                            // Modo manual: usar lo que el usuario escribió
+                            rutaDescripcion = txtRutaManual.Text.Trim();
+                        }
+                        cmd.Parameters.Add("@rutaDescripcion", SqlDbType.VarChar, 500).Value =
+                            string.IsNullOrEmpty(rutaDescripcion) ? (object)DBNull.Value : rutaDescripcion;
+
+                        // idRuta (NULL para manual, se mantiene por compatibilidad)
+                        cmd.Parameters.Add("@idRuta", SqlDbType.Int).Value = DBNull.Value;
+
+                        // Tipo de abastecimiento (motivo de salida)
+                        string tipoAbast = "ABASTECIMIENTO";
+                        if (hdnModoViaje.Value == "1")
+                        {
+                            tipoAbast = "VIAJE PROGRAMADO";
+                        }
+                        else if (ddlMotivoSalida.SelectedValue != null)
+                        {
+                            tipoAbast = ddlMotivoSalida.SelectedValue;
+                        }
+                        cmd.Parameters.Add("@tipoAbastecimiento", SqlDbType.VarChar, 50).Value = tipoAbast;
 
                         // Producto (viene de txtProductoViaje en modo viaje o txtProducto en modo manual)
-                        string producto = "Sin especificar";
+                        // Solo VIAJE PROGRAMADO exige producto; para los demás es opcional
+                        string producto = "";
                         string prodText = hdnModoViaje.Value == "1" ? txtProductoViaje.Text : txtProducto.Text;
                         if (!string.IsNullOrEmpty(prodText))
                             producto = prodText;
+                        else if (tipoAbast == "VIAJE PROGRAMADO")
+                            producto = "Sin especificar";
+                        else
+                            producto = "N/A";
                         cmd.Parameters.Add("@producto", SqlDbType.VarChar, 100).Value = producto;
 
                         // Lugar de abastecimiento
@@ -691,8 +723,7 @@ namespace WebSGV.Views
                         }
                         cmd.Parameters.Add("@idOrdenViaje", SqlDbType.Int).Value = ordenViajeValue;
 
-                        // Abrir conexión y ejecutar el procedimiento almacenado
-                        conn.Open();
+                        // Ejecutar el procedimiento almacenado
                         int filasAfectadas = cmd.ExecuteNonQuery();
                         RegistrarInfo($"Filas afectadas: {filasAfectadas}");
                     }
