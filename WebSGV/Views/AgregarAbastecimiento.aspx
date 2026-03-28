@@ -376,6 +376,17 @@
         .btn-back-link:hover {
             text-decoration: underline;
         }
+
+        /* Motivo de salida */
+        .motivo-hint {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            color: #6c757d;
+            line-height: 1.4;
+        }
     </style>
 
     <div class="container-fluid abastecimiento-container">
@@ -431,6 +442,31 @@
         <!-- MODO MANUAL: Dropdowns completos              -->
         <!-- ============================================= -->
         <asp:Panel ID="pnlManualEntry" runat="server" Visible="true">
+            <!-- Motivo de Salida de Combustible -->
+            <div class="card mb-3">
+                <div class="card-header" style="background-color:#fff3e0; color:#e65100;">
+                    <i class="fas fa-clipboard-list mr-2"></i>Motivo de Salida de Combustible
+                </div>
+                <div class="card-body" style="padding: 12px 18px;">
+                    <div class="row align-items-end">
+                        <div class="col-md-4 form-group mb-0">
+                            <label class="form-label">Tipo de Registro:</label>
+                            <asp:DropDownList ID="ddlMotivoSalida" runat="server" CssClass="form-control" onchange="onMotivoChange()">
+                                <asp:ListItem Value="ABASTECIMIENTO" Selected="True">🚛 Abastecimiento (viaje corto / rutina)</asp:ListItem>
+                                <asp:ListItem Value="MANTENIMIENTO">🔧 Mantenimiento (filtros, limpieza, servicio)</asp:ListItem>
+                                <asp:ListItem Value="OTRO">📋 Otro (generador, equipo, especial)</asp:ListItem>
+                            </asp:DropDownList>
+                        </div>
+                        <div class="col-md-8 mb-0">
+                            <div id="motivoHint" class="motivo-hint">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                <span id="motivoHintText">Rellenado de combustible para viaje corto o rutina operativa.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <i class="fas fa-truck mr-2"></i>Información del Vehículo y Conductor
@@ -462,7 +498,7 @@
                     <div class="row mt-2">
                         <div class="col-md-6 form-group">
                             <label class="form-label">Ruta:</label>
-                            <asp:DropDownList ID="ddlRuta" runat="server" CssClass="form-control"></asp:DropDownList>
+                            <asp:TextBox ID="txtRutaManual" runat="server" CssClass="form-control" placeholder="Ej: Lima → Trujillo, Planta - Cusco..."></asp:TextBox>
                         </div>
                         <div class="col-md-6 form-group">
                             <label class="form-label">Producto:</label>
@@ -747,6 +783,45 @@
             calcularTotales();
         });
 
+        function onMotivoChange() {
+            var ddl = document.getElementById('<%= ddlMotivoSalida.ClientID %>');
+            var hint = document.getElementById('motivoHintText');
+            if (!ddl || !hint) return;
+            var val = ddl.value;
+            var esFlexible = (val === 'MANTENIMIENTO' || val === 'OTRO');
+
+            // Actualizar hint descriptivo según motivo
+            if (val === 'MANTENIMIENTO') {
+                hint.textContent = 'Salida de combustible para mantenimiento: filtros, limpieza, servicio técnico. Conductor, placa, producto y tickets son opcionales.';
+            } else if (val === 'OTRO') {
+                hint.textContent = 'Uso especial: generadores, equipos, pruebas u otros. Conductor, placa, producto y tickets son opcionales. Detalle en Observaciones.';
+            } else {
+                hint.textContent = 'Rellenado de combustible para viaje corto o rutina. Producto, tickets y GL Ruta son opcionales.';
+            }
+
+            // Campos opcionales según tipo:
+            // MANTENIMIENTO/OTRO: placa, conductor, producto, GL Ruta son opcionales
+            // ABASTECIMIENTO: producto y GL Ruta son opcionales (placa y conductor siguen siendo requeridos)
+            var camposTodosOpcionales = ['<%= ddlPlaca.ClientID %>', '<%= ddlCarreta.ClientID %>', '<%= ddlConductor.ClientID %>', '<%= txtProducto.ClientID %>', '<%= txtGLRuta.ClientID %>'];
+            var camposProductoOpcional = ['<%= txtProducto.ClientID %>', '<%= txtGLRuta.ClientID %>'];
+
+            // Primero resetear todos
+            camposTodosOpcionales.forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) { el.style.borderColor = ''; el.style.backgroundColor = ''; }
+            });
+
+            // Luego marcar los opcionales según el motivo
+            var camposAMarcar = esFlexible ? camposTodosOpcionales : camposProductoOpcional;
+            camposAMarcar.forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) {
+                    el.style.borderColor = '#ffc107';
+                    el.style.backgroundColor = '#fffdf5';
+                }
+            });
+        }
+
         function limpiarFormulario() {
             if (!esModoViaje) {
                 try {
@@ -754,9 +829,12 @@
                         $('#<%= ddlPlaca.ClientID %>').val(null).trigger('change');
                         $('#<%= ddlCarreta.ClientID %>').val(null).trigger('change');
                         $('#<%= ddlConductor.ClientID %>').val(null).trigger('change');
-                        $('#<%= ddlRuta.ClientID %>').val(null).trigger('change');
                     }
                 } catch (e) { }
+                var txtRuta = document.getElementById('<%= txtRutaManual.ClientID %>');
+                if (txtRuta) txtRuta.value = '';
+                var ddlMotivo = document.getElementById('<%= ddlMotivoSalida.ClientID %>');
+                if (ddlMotivo) { ddlMotivo.value = 'ABASTECIMIENTO'; onMotivoChange(); }
                 var txtProd = document.getElementById('<%= txtProducto.ClientID %>');
                 if (txtProd) txtProd.value = '';
             }
@@ -797,7 +875,6 @@
                     $('#<%= ddlPlaca.ClientID %>').select2($.extend({}, select2Config, { placeholder: "Buscar placa..." }));
                     $('#<%= ddlCarreta.ClientID %>').select2($.extend({}, select2Config, { placeholder: "Buscar carreta..." }));
                     $('#<%= ddlConductor.ClientID %>').select2($.extend({}, select2Config, { placeholder: "Buscar conductor..." }));
-                    $('#<%= ddlRuta.ClientID %>').select2($.extend({}, select2Config, { placeholder: "Buscar ruta..." }));
                 } catch (e) { console.error("Error Select2: ", e); }
             }
 

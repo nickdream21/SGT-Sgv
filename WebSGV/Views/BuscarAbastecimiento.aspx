@@ -163,6 +163,97 @@
             background-color: #fffdf0;
             border-color: #ffc107;
         }
+
+        /* Tipo de registro */
+        .tipo-info-banner {
+            background: linear-gradient(135deg, #f0f7ff 0%, #e3f0ff 100%);
+            border: 1px solid #b8d4f0;
+            border-left: 4px solid var(--primary-color);
+            border-radius: 6px;
+            padding: 10px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tipo-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .tipo-badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .tipo-viaje-programado { background-color: var(--primary-color); }
+        .tipo-abastecimiento { background-color: #28a745; }
+        .tipo-mantenimiento { background-color: #fd7e14; }
+        .tipo-otro { background-color: #6c757d; }
+
+        .motivo-hint-edit {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            color: #856404;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .tipo-anulado { background-color: #dc3545; }
+
+        .estado-anulado-banner {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border: 1px solid #f5c6cb;
+            border-left: 4px solid #dc3545;
+            border-radius: 6px;
+            padding: 10px 16px;
+            margin-bottom: 12px;
+            color: #721c24;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .ddl-tipo-edit {
+            display: inline-block;
+            width: auto;
+            min-width: 200px;
+            padding: 4px 10px;
+            font-size: 0.85rem;
+            border: 1px solid #ffc107;
+            background-color: #fffdf0;
+            border-radius: 4px;
+        }
+
+        .btn-anular {
+            background-color: #fd7e14;
+            border-color: #fd7e14;
+            color: white;
+        }
+        .btn-anular:hover {
+            background-color: #e8690b;
+            border-color: #e8690b;
+            color: white;
+        }
+
+        .btn-eliminar {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            color: white;
+        }
+        .btn-eliminar:hover {
+            background-color: #c82333;
+            border-color: #c82333;
+            color: white;
+        }
     </style>
 
     <div class="container-fluid buscar-abastecimiento-container">
@@ -187,6 +278,26 @@
 
         <!-- Panel de Resultados -->
         <asp:Panel ID="pnlResultados" runat="server" Visible="false">
+            <!-- Banner de ANULADO (solo visible si está anulado) -->
+            <asp:Panel ID="pnlAnuladoBanner" runat="server" Visible="false">
+                <div class="estado-anulado-banner">
+                    <i class="fas fa-ban mr-2"></i>Este registro ha sido ANULADO y no puede ser editado.
+                </div>
+            </asp:Panel>
+
+            <!-- Tipo de Registro -->
+            <div class="tipo-info-banner">
+                <span class="tipo-label"><i class="fas fa-tag mr-1"></i>Tipo de Registro:</span>
+                <asp:Label ID="lblTipoAbastecimiento" runat="server" CssClass="tipo-badge tipo-abastecimiento" Text="ABASTECIMIENTO" />
+                <asp:DropDownList ID="ddlTipoAbastecimientoEdit" runat="server" CssClass="ddl-tipo-edit" Visible="false">
+                    <asp:ListItem Value="ABASTECIMIENTO">🚛 Abastecimiento</asp:ListItem>
+                    <asp:ListItem Value="MANTENIMIENTO">🔧 Mantenimiento</asp:ListItem>
+                    <asp:ListItem Value="OTRO">📋 Otro</asp:ListItem>
+                </asp:DropDownList>
+                <asp:HiddenField ID="hdnTipoAbastecimiento" runat="server" Value="" />
+            </div>
+            <div id="divMotivoHint" class="motivo-hint-edit" style="display:none;"></div>
+
             <!-- Información General -->
             <div class="card mb-4">
                 <div class="card-header">
@@ -362,8 +473,10 @@
             <div class="text-end mt-4">
                 <asp:Button ID="btnHabilitarEdicion" runat="server" CssClass="btn btn-primary" Text="Habilitar Edición" OnClick="HabilitarEdicion" />
                 <asp:Button ID="btnGuardarCambios" runat="server" CssClass="btn btn-success" Text="Guardar Cambios" OnClick="GuardarCambios" Visible="false" />
-                <asp:Button ID="btnCancelar" runat="server" CssClass="btn btn-danger" Text="Cancelar" OnClick="Cancelar" />
+                <asp:Button ID="btnCancelar" runat="server" CssClass="btn btn-secondary" Text="Cancelar" OnClick="Cancelar" />
                 <asp:Button ID="btnImprimir" runat="server" CssClass="btn btn-info" Text="Imprimir" OnClientClick="window.print(); return false;" />
+                <asp:Button ID="btnAnular" runat="server" CssClass="btn btn-anular" Text="Anular" OnClick="AnularAbastecimiento" OnClientClick="return confirm('¿Está seguro que desea ANULAR este registro de abastecimiento?\n\nEsta acción marcará el registro como anulado.');" />
+                <asp:Button ID="btnEliminar" runat="server" CssClass="btn btn-eliminar" Text="Eliminar" OnClick="EliminarAbastecimiento" OnClientClick="return confirm('¿Está seguro que desea ELIMINAR este registro de abastecimiento?\n\nEsta acción es IRREVERSIBLE y eliminará permanentemente el registro.');" />
             </div>
 
             <div class="form-group text-center mt-3">
@@ -428,6 +541,40 @@
             }
         }
 
+        // Función para mostrar indicadores de campos opcionales en modo edición
+        function aplicarIndicadoresEdicion() {
+            var ddlTipo = document.getElementById('<%= ddlTipoAbastecimientoEdit.ClientID %>');
+            var hdnTipo = document.getElementById('<%= hdnTipoAbastecimiento.ClientID %>');
+            var tipo = ddlTipo ? ddlTipo.value : (hdnTipo ? hdnTipo.value : 'ABASTECIMIENTO');
+            var esViajeProgramado = (tipo === 'VIAJE PROGRAMADO');
+            var esFlexible = (tipo === 'MANTENIMIENTO' || tipo === 'OTRO');
+
+            // Sincronizar hidden field
+            if (hdnTipo) hdnTipo.value = tipo;
+
+            var hintDiv = document.getElementById('divMotivoHint');
+            if (hintDiv) {
+                hintDiv.style.display = 'block';
+                if (esFlexible) {
+                    hintDiv.innerHTML = '<i class="fas fa-info-circle mr-1"></i>Tipo <strong>' + tipo + '</strong>: Producto, GL Ruta, precio y distancia son opcionales.';
+                } else if (esViajeProgramado) {
+                    hintDiv.innerHTML = '<i class="fas fa-info-circle mr-1"></i><strong>Viaje Programado</strong>: Todos los campos de combustible aplican.';
+                } else {
+                    hintDiv.innerHTML = '<i class="fas fa-info-circle mr-1"></i><strong>Abastecimiento</strong>: Producto y GL Ruta son opcionales.';
+                }
+            }
+        }
+
+        // Vincular cambio de tipo dropdown a actualización de indicadores
+        function initTipoDropdownChange() {
+            var ddlTipo = document.getElementById('<%= ddlTipoAbastecimientoEdit.ClientID %>');
+            if (ddlTipo) {
+                ddlTipo.addEventListener('change', function () {
+                    aplicarIndicadoresEdicion();
+                });
+            }
+        }
+
         // Inicializar visualización al cargar la página
         window.onload = function () {
             try {
@@ -442,6 +589,8 @@
                 } else {
                     console.log("Elementos no encontrados: txtTotalGL o txtGLFinal");
                 }
+
+                initTipoDropdownChange();
             } catch (error) {
                 console.error("Error en window.onload:", error);
             }

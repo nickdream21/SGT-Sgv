@@ -94,6 +94,10 @@ namespace WebSGV.Helpers
                 case "INDICADORES":
                     return EsAdmin() || rol == ROL_SUPERVISOR;
 
+                // Registro de Conductores: ADMIN y ADMIN DE GRIFO
+                case "REGISTRO_CONDUCTORES":
+                    return EsAdmin() || EsAdminGrifo() || rol == ROL_SUPERVISOR;
+
                 // Abastecimiento: ADMIN y ADMIN DE GRIFO
                 case "ABASTECIMIENTO":
                     return EsAdmin() || EsAdminGrifo() || rol == ROL_SUPERVISOR;

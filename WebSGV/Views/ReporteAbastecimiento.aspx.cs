@@ -32,58 +32,53 @@ namespace WebSGV.Views
 
             if (!IsPostBack)
             {
-                CargarRutas();
                 // Establecer rango por defecto: mes actual
                 txtFechaDesde.Text = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).ToString("yyyy-MM-dd");
                 txtFechaHasta.Text = DateTime.Now.ToString("yyyy-MM-dd");
+                CargarReporte();
             }
         }
 
         #region Carga de Datos
 
-        private void CargarRutas()
-        {
-            try
-            {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = "SELECT idRuta, nombre FROM Ruta ORDER BY nombre";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        conn.Open();
-                        SqlDataAdapter da = new SqlDataAdapter(cmd);
-                        DataTable dt = new DataTable();
-                        da.Fill(dt);
-
-                        ddlRuta.Items.Clear();
-                        ddlRuta.Items.Add(new ListItem("Todas", ""));
-                        foreach (DataRow row in dt.Rows)
-                        {
-                            ddlRuta.Items.Add(new ListItem(row["nombre"].ToString(), row["idRuta"].ToString()));
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("Error al cargar rutas: " + ex.Message);
-            }
-        }
-
-        private DataTable ObtenerReporte(string fechaDesde, string fechaHasta, string conductor, string idRuta)
+        private DataTable ObtenerReporte(string fechaDesde, string fechaHasta, string conductor, string tipoAbast)
         {
             DataTable dt = new DataTable();
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                StringBuilder query = new StringBuilder(@"
+                conn.Open();
+
+                // Detectar columnas disponibles (scripts de migración pueden no haberse ejecutado)
+                bool tieneTipoAbast = ColumnaExisteEnTabla(conn, "AbastecimientoCombustible", "tipoAbastecimiento");
+                bool tieneRutaDesc = ColumnaExisteEnTabla(conn, "AbastecimientoCombustible", "rutaDescripcion");
+                bool tieneIdOrdenViaje = ColumnaExisteEnTabla(conn, "AbastecimientoCombustible", "idOrdenViaje");
+
+                // Expresiones dinámicas según columnas disponibles
+                string tipoAbastExpr;
+                if (tieneIdOrdenViaje && tieneTipoAbast)
+                    tipoAbastExpr = "CASE WHEN a.idOrdenViaje IS NOT NULL THEN 'VIAJE PROGRAMADO' ELSE ISNULL(a.tipoAbastecimiento, 'ABASTECIMIENTO') END";
+                else if (tieneIdOrdenViaje)
+                    tipoAbastExpr = "CASE WHEN a.idOrdenViaje IS NOT NULL THEN 'VIAJE PROGRAMADO' ELSE 'ABASTECIMIENTO' END";
+                else if (tieneTipoAbast)
+                    tipoAbastExpr = "ISNULL(a.tipoAbastecimiento, 'ABASTECIMIENTO')";
+                else
+                    tipoAbastExpr = "'ABASTECIMIENTO'";
+
+                string rutaExpr = tieneRutaDesc
+                    ? "ISNULL(a.rutaDescripcion, ISNULL(r.nombre, 'N/A'))"
+                    : "ISNULL(r.nombre, 'N/A')";
+
+                StringBuilder query = new StringBuilder();
+                query.Append($@"
                     SELECT 
                         RTRIM(a.numeroAbastecimientoCombustible) AS NumeroFormato,
                         a.fechaHora AS Fecha,
+                        {tipoAbastExpr} AS TipoAbastecimiento,
                         ISNULL(tc.nombre, 'N/A') AS TipoVehiculo,
                         ISNULL(CONCAT(c.nombre, ' ', c.apPaterno), 'N/A') AS Conductor,
                         ISNULL(t.placaTracto, 'N/A') AS PlacaTracto,
-                        ISNULL(r.nombre, 'N/A') AS Ruta,
+                        {rutaExpr} AS Ruta,
                         ISNULL(a.producto, 'N/A') AS Producto,
                         ISNULL(la.nombreAbastecimiento, 'N/A') AS LugarAbastecimiento,
                         FORMAT(a.fechaHora, 'hh:mmtt') AS Hora,
@@ -118,9 +113,9 @@ namespace WebSGV.Views
                     query.Append(" AND (c.nombre LIKE @Conductor OR c.apPaterno LIKE @Conductor OR c.DNI LIKE @Conductor)");
                 }
 
-                if (!string.IsNullOrEmpty(idRuta))
+                if (!string.IsNullOrEmpty(tipoAbast) && (tieneTipoAbast || tieneIdOrdenViaje))
                 {
-                    query.Append(" AND a.idRuta = @IdRuta");
+                    query.Append($" AND {tipoAbastExpr} = @TipoAbast");
                 }
 
                 query.Append(" ORDER BY a.fechaHora DESC");
@@ -136,16 +131,26 @@ namespace WebSGV.Views
                     if (!string.IsNullOrEmpty(conductor))
                         cmd.Parameters.AddWithValue("@Conductor", "%" + conductor + "%");
 
-                    if (!string.IsNullOrEmpty(idRuta))
-                        cmd.Parameters.AddWithValue("@IdRuta", Convert.ToInt32(idRuta));
+                    if (!string.IsNullOrEmpty(tipoAbast) && (tieneTipoAbast || tieneIdOrdenViaje))
+                        cmd.Parameters.AddWithValue("@TipoAbast", tipoAbast);
 
-                    conn.Open();
                     SqlDataAdapter da = new SqlDataAdapter(cmd);
                     da.Fill(dt);
                 }
             }
 
             return dt;
+        }
+
+        private bool ColumnaExisteEnTabla(SqlConnection conn, string tabla, string columna)
+        {
+            using (SqlCommand cmd = new SqlCommand(
+                "SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(@Tabla) AND name = @Columna", conn))
+            {
+                cmd.Parameters.AddWithValue("@Tabla", tabla);
+                cmd.Parameters.AddWithValue("@Columna", columna);
+                return cmd.ExecuteScalar() != null;
+            }
         }
 
         private void CargarReporte()
@@ -155,9 +160,9 @@ namespace WebSGV.Views
                 string fechaDesde = txtFechaDesde.Text.Trim();
                 string fechaHasta = txtFechaHasta.Text.Trim();
                 string conductor = txtBuscarConductor.Text.Trim();
-                string idRuta = ddlRuta.SelectedValue;
+                string tipoAbast = ddlTipoAbastecimiento.SelectedValue;
 
-                DataTable dt = ObtenerReporte(fechaDesde, fechaHasta, conductor, idRuta);
+                DataTable dt = ObtenerReporte(fechaDesde, fechaHasta, conductor, tipoAbast);
 
                 lblTotalRegistros.Text = dt.Rows.Count.ToString();
 
@@ -193,6 +198,8 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine("Error al cargar reporte: " + ex.Message);
+                ScriptManager.RegisterStartupScript(this, GetType(), "errorReporte",
+                    "alert('Error al cargar el reporte: " + ex.Message.Replace("'", "\\'" ).Replace("\r", "").Replace("\n", " ") + "');", true);
                 pnlReporte.Visible = false;
                 pnlResumen.Visible = false;
                 pnlSinResultados.Visible = true;
@@ -213,7 +220,7 @@ namespace WebSGV.Views
             txtFechaDesde.Text = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).ToString("yyyy-MM-dd");
             txtFechaHasta.Text = DateTime.Now.ToString("yyyy-MM-dd");
             txtBuscarConductor.Text = "";
-            ddlRuta.SelectedIndex = 0;
+            ddlTipoAbastecimiento.SelectedIndex = 0;
             pnlReporte.Visible = false;
             pnlResumen.Visible = false;
             pnlSinResultados.Visible = true;
@@ -227,9 +234,9 @@ namespace WebSGV.Views
                 string fechaDesde = txtFechaDesde.Text.Trim();
                 string fechaHasta = txtFechaHasta.Text.Trim();
                 string conductor = txtBuscarConductor.Text.Trim();
-                string idRuta = ddlRuta.SelectedValue;
+                string tipoAbast = ddlTipoAbastecimiento.SelectedValue;
 
-                DataTable dt = ObtenerReporte(fechaDesde, fechaHasta, conductor, idRuta);
+                DataTable dt = ObtenerReporte(fechaDesde, fechaHasta, conductor, tipoAbast);
 
                 if (dt.Rows.Count == 0)
                 {
@@ -240,6 +247,7 @@ namespace WebSGV.Views
 
                 Response.Clear();
                 Response.Buffer = true;
+                Response.ClearHeaders();
                 Response.ContentType = "application/vnd.ms-excel";
                 string fileName = $"Reporte_Abastecimiento_{DateTime.Now:yyyyMMdd_HHmm}.xls";
                 Response.AddHeader("content-disposition", "attachment;filename=" + fileName);
@@ -256,13 +264,13 @@ namespace WebSGV.Views
 
                         // Encabezado principal
                         hw.Write("<tr>");
-                        hw.Write("<td colspan='17' style='background-color:#0056b3;color:white;font-size:14px;font-weight:bold;text-align:center;padding:10px;'>");
+                        hw.Write("<td colspan='18' style='background-color:#0056b3;color:white;font-size:14px;font-weight:bold;text-align:center;padding:10px;'>");
                         hw.Write("REPORTE DE ABASTECIMIENTO DE COMBUSTIBLE");
                         hw.Write("</td></tr>");
 
                         // Rango de fechas
                         hw.Write("<tr>");
-                        hw.Write("<td colspan='17' style='background-color:#f0f7ff;font-size:10px;text-align:center;padding:6px;'>");
+                        hw.Write("<td colspan='18' style='background-color:#f0f7ff;font-size:10px;text-align:center;padding:6px;'>");
                         string rangoFechas = "";
                         if (!string.IsNullOrEmpty(fechaDesde) && !string.IsNullOrEmpty(fechaHasta))
                             rangoFechas = $"Periodo: {DateTime.Parse(fechaDesde):dd/MM/yyyy} al {DateTime.Parse(fechaHasta):dd/MM/yyyy}";
@@ -272,7 +280,7 @@ namespace WebSGV.Views
                         hw.Write("</td></tr>");
 
                         // Fila vacia
-                        hw.Write("<tr><td colspan='17'></td></tr>");
+                        hw.Write("<tr><td colspan='18'></td></tr>");
 
                         // Headers grupo
                         hw.Write("<tr>");
@@ -281,6 +289,7 @@ namespace WebSGV.Views
 
                         hw.Write($"<td rowspan='2' style='{thStyle}'>NRO. FORMATO</td>");
                         hw.Write($"<td rowspan='2' style='{thStyle}'>FECHA</td>");
+                        hw.Write($"<td rowspan='2' style='{thStyle}'>MOTIVO</td>");
                         hw.Write($"<td rowspan='2' style='{thStyle}'>TIPO VEHICULO</td>");
                         hw.Write($"<td rowspan='2' style='{thStyle}'>NOMBRE</td>");
                         hw.Write($"<td rowspan='2' style='{thStyle}'>PLACA TRACTO</td>");
@@ -334,6 +343,7 @@ namespace WebSGV.Views
                             hw.Write("<tr>");
                             hw.Write($"<td style='{tdStyle}'>{HttpUtility.HtmlEncode(row["NumeroFormato"])}</td>");
                             hw.Write($"<td style='{tdStyle}'>{fecha:dd/MM/yyyy}</td>");
+                            hw.Write($"<td style='{tdStyle}'>{HttpUtility.HtmlEncode(row["TipoAbastecimiento"])}</td>");
                             hw.Write($"<td style='{tdStyle}'>{HttpUtility.HtmlEncode(row["TipoVehiculo"])}</td>");
                             hw.Write($"<td style='{tdLeftStyle}'>{HttpUtility.HtmlEncode(row["Conductor"])}</td>");
                             hw.Write($"<td style='{tdStyle}'>{HttpUtility.HtmlEncode(row["PlacaTracto"])}</td>");
@@ -355,7 +365,7 @@ namespace WebSGV.Views
                         // Fila de totales
                         string tfStyle = "background-color:#f0f7ff;border:1px solid #d1e7ff;padding:6px;text-align:center;font-weight:bold;color:#0056b3;";
                         hw.Write("<tr>");
-                        hw.Write($"<td colspan='9' style='{tfStyle}text-align:right;'>TOTALES</td>");
+                        hw.Write($"<td colspan='10' style='{tfStyle}text-align:right;'>TOTALES</td>");
                         hw.Write($"<td style='{tfStyle}'>{sumGLAsignada:#,##0.##}</td>");
                         hw.Write($"<td style='{tfStyle}'>{sumGLComprados:#,##0.##}</td>");
                         hw.Write($"<td style='{tfStyle}'>{sumGLTotal:#,##0.##}</td>");
@@ -377,11 +387,13 @@ namespace WebSGV.Views
             }
             catch (System.Threading.ThreadAbortException)
             {
-                // Response.End() causa ThreadAbortException - es esperado
+                // Response.End() lanza ThreadAbortException - es comportamiento esperado
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine("Error al exportar Excel: " + ex.Message);
+                ScriptManager.RegisterStartupScript(this, GetType(), "errorExport",
+                    "alert('Error al exportar: " + ex.Message.Replace("'", "\\'" ).Replace("\r", "").Replace("\n", " ") + "');", true);
             }
         }
 
@@ -393,19 +405,19 @@ namespace WebSGV.Views
         {
             if (e.Row.RowType == DataControlRowType.DataRow)
             {
-                // Columna Conductor (indice 3) - alineada a izquierda
-                e.Row.Cells[3].CssClass = "td-left";
-                // Columna Producto (indice 6)
-                e.Row.Cells[6].CssClass = "td-left";
+                // Columna Conductor (indice 4) - alineada a izquierda
+                e.Row.Cells[4].CssClass = "td-left";
+                // Columna Producto (indice 7)
+                e.Row.Cells[7].CssClass = "td-left";
                 // Columnas numericas
-                for (int i = 9; i <= 15; i++)
+                for (int i = 10; i <= 16; i++)
                 {
                     e.Row.Cells[i].CssClass = "td-num";
                 }
-                // Columna Observaciones (indice 16)
-                if (e.Row.Cells.Count > 16)
+                // Columna Observaciones (indice 17)
+                if (e.Row.Cells.Count > 17)
                 {
-                    e.Row.Cells[16].CssClass = "td-obs";
+                    e.Row.Cells[17].CssClass = "td-obs";
                 }
             }
         }
@@ -413,6 +425,31 @@ namespace WebSGV.Views
         #endregion
 
         #region Helpers de Formato
+
+        protected string FormatTipoAbastecimiento(object tipo)
+        {
+            string val = tipo?.ToString() ?? "ABASTECIMIENTO";
+            string cssClass = "motivo-abastecimiento";
+            string icon = "🚛";
+
+            switch (val.ToUpper())
+            {
+                case "VIAJE PROGRAMADO":
+                    cssClass = "motivo-viaje";
+                    icon = "📦";
+                    break;
+                case "MANTENIMIENTO":
+                    cssClass = "motivo-mantenimiento";
+                    icon = "🔧";
+                    break;
+                case "OTRO":
+                    cssClass = "motivo-otro";
+                    icon = "📋";
+                    break;
+            }
+
+            return $"<span class=\"motivo-badge {cssClass}\">{icon} {HttpUtility.HtmlEncode(val)}</span>";
+        }
 
         protected string FormatTipoVehiculo(object tipoVehiculo)
         {
