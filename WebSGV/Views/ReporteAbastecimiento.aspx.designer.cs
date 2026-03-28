@@ -34,9 +34,9 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.TextBox txtBuscarConductor;
 
         /// <summary>
-        /// Control ddlRuta.
+        /// Control ddlTipoAbastecimiento.
         /// </summary>
-        protected global::System.Web.UI.WebControls.DropDownList ddlRuta;
+        protected global::System.Web.UI.WebControls.DropDownList ddlTipoAbastecimiento;
 
         /// <summary>
         /// Control btnBuscar.
@@ -51,7 +51,7 @@ namespace WebSGV.Views
         /// <summary>
         /// Control btnExportarExcel.
         /// </summary>
-        protected global::System.Web.UI.WebControls.Button btnExportarExcel;
+        protected global::System.Web.UI.WebControls.LinkButton btnExportarExcel;
 
         /// <summary>
         /// Control pnlResumen.

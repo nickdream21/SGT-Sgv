@@ -87,6 +87,15 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Panel pnlManualEntry;
 
         /// <summary>
+        /// Control ddlMotivoSalida.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlMotivoSalida;
+
+        /// <summary>
         /// Control tipoVehiculo.
         /// </summary>
         /// <remarks>
@@ -123,13 +132,13 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.DropDownList ddlConductor;
 
         /// <summary>
-        /// Control ddlRuta.
+        /// Control txtRutaManual.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList ddlRuta;
+        protected global::System.Web.UI.WebControls.TextBox txtRutaManual;
 
         /// <summary>
         /// Control txtProducto.
