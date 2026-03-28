@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.Net.Compilers.4.2.0\build\Microsoft.Net.Compilers.props" Condition="Exists('..\packages\Microsoft.Net.Compilers.4.2.0\build\Microsoft.Net.Compilers.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -211,6 +211,7 @@
     <Content Include="Content\favicon.png" />
     <Content Include="Content\responsive-mobile.css" />
     <Content Include="Content\Site.css" />
+    <Content Include="Database\Scripts\script_AgregarRolAdminGrifo.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearCPIC.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearDespacho.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearFactura.sql" />
@@ -264,6 +265,7 @@
     <Content Include="Database\StoredProcedures\sp_ObtenerPlantasPorAmbito.sql" />
     <Content Include="Database\StoredProcedures\sp_ObtenerTractosActivos.sql" />
     <Content Include="Database\StoredProcedures\sp_ObtenerViajesAbiertosConductor.sql" />
+    <Content Include="Database\StoredProcedures\sp_ObtenerViajesActivosParaGrifo.sql" />
     <Content Include="Database\StoredProcedures\sp_ValidarDocumentosDuplicados.sql" />
     <Content Include="Default.aspx" />
     <Content Include="favicon.ico" />
@@ -351,6 +353,7 @@
     <Content Include="Views\ConsultaAuditoria.aspx" />
     <Content Include="Views\Dashboard.aspx" />
     <Content Include="Views\DashboardConductor.aspx" />
+    <Content Include="Views\DashboardGrifo.aspx" />
     <Content Include="Views\DetalleOrdenViaje.aspx" />
     <Content Include="Views\EditarDespacho.aspx" />
     <Content Include="Views\Error.aspx" />
@@ -369,6 +372,7 @@
     <Content Include="Views\RegistroRutas.aspx" />
     <Content Include="Views\RegistroSemiremolques.aspx" />
     <Content Include="Views\RegistroTractos.aspx" />
+    <Content Include="Views\ReporteAbastecimiento.aspx" />
     <Content Include="Views\ReporteResultado.aspx" />
     <Content Include="Views\Reportes.aspx" />
     <Content Include="Views\ReportesOrdenesViaje.aspx" />
@@ -532,6 +536,13 @@
     <Compile Include="Views\DashboardConductor.aspx.designer.cs">
       <DependentUpon>DashboardConductor.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Views\DashboardGrifo.aspx.cs">
+      <DependentUpon>DashboardGrifo.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\DashboardGrifo.aspx.designer.cs">
+      <DependentUpon>DashboardGrifo.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Views\DetalleOrdenViaje.aspx.cs">
       <DependentUpon>DetalleOrdenViaje.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -648,6 +659,13 @@
     </Compile>
     <Compile Include="Views\RegistroTractos.aspx.designer.cs">
       <DependentUpon>RegistroTractos.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ReporteAbastecimiento.aspx.cs">
+      <DependentUpon>ReporteAbastecimiento.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\ReporteAbastecimiento.aspx.designer.cs">
+      <DependentUpon>ReporteAbastecimiento.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\ReporteResultado.aspx.cs">
       <DependentUpon>ReporteResultado.aspx</DependentUpon>

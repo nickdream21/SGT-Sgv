@@ -21,6 +21,10 @@ namespace WebSGV.Views
                 {
                     Response.Redirect("~/Views/DashboardConductor.aspx");
                 }
+                else if (rol.ToUpper() == "ADMINISTRADOR DE GRIFO")
+                {
+                    Response.Redirect("~/Views/DashboardGrifo.aspx");
+                }
                 else
                 {
                     Response.Redirect("~/Views/Inicio.aspx");
@@ -75,6 +79,11 @@ namespace WebSGV.Views
                 {
                     System.Diagnostics.Debug.WriteLine($"✅ Login exitoso - CONDUCTOR: {resultado.Nombre}");
                     Response.Redirect("~/Views/DashboardConductor.aspx");
+                }
+                else if (resultado.Rol.ToUpper() == "ADMINISTRADOR DE GRIFO")
+                {
+                    System.Diagnostics.Debug.WriteLine($"✅ Login exitoso - ADMIN GRIFO: {resultado.Nombre}");
+                    Response.Redirect("~/Views/DashboardGrifo.aspx");
                 }
                 else
                 {

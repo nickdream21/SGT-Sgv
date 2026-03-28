@@ -16,6 +16,7 @@ namespace WebSGV
         public bool EsAdmin { get; set; }
         public bool EsConductor { get; set; }
         public bool EsAdminSistema { get; set; }
+        public bool EsAdminGrifo { get; set; }
 
         /// <summary>
         /// Page_Init: Vincula el ViewState a la sesión del usuario.
@@ -155,6 +156,7 @@ namespace WebSGV
             EsAdmin = false;
             EsConductor = false;
             EsAdminSistema = false;
+            EsAdminGrifo = false;
         }
 
         private void CargarInformacionUsuario()
@@ -166,6 +168,7 @@ namespace WebSGV
                 EsAdmin = RolesHelper.EsAdmin();
                 EsConductor = RolesHelper.EsConductor();
                 EsAdminSistema = RolesHelper.EsAdminSistema();
+                EsAdminGrifo = RolesHelper.EsAdminGrifo();
             }
             catch (Exception ex)
             {

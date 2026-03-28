@@ -19,34 +19,104 @@
 
         .header-container {
             border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 15px;
-            margin-bottom: 25px;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
         }
 
         .abastecimiento-header {
             color: var(--primary-color);
-            font-size: 1.6rem;
+            font-size: 1.4rem;
             font-weight: 700;
             margin: 0;
         }
 
+        /* === BANNER COMPACTO DE VIAJE === */
+        .trip-info-banner {
+            background: linear-gradient(135deg, #f0f7ff 0%, #e3f0ff 100%);
+            border: 1px solid #b8d4f0;
+            border-left: 4px solid var(--primary-color);
+            border-radius: 6px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+        }
+
+        .trip-info-banner .trip-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .trip-info-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 24px;
+        }
+
+        .trip-info-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.88rem;
+        }
+
+        .trip-info-item .info-icon {
+            color: var(--primary-color);
+            font-size: 0.85rem;
+            width: 16px;
+            text-align: center;
+        }
+
+        .trip-info-item .info-label {
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .trip-info-item .info-value {
+            color: #212529;
+            font-weight: 600;
+        }
+
+        .trip-ruta-badge {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .trip-gl-badge {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* === CARD ESTILOS COMPACTOS === */
         .card {
             border: none;
-            margin-bottom: 25px;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
         }
 
         .card-header {
             background-color: var(--primary-color);
             color: white;
             font-weight: 600;
-            font-size: 1.1rem;
-            padding: 12px 20px;
+            font-size: 0.95rem;
+            padding: 10px 16px;
             border-radius: 4px 4px 0 0;
         }
 
         .card-body {
-            padding: 20px;
+            padding: 16px;
             background-color: #fafafa;
             border: 1px solid #e9ecef;
             border-top: none;
@@ -56,17 +126,24 @@
         .form-label {
             font-weight: 500;
             color: #495057;
+            font-size: 0.85rem;
+            margin-bottom: 3px;
         }
 
         .form-control {
             border: 1px solid #ced4da;
-            padding: 8px 12px;
+            padding: 6px 10px;
             height: auto;
+            font-size: 0.9rem;
         }
 
         .form-control:focus {
             border-color: #80bdff;
             box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        .form-group {
+            margin-bottom: 10px;
         }
 
         .btn-primary {
@@ -84,8 +161,8 @@
             background-color: var(--accent-color);
             border: 1px solid #d1e7ff;
             border-radius: 4px;
-            padding: 15px;
-            margin-top: 15px;
+            padding: 12px;
+            margin-top: 10px;
         }
 
         .calculation-result {
@@ -93,9 +170,9 @@
             justify-content: space-between;
             font-weight: 600;
             color: var(--primary-color);
+            font-size: 0.95rem;
         }
 
-        /* Estilos para campos calculados */
         .calculated-field {
             background-color: #f0f7ff;
             color: #495057;
@@ -107,63 +184,63 @@
             border-color: #ffeaa7;
         }
 
-        /* Indicador visual de tanque de combustible */
+        /* === FUEL VISUAL COMPACTO === */
         .fuel-section {
             background-color: #f8f9fa;
             border-radius: 6px;
             border: 1px solid #e9ecef;
-            padding: 15px;
-            margin-top: 20px;
+            padding: 12px;
+            margin-top: 10px;
         }
 
         .fuel-tank {
-            height: 30px;
+            height: 22px;
             background-color: #e9ecef;
-            border-radius: 15px;
+            border-radius: 11px;
             position: relative;
             overflow: hidden;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
 
         .fuel-level {
             height: 100%;
             background: linear-gradient(90deg, #28a745, #67c977);
-            border-radius: 15px 0 0 15px;
+            border-radius: 11px 0 0 11px;
             width: 75%;
         }
 
         .fuel-markers {
             display: flex;
             justify-content: space-between;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #6c757d;
         }
 
-        /* NUEVOS ESTILOS PARA DETALLES DE COMPRA */
+        /* === TICKETS COMPACTOS === */
         .tickets-section {
             background-color: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 6px;
-            padding: 20px;
-            margin-bottom: 20px;
+            padding: 14px;
         }
 
         .tickets-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .tickets-table th {
             background-color: var(--primary-color);
             color: white;
-            padding: 12px;
+            padding: 8px 10px;
             text-align: center;
             font-weight: 600;
+            font-size: 0.85rem;
         }
 
         .tickets-table td {
-            padding: 10px;
+            padding: 6px 8px;
             text-align: center;
             border: 1px solid #dee2e6;
             background-color: white;
@@ -171,47 +248,47 @@
 
         .tickets-table input {
             border: 1px solid #ced4da;
-            padding: 8px;
+            padding: 6px;
             border-radius: 4px;
             width: 100%;
             text-align: center;
+            font-size: 0.9rem;
         }
 
         .btn-add-ticket {
             background-color: #28a745;
             border-color: #28a745;
             color: white;
-            padding: 8px 15px;
+            padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 0.85rem;
         }
 
         .btn-add-ticket:hover {
             background-color: #218838;
-            border-color: #1e7e34;
         }
 
         .btn-remove-ticket {
             background-color: #dc3545;
             border-color: #dc3545;
             color: white;
-            padding: 5px 10px;
+            padding: 4px 8px;
             border-radius: 3px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 0.75rem;
         }
 
         .btn-remove-ticket:hover {
             background-color: #c82333;
-            border-color: #bd2130;
         }
 
         .totales-tickets {
             background-color: #e3f2fd;
             border: 1px solid #2196f3;
             border-radius: 4px;
-            padding: 15px;
-            margin-top: 15px;
+            padding: 10px 14px;
+            margin-top: 10px;
         }
 
         .total-row {
@@ -219,95 +296,42 @@
             justify-content: space-between;
             font-weight: 600;
             color: var(--primary-color);
-            margin-bottom: 5px;
+            margin-bottom: 3px;
+            font-size: 0.9rem;
         }
 
-        .observaciones-section {
-            margin-top: 20px;
-        }
-
-        /* Estilos mejorados para Select2 */
+        /* === SELECT2 === */
         .select2-container {
             width: 100% !important;
         }
 
         .select2-container--default .select2-selection--single {
-            height: 38px;
+            height: 36px;
             border: 1px solid #ced4da;
             border-radius: 4px;
             background-color: #fff;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-        }
-
-        .select2-container--default .select2-selection--single:focus,
-        .select2-container--default.select2-container--focus .select2-selection--single {
-            border-color: #80bdff;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
         }
 
         .select2-container--default .select2-selection--single .select2-selection__rendered {
             color: #495057;
-            line-height: 36px;
-            padding-left: 12px;
-            padding-right: 30px;
-        }
-
-        .select2-container--default .select2-selection--single .select2-selection__placeholder {
-            color: #6c757d;
+            line-height: 34px;
+            padding-left: 10px;
+            font-size: 0.9rem;
         }
 
         .select2-container--default .select2-selection--single .select2-selection__arrow {
-            height: 36px;
-            width: 30px;
-            right: 3px;
-        }
-
-        .select2-container--default .select2-selection--single .select2-selection__arrow b {
-            border-color: #6c757d transparent transparent transparent;
-        }
-
-        .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
-            border-color: transparent transparent #6c757d transparent;
-        }
-
-        .select2-container--default .select2-selection--single .select2-selection__clear {
-            color: #dc3545;
-            font-weight: bold;
-            margin-right: 8px;
+            height: 34px;
         }
 
         .select2-dropdown {
             border: 1px solid #ced4da;
             border-radius: 4px;
             box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
-        }
-
-        .select2-search--dropdown {
-            padding: 8px;
-        }
-
-        .select2-search--dropdown .select2-search__field {
-            padding: 8px 12px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            outline: none;
-        }
-
-        .select2-search--dropdown .select2-search__field:focus {
-            border-color: #80bdff;
-            box-shadow: 0 0 0 0.1rem rgba(0, 123, 255, 0.2);
         }
 
         .select2-results__option {
-            padding: 8px 12px;
-            font-size: 14px;
-            transition: background-color 0.15s ease-in-out;
-        }
-
-        .select2-results__option[aria-selected=true] {
-            background-color: #e9ecef;
+            padding: 6px 10px;
+            font-size: 0.9rem;
         }
 
         .select2-container--default .select2-results__option--highlighted[aria-selected] {
@@ -315,12 +339,13 @@
             color: white;
         }
 
-        /* Mensaje de éxito o error */
+        /* === ALERTAS === */
         .alert-message {
             padding: 10px 15px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             border-radius: 4px;
             display: none;
+            font-size: 0.9rem;
         }
 
         .alert-success {
@@ -336,258 +361,278 @@
         }
 
         .sync-indicator {
-            font-size: 0.8em;
+            font-size: 0.75em;
             color: #ffc107;
-            margin-left: 5px;
+            margin-left: 3px;
+        }
+
+        /* === LINK VOLVER === */
+        .btn-back-link {
+            color: var(--primary-color);
+            font-size: 0.85rem;
+            text-decoration: none;
+        }
+
+        .btn-back-link:hover {
+            text-decoration: underline;
         }
     </style>
 
     <div class="container-fluid abastecimiento-container">
-        <!-- Mensaje de alerta para retroalimentación al usuario -->
         <div id="alertMessage" class="alert-message" role="alert"></div>
 
-        <!-- Encabezado SIN número -->
-        <div class="header-container">
-            <h3 class="abastecimiento-header text-uppercase">Parte de Abastecimiento de Combustible</h3>
+        <!-- Encabezado -->
+        <div class="header-container d-flex justify-content-between align-items-center">
+            <h3 class="abastecimiento-header text-uppercase">
+                <i class="fas fa-gas-pump mr-2"></i>Registro de Abastecimiento
+            </h3>
+            <asp:Panel ID="pnlBackLink" runat="server" Visible="false">
+                <a href="DashboardGrifo.aspx" class="btn-back-link"><i class="fas fa-arrow-left mr-1"></i>Volver al Dashboard</a>
+            </asp:Panel>
         </div>
 
-        <!-- Información General -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <i class="fas fa-truck me-2"></i>Información General
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3">
-                        <label for="<%= tipoVehiculo.ClientID %>" class="form-label">Tipo:</label>
-                        <asp:DropDownList ID="tipoVehiculo" runat="server" CssClass="form-control">
-                            <asp:ListItem Value="1">Camioneta</asp:ListItem>
-                            <asp:ListItem Value="2" Selected="True">Camión</asp:ListItem>
-                            <asp:ListItem Value="3">Trailer</asp:ListItem>
-                            <asp:ListItem Value="4">Otro</asp:ListItem>
-                        </asp:DropDownList>
+        <!-- ============================================= -->
+        <!-- MODO VIAJE: Banner compacto (solo si idViaje) -->
+        <!-- ============================================= -->
+        <asp:Panel ID="pnlTripBanner" runat="server" Visible="false">
+            <div class="trip-info-banner">
+                <div class="trip-title"><i class="fas fa-truck mr-1"></i>Datos del Viaje</div>
+                <div class="trip-info-grid">
+                    <div class="trip-info-item">
+                        <span class="info-icon"><i class="fas fa-user"></i></span>
+                        <span class="info-label">Conductor:</span>
+                        <span class="info-value"><asp:Literal ID="litConductor" runat="server" /></span>
                     </div>
-                    <div class="col-md-3">
-                        <label for="<%= ddlPlaca.ClientID %>" class="form-label">Placa:</label>
-                        <asp:DropDownList ID="ddlPlaca" runat="server" CssClass="form-control"></asp:DropDownList>
+                    <div class="trip-info-item">
+                        <span class="info-icon"><i class="fas fa-truck-moving"></i></span>
+                        <span class="info-label">Tracto:</span>
+                        <span class="info-value"><asp:Literal ID="litPlacaTracto" runat="server" /></span>
                     </div>
-                    <div class="col-md-3">
-                        <label for="<%= ddlCarreta.ClientID %>" class="form-label">Carreta:</label>
-                        <asp:DropDownList ID="ddlCarreta" runat="server" CssClass="form-control"></asp:DropDownList>
+                    <div class="trip-info-item">
+                        <span class="info-icon"><i class="fas fa-trailer"></i></span>
+                        <span class="info-label">Carreta:</span>
+                        <span class="info-value"><asp:Literal ID="litPlacaCarreta" runat="server" /></span>
                     </div>
-                    <div class="col-md-3">
-                        <label for="<%= ddlConductor.ClientID %>" class="form-label">Conductor:</label>
-                        <asp:DropDownList ID="ddlConductor" runat="server" CssClass="form-control"></asp:DropDownList>
+                    <div class="trip-info-item">
+                        <span class="info-icon"><i class="fas fa-route"></i></span>
+                        <span class="info-label">Ruta:</span>
+                        <span class="trip-ruta-badge"><asp:Literal ID="litRutaViaje" runat="server" /></span>
+                    </div>
+                    <div class="trip-info-item">
+                        <span class="info-icon"><i class="fas fa-tint"></i></span>
+                        <span class="info-label">GL Asignados:</span>
+                        <span class="trip-gl-badge"><asp:Literal ID="litGLAsignados" runat="server" /></span>
                     </div>
                 </div>
             </div>
-        </div>
+        </asp:Panel>
 
-        <!-- Ruta y Producto -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <i class="fas fa-route me-2"></i>Ruta y Producto
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <label for="<%= ddlRuta.ClientID %>" class="form-label">Ruta:</label>
-                        <asp:DropDownList ID="ddlRuta" runat="server" CssClass="form-control"></asp:DropDownList>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="<%= txtProducto.ClientID %>" class="form-label">Producto:</label>
-                        <asp:TextBox ID="txtProducto" runat="server" CssClass="form-control" placeholder="Ingrese el producto"></asp:TextBox>
-                    </div>
+        <!-- ============================================= -->
+        <!-- MODO MANUAL: Dropdowns completos              -->
+        <!-- ============================================= -->
+        <asp:Panel ID="pnlManualEntry" runat="server" Visible="true">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-truck mr-2"></i>Información del Vehículo y Conductor
                 </div>
-            </div>
-        </div>
-
-        <!-- Control de Combustible -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <i class="fas fa-gas-pump me-2"></i>Control de Combustible
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <label for="<%= lugarAbastecimiento.ClientID %>" class="form-label">Lugar de Abastecimiento:</label>
-                        <asp:DropDownList ID="lugarAbastecimiento" runat="server" CssClass="form-control">
-                            <asp:ListItem Value="1" Selected="True">Grifo Cochera 03</asp:ListItem>
-                            <asp:ListItem Value="2">Otro</asp:ListItem>
-                        </asp:DropDownList>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="<%= txtFecha.ClientID %>" class="form-label">Fecha:</label>
-                        <asp:TextBox ID="txtFecha" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="<%= txtHora.ClientID %>" class="form-label">Hora:</label>
-                        <asp:TextBox ID="txtHora" runat="server" CssClass="form-control" TextMode="Time"></asp:TextBox>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- NUEVA SECCIÓN: Detalles de Compra -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <i class="fas fa-receipt me-2"></i>Detalles de Compra - Tickets de Combustible
-            </div>
-            <div class="card-body">
-                <div class="tickets-section">
-                    <table class="tickets-table" id="ticketsTable">
-                        <thead>
-                            <tr>
-                                <th style="width: 10%;">#</th>
-                                <th style="width: 35%;">Costo del Ticket (USD)</th>
-                                <th style="width: 35%;">Galones</th>
-                                <th style="width: 20%;">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ticketsTableBody">
-                            <!-- Los tickets se agregarán dinámicamente aquí -->
-                        </tbody>
-                    </table>
-                    
-                    <div class="text-center">
-                        <button type="button" class="btn-add-ticket" onclick="agregarTicket()">
-                            <i class="fas fa-plus"></i> Agregar Ticket
-                        </button>
-                    </div>
-
-                    <div class="totales-tickets" id="totalesTickets">
-                        <div class="total-row">
-                            <span>Total Tickets:</span>
-                            <span id="totalTickets">0</span>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 form-group">
+                            <label class="form-label">Tipo:</label>
+                            <asp:DropDownList ID="tipoVehiculo" runat="server" CssClass="form-control">
+                                <asp:ListItem Value="1">Camioneta</asp:ListItem>
+                                <asp:ListItem Value="2" Selected="True">Camión</asp:ListItem>
+                                <asp:ListItem Value="3">Trailer</asp:ListItem>
+                                <asp:ListItem Value="4">Otro</asp:ListItem>
+                            </asp:DropDownList>
                         </div>
-                        <div class="total-row">
-                            <span>Costo Total (USD):</span>
-                            <span id="costoTotalTickets">$ 0.00</span>
+                        <div class="col-md-3 form-group">
+                            <label class="form-label">Placa Tracto:</label>
+                            <asp:DropDownList ID="ddlPlaca" runat="server" CssClass="form-control"></asp:DropDownList>
                         </div>
-                        <div class="total-row">
-                            <span>Galones Totales:</span>
-                            <span id="galonesTotalesTickets">0.00 GL</span>
+                        <div class="col-md-3 form-group">
+                            <label class="form-label">Carreta:</label>
+                            <asp:DropDownList ID="ddlCarreta" runat="server" CssClass="form-control"></asp:DropDownList>
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label class="form-label">Conductor:</label>
+                            <asp:DropDownList ID="ddlConductor" runat="server" CssClass="form-control"></asp:DropDownList>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6 form-group">
+                            <label class="form-label">Ruta:</label>
+                            <asp:DropDownList ID="ddlRuta" runat="server" CssClass="form-control"></asp:DropDownList>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="form-label">Producto:</label>
+                            <asp:TextBox ID="txtProducto" runat="server" CssClass="form-control" placeholder="Ingrese el producto"></asp:TextBox>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </asp:Panel>
 
-        <!-- Detalles de Consumo -->
-        <div class="card mb-4">
+        <!-- Producto (visible solo en modo viaje, ya que en manual está arriba) -->
+        <asp:Panel ID="pnlProductoViaje" runat="server" Visible="false">
+            <div class="row mb-3">
+                <div class="col-md-4 form-group">
+                    <label class="form-label">Producto:</label>
+                    <asp:TextBox ID="txtProductoViaje" runat="server" CssClass="form-control" placeholder="Ej: Diesel B5"></asp:TextBox>
+                </div>
+            </div>
+        </asp:Panel>
+
+        <!-- ============================================= -->
+        <!-- SECCIÓN ÚNICA: Combustible y Tickets          -->
+        <!-- ============================================= -->
+        <div class="card">
             <div class="card-header">
-                <i class="fas fa-tachometer-alt me-2"></i>Detalles de Consumo
+                <i class="fas fa-gas-pump mr-2"></i>Control de Combustible
             </div>
             <div class="card-body">
                 <div class="row">
+                    <!-- Columna izquierda: Lugar, Fecha/Hora, GL -->
                     <div class="col-md-6">
                         <div class="row">
                             <div class="col-md-6 form-group">
-                                <label for="<%= txtGLRuta.ClientID %>" class="form-label">GL Ruta Asignada:</label>
+                                <label class="form-label">Lugar de Abastecimiento:</label>
+                                <asp:DropDownList ID="lugarAbastecimiento" runat="server" CssClass="form-control">
+                                    <asp:ListItem Value="1" Selected="True">Grifo Cochera 03</asp:ListItem>
+                                    <asp:ListItem Value="2">Otro</asp:ListItem>
+                                </asp:DropDownList>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">Fecha:</label>
+                                <asp:TextBox ID="txtFecha" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">Hora:</label>
+                                <asp:TextBox ID="txtHora" runat="server" CssClass="form-control" TextMode="Time"></asp:TextBox>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label class="form-label">GL Ruta Asignada:</label>
                                 <asp:TextBox ID="txtGLRuta" runat="server" CssClass="form-control" TextMode="Number" step="any" placeholder="Ej: 50" onchange="calcularTotales()"></asp:TextBox>
                             </div>
                             <div class="col-md-6 form-group">
-                                <label for="<%= txtGLComprados.ClientID %>" class="form-label">
-                                    GL Comprados en Ruta:
-                                    <span class="sync-indicator">🔗</span>
-                                </label>
-                                <asp:TextBox ID="txtGLComprados" runat="server" CssClass="form-control synchronized-field" TextMode="Number" step="any" placeholder="Auto desde tickets" readonly="true"></asp:TextBox>
+                                <label class="form-label">GL Comprados <span class="sync-indicator">🔗</span></label>
+                                <asp:TextBox ID="txtGLComprados" runat="server" CssClass="form-control synchronized-field" TextMode="Number" step="any" placeholder="Auto"></asp:TextBox>
                             </div>
                         </div>
-                        <div class="row mt-3">
+                        <div class="row">
                             <div class="col-md-6 form-group">
-                                <label for="<%= txtTotalGL.ClientID %>" class="form-label">GL Total Abastecidos:</label>
-                                <asp:TextBox ID="txtTotalGL" runat="server" CssClass="form-control calculated-field" TextMode="Number" step="any" placeholder="Calculado automáticamente" ReadOnly="true"></asp:TextBox>
+                                <label class="form-label">GL Total Abastecidos:</label>
+                                <asp:TextBox ID="txtTotalGL" runat="server" CssClass="form-control calculated-field" TextMode="Number" step="any"></asp:TextBox>
                             </div>
                             <div class="col-md-6 form-group">
-                                <label for="<%= txtGLFinal.ClientID %>" class="form-label">GL Trae al Finalizar:</label>
+                                <label class="form-label">GL Trae al Finalizar:</label>
                                 <asp:TextBox ID="txtGLFinal" runat="server" CssClass="form-control" TextMode="Number" step="any" placeholder="Ej: 62" onchange="calcularTotales()"></asp:TextBox>
                             </div>
                         </div>
-                        <div class="row mt-3">
+                        <div class="row">
                             <div class="col-md-6 form-group">
-                                <label for="<%= txtGLConsumidos.ClientID %>" class="form-label">GL Total Consumidos:</label>
-                                <asp:TextBox ID="txtGLConsumidos" runat="server" CssClass="form-control calculated-field" TextMode="Number" step="any" placeholder="Calculado automáticamente" ReadOnly="true"></asp:TextBox>
+                                <label class="form-label">GL Consumidos:</label>
+                                <asp:TextBox ID="txtGLConsumidos" runat="server" CssClass="form-control calculated-field" TextMode="Number" step="any"></asp:TextBox>
                             </div>
                             <div class="col-md-6 form-group">
-                                <label for="<%= txtPrecioDolar.ClientID %>" class="form-label">Precio del Dólar:</label>
+                                <label class="form-label">Precio Dólar:</label>
                                 <asp:TextBox ID="txtPrecioDolar" runat="server" CssClass="form-control" TextMode="Number" step="any" placeholder="Ej: 1.795"></asp:TextBox>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
                         <div class="row">
                             <div class="col-md-6 form-group">
-                                <label for="<%= txtMontoTotal.ClientID %>" class="form-label">
-                                    Monto Total GL:
-                                    <span class="sync-indicator">🔗</span>
-                                </label>
-                                <asp:TextBox ID="txtMontoTotal" runat="server" CssClass="form-control synchronized-field" TextMode="Number" step="any" placeholder="Auto desde tickets" readonly="true"></asp:TextBox>
+                                <label class="form-label">Monto Total <span class="sync-indicator">🔗</span></label>
+                                <asp:TextBox ID="txtMontoTotal" runat="server" CssClass="form-control synchronized-field" TextMode="Number" step="any"></asp:TextBox>
                             </div>
                             <div class="col-md-6 form-group">
-                                <label for="<%= txtDistancia.ClientID %>" class="form-label">Distancia en KM:</label>
+                                <label class="form-label">Distancia KM:</label>
                                 <asp:TextBox ID="txtDistancia" runat="server" CssClass="form-control" TextMode="Number" step="any" placeholder="Ej: 1935.9" onchange="calcularRendimiento()"></asp:TextBox>
                             </div>
                         </div>
-                        <div class="row mt-3">
+                        <div class="row">
                             <div class="col-md-6 form-group">
-                                <label for="<%= txtConsumoComputador.ClientID %>" class="form-label">Consumo Computador:</label>
+                                <label class="form-label">Consumo Computador:</label>
                                 <asp:TextBox ID="txtConsumoComputador" runat="server" CssClass="form-control" TextMode="Number" step="any" placeholder="Ej: 184.2"></asp:TextBox>
                             </div>
                             <div class="col-md-6 form-group">
-                                <label for="<%= txtHoraRetorno.ClientID %>" class="form-label">Hora Retorno:</label>
+                                <label class="form-label">Hora Retorno:</label>
                                 <asp:TextBox ID="txtHoraRetorno" runat="server" CssClass="form-control" TextMode="Time"></asp:TextBox>
                             </div>
                         </div>
-                        <div class="fuel-section mt-3">
-                            <h6 class="mb-2">Visualización de consumo de combustible</h6>
+                        <div class="fuel-section">
+                            <small class="text-muted mb-1 d-block">Nivel de combustible</small>
                             <div class="fuel-tank">
                                 <div class="fuel-level" id="fuelLevelVisual"></div>
                             </div>
                             <div class="fuel-markers">
-                                <span>0%</span>
-                                <span>25%</span>
-                                <span>50%</span>
-                                <span>75%</span>
-                                <span>100%</span>
+                                <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+                            </div>
+                        </div>
+                        <div class="calculation-box">
+                            <div class="calculation-result">
+                                <span>Rendimiento (KM/GL):</span>
+                                <span id="rendimientoPromedio">0.00</span>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Cálculos y Resultados -->
-                <div class="calculation-box mt-3">
-                    <div class="calculation-result">
-                        <span>Rendimiento promedio (KM/GL):</span>
-                        <span id="rendimientoPromedio">0.00</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Observaciones -->
-        <div class="card mb-4 observaciones-section">
-            <div class="card-header">
-                <i class="fas fa-clipboard me-2"></i>Observaciones
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-12">
-                        <asp:TextBox ID="txtObservaciones" runat="server" CssClass="form-control" TextMode="MultiLine" Rows="4" placeholder="Ingrese observaciones adicionales aquí..."></asp:TextBox>
+                    <!-- Columna derecha: Tickets -->
+                    <div class="col-md-6">
+                        <div class="tickets-section">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong style="font-size:0.9rem; color: var(--primary-color);"><i class="fas fa-receipt mr-1"></i>Tickets de Combustible</strong>
+                                <button type="button" class="btn-add-ticket" onclick="agregarTicket()">
+                                    <i class="fas fa-plus"></i> Agregar
+                                </button>
+                            </div>
+                            <table class="tickets-table" id="ticketsTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;">#</th>
+                                        <th style="width: 35%;">Costo (USD)</th>
+                                        <th style="width: 35%;">Galones</th>
+                                        <th style="width: 20%;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ticketsTableBody"></tbody>
+                            </table>
+                            <div class="totales-tickets" id="totalesTickets">
+                                <div class="total-row">
+                                    <span>Tickets:</span>
+                                    <span id="totalTickets">0</span>
+                                </div>
+                                <div class="total-row">
+                                    <span>Costo Total:</span>
+                                    <span id="costoTotalTickets">$ 0.00</span>
+                                </div>
+                                <div class="total-row">
+                                    <span>Galones:</span>
+                                    <span id="galonesTotalesTickets">0.00 GL</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Observaciones integradas -->
+                        <div class="form-group mt-3">
+                            <label class="form-label"><i class="fas fa-clipboard mr-1"></i>Observaciones:</label>
+                            <asp:TextBox ID="txtObservaciones" runat="server" CssClass="form-control" TextMode="MultiLine" Rows="3" placeholder="Observaciones adicionales..."></asp:TextBox>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Botones -->
-        <div class="text-end mt-4">
-            <asp:Button ID="btnImprimir" runat="server" CssClass="btn btn-success me-2" Text="Imprimir" OnClientClick="window.print(); return false;" />
-            <asp:Button ID="btnLimpiar" runat="server" CssClass="btn btn-secondary me-2" Text="Limpiar" OnClientClick="limpiarFormulario(); return false;" />
-            <asp:Button ID="btnGuardar" runat="server" CssClass="btn btn-primary" Text="Guardar" OnClick="btnGuardar_Click" UseSubmitBehavior="true" />
+        <div class="text-end mt-3">
+            <asp:Button ID="btnImprimir" runat="server" CssClass="btn btn-outline-secondary mr-2" Text="Imprimir" OnClientClick="window.print(); return false;" />
+            <asp:Button ID="btnLimpiar" runat="server" CssClass="btn btn-secondary mr-2" Text="Limpiar" OnClientClick="limpiarFormulario(); return false;" />
+            <asp:Button ID="btnGuardar" runat="server" CssClass="btn btn-primary" Text="Guardar Abastecimiento" OnClick="btnGuardar_Click" UseSubmitBehavior="true" />
         </div>
 
-        <!-- Campo oculto para almacenar datos de tickets -->
         <asp:HiddenField ID="hdnTicketsData" runat="server" />
+        <asp:HiddenField ID="hdnModoViaje" runat="server" Value="0" />
+        <asp:HiddenField ID="hdnIdViaje" runat="server" Value="0" />
     </div>
 
     <!-- Referencias a jQuery y jQuery UI -->
@@ -599,349 +644,164 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-    <!-- Scripts para cálculos automáticos y manejo de tickets -->
     <script type="text/javascript">
-        // Variables globales para tickets
         let contadorTickets = 0;
-        let ticketsData = [];
+        var esModoViaje = '<%= hdnModoViaje.Value %>' === '1';
 
-        // Función para agregar un nuevo ticket
         function agregarTicket() {
             contadorTickets++;
             const tableBody = document.getElementById('ticketsTableBody');
-
             const newRow = document.createElement('tr');
-            newRow.id = `ticket_${contadorTickets}`;
-            newRow.innerHTML = `
-                <td>${contadorTickets}</td>
-                <td>
-                    <input type="number" 
-                           id="costo_${contadorTickets}" 
-                           step="0.01" 
-                           placeholder="548.54" 
-                           onchange="actualizarTotalesTickets()" 
-                           style="width: 100%; text-align: center;">
-                </td>
-                <td>
-                    <input type="number" 
-                           id="galones_${contadorTickets}" 
-                           step="0.01" 
-                           placeholder="305.2" 
-                           onchange="actualizarTotalesTickets()" 
-                           style="width: 100%; text-align: center;">
-                </td>
-                <td>
-                    <button type="button" 
-                            class="btn-remove-ticket" 
-                            onclick="eliminarTicket(${contadorTickets})">
-                        <i class="fas fa-trash"></i> Eliminar
-                    </button>
-                </td>
-            `;
-
+            newRow.id = 'ticket_' + contadorTickets;
+            newRow.innerHTML =
+                '<td>' + contadorTickets + '</td>' +
+                '<td><input type="number" id="costo_' + contadorTickets + '" step="0.01" placeholder="548.54" onchange="actualizarTotalesTickets()"></td>' +
+                '<td><input type="number" id="galones_' + contadorTickets + '" step="0.01" placeholder="305.2" onchange="actualizarTotalesTickets()"></td>' +
+                '<td><button type="button" class="btn-remove-ticket" onclick="eliminarTicket(' + contadorTickets + ')"><i class="fas fa-trash"></i></button></td>';
             tableBody.appendChild(newRow);
             actualizarTotalesTickets();
         }
 
-        // Función para eliminar un ticket
         function eliminarTicket(id) {
-            if (confirm('¿Está seguro de eliminar este ticket?')) {
-                const row = document.getElementById(`ticket_${id}`);
-                if (row) {
-                    row.remove();
-                    actualizarTotalesTickets();
-                }
-            }
+            var row = document.getElementById('ticket_' + id);
+            if (row) { row.remove(); actualizarTotalesTickets(); }
         }
 
-        // Función para actualizar totales de tickets
         function actualizarTotalesTickets() {
-            let totalTickets = 0;
-            let costoTotal = 0;
-            let galonesTotal = 0;
-
-            // Recorrer todas las filas de tickets
-            const rows = document.querySelectorAll('#ticketsTableBody tr');
-            rows.forEach(row => {
-                const costoInput = row.querySelector('input[id^="costo_"]');
-                const galonesInput = row.querySelector('input[id^="galones_"]');
-
+            var totalTickets = 0, costoTotal = 0, galonesTotal = 0;
+            var rows = document.querySelectorAll('#ticketsTableBody tr');
+            rows.forEach(function (row) {
+                var costoInput = row.querySelector('input[id^="costo_"]');
+                var galonesInput = row.querySelector('input[id^="galones_"]');
                 if (costoInput && galonesInput) {
-                    const costo = parseFloat(costoInput.value) || 0;
-                    const galones = parseFloat(galonesInput.value) || 0;
-
-                    if (costo > 0 || galones > 0) {
-                        totalTickets++;
-                        costoTotal += costo;
-                        galonesTotal += galones;
-                    }
+                    var costo = parseFloat(costoInput.value) || 0;
+                    var galones = parseFloat(galonesInput.value) || 0;
+                    if (costo > 0 || galones > 0) { totalTickets++; costoTotal += costo; galonesTotal += galones; }
                 }
             });
-
-            // Actualizar totales en la interfaz
             document.getElementById('totalTickets').textContent = totalTickets;
-            document.getElementById('costoTotalTickets').textContent = `$ ${costoTotal.toFixed(2)}`;
-            document.getElementById('galonesTotalesTickets').textContent = `${galonesTotal.toFixed(2)} GL`;
-
-            // Sincronizar con campos principales
+            document.getElementById('costoTotalTickets').textContent = '$ ' + costoTotal.toFixed(2);
+            document.getElementById('galonesTotalesTickets').textContent = galonesTotal.toFixed(2) + ' GL';
             sincronizarCamposPrincipales(costoTotal, galonesTotal);
-
-            // Guardar datos en campo oculto
             guardarTicketsData();
         }
 
-        // Función para sincronizar campos principales
         function sincronizarCamposPrincipales(costoTotal, galonesTotal) {
-            const txtGLComprados = document.getElementById('<%= txtGLComprados.ClientID %>');
-            const txtMontoTotal = document.getElementById('<%= txtMontoTotal.ClientID %>');
-
-            if (txtGLComprados) {
-                txtGLComprados.value = galonesTotal.toFixed(2);
-            }
-
-            if (txtMontoTotal) {
-                txtMontoTotal.value = costoTotal.toFixed(2);
-            }
-
-            // Recalcular totales generales
+            var elGL = document.getElementById('<%= txtGLComprados.ClientID %>');
+            var elMonto = document.getElementById('<%= txtMontoTotal.ClientID %>');
+            if (elGL) elGL.value = galonesTotal.toFixed(2);
+            if (elMonto) elMonto.value = costoTotal.toFixed(2);
             calcularTotales();
         }
 
-        // Función para guardar datos de tickets en campo oculto
         function guardarTicketsData() {
-            const tickets = [];
-            const rows = document.querySelectorAll('#ticketsTableBody tr');
-
-            rows.forEach(row => {
-                const costoInput = row.querySelector('input[id^="costo_"]');
-                const galonesInput = row.querySelector('input[id^="galones_"]');
-
-                if (costoInput && galonesInput) {
-                    const costo = parseFloat(costoInput.value) || 0;
-                    const galones = parseFloat(galonesInput.value) || 0;
-
-                    if (costo > 0 || galones > 0) {
-                        tickets.push({
-                            costo: costo,
-                            galones: galones
-                        });
-                    }
+            var tickets = [];
+            document.querySelectorAll('#ticketsTableBody tr').forEach(function (row) {
+                var c = row.querySelector('input[id^="costo_"]');
+                var g = row.querySelector('input[id^="galones_"]');
+                if (c && g) {
+                    var cv = parseFloat(c.value) || 0, gv = parseFloat(g.value) || 0;
+                    if (cv > 0 || gv > 0) tickets.push({ costo: cv, galones: gv });
                 }
             });
-
-            const hdnTicketsData = document.getElementById('<%= hdnTicketsData.ClientID %>');
-            if (hdnTicketsData) {
-                hdnTicketsData.value = JSON.stringify(tickets);
-            }
+            var hdn = document.getElementById('<%= hdnTicketsData.ClientID %>');
+            if (hdn) hdn.value = JSON.stringify(tickets);
         }
 
-        // Función para calcular totales automáticamente (MODIFICADA)
         function calcularTotales() {
-            // Asegurar el uso de punto como separador decimal
             var glRuta = parseFloat((document.getElementById('<%= txtGLRuta.ClientID %>').value || "0").replace(",", ".")) || 0;
             var glComprados = parseFloat((document.getElementById('<%= txtGLComprados.ClientID %>').value || "0").replace(",", ".")) || 0;
             var glFinal = parseFloat((document.getElementById('<%= txtGLFinal.ClientID %>').value || "0").replace(",", ".")) || 0;
-
-            // Calcular total abastecido
             var totalAbastecido = glRuta + glComprados;
             document.getElementById('<%= txtTotalGL.ClientID %>').value = totalAbastecido.toFixed(2);
-
-            // Calcular total consumido
             var totalConsumido = totalAbastecido - glFinal;
             if (totalConsumido < 0) totalConsumido = 0;
             document.getElementById('<%= txtGLConsumidos.ClientID %>').value = totalConsumido.toFixed(2);
-
-            // Actualizar visualización del nivel de combustible
             actualizarNivelCombustible(glFinal, totalAbastecido);
-
-            // Calcular rendimiento si hay distancia
             calcularRendimiento();
         }
 
-        // Función para calcular rendimiento
         function calcularRendimiento() {
             var distancia = parseFloat((document.getElementById('<%= txtDistancia.ClientID %>').value || "0").replace(",", ".")) || 0;
             var consumido = parseFloat((document.getElementById('<%= txtGLConsumidos.ClientID %>').value || "0").replace(",", ".")) || 0;
-
-            if (distancia > 0 && consumido > 0) {
-                var rendimiento = distancia / consumido;
-                document.getElementById('rendimientoPromedio').textContent = rendimiento.toFixed(2);
-            } else {
-                document.getElementById('rendimientoPromedio').textContent = "0.00";
-            }
+            document.getElementById('rendimientoPromedio').textContent = (distancia > 0 && consumido > 0) ? (distancia / consumido).toFixed(2) : "0.00";
         }
 
-        // Función para actualizar la visualización del nivel de combustible
         function actualizarNivelCombustible(actual, total) {
-            const fuelLevelVisual = document.getElementById('fuelLevelVisual');
-            if (fuelLevelVisual) {
-                if (total > 0) {
-                    var porcentaje = (actual / total) * 100;
-                    if (porcentaje > 100) porcentaje = 100;
-                    fuelLevelVisual.style.width = porcentaje + '%';
-                } else {
-                    fuelLevelVisual.style.width = '0%';
-                }
+            var el = document.getElementById('fuelLevelVisual');
+            if (el) {
+                if (total > 0) { var p = (actual / total) * 100; el.style.width = Math.min(p, 100) + '%'; }
+                else { el.style.width = '0%'; }
             }
         }
 
-        // Inicializar cuando el documento está completamente cargado
         document.addEventListener('DOMContentLoaded', function () {
-            // Establecer fecha y hora actuales si no hay valores
             var fechaInput = document.getElementById('<%= txtFecha.ClientID %>');
             var horaInput = document.getElementById('<%= txtHora.ClientID %>');
-
-            if (!fechaInput.value) {
-                var hoy = new Date().toISOString().split('T')[0];
-                fechaInput.value = hoy;
-            }
-
+            if (!fechaInput.value) fechaInput.value = new Date().toISOString().split('T')[0];
             if (!horaInput.value) {
                 var ahora = new Date();
-                var horas = ahora.getHours().toString().padStart(2, '0');
-                var minutos = ahora.getMinutes().toString().padStart(2, '0');
-                horaInput.value = horas + ":" + minutos;
+                horaInput.value = ahora.getHours().toString().padStart(2, '0') + ":" + ahora.getMinutes().toString().padStart(2, '0');
             }
-
-            // Agregar el primer ticket automáticamente
             agregarTicket();
-
-            // Iniciar cálculos
             calcularTotales();
         });
 
-        // Función para limpiar formulario (MODIFICADA)
         function limpiarFormulario() {
-            // Resetear los Select2
-            try {
-                if ($.fn.select2) {
-                    $('#<%= ddlPlaca.ClientID %>').val(null).trigger('change');
-                    $('#<%= ddlCarreta.ClientID %>').val(null).trigger('change');
-                    $('#<%= ddlConductor.ClientID %>').val(null).trigger('change');
-                    $('#<%= ddlRuta.ClientID %>').val(null).trigger('change');
-                }
-            } catch (e) {
-                console.error("Error al resetear Select2: ", e);
+            if (!esModoViaje) {
+                try {
+                    if ($.fn.select2) {
+                        $('#<%= ddlPlaca.ClientID %>').val(null).trigger('change');
+                        $('#<%= ddlCarreta.ClientID %>').val(null).trigger('change');
+                        $('#<%= ddlConductor.ClientID %>').val(null).trigger('change');
+                        $('#<%= ddlRuta.ClientID %>').val(null).trigger('change');
+                    }
+                } catch (e) { }
+                var txtProd = document.getElementById('<%= txtProducto.ClientID %>');
+                if (txtProd) txtProd.value = '';
             }
-
-            // Limpiar tickets
+            var txtProdViaje = document.getElementById('<%= txtProductoViaje.ClientID %>');
+            if (txtProdViaje) txtProdViaje.value = '';
             document.getElementById('ticketsTableBody').innerHTML = '';
             contadorTickets = 0;
-            agregarTicket(); // Agregar un ticket vacío
-
-            // Limpiar otros campos
-            document.getElementById('<%= txtProducto.ClientID %>').value = '';
-            document.getElementById('<%= txtGLRuta.ClientID %>').value = '';
-            document.getElementById('<%= txtGLComprados.ClientID %>').value = '';
-            document.getElementById('<%= txtTotalGL.ClientID %>').value = '';
-            document.getElementById('<%= txtGLFinal.ClientID %>').value = '';
-            document.getElementById('<%= txtGLConsumidos.ClientID %>').value = '';
-            document.getElementById('<%= txtPrecioDolar.ClientID %>').value = '';
-            document.getElementById('<%= txtMontoTotal.ClientID %>').value = '';
-            document.getElementById('<%= txtDistancia.ClientID %>').value = '';
-            document.getElementById('<%= txtConsumoComputador.ClientID %>').value = '';
-            document.getElementById('<%= txtObservaciones.ClientID %>').value = '';
+            agregarTicket();
+            var campos = ['<%= txtGLRuta.ClientID %>', '<%= txtGLComprados.ClientID %>', '<%= txtTotalGL.ClientID %>',
+                '<%= txtGLFinal.ClientID %>', '<%= txtGLConsumidos.ClientID %>', '<%= txtPrecioDolar.ClientID %>',
+                '<%= txtMontoTotal.ClientID %>', '<%= txtDistancia.ClientID %>', '<%= txtConsumoComputador.ClientID %>',
+                '<%= txtObservaciones.ClientID %>'];
+            campos.forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
             document.getElementById('rendimientoPromedio').textContent = '0.00';
             document.getElementById('fuelLevelVisual').style.width = '0%';
-
-            // Ocultar mensaje de alerta si está visible
             document.getElementById('alertMessage').style.display = 'none';
         }
 
-        // Función para mostrar mensajes al usuario
         function mostrarMensaje(mensaje, tipo) {
             var alertDiv = document.getElementById('alertMessage');
-            
-            // Configurar el tipo de alerta
             alertDiv.classList.remove('alert-success', 'alert-danger');
-            if (tipo === 'success') {
-                alertDiv.classList.add('alert-success');
-            } else {
-                alertDiv.classList.add('alert-danger');
-            }
-            
-            // Establecer el mensaje
+            alertDiv.classList.add(tipo === 'success' ? 'alert-success' : 'alert-danger');
             alertDiv.innerHTML = mensaje;
             alertDiv.style.display = 'block';
-            
-            // Ocultar después de 5 segundos
-            setTimeout(function() {
-                alertDiv.style.display = 'none';
-            }, 5000);
+            setTimeout(function () { alertDiv.style.display = 'none'; }, 5000);
         }
 
-        // Inicializar Select2 cuando el documento esté listo
         $(document).ready(function () {
-            // Inicializar Select2 en los DropDownList
-            try {
-                $('#<%= ddlPlaca.ClientID %>').select2({
-                    placeholder: "Buscar placa...",
-                    allowClear: true,
-                    width: '100%',
-                    closeOnSelect: true,
-                    language: {
-                        noResults: function () {
-                            return "No se encontraron resultados";
-                        },
-                        searching: function () {
-                            return "Buscando...";
-                        }
-                    }
-                });
+            // Aplicar readonly via JS para que ASP.NET no ignore los valores en postback
+            $('#<%= txtGLComprados.ClientID %>').prop('readonly', true);
+            $('#<%= txtTotalGL.ClientID %>').prop('readonly', true);
+            $('#<%= txtGLConsumidos.ClientID %>').prop('readonly', true);
+            $('#<%= txtMontoTotal.ClientID %>').prop('readonly', true);
 
-                $('#<%= ddlCarreta.ClientID %>').select2({
-                    placeholder: "Buscar carreta...",
-                    allowClear: true,
-                    width: '100%',
-                    closeOnSelect: true,
-                    language: {
-                        noResults: function () {
-                            return "No se encontraron resultados";
-                        },
-                        searching: function () {
-                            return "Buscando...";
-                        }
-                    }
-                });
-
-                $('#<%= ddlConductor.ClientID %>').select2({
-                    placeholder: "Buscar conductor...",
-                    allowClear: true,
-                    width: '100%',
-                    closeOnSelect: true,
-                    language: {
-                        noResults: function () {
-                            return "No se encontraron resultados";
-                        },
-                        searching: function () {
-                            return "Buscando...";
-                        }
-                    }
-                });
-
-                $('#<%= ddlRuta.ClientID %>').select2({
-                    placeholder: "Buscar ruta...",
-                    allowClear: true,
-                    width: '100%',
-                    closeOnSelect: true,
-                    language: {
-                        noResults: function () {
-                            return "No se encontraron resultados";
-                        },
-                        searching: function () {
-                            return "Buscando...";
-                        }
-                    }
-                });
-            } catch (e) {
-                console.error("Error al inicializar Select2: ", e);
+            if (!esModoViaje) {
+                try {
+                    var select2Config = { allowClear: true, width: '100%', closeOnSelect: true, language: { noResults: function () { return "Sin resultados"; }, searching: function () { return "Buscando..."; } } };
+                    $('#<%= ddlPlaca.ClientID %>').select2($.extend({}, select2Config, { placeholder: "Buscar placa..." }));
+                    $('#<%= ddlCarreta.ClientID %>').select2($.extend({}, select2Config, { placeholder: "Buscar carreta..." }));
+                    $('#<%= ddlConductor.ClientID %>').select2($.extend({}, select2Config, { placeholder: "Buscar conductor..." }));
+                    $('#<%= ddlRuta.ClientID %>').select2($.extend({}, select2Config, { placeholder: "Buscar ruta..." }));
+                } catch (e) { console.error("Error Select2: ", e); }
             }
 
-            // Asegurar que el botón Guardar tiene el comportamiento correcto
-            $('#<%= btnGuardar.ClientID %>').on('click', function (e) {
-                console.log('Botón Guardar clickeado');
-                guardarTicketsData(); // Asegurar que los datos estén guardados antes del postback
-            });
+            $('#<%= btnGuardar.ClientID %>').on('click', function () { guardarTicketsData(); });
         });
     </script>
 </asp:Content>
