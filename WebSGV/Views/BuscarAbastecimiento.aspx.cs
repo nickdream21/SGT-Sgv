@@ -16,7 +16,13 @@ namespace WebSGV.Views
         {
             if (!IsPostBack)
             {
-                // Inicializaciones necesarias
+                // Si viene con numero por QueryString, buscar automaticamente
+                string numero = Request.QueryString["numero"];
+                if (!string.IsNullOrEmpty(numero))
+                {
+                    txtBuscarAbastecimiento.Text = numero.Trim();
+                    BuscarAbastecimientoClick(sender, e);
+                }
             }
         }
 

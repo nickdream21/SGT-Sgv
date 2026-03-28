@@ -15,6 +15,7 @@ namespace WebSGV.Helpers
         public const string ROL_CONDUCTOR = "CONDUCTOR";
         public const string ROL_SUPERVISOR = "SUPERVISOR"; // Por si lo necesitas en el futuro
         public const string ROL_ADMIN_SISTEMA = "ADMINISTRADOR DE SISTEMA";
+        public const string ROL_ADMIN_GRIFO = "ADMINISTRADOR DE GRIFO";
 
         /// <summary>
         /// Obtiene el rol del usuario actual desde la sesión
@@ -58,6 +59,15 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
+        /// Verifica si el usuario actual es Administrador de Grifo
+        /// </summary>
+        public static bool EsAdminGrifo()
+        {
+            string rolActual = ObtenerRolActual();
+            return rolActual == ROL_ADMIN_GRIFO;
+        }
+
+        /// <summary>
         /// Verifica si el usuario tiene sesión activa
         /// </summary>
         public static bool TieneSesionActiva()
@@ -79,11 +89,18 @@ namespace WebSGV.Helpers
                 case "FACTURA":
                 case "CPIC":
                 case "ORDEN_VIAJE":
-                case "ABASTECIMIENTO":
                 case "REGISTRO":
                 case "CONSULTAS":
                 case "INDICADORES":
                     return EsAdmin() || rol == ROL_SUPERVISOR;
+
+                // Abastecimiento: ADMIN y ADMIN DE GRIFO
+                case "ABASTECIMIENTO":
+                    return EsAdmin() || EsAdminGrifo() || rol == ROL_SUPERVISOR;
+
+                // Dashboard del Grifo
+                case "DASHBOARD_GRIFO":
+                    return EsAdminGrifo() || EsAdmin();
 
                 // Auditoría: solo ADMINISTRADOR DE SISTEMA
                 case "AUDITORIA":
@@ -126,6 +143,10 @@ namespace WebSGV.Helpers
             if (EsConductor())
             {
                 HttpContext.Current.Response.Redirect("~/Views/DashboardConductor.aspx");
+            }
+            else if (EsAdminGrifo())
+            {
+                HttpContext.Current.Response.Redirect("~/Views/DashboardGrifo.aspx");
             }
             else if (EsAdmin())
             {

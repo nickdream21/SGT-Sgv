@@ -9,7 +9,6 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
-using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -30,6 +29,9 @@ namespace WebSGV.Views
                 // Establecer fecha y hora actual por defecto
                 txtFecha.Text = DateTime.Now.ToString("yyyy-MM-dd");
                 txtHora.Text = DateTime.Now.ToString("HH:mm");
+
+                // Pre-poblar desde viaje programado si viene de DashboardGrifo
+                PrePoblarDesdeViaje();
             }
         }
 
@@ -95,6 +97,139 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 RegistrarError("Error al cargar placas tracto: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Pre-pobla los campos del formulario cuando se navega desde DashboardGrifo con un viaje seleccionado.
+        /// En modo viaje: muestra banner compacto con datos de solo lectura y oculta dropdowns.
+        /// </summary>
+        private void PrePoblarDesdeViaje()
+        {
+            try
+            {
+                string idViaje = Request.QueryString["idViaje"];
+                string idConductor = Request.QueryString["idConductor"];
+                string idTracto = Request.QueryString["idTracto"];
+                string idCarreta = Request.QueryString["idCarreta"];
+
+                if (string.IsNullOrEmpty(idViaje))
+                    return;
+
+                RegistrarInfo($"Pre-poblando desde viaje: idViaje={idViaje}, idConductor={idConductor}, idTracto={idTracto}, idCarreta={idCarreta}");
+
+                // Activar modo viaje
+                hdnModoViaje.Value = "1";
+                hdnIdViaje.Value = idViaje;
+                pnlTripBanner.Visible = true;
+                pnlManualEntry.Visible = false;
+                pnlProductoViaje.Visible = true;
+                pnlBackLink.Visible = true;
+
+                // Seleccionar valores en dropdowns ocultos (para el guardado)
+                if (!string.IsNullOrEmpty(idConductor) && ddlConductor.Items.FindByValue(idConductor) != null)
+                    ddlConductor.SelectedValue = idConductor;
+
+                if (!string.IsNullOrEmpty(idTracto) && idTracto != "0" && ddlPlaca.Items.FindByValue(idTracto) != null)
+                    ddlPlaca.SelectedValue = idTracto;
+
+                if (!string.IsNullOrEmpty(idCarreta) && idCarreta != "0" && ddlCarreta.Items.FindByValue(idCarreta) != null)
+                    ddlCarreta.SelectedValue = idCarreta;
+
+                // Poblar labels del banner con textos legibles
+                litConductor.Text = ddlConductor.SelectedItem != null ? ddlConductor.SelectedItem.Text : "—";
+                litPlacaTracto.Text = ddlPlaca.SelectedItem != null && ddlPlaca.SelectedIndex > 0 ? ddlPlaca.SelectedItem.Text : "N/A";
+                litPlacaCarreta.Text = ddlCarreta.SelectedItem != null && ddlCarreta.SelectedIndex > 0 ? ddlCarreta.SelectedItem.Text : "N/A";
+
+                // Obtener ruta y galones desde los despachos del viaje
+                ObtenerInfoViajeYSugerirGalones(idViaje);
+            }
+            catch (Exception ex)
+            {
+                RegistrarError("Error al pre-poblar desde viaje: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Obtiene la info del viaje desde Despachos: construye descripción de ruta
+        /// (ej: "Carga - Quito → Descarga - Guayaquil") y sugiere GL según reglas de destino.
+        /// </summary>
+        private void ObtenerInfoViajeYSugerirGalones(string idViaje)
+        {
+            try
+            {
+                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    // Obtener TODOS los despachos del viaje para construir la ruta completa
+                    string query = @"
+                        SELECT 
+                            ISNULL(d.lugarOperacion, '') AS Destino,
+                            ISNULL(d.tipoOperacion, '') AS TipoOperacion,
+                            d.esInternacional,
+                            d.idDespacho
+                        FROM Despachos d 
+                        WHERE d.idViajeProgreso = @idViaje AND d.activo = 1
+                        ORDER BY d.idDespacho";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@idViaje", Convert.ToInt32(idViaje));
+                        conn.Open();
+
+                        List<string> operaciones = new List<string>();
+                        string ultimoDestino = "";
+
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                string destino = reader["Destino"].ToString();
+                                string tipoOp = reader["TipoOperacion"].ToString();
+
+                                if (!string.IsNullOrEmpty(tipoOp) && !string.IsNullOrEmpty(destino))
+                                {
+                                    operaciones.Add($"{tipoOp} - {destino}");
+                                    ultimoDestino = destino.ToUpper();
+                                }
+                            }
+                        }
+
+                        // Construir descripción de ruta
+                        string rutaDesc = operaciones.Count > 0 
+                            ? string.Join(" → ", operaciones) 
+                            : "Sin definir";
+                        litRutaViaje.Text = rutaDesc;
+
+                        RegistrarInfo($"Ruta viaje: {rutaDesc}");
+
+                        // Aplicar reglas de galones según destino final
+                        string glSugeridos = "—";
+                        if (ultimoDestino.Contains("FRONTERA"))
+                        {
+                            txtGLRuta.Text = "50";
+                            glSugeridos = "50 GL";
+                        }
+                        else if (ultimoDestino.Contains("TRUJILLO"))
+                        {
+                            txtGLRuta.Text = "130";
+                            glSugeridos = "130 GL";
+                        }
+
+                        litGLAsignados.Text = glSugeridos;
+                    }
+                }
+
+                // Recalcular totales después de establecer GL Ruta
+                if (!string.IsNullOrEmpty(txtGLRuta.Text))
+                {
+                    ScriptManager.RegisterStartupScript(this, this.GetType(), "recalcular",
+                        "setTimeout(function() { calcularTotales(); }, 500);", true);
+                }
+            }
+            catch (Exception ex)
+            {
+                RegistrarError("Error al obtener info del viaje: " + ex.Message);
             }
         }
         private void CargarTiposCarro()
@@ -247,14 +382,28 @@ namespace WebSGV.Views
                 {
                     GuardarAbastecimiento();
 
+                    // Si es modo viaje, actualizar estado del viaje a ABASTECIDO
+                    if (hdnModoViaje.Value == "1")
+                    {
+                        ActualizarEstadoViaje();
+                    }
+
                     AuditoriaHelper.Registrar("INSERT", "Abastecimiento",
                         descripcion: $"Abastecimiento registrado - Placa: {ddlPlaca.SelectedItem?.Text}, Conductor: {ddlConductor.SelectedItem?.Text}, Producto: {txtProducto.Text}");
 
-                    LimpiarFormulario();
+                    if (hdnModoViaje.Value == "1")
+                    {
+                        // Redirigir al dashboard con mensaje de exito
+                        Response.Redirect("DashboardGrifo.aspx?msg=abastecido");
+                    }
+                    else
+                    {
+                        LimpiarFormulario();
 
-                    // Mensaje de éxito con alerta
-                    ScriptManager.RegisterStartupScript(this, this.GetType(), "mensajeExito",
-                        "mostrarMensaje('Abastecimiento guardado correctamente', 'success');", true);
+                        // Mensaje de exito con alerta
+                        ScriptManager.RegisterStartupScript(this, this.GetType(), "mensajeExito",
+                            "mostrarMensaje('Abastecimiento guardado correctamente', 'success');", true);
+                    }
                 }
             }
             catch (Exception ex)
@@ -289,7 +438,8 @@ namespace WebSGV.Views
                     return false;
                 }
 
-                if (string.IsNullOrEmpty(txtProducto.Text))
+                string productoText = hdnModoViaje.Value == "1" ? txtProductoViaje.Text : txtProducto.Text;
+                if (string.IsNullOrEmpty(productoText))
                 {
                     MostrarMensaje("Debe ingresar el producto", "error");
                     return false;
@@ -305,12 +455,15 @@ namespace WebSGV.Views
                     return false;
                 }
 
-                decimal glComprados;
-                if (!decimal.TryParse(txtGLComprados.Text.Replace(',', '.'), NumberStyles.Any,
-                    culture, out glComprados) || glComprados < 0)
+                decimal glComprados = 0;
+                if (!string.IsNullOrEmpty(txtGLComprados.Text))
                 {
-                    MostrarMensaje("Ingrese un valor válido para Galones Comprados en Ruta", "error");
-                    return false;
+                    if (!decimal.TryParse(txtGLComprados.Text.Replace(',', '.'), NumberStyles.Any,
+                        culture, out glComprados) || glComprados < 0)
+                    {
+                        MostrarMensaje("Ingrese un valor válido para Galones Comprados en Ruta", "error");
+                        return false;
+                    }
                 }
 
                 decimal glFinal;
@@ -337,12 +490,15 @@ namespace WebSGV.Views
                     return false;
                 }
 
-                decimal montoTotal;
-                if (!decimal.TryParse(txtMontoTotal.Text.Replace(',', '.'), NumberStyles.Any,
-                    culture, out montoTotal) || montoTotal < 0)
+                decimal montoTotal = 0;
+                if (!string.IsNullOrEmpty(txtMontoTotal.Text))
                 {
-                    MostrarMensaje("Ingrese un valor válido para Monto Total GL", "error");
-                    return false;
+                    if (!decimal.TryParse(txtMontoTotal.Text.Replace(',', '.'), NumberStyles.Any,
+                        culture, out montoTotal) || montoTotal < 0)
+                    {
+                        MostrarMensaje("Ingrese un valor válido para Monto Total GL", "error");
+                        return false;
+                    }
                 }
 
                 // Solo validar si el campo tiene contenido
@@ -428,10 +584,11 @@ namespace WebSGV.Views
                             rutaValue = idRuta;
                         cmd.Parameters.Add("@idRuta", SqlDbType.Int).Value = rutaValue;
 
-                        // Producto
+                        // Producto (viene de txtProductoViaje en modo viaje o txtProducto en modo manual)
                         string producto = "Sin especificar";
-                        if (!string.IsNullOrEmpty(txtProducto.Text))
-                            producto = txtProducto.Text;
+                        string prodText = hdnModoViaje.Value == "1" ? txtProductoViaje.Text : txtProducto.Text;
+                        if (!string.IsNullOrEmpty(prodText))
+                            producto = prodText;
                         cmd.Parameters.Add("@producto", SqlDbType.VarChar, 100).Value = producto;
 
                         // Lugar de abastecimiento
@@ -595,6 +752,36 @@ namespace WebSGV.Views
                 RegistrarError("Error al buscar orden viaje relacionada: " + ex.Message);
             }
             return null;
+        }
+
+        private void ActualizarEstadoViaje()
+        {
+            try
+            {
+                int idViaje = 0;
+                if (!int.TryParse(hdnIdViaje.Value, out idViaje) || idViaje <= 0)
+                {
+                    RegistrarError("No se pudo obtener el idViaje para actualizar estado");
+                    return;
+                }
+
+                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    string query = "UPDATE ViajesEnProgreso SET estadoViaje = 'ABASTECIDO' WHERE idViajeProgreso = @idViaje";
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@idViaje", idViaje);
+                        conn.Open();
+                        int rows = cmd.ExecuteNonQuery();
+                        RegistrarInfo($"ViajesEnProgreso actualizado a ABASTECIDO para idViaje={idViaje}, filas={rows}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                RegistrarError("Error al actualizar estado del viaje: " + ex.Message);
+            }
         }
 
         #endregion

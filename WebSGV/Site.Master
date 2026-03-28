@@ -200,7 +200,7 @@
 
         <!-- Navbar -->
         <nav class="navbar navbar-expand-lg navbar-light bg-light" runat="server" id="Navbar">
-            <a class="navbar-brand" href="<%= EsAdmin ? "Inicio.aspx" : "DashboardConductor.aspx" %>">
+            <a class="navbar-brand" href="<%= EsAdminGrifo ? "DashboardGrifo.aspx" : (EsAdmin ? "Inicio.aspx" : "DashboardConductor.aspx") %>">
                 <i class="fas fa-truck-moving"></i>Sistema SGV
             </a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
@@ -273,6 +273,36 @@
                             </li>
 
                             <% } %>
+
+                    <!-- ==================== MENÚ PARA ADMINISTRADOR DE GRIFO ==================== -->
+                    <% if (EsAdminGrifo)
+                        { %>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="DashboardGrifo.aspx">
+                            <i class="fas fa-home"></i>Inicio
+                        </a>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownAbastecimiento" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-gas-pump"></i>Abastecimiento
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownAbastecimiento">
+                            <a class="dropdown-item" href="AgregarAbastecimiento.aspx">
+                                <i class="fas fa-plus-circle"></i>Registrar Abastecimiento
+                            </a>
+                            <a class="dropdown-item" href="BuscarAbastecimiento.aspx">
+                                <i class="fas fa-search"></i>Buscar Abastecimiento
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="ReporteAbastecimiento.aspx">
+                                <i class="fas fa-file-alt"></i>Reporte
+                            </a>
+                        </div>
+                    </li>
+
+                    <% } %>
 
                     <!-- ==================== MENÚ PARA CONDUCTOR ==================== -->
                     <% if (EsConductor)
