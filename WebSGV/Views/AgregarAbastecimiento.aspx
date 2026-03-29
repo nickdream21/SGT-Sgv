@@ -452,9 +452,9 @@
                         <div class="col-md-4 form-group mb-0">
                             <label class="form-label">Tipo de Registro:</label>
                             <asp:DropDownList ID="ddlMotivoSalida" runat="server" CssClass="form-control" onchange="onMotivoChange()">
-                                <asp:ListItem Value="ABASTECIMIENTO" Selected="True">🚛 Abastecimiento (viaje corto / rutina)</asp:ListItem>
-                                <asp:ListItem Value="MANTENIMIENTO">🔧 Mantenimiento (filtros, limpieza, servicio)</asp:ListItem>
-                                <asp:ListItem Value="OTRO">📋 Otro (generador, equipo, especial)</asp:ListItem>
+                                <asp:ListItem Value="ABASTECIMIENTO" Selected="True">Abastecimiento (viaje corto / rutina)</asp:ListItem>
+                                <asp:ListItem Value="MANTENIMIENTO">Mantenimiento (filtros, limpieza, servicio)</asp:ListItem>
+                                <asp:ListItem Value="OTRO">Otro (generador, equipo, especial)</asp:ListItem>
                             </asp:DropDownList>
                         </div>
                         <div class="col-md-8 mb-0">
