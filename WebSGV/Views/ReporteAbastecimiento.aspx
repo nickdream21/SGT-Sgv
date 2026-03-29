@@ -368,10 +368,10 @@
                 <label>Motivo</label>
                 <asp:DropDownList ID="ddlTipoAbastecimiento" runat="server" CssClass="form-control" style="min-width:150px;">
                     <asp:ListItem Value="" Text="Todos"></asp:ListItem>
-                    <asp:ListItem Value="VIAJE PROGRAMADO" Text="📦 Viaje Programado"></asp:ListItem>
-                    <asp:ListItem Value="ABASTECIMIENTO" Text="🚛 Abastecimiento"></asp:ListItem>
-                    <asp:ListItem Value="MANTENIMIENTO" Text="🔧 Mantenimiento"></asp:ListItem>
-                    <asp:ListItem Value="OTRO" Text="📋 Otro"></asp:ListItem>
+                    <asp:ListItem Value="VIAJE PROGRAMADO" Text="Viaje Programado"></asp:ListItem>
+                    <asp:ListItem Value="ABASTECIMIENTO" Text="Abastecimiento"></asp:ListItem>
+                    <asp:ListItem Value="MANTENIMIENTO" Text="Mantenimiento"></asp:ListItem>
+                    <asp:ListItem Value="OTRO" Text="Otro"></asp:ListItem>
                 </asp:DropDownList>
             </div>
             <asp:Button ID="btnBuscar" runat="server" CssClass="btn-filter btn-filter-primary" Text="Buscar" OnClick="btnBuscar_Click" />

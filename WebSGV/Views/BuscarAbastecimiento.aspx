@@ -290,9 +290,9 @@
                 <span class="tipo-label"><i class="fas fa-tag mr-1"></i>Tipo de Registro:</span>
                 <asp:Label ID="lblTipoAbastecimiento" runat="server" CssClass="tipo-badge tipo-abastecimiento" Text="ABASTECIMIENTO" />
                 <asp:DropDownList ID="ddlTipoAbastecimientoEdit" runat="server" CssClass="ddl-tipo-edit" Visible="false">
-                    <asp:ListItem Value="ABASTECIMIENTO">🚛 Abastecimiento</asp:ListItem>
-                    <asp:ListItem Value="MANTENIMIENTO">🔧 Mantenimiento</asp:ListItem>
-                    <asp:ListItem Value="OTRO">📋 Otro</asp:ListItem>
+                    <asp:ListItem Value="ABASTECIMIENTO">Abastecimiento</asp:ListItem>
+                    <asp:ListItem Value="MANTENIMIENTO">Mantenimiento</asp:ListItem>
+                    <asp:ListItem Value="OTRO">Otro</asp:ListItem>
                 </asp:DropDownList>
                 <asp:HiddenField ID="hdnTipoAbastecimiento" runat="server" Value="" />
             </div>
