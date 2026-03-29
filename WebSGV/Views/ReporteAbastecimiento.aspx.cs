@@ -430,21 +430,21 @@ namespace WebSGV.Views
         {
             string val = tipo?.ToString() ?? "ABASTECIMIENTO";
             string cssClass = "motivo-abastecimiento";
-            string icon = "🚛";
+            string icon = "<i class='fas fa-gas-pump'></i>";
 
             switch (val.ToUpper())
             {
                 case "VIAJE PROGRAMADO":
                     cssClass = "motivo-viaje";
-                    icon = "📦";
+                    icon = "<i class='fas fa-box'></i>";
                     break;
                 case "MANTENIMIENTO":
                     cssClass = "motivo-mantenimiento";
-                    icon = "🔧";
+                    icon = "<i class='fas fa-wrench'></i>";
                     break;
                 case "OTRO":
                     cssClass = "motivo-otro";
-                    icon = "📋";
+                    icon = "<i class='fas fa-clipboard-list'></i>";
                     break;
             }
 
