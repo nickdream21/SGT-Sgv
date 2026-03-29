@@ -51,6 +51,60 @@ namespace WebSGV
         protected global::System.Web.UI.WebControls.ContentPlaceHolder MainContent;
 
         /// <summary>
+        /// Control pnlMensajeContrasena.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlMensajeContrasena;
+
+        /// <summary>
+        /// Control lblMensajeContrasena.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblMensajeContrasena;
+
+        /// <summary>
+        /// Control txtContrasenaActual.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtContrasenaActual;
+
+        /// <summary>
+        /// Control txtNuevaContrasena.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtNuevaContrasena;
+
+        /// <summary>
+        /// Control txtConfirmarContrasena.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtConfirmarContrasena;
+
+        /// <summary>
+        /// Control btnCambiarContrasena.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnCambiarContrasena;
+
+        /// <summary>
         /// Control ScriptsSection.
         /// </summary>
         /// <remarks>
@@ -58,35 +112,5 @@ namespace WebSGV
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.ContentPlaceHolder ScriptsSection;
-
-        /// <summary>
-        /// Control pnlMensajeContrasena.
-        /// </summary>
-        protected global::System.Web.UI.WebControls.Panel pnlMensajeContrasena;
-
-        /// <summary>
-        /// Control lblMensajeContrasena.
-        /// </summary>
-        protected global::System.Web.UI.WebControls.Label lblMensajeContrasena;
-
-        /// <summary>
-        /// Control txtContrasenaActual.
-        /// </summary>
-        protected global::System.Web.UI.WebControls.TextBox txtContrasenaActual;
-
-        /// <summary>
-        /// Control txtNuevaContrasena.
-        /// </summary>
-        protected global::System.Web.UI.WebControls.TextBox txtNuevaContrasena;
-
-        /// <summary>
-        /// Control txtConfirmarContrasena.
-        /// </summary>
-        protected global::System.Web.UI.WebControls.TextBox txtConfirmarContrasena;
-
-        /// <summary>
-        /// Control btnCambiarContrasena.
-        /// </summary>
-        protected global::System.Web.UI.WebControls.Button btnCambiarContrasena;
     }
 }
