@@ -30,6 +30,17 @@ namespace WebSGV.Views
                     Response.Redirect("~/Views/Inicio.aspx");
                 }
             }
+
+            if (!IsPostBack)
+            {
+                // Pre-llenar usuario desde cookie "Recordarme"
+                HttpCookie cookie = Request.Cookies["SGVUserInfo"];
+                if (cookie != null && !string.IsNullOrEmpty(cookie.Values["Usuario"]))
+                {
+                    txtUsername.Text = cookie.Values["Usuario"];
+                    chkRemember.Checked = true;
+                }
+            }
         }
 
         protected void btnLogin_Click(object sender, EventArgs e)
@@ -63,6 +74,22 @@ namespace WebSGV.Views
                 {
                     Session["IdConductor"] = resultado.IdConductor.Value;
                 }
+
+                // ✅ Crear cookie temporal de respaldo para reconstruir sesión si se pierde
+                HttpCookie authTemp = new HttpCookie("SGV_AuthTemp");
+                authTemp.Values["uid"] = resultado.IdUsuario.ToString();
+                authTemp.Values["rol"] = HttpUtility.UrlEncode(resultado.Rol);
+                authTemp.Values["nombre"] = HttpUtility.UrlEncode(resultado.Nombre);
+                authTemp.Values["nombreUsuario"] = HttpUtility.UrlEncode(resultado.NombreUsuario);
+                if (resultado.Rol.ToUpper() == "CONDUCTOR" && resultado.IdConductor.HasValue)
+                {
+                    authTemp.Values["idConductor"] = resultado.IdConductor.Value.ToString();
+                }
+                authTemp.Expires = DateTime.Now.AddMinutes(30);
+                authTemp.HttpOnly = true;
+                Response.Cookies.Add(authTemp);
+
+                System.Diagnostics.Debug.WriteLine($"🍪 Cookie SGV_AuthTemp creada - Rol: {resultado.Rol}");
 
                 // Si la opción "Recordarme" está marcada, guardar una cookie
                 if (chkRemember.Checked)
@@ -140,9 +167,9 @@ namespace WebSGV.Views
                         // 2. Verificar contraseña con PasswordHelper
                         if (PasswordHelper.VerifyPassword(contrasena, storedHash))
                         {
-                            nombreUsuario = reader["nombreUsuario"].ToString();
-                            nombre = reader["nombre"].ToString();
-                            rol = reader["rol"].ToString();
+                            nombreUsuario = reader["nombreUsuario"].ToString().Trim();
+                            nombre = reader["nombre"].ToString().Trim();
+                            rol = reader["rol"].ToString().Trim();
 
                             if (rol.ToUpper() == "CONDUCTOR" && reader["idConductor"] != DBNull.Value)
                             {
@@ -208,12 +235,8 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje)
         {
-            ClientScript.RegisterStartupScript(
-                this.GetType(),
-                "alert",
-                $"alert('{HttpUtility.JavaScriptStringEncode(mensaje)}');",
-                true
-            );
+            lblError.Text = mensaje;
+            pnlError.Visible = true;
         }
 
         protected void lnkForgotPassword_Click(object sender, EventArgs e)

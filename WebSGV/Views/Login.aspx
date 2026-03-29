@@ -1,6 +1,5 @@
 ﻿<%@ Page Title="Iniciar Sesión" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="Login.aspx.cs" Inherits="WebSGV.Views.WebForm1" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
-        <!-- Estilos específicos para arreglar la página de login -->
     <style>
         .main-container {
             max-width: 800px;
@@ -8,24 +7,24 @@
             text-align: center;
             padding: 20px;
         }
-        
+
         .logo {
             max-width: 200px;
             margin-bottom: 20px;
         }
-        
+
         .header {
             font-size: 28px;
             margin-bottom: 10px;
             font-weight: bold;
         }
-        
+
         .subheader {
             font-size: 16px;
             margin-bottom: 30px;
             color: #666;
         }
-        
+
         .login-container {
             background-color: #f8f9fa;
             border-radius: 8px;
@@ -35,23 +34,23 @@
             margin: 0 auto;
             text-align: left;
         }
-        
+
         .title {
             font-size: 24px;
             margin-bottom: 20px;
             text-align: center;
         }
-        
+
         .form-group {
             margin-bottom: 20px;
         }
-        
+
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
         }
-        
+
         .form-control {
             width: 100%;
             padding: 10px 15px;
@@ -59,16 +58,16 @@
             border: 1px solid #ced4da;
             border-radius: 4px;
         }
-        
+
         .checkbox {
             display: flex;
             align-items: center;
         }
-        
+
         .checkbox input {
             margin-right: 10px;
         }
-        
+
         .login-btn {
             background-color: #007bff;
             color: white;
@@ -80,7 +79,7 @@
             width: 100%;
             font-weight: 600;
         }
-        
+
         .login-btn:hover {
             background-color: #0069d9;
         }
@@ -107,6 +106,12 @@
             padding-right: 42px;
         }
 
+        /* Ocultar el botón nativo de revelar contraseña en Edge/Chromium */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none;
+        }
+
         .btn-toggle-pass {
             position: absolute;
             right: 10px;
@@ -124,40 +129,64 @@
         .btn-toggle-pass:hover {
             color: #343a40;
         }
+
+        .login-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .login-error i {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
     </style>
     <div class="main-container">
-        <img src="/Content/favicon.png" alt="Logo" class="logo" />
+        <img src="<%= ResolveUrl("~/Content/favicon.png") %>" alt="Logo SGV" class="logo" />
         <h1 class="header">Sistema de Gestión de Transporte</h1>
         <p class="subheader">Bienvenido al sistema <strong>Servicios Generales Viviana (SGV)</strong>. Inicia sesión para continuar.</p>
         <div class="login-container">
             <h2 class="title">Iniciar Sesión</h2>
+
+            <asp:Panel ID="pnlError" runat="server" Visible="false" CssClass="login-error">
+                <i class="fas fa-exclamation-circle"></i>
+                <asp:Label ID="lblError" runat="server"></asp:Label>
+            </asp:Panel>
+
             <div class="form-group">
-                <label for="username">Usuario:</label>
-                <asp:TextBox ID="txtUsername" runat="server" CssClass="form-control" placeholder="Ingrese su usuario"></asp:TextBox>
+                <label for="<%= txtUsername.ClientID %>">Usuario:</label>
+                <asp:TextBox ID="txtUsername" runat="server" CssClass="form-control" placeholder="Ingrese su usuario" autocomplete="username"></asp:TextBox>
             </div>
             <div class="form-group">
-                <label for="password">Contraseña:</label>
+                <label for="<%= txtPassword.ClientID %>">Contraseña:</label>
                 <div class="password-wrapper">
-                    <asp:TextBox ID="txtPassword" runat="server" TextMode="Password" CssClass="form-control" placeholder="Ingrese su contraseña"></asp:TextBox>
-                    <button type="button" class="btn-toggle-pass" onclick="togglePassword()" title="Mostrar/ocultar contraseña" tabindex="-1">
+                    <asp:TextBox ID="txtPassword" runat="server" TextMode="Password" CssClass="form-control" placeholder="Ingrese su contraseña" autocomplete="current-password"></asp:TextBox>
+                    <button type="button" class="btn-toggle-pass" onclick="togglePassword()" title="Mostrar/ocultar contraseña" tabindex="-1" aria-label="Mostrar u ocultar contraseña">
                         <i id="iconTogglePass" class="fas fa-eye"></i>
                     </button>
                 </div>
             </div>
             <div class="form-group checkbox">
                 <asp:CheckBox ID="chkRemember" runat="server" />
-                <label for="chkRemember">Recordarme</label>
+                <label for="<%= chkRemember.ClientID %>">Recordarme</label>
             </div>
-            <asp:Button ID="btnLogin" runat="server" CssClass="login-btn" Text="Acceder"  OnClick="btnLogin_Click" />
+            <asp:Button ID="btnLogin" runat="server" CssClass="login-btn" Text="Acceder" OnClick="btnLogin_Click" />
             <div class="forgot-password">
                 <a href="RecuperarContrasena.aspx">¿Olvidó su contraseña?</a>
             </div>
         </div>
     </div>
 
-    <script>
+    <script type="text/javascript">
         function togglePassword() {
-            var input = document.getElementById('<%=txtPassword.ClientID%>');
+            var input = document.getElementById('<%= txtPassword.ClientID %>');
             var icon = document.getElementById('iconTogglePass');
             if (input.type === 'password') {
                 input.type = 'text';
@@ -167,5 +196,16 @@
                 icon.classList.replace('fa-eye-slash', 'fa-eye');
             }
         }
+
+        // Autofocus en el primer campo vacío
+        (function () {
+            var user = document.getElementById('<%= txtUsername.ClientID %>');
+            var pass = document.getElementById('<%= txtPassword.ClientID %>');
+            if (user && !user.value) {
+                user.focus();
+            } else if (pass) {
+                pass.focus();
+            }
+        })();
     </script>
 </asp:Content>
