@@ -24,7 +24,7 @@ namespace WebSGV.Helpers
         {
             if (HttpContext.Current.Session["Rol"] != null)
             {
-                return HttpContext.Current.Session["Rol"].ToString().ToUpper();
+                return HttpContext.Current.Session["Rol"].ToString().Trim().ToUpper();
             }
             return string.Empty;
         }

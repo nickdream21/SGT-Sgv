@@ -107,11 +107,11 @@ namespace WebSGV
                 // Reconstruir la sesión con los datos de la cookie
                 Session["UsuarioID"] = authTemp.Values["uid"];
                 Session["IdUsuario"] = Convert.ToInt32(authTemp.Values["uid"]);
-                Session["Rol"] = authTemp.Values["rol"];
+                Session["Rol"] = HttpUtility.UrlDecode(authTemp.Values["rol"]);
                 Session["Nombre"] = HttpUtility.UrlDecode(authTemp.Values["nombre"]);
                 Session["NombreUsuario"] = HttpUtility.UrlDecode(authTemp.Values["nombreUsuario"]);
 
-                string rol = authTemp.Values["rol"] ?? "";
+                string rol = HttpUtility.UrlDecode(authTemp.Values["rol"] ?? "");
                 string idConductorStr = authTemp.Values["idConductor"];
 
                 if (rol.ToUpper() == "CONDUCTOR" && !string.IsNullOrEmpty(idConductorStr))
@@ -119,12 +119,8 @@ namespace WebSGV
                     Session["IdConductor"] = Convert.ToInt32(idConductorStr);
                 }
 
-                // ✅ Eliminar la cookie temporal inmediatamente (uso único)
-                HttpCookie expiredCookie = new HttpCookie("SGV_AuthTemp")
-                {
-                    Expires = DateTime.Now.AddDays(-1)
-                };
-                Response.Cookies.Add(expiredCookie);
+                // ✅ NO eliminar la cookie - mantenerla como respaldo mientras dure la sesión
+                // Se eliminará al cerrar sesión (btnCerrarSesion_Click)
 
                 System.Diagnostics.Debug.WriteLine($"✅ Sesión reconstruida - Usuario: {Session["Nombre"]}, Rol: {Session["Rol"]}");
                 return true;
