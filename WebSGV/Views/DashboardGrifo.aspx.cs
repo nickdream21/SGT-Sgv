@@ -5,7 +5,6 @@ using System.Data.SqlClient;
 using System.Text;
 using System.Web;
 using System.Web.UI;
-using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 
 namespace WebSGV.Views
@@ -60,8 +59,8 @@ namespace WebSGV.Views
 
                 if (dt.Rows.Count > 0)
                 {
-                    gvViajesActivos.DataSource = dt;
-                    gvViajesActivos.DataBind();
+                    rptViajesActivos.DataSource = dt;
+                    rptViajesActivos.DataBind();
                     pnlViajes.Visible = true;
                     pnlSinViajes.Visible = false;
                 }
@@ -159,33 +158,6 @@ namespace WebSGV.Views
 
         #endregion
 
-        #region Eventos de GridView
-
-        protected void gvViajesActivos_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            if (e.CommandName == "RegistrarAbastecimiento")
-            {
-                string[] args = e.CommandArgument.ToString().Split('|');
-                string idViaje = args.Length > 0 ? args[0] : "";
-                string idConductor = args.Length > 1 ? args[1] : "";
-                string idTracto = args.Length > 2 ? args[2] : "";
-                string idCarreta = args.Length > 3 ? args[3] : "";
-
-                Response.Redirect($"AgregarAbastecimiento.aspx?idViaje={idViaje}&idConductor={idConductor}&idTracto={idTracto}&idCarreta={idCarreta}");
-            }
-        }
-
-        protected void gvViajesActivos_RowDataBound(object sender, GridViewRowEventArgs e)
-        {
-            if (e.Row.RowType == DataControlRowType.DataRow)
-            {
-                // Columna Conductor (índice 1) — alineada a izquierda
-                e.Row.Cells[1].CssClass = "td-conductor";
-            }
-        }
-
-        #endregion
-
         #region Eventos de Botones
 
         protected void btnFiltrar_Click(object sender, EventArgs e)
@@ -224,8 +196,8 @@ namespace WebSGV.Views
 
                 if (dt.Rows.Count > 0)
                 {
-                    gvAbastecimientos.DataSource = dt;
-                    gvAbastecimientos.DataBind();
+                    rptAbastecimientos.DataSource = dt;
+                    rptAbastecimientos.DataBind();
                     pnlAbastecimientos.Visible = true;
                     pnlSinAbastecimientos.Visible = false;
                 }
@@ -300,40 +272,6 @@ namespace WebSGV.Views
             return dt;
         }
 
-        protected void gvAbastecimientos_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            if (e.CommandName == "VerDetalle")
-            {
-                string numeroAbastecimiento = e.CommandArgument.ToString();
-                Response.Redirect($"BuscarAbastecimiento.aspx?numero={HttpUtility.UrlEncode(numeroAbastecimiento)}");
-            }
-        }
-
-        protected void gvAbastecimientos_RowDataBound(object sender, GridViewRowEventArgs e)
-        {
-            if (e.Row.RowType == DataControlRowType.DataRow)
-            {
-                // Columna Conductor (indice 2) alineada a izquierda
-                e.Row.Cells[2].CssClass = "td-conductor";
-            }
-        }
-
-        protected void gvAbastecimientos_PageIndexChanging(object sender, GridViewPageEventArgs e)
-        {
-            gvAbastecimientos.PageIndex = e.NewPageIndex;
-
-            string buscar = txtBuscarAbastecimiento.Text.Trim();
-            DateTime? fechaDesde = null;
-            DateTime? fechaHasta = null;
-
-            if (!string.IsNullOrEmpty(txtFechaDesde.Text) && DateTime.TryParse(txtFechaDesde.Text, out DateTime fdParsed))
-                fechaDesde = fdParsed;
-            if (!string.IsNullOrEmpty(txtFechaHasta.Text) && DateTime.TryParse(txtFechaHasta.Text, out DateTime fhParsed))
-                fechaHasta = fhParsed;
-
-            CargarHistorialAbastecimientos(buscar, fechaDesde, fechaHasta);
-        }
-
         protected void btnFiltrarHistorial_Click(object sender, EventArgs e)
         {
             string buscar = txtBuscarAbastecimiento.Text.Trim();
@@ -345,7 +283,6 @@ namespace WebSGV.Views
             if (!string.IsNullOrEmpty(txtFechaHasta.Text) && DateTime.TryParse(txtFechaHasta.Text, out DateTime fh))
                 fechaHasta = fh;
 
-            gvAbastecimientos.PageIndex = 0;
             CargarHistorialAbastecimientos(buscar, fechaDesde, fechaHasta);
 
             // Mantener los viajes activos visibles
@@ -357,13 +294,23 @@ namespace WebSGV.Views
             txtBuscarAbastecimiento.Text = "";
             txtFechaDesde.Text = "";
             txtFechaHasta.Text = "";
-            gvAbastecimientos.PageIndex = 0;
             CargarDatos();
         }
 
         #endregion
 
         #region Helpers de Formato
+
+        /// <summary>
+        /// Genera la clase CSS para el badge de estado del viaje.
+        /// </summary>
+        protected string GetEstadoClass(object estado)
+        {
+            string val = (estado ?? "").ToString().ToUpper();
+            if (val == "ABIERTO") return "vj-estado-abierto";
+            if (val == "ABASTECIDO") return "vj-estado-abastecido";
+            return "vj-estado-abierto";
+        }
 
         /// <summary>
         /// Genera un badge HTML con color según el destino.

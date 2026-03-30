@@ -1,88 +1,127 @@
-﻿<%@ Page Title="Dashboard - Administrador de Grifo" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="DashboardGrifo.aspx.cs" Inherits="WebSGV.Views.DashboardGrifo" %>
+<%@ Page Title="Dashboard - Administrador de Grifo" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="DashboardGrifo.aspx.cs" Inherits="WebSGV.Views.DashboardGrifo" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
+
+    <asp:HiddenField ID="hfTabActiva" runat="server" ClientIDMode="Static" Value="viajes" />
+
     <style>
+        /* ============================================
+           DASHBOARD GRIFO - Mobile First
+           ============================================ */
         :root {
-            --primary-color: #0056b3;
-            --secondary-color: #0062cc;
-            --accent-color: #f0f7ff;
-            --border-color: #dee2e6;
+            --gf-primary: #1565c0;
+            --gf-secondary: #1976d2;
+            --gf-accent: #e3f2fd;
+            --gf-light: #f5f9ff;
+            --gf-border: #bbdefb;
+            --gf-success: #28a745;
         }
 
-        .dashboard-container {
-            background-color: white;
-            border-radius: 6px;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            margin-bottom: 30px;
+        .dash-gf {
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding-bottom: 30px;
         }
 
-        /* === ENCABEZADO === */
-        .header-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 12px;
-            margin-bottom: 16px;
+        /* --- HEADER --- */
+        .gf-header {
+            background: linear-gradient(135deg, var(--gf-primary) 0%, var(--gf-secondary) 100%);
+            color: white;
+            padding: 16px;
         }
 
-        .header-bar h3 {
-            color: var(--primary-color);
-            font-size: 1.3rem;
+        .gf-header h2 {
+            font-size: 1.15rem;
             font-weight: 700;
+            margin: 0 0 4px 0;
+        }
+
+        .gf-header .gf-sub {
+            font-size: 0.82rem;
+            opacity: 0.9;
             margin: 0;
         }
 
-        .header-bar .header-meta {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            font-size: 0.82rem;
-            color: #6c757d;
-        }
-
-        .header-bar .header-meta .meta-count {
-            background-color: var(--accent-color);
-            border: 1px solid #d1e7ff;
+        .gf-fecha-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
             border-radius: 20px;
-            padding: 3px 12px;
-            font-weight: 600;
-            color: var(--primary-color);
+            padding: 4px 12px;
+            font-size: 0.78rem;
+            margin-top: 6px;
         }
 
-        /* === BARRA DE FILTRO INLINE === */
-        .filter-bar {
+        /* --- TABS --- */
+        .gf-tabs {
             display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 14px;
-            flex-wrap: wrap;
+            gap: 0;
+            margin: 0;
+            background: white;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
 
-        .filter-bar .filter-input {
+        .gf-tab {
             flex: 1;
-            min-width: 200px;
-            max-width: 320px;
+            padding: 12px 8px;
+            border: none;
+            background: white;
+            color: #999;
+            font-weight: 600;
+            font-size: 0.82rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            text-align: center;
+            touch-action: manipulation;
+        }
+
+        .gf-tab:hover {
+            background: #f8f9fa;
+            color: var(--gf-primary);
+        }
+
+        .gf-tab.active {
+            color: var(--gf-primary);
+            border-bottom-color: var(--gf-primary);
+            background: var(--gf-accent);
+        }
+
+        .tab-badge {
+            display: inline-block;
+            background: #e0e0e0;
+            color: #666;
+            border-radius: 10px;
+            padding: 1px 8px;
+            font-size: 0.72rem;
+            margin-left: 4px;
+        }
+
+        .gf-tab.active .tab-badge {
+            background: var(--gf-primary);
+            color: white;
+        }
+
+        /* --- FILTER --- */
+        .gf-filter {
+            background: white;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            margin: 0 0 8px 0;
+        }
+
+        .gf-filter-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .gf-filter-input {
             position: relative;
+            flex: 1;
         }
 
-        .filter-bar .filter-input input {
-            padding-left: 34px;
-            height: 36px;
-            font-size: 0.88rem;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            width: 100%;
-        }
-
-        .filter-bar .filter-input input:focus {
-            border-color: #80bdff;
-            box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.2);
-            outline: none;
-        }
-
-        .filter-bar .filter-input .search-icon {
+        .gf-filter-input .fa-search {
             position: absolute;
             left: 10px;
             top: 50%;
@@ -92,522 +131,644 @@
             pointer-events: none;
         }
 
-        .filter-bar select {
-            height: 36px;
-            font-size: 0.88rem;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            padding: 0 10px;
-            min-width: 150px;
+        .gf-filter-input input {
+            padding-left: 34px !important;
         }
 
-        .filter-bar .btn-filter {
-            height: 36px;
-            padding: 0 16px;
-            font-size: 0.85rem;
-            border-radius: 4px;
+        .gf-filter .form-control {
+            height: 42px;
+            font-size: 0.88rem;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .gf-filter .form-control:focus {
+            border-color: var(--gf-primary);
+            box-shadow: 0 0 0 2px rgba(21,101,192,0.15);
+        }
+
+        .gf-filter-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .gf-filter-label {
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 2px;
             font-weight: 500;
         }
 
-        .filter-bar .btn-filter-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
+        /* --- BUTTONS --- */
+        .btn-gf-primary {
+            background: var(--gf-primary);
             color: white;
-        }
-
-        .filter-bar .btn-filter-primary:hover {
-            background-color: var(--secondary-color);
-        }
-
-        .filter-bar .btn-filter-outline {
-            background-color: transparent;
-            border: 1px solid #ced4da;
-            color: #495057;
-        }
-
-        .filter-bar .btn-filter-outline:hover {
-            background-color: #f8f9fa;
-        }
-
-        .filter-bar .filter-separator {
-            width: 1px;
-            height: 24px;
-            background-color: #dee2e6;
-        }
-
-        /* === TABLA === */
-        .table-wrapper {
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        .table-viajes {
-            margin-bottom: 0;
-        }
-
-        .table-viajes thead th {
-            background-color: var(--primary-color) !important;
-            color: white !important;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 0.88rem;
             font-weight: 600;
-            font-size: 0.82rem;
+            cursor: pointer;
+            flex: 1;
+            touch-action: manipulation;
+        }
+
+        .btn-gf-outline {
+            background: white;
+            color: #666;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
+            flex: 1;
+            touch-action: manipulation;
+        }
+
+        .btn-gf-crear {
+            display: block;
+            background: #ff8f00;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
             text-align: center;
-            vertical-align: middle;
-            padding: 10px 8px;
-            border: none !important;
+            text-decoration: none;
+            touch-action: manipulation;
+            width: 100%;
+        }
+
+        .btn-gf-crear:hover {
+            background: #ff6f00;
+            color: white;
+            text-decoration: none;
+        }
+
+        /* --- CARD LIST --- */
+        .gf-card-list {
+            padding: 8px 12px;
+        }
+
+        /* --- VIAJE CARD --- */
+        .vj-card {
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            overflow: hidden;
+            border-left: 4px solid var(--gf-primary);
+        }
+
+        .vj-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px 6px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .vj-num {
+            font-weight: 700;
+            color: var(--gf-primary);
+            font-size: 0.88rem;
+        }
+
+        .vj-estado {
+            font-size: 0.72rem;
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 2px 8px;
+        }
+
+        .vj-estado-abierto { background: #e8f5e9; color: #2e7d32; }
+        .vj-estado-abastecido { background: #e3f2fd; color: #1565c0; }
+
+        .vj-card-body { padding: 8px 12px; }
+
+        .vj-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .vj-label {
+            font-size: 0.7rem;
+            color: #999;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
 
-        .table-viajes tbody td {
-            vertical-align: middle;
-            text-align: center;
-            padding: 9px 8px;
-            font-size: 0.88rem;
-            border-color: #f0f0f0;
-        }
-
-        .table-viajes tbody tr {
-            transition: background-color 0.15s ease;
-        }
-
-        .table-viajes tbody tr:hover {
-            background-color: #edf5ff !important;
-        }
-
-        .table-viajes tbody tr:nth-child(even) {
-            background-color: #fafbfc;
-        }
-
-        /* Columna conductor alineada a izquierda */
-        .table-viajes tbody td.td-conductor {
-            text-align: left;
+        .vj-value {
+            font-size: 0.85rem;
             font-weight: 500;
+            color: #333;
         }
 
-        /* Badge destino */
-        .destino-badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 0.78rem;
-            font-weight: 600;
-            letter-spacing: 0.2px;
+        .vj-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #fafafa;
+            border-top: 1px solid #f0f0f0;
+            gap: 8px;
         }
 
-        .destino-frontera {
-            background-color: #fce4ec;
-            color: #c62828;
+        .vj-dias-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: #666;
+            flex-wrap: wrap;
         }
 
-        .destino-trujillo {
-            background-color: #e3f2fd;
-            color: #1565c0;
-        }
-
-        .destino-default {
-            background-color: #f5f5f5;
-            color: #616161;
-        }
-
-        /* Dias en viaje */
-        .dias-badge {
-            display: inline-block;
-            min-width: 28px;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.82rem;
-            font-weight: 600;
-            text-align: center;
-        }
-
-        .dias-ok {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        .dias-warning {
-            background-color: #fff3e0;
-            color: #e65100;
-        }
-
-        .dias-danger {
-            background-color: #fce4ec;
-            color: #c62828;
-        }
-
-        /* Boton abastecer */
-        .btn-abastecer {
+        .btn-abastecer-card {
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            background-color: #28a745;
+            background: var(--gf-success);
+            color: white;
             border: none;
-            color: white;
-            padding: 5px 14px;
-            font-size: 0.82rem;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
             font-weight: 600;
-            border-radius: 4px;
             text-decoration: none;
-            transition: background-color 0.15s ease;
+            touch-action: manipulation;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
-        .btn-abastecer:hover {
-            background-color: #218838;
+        .btn-abastecer-card:hover {
+            background: #218838;
             color: white;
             text-decoration: none;
         }
 
-        /* Link manual */
-        .btn-manual-link {
-            color: var(--primary-color);
-            font-size: 0.82rem;
-            text-decoration: none;
+        /* --- BADGES --- */
+        .destino-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        .destino-frontera { background: #fce4ec; color: #c62828; }
+        .destino-trujillo { background: #e3f2fd; color: #1565c0; }
+        .destino-default { background: #f5f5f5; color: #616161; }
+
+        .dias-badge {
+            display: inline-block;
+            min-width: 24px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .dias-ok { background: #e8f5e9; color: #2e7d32; }
+        .dias-warning { background: #fff3e0; color: #e65100; }
+        .dias-danger { background: #fce4ec; color: #c62828; }
+
+        /* --- ABASTECIMIENTO CARD --- */
+        .ab-card {
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            overflow: hidden;
+        }
+
+        .ab-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px 6px;
+            background: var(--gf-light);
+            border-bottom: 1px solid #eef3f9;
+        }
+
+        .ab-num {
+            font-weight: 700;
+            color: var(--gf-primary);
+            font-size: 0.85rem;
+        }
+
+        .ab-fecha {
+            font-size: 0.78rem;
+            color: #888;
+        }
+
+        .ab-card-body { padding: 8px 12px; }
+
+        .ab-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .ab-label {
+            font-size: 0.7rem;
+            color: #999;
+            text-transform: uppercase;
+        }
+
+        .ab-value {
+            font-size: 0.85rem;
             font-weight: 500;
+            color: #333;
         }
 
-        .btn-manual-link:hover {
-            text-decoration: underline;
+        .ab-highlight {
+            color: var(--gf-primary);
+            font-weight: 700;
         }
 
-        /* Boton crear abastecimiento */
-        .btn-crear-abastecimiento {
+        .ab-card-footer {
+            display: flex;
+            justify-content: flex-end;
+            padding: 8px 12px;
+            background: #fafafa;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .btn-ver-card {
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            height: 36px;
-            padding: 0 16px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            border-radius: 4px;
-            background-color: #ff8f00;
+            background: var(--gf-primary);
+            color: white;
             border: none;
-            color: white;
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: 0.82rem;
+            font-weight: 500;
             text-decoration: none;
-            transition: background-color 0.15s ease;
+            touch-action: manipulation;
         }
 
-        .btn-crear-abastecimiento:hover {
-            background-color: #ff6f00;
+        .btn-ver-card:hover {
+            background: var(--gf-secondary);
             color: white;
             text-decoration: none;
         }
 
-        /* === ESTADO VACIO === */
-        .empty-state {
+        /* --- EMPTY STATE --- */
+        .gf-empty {
             text-align: center;
-            padding: 50px 20px;
-            color: #6c757d;
+            padding: 40px 20px;
+            background: white;
+            margin: 0 12px;
+            border-radius: 10px;
         }
 
-        .empty-state .empty-icon {
+        .gf-empty i {
             font-size: 2.5rem;
-            opacity: 0.3;
+            color: #ddd;
+            display: block;
             margin-bottom: 12px;
         }
 
-        .empty-state h5 {
+        .gf-empty h5 {
+            color: #666;
             font-size: 1rem;
-            font-weight: 600;
-            color: #495057;
             margin-bottom: 6px;
         }
 
-        .empty-state p {
+        .gf-empty p {
+            color: #999;
             font-size: 0.85rem;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
-        /* Labels ocultas para accesibilidad */
+        /* --- TAB CONTENT --- */
+        .gf-tab-content { display: none; }
+        .gf-tab-content.active { display: block; }
+
+        /* --- SR ONLY --- */
         .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 
-        /* === TABS DE NAVEGACIÓN === */
-        .tabs-navigation {
-            display: flex;
-            gap: 0;
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            overflow: hidden;
-            margin-bottom: 20px;
+        /* --- DESKTOP --- */
+        @media (min-width: 576px) {
+            .gf-filter-row {
+                flex-direction: row;
+                align-items: flex-end;
+            }
+
+            .gf-filter-actions {
+                flex-direction: row;
+            }
+
+            .btn-gf-primary,
+            .btn-gf-outline {
+                flex: 0;
+                white-space: nowrap;
+            }
+
+            .btn-gf-crear {
+                width: auto;
+                display: inline-block;
+            }
         }
 
-        .tab-btn {
-            flex: 1;
-            padding: 0.875rem 1.25rem;
-            border: none;
-            background: white;
-            color: #6c757d;
-            font-weight: 600;
-            font-size: 0.9375rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-bottom: 3px solid transparent;
+        @media (min-width: 768px) {
+            .gf-header h2 { font-size: 1.4rem; }
+
+            .gf-tabs {
+                max-width: 500px;
+                margin: 0 auto;
+                border-radius: 0;
+            }
+
+            .vj-grid { grid-template-columns: 1fr 1fr 1fr; }
+            .ab-grid { grid-template-columns: 1fr 1fr 1fr; }
+            .gf-card-list { padding: 12px 16px; }
+
+            .gf-filter {
+                margin: 0 12px;
+                border-radius: 10px;
+                margin-bottom: 8px;
+            }
         }
 
-        .tab-btn:hover {
-            background: #f8f9fa;
-            color: var(--primary-color);
-        }
-
-        .tab-btn-active {
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
-            background: var(--accent-color);
+        @media (min-width: 992px) {
+            .ab-grid { grid-template-columns: 1fr 1fr 1fr 1fr; }
         }
     </style>
 
-    <div class="container-fluid px-4">
+    <div class="dash-gf">
 
-        <%-- Labels ocultas que mantienen compatibilidad con el code-behind --%>
+        <%-- Labels ocultas para compatibilidad --%>
         <asp:Label ID="lblAbastecimientosHoy" runat="server" Text="0" CssClass="sr-only"></asp:Label>
         <asp:Label ID="lblGalonesHoy" runat="server" Text="0" CssClass="sr-only"></asp:Label>
 
-        <!-- TABS DE NAVEGACIÓN -->
-        <div class="tabs-navigation">
-            <button type="button" class="tab-btn tab-btn-active" id="tabViajes" onclick="cambiarTabGrifo('viajes')">
-                <i class="fas fa-gas-pump mr-2"></i>Viajes Activos
-                <span class="meta-count ml-2">
-                    <asp:Label ID="lblTotalViajesActivos" runat="server" Text="0"></asp:Label>
-                </span>
+        <!-- ========== HEADER ========== -->
+        <div class="gf-header">
+            <h2><i class="fas fa-gas-pump mr-2"></i>Dashboard de Grifo</h2>
+            <p class="gf-sub">Control de abastecimiento de combustible</p>
+            <span class="gf-fecha-badge">
+                <i class="fas fa-calendar-alt mr-1"></i>
+                <%= DateTime.Now.ToString("dddd, dd/MM/yyyy HH:mm", new System.Globalization.CultureInfo("es-PE")) %>
+            </span>
+        </div>
+
+        <!-- ========== TABS ========== -->
+        <div class="gf-tabs">
+            <button type="button" class="gf-tab active" id="tabViajes" onclick="cambiarTab('viajes')">
+                <i class="fas fa-truck mr-1"></i>Viajes
+                <span class="tab-badge"><asp:Label ID="lblTotalViajesActivos" runat="server" Text="0"></asp:Label></span>
             </button>
-            <button type="button" class="tab-btn" id="tabHistorial" onclick="cambiarTabGrifo('historial')">
-                <i class="fas fa-history mr-2"></i>Historial de Abastecimientos
-                <span class="meta-count ml-2">
-                    <asp:Label ID="lblTotalAbastecimientos" runat="server" Text="0"></asp:Label>
-                </span>
+            <button type="button" class="gf-tab" id="tabHistorial" onclick="cambiarTab('historial')">
+                <i class="fas fa-history mr-1"></i>Historial
+                <span class="tab-badge"><asp:Label ID="lblTotalAbastecimientos" runat="server" Text="0"></asp:Label></span>
             </button>
         </div>
 
-        <!-- SECCIÓN VIAJES ACTIVOS -->
-        <div id="seccionViajes">
+        <!-- ======================================================
+             TAB 1: VIAJES ACTIVOS
+             ====================================================== -->
+        <div class="gf-tab-content active" id="seccionViajes">
 
-    <div class="container-fluid dashboard-container">
-
-        <!-- Encabezado -->
-        <div class="header-bar">
-            <h3><i class="fas fa-gas-pump mr-2"></i>Viajes Activos</h3>
-            <div class="header-meta">
-                <span><i class="fas fa-calendar-alt mr-1"></i><%= DateTime.Now.ToString("dd/MM/yyyy HH:mm") %></span>
+            <!-- Filtro -->
+            <div class="gf-filter">
+                <div class="gf-filter-row">
+                    <div class="gf-filter-input">
+                        <i class="fas fa-search"></i>
+                        <asp:TextBox ID="txtBuscarConductor" runat="server" CssClass="form-control"
+                            placeholder="Buscar conductor o DNI..."></asp:TextBox>
+                    </div>
+                    <asp:DropDownList ID="ddlEstado" runat="server" CssClass="form-control">
+                        <asp:ListItem Value="ABIERTO" Selected="True">Abiertos</asp:ListItem>
+                        <asp:ListItem Value="ABASTECIDO">Abastecidos</asp:ListItem>
+                        <asp:ListItem Value="TODOS">Todos</asp:ListItem>
+                    </asp:DropDownList>
+                    <div class="gf-filter-actions">
+                        <asp:Button ID="btnFiltrar" runat="server" CssClass="btn-gf-primary"
+                            Text="Filtrar" OnClick="btnFiltrar_Click" />
+                        <asp:Button ID="btnRefrescar" runat="server" CssClass="btn-gf-outline"
+                            Text="Refrescar" OnClick="btnRefrescar_Click" />
+                    </div>
+                </div>
+                <div style="margin-top: 8px;">
+                    <a href="AgregarAbastecimiento.aspx" class="btn-gf-crear">
+                        <i class="fas fa-plus-circle mr-1"></i>Crear Abastecimiento Manual
+                    </a>
+                </div>
             </div>
-        </div>
 
-        <!-- Filtro inline -->
-        <div class="filter-bar">
-            <div class="filter-input">
-                <i class="fas fa-search search-icon"></i>
-                <asp:TextBox ID="txtBuscarConductor" runat="server" CssClass="form-control" placeholder="Buscar conductor o DNI..."></asp:TextBox>
-            </div>
-            <asp:DropDownList ID="ddlEstado" runat="server" CssClass="form-control">
-                <asp:ListItem Value="ABIERTO" Selected="True">Abiertos</asp:ListItem>
-                <asp:ListItem Value="ABASTECIDO">Abastecidos</asp:ListItem>
-                <asp:ListItem Value="TODOS">Todos</asp:ListItem>
-            </asp:DropDownList>
-            <asp:Button ID="btnFiltrar" runat="server" CssClass="btn-filter btn-filter-primary" Text="Filtrar" OnClick="btnFiltrar_Click" />
-            <div class="filter-separator"></div>
-            <asp:Button ID="btnRefrescar" runat="server" CssClass="btn-filter btn-filter-outline" Text="Refrescar" OnClick="btnRefrescar_Click" />
-            <div class="filter-separator"></div>
-            <a href="AgregarAbastecimiento.aspx" class="btn-crear-abastecimiento">
-                <i class="fas fa-plus-circle mr-1"></i>Crear Abastecimiento
-            </a>
-        </div>
-
-        <!-- Tabla de viajes -->
-        <asp:Panel ID="pnlViajes" runat="server">
-            <div class="table-wrapper">
-                <div class="table-responsive">
-                    <asp:GridView ID="gvViajesActivos" runat="server" CssClass="table table-viajes mb-0"
-                        AutoGenerateColumns="false" EmptyDataText="" ShowHeaderWhenEmpty="false"
-                        OnRowCommand="gvViajesActivos_RowCommand" OnRowDataBound="gvViajesActivos_RowDataBound">
-                        <Columns>
-                            <asp:BoundField DataField="NumeroViajeProgreso" HeaderText="Nro. Viaje" />
-                            <asp:BoundField DataField="Conductor" HeaderText="Conductor" />
-                            <asp:BoundField DataField="DNI" HeaderText="DNI" />
-                            <asp:BoundField DataField="PlacaTracto" HeaderText="Tracto" />
-                            <asp:BoundField DataField="PlacaCarreta" HeaderText="Carreta" />
-                            <asp:BoundField DataField="Cliente" HeaderText="Cliente" />
-                            <asp:TemplateField HeaderText="Destino">
-                                <ItemTemplate>
-                                    <%# FormatDestinoBadge(Eval("Destino")) %>
-                                </ItemTemplate>
-                            </asp:TemplateField>
-                            <asp:BoundField DataField="FechaInicio" HeaderText="Inicio" DataFormatString="{0:dd/MM/yyyy}" />
-                            <asp:TemplateField HeaderText="Dias">
-                                <ItemTemplate>
-                                    <%# FormatDiasBadge(Eval("DiasEnViaje")) %>
-                                </ItemTemplate>
-                            </asp:TemplateField>
-                            <asp:TemplateField HeaderText="">
-                                <ItemTemplate>
-                                    <asp:LinkButton ID="btnRegistrar" runat="server"
-                                        CssClass="btn-abastecer"
-                                        CommandName="RegistrarAbastecimiento"
-                                        CommandArgument='<%# Eval("IdViaje") + "|" + Eval("IdConductor") + "|" + Eval("IdTracto") + "|" + Eval("IdCarreta") %>'>
+            <!-- Cards de viajes -->
+            <asp:Panel ID="pnlViajes" runat="server">
+                <div class="gf-card-list">
+                    <asp:Repeater ID="rptViajesActivos" runat="server">
+                        <ItemTemplate>
+                            <div class="vj-card">
+                                <div class="vj-card-header">
+                                    <span class="vj-num">
+                                        <i class="fas fa-route mr-1"></i><%# Eval("NumeroViajeProgreso") %>
+                                    </span>
+                                    <span class='vj-estado <%# GetEstadoClass(Eval("Estado")) %>'>
+                                        <%# Eval("Estado") %>
+                                    </span>
+                                </div>
+                                <div class="vj-card-body">
+                                    <div class="vj-grid">
+                                        <div class="vj-item">
+                                            <div class="vj-label">Conductor</div>
+                                            <div class="vj-value"><%# Eval("Conductor") %></div>
+                                        </div>
+                                        <div class="vj-item">
+                                            <div class="vj-label">DNI</div>
+                                            <div class="vj-value"><%# Eval("DNI") %></div>
+                                        </div>
+                                        <div class="vj-item">
+                                            <div class="vj-label">Tracto</div>
+                                            <div class="vj-value"><%# Eval("PlacaTracto") %></div>
+                                        </div>
+                                        <div class="vj-item">
+                                            <div class="vj-label">Carreta</div>
+                                            <div class="vj-value"><%# Eval("PlacaCarreta") %></div>
+                                        </div>
+                                        <div class="vj-item">
+                                            <div class="vj-label">Cliente</div>
+                                            <div class="vj-value"><%# Eval("Cliente") %></div>
+                                        </div>
+                                        <div class="vj-item">
+                                            <div class="vj-label">Destino</div>
+                                            <div class="vj-value"><%# FormatDestinoBadge(Eval("Destino")) %></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="vj-card-footer">
+                                    <div class="vj-dias-info">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <%# Eval("FechaInicio", "{0:dd/MM/yyyy}") %>
+                                        <span>&#183;</span>
+                                        <%# FormatDiasBadge(Eval("DiasEnViaje")) %> d&#237;as
+                                    </div>
+                                    <a href='<%# "AgregarAbastecimiento.aspx?idViaje=" + Eval("IdViaje") + "&amp;idConductor=" + Eval("IdConductor") + "&amp;idTracto=" + Eval("IdTracto") + "&amp;idCarreta=" + Eval("IdCarreta") %>'
+                                       class="btn-abastecer-card">
                                         <i class="fas fa-gas-pump"></i> Abastecer
-                                    </asp:LinkButton>
-                                </ItemTemplate>
-                            </asp:TemplateField>
-                        </Columns>
-                    </asp:GridView>
+                                    </a>
+                                </div>
+                            </div>
+                        </ItemTemplate>
+                    </asp:Repeater>
                 </div>
-            </div>
-        </asp:Panel>
+            </asp:Panel>
 
-        <asp:Panel ID="pnlSinViajes" runat="server" Visible="false">
-            <div class="empty-state">
-                <div class="empty-icon"><i class="fas fa-truck"></i></div>
-                <h5>Sin viajes pendientes</h5>
-                <p>No hay viajes abiertos en este momento. Puede crear un abastecimiento manualmente.</p>
-                <a href="AgregarAbastecimiento.aspx" class="btn-crear-abastecimiento" style="display:inline-flex;">
-                    <i class="fas fa-plus-circle mr-1"></i> Crear Abastecimiento
-                </a>
-            </div>
-        </asp:Panel>
-    </div>
+            <asp:Panel ID="pnlSinViajes" runat="server" Visible="false">
+                <div class="gf-empty">
+                    <i class="fas fa-truck"></i>
+                    <h5>Sin viajes pendientes</h5>
+                    <p>No hay viajes abiertos en este momento.</p>
+                    <a href="AgregarAbastecimiento.aspx" class="btn-gf-crear" style="max-width: 280px; margin: 0 auto;">
+                        <i class="fas fa-plus-circle mr-1"></i>Crear Abastecimiento
+                    </a>
+                </div>
+            </asp:Panel>
 
-        </div><!-- /seccionViajes -->
-
-        <!-- SECCIÓN HISTORIAL DE ABASTECIMIENTOS -->
-        <div id="seccionHistorial" style="display:none;">
-
-    <div class="container-fluid dashboard-container">
-        <div class="header-bar">
-            <h3><i class="fas fa-history mr-2"></i>Historial de Abastecimientos</h3>
-            <div class="header-meta">
-                <span><i class="fas fa-calendar-alt mr-1"></i><%= DateTime.Now.ToString("dd/MM/yyyy HH:mm") %></span>
-            </div>
         </div>
 
-        <!-- Filtros del historial -->
-        <div class="filter-bar">
-            <div class="filter-group" style="display:flex; flex-direction:column; gap:2px;">
-                <label style="font-size:0.78rem; color:#6c757d; font-weight:500; margin:0;">Desde</label>
-                <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control" TextMode="Date" style="height:36px; font-size:0.88rem; min-width:150px;"></asp:TextBox>
-            </div>
-            <div class="filter-group" style="display:flex; flex-direction:column; gap:2px;">
-                <label style="font-size:0.78rem; color:#6c757d; font-weight:500; margin:0;">Hasta</label>
-                <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control" TextMode="Date" style="height:36px; font-size:0.88rem; min-width:150px;"></asp:TextBox>
-            </div>
-            <div class="filter-input">
-                <i class="fas fa-search search-icon"></i>
-                <asp:TextBox ID="txtBuscarAbastecimiento" runat="server" CssClass="form-control" placeholder="Buscar conductor o placa..."></asp:TextBox>
-            </div>
-            <asp:Button ID="btnFiltrarHistorial" runat="server" CssClass="btn-filter btn-filter-primary" Text="Buscar" OnClick="btnFiltrarHistorial_Click" />
-            <div class="filter-separator"></div>
-            <asp:Button ID="btnLimpiarHistorial" runat="server" CssClass="btn-filter btn-filter-outline" Text="Limpiar" OnClick="btnLimpiarHistorial_Click" />
-        </div>
+        <!-- ======================================================
+             TAB 2: HISTORIAL DE ABASTECIMIENTOS
+             ====================================================== -->
+        <div class="gf-tab-content" id="seccionHistorial">
 
-        <!-- Tabla de abastecimientos -->
-        <asp:Panel ID="pnlAbastecimientos" runat="server">
-            <div class="table-wrapper">
-                <div class="table-responsive">
-                    <asp:GridView ID="gvAbastecimientos" runat="server" CssClass="table table-viajes mb-0"
-                        AutoGenerateColumns="false" EmptyDataText="" ShowHeaderWhenEmpty="false"
-                        OnRowCommand="gvAbastecimientos_RowCommand" OnRowDataBound="gvAbastecimientos_RowDataBound"
-                        AllowPaging="true" PageSize="15" OnPageIndexChanging="gvAbastecimientos_PageIndexChanging">
-                        <PagerSettings Mode="NumericFirstLast" FirstPageText="&laquo;" LastPageText="&raquo;" PageButtonCount="5" />
-                        <PagerStyle CssClass="gridview-pager" HorizontalAlign="Center" />
-                        <Columns>
-                            <asp:BoundField DataField="IdAbastecimiento" HeaderText="ID" />
-                            <asp:BoundField DataField="FechaHora" HeaderText="Fecha" DataFormatString="{0:dd/MM/yyyy HH:mm}" />
-                            <asp:BoundField DataField="Conductor" HeaderText="Conductor" />
-                            <asp:BoundField DataField="PlacaTracto" HeaderText="Tracto" />
-                            <asp:BoundField DataField="PlacaCarreta" HeaderText="Carreta" />
-                            <asp:BoundField DataField="Lugar" HeaderText="Lugar" />
-                            <asp:BoundField DataField="GLAbastecidos" HeaderText="GL Total" DataFormatString="{0:N2}" />
-                            <asp:BoundField DataField="GLConsumidos" HeaderText="GL Cons." DataFormatString="{0:N2}" />
-                            <asp:BoundField DataField="MontoTotal" HeaderText="Monto USD" DataFormatString="{0:N2}" />
-                            <asp:BoundField DataField="Rendimiento" HeaderText="KM/GL" DataFormatString="{0:N2}" />
-                            <asp:TemplateField HeaderText="">
-                                <ItemTemplate>
-                                    <asp:LinkButton ID="btnVerDetalle" runat="server"
-                                        CssClass="btn-ver-detalle"
-                                        CommandName="VerDetalle"
-                                        CommandArgument='<%# Eval("NumeroAbastecimiento") %>'>
-                                        <i class="fas fa-eye"></i> Ver
-                                    </asp:LinkButton>
-                                </ItemTemplate>
-                            </asp:TemplateField>
-                        </Columns>
-                    </asp:GridView>
+            <!-- Filtros -->
+            <div class="gf-filter">
+                <div class="gf-filter-row">
+                    <div style="flex:1;">
+                        <div class="gf-filter-label">Desde</div>
+                        <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                    </div>
+                    <div style="flex:1;">
+                        <div class="gf-filter-label">Hasta</div>
+                        <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                    </div>
+                    <div class="gf-filter-input" style="flex:1.5;">
+                        <i class="fas fa-search"></i>
+                        <asp:TextBox ID="txtBuscarAbastecimiento" runat="server" CssClass="form-control"
+                            placeholder="Conductor o placa..."></asp:TextBox>
+                    </div>
+                </div>
+                <div class="gf-filter-actions" style="margin-top: 8px;">
+                    <asp:Button ID="btnFiltrarHistorial" runat="server" CssClass="btn-gf-primary"
+                        Text="Buscar" OnClick="btnFiltrarHistorial_Click" />
+                    <asp:Button ID="btnLimpiarHistorial" runat="server" CssClass="btn-gf-outline"
+                        Text="Limpiar" OnClick="btnLimpiarHistorial_Click" />
                 </div>
             </div>
-        </asp:Panel>
 
-        <asp:Panel ID="pnlSinAbastecimientos" runat="server" Visible="false">
-            <div class="empty-state">
-                <div class="empty-icon"><i class="fas fa-gas-pump"></i></div>
-                <h5>Sin registros</h5>
-                <p>No se encontraron abastecimientos con los filtros seleccionados.</p>
-            </div>
-        </asp:Panel>
+            <!-- Cards de historial -->
+            <asp:Panel ID="pnlAbastecimientos" runat="server">
+                <div class="gf-card-list">
+                    <asp:Repeater ID="rptAbastecimientos" runat="server">
+                        <ItemTemplate>
+                            <div class="ab-card">
+                                <div class="ab-card-header">
+                                    <span class="ab-num">
+                                        <i class="fas fa-file-alt mr-1"></i><%# Eval("NumeroAbastecimiento") %>
+                                    </span>
+                                    <span class="ab-fecha">
+                                        <i class="fas fa-clock mr-1"></i><%# Eval("FechaHora", "{0:dd/MM/yyyy HH:mm}") %>
+                                    </span>
+                                </div>
+                                <div class="ab-card-body">
+                                    <div class="ab-grid">
+                                        <div class="ab-item">
+                                            <div class="ab-label">Conductor</div>
+                                            <div class="ab-value"><%# Eval("Conductor") %></div>
+                                        </div>
+                                        <div class="ab-item">
+                                            <div class="ab-label">Tracto</div>
+                                            <div class="ab-value"><%# Eval("PlacaTracto") %></div>
+                                        </div>
+                                        <div class="ab-item">
+                                            <div class="ab-label">Carreta</div>
+                                            <div class="ab-value"><%# Eval("PlacaCarreta") %></div>
+                                        </div>
+                                        <div class="ab-item">
+                                            <div class="ab-label">Lugar</div>
+                                            <div class="ab-value"><%# Eval("Lugar") %></div>
+                                        </div>
+                                        <div class="ab-item">
+                                            <div class="ab-label">GL Abastecidos</div>
+                                            <div class="ab-value ab-highlight"><%# Eval("GLAbastecidos", "{0:N2}") %></div>
+                                        </div>
+                                        <div class="ab-item">
+                                            <div class="ab-label">GL Consumidos</div>
+                                            <div class="ab-value"><%# Eval("GLConsumidos", "{0:N2}") %></div>
+                                        </div>
+                                        <div class="ab-item">
+                                            <div class="ab-label">Monto USD</div>
+                                            <div class="ab-value">$<%# Eval("MontoTotal", "{0:N2}") %></div>
+                                        </div>
+                                        <div class="ab-item">
+                                            <div class="ab-label">Rendimiento</div>
+                                            <div class="ab-value"><%# Eval("Rendimiento", "{0:N2}") %> KM/GL</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ab-card-footer">
+                                    <a href='<%# "BuscarAbastecimiento.aspx?numero=" + HttpUtility.UrlEncode(Eval("NumeroAbastecimiento").ToString()) %>'
+                                       class="btn-ver-card">
+                                        <i class="fas fa-eye"></i> Ver Detalle
+                                    </a>
+                                </div>
+                            </div>
+                        </ItemTemplate>
+                    </asp:Repeater>
+                </div>
+            </asp:Panel>
+
+            <asp:Panel ID="pnlSinAbastecimientos" runat="server" Visible="false">
+                <div class="gf-empty">
+                    <i class="fas fa-gas-pump"></i>
+                    <h5>Sin registros</h5>
+                    <p>No se encontraron abastecimientos con los filtros seleccionados.</p>
+                </div>
+            </asp:Panel>
+
+        </div>
+
     </div>
-
-        </div><!-- /seccionHistorial -->
-
-    </div><!-- /container-fluid -->
 
     <script type="text/javascript">
-        function cambiarTabGrifo(tab) {
+        function cambiarTab(tab) {
+            var viajes = document.getElementById('seccionViajes');
+            var historial = document.getElementById('seccionHistorial');
+            var tabV = document.getElementById('tabViajes');
+            var tabH = document.getElementById('tabHistorial');
+            var hf = document.getElementById('hfTabActiva');
+
             if (tab === 'viajes') {
-                document.getElementById('seccionViajes').style.display = '';
-                document.getElementById('seccionHistorial').style.display = 'none';
-                document.getElementById('tabViajes').className = 'tab-btn tab-btn-active';
-                document.getElementById('tabHistorial').className = 'tab-btn';
+                viajes.className = 'gf-tab-content active';
+                historial.className = 'gf-tab-content';
+                tabV.className = 'gf-tab active';
+                tabH.className = 'gf-tab';
             } else {
-                document.getElementById('seccionViajes').style.display = 'none';
-                document.getElementById('seccionHistorial').style.display = '';
-                document.getElementById('tabViajes').className = 'tab-btn';
-                document.getElementById('tabHistorial').className = 'tab-btn tab-btn-active';
+                viajes.className = 'gf-tab-content';
+                historial.className = 'gf-tab-content active';
+                tabV.className = 'gf-tab';
+                tabH.className = 'gf-tab active';
             }
+            hf.value = tab;
         }
+
+        // Restore tab after postback
+        (function () {
+            var hf = document.getElementById('hfTabActiva');
+            if (hf && hf.value === 'historial') {
+                cambiarTab('historial');
+            }
+        })();
     </script>
 
-    <style>
-        .btn-ver-detalle {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            background-color: var(--primary-color);
-            border: none;
-            color: white;
-            padding: 4px 12px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            border-radius: 4px;
-            text-decoration: none;
-            transition: background-color 0.15s ease;
-        }
-
-        .btn-ver-detalle:hover {
-            background-color: var(--secondary-color);
-            color: white;
-            text-decoration: none;
-        }
-
-        .gridview-pager {
-            padding: 10px;
-            background-color: #f8f9fa;
-        }
-
-        .gridview-pager a, .gridview-pager span {
-            padding: 4px 10px;
-            margin: 0 2px;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            text-decoration: none;
-            color: var(--primary-color);
-        }
-
-        .gridview-pager span {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-
-        .gridview-pager a:hover {
-            background-color: #e9ecef;
-        }
-    </style>
 </asp:Content>
