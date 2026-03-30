@@ -16,39 +16,26 @@
         <asp:Label ID="lblMensaje" runat="server"></asp:Label>
     </asp:Panel>
 
-    <div class="container-fluid px-4">
+    <div class="dash-conductor">
 
-        <!-- Header con info del conductor -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="page-header">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap">
-                        <div>
-                            <h2 class="page-title mb-1">
-                                <i class="fas fa-tachometer-alt mr-2"></i>Mi Dashboard
-                            </h2>
-                            <p class="text-muted mb-0">
-                                Bienvenido, <strong>
-                                    <asp:Label ID="lblNombreConductor" runat="server"></asp:Label></strong>
-                                | DNI:
-                                <asp:Label ID="lblDNIConductor" runat="server"></asp:Label>
-                            </p>
-                        </div>
-                        <div class="conductor-status mt-2 mt-md-0">
-                            <asp:Panel ID="pnlEstadoViaje" runat="server" CssClass="badge-status">
-                                <i class="fas fa-circle mr-1"></i>
-                                <asp:Label ID="lblEstadoViaje" runat="server" Text="Sin viajes activos"></asp:Label>
-                            </asp:Panel>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- Header mobile-first con gradiente -->
+        <div class="cd-header">
+            <h2><i class="fas fa-tachometer-alt mr-2"></i>Mi Dashboard</h2>
+            <p class="cd-sub">
+                <strong><asp:Label ID="lblNombreConductor" runat="server"></asp:Label></strong>
+                &nbsp;|&nbsp; DNI: <asp:Label ID="lblDNIConductor" runat="server"></asp:Label>
+            </p>
+            <asp:Panel ID="pnlEstadoViaje" runat="server" CssClass="cd-estado-badge">
+                <i class="fas fa-circle mr-1"></i>
+                <asp:Label ID="lblEstadoViaje" runat="server" Text="Sin viajes activos"></asp:Label>
+            </asp:Panel>
         </div>
 
-        <!-- PESTAÑAS PRINCIPALES -->
-        <div class="row">
-            <div class="col-12">
-                <ul class="nav nav-tabs-custom mb-0" id="conductorTabs" role="tablist">
+        <!-- PESTA&#209;AS PRINCIPALES -->
+        <div class="cd-tabs-wrapper">
+            <div class="row">
+                <div class="col-12">
+                    <ul class="nav nav-tabs-custom mb-0" id="conductorTabs" role="tablist">
                     <li class="nav-item">
                         <a class="nav-link active" id="viajesActivos-tab" data-toggle="tab" href="#viajesActivos" role="tab">
                             <i class="fas fa-truck-loading mr-2"></i><span class="d-none d-sm-inline">Mis </span>Viajes
@@ -298,7 +285,7 @@
                                     <div class="section-body">
                                         <div class="alert alert-info-light mb-3">
                                             <i class="fas fa-lightbulb mr-2"></i>
-                                            <strong>Instrucción:</strong> Registra todos los ingresos que recibiste para este viaje.
+                                            Registra todos los <strong>ingresos</strong> que recibiste para este viaje.
                                         </div>
                                         <div class="table-responsive">
                                             <table class="table table-financial">
@@ -413,7 +400,7 @@
                                     <div class="section-body">
                                         <div class="alert alert-warning-light mb-3">
                                             <i class="fas fa-exclamation-triangle mr-2"></i>
-                                            <strong>Importante:</strong> Registra TODOS los gastos con sus comprobantes. Los comprobantes físicos deben ser entregados en oficina.
+                                            Registra <strong>todos los gastos</strong> con sus comprobantes. Entrega los f&#237;sicos en oficina.
                                         </div>
                                         <div class="table-responsive">
                                             <table class="table table-financial">
@@ -652,10 +639,10 @@
                                     </div>
                                 </div>
 
-                                <!-- Botón de Envío -->
-                                <div class="text-center mb-5">
+                                <!-- Bot&#243;n de Env&#237;o -->
+                                <div class="text-center mb-5" style="padding: 0 12px;">
                                     <asp:Button ID="btnEnviarLiquidacion" runat="server"
-                                        Text="Enviar Liquidación"
+                                        Text="Enviar Liquidaci&#243;n"
                                         CssClass="btn btn-primary-conductor btn-lg px-4 px-md-5 mb-2 mb-md-0"
                                         OnClick="btnEnviarLiquidacion_Click"
                                         OnClientClick="prepararDatosFinancieros(); return confirmarEnvioLiquidacion();" />
@@ -797,7 +784,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <!-- ========== MODALES ========== -->
@@ -1167,7 +1153,7 @@
         </div>
     </div>
 
-    <!-- CSS PROFESIONAL CON RESPONSIVE -->
+    <!-- CSS PROFESIONAL CON RESPONSIVE MOBILE-FIRST -->
     <style>
         /* === VARIABLES DE COLOR === */
         :root {
@@ -1186,36 +1172,48 @@
             --text-secondary: #64748b;
         }
 
-        /* === LAYOUT === */
-        .page-header {
-            padding-bottom: 1rem;
-            border-bottom: 2px solid var(--border-color);
+        /* === CONTENEDOR PRINCIPAL === */
+        .dash-conductor {
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding-bottom: 30px;
         }
 
-        .page-title {
-            color: var(--text-primary);
-            font-weight: 600;
-            font-size: 1.75rem;
-            margin: 0;
+        /* === HEADER GRADIENTE === */
+        .cd-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+            color: white;
+            padding: 16px;
         }
 
-        .conductor-status {
-            display: flex;
-            align-items: center;
+        .cd-header h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin: 0 0 4px 0;
         }
 
-        .badge-status {
-            font-size: 0.9rem;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            font-weight: 600;
-            background-color: var(--medium-gray);
-            color: var(--text-secondary);
+        .cd-header .cd-sub {
+            font-size: 0.82rem;
+            opacity: 0.9;
+            margin: 0 0 6px 0;
         }
 
-            .badge-status i {
-                animation: pulse 2s infinite;
-            }
+        .cd-estado-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.78rem;
+        }
+
+        .cd-estado-badge i {
+            animation: pulse 2s infinite;
+        }
+
+        /* === TABS WRAPPER === */
+        .cd-tabs-wrapper {
+            background: white;
+        }
 
         @keyframes pulse {
             0%, 100% {
@@ -1745,17 +1743,19 @@
 
         /* === RESPONSIVE MÓVIL === */
         @media (max-width: 768px) {
-            .page-title {
-                font-size: 1.375rem;
+            /* Contenedor sin padding excesivo */
+            .cd-tabs-wrapper .container-fluid {
+                padding-left: 0;
+                padding-right: 0;
             }
 
             .nav-tabs-custom .nav-link {
-                padding: 0.75rem 1rem;
-                font-size: 0.875rem;
+                padding: 0.75rem 0.75rem;
+                font-size: 0.82rem;
             }
 
             .section-body {
-                padding: 1rem;
+                padding: 0.875rem;
             }
 
             .info-grid {
@@ -1801,8 +1801,20 @@
                 padding: 0.2rem 0.5rem;
             }
 
+            /* Modales fullscreen en m&#243;vil */
             .modal-dialog {
-                margin: 0.5rem;
+                margin: 0;
+                max-width: 100%;
+                min-height: 100vh;
+            }
+
+            .modal-content {
+                border-radius: 0;
+                min-height: 100vh;
+            }
+
+            .modal-body {
+                padding: 1rem;
             }
 
             .empty-state {
@@ -1815,6 +1827,37 @@
 
             .btn-md-auto {
                 width: 100%;
+            }
+
+            /* Inputs touch-friendly m&#225;s grandes */
+            .form-control {
+                min-height: 42px;
+                font-size: 0.9rem;
+            }
+
+            .form-control-sm {
+                font-size: 0.875rem;
+                padding: 0.5rem 0.625rem;
+                min-height: 40px;
+            }
+
+            /* Botones m&#225;s grandes para touch */
+            .btn-success-custom.btn-sm,
+            .btn-danger-custom.btn-sm {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+
+            .btn-primary-conductor {
+                width: 100%;
+                padding: 0.875rem;
+                font-size: 1rem;
+            }
+
+            .btn-secondary-custom.btn-lg {
+                width: 100%;
+                margin-left: 0 !important;
+                margin-top: 0.5rem;
             }
 
             /* Ocultar columnas menos importantes en tabla despachos */
@@ -1849,6 +1892,39 @@
 
             .alert-info-conductor .col-12.col-md-4 {
                 margin-top: 1rem;
+            }
+
+            /* Section cards sin bordes laterales en m&#243;vil */
+            .section-card {
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+            }
+
+            /* Resumen viaje mejorado en m&#243;vil */
+            .form-label-summary {
+                font-size: 0.7rem;
+            }
+
+            .form-value-summary {
+                font-size: 1rem;
+            }
+
+            /* Balance final prominente */
+            .balance-final {
+                padding: 1rem;
+            }
+
+            /* Tab content sin borde superior en m&#243;vil */
+            .tab-content-custom {
+                border: none;
+            }
+
+            /* Alert info m&#225;s compacto */
+            .alert-info-light,
+            .alert-warning-light {
+                padding: 0.75rem;
+                font-size: 0.82rem;
             }
 
             /* =============================================
@@ -2155,6 +2231,37 @@
             font-size: 0.75rem;
             pointer-events: none;
             display: none;
+        }
+
+        /* === DESKTOP OVERRIDES === */
+        @media (min-width: 769px) {
+            .cd-header h2 {
+                font-size: 1.5rem;
+            }
+
+            .cd-header {
+                padding: 20px 24px;
+            }
+
+            .dash-conductor .tab-content-custom {
+                border: 1px solid var(--border-color);
+                border-top: none;
+            }
+
+            .dash-conductor .section-card {
+                border-radius: 0.5rem;
+                border: 1px solid var(--border-color);
+            }
+
+            /* Modales normales en desktop */
+            .modal-dialog {
+                margin: 1.75rem auto;
+            }
+
+            .modal-content {
+                border-radius: 0.5rem;
+                min-height: auto;
+            }
         }
     </style>
 
