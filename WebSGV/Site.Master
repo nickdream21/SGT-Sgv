@@ -315,6 +315,47 @@
 
                     <% } %>
 
+                    <!-- ==================== MENÚ PARA ADMINISTRADOR DE MAQUINARIA ==================== -->
+                    <% if (EsAdminMaquinaria)
+                        { %>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="Inicio.aspx">
+                            <i class="fas fa-home"></i>Inicio
+                        </a>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownRegistroMaquinaria" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-database"></i>Registro
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownRegistroMaquinaria">
+                            <a class="dropdown-item" href="RegistroChoferes.aspx">
+                                <i class="fas fa-user-tie"></i>Conductores
+                            </a>
+                            <a class="dropdown-item" href="RegistroTractos.aspx">
+                                <i class="fas fa-truck"></i>Tractos
+                            </a>
+                            <a class="dropdown-item" href="RegistroSemiremolques.aspx">
+                                <i class="fas fa-trailer"></i>Semiremolques
+                            </a>
+                        </div>
+                    </li>
+
+                    <% } %>
+
+                    <!-- ==================== MENÚ PARA OPERADOR ==================== -->
+                    <% if (EsOperador)
+                        { %>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="DashboardOperador.aspx">
+                            <i class="fas fa-hard-hat"></i>Mi Dashboard
+                        </a>
+                    </li>
+
+                    <% } %>
+
                     <!-- ==================== MENÚ PARA CONDUCTOR ==================== -->
                     <% if (EsConductor)
                         { %>

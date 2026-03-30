@@ -214,6 +214,9 @@
     <Content Include="Database\Scripts\script_AgregarColumnaRutaDescripcion.sql" />
     <Content Include="Database\Scripts\script_AgregarColumnaTipoAbastecimiento.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminGrifo.sql" />
+    <Content Include="Database\Scripts\script_AgregarRolAdminMaquinaria.sql" />
+    <Content Include="Database\Scripts\script_CrearTablasMaquinaria.sql" />
+    <Content Include="Database\Scripts\script_DatosPruebaMaquinaria.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearCPIC.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearDespacho.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearFactura.sql" />
@@ -261,6 +264,7 @@
     <Content Include="Database\StoredProcedures\sp_LD_ObtenerLotesRegistrados.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ObtenerTodosConductores.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ObtenerViajesActivos.sql" />
+    <Content Include="Database\StoredProcedures\sp_MQ_Maquinaria.sql" />
     <Content Include="Database\StoredProcedures\sp_ObtenerCarretasActivas.sql" />
     <Content Include="Database\StoredProcedures\sp_ObtenerClientesActivos.sql" />
     <Content Include="Database\StoredProcedures\sp_ObtenerConductoresActivos.sql" />
@@ -357,6 +361,7 @@
     <Content Include="Views\Dashboard.aspx" />
     <Content Include="Views\DashboardConductor.aspx" />
     <Content Include="Views\DashboardGrifo.aspx" />
+    <Content Include="Views\DashboardOperador.aspx" />
     <Content Include="Views\DetalleOrdenViaje.aspx" />
     <Content Include="Views\EditarDespacho.aspx" />
     <Content Include="Views\Error.aspx" />
@@ -545,6 +550,13 @@
     </Compile>
     <Compile Include="Views\DashboardGrifo.aspx.designer.cs">
       <DependentUpon>DashboardGrifo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\DashboardOperador.aspx.cs">
+      <DependentUpon>DashboardOperador.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\DashboardOperador.aspx.designer.cs">
+      <DependentUpon>DashboardOperador.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\DetalleOrdenViaje.aspx.cs">
       <DependentUpon>DetalleOrdenViaje.aspx</DependentUpon>

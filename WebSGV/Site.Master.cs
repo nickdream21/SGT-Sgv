@@ -17,6 +17,8 @@ namespace WebSGV
         public bool EsConductor { get; set; }
         public bool EsAdminSistema { get; set; }
         public bool EsAdminGrifo { get; set; }
+        public bool EsAdminMaquinaria { get; set; }
+        public bool EsOperador { get; set; }
 
         /// <summary>
         /// Page_Init: Vincula el ViewState a la sesión del usuario.
@@ -119,6 +121,12 @@ namespace WebSGV
                     Session["IdConductor"] = Convert.ToInt32(idConductorStr);
                 }
 
+                string idOperadorStr = authTemp.Values["idOperador"];
+                if (rol.ToUpper() == "OPERADOR" && !string.IsNullOrEmpty(idOperadorStr))
+                {
+                    Session["IdOperador"] = Convert.ToInt32(idOperadorStr);
+                }
+
                 // ✅ NO eliminar la cookie - mantenerla como respaldo mientras dure la sesión
                 // Se eliminará al cerrar sesión (btnCerrarSesion_Click)
 
@@ -153,6 +161,8 @@ namespace WebSGV
             EsConductor = false;
             EsAdminSistema = false;
             EsAdminGrifo = false;
+            EsAdminMaquinaria = false;
+            EsOperador = false;
         }
 
         private void CargarInformacionUsuario()
@@ -165,6 +175,8 @@ namespace WebSGV
                 EsConductor = RolesHelper.EsConductor();
                 EsAdminSistema = RolesHelper.EsAdminSistema();
                 EsAdminGrifo = RolesHelper.EsAdminGrifo();
+                EsAdminMaquinaria = RolesHelper.EsAdminMaquinaria();
+                EsOperador = RolesHelper.EsOperador();
             }
             catch (Exception ex)
             {
