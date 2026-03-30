@@ -21,6 +21,10 @@ namespace WebSGV.Views
                 {
                     Response.Redirect("~/Views/DashboardConductor.aspx");
                 }
+                else if (rol.ToUpper() == "OPERADOR")
+                {
+                    Response.Redirect("~/Views/DashboardOperador.aspx");
+                }
                 else if (rol.ToUpper() == "ADMINISTRADOR DE GRIFO")
                 {
                     Response.Redirect("~/Views/DashboardGrifo.aspx");
@@ -75,6 +79,11 @@ namespace WebSGV.Views
                     Session["IdConductor"] = resultado.IdConductor.Value;
                 }
 
+                if (resultado.Rol.ToUpper() == "OPERADOR" && resultado.IdOperador.HasValue)
+                {
+                    Session["IdOperador"] = resultado.IdOperador.Value;
+                }
+
                 // ✅ Crear cookie temporal de respaldo para reconstruir sesión si se pierde
                 HttpCookie authTemp = new HttpCookie("SGV_AuthTemp");
                 authTemp.Values["uid"] = resultado.IdUsuario.ToString();
@@ -84,6 +93,10 @@ namespace WebSGV.Views
                 if (resultado.Rol.ToUpper() == "CONDUCTOR" && resultado.IdConductor.HasValue)
                 {
                     authTemp.Values["idConductor"] = resultado.IdConductor.Value.ToString();
+                }
+                if (resultado.Rol.ToUpper() == "OPERADOR" && resultado.IdOperador.HasValue)
+                {
+                    authTemp.Values["idOperador"] = resultado.IdOperador.Value.ToString();
                 }
                 authTemp.Expires = DateTime.Now.AddMinutes(30);
                 authTemp.HttpOnly = true;
@@ -107,6 +120,11 @@ namespace WebSGV.Views
                     System.Diagnostics.Debug.WriteLine($"✅ Login exitoso - CONDUCTOR: {resultado.Nombre}");
                     Response.Redirect("~/Views/DashboardConductor.aspx");
                 }
+                else if (resultado.Rol.ToUpper() == "OPERADOR")
+                {
+                    System.Diagnostics.Debug.WriteLine($"✅ Login exitoso - OPERADOR: {resultado.Nombre}");
+                    Response.Redirect("~/Views/DashboardOperador.aspx");
+                }
                 else if (resultado.Rol.ToUpper() == "ADMINISTRADOR DE GRIFO")
                 {
                     System.Diagnostics.Debug.WriteLine($"✅ Login exitoso - ADMIN GRIFO: {resultado.Nombre}");
@@ -125,7 +143,7 @@ namespace WebSGV.Views
         }
 
         private (bool EsValido, string Rol, string Nombre, string NombreUsuario, 
-                 int IdUsuario, int? IdConductor) ValidarUsuario(string usuario, string contrasena)
+                 int IdUsuario, int? IdConductor, int? IdOperador) ValidarUsuario(string usuario, string contrasena)
         {
             bool esValido = false;
             string rol = "";
@@ -133,6 +151,7 @@ namespace WebSGV.Views
             string nombreUsuario = "";
             int idUsuario = 0;
             int? idConductor = null;
+            int? idOperador = null;
 
             string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
 
@@ -146,6 +165,7 @@ namespace WebSGV.Views
                         u.nombre, 
                         u.rol,
                         u.idConductor,
+                        u.idOperador,
                         u.contrasena
                     FROM Usuarios u
                     WHERE u.nombreUsuario = @Usuario 
@@ -176,6 +196,11 @@ namespace WebSGV.Views
                                 idConductor = Convert.ToInt32(reader["idConductor"]);
                                 System.Diagnostics.Debug.WriteLine($"🚗 Conductor detectado: {nombre} (ID: {idConductor})");
                             }
+                            else if (rol.ToUpper() == "OPERADOR" && reader["idOperador"] != DBNull.Value)
+                            {
+                                idOperador = Convert.ToInt32(reader["idOperador"]);
+                                System.Diagnostics.Debug.WriteLine($"🛠️ Operador detectado: {nombre} (ID: {idOperador})");
+                            }
                             else
                             {
                                 System.Diagnostics.Debug.WriteLine($"👨‍💼 Admin detectado: {nombre}");
@@ -203,7 +228,7 @@ namespace WebSGV.Views
                 }
             }
 
-            return (esValido, rol, nombre, nombreUsuario, idUsuario, idConductor);
+            return (esValido, rol, nombre, nombreUsuario, idUsuario, idConductor, idOperador);
         }
 
         /// <summary>

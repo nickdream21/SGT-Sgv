@@ -16,6 +16,8 @@ namespace WebSGV.Helpers
         public const string ROL_SUPERVISOR = "SUPERVISOR"; // Por si lo necesitas en el futuro
         public const string ROL_ADMIN_SISTEMA = "ADMINISTRADOR DE SISTEMA";
         public const string ROL_ADMIN_GRIFO = "ADMINISTRADOR DE GRIFO";
+        public const string ROL_ADMIN_MAQUINARIA = "ADMINISTRADOR DE MAQUINARIA";
+        public const string ROL_OPERADOR = "OPERADOR";
 
         /// <summary>
         /// Obtiene el rol del usuario actual desde la sesión
@@ -68,6 +70,24 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
+        /// Verifica si el usuario actual es Administrador de Maquinaria
+        /// </summary>
+        public static bool EsAdminMaquinaria()
+        {
+            string rolActual = ObtenerRolActual();
+            return rolActual == ROL_ADMIN_MAQUINARIA;
+        }
+
+        /// <summary>
+        /// Verifica si el usuario actual es Operador de Maquinaria
+        /// </summary>
+        public static bool EsOperador()
+        {
+            string rolActual = ObtenerRolActual();
+            return rolActual == ROL_OPERADOR;
+        }
+
+        /// <summary>
         /// Verifica si el usuario tiene sesión activa
         /// </summary>
         public static bool TieneSesionActiva()
@@ -116,6 +136,11 @@ namespace WebSGV.Helpers
                 case "MI_PERFIL":
                     return EsConductor() || EsAdmin();
 
+                // Páginas accesibles para OPERADOR de Maquinaria
+                case "DASHBOARD_OPERADOR":
+                case "PARTE_DIARIO":
+                    return EsOperador() || EsAdminMaquinaria() || EsAdmin();
+
                 default:
                     return false;
             }
@@ -148,9 +173,17 @@ namespace WebSGV.Helpers
             {
                 HttpContext.Current.Response.Redirect("~/Views/DashboardConductor.aspx");
             }
+            else if (EsOperador())
+            {
+                HttpContext.Current.Response.Redirect("~/Views/DashboardOperador.aspx");
+            }
             else if (EsAdminGrifo())
             {
                 HttpContext.Current.Response.Redirect("~/Views/DashboardGrifo.aspx");
+            }
+            else if (EsAdminMaquinaria())
+            {
+                HttpContext.Current.Response.Redirect("~/Views/Inicio.aspx");
             }
             else if (EsAdmin())
             {
