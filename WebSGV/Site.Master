@@ -330,16 +330,26 @@
                             <i class="fas fa-database"></i>Registro
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdownRegistroMaquinaria">
-                            <a class="dropdown-item" href="RegistroChoferes.aspx">
-                                <i class="fas fa-user-tie"></i>Conductores
+                            <a class="dropdown-item" href="RegistroOperadores.aspx">
+                                <i class="fas fa-hard-hat"></i>Operadores
                             </a>
-                            <a class="dropdown-item" href="RegistroTractos.aspx">
-                                <i class="fas fa-truck"></i>Tractos
+                            <a class="dropdown-item" href="RegistroEquiposMaquinaria.aspx">
+                                <i class="fas fa-cogs"></i>Equipos / Maquinaria
                             </a>
-                            <a class="dropdown-item" href="RegistroSemiremolques.aspx">
-                                <i class="fas fa-trailer"></i>Semiremolques
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="RegistroClientesObra.aspx">
+                                <i class="fas fa-building"></i>Clientes de Obra
+                            </a>
+                            <a class="dropdown-item" href="RegistroObras.aspx">
+                                <i class="fas fa-hard-hat"></i>Obras
                             </a>
                         </div>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="AsignacionesMaquinaria.aspx">
+                            <i class="fas fa-project-diagram"></i>Asignaciones
+                        </a>
                     </li>
 
                     <% } %>

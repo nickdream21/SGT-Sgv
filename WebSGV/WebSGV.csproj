@@ -351,6 +351,7 @@
     <Content Include="Views\AgregarFactura.aspx" />
     <Content Include="Views\AgregarIndicadores.aspx" />
     <Content Include="Views\AgregarOrdenViaje.aspx" />
+    <Content Include="Views\AsignacionesMaquinaria.aspx" />
     <Content Include="Views\Auditoria.aspx" />
     <Content Include="Views\BuscarAbastecimiento.aspx" />
     <Content Include="Views\BuscarCPIC.aspx" />
@@ -373,7 +374,11 @@
     <Content Include="Views\RecuperarContrasena.aspx" />
     <Content Include="Views\RegistroChoferes.aspx" />
     <Content Include="Views\RegistroClientes.aspx" />
+    <Content Include="Views\RegistroClientesObra.aspx" />
     <Content Include="Views\RegistroDespacho.aspx" />
+    <Content Include="Views\RegistroEquiposMaquinaria.aspx" />
+    <Content Include="Views\RegistroObras.aspx" />
+    <Content Include="Views\RegistroOperadores.aspx" />
     <Content Include="Views\RegistroPeajes.aspx" />
     <Content Include="Views\RegistroPlantas.aspx" />
     <Content Include="Views\RegistroProductos.aspx" />
@@ -481,6 +486,13 @@
     </Compile>
     <Compile Include="Models\DniResponse.cs" />
     <Compile Include="Models\DniService.cs" />
+    <Compile Include="Views\AsignacionesMaquinaria.aspx.cs">
+      <DependentUpon>AsignacionesMaquinaria.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\AsignacionesMaquinaria.aspx.designer.cs">
+      <DependentUpon>AsignacionesMaquinaria.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Views\Auditoria.aspx.cs">
       <DependentUpon>Auditoria.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -626,12 +638,40 @@
     <Compile Include="Views\RegistroClientes.aspx.designer.cs">
       <DependentUpon>RegistroClientes.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Views\RegistroClientesObra.aspx.cs">
+      <DependentUpon>RegistroClientesObra.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\RegistroClientesObra.aspx.designer.cs">
+      <DependentUpon>RegistroClientesObra.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Views\RegistroDespacho.aspx.cs">
       <DependentUpon>RegistroDespacho.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Views\RegistroDespacho.aspx.designer.cs">
       <DependentUpon>RegistroDespacho.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\RegistroEquiposMaquinaria.aspx.cs">
+      <DependentUpon>RegistroEquiposMaquinaria.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\RegistroEquiposMaquinaria.aspx.designer.cs">
+      <DependentUpon>RegistroEquiposMaquinaria.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\RegistroObras.aspx.cs">
+      <DependentUpon>RegistroObras.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\RegistroObras.aspx.designer.cs">
+      <DependentUpon>RegistroObras.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\RegistroOperadores.aspx.cs">
+      <DependentUpon>RegistroOperadores.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\RegistroOperadores.aspx.designer.cs">
+      <DependentUpon>RegistroOperadores.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\RegistroPeajes.aspx.cs">
       <DependentUpon>RegistroPeajes.aspx</DependentUpon>
