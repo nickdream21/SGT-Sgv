@@ -113,6 +113,12 @@ namespace WebSGV.Views
         /// </remarks>
         protected global::System.Web.UI.WebControls.DropDownList ddlPlaca;
 
+        protected global::System.Web.UI.WebControls.DropDownList ddlPlacaVolquete;
+
+        protected global::System.Web.UI.WebControls.DropDownList ddlPlacaCamioneta;
+
+        protected global::System.Web.UI.WebControls.TextBox txtPlacaOtro;
+
         /// <summary>
         /// Control ddlCarreta.
         /// </summary>

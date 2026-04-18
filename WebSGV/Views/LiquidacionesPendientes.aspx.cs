@@ -1453,5 +1453,267 @@ namespace WebSGV.Views
         }
 
         #endregion
+
+        #region WebMethods - Firma Digital (Fase 2.C)
+
+        /// <summary>
+        /// Registra la firma del conductor (declaración jurada al enviar la
+        /// liquidación). Append-only: no modifica ni elimina firmas previas.
+        /// Se invoca desde el UI de canvas en móvil/web.
+        /// </summary>
+        /// <param name="idOrdenViaje">Identificador de la orden a firmar.</param>
+        /// <param name="firmaPngBase64">PNG del trazo canvas en Base64 (con o sin prefijo data:image/...).</param>
+        [WebMethod(EnableSession = true)]
+        public static object RegistrarFirmaConductor(int idOrdenViaje, string firmaPngBase64)
+        {
+            try
+            {
+                var ctx = System.Web.HttpContext.Current;
+                int idUsuario = ctx.Session["IdUsuario"] != null ? Convert.ToInt32(ctx.Session["IdUsuario"]) : 0;
+                string nombre = ctx.Session["Nombre"] as string ?? "";
+                string rol    = (ctx.Session["Rol"] as string ?? "").ToUpperInvariant();
+
+                if (idUsuario == 0)
+                    return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
+                if (rol != "CONDUCTOR")
+                    return new { success = false, message = "Sólo un conductor autenticado puede firmar esta liquidación." };
+
+                byte[] pngBytes = DecodificarPngBase64(firmaPngBase64);
+                if (pngBytes == null)
+                    return new { success = false, message = "La firma recibida es inválida." };
+
+                string ip = ObtenerIpCliente(ctx);
+                string ua = ctx.Request.UserAgent ?? "";
+
+                var svc = new WebSGV.Services.FirmaService();
+                var r = svc.RegistrarFirmaConductor(
+                    idOrdenViaje: idOrdenViaje,
+                    idUsuarioFirmante: idUsuario,
+                    dniFirmante: null,
+                    nombreFirmante: nombre,
+                    imagenTrazoPng: pngBytes,
+                    ipOrigen: ip,
+                    userAgent: ua);
+
+                return new
+                {
+                    success = r.Exito,
+                    message = r.Mensaje,
+                    idFirma = r.IdFirma,
+                    hashPdf = r.HashPdf,
+                    rutaPdf = r.RutaRelativa
+                };
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error RegistrarFirmaConductor: {ex.Message}");
+                return new { success = false, message = "Error al registrar la firma: " + ex.Message };
+            }
+        }
+
+        /// <summary>
+        /// Aprueba la liquidación y registra la firma administrativa de Nivel C
+        /// (constancia con credenciales autenticadas). Ejecuta además el flujo
+        /// existente de aprobación (sp_AprobarLiquidacion) con ajustes opcionales.
+        /// </summary>
+        [WebMethod(EnableSession = true)]
+        public static object AprobarLiquidacionConFirma(
+            int idOrdenViaje,
+            decimal descuentoSoles,
+            decimal descuentoDolares,
+            decimal reintegroSoles,
+            decimal reintegroDolares)
+        {
+            try
+            {
+                var ctx = System.Web.HttpContext.Current;
+                int idUsuario = ctx.Session["IdUsuario"] != null ? Convert.ToInt32(ctx.Session["IdUsuario"]) : 0;
+                string nombre = ctx.Session["Nombre"] as string ?? "";
+                string rol    = (ctx.Session["Rol"] as string ?? "").ToUpperInvariant();
+
+                if (idUsuario == 0)
+                    return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
+                if (rol == "CONDUCTOR")
+                    return new { success = false, message = "Un conductor no puede aprobar liquidaciones." };
+
+                // 1) Ejecutar el flujo de aprobación existente (ajustes + sp_AprobarLiquidacion)
+                var resAprobacion = AprobarConAjustes(idOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares)
+                    as dynamic;
+                bool okAprobacion = resAprobacion != null && (bool)resAprobacion.success;
+                if (!okAprobacion)
+                    return resAprobacion;
+
+                // 2) Registrar firma administrativa Nivel C (append-only)
+                string ip = ObtenerIpCliente(ctx);
+                string ua = ctx.Request.UserAgent ?? "";
+
+                var svc = new WebSGV.Services.FirmaService();
+                var r = svc.RegistrarFirmaAdmin(
+                    idOrdenViaje: idOrdenViaje,
+                    idUsuarioFirmante: idUsuario,
+                    dniFirmante: null,
+                    nombreFirmante: nombre,
+                    ipOrigen: ip,
+                    userAgent: ua);
+
+                if (!r.Exito)
+                {
+                    // La aprobación ya se ejecutó; reportamos el error de la firma
+                    // pero NO revertimos. El admin puede re-firmar si es necesario.
+                    return new
+                    {
+                        success = true,
+                        message = (string)resAprobacion.message + " [Advertencia firma: " + r.Mensaje + "]",
+                        firmaAdmin = false
+                    };
+                }
+
+                return new
+                {
+                    success = true,
+                    message = (string)resAprobacion.message + " Firma administrativa registrada (id=" + r.IdFirma + ").",
+                    firmaAdmin = true,
+                    idFirma = r.IdFirma,
+                    hashPdf = r.HashPdf,
+                    rutaPdf = r.RutaRelativa
+                };
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error AprobarLiquidacionConFirma: {ex.Message}");
+                return new { success = false, message = "Error al aprobar con firma: " + ex.Message };
+            }
+        }
+
+        /// <summary>
+        /// Rechaza una liquidación pendiente. No registra firma (el conductor
+        /// deberá re-firmar al volver a enviar). Las firmas previas quedan en
+        /// la tabla FirmaDigital como histórico; el admin puede opcionalmente
+        /// revocarlas si lo requiere la política interna.
+        /// </summary>
+        [WebMethod(EnableSession = true)]
+        public static object RechazarLiquidacion(int idOrdenViaje, string motivo, bool revocarFirmaConductor)
+        {
+            try
+            {
+                var ctx = System.Web.HttpContext.Current;
+                int idUsuario = ctx.Session["IdUsuario"] != null ? Convert.ToInt32(ctx.Session["IdUsuario"]) : 0;
+                string nombre = ctx.Session["Nombre"] as string ?? "";
+                string rol    = (ctx.Session["Rol"] as string ?? "").ToUpperInvariant();
+
+                if (idUsuario == 0)
+                    return new { success = false, message = "Sesión no válida." };
+                if (rol == "CONDUCTOR")
+                    return new { success = false, message = "Un conductor no puede rechazar liquidaciones." };
+                if (string.IsNullOrWhiteSpace(motivo))
+                    return new { success = false, message = "Debe indicar el motivo del rechazo." };
+
+                string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                int? idFirmaConductor = null;
+                string numeroOrden = null;
+
+                using (var conn = new SqlConnection(cs))
+                {
+                    conn.Open();
+
+                    // 1) Obtener datos actuales
+                    using (var cmd = new SqlCommand(
+                        "SELECT numeroOrdenViaje, idFirmaConductor FROM OrdenViaje WHERE idOrdenViaje = @id AND estadoAprobacion = 'PENDIENTE'", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@id", idOrdenViaje);
+                        using (var r = cmd.ExecuteReader())
+                        {
+                            if (!r.Read())
+                                return new { success = false, message = "La orden no se encontró o ya no está pendiente." };
+                            numeroOrden = r["numeroOrdenViaje"].ToString();
+                            if (r["idFirmaConductor"] != DBNull.Value)
+                                idFirmaConductor = Convert.ToInt32(r["idFirmaConductor"]);
+                        }
+                    }
+
+                    // 2) Marcar como rechazada (habilita re-envío y re-firma del conductor)
+                    using (var cmd = new SqlCommand(@"
+                        UPDATE OrdenViaje
+                        SET estadoAprobacion = 'RECHAZADO',
+                            observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) +
+                                '[RECHAZO ' + CONVERT(varchar, GETDATE(), 120) + '] ' + @motivo
+                        WHERE idOrdenViaje = @id AND estadoAprobacion = 'PENDIENTE'", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@id", idOrdenViaje);
+                        cmd.Parameters.AddWithValue("@motivo", motivo);
+                        int a = cmd.ExecuteNonQuery();
+                        if (a == 0)
+                            return new { success = false, message = "No se pudo rechazar (otro usuario la modificó)." };
+                    }
+                }
+
+                // 3) Opcional: revocar la firma del conductor (append-only)
+                int idRevocacion = 0;
+                if (revocarFirmaConductor && idFirmaConductor.HasValue)
+                {
+                    string ip = ObtenerIpCliente(ctx);
+                    string ua = ctx.Request.UserAgent ?? "";
+                    var svc = new WebSGV.Services.FirmaService();
+                    var rev = svc.RevocarFirma(
+                        idFirmaOriginal: idFirmaConductor.Value,
+                        idUsuarioRevocador: idUsuario,
+                        nombreRevocador: nombre,
+                        motivoAnulacion: "Rechazo administrativo: " + motivo,
+                        ipOrigen: ip,
+                        userAgent: ua);
+                    if (rev.Exito) idRevocacion = rev.IdFirma;
+                }
+
+                return new
+                {
+                    success = true,
+                    message = "Liquidación " + numeroOrden + " rechazada. El conductor deberá corregir y re-enviar.",
+                    firmaRevocada = idRevocacion > 0,
+                    idFirmaRevocacion = idRevocacion
+                };
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error RechazarLiquidacion: {ex.Message}");
+                return new { success = false, message = "Error al rechazar: " + ex.Message };
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Helpers privados de firma
+        // --------------------------------------------------------------------
+
+        /// <summary>Decodifica un PNG en Base64 (con o sin prefijo data URI).</summary>
+        private static byte[] DecodificarPngBase64(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return null;
+            try
+            {
+                int comma = s.IndexOf(',');
+                string body = (comma >= 0 && s.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                    ? s.Substring(comma + 1)
+                    : s;
+                return Convert.FromBase64String(body);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Obtiene la IP del cliente respetando X-Forwarded-For si existe.</summary>
+        private static string ObtenerIpCliente(System.Web.HttpContext ctx)
+        {
+            if (ctx == null || ctx.Request == null) return null;
+            string fwd = ctx.Request.Headers["X-Forwarded-For"];
+            if (!string.IsNullOrEmpty(fwd))
+            {
+                int c = fwd.IndexOf(',');
+                return (c > 0 ? fwd.Substring(0, c) : fwd).Trim();
+            }
+            return ctx.Request.UserHostAddress;
+        }
+
+        #endregion
     }
 }

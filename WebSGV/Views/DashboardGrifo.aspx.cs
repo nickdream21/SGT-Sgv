@@ -43,7 +43,7 @@ namespace WebSGV.Views
 
         private void CargarDatos()
         {
-            CargarViajesActivos("", "ABIERTO");
+            CargarViajesActivos("", "ACTIVO");
             CargarHistorialAbastecimientos("", null, null);
         }
 
@@ -84,64 +84,90 @@ namespace WebSGV.Views
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
+                // Un viaje se abastece UNA vez (la salida desde el grifo). Internacional solo se
+                // marca visualmente; la eventual compra de combustible en Ecuador se registra
+                // aparte como "Retorno Ecuador" (no es abastecimiento al vehiculo).
                 StringBuilder query = new StringBuilder(@"
-                    SELECT 
-                        vp.numeroViajeProgreso AS NumeroViajeProgreso,
-                        c.DNI,
-                        CONCAT(c.nombre, ' ', c.apPaterno, ' ', ISNULL(c.apMaterno, '')) AS Conductor,
-                        c.idConductor AS IdConductor,
-                        ISNULL(MAX(t.placaTracto), 'N/A') AS PlacaTracto,
-                        ISNULL(MAX(t.idTracto), 0) AS IdTracto,
-                        ISNULL(MAX(ca.placaCarreta), 'N/A') AS PlacaCarreta,
-                        ISNULL(MAX(ca.idCarreta), 0) AS IdCarreta,
-                        ISNULL(MAX(cl.nombre), 'N/A') AS Cliente,
-                        ISNULL(MAX(d.lugarOperacion), 'N/A') AS Destino,
-                        vp.fechaInicio AS FechaInicio,
-                        DATEDIFF(DAY, vp.fechaInicio, GETDATE()) AS DiasEnViaje,
-                        vp.estadoViaje AS Estado,
-                        vp.idViajeProgreso AS IdViaje
-                    FROM ViajesEnProgreso vp
-                    INNER JOIN Conductor c ON c.idConductor = (
-                        SELECT TOP 1 idConductor FROM Despachos
-                        WHERE idViajeProgreso = vp.idViajeProgreso AND activo = 1
-                        GROUP BY idConductor ORDER BY COUNT(*) DESC
+                    ;WITH ViajesBase AS (
+                        SELECT 
+                            vp.idViajeProgreso,
+                            vp.numeroViajeProgreso,
+                            vp.fechaInicio,
+                            vp.estadoViaje,
+                            c.idConductor,
+                            c.DNI,
+                            CONCAT(c.nombre, ' ', c.apPaterno, ' ', ISNULL(c.apMaterno, '')) AS Conductor,
+                            ISNULL(MAX(t.placaTracto), 'N/A') AS PlacaTracto,
+                            ISNULL(MAX(t.idTracto), 0) AS IdTracto,
+                            ISNULL(MAX(ca.placaCarreta), 'N/A') AS PlacaCarreta,
+                            ISNULL(MAX(ca.idCarreta), 0) AS IdCarreta,
+                            ISNULL(MAX(cl.nombre), 'N/A') AS Cliente,
+                            ISNULL(MAX(d.lugarOperacion), 'N/A') AS Destino,
+                            MAX(CASE WHEN ISNULL(d.esInternacional, 0) = 1 THEN 1 ELSE 0 END) AS EsInternacional
+                        FROM ViajesEnProgreso vp
+                        INNER JOIN Conductor c ON c.idConductor = (
+                            SELECT TOP 1 idConductor FROM Despachos
+                            WHERE idViajeProgreso = vp.idViajeProgreso AND activo = 1
+                            GROUP BY idConductor ORDER BY COUNT(*) DESC
+                        )
+                        INNER JOIN Despachos d ON vp.idViajeProgreso = d.idViajeProgreso AND d.activo = 1
+                        LEFT JOIN Tracto t ON d.idTracto = t.idTracto
+                        LEFT JOIN Carreta ca ON d.idCarreta = ca.idCarreta
+                        LEFT JOIN Cliente cl ON d.idCliente = cl.idCliente
+                        WHERE vp.activo = 1
+                        GROUP BY vp.idViajeProgreso, vp.numeroViajeProgreso, vp.fechaInicio, 
+                                 vp.estadoViaje, c.DNI, c.nombre, c.apPaterno, c.apMaterno, c.idConductor
+                    ),
+                    ViajesConCargas AS (
+                        SELECT vb.*,
+                            (SELECT COUNT(*) FROM AbastecimientoCombustible abc
+                             WHERE abc.idConductor = vb.idConductor
+                               AND (vb.IdTracto = 0 OR abc.idTracto = vb.IdTracto)
+                               AND abc.fechaHora >= vb.fechaInicio) AS CargasRealizadas,
+                            (SELECT COUNT(*) FROM IngresoCombustibleEcuador ice
+                             WHERE ice.idViajeProgreso = vb.idViajeProgreso
+                               AND ISNULL(ice.activo, 1) = 1) AS RetornoRegistrado
+                        FROM ViajesBase vb
                     )
-                    INNER JOIN Despachos d ON vp.idViajeProgreso = d.idViajeProgreso AND d.activo = 1
-                    LEFT JOIN Tracto t ON d.idTracto = t.idTracto
-                    LEFT JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-                    LEFT JOIN Cliente cl ON d.idCliente = cl.idCliente
-                    WHERE vp.activo = 1
-                    AND NOT EXISTS (
-                        SELECT 1 
-                        FROM AbastecimientoCombustible abc
-                        INNER JOIN Despachos d_chk ON d_chk.idViajeProgreso = vp.idViajeProgreso 
-                            AND d_chk.activo = 1
-                            AND d_chk.idTracto = abc.idTracto
-                        WHERE abc.idConductor = c.idConductor
-                        AND abc.fechaHora >= vp.fechaInicio
-                    )");
+                    SELECT 
+                        numeroViajeProgreso AS NumeroViajeProgreso,
+                        DNI,
+                        Conductor,
+                        idConductor AS IdConductor,
+                        PlacaTracto,
+                        IdTracto,
+                        PlacaCarreta,
+                        IdCarreta,
+                        Cliente,
+                        Destino,
+                        EsInternacional,
+                        fechaInicio AS FechaInicio,
+                        DATEDIFF(DAY, fechaInicio, GETDATE()) AS DiasEnViaje,
+                        estadoViaje AS Estado,
+                        idViajeProgreso AS IdViaje,
+                        CargasRealizadas,
+                        RetornoRegistrado,
+                        CASE WHEN CargasRealizadas = 0 THEN 'PENDIENTE' ELSE 'COMPLETO' END AS FaseCarga
+                    FROM ViajesConCargas
+                    WHERE 1 = 1");
 
-                if (!string.IsNullOrEmpty(estadoViaje) && estadoViaje != "TODOS")
-                {
-                    query.Append(" AND vp.estadoViaje = @EstadoViaje");
-                }
+                if (estadoViaje == "PENDIENTE" || estadoViaje == "ACTIVO" || string.IsNullOrEmpty(estadoViaje))
+                    query.Append(" AND CargasRealizadas = 0");
+                else if (estadoViaje == "COMPLETO")
+                    query.Append(" AND CargasRealizadas >= 1");
+                else if (estadoViaje == "RETORNO_PEND")
+                    query.Append(" AND EsInternacional = 1 AND CargasRealizadas >= 1 AND RetornoRegistrado = 0");
+                // "TODOS" no agrega filtro
 
                 if (!string.IsNullOrEmpty(buscarConductor))
                 {
-                    query.Append(" AND (c.nombre LIKE @BuscarConductor OR c.apPaterno LIKE @BuscarConductor OR c.DNI LIKE @BuscarConductor)");
+                    query.Append(" AND (Conductor LIKE @BuscarConductor OR DNI LIKE @BuscarConductor)");
                 }
 
-                query.Append(@" GROUP BY vp.idViajeProgreso, vp.numeroViajeProgreso, vp.fechaInicio, 
-                                vp.estadoViaje, c.DNI, c.nombre, c.apPaterno, c.apMaterno, c.idConductor
-                              ORDER BY vp.fechaInicio DESC");
+                query.Append(" ORDER BY FechaInicio DESC");
 
                 using (SqlCommand cmd = new SqlCommand(query.ToString(), conn))
                 {
-                    if (!string.IsNullOrEmpty(estadoViaje) && estadoViaje != "TODOS")
-                    {
-                        cmd.Parameters.AddWithValue("@EstadoViaje", estadoViaje);
-                    }
-
                     if (!string.IsNullOrEmpty(buscarConductor))
                     {
                         cmd.Parameters.AddWithValue("@BuscarConductor", $"%{buscarConductor}%");
@@ -178,7 +204,7 @@ namespace WebSGV.Views
         protected void btnRefrescar_Click(object sender, EventArgs e)
         {
             txtBuscarConductor.Text = "";
-            ddlEstado.SelectedValue = "ABIERTO";
+            ddlEstado.SelectedValue = "ACTIVO";
             CargarDatos();
         }
 
@@ -299,6 +325,85 @@ namespace WebSGV.Views
 
         #endregion
 
+        #region Retornos Ecuador
+
+        private void CargarRetornosEcuador()
+        {
+            try
+            {
+                DataTable dt = new DataTable();
+                decimal totalGal = 0m, totalUsd = 0m;
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    string query = @"
+                        SELECT 
+                            ice.idIngreso,
+                            ice.fechaRecepcion AS FechaRecepcion,
+                            ISNULL(vp.numeroViajeProgreso, '-') AS NumeroViajeProgreso,
+                            ISNULL(CONCAT(c.nombre, ' ', c.apPaterno), 'N/A') AS Conductor,
+                            ISNULL(t.placaTracto, 'N/A') AS PlacaTracto,
+                            ice.totalGalones AS TotalGalones,
+                            ice.totalUSD AS TotalUSD,
+                            ISNULL(ice.observaciones, '') AS Observaciones,
+                            (SELECT COUNT(*) FROM DetalleTicketEcuador dte 
+                             WHERE dte.idIngreso = ice.idIngreso) AS CantidadTickets
+                        FROM IngresoCombustibleEcuador ice
+                        LEFT JOIN ViajesEnProgreso vp ON ice.idViajeProgreso = vp.idViajeProgreso
+                        LEFT JOIN Conductor c ON ice.idConductor = c.idConductor
+                        LEFT JOIN Tracto t ON ice.idTracto = t.idTracto
+                        WHERE ISNULL(ice.activo, 1) = 1
+                        ORDER BY ice.fechaRecepcion DESC";
+
+                    conn.Open();
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        SqlDataAdapter da = new SqlDataAdapter(cmd);
+                        da.Fill(dt);
+                    }
+
+                    using (SqlCommand cmdTot = new SqlCommand(@"
+                        SELECT ISNULL(SUM(totalGalones),0) AS G, ISNULL(SUM(totalUSD),0) AS U
+                        FROM IngresoCombustibleEcuador WHERE ISNULL(activo,1) = 1", conn))
+                    {
+                        using (var r = cmdTot.ExecuteReader())
+                        {
+                            if (r.Read())
+                            {
+                                totalGal = Convert.ToDecimal(r["G"]);
+                                totalUsd = Convert.ToDecimal(r["U"]);
+                            }
+                        }
+                    }
+                }
+
+                lblTotalRetornos.Text = dt.Rows.Count.ToString();
+                lblTotalGalonesEcuador.Text = totalGal.ToString("N2");
+                lblTotalUsdEcuador.Text = totalUsd.ToString("N2");
+
+                if (dt.Rows.Count > 0)
+                {
+                    rptRetornos.DataSource = dt;
+                    rptRetornos.DataBind();
+                    pnlRetornos.Visible = true;
+                    pnlSinRetornos.Visible = false;
+                }
+                else
+                {
+                    pnlRetornos.Visible = false;
+                    pnlSinRetornos.Visible = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al cargar retornos ecuador: {ex.Message}");
+                pnlRetornos.Visible = false;
+                pnlSinRetornos.Visible = true;
+            }
+        }
+
+        #endregion
+
         #region Helpers de Formato
 
         /// <summary>
@@ -342,6 +447,64 @@ namespace WebSGV.Views
             else if (d >= 3) cssClass = "dias-warning";
 
             return $"<span class=\"dias-badge {cssClass}\">{d}</span>";
+        }
+
+        /// <summary>
+        /// Badge visual para la fase del viaje: pendiente de IDA o COMPLETO.
+        /// Los viajes internacionales se marcan con el icono 🌎 pero siguen el mismo flujo de 1 carga.
+        /// </summary>
+        protected string FormatFaseBadge(object fase, object esInternacional, object cargas)
+        {
+            string f = (fase ?? "").ToString().ToUpper();
+            string intlStr = (esInternacional ?? "0").ToString().ToLower();
+            bool intl = intlStr == "1" || intlStr == "true";
+            int n = 0;
+            int.TryParse((cargas ?? "0").ToString(), out n);
+
+            string icon, label, cls;
+            if (f == "PENDIENTE")
+            {
+                icon = "fa-arrow-right";
+                label = intl ? "POR ABASTECER (Intl)" : "POR ABASTECER";
+                cls = "fase-ida";
+            }
+            else
+            {
+                icon = "fa-check-circle";
+                label = "ABASTECIDO";
+                cls = "fase-completo";
+            }
+
+            string intlTag = intl ? " <i class=\"fas fa-globe-americas\" title=\"Viaje internacional (Ecuador)\"></i>" : "";
+            string cargasTxt = n > 0 ? $" <small>({n} carga{(n == 1 ? "" : "s")})</small>" : "";
+            return $"<span class=\"fase-badge {cls}\"><i class=\"fas {icon}\"></i> {label}{intlTag}{cargasTxt}</span>";
+        }
+
+        /// <summary>
+        /// Devuelve true si el viaje aún no tiene ninguna carga de combustible registrada.
+        /// </summary>
+        protected bool PuedeAbastecer(object fase)
+        {
+            string f = (fase ?? "").ToString().ToUpper();
+            return f == "PENDIENTE";
+        }
+
+        /// <summary>
+        /// Devuelve true si el viaje es internacional, ya fue abastecido y aún no tiene retorno registrado.
+        /// Habilita el botón "Registrar Retorno Ecuador".
+        /// </summary>
+        protected bool PuedeRegistrarRetorno(object esInternacional, object fase, object retornoRegistrado)
+        {
+            string intlStr = (esInternacional ?? "0").ToString().ToLower();
+            bool intl = intlStr == "1" || intlStr == "true";
+            if (!intl) return false;
+
+            string f = (fase ?? "").ToString().ToUpper();
+            if (f != "COMPLETO") return false;
+
+            int rr = 0;
+            int.TryParse((retornoRegistrado ?? "0").ToString(), out rr);
+            return rr == 0;
         }
 
         #endregion

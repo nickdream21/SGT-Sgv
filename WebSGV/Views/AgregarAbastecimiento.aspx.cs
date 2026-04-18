@@ -20,6 +20,8 @@ namespace WebSGV.Views
             {
                 // Cargar datos iniciales
                 CargarPlacasTracto();
+                CargarPlacasVolquete();
+                CargarPlacasCamioneta();
                 CargarPlacasCarreta();
                 CargarConductores();
                 CargarLugaresAbastecimiento();
@@ -96,6 +98,40 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 RegistrarError("Error al cargar placas tracto: " + ex.Message);
+            }
+        }
+
+        private void CargarPlacasVolquete()
+        {
+            try
+            {
+                string query = "SELECT id, placa FROM volquetes ORDER BY placa";
+                DataTable dt = ObtenerDatosDeBD(query);
+                ddlPlacaVolquete.Items.Clear();
+                ddlPlacaVolquete.Items.Add(new ListItem("Seleccione una placa", ""));
+                foreach (DataRow r in dt.Rows)
+                    ddlPlacaVolquete.Items.Add(new ListItem(r["placa"].ToString(), r["id"].ToString()));
+            }
+            catch (Exception ex)
+            {
+                RegistrarError("Error al cargar placas volquete: " + ex.Message);
+            }
+        }
+
+        private void CargarPlacasCamioneta()
+        {
+            try
+            {
+                string query = "SELECT id, placa FROM camionetas ORDER BY placa";
+                DataTable dt = ObtenerDatosDeBD(query);
+                ddlPlacaCamioneta.Items.Clear();
+                ddlPlacaCamioneta.Items.Add(new ListItem("Seleccione una placa", ""));
+                foreach (DataRow r in dt.Rows)
+                    ddlPlacaCamioneta.Items.Add(new ListItem(r["placa"].ToString(), r["id"].ToString()));
+            }
+            catch (Exception ex)
+            {
+                RegistrarError("Error al cargar placas camioneta: " + ex.Message);
             }
         }
 
@@ -410,10 +446,24 @@ namespace WebSGV.Views
                 bool esRegistroFlexible = (motivo == "MANTENIMIENTO" || motivo == "OTRO");
 
                 // Placa: obligatoria para viajes programados y abastecimiento, opcional para mantenimiento/otro
-                if (!esRegistroFlexible && ddlPlaca.SelectedIndex == 0)
+                if (!esRegistroFlexible)
                 {
-                    MostrarMensaje("Debe seleccionar una placa", "error");
-                    return false;
+                    string tipoTxt = (tipoVehiculo.SelectedItem != null ? tipoVehiculo.SelectedItem.Text : "").ToUpperInvariant();
+                    bool placaOk = false;
+                    if (tipoTxt.Contains("VOLQUETE"))
+                        placaOk = !string.IsNullOrEmpty(ddlPlacaVolquete.SelectedValue);
+                    else if (tipoTxt.Contains("CAMIONETA"))
+                        placaOk = !string.IsNullOrEmpty(ddlPlacaCamioneta.SelectedValue);
+                    else if (tipoTxt.Contains("TRACTO") || tipoTxt.Contains("TRAILER") || tipoTxt.Contains("TRÁILER") || tipoTxt.Contains("CAMIÓN") || tipoTxt.Contains("CAMION"))
+                        placaOk = ddlPlaca.SelectedIndex > 0;
+                    else
+                        placaOk = !string.IsNullOrWhiteSpace(txtPlacaOtro.Text);
+
+                    if (!placaOk)
+                    {
+                        MostrarMensaje("Debe seleccionar/ingresar una placa", "error");
+                        return false;
+                    }
                 }
 
                 // Conductor: obligatorio para viajes programados y abastecimiento, opcional para mantenimiento/otro
@@ -560,11 +610,37 @@ namespace WebSGV.Views
 
                         cmd.Parameters.Add("@numeroAbastecimientoCombustible", SqlDbType.Char, 6).Value = numAbast;
 
-                        // Tracto
+                        // Tracto / Volquete / Camioneta / Otro segun tipo
                         object tractoValue = DBNull.Value;
+                        object volqueteValue = DBNull.Value;
+                        object camionetaValue = DBNull.Value;
                         int idTracto = 0;
-                        if (ddlPlaca.SelectedIndex > 0 && int.TryParse(ddlPlaca.SelectedValue, out idTracto))
-                            tractoValue = idTracto;
+                        string tipoVehTexto = (tipoVehiculo.SelectedItem != null ? tipoVehiculo.SelectedItem.Text : "").ToUpperInvariant();
+                        bool esTractoTrailer = tipoVehTexto.Contains("TRACTO") || tipoVehTexto.Contains("TRAILER") || tipoVehTexto.Contains("TRÁILER") || tipoVehTexto.Contains("CAMIÓN") || tipoVehTexto.Contains("CAMION");
+                        bool esVolquete = tipoVehTexto.Contains("VOLQUETE");
+                        bool esCamioneta = tipoVehTexto.Contains("CAMIONETA");
+                        string placaOtroTexto = null;
+
+                        if (esCamioneta)
+                        {
+                            if (int.TryParse(ddlPlacaCamioneta.SelectedValue, out int idCam) && idCam > 0)
+                                camionetaValue = idCam;
+                        }
+                        else if (esVolquete)
+                        {
+                            if (int.TryParse(ddlPlacaVolquete.SelectedValue, out int idVol) && idVol > 0)
+                                volqueteValue = idVol;
+                        }
+                        else if (esTractoTrailer)
+                        {
+                            if (ddlPlaca.SelectedIndex > 0 && int.TryParse(ddlPlaca.SelectedValue, out idTracto))
+                                tractoValue = idTracto;
+                        }
+                        else
+                        {
+                            if (!string.IsNullOrWhiteSpace(txtPlacaOtro.Text))
+                                placaOtroTexto = txtPlacaOtro.Text.Trim();
+                        }
                         cmd.Parameters.Add("@idTracto", SqlDbType.Int).Value = tractoValue;
 
                         // Carreta (opcional)
@@ -687,8 +763,14 @@ namespace WebSGV.Views
 
                         // Otros campos opcionales
                         object obsValue = DBNull.Value;
-                        if (!string.IsNullOrEmpty(txtObservaciones.Text))
-                            obsValue = txtObservaciones.Text;
+                        string obsTexto = txtObservaciones.Text ?? "";
+                        if (!string.IsNullOrWhiteSpace(placaOtroTexto))
+                        {
+                            string prefijo = $"[Placa {tipoVehTexto}: {placaOtroTexto}]";
+                            obsTexto = string.IsNullOrWhiteSpace(obsTexto) ? prefijo : (prefijo + " " + obsTexto);
+                        }
+                        if (!string.IsNullOrEmpty(obsTexto))
+                            obsValue = obsTexto;
                         cmd.Parameters.Add("@observaciones", SqlDbType.VarChar, 300).Value = obsValue;
 
                         // Hora retorno (opcional)
@@ -722,6 +804,10 @@ namespace WebSGV.Views
                                 ordenViajeValue = idOrdenViaje.Value;
                         }
                         cmd.Parameters.Add("@idOrdenViaje", SqlDbType.Int).Value = ordenViajeValue;
+
+                        // Trazabilidad real de volquete / camioneta (FKs)
+                        cmd.Parameters.Add("@idVolquete", SqlDbType.Int).Value = volqueteValue;
+                        cmd.Parameters.Add("@idCamioneta", SqlDbType.Int).Value = camionetaValue;
 
                         // Ejecutar el procedimiento almacenado
                         int filasAfectadas = cmd.ExecuteNonQuery();
