@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.Net.Compilers.4.2.0\build\Microsoft.Net.Compilers.props" Condition="Exists('..\packages\Microsoft.Net.Compilers.4.2.0\build\Microsoft.Net.Compilers.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -211,12 +211,19 @@
     <Content Include="Content\favicon.png" />
     <Content Include="Content\responsive-mobile.css" />
     <Content Include="Content\Site.css" />
+    <Content Include="Database\Schema\01_FormatoControlado.sql" />
+    <Content Include="Database\Schema\02_FirmaDigital.sql" />
+    <Content Include="Database\Schema\03_OrdenViajeAjuste.sql" />
+    <Content Include="Database\Schema\04_OrdenViaje_AlterFirma.sql" />
     <Content Include="Database\Scripts\script_AgregarColumnaRutaDescripcion.sql" />
     <Content Include="Database\Scripts\script_AgregarColumnaTipoAbastecimiento.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminGrifo.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminMaquinaria.sql" />
+    <Content Include="Database\Scripts\script_CrearTablasDespachoObra.sql" />
+    <Content Include="Database\Scripts\script_CrearTablasIngresoEcuador.sql" />
     <Content Include="Database\Scripts\script_CrearTablasMaquinaria.sql" />
     <Content Include="Database\Scripts\script_DatosPruebaMaquinaria.sql" />
+    <Content Include="Database\Scripts\script_TrazabilidadVolqueteCamioneta.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearCPIC.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearDespacho.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearFactura.sql" />
@@ -243,9 +250,14 @@
     <Content Include="Database\StoredProcedures\sp_DC_ObtenerHistorialLiquidaciones.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_ObtenerOrdenRechazada.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_ObtenerViajesActivosConductor.sql" />
+    <Content Include="Database\StoredProcedures\sp_DC_RegistrarFirmaAdmin.sql" />
+    <Content Include="Database\StoredProcedures\sp_DC_RegistrarFirmaConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_RetirarLiquidacion.sql" />
+    <Content Include="Database\StoredProcedures\sp_DC_RevocarFirma.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_VerificarObservacionesRechazo.sql" />
     <Content Include="Database\StoredProcedures\sp_InsertarAbastecimientoCombustible_ALTER.sql" />
+    <Content Include="Database\StoredProcedures\sp_InsertarDespachoObra.sql" />
+    <Content Include="Database\StoredProcedures\sp_InsertarIngresoEcuador.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ActualizarConductorDominanteViajes.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ActualizarDespachoEnLote.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_AnularLote.sql" />
@@ -367,11 +379,14 @@
     <Content Include="Views\EditarDespacho.aspx" />
     <Content Include="Views\Error.aspx" />
     <Content Include="Views\Error404.aspx" />
+    <Content Include="Views\FirmarLiquidacion.aspx" />
     <Content Include="Views\Inicio.aspx" />
     <Content Include="Views\LiquidacionesPendientes.aspx" />
     <Content Include="Views\ListaDespachos.aspx" />
     <Content Include="Views\Login.aspx" />
     <Content Include="Views\RecuperarContrasena.aspx" />
+    <Content Include="Views\RegistrarDespachoObra.aspx" />
+    <Content Include="Views\RegistrarRetornoEcuador.aspx" />
     <Content Include="Views\RegistroChoferes.aspx" />
     <Content Include="Views\RegistroClientes.aspx" />
     <Content Include="Views\RegistroClientesObra.aspx" />
@@ -390,6 +405,7 @@
     <Content Include="Views\Reportes.aspx" />
     <Content Include="Views\ReportesOrdenesViaje.aspx" />
     <Content Include="Views\RestablecerContrasena.aspx" />
+    <Content Include="Views\TestGenerarPdfOrdenViaje.aspx" />
     <Content Include="Views\WebForm2.aspx" />
     <Content Include="Web.config" />
     <Content Include="Bundle.config" />
@@ -424,9 +440,14 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Helpers\AuditoriaHelper.cs" />
+    <Compile Include="Helpers\EmpresaConfigHelper.cs" />
     <Compile Include="Helpers\FechaHelper.cs" />
+    <Compile Include="Helpers\HashHelper.cs" />
+    <Compile Include="Helpers\NumeroALetrasHelper.cs" />
     <Compile Include="Helpers\PasswordHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\FirmaService.cs" />
+    <Compile Include="Services\PdfOrdenViajeService.cs" />
     <Compile Include="Site.Master.cs">
       <DependentUpon>Site.Master</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -592,6 +613,13 @@
       <DependentUpon>Error404.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
+    <Compile Include="Views\FirmarLiquidacion.aspx.cs">
+      <DependentUpon>FirmarLiquidacion.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\FirmarLiquidacion.aspx.designer.cs">
+      <DependentUpon>FirmarLiquidacion.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Views\Inicio.aspx.cs">
       <DependentUpon>Inicio.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -623,6 +651,20 @@
     <Compile Include="Views\RecuperarContrasena.aspx.cs">
       <DependentUpon>RecuperarContrasena.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\RegistrarDespachoObra.aspx.cs">
+      <DependentUpon>RegistrarDespachoObra.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\RegistrarDespachoObra.aspx.designer.cs">
+      <DependentUpon>RegistrarDespachoObra.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\RegistrarRetornoEcuador.aspx.cs">
+      <DependentUpon>RegistrarRetornoEcuador.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\RegistrarRetornoEcuador.aspx.designer.cs">
+      <DependentUpon>RegistrarRetornoEcuador.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\RegistroChoferes.aspx.cs">
       <DependentUpon>RegistroChoferes.aspx</DependentUpon>
@@ -748,6 +790,10 @@
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Views\RolesHelper.cs" />
+    <Compile Include="Views\TestGenerarPdfOrdenViaje.aspx.cs">
+      <DependentUpon>TestGenerarPdfOrdenViaje.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="Views\WebForm2.aspx.cs">
       <DependentUpon>WebForm2.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

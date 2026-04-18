@@ -28,5 +28,11 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Panel pnlAbastecimientos;
         protected global::System.Web.UI.WebControls.Repeater rptAbastecimientos;
         protected global::System.Web.UI.WebControls.Panel pnlSinAbastecimientos;
+        protected global::System.Web.UI.WebControls.Label lblTotalRetornos;
+        protected global::System.Web.UI.WebControls.Label lblTotalGalonesEcuador;
+        protected global::System.Web.UI.WebControls.Label lblTotalUsdEcuador;
+        protected global::System.Web.UI.WebControls.Panel pnlRetornos;
+        protected global::System.Web.UI.WebControls.Repeater rptRetornos;
+        protected global::System.Web.UI.WebControls.Panel pnlSinRetornos;
     }
 }

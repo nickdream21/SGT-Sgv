@@ -323,12 +323,24 @@ namespace WebSGV.Views
                     LEFT JOIN Tracto t ON d.idTracto = t.idTracto
                     LEFT JOIN Carreta ca ON d.idCarreta = ca.idCarreta
                     LEFT JOIN Cliente cl ON d.idCliente = cl.idCliente
-                    WHERE vp.estadoViaje IN ('ABIERTO')
-                    AND vp.activo = 1
-                    AND NOT EXISTS (
-                        SELECT 1 FROM OrdenViaje ov 
-                        WHERE ov.idViajeProgreso = vp.idViajeProgreso
-                    )");
+                    /*
+                        Definición de 'Viaje activo sin liquidación':
+                        Mismo criterio que la pantalla ListaDespachos (sp_LD_ObtenerViajesActivos):
+                        - El viaje en progreso sigue ABIERTO (al liquidar pasa a CERRADO).
+                        - El viaje está activo (no anulado).
+                        - Tiene al menos un despacho activo asociado.
+
+                        Salvaguarda: si por inconsistencia de datos quedó vinculada una OrdenViaje
+                        ya COMPLETADA al viaje, igual lo excluimos. Las órdenes en otros estados
+                        (borradores, rechazadas, etc.) NO se consideran liquidación válida.
+                    */
+                    WHERE vp.estadoViaje = 'ABIERTO'
+                      AND vp.activo = 1
+                      AND NOT EXISTS (
+                          SELECT 1 FROM OrdenViaje ov
+                          WHERE ov.idViajeProgreso = vp.idViajeProgreso
+                            AND ov.estadoViaje = 'COMPLETADO'
+                      )");
 
                 if (!string.IsNullOrEmpty(buscarConductor))
                 {

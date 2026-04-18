@@ -475,18 +475,31 @@
                     <div class="row">
                         <div class="col-md-3 form-group">
                             <label class="form-label">Tipo:</label>
-                            <asp:DropDownList ID="tipoVehiculo" runat="server" CssClass="form-control">
+                            <asp:DropDownList ID="tipoVehiculo" runat="server" CssClass="form-control"
+                                onchange="onTipoVehiculoChange()">
                                 <asp:ListItem Value="1">Camioneta</asp:ListItem>
                                 <asp:ListItem Value="2" Selected="True">Camión</asp:ListItem>
                                 <asp:ListItem Value="3">Trailer</asp:ListItem>
                                 <asp:ListItem Value="4">Otro</asp:ListItem>
                             </asp:DropDownList>
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group" id="divPlacaTracto">
                             <label class="form-label">Placa Tracto:</label>
                             <asp:DropDownList ID="ddlPlaca" runat="server" CssClass="form-control"></asp:DropDownList>
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group" id="divPlacaVolquete" style="display:none;">
+                            <label class="form-label">Placa Volquete:</label>
+                            <asp:DropDownList ID="ddlPlacaVolquete" runat="server" CssClass="form-control"></asp:DropDownList>
+                        </div>
+                        <div class="col-md-3 form-group" id="divPlacaCamioneta" style="display:none;">
+                            <label class="form-label">Placa Camioneta:</label>
+                            <asp:DropDownList ID="ddlPlacaCamioneta" runat="server" CssClass="form-control"></asp:DropDownList>
+                        </div>
+                        <div class="col-md-3 form-group" id="divPlacaOtro" style="display:none;">
+                            <label class="form-label">Placa (texto libre):</label>
+                            <asp:TextBox ID="txtPlacaOtro" runat="server" CssClass="form-control" placeholder="Ingrese placa"></asp:TextBox>
+                        </div>
+                        <div class="col-md-3 form-group" id="divCarreta">
                             <label class="form-label">Carreta:</label>
                             <asp:DropDownList ID="ddlCarreta" runat="server" CssClass="form-control"></asp:DropDownList>
                         </div>
@@ -781,7 +794,39 @@
             }
             agregarTicket();
             calcularTotales();
+            onTipoVehiculoChange();
         });
+
+        function onTipoVehiculoChange() {
+            var ddl = document.getElementById('<%= tipoVehiculo.ClientID %>');
+            if (!ddl) return;
+            var txt = (ddl.options[ddl.selectedIndex] ? ddl.options[ddl.selectedIndex].text : '').toUpperCase();
+
+            var divTracto    = document.getElementById('divPlacaTracto');
+            var divVolquete  = document.getElementById('divPlacaVolquete');
+            var divCamioneta = document.getElementById('divPlacaCamioneta');
+            var divOtro      = document.getElementById('divPlacaOtro');
+            var divCarreta   = document.getElementById('divCarreta');
+
+            // Ocultar todos
+            if (divTracto) divTracto.style.display = 'none';
+            if (divVolquete) divVolquete.style.display = 'none';
+            if (divCamioneta) divCamioneta.style.display = 'none';
+            if (divOtro) divOtro.style.display = 'none';
+            if (divCarreta) divCarreta.style.display = 'none';
+
+            if (txt.indexOf('VOLQUETE') >= 0) {
+                if (divVolquete) divVolquete.style.display = '';
+            } else if (txt.indexOf('CAMIONETA') >= 0) {
+                if (divCamioneta) divCamioneta.style.display = '';
+            } else if (txt.indexOf('TRAILER') >= 0 || txt.indexOf('TRÁILER') >= 0 ||
+                       txt.indexOf('TRACTO') >= 0 || txt.indexOf('CAMIÓN') >= 0 || txt.indexOf('CAMION') >= 0) {
+                if (divTracto) divTracto.style.display = '';
+                if (divCarreta) divCarreta.style.display = '';
+            } else {
+                if (divOtro) divOtro.style.display = '';
+            }
+        }
 
         function onMotivoChange() {
             var ddl = document.getElementById('<%= ddlMotivoSalida.ClientID %>');
