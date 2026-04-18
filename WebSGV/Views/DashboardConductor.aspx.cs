@@ -969,6 +969,7 @@ namespace WebSGV.Views
 
                 System.Diagnostics.Debug.WriteLine("Iniciando transacción de base de datos...");
                 bool transaccionExitosa = false;
+                int idOrdenGuardada = 0;
 
                 using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
@@ -989,6 +990,14 @@ namespace WebSGV.Views
                                 System.Diagnostics.Debug.WriteLine("Actualizando orden de viaje existente...");
                                 ActualizarOrdenViajeConductor(conn, transaction, numeroOrdenViaje,
                                     fechaSalida, fechaLlegada, horaSalida, horaLlegada, observaciones);
+
+                                using (SqlCommand cmdId = new SqlCommand(
+                                    "SELECT idOrdenViaje FROM OrdenViaje WHERE numeroOrdenViaje = @n", conn, transaction))
+                                {
+                                    cmdId.Parameters.AddWithValue("@n", numeroOrdenViaje);
+                                    object obj = cmdId.ExecuteScalar();
+                                    idOrdenGuardada = (obj != null && obj != DBNull.Value) ? Convert.ToInt32(obj) : 0;
+                                }
                             }
                             else
                             {
@@ -999,6 +1008,7 @@ namespace WebSGV.Views
                                     datosViaje.IdConductor, datosViaje.IdTracto, datosViaje.IdCarreta,
                                     observaciones, idViajeProgreso
                                 );
+                                idOrdenGuardada = idOrdenViaje;
                                 System.Diagnostics.Debug.WriteLine($"Orden de viaje insertada: {idOrdenViaje}");
                             }
 
@@ -1049,15 +1059,25 @@ namespace WebSGV.Views
                     AuditoriaHelper.Registrar("LIQUIDAR", "OrdenViaje", numeroOrdenViaje,
                         $"Conductor envió liquidación - Orden: {numeroOrdenViaje}, Viajes: {string.Join(", ", idsViajesActivos)}");
 
-                    MostrarResultadoExitoso(numeroOrdenViaje);
+                    System.Diagnostics.Debug.WriteLine($"=== LIQUIDACIÓN ENVIADA EXITOSAMENTE (idOrdenViaje={idOrdenGuardada}) ===");
 
+                    // ✅ Fase 3.A: redirigir al conductor a la vista de firma digital
+                    if (idOrdenGuardada > 0)
+                    {
+                        Response.Redirect(
+                            ResolveUrl($"~/Views/FirmarLiquidacion.aspx?id={idOrdenGuardada}"),
+                            false);
+                        Context.ApplicationInstance.CompleteRequest();
+                        return;
+                    }
+
+                    // Fallback: si no obtuvimos id, mostrar el mensaje clasico y recargar
+                    MostrarResultadoExitoso(numeroOrdenViaje);
                     string redirectScript = $@"
                         setTimeout(function() {{
                             window.location.href = '{ResolveUrl(Request.RawUrl)}';
                         }}, 2000);";
                     ScriptManager.RegisterStartupScript(this, GetType(), "RedirectDespuesExito", redirectScript, true);
-
-                    System.Diagnostics.Debug.WriteLine("=== LIQUIDACIÓN ENVIADA EXITOSAMENTE ===");
                 }
             }
             catch (Exception ex)
@@ -1216,8 +1236,9 @@ namespace WebSGV.Views
 
         private void InsertarGastosPrincipales(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje)
         {
-            decimal peajesSoles = decimal.TryParse(Request.Form["peajesSoles"], out decimal pjs) ? pjs : 0;
-            decimal peajesDolares = decimal.TryParse(Request.Form["peajesDolares"], out decimal pjd) ? pjd : 0;
+            // Peajes simplificados: Nacionales solo en Soles (Perú), Extranjeros solo en Dólares (Ecuador)
+            decimal peajesSoles = decimal.TryParse(Request.Form["peajesNacSoles"], out decimal pns) ? pns : 0;
+            decimal peajesDolares = decimal.TryParse(Request.Form["peajesExtDolares"], out decimal ped) ? ped : 0;
             decimal alimentacionSoles = decimal.TryParse(Request.Form["alimentacionSoles"], out decimal als) ? als : 0;
             decimal alimentacionDolares = decimal.TryParse(Request.Form["alimentacionDolares"], out decimal ald) ? ald : 0;
             decimal apoyoSeguridadSoles = decimal.TryParse(Request.Form["apoyoSeguridadSoles"], out decimal ass) ? ass : 0;
@@ -1233,7 +1254,15 @@ namespace WebSGV.Views
             decimal combustibleSoles = decimal.TryParse(Request.Form["combustibleSoles"], out decimal coms) ? coms : 0;
             decimal combustibleDolares = decimal.TryParse(Request.Form["combustibleDolares"], out decimal comd) ? comd : 0;
 
-            string descPeajes = Request.Form["descPeajes"] ?? "";
+            // Descripción de peajes: combinar nacionales (S/) y extranjeros ($)
+            string descPeajesNac = Request.Form["descPeajesNacionales"] ?? "";
+            string descPeajesExt = Request.Form["descPeajesExtranjeros"] ?? "";
+            var partesPeajes = new List<string>();
+            if (peajesSoles > 0)
+                partesPeajes.Add("Nac: S/" + peajesSoles.ToString("F2") + (!string.IsNullOrEmpty(descPeajesNac) ? " - " + descPeajesNac : ""));
+            if (peajesDolares > 0)
+                partesPeajes.Add("Ext: $" + peajesDolares.ToString("F2") + (!string.IsNullOrEmpty(descPeajesExt) ? " - " + descPeajesExt : ""));
+            string descPeajes = partesPeajes.Count > 0 ? string.Join(" | ", partesPeajes) : "";
             string descAlimentacion = Request.Form["descAlimentacion"] ?? "";
             string descApoyoSeguridad = Request.Form["descApoyoSeguridad"] ?? "";
             string descReparaciones = Request.Form["descReparaciones"] ?? "";

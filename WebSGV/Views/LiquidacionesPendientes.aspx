@@ -1879,142 +1879,280 @@
 
             var logoUrl = window.location.origin + '/Content/favicon.png';
 
+            // === DATOS CORPORATIVOS (Empresa + Formato Controlado ISO/BASC) ===
+            var EMPRESA_NOMBRE = 'SERVICIOS GENERALES VIVIANA E.I.R.L.';
+            var EMPRESA_RUBRO = 'Transporte y Construcci\u00f3n';
+            var EMPRESA_RUC = '20483851171';
+            var EMPRESA_DIRECCION = 'Jr. Ca\u00f1ete Nro. 416 Dpto. 100 - Cercado de Lima, Lima';
+            var EMPRESA_WEB = 'www.serviciosgviviana.somee.com';
+            var FORMATO_CODIGO = 'SGV-CDF-F-05';
+            var FORMATO_VERSION = '01';
+            var FORMATO_VIGENCIA = '01/01/2025';
+
+            // === Conversi\u00f3n monto a letras (peruano) ===
+            function numeroALetras(num, moneda) {
+                num = parseFloat(num) || 0;
+                var negativo = num < 0;
+                num = Math.abs(num);
+                var entero = Math.floor(num);
+                var decimal = Math.round((num - entero) * 100);
+                if (decimal === 100) { entero += 1; decimal = 0; }
+
+                var UNIDADES = ['', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE', 'DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECIS\u00c9IS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE', 'VEINTE'];
+                var DECENAS = ['', '', 'VEINTI', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+                var CENTENAS = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+
+                function seccion(n) {
+                    if (n === 0) return '';
+                    if (n <= 20) return UNIDADES[n];
+                    if (n < 30) return 'VEINTI' + UNIDADES[n - 20].toLowerCase();
+                    if (n < 100) {
+                        var d = Math.floor(n / 10), u = n % 10;
+                        return DECENAS[d] + (u ? ' Y ' + UNIDADES[u] : '');
+                    }
+                    if (n === 100) return 'CIEN';
+                    if (n < 1000) {
+                        var c = Math.floor(n / 100), r = n % 100;
+                        return CENTENAS[c] + (r ? ' ' + seccion(r) : '');
+                    }
+                    if (n < 1000000) {
+                        var miles = Math.floor(n / 1000), resto = n % 1000;
+                        var pref = (miles === 1) ? 'MIL' : seccion(miles) + ' MIL';
+                        return pref + (resto ? ' ' + seccion(resto) : '');
+                    }
+                    var mill = Math.floor(n / 1000000), rest2 = n % 1000000;
+                    var pref2 = (mill === 1) ? 'UN MILL\u00d3N' : seccion(mill) + ' MILLONES';
+                    return pref2 + (rest2 ? ' ' + seccion(rest2) : '');
+                }
+
+                var letras = seccion(entero);
+                if (!letras) letras = 'CERO';
+                letras = letras.replace('VEINTIuno', 'VEINTIUNO').replace('VEINTIdos', 'VEINTID\u00d3S').replace('VEINTItres', 'VEINTITR\u00c9S').replace('VEINTIcuatro', 'VEINTICUATRO').replace('VEINTIcinco', 'VEINTICINCO').replace('VEINTIseis', 'VEINTIS\u00c9IS').replace('VEINTIsiete', 'VEINTISIETE').replace('VEINTIocho', 'VEINTIOCHO').replace('VEINTInueve', 'VEINTINUEVE');
+                var dec = (decimal < 10 ? '0' : '') + decimal;
+                var signo = negativo ? 'MENOS ' : '';
+                return signo + letras + ' CON ' + dec + '/100 ' + moneda;
+            }
+
+            var balSolesNum = parseFloat(balanceSoles) || 0;
+            var balDolaresNum = parseFloat(balanceDolares) || 0;
+            var balSolesLetras = numeroALetras(balSolesNum, 'SOLES');
+            var balDolaresLetras = numeroALetras(balDolaresNum, 'D\u00d3LARES AMERICANOS');
+
             var printHtml = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"/>' +
-                '<title>Liquidaci\u00f3n ' + htmlEncode(numeroOrden) + '</title>' +
+                '<title>Orden de Viaje ' + htmlEncode(numeroOrden) + '</title>' +
+                '<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>' +
                 '<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet"/>' +
                 '<style>' +
-                '@page { size: A4; margin: 15mm 12mm 15mm 12mm; }' +
+                // --- Variables y reset ---
+                '@page { size: A4; margin: 12mm 12mm 14mm 12mm; }' +
                 '*, *::before, *::after { box-sizing: border-box; }' +
-                'body { font-family: "Segoe UI", Arial, sans-serif; color: #1e293b; margin: 0; padding: 0; font-size: 13px; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }' +
+                'body { font-family: "Open Sans", "Segoe UI", Arial, sans-serif; color: #1F2937; margin: 0; padding: 0; font-size: 12px; line-height: 1.45; -webkit-print-color-adjust: exact; print-color-adjust: exact; }' +
                 '.print-page { max-width: 210mm; margin: 0 auto; padding: 0; }' +
-                '.header-empresa { display: flex; align-items: center; border-bottom: 3px solid #1e40af; padding-bottom: 12px; margin-bottom: 16px; }' +
-                '.header-logo { width: 90px; height: 90px; margin-right: 18px; flex-shrink: 0; }' +
-                '.header-logo img { width: 100%; height: 100%; object-fit: contain; }' +
-                '.header-info { flex: 1; }' +
-                '.header-info h1 { margin: 0 0 2px 0; font-size: 20px; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 1px; }' +
-                '.header-info h2 { margin: 0 0 2px 0; font-size: 13px; font-weight: 600; color: #475569; }' +
-                '.header-info p { margin: 0; font-size: 11px; color: #64748b; }' +
-                '.header-doc { text-align: right; flex-shrink: 0; }' +
-                '.header-doc .doc-title { font-size: 16px; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }' +
-                '.header-doc .doc-number { font-size: 18px; font-weight: 700; color: #dc2626; background: #fef2f2; border: 2px solid #fca5a5; border-radius: 6px; padding: 4px 14px; display: inline-block; }' +
-                '.header-doc .doc-date { font-size: 11px; color: #64748b; margin-top: 6px; }' +
-                '.section { margin-bottom: 14px; }' +
-                '.section-title { font-size: 13px; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 10px; background: #eff6ff; border-left: 4px solid #2563eb; margin-bottom: 8px; }' +
-                '.info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 4px; }' +
-                '.info-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 8px 10px; }' +
-                '.info-item .label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 2px; }' +
-                '.info-item .value { font-size: 14px; font-weight: 700; color: #1e293b; }' +
-                '.obs-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 8px 10px; font-style: italic; font-size: 12px; color: #78350f; margin-top: 6px; }' +
-                'table.report-table { width: 100%; border-collapse: collapse; font-size: 13px; }' +
-                'table.report-table thead th { background: #1e40af; color: white; padding: 8px 10px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }' +
+                'h1, h2, h3, h4 { font-family: "Montserrat", "Segoe UI", Arial, sans-serif; margin: 0; }' +
+
+                // --- Header controlado (3 columnas: logo | empresa | formato) ---
+                '.doc-header { display: table; width: 100%; border: 1.5px solid #0B3D91; border-collapse: collapse; margin-bottom: 10px; }' +
+                '.doc-header > div { display: table-cell; vertical-align: middle; padding: 8px 10px; border-right: 1px solid #0B3D91; }' +
+                '.doc-header > div:last-child { border-right: none; }' +
+                '.dh-logo { width: 90px; text-align: center; }' +
+                '.dh-logo img { width: 70px; height: 70px; object-fit: contain; }' +
+                '.dh-empresa { text-align: center; }' +
+                '.dh-empresa .razon { font-family: "Montserrat"; font-size: 13px; font-weight: 800; color: #0B3D91; text-transform: uppercase; letter-spacing: 0.5px; }' +
+                '.dh-empresa .rubro { font-size: 10.5px; color: #6B7280; font-weight: 600; margin-top: 1px; }' +
+                '.dh-empresa .titulo-doc { font-family: "Montserrat"; font-size: 15px; font-weight: 700; color: #1F2937; letter-spacing: 3px; margin-top: 6px; text-transform: uppercase; }' +
+                '.dh-formato { width: 160px; font-size: 10px; color: #1F2937; }' +
+                '.dh-formato table { width: 100%; border-collapse: collapse; }' +
+                '.dh-formato td { padding: 2px 4px; border-bottom: 1px dotted #D1D5DB; }' +
+                '.dh-formato td.lbl { font-weight: 700; color: #6B7280; text-transform: uppercase; font-size: 9px; letter-spacing: 0.3px; }' +
+                '.dh-formato td.val { font-family: "Montserrat"; font-weight: 700; color: #0B3D91; text-align: right; font-size: 10px; }' +
+                '.dh-formato tr:last-child td { border-bottom: none; }' +
+
+                // --- Sub-cabecera: datos empresa + n\u00famero doc ---
+                '.sub-header { display: table; width: 100%; margin-bottom: 12px; font-size: 10.5px; }' +
+                '.sub-header > div { display: table-cell; vertical-align: top; }' +
+                '.sub-header .emp-data { color: #374151; line-height: 1.55; }' +
+                '.sub-header .emp-data strong { color: #0B3D91; font-weight: 700; }' +
+                '.sub-header .doc-num { text-align: right; width: 200px; }' +
+                '.sub-header .doc-num .nro-label { font-size: 9.5px; font-weight: 700; color: #6B7280; letter-spacing: 0.4px; text-transform: uppercase; }' +
+                '.sub-header .doc-num .nro-value { font-family: "Montserrat"; font-size: 17px; font-weight: 800; color: #C8102E; border: 1.5px solid #C8102E; padding: 4px 12px; display: inline-block; margin-top: 3px; letter-spacing: 0.8px; }' +
+                '.sub-header .doc-num .emitido { font-size: 9.5px; color: #6B7280; margin-top: 5px; }' +
+
+                // --- Secciones numeradas ---
+                '.section { margin-bottom: 10px; page-break-inside: avoid; }' +
+                '.section-title { font-family: "Montserrat"; font-size: 11px; font-weight: 700; color: #FFFFFF; background: #0B3D91; padding: 5px 10px; text-transform: uppercase; letter-spacing: 0.6px; }' +
+                '.section-title .num { display: inline-block; background: #FFFFFF; color: #0B3D91; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 2px; margin-right: 8px; font-weight: 800; }' +
+
+                // --- Grid de info ---
+                '.info-grid { display: table; width: 100%; border-collapse: collapse; }' +
+                '.info-grid .info-row { display: table-row; }' +
+                '.info-item { display: table-cell; border: 1px solid #D1D5DB; padding: 6px 10px; width: 25%; }' +
+                '.info-item .label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #6B7280; }' +
+                '.info-item .value { font-family: "Montserrat"; font-size: 12px; font-weight: 700; color: #1F2937; margin-top: 2px; }' +
+                '.obs-box { border: 1px solid #D1D5DB; border-left: 3px solid #C8102E; padding: 7px 10px; font-size: 11px; color: #374151; margin-top: 6px; background: #FAFAFA; }' +
+
+                // --- Tablas ---
+                'table.report-table { width: 100%; border-collapse: collapse; font-size: 11.5px; border: 1px solid #D1D5DB; }' +
+                'table.report-table thead th { background: #0B3D91; color: #FFFFFF; padding: 6px 10px; font-family: "Montserrat"; font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.4px; border: 1px solid #0B3D91; }' +
                 'table.report-table thead th:first-child { text-align: left; }' +
                 'table.report-table thead th.text-right { text-align: right; }' +
-                'table.report-table tfoot td { background: #f1f5f9; font-weight: 700; padding: 10px; border-top: 2px solid #1e40af; font-size: 14px; }' +
-                '.resumen-financiero { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }' +
-                '.resumen-card { border: 2px solid #e2e8f0; border-radius: 6px; padding: 12px 14px; }' +
-                '.resumen-card.ingresos { background: #f0fdf4; border-color: #86efac; }' +
-                '.resumen-card.gastos { background: #fef2f2; border-color: #fca5a5; }' +
-                '.resumen-card .card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }' +
-                '.resumen-card.ingresos .card-title { color: #065f46; }' +
-                '.resumen-card.gastos .card-title { color: #991b1b; }' +
-                '.resumen-card .amount { font-size: 20px; font-weight: 700; color: #1e293b; }' +
-                '.resumen-card .amount-sub { font-size: 15px; font-weight: 600; color: #475569; margin-top: 2px; }' +
-                '.balance-box { background: #eff6ff; border: 2px solid #2563eb; border-radius: 6px; padding: 14px; text-align: center; margin-bottom: 14px; }' +
-                '.balance-box .title { font-size: 14px; font-weight: 700; color: #1e40af; text-transform: uppercase; margin-bottom: 8px; }' +
-                '.balance-amounts { display: flex; justify-content: center; gap: 40px; }' +
-                '.balance-amounts .bal-item { text-align: center; }' +
-                '.balance-amounts .bal-label { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; }' +
-                '.balance-amounts .bal-value { font-size: 24px; font-weight: 800; }' +
-                '.footer-print { border-top: 2px solid #e2e8f0; padding-top: 12px; margin-top: 20px; display: flex; justify-content: space-between; align-items: flex-end; }' +
-                '.footer-print .firma { text-align: center; min-width: 200px; }' +
-                '.footer-print .firma .linea { border-top: 1px solid #1e293b; margin-top: 40px; padding-top: 4px; font-size: 11px; font-weight: 600; color: #475569; }' +
-                '.footer-print .legal { font-size: 10px; color: #94a3b8; max-width: 280px; }' +
-                '.table-sub { font-size: 11px !important; }' +
-                '.table-sub thead th { background: #e2e8f0 !important; color: #1e293b !important; font-size: 10px !important; padding: 4px 6px !important; }' +
-                '.table-sub tbody td { padding: 3px 6px !important; font-size: 11px !important; }' +
-                '.detail-desc { font-size: 11px; color: #64748b; font-style: italic; margin-bottom: 4px; }' +
-                '.detail-sub-content { padding: 4px 8px; }' +
+                'table.report-table tbody td { padding: 5px 10px; border-bottom: 1px solid #E5E7EB; }' +
+                'table.report-table tbody tr:nth-child(odd) td { background: #E8EEF7; }' +
+                'table.report-table tbody tr:nth-child(even) td { background: #FFFFFF; }' +
+                'table.report-table tfoot td { background: #F3F4F6; font-family: "Montserrat"; font-weight: 700; padding: 7px 10px; border-top: 1.5px solid #0B3D91; font-size: 12px; color: #0B3D91; }' +
+
+                // --- Resumen financiero (tabla sobria) ---
+                'table.resumen-table { width: 100%; border-collapse: collapse; font-size: 11.5px; border: 1px solid #D1D5DB; }' +
+                'table.resumen-table th { background: #F3F4F6; color: #1F2937; padding: 6px 10px; font-family: "Montserrat"; font-weight: 700; font-size: 10.5px; text-transform: uppercase; border: 1px solid #D1D5DB; }' +
+                'table.resumen-table td { padding: 6px 10px; border: 1px solid #D1D5DB; }' +
+                'table.resumen-table td.concepto { font-weight: 600; color: #1F2937; }' +
+                'table.resumen-table td.num { text-align: right; font-family: "Montserrat"; font-weight: 600; }' +
+                'table.resumen-table tr.total td { background: #E8EEF7; font-weight: 800; color: #0B3D91; }' +
+                'table.resumen-table tr.balance td { background: #0B3D91; color: #FFFFFF; font-family: "Montserrat"; font-weight: 800; font-size: 13px; }' +
+                'table.resumen-table tr.balance td.num.neg { color: #FCA5A5; }' +
+                '.monto-letras { background: #F9FAFB; border: 1px dashed #9CA3AF; padding: 6px 10px; font-size: 10.5px; color: #374151; margin-top: 6px; }' +
+                '.monto-letras strong { font-family: "Montserrat"; font-weight: 700; color: #0B3D91; display: inline-block; min-width: 60px; }' +
+
+                // --- Constancia y firma ---
+                '.constancia { border: 1px solid #D1D5DB; padding: 10px 12px; margin-top: 10px; page-break-inside: avoid; }' +
+                '.constancia .const-title { font-family: "Montserrat"; font-size: 11px; font-weight: 700; color: #0B3D91; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }' +
+                '.constancia .const-text { font-size: 11px; text-align: justify; color: #374151; line-height: 1.55; margin-bottom: 10px; }' +
+                '.firma-box { width: 280px; margin: 0 auto; text-align: center; }' +
+                '.firma-box .firma-area { border: 1px dashed #9CA3AF; height: 70px; margin-bottom: 4px; background: #FAFAFA; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #9CA3AF; font-style: italic; }' +
+                '.firma-box .firma-line { border-top: 1px solid #1F2937; padding-top: 3px; }' +
+                '.firma-box .firma-nombre { font-family: "Montserrat"; font-size: 11px; font-weight: 700; color: #1F2937; }' +
+                '.firma-box .firma-rol { font-size: 10px; color: #6B7280; margin-top: 1px; }' +
+                '.firma-meta { margin-top: 8px; font-size: 9px; color: #6B7280; text-align: center; font-family: "Consolas", monospace; }' +
+
+                // --- Pie ---
+                '.doc-footer { margin-top: 14px; border-top: 1.5px solid #0B3D91; padding-top: 8px; font-size: 9px; color: #6B7280; display: table; width: 100%; }' +
+                '.doc-footer > div { display: table-cell; vertical-align: top; }' +
+                '.doc-footer .foot-legal { width: 75%; line-height: 1.5; }' +
+                '.doc-footer .foot-legal strong { color: #0B3D91; }' +
+                '.doc-footer .foot-pag { width: 25%; text-align: right; font-family: "Consolas", monospace; }' +
+                '.doc-footer .hash { font-family: "Consolas", monospace; color: #374151; word-break: break-all; }' +
+
+                // --- Detalles anidados / tablas hijas ---
+                '.detail-sub-content { padding: 4px 8px; font-size: 10.5px; }' +
+                '.detail-desc { font-size: 10.5px; color: #6B7280; font-style: italic; margin-bottom: 4px; }' +
+                '.table-sub { font-size: 10px !important; }' +
+                '.table-sub thead th { background: #E5E7EB !important; color: #1F2937 !important; font-size: 9.5px !important; padding: 3px 6px !important; }' +
+                '.table-sub tbody td { padding: 3px 6px !important; font-size: 10px !important; background: #FFFFFF !important; }' +
+
                 '</style></head><body>' +
                 '<div class="print-page">' +
 
-                // === HEADER ===
-                '<div class="header-empresa">' +
-                '<div class="header-logo"><img src="' + logoUrl + '" alt="Logo"/></div>' +
-                '<div class="header-info">' +
-                '<h1>Servicios Generales Viviana E.I.R.L.</h1>' +
-                '<h2>Transporte y Construcci\u00f3n</h2>' +
-                '<p>RUC: 20XXXXXXXXX | Direcci\u00f3n Fiscal</p>' +
+                // === 1. ENCABEZADO CONTROLADO (ISO/BASC) ===
+                '<div class="doc-header">' +
+                '<div class="dh-logo"><img src="' + logoUrl + '" alt="Logo Viviana"/></div>' +
+                '<div class="dh-empresa">' +
+                '<div class="razon">' + EMPRESA_NOMBRE + '</div>' +
+                '<div class="rubro">' + EMPRESA_RUBRO + '</div>' +
+                '<div class="titulo-doc">Orden de Viaje</div>' +
                 '</div>' +
-                '<div class="header-doc">' +
-                '<div class="doc-title">Liquidaci\u00f3n de Viaje</div>' +
-                '<div class="doc-number">' + htmlEncode(numeroOrden) + '</div>' +
-                '<div class="doc-date">Impreso: ' + fechaImpresion + '</div>' +
+                '<div class="dh-formato">' +
+                '<table>' +
+                '<tr><td class="lbl">C\u00f3digo</td><td class="val">' + FORMATO_CODIGO + '</td></tr>' +
+                '<tr><td class="lbl">Versi\u00f3n</td><td class="val">' + FORMATO_VERSION + '</td></tr>' +
+                '<tr><td class="lbl">Vigencia</td><td class="val">' + FORMATO_VIGENCIA + '</td></tr>' +
+                '<tr><td class="lbl">P\u00e1gina</td><td class="val">1 de 1</td></tr>' +
+                '</table>' +
                 '</div>' +
                 '</div>' +
 
-                // === INFORMACION DEL VIAJE ===
+                // === SUB-HEADER: datos empresa + n\u00famero de documento ===
+                '<div class="sub-header">' +
+                '<div class="emp-data">' +
+                '<strong>RUC:</strong> ' + EMPRESA_RUC + '<br/>' +
+                '<strong>Domicilio Fiscal:</strong> ' + EMPRESA_DIRECCION + '<br/>' +
+                '<strong>Web:</strong> ' + EMPRESA_WEB +
+                '</div>' +
+                '<div class="doc-num">' +
+                '<div class="nro-label">N.\u00b0 de Orden</div>' +
+                '<div class="nro-value">' + htmlEncode(numeroOrden) + '</div>' +
+                '<div class="emitido">Emitido: ' + fechaImpresion + '</div>' +
+                '</div>' +
+                '</div>' +
+
+                // === 1. INFORMACI\u00d3N DEL VIAJE ===
                 '<div class="section">' +
-                '<div class="section-title"><i class="fas fa-route mr-2"></i>Informaci\u00f3n del Viaje</div>' +
-                '<div class="info-grid">' +
+                '<div class="section-title"><span class="num">1</span>Informaci\u00f3n del Viaje</div>' +
+                '<div class="info-grid"><div class="info-row">' +
                 '<div class="info-item"><div class="label">Conductor</div><div class="value">' + htmlEncode(conductor) + '</div></div>' +
                 '<div class="info-item"><div class="label">Tracto</div><div class="value">' + htmlEncode(tracto) + '</div></div>' +
                 '<div class="info-item"><div class="label">Carreta</div><div class="value">' + htmlEncode(carreta) + '</div></div>' +
                 '<div class="info-item"><div class="label">Periodo</div><div class="value">' + htmlEncode(periodo) + '</div></div>' +
-                '</div>' +
-                (observaciones ? '<div class="obs-box"><strong>Observaciones:</strong> ' + htmlEncode(observaciones) + '</div>' : '') +
+                '</div></div>' +
                 '</div>' +
 
-                // === RESUMEN FINANCIERO ===
+                // === 2. RESUMEN FINANCIERO (tabla sobria) ===
                 '<div class="section">' +
-                '<div class="section-title"><i class="fas fa-calculator mr-2"></i>Resumen Financiero</div>' +
-                '<div class="resumen-financiero">' +
-                '<div class="resumen-card ingresos">' +
-                '<div class="card-title"><i class="fas fa-plus-circle mr-1"></i>Total Ingresos</div>' +
-                '<div class="amount">S/ ' + ingresosSoles + '</div>' +
-                '<div class="amount-sub">$ ' + ingresosDolares + '</div>' +
-                '</div>' +
-                '<div class="resumen-card gastos">' +
-                '<div class="card-title"><i class="fas fa-minus-circle mr-1"></i>Total Gastos</div>' +
-                '<div class="amount">S/ ' + gastosSoles + '</div>' +
-                '<div class="amount-sub">$ ' + gastosDolares + '</div>' +
-                '</div>' +
-                '</div>' +
+                '<div class="section-title"><span class="num">2</span>Resumen Financiero</div>' +
+                '<table class="resumen-table">' +
+                '<thead><tr><th style="text-align:left;">Concepto</th><th style="text-align:right;">Soles (S/)</th><th style="text-align:right;">D\u00f3lares ($)</th></tr></thead>' +
+                '<tbody>' +
+                '<tr><td class="concepto">Total Ingresos</td><td class="num">S/ ' + ingresosSoles + '</td><td class="num">$ ' + ingresosDolares + '</td></tr>' +
+                '<tr><td class="concepto">Total Gastos</td><td class="num">S/ ' + gastosSoles + '</td><td class="num">$ ' + gastosDolares + '</td></tr>' +
+                '<tr class="balance"><td>BALANCE FINAL DEL VIAJE</td><td class="num' + (balSolesNum < 0 ? ' neg' : '') + '">S/ ' + balanceSoles + '</td><td class="num' + (balDolaresNum < 0 ? ' neg' : '') + '">$ ' + balanceDolares + '</td></tr>' +
+                '</tbody></table>' +
+                '<div class="monto-letras"><strong>SOLES:</strong> ' + balSolesLetras + '</div>' +
+                '<div class="monto-letras"><strong>D\u00d3LARES:</strong> ' + balDolaresLetras + '</div>' +
                 '</div>' +
 
-                // === BALANCE ===
-                '<div class="balance-box">' +
-                '<div class="title"><i class="fas fa-balance-scale mr-2"></i>Balance Final del Viaje</div>' +
-                '<div class="balance-amounts">' +
-                '<div class="bal-item"><div class="bal-label">Soles</div><div class="bal-value" style="color:' + balSolesColor + '">S/ ' + balanceSoles + '</div></div>' +
-                '<div class="bal-item"><div class="bal-label">D\u00f3lares</div><div class="bal-value" style="color:' + balDolaresColor + '">$ ' + balanceDolares + '</div></div>' +
-                '</div>' +
-                '</div>' +
-
-                // === DESGLOSE DE INGRESOS ===
+                // === 3. DESGLOSE DE INGRESOS ===
                 '<div class="section">' +
-                '<div class="section-title"><i class="fas fa-hand-holding-usd mr-2"></i>Desglose de Ingresos</div>' +
+                '<div class="section-title"><span class="num">3</span>Desglose de Ingresos</div>' +
                 '<table class="report-table">' +
                 '<thead><tr><th>Concepto</th><th class="text-right">Soles (S/)</th><th class="text-right">D\u00f3lares ($)</th></tr></thead>' +
                 '<tbody>' + ingresosRows + '</tbody>' +
                 '<tfoot><tr><td>Total Ingresos</td><td style="text-align:right;">S/ ' + ingresosSoles + '</td><td style="text-align:right;">$ ' + ingresosDolares + '</td></tr></tfoot>' +
                 '</table></div>' +
 
-                // === DESGLOSE DE GASTOS ===
+                // === 4. DESGLOSE DE GASTOS ===
                 '<div class="section">' +
-                '<div class="section-title"><i class="fas fa-receipt mr-2"></i>Desglose de Gastos</div>' +
+                '<div class="section-title"><span class="num">4</span>Desglose de Gastos</div>' +
                 '<table class="report-table">' +
                 '<thead><tr><th>Concepto</th><th class="text-right">Soles (S/)</th><th class="text-right">D\u00f3lares ($)</th></tr></thead>' +
                 '<tbody>' + gastosRows + '</tbody>' +
                 '<tfoot><tr><td>Total Gastos</td><td style="text-align:right;">S/ ' + gastosSoles + '</td><td style="text-align:right;">$ ' + gastosDolares + '</td></tr></tfoot>' +
                 '</table></div>' +
 
-                // === FOOTER ===
-                '<div class="footer-print">' +
-                '<div class="legal">' +
-                '<strong>Nota:</strong> Este documento es un reporte interno de liquidaci\u00f3n de viaje. Los comprobantes f\u00edsicos deben ser adjuntados como sustento.' +
+                // === 5. OBSERVACIONES ===
+                (observaciones ?
+                    '<div class="section">' +
+                    '<div class="section-title"><span class="num">5</span>Observaciones</div>' +
+                    '<div class="obs-box">' + htmlEncode(observaciones) + '</div>' +
+                    '</div>'
+                    : '') +
+
+                // === 6. CONSTANCIA DE CONFORMIDAD Y FIRMA ===
+                '<div class="constancia">' +
+                '<div class="const-title">Constancia de Conformidad</div>' +
+                '<div class="const-text">Yo, <strong>' + htmlEncode(conductor) + '</strong>, en mi condici\u00f3n de conductor del viaje ' +
+                '<strong>' + htmlEncode(numeroOrden) + '</strong>, declaro haber revisado el detalle de ingresos, gastos y balance ' +
+                'consignados en el presente documento, y manifiesto mi conformidad con la informaci\u00f3n registrada. ' +
+                'Firmo en se\u00f1al de aceptaci\u00f3n y asumo las obligaciones derivadas de la presente liquidaci\u00f3n.</div>' +
+                '<div class="firma-box">' +
+                '<div class="firma-area">[Espacio reservado para firma del conductor]</div>' +
+                '<div class="firma-line">' +
+                '<div class="firma-nombre">' + htmlEncode(conductor) + '</div>' +
+                '<div class="firma-rol">Conductor</div>' +
                 '</div>' +
-                '<div class="firma"><div class="linea">Firma del Administrador</div></div>' +
-                '<div class="firma"><div class="linea">Firma del Conductor</div></div>' +
+                '</div>' +
+                '<div class="firma-meta">Firma pendiente de registro digital</div>' +
+                '</div>' +
+
+                // === PIE CONTROLADO ===
+                '<div class="doc-footer">' +
+                '<div class="foot-legal">' +
+                '<strong>Documento interno controlado.</strong> Generado electr\u00f3nicamente por el Sistema SGV. ' +
+                'Los comprobantes tributarios (facturas, boletas, guias, tickets) que respaldan los importes aqu\u00ed consignados ' +
+                'se conservan digitalmente vinculados a este documento conforme al art. 87 del C\u00f3digo Tributario (plazo m\u00ednimo 5 a\u00f1os).' +
+                '<br/><span class="hash">Hash documento: [pendiente de firma digital]</span>' +
+                '</div>' +
+                '<div class="foot-pag">' +
+                FORMATO_CODIGO + ' v.' + FORMATO_VERSION + '<br/>' +
+                'P\u00e1gina 1 de 1' +
+                '</div>' +
                 '</div>' +
 
                 '</div></body></html>';

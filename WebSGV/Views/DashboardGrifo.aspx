@@ -247,6 +247,20 @@
         .vj-estado-abierto { background: #e8f5e9; color: #2e7d32; }
         .vj-estado-abastecido { background: #e3f2fd; color: #1565c0; }
 
+        /* Fase de carga (IDA / VUELTA / COMPLETO) */
+        .fase-badge {
+            font-size: 0.72rem;
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 3px 9px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .fase-badge small { font-weight: 500; opacity: 0.8; }
+        .fase-ida { background: #fff3e0; color: #e65100; }
+        .fase-completo { background: #e3f2fd; color: #1565c0; }
+
         .vj-card-body { padding: 8px 12px; }
 
         .vj-grid {
@@ -306,6 +320,29 @@
 
         .btn-abastecer-card:hover {
             background: #218838;
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn-retorno-card {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #6a1b9a;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            touch-action: manipulation;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .btn-retorno-card:hover {
+            background: #4a148c;
             color: white;
             text-decoration: none;
         }
@@ -517,6 +554,12 @@
                 <i class="fas fa-calendar-alt mr-1"></i>
                 <%= DateTime.Now.ToString("dddd, dd/MM/yyyy HH:mm", new System.Globalization.CultureInfo("es-PE")) %>
             </span>
+            <div style="margin-top:12px;">
+                <a href="RegistrarDespachoObra.aspx" class="btn btn-light"
+                   style="background:#fff;color:#e65100;font-weight:600;border:none;box-shadow:0 2px 6px rgba(0,0,0,.15);">
+                    <i class="fas fa-truck-loading mr-1"></i>Registrar Despacho a Obra
+                </a>
+            </div>
         </div>
 
         <!-- ========== TABS ========== -->
@@ -528,6 +571,10 @@
             <button type="button" class="gf-tab" id="tabHistorial" onclick="cambiarTab('historial')">
                 <i class="fas fa-history mr-1"></i>Historial
                 <span class="tab-badge"><asp:Label ID="lblTotalAbastecimientos" runat="server" Text="0"></asp:Label></span>
+            </button>
+            <button type="button" class="gf-tab" id="tabRetornos" onclick="cambiarTab('retornos')">
+                <i class="fas fa-globe-americas mr-1"></i>Retornos Ecuador
+                <span class="tab-badge"><asp:Label ID="lblTotalRetornos" runat="server" Text="0"></asp:Label></span>
             </button>
         </div>
 
@@ -545,8 +592,9 @@
                             placeholder="Buscar conductor o DNI..."></asp:TextBox>
                     </div>
                     <asp:DropDownList ID="ddlEstado" runat="server" CssClass="form-control">
-                        <asp:ListItem Value="ABIERTO" Selected="True">Abiertos</asp:ListItem>
-                        <asp:ListItem Value="ABASTECIDO">Abastecidos</asp:ListItem>
+                        <asp:ListItem Value="ACTIVO" Selected="True">Por abastecer</asp:ListItem>
+                        <asp:ListItem Value="COMPLETO">Abastecidos</asp:ListItem>
+                        <asp:ListItem Value="RETORNO_PEND">Retorno Ecuador pendiente</asp:ListItem>
                         <asp:ListItem Value="TODOS">Todos</asp:ListItem>
                     </asp:DropDownList>
                     <div class="gf-filter-actions">
@@ -573,9 +621,7 @@
                                     <span class="vj-num">
                                         <i class="fas fa-route mr-1"></i><%# Eval("NumeroViajeProgreso") %>
                                     </span>
-                                    <span class='vj-estado <%# GetEstadoClass(Eval("Estado")) %>'>
-                                        <%# Eval("Estado") %>
-                                    </span>
+                                    <%# FormatFaseBadge(Eval("FaseCarga"), Eval("EsInternacional"), Eval("CargasRealizadas")) %>
                                 </div>
                                 <div class="vj-card-body">
                                     <div class="vj-grid">
@@ -613,7 +659,8 @@
                                         <%# FormatDiasBadge(Eval("DiasEnViaje")) %> d&#237;as
                                     </div>
                                     <a href='<%# "AgregarAbastecimiento.aspx?idViaje=" + Eval("IdViaje") + "&amp;idConductor=" + Eval("IdConductor") + "&amp;idTracto=" + Eval("IdTracto") + "&amp;idCarreta=" + Eval("IdCarreta") %>'
-                                       class="btn-abastecer-card">
+                                       class="btn-abastecer-card"
+                                       style='<%# PuedeAbastecer(Eval("FaseCarga")) ? "" : "display:none;" %>'>
                                         <i class="fas fa-gas-pump"></i> Abastecer
                                     </a>
                                 </div>
@@ -738,26 +785,109 @@
 
         </div>
 
+        <!-- ======================================================
+             TAB 3: RETORNOS ECUADOR (Informativo)
+             ====================================================== -->
+        <div class="gf-tab-content" id="seccionRetornos">
+
+            <div class="gf-filter">
+                <div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div style="font-size: 0.85rem; color: #555;">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Registro informativo de combustible comprado en Ecuador (tickets presentados al retorno).
+                    </div>
+                    <div style="font-size: 0.95rem; font-weight: 600; color: #1565c0;">
+                        Total acumulado: <asp:Label ID="lblTotalGalonesEcuador" runat="server" Text="0.00"></asp:Label> GL
+                        &middot; $<asp:Label ID="lblTotalUsdEcuador" runat="server" Text="0.00"></asp:Label>
+                    </div>
+                </div>
+            </div>
+
+            <asp:Panel ID="pnlRetornos" runat="server">
+                <div class="gf-card-list">
+                    <asp:Repeater ID="rptRetornos" runat="server">
+                        <ItemTemplate>
+                            <div class="ab-card">
+                                <div class="ab-card-header">
+                                    <span class="ab-num">
+                                        <i class="fas fa-route mr-1"></i><%# Eval("NumeroViajeProgreso") %>
+                                    </span>
+                                    <span class="ab-fecha">
+                                        <i class="fas fa-clock mr-1"></i><%# Eval("FechaRecepcion", "{0:dd/MM/yyyy HH:mm}") %>
+                                    </span>
+                                </div>
+                                <div class="ab-card-body">
+                                    <div class="ab-grid">
+                                        <div class="ab-item">
+                                            <div class="ab-label">Conductor</div>
+                                            <div class="ab-value"><%# Eval("Conductor") %></div>
+                                        </div>
+                                        <div class="ab-item">
+                                            <div class="ab-label">Tracto</div>
+                                            <div class="ab-value"><%# Eval("PlacaTracto") %></div>
+                                        </div>
+                                        <div class="ab-item">
+                                            <div class="ab-label">Tickets</div>
+                                            <div class="ab-value"><%# Eval("CantidadTickets") %></div>
+                                        </div>
+                                        <div class="ab-item">
+                                            <div class="ab-label">Galones</div>
+                                            <div class="ab-value ab-highlight"><%# Eval("TotalGalones", "{0:N2}") %></div>
+                                        </div>
+                                        <div class="ab-item">
+                                            <div class="ab-label">Monto USD</div>
+                                            <div class="ab-value">$<%# Eval("TotalUSD", "{0:N2}") %></div>
+                                        </div>
+                                        <div class="ab-item">
+                                            <div class="ab-label">Observaciones</div>
+                                            <div class="ab-value"><%# Eval("Observaciones") %></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </ItemTemplate>
+                    </asp:Repeater>
+                </div>
+            </asp:Panel>
+
+            <asp:Panel ID="pnlSinRetornos" runat="server" Visible="false">
+                <div class="gf-empty">
+                    <i class="fas fa-globe-americas"></i>
+                    <h5>Sin retornos registrados</h5>
+                    <p>Aún no se han registrado ingresos de combustible desde Ecuador.</p>
+                </div>
+            </asp:Panel>
+
+        </div>
+
     </div>
 
     <script type="text/javascript">
         function cambiarTab(tab) {
             var viajes = document.getElementById('seccionViajes');
             var historial = document.getElementById('seccionHistorial');
+            var retornos = document.getElementById('seccionRetornos');
             var tabV = document.getElementById('tabViajes');
             var tabH = document.getElementById('tabHistorial');
+            var tabR = document.getElementById('tabRetornos');
             var hf = document.getElementById('hfTabActiva');
 
-            if (tab === 'viajes') {
-                viajes.className = 'gf-tab-content active';
-                historial.className = 'gf-tab-content';
-                tabV.className = 'gf-tab active';
-                tabH.className = 'gf-tab';
-            } else {
-                viajes.className = 'gf-tab-content';
+            viajes.className = 'gf-tab-content';
+            historial.className = 'gf-tab-content';
+            retornos.className = 'gf-tab-content';
+            tabV.className = 'gf-tab';
+            tabH.className = 'gf-tab';
+            tabR.className = 'gf-tab';
+
+            if (tab === 'historial') {
                 historial.className = 'gf-tab-content active';
-                tabV.className = 'gf-tab';
                 tabH.className = 'gf-tab active';
+            } else if (tab === 'retornos') {
+                retornos.className = 'gf-tab-content active';
+                tabR.className = 'gf-tab active';
+            } else {
+                viajes.className = 'gf-tab-content active';
+                tabV.className = 'gf-tab active';
             }
             hf.value = tab;
         }
@@ -765,8 +895,8 @@
         // Restore tab after postback
         (function () {
             var hf = document.getElementById('hfTabActiva');
-            if (hf && hf.value === 'historial') {
-                cambiarTab('historial');
+            if (hf && (hf.value === 'historial' || hf.value === 'retornos')) {
+                cambiarTab(hf.value);
             }
         })();
     </script>

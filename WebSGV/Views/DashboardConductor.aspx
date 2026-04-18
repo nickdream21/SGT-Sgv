@@ -415,33 +415,46 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody id="gastosBody">
-                                                    <!-- Peajes -->
+                                                    <!-- Peajes Nacionales (Perú) - Solo Soles -->
                                                     <tr>
                                                         <td class="text-center">1</td>
+                                                        <td><strong>Peajes Nacionales</strong><br/><small class="text-muted">Perú (S/)</small></td>
                                                         <td>
-                                                            <strong>Peajes</strong>
-                                                            <button type="button" class="btn btn-detail-modal btn-sm ml-2" onclick="abrirModalPeajes()">
-                                                                <i class="fas fa-edit"></i>Detalle
-                                                            </button>
+                                                            <input type="text" class="form-control form-control-sm"
+                                                                name="descPeajesNacionales" id="descPeajesNacionales" placeholder="Observaciones peajes nacionales">
                                                         </td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm form-control-readonly"
-                                                                name="descPeajes" id="descPeajes" readonly placeholder="Sin peajes registrados">
+                                                            <input type="number" class="form-control form-control-sm gasto-soles"
+                                                                name="peajesNacSoles" id="peajesNacSoles" placeholder="0.00" step="0.01" onchange="calcularTotales()">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-soles"
-                                                                name="peajesSoles" id="peajesSoles" readonly placeholder="0.00" step="0.01" onchange="calcularTotales()">
+                                                            <input type="number" class="form-control form-control-sm form-control-readonly"
+                                                                value="0.00" readonly title="Peajes nacionales solo en soles">
+                                                        </td>
+                                                        <td class="text-center"><span class="badge badge-fixed">Manual</span></td>
+                                                    </tr>
+                                                    <!-- Peajes Extranjeros (Ecuador) - Solo Dólares -->
+                                                    <tr>
+                                                        <td class="text-center">2</td>
+                                                        <td><strong>Peajes Extranjeros</strong><br/><small class="text-muted">Ecuador ($)</small></td>
+                                                        <td>
+                                                            <input type="text" class="form-control form-control-sm"
+                                                                name="descPeajesExtranjeros" id="descPeajesExtranjeros" placeholder="Observaciones peajes extranjeros">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control form-control-sm form-control-readonly gasto-dolares"
-                                                                name="peajesDolares" id="peajesDolares" readonly placeholder="0.00" step="0.01" onchange="calcularTotales()">
+                                                            <input type="number" class="form-control form-control-sm form-control-readonly"
+                                                                value="0.00" readonly title="Peajes extranjeros solo en dólares">
                                                         </td>
-                                                        <td class="text-center"><span class="badge badge-count" id="contadorPeajes">0</span></td>
+                                                        <td>
+                                                            <input type="number" class="form-control form-control-sm gasto-dolares"
+                                                                name="peajesExtDolares" id="peajesExtDolares" placeholder="0.00" step="0.01" onchange="calcularTotales()">
+                                                        </td>
+                                                        <td class="text-center"><span class="badge badge-fixed">Manual</span></td>
                                                     </tr>
 
                                                     <!-- Alimentación -->
                                                     <tr>
-                                                        <td class="text-center">2</td>
+                                                        <td class="text-center">3</td>
                                                         <td><strong>Alimentación</strong></td>
                                                         <td>
                                                             <input type="text" class="form-control form-control-sm" name="descAlimentacion"
@@ -460,7 +473,7 @@
 
                                                     <!-- Apoyo-Seguridad -->
                                                     <tr>
-                                                        <td class="text-center">3</td>
+                                                        <td class="text-center">4</td>
                                                         <td><strong>Apoyo-Seguridad</strong></td>
                                                         <td>
                                                             <input type="text" class="form-control form-control-sm" name="descApoyoSeguridad"
@@ -479,7 +492,7 @@
 
                                                     <!-- Reparaciones -->
                                                     <tr>
-                                                        <td class="text-center">4</td>
+                                                        <td class="text-center">5</td>
                                                         <td>
                                                             <strong>Reparaciones Varios</strong>
                                                             <button type="button" class="btn btn-detail-modal btn-sm ml-2" onclick="abrirModalReparaciones()">
@@ -503,7 +516,7 @@
 
                                                     <!-- Movilidad -->
                                                     <tr>
-                                                        <td class="text-center">5</td>
+                                                        <td class="text-center">6</td>
                                                         <td><strong>Movilidad</strong></td>
                                                         <td>
                                                             <input type="text" class="form-control form-control-sm" name="descMovilidad"
@@ -522,7 +535,7 @@
 
                                                     <!-- Encarpada/Desencarpada -->
                                                     <tr>
-                                                        <td class="text-center">6</td>
+                                                        <td class="text-center">7</td>
                                                         <td><strong>Encarpada/Desencarpada</strong></td>
                                                         <td>
                                                             <input type="text" class="form-control form-control-sm" name="descEncapada"
@@ -541,7 +554,7 @@
 
                                                     <!-- Hospedaje -->
                                                     <tr>
-                                                        <td class="text-center">7</td>
+                                                        <td class="text-center">8</td>
                                                         <td>
                                                             <strong>Hospedaje</strong>
                                                             <button type="button" class="btn btn-detail-modal btn-sm ml-2" onclick="abrirModalHospedaje()">
@@ -565,7 +578,7 @@
 
                                                     <!-- Combustible -->
                                                     <tr>
-                                                        <td class="text-center">8</td>
+                                                        <td class="text-center">9</td>
                                                         <td>
                                                             <strong>Combustible</strong>
                                                             <button type="button" class="btn btn-detail-modal btn-sm ml-2" onclick="abrirModalCombustible()">
@@ -788,109 +801,7 @@
 
     <!-- ========== MODALES ========== -->
 
-    <!-- Modal Peajes -->
-    <div class="modal fade" id="modalPeajes" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header modal-header-custom">
-                    <h5 class="modal-title"><i class="fas fa-road mr-2"></i>Registrar Peajes</h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="card card-form mb-3">
-                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar Peaje</div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label">Estación/Peaje <span class="text-danger">*</span></label>
-                                    <div class="peaje-autocomplete-wrapper">
-                                        <div class="peaje-input-container">
-                                            <input type="text" class="form-control form-control-sm" id="nuevoPeajeEstacion"
-                                                placeholder="Buscar peaje..." autocomplete="off">
-                                            <i class="fas fa-search peaje-search-icon"></i>
-                                        </div>
-                                        <div id="peajeDropdown" class="peaje-dropdown" style="display:none;"></div>
-                                    </div>
-                                    <small class="form-text text-muted">
-                                        <i class="fas fa-keyboard mr-1"></i>Escriba para filtrar y seleccione de la lista
-                                    </small>
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label">Fecha <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control form-control-sm" id="nuevoPeajeFecha">
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label">N° Comprobante</label>
-                                    <input type="text" class="form-control form-control-sm" id="nuevoPeajeComprobante" placeholder="001-123456">
-                                </div>
-                            </div>
-                            <div class="row mt-3">
-                                <div class="col-12 col-md-6">
-                                    <label class="form-label">Monto Soles</label>
-                                    <input type="number" class="form-control form-control-sm" id="nuevoPeajeSoles" placeholder="0.00" step="0.01">
-                                </div>
-                                <div class="col-12 col-md-6">
-                                    <label class="form-label">Monto Dólares</label>
-                                    <input type="number" class="form-control form-control-sm" id="nuevoPeajeDolares" placeholder="0.00" step="0.01">
-                                </div>
-                            </div>
-                            <div class="row mt-3">
-                                <div class="col-12">
-                                    <label class="form-label">Observaciones</label>
-                                    <input type="text" class="form-control form-control-sm" id="nuevoPeajeObservaciones" placeholder="Observaciones">
-                                </div>
-                            </div>
-                            <div class="text-right mt-3">
-                                <button type="button" class="btn btn-success-custom btn-sm" onclick="agregarPeaje()">
-                                    <i class="fas fa-plus mr-1"></i>Agregar Peaje
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card card-list">
-                        <div class="card-header d-flex justify-content-between">
-                            <span><i class="fas fa-list mr-2"></i>Peajes Registrados</span>
-                            <span class="badge badge-primary-custom" id="totalPeajes">0 peajes</span>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-modal mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Estación</th>
-                                            <th>Fecha</th>
-                                            <th>Comprobante</th>
-                                            <th>Soles</th>
-                                            <th>Dólares</th>
-                                            <th width="80">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tablaPeajes"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="card-footer-totals">
-                            <div class="row">
-                                <div class="col-6">
-                                    <strong>Total Soles: <span id="totalPeajesSoles">S/ 0.00</span></strong>
-                                </div>
-                                <div class="col-6 text-right">
-                                    <strong>Total Dólares: <span id="totalPeajesDolares">$ 0.00</span></strong>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary-custom" onclick="aplicarPeajes()">Aplicar y Cerrar</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Modal Peajes eliminado - Ahora se usan campos directos de Peajes Nacionales/Extranjeros -->
 
     <!-- Modal Reparaciones -->
     <div class="modal fade" id="modalReparaciones" tabindex="-1">
@@ -2274,24 +2185,18 @@
         let contadorGastosAdicionales = 0;
 
         // Datos de modales
-        let _peajeSeleccionado = '';
-        let peajesData = [];
         let reparacionesData = [];
         let hospedajesData = [];
         let combustiblesData = [];
 
-        let contadorPeajes = 0;
         let contadorReparaciones = 0;
         let contadorHospedajes = 0;
         let contadorCombustibles = 0;
-
-        let estacionesPeaje = [];
 
         // === INICIALIZACIÓN ===
         $(document).ready(function () {
             console.log('✅ Dashboard Conductor iniciado');
             configurarFechasPorDefecto();
-            cargarEstacionesPeaje();
             calcularTotales();
         });
 
@@ -2299,7 +2204,7 @@
             const hoy = new Date();
             const fechaHoy = hoy.toISOString().split('T')[0];
 
-            $('#nuevoPeajeFecha, #nuevaReparacionFecha, #nuevoHospedajeFecha, #nuevoCombustibleFecha').val(fechaHoy);
+            $('#nuevaReparacionFecha, #nuevoHospedajeFecha, #nuevoCombustibleFecha').val(fechaHoy);
 
             if (!$('#<%= txtFechaSalida.ClientID %>').val()) {
                 $('#<%= txtFechaSalida.ClientID %>').val(fechaHoy);
@@ -2430,223 +2335,8 @@
             $('#diferenciaDolares').css('color', diferenciaDolares >= 0 ? '#059669' : '#dc2626');
         }
 
-        // === GESTIÓN DE PEAJES ===
-
-        function cargarEstacionesPeaje() {
-            try {
-                const json = '<%= ObtenerEstacionesPeajeJSON() %>';
-                console.log('JSON recibido:', json);
-                console.log('Longitud del JSON:', json.length);
-
-                if (json && json !== '[]' && json !== '') {
-                    estacionesPeaje = JSON.parse(json);
-                    console.log('Peajes parseados:', estacionesPeaje);
-                    console.log('Cantidad de peajes:', estacionesPeaje.length);
-                    llenarSelectEstaciones();
-                } else {
-                    console.error('❌ JSON vacío o inválido');
-                }
-            } catch (e) {
-                console.error('❌ Error cargando estaciones:', e);
-                console.error('Stack:', e.stack);
-            }
-        }
-
-        function llenarSelectEstaciones() {
-            if (!estacionesPeaje || estacionesPeaje.length === 0) {
-                console.error('❌ No hay estaciones para configurar');
-                return;
-            }
-            console.log('✅ Autocomplete configurado con', estacionesPeaje.length, 'peajes');
-
-            const input = $('#nuevoPeajeEstacion');
-
-            input.off('input.peaje').on('input.peaje', function () {
-                _peajeSeleccionado = '';
-                actualizarIconoPeaje(false);
-                const q = $(this).val().trim();
-                if (q.length === 0) {
-                    mostrarDropdownPeajes(estacionesPeaje, '');
-                } else {
-                    const filtrados = estacionesPeaje.filter(e =>
-                        e.nombre.toLowerCase().includes(q.toLowerCase())
-                    );
-                    mostrarDropdownPeajes(filtrados, q);
-                }
-            });
-
-            input.off('focus.peaje').on('focus.peaje', function () {
-                const q = $(this).val().trim();
-                const filtrados = q
-                    ? estacionesPeaje.filter(e => e.nombre.toLowerCase().includes(q.toLowerCase()))
-                    : estacionesPeaje;
-                mostrarDropdownPeajes(filtrados, q);
-            });
-
-            input.off('keydown.peaje').on('keydown.peaje', function (e) {
-                const items = $('#peajeDropdown .peaje-dropdown-item');
-                const current = $('#peajeDropdown .peaje-dropdown-item.highlighted');
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    if (!current.length) items.first().addClass('highlighted');
-                    else { current.removeClass('highlighted'); current.next('.peaje-dropdown-item').addClass('highlighted'); }
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    if (current.length) { current.removeClass('highlighted'); current.prev('.peaje-dropdown-item').addClass('highlighted'); }
-                } else if (e.key === 'Enter') {
-                    e.preventDefault();
-                    if (current.length) current.trigger('click');
-                } else if (e.key === 'Escape') {
-                    $('#peajeDropdown').hide();
-                }
-            });
-
-            $(document).off('click.peaje').on('click.peaje', function (e) {
-                if (!$(e.target).closest('.peaje-autocomplete-wrapper').length) {
-                    $('#peajeDropdown').hide();
-                }
-            });
-        }
-
-        function mostrarDropdownPeajes(items, query) {
-            const dropdown = $('#peajeDropdown');
-            dropdown.empty();
-
-            if (items.length === 0) {
-                dropdown.append('<div class="peaje-dropdown-empty"><i class="fas fa-search mr-1"></i>No se encontraron peajes</div>');
-            } else {
-                items.forEach(item => {
-                    let label = item.nombre;
-                    if (query) {
-                        const regex = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-                        label = item.nombre.replace(regex, '<strong>$1</strong>');
-                    }
-                    const div = $('<div class="peaje-dropdown-item"></div>')
-                        .html(label)
-                        .on('click', function () { seleccionarPeaje(item.nombre); });
-                    dropdown.append(div);
-                });
-            }
-
-            dropdown.show();
-        }
-
-        function seleccionarPeaje(nombre) {
-            _peajeSeleccionado = nombre;
-            $('#nuevoPeajeEstacion').val(nombre);
-            $('#peajeDropdown').hide();
-            actualizarIconoPeaje(true);
-        }
-
-        function actualizarIconoPeaje(seleccionado) {
-            const wrapper = $('#nuevoPeajeEstacion').closest('.peaje-input-container');
-            wrapper.find('.peaje-search-icon').toggle(!seleccionado);
-            if (seleccionado) {
-                if (!wrapper.find('.peaje-selected-indicator').length) {
-                    wrapper.append('<i class="fas fa-check-circle peaje-selected-indicator" style="display:block;"></i>');
-                } else {
-                    wrapper.find('.peaje-selected-indicator').show();
-                }
-            } else {
-                wrapper.find('.peaje-selected-indicator').hide();
-            }
-        }
-
-        function abrirModalPeajes() {
-            _peajeSeleccionado = '';
-            $('#nuevoPeajeEstacion').val('');
-            actualizarIconoPeaje(false);
-            $('#peajeDropdown').hide();
-            $('#modalPeajes').modal('show');
-            actualizarTablaPeajes();
-        }
-
-        function agregarPeaje() {
-            const estacion = _peajeSeleccionado || '';
-            const fecha = $('#nuevoPeajeFecha').val();
-            const comprobante = $('#nuevoPeajeComprobante').val().trim();
-            const soles = parseFloat($('#nuevoPeajeSoles').val()) || 0;
-            const dolares = parseFloat($('#nuevoPeajeDolares').val()) || 0;
-            const observaciones = $('#nuevoPeajeObservaciones').val().trim();
-
-            if (!estacion) {
-                alert('⚠️ Debe seleccionar una estación de peaje de la lista');
-                $('#nuevoPeajeEstacion').focus();
-                return;
-            }
-            if (!fecha) {
-                alert('⚠️ Seleccione una fecha');
-                $('#nuevoPeajeFecha').focus();
-                return;
-            }
-            if (soles <= 0 && dolares <= 0) {
-                alert('⚠️ Ingrese al menos un monto');
-                $('#nuevoPeajeSoles').focus();
-                return;
-            }
-
-            peajesData.push({
-                id: ++contadorPeajes,
-                estacion, fecha, comprobante, soles, dolares, observaciones
-            });
-
-            _peajeSeleccionado = '';
-            $('#nuevoPeajeEstacion').val('');
-            actualizarIconoPeaje(false);
-            $('#nuevoPeajeComprobante, #nuevoPeajeObservaciones').val('');
-            $('#nuevoPeajeSoles, #nuevoPeajeDolares').val('');
-
-            actualizarTablaPeajes();
-            actualizarTotalesPeajes();
-        }
-
-        function eliminarPeaje(id) {
-            if (confirm('¿Eliminar este peaje?')) {
-                peajesData = peajesData.filter(p => p.id !== id);
-                actualizarTablaPeajes();
-                actualizarTotalesPeajes();
-            }
-        }
-
-        function actualizarTablaPeajes() {
-            const tbody = $('#tablaPeajes');
-            tbody.empty();
-            peajesData.forEach(p => {
-                tbody.append(`
-                <tr>
-                    <td>${p.estacion}</td>
-                    <td>${p.fecha}</td>
-                    <td>${p.comprobante || 'N/A'}</td>
-                    <td>S/ ${p.soles.toFixed(2)}</td>
-                    <td>$ ${p.dolares.toFixed(2)}</td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarPeaje(${p.id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `);
-            });
-            $('#totalPeajes').text(`${peajesData.length} peajes`);
-        }
-
-        function actualizarTotalesPeajes() {
-            const totalSoles = peajesData.reduce((sum, p) => sum + p.soles, 0);
-            const totalDolares = peajesData.reduce((sum, p) => sum + p.dolares, 0);
-
-            $('#totalPeajesSoles').text(`S/ ${totalSoles.toFixed(2)}`);
-            $('#totalPeajesDolares').text(`$ ${totalDolares.toFixed(2)}`);
-            $('#peajesSoles').val(totalSoles > 0 ? totalSoles.toFixed(2) : '');
-            $('#peajesDolares').val(totalDolares > 0 ? totalDolares.toFixed(2) : '');
-            $('#descPeajes').val(peajesData.length > 0 ? `${peajesData.length} peajes registrados` : 'Sin peajes');
-            $('#contadorPeajes').text(peajesData.length);
-
-            calcularTotales();
-        }
-
-        function aplicarPeajes() {
-            $('#modalPeajes').modal('hide');
-        }
+        // === GESTIÓN DE PEAJES (Simplificado: Nacionales/Extranjeros) ===
+        // Ya no se usa modal ni detalle individual, los campos son directos en la tabla de egresos.
 
         // === GESTIÓN DE REPARACIONES ===
 
@@ -2888,12 +2578,38 @@
         // === PREPARAR DATOS PARA ENVÍO ===
 
         function prepararDatosFinancieros() {
-            const gastosFinancieros = [
-                ...peajesData.map(p => ({ categoria: 'Peajes', ...p })),
+            const gastosFinancieros = [];
+
+            // Peajes Nacionales (Perú) - solo Soles
+            const pnSoles = parseFloat($('#peajesNacSoles').val()) || 0;
+            if (pnSoles > 0) {
+                gastosFinancieros.push({
+                    categoria: 'Peajes',
+                    estacion: 'Peajes Nacionales (Perú)',
+                    soles: pnSoles,
+                    dolares: 0,
+                    observaciones: $('#descPeajesNacionales').val() || ''
+                });
+            }
+
+            // Peajes Extranjeros (Ecuador) - solo Dólares
+            const peDolares = parseFloat($('#peajesExtDolares').val()) || 0;
+            if (peDolares > 0) {
+                gastosFinancieros.push({
+                    categoria: 'Peajes',
+                    estacion: 'Peajes Extranjeros (Ecuador)',
+                    soles: 0,
+                    dolares: peDolares,
+                    observaciones: $('#descPeajesExtranjeros').val() || ''
+                });
+            }
+
+            // Otros gastos detallados
+            gastosFinancieros.push(
                 ...reparacionesData.map(r => ({ categoria: 'Reparaciones', ...r })),
                 ...hospedajesData.map(h => ({ categoria: 'Hospedaje', ...h })),
                 ...combustiblesData.map(c => ({ categoria: 'Combustible', ...c }))
-            ];
+            );
             $('#hfGastosFinancieros').val(JSON.stringify(gastosFinancieros));
 
             const ingresosAdicionales = [];
