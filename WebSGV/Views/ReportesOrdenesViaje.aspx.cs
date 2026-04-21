@@ -45,6 +45,9 @@ namespace WebSGV.Views
                     case "generarPDF":
                         GenerarPDFLiquidaciones();
                         return; // ✅ Salir inmediatamente
+                    case "reportePersonalizado":
+                        GenerarReportePersonalizado();
+                        return; // ✅ Salir inmediatamente
                 }
             }
 
@@ -58,10 +61,67 @@ namespace WebSGV.Views
                 txtFechaHasta.Text = hoy.ToString("yyyy-MM-dd");
                 txtFactorConversion.Text = "3.75";
 
+                // Fechas y combos para el reporte personalizado
+                txtPersFechaDesde.Text = primerDia.ToString("yyyy-MM-dd");
+                txtPersFechaHasta.Text = hoy.ToString("yyyy-MM-dd");
+                txtPersFactor.Text = "3.75";
+                CargarConductoresPersonalizado();
+                CargarClientesPersonalizado();
+
                 // Cargar datos iniciales
                 CargarLiquidaciones();
                 CargarViajesActivos();
             }
+        }
+
+        private void CargarConductoresPersonalizado()
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string query = @"SELECT idConductor, 
+                                        CONCAT(nombre, ' ', apPaterno, ' ', ISNULL(apMaterno,'')) AS NombreCompleto
+                                     FROM Conductor
+                                     WHERE activo = 1
+                                     ORDER BY nombre, apPaterno";
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlDataReader dr = cmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            ddlPersConductor.Items.Add(new System.Web.UI.WebControls.ListItem(
+                                dr["NombreCompleto"].ToString().Trim(),
+                                dr["idConductor"].ToString()));
+                        }
+                    }
+                }
+            }
+            catch { /* silencioso: el combo sigue con "Todos" */ }
+        }
+
+        private void CargarClientesPersonalizado()
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string query = @"SELECT idCliente, nombre FROM Cliente ORDER BY nombre";
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlDataReader dr = cmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            ddlPersCliente.Items.Add(new System.Web.UI.WebControls.ListItem(
+                                dr["nombre"].ToString(),
+                                dr["idCliente"].ToString()));
+                        }
+                    }
+                }
+            }
+            catch { /* silencioso */ }
         }
 
         #region LIQUIDACIONES
@@ -1470,6 +1530,873 @@ namespace WebSGV.Views
             html.Append("</div>");
 
             return html.ToString();
+        }
+
+        #endregion
+
+        #region REPORTE PERSONALIZADO
+
+        /// <summary>
+        /// Definición de columnas disponibles (clave, encabezado, tipo).
+        /// Tipo: "text" | "date" | "time" | "money-sol" | "money-dol" | "int"
+        /// </summary>
+        private static readonly Tuple<string, string, string>[] ColumnasPersonalizadas = new[]
+        {
+            Tuple.Create("dni",              "DNI",                 "text"),
+            Tuple.Create("conductor",        "Conductor",           "text"),
+            Tuple.Create("fechaSalida",      "Fecha Salida",        "date"),
+            Tuple.Create("fechaLlegada",     "Fecha Llegada",       "date"),
+            Tuple.Create("horaSalida",       "Hora Salida",         "time"),
+            Tuple.Create("horaLlegada",      "Hora Llegada",        "time"),
+            Tuple.Create("tracto",           "Placa Tracto",        "text"),
+            Tuple.Create("carreta",          "Placa Carreta",       "text"),
+            Tuple.Create("cliente",          "Cliente",             "text"),
+            Tuple.Create("destino",          "Destino",             "text"),
+            Tuple.Create("numero",           "N° Liquidación",      "text"),
+            Tuple.Create("estado",           "Estado",              "text"),
+            Tuple.Create("ingresosSoles",    "Ingresos S/",         "money-sol"),
+            Tuple.Create("ingresosDolares",  "Ingresos $",          "money-dol"),
+            Tuple.Create("gastosSoles",      "Gastos S/",           "money-sol"),
+            Tuple.Create("gastosDolares",    "Gastos $",            "money-dol"),
+            Tuple.Create("descuentoSoles",   "Descuento S/",        "money-sol"),
+            Tuple.Create("descuentoDolares", "Descuento $",         "money-dol"),
+            Tuple.Create("reintegroSoles",   "Reintegro S/",        "money-sol"),
+            Tuple.Create("reintegroDolares", "Reintegro $",         "money-dol"),
+            Tuple.Create("balanceSoles",     "Balance Neto S/",     "money-sol"),
+            Tuple.Create("balanceDolares",   "Balance Neto $",      "money-dol"),
+            // === INGRESOS DETALLADOS ===
+            Tuple.Create("iDespachoS",       "Ing. Despacho S/",    "money-sol"),
+            Tuple.Create("iDespachoD",       "Ing. Despacho $",     "money-dol"),
+            Tuple.Create("iPrestamoS",       "Ing. Préstamo S/",    "money-sol"),
+            Tuple.Create("iPrestamoD",       "Ing. Préstamo $",     "money-dol"),
+            Tuple.Create("iMensualidadS",    "Ing. Mensualidad S/", "money-sol"),
+            Tuple.Create("iMensualidadD",    "Ing. Mensualidad $",  "money-dol"),
+            Tuple.Create("iOtrosS",          "Ing. Otros S/",       "money-sol"),
+            Tuple.Create("iOtrosD",          "Ing. Otros $",        "money-dol"),
+            Tuple.Create("iAdicionalesS",    "Ing. Adicionales S/", "money-sol"),
+            Tuple.Create("iAdicionalesD",    "Ing. Adicionales $",  "money-dol"),
+            Tuple.Create("iAdicionalesDet",  "Detalle Ing. Adicionales", "text"),
+            // === GASTOS DETALLADOS ===
+            Tuple.Create("gPeajesS",         "Peajes S/",           "money-sol"),
+            Tuple.Create("gPeajesD",         "Peajes $",            "money-dol"),
+            Tuple.Create("gAlimentacionS",   "Alimentación S/",     "money-sol"),
+            Tuple.Create("gAlimentacionD",   "Alimentación $",      "money-dol"),
+            Tuple.Create("gApoyoSeguridadS", "Apoyo Seguridad S/",  "money-sol"),
+            Tuple.Create("gApoyoSeguridadD", "Apoyo Seguridad $",   "money-dol"),
+            Tuple.Create("gReparacionesS",   "Reparaciones S/",     "money-sol"),
+            Tuple.Create("gReparacionesD",   "Reparaciones $",      "money-dol"),
+            Tuple.Create("gMovilidadS",      "Movilidad S/",        "money-sol"),
+            Tuple.Create("gMovilidadD",      "Movilidad $",         "money-dol"),
+            Tuple.Create("gHospedajeS",      "Hospedaje S/",        "money-sol"),
+            Tuple.Create("gHospedajeD",      "Hospedaje $",         "money-dol"),
+            Tuple.Create("gCombustibleS",    "Combustible S/",      "money-sol"),
+            Tuple.Create("gCombustibleD",    "Combustible $",       "money-dol"),
+            Tuple.Create("gEncarpadaS",      "Encarpada/Desenc. S/","money-sol"),
+            Tuple.Create("gEncarpadaD",      "Encarpada/Desenc. $", "money-dol"),
+            Tuple.Create("gAdicionalesS",    "Otros Gastos S/",     "money-sol"),
+            Tuple.Create("gAdicionalesD",    "Otros Gastos $",      "money-dol"),
+            Tuple.Create("gAdicionalesDet",  "Detalle Otros Gastos (Propina, etc.)", "text"),
+            Tuple.Create("observaciones",    "Observaciones",       "text"),
+        };
+
+        private class FiltrosPersonalizado
+        {
+            public DateTime FechaDesde;
+            public DateTime FechaHasta;
+            public string Estado;
+            public int IdConductor;
+            public int IdCliente;
+            public string PlacaTracto;
+            public string Categoria;
+            public string Orden;
+            public decimal Factor;
+            public string Titulo;
+            public bool IncluirTotales;
+            public bool IncluirResumen;
+            public List<string> Columnas;
+            public string Formato;
+        }
+
+        private FiltrosPersonalizado LeerFiltrosPersonalizado()
+        {
+            var q = Request.QueryString;
+            decimal factor;
+            if (!decimal.TryParse(q["factor"], System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out factor))
+                factor = 3.75m;
+
+            int idConductor;
+            int.TryParse(q["idConductor"], out idConductor);
+            int idCliente;
+            int.TryParse(q["idCliente"], out idCliente);
+
+            return new FiltrosPersonalizado
+            {
+                FechaDesde = DateTime.Parse(q["fechaDesde"]),
+                FechaHasta = DateTime.Parse(q["fechaHasta"]),
+                Estado = q["estado"] ?? "TODOS",
+                IdConductor = idConductor,
+                IdCliente = idCliente,
+                PlacaTracto = (q["placaTracto"] ?? "").Trim(),
+                Categoria = (q["categoria"] ?? "").Trim(),
+                Orden = q["orden"] ?? "fecha_desc",
+                Factor = factor,
+                Titulo = string.IsNullOrWhiteSpace(q["titulo"]) ? "Reporte Personalizado" : q["titulo"],
+                IncluirTotales = q["totales"] != "0",
+                IncluirResumen = q["resumen"] != "0",
+                Columnas = (q["cols"] ?? "")
+                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(c => c.Trim()).Where(c => c.Length > 0).ToList(),
+                Formato = (q["formato"] ?? "excel").ToLowerInvariant()
+            };
+        }
+
+        private DataTable ObtenerReportePersonalizado(FiltrosPersonalizado f)
+        {
+            DataTable dt = new DataTable();
+
+            string orderBy;
+            switch (f.Orden)
+            {
+                case "fecha_asc": orderBy = "ov.fechaSalida ASC"; break;
+                case "conductor": orderBy = "Conductor ASC, ov.fechaSalida DESC"; break;
+                case "cliente": orderBy = "Cliente ASC, ov.fechaSalida DESC"; break;
+                default: orderBy = "ov.fechaSalida DESC"; break;
+            }
+
+            StringBuilder sb = new StringBuilder(@"
+                SELECT
+                    c.DNI AS DNI,
+                    CONCAT(c.nombre, ' ', c.apPaterno, ' ', ISNULL(c.apMaterno,'')) AS Conductor,
+                    ov.fechaSalida AS FechaSalida,
+                    ov.fechaLlegada AS FechaLlegada,
+                    ov.horaSalida AS HoraSalida,
+                    ov.horaLlegada AS HoraLlegada,
+                    ISNULL(t.placaTracto, 'N/A') AS PlacaTracto,
+                    ISNULL(ca.placaCarreta, 'N/A') AS PlacaCarreta,
+                    ISNULL((SELECT TOP 1 cl.nombre FROM Despachos d
+                                INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
+                            WHERE d.idViajeProgreso = ov.idViajeProgreso AND d.activo = 1
+                            ORDER BY d.idDespacho DESC), 'N/A') AS Cliente,
+                    ISNULL((SELECT TOP 1 d.lugarOperacion FROM Despachos d
+                            WHERE d.idViajeProgreso = ov.idViajeProgreso AND d.activo = 1
+                            ORDER BY d.idDespacho DESC), 'N/A') AS Destino,
+                    ov.numeroOrdenViaje AS NumeroLiquidacion,
+                    ov.estadoViaje AS Estado,
+                    ISNULL(ov.observaciones, '') AS Observaciones,
+
+                    -- Ingresos por categoría
+                    ISNULL((SELECT i.despachoSoles FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IDespachoSoles,
+                    ISNULL((SELECT i.despachoDolares FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IDespachoDolares,
+                    ISNULL((SELECT i.prestamoSoles FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IPrestamoSoles,
+                    ISNULL((SELECT i.prestamosDolares FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IPrestamoDolares,
+                    ISNULL((SELECT i.mensualidadSoles FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IMensualidadSoles,
+                    ISNULL((SELECT i.mensualidadDolares FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IMensualidadDolares,
+                    ISNULL((SELECT i.otrosSoles FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IOtrosSoles,
+                    ISNULL((SELECT i.otrosDolares FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IOtrosDolares,
+                    ISNULL((SELECT SUM(soles) FROM IngresosAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IAdicionalesSoles,
+                    ISNULL((SELECT SUM(dolares) FROM IngresosAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IAdicionalesDolares,
+                    ISNULL(STUFF((SELECT '; ' + ia.nombreCategoria + ' S/' + CONVERT(varchar, CAST(ISNULL(ia.soles,0) AS decimal(18,2)))
+                                        + CASE WHEN ISNULL(ia.dolares,0) > 0 THEN ' / $' + CONVERT(varchar, CAST(ia.dolares AS decimal(18,2))) ELSE '' END
+                                 FROM IngresosAdicionales ia
+                                 WHERE ia.numeroOrdenViaje = ov.numeroOrdenViaje
+                                   AND (ISNULL(ia.soles,0) > 0 OR ISNULL(ia.dolares,0) > 0)
+                                 FOR XML PATH(''), TYPE).value('.', 'nvarchar(max)'), 1, 2, ''), '') AS IAdicionalesDetalle,
+
+                    -- Gastos por categoría
+                    ISNULL((SELECT e.peajesSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GPeajesSoles,
+                    ISNULL((SELECT e.peajesDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GPeajesDolares,
+                    ISNULL((SELECT e.alimentacionSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GAlimentacionSoles,
+                    ISNULL((SELECT e.alimentacionDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GAlimentacionDolares,
+                    ISNULL((SELECT e.apoyoseguridadSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GApoyoSeguridadSoles,
+                    ISNULL((SELECT e.apoyoseguridadDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GApoyoSeguridadDolares,
+                    ISNULL((SELECT e.reparacionesVariosSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GReparacionesSoles,
+                    ISNULL((SELECT e.repacionesVariosDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GReparacionesDolares,
+                    ISNULL((SELECT e.movilidadSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GMovilidadSoles,
+                    ISNULL((SELECT e.movilidadDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GMovilidadDolares,
+                    ISNULL((SELECT e.hospedajeSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GHospedajeSoles,
+                    ISNULL((SELECT e.hospedajeDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GHospedajeDolares,
+                    ISNULL((SELECT e.combustibleSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GCombustibleSoles,
+                    ISNULL((SELECT e.combustibleDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GCombustibleDolares,
+                    ISNULL((SELECT e.encarpada_desencarpadaSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GEncarpadaSoles,
+                    ISNULL((SELECT e.encarpada_desencarpadaDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GEncarpadaDolares,
+                    ISNULL((SELECT SUM(soles) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GAdicionalesSoles,
+                    ISNULL((SELECT SUM(dolares) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GAdicionalesDolares,
+                    ISNULL(STUFF((SELECT '; ' + gca.nombreCategoria + ' S/' + CONVERT(varchar, CAST(ISNULL(gca.soles,0) AS decimal(18,2)))
+                                        + CASE WHEN ISNULL(gca.dolares,0) > 0 THEN ' / $' + CONVERT(varchar, CAST(gca.dolares AS decimal(18,2))) ELSE '' END
+                                 FROM CategoriasAdicionales gca
+                                 WHERE gca.numeroOrdenViaje = ov.numeroOrdenViaje
+                                   AND (ISNULL(gca.soles,0) > 0 OR ISNULL(gca.dolares,0) > 0)
+                                 FOR XML PATH(''), TYPE).value('.', 'nvarchar(max)'), 1, 2, ''), '') AS GAdicionalesDetalle,
+
+                    -- Totales agregados (para columnas agregadas y balance)
+                    ISNULL((SELECT ISNULL(i.despachoSoles,0) + ISNULL(i.prestamoSoles,0)
+                                   + ISNULL(i.mensualidadSoles,0) + ISNULL(i.otrosSoles,0)
+                            FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0)
+                    + ISNULL((SELECT SUM(soles) FROM IngresosAdicionales
+                              WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IngresosSoles,
+
+                    ISNULL((SELECT ISNULL(i.despachoDolares,0) + ISNULL(i.prestamosDolares,0)
+                                   + ISNULL(i.mensualidadDolares,0) + ISNULL(i.otrosDolares,0)
+                            FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0)
+                    + ISNULL((SELECT SUM(dolares) FROM IngresosAdicionales
+                              WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IngresosDolares,
+
+                    ISNULL((SELECT ISNULL(e.peajesSoles,0) + ISNULL(e.alimentacionSoles,0)
+                                   + ISNULL(e.apoyoseguridadSoles,0) + ISNULL(e.reparacionesVariosSoles,0)
+                                   + ISNULL(e.movilidadSoles,0) + ISNULL(e.hospedajeSoles,0)
+                                   + ISNULL(e.combustibleSoles,0) + ISNULL(e.encarpada_desencarpadaSoles,0)
+                            FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0)
+                    + ISNULL((SELECT SUM(soles) FROM CategoriasAdicionales
+                              WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GastosSoles,
+
+                    ISNULL((SELECT ISNULL(e.peajesDolares,0) + ISNULL(e.alimentacionDolares,0)
+                                   + ISNULL(e.apoyoseguridadDolares,0) + ISNULL(e.repacionesVariosDolares,0)
+                                   + ISNULL(e.movilidadDolares,0) + ISNULL(e.hospedajeDolares,0)
+                                   + ISNULL(e.combustibleDolares,0) + ISNULL(e.encarpada_desencarpadaDolares,0)
+                            FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0)
+                    + ISNULL((SELECT SUM(dolares) FROM CategoriasAdicionales
+                              WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GastosDolares,
+
+                    ISNULL((SELECT dr.descuentoSoles FROM DescuentosReintegros dr
+                            WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS DescuentoSoles,
+                    ISNULL((SELECT dr.descuentoDolares FROM DescuentosReintegros dr
+                            WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS DescuentoDolares,
+                    ISNULL((SELECT dr.reintegroSoles FROM DescuentosReintegros dr
+                            WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS ReintegroSoles,
+                    ISNULL((SELECT dr.reintegroDolares FROM DescuentosReintegros dr
+                            WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS ReintegroDolares
+
+                FROM OrdenViaje ov
+                INNER JOIN Conductor c ON ov.idConductor = c.idConductor
+                LEFT JOIN Tracto t ON ov.idTracto = t.idTracto
+                LEFT JOIN Carreta ca ON ov.idCarreta = ca.idCarreta
+                WHERE ov.fechaSalida BETWEEN @FechaDesde AND @FechaHasta ");
+
+            if (!string.IsNullOrEmpty(f.Estado) && f.Estado != "TODOS")
+                sb.Append(" AND ov.estadoViaje = @Estado ");
+            if (f.IdConductor > 0)
+                sb.Append(" AND ov.idConductor = @IdConductor ");
+            if (!string.IsNullOrEmpty(f.PlacaTracto))
+                sb.Append(" AND t.placaTracto LIKE @PlacaTracto ");
+            if (f.IdCliente > 0)
+                sb.Append(@" AND EXISTS (SELECT 1 FROM Despachos d
+                                         WHERE d.idViajeProgreso = ov.idViajeProgreso
+                                           AND d.activo = 1 AND d.idCliente = @IdCliente) ");
+            if (!string.IsNullOrEmpty(f.Categoria))
+                sb.Append(@" AND EXISTS (SELECT 1 FROM CategoriasAdicionales gca
+                                         WHERE gca.numeroOrdenViaje = ov.numeroOrdenViaje
+                                           AND gca.nombreCategoria LIKE @Categoria
+                                           AND (ISNULL(gca.soles,0) > 0 OR ISNULL(gca.dolares,0) > 0)) ");
+
+            sb.Append(" ORDER BY ").Append(orderBy);
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SqlCommand cmd = new SqlCommand(sb.ToString(), conn))
+            {
+                cmd.Parameters.AddWithValue("@FechaDesde", f.FechaDesde);
+                cmd.Parameters.AddWithValue("@FechaHasta", f.FechaHasta);
+                if (!string.IsNullOrEmpty(f.Estado) && f.Estado != "TODOS")
+                    cmd.Parameters.AddWithValue("@Estado", f.Estado);
+                if (f.IdConductor > 0)
+                    cmd.Parameters.AddWithValue("@IdConductor", f.IdConductor);
+                if (!string.IsNullOrEmpty(f.PlacaTracto))
+                    cmd.Parameters.AddWithValue("@PlacaTracto", "%" + f.PlacaTracto + "%");
+                if (f.IdCliente > 0)
+                    cmd.Parameters.AddWithValue("@IdCliente", f.IdCliente);
+                if (!string.IsNullOrEmpty(f.Categoria))
+                    cmd.Parameters.AddWithValue("@Categoria", "%" + f.Categoria + "%");
+
+                new SqlDataAdapter(cmd).Fill(dt);
+            }
+
+            // Balance Neto = Ingresos - Gastos - Descuento + Reintegro
+            dt.Columns.Add("BalanceSoles", typeof(decimal));
+            dt.Columns.Add("BalanceDolares", typeof(decimal));
+            foreach (DataRow r in dt.Rows)
+            {
+                decimal ingS = Convert.ToDecimal(r["IngresosSoles"]);
+                decimal gasS = Convert.ToDecimal(r["GastosSoles"]);
+                decimal desS = Convert.ToDecimal(r["DescuentoSoles"]);
+                decimal reiS = Convert.ToDecimal(r["ReintegroSoles"]);
+                decimal ingD = Convert.ToDecimal(r["IngresosDolares"]);
+                decimal gasD = Convert.ToDecimal(r["GastosDolares"]);
+                decimal desD = Convert.ToDecimal(r["DescuentoDolares"]);
+                decimal reiD = Convert.ToDecimal(r["ReintegroDolares"]);
+                r["BalanceSoles"] = ingS - gasS - desS + reiS;
+                r["BalanceDolares"] = ingD - gasD - desD + reiD;
+            }
+            return dt;
+        }
+
+        /// <summary>Mapea la clave de columna al nombre de la columna del DataTable.</summary>
+        private static string ColumnaDataKey(string key)
+        {
+            switch (key)
+            {
+                case "dni": return "DNI";
+                case "conductor": return "Conductor";
+                case "fechaSalida": return "FechaSalida";
+                case "fechaLlegada": return "FechaLlegada";
+                case "horaSalida": return "HoraSalida";
+                case "horaLlegada": return "HoraLlegada";
+                case "tracto": return "PlacaTracto";
+                case "carreta": return "PlacaCarreta";
+                case "cliente": return "Cliente";
+                case "destino": return "Destino";
+                case "numero": return "NumeroLiquidacion";
+                case "estado": return "Estado";
+                case "ingresosSoles": return "IngresosSoles";
+                case "ingresosDolares": return "IngresosDolares";
+                case "gastosSoles": return "GastosSoles";
+                case "gastosDolares": return "GastosDolares";
+                case "descuentoSoles": return "DescuentoSoles";
+                case "descuentoDolares": return "DescuentoDolares";
+                case "reintegroSoles": return "ReintegroSoles";
+                case "reintegroDolares": return "ReintegroDolares";
+                case "balanceSoles": return "BalanceSoles";
+                case "balanceDolares": return "BalanceDolares";
+                case "iDespachoS": return "IDespachoSoles";
+                case "iDespachoD": return "IDespachoDolares";
+                case "iPrestamoS": return "IPrestamoSoles";
+                case "iPrestamoD": return "IPrestamoDolares";
+                case "iMensualidadS": return "IMensualidadSoles";
+                case "iMensualidadD": return "IMensualidadDolares";
+                case "iOtrosS": return "IOtrosSoles";
+                case "iOtrosD": return "IOtrosDolares";
+                case "iAdicionalesS": return "IAdicionalesSoles";
+                case "iAdicionalesD": return "IAdicionalesDolares";
+                case "iAdicionalesDet": return "IAdicionalesDetalle";
+                case "gPeajesS": return "GPeajesSoles";
+                case "gPeajesD": return "GPeajesDolares";
+                case "gAlimentacionS": return "GAlimentacionSoles";
+                case "gAlimentacionD": return "GAlimentacionDolares";
+                case "gApoyoSeguridadS": return "GApoyoSeguridadSoles";
+                case "gApoyoSeguridadD": return "GApoyoSeguridadDolares";
+                case "gReparacionesS": return "GReparacionesSoles";
+                case "gReparacionesD": return "GReparacionesDolares";
+                case "gMovilidadS": return "GMovilidadSoles";
+                case "gMovilidadD": return "GMovilidadDolares";
+                case "gHospedajeS": return "GHospedajeSoles";
+                case "gHospedajeD": return "GHospedajeDolares";
+                case "gCombustibleS": return "GCombustibleSoles";
+                case "gCombustibleD": return "GCombustibleDolares";
+                case "gEncarpadaS": return "GEncarpadaSoles";
+                case "gEncarpadaD": return "GEncarpadaDolares";
+                case "gAdicionalesS": return "GAdicionalesSoles";
+                case "gAdicionalesD": return "GAdicionalesDolares";
+                case "gAdicionalesDet": return "GAdicionalesDetalle";
+                case "observaciones": return "Observaciones";
+                default: return null;
+            }
+        }
+
+        private void GenerarReportePersonalizado()
+        {
+            try
+            {
+                var f = LeerFiltrosPersonalizado();
+                DataTable dt = ObtenerReportePersonalizado(f);
+
+                // Preservar el orden declarado en ColumnasPersonalizadas para salida ordenada
+                var colsOrdenadas = ColumnasPersonalizadas
+                    .Where(c => f.Columnas.Contains(c.Item1))
+                    .ToList();
+
+                if (colsOrdenadas.Count == 0)
+                {
+                    // Al menos mostrar conductor + número
+                    colsOrdenadas = ColumnasPersonalizadas
+                        .Where(c => c.Item1 == "conductor" || c.Item1 == "numero").ToList();
+                }
+
+                if (f.Formato == "pdf")
+                    ExportarPersonalizadoPDF(dt, colsOrdenadas, f);
+                else
+                    ExportarPersonalizadoExcel(dt, colsOrdenadas, f);
+            }
+            catch (System.Threading.ThreadAbortException) { /* normal */ }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Error reporte personalizado: " + ex.Message);
+                throw;
+            }
+        }
+
+        private void ExportarPersonalizadoExcel(DataTable dt,
+            List<Tuple<string, string, string>> cols, FiltrosPersonalizado f)
+        {
+            byte[] excelBytes;
+            int colCount = cols.Count;
+
+            using (XLWorkbook wb = new XLWorkbook())
+            {
+                var ws = wb.Worksheets.Add("Reporte Personalizado");
+
+                // Encabezados del reporte
+                ws.Cell(1, 1).Value = "SISTEMA SGV";
+                ws.Range(1, 1, 1, colCount).Merge();
+                ws.Cell(1, 1).Style.Font.Bold = true;
+                ws.Cell(1, 1).Style.Font.FontSize = 14;
+                ws.Cell(1, 1).Style.Font.FontColor = XLColor.White;
+                ws.Cell(1, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#1e40af");
+                ws.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Row(1).Height = 30;
+
+                ws.Cell(2, 1).Value = f.Titulo;
+                ws.Range(2, 1, 2, colCount).Merge();
+                ws.Cell(2, 1).Style.Font.Bold = true;
+                ws.Cell(2, 1).Style.Font.FontSize = 12;
+                ws.Cell(2, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#e2e8f0");
+                ws.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                ws.Cell(3, 1).Value = $"Período: {f.FechaDesde:dd/MM/yyyy} - {f.FechaHasta:dd/MM/yyyy}  |  Estado: {f.Estado}  |  Generado: {DateTime.Now:dd/MM/yyyy HH:mm}";
+                ws.Range(3, 1, 3, colCount).Merge();
+                ws.Cell(3, 1).Style.Font.Italic = true;
+                ws.Cell(3, 1).Style.Font.FontSize = 10;
+                ws.Cell(3, 1).Style.Font.FontColor = XLColor.FromHtml("#64748b");
+                ws.Cell(3, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                // Encabezados de columnas
+                int headerRow = 5;
+                for (int i = 0; i < colCount; i++)
+                    ws.Cell(headerRow, i + 1).Value = cols[i].Item2;
+
+                var headerRange = ws.Range(headerRow, 1, headerRow, colCount);
+                headerRange.Style.Font.Bold = true;
+                headerRange.Style.Font.FontColor = XLColor.White;
+                headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#334155");
+                headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                headerRange.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+                ws.Row(headerRow).Height = 25;
+
+                // Totales por columna
+                var totales = new decimal[colCount];
+                bool[] esMoneda = new bool[colCount];
+                for (int i = 0; i < colCount; i++)
+                    esMoneda[i] = cols[i].Item3 == "money-sol" || cols[i].Item3 == "money-dol";
+
+                int row = headerRow + 1;
+                bool alt = false;
+                foreach (DataRow dr in dt.Rows)
+                {
+                    for (int i = 0; i < colCount; i++)
+                    {
+                        var col = cols[i];
+                        string dkey = ColumnaDataKey(col.Item1);
+                        object v = dkey != null && dt.Columns.Contains(dkey) ? dr[dkey] : null;
+                        var cell = ws.Cell(row, i + 1);
+
+                        if (v == null || v == DBNull.Value) { cell.Value = ""; }
+                        else
+                        {
+                            switch (col.Item3)
+                            {
+                                case "date":
+                                    cell.Value = Convert.ToDateTime(v).ToString("dd/MM/yyyy");
+                                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                                    break;
+                                case "time":
+                                    cell.Value = v.ToString();
+                                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                                    break;
+                                case "money-sol":
+                                case "money-dol":
+                                    decimal mv = Convert.ToDecimal(v);
+                                    cell.Value = mv;
+                                    cell.Style.NumberFormat.Format = "#,##0.00";
+                                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                                    if (mv < 0) cell.Style.Font.FontColor = XLColor.FromHtml("#dc2626");
+                                    else if (mv > 0 && (col.Item1.StartsWith("reintegro") || col.Item1.StartsWith("balance")))
+                                        cell.Style.Font.FontColor = XLColor.FromHtml("#2563eb");
+                                    totales[i] += mv;
+                                    break;
+                                default:
+                                    cell.Value = v.ToString();
+                                    break;
+                            }
+                        }
+                    }
+
+                    if (alt) ws.Range(row, 1, row, colCount).Style.Fill.BackgroundColor = XLColor.FromHtml("#f8fafc");
+                    alt = !alt;
+                    ws.Range(row, 1, row, colCount).Style.Border.BottomBorder = XLBorderStyleValues.Hair;
+                    ws.Range(row, 1, row, colCount).Style.Border.BottomBorderColor = XLColor.FromHtml("#e2e8f0");
+                    row++;
+                }
+
+                // Fila de totales
+                if (f.IncluirTotales && dt.Rows.Count > 0)
+                {
+                    var totalRange = ws.Range(row, 1, row, colCount);
+                    totalRange.Style.Font.Bold = true;
+                    totalRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#f1f5f9");
+                    totalRange.Style.Border.TopBorder = XLBorderStyleValues.Medium;
+                    totalRange.Style.Border.TopBorderColor = XLColor.FromHtml("#334155");
+
+                    // Colocar etiqueta en primera columna no monetaria, o en la primera
+                    int labelIdx = 0;
+                    for (int i = 0; i < colCount; i++) { if (!esMoneda[i]) { labelIdx = i; break; } }
+                    ws.Cell(row, labelIdx + 1).Value = "TOTAL:";
+                    ws.Cell(row, labelIdx + 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+
+                    for (int i = 0; i < colCount; i++)
+                    {
+                        if (esMoneda[i])
+                        {
+                            ws.Cell(row, i + 1).Value = totales[i];
+                            ws.Cell(row, i + 1).Style.NumberFormat.Format = "#,##0.00";
+                            ws.Cell(row, i + 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                        }
+                    }
+                    row++;
+                }
+
+                // Resumen ejecutivo
+                if (f.IncluirResumen)
+                {
+                    row += 1;
+                    ws.Cell(row, 1).Value = "RESUMEN EJECUTIVO";
+                    ws.Range(row, 1, row, colCount).Merge();
+                    ws.Cell(row, 1).Style.Font.Bold = true;
+                    ws.Cell(row, 1).Style.Font.FontColor = XLColor.White;
+                    ws.Cell(row, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#059669");
+                    ws.Cell(row, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    row++;
+
+                    decimal totIngS = SumaColumna(dt, "IngresosSoles");
+                    decimal totGasS = SumaColumna(dt, "GastosSoles");
+                    decimal totDesS = SumaColumna(dt, "DescuentoSoles");
+                    decimal totReiS = SumaColumna(dt, "ReintegroSoles");
+                    decimal totBalS = SumaColumna(dt, "BalanceSoles");
+                    decimal totIngD = SumaColumna(dt, "IngresosDolares");
+                    decimal totGasD = SumaColumna(dt, "GastosDolares");
+                    decimal totBalD = SumaColumna(dt, "BalanceDolares");
+
+                    string[,] resumen = {
+                        { "Total de liquidaciones:",        dt.Rows.Count.ToString() },
+                        { "Total Ingresos (S/):",           $"S/ {totIngS:N2}" },
+                        { "Total Gastos (S/):",             $"S/ {totGasS:N2}" },
+                        { "Total Descuentos (S/):",         $"S/ {totDesS:N2}" },
+                        { "Total Reintegros (S/):",         $"S/ {totReiS:N2}" },
+                        { "Total Balance Neto (S/):",       $"S/ {totBalS:N2}" },
+                        { "Total Ingresos ($):",            $"$ {totIngD:N2}" },
+                        { "Total Gastos ($):",              $"$ {totGasD:N2}" },
+                        { "Total Balance Neto ($):",        $"$ {totBalD:N2}" },
+                        { "Factor de conversión:",          f.Factor.ToString("0.00") },
+                        { "Balance General en Soles:",      $"S/ {(totBalS + totBalD * f.Factor):N2}" },
+                    };
+
+                    int halfA = Math.Max(1, colCount / 2);
+                    for (int i = 0; i < resumen.GetLength(0); i++)
+                    {
+                        ws.Cell(row, 1).Value = resumen[i, 0];
+                        ws.Cell(row, 1).Style.Font.Bold = true;
+                        if (halfA > 1) ws.Range(row, 1, row, halfA).Merge();
+                        ws.Cell(row, halfA + 1).Value = resumen[i, 1];
+                        ws.Cell(row, halfA + 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                        if (halfA + 1 < colCount) ws.Range(row, halfA + 1, row, colCount).Merge();
+                        ws.Range(row, 1, row, colCount).Style.Fill.BackgroundColor =
+                            XLColor.FromHtml(i % 2 == 0 ? "#f0fdf4" : "#ecfdf5");
+                        ws.Range(row, 1, row, colCount).Style.Border.BottomBorder = XLBorderStyleValues.Hair;
+                        row++;
+                    }
+                }
+
+                ws.Columns().AdjustToContents();
+                foreach (var idx in Enumerable.Range(1, colCount))
+                    if (ws.Column(idx).Width < 14) ws.Column(idx).Width = 14;
+
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    wb.SaveAs(ms);
+                    excelBytes = ms.ToArray();
+                }
+            }
+
+            HttpContext.Current.Response.Clear();
+            HttpContext.Current.Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            HttpContext.Current.Response.AddHeader("Content-Disposition",
+                $"attachment; filename=ReportePersonalizado_{DateTime.Now:yyyyMMddHHmmss}.xlsx");
+            HttpContext.Current.Response.BinaryWrite(excelBytes);
+            HttpContext.Current.Response.Flush();
+            HttpContext.Current.Response.End();
+        }
+
+        private void ExportarPersonalizadoPDF(DataTable dt,
+            List<Tuple<string, string, string>> cols, FiltrosPersonalizado f)
+        {
+            byte[] pdfBytes;
+            int colCount = cols.Count;
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                iTextDocument document = new iTextDocument(iTextPageSize.A4.Rotate(), 25, 25, 30, 30);
+                PdfWriter writer = PdfWriter.GetInstance(document, ms);
+                writer.CloseStream = false;
+                document.Open();
+
+                BaseColor headerBg = new BaseColor(30, 41, 59);
+                BaseColor accentBlue = new BaseColor(30, 64, 175);
+                BaseColor accentGreen = new BaseColor(5, 150, 105);
+                BaseColor altRow = new BaseColor(248, 250, 252);
+                BaseColor borderColor = new BaseColor(226, 232, 240);
+                BaseColor redColor = new BaseColor(220, 38, 38);
+                BaseColor blueColor = new BaseColor(37, 99, 235);
+
+                // Banner
+                PdfPTable headerTable = new PdfPTable(1) { WidthPercentage = 100 };
+                PdfPCell brandCell = new PdfPCell(new Phrase("SISTEMA SGV",
+                    FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, BaseColor.WHITE)))
+                {
+                    BackgroundColor = accentBlue,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    Padding = 12,
+                    Border = 0
+                };
+                headerTable.AddCell(brandCell);
+                document.Add(headerTable);
+
+                iTextParagraph title = new iTextParagraph(f.Titulo,
+                    FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 14, new BaseColor(30, 41, 59)))
+                { Alignment = Element.ALIGN_CENTER, SpacingBefore = 12 };
+                document.Add(title);
+
+                iTextParagraph subtitle = new iTextParagraph(
+                    $"Período: {f.FechaDesde:dd/MM/yyyy} - {f.FechaHasta:dd/MM/yyyy}  |  Estado: {f.Estado}  |  Generado: {DateTime.Now:dd/MM/yyyy HH:mm}",
+                    FontFactory.GetFont(FontFactory.HELVETICA, 10, new BaseColor(100, 116, 139)))
+                { Alignment = Element.ALIGN_CENTER, SpacingAfter = 15 };
+                document.Add(subtitle);
+
+                // Tabla
+                PdfPTable table = new PdfPTable(colCount) { WidthPercentage = 100 };
+                float[] widths = new float[colCount];
+                for (int i = 0; i < colCount; i++)
+                {
+                    string t = cols[i].Item3;
+                    widths[i] = (t == "money-sol" || t == "money-dol") ? 14f :
+                                t == "date" || t == "time" ? 12f :
+                                cols[i].Item1 == "conductor" || cols[i].Item1 == "cliente" ||
+                                cols[i].Item1 == "destino" || cols[i].Item1 == "observaciones" ? 22f : 12f;
+                }
+                table.SetWidths(widths);
+
+                iTextFont headerFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 8, BaseColor.WHITE);
+                foreach (var c in cols)
+                {
+                    PdfPCell h = new PdfPCell(new Phrase(c.Item2, headerFont))
+                    {
+                        BackgroundColor = headerBg,
+                        HorizontalAlignment = Element.ALIGN_CENTER,
+                        VerticalAlignment = Element.ALIGN_MIDDLE,
+                        Padding = 6,
+                        BorderColor = headerBg
+                    };
+                    table.AddCell(h);
+                }
+
+                iTextFont dataFont = FontFactory.GetFont(FontFactory.HELVETICA, 8);
+                var totales = new decimal[colCount];
+                bool[] esMoneda = new bool[colCount];
+                for (int i = 0; i < colCount; i++)
+                    esMoneda[i] = cols[i].Item3 == "money-sol" || cols[i].Item3 == "money-dol";
+
+                bool alt = false;
+                foreach (DataRow dr in dt.Rows)
+                {
+                    BaseColor rowBg = alt ? altRow : BaseColor.WHITE;
+                    for (int i = 0; i < colCount; i++)
+                    {
+                        var col = cols[i];
+                        string dkey = ColumnaDataKey(col.Item1);
+                        object v = dkey != null && dt.Columns.Contains(dkey) ? dr[dkey] : null;
+                        string texto = "";
+                        int align = Element.ALIGN_LEFT;
+                        BaseColor fontColor = new BaseColor(30, 41, 59);
+                        bool bold = false;
+
+                        if (v != null && v != DBNull.Value)
+                        {
+                            switch (col.Item3)
+                            {
+                                case "date":
+                                    texto = Convert.ToDateTime(v).ToString("dd/MM/yyyy");
+                                    align = Element.ALIGN_CENTER; break;
+                                case "time":
+                                    texto = v.ToString(); align = Element.ALIGN_CENTER; break;
+                                case "money-sol":
+                                case "money-dol":
+                                    decimal mv = Convert.ToDecimal(v);
+                                    string sym = col.Item3 == "money-sol" ? "S/" : "$";
+                                    texto = mv < 0 ? $"-{sym} {Math.Abs(mv):N2}" : $"{sym} {mv:N2}";
+                                    align = Element.ALIGN_RIGHT;
+                                    bold = true;
+                                    if (mv < 0) fontColor = redColor;
+                                    else if (mv > 0 && (col.Item1.StartsWith("reintegro") || col.Item1.StartsWith("balance")))
+                                        fontColor = blueColor;
+                                    totales[i] += mv;
+                                    break;
+                                default:
+                                    texto = v.ToString();
+                                    align = col.Item1 == "numero" || col.Item1 == "estado" ||
+                                            col.Item1 == "dni" ? Element.ALIGN_CENTER : Element.ALIGN_LEFT;
+                                    break;
+                            }
+                        }
+
+                        iTextFont cellFont = bold
+                            ? FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 8, fontColor)
+                            : FontFactory.GetFont(FontFactory.HELVETICA, 8, fontColor);
+
+                        PdfPCell cell = new PdfPCell(new Phrase(texto, cellFont))
+                        {
+                            HorizontalAlignment = align,
+                            VerticalAlignment = Element.ALIGN_MIDDLE,
+                            Padding = 5,
+                            BackgroundColor = rowBg,
+                            BorderColor = borderColor
+                        };
+                        table.AddCell(cell);
+                    }
+                    alt = !alt;
+                }
+
+                // Totales
+                if (f.IncluirTotales && dt.Rows.Count > 0)
+                {
+                    iTextFont totalFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, new BaseColor(30, 41, 59));
+                    BaseColor totalBg = new BaseColor(241, 245, 249);
+                    int labelIdx = 0;
+                    for (int i = 0; i < colCount; i++) { if (!esMoneda[i]) { labelIdx = i; break; } }
+
+                    for (int i = 0; i < colCount; i++)
+                    {
+                        string texto = "";
+                        int align = Element.ALIGN_LEFT;
+                        if (i == labelIdx) { texto = "TOTAL:"; align = Element.ALIGN_RIGHT; }
+                        else if (esMoneda[i])
+                        {
+                            string sym = cols[i].Item3 == "money-sol" ? "S/" : "$";
+                            decimal mv = totales[i];
+                            texto = mv < 0 ? $"-{sym} {Math.Abs(mv):N2}" : $"{sym} {mv:N2}";
+                            align = Element.ALIGN_RIGHT;
+                        }
+                        PdfPCell tc = new PdfPCell(new Phrase(texto, totalFont))
+                        {
+                            BackgroundColor = totalBg,
+                            HorizontalAlignment = align,
+                            Padding = 7,
+                            BorderColor = headerBg,
+                            BorderWidthTop = 2,
+                            BorderWidthBottom = 2
+                        };
+                        table.AddCell(tc);
+                    }
+                }
+
+                document.Add(table);
+
+                // Resumen
+                if (f.IncluirResumen)
+                {
+                    document.Add(new iTextParagraph(" "));
+                    PdfPTable rh = new PdfPTable(1) { WidthPercentage = 70, HorizontalAlignment = Element.ALIGN_CENTER };
+                    PdfPCell rhc = new PdfPCell(new Phrase("RESUMEN EJECUTIVO",
+                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, BaseColor.WHITE)))
+                    {
+                        BackgroundColor = accentGreen,
+                        HorizontalAlignment = Element.ALIGN_CENTER,
+                        Padding = 10,
+                        Border = 0
+                    };
+                    rh.AddCell(rhc);
+                    rh.SpacingBefore = 10;
+                    rh.SpacingAfter = 5;
+                    document.Add(rh);
+
+                    decimal totIngS = SumaColumna(dt, "IngresosSoles");
+                    decimal totGasS = SumaColumna(dt, "GastosSoles");
+                    decimal totDesS = SumaColumna(dt, "DescuentoSoles");
+                    decimal totReiS = SumaColumna(dt, "ReintegroSoles");
+                    decimal totBalS = SumaColumna(dt, "BalanceSoles");
+                    decimal totIngD = SumaColumna(dt, "IngresosDolares");
+                    decimal totGasD = SumaColumna(dt, "GastosDolares");
+                    decimal totBalD = SumaColumna(dt, "BalanceDolares");
+                    decimal balanceGeneral = totBalS + totBalD * f.Factor;
+
+                    string[,] resumen = {
+                        { "Total de liquidaciones:",        dt.Rows.Count.ToString() },
+                        { "Total Ingresos (S/):",           $"S/ {totIngS:N2}" },
+                        { "Total Gastos (S/):",             $"S/ {totGasS:N2}" },
+                        { "Total Descuentos (S/):",         $"S/ {totDesS:N2}" },
+                        { "Total Reintegros (S/):",         $"S/ {totReiS:N2}" },
+                        { "Total Balance Neto (S/):",       $"S/ {totBalS:N2}" },
+                        { "Total Ingresos ($):",            $"$ {totIngD:N2}" },
+                        { "Total Gastos ($):",              $"$ {totGasD:N2}" },
+                        { "Total Balance Neto ($):",        $"$ {totBalD:N2}" },
+                        { "Factor de conversión:",          f.Factor.ToString("0.00") },
+                        { "BALANCE GENERAL EN SOLES:",      $"S/ {balanceGeneral:N2}" },
+                    };
+
+                    PdfPTable rt = new PdfPTable(2) { WidthPercentage = 70, HorizontalAlignment = Element.ALIGN_CENTER };
+                    rt.SetWidths(new float[] { 60f, 40f });
+                    iTextFont labelFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, new BaseColor(30, 41, 59));
+                    iTextFont valueFont = FontFactory.GetFont(FontFactory.HELVETICA, 9, new BaseColor(30, 41, 59));
+                    iTextFont totValFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11, accentGreen);
+
+                    for (int i = 0; i < resumen.GetLength(0); i++)
+                    {
+                        bool ultima = i == resumen.GetLength(0) - 1;
+                        BaseColor bg = ultima ? new BaseColor(209, 250, 229) :
+                            (i % 2 == 0 ? new BaseColor(240, 253, 244) : new BaseColor(236, 253, 245));
+
+                        PdfPCell lc = new PdfPCell(new Phrase(resumen[i, 0], labelFont))
+                        {
+                            BackgroundColor = bg,
+                            Padding = 7,
+                            BorderColor = borderColor
+                        };
+                        PdfPCell vc = new PdfPCell(new Phrase(resumen[i, 1], ultima ? totValFont : valueFont))
+                        {
+                            BackgroundColor = bg,
+                            HorizontalAlignment = Element.ALIGN_RIGHT,
+                            Padding = 7,
+                            BorderColor = borderColor
+                        };
+                        if (ultima)
+                        {
+                            lc.BorderColor = accentGreen;
+                            vc.BorderColor = accentGreen;
+                            lc.BorderWidthTop = 2;
+                            vc.BorderWidthTop = 2;
+                        }
+                        rt.AddCell(lc);
+                        rt.AddCell(vc);
+                    }
+                    document.Add(rt);
+                }
+
+                document.Close();
+                writer.Close();
+                pdfBytes = ms.ToArray();
+            }
+
+            HttpContext.Current.Response.Clear();
+            HttpContext.Current.Response.ContentType = "application/pdf";
+            HttpContext.Current.Response.AddHeader("Content-Disposition",
+                $"attachment; filename=ReportePersonalizado_{DateTime.Now:yyyyMMddHHmmss}.pdf");
+            HttpContext.Current.Response.BinaryWrite(pdfBytes);
+            HttpContext.Current.Response.Flush();
+            HttpContext.Current.Response.End();
+        }
+
+        private static decimal SumaColumna(DataTable dt, string col)
+        {
+            if (!dt.Columns.Contains(col)) return 0m;
+            decimal s = 0;
+            foreach (DataRow r in dt.Rows)
+                if (r[col] != DBNull.Value) s += Convert.ToDecimal(r[col]);
+            return s;
         }
 
         #endregion

@@ -4,10 +4,13 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
+using System.Web.Hosting;
 using System.Web.Services;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services;
 
 namespace WebSGV.Views
 {
@@ -400,6 +403,19 @@ namespace WebSGV.Views
 
                 AuditoriaHelper.Registrar("APROBAR", "OrdenViaje", idOrdenViaje,
                     $"Liquidación aprobada - Orden: {numeroOrdenViaje}");
+
+                // Garantizar que el PDF oficial (SGV-CDF-F-05) esté archivado.
+                // Si el conductor firmó, el PDF ya existe desde la firma; este paso
+                // solo lo regenera cuando falta, para que la descarga nunca devuelva 404.
+                try
+                {
+                    GarantizarPdfArchivadoOV(idOrdenViaje, "Aprobación");
+                }
+                catch (Exception exPdf)
+                {
+                    // El fallo al archivar no debe bloquear la aprobación.
+                    System.Diagnostics.Debug.WriteLine($"⚠ No se pudo garantizar PDF: {exPdf.Message}");
+                }
 
                 MostrarMensaje(
                     $"Liquidación <strong>{System.Web.HttpUtility.HtmlEncode(numeroOrdenViaje)}</strong> aprobada exitosamente. El viaje ha sido completado.",
@@ -1077,6 +1093,17 @@ namespace WebSGV.Views
                 }
 
                 System.Diagnostics.Debug.WriteLine($"✅ Liquidación {numeroOrdenViaje} aprobada con éxito");
+
+                // Garantizar PDF archivado también en flujo con ajustes (modal).
+                try
+                {
+                    GarantizarPdfArchivadoOV(idOrdenViaje, "AprobaciónConAjustes");
+                }
+                catch (Exception exPdf)
+                {
+                    System.Diagnostics.Debug.WriteLine($"⚠ No se pudo garantizar PDF (AprobarConAjustes): {exPdf.Message}");
+                }
+
                 return new { success = true, message = $"Liquidación {numeroOrdenViaje} aprobada exitosamente. El viaje ha sido completado." };
             }
             catch (Exception ex)
@@ -1712,6 +1739,127 @@ namespace WebSGV.Views
                 return (c > 0 ? fwd.Substring(0, c) : fwd).Trim();
             }
             return ctx.Request.UserHostAddress;
+        }
+
+        #endregion
+
+        #region PDF de Orden de Viaje (archivado y descarga bajo demanda)
+
+        /// <summary>
+        /// Garantiza que la Orden de Viaje tenga su PDF oficial (SGV-CDF-F-05)
+        /// archivado en disco y registrado en la tabla OrdenViaje. Si ya existe,
+        /// no hace nada. Si falta, lo regenera a partir del DTO de liquidación
+        /// (sin firma embebida — se usa la constancia) y persiste ruta+hash.
+        ///
+        /// Esta estrategia es defensiva: el flujo normal archiva el PDF cuando
+        /// el conductor firma (FirmaService.RegistrarFirmaConductor). Este método
+        /// cubre el caso de aprobaciones administrativas en las que la firma
+        /// pueda no haberse completado o el archivo físico se haya extraviado.
+        /// </summary>
+        private static string GarantizarPdfArchivadoOV(int idOrdenViaje, string origenLog)
+        {
+            string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+            string rutaExistente = null;
+
+            using (var conn = new SqlConnection(connectionString))
+            using (var cmd = new SqlCommand(
+                "SELECT rutaPdfFirmado FROM OrdenViaje WHERE idOrdenViaje = @id", conn))
+            {
+                cmd.Parameters.AddWithValue("@id", idOrdenViaje);
+                conn.Open();
+                object r = cmd.ExecuteScalar();
+                rutaExistente = r == null || r == DBNull.Value ? null : r.ToString();
+            }
+
+            // Si hay ruta y el archivo físico existe, reusamos.
+            if (!string.IsNullOrEmpty(rutaExistente))
+            {
+                string fisica = ResolverRutaFisicaPdf(rutaExistente);
+                if (!string.IsNullOrEmpty(fisica) && File.Exists(fisica))
+                {
+                    return rutaExistente;
+                }
+            }
+
+            // Regenerar: obtener DTO y llamar al servicio.
+            var detalle = ObtenerDetalleLiquidacion(idOrdenViaje);
+            if (detalle == null)
+                throw new InvalidOperationException("No se pudo cargar el detalle para generar el PDF.");
+
+            var svc = new PdfOrdenViajeService();
+            var pdf = svc.GenerarYArchivar(detalle, firmaConductorPng: null, archivar: true);
+
+            // Persistir ruta y hash si la columna acepta (idempotente: sobrescribe
+            // si ya había una ruta huérfana apuntando a un archivo inexistente).
+            using (var conn = new SqlConnection(connectionString))
+            using (var cmd = new SqlCommand(@"
+                UPDATE OrdenViaje
+                   SET rutaPdfFirmado = @ruta,
+                       hashPdfFirmado = @hash
+                 WHERE idOrdenViaje = @id", conn))
+            {
+                cmd.Parameters.AddWithValue("@ruta", (object)pdf.RutaRelativa ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@hash", (object)pdf.Hash ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@id", idOrdenViaje);
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+
+            System.Diagnostics.Debug.WriteLine(
+                $"📄 [{origenLog}] PDF archivado para OV id={idOrdenViaje}: {pdf.RutaRelativa}");
+
+            return pdf.RutaRelativa;
+        }
+
+        /// <summary>
+        /// Resuelve la ruta física absoluta de un PDF archivado, a partir de
+        /// una ruta relativa a <c>~/App_Data/</c>.
+        /// </summary>
+        private static string ResolverRutaFisicaPdf(string rutaRelativa)
+        {
+            if (string.IsNullOrEmpty(rutaRelativa)) return null;
+
+            string appData = HostingEnvironment.MapPath("~/App_Data");
+            if (string.IsNullOrEmpty(appData)) return null;
+
+            string limpia = rutaRelativa
+                .Replace("~/App_Data/", "")
+                .Replace("~/App_Data\\", "")
+                .TrimStart('/', '\\');
+
+            return Path.Combine(appData, limpia.Replace('/', Path.DirectorySeparatorChar));
+        }
+
+        /// <summary>
+        /// WebMethod invocado desde el front para obtener la URL de descarga
+        /// del PDF oficial de una Orden de Viaje. Genera el PDF bajo demanda
+        /// si aún no existe. Devuelve la ruta a la página handler que
+        /// streameará el archivo.
+        /// </summary>
+        [WebMethod(EnableSession = true)]
+        public static object ObtenerUrlPdfOrdenViaje(int idOrdenViaje)
+        {
+            try
+            {
+                var ctx = System.Web.HttpContext.Current;
+                int idUsuario = ctx.Session["IdUsuario"] != null ? Convert.ToInt32(ctx.Session["IdUsuario"]) : 0;
+                if (idUsuario == 0)
+                    return new { success = false, message = "Sesión no válida. Inicie sesión nuevamente." };
+
+                GarantizarPdfArchivadoOV(idOrdenViaje, "DescargaBajoDemanda");
+
+                AuditoriaHelper.Registrar("DESCARGAR_PDF", "OrdenViaje", idOrdenViaje,
+                    $"Descarga de PDF SGV-CDF-F-05 solicitada por usuario {idUsuario}");
+
+                string url = System.Web.VirtualPathUtility.ToAbsolute(
+                    "~/Views/DescargarPdfOrdenViaje.aspx?id=" + idOrdenViaje);
+                return new { success = true, url = url };
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ ObtenerUrlPdfOrdenViaje: {ex.Message}");
+                return new { success = false, message = "No se pudo preparar el PDF: " + ex.Message };
+            }
         }
 
         #endregion

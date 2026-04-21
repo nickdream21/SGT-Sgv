@@ -60,6 +60,9 @@
                     <button type="button" class="tab-btn" id="tabViajesActivos" onclick="cambiarTab('viajesActivos')">
                         <i class="fas fa-truck-loading mr-2"></i>Viajes Activos Sin Liquidación
                     </button>
+                    <button type="button" class="tab-btn" id="tabPersonalizado" onclick="cambiarTab('personalizado')">
+                        <i class="fas fa-sliders-h mr-2"></i>Reporte Personalizado
+                    </button>
                 </div>
             </div>
         </div>
@@ -360,6 +363,257 @@
                                 </asp:TemplateField>
                             </Columns>
                         </asp:GridView>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ==================== SECCIÓN REPORTE PERSONALIZADO ==================== -->
+        <div id="seccionPersonalizado" style="display: none;">
+
+            <!-- Filtros -->
+            <div class="section-card mb-4">
+                <div class="section-header section-header-info">
+                    <h5 class="section-title">
+                        <i class="fas fa-sliders-h mr-2"></i>Configuración del Reporte Personalizado
+                    </h5>
+                </div>
+                <div class="section-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">Fecha Desde</label>
+                                <asp:TextBox ID="txtPersFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">Fecha Hasta</label>
+                                <asp:TextBox ID="txtPersFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">Estado del Viaje</label>
+                                <asp:DropDownList ID="ddlPersEstado" runat="server" CssClass="form-control">
+                                    <asp:ListItem Value="TODOS" Text="Todos" Selected="True"></asp:ListItem>
+                                    <asp:ListItem Value="COMPLETADO" Text="Liquidados (Completado)"></asp:ListItem>
+                                    <asp:ListItem Value="PENDIENTE" Text="Pendientes de Aprobación"></asp:ListItem>
+                                    <asp:ListItem Value="RECHAZADO" Text="Rechazados"></asp:ListItem>
+                                </asp:DropDownList>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">Conductor</label>
+                                <asp:DropDownList ID="ddlPersConductor" runat="server" CssClass="form-control">
+                                    <asp:ListItem Value="0" Text="Todos los conductores"></asp:ListItem>
+                                </asp:DropDownList>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">Cliente</label>
+                                <asp:DropDownList ID="ddlPersCliente" runat="server" CssClass="form-control">
+                                    <asp:ListItem Value="0" Text="Todos los clientes"></asp:ListItem>
+                                </asp:DropDownList>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">Placa Tracto</label>
+                                <asp:TextBox ID="txtPersPlacaTracto" runat="server" CssClass="form-control" placeholder="Ej. ABC-123"></asp:TextBox>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Categoría de Gasto Adicional
+                                    <i class="fas fa-info-circle ml-1 text-muted" title="Solo incluye viajes con la categoría indicada (ej: propina, cochera, lavado)"></i>
+                                </label>
+                                <asp:TextBox ID="txtPersCategoria" runat="server" CssClass="form-control" placeholder="Ej. propina, cochera..."></asp:TextBox>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">Ordenar por</label>
+                                <asp:DropDownList ID="ddlPersOrden" runat="server" CssClass="form-control">
+                                    <asp:ListItem Value="fecha_desc" Text="Fecha (más reciente primero)" Selected="True"></asp:ListItem>
+                                    <asp:ListItem Value="fecha_asc" Text="Fecha (más antigua primero)"></asp:ListItem>
+                                    <asp:ListItem Value="conductor" Text="Conductor (A-Z)"></asp:ListItem>
+                                    <asp:ListItem Value="cliente" Text="Cliente (A-Z)"></asp:ListItem>
+                                </asp:DropDownList>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">Factor de Conversión ($ a S/)</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">S/</span>
+                                    </div>
+                                    <asp:TextBox ID="txtPersFactor" runat="server" CssClass="form-control" Text="3.75"></asp:TextBox>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label class="form-label">Título del Reporte</label>
+                                <asp:TextBox ID="txtPersTitulo" runat="server" CssClass="form-control"
+                                    Text="Reporte Personalizado de Órdenes de Viaje"></asp:TextBox>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selección de Columnas -->
+            <div class="section-card mb-4">
+                <div class="section-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="section-title mb-0">
+                            <i class="fas fa-columns mr-2"></i>Columnas del Reporte
+                        </h5>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-secondary-custom" onclick="marcarTodasColumnas(true)">
+                                <i class="fas fa-check-square mr-1"></i>Marcar todas
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary-custom ml-1" onclick="marcarTodasColumnas(false)">
+                                <i class="fas fa-square mr-1"></i>Desmarcar todas
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6 class="columnas-grupo"><i class="fas fa-user mr-1"></i>Datos del Conductor</h6>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="dni" checked /> DNI</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="conductor" checked /> Conductor</label>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="columnas-grupo"><i class="fas fa-calendar-alt mr-1"></i>Fechas y Horas</h6>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="fechaSalida" checked /> Fecha Salida</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="fechaLlegada" checked /> Fecha Llegada</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="horaSalida" /> Hora Salida</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="horaLlegada" /> Hora Llegada</label>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="columnas-grupo"><i class="fas fa-truck mr-1"></i>Vehículo y Viaje</h6>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="tracto" checked /> Placa Tracto</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="carreta" /> Placa Carreta</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="cliente" checked /> Cliente</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="destino" checked /> Destino</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="numero" checked /> N° Liquidación</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="estado" checked /> Estado</label>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6 class="columnas-grupo"><i class="fas fa-plus-circle mr-1 text-success"></i>Ingresos</h6>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="ingresosSoles" checked /> Total Ingresos S/</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="ingresosDolares" /> Total Ingresos $</label>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="columnas-grupo"><i class="fas fa-minus-circle mr-1 text-danger"></i>Gastos</h6>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="gastosSoles" checked /> Total Gastos S/</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="gastosDolares" /> Total Gastos $</label>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="columnas-grupo"><i class="fas fa-balance-scale mr-1 text-info"></i>Descuentos, Reintegros y Balance</h6>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="descuentoSoles" checked /> Descuento S/</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="descuentoDolares" /> Descuento $</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="reintegroSoles" checked /> Reintegro S/</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="reintegroDolares" /> Reintegro $</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="balanceSoles" checked /> Balance Neto S/</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="balanceDolares" /> Balance Neto $</label>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="columnas-grupo"><i class="fas fa-plus-square mr-1 text-success"></i>Detalle de Ingresos por Categoría</h6>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="iDespachoS" /> Despacho S/</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="iDespachoD" /> Despacho $</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="iPrestamoS" /> Préstamo S/</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="iPrestamoD" /> Préstamo $</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="iMensualidadS" /> Mensualidad S/</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="iMensualidadD" /> Mensualidad $</label>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="iOtrosS" /> Otros Autorizados S/</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="iOtrosD" /> Otros Autorizados $</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="iAdicionalesS" /> Ing. Adicionales S/</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="iAdicionalesD" /> Ing. Adicionales $</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="iAdicionalesDet" /> Detalle Ing. Adicionales</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="columnas-grupo"><i class="fas fa-minus-square mr-1 text-danger"></i>Detalle de Gastos por Categoría</h6>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gPeajesS" /> Peajes S/</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gPeajesD" /> Peajes $</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gAlimentacionS" /> Alimentación S/</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gAlimentacionD" /> Alimentación $</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gCombustibleS" /> Combustible S/</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gCombustibleD" /> Combustible $</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gHospedajeS" /> Hospedaje S/</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gHospedajeD" /> Hospedaje $</label>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gMovilidadS" /> Movilidad S/</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gMovilidadD" /> Movilidad $</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gApoyoSeguridadS" /> Apoyo Seguridad S/</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gApoyoSeguridadD" /> Apoyo Seguridad $</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gReparacionesS" /> Reparaciones S/</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gReparacionesD" /> Reparaciones $</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gEncarpadaS" /> Encarpada/Desenc. S/</label>
+                                    <label class="col-check"><input type="checkbox" class="col-pers" value="gEncarpadaD" /> Encarpada/Desenc. $</label>
+                                </div>
+                            </div>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="gAdicionalesS" /> Otros Gastos (Propina/Cochera/...) S/</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="gAdicionalesD" /> Otros Gastos $</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="gAdicionalesDet" checked /> Detalle Otros Gastos (texto)</label>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="observaciones" /> Incluir Observaciones</label>
+                            <label class="col-check ml-3"><input type="checkbox" id="chkIncluirTotales" checked /> Incluir fila de totales</label>
+                            <label class="col-check ml-3"><input type="checkbox" id="chkIncluirResumen" checked /> Incluir resumen ejecutivo</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="section-card">
+                <div class="section-body">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                        <div class="text-muted small">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            El reporte se generará con los filtros y columnas seleccionadas.
+                            Se construye sobre liquidaciones aprobadas por el administrador.
+                        </div>
+                        <div class="d-flex" style="gap:0.5rem;">
+                            <button type="button" class="btn btn-export btn-export-excel" onclick="generarPersonalizado('excel')">
+                                <i class="fas fa-file-excel mr-1"></i>Generar Excel
+                            </button>
+                            <button type="button" class="btn btn-export btn-export-pdf" onclick="generarPersonalizado('pdf')">
+                                <i class="fas fa-file-pdf mr-1"></i>Generar PDF
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -841,6 +1095,38 @@
             color: var(--rpt-neutral);
         }
 
+        /* === COLUMNAS PERSONALIZADO === */
+        .columnas-grupo {
+            font-weight: 700;
+            color: #334155;
+            font-size: 0.875rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--rpt-medium-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .col-check {
+            display: block;
+            padding: 0.375rem 0.5rem;
+            margin-bottom: 0.25rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            color: #1e293b;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .col-check:hover {
+            background: var(--rpt-light-gray);
+        }
+
+        .col-check input[type="checkbox"] {
+            margin-right: 0.5rem;
+            cursor: pointer;
+        }
+
         /* === RESPONSIVE === */
         @media (max-width: 768px) {
             .page-header {
@@ -884,16 +1170,20 @@
 
     <script type="text/javascript">
         function cambiarTab(tab) {
+            $('#seccionLiquidaciones').hide();
+            $('#seccionViajesActivos').hide();
+            $('#seccionPersonalizado').hide();
+            $('#tabLiquidaciones, #tabViajesActivos, #tabPersonalizado').removeClass('tab-btn-active');
+
             if (tab === 'liquidaciones') {
                 $('#seccionLiquidaciones').show();
-                $('#seccionViajesActivos').hide();
                 $('#tabLiquidaciones').addClass('tab-btn-active');
-                $('#tabViajesActivos').removeClass('tab-btn-active');
-            } else {
-                $('#seccionLiquidaciones').hide();
+            } else if (tab === 'viajesActivos') {
                 $('#seccionViajesActivos').show();
-                $('#tabLiquidaciones').removeClass('tab-btn-active');
                 $('#tabViajesActivos').addClass('tab-btn-active');
+            } else if (tab === 'personalizado') {
+                $('#seccionPersonalizado').show();
+                $('#tabPersonalizado').addClass('tab-btn-active');
             }
         }
 
@@ -963,6 +1253,56 @@
             }
 
             window.location.href = 'ReportesOrdenesViaje.aspx?action=generarPDF&fechaDesde=' + fechaDesde + '&fechaHasta=' + fechaHasta + '&factor=' + factorConversion;
+        }
+
+        function marcarTodasColumnas(checked) {
+            $('.col-pers').prop('checked', checked);
+        }
+
+        function generarPersonalizado(formato) {
+            var fechaDesde = $('#<%= txtPersFechaDesde.ClientID %>').val();
+            var fechaHasta = $('#<%= txtPersFechaHasta.ClientID %>').val();
+            var estado = $('#<%= ddlPersEstado.ClientID %>').val();
+            var idConductor = $('#<%= ddlPersConductor.ClientID %>').val();
+            var idCliente = $('#<%= ddlPersCliente.ClientID %>').val();
+            var placaTracto = $('#<%= txtPersPlacaTracto.ClientID %>').val();
+            var categoria = $('#<%= txtPersCategoria.ClientID %>').val();
+            var orden = $('#<%= ddlPersOrden.ClientID %>').val();
+            var factor = $('#<%= txtPersFactor.ClientID %>').val() || '3.75';
+            var titulo = $('#<%= txtPersTitulo.ClientID %>').val() || 'Reporte Personalizado';
+            var incluirTotales = $('#chkIncluirTotales').is(':checked') ? '1' : '0';
+            var incluirResumen = $('#chkIncluirResumen').is(':checked') ? '1' : '0';
+
+            if (!fechaDesde || !fechaHasta) {
+                alert('Por favor seleccione el rango de fechas');
+                return;
+            }
+
+            var columnas = [];
+            $('.col-pers:checked').each(function () { columnas.push($(this).val()); });
+
+            if (columnas.length === 0) {
+                alert('Debe seleccionar al menos una columna para el reporte');
+                return;
+            }
+
+            var qs = 'action=reportePersonalizado'
+                + '&formato=' + formato
+                + '&fechaDesde=' + encodeURIComponent(fechaDesde)
+                + '&fechaHasta=' + encodeURIComponent(fechaHasta)
+                + '&estado=' + encodeURIComponent(estado)
+                + '&idConductor=' + encodeURIComponent(idConductor)
+                + '&idCliente=' + encodeURIComponent(idCliente)
+                + '&placaTracto=' + encodeURIComponent(placaTracto)
+                + '&categoria=' + encodeURIComponent(categoria)
+                + '&orden=' + encodeURIComponent(orden)
+                + '&factor=' + encodeURIComponent(factor)
+                + '&titulo=' + encodeURIComponent(titulo)
+                + '&totales=' + incluirTotales
+                + '&resumen=' + incluirResumen
+                + '&cols=' + encodeURIComponent(columnas.join(','));
+
+            window.location.href = 'ReportesOrdenesViaje.aspx?' + qs;
         }
     </script>
 

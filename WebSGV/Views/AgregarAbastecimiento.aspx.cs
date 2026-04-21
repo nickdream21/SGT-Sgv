@@ -9,6 +9,7 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services;
 
 namespace WebSGV.Views
 {
@@ -407,16 +408,32 @@ namespace WebSGV.Views
 
                     if (hdnModoViaje.Value == "1")
                     {
-                        // Redirigir al dashboard con mensaje de exito
-                        Response.Redirect("DashboardGrifo.aspx?msg=abastecido");
+                        // Redirigir al dashboard con mensaje de exito e incluir número para descargar PDF
+                        string numQs = !string.IsNullOrEmpty(_ultimoNumAbastGuardado)
+                            ? ("&num=" + HttpUtility.UrlEncode(_ultimoNumAbastGuardado))
+                            : "";
+                        Response.Redirect("DashboardGrifo.aspx?msg=abastecido" + numQs);
                     }
                     else
                     {
                         LimpiarFormulario();
 
-                        // Mensaje de exito con alerta
-                        ScriptManager.RegisterStartupScript(this, this.GetType(), "mensajeExito",
-                            "mostrarMensaje('Abastecimiento guardado correctamente', 'success');", true);
+                        // Mensaje de exito con alerta + link para descargar el PDF generado (SGV-CDF-F-06)
+                        string num = _ultimoNumAbastGuardado ?? "";
+                        string numJs = HttpUtility.JavaScriptStringEncode(num);
+                        string urlPdf = ResolveUrl("~/Views/DescargarPdfAbastecimiento.aspx") + "?num=" + HttpUtility.UrlEncode(num);
+                        string urlPdfJs = HttpUtility.JavaScriptStringEncode(urlPdf);
+
+                        string script =
+                            "mostrarMensaje('Abastecimiento N° " + numJs + " guardado correctamente.', 'success');" +
+                            (string.IsNullOrEmpty(num) ? "" :
+                                "setTimeout(function(){" +
+                                "  if (confirm('¿Desea descargar el PDF del abastecimiento N° " + numJs + " (SGV-CDF-F-06)?')) {" +
+                                "    window.open('" + urlPdfJs + "', '_blank');" +
+                                "  }" +
+                                "}, 400);");
+
+                        ScriptManager.RegisterStartupScript(this, this.GetType(), "mensajeExito", script, true);
                     }
                 }
             }
@@ -582,6 +599,8 @@ namespace WebSGV.Views
                 return false;
             }
         }
+
+        private string _ultimoNumAbastGuardado = null;
 
         private void GuardarAbastecimiento()
         {
@@ -813,6 +832,20 @@ namespace WebSGV.Views
                         int filasAfectadas = cmd.ExecuteNonQuery();
                         RegistrarInfo($"Filas afectadas: {filasAfectadas}");
                     }
+
+                    // ====================================================================
+                    // GENERACIÓN DE PDF (SGV-CDF-F-06) - Reemplaza al talonario físico.
+                    // El fallo al generar el PDF NO debe abortar el guardado del registro.
+                    // ====================================================================
+                    try
+                    {
+                        GenerarYArchivarPdfAbastecimiento(conn, numAbast);
+                        _ultimoNumAbastGuardado = numAbast;
+                    }
+                    catch (Exception exPdf)
+                    {
+                        RegistrarError("No se pudo generar el PDF del abastecimiento: " + exPdf.Message);
+                    }
                 }
                 catch (SqlException sqlEx)
                 {
@@ -932,6 +965,158 @@ namespace WebSGV.Views
         {
             // Log para errores
             System.Diagnostics.Debug.WriteLine($"ERROR [{DateTime.Now.ToString("HH:mm:ss")}]: {mensaje}");
+        }
+
+        #endregion
+
+        #region PDF SGV-CDF-F-06
+
+        /// <summary>
+        /// Genera el PDF oficial del Parte de Abastecimiento (SGV-CDF-F-06),
+        /// lo archiva en disco y persiste la ruta y hash en la fila recién
+        /// insertada en AbastecimientoCombustible. Utiliza la conexión ya abierta.
+        /// Las columnas PDF se actualizan sólo si existen (compatibilidad con
+        /// instalaciones donde aún no se ejecutó el script de migración).
+        /// </summary>
+        private void GenerarYArchivarPdfAbastecimiento(SqlConnection conn, string numeroAbast)
+        {
+            // Detectar columnas opcionales (compatibilidad con esquemas no migrados).
+            bool tieneIdVolquete  = ColumnaExisteAbast(conn, "idVolquete");
+            bool tieneIdCamioneta = ColumnaExisteAbast(conn, "idCamioneta");
+
+            string placaExpr =
+                "ISNULL(t.placaTracto, " +
+                (tieneIdVolquete  ? "ISNULL(v.placa, "   : "ISNULL(NULL, ") +
+                (tieneIdCamioneta ? "ISNULL(cam.placa, ''))" : "ISNULL(NULL, ''))") +
+                ")";
+            string joinVolquete  = tieneIdVolquete  ? "LEFT JOIN volquetes v    ON a.idVolquete  = v.id" : "";
+            string joinCamioneta = tieneIdCamioneta ? "LEFT JOIN camionetas cam ON a.idCamioneta = cam.id" : "";
+
+            // 1) Leer los datos completos del registro con sus nombres descriptivos.
+            string sqlSelect = @"
+                SELECT TOP 1
+                    a.idAbastecimientoCombustible,
+                    a.numeroAbastecimientoCombustible,
+                    a.fechaHora, a.horaRetorno,
+                    a.galonesRutaAsignada, a.galonesCompradosRuta,
+                    a.galonesTotalAbastecidos, a.galonesAlFinalizar, a.galonesTotalConsumidos,
+                    a.precioDolar, a.montoTotalGalonesComprados,
+                    a.distanciaRutaKM, a.consumoComputador, a.rendimientoPromedio,
+                    a.producto, a.observaciones,
+                    ISNULL(tc.nombre, '') AS tipoUnidad,
+                    " + placaExpr + @" AS placa,
+                    ISNULL(cr.placaCarreta, '') AS placaCarreta,
+                    LTRIM(RTRIM(ISNULL(c.nombre,'') + ' ' + ISNULL(c.apPaterno,'') + ' ' + ISNULL(c.apMaterno,''))) AS conductor,
+                    ISNULL(la.nombreAbastecimiento, '') AS lugar,
+                    ISNULL(a.tipoAbastecimiento, '') AS tipoAbast,
+                    ISNULL(a.rutaDescripcion, ISNULL(r.nombre, '')) AS ruta
+                FROM AbastecimientoCombustible a
+                LEFT JOIN TipoCarro tc ON a.idTipoCarro = tc.idTipoCarro
+                LEFT JOIN Tracto t     ON a.idTracto    = t.idTracto
+                " + joinVolquete + @"
+                " + joinCamioneta + @"
+                LEFT JOIN Carreta cr   ON a.idCarreta   = cr.idCarreta
+                LEFT JOIN Conductor c  ON a.idConductor = c.idConductor
+                LEFT JOIN LugarAbastecimiento la ON a.idLugarAbastecimiento = la.idLugarAbastecimiento
+                LEFT JOIN Ruta r       ON a.idRuta      = r.idRuta
+                WHERE RTRIM(a.numeroAbastecimientoCombustible) = @num";
+
+            var dto = new DetalleAbastecimientoPdf();
+            using (var cmd = new SqlCommand(sqlSelect, conn))
+            {
+                cmd.Parameters.AddWithValue("@num", numeroAbast);
+                using (var rd = cmd.ExecuteReader(CommandBehavior.SingleRow))
+                {
+                    if (!rd.Read())
+                    {
+                        RegistrarError("No se encontró el registro recién insertado para generar PDF.");
+                        return;
+                    }
+
+                    dto.IdAbastecimientoCombustible = Convert.ToInt32(rd["idAbastecimientoCombustible"]);
+                    dto.NumeroAbastecimiento = rd["numeroAbastecimientoCombustible"].ToString().Trim();
+                    dto.FechaHora = Convert.ToDateTime(rd["fechaHora"]);
+                    if (rd["horaRetorno"] != DBNull.Value)
+                        dto.HoraRetorno = (TimeSpan)rd["horaRetorno"];
+
+                    dto.GalonesRutaAsignada    = LeerDec(rd, "galonesRutaAsignada");
+                    dto.GalonesCompradosRuta   = LeerDec(rd, "galonesCompradosRuta");
+                    dto.GalonesTotalAbastecidos= LeerDec(rd, "galonesTotalAbastecidos");
+                    dto.GalonesAlFinalizar     = LeerDec(rd, "galonesAlFinalizar");
+                    dto.GalonesTotalConsumidos = LeerDec(rd, "galonesTotalConsumidos");
+                    dto.PrecioDolar            = LeerDec(rd, "precioDolar");
+                    dto.MontoTotal             = LeerDec(rd, "montoTotalGalonesComprados");
+                    dto.DistanciaKm            = LeerDec(rd, "distanciaRutaKM");
+                    dto.ConsumoComputador      = LeerDec(rd, "consumoComputador");
+                    dto.RendimientoPromedio    = LeerDec(rd, "rendimientoPromedio");
+
+                    dto.Producto            = rd["producto"]      as string;
+                    dto.Observaciones       = rd["observaciones"] as string;
+                    dto.TipoUnidad          = rd["tipoUnidad"]    as string;
+                    dto.Placa               = rd["placa"]         as string;
+                    dto.PlacaCarreta        = rd["placaCarreta"]  as string;
+                    dto.Conductor           = rd["conductor"]     as string;
+                    dto.LugarAbastecimiento = rd["lugar"]         as string;
+                    dto.TipoAbastecimiento  = rd["tipoAbast"]     as string;
+                    dto.Ruta                = rd["ruta"]          as string;
+                }
+            }
+
+            dto.UsuarioRegistra = (Session["Nombre"] as string) ?? "";
+
+            // 2) Generar y archivar
+            var svc = new PdfAbastecimientoService();
+            var resultado = svc.GenerarYArchivar(dto, archivar: true);
+
+            // 3) Persistir ruta/hash/fecha si las columnas existen
+            bool tieneRuta  = ColumnaExisteAbast(conn, "rutaPdfGenerado");
+            bool tieneHash  = ColumnaExisteAbast(conn, "hashPdfGenerado");
+            bool tieneFecha = ColumnaExisteAbast(conn, "fechaGeneracionPdf");
+
+            if (!tieneRuta && !tieneHash && !tieneFecha)
+            {
+                RegistrarInfo("PDF generado pero las columnas de persistencia no existen aún. " +
+                              "Ejecute script_AgregarPdfAbastecimiento.sql.");
+                return;
+            }
+
+            var sets = new List<string>();
+            if (tieneRuta)  sets.Add("rutaPdfGenerado = @ruta");
+            if (tieneHash)  sets.Add("hashPdfGenerado = @hash");
+            if (tieneFecha) sets.Add("fechaGeneracionPdf = @fecha");
+
+            string sqlUpdate = "UPDATE AbastecimientoCombustible SET " +
+                               string.Join(", ", sets) +
+                               " WHERE idAbastecimientoCombustible = @id";
+
+            using (var cmdU = new SqlCommand(sqlUpdate, conn))
+            {
+                if (tieneRuta)  cmdU.Parameters.AddWithValue("@ruta",  (object)resultado.RutaRelativa ?? DBNull.Value);
+                if (tieneHash)  cmdU.Parameters.AddWithValue("@hash",  (object)resultado.Hash ?? DBNull.Value);
+                if (tieneFecha) cmdU.Parameters.AddWithValue("@fecha", DateTime.Now);
+                cmdU.Parameters.AddWithValue("@id", dto.IdAbastecimientoCombustible);
+                cmdU.ExecuteNonQuery();
+            }
+
+            RegistrarInfo($"PDF SGV-CDF-F-06 archivado: {resultado.RutaRelativa}");
+        }
+
+        private static decimal LeerDec(System.Data.IDataRecord rd, string col)
+        {
+            int i = rd.GetOrdinal(col);
+            return rd.IsDBNull(i) ? 0m : Convert.ToDecimal(rd[i]);
+        }
+
+        private static bool ColumnaExisteAbast(SqlConnection conn, string columna)
+        {
+            const string q = @"SELECT COUNT(*) FROM sys.columns
+                               WHERE object_id = OBJECT_ID('AbastecimientoCombustible')
+                                 AND name = @c";
+            using (var cmd = new SqlCommand(q, conn))
+            {
+                cmd.Parameters.AddWithValue("@c", columna);
+                return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+            }
         }
 
         #endregion

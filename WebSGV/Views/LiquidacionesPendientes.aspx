@@ -2405,6 +2405,7 @@
                         // Acciones
                         html += '<td class="text-center"><div class="acciones-grupo">';
                         html += '<button type="button" class="btn btn-info-action" onclick="verDetalleLiquidacion(' + item.IdOrdenViaje + ')" title="Ver Detalle"><i class="fas fa-eye"></i></button>';
+                        html += '<button type="button" class="btn btn-success-action" onclick="descargarPdfOrdenViaje(' + item.IdOrdenViaje + ')" title="Descargar PDF SGV-CDF-F-05"><i class="fas fa-file-pdf"></i></button>';
                         html += '<button type="button" class="btn btn-warning-action" onclick="abrirModalCorregir(' + item.IdOrdenViaje + ')" title="Corregir Ajustes"><i class="fas fa-edit"></i></button>';
                         html += '<button type="button" class="btn btn-danger-action" onclick="abrirModalRevertir(' + item.IdOrdenViaje + ')" title="Revertir Aprobaci\u00f3n"><i class="fas fa-undo"></i></button>';
                         html += '</div></td>';
@@ -2430,6 +2431,31 @@
             var div = document.createElement('div');
             div.appendChild(document.createTextNode(text));
             return div.innerHTML;
+        }
+
+        // --- Descargar PDF SGV-CDF-F-05 ---
+        function descargarPdfOrdenViaje(idOrden) {
+            if (!idOrden) return;
+            $.ajax({
+                type: "POST",
+                url: "LiquidacionesPendientes.aspx/ObtenerUrlPdfOrdenViaje",
+                data: JSON.stringify({ idOrdenViaje: idOrden }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (response) {
+                    var r = response.d;
+                    if (r && r.success && r.url) {
+                        // Abrir en pestaña nueva (vista previa). Para forzar descarga: &download=1
+                        window.open(r.url, '_blank');
+                    } else {
+                        alert('\u274c ' + (r && r.message ? r.message : 'No se pudo obtener el PDF.'));
+                    }
+                },
+                error: function (xhr) {
+                    console.error('Error PDF:', xhr.responseText);
+                    alert('Error al solicitar el PDF.');
+                }
+            });
         }
 
         // --- Modal Revertir ---
