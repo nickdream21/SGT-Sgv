@@ -702,7 +702,7 @@
                     <div class="gf-filter-input" style="flex:1.5;">
                         <i class="fas fa-search"></i>
                         <asp:TextBox ID="txtBuscarAbastecimiento" runat="server" CssClass="form-control"
-                            placeholder="Conductor o placa..."></asp:TextBox>
+                            placeholder="Nº, conductor o placa..."></asp:TextBox>
                     </div>
                 </div>
                 <div class="gf-filter-actions" style="margin-top: 8px;">
@@ -766,7 +766,11 @@
                                 <div class="ab-card-footer">
                                     <a href='<%# "BuscarAbastecimiento.aspx?numero=" + HttpUtility.UrlEncode(Eval("NumeroAbastecimiento").ToString()) %>'
                                        class="btn-ver-card">
-                                        <i class="fas fa-eye"></i> Ver Detalle
+                                        <i class="fas fa-eye"></i> Ver / Editar
+                                    </a>
+                                    <a href='<%# "DescargarPdfAbastecimiento.aspx?num=" + HttpUtility.UrlEncode(Eval("NumeroAbastecimiento").ToString()) %>'
+                                       target="_blank" class="btn-ver-card" style="background:#28a745; margin-left:6px;">
+                                        <i class="fas fa-file-pdf"></i> PDF
                                     </a>
                                 </div>
                             </div>

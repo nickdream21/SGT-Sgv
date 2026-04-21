@@ -474,6 +474,9 @@
                 <asp:Button ID="btnHabilitarEdicion" runat="server" CssClass="btn btn-primary" Text="Habilitar Edición" OnClick="HabilitarEdicion" />
                 <asp:Button ID="btnGuardarCambios" runat="server" CssClass="btn btn-success" Text="Guardar Cambios" OnClick="GuardarCambios" Visible="false" />
                 <asp:Button ID="btnCancelar" runat="server" CssClass="btn btn-secondary" Text="Cancelar" OnClick="Cancelar" />
+                <button type="button" id="btnDescargarPdfAbast" class="btn btn-success" onclick="descargarPdfAbastecimiento();">
+                    <i class="fas fa-file-pdf"></i> Descargar PDF
+                </button>
                 <asp:Button ID="btnImprimir" runat="server" CssClass="btn btn-info" Text="Imprimir" OnClientClick="window.print(); return false;" />
                 <asp:Button ID="btnAnular" runat="server" CssClass="btn btn-anular" Text="Anular" OnClick="AnularAbastecimiento" OnClientClick="return confirm('¿Está seguro que desea ANULAR este registro de abastecimiento?\n\nEsta acción marcará el registro como anulado.');" />
                 <asp:Button ID="btnEliminar" runat="server" CssClass="btn btn-eliminar" Text="Eliminar" OnClick="EliminarAbastecimiento" OnClientClick="return confirm('¿Está seguro que desea ELIMINAR este registro de abastecimiento?\n\nEsta acción es IRREVERSIBLE y eliminará permanentemente el registro.');" />
@@ -495,6 +498,17 @@
 
     <!-- Scripts para cálculos automáticos -->
     <script type="text/javascript">
+        // Descargar PDF SGV-CDF-F-06 del abastecimiento cargado.
+        function descargarPdfAbastecimiento() {
+            var inp = document.getElementById('<%= txtNumAbastecimiento.ClientID %>');
+            var num = inp ? (inp.value || '').trim() : '';
+            if (!num) {
+                alert('No hay un abastecimiento cargado para generar el PDF.');
+                return;
+            }
+            var url = 'DescargarPdfAbastecimiento.aspx?num=' + encodeURIComponent(num);
+            window.open(url, '_blank');
+        }
         // Función para actualizar la visualización del nivel de combustible
         function actualizarNivelCombustible(actual, total) {
             if (total > 0) {

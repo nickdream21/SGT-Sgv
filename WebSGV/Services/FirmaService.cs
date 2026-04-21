@@ -88,6 +88,31 @@ namespace WebSGV.Services
         }
 
         // ---------------------------------------------------------------------
+        // Obtener el trazo PNG vigente del conductor para una Orden de Viaje
+        // (se usa al re-generar el PDF en la aprobación administrativa).
+        // ---------------------------------------------------------------------
+        public byte[] ObtenerTrazoConductor(int idOrdenViaje)
+        {
+            string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+            const string sql = @"
+                SELECT TOP 1 fd.imagenTrazoPng
+                FROM OrdenViaje ov
+                INNER JOIN FirmaDigital fd ON ov.idFirmaConductor = fd.idFirma
+                WHERE ov.idOrdenViaje = @id
+                  AND fd.estadoFirma = 'V'
+                  AND fd.imagenTrazoPng IS NOT NULL";
+
+            using (var conn = new SqlConnection(cs))
+            using (var cmd = new SqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("@id", idOrdenViaje);
+                conn.Open();
+                var obj = cmd.ExecuteScalar();
+                return (obj == null || obj == DBNull.Value) ? null : (byte[])obj;
+            }
+        }
+
+        // ---------------------------------------------------------------------
         // Firma del ADMINISTRADOR (Nivel C - constancia, sin trazo canvas)
         // ---------------------------------------------------------------------
         public ResultadoFirma RegistrarFirmaAdmin(
@@ -103,14 +128,20 @@ namespace WebSGV.Services
             if (detalle == null)
                 return Error("No se encontró la Orden de Viaje solicitada.");
 
-            // 2) Re-generar PDF (si ya existía firma conductor, llega en detalle;
-            //    si no, se genera solo con constancia). Archivamos una copia
-            //    nueva para incluir la aprobación admin en el pie.
-            //    Nota: en esta fase no re-embebemos el trazo conductor porque el
-            //    PdfOrdenViajeService firma a partir del PNG recibido en memoria.
-            //    Para el sello admin generamos sin trazo; la firma conductor
-            //    queda referenciada por idFirmaConductor en OrdenViaje.
-            var pdf = _pdfSvc.GenerarYArchivar(detalle, firmaConductorPng: null, archivar: true);
+            // 2) Recuperar el trazo del conductor (si existe) para re-embeberlo
+            //    en el PDF final aprobado. El sello admin se agrega como segundo
+            //    bloque de firma al lado derecho.
+            byte[] trazoConductor = null;
+            try { trazoConductor = ObtenerTrazoConductor(idOrdenViaje); }
+            catch { /* si falla la lectura, generamos sin firma conductor */ }
+
+            string fechaAprobacion = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
+            var pdf = _pdfSvc.GenerarYArchivar(
+                detalle,
+                firmaConductorPng: trazoConductor,
+                archivar: true,
+                nombreAdminAprobador: nombreFirmante,
+                fechaAprobacionAdmin: fechaAprobacion);
 
             string consentimiento =
                 "Aprobación administrativa de la Orden de Viaje N° " +

@@ -77,17 +77,25 @@ namespace WebSGV.Services
         /// Si es <c>null</c>, se imprime un recuadro vacío con el texto "Firma pendiente de registro digital".</param>
         /// <param name="archivar">Si es true, el PDF se guarda en
         /// <c>~/App_Data/OrdenesViaje/AAAA/MM/OV-AAAA-NNNNNN.pdf</c>.</param>
+        /// <param name="nombreAdminAprobador">Si se especifica, se agrega un segundo
+        /// bloque de firma (constancia administrativa) al lado derecho con el nombre
+        /// del administrador que aprobó la liquidación.</param>
+        /// <param name="fechaAprobacionAdmin">Fecha/hora legible de la aprobación
+        /// administrativa (se imprime bajo el sello admin).</param>
         public ResultadoGeneracionPdf GenerarYArchivar(
             object detalle,
             byte[] firmaConductorPng = null,
-            bool archivar = false)
+            bool archivar = false,
+            string nombreAdminAprobador = null,
+            string fechaAprobacionAdmin = null)
         {
             if (detalle == null) throw new ArgumentNullException("detalle");
 
             var empresa = EmpresaConfigHelper.ObtenerEmpresa();
             var formato = EmpresaConfigHelper.ObtenerFormato("SGV-CDF-F-05");
 
-            byte[] pdfBytes = ConstruirPdf(detalle, empresa, formato, firmaConductorPng);
+            byte[] pdfBytes = ConstruirPdf(detalle, empresa, formato, firmaConductorPng,
+                nombreAdminAprobador, fechaAprobacionAdmin);
             string hash = HashHelper.ComputeSha256(pdfBytes);
 
             var resultado = new ResultadoGeneracionPdf
@@ -111,7 +119,8 @@ namespace WebSGV.Services
         // CONSTRUCCIÓN DEL PDF
         // ============================================================================
 
-        private byte[] ConstruirPdf(object d, EmpresaInfo emp, FormatoControladoInfo fmt, byte[] firmaPng)
+        private byte[] ConstruirPdf(object d, EmpresaInfo emp, FormatoControladoInfo fmt, byte[] firmaPng,
+            string nombreAdminAprobador = null, string fechaAprobacionAdmin = null)
         {
             // A4: 595 x 842 pt. Márgenes ~12mm = 34pt (laterales), 14mm = 40pt inferior.
             using (var ms = new MemoryStream())
@@ -154,7 +163,7 @@ namespace WebSGV.Services
                 }
 
                 // 8) Constancia + Firma del conductor
-                doc.Add(ConstruirConstanciaYFirma(d, firmaPng));
+                doc.Add(ConstruirConstanciaYFirma(d, firmaPng, nombreAdminAprobador, fechaAprobacionAdmin));
 
                 doc.Close();
                 return ms.ToArray();
@@ -580,8 +589,11 @@ namespace WebSGV.Services
             return t;
         }
 
-        private PdfPTable ConstruirConstanciaYFirma(object d, byte[] firmaPng)
+        private PdfPTable ConstruirConstanciaYFirma(object d, byte[] firmaPng,
+            string nombreAdminAprobador = null, string fechaAprobacionAdmin = null)
         {
+            bool conAdmin = !string.IsNullOrWhiteSpace(nombreAdminAprobador);
+
             var t = new PdfPTable(1) { WidthPercentage = 100f, SpacingBefore = 4f };
             var c = new PdfPCell
             {
@@ -591,7 +603,7 @@ namespace WebSGV.Services
                 Padding = 10f
             };
 
-            c.AddElement(new Paragraph("CONSTANCIA DE CONFORMIDAD",
+            c.AddElement(new Paragraph("CONSTANCIA DE CONFORMIDAD Y APROBACIÓN",
                 Fuente(_bfBold, 10f, AZUL_CORP)));
 
             string conductor = ObtenerStringProp(d, "NombreConductor") ?? "";
@@ -606,8 +618,65 @@ namespace WebSGV.Services
             { Alignment = Element.ALIGN_JUSTIFIED, SpacingBefore = 4f, SpacingAfter = 8f };
             c.AddElement(pTexto);
 
-            // --- Bloque de firma centrado ---
-            var tblFirma = new PdfPTable(1) { WidthPercentage = 55f, HorizontalAlignment = Element.ALIGN_CENTER };
+            // --- Tabla de firmas: 1 ó 2 columnas según haya aprobación admin ---
+            var tblFirmas = new PdfPTable(conAdmin ? 2 : 1)
+            {
+                WidthPercentage = conAdmin ? 95f : 55f,
+                HorizontalAlignment = Element.ALIGN_CENTER
+            };
+            if (conAdmin) tblFirmas.SetWidths(new float[] { 1f, 1f });
+
+            // ---------- Bloque CONDUCTOR ----------
+            tblFirmas.AddCell(ConstruirCeldaFirmaImagen(firmaPng,
+                esperaTexto: "[Espacio reservado para firma del conductor]"));
+            tblFirmas.AddCell(ConstruirCeldaFirmaPie(
+                nombre: conductor,
+                rolTexto: "Conductor",
+                metaTexto: firmaPng != null
+                    ? ("Firmado electrónicamente el " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"))
+                    : "Firma pendiente de registro digital"));
+
+            // ---------- Bloque ADMIN (sólo si hay aprobación) ----------
+            if (conAdmin)
+            {
+                // Celda con sello "APROBADO" estilizado
+                var celSello = new PdfPCell
+                {
+                    FixedHeight = 65f,
+                    Border = Rectangle.BOX,
+                    BorderColor = GRIS_BORDE_B,
+                    BorderWidth = 0.5f,
+                    BackgroundColor = FONDO_OBS,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    VerticalAlignment = Element.ALIGN_MIDDLE
+                };
+                // "APROBADO" en grande + rojo corporativo (sello visual)
+                var pSello = new Paragraph("✓ APROBADO",
+                    new Font(_bfBold, 18f, Font.NORMAL, ROJO_CORP))
+                { Alignment = Element.ALIGN_CENTER };
+                celSello.AddElement(pSello);
+                var pRef = new Paragraph("Aprobación administrativa mediante credenciales autenticadas",
+                    Fuente(_bfRegular, 7f, GRIS_SECUND))
+                { Alignment = Element.ALIGN_CENTER };
+                celSello.AddElement(pRef);
+                tblFirmas.AddCell(celSello);
+
+                // Pie con nombre del admin + fecha de aprobación
+                tblFirmas.AddCell(ConstruirCeldaFirmaPie(
+                    nombre: nombreAdminAprobador,
+                    rolTexto: "Administrador de Transporte",
+                    metaTexto: !string.IsNullOrWhiteSpace(fechaAprobacionAdmin)
+                        ? ("Aprobado el " + fechaAprobacionAdmin)
+                        : ("Aprobado el " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"))));
+            }
+
+            c.AddElement(tblFirmas);
+            t.AddCell(c);
+            return t;
+        }
+
+        private PdfPCell ConstruirCeldaFirmaImagen(byte[] firmaPng, string esperaTexto)
+        {
             var celArea = new PdfPCell
             {
                 FixedHeight = 65f,
@@ -634,32 +703,33 @@ namespace WebSGV.Services
             }
             else
             {
-                var pPend = new Paragraph("[Espacio reservado para firma del conductor]",
+                var pPend = new Paragraph(esperaTexto,
                     Fuente(_bfRegular, 8f, GRIS_SECUND)) { Alignment = Element.ALIGN_CENTER };
                 celArea.AddElement(pPend);
             }
-            tblFirma.AddCell(celArea);
+            return celArea;
+        }
 
-            var celLinea = new PdfPCell { Border = Rectangle.TOP_BORDER,
-                BorderColorTop = GRIS_TEXTO, BorderWidthTop = 0.6f, Padding = 3f };
-            celLinea.AddElement(new Paragraph(conductor.ToUpperInvariant(), Fuente(_bfBold, 10f, GRIS_TEXTO))
-                { Alignment = Element.ALIGN_CENTER });
-            celLinea.AddElement(new Paragraph("Conductor", Fuente(_bfRegular, 8.5f, GRIS_SECUND))
-                { Alignment = Element.ALIGN_CENTER });
-            tblFirma.AddCell(celLinea);
-
-            c.AddElement(tblFirma);
-
-            var pMeta = new Paragraph(
-                firmaPng != null
-                    ? ("Firmado electrónicamente el " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"))
-                    : "Firma pendiente de registro digital",
-                new Font(_bfMono, 7.5f, Font.NORMAL, GRIS_SECUND))
-            { Alignment = Element.ALIGN_CENTER, SpacingBefore = 6f };
-            c.AddElement(pMeta);
-
-            t.AddCell(c);
-            return t;
+        private PdfPCell ConstruirCeldaFirmaPie(string nombre, string rolTexto, string metaTexto)
+        {
+            var celLinea = new PdfPCell
+            {
+                Border = Rectangle.TOP_BORDER,
+                BorderColorTop = GRIS_TEXTO,
+                BorderWidthTop = 0.6f,
+                Padding = 3f
+            };
+            celLinea.AddElement(new Paragraph((nombre ?? "").ToUpperInvariant(), Fuente(_bfBold, 10f, GRIS_TEXTO))
+            { Alignment = Element.ALIGN_CENTER });
+            celLinea.AddElement(new Paragraph(rolTexto ?? "", Fuente(_bfRegular, 8.5f, GRIS_SECUND))
+            { Alignment = Element.ALIGN_CENTER });
+            if (!string.IsNullOrWhiteSpace(metaTexto))
+            {
+                celLinea.AddElement(new Paragraph(metaTexto,
+                    new Font(_bfMono, 7.5f, Font.NORMAL, GRIS_SECUND))
+                { Alignment = Element.ALIGN_CENTER, SpacingBefore = 3f });
+            }
+            return celLinea;
         }
 
         // ============================================================================

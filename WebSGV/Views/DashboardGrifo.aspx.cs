@@ -35,8 +35,27 @@ namespace WebSGV.Views
                 // Mostrar mensaje de exito si viene de un abastecimiento completado
                 if (Request.QueryString["msg"] == "abastecido")
                 {
-                    ScriptManager.RegisterStartupScript(this, this.GetType(), "msgExito",
-                        "setTimeout(function(){ alert('Abastecimiento registrado correctamente. El viaje fue marcado como ABASTECIDO.'); }, 300);", true);
+                    string num = Request.QueryString["num"] ?? "";
+                    string numJs = HttpUtility.JavaScriptStringEncode(num);
+                    string urlPdf = ResolveUrl("~/Views/DescargarPdfAbastecimiento.aspx") + "?num=" + HttpUtility.UrlEncode(num);
+                    string urlPdfJs = HttpUtility.JavaScriptStringEncode(urlPdf);
+
+                    string script;
+                    if (!string.IsNullOrEmpty(num))
+                    {
+                        script =
+                            "setTimeout(function(){" +
+                            "  if (confirm('Abastecimiento N° " + numJs + " registrado correctamente. El viaje fue marcado como ABASTECIDO.\\n\\n¿Desea descargar el PDF (SGV-CDF-F-06)?')) {" +
+                            "    window.open('" + urlPdfJs + "', '_blank');" +
+                            "  }" +
+                            "}, 300);";
+                    }
+                    else
+                    {
+                        script = "setTimeout(function(){ alert('Abastecimiento registrado correctamente. El viaje fue marcado como ABASTECIDO.'); }, 300);";
+                    }
+
+                    ScriptManager.RegisterStartupScript(this, this.GetType(), "msgExito", script, true);
                 }
             }
         }
@@ -274,7 +293,7 @@ namespace WebSGV.Views
                     query.Append(" AND a.fechaHora < @FechaHasta");
 
                 if (!string.IsNullOrEmpty(buscar))
-                    query.Append(" AND (c.nombre LIKE @Buscar OR c.apPaterno LIKE @Buscar OR t.placaTracto LIKE @Buscar)");
+                    query.Append(" AND (c.nombre LIKE @Buscar OR c.apPaterno LIKE @Buscar OR t.placaTracto LIKE @Buscar OR cr.placaCarreta LIKE @Buscar OR RTRIM(a.numeroAbastecimientoCombustible) LIKE @Buscar)");
 
                 query.Append(" ORDER BY a.fechaHora DESC");
 
