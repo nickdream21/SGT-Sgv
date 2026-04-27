@@ -2222,7 +2222,7 @@
 
             $.ajax({
                 type: "POST",
-                url: "LiquidacionesPendientes.aspx/AprobarConAjustes",
+                url: "LiquidacionesPendientes.aspx/AprobarLiquidacionConFirma",
                 data: JSON.stringify({
                     idOrdenViaje: idOrdenParaAprobar,
                     descuentoSoles: descS,

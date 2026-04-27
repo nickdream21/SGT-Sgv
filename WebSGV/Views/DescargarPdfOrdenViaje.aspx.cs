@@ -72,7 +72,9 @@ namespace WebSGV.Views
                 string rutaPdfFirmadoRel;
                 string hashPdfFirmado;
                 byte[] imagenTrazoPng;
-                CargarEstadoFirma(idOrdenViaje, out rutaPdfFirmadoRel, out hashPdfFirmado, out imagenTrazoPng);
+                string nombreAdmin;
+                string fechaAprobacionAdmin;
+                CargarEstadoFirma(idOrdenViaje, out rutaPdfFirmadoRel, out hashPdfFirmado, out imagenTrazoPng, out nombreAdmin, out fechaAprobacionAdmin);
 
                 byte[] pdfBytes;
                 string pdfHash;
@@ -91,7 +93,9 @@ namespace WebSGV.Views
                     var resultado = svc.GenerarYArchivar(
                         detalle: detalle,
                         firmaConductorPng: imagenTrazoPng,
-                        archivar: true);
+                        archivar: true,
+                        nombreAdminAprobador: nombreAdmin,
+                        fechaAprobacionAdmin: fechaAprobacionAdmin);
                     pdfBytes = resultado.Bytes;
                     pdfHash = resultado.Hash;
 
@@ -159,22 +163,32 @@ namespace WebSGV.Views
             int idOrdenViaje,
             out string rutaPdfFirmado,
             out string hashPdfFirmado,
-            out byte[] imagenTrazoPng)
+            out byte[] imagenTrazoPng,
+            out string nombreAdmin,
+            out string fechaAprobacionAdmin)
         {
             rutaPdfFirmado = null;
             hashPdfFirmado = null;
             imagenTrazoPng = null;
+            nombreAdmin = null;
+            fechaAprobacionAdmin = null;
 
             string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
             const string sql = @"
                 SELECT TOP 1
                     ov.rutaPdfFirmado,
                     ov.hashPdfFirmado,
-                    fd.imagenTrazoPng
+                    fd.imagenTrazoPng,
+                    fda.nombreFirmante,
+                    CONVERT(VARCHAR(19), ov.fechaAprobacionFirmada, 103) + ' ' +
+                        CONVERT(VARCHAR(8), ov.fechaAprobacionFirmada, 108) AS fechaAprobAdmin
                 FROM OrdenViaje ov
                 LEFT JOIN FirmaDigital fd
                        ON fd.idFirma = ov.idFirmaConductor
                       AND fd.estadoFirma = 'V'
+                LEFT JOIN FirmaDigital fda
+                       ON fda.idFirma = ov.idFirmaAdmin
+                      AND fda.estadoFirma = 'V'
                 WHERE ov.idOrdenViaje = @id;";
 
             using (var conn = new SqlConnection(cs))
@@ -189,6 +203,8 @@ namespace WebSGV.Views
                         if (!rd.IsDBNull(0)) rutaPdfFirmado = rd.GetString(0);
                         if (!rd.IsDBNull(1)) hashPdfFirmado = rd.GetString(1);
                         if (!rd.IsDBNull(2)) imagenTrazoPng = (byte[])rd[2];
+                        if (!rd.IsDBNull(3)) nombreAdmin = rd.GetString(3);
+                        if (!rd.IsDBNull(4)) fechaAprobacionAdmin = rd.GetString(4);
                     }
                 }
             }
