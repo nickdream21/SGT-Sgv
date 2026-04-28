@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "project": "WebSGV",
+  "last_updated": "2026-04-27T-models-reassigned",
+  "current_task_id": null,
+  "global_plan": [],
+  "active_subtasks": [],
+  "context_summary": "Proyecto ASP.NET Web Forms (.NET 4.8). Sistema multi-agente instalado (1 orquestador + 6 subagentes). El agente DBA usa el SQL MCP Server de Data API Builder (dab-config.json ya existente en el repo). MCP pendiente de activar: requiere instalar DAB CLI, definir DATABASE_CONNECTION_STRING, y registrar el MCP en opencode.jsonc.",
+  "decisions_log": [
+    {
+      "ts": "2026-04-27",
+      "decision": "Sistema multi-agente instalado: 1 orquestador + 6 subagentes (arquitecto, developer, dba, qa, reviewer, writer)",
+      "task_id": null
+    },
+    {
+      "ts": "2026-04-27",
+      "decision": "DBA usa SQL MCP Server (Data API Builder) para lectura/diagnóstico/ejecución de SPs. DDL sigue manual. Política git-first: el .sql se versiona ANTES de desplegar.",
+      "task_id": null
+    },
+    {
+      "ts": "2026-04-27",
+      "decision": "Permisos MCP: read_records/aggregate_records/describe_entities = allow; execute_entity/create_record/update_record = ask; delete_record = deny.",
+      "task_id": null
+    },
+    {
+      "ts": "2026-04-27",
+      "decision": "Reasignación de modelos por subagente. Orchestrator y Reviewer mantienen Claude Sonnet 4.6 (Copilot). Arquitecto → openai/gpt-5.5 (fallback Sonnet 4.6). Developer → openai/gpt-5.1-codex-max (fallback Sonnet 4.6). DBA → github-copilot/gpt-5.3-codex. QA y Writer migran de GPT-4 a openai/gpt-5.4. Distribución: 3 agentes en Copilot (orchestrator, dba, reviewer) y 4 en OpenAI directo (arquitecto, developer, qa, writer).",
+      "task_id": null
+    }
+  ],
+  "agents_registry": {
+    "orchestrator": { "model": "claude-sonnet-4.6",              "fallback": null,                          "runtime": "opencode",          "status": "active"    },
+    "arquitecto":   { "model": "openai/gpt-5.5",                 "fallback": "github-copilot/claude-sonnet-4.6", "runtime": "opencode-task",     "status": "available" },
+    "developer":    { "model": "openai/gpt-5.1-codex-max",       "fallback": "github-copilot/claude-sonnet-4.6", "runtime": "opencode-task",     "status": "available" },
+    "dba":          { "model": "github-copilot/gpt-5.3-codex",   "fallback": null,                          "runtime": "opencode-task+mcp", "status": "available" },
+    "qa":           { "model": "openai/gpt-5.4",                 "fallback": null,                          "runtime": "opencode-task",     "status": "available" },
+    "reviewer":     { "model": "claude-sonnet-4.6",              "fallback": null,                          "runtime": "opencode-task",     "status": "available" },
+    "writer":       { "model": "openai/gpt-5.4",                 "fallback": null,                          "runtime": "opencode-task",     "status": "available" }
+  },
+  "mcp_servers": {
+    "sql-mcp-server": {
+      "type": "data-api-builder",
+      "transport": "stdio",
+      "config_file": "dab-config.json",
+      "status": "pending_configuration",
+      "setup_doc": ".opencode/mcp/sqlserver-setup.md",
+      "required_steps": [
+        "Instalar DAB: dotnet tool install --global Microsoft.DataApiBuilder",
+        "Definir DATABASE_CONNECTION_STRING en .env (raíz del repo)",
+        "Agregar bloque mcp + permission a opencode.jsonc (snippet en setup doc)",
+        "Reiniciar OpenCode"
+      ],
+      "tools_available": [
+        "describe_entities",
+        "read_records",
+        "aggregate_records",
+        "execute_entity",
+        "create_record",
+        "update_record",
+        "delete_record"
+      ],
+      "permissions_recommended": {
+        "describe_entities": "allow",
+        "read_records": "allow",
+        "aggregate_records": "allow",
+        "execute_entity": "ask",
+        "create_record": "ask",
+        "update_record": "ask",
+        "delete_record": "deny"
+      }
+    }
+  },
+  "metrics": {
+    "total_tasks_completed": 0,
+    "total_handoffs": 0,
+    "context_compactions": 0
+  }
+}

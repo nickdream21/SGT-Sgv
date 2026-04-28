@@ -1,0 +1,28 @@
+{
+  "msg_type": "task_assignment",
+  "task_id": "TASK-XXX.Y",
+  "parent_task_id": "TASK-XXX",
+  "from": "orchestrator",
+  "to": "<arquitecto|developer|dba|qa|reviewer|writer>",
+  "ts": "YYYY-MM-DDTHH:MM:SSZ",
+  "objective": "Descripción concreta de UNA tarea atómica",
+  "context": {
+    "skill_required": ["nombre-de-skill-de-.opencode/skills"],
+    "files_to_read": ["ruta/relativa/al/repo.cs"],
+    "files_to_modify": ["ruta/relativa/al/repo.aspx"],
+    "constraints": [
+      "Roles permitidos: ADMIN, SUPERVISOR",
+      "Idioma UI: es-PE",
+      "No modificar Web.config"
+    ],
+    "previous_artifacts": [
+      "Database/StoredProcedures/sp_X_Nombre.sql ya desplegado"
+    ],
+    "user_preferences": []
+  },
+  "deliverables": [
+    "Lista concreta de archivos esperados o decisiones a entregar"
+  ],
+  "deadline_relative": "esta sesión|próxima sesión|sin urgencia",
+  "priority": "high|medium|low"
+}

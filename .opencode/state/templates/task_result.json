@@ -1,0 +1,34 @@
+{
+  "msg_type": "task_result",
+  "task_id": "TASK-XXX.Y",
+  "from": "<arquitecto|developer|dba|qa|reviewer|writer>",
+  "to": "orchestrator",
+  "ts": "YYYY-MM-DDTHH:MM:SSZ",
+  "status": "completed|partial|blocked|needs_clarification",
+  "artifacts": [
+    {
+      "path": "ruta/relativa/al/repo.cs",
+      "action": "created|modified|deleted|reviewed",
+      "summary_of_change": "Una frase explicando el cambio"
+    }
+  ],
+  "summary": "Resumen ejecutivo de lo realizado (max 3 frases)",
+  "findings": [
+    {
+      "severity": "blocker|major|minor|info",
+      "file": "ruta.cs",
+      "line": 42,
+      "issue": "Descripción del hallazgo (solo aplica a reviewer)",
+      "suggestion": "Acción sugerida"
+    }
+  ],
+  "open_questions": [
+    "Pregunta concreta para el orquestador o usuario, si las hay"
+  ],
+  "blockers": [
+    "Cosas que impiden completar la tarea (ej: 'sp_X requerido pero no existe')"
+  ],
+  "next_suggested_agent": "<nombre del próximo agente sugerido o null>",
+  "requires_user_approval": false,
+  "deployment_required": false
+}
