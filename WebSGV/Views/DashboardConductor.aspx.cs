@@ -1,5 +1,6 @@
 ﻿using System.Web.UI;
 using System.Web.Services;
+using System.Web;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -202,6 +203,9 @@ namespace WebSGV.Views
         {
             try
             {
+                // Verificar sesión activa Y rol autorizado (CONDUCTOR o ADMIN) via RolesHelper
+                RolesHelper.ValidarAccesoSeccion("DASHBOARD_CONDUCTOR");
+
                 if (Session["IdConductor"] == null || IdConductorActual == 0)
                 {
                     System.Diagnostics.Debug.WriteLine("❌ No hay sesión de conductor");
@@ -259,7 +263,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error inicializando dashboard: {ex.Message}");
-                MostrarMensaje($"Error al cargar el dashboard: {ex.Message}", "danger");
+                MostrarMensaje($"Error al cargar el dashboard: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
 
@@ -935,6 +939,14 @@ namespace WebSGV.Views
                     idsViajesActivos.Add(idViajeProgreso);
                 System.Diagnostics.Debug.WriteLine($"Viajes a cerrar: {string.Join(", ", idsViajesActivos)}");
 
+                // Verificar que todos los IDs de viajes pertenecen al conductor actual (C-3)
+                if (!ValidarOwnershipViajes(idsViajesActivos, IdConductorActual))
+                {
+                    System.Diagnostics.Debug.WriteLine($"❌ Ownership inválido: los viajes {string.Join(", ", idsViajesActivos)} no pertenecen al conductor {IdConductorActual}");
+                    MostrarMensaje("Acceso no autorizado", "danger");
+                    return;
+                }
+
                 // ✅ Detectar si es una re-liquidación de orden rechazada
                 bool esReliquidacion = !string.IsNullOrEmpty(hfNumeroOrdenExistente.Value);
                 string numeroOrdenViaje = esReliquidacion
@@ -944,6 +956,14 @@ namespace WebSGV.Views
                 System.Diagnostics.Debug.WriteLine(esReliquidacion
                     ? $"♻️ Re-liquidación sobre orden existente: {numeroOrdenViaje}"
                     : $"Número de orden generado: {numeroOrdenViaje}");
+
+                // Verificar que la orden rechazada pertenece al conductor actual (C-4)
+                if (esReliquidacion && !ValidarOwnershipOrden(numeroOrdenViaje, IdConductorActual))
+                {
+                    System.Diagnostics.Debug.WriteLine($"❌ Ownership inválido: la orden {numeroOrdenViaje} no pertenece al conductor {IdConductorActual}");
+                    MostrarMensaje("Acceso no autorizado", "danger");
+                    return;
+                }
 
                 DateTime fechaSalida = DateTime.TryParse(txtFechaSalida.Text, out DateTime fs) ? fs : DateTime.MinValue;
                 DateTime fechaLlegada = DateTime.TryParse(txtFechaLlegada.Text, out DateTime fl) ? fl : DateTime.MinValue;
@@ -1048,7 +1068,7 @@ namespace WebSGV.Views
                                 System.Diagnostics.Debug.WriteLine($"⚠️ Error en Rollback (ignorado): {rollbackEx.Message}");
                             }
 
-                            MostrarMensaje($"Error al enviar la liquidación: {ex.Message}", "danger");
+                            MostrarMensaje($"Error al enviar la liquidación: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
                         }
                     }
                 }
@@ -1084,7 +1104,7 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine($"❌ ERROR GENERAL: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"   StackTrace: {ex.StackTrace}");
-                MostrarMensaje($"Error general: {ex.Message}", "danger");
+                MostrarMensaje($"Error general: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
 
@@ -1512,6 +1532,7 @@ namespace WebSGV.Views
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@idsViajes", string.Join(",", idsViajes));
+                    cmd.Parameters.AddWithValue("@idConductor", IdConductorActual); // IDOR guard: el SP valida que los viajes pertenecen a este conductor
 
                     SqlParameter pViajesCerrados = new SqlParameter("@filasViajesCerrados", SqlDbType.Int) { Direction = ParameterDirection.Output };
                     SqlParameter pDespachosCerrados = new SqlParameter("@filasDespachosCerrados", SqlDbType.Int) { Direction = ParameterDirection.Output };
@@ -1611,7 +1632,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error cargando historial: {ex.Message}");
-                MostrarMensaje($"Error al cargar el historial: {ex.Message}", "danger");
+                MostrarMensaje($"Error al cargar el historial: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
 
@@ -1694,7 +1715,9 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error generando número de orden: {ex.Message}");
-                string fallbackNumero = $"OV-{DateTime.Now:yyyyMMddHHmmss}-{IdConductorActual:D4}";
+                // Fallback: formato que incluye conductor y ticks para unicidad
+                string fallbackNumero = $"OV-{DateTime.Now:yyyyMMddHHmmss}-{IdConductorActual:D4}-{DateTime.Now.Ticks % 1000:D3}";
+                System.Diagnostics.Debug.WriteLine($"⚠️ Usando número de orden fallback (SP falló): {fallbackNumero}");
                 return fallbackNumero;
             }
         }
@@ -1757,19 +1780,43 @@ namespace WebSGV.Views
         {
             string mensajeError = "";
 
+            // Validar fechas obligatorias
             if (fechaSalida == DateTime.MinValue)
                 mensajeError += "Por favor, seleccione una 'Fecha de Salida'.\n";
 
             if (fechaLlegada == DateTime.MinValue)
                 mensajeError += "Por favor, seleccione una 'Fecha de Llegada'.\n";
 
+            // Validar orden lógico de fechas
             if (fechaSalida != DateTime.MinValue && fechaLlegada != DateTime.MinValue)
             {
                 if (fechaSalida > fechaLlegada)
                     mensajeError += "La 'Fecha de Salida' no puede ser mayor a la 'Fecha de Llegada'.\n";
+
+                // M-3: Detectar fechas absurdamente futuras (más de 1 año desde hoy)
+                DateTime limiteMaximo = DateTime.Today.AddYears(1);
+                if (fechaSalida > limiteMaximo || fechaLlegada > limiteMaximo)
+                    mensajeError += "Las fechas no pueden ser superiores a un año desde hoy.\n";
             }
 
+            // M-2: Validar formato de hora (HH:mm, rango 00:00-23:59)
+            if (!string.IsNullOrEmpty(horaSalida) && !ValidarFormatoHora(horaSalida))
+                mensajeError += "El formato de 'Hora de Salida' es incorrecto. Use HH:MM (ej. 08:30).\n";
+
+            if (!string.IsNullOrEmpty(horaLlegada) && !ValidarFormatoHora(horaLlegada))
+                mensajeError += "El formato de 'Hora de Llegada' es incorrecto. Use HH:MM (ej. 18:00).\n";
+
             return mensajeError;
+        }
+
+        /// <summary>
+        /// Valida que una cadena tenga formato HH:mm con valores de rango válido.
+        /// </summary>
+        private bool ValidarFormatoHora(string hora)
+        {
+            if (TimeSpan.TryParseExact(hora.Trim(), @"hh\:mm", null, out TimeSpan ts))
+                return ts.Hours >= 0 && ts.Hours <= 23 && ts.Minutes >= 0 && ts.Minutes <= 59;
+            return false;
         }
 
         private bool EsFechaValidaSQL(DateTime fecha)
@@ -1784,8 +1831,13 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
+            // M-4: whitelist de tipos Bootstrap válidos para evitar CSS injection
+            var tiposPermitidos = new System.Collections.Generic.HashSet<string>
+                { "success", "danger", "warning", "info", "primary", "secondary" };
+            string tipoSeguro = tiposPermitidos.Contains(tipo) ? tipo : "info";
+
             lblMensaje.Text = mensaje;
-            lblMensaje.CssClass = $"alert alert-{tipo} alert-dismissible fade show";
+            lblMensaje.CssClass = $"alert alert-{tipoSeguro} alert-dismissible fade show";
             pnlMensajes.Visible = true;
         }
 
@@ -1795,7 +1847,7 @@ namespace WebSGV.Views
             {
                 string mensajeCompleto = $@"
                     ¡Liquidación enviada exitosamente!<br/>
-                    <strong>Número de orden:</strong> {numeroOrdenViaje}<br/>
+                    <strong>Número de orden:</strong> {System.Web.HttpUtility.HtmlEncode(numeroOrdenViaje)}<br/>
                     <div class='alert alert-info mt-3'>
                         <i class='fas fa-info-circle mr-2'></i>
                         <strong>Estado:</strong> Pendiente de aprobación<br/>
@@ -1810,9 +1862,60 @@ namespace WebSGV.Views
             }
         }
 
-        #endregion
+        private bool ValidarOwnershipViajes(List<int> idsViajes, int idConductor)
+        {
+            try
+            {
+                if (idsViajes == null || idsViajes.Count == 0) return false;
 
-        #region Métodos de Utilidad para GridView
+                string inClause = string.Join(",", idsViajes.Select(id => id.ToString()));
+                string sql = $"SELECT COUNT(*) FROM ViajesEnProgreso WHERE idViajeProgreso IN ({inClause}) AND idConductor = @idConductor";
+
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                {
+                    using (SqlCommand cmd = new SqlCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@idConductor", idConductor);
+                        conn.Open();
+                        int count = (int)cmd.ExecuteScalar();
+                        return count == idsViajes.Count;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error en ValidarOwnershipViajes: {ex.Message}");
+                return false;
+            }
+        }
+
+        private bool ValidarOwnershipOrden(string numeroOrden, int idConductor)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(numeroOrden)) return false;
+
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                {
+                    using (SqlCommand cmd = new SqlCommand(
+                        "SELECT COUNT(*) FROM OrdenViaje WHERE numeroOrdenViaje = @numeroOrden AND idConductor = @idConductor", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
+                        cmd.Parameters.AddWithValue("@idConductor", idConductor);
+                        conn.Open();
+                        int count = (int)cmd.ExecuteScalar();
+                        return count > 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error en ValidarOwnershipOrden: {ex.Message}");
+                return false;
+            }
+        }
+
+        #endregion
 
         protected string ObtenerClaseEstado(object estado)
         {
@@ -1847,15 +1950,30 @@ namespace WebSGV.Views
                 return "text-danger font-weight-bold";
         }
 
-        #endregion
-
         #region WebMethods
 
-        [WebMethod]
+        [WebMethod(EnableSession = true)]
         public static object RetirarLiquidacion(int idOrdenViaje)
         {
             try
             {
+                // Validar sesión activa
+                var session = HttpContext.Current.Session;
+                if (session["IdConductor"] == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("❌ RetirarLiquidacion: sesión no válida (IdConductor nulo)");
+                    return new { success = false, message = "Sesión no válida" };
+                }
+
+                // Validar rol: solo CONDUCTOR / CHOFER pueden retirar liquidaciones propias
+                if (!RolesHelper.EsConductor())
+                {
+                    System.Diagnostics.Debug.WriteLine("❌ RetirarLiquidacion: rol no autorizado");
+                    return new { success = false, message = "Sesión no válida" };
+                }
+
+                int idConductorActual = Convert.ToInt32(session["IdConductor"]);
+
                 string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
@@ -1864,6 +1982,7 @@ namespace WebSGV.Views
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@idOrdenViaje", idOrdenViaje);
+                        cmd.Parameters.AddWithValue("@idConductor", idConductorActual);
 
                         SqlParameter pResultado = new SqlParameter("@resultado", SqlDbType.Int) { Direction = ParameterDirection.Output };
                         SqlParameter pMensaje = new SqlParameter("@mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };

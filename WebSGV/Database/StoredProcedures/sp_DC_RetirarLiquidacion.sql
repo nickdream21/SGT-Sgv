@@ -1,5 +1,6 @@
 CREATE OR ALTER PROCEDURE sp_DC_RetirarLiquidacion
     @idOrdenViaje INT,
+    @idConductor  INT,              -- NUEVO: conductor autenticado (IDOR guard)
     @resultado INT OUTPUT,          -- 0=error, 1=éxito
     @mensaje VARCHAR(500) OUTPUT,
     @numeroOrdenViajeSalida VARCHAR(50) OUTPUT,
@@ -12,7 +13,8 @@ BEGIN
     DECLARE @idViajeProgreso INT = 0;
     DECLARE @idConductorOrden INT = 0;
 
-    -- 1. Verificar que la liquidación existe, está PENDIENTE y fue registrada por el conductor
+    -- 1. Verificar que la liquidación existe, está PENDIENTE, fue registrada por el conductor
+    --    Y pertenece al conductor autenticado (IDOR guard)
     SELECT 
         @numeroOrdenViaje = numeroOrdenViaje,
         @idViajeProgreso = ISNULL(idViajeProgreso, 0),
@@ -20,12 +22,13 @@ BEGIN
     FROM OrdenViaje 
     WHERE idOrdenViaje = @idOrdenViaje 
         AND estadoAprobacion = 'PENDIENTE' 
-        AND registradoPor = 'CONDUCTOR';
+        AND registradoPor = 'CONDUCTOR'
+        AND idConductor   = @idConductor;  -- solo puede retirar su propia orden
 
     IF @numeroOrdenViaje IS NULL
     BEGIN
         SET @resultado = 0;
-        SET @mensaje = 'No se puede retirar esta liquidación. Es posible que ya haya sido revisada por la administración.';
+        SET @mensaje = 'No se puede retirar esta liquidación. Es posible que ya haya sido revisada por la administración o no le pertenece.';
         SET @numeroOrdenViajeSalida = '';
         SET @idViajeProgresoSalida = 0;
         RETURN;

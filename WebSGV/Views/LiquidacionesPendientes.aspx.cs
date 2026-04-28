@@ -139,9 +139,9 @@ namespace WebSGV.Views
         {
             get
             {
-                if (Session["IdUsuario"] != null)
+                if (Session["UsuarioID"] != null)
                 {
-                    return Convert.ToInt32(Session["IdUsuario"]);
+                    return Convert.ToInt32(Session["UsuarioID"]);
                 }
                 return 0;
             }
@@ -151,7 +151,7 @@ namespace WebSGV.Views
         {
             get
             {
-                return Session["NombreUsuario"]?.ToString() ?? "";
+                return Session["Nombre"]?.ToString() ?? "";
             }
         }
 
@@ -184,12 +184,11 @@ namespace WebSGV.Views
                     return;
                 }
 
-                // Verificar que NO sea conductor (solo admin puede aprobar)
-                string rol = Session["Rol"]?.ToString() ?? "";
-                if (rol.ToUpper() == "CONDUCTOR")
+                // Solo ADMIN y SUPERVISOR pueden gestionar liquidaciones (whitelist)
+                if (!RolesHelper.TienePermiso("ORDEN_VIAJE"))
                 {
-                    System.Diagnostics.Debug.WriteLine("⚠️ Conductor intentó acceder a página de aprobaciones");
-                    Response.Redirect("~/Views/DashboardConductor.aspx");
+                    System.Diagnostics.Debug.WriteLine($"⚠️ Acceso denegado a LiquidacionesPendientes - Rol: {Session["Rol"]}");
+                    RolesHelper.RedirigirSegunRol();
                     return;
                 }
 
@@ -215,7 +214,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error inicializando página: {ex.Message}");
-                MostrarMensaje($"Error al cargar la página: {ex.Message}", "danger");
+                MostrarMensaje($"Error al cargar la página: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
 
@@ -243,14 +242,14 @@ namespace WebSGV.Views
                             cmd.Parameters.AddWithValue("@idConductor", Convert.ToInt32(hfConductorId.Value));
                         }
 
-                        if (!string.IsNullOrEmpty(txtFechaDesde.Text))
+                        if (!string.IsNullOrEmpty(txtFechaDesde.Text) && DateTime.TryParse(txtFechaDesde.Text, out DateTime fechaD))
                         {
-                            cmd.Parameters.AddWithValue("@fechaDesde", DateTime.Parse(txtFechaDesde.Text));
+                            cmd.Parameters.AddWithValue("@fechaDesde", fechaD);
                         }
 
-                        if (!string.IsNullOrEmpty(txtFechaHasta.Text))
+                        if (!string.IsNullOrEmpty(txtFechaHasta.Text) && DateTime.TryParse(txtFechaHasta.Text, out DateTime fechaH))
                         {
-                            cmd.Parameters.AddWithValue("@fechaHasta", DateTime.Parse(txtFechaHasta.Text));
+                            cmd.Parameters.AddWithValue("@fechaHasta", fechaH);
                         }
 
                         conn.Open();
@@ -260,25 +259,6 @@ namespace WebSGV.Views
                         {
                             da.Fill(dt);
                         }
-
-                        // Calcular estadísticas
-                        int totalPendientes = dt.Rows.Count;
-                        int totalUrgentes = 0;
-
-                        foreach (DataRow row in dt.Rows)
-                        {
-                            if (row["HorasPendientes"] != DBNull.Value)
-                            {
-                                int horasPendientes = Convert.ToInt32(row["HorasPendientes"]);
-                                if (horasPendientes > 24)
-                                {
-                                    totalUrgentes++;
-                                }
-                            }
-                        }
-
-                        lblTotalPendientes.Text = totalPendientes.ToString();
-                        lblTotalUrgentes.Text = totalUrgentes.ToString();
 
                         // Aplicar filtro de prioridad si está seleccionado
                         if (!string.IsNullOrEmpty(ddlPrioridad.SelectedValue))
@@ -297,6 +277,25 @@ namespace WebSGV.Views
                             dt = dtFiltrado;
                         }
 
+                        // Calcular estadísticas sobre el dt resultante (refleja lo que se muestra)
+                        int totalPendientes = dt.Rows.Count;
+                        int totalUrgentes = 0;
+
+                        foreach (DataRow row in dt.Rows)
+                        {
+                            if (row["HorasPendientes"] != DBNull.Value)
+                            {
+                                int horasPendientes = Convert.ToInt32(row["HorasPendientes"]);
+                                if (horasPendientes > 24)
+                                {
+                                    totalUrgentes++;
+                                }
+                            }
+                        }
+
+                        lblTotalPendientes.Text = totalPendientes.ToString();
+                        lblTotalUrgentes.Text = totalUrgentes.ToString();
+
                         // Vincular al GridView
                         gvLiquidacionesPendientes.DataSource = dt;
                         gvLiquidacionesPendientes.DataBind();
@@ -310,7 +309,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error cargando liquidaciones: {ex.Message}");
-                MostrarMensaje($"Error al cargar las liquidaciones: {ex.Message}", "danger");
+                MostrarMensaje($"Error al cargar las liquidaciones: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
 
@@ -340,7 +339,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error en RowCommand: {ex.Message}");
-                MostrarMensaje($"Error: {ex.Message}", "danger");
+                MostrarMensaje($"Error: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
 
@@ -428,7 +427,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error aprobando liquidación: {ex.Message}");
-                MostrarMensaje($"Error al aprobar la liquidación: {ex.Message}", "danger");
+                MostrarMensaje($"Error al aprobar la liquidación: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
 
@@ -444,7 +443,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error redirigiendo a edición: {ex.Message}");
-                MostrarMensaje($"Error al redirigir: {ex.Message}", "danger");
+                MostrarMensaje($"Error al redirigir: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
 
@@ -548,7 +547,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error rechazando liquidación: {ex.Message}");
-                MostrarMensaje($"Error al rechazar la liquidación: {ex.Message}", "danger");
+                MostrarMensaje($"Error al rechazar la liquidación: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
 
@@ -597,11 +596,15 @@ namespace WebSGV.Views
 
         #region WebMethod - Buscar Conductores
 
-        [WebMethod]
+        [WebMethod(EnableSession = true)]
         public static string BuscarConductores(string term)
         {
             try
             {
+                var ctx = System.Web.HttpContext.Current;
+                if (ctx.Session["UsuarioID"] == null)
+                    return "[]";
+
                 if (string.IsNullOrEmpty(term) || term.Trim().Length < 2)
                     return "[]";
 
@@ -652,11 +655,15 @@ namespace WebSGV.Views
 
         #region WebMethod - Obtener Detalle
 
-        [WebMethod]
+        [WebMethod(EnableSession = true)]
         public static DetalleLiquidacion ObtenerDetalleLiquidacion(int idOrdenViaje)
         {
             try
             {
+                var ctx = System.Web.HttpContext.Current;
+                if (ctx.Session["UsuarioID"] == null)
+                    return null;
+
                 System.Diagnostics.Debug.WriteLine($"=== OBTENIENDO DETALLE LIQUIDACIÓN: {idOrdenViaje} ===");
 
                 string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
@@ -758,8 +765,10 @@ namespace WebSGV.Views
                                     NombreConductor = reader["nombreConductor"].ToString(),
                                     PlacaTracto = reader["placaTracto"].ToString(),
                                     PlacaCarreta = reader["placaCarreta"].ToString(),
-                                    FechaSalida = Convert.ToDateTime(reader["fechaSalida"]).ToString("dd/MM/yyyy"),
-                                    FechaLlegada = Convert.ToDateTime(reader["fechaLlegada"]).ToString("dd/MM/yyyy"),
+                                    FechaSalida  = reader["fechaSalida"] != DBNull.Value
+                                        ? Convert.ToDateTime(reader["fechaSalida"]).ToString("dd/MM/yyyy") : "—",
+                                    FechaLlegada = reader["fechaLlegada"] != DBNull.Value
+                                        ? Convert.ToDateTime(reader["fechaLlegada"]).ToString("dd/MM/yyyy") : "—",
                                     Observaciones = reader["observaciones"]?.ToString() ?? "",
 
                                     // Ingresos (aún falta sumar adicionales)
@@ -1020,8 +1029,8 @@ namespace WebSGV.Views
                 System.Diagnostics.Debug.WriteLine($"=== APROBAR CON AJUSTES: {idOrdenViaje} ===");
 
                 int idUsuario = 0;
-                if (System.Web.HttpContext.Current.Session["IdUsuario"] != null)
-                    idUsuario = Convert.ToInt32(System.Web.HttpContext.Current.Session["IdUsuario"]);
+                if (System.Web.HttpContext.Current.Session["UsuarioID"] != null)
+                    idUsuario = Convert.ToInt32(System.Web.HttpContext.Current.Session["UsuarioID"]);
 
                 if (idUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
@@ -1032,10 +1041,14 @@ namespace WebSGV.Views
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     conn.Open();
+                    using (SqlTransaction tran = conn.BeginTransaction())
+                    {
+                    try
+                    {
 
                     // 1. Obtener numeroOrdenViaje
                     using (SqlCommand cmd = new SqlCommand(
-                        "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id", conn))
+                        "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id", conn, tran))
                     {
                         cmd.Parameters.AddWithValue("@id", idOrdenViaje);
                         object result = cmd.ExecuteScalar();
@@ -1059,7 +1072,7 @@ namespace WebSGV.Views
                                     (numeroOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, activo)
                                 VALUES (@numeroOrden, @descS, @descD, @reintS, @reintD, 1)";
 
-                        using (SqlCommand cmd = new SqlCommand(upsertSql, conn))
+                        using (SqlCommand cmd = new SqlCommand(upsertSql, conn, tran))
                         {
                             cmd.Parameters.AddWithValue("@numeroOrden", numeroOrdenViaje);
                             cmd.Parameters.AddWithValue("@descS", descuentoSoles);
@@ -1072,7 +1085,7 @@ namespace WebSGV.Views
                     }
 
                     // 3. Llamar sp_AprobarLiquidacion
-                    using (SqlCommand cmd = new SqlCommand("sp_AprobarLiquidacion", conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_AprobarLiquidacion", conn, tran))
                     {
                         cmd.CommandType = System.Data.CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
@@ -1089,6 +1102,15 @@ namespace WebSGV.Views
                                     return new { success = false, message = mensaje };
                             }
                         }
+                    }
+
+                    tran.Commit();
+                    }
+                    catch
+                    {
+                        tran.Rollback();
+                        throw;
+                    }
                     }
                 }
 
@@ -1109,7 +1131,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error en AprobarConAjustes: {ex.Message}");
-                return new { success = false, message = $"Error al aprobar: {ex.Message}" };
+                return new { success = false, message = "Error interno al aprobar. Contacte al administrador." };
             }
         }
 
@@ -1223,11 +1245,15 @@ namespace WebSGV.Views
             public decimal BalanceDolares { get; set; }
         }
 
-        [WebMethod]
+        [WebMethod(EnableSession = true)]
         public static List<LiquidacionAprobadaItem> ObtenerLiquidacionesAprobadas(int idConductor, string fechaDesde, string fechaHasta, string numeroOrden)
         {
             try
             {
+                var ctx = System.Web.HttpContext.Current;
+                if (ctx.Session["UsuarioID"] == null)
+                    return new List<LiquidacionAprobadaItem>();
+
                 System.Diagnostics.Debug.WriteLine("=== OBTENIENDO LIQUIDACIONES APROBADAS ===");
 
                 string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
@@ -1280,10 +1306,10 @@ namespace WebSGV.Views
                     {
                         if (idConductor > 0)
                             cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                        if (!string.IsNullOrEmpty(fechaDesde))
-                            cmd.Parameters.AddWithValue("@fechaDesde", DateTime.Parse(fechaDesde));
-                        if (!string.IsNullOrEmpty(fechaHasta))
-                            cmd.Parameters.AddWithValue("@fechaHasta", DateTime.Parse(fechaHasta));
+                        if (!string.IsNullOrEmpty(fechaDesde) && DateTime.TryParse(fechaDesde, out DateTime fdDesde))
+                            cmd.Parameters.AddWithValue("@fechaDesde", fdDesde);
+                        if (!string.IsNullOrEmpty(fechaHasta) && DateTime.TryParse(fechaHasta, out DateTime fdHasta))
+                            cmd.Parameters.AddWithValue("@fechaHasta", fdHasta);
                         if (!string.IsNullOrEmpty(numeroOrden))
                             cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
 
@@ -1341,8 +1367,8 @@ namespace WebSGV.Views
                 System.Diagnostics.Debug.WriteLine($"=== REVERTIR APROBACIÓN: {idOrdenViaje} ===");
 
                 int idUsuario = 0;
-                if (System.Web.HttpContext.Current.Session["IdUsuario"] != null)
-                    idUsuario = Convert.ToInt32(System.Web.HttpContext.Current.Session["IdUsuario"]);
+                if (System.Web.HttpContext.Current.Session["UsuarioID"] != null)
+                    idUsuario = Convert.ToInt32(System.Web.HttpContext.Current.Session["UsuarioID"]);
 
                 if (idUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
@@ -1384,12 +1410,15 @@ namespace WebSGV.Views
                     System.Diagnostics.Debug.WriteLine($"✅ Liquidación {numeroOrdenViaje} revertida por usuario {idUsuario}. Motivo: {motivo}");
                 }
 
+                AuditoriaHelper.Registrar("REVERTIR", "OrdenViaje", idOrdenViaje,
+                    $"Reversión de aprobación - Orden: {numeroOrdenViaje}. Motivo: {motivo}");
+
                 return new { success = true, message = $"Liquidación {numeroOrdenViaje} revertida exitosamente. Ahora aparecerá en la lista de pendientes para re-aprobación." };
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error revirtiendo aprobación: {ex.Message}");
-                return new { success = false, message = $"Error al revertir: {ex.Message}" };
+                return new { success = false, message = "Error interno al revertir. Contacte al administrador." };
             }
         }
 
@@ -1401,8 +1430,8 @@ namespace WebSGV.Views
                 System.Diagnostics.Debug.WriteLine($"=== CORREGIR AJUSTES APROBADA: {idOrdenViaje} ===");
 
                 int idUsuario = 0;
-                if (System.Web.HttpContext.Current.Session["IdUsuario"] != null)
-                    idUsuario = Convert.ToInt32(System.Web.HttpContext.Current.Session["IdUsuario"]);
+                if (System.Web.HttpContext.Current.Session["UsuarioID"] != null)
+                    idUsuario = Convert.ToInt32(System.Web.HttpContext.Current.Session["UsuarioID"]);
 
                 if (idUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
@@ -1413,10 +1442,14 @@ namespace WebSGV.Views
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     conn.Open();
+                    using (SqlTransaction tran = conn.BeginTransaction())
+                    {
+                    try
+                    {
 
                     // 1. Obtener número de orden
                     using (SqlCommand cmd = new SqlCommand(
-                        "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id", conn))
+                        "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id", conn, tran))
                     {
                         cmd.Parameters.AddWithValue("@id", idOrdenViaje);
                         object result = cmd.ExecuteScalar();
@@ -1438,7 +1471,7 @@ namespace WebSGV.Views
                                 (numeroOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, activo)
                             VALUES (@numeroOrden, @descS, @descD, @reintS, @reintD, 1)";
 
-                    using (SqlCommand cmd = new SqlCommand(upsertSql, conn))
+                    using (SqlCommand cmd = new SqlCommand(upsertSql, conn, tran))
                     {
                         cmd.Parameters.AddWithValue("@numeroOrden", numeroOrdenViaje);
                         cmd.Parameters.AddWithValue("@descS", descuentoSoles);
@@ -1455,7 +1488,7 @@ namespace WebSGV.Views
                             '[CORRECCION AJUSTES ' + CONVERT(varchar, GETDATE(), 120) + '] ' + @motivo +
                             ' | Desc S/' + CAST(@descS AS varchar) + ' $' + CAST(@descD AS varchar) +
                             ' | Reint S/' + CAST(@reintS AS varchar) + ' $' + CAST(@reintD AS varchar)
-                        WHERE idOrdenViaje = @id", conn))
+                        WHERE idOrdenViaje = @id", conn, tran))
                     {
                         cmd.Parameters.AddWithValue("@id", idOrdenViaje);
                         cmd.Parameters.AddWithValue("@motivo", motivo);
@@ -1468,6 +1501,15 @@ namespace WebSGV.Views
 
                     System.Diagnostics.Debug.WriteLine($"✅ Ajustes corregidos para {numeroOrdenViaje} por usuario {idUsuario}");
                     System.Diagnostics.Debug.WriteLine($"   DescS={descuentoSoles} DescD={descuentoDolares} ReintS={reintegroSoles} ReintD={reintegroDolares}");
+
+                    tran.Commit();
+                    }
+                    catch
+                    {
+                        tran.Rollback();
+                        throw;
+                    }
+                    }
                 }
 
                 return new { success = true, message = $"Ajustes de la liquidación {numeroOrdenViaje} corregidos exitosamente. Los cambios se reflejan en los reportes." };
@@ -1475,7 +1517,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error corrigiendo ajustes: {ex.Message}");
-                return new { success = false, message = $"Error al corregir ajustes: {ex.Message}" };
+                return new { success = false, message = "Error interno al corregir ajustes. Contacte al administrador." };
             }
         }
 
