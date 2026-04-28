@@ -685,7 +685,7 @@
 
                     <div class="form-group">
                         <label class="form-label">Motivo del Rechazo <span class="text-danger">*</span></label>
-                        <textarea id="rechazarObservaciones" class="form-control" rows="4" 
+                        <textarea id="rechazarObservaciones" name="observacionesRechazo" class="form-control" rows="4" 
                             placeholder="Explique detalladamente qué debe corregir el conductor...&#13;&#10;Ejemplo: Los montos de peajes no coinciden con los comprobantes adjuntos. Por favor revisar."></textarea>
                     </div>
                 </div>
