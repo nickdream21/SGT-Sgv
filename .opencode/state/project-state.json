@@ -1,11 +1,11 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "project": "WebSGV",
-  "last_updated": "2026-04-27T-models-reassigned",
+  "last_updated": "2026-04-29T-multiagent-refactor-v2",
   "current_task_id": null,
   "global_plan": [],
   "active_subtasks": [],
-  "context_summary": "Proyecto ASP.NET Web Forms (.NET 4.8). Sistema multi-agente instalado (1 orquestador + 6 subagentes). El agente DBA usa el SQL MCP Server de Data API Builder (dab-config.json ya existente en el repo). MCP pendiente de activar: requiere instalar DAB CLI, definir DATABASE_CONNECTION_STRING, y registrar el MCP en opencode.jsonc.",
+  "context_summary": "Proyecto ASP.NET Web Forms (.NET 4.8). Sistema multi-agente refactorizado a v2 (2026-04-29): 1 orquestador + 6 subagentes con paralelismo seguro, intent routing, evidence-gating obligatorio antes de cerrar tareas, y 11 skills cargables (frontend-design, systematic-debugging, verification-before-completion, test-driven-development, nueva-pagina-aspx, nueva-sp-sql, sql-injection-y-sqlcommand-seguro, itextsharp-pdf-webforms, auditoria-y-sesiones-sgv, msbuild-csproj-sync, viewstate-postback-webforms). El agente DBA usa SQL MCP Server (Data API Builder) — DDL sigue requiriendo despliegue manual.",
   "decisions_log": [
     {
       "ts": "2026-04-27",
@@ -26,6 +26,142 @@
       "ts": "2026-04-27",
       "decision": "Reasignación de modelos por subagente. Orchestrator y Reviewer mantienen Claude Sonnet 4.6 (Copilot). Arquitecto → openai/gpt-5.5 (fallback Sonnet 4.6). Developer → openai/gpt-5.1-codex-max (fallback Sonnet 4.6). DBA → github-copilot/gpt-5.3-codex. QA y Writer migran de GPT-4 a openai/gpt-5.4. Distribución: 3 agentes en Copilot (orchestrator, dba, reviewer) y 4 en OpenAI directo (arquitecto, developer, qa, writer).",
       "task_id": null
+    },
+    {
+      "ts": "2026-04-29",
+      "decision": "Refactor v2 del sistema multi-agente: (1) plantillas v2 con intent, evidence_required, decisions_context, parallel_group_id, rollback_plan, skills_loaded; (2) 5 skills nuevas WebSGV-specific (sql-injection-y-sqlcommand-seguro, itextsharp-pdf-webforms, auditoria-y-sesiones-sgv, msbuild-csproj-sync, viewstate-postback-webforms); (3) orchestrator gana intent_routing_table, paralelismo seguro, verification gate; (4) cada subagente carga skills automáticamente según intent. Mantenidos los 7 agentes (no se agregaron nuevos).",
+      "task_id": null
+    },
+    {
+      "ts": "2026-04-29",
+      "decision": "Paralelismo seguro: dos agentes pueden correr en paralelo si (a) misma TASK-XXX con subtareas distintas Y (b) archivos disjuntos Y (c) sin dependencia ordinal. Prohibido: dos dba simultáneos sobre misma DB; dos arquitecto simultáneos; dos writer simultáneos sobre misma carpeta docs/. Marcador: parallel_group_id en task_assignment.",
+      "task_id": null
+    },
+    {
+      "ts": "2026-04-29",
+      "decision": "Verification gate obligatorio: orchestrator NO marca completed sin task_result.evidence con build_exit_code=0 (developer) o sp_smoke_test_output (dba) o manual_test_results (qa). status='completed' sin evidence se rechaza con needs_clarification.",
+      "task_id": null
+    },
+    {
+      "ts": "2026-04-29",
+      "decision": "Firma canónica: RolesHelper.TienePermiso(seccion) y ValidarAccesoSeccion(seccion) toman UN solo parámetro (la sección). Variantes con (rol, seccion) son invenciones — no usar. AuditoriaHelper.Registrar firma real: (accion, tablaAfectada, idRegistroAfectado, descripcion, valoresAnteriores, valoresNuevos). Sesión usa DOS claves: Session['UsuarioID'] (string, validación) y Session['IdUsuario'] (int, FK).",
+      "task_id": null
+    }
+  ],
+  "intent_routing_table": {
+    "new_page": {
+      "owner": "developer",
+      "skills_auto_load": ["nueva-pagina-aspx", "auditoria-y-sesiones-sgv", "msbuild-csproj-sync", "viewstate-postback-webforms"],
+      "evidence_required": ["build_exit_code=0", "manual_test: happy_path"],
+      "review_required": true,
+      "next_after_complete": "reviewer"
+    },
+    "new_sp": {
+      "owner": "dba",
+      "skills_auto_load": ["nueva-sp-sql", "sql-injection-y-sqlcommand-seguro"],
+      "evidence_required": ["sql file in Database/StoredProcedures/", "sp_deployed=true", "sp_smoke_test_output"],
+      "review_required": true,
+      "next_after_complete": "reviewer"
+    },
+    "bugfix": {
+      "owner": "developer",
+      "skills_auto_load": ["systematic-debugging", "verification-before-completion"],
+      "evidence_required": ["root_cause_documented", "build_exit_code=0", "regression_test_or_manual_repro"],
+      "review_required": true,
+      "next_after_complete": "qa"
+    },
+    "refactor": {
+      "owner": "developer",
+      "skills_auto_load": ["msbuild-csproj-sync", "verification-before-completion"],
+      "evidence_required": ["build_exit_code=0", "behavior_unchanged_proof"],
+      "review_required": true,
+      "next_after_complete": "reviewer"
+    },
+    "arch_decision": {
+      "owner": "arquitecto",
+      "skills_auto_load": [],
+      "evidence_required": ["ADR_document_in_docs/", "tradeoffs_listed"],
+      "review_required": false,
+      "next_after_complete": null
+    },
+    "code_review": {
+      "owner": "reviewer",
+      "skills_auto_load": ["sql-injection-y-sqlcommand-seguro", "auditoria-y-sesiones-sgv"],
+      "evidence_required": ["findings_classified_by_severity"],
+      "review_required": false,
+      "next_after_complete": "developer"
+    },
+    "qa_plan": {
+      "owner": "qa",
+      "skills_auto_load": ["test-driven-development", "viewstate-postback-webforms"],
+      "evidence_required": ["test_cases_with_steps_and_expected", "negative_cases_per_role"],
+      "review_required": false,
+      "next_after_complete": null
+    },
+    "doc_update": {
+      "owner": "writer",
+      "skills_auto_load": [],
+      "evidence_required": ["docs_diff", "no_secrets_committed"],
+      "review_required": false,
+      "next_after_complete": null
+    },
+    "deploy_verify": {
+      "owner": "dba",
+      "skills_auto_load": ["verification-before-completion"],
+      "evidence_required": ["mcp_describe_entities_output", "mcp_execute_entity_smoke_test"],
+      "review_required": false,
+      "next_after_complete": null
+    }
+  },
+  "parallelism_matrix": {
+    "rules": [
+      "Subtareas de la misma TASK-XXX que tocan archivos disjuntos PUEDEN correr en paralelo con mismo parallel_group_id",
+      "Subtareas con dependencia ordinal (developer requiere SP del dba) NO corren en paralelo",
+      "Operaciones de escritura sobre misma carpeta NO en paralelo aunque sean agentes distintos"
+    ],
+    "agent_pairs": {
+      "developer+developer": "ok_si_archivos_disjuntos",
+      "developer+dba": "ok_si_developer_no_depende_de_sp_pendiente",
+      "developer+writer": "ok_siempre",
+      "dba+dba": "PROHIBIDO_sobre_misma_db",
+      "arquitecto+arquitecto": "PROHIBIDO",
+      "writer+writer": "ok_si_carpetas_distintas",
+      "reviewer+cualquiera": "ok_reviewer_solo_lee",
+      "qa+cualquiera": "ok_qa_solo_diseña_casos"
+    }
+  },
+  "risk_register": [
+    {
+      "id": "RISK-001",
+      "description": "MCP DAB no instalado bloquea diagnóstico de bugs en datos",
+      "owner": "dba",
+      "severity": "medium",
+      "mitigation": "Setup en .opencode/mcp/sqlserver-setup.md; mientras no exista, dba pide a usuario que ejecute query y pegue resultado",
+      "status": "open"
+    },
+    {
+      "id": "RISK-002",
+      "description": "iTextSharp 5.5.13.4 es AGPL — riesgo licencia si código se distribuye fuera de uso interno",
+      "owner": "arquitecto",
+      "severity": "low",
+      "mitigation": "Documentado; uso interno de empresa; migrar a iText 7 (commercial) requiere ADR",
+      "status": "accepted"
+    },
+    {
+      "id": "RISK-003",
+      "description": "DDL no automatizado: nuevos SPs requieren despliegue manual con SSMS/sqlcmd; código que los llama falla hasta despliegue",
+      "owner": "dba",
+      "severity": "high",
+      "mitigation": "Política git-first + verificación con MCP describe_entities + smoke test execute_entity antes de cerrar TASK",
+      "status": "open"
+    },
+    {
+      "id": "RISK-004",
+      "description": "Credenciales reales de somee.com en connectionStrings.config localmente (gitignored)",
+      "owner": "orchestrator",
+      "severity": "high",
+      "mitigation": "Confirmar .gitignore activo antes de cualquier commit; nunca incluir el archivo en task_assignment.files_to_modify",
+      "status": "mitigated"
     }
   ],
   "agents_registry": {
@@ -36,6 +172,19 @@
     "qa":           { "model": "openai/gpt-5.4",                 "fallback": null,                          "runtime": "opencode-task",     "status": "available" },
     "reviewer":     { "model": "claude-sonnet-4.6",              "fallback": null,                          "runtime": "opencode-task",     "status": "available" },
     "writer":       { "model": "openai/gpt-5.4",                 "fallback": null,                          "runtime": "opencode-task",     "status": "available" }
+  },
+  "skills_registry": {
+    "frontend-design":              { "scope": "global",   "audience": ["developer"] },
+    "systematic-debugging":         { "scope": "global",   "audience": ["developer", "dba", "qa"] },
+    "verification-before-completion": { "scope": "global", "audience": ["all"] },
+    "test-driven-development":      { "scope": "global",   "audience": ["developer", "qa"] },
+    "nueva-pagina-aspx":            { "scope": "websgv",   "audience": ["developer"] },
+    "nueva-sp-sql":                 { "scope": "websgv",   "audience": ["dba"] },
+    "sql-injection-y-sqlcommand-seguro": { "scope": "websgv", "audience": ["developer", "reviewer", "dba"] },
+    "itextsharp-pdf-webforms":      { "scope": "websgv",   "audience": ["developer"] },
+    "auditoria-y-sesiones-sgv":     { "scope": "websgv",   "audience": ["developer", "reviewer", "qa"] },
+    "msbuild-csproj-sync":          { "scope": "websgv",   "audience": ["developer"] },
+    "viewstate-postback-webforms":  { "scope": "websgv",   "audience": ["developer", "qa"] }
   },
   "mcp_servers": {
     "sql-mcp-server": {
@@ -70,9 +219,20 @@
       }
     }
   },
+  "verification_gate": {
+    "enforced": true,
+    "rules": [
+      "task_result.status='completed' requiere task_result.evidence completo según intent_routing_table[intent].evidence_required",
+      "Si evidence falta o build_exit_code != 0, orchestrator marca status='needs_clarification' y devuelve a owner",
+      "deployment_required=true exige rollback_plan no vacío",
+      "DBA NO puede declarar SP completado sin sp_deployed=true Y sp_smoke_test_output presente"
+    ]
+  },
   "metrics": {
     "total_tasks_completed": 0,
     "total_handoffs": 0,
-    "context_compactions": 0
+    "context_compactions": 0,
+    "parallel_groups_executed": 0,
+    "verification_rejections": 0
   }
 }
