@@ -14,6 +14,9 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            SecurityHelper.AgregarHeadersSeguridad();
+            SecurityHelper.ExigirRolAdmin();
+
             if (!IsPostBack)
             {
                 CargarPlantas();

@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -68,7 +69,18 @@ namespace WebSGV.Views
 
         private void VerificarSesion()
         {
-            if (IdConductorActual == 0)
+            // Verificar sesión activa
+            if (Session["UsuarioID"] == null)
+            {
+                Response.Redirect("~/Views/Login.aspx?error=sesion", false);
+                Context.ApplicationInstance.CompleteRequest();
+                return;
+            }
+
+            // Permitir ADMIN, ADMIN_SISTEMA y SUPERVISOR sin restricción de conductor
+            string rol = Session["Rol"]?.ToString().Trim().ToUpperInvariant() ?? "";
+            bool esAdmin = rol == "ADMIN" || rol == "ADMINISTRADOR DE SISTEMA" || rol == "SUPERVISOR";
+            if (!esAdmin && IdConductorActual == 0)
             {
                 Response.Redirect("~/Views/Login.aspx?error=sesion", false);
                 Context.ApplicationInstance.CompleteRequest();

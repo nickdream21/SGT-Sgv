@@ -15,6 +15,7 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebGrease.Activities;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
@@ -24,6 +25,9 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            SecurityHelper.AgregarHeadersSeguridad();
+            SecurityHelper.ExigirRolAdminOSupervisor();
+
             if (!IsPostBack)
             {
                 // Establecer fechas predeterminadas (último mes)

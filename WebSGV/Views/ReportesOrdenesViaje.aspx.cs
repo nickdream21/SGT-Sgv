@@ -13,6 +13,7 @@ using System.IO;
 using ClosedXML.Excel;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
+using WebSGV.Helpers;
 
 // Alias para resolver ambigüedades
 using iTextParagraph = iTextSharp.text.Paragraph;
@@ -29,6 +30,10 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            // Verificar acceso antes de cualquier operación (incluidas exportaciones)
+            SecurityHelper.AgregarHeadersSeguridad();
+            SecurityHelper.ExigirRolAdminOSupervisor();
+
             // ✅ PROCESAR EXPORTACIONES ANTES DE CUALQUIER COSA
             string action = Request.QueryString["action"];
 
