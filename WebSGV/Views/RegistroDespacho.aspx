@@ -22,7 +22,7 @@
 .rd-viaje-header h6 { margin: 0; font-size: .88rem; font-weight: 600; color: #4c1d95; display: flex; align-items: center; gap: .45rem; }
 .rd-list-header { background: #f8fafc; border-bottom: 1px solid #e2e8f0; border-radius: 5px 5px 0 0; padding: .85rem 1.25rem; }
 .rd-list-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: #1e293b; }
-.loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,.75); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+/* MIN-002: .loading-overlay definido solo en Content2 (definición completa con width/height 100%) */
 </style>
 
     <div class="container-fluid">
@@ -363,7 +363,7 @@
                                                                 <label class="form-label">
                                                                     <strong>Viaje activo encontrado:</strong>
                                                                 </label>
-                                                                <div class="rd-notice rd-notice-ok">
+                                                                 <div class="rd-notice rd-notice-ok">
                                                                     <div class="row align-items-center">
                                                                         <div class="col-md-12">
                                                                             <strong><i class="fas fa-clipboard-list"></i> <asp:Label ID="lblNumeroViaje" runat="server"></asp:Label></strong><br>
@@ -374,6 +374,16 @@
                                                                             </small>
                                                                         </div>
                                                                     </div>
+                                                                </div>
+                                                                <!-- BLK-003: Botón para finalizar el viaje único activo -->
+                                                                <div class="mt-2">
+                                                                    <asp:Button ID="btnFinalizarViajeUnico" runat="server"
+                                                                        Text="Finalizar Viaje"
+                                                                        CssClass="btn btn-outline-warning btn-sm"
+                                                                        OnClick="btnFinalizarViajeUnico_Click"
+                                                                        CausesValidation="false"
+                                                                        ToolTip="Cierra el viaje activo del conductor"
+                                                                        OnClientClick="return confirm('¿Desea finalizar este viaje en progreso?');" />
                                                                 </div>
                                                             </asp:Panel>
                                                             
@@ -615,6 +625,7 @@
                                 <asp:AsyncPostBackTrigger ControlID="rblAmbitoOperacionBase" EventName="SelectedIndexChanged" />
                                 <asp:AsyncPostBackTrigger ControlID="ddlConductor" EventName="SelectedIndexChanged" />
                                 <asp:AsyncPostBackTrigger ControlID="btnCrearNuevoViaje" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnFinalizarViajeUnico" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnVerHistorialViajes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="gvConductoresLote" EventName="RowCommand" />
                             </Triggers>
@@ -648,7 +659,7 @@
                                     <asp:BoundField DataField="FechaInicio" HeaderText="Fecha Inicio" DataFormatString="{0:dd/MM/yyyy HH:mm}" />
                                     <asp:BoundField DataField="FechaCierre" HeaderText="Fecha Cierre" DataFormatString="{0:dd/MM/yyyy HH:mm}" />
                                     <asp:BoundField DataField="CantidadDespachos" HeaderText="Despachos" />
-                                    <asp:BoundField DataField="TipoViaje" HeaderText="Tipo" />
+                                                     <asp:BoundField DataField="TipoViaje" HeaderText="Tipo Viaje" />
                                     <asp:BoundField DataField="EstadoViaje" HeaderText="Estado" />
                                     <asp:TemplateField HeaderText="Acciones">
                                         <ItemTemplate>
@@ -700,6 +711,7 @@
         $(document).ready(function () {
             initializeSelect2();
             setDefaultDate();
+            autoHideMessages();
         });
 
         function initializeSelect2() {

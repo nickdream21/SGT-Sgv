@@ -1,0 +1,17 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // Carga AGENTS.md automáticamente como contexto del proyecto en cada sesión
+  "instructions": ["AGENTS.md"],
+
+  "mcp": {
+    // Context7: búsqueda de documentación de librerías (ASP.NET, iTextSharp, EPPlus, SQL Server, etc.)
+    // Servidor remoto — no requiere instalación local ni API key.
+    // Uso en prompts: agrega "use context7" o "usa context7" al final de tu mensaje.
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "enabled": true
+    }
+  }
+}
