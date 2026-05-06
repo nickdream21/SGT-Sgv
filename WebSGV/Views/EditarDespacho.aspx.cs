@@ -15,6 +15,9 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            SecurityHelper.AgregarHeadersSeguridad();
+            SecurityHelper.ExigirRolAdminOSupervisor();
+
             if (!IsPostBack)
             {
                 if (!int.TryParse(Request.QueryString["id"], out idDespacho) || idDespacho <= 0)

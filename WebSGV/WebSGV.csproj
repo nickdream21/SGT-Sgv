@@ -814,6 +814,9 @@
     <Compile Include="Views\WebForm2.aspx.designer.cs">
       <DependentUpon>WebForm2.aspx</DependentUpon>
     </Compile>
+    <Compile Include="WebSGV\Helpers\SecurityHelper.cs" />
+    <Compile Include="WebSGV\Views\Inicio.aspx.cs" />
+    <Compile Include="WebSGV\Views\ListaDespachos.aspx.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

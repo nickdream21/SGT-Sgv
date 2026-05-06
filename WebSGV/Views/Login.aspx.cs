@@ -65,12 +65,37 @@ namespace WebSGV.Views
 
         protected void btnLogin_Click(object sender, EventArgs e)
         {
+            // Agregar cabeceras de seguridad en la respuesta del login
+            Response.Headers.Add("X-Frame-Options", "SAMEORIGIN");
+            Response.Headers.Add("X-Content-Type-Options", "nosniff");
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+
             string usuario = txtUsername.Text.Trim();
             string contrasena = txtPassword.Text.Trim();
 
+            // Validar longitud máxima para prevenir ataques de buffer
             if (string.IsNullOrEmpty(usuario) || string.IsNullOrEmpty(contrasena))
             {
                 MostrarMensaje("Por favor, ingrese usuario y contraseña.");
+                return;
+            }
+
+            if (usuario.Length > 100 || contrasena.Length > 200)
+            {
+                MostrarMensaje("Usuario o contraseña incorrectos. Por favor, intente nuevamente.");
+                return;
+            }
+
+            // Protección básica anti-fuerza-bruta por IP (Application state)
+            string ip = Request.UserHostAddress ?? "unknown";
+            string claveFallidos = "LoginFail_" + ip;
+            string claveBloqueo = "LoginBlock_" + ip;
+
+            if (Application[claveBloqueo] is DateTime bloqueadoHasta && bloqueadoHasta > DateTime.UtcNow)
+            {
+                int segundos = (int)(bloqueadoHasta - DateTime.UtcNow).TotalSeconds;
+                MostrarMensaje($"Demasiados intentos fallidos. Intente nuevamente en {segundos} segundos.");
                 return;
             }
 
@@ -79,8 +104,11 @@ namespace WebSGV.Views
 
             if (resultado.EsValido)
             {
-                // ✅ Limpiar sesión anterior sin abandonarla (mantiene el SessionID
-                // para que ViewStateUserKey no entre en conflicto)
+                // Limpiar contador de intentos fallidos
+                Application.Remove(claveFallidos);
+                Application.Remove(claveBloqueo);
+
+                // Limpiar sesión anterior
                 Session.Clear();
 
                 // Guardar datos directamente en la sesión actual
@@ -117,17 +145,19 @@ namespace WebSGV.Views
                 authTemp.Expires = DateTime.Now.AddMinutes(30);
                 authTemp.HttpOnly = true;
                 authTemp.Secure = Request.IsSecureConnection;  // Solo Secure si es HTTPS
-                Response.Cookies.Add(authTemp);
+                // ⚠️ SEGURIDAD: No almacenar datos de sesión en cookies del cliente.
+                // La sesión de servidor (Session[]) es suficiente y más segura.
+                // La cookie SGV_AuthTemp ha sido eliminada para evitar exposición
+                // de datos sensibles (uid, rol, nombre) en el navegador del cliente.
 
-                System.Diagnostics.Debug.WriteLine($"🍪 Cookie SGV_AuthTemp creada - Rol: {resultado.Rol}");
-
-                // Si la opción "Recordarme" está marcada, guardar una cookie
+                // Si la opción "Recordarme" está marcada, guardar solo el usuario (no el rol ni ID)
                 if (chkRemember.Checked)
                 {
                     HttpCookie cookie = new HttpCookie("SGVUserInfo");
                     cookie.Values.Add("Usuario", usuario);
                     cookie.Expires = DateTime.Now.AddDays(15);
                     cookie.HttpOnly = true;
+                    cookie.Secure = Request.IsSecureConnection;
                     Response.Cookies.Add(cookie);
                 }
 
@@ -155,7 +185,22 @@ namespace WebSGV.Views
             }
             else
             {
-                MostrarMensaje("Usuario o contraseña incorrectos. Por favor, intente nuevamente.");
+                // Incrementar contador de intentos fallidos
+                int intentos = (Application[claveFallidos] as int?) ?? 0;
+                intentos++;
+                Application[claveFallidos] = intentos;
+
+                // Bloquear IP por 5 minutos tras 5 intentos fallidos
+                if (intentos >= 5)
+                {
+                    Application[claveBloqueo] = DateTime.UtcNow.AddMinutes(5);
+                    Application.Remove(claveFallidos);
+                    MostrarMensaje("Demasiados intentos fallidos. Su acceso ha sido bloqueado temporalmente por 5 minutos.");
+                }
+                else
+                {
+                    MostrarMensaje("Usuario o contraseña incorrectos. Por favor, intente nuevamente.");
+                }
             }
         }
 
