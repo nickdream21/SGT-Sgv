@@ -151,13 +151,8 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            // BLK-001: Verificación de acceso con RolesHelper
-            if (Session["UsuarioID"] == null)
-            {
-                Response.Redirect("~/Views/Login.aspx");
-                return;
-            }
-            RolesHelper.ValidarAccesoSeccion("DESPACHO");
+            SecurityHelper.AgregarHeadersSeguridad();
+            SecurityHelper.ExigirRolAdminOSupervisor();
 
             if (!Page.IsPostBack)
             {
