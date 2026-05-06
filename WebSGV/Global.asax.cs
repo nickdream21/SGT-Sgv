@@ -29,30 +29,45 @@ namespace WebSGV
             Exception ex = Server.GetLastError();
             if (ex != null)
             {
+                // Desenvolver para tener la excepción real (HttpUnhandledException la envuelve)
+                Exception real = ex;
+                while ((real is HttpUnhandledException) && real.InnerException != null)
+                    real = real.InnerException;
+
                 // Log detallado del error para diagnóstico
                 System.Diagnostics.Debug.WriteLine("========== APPLICATION ERROR ==========");
-                System.Diagnostics.Debug.WriteLine($"URL: {Request?.Url}");
-                System.Diagnostics.Debug.WriteLine($"Error: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"Tipo: {ex.GetType().FullName}");
-                System.Diagnostics.Debug.WriteLine($"Stack: {ex.StackTrace}");
-
-                if (ex.InnerException != null)
+                try { System.Diagnostics.Debug.WriteLine($"URL: {Request?.Url}"); } catch { }
+                System.Diagnostics.Debug.WriteLine($"Error: {real.Message}");
+                System.Diagnostics.Debug.WriteLine($"Tipo: {real.GetType().FullName}");
+                System.Diagnostics.Debug.WriteLine($"Stack: {real.StackTrace}");
+                if (real.InnerException != null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Inner: {ex.InnerException.Message}");
-                    System.Diagnostics.Debug.WriteLine($"Inner Stack: {ex.InnerException.StackTrace}");
+                    System.Diagnostics.Debug.WriteLine($"Inner: {real.InnerException.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Inner Stack: {real.InnerException.StackTrace}");
                 }
-
                 System.Diagnostics.Debug.WriteLine("=======================================");
 
                 // Si es un error de ViewState, redirigir al login
-                if (ex is HttpException httpEx && (
-                    ex.Message.Contains("ViewState") ||
-                    ex.Message.Contains("viewstate")))
+                if (real is HttpException &&
+                    (real.Message.Contains("ViewState") || real.Message.Contains("viewstate")))
                 {
                     Server.ClearError();
                     Response.Redirect("~/Views/Login.aspx?error=sesion", false);
                     HttpContext.Current.ApplicationInstance.CompleteRequest();
+                    return;
                 }
+
+                // Guardar la excepción REAL en Application (estado global) para que Error.aspx
+                // pueda recuperarla incluso cuando IIS ejecute Error.aspx en un sub-request donde
+                // Server.GetLastError() retornaría null.
+                try
+                {
+                    string key = "LastError_" + (HttpContext.Current?.Session?.SessionID
+                                                 ?? Guid.NewGuid().ToString());
+                    Application["LastError_LastKey"] = key;
+                    Application[key] = real;
+                }
+                catch { /* nunca dejar reventar Application_Error */ }
             }
         }
     }

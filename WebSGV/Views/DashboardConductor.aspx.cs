@@ -180,7 +180,10 @@ namespace WebSGV.Views
         {
             if (!IsPostBack)
             {
-                VerificarSesion();
+                if (!VerificarSesion())
+                {
+                    return; // VerificarSesion ya emitió el redirect; no inicializar nada
+                }
                 InicializarDashboard();
             }
             else
@@ -199,28 +202,53 @@ namespace WebSGV.Views
 
         #region Métodos de Inicialización
 
-        private void VerificarSesion()
+        private bool VerificarSesion()
         {
             try
             {
-                // Verificar sesión activa Y rol autorizado (CONDUCTOR o ADMIN) via RolesHelper
-                RolesHelper.ValidarAccesoSeccion("DASHBOARD_CONDUCTOR");
+                // Sin sesión activa => al login
+                if (!RolesHelper.TieneSesionActiva())
+                {
+                    Response.Redirect("~/Views/Login.aspx?error=sesion", false);
+                    Context.ApplicationInstance.CompleteRequest();
+                    return false;
+                }
+
+                // Rol no autorizado para esta sección => redirige según su rol
+                if (!RolesHelper.TienePermiso("DASHBOARD_CONDUCTOR"))
+                {
+                    RolesHelper.RedirigirSegunRol();
+                    Context.ApplicationInstance.CompleteRequest();
+                    return false;
+                }
 
                 if (Session["IdConductor"] == null || IdConductorActual == 0)
                 {
-                    System.Diagnostics.Debug.WriteLine("❌ No hay sesión de conductor");
-                    Response.Redirect("~/Views/Login.aspx?error=sesion", false);
+                    // Usuario CONDUCTOR sin idConductor vinculado en BD.
+                    // Limpiamos la sesión para evitar loop con Login.aspx (que auto-redirige al
+                    // dashboard si encuentra Session["UsuarioID"] con rol CONDUCTOR) y enviamos
+                    // un código de error que el Login mostrará al usuario.
+                    System.Diagnostics.Debug.WriteLine("❌ Usuario logueado sin idConductor vinculado — limpiando sesión y redirigiendo al login");
+                    Session.Clear();
+                    Session.Abandon();
+                    Response.Redirect("~/Views/Login.aspx?error=sin_conductor", false);
                     Context.ApplicationInstance.CompleteRequest();
-                    return;
+                    return false;
                 }
 
                 System.Diagnostics.Debug.WriteLine($"✅ Sesión válida: IdConductor={IdConductorActual}");
+                return true;
+            }
+            catch (System.Threading.ThreadAbortException)
+            {
+                return false;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error verificando sesión: {ex.Message}");
                 Response.Redirect("~/Views/Login.aspx?error=sesion", false);
                 Context.ApplicationInstance.CompleteRequest();
+                return false;
             }
         }
 

@@ -1,15 +1,9 @@
-﻿using ClosedXML.Excel;
-using OfficeOpenXml;
-using OfficeOpenXml.DataValidation;
-using OfficeOpenXml.Style;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
-using System.Data.OleDb;
 using System.Data.SqlClient;
-using System.Drawing;
-using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -112,6 +106,11 @@ namespace WebSGV.Views
             public string DescripcionViaje { get; set; }
             public string EstadoViaje { get; set; }
             public string Display => $"{NumeroViajeProgreso} - {FechaInicio:dd/MM} ({CantidadDespachos} despachos)";
+
+            // MAJ-001: Propiedad calculada para tipo de viaje descriptivo
+            public string TipoViaje => EsInternacional.HasValue
+                ? (EsInternacional.Value ? "Internacional" : "Nacional")
+                : DescripcionViaje ?? "Por determinar";
         }
 
         #endregion
@@ -152,6 +151,14 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            // BLK-001: Verificación de acceso con RolesHelper
+            if (Session["UsuarioID"] == null)
+            {
+                Response.Redirect("~/Views/Login.aspx");
+                return;
+            }
+            RolesHelper.ValidarAccesoSeccion("DESPACHO");
+
             if (!Page.IsPostBack)
             {
                 CargarDatos();
@@ -336,8 +343,10 @@ namespace WebSGV.Views
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                // MAJ-005: Logging básico para diagnóstico en lugar de swallow silencioso
+                System.Diagnostics.Trace.TraceError("ActualizarPlantasPorAmbito: " + ex.Message);
                 // Fallback a valores por defecto si la tabla Planta no existe aún
                 if (esInternacional)
                 {
@@ -643,16 +652,30 @@ namespace WebSGV.Views
             // Configurar documentación base
             if (pnlFacturaBase.Visible && !string.IsNullOrEmpty(txtNumeroFacturaBase.Text))
             {
+                // BLK-002: Usar TryParse con InvariantCulture (input type=number usa punto decimal)
+                decimal valorFactura;
+                if (!decimal.TryParse(txtValorTotalFacturaBase.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out valorFactura))
+                {
+                    MostrarMensaje("El valor total de la factura no tiene un formato numérico válido.", "danger");
+                    return;
+                }
                 lote.Documentacion.NumeroFactura = txtNumeroFacturaBase.Text.Trim();
                 lote.Documentacion.FechaEmisionFactura = DateTime.Parse(txtFechaEmisionFacturaBase.Text);
-                lote.Documentacion.ValorTotalFactura = Convert.ToDecimal(txtValorTotalFacturaBase.Text);
+                lote.Documentacion.ValorTotalFactura = valorFactura;
             }
 
             if (pnlCPICBase.Visible && !string.IsNullOrEmpty(txtNumeroCPICBase.Text))
             {
+                // BLK-002: Usar TryParse con InvariantCulture (input type=number usa punto decimal)
+                decimal valorFlete;
+                if (!decimal.TryParse(txtValorFleteBase.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out valorFlete))
+                {
+                    MostrarMensaje("El valor del flete no tiene un formato numérico válido.", "danger");
+                    return;
+                }
                 lote.Documentacion.NumeroCPIC = txtNumeroCPICBase.Text.Trim();
                 lote.Documentacion.FechaEmisionCPIC = DateTime.Parse(txtFechaEmisionCPICBase.Text);
-                lote.Documentacion.ValorFlete = Convert.ToDecimal(txtValorFleteBase.Text);
+                lote.Documentacion.ValorFlete = valorFlete;
             }
 
             LoteActual = lote;
@@ -1155,6 +1178,22 @@ namespace WebSGV.Views
         {
             var viajesAbiertos = ObtenerViajesAbiertosConductor(idConductor);
 
+            // MAJ-003: TODO — El SP sp_ObtenerViajesAbiertosConductor no acepta parámetros
+            // @esInternacional ni @tipoOperacion en su versión actual. Cuando el SP sea actualizado,
+            // agregar: cmd.Parameters.AddWithValue("@esInternacional", esInternacional);
+            //          cmd.Parameters.AddWithValue("@tipoOperacion", tipoOperacion);
+            // Por ahora se filtra en C# sobre la lista ya cargada.
+            if (esInternacional || !string.IsNullOrEmpty(tipoOperacion))
+            {
+                // Filtro en C#: si el viaje tiene EsInternacional definido, aplicar el filtro
+                var viajeFiltrado = viajesAbiertos
+                    .Where(v => !v.EsInternacional.HasValue || v.EsInternacional.Value == esInternacional)
+                    .ToList();
+                // Solo reemplazamos la lista si el filtro reduce (evitamos quedarnos sin viajes por datos incompletos)
+                if (viajeFiltrado.Count > 0)
+                    viajesAbiertos = viajeFiltrado;
+            }
+
             if (viajesAbiertos.Count == 0)
             {
                 // Sin viajes abiertos: se creará dentro de la transacción al finalizar el lote.
@@ -1259,19 +1298,110 @@ namespace WebSGV.Views
 
         protected void btnFinalizarViajeUnico_Click(object sender, EventArgs e)
         {
-            // Implementación de finalizar viaje único
-            MostrarMensaje("Funcionalidad de finalizar viaje implementada", "info");
+            // MAJ-002: Funcionalidad de finalizar viaje único
+            // El SP sp_CerrarViajeProgreso no está confirmado como desplegado.
+            // Se muestra mensaje orientativo hasta que el SP esté disponible.
+            MostrarMensaje("Para cerrar un viaje, use la pantalla de Gestión de Viajes. Esta acción estará disponible próximamente.", "warning");
         }
 
         protected void btnVerHistorialViajes_Click(object sender, EventArgs e)
         {
-            // Implementación de ver historial
-            MostrarMensaje("Modal de historial de viajes implementado", "info");
+            // MAJ-002: Implementación real del historial de viajes
+            try
+            {
+                if (ddlConductor.SelectedValue == "0")
+                {
+                    MostrarMensaje("Seleccione un conductor para ver su historial de viajes.", "warning");
+                    return;
+                }
+
+                int idConductor = Convert.ToInt32(ddlConductor.SelectedValue);
+                string nombreConductor = ddlConductor.SelectedItem.Text.Split('-')[0].Trim();
+
+                // Actualizar el span del modal con el nombre del conductor
+                spanConductorModal.InnerText = nombreConductor;
+
+                // Cargar historial de viajes desde la BD
+                CargarHistorialViajes(idConductor);
+
+                // Abrir el modal Bootstrap via script
+                ScriptManager.RegisterStartupScript(this, this.GetType(), "showModal", "showHistorialModal();", true);
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al cargar historial de viajes: " + ex.Message, "danger");
+            }
+        }
+
+        private void CargarHistorialViajes(int idConductor)
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                {
+                    using (SqlCommand cmd = new SqlCommand("sp_ObtenerHistorialViajesConductor", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@idConductor", idConductor);
+                        conn.Open();
+
+                        DataTable dt = new DataTable();
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            dt.Load(reader);
+                        }
+
+                        gvHistorialViajes.DataSource = dt;
+                        gvHistorialViajes.DataBind();
+                        UpdatePanelModal.Update();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError("CargarHistorialViajes: " + ex.Message);
+                // Mostrar grilla vacía si falla la carga
+                gvHistorialViajes.DataSource = null;
+                gvHistorialViajes.DataBind();
+                MostrarMensaje("Error al cargar el historial: " + ex.Message, "danger");
+            }
         }
 
         protected void gvHistorialViajes_RowCommand(object sender, GridViewCommandEventArgs e)
         {
-            // Implementación de comandos del historial
+            // MAJ-002: Implementación del comando Reabrir
+            try
+            {
+                if (e.CommandName == "Reabrir")
+                {
+                    int idViajeProgreso = Convert.ToInt32(e.CommandArgument);
+
+                    using (SqlConnection conn = new SqlConnection(ConnectionString))
+                    {
+                        using (SqlCommand cmd = new SqlCommand("sp_ReabrirViajeProgreso", conn))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
+                            cmd.Parameters.AddWithValue("@usuario", ObtenerUsuarioActual());
+                            conn.Open();
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    // Recargar historial del conductor activo
+                    if (ddlConductor.SelectedValue != "0")
+                    {
+                        int idConductor = Convert.ToInt32(ddlConductor.SelectedValue);
+                        CargarHistorialViajes(idConductor);
+                    }
+
+                    MostrarMensaje("Viaje reabierto exitosamente.", "success");
+                }
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al reabrir viaje: " + ex.Message, "danger");
+            }
         }
 
         #endregion
@@ -1285,9 +1415,10 @@ namespace WebSGV.Views
 
         private string ObtenerUsuarioActual()
         {
-            if (Session["Usuario"] != null)
+            // MAJ-004: Usar Session["Nombre"] consistente con el resto del proyecto
+            if (Session["Nombre"] != null)
             {
-                return Session["Usuario"].ToString();
+                return Session["Nombre"].ToString();
             }
             else if (User.Identity.IsAuthenticated)
             {

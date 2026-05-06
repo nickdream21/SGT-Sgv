@@ -1,28 +1,54 @@
 {
+  "$schema_version": "2.0",
   "msg_type": "task_assignment",
   "task_id": "TASK-XXX.Y",
   "parent_task_id": "TASK-XXX",
   "from": "orchestrator",
   "to": "<arquitecto|developer|dba|qa|reviewer|writer>",
   "ts": "YYYY-MM-DDTHH:MM:SSZ",
-  "objective": "Descripción concreta de UNA tarea atómica",
+  "intent": "new_page|new_sp|bugfix|refactor|arch_decision|code_review|qa_plan|doc_update|deploy_verify",
+  "objective": "Descripción concreta de UNA tarea atómica (1 frase)",
   "context": {
-    "skill_required": ["nombre-de-skill-de-.opencode/skills"],
-    "files_to_read": ["ruta/relativa/al/repo.cs"],
-    "files_to_modify": ["ruta/relativa/al/repo.aspx"],
+    "skills_required": [
+      "nueva-pagina-aspx",
+      "auditoria-y-sesiones-sgv"
+    ],
+    "files_to_read": ["WebSGV/Views/EjemploExistente.aspx.cs"],
+    "files_to_modify": ["WebSGV/Views/MiPagina.aspx", "WebSGV/Views/MiPagina.aspx.cs", "WebSGV/Views/MiPagina.aspx.designer.cs", "WebSGV/WebSGV.csproj"],
+    "files_forbidden": ["WebSGV/Web.config", "WebSGV/connectionStrings.config"],
     "constraints": [
       "Roles permitidos: ADMIN, SUPERVISOR",
       "Idioma UI: es-PE",
-      "No modificar Web.config"
+      "Usar SqlCommand parametrizado",
+      "Sin emojis en UI"
     ],
     "previous_artifacts": [
-      "Database/StoredProcedures/sp_X_Nombre.sql ya desplegado"
+      {"path": "WebSGV/Database/StoredProcedures/sp_X_Nombre.sql", "status": "deployed", "deployed_at": "YYYY-MM-DDTHH:MM:SSZ"}
+    ],
+    "decisions_context": [
+      "ADR-001: usar paginación server-side",
+      "Decision_log entry #14: AuditoriaHelper.Registrar obligatorio en INSERT/UPDATE/DELETE"
     ],
     "user_preferences": []
   },
+  "evidence_required": {
+    "build_must_pass": true,
+    "build_command": "msbuild WebSGV.sln /p:Configuration=Debug /nologo /verbosity:minimal",
+    "sp_must_be_deployed": false,
+    "deployment_verification_command": null,
+    "manual_test_steps": [
+      "Login como ADMIN, navegar a /Views/MiPagina.aspx",
+      "Verificar que carga sin error y respeta sesión expirada"
+    ],
+    "qa_test_cases_expected": ["happy_path", "session_expired", "rol_no_autorizado"]
+  },
   "deliverables": [
-    "Lista concreta de archivos esperados o decisiones a entregar"
+    "Los 3 archivos .aspx/.aspx.cs/.aspx.designer.cs",
+    "Entrada en WebSGV.csproj",
+    "task_result.json con evidence.build_output"
   ],
+  "parallel_group_id": null,
+  "parallel_safe_with": [],
   "deadline_relative": "esta sesión|próxima sesión|sin urgencia",
   "priority": "high|medium|low"
 }

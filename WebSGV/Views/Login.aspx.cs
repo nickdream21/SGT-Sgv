@@ -44,6 +44,22 @@ namespace WebSGV.Views
                     txtUsername.Text = cookie.Values["Usuario"];
                     chkRemember.Checked = true;
                 }
+
+                // Mostrar mensajes según el código de error en la query string
+                string err = Request.QueryString["error"];
+                if (!string.IsNullOrEmpty(err))
+                {
+                    switch (err.ToLowerInvariant())
+                    {
+                        case "sin_conductor":
+                            MostrarMensaje("Tu cuenta de usuario no está vinculada a un registro de conductor. " +
+                                           "Contacta al administrador del sistema para que configure el vínculo correspondiente.");
+                            break;
+                        case "sesion":
+                            MostrarMensaje("Tu sesión ha expirado o no es válida. Por favor, inicia sesión nuevamente.");
+                            break;
+                    }
+                }
             }
         }
 
@@ -100,6 +116,7 @@ namespace WebSGV.Views
                 }
                 authTemp.Expires = DateTime.Now.AddMinutes(30);
                 authTemp.HttpOnly = true;
+                authTemp.Secure = Request.IsSecureConnection;  // Solo Secure si es HTTPS
                 Response.Cookies.Add(authTemp);
 
                 System.Diagnostics.Debug.WriteLine($"🍪 Cookie SGV_AuthTemp creada - Rol: {resultado.Rol}");

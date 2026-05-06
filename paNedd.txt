@@ -1,0 +1,222 @@
+USE [sgvActualizada]
+GO
+/****** Object:  StoredProcedure [dbo].[sp_ObtenerLiquidacionesPendientes]    Script Date: 28/04/2026 10:04:54 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[sp_ObtenerLiquidacionesPendientes]
+    @idConductor INT = NULL,
+    @fechaDesde DATE = NULL,
+    @fechaHasta DATE = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT 
+        ov.idOrdenViaje,
+        ov.numeroOrdenViaje,
+        ov.fechaRegistro,
+        ov.fechaSalida,
+        ov.fechaLlegada,
+        ISNULL(cond.nombre, '') + ' ' + ISNULL(cond.apPaterno, '') + ' ' + ISNULL(cond.apMaterno, '') AS NombreConductor,
+        ISNULL(t.placaTracto, '') AS PlacaTracto,
+        ISNULL(car.placaCarreta, '') AS PlacaCarreta,
+        CASE 
+            WHEN ov.registradoPor = 'CONDUCTOR' THEN 'Conductor'
+            ELSE ISNULL(uReg.nombre, '') + ' ' + ISNULL(uReg.apellido, '')
+        END AS RegistradoPor,
+        
+        -- Ingresos (principales + adicionales)
+        (
+            ISNULL(ing.despachoSoles, 0) + 
+            ISNULL(ing.prestamoSoles, 0) + 
+            ISNULL(ing.mensualidadSoles, 0) + 
+            ISNULL(ing.otrosSoles, 0) +
+            ISNULL((SELECT SUM(soles) FROM IngresosAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0)
+        ) AS TotalIngresosSoles,
+        
+        (
+            ISNULL(ing.despachoDolares, 0) + 
+            ISNULL(ing.prestamosDolares, 0) + 
+            ISNULL(ing.mensualidadDolares, 0) + 
+            ISNULL(ing.otrosDolares, 0) +
+            ISNULL((SELECT SUM(dolares) FROM IngresosAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0)
+        ) AS TotalIngresosDolares,
+        
+        -- Gastos (principales + adicionales)
+        (
+            ISNULL(egr.peajesSoles, 0) + 
+            ISNULL(egr.alimentacionSoles, 0) + 
+            ISNULL(egr.apoyoseguridadSoles, 0) + 
+            ISNULL(egr.reparacionesVariosSoles, 0) + 
+            ISNULL(egr.movilidadSoles, 0) + 
+            ISNULL(egr.encarpada_desencarpadaSoles, 0) + 
+            ISNULL(egr.hospedajeSoles, 0) + 
+            ISNULL(egr.combustibleSoles, 0) +
+            ISNULL((SELECT SUM(soles) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0)
+        ) AS TotalGastosSoles,
+        
+        (
+            ISNULL(egr.peajesDolares, 0) + 
+            ISNULL(egr.alimentacionDolares, 0) + 
+            ISNULL(egr.apoyoseguridadDolares, 0) + 
+            ISNULL(egr.repacionesVariosDolares, 0) + 
+            ISNULL(egr.movilidadDolares, 0) + 
+            ISNULL(egr.encarpada_desencarpadaDolares, 0) + 
+            ISNULL(egr.hospedajeDolares, 0) + 
+            ISNULL(egr.combustibleDolares, 0) +
+            ISNULL((SELECT SUM(dolares) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0)
+        ) AS TotalGastosDolares,
+        
+        -- Balance (ingresos - gastos)
+        (
+            (ISNULL(ing.despachoSoles, 0) + ISNULL(ing.prestamoSoles, 0) + ISNULL(ing.mensualidadSoles, 0) + ISNULL(ing.otrosSoles, 0) +
+             ISNULL((SELECT SUM(soles) FROM IngresosAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0))
+            -
+            (ISNULL(egr.peajesSoles, 0) + ISNULL(egr.alimentacionSoles, 0) + ISNULL(egr.apoyoseguridadSoles, 0) + 
+             ISNULL(egr.reparacionesVariosSoles, 0) + ISNULL(egr.movilidadSoles, 0) + ISNULL(egr.encarpada_desencarpadaSoles, 0) + 
+             ISNULL(egr.hospedajeSoles, 0) + ISNULL(egr.combustibleSoles, 0) +
+             ISNULL((SELECT SUM(soles) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0))
+        ) AS BalanceSoles,
+        
+        (
+            (ISNULL(ing.despachoDolares, 0) + ISNULL(ing.prestamosDolares, 0) + ISNULL(ing.mensualidadDolares, 0) + ISNULL(ing.otrosDolares, 0) +
+             ISNULL((SELECT SUM(dolares) FROM IngresosAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0))
+            -
+            (ISNULL(egr.peajesDolares, 0) + ISNULL(egr.alimentacionDolares, 0) + ISNULL(egr.apoyoseguridadDolares, 0) + 
+             ISNULL(egr.repacionesVariosDolares, 0) + ISNULL(egr.movilidadDolares, 0) + ISNULL(egr.encarpada_desencarpadaDolares, 0) + 
+             ISNULL(egr.hospedajeDolares, 0) + ISNULL(egr.combustibleDolares, 0) +
+             ISNULL((SELECT SUM(dolares) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0))
+        ) AS BalanceDolares,
+        
+        DATEDIFF(HOUR, ov.fechaRegistro, GETDATE()) AS HorasPendientes
+        
+    FROM OrdenViaje ov
+    INNER JOIN Conductor cond ON ov.idConductor = cond.idConductor
+    INNER JOIN Tracto t ON ov.idTracto = t.idTracto
+    INNER JOIN Carreta car ON ov.idCarreta = car.idCarreta
+    LEFT JOIN Usuarios uReg ON ov.idUsuarioRegistro = uReg.idUsuario
+    LEFT JOIN Ingresos ing ON ov.numeroOrdenViaje = ing.numeroOrdenViaje
+    LEFT JOIN Egresos egr ON ov.numeroOrdenViaje = egr.numeroOrdenViaje
+    
+    WHERE ov.registradoPor = 'CONDUCTOR'
+        AND ov.estadoAprobacion = 'PENDIENTE'
+        AND (@idConductor IS NULL OR ov.idConductor = @idConductor)
+        AND (@fechaDesde IS NULL OR ov.fechaRegistro >= @fechaDesde)
+        AND (@fechaHasta IS NULL OR ov.fechaRegistro <= @fechaHasta)
+    
+    ORDER BY ov.fechaRegistro ASC;
+END
+
+
+USE [sgvActualizada]
+GO
+/****** Object:  StoredProcedure [dbo].[sp_AprobarLiquidacion]    Script Date: 28/04/2026 10:07:45 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[sp_AprobarLiquidacion]
+    @numeroOrdenViaje VARCHAR(50),
+    @idUsuarioAprobacion INT,
+    @observaciones VARCHAR(500) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRANSACTION;
+    
+    BEGIN TRY
+        -- Actualizar estado de la orden
+        UPDATE OrdenViaje
+        SET 
+            estadoAprobacion = 'APROBADO',
+            fechaAprobacion = GETDATE(),
+            idUsuarioAprobacion = @idUsuarioAprobacion,
+            observacionesAprobacion = @observaciones,
+            estadoViaje = 'COMPLETADO'
+        WHERE numeroOrdenViaje = @numeroOrdenViaje
+            AND estadoAprobacion = 'PENDIENTE';
+        
+        IF @@ROWCOUNT = 0
+        BEGIN
+            RAISERROR('No se encontró la liquidación o ya fue procesada', 16, 1);
+            RETURN;
+        END
+        
+        COMMIT TRANSACTION;
+        SELECT 1 AS Resultado, 'Liquidación aprobada exitosamente' AS Mensaje;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        SELECT 0 AS Resultado, ERROR_MESSAGE() AS Mensaje;
+    END CATCH
+END
+
+
+USE [sgvActualizada]
+GO
+/****** Object:  StoredProcedure [dbo].[sp_RechazarLiquidacion]    Script Date: 28/04/2026 10:08:58 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[sp_RechazarLiquidacion]
+    @numeroOrdenViaje VARCHAR(50),
+    @observaciones NVARCHAR(500),
+    @idUsuarioAprobacion INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        
+        -- Obtener idViajeProgreso antes de actualizar
+        DECLARE @idViajeProgreso INT;
+        
+        SELECT @idViajeProgreso = idViajeProgreso
+        FROM OrdenViaje
+        WHERE numeroOrdenViaje = @numeroOrdenViaje;
+        
+        -- Actualizar OrdenViaje
+        UPDATE OrdenViaje
+        SET 
+            estadoAprobacion = 'REABIERTO',
+            observacionesRechazo = @observaciones,
+            fechaRechazo = GETDATE(),
+            idUsuarioAprobacion = @idUsuarioAprobacion,
+            observaciones = ISNULL(observaciones, '') + 
+                CHAR(13) + CHAR(10) + 
+                '**RECHAZADO ' + CONVERT(VARCHAR, GETDATE(), 120) + '**: ' + @observaciones
+        WHERE numeroOrdenViaje = @numeroOrdenViaje;
+        
+        -- ✅ REABRIR EL VIAJE EN PROGRESO
+        IF @idViajeProgreso IS NOT NULL
+        BEGIN
+            UPDATE ViajesEnProgreso
+            SET 
+                estadoViaje = 'ABIERTO',
+                fechaCierre = NULL
+            WHERE idViajeProgreso = @idViajeProgreso;
+            
+            -- Reabrir despachos asociados
+            UPDATE Despachos
+            SET estadoDespacho = 'EN_PROCESO'
+            WHERE idViajeProgreso = @idViajeProgreso
+                AND activo = 1;
+        END
+        
+        COMMIT TRANSACTION;
+        
+        SELECT 1 AS Resultado, 'Liquidación rechazada correctamente' AS Mensaje;
+        
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+            
+        SELECT 0 AS Resultado, ERROR_MESSAGE() AS Mensaje;
+    END CATCH
+END;

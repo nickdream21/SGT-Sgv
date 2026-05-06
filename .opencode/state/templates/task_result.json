@@ -1,34 +1,62 @@
 {
+  "$schema_version": "2.0",
   "msg_type": "task_result",
   "task_id": "TASK-XXX.Y",
+  "parent_task_id": "TASK-XXX",
   "from": "<arquitecto|developer|dba|qa|reviewer|writer>",
   "to": "orchestrator",
   "ts": "YYYY-MM-DDTHH:MM:SSZ",
-  "status": "completed|partial|blocked|needs_clarification",
+  "status": "completed|partial|blocked|needs_clarification|rejected_by_review",
+  "skills_loaded": ["nueva-pagina-aspx", "auditoria-y-sesiones-sgv", "msbuild-csproj-sync"],
   "artifacts": [
     {
-      "path": "ruta/relativa/al/repo.cs",
-      "action": "created|modified|deleted|reviewed",
-      "summary_of_change": "Una frase explicando el cambio"
+      "path": "WebSGV/Views/MiPagina.aspx",
+      "action": "created|modified|deleted|reviewed|deployed",
+      "summary_of_change": "Una frase explicando el cambio",
+      "lines_changed": 42
     }
   ],
-  "summary": "Resumen ejecutivo de lo realizado (max 3 frases)",
+  "summary": "Resumen ejecutivo (max 3 frases) — qué se hizo, por qué, resultado.",
+  "evidence": {
+    "build_executed": true,
+    "build_command": "msbuild WebSGV.sln /p:Configuration=Debug /nologo /verbosity:minimal",
+    "build_exit_code": 0,
+    "build_output_excerpt": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)",
+    "build_verified_at": "YYYY-MM-DDTHH:MM:SSZ",
+    "sp_deployed": false,
+    "sp_deployment_method": null,
+    "sp_smoke_test_output": null,
+    "manual_test_results": [
+      {"step": "Login ADMIN + navegar", "result": "pass", "notes": ""}
+    ],
+    "tests_run": [],
+    "screenshots": []
+  },
   "findings": [
     {
       "severity": "blocker|major|minor|info",
-      "file": "ruta.cs",
+      "category": "security|performance|maintainability|correctness|style|deployment",
+      "file": "WebSGV/Views/Foo.aspx.cs",
       "line": 42,
-      "issue": "Descripción del hallazgo (solo aplica a reviewer)",
-      "suggestion": "Acción sugerida"
+      "issue": "Descripción concreta (solo reviewer/qa)",
+      "evidence": "Snippet o output que prueba el hallazgo",
+      "suggestion": "Acción sugerida con código si aplica",
+      "owner_suggested": "developer|dba|arquitecto"
     }
   ],
   "open_questions": [
-    "Pregunta concreta para el orquestador o usuario, si las hay"
+    "Pregunta concreta dirigida a orquestador o usuario"
   ],
   "blockers": [
-    "Cosas que impiden completar la tarea (ej: 'sp_X requerido pero no existe')"
+    {"description": "sp_X requerido pero no desplegado", "owner": "dba", "severity": "blocker"}
   ],
-  "next_suggested_agent": "<nombre del próximo agente sugerido o null>",
+  "decisions_made": [
+    {"decision": "Reutilizar sp_LQ_Buscar existente", "rationale": "Evita duplicación", "ts": "YYYY-MM-DDTHH:MM:SSZ"}
+  ],
+  "next_suggested_agent": "reviewer|qa|null",
+  "next_suggested_intent": "code_review|qa_plan|deploy_verify|null",
   "requires_user_approval": false,
-  "deployment_required": false
+  "deployment_required": false,
+  "rollback_plan": "DROP PROCEDURE sp_X; o git revert SHA si solo es código. OBLIGATORIO si deployment_required=true",
+  "parallel_group_id": null
 }
