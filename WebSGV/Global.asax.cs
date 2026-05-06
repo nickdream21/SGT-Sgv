@@ -34,19 +34,6 @@ namespace WebSGV
                 while ((real is HttpUnhandledException) && real.InnerException != null)
                     real = real.InnerException;
 
-                // Log detallado del error para diagnóstico
-                System.Diagnostics.Debug.WriteLine("========== APPLICATION ERROR ==========");
-                try { System.Diagnostics.Debug.WriteLine($"URL: {Request?.Url}"); } catch { }
-                System.Diagnostics.Debug.WriteLine($"Error: {real.Message}");
-                System.Diagnostics.Debug.WriteLine($"Tipo: {real.GetType().FullName}");
-                System.Diagnostics.Debug.WriteLine($"Stack: {real.StackTrace}");
-                if (real.InnerException != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Inner: {real.InnerException.Message}");
-                    System.Diagnostics.Debug.WriteLine($"Inner Stack: {real.InnerException.StackTrace}");
-                }
-                System.Diagnostics.Debug.WriteLine("=======================================");
-
                 // Si es un error de ViewState, redirigir al login
                 if (real is HttpException &&
                     (real.Message.Contains("ViewState") || real.Message.Contains("viewstate")))

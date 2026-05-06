@@ -38,42 +38,26 @@ namespace WebSGV
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            // 1. DETECTAR SI ESTAMOS EN PÁGINAS PÚBLICAS (sin autenticación)
-            System.Diagnostics.Debug.WriteLine($"🔍 Ruta actual: {Request.Url.AbsolutePath.ToLower()}");
-
             bool esPaginaPublica = EsPaginaPublica();
 
-            System.Diagnostics.Debug.WriteLine($"🔍 Archivo: {System.IO.Path.GetFileName(Request.Url.AbsolutePath).ToLower()}, Es pública: {esPaginaPublica}");
-
-            // 2. SI ES PÁGINA PÚBLICA: Ocultar navbar, inicializar propiedades y SALIR
+            // Si es página pública: ocultar navbar y salir
             if (esPaginaPublica)
             {
                 Navbar.Visible = false;
                 InicializarPropiedadesVacias();
-                return; // ← CRUCIAL: Salir aquí para evitar bucle
+                return;
             }
 
-            // 3. ✅ RECONSTRUIR SESIÓN desde cookie temporal post-login
+            // Sin sesión válida → redirigir a login
             if (!TieneSesionActivaLocal())
             {
-                if (ReconstruirSesionDesdeAuthTemp())
-                {
-                    // Sesión reconstruida exitosamente, continuar
-                    System.Diagnostics.Debug.WriteLine("🔄 Sesión reconstruida desde cookie temporal");
-                }
-                else
-                {
-                    // Sin sesión y sin cookie temporal → Redirigir a login
-                    Response.Redirect("~/Views/Login.aspx", false);
-                    Context.ApplicationInstance.CompleteRequest();
-                    return;
-                }
+                Response.Redirect("~/Views/Login.aspx", false);
+                Context.ApplicationInstance.CompleteRequest();
+                return;
             }
 
-            // 4. TIENE SESIÓN VÁLIDA: Cargar información del usuario
+            // Sesión válida: cargar datos del usuario y mostrar navbar
             CargarInformacionUsuario();
-
-            // 5. Mostrar navbar
             Navbar.Visible = true;
         }
 
@@ -93,54 +77,7 @@ namespace WebSGV
                    string.IsNullOrEmpty(nombreArchivo);
         }
 
-        /// <summary>
-        /// Reconstruye la sesión desde la cookie temporal creada durante el login.
-        /// Esto completa el flujo de anti-fijación de sesión.
-        /// </summary>
-        private bool ReconstruirSesionDesdeAuthTemp()
-        {
-            try
-            {
-                HttpCookie authTemp = Request.Cookies["SGV_AuthTemp"];
 
-                if (authTemp == null || string.IsNullOrEmpty(authTemp.Values["uid"]))
-                    return false;
-
-                // Reconstruir la sesión con los datos de la cookie
-                Session["UsuarioID"] = authTemp.Values["uid"];
-                Session["IdUsuario"] = Convert.ToInt32(authTemp.Values["uid"]);
-                Session["Rol"] = HttpUtility.UrlDecode(authTemp.Values["rol"]);
-                Session["Nombre"] = HttpUtility.UrlDecode(authTemp.Values["nombre"]);
-                Session["NombreUsuario"] = HttpUtility.UrlDecode(authTemp.Values["nombreUsuario"]);
-
-                string rol = HttpUtility.UrlDecode(authTemp.Values["rol"] ?? "");
-                string idConductorStr = authTemp.Values["idConductor"];
-
-                if (rol.ToUpper() == "CONDUCTOR" && !string.IsNullOrEmpty(idConductorStr))
-                {
-                    Session["IdConductor"] = Convert.ToInt32(idConductorStr);
-                }
-
-                string idOperadorStr = authTemp.Values["idOperador"];
-                if (rol.ToUpper() == "OPERADOR" && !string.IsNullOrEmpty(idOperadorStr))
-                {
-                    Session["IdOperador"] = Convert.ToInt32(idOperadorStr);
-                }
-
-                // ✅ NO eliminar la cookie - mantenerla como respaldo mientras dure la sesión
-                // Se eliminará al cerrar sesión (btnCerrarSesion_Click)
-
-                System.Diagnostics.Debug.WriteLine($"✅ Sesión reconstruida - Usuario: {Session["Nombre"]}, Rol: {Session["Rol"]}");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"❌ Error reconstruyendo sesión: {ex.Message}");
-                return false;
-            }
-        }
-
-        // Método local para evitar problemas con HttpContext
         private bool TieneSesionActivaLocal()
         {
             try
@@ -178,9 +115,8 @@ namespace WebSGV
                 EsAdminMaquinaria = RolesHelper.EsAdminMaquinaria();
                 EsOperador = RolesHelper.EsOperador();
             }
-            catch (Exception ex)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"Error al cargar usuario: {ex.Message}");
                 InicializarPropiedadesVacias();
             }
         }
@@ -279,9 +215,8 @@ namespace WebSGV
                 ScriptManager.RegisterStartupScript(this, GetType(), "SuccessContrasena",
                     "$('#modalCambiarContrasena').modal('hide'); alert('✅ Contraseña cambiada exitosamente.');", true);
             }
-            catch (Exception ex)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"Error cambiando contraseña: {ex.Message}");
                 MostrarMensajeContrasena("Ocurrió un error al cambiar la contraseña. Inténtalo de nuevo.", "danger");
                 AbrirModalContrasena();
             }
@@ -327,20 +262,9 @@ namespace WebSGV
                     };
                     Response.Cookies.Add(cookie);
                 }
-
-                // Limpiar cookie temporal si existiera
-                if (Request.Cookies["SGV_AuthTemp"] != null)
-                {
-                    var cookie = new HttpCookie("SGV_AuthTemp")
-                    {
-                        Expires = DateTime.Now.AddDays(-1)
-                    };
-                    Response.Cookies.Add(cookie);
-                }
             }
-            catch (Exception ex)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"Error al cerrar sesión: {ex.Message}");
             }
 
             // Redirigir al login

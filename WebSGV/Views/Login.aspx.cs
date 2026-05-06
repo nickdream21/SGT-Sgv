@@ -164,22 +164,18 @@ namespace WebSGV.Views
                 // Redirigir según el rol
                 if (resultado.Rol.ToUpper() == "CONDUCTOR")
                 {
-                    System.Diagnostics.Debug.WriteLine($"✅ Login exitoso - CONDUCTOR: {resultado.Nombre}");
                     Response.Redirect("~/Views/DashboardConductor.aspx");
                 }
                 else if (resultado.Rol.ToUpper() == "OPERADOR")
                 {
-                    System.Diagnostics.Debug.WriteLine($"✅ Login exitoso - OPERADOR: {resultado.Nombre}");
                     Response.Redirect("~/Views/DashboardOperador.aspx");
                 }
                 else if (resultado.Rol.ToUpper() == "ADMINISTRADOR DE GRIFO")
                 {
-                    System.Diagnostics.Debug.WriteLine($"✅ Login exitoso - ADMIN GRIFO: {resultado.Nombre}");
                     Response.Redirect("~/Views/DashboardGrifo.aspx");
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"✅ Login exitoso - ADMIN: {resultado.Nombre}");
                     Response.Redirect("~/Views/Inicio.aspx");
                 }
             }
@@ -256,16 +252,10 @@ namespace WebSGV.Views
                             if (rol.ToUpper() == "CONDUCTOR" && reader["idConductor"] != DBNull.Value)
                             {
                                 idConductor = Convert.ToInt32(reader["idConductor"]);
-                                System.Diagnostics.Debug.WriteLine($"🚗 Conductor detectado: {nombre} (ID: {idConductor})");
                             }
                             else if (rol.ToUpper() == "OPERADOR" && reader["idOperador"] != DBNull.Value)
                             {
                                 idOperador = Convert.ToInt32(reader["idOperador"]);
-                                System.Diagnostics.Debug.WriteLine($"🛠️ Operador detectado: {nombre} (ID: {idOperador})");
-                            }
-                            else
-                            {
-                                System.Diagnostics.Debug.WriteLine($"👨‍💼 Admin detectado: {nombre}");
                             }
 
                             esValido = true;
@@ -284,9 +274,8 @@ namespace WebSGV.Views
                     if (!reader.IsClosed)
                         reader.Close();
                 }
-                catch (Exception ex)
+                catch
                 {
-                    System.Diagnostics.Debug.WriteLine($"❌ Error al validar usuario: {ex.Message}");
                 }
             }
 
@@ -311,12 +300,9 @@ namespace WebSGV.Views
                     cmdUpdate.Parameters.AddWithValue("@IdUsuario", idUsuario);
                     cmdUpdate.ExecuteNonQuery();
                 }
-
-                System.Diagnostics.Debug.WriteLine($"🔒 Contraseña migrada a hash para usuario ID: {idUsuario}");
             }
-            catch (Exception ex)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"⚠️ Error migrando contraseña: {ex.Message}");
             }
         }
 
