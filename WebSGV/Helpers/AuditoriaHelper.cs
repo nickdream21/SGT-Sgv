@@ -106,20 +106,31 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
-        /// Obtiene la IP real del cliente (considerando proxies).
+        /// Obtiene la IP del cliente.
+        /// REMOTE_ADDR es la IP confiable (la del socket TCP).
+        /// X-Forwarded-For se registra solo como referencia adicional, ya que puede
+        /// ser manipulada por el cliente y no debe usarse como IP principal.
         /// </summary>
         private static string ObtenerIPCliente(HttpRequest request)
         {
             try
             {
-                string ip = request.ServerVariables["HTTP_X_FORWARDED_FOR"];
-                if (!string.IsNullOrEmpty(ip))
+                // IP confiable: la del socket TCP directo (no manipulable por el cliente)
+                string ipConfiable = request.ServerVariables["REMOTE_ADDR"]
+                                  ?? request.UserHostAddress
+                                  ?? "Desconocida";
+
+                // X-Forwarded-For puede estar presente si hay un proxy/balanceador legítimo,
+                // pero NO la usamos como IP principal porque puede ser falsificada.
+                string xForwardedFor = request.ServerVariables["HTTP_X_FORWARDED_FOR"];
+                if (!string.IsNullOrEmpty(xForwardedFor))
                 {
-                    string[] addresses = ip.Split(',');
-                    if (addresses.Length > 0)
-                        return addresses[0].Trim();
+                    // Registrar solo la primera entrada como referencia (puede ser falsa)
+                    string xffPrimera = xForwardedFor.Split(',')[0].Trim();
+                    return $"{ipConfiable} (XFF: {xffPrimera})";
                 }
-                return request.ServerVariables["REMOTE_ADDR"] ?? request.UserHostAddress ?? "Desconocida";
+
+                return ipConfiable;
             }
             catch
             {

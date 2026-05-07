@@ -291,7 +291,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error inicializando dashboard: {ex.Message}");
-                MostrarMensaje($"Error al cargar el dashboard: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
+                MostrarMensaje("Error al cargar el dashboard. Por favor, recarga la página o contacta al administrador.", "danger");
             }
         }
 
@@ -911,11 +911,11 @@ namespace WebSGV.Views
                 lblFechaInicioResumen.Text = viajePrimario.FechaInicio.ToString("dd/MM/yyyy");
                 lblDespachosResumen.Text = totalDespachos.ToString();
 
-                DateTime hoy = DateTime.Today;
+                DateTime ahoraServidor = DateTime.Now;
                 txtFechaSalida.Text = viajePrimario.FechaInicio.ToString("yyyy-MM-dd");
-                txtFechaLlegada.Text = hoy.ToString("yyyy-MM-dd");
+                txtFechaLlegada.Text = ahoraServidor.ToString("yyyy-MM-dd");
                 txtHoraSalida.Text = "08:00";
-                txtHoraLlegada.Text = "18:00";
+                txtHoraLlegada.Text = ahoraServidor.ToString("HH:mm");
 
                 System.Diagnostics.Debug.WriteLine("✅ Formulario de liquidación habilitado");
             }
@@ -994,10 +994,14 @@ namespace WebSGV.Views
                 }
 
                 DateTime fechaSalida = DateTime.TryParse(txtFechaSalida.Text, out DateTime fs) ? fs : DateTime.MinValue;
-                DateTime fechaLlegada = DateTime.TryParse(txtFechaLlegada.Text, out DateTime fl) ? fl : DateTime.MinValue;
+                DateTime fechaLlegada = FechaHelper.Hoy();
                 string horaSalida = txtHoraSalida.Text;
-                string horaLlegada = txtHoraLlegada.Text;
+                string horaLlegada = FechaHelper.Ahora().ToString("HH:mm");
                 string observaciones = txtObservaciones.Text;
+
+                // Reflejar en UI la hora oficial usada para registrar la liquidación
+                txtFechaLlegada.Text = fechaLlegada.ToString("yyyy-MM-dd");
+                txtHoraLlegada.Text = horaLlegada;
 
                 string errores = ValidarDatosGenerales(fechaSalida, fechaLlegada, horaSalida, horaLlegada);
                 if (!string.IsNullOrEmpty(errores))
@@ -1132,7 +1136,7 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine($"❌ ERROR GENERAL: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"   StackTrace: {ex.StackTrace}");
-                MostrarMensaje($"Error general: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
+                MostrarMensaje("Error al enviar la liquidación. Por favor, intente nuevamente o contacte al administrador.", "danger");
             }
         }
 
@@ -2049,7 +2053,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Error en RetirarLiquidacion: {ex.Message}");
-                return new { success = false, message = "Error al retirar la liquidación: " + ex.Message };
+                return new { success = false, message = "Error al retirar la liquidación. Intente nuevamente." };
             }
         }
 
