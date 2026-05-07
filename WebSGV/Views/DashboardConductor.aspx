@@ -245,7 +245,7 @@
                                             <div class="col-12 col-md-3">
                                                 <div class="form-group">
                                                     <label class="form-label">Fecha Llegada <span class="text-danger">*</span></label>
-                                                    <asp:TextBox ID="txtFechaLlegada" runat="server" CssClass="form-control" TextMode="Date" required></asp:TextBox>
+                                                    <asp:TextBox ID="txtFechaLlegada" runat="server" CssClass="form-control" TextMode="Date" required ReadOnly="true"></asp:TextBox>
                                                 </div>
                                             </div>
                                             <div class="col-12 col-md-3">
@@ -257,8 +257,13 @@
                                             <div class="col-12 col-md-3">
                                                 <div class="form-group">
                                                     <label class="form-label">Hora Llegada</label>
-                                                    <asp:TextBox ID="txtHoraLlegada" runat="server" CssClass="form-control" TextMode="Time"></asp:TextBox>
+                                                    <asp:TextBox ID="txtHoraLlegada" runat="server" CssClass="form-control" TextMode="Time" ReadOnly="true"></asp:TextBox>
                                                 </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <small class="text-muted">La hora de llegada se registra automáticamente con la hora oficial del servidor al enviar la liquidación.</small>
                                             </div>
                                         </div>
                                         <div class="row">
