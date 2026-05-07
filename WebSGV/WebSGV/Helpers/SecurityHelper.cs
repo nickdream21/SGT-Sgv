@@ -14,6 +14,7 @@ namespace WebSGV.Helpers
     {
         // ── Roles reconocidos ──────────────────────────────────────────────
         private const string ROL_ADMIN          = "ADMIN";
+        private const string ROL_ADMIN_LEGADO   = "ADMINISTRADOR";
         private const string ROL_ADMIN_SISTEMA  = "ADMINISTRADOR DE SISTEMA";
         private const string ROL_SUPERVISOR     = "SUPERVISOR";
         private const string ROL_ADMIN_GRIFO    = "ADMINISTRADOR DE GRIFO";
@@ -51,13 +52,13 @@ namespace WebSGV.Helpers
         public static bool EsAdmin()
         {
             string rol = ObtenerRol();
-            return rol == ROL_ADMIN || rol == ROL_ADMIN_SISTEMA;
+            return rol == ROL_ADMIN || rol == ROL_ADMIN_LEGADO || rol == ROL_ADMIN_SISTEMA;
         }
 
         public static bool EsAdminOSupervisor()
         {
             string rol = ObtenerRol();
-            return rol == ROL_ADMIN || rol == ROL_ADMIN_SISTEMA || rol == ROL_SUPERVISOR;
+            return rol == ROL_ADMIN || rol == ROL_ADMIN_LEGADO || rol == ROL_ADMIN_SISTEMA || rol == ROL_SUPERVISOR;
         }
 
         public static bool EsAdminGrifo()      => ObtenerRol() == ROL_ADMIN_GRIFO;

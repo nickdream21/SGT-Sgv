@@ -29,9 +29,20 @@ namespace WebSGV.Views
                 {
                     Response.Redirect("~/Views/DashboardGrifo.aspx");
                 }
-                else
+                else if (rol.ToUpper() == "ADMIN" ||
+                         rol.ToUpper() == "ADMINISTRADOR" ||
+                         rol.ToUpper() == "SUPERVISOR" ||
+                         rol.ToUpper() == "ADMINISTRADOR DE SISTEMA" ||
+                         rol.ToUpper() == "ADMINISTRADOR DE MAQUINARIA")
                 {
                     Response.Redirect("~/Views/Inicio.aspx");
+                }
+                else
+                {
+                    // Rol desconocido: cerrar sesión para evitar loops Login <-> páginas protegidas
+                    Session.Clear();
+                    Session.Abandon();
+                    Response.Redirect("~/Views/Login.aspx?error=sesion");
                 }
             }
 
@@ -88,25 +99,37 @@ namespace WebSGV.Views
             }
 
             // Protección básica anti-fuerza-bruta por IP (Application state)
+            // Application.Lock() evita race conditions en entornos multi-hilo.
             string ip = Request.UserHostAddress ?? "unknown";
             string claveFallidos = "LoginFail_" + ip;
-            string claveBloqueo = "LoginBlock_" + ip;
+            string claveBloqueo  = "LoginBlock_" + ip;
 
-            if (Application[claveBloqueo] is DateTime bloqueadoHasta && bloqueadoHasta > DateTime.UtcNow)
+            Application.Lock();
+            try
             {
-                int segundos = (int)(bloqueadoHasta - DateTime.UtcNow).TotalSeconds;
-                MostrarMensaje($"Demasiados intentos fallidos. Intente nuevamente en {segundos} segundos.");
-                return;
+                if (Application[claveBloqueo] is DateTime bloqueadoHasta && bloqueadoHasta > DateTime.UtcNow)
+                {
+                    int segundos = (int)(bloqueadoHasta - DateTime.UtcNow).TotalSeconds;
+                    Application.UnLock();
+                    MostrarMensaje($"Demasiados intentos fallidos. Intente nuevamente en {segundos} segundos.");
+                    return;
+                }
+            }
+            finally
+            {
+                Application.UnLock();
             }
 
-            // Verificar credenciales en la base de datos
+            // Verificar credenciales en la base de datos (fuera del lock para no retenerlo durante I/O)
             var resultado = ValidarUsuario(usuario, contrasena);
 
             if (resultado.EsValido)
             {
                 // Limpiar contador de intentos fallidos
+                Application.Lock();
                 Application.Remove(claveFallidos);
                 Application.Remove(claveBloqueo);
+                Application.UnLock();
 
                 // Limpiar sesión anterior
                 Session.Clear();
@@ -128,27 +151,8 @@ namespace WebSGV.Views
                     Session["IdOperador"] = resultado.IdOperador.Value;
                 }
 
-                // ✅ Crear cookie temporal de respaldo para reconstruir sesión si se pierde
-                HttpCookie authTemp = new HttpCookie("SGV_AuthTemp");
-                authTemp.Values["uid"] = resultado.IdUsuario.ToString();
-                authTemp.Values["rol"] = HttpUtility.UrlEncode(resultado.Rol);
-                authTemp.Values["nombre"] = HttpUtility.UrlEncode(resultado.Nombre);
-                authTemp.Values["nombreUsuario"] = HttpUtility.UrlEncode(resultado.NombreUsuario);
-                if (resultado.Rol.ToUpper() == "CONDUCTOR" && resultado.IdConductor.HasValue)
-                {
-                    authTemp.Values["idConductor"] = resultado.IdConductor.Value.ToString();
-                }
-                if (resultado.Rol.ToUpper() == "OPERADOR" && resultado.IdOperador.HasValue)
-                {
-                    authTemp.Values["idOperador"] = resultado.IdOperador.Value.ToString();
-                }
-                authTemp.Expires = DateTime.Now.AddMinutes(30);
-                authTemp.HttpOnly = true;
-                authTemp.Secure = Request.IsSecureConnection;  // Solo Secure si es HTTPS
-                // ⚠️ SEGURIDAD: No almacenar datos de sesión en cookies del cliente.
-                // La sesión de servidor (Session[]) es suficiente y más segura.
-                // La cookie SGV_AuthTemp ha sido eliminada para evitar exposición
-                // de datos sensibles (uid, rol, nombre) en el navegador del cliente.
+                // La sesión de servidor (Session[]) almacena todos los datos de autenticación.
+                // No se emite ninguna cookie adicional con datos sensibles (uid, rol, nombre).
 
                 // Si la opción "Recordarme" está marcada, guardar solo el usuario (no el rol ni ID)
                 if (chkRemember.Checked)
@@ -181,7 +185,8 @@ namespace WebSGV.Views
             }
             else
             {
-                // Incrementar contador de intentos fallidos
+                // Incrementar contador de intentos fallidos con lock para evitar race condition
+                Application.Lock();
                 int intentos = (Application[claveFallidos] as int?) ?? 0;
                 intentos++;
                 Application[claveFallidos] = intentos;
@@ -191,6 +196,11 @@ namespace WebSGV.Views
                 {
                     Application[claveBloqueo] = DateTime.UtcNow.AddMinutes(5);
                     Application.Remove(claveFallidos);
+                }
+                Application.UnLock();
+
+                if (intentos >= 5)
+                {
                     MostrarMensaje("Demasiados intentos fallidos. Su acceso ha sido bloqueado temporalmente por 5 minutos.");
                 }
                 else
