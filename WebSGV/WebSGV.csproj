@@ -211,11 +211,14 @@
     <Content Include="Content\favicon.png" />
     <Content Include="Content\responsive-mobile.css" />
     <Content Include="Content\Site.css" />
+    <Content Include="Database\Despliegue_Exportacion.sql" />
     <Content Include="Database\Schema\01_FormatoControlado.sql" />
     <Content Include="Database\Schema\02_FirmaDigital.sql" />
     <Content Include="Database\Schema\03_OrdenViajeAjuste.sql" />
     <Content Include="Database\Schema\04_OrdenViaje_AlterFirma.sql" />
     <Content Include="Database\Scripts\diagnostico_PdfAbastecimiento.sql" />
+    <Content Include="Database\Scripts\fix_EstadoSeguimientoExportacion.sql" />
+    <Content Include="Database\Scripts\reset_SeguimientoExportacion.sql" />
     <Content Include="Database\Scripts\script_AgregarColumnaRutaDescripcion.sql" />
     <Content Include="Database\Scripts\script_AgregarColumnaTipoAbastecimiento.sql" />
     <Content Include="Database\Scripts\script_AgregarPdfAbastecimiento.sql" />
@@ -287,6 +290,8 @@
     <Content Include="Database\StoredProcedures\sp_ObtenerTractosActivos.sql" />
     <Content Include="Database\StoredProcedures\sp_ObtenerViajesAbiertosConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_ObtenerViajesActivosParaGrifo.sql" />
+    <Content Include="Database\StoredProcedures\sp_SE_GridListar.sql" />
+    <Content Include="Database\StoredProcedures\sp_SE_ListarEnCurso.sql" />
     <Content Include="Database\StoredProcedures\sp_ValidarDocumentosDuplicados.sql" />
     <Content Include="Default.aspx" />
     <Content Include="favicon.ico" />
@@ -323,6 +328,7 @@
     <Content Include="Content\Templates\PlantillaIndicadores.xlsx" />
     <Content Include="connectionStrings.config" />
     <Content Include="appSettings.Secrets.config" />
+    <Content Include="dashboard\PLAN_MODERNIZACION.md" />
     <None Include="Scripts\jquery-3.7.0.intellisense.js" />
     <Content Include="Scripts\BuscarOrdenViaje.js" />
     <Content Include="Scripts\Custom\JavaScript.js" />
@@ -383,6 +389,8 @@
     <Content Include="Views\EditarDespacho.aspx" />
     <Content Include="Views\Error.aspx" />
     <Content Include="Views\Error404.aspx" />
+    <Content Include="Views\Exportacion\DashboardExportacion.aspx" />
+    <Content Include="Views\Exportacion\RegistroSeguimiento.aspx" />
     <Content Include="Views\FirmarLiquidacion.aspx" />
     <Content Include="Views\Inicio.aspx" />
     <Content Include="Views\LiquidacionesPendientes.aspx" />
@@ -567,6 +575,20 @@
     </Compile>
     <Compile Include="Views\ConsultaAuditoria.aspx.designer.cs">
       <DependentUpon>ConsultaAuditoria.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Exportacion\DashboardExportacion.aspx.cs">
+      <DependentUpon>DashboardExportacion.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Exportacion\DashboardExportacion.aspx.designer.cs">
+      <DependentUpon>DashboardExportacion.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Exportacion\RegistroSeguimiento.aspx.cs">
+      <DependentUpon>RegistroSeguimiento.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Exportacion\RegistroSeguimiento.aspx.designer.cs">
+      <DependentUpon>RegistroSeguimiento.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\Dashboard.aspx.cs">
       <DependentUpon>Dashboard.aspx</DependentUpon>

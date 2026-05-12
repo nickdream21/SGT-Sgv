@@ -1,0 +1,243 @@
+Indicadores / dashboard
+
+tenemos ue desarrollar 25 graficos
+
+% de cumplimiento =
+
+% Cumplimiento Programado = DIVIDE(COUNTBLANK('Seguimiento EXPORTACION'[Cumplimiento]),COUNT('Seguimiento EXPORTACION'[PEDIDO]))
+
+Cumplimiento = 
+if(
+    ('Seguimiento EXPORTACION'[F.LL. Trujillo] + 'Seguimiento EXPORTACION'[H.LL. Trujillo]
+    - 'Seguimiento EXPORTACION'[F. PROGRAMACION] - 'Seguimiento EXPORTACION'[H. PROGRAMACION])*24 > 0,
+    ('Seguimiento EXPORTACION'[F.LL. Trujillo] + 'Seguimiento EXPORTACION'[H.LL. Trujillo]
+    - 'Seguimiento EXPORTACION'[F. PROGRAMACION] - 'Seguimiento EXPORTACION'[H. PROGRAMACION])*24
+)
+
+
+total de camiones :
+Camiones = COUNT('PEDIDOS'[PEDIDO])
+
+total de pedidos:
+Pedidos = DISTINCTCOUNT(PEDIDOS[PEDIDO])
+
+camiones por pedido:
+Camiones/Pedido = ROUND([Camiones]/[Pedidos],0)
+
+Tiempos promedio en Trujillo (Hrs):
+Camiones = COUNT('PEDIDOS'[PEDIDO])
+Carga (Horas) = ('Seguimiento EXPORTACION'[H.Termino carga] - 'Seguimiento EXPORTACION'[H.Carga])*24
+Espera a ingreso Trujillo = 
+if(
+    ('Seguimiento EXPORTACION'[F.I planta] + 'Seguimiento EXPORTACION'[H.I planta])*24
+    - ('Seguimiento EXPORTACION'[F. PROGRAMACION] + 'Seguimiento EXPORTACION'[H. PROGRAMACION])*24 <0,
+    0,
+    ('Seguimiento EXPORTACION'[F.I planta] + 'Seguimiento EXPORTACION'[H.I planta])*24
+    - ('Seguimiento EXPORTACION'[F. PROGRAMACION] + 'Seguimiento EXPORTACION'[H. PROGRAMACION])*24
+) 
+Espera para iniciar la carga = 
+    ('Seguimiento EXPORTACION'[F.Carga] + 'Seguimiento EXPORTACION'[H.Carga]
+    - 'Seguimiento EXPORTACION'[F.I planta] - 'Seguimiento EXPORTACION'[H.I planta])*24
+
+Permanencia en planta Trujillo = 
+    ('Seguimiento EXPORTACION'[H.S Planta] -'Seguimiento EXPORTACION'[H.I planta])*24
+
+
+
+ Tiempos promedio en Inbalnor(Hrs):
+ Descarga (Horas) = ('Seguimiento EXPORTACION'[H.T. descarga] - 'Seguimiento EXPORTACION'[H.I. descarga])*24
+ Espera para iniciar la descarga = 
+    ('Seguimiento EXPORTACION'[F.I. descarga] + 'Seguimiento EXPORTACION'[H.I. descarga] - 
+        'Seguimiento EXPORTACION'[F.Ingreso] - 'Seguimiento EXPORTACION'[H.Ingreso] )*24
+
+
+Tiempos promedio en Jave(Hrs):
+Descarga (Horas) = ('Seguimiento EXPORTACION'[H.T. descarga] - 'Seguimiento EXPORTACION'[H.I. descarga])*24
+Espera para iniciar la descarga = 
+    ('Seguimiento EXPORTACION'[F.I. descarga] + 'Seguimiento EXPORTACION'[H.I. descarga] - 
+        'Seguimiento EXPORTACION'[F.Ingreso] - 'Seguimiento EXPORTACION'[H.Ingreso] )*24
+
+
+Tiempo Trujillo planta Ecuador (dias):
+Trujillo-PlantaEcu = 'Seguimiento EXPORTACION'[F.LL.Planta] + 'Seguimiento EXPORTACION'[H.LL.Planta]
+                    - 'Seguimiento EXPORTACION'[F.S Planta] - 'Seguimiento EXPORTACION'[H.S Planta]
+
+
+Tiempo promedio en Base(Hrs):
+
+Base = 
+    ('Seguimiento EXPORTACION'[F.S Base] + 'Seguimiento EXPORTACION'[H.S Base]
+    -'Seguimiento EXPORTACION'[F.LL. Base] -'Seguimiento EXPORTACION'[H.LL. Base] )*24
+
+
+Espera para ingresar a Bodega Nacional (Hrs):
+Espera para ingresar Depsa = 
+IF( FORMAT('Seguimiento EXPORTACION'[F.LL.Depsa],"dddd")="domingo",
+    'Seguimiento EXPORTACION'[H.I. Depsa]*24 - 8,
+    IF(
+        8/24<'Seguimiento EXPORTACION'[H.LL.Depsa] && 'Seguimiento EXPORTACION'[H.LL.Depsa]<22/24,
+        ('Seguimiento EXPORTACION'[H.I. Depsa]-'Seguimiento EXPORTACION'[H.LL.Depsa])*24,
+        'Seguimiento EXPORTACION'[H.I. Depsa]*24 - 8
+    )
+)
+
+
+Tiempo promedio en Bodega Nacional (Hrs):
+DEPSA = 
+       ('Seguimiento EXPORTACION'[F.S.Depsa] + 'Seguimiento EXPORTACION'[H.S.Depsa] - 
+        'Seguimiento EXPORTACION'[F.I. Depsa] - 'Seguimiento EXPORTACION'[H.I. Depsa] )*24
+
+
+Tiempo promedio en TCI (Hrs):
+TCI = 
+IF(
+    ('Seguimiento EXPORTACION'[F.LL.TCI] +'Seguimiento EXPORTACION'[H.LL.TCI]) <('Seguimiento EXPORTACION'[F. NACIONALIZACION]+ 'Seguimiento EXPORTACION'[H. NACIONALIZACION]),
+    ('Seguimiento EXPORTACION'[F.S TCI]+'Seguimiento EXPORTACION'[H.S TCI])*24 
+            - ('Seguimiento EXPORTACION'[F. NACIONALIZACION]+'Seguimiento EXPORTACION'[H. NACIONALIZACION])*24,
+    ('Seguimiento EXPORTACION'[F.S TCI]+'Seguimiento EXPORTACION'[H.S TCI])*24 
+            - ('Seguimiento EXPORTACION'[F.LL.TCI]+'Seguimiento EXPORTACION'[H.LL.TCI])*24
+)
+
+
+
+Tiempo promedio en CEBAF(min):
+CEBAF = (('Seguimiento EXPORTACION'[H. CRUCE E] -'Seguimiento EXPORTACION'[H.LL CEBAF E])*24)*60
+
+
+---------------------------------------------------------------------------------------------------------
+
+Espera para Ingresar a Depsa(Hrs):
+
+Espera para ingresar Depsa = 
+IF( FORMAT('Seguimiento EXPORTACION'[F.LL.Depsa],"dddd")="domingo",
+    'Seguimiento EXPORTACION'[H.I. Depsa]*24 - 8,
+    IF(
+        8/24<'Seguimiento EXPORTACION'[H.LL.Depsa] && 'Seguimiento EXPORTACION'[H.LL.Depsa]<22/24,
+        ('Seguimiento EXPORTACION'[H.I. Depsa]-'Seguimiento EXPORTACION'[H.LL.Depsa])*24,
+        'Seguimiento EXPORTACION'[H.I. Depsa]*24 - 8
+    )
+)
+
+(añadir total promedio)
+
+
+
+
+Espera para ingresar a complex (Hrs):
+
+Espera para ingresar Depsa = 
+IF( FORMAT('Seguimiento EXPORTACION'[F.LL.Depsa],"dddd")="domingo",
+    'Seguimiento EXPORTACION'[H.I. Depsa]*24 - 8,
+    IF(
+        8/24<'Seguimiento EXPORTACION'[H.LL.Depsa] && 'Seguimiento EXPORTACION'[H.LL.Depsa]<22/24,
+        ('Seguimiento EXPORTACION'[H.I. Depsa]-'Seguimiento EXPORTACION'[H.LL.Depsa])*24,
+        'Seguimiento EXPORTACION'[H.I. Depsa]*24 - 8
+    )
+)
+
+
+(añadir total promedio)
+
+
+Tiempo promedio en Depsa:
+DEPSA = 
+       ('Seguimiento EXPORTACION'[F.S.Depsa] + 'Seguimiento EXPORTACION'[H.S.Depsa] - 
+        'Seguimiento EXPORTACION'[F.I. Depsa] - 'Seguimiento EXPORTACION'[H.I. Depsa] )*24
+
+
+(añadir total promedio)
+
+
+
+Tiempo promedio en Complex:
+DEPSA = 
+       ('Seguimiento EXPORTACION'[F.S.Depsa] + 'Seguimiento EXPORTACION'[H.S.Depsa] - 
+        'Seguimiento EXPORTACION'[F.I. Depsa] - 'Seguimiento EXPORTACION'[H.I. Depsa] )*24
+
+
+(añadir total promedio)
+
+Tiempo promedio en Cebaf(Min):
+
+CEBAF = (('Seguimiento EXPORTACION'[H. CRUCE E] -'Seguimiento EXPORTACION'[H.LL CEBAF E])*24)*60
+
+
+------------------------------------------------------------------------------------------------
+
+
+Tiempo promedio en TCI(Hrs):
+
+TCI = 
+IF(
+    ('Seguimiento EXPORTACION'[F.LL.TCI] +'Seguimiento EXPORTACION'[H.LL.TCI]) <('Seguimiento EXPORTACION'[F. NACIONALIZACION]+ 'Seguimiento EXPORTACION'[H. NACIONALIZACION]),
+    ('Seguimiento EXPORTACION'[F.S TCI]+'Seguimiento EXPORTACION'[H.S TCI])*24 
+            - ('Seguimiento EXPORTACION'[F. NACIONALIZACION]+'Seguimiento EXPORTACION'[H. NACIONALIZACION])*24,
+    ('Seguimiento EXPORTACION'[F.S TCI]+'Seguimiento EXPORTACION'[H.S TCI])*24 
+            - ('Seguimiento EXPORTACION'[F.LL.TCI]+'Seguimiento EXPORTACION'[H.LL.TCI])*24
+)
+
+
+(anadir promedio)
+
+
+Espera de Nacionalizacion (Hrs):
+Espera Nacionalizacion = 
+IF(
+    ('Seguimiento EXPORTACION'[F.LL.TCI]+'Seguimiento EXPORTACION'[H.LL.TCI]) - ('Seguimiento EXPORTACION'[F. NACIONALIZACION] + 'Seguimiento EXPORTACION'[H. NACIONALIZACION]) >0,
+    0,
+    ('Seguimiento EXPORTACION'[F. NACIONALIZACION] + 'Seguimiento EXPORTACION'[H. NACIONALIZACION])*24 - ('Seguimiento EXPORTACION'[F.LL.TCI]+'Seguimiento EXPORTACION'[H.LL.TCI])*24
+)
+
+
+(anadir promedio)
+
+
+
+----------------------------------------------------------------------------------------------------------
+
+Tiempo promedio  de bodega nacional a Inbalnor (horas):
+De Depsa a bodega = 
+('Seguimiento EXPORTACION'[F.LL.Almacen] - 'Seguimiento EXPORTACION'[F.S.Depsa])*24
++
+('Seguimiento EXPORTACION'[H.LL.Almacen] - 'Seguimiento EXPORTACION'[H.S.Depsa])*24
+
+(anadir promedio)
+
+
+
+Tiempo promedio  de bodega nacional a Jave (horas):
+
+De Depsa a bodega = 
+('Seguimiento EXPORTACION'[F.LL.Almacen] - 'Seguimiento EXPORTACION'[F.S.Depsa])*24
++
+('Seguimiento EXPORTACION'[H.LL.Almacen] - 'Seguimiento EXPORTACION'[H.S.Depsa])*24
+
+(anadir promedio)
+
+
+Tiempo promedio de TCI a Inbalnor (Hrs):
+De TCI a bodega = 
+('Seguimiento EXPORTACION'[F.LL.Almacen] - 'Seguimiento EXPORTACION'[F.S TCI])*24
++
+('Seguimiento EXPORTACION'[H.LL.Almacen] - 'Seguimiento EXPORTACION'[H.S TCI])*24
+
+(anadir promedio)
+
+
+
+Tiempo promedio de TCI a Jave (Hrs):
+De TCI a bodega = 
+('Seguimiento EXPORTACION'[F.LL.Almacen] - 'Seguimiento EXPORTACION'[F.S TCI])*24
++
+('Seguimiento EXPORTACION'[H.LL.Almacen] - 'Seguimiento EXPORTACION'[H.S TCI])*24
+
+-----------------------------------------------------
+
+Incidencias:
+
+-----------------------------------
+
+tener en cuenta:
+LA COLUMNA : "F.H. PROGRAMACION" ahi se saca  total de camiones segun el mes
+
+si el viaje termina en julio  pero la fecha de programacion es en finales de mayo , ese viaje pertenece a mayo

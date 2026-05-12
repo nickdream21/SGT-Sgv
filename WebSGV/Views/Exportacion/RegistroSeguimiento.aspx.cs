@@ -1,0 +1,1138 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Data;
+using System.Data.SqlClient;
+using System.IO;
+using System.Linq;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using OfficeOpenXml;
+using WebSGV.Helpers;
+
+namespace WebSGV.Views.Exportacion
+{
+    /// <summary>
+    /// Página de registro individual + importación masiva desde Excel
+    /// para Seguimiento de Exportación (reemplaza el Excel STATUS GENERAL VIVIANA).
+    /// </summary>
+    public partial class RegistroSeguimiento : System.Web.UI.Page
+    {
+        private static readonly string ConnStr =
+            ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+
+        // Contadores de la última importación masiva (se reinician en cada importación)
+        private int _importInsertados   = 0;
+        private int _importActualizados = 0;
+
+        // ── Mapa Excel → Columna lógica (case-insensitive, busca por contiene)
+        // Clave = nombre lógico interno; Valor = lista de fragmentos que aceptamos.
+        private static readonly Dictionary<string, string[]> ExcelHeaderMap =
+            new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "cliente",                        new[] { "CLIENTE" } },
+                { "conductorOrigen",                new[] { "CONDUCTOR ORIGEN" } },
+                { "tracto1",                        new[] { "TRACTO 1", "TRACTO1" } },
+                { "carreta",                        new[] { "CARRETA" } },
+                { "conductorDestino",               new[] { "CONDUCTOR DESTINO" } },
+                { "tracto2",                        new[] { "TRACTO 2", "TRACTO2", "TRAXTO 2", "TRAXTO2" } },
+                { "fhSalidaBase1",                  new[] { "F.H.S.BASE:", "F.H.S.BASE." } },
+                { "fhLlegadaTrujillo",              new[] { "F.H.LL. TRUJILLO", "F.H.LL.TRUJILLO" } },
+                { "fhRegistro",                     new[] { "F.H.REGISTRO" } },
+                { "fhProgramacion",                 new[] { "F.H. PROGRAMACION", "F.H.PROGRAMACION" } },
+                { "fhIngresoPlanta",                new[] { "F.H.I PLANTA", "F.H.I. PLANTA" } },
+                { "fhInicioCarga",                  new[] { "F.H.INICIO DE CARGA" } },
+                { "fhTerminoCarga",                 new[] { "F.H.TERMINO CARGA" } },
+                { "fhSalidaPlanta",                 new[] { "F.H.S PLANTA" } },
+                { "fhLlegadaBase2",                 new[] { "F.H.LL. BASE", "F.H.LL.BASE" } },
+                { "fhSalidaBase2",                  new[] { "F.H.S BASE" } },
+                { "fhLlegadaBodegaNacional",        new[] { "F.H.LL.BODEGA NACIONAL", "F.H.LL BODEGA NACIONAL" } },
+                { "fhIngresoBodegaNacional",        new[] { "F.H.I. BODEGA NACIONAL", "F.H.I BODEGA NACIONAL" } },
+                { "fhSalidaBodegaNacional",         new[] { "F.H.S.BODEGA NACIONAL", "F.H.S BODEGA NACIONAL" } },
+                { "bodegaNacional",                 new[] { "BODEGA" } },
+                { "fhLlegadaCEBAF",                 new[] { "F.H.LL CEBAF" } },
+                { "fhCruceEcuador",                 new[] { "F.H CRUCE" } },
+                { "fhAutorizacionNacionalizacion",  new[] { "AUTORIZACION DE LA NACIONALIZACION" } },
+                { "bodegaEcuatoriana",              new[] { "BODEGA ECUATORIANA" } },
+                { "fhLlegadaTCI",                   new[] { "F.H.LL.TCI" } },
+                { "fhSalidaTCI",                    new[] { "F.H.S TCI" } },
+                { "bodegaDescarga",                 new[] { "BODEGA DESCARGA" } },
+                { "fhLlegadaPlantaEcuador",         new[] { "F.H.LL.PLANTA" } },
+                { "fhLlegadaAlmacen",               new[] { "F.H.LL.ALMACEN" } },
+                { "fhIngreso",                      new[] { "F.H.INGRESO" } },
+                { "fhInicioDescarga",               new[] { "F.H.I. DESCARGA", "F.H.I DESCARGA" } },
+                { "fhTerminoDescarga",              new[] { "F.H.T. DESCARGA", "F.H.T DESCARGA" } },
+                { "fhSalida",                       new[] { "F.H.SALIDA" } },
+                { "motivoRetraso",                  new[] { "MOTIVO DE RETRASO", "COMENTARIO" } }
+            };
+
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            // Validación de sesión + rol
+            RolesHelper.ValidarAccesoSeccion("SEGUIMIENTO_EXPORTACION");
+
+            if (!IsPostBack)
+            {
+                CargarGrid();
+                CargarBandeja();
+                CargarRegistrosRecientes();
+            }
+        }
+
+        // ============================================================
+        //  Bandeja "Viajes en curso"  (captura progresiva)
+        // ============================================================
+        private void CargarBandeja()
+        {
+            try
+            {
+                using (var conn = new SqlConnection(ConnStr))
+                using (var cmd = new SqlCommand("sp_SE_ListarEnCurso", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    string filtro = txtFiltroBandeja.Text?.Trim();
+                    cmd.Parameters.Add("@cliente",   SqlDbType.VarChar, 150).Value = string.IsNullOrEmpty(filtro) ? (object)DBNull.Value : filtro;
+                    cmd.Parameters.Add("@conductor", SqlDbType.VarChar, 150).Value = string.IsNullOrEmpty(filtro) ? (object)DBNull.Value : filtro;
+                    cmd.Parameters.Add("@top", SqlDbType.Int).Value = 200;
+
+                    conn.Open();
+                    using (var da = new SqlDataAdapter(cmd))
+                    {
+                        var dt = new DataTable();
+                        da.Fill(dt);
+
+                        // También filtrar por tracto si el filtro coincide
+                        if (!string.IsNullOrEmpty(filtro))
+                        {
+                            var dt2 = new DataTable();
+                            using (var cmd2 = new SqlCommand("sp_SE_ListarEnCurso", conn))
+                            {
+                                cmd2.CommandType = CommandType.StoredProcedure;
+                                cmd2.Parameters.Add("@cliente",   SqlDbType.VarChar, 150).Value = DBNull.Value;
+                                cmd2.Parameters.Add("@conductor", SqlDbType.VarChar, 150).Value = DBNull.Value;
+                                cmd2.Parameters.Add("@top", SqlDbType.Int).Value = 200;
+                                using (var da2 = new SqlDataAdapter(cmd2))
+                                {
+                                    da2.Fill(dt2);
+                                }
+                            }
+                            var f = filtro.ToUpperInvariant();
+                            var filas = dt2.AsEnumerable().Where(r =>
+                                (r["cliente"]?.ToString() ?? "").ToUpperInvariant().Contains(f) ||
+                                (r["conductorOrigen"]?.ToString() ?? "").ToUpperInvariant().Contains(f) ||
+                                (r["conductorDestino"]?.ToString() ?? "").ToUpperInvariant().Contains(f) ||
+                                (r["tracto1"]?.ToString() ?? "").ToUpperInvariant().Contains(f) ||
+                                (r["tracto2"]?.ToString() ?? "").ToUpperInvariant().Contains(f));
+                            dt = filas.Any() ? filas.CopyToDataTable() : dt2.Clone();
+                        }
+
+                        rptBandeja.DataSource = dt;
+                        rptBandeja.DataBind();
+                        litCountBandeja.Text = dt.Rows.Count.ToString();
+                        pnlBandejaVacia.Visible = dt.Rows.Count == 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MostrarAlerta("Error al cargar viajes en curso: " + ex.Message, "danger");
+                rptBandeja.DataSource = null;
+                rptBandeja.DataBind();
+                litCountBandeja.Text = "0";
+                pnlBandejaVacia.Visible = true;
+            }
+        }
+
+        protected void btnBuscarBandeja_Click(object sender, EventArgs e)
+        {
+            CargarBandeja();
+        }
+
+        protected void btnRefrescarBandeja_Click(object sender, EventArgs e)
+        {
+            txtFiltroBandeja.Text = "";
+            CargarBandeja();
+        }
+
+        protected void btnNuevoViaje_Click(object sender, EventArgs e)
+        {
+            LimpiarFormulario();
+            hdnIdSeguimiento.Value = "0";
+            pnlFormBanner.Visible = true;
+            litFormBannerTitle.Text = "Nuevo viaje";
+            litFormBannerSub.Text = "Llena al menos Cliente, F.H. Programación y Tracto 1 para abrir el viaje. El resto lo puedes ir registrando con el tiempo.";
+            ActivarTab("panel-form");
+        }
+
+        protected void btnCancelarEdicion_Click(object sender, EventArgs e)
+        {
+            LimpiarFormulario();
+            hdnIdSeguimiento.Value = "0";
+            pnlFormBanner.Visible = false;
+            ActivarTab("panel-bandeja");
+        }
+
+        protected void rptBandeja_ItemCommand(object source, System.Web.UI.WebControls.RepeaterCommandEventArgs e)
+        {
+            int id;
+            if (!int.TryParse(Convert.ToString(e.CommandArgument), out id) || id <= 0) return;
+
+            if (string.Equals(e.CommandName, "Continuar", StringComparison.OrdinalIgnoreCase))
+            {
+                CargarRegistroEnFormulario(id);
+            }
+            else if (string.Equals(e.CommandName, "Finalizar", StringComparison.OrdinalIgnoreCase))
+            {
+                FinalizarRegistro(id);
+                CargarBandeja();
+                CargarRegistrosRecientes();
+            }
+        }
+
+        private void CargarRegistroEnFormulario(int id)
+        {
+            try
+            {
+                DataRow row = null;
+                using (var conn = new SqlConnection(ConnStr))
+                using (var cmd = new SqlCommand("sp_SE_ObtenerPorId", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Add("@idSeguimiento", SqlDbType.Int).Value = id;
+                    conn.Open();
+                    using (var da = new SqlDataAdapter(cmd))
+                    {
+                        var dt = new DataTable();
+                        da.Fill(dt);
+                        if (dt.Rows.Count > 0) row = dt.Rows[0];
+                    }
+                }
+                if (row == null)
+                {
+                    MostrarAlerta("El registro #" + id + " ya no existe.", "warning");
+                    return;
+                }
+
+                hdnIdSeguimiento.Value = id.ToString();
+
+                txtCliente.Text          = ToStr(row, "cliente");
+                txtConductorOrigen.Text  = ToStr(row, "conductorOrigen");
+                txtTracto1.Text          = ToStr(row, "tracto1");
+                txtCarreta.Text          = ToStr(row, "carreta");
+                txtConductorDestino.Text = ToStr(row, "conductorDestino");
+                txtTracto2.Text          = ToStr(row, "tracto2");
+
+                txtFhSalidaBase1.Text                 = ToDtLocal(row, "fhSalidaBase1");
+                txtFhLlegadaTrujillo.Text             = ToDtLocal(row, "fhLlegadaTrujillo");
+                txtFhRegistro.Text                    = ToDtLocal(row, "fhRegistro");
+                txtFhProgramacion.Text                = ToDtLocal(row, "fhProgramacion");
+                txtFhIngresoPlanta.Text               = ToDtLocal(row, "fhIngresoPlanta");
+                txtFhInicioCarga.Text                 = ToDtLocal(row, "fhInicioCarga");
+                txtFhTerminoCarga.Text                = ToDtLocal(row, "fhTerminoCarga");
+                txtFhSalidaPlanta.Text                = ToDtLocal(row, "fhSalidaPlanta");
+                txtFhLlegadaBase2.Text                = ToDtLocal(row, "fhLlegadaBase2");
+                txtFhSalidaBase2.Text                 = ToDtLocal(row, "fhSalidaBase2");
+                txtFhLlegadaBodegaNacional.Text       = ToDtLocal(row, "fhLlegadaBodegaNacional");
+                txtFhIngresoBodegaNacional.Text       = ToDtLocal(row, "fhIngresoBodegaNacional");
+                txtFhSalidaBodegaNacional.Text        = ToDtLocal(row, "fhSalidaBodegaNacional");
+                txtBodegaNacional.Text                = ToStr(row, "bodegaNacional");
+                txtFhLlegadaCEBAF.Text                = ToDtLocal(row, "fhLlegadaCEBAF");
+                txtFhCruceEcuador.Text                = ToDtLocal(row, "fhCruceEcuador");
+                txtFhAutorizacionNacionalizacion.Text = ToDtLocal(row, "fhAutorizacionNacionalizacion");
+                txtBodegaEcuatoriana.Text             = ToStr(row, "bodegaEcuatoriana");
+                txtFhLlegadaTCI.Text                  = ToDtLocal(row, "fhLlegadaTCI");
+                txtFhSalidaTCI.Text                   = ToDtLocal(row, "fhSalidaTCI");
+                txtBodegaDescarga.Text                = ToStr(row, "bodegaDescarga");
+                txtFhLlegadaPlantaEcuador.Text        = ToDtLocal(row, "fhLlegadaPlantaEcuador");
+                txtFhLlegadaAlmacen.Text              = ToDtLocal(row, "fhLlegadaAlmacen");
+                txtFhIngreso.Text                     = ToDtLocal(row, "fhIngreso");
+                txtFhInicioDescarga.Text              = ToDtLocal(row, "fhInicioDescarga");
+                txtFhTerminoDescarga.Text             = ToDtLocal(row, "fhTerminoDescarga");
+                txtFhSalida.Text                      = ToDtLocal(row, "fhSalida");
+                txtMotivoRetraso.Text                 = ToStr(row, "motivoRetraso");
+
+                txtSacosRobados.Text = row.IsNull("sacosRobados") ? "0" : row["sacosRobados"].ToString();
+                txtSacosRotos.Text   = row.IsNull("sacosRotos")   ? "0" : row["sacosRotos"].ToString();
+                txtSacosMojados.Text = row.IsNull("sacosMojados") ? "0" : row["sacosMojados"].ToString();
+
+                string estado = ToStr(row, "estado");
+                if (!string.IsNullOrEmpty(estado))
+                {
+                    var li = ddlEstado.Items.FindByValue(estado);
+                    if (li != null) ddlEstado.SelectedValue = estado;
+                    else ddlEstado.SelectedValue = "EN_CURSO";
+                }
+
+                pnlFormBanner.Visible = true;
+                litFormBannerTitle.Text = $"Editando viaje #{id} — {txtCliente.Text}";
+                litFormBannerSub.Text = "Agrega solo los hitos nuevos. Los campos vacíos NO sobrescriben los datos ya guardados.";
+                ActivarTab("panel-form");
+            }
+            catch (Exception ex)
+            {
+                MostrarAlerta("Error al cargar el viaje: " + ex.Message, "danger");
+            }
+        }
+
+        private void FinalizarRegistro(int id)
+        {
+            try
+            {
+                using (var conn = new SqlConnection(ConnStr))
+                using (var cmd = new SqlCommand(
+                    "UPDATE SeguimientoExportacion " +
+                    "SET estado='FINALIZADO', fechaModificacion=GETDATE(), idUsuarioModificacion=@u " +
+                    "WHERE idSeguimiento=@id AND activo=1", conn))
+                {
+                    cmd.Parameters.Add("@id", SqlDbType.Int).Value = id;
+                    cmd.Parameters.Add("@u",  SqlDbType.Int).Value = (object)ObtenerIdUsuarioSesion() ?? DBNull.Value;
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+                MostrarAlerta($"Viaje #{id} marcado como FINALIZADO.", "success");
+            }
+            catch (Exception ex)
+            {
+                MostrarAlerta("Error al finalizar: " + ex.Message, "danger");
+            }
+        }
+
+        private void ActivarTab(string panelId)
+        {
+            string script = $"window.__seActivateTab=function(){{var b=document.querySelector('.se-tab[data-target=\"{panelId}\"]');if(b)b.click();}};setTimeout(window.__seActivateTab,30);";
+            ScriptManager.RegisterStartupScript(this, GetType(), "seActivateTab", script, true);
+        }
+
+        private static string ToStr(DataRow r, string col)
+        {
+            if (!r.Table.Columns.Contains(col) || r.IsNull(col)) return "";
+            return Convert.ToString(r[col]) ?? "";
+        }
+
+        private static string ToDtLocal(DataRow r, string col)
+        {
+            if (!r.Table.Columns.Contains(col) || r.IsNull(col)) return "";
+            DateTime d = Convert.ToDateTime(r[col]);
+            // formato HTML5 datetime-local
+            return d.ToString("yyyy-MM-ddTHH:mm");
+        }
+
+        // ============================================================
+        //  Registro individual
+        // ============================================================
+        protected void btnGuardar_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Validación mínima: para crear/editar necesitamos al menos cliente + tracto1 + fhProgramacion
+                if (string.IsNullOrWhiteSpace(txtCliente.Text) ||
+                    string.IsNullOrWhiteSpace(txtTracto1.Text) ||
+                    string.IsNullOrWhiteSpace(txtFhProgramacion.Text))
+                {
+                    MostrarAlerta("Para abrir o actualizar un viaje necesitas al menos: Cliente, Tracto 1 y F.H. Programación.", "warning");
+                    ActivarTab("panel-form");
+                    return;
+                }
+
+                int? idUsuario = ObtenerIdUsuarioSesion();
+                int idGenerado;
+
+                using (var conn = new SqlConnection(ConnStr))
+                using (var cmd = new SqlCommand("sp_SE_Insertar", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    AgregarTexto(cmd, "@cliente",          txtCliente.Text,          150);
+                    AgregarTexto(cmd, "@conductorOrigen",  txtConductorOrigen.Text,  150);
+                    AgregarTexto(cmd, "@tracto1",          txtTracto1.Text,          20);
+                    AgregarTexto(cmd, "@carreta",          txtCarreta.Text,          20);
+                    AgregarTexto(cmd, "@conductorDestino", txtConductorDestino.Text, 150);
+                    AgregarTexto(cmd, "@tracto2",          txtTracto2.Text,          20);
+
+                    AgregarFecha(cmd, "@fhSalidaBase1",                  txtFhSalidaBase1.Text);
+                    AgregarFecha(cmd, "@fhLlegadaTrujillo",              txtFhLlegadaTrujillo.Text);
+                    AgregarFecha(cmd, "@fhRegistro",                     txtFhRegistro.Text);
+                    AgregarFecha(cmd, "@fhProgramacion",                 txtFhProgramacion.Text);
+                    AgregarFecha(cmd, "@fhIngresoPlanta",                txtFhIngresoPlanta.Text);
+                    AgregarFecha(cmd, "@fhInicioCarga",                  txtFhInicioCarga.Text);
+                    AgregarFecha(cmd, "@fhTerminoCarga",                 txtFhTerminoCarga.Text);
+                    AgregarFecha(cmd, "@fhSalidaPlanta",                 txtFhSalidaPlanta.Text);
+                    AgregarFecha(cmd, "@fhLlegadaBase2",                 txtFhLlegadaBase2.Text);
+                    AgregarFecha(cmd, "@fhSalidaBase2",                  txtFhSalidaBase2.Text);
+                    AgregarFecha(cmd, "@fhLlegadaBodegaNacional",        txtFhLlegadaBodegaNacional.Text);
+                    AgregarFecha(cmd, "@fhIngresoBodegaNacional",        txtFhIngresoBodegaNacional.Text);
+                    AgregarFecha(cmd, "@fhSalidaBodegaNacional",         txtFhSalidaBodegaNacional.Text);
+                    AgregarTexto(cmd, "@bodegaNacional",                 txtBodegaNacional.Text, 150);
+                    AgregarFecha(cmd, "@fhLlegadaCEBAF",                 txtFhLlegadaCEBAF.Text);
+                    AgregarFecha(cmd, "@fhCruceEcuador",                 txtFhCruceEcuador.Text);
+                    AgregarFecha(cmd, "@fhAutorizacionNacionalizacion",  txtFhAutorizacionNacionalizacion.Text);
+                    AgregarTexto(cmd, "@bodegaEcuatoriana",              txtBodegaEcuatoriana.Text, 150);
+                    AgregarFecha(cmd, "@fhLlegadaTCI",                   txtFhLlegadaTCI.Text);
+                    AgregarFecha(cmd, "@fhSalidaTCI",                    txtFhSalidaTCI.Text);
+                    AgregarTexto(cmd, "@bodegaDescarga",                 txtBodegaDescarga.Text, 150);
+                    AgregarFecha(cmd, "@fhLlegadaPlantaEcuador",         txtFhLlegadaPlantaEcuador.Text);
+                    AgregarFecha(cmd, "@fhLlegadaAlmacen",               txtFhLlegadaAlmacen.Text);
+                    AgregarFecha(cmd, "@fhIngreso",                      txtFhIngreso.Text);
+                    AgregarFecha(cmd, "@fhInicioDescarga",               txtFhInicioDescarga.Text);
+                    AgregarFecha(cmd, "@fhTerminoDescarga",              txtFhTerminoDescarga.Text);
+                    AgregarFecha(cmd, "@fhSalida",                       txtFhSalida.Text);
+
+                    AgregarTexto(cmd, "@motivoRetraso", txtMotivoRetraso.Text, 1000);
+                    cmd.Parameters.Add("@sacosRobados", SqlDbType.Int).Value = ParseIntSafe(txtSacosRobados.Text);
+                    cmd.Parameters.Add("@sacosRotos",   SqlDbType.Int).Value = ParseIntSafe(txtSacosRotos.Text);
+                    cmd.Parameters.Add("@sacosMojados", SqlDbType.Int).Value = ParseIntSafe(txtSacosMojados.Text);
+                    cmd.Parameters.Add("@estado", SqlDbType.VarChar, 20).Value = ddlEstado.SelectedValue;
+                    cmd.Parameters.Add("@idUsuarioRegistro", SqlDbType.Int).Value = (object)idUsuario ?? DBNull.Value;
+
+                    var outParam = new SqlParameter("@idSeguimiento", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                    cmd.Parameters.Add(outParam);
+
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                    idGenerado = Convert.ToInt32(outParam.Value);
+                }
+
+                // Auditoría
+                try
+                {
+                    bool fueUpdate = idGenerado == -2;
+                    AuditoriaHelper.Registrar(
+                        accion: fueUpdate ? "UPDATE" : "INSERT",
+                        tablaAfectada: "SeguimientoExportacion",
+                        idRegistroAfectado: fueUpdate ? hdnIdSeguimiento.Value : idGenerado.ToString(),
+                        descripcion: $"Seguimiento de exportación {(fueUpdate ? "actualizado" : "creado")} (Cliente: {txtCliente.Text})");
+                }
+                catch { /* No bloquear flujo si la auditoría falla */ }
+
+                if (idGenerado == -1)
+                {
+                    MostrarAlerta("Faltan datos clave (cliente / F.H. Programación). No se guardó.", "warning");
+                }
+                else if (idGenerado == -2)
+                {
+                    MostrarAlerta($"Avance guardado en el viaje existente. Los campos llenos se actualizaron sin pisar lo anterior.", "success");
+                }
+                else
+                {
+                    MostrarAlerta($"Viaje #{idGenerado} abierto correctamente. Puedes seguir registrando avances cuando quieras.", "success");
+                    hdnIdSeguimiento.Value = idGenerado.ToString();
+                }
+
+                CargarBandeja();
+                CargarRegistrosRecientes();
+                // Si se finaliza el viaje, volver a la bandeja; si no, mantener form abierto.
+                string estadoSel = ddlEstado.SelectedValue ?? "";
+                if (estadoSel == "FINALIZADO" || estadoSel == "COMPLETADO" || estadoSel == "CANCELADO")
+                {
+                    LimpiarFormulario();
+                    hdnIdSeguimiento.Value = "0";
+                    pnlFormBanner.Visible = false;
+                    ActivarTab("panel-bandeja");
+                }
+                else
+                {
+                    ActivarTab("panel-form");
+                }
+            }
+            catch (Exception ex)
+            {
+                MostrarAlerta("Error al guardar: " + ex.Message, "danger");
+            }
+        }
+
+        protected void btnLimpiar_Click(object sender, EventArgs e)
+        {
+            LimpiarFormulario();
+        }
+
+        private void LimpiarFormulario()
+        {
+            foreach (var c in new[] {
+                txtCliente, txtConductorOrigen, txtTracto1, txtCarreta, txtConductorDestino, txtTracto2,
+                txtFhSalidaBase1, txtFhLlegadaTrujillo, txtFhRegistro, txtFhProgramacion,
+                txtFhIngresoPlanta, txtFhInicioCarga, txtFhTerminoCarga, txtFhSalidaPlanta,
+                txtFhLlegadaBase2, txtFhSalidaBase2, txtFhLlegadaBodegaNacional,
+                txtFhIngresoBodegaNacional, txtFhSalidaBodegaNacional, txtBodegaNacional,
+                txtFhLlegadaCEBAF, txtFhCruceEcuador, txtFhAutorizacionNacionalizacion,
+                txtBodegaEcuatoriana, txtFhLlegadaTCI, txtFhSalidaTCI, txtBodegaDescarga,
+                txtFhLlegadaPlantaEcuador, txtFhLlegadaAlmacen, txtFhIngreso,
+                txtFhInicioDescarga, txtFhTerminoDescarga, txtFhSalida, txtMotivoRetraso
+            })
+            {
+                c.Text = "";
+            }
+            txtSacosRobados.Text = "0";
+            txtSacosRotos.Text   = "0";
+            txtSacosMojados.Text = "0";
+            ddlEstado.SelectedValue = "EN_CURSO";
+        }
+
+        // ============================================================
+        //  Importación masiva
+        // ============================================================
+        protected void btnImportar_Click(object sender, EventArgs e)
+        {
+            if (!fileExcel.HasFile)
+            {
+                MostrarAlerta("Seleccione primero un archivo Excel.", "warning");
+                return;
+            }
+
+            string ext = Path.GetExtension(fileExcel.FileName).ToLowerInvariant();
+            if (ext != ".xlsx" && ext != ".xls")
+            {
+                MostrarAlerta("Solo se aceptan archivos .xlsx o .xls", "warning");
+                return;
+            }
+            if (fileExcel.PostedFile.ContentLength > 10 * 1024 * 1024)
+            {
+                MostrarAlerta("El archivo supera el límite de 10MB.", "warning");
+                return;
+            }
+
+            string tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ext);
+            try
+            {
+                fileExcel.SaveAs(tempPath);
+                int filas = ProcesarExcel(tempPath);
+                MostrarAlerta($"Importación finalizada: {_importInsertados} nuevo(s) · {_importActualizados} actualizado(s) · {filas} fila(s) procesada(s).", "success");
+                CargarRegistrosRecientes();
+            }
+            catch (Exception ex)
+            {
+                MostrarAlerta("Error al procesar el archivo: " + ex.Message, "danger");
+            }
+            finally
+            {
+                if (File.Exists(tempPath))
+                {
+                    try { File.Delete(tempPath); } catch { /* ignore */ }
+                }
+            }
+        }
+
+        private int ProcesarExcel(string path)
+        {
+            int procesados = 0;
+
+            // EPPlus 8 — licencia es opcional para no-comercial; el resto del proyecto la deja sin set.
+            using (var package = new ExcelPackage(new FileInfo(path)))
+            {
+                if (package.Workbook.Worksheets.Count == 0)
+                    throw new Exception("El archivo Excel no contiene hojas.");
+
+                ExcelWorksheet ws = package.Workbook.Worksheets
+                                        .FirstOrDefault(w => (w.Name ?? "").ToUpper().Contains("SEGUIMIENTO"))
+                                    ?? package.Workbook.Worksheets.First();
+
+                if (ws.Dimension == null)
+                    throw new Exception("La hoja seleccionada está vacía.");
+
+                int rows = ws.Dimension.Rows;
+                int cols = ws.Dimension.Columns;
+
+                // Detectar fila de headers (puede estar en fila 1 o más abajo si hay título)
+                int headerRow = DetectarFilaHeaders(ws, cols);
+                if (headerRow == -1)
+                    throw new Exception("No se pudo identificar la fila de encabezados (se busca CLIENTE / CONDUCTOR).");
+
+                // Mapear cada columna lógica → índice de columna en Excel.
+                // Para evitar colisiones (ej: "BODEGA" coincidiendo con "BODEGA ECUATORIANA"),
+                // se prueba primero el match EXACTO; si no, se hace contains priorizando los headers más largos.
+                var colMap = new Dictionary<string, int>();
+                var headersExcel = new Dictionary<int, string>();
+                for (int c = 1; c <= cols; c++)
+                {
+                    string h = ws.Cells[headerRow, c].Value?.ToString()?.Trim() ?? "";
+                    if (h.Length > 0) headersExcel[c] = NormalizarHeader(h);
+                }
+
+                // 1) Match exacto (case-insensitive, normalizando espacios)
+                foreach (var kv in ExcelHeaderMap)
+                {
+                    foreach (var frag in kv.Value)
+                    {
+                        string fragU = NormalizarHeader(frag);
+                        var match = headersExcel.FirstOrDefault(h =>
+                            h.Value == fragU && !colMap.ContainsValue(h.Key));
+                        if (match.Key != 0)
+                        {
+                            colMap[kv.Key] = match.Key;
+                            break;
+                        }
+                    }
+                }
+
+                // 2) Match por contains, ordenando los fragments más largos primero (más específicos)
+                var pendientes = ExcelHeaderMap
+                    .Where(kv => !colMap.ContainsKey(kv.Key))
+                    .SelectMany(kv => kv.Value.Select(f => new { Key = kv.Key, Frag = NormalizarHeader(f) }))
+                    .OrderByDescending(x => x.Frag.Length);
+
+                foreach (var p in pendientes)
+                {
+                    if (colMap.ContainsKey(p.Key)) continue;
+                    var match = headersExcel.FirstOrDefault(h =>
+                        !colMap.ContainsValue(h.Key) && h.Value.Contains(p.Frag));
+                    if (match.Key != 0)
+                    {
+                        colMap[p.Key] = match.Key;
+                    }
+                }
+
+                // Detectar columna de HORA adyacente (Excel abril2025 usa pares: [fecha][hora] con header vacío en la columna de hora)
+                // Sólo aplica a claves que empiezan con "fh"
+                var horaColMap = new Dictionary<string, int>();
+                foreach (var kv in colMap)
+                {
+                    if (!kv.Key.StartsWith("fh", StringComparison.OrdinalIgnoreCase)) continue;
+                    int next = kv.Value + 1;
+                    if (next > cols) continue;
+                    string nextHeader = ws.Cells[headerRow, next].Value?.ToString()?.Trim() ?? "";
+                    if (nextHeader.Length == 0)
+                    {
+                        horaColMap[kv.Key] = next;
+                    }
+                }
+
+                if (!colMap.ContainsKey("cliente") && !colMap.ContainsKey("conductorOrigen"))
+                    throw new Exception("El archivo no contiene columnas reconocibles (CLIENTE / CONDUCTOR ORIGEN).");
+
+                int? idUsuario = ObtenerIdUsuarioSesion();
+                _importInsertados   = 0;
+                _importActualizados = 0;
+                int insertados  = 0;
+                int actualizados = 0;
+
+                using (var conn = new SqlConnection(ConnStr))
+                {
+                    conn.Open();
+                    using (var tx = conn.BeginTransaction())
+                    {
+                        try
+                        {
+                            for (int r = headerRow + 1; r <= rows; r++)
+                            {
+                                // Si la fila está totalmente vacía en las columnas mapeadas, saltar
+                                if (FilaVacia(ws, r, colMap)) continue;
+
+                                using (var cmd = new SqlCommand("sp_SE_Insertar", conn, tx))
+                                {
+                                    cmd.CommandType = CommandType.StoredProcedure;
+
+                                    AgregarTexto(cmd, "@cliente",          LeerTexto(ws, r, colMap, "cliente"),          150);
+                                    AgregarTexto(cmd, "@conductorOrigen",  LeerTexto(ws, r, colMap, "conductorOrigen"),  150);
+                                    AgregarTexto(cmd, "@tracto1",          LeerTexto(ws, r, colMap, "tracto1"),          20);
+                                    AgregarTexto(cmd, "@carreta",          LeerTexto(ws, r, colMap, "carreta"),          20);
+                                    AgregarTexto(cmd, "@conductorDestino", LeerTexto(ws, r, colMap, "conductorDestino"), 150);
+                                    AgregarTexto(cmd, "@tracto2",          LeerTexto(ws, r, colMap, "tracto2"),          20);
+
+                                    var fechasFila = new Dictionary<string, DateTime?>();
+                                    foreach (var key in new[] {
+                                        "fhSalidaBase1","fhLlegadaTrujillo","fhRegistro","fhProgramacion",
+                                        "fhIngresoPlanta","fhInicioCarga","fhTerminoCarga","fhSalidaPlanta",
+                                        "fhLlegadaBase2","fhSalidaBase2",
+                                        "fhLlegadaBodegaNacional","fhIngresoBodegaNacional","fhSalidaBodegaNacional",
+                                        "fhLlegadaCEBAF","fhCruceEcuador","fhAutorizacionNacionalizacion",
+                                        "fhLlegadaTCI","fhSalidaTCI",
+                                        "fhLlegadaPlantaEcuador","fhLlegadaAlmacen","fhIngreso",
+                                        "fhInicioDescarga","fhTerminoDescarga","fhSalida"
+                                    })
+                                    {
+                                        var celda = LeerCelda(ws, r, colMap, key);
+                                        object celdaHora = null;
+                                        if (horaColMap.ContainsKey(key))
+                                            celdaHora = ws.Cells[r, horaColMap[key]].Value;
+                                        var fecha = AgregarFechaCelda(cmd, "@" + key, celda, celdaHora);
+                                        fechasFila[key] = fecha;
+                                    }
+
+                                    AgregarTexto(cmd, "@bodegaNacional",    LeerTexto(ws, r, colMap, "bodegaNacional"),    150);
+                                    AgregarTexto(cmd, "@bodegaEcuatoriana", LeerTexto(ws, r, colMap, "bodegaEcuatoriana"), 150);
+                                    AgregarTexto(cmd, "@bodegaDescarga",    LeerTexto(ws, r, colMap, "bodegaDescarga"),    150);
+                                    AgregarTexto(cmd, "@motivoRetraso",     LeerTexto(ws, r, colMap, "motivoRetraso"),     1000);
+
+                                    cmd.Parameters.Add("@sacosRobados", SqlDbType.Int).Value = 0;
+                                    cmd.Parameters.Add("@sacosRotos",   SqlDbType.Int).Value = 0;
+                                    cmd.Parameters.Add("@sacosMojados", SqlDbType.Int).Value = 0;
+                                    cmd.Parameters.Add("@estado",       SqlDbType.VarChar, 20).Value = DerivarEstado(fechasFila);
+                                    cmd.Parameters.Add("@idUsuarioRegistro", SqlDbType.Int).Value = (object)idUsuario ?? DBNull.Value;
+
+                                    var outParam = new SqlParameter("@idSeguimiento", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                                    cmd.Parameters.Add(outParam);
+
+                                    cmd.ExecuteNonQuery();
+                                    int idGen = Convert.ToInt32(outParam.Value);
+                                    if      (idGen == -1) { /* fila sin clave, ignorada */ }
+                                    else if (idGen == -2) { actualizados++; procesados++; }
+                                    else                  { insertados++;   procesados++; }
+                                }
+                            }
+
+                            tx.Commit();
+                            _importInsertados   = insertados;
+                            _importActualizados = actualizados;
+                        }
+                        catch
+                        {
+                            tx.Rollback();
+                            throw;
+                        }
+                    }
+                }
+
+                try
+                {
+                    AuditoriaHelper.Registrar(
+                        accion: "IMPORT",
+                        tablaAfectada: "SeguimientoExportacion",
+                        idRegistroAfectado: "BULK",
+                        descripcion: $"Importación masiva Excel: {insertados} nuevos, {actualizados} actualizados ({procesados} filas procesadas).");
+                }
+                catch { /* No bloquear */ }
+            }
+
+            return procesados;
+        }
+
+        private static int DetectarFilaHeaders(ExcelWorksheet ws, int cols)
+        {
+            int maxFila = Math.Min(15, ws.Dimension.Rows);
+            for (int r = 1; r <= maxFila; r++)
+            {
+                int hits = 0;
+                for (int c = 1; c <= cols; c++)
+                {
+                    string val = ws.Cells[r, c].Value?.ToString()?.Trim()?.ToUpper() ?? "";
+                    if (val.Contains("CLIENTE") || val.Contains("CONDUCTOR") || val.Contains("TRACTO") || val.Contains("CARRETA"))
+                        hits++;
+                    if (hits >= 2) return r;
+                }
+            }
+            return -1;
+        }
+
+        private static bool FilaVacia(ExcelWorksheet ws, int row, Dictionary<string, int> colMap)
+        {
+            foreach (var kv in colMap)
+            {
+                var v = ws.Cells[row, kv.Value].Value;
+                if (v != null && !string.IsNullOrWhiteSpace(v.ToString())) return false;
+            }
+            return true;
+        }
+
+        private static string LeerTexto(ExcelWorksheet ws, int row, Dictionary<string, int> colMap, string key)
+        {
+            if (!colMap.ContainsKey(key)) return null;
+            object v = ws.Cells[row, colMap[key]].Value;
+            return v?.ToString()?.Trim();
+        }
+
+        private static object LeerCelda(ExcelWorksheet ws, int row, Dictionary<string, int> colMap, string key)
+        {
+            if (!colMap.ContainsKey(key)) return null;
+            return ws.Cells[row, colMap[key]].Value;
+        }
+
+        /// <summary>
+        /// Normaliza un encabezado para comparación robusta:
+        /// MAYÚSCULAS + colapsa espacios múltiples a 1 + trim.
+        /// </summary>
+        private static string NormalizarHeader(string h)
+        {
+            if (string.IsNullOrEmpty(h)) return "";
+            string up = h.ToUpperInvariant().Trim();
+            // Colapsar espacios múltiples (incluye tabs / nbsp)
+            return System.Text.RegularExpressions.Regex.Replace(up, @"\s+", " ");
+        }
+
+        // ============================================================
+        //  Tabla de registros recientes
+        // ============================================================
+        protected void gvRecientes_PageIndexChanging(object sender, GridViewPageEventArgs e)
+        {
+            gvRecientes.PageIndex = e.NewPageIndex;
+            CargarRegistrosRecientes();
+        }
+
+        private void CargarRegistrosRecientes()
+        {
+            try
+            {
+                using (var conn = new SqlConnection(ConnStr))
+                using (var cmd = new SqlCommand("sp_SE_Listar", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Add("@top", SqlDbType.Int).Value = 200;
+
+                    conn.Open();
+                    using (var da = new SqlDataAdapter(cmd))
+                    {
+                        var dt = new DataTable();
+                        da.Fill(dt);
+                        gvRecientes.DataSource = dt;
+                        gvRecientes.DataBind();
+                    }
+                }
+            }
+            catch
+            {
+                gvRecientes.DataSource = null;
+                gvRecientes.DataBind();
+            }
+        }
+
+        // ============================================================
+        //  Helpers
+        // ============================================================
+        private void MostrarAlerta(string mensaje, string tipo)
+        {
+            litAlert.Text = System.Web.HttpUtility.HtmlEncode(mensaje);
+            pnlAlert.Visible = true;
+            switch ((tipo ?? "info").ToLower())
+            {
+                case "success": pnlAlert.CssClass = "se-alert se-alert-success"; break;
+                case "warning": pnlAlert.CssClass = "se-alert se-alert-warning"; break;
+                case "danger":  pnlAlert.CssClass = "se-alert se-alert-danger";  break;
+                default:        pnlAlert.CssClass = "se-alert se-alert-info";    break;
+            }
+        }
+
+        private static int? ObtenerIdUsuarioSesion()
+        {
+            try
+            {
+                var s = System.Web.HttpContext.Current.Session["IdUsuario"];
+                if (s == null) return null;
+                int id;
+                return int.TryParse(s.ToString(), out id) ? id : (int?)null;
+            }
+            catch { return null; }
+        }
+
+        private static void AgregarTexto(SqlCommand cmd, string name, string value, int size)
+        {
+            cmd.Parameters.Add(name, SqlDbType.VarChar, size).Value =
+                string.IsNullOrWhiteSpace(value) ? (object)DBNull.Value : value.Trim();
+        }
+
+        private static void AgregarFecha(SqlCommand cmd, string name, string value)
+        {
+            DateTime dt;
+            if (!string.IsNullOrWhiteSpace(value) && DateTime.TryParse(value, out dt))
+                cmd.Parameters.Add(name, SqlDbType.DateTime).Value = dt;
+            else
+                cmd.Parameters.Add(name, SqlDbType.DateTime).Value = DBNull.Value;
+        }
+
+        private static DateTime? AgregarFechaCelda(SqlCommand cmd, string name, object cellValue, object timeValue = null)
+        {
+            DateTime? resultado = ParsearFechaHora(cellValue, timeValue);
+            cmd.Parameters.Add(name, SqlDbType.DateTime).Value =
+                resultado.HasValue ? (object)resultado.Value : DBNull.Value;
+            return resultado;
+        }
+
+        /// <summary>
+        /// Combina una celda de fecha y, opcionalmente, una celda con la fracción de hora (0..1)
+        /// tal como las guarda el Excel de seguimiento (par fecha+hora por hito).
+        /// </summary>
+        private static DateTime? ParsearFechaHora(object cellValue, object timeValue)
+        {
+            if (cellValue == null || string.IsNullOrWhiteSpace(cellValue.ToString()))
+                return null;
+
+            DateTime baseDate;
+            bool gotBase = false;
+
+            if (cellValue is DateTime dtVal)
+            {
+                baseDate = dtVal;
+                gotBase = true;
+            }
+            else if (cellValue is double dVal)
+            {
+                try { baseDate = DateTime.FromOADate(dVal); gotBase = true; }
+                catch { baseDate = DateTime.MinValue; }
+            }
+            else
+            {
+                double dParsed;
+                if (double.TryParse(cellValue.ToString(),
+                        System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture, out dParsed))
+                {
+                    try { baseDate = DateTime.FromOADate(dParsed); gotBase = true; }
+                    catch { baseDate = DateTime.MinValue; }
+                }
+                else if (DateTime.TryParse(cellValue.ToString(), out baseDate))
+                {
+                    gotBase = true;
+                }
+            }
+
+            if (!gotBase) return null;
+
+            // Si la fecha trae componente horario distinto de 00:00 y no nos dieron hora aparte,
+            // dejarla tal cual.
+            DateTime soloFecha = baseDate.Date;
+            bool fechaTraeHora = baseDate.TimeOfDay.TotalSeconds > 0.5;
+
+            // Procesar columna de hora si vino
+            if (timeValue != null && !string.IsNullOrWhiteSpace(timeValue.ToString()))
+            {
+                double frac;
+                bool gotFrac = false;
+
+                if (timeValue is double dt) { frac = dt; gotFrac = true; }
+                else if (timeValue is DateTime tdt) { frac = tdt.TimeOfDay.TotalDays; gotFrac = true; }
+                else if (double.TryParse(timeValue.ToString(),
+                            System.Globalization.NumberStyles.Any,
+                            System.Globalization.CultureInfo.InvariantCulture, out frac))
+                {
+                    gotFrac = true;
+                }
+                else
+                {
+                    TimeSpan ts;
+                    if (TimeSpan.TryParse(timeValue.ToString(), out ts))
+                    {
+                        frac = ts.TotalDays;
+                        gotFrac = true;
+                    }
+                    else frac = 0;
+                }
+
+                if (gotFrac)
+                {
+                    // Solo tomar la parte fraccionaria (por si llegara un valor >= 1)
+                    double soloFrac = frac - Math.Floor(frac);
+                    return soloFecha.AddDays(soloFrac);
+                }
+            }
+
+            // Sin columna de hora: devolver fecha como está (con hora si la traía)
+            return fechaTraeHora ? baseDate : soloFecha;
+        }
+
+        /// <summary>
+        /// Determina el estado de un registro importado en función de las fechas presentes:
+        ///   - COMPLETADO: hay fecha de término de descarga o salida del destino final.
+        ///   - EN_CURSO  : hay fechas intermedias pero no la final.
+        ///   - PENDIENTE : no hay fechas significativas registradas.
+        /// </summary>
+        private static string DerivarEstado(Dictionary<string, DateTime?> fechas)
+        {
+            DateTime? Get(string k) => fechas.TryGetValue(k, out var v) ? v : null;
+
+            // Indicadores de viaje finalizado
+            if (Get("fhTerminoDescarga").HasValue || Get("fhSalida").HasValue)
+                return "COMPLETADO";
+
+            // Cualquier hito intermedio significa que el viaje arrancó
+            string[] enCurso = {
+                "fhSalidaBase1","fhLlegadaTrujillo","fhIngresoPlanta","fhInicioCarga","fhTerminoCarga",
+                "fhSalidaPlanta","fhLlegadaBase2","fhSalidaBase2","fhLlegadaBodegaNacional",
+                "fhIngresoBodegaNacional","fhSalidaBodegaNacional","fhLlegadaCEBAF","fhCruceEcuador",
+                "fhAutorizacionNacionalizacion","fhLlegadaTCI","fhSalidaTCI","fhLlegadaPlantaEcuador",
+                "fhLlegadaAlmacen","fhIngreso","fhInicioDescarga"
+            };
+            if (enCurso.Any(k => Get(k).HasValue))
+                return "EN_CURSO";
+
+            return "PENDIENTE";
+        }
+
+        private static int ParseIntSafe(string s)
+        {
+            int v;
+            return int.TryParse(s, out v) ? v : 0;
+        }
+
+        // ============================================================
+        //  GRID estilo Excel: carga (JSON) y guardado masivo (UPSERT)
+        // ============================================================
+        private void CargarGrid()
+        {
+            try
+            {
+                bool incluirFinalizados = chkIncluirFinalizados != null && chkIncluirFinalizados.Checked;
+                var rows = new List<Dictionary<string, object>>();
+
+                using (var conn = new SqlConnection(ConnStr))
+                using (var cmd = new SqlCommand("sp_SE_GridListar", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Add("@incluirFinalizados", SqlDbType.Bit).Value = incluirFinalizados ? 1 : 0;
+                    cmd.Parameters.Add("@top", SqlDbType.Int).Value = 500;
+                    conn.Open();
+                    using (var rd = cmd.ExecuteReader())
+                    {
+                        while (rd.Read())
+                        {
+                            var d = new Dictionary<string, object>();
+                            for (int i = 0; i < rd.FieldCount; i++)
+                            {
+                                string name = rd.GetName(i);
+                                object val = rd.IsDBNull(i) ? null : rd.GetValue(i);
+                                if (val is DateTime dt)
+                                    val = dt.ToString("yyyy-MM-ddTHH:mm");
+                                d[name] = val;
+                            }
+                            rows.Add(d);
+                        }
+                    }
+                }
+
+                litGridDataJson.Text = Newtonsoft.Json.JsonConvert.SerializeObject(rows);
+            }
+            catch (Exception ex)
+            {
+                litGridDataJson.Text = "[]";
+                MostrarAlerta("Error al cargar la grilla: " + ex.Message, "danger");
+            }
+        }
+
+        protected void btnRefrescarGrid_Click(object sender, EventArgs e)
+        {
+            CargarGrid();
+            ActivarTab("panel-grid");
+        }
+
+        protected void chkIncluirFinalizados_CheckedChanged(object sender, EventArgs e)
+        {
+            CargarGrid();
+            ActivarTab("panel-grid");
+        }
+
+        protected void btnGuardarGrid_Click(object sender, EventArgs e)
+        {
+            string json = hdnGridChanges.Value;
+            if (string.IsNullOrWhiteSpace(json) || json == "[]")
+            {
+                MostrarAlerta("No hay cambios para guardar.", "warning");
+                ActivarTab("panel-grid");
+                return;
+            }
+
+            int insertados = 0, actualizados = 0, ignorados = 0, errores = 0;
+            int? idUsuario = ObtenerIdUsuarioSesion();
+
+            try
+            {
+                var arr = Newtonsoft.Json.Linq.JArray.Parse(json);
+
+                foreach (var item in arr)
+                {
+                    try
+                    {
+                        string cliente        = (string)item["cliente"];
+                        string fhProg         = (string)item["fhProgramacion"];
+                        string tracto1        = (string)item["tracto1"];
+
+                        // Validación mínima: para crear necesitamos cliente + fhProgramacion + tracto1.
+                        // Si la fila no es nueva (id>0) y faltan claves, igual la mandamos pero el SP devolverá -1.
+                        if (string.IsNullOrWhiteSpace(cliente) ||
+                            string.IsNullOrWhiteSpace(fhProg)  ||
+                            string.IsNullOrWhiteSpace(tracto1))
+                        {
+                            ignorados++;
+                            continue;
+                        }
+
+                        using (var conn = new SqlConnection(ConnStr))
+                        using (var cmd = new SqlCommand("sp_SE_Insertar", conn))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+
+                            AgregarTexto(cmd, "@cliente",          cliente,                              150);
+                            AgregarTexto(cmd, "@conductorOrigen",  (string)item["conductorOrigen"],      150);
+                            AgregarTexto(cmd, "@tracto1",          tracto1,                              20);
+                            AgregarTexto(cmd, "@carreta",          (string)item["carreta"],              20);
+                            AgregarTexto(cmd, "@conductorDestino", (string)item["conductorDestino"],     150);
+                            AgregarTexto(cmd, "@tracto2",          (string)item["tracto2"],              20);
+
+                            AgregarFecha(cmd, "@fhSalidaBase1",                  (string)item["fhSalidaBase1"]);
+                            AgregarFecha(cmd, "@fhLlegadaTrujillo",              (string)item["fhLlegadaTrujillo"]);
+                            AgregarFecha(cmd, "@fhRegistro",                     (string)item["fhRegistro"]);
+                            AgregarFecha(cmd, "@fhProgramacion",                 fhProg);
+                            AgregarFecha(cmd, "@fhIngresoPlanta",                (string)item["fhIngresoPlanta"]);
+                            AgregarFecha(cmd, "@fhInicioCarga",                  (string)item["fhInicioCarga"]);
+                            AgregarFecha(cmd, "@fhTerminoCarga",                 (string)item["fhTerminoCarga"]);
+                            AgregarFecha(cmd, "@fhSalidaPlanta",                 (string)item["fhSalidaPlanta"]);
+                            AgregarFecha(cmd, "@fhLlegadaBase2",                 (string)item["fhLlegadaBase2"]);
+                            AgregarFecha(cmd, "@fhSalidaBase2",                  (string)item["fhSalidaBase2"]);
+                            AgregarFecha(cmd, "@fhLlegadaBodegaNacional",        (string)item["fhLlegadaBodegaNacional"]);
+                            AgregarFecha(cmd, "@fhIngresoBodegaNacional",        (string)item["fhIngresoBodegaNacional"]);
+                            AgregarFecha(cmd, "@fhSalidaBodegaNacional",         (string)item["fhSalidaBodegaNacional"]);
+                            AgregarTexto(cmd, "@bodegaNacional",                 (string)item["bodegaNacional"], 150);
+                            AgregarFecha(cmd, "@fhLlegadaCEBAF",                 (string)item["fhLlegadaCEBAF"]);
+                            AgregarFecha(cmd, "@fhCruceEcuador",                 (string)item["fhCruceEcuador"]);
+                            AgregarFecha(cmd, "@fhAutorizacionNacionalizacion",  (string)item["fhAutorizacionNacionalizacion"]);
+                            AgregarTexto(cmd, "@bodegaEcuatoriana",              (string)item["bodegaEcuatoriana"], 150);
+                            AgregarFecha(cmd, "@fhLlegadaTCI",                   (string)item["fhLlegadaTCI"]);
+                            AgregarFecha(cmd, "@fhSalidaTCI",                    (string)item["fhSalidaTCI"]);
+                            AgregarTexto(cmd, "@bodegaDescarga",                 (string)item["bodegaDescarga"], 150);
+                            AgregarFecha(cmd, "@fhLlegadaPlantaEcuador",         (string)item["fhLlegadaPlantaEcuador"]);
+                            AgregarFecha(cmd, "@fhLlegadaAlmacen",               (string)item["fhLlegadaAlmacen"]);
+                            AgregarFecha(cmd, "@fhIngreso",                      (string)item["fhIngreso"]);
+                            AgregarFecha(cmd, "@fhInicioDescarga",               (string)item["fhInicioDescarga"]);
+                            AgregarFecha(cmd, "@fhTerminoDescarga",              (string)item["fhTerminoDescarga"]);
+                            AgregarFecha(cmd, "@fhSalida",                       (string)item["fhSalida"]);
+
+                            AgregarTexto(cmd, "@motivoRetraso", (string)item["motivoRetraso"], 1000);
+                            cmd.Parameters.Add("@sacosRobados", SqlDbType.Int).Value = ParseIntSafe((string)item["sacosRobados"]);
+                            cmd.Parameters.Add("@sacosRotos",   SqlDbType.Int).Value = ParseIntSafe((string)item["sacosRotos"]);
+                            cmd.Parameters.Add("@sacosMojados", SqlDbType.Int).Value = ParseIntSafe((string)item["sacosMojados"]);
+
+                            string estado = (string)item["estado"];
+                            cmd.Parameters.Add("@estado", SqlDbType.VarChar, 20).Value =
+                                string.IsNullOrWhiteSpace(estado) ? "EN_CURSO" : estado;
+                            cmd.Parameters.Add("@idUsuarioRegistro", SqlDbType.Int).Value = (object)idUsuario ?? DBNull.Value;
+
+                            var outP = new SqlParameter("@idSeguimiento", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                            cmd.Parameters.Add(outP);
+
+                            conn.Open();
+                            cmd.ExecuteNonQuery();
+                            int rv = Convert.ToInt32(outP.Value);
+                            if (rv == -1)      ignorados++;
+                            else if (rv == -2) actualizados++;
+                            else if (rv >  0)  insertados++;
+                        }
+                    }
+                    catch
+                    {
+                        errores++;
+                    }
+                }
+
+                try
+                {
+                    AuditoriaHelper.Registrar(
+                        accion: "UPSERT_GRID",
+                        tablaAfectada: "SeguimientoExportacion",
+                        idRegistroAfectado: "(grid)",
+                        descripcion: $"Grid Excel: {insertados} insertados, {actualizados} actualizados, {ignorados} ignorados, {errores} errores.");
+                }
+                catch { /* no bloquear */ }
+
+                string tipo = errores > 0 ? "warning" : "success";
+                MostrarAlerta(
+                    $"Cambios procesados: ✅ {insertados} nuevos · 🔄 {actualizados} actualizados · ⚠ {ignorados} sin clave · ❌ {errores} con error.",
+                    tipo);
+            }
+            catch (Exception ex)
+            {
+                MostrarAlerta("Error al guardar la grilla: " + ex.Message, "danger");
+            }
+
+            hdnGridChanges.Value = "";
+            CargarGrid();
+            CargarBandeja();
+            CargarRegistrosRecientes();
+            ActivarTab("panel-grid");
+        }
+    }
+}
