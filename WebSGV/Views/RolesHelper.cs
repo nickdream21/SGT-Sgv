@@ -130,6 +130,11 @@ namespace WebSGV.Helpers
                 case "AUDITORIA":
                     return EsAdminSistema();
 
+                // Seguimiento de Exportación: ADMIN, ADMIN DE SISTEMA y SUPERVISOR
+                case "SEGUIMIENTO_EXPORTACION":
+                case "DASHBOARD_EXPORTACION":
+                    return EsAdmin() || EsAdminSistema() || rol == ROL_SUPERVISOR;
+
                 // Páginas accesibles para CONDUCTOR
                 case "DASHBOARD_CONDUCTOR":
                 case "MIS_VIAJES":
