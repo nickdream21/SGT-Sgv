@@ -195,7 +195,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar los datos: " + ex.Message, "danger");
+                MostrarErrorOperacion("Error al cargar los datos. Intente nuevamente.", "CargarDatos", ex);
             }
         }
 
@@ -576,7 +576,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al iniciar lote: " + ex.Message, "danger");
+                MostrarErrorOperacion("Error al iniciar el lote. Intente nuevamente.", "btnIniciarLote_Click", ex);
             }
         }
 
@@ -696,7 +696,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar viajes: " + ex.Message, "danger");
+                MostrarErrorOperacion("Error al cargar viajes del conductor.", "ddlConductor_SelectedIndexChanged", ex);
             }
         }
 
@@ -714,7 +714,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al agregar conductor: " + ex.Message, "danger");
+                MostrarErrorOperacion("Error al agregar conductor al lote.", "btnAgregarConductor_Click", ex);
             }
         }
 
@@ -737,7 +737,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al quitar conductor: " + ex.Message, "danger");
+                MostrarErrorOperacion("Error al quitar conductor del lote.", "gvConductoresLote_RowCommand", ex);
             }
         }
 
@@ -919,7 +919,8 @@ namespace WebSGV.Views
                     }
                     catch (Exception ex)
                     {
-                        errores.Add($"Error con {conductor.NombreConductor}: {ex.Message}");
+                        RegistrarError($"ProcesarLoteCompleto.Conductor:{conductor.NombreConductor}", ex);
+                        errores.Add($"Error al procesar conductor {conductor.NombreConductor}");
                     }
                 }
 
@@ -938,7 +939,8 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                return (false, despachosCreados, ex.Message);
+                RegistrarError("ProcesarLoteCompleto", ex);
+                return (false, despachosCreados, "Se produjo un error interno al procesar el lote.");
             }
         }
 
@@ -1287,7 +1289,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al crear nuevo viaje: " + ex.Message, "danger");
+                MostrarErrorOperacion("Error al crear nuevo viaje.", "btnCrearNuevoViaje_Click", ex);
             }
         }
 
@@ -1324,7 +1326,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar historial de viajes: " + ex.Message, "danger");
+                MostrarErrorOperacion("Error al cargar historial de viajes.", "btnVerHistorialViajes_Click", ex);
             }
         }
 
@@ -1354,11 +1356,11 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.TraceError("CargarHistorialViajes: " + ex.Message);
+                RegistrarError("CargarHistorialViajes", ex);
                 // Mostrar grilla vacía si falla la carga
                 gvHistorialViajes.DataSource = null;
                 gvHistorialViajes.DataBind();
-                MostrarMensaje("Error al cargar el historial: " + ex.Message, "danger");
+                MostrarMensaje("Error al cargar el historial.", "danger");
             }
         }
 
@@ -1395,7 +1397,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al reabrir viaje: " + ex.Message, "danger");
+                MostrarErrorOperacion("Error al reabrir viaje.", "gvHistorialViajes_RowCommand", ex);
             }
         }
 
@@ -1451,10 +1453,21 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            lblMensaje.Text = mensaje;
+            lblMensaje.Text = HttpUtility.HtmlEncode(mensaje ?? string.Empty);
             lblMensaje.CssClass = $"alert alert-{tipo} alert-dismissible fade show";
             pnlMensajes.Visible = true;
             UpdatePanelMain.Update();
+        }
+
+        private void RegistrarError(string contexto, Exception ex)
+        {
+            System.Diagnostics.Trace.TraceError($"{contexto}: {ex}");
+        }
+
+        private void MostrarErrorOperacion(string mensajeUsuario, string contexto, Exception ex)
+        {
+            RegistrarError(contexto, ex);
+            MostrarMensaje(mensajeUsuario, "danger");
         }
 
         #endregion

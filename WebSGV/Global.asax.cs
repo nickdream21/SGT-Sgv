@@ -20,6 +20,11 @@ namespace WebSGV
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
 
+            // EPPlus 8+ requiere configurar la licencia antes de usar ExcelPackage.
+            // Uso no comercial / personal (sin clave). Si se va a usar comercialmente,
+            // reemplazar por SetCommercial("CLAVE") con una licencia válida.
+            OfficeOpenXml.ExcelPackage.License.SetNonCommercialPersonal("SGV");
+
             // Crear tabla de auditoría si no existe
             AuditoriaHelper.CrearTablaAuditoriaSiNoExiste();
         }
