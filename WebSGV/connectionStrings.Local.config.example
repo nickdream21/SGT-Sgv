@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ejemplo de connectionStrings local. NO subir este archivo al repositorio.
+  Pasos:
+  1) Copia este archivo como connectionStrings.Local.config
+  2) Modifica el valor de la cadena de conexión 'ConexionSGV' con tu servidor/usuario/clave local
+  3) Asegúrate de que Web.config contiene: <connectionStrings configSource="connectionStrings.Local.config" />
+-->
+<connectionStrings>
+  <add name="ConexionSGV" connectionString="Server=TU_SERVIDOR;Database=TU_BD;User Id=TU_USUARIO;Password=TU_CLAVE;MultipleActiveResultSets=True;" providerName="System.Data.SqlClient" />
+</connectionStrings>
