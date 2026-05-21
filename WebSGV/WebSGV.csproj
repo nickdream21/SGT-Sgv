@@ -190,6 +190,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include=".gitignore" />
     <Content Include="About.aspx" />
     <Content Include="Contact.aspx" />
     <Content Include="Content\bootstrap-grid.css" />
@@ -329,6 +330,7 @@
     <Content Include="connectionStrings.config" />
     <Content Include="appSettings.Secrets.config" />
     <Content Include="dashboard\PLAN_MODERNIZACION.md" />
+    <Content Include="connectionStrings.Local.config.example" />
     <None Include="Scripts\jquery-3.7.0.intellisense.js" />
     <Content Include="Scripts\BuscarOrdenViaje.js" />
     <Content Include="Scripts\Custom\JavaScript.js" />
