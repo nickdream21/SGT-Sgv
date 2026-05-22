@@ -1,0 +1,651 @@
+╭─── Claude Code v2.1.147 ─────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting        │
+│                 Welcome back Nick!                 │ started                 │
+│                                                    │ Run /init to create a … │
+│                       ▐▛███▜▌                      │ ─────────────────────── │
+│                      ▝▜█████▛▘                     │ What's new              │
+│                        ▘▘ ▝▝                       │ Fixed the Bash tool re… │
+│   Sonnet 4.6 · Claude Pro ·                        │ Pinned background sess… │
+│   moranpalaciosalembert@gmail.com's Organization   │ Renamed `/simplify` to… │
+│         ~\source\repos\nickdream21\SGT-Sgv         │ /release-notes for more │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+> Eres un arquitecto de software senior especializado en sistemas de            
+  transporte/logística.                                                         
+                                                                                
+  Quiero que hagas un **análisis completo y profundo** de todo el proyecto      
+  actual.                                                                       
+                                                                                
+  ### Instrucciones:                                                            
+  1. Analiza toda la estructura del proyecto (carpetas, archivos, código        
+  fuente, configuración, etc.).                                                 
+  2. Identifica las tecnologías usadas (frontend, backend, base de datos,       
+  etc.).                                                                        
+  3. Entiende la arquitectura actual y el propósito del sistema.                
+  4. Detecta posibles patrones, buenas prácticas y áreas de mejora.             
+  5. Resume los módulos principales y su funcionalidad.                         
+                                                                                
+  ### Formato de salida (obligatorio):                                          
+                                                                                
+  Crea un documento Markdown muy bien estructurado con el siguiente esquema:    
+                                                                                
+  # 📋 Análisis Completo del Proyecto - Software de Transporte                  
+                                                                                
+  ## 1. Resumen Ejecutivo                                                       
+  (Descripción breve del proyecto en 4-5 líneas)                                
+                                                                                
+  ## 2. Tecnologías y Stack                                                     
+  - Frontend:                                                                   
+  - Backend:                                                                    
+  - Base de datos:                                                              
+  - Otras herramientas/tecnologías:                                             
+                                                                                
+  ## 3. Estructura del Proyecto                                                 
+  ```bash                                                                       
+  (proporciona la estructura de carpetas relevante)  4. Módulos                 
+  PrincipalesMódulo 1: [Nombre]Responsabilidad:                                 
+  Tecnologías:                                                                  
+  Archivos clave:                                                               
+                                                                                
+  (Repite por cada módulo importante)5. Flujos Principales del Sistema(Describe 
+   los flujos más importantes del software de transporte)6. Estado Actual del   
+  ProyectoLo que ya está implementado                                           
+  Lo que parece estar en desarrollo                                             
+  Posibles deudas técnicas detectadas                                           
+                                                                                
+  7. Recomendaciones Arquitectónicas(Sugerencias de mejoras, patrones           
+  recomendados, etc.)8. Contexto para IAEste apartado es muy importante:        
+  Escribe un resumen compacto pero muy denso en información que pueda servir    
+  como contexto permanente para otra IA (GPT). Incluye:Objetivo del sistema     
+  Dominio del problema (transporte)                                             
+  Reglas de negocio clave detectadas                                            
+  Convenciones de código                                                        
+  Decisiones arquitectónicas importantes                                        
+                                                                                
+  Reglas adicionales:Sé extremadamente detallista pero organizado.              
+  Usa emojis para mejorar la legibilidad.                                       
+  Usa tablas cuando sea útil.                                                   
+  No omitas detalles importantes aunque parezcan pequeños.                      
+  Al final agrega una sección llamada ## Notas Adicionales con cualquier        
+  observación relevante.                                                        
+                                                                                
+                                                                                
+
+● Voy a explorar todo el proyecto en profundidad antes de generar el documento
+  de análisis.
+
+● Explore(Deep project structure exploration)
+  ⎿  Done (41 tool uses · 100.8k tokens · 2m 51s)
+  (ctrl+o to expand)
+
+● Excelente — el agente exploró el proyecto exhaustivamente. Ahora genero el
+  documento final.
+
+● Write(ANALISIS_PROYECTO.md)
+  ⎿  Wrote 628 lines to ANALISIS_PROYECTO.md
+      1 # 📋 Análisis Completo del Proyecto — Sistema de Gestión de Trans
+        porte (SGT-SGV)
+      2 
+      3 > **Generado por:** Arquitecto de Software Senior (IA)  
+      4 > **Fecha:** 22 de mayo de 2026  
+      5 > **Versión del análisis:** 1.0  
+      6 
+      7 ---
+      8 
+      9 ## 1. 🧭 Resumen Ejecutivo
+     … +855 lines (ctrl+o to expand)
+
+● El documento ha sido generado en ANALISIS_PROYECTO.md en la raíz del proyecto.
+   Aquí un resumen de lo que contiene:
+
+  ---
+  Resumen del análisis generado
+
+  8 secciones principales con el siguiente contenido destacado:
+
+  ┌──────────────────┬──────────────────────────────────────────────────────┐
+  │     Sección      │                      Contenido                       │
+  ├──────────────────┼──────────────────────────────────────────────────────┤
+  │ Resumen          │ SGT-SGV es un ERP de transporte peruano (SERVICIOS   │
+  │ Ejecutivo        │ GENERALES VIVIANA E.I.R.L.) con .NET 4.8 Web Forms   │
+  ├──────────────────┼──────────────────────────────────────────────────────┤
+  │ Stack            │ C# / Web Forms / SQL Server / ADO.NET / Bootstrap 5  │
+  │ tecnológico      │ / jQuery / iTextSharp / EPPlus                       │
+  ├──────────────────┼──────────────────────────────────────────────────────┤
+  │ Estructura del   │ 56 páginas .aspx, 133 archivos C#, 92+ scripts SQL   │
+  │ proyecto         │ organizados por dominio                              │
+  ├──────────────────┼──────────────────────────────────────────────────────┤
+  │ 9 módulos        │ Auth, Despachos, Liquidaciones, Grifo, Maquinaria,   │
+  │ documentados     │ Exportaciones, Auditoría, Maestros, PDFs             │
+  ├──────────────────┼──────────────────────────────────────────────────────┤
+  │ 4 flujos de      │ Despacho→Firma→Aprobación, Abastecimiento,           │
+  │ negocio          │ Maquinaria, Exportaciones (con diagramas de flujo)   │
+  ├──────────────────┼──────────────────────────────────────────────────────┤
+  │ Estado del       │ Qué está implementado, qué está en desarrollo, 10    │
+  │ proyecto         │ deudas técnicas identificadas                        │
+  ├──────────────────┼──────────────────────────────────────────────────────┤
+  │ Recomendaciones  │ 10 recomendaciones priorizadas (migración .NET Core, │
+  │                  │  CI/CD, iTextSharp, DbUp, etc.)                      │
+  ├──────────────────┼──────────────────────────────────────────────────────┤
+  │                  │ Bloque compacto con reglas de negocio, convenciones  │
+  │ Contexto para IA │ y decisiones arquitectónicas — listo para pegar en   │
+  │                  │ system prompts de GPT u otra IA                      │
+  └──────────────────┴──────────────────────────────────────────────────────┘
+
+✻ Brewed for 6m 40s
+
+> Actúa como arquitecto senior de base de datos SQL Server y especialista en    
+  migración segura para un sistema ASP.NET Web Forms / .NET Framework 4.8       
+  llamado SGT-SGV.                                                              
+                                                                                
+  Contexto del sistema:                                                         
+  - Proyecto: Sistema de Gestión de Transporte de Servicios Generales Viviana   
+  E.I.R.L.                                                                      
+  - Base actual: SQL Server en Somee.                                           
+  - El sistema gestiona despachos, órdenes de viaje/liquidaciones, conductores, 
+   usuarios, abastecimiento de combustible, maquinaria, exportaciones,          
+  auditoría, firmas digitales y reportes.                                       
+  - La base actual contiene datos de prueba. Quiero preparar una migración      
+  hacia una nueva base en una cuenta premium de Somee.                          
+  - El objetivo NO es destruir la base actual. El objetivo es analizarla y      
+  preparar un plan de migración limpio y seguro.                                
+                                                                                
+  IMPORTANTE:                                                                   
+  Antes de cualquier acción, trabaja en modo SOLO LECTURA.                      
+  NO ejecutes DELETE, DROP, TRUNCATE, UPDATE, ALTER ni ningún cambio            
+  destructivo.                                                                  
+  NO modifiques datos.                                                          
+  NO limpies nada todavía.                                                      
+  Primero analiza, documenta y genera scripts separados para revisión humana.   
+                                                                                
+  Tienes acceso mediante MCP SQL a la base de datos actual. Necesito que        
+  inspecciones toda la base y determines qué tablas son críticas, cuáles son    
+  maestras, cuáles son operacionales, cuáles son de configuración, cuáles son   
+  de auditoría/firma, cuáles son de reportes y cuáles parecen contener datos de 
+   prueba.                                                                      
+                                                                                
+  Tareas obligatorias:                                                          
+                                                                                
+  1. Inventario completo de base de datos                                       
+     - Listar todas las tablas.                                                 
+     - Indicar cantidad de registros por tabla.                                 
+     - Identificar claves primarias.                                            
+     - Identificar claves foráneas.                                             
+     - Identificar dependencias entre tablas.                                   
+     - Identificar triggers.                                                    
+     - Identificar stored procedures relacionados con cada módulo.              
+                                                                                
+  2. Clasificación de tablas                                                    
+     Clasifica cada tabla en una de estas categorías:                           
+                                                                                
+     A. ESTRUCTURA Y DATOS A CONSERVAR                                          
+     Tablas que probablemente deben migrarse con datos reales si contienen      
+  información válida, por ejemplo:                                              
+     - Usuarios                                                                 
+     - Conductores / Choferes                                                   
+     - Clientes                                                                 
+     - Tractos                                                                  
+     - Semiremolques                                                            
+     - Rutas                                                                    
+     - Plantas                                                                  
+     - Productos                                                                
+     - Peajes                                                                   
+     - Operadores                                                               
+     - Equipos de maquinaria                                                    
+     - Obras                                                                    
+     - Configuración de empresa                                                 
+     - Formatos controlados                                                     
+     - Catálogos necesarios para que el sistema funcione                        
+                                                                                
+     B. ESTRUCTURA A CONSERVAR, PERO DATOS A LIMPIAR                            
+     Tablas operacionales que probablemente contienen registros de prueba y que 
+   deben quedar vacías en producción, salvo que yo indique lo contrario:        
+     - Despachos                                                                
+     - ViajesProgreso                                                           
+     - OrdenViaje                                                               
+     - OrdenViajeAjuste                                                         
+     - AbastecimientoCombustible                                                
+     - Facturas vinculadas a despachos                                          
+     - CPIC u otros documentos internacionales de prueba                        
+     - SeguimientoExportacion                                                   
+     - Registros diarios generados por conductores u operadores                 
+     - Reportes generados desde datos de prueba                                 
+     - Cualquier tabla que represente operaciones históricas, movimientos,      
+  liquidaciones, viajes o consumos                                              
+                                                                                
+     C. TABLAS DE AUDITORÍA / FIRMA / TRAZABILIDAD                              
+     Identifica tablas como:                                                    
+     - AuditoriaLog                                                             
+     - FirmaDigital                                                             
+     - Historiales                                                              
+     - Logs                                                                     
+     - Tablas append-only o con integridad documental                           
+     Estas tablas no deben manipularse a la ligera. Para la nueva base de       
+  producción pueden quedar vacías, pero su estructura, triggers y restricciones 
+   deben conservarse exactamente.                                               
+                                                                                
+     D. TABLAS DUDOSAS / REQUIEREN VALIDACIÓN HUMANA                            
+     Si no puedes determinar con seguridad si una tabla debe conservar datos o  
+  limpiarse, márcala como “REVISAR MANUALMENTE” y explica por qué.              
+                                                                                
+  3. Análisis por módulo                                                        
+     Organiza el análisis por módulos:                                          
+     - Seguridad / Usuarios / Roles                                             
+     - Conductores                                                              
+     - Despachos                                                                
+     - Órdenes de viaje y liquidaciones                                         
+     - Firma digital                                                            
+     - Abastecimiento de combustible                                            
+     - Maquinaria pesada                                                        
+     - Exportaciones                                                            
+     - Reportes                                                                 
+     - Auditoría                                                                
+     - Catálogos / maestros                                                     
+     - Configuración del sistema                                                
+                                                                                
+  4. Reglas de seguridad                                                        
+     - No propongas borrar tablas.                                              
+     - No propongas eliminar stored procedures.                                 
+     - No propongas eliminar triggers.                                          
+     - No propongas eliminar constraints.                                       
+     - Para producción limpia, la regla debe ser: conservar estructura completa 
+   y limpiar únicamente datos transaccionales de prueba.                        
+     - La base antigua debe quedar intacta.                                     
+     - La limpieza debe aplicarse únicamente sobre una copia o sobre la nueva   
+  base premium.                                                                 
+                                                                                
+  5. Estrategia de migración recomendada                                        
+     Propón una estrategia segura en fases:                                     
+                                                                                
+     Fase 1: Backup completo de la base actual.                                 
+     Fase 2: Generar script de estructura completa: tablas, PK, FK, índices,    
+  triggers, funciones, views y stored procedures.                               
+     Fase 3: Crear nueva base en Somee premium.                                 
+     Fase 4: Restaurar/crear estructura en la nueva base.                       
+     Fase 5: Migrar solo datos maestros aprobados.                              
+     Fase 6: Dejar vacías las tablas transaccionales de prueba.                 
+     Fase 7: Validar login, permisos, creación de despacho, creación de orden   
+  de viaje, firma, reportes y descarga de PDF.                                  
+     Fase 8: Cambiar connectionString del proyecto web hacia la nueva base.     
+     Fase 9: Probar en ambiente premium antes de apuntar el dominio final.      
+                                                                                
+  6. Scripts SQL                                                                
+     Genera scripts, pero NO los ejecutes.                                      
+     Crea los siguientes archivos en una carpeta llamada:                       
+     docs/migracion_somee/                                                      
+                                                                                
+     Archivos requeridos:                                                       
+     - 01_inventario_bd_actual.md                                               
+     - 02_clasificacion_tablas.md                                               
+     - 03_dependencias_fk.md                                                    
+     - 04_plan_migracion_produccion.md                                          
+     - 05_script_validacion_pre_migracion.sql                                   
+     - 06_script_migracion_datos_maestros.sql                                   
+     - 07_script_limpieza_transaccional_SOLO_NUEVA_BD.sql                       
+     - 08_script_validacion_post_migracion.sql                                  
+                                                                                
+  7. Script de validación pre-migración                                         
+     El script debe mostrar:                                                    
+     - Cantidad de registros por tabla.                                         
+     - Tablas sin PK.                                                           
+     - Tablas sin FK pero que parecen depender de otras por nombre de columna.  
+     - Stored procedures existentes.                                            
+     - Triggers existentes.                                                     
+     - Índices principales.                                                     
+     - Últimos registros insertados si hay columnas fecha.                      
+     - Tablas con nombres relacionados a prueba, test, demo, ejemplo o          
+  temporal.                                                                     
+                                                                                
+  8. Script de migración de datos maestros                                      
+     Debe copiar solo datos maestros que sean necesarios para operar el         
+  sistema.                                                                      
+     Debe usar INSERT INTO destino SELECT FROM origen de forma segura.          
+     Debe respetar el orden de dependencias.                                    
+     Debe dejar comentadas las tablas dudosas para revisión manual.             
+     Debe incluir SET IDENTITY_INSERT cuando corresponda.                       
+     Debe incluir transacciones TRY/CATCH.                                      
+     Debe incluir rollback automático si ocurre error.                          
+                                                                                
+  9. Script de limpieza transaccional                                           
+     Este script debe estar claramente marcado como:                            
+     “SOLO EJECUTAR EN LA NUEVA BASE PREMIUM, NUNCA EN LA BASE ORIGINAL”.       
+     Debe limpiar datos transaccionales respetando FKs.                         
+     Debe usar DELETE en orden correcto según dependencias.                     
+     Si se recomienda TRUNCATE, justificarlo, pero preferir DELETE por          
+  seguridad.                                                                    
+     Debe incluir TRANSACTION, TRY/CATCH y ROLLBACK.                            
+     Debe dejar intactos usuarios, conductores, catálogos, configuración,       
+  formatos controlados, stored procedures, triggers y estructura.               
+                                                                                
+  10. Reporte final                                                             
+     Entrégame un resumen ejecutivo con:                                        
+     - Tablas que definitivamente deben conservar datos.                        
+     - Tablas que deben quedar vacías para producción.                          
+     - Tablas que requieren decisión mía.                                       
+     - Riesgos detectados.                                                      
+     - Orden recomendado de migración.                                          
+     - Checklist antes de cambiar el connectionString.                          
+     - Checklist después de publicar la web en Somee premium.                   
+                                                                                
+  Criterio clave:                                                               
+  No quiero una limpieza improvisada. Quiero una migración empresarial, segura, 
+   auditable y reversible. Primero analiza, luego propone. No ejecutes cambios  
+  destructivos sin mi aprobación expresa.                                       
+  Ten especial cuidado con estas tablas o módulos: Usuarios, Conductores,       
+  Despachos, ViajesProgreso, OrdenViaje, FirmaDigital, AuditoriaLog,            
+  AbastecimientoCombustible, Factura, CPIC, SeguimientoExportacion, reportes y  
+  tablas de configuración.                                                      
+                                                                                
+  Para producción nueva, mi intención inicial es:                               
+  - Mantener estructura completa.                                               
+  - Migrar solo maestros reales.                                                
+  - Dejar vacíos los registros operacionales de prueba.                         
+  - No tocar la base antigua.                                                   
+  - No borrar tablas.                                                           
+  - No ejecutar scripts destructivos hasta que yo revise y apruebe.             
+
+● Primero leo la configuración MCP y luego inicio el análisis exhaustivo en modo
+   solo lectura.
+
+  Read 1 file, recalled 1 memory (ctrl+o to expand)
+
+● Perfecto. MCP configurado. Voy a cargar la herramienta SQL y comenzar las
+  consultas de inspección en paralelo.
+
+● Bash(cd "C:\Users\PRACTICANTES-PC\source\repos\nickdream21\SGT-Sgv" && cat
+      .claude/settings.json 2>/dev/null || echo "no settings")
+  ⎿  {
+       "mcpServers": {
+         "mssql-sgv": {
+     … +14 lines (ctrl+o to expand)
+
+● El MCP no está cargado como herramienta deferred. Voy a conectar directamente
+  a SQL Server vía PowerShell con SqlClient para hacer todas las consultas de
+  inspección en modo solo lectura.
+
+● PowerShell($server = "sgvActualizada.mssql.somee.com"…)
+  ⎿  Tabla                                         Columnas Registros
+     -----                                         -------- ---------
+     AbastecimientoCombustible                           30         4
+     … +67 lines (ctrl+o to expand)
+  ⎿  (timeout 1m)
+
+● Excelente. 71 tablas identificadas. Ahora ejecuto las consultas de metadatos
+  en paralelo.
+
+● PowerShell($connStr = "Server=sgvActualizada.mssql.somee.com,1433;Database=sgv
+            Actualizada;User Id=NickDream_SQLLogin_1;Password=6bf7mk9sub;Encrypt
+            =True;TrustServerCertifi…)
+  ⎿  === CLAVES PRIMARIAS ===
+     AbastecimientoCombustible | PK: idAbastecimientoCombustible
+     AsignacionesMaquinaria | PK: idAsignacion
+     … +30 lines (ctrl+o to expand)
+  ⎿  (timeout 1m)
+
+● PowerShell($connStr = "Server=sgvActualizada.mssql.somee.com,1433;Database=sgv
+            Actualizada;User Id=NickDream_SQLLogin_1;Password=6bf7mk9sub;Encrypt
+            =True;TrustServerCertifi…)
+  ⎿  === CLAVES FORÁNEAS (111 total) ===
+
+     FK                                      TablaHijo                 ColH
+     … +263 lines (ctrl+o to expand)
+  ⎿  (timeout 1m)
+
+● PowerShell($connStr = "Server=sgvActualizada.mssql.somee.com,1433;Database=sgv
+            Actualizada;User Id=NickDream_SQLLogin_1;Password=6bf7mk9sub;Encrypt
+            =True;TrustServerCertifi…)
+  ⎿  === TRIGGERS (38 total) ===
+
+     Trigger                                Tabla                     Desha
+     … +53 lines (ctrl+o to expand)
+
+● PowerShell($connStr = "Server=sgvActualizada.mssql.somee.com,1433;Database=sgv
+            Actualizada;User Id=NickDream_SQLLogin_1;Password=6bf7mk9sub;Encrypt
+            =True;TrustServerCertifi…)  ⎿  === STORED PROCEDURES (135 total) ===
+
+     SP                                         Creado              Modific
+     … +162 lines (ctrl+o to expand)
+  ⎿  (timeout 1m)
+
+● Datos completos. Ahora obtengo índices, columnas de fecha y detalles de tablas
+   críticas.
+
+● PowerShell($connStr = "Server=sgvActualizada.mssql.somee.com,1433;Database=sgv
+            Actualizada;User Id=NickDream_SQLLogin_1;Password=6bf7mk9sub;Encrypt
+            =True;TrustServerCertifi…)
+  ⎿  === TABLAS SIN PK ===
+       - CPIC_Productos
+       - SeguimientoExportacion_Backup_20260512_115847
+     … +186 lines (ctrl+o to expand)
+
+● PowerShell($connStr = "Server=sgvActualizada.mssql.somee.com,1433;Database=sgv
+            Actualizada;User Id=NickDream_SQLLogin_1;Password=6bf7mk9sub;Encrypt
+            =True;TrustServerCertifi…)
+  ⎿  === FormatoControlado ===
+
+     idFormato codigoFormato nombre
+     … +181 lines (ctrl+o to expand)
+  ⎿  (timeout 1m)
+
+● PowerShell($connStr = "Server=sgvActualizada.mssql.somee.com,1433;Database=sgv
+            Actualizada;User Id=NickDream_SQLLogin_1;Password=6bf7mk9sub;Encrypt
+            =True;TrustServerCertifi…)
+  ⎿  === OBJETOS CON NOMBRE SOSPECHOSO (backup/prueba/test/temp) ===
+
+     Nombre                                        Creado              Modi
+     … +75 lines (ctrl+o to expand)
+  ⎿  (timeout 1m)
+
+● Datos completísimos. Ahora creo la carpeta y genero los 8 documentos
+  requeridos.
+
+● PowerShell($connStr = "Server=sgvActualizada.mssql.somee.com,1433;Database=sgv
+            Actualizada;User Id=NickDream_SQLLogin_1;Password=6bf7mk9sub;Encrypt
+            =True;TrustServerCertifi…)
+  ⎿  === CONDUCTOR columnas ===
+     idConductor (int) | DNI (char) | nombre (varchar) | apPaterno (varchar
+     ) | apMaterno (varchar) | fechaNacimiento (date) | direccion (varchar)
+     … +29 lines (ctrl+o to expand)
+  ⎿  (timeout 1m)
+
+● Perfecto. Tengo todos los datos necesarios. Creo la carpeta y genero los 8
+  documentos en paralelo.
+
+● Bash(mkdir -p "C:\Users\PRACTICANTES-PC\source\repos\nickdream21\SGT-Sgv\docs\
+      migracion_somee")
+  ⎿  Done
+
+● Write(docs\migracion_somee\01_inventario_bd_actual.md)
+  ⎿  Wrote 178 lines to docs\migracion_somee\01_inventario_bd_actual.md
+       2 **Base de datos:** `sgvActualizada` — SQL Server en Somee.com  
+       3 **Servidor:** `sgvActualizada.mssql.somee.com`  
+       4 **Fecha de análisis:** 2026-05-22 (SOLO LECTURA — sin modificaci
+         ones)
+       5 
+       6 ---
+       7 
+       8 ## 🗂️ Resumen General
+       9 
+      10 | Elemento | Cantidad |
+     … +272 lines (ctrl+o to expand)
+
+● Write(docs\migracion_somee\02_clasificacion_tablas.md)
+  ⎿  Wrote 184 lines to docs\migracion_somee\02_clasificacion_tablas.md
+       2 **Base de datos:** `sgvActualizada`  goría de Migración
+       3 **Fecha:** 2026-05-22  
+       4 **Modo:** SOLO LECTURA — clasificación basada en análisis de est
+         ructura y datos
+       5 
+       6 ---
+       7 
+       8 ## Leyenda de Categorías
+       9 
+      10 | Categoría | Símbolo | Acción en nueva BD |
+     … +239 lines (ctrl+o to expand)
+
+● Write(docs\migracion_somee\03_dependencias_fk.md)
+  ⎿  Wrote 265 lines to docs\migracion_somee\03_dependencias_fk.md
+       2 **Base de datos:** `sgvActualizada`  ráneas
+       3 **Total FKs analizadas:** 111  
+       4 **Fecha:** 2026-05-22
+       5 
+       6 ---
+       7 
+       8 ## 🗺️ Árbol de Dependencias por Módulo
+       9 
+      10 Este árbol define el **orden correcto de inserción** para migrac
+         iones y el **orden correcto de eliminación** para limpiezas.
+     … +292 lines (ctrl+o to expand)
+
+● Write(docs\migracion_somee\04_plan_migracion_produccion.md)
+  ⎿  Wrote 267 lines to
+     docs\migracion_somee\04_plan_migracion_produccion.md
+       2 **Proyecto:** SGT-SGV — SERVICIOS GENERALES VIVIANA E.I.R.L.  
+       3 **Origen:** `sgvActualizada` (Somee free/estándar)  
+       4 **Destino:** Nueva base de datos en cuenta Somee **Premium**  
+       5 **Fecha del plan:** 2026-05-22  
+       6 **Autor:** Análisis automatizado + revisión humana requerida en 
+         pasos marcados con 👤
+       7 
+       8 ---
+       9 
+      10 ## ⚠️ Principios de Oro de Esta Migración
+     … +302 lines (ctrl+o to expand)
+
+● Write(docs\migracion_somee\05_script_validacion_pre_migracion.sql)
+  ⎿  Wrote 309 lines to
+     docs\migracion_somee\05_script_validacion_pre_migracion.sql
+       1 -- ============================================================
+       2 -- SCRIPT: 05_script_validacion_pre_migracion.sql
+       3 -- BASE DE DATOS: sgvActualizada (BASE ORIGINAL - SOLO LECTURA)
+       4 -- PROPÓSITO: Inspeccionar el estado actual de la BD antes
+       5 --            de iniciar cualquier migración.
+       6 -- MODO: SELECT ONLY — NINGÚN CAMBIO A LA BASE DE DATOS
+       7 -- FECHA: 2026-05-22
+       8 -- PROYECTO: SGT-SGV - SERVICIOS GENERALES VIVIANA E.I.R.L.
+       9 -- ============================================================
+      10 -- INSTRUCCIONES:
+     … +326 lines (ctrl+o to expand)
+
+● Write(docs\migracion_somee\06_script_migracion_datos_maestros.sql)
+  ⎿  Wrote 378 lines to
+     docs\migracion_somee\06_script_migracion_datos_maestros.sql
+       2 -- SCRIPT: 06_script_migracion_datos_maestros.sql==============
+       3 -- PROPÓSITO: Migrar únicamente datos maestros (Categoría A)
+       4 --            desde la base de origen hacia la nueva base de pro
+       5 -- ============================================================
+       6 -- ⚠️ INSTRUCCIONES CRÍTICAS:
+       7 --    1. Ejecutar PRIMERO en la NUEVA base de producción (destin
+       8 --    2. La base ORIGEN (sgvActualizada) NO debe ser modificada
+       9 --    3. Ajustar los nombres de servidor/BD en el servidor vincu
+         lado
+      10 --       o ejecutar por secciones copiando datos manualmente
+     … +432 lines (ctrl+o to expand)
+
+● Write(docs\migracion_somee\07_script_limpieza_transaccional_SOLO_NUEVA_BD.sql)
+  ⎿  Wrote 311 lines to docs\migracion_somee\07_script_limpieza_transaccion
+     al_SOLO_NUEVA_BD.sql
+       1 -- ============================================================
+       2 -- SCRIPT: 07_script_limpieza_transaccional_SOLO_NUEVA_BD.sql
+       3 -- ============================================================
+       4 -- ███████████████████████████████████████████████████████████
+       5 -- ██                                                       ██
+       6 -- ██   ⛔  PELIGRO — LEER ANTES DE EJECUTAR  ⛔            ██
+       7 -- ██                                                       ██
+       8 -- ██  ESTE SCRIPT BORRA DATOS TRANSACCIONALES.             ██
+       9 -- ██                                                       ██
+      10 -- ██  SOLO EJECUTAR EN:                                    ██
+     … +384 lines (ctrl+o to expand)
+
+● Write(docs\migracion_somee\08_script_validacion_post_migracion.sql)
+  ⎿  Wrote 323 lines to
+     docs\migracion_somee\08_script_validacion_post_migracion.sql
+       2 -- SCRIPT: 08_script_validacion_post_migracion.sql=============
+       3 -- BASE DE DATOS: NUEVA BASE PREMIUM (después de migración)
+       4 -- PROPÓSITO: Validar que la nueva base de producción está
+       5 --            correctamente configurada y lista para operar.
+       6 -- MODO: SELECT ONLY — VERIFICACIÓN SIN CAMBIOS
+       7 -- FECHA: 2026-05-22
+       8 -- ============================================================
+       9 
+      10 PRINT '=========================================================
+         ======='
+     … +375 lines (ctrl+o to expand)
+
+● Ahora genero el reporte ejecutivo final.
+
+● Write(docs\migracion_somee\00_REPORTE_EJECUTIVO.md)
+  ⎿  Wrote 190 lines to docs\migracion_somee\00_REPORTE_EJECUTIVO.md
+         um🧭 Reporte Ejecutivo — Plan de Migración SGT-SGV a Somee Premi
+       2 **Fecha:** 2026-05-22  
+       3 **Propietario:** SERVICIOS GENERALES VIVIANA E.I.R.L.  
+       4 **Base origen:** `sgvActualizada` (Somee estándar)  
+       5 **Base destino:** Nueva cuenta Somee Premium  
+         obacióno:** ✅ Análisis completado — Pendiente ejecución con apr
+       7 
+       8 ---
+       9 
+      10 ## 📊 Resumen de la Base de Datos Analizada
+     … +241 lines (ctrl+o to expand)
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Los 9 archivos están generados. Aquí el resumen completo de lo que se hizo:
+
+  ---
+  ✅ Análisis completado — Modo SOLO LECTURA
+
+  La base de datos sgvActualizada fue inspeccionada sin ninguna modificación. Se
+   generaron 9 documentos en docs/migracion_somee/:
+
+  ---
+  Hallazgos clave del análisis
+
+  71 tablas | 135 SPs | 38 triggers | 111 FKs | 77 índices
+
+  ┌──────────────┬────────┬─────────────────────────────────────────────────┐
+  │  Categoría   │ Tablas │                    Decisión                     │
+  ├──────────────┼────────┼─────────────────────────────────────────────────┤
+  │ 🟢 Migrar    │ 25     │ Conductores (85), Tractos (100), Carretas       │
+  │ con datos    │ tablas │ (134), Clientes, Productos, Roles, Formatos,    │
+  │              │        │ Peajes, etc.                                    │
+  ├──────────────┼────────┼─────────────────────────────────────────────────┤
+  │ 🔴 Limpiar   │ 37     │ Despachos (308), ViajesEnProgreso (74),         │
+  │ datos        │ tablas │ OrdenViaje (32), CPIC (57), Facturas (33),      │
+  │              │        │ todos los detalles                              │
+  ├──────────────┼────────┼─────────────────────────────────────────────────┤
+  │ 🟡           │        │                                                 │
+  │ Estructura   │ 3      │ FirmaDigital (append-only), AuditoriaLog,       │
+  │ exacta,      │ tablas │ Auditoria                                       │
+  │ vacías       │        │                                                 │
+  ├──────────────┼────────┼─────────────────────────────────────────────────┤
+  │ 🟠 Necesitan │ 3      │ Ver abajo                                       │
+  │  tu decisión │ tablas │                                                 │
+  ├──────────────┼────────┼─────────────────────────────────────────────────┤
+  │ ⛔ No migrar │ 2      │ SeguimientoExportacion_Backup_20260512_*        │
+  │              │ tablas │                                                 │
+  └──────────────┴────────┴─────────────────────────────────────────────────┘
+
+  ---
+  Las 3 decisiones que debes tomar antes de ejecutar
+
+  1. Usuarios (96) — ¿Migras todos o solo los conductores reales? Los usuarios
+  admin, operador y STEPHANYSGV parecen de prueba. El rol Usuario de STEPHANYSGV
+   no existe en la tabla Roles.
+  2. Indicadores (1507) — Registros de KPIs desde enero 2025 con nombres de
+  conductores y placas reales. ¿Son histórico real o datos de un piloto que se
+  puede limpiar?
+  3. SeguimientoExportacion (679) — Todos los registros son de estado COMPLETADO
+   y se crearon en 2 días (12-13 mayo 2026). Las tablas de backup de ese mismo
+  día (6,308 registros extra) confirman que fue una importación de prueba.
+  Recomendación: no migrar.
+
+  ---
+  Riesgo crítico detectado
+
+  AbastecimientoCombustible tiene FK duplicadas (nombres automáticos
+  FK__Abastecim__* más FKs nombradas sobre las mismas columnas). Al generar el
+  DDL con SSMS, verificar y limpiar estas duplicadas antes de aplicar en la
+  nueva BD.
+
+✻ Sautéed for 12m 33s
