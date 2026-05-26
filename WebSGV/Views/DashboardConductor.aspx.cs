@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Globalization;
 using System.Linq;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
@@ -41,9 +42,13 @@ namespace WebSGV.Views
             {
                 get
                 {
-                    if (DateTime.TryParse(FechaString, out DateTime fecha))
+                    if (!string.IsNullOrWhiteSpace(FechaString) &&
+                        DateTime.TryParse(FechaString, CultureInfo.InvariantCulture,
+                            DateTimeStyles.None, out DateTime fecha))
                         return fecha;
-                    return DateTime.Now;
+                    // Retornamos MinValue; FechaSeguraSQL lo convierte a DBNull
+                    // evitando que una fecha inválida quede registrada como "hoy"
+                    return DateTime.MinValue;
                 }
             }
 
@@ -228,7 +233,7 @@ namespace WebSGV.Views
                     // Limpiamos la sesión para evitar loop con Login.aspx (que auto-redirige al
                     // dashboard si encuentra Session["UsuarioID"] con rol CONDUCTOR) y enviamos
                     // un código de error que el Login mostrará al usuario.
-                    System.Diagnostics.Debug.WriteLine("❌ Usuario logueado sin idConductor vinculado — limpiando sesión y redirigiendo al login");
+                    Log("❌ Usuario logueado sin idConductor vinculado — limpiando sesión y redirigiendo al login");
                     Session.Clear();
                     Session.Abandon();
                     Response.Redirect("~/Views/Login.aspx?error=sin_conductor", false);
@@ -236,7 +241,7 @@ namespace WebSGV.Views
                     return false;
                 }
 
-                System.Diagnostics.Debug.WriteLine($"✅ Sesión válida: IdConductor={IdConductorActual}");
+                Log($"✅ Sesión válida: IdConductor={IdConductorActual}");
                 return true;
             }
             catch (System.Threading.ThreadAbortException)
@@ -245,7 +250,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error verificando sesión: {ex.Message}");
+                Log($"❌ Error verificando sesión: {ex.Message}");
                 Response.Redirect("~/Views/Login.aspx?error=sesion", false);
                 Context.ApplicationInstance.CompleteRequest();
                 return false;
@@ -256,7 +261,7 @@ namespace WebSGV.Views
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("=== INICIALIZANDO DASHBOARD CONDUCTOR ===");
+                Log("=== INICIALIZANDO DASHBOARD CONDUCTOR ===");
 
                 CargarDatosConductor();
                 List<ViajeActivo> viajesActivos = ObtenerViajesActivos();
@@ -267,7 +272,7 @@ namespace WebSGV.Views
                     List<int> idsViajes = viajesActivos.Select(v => v.IdViajeProgreso).ToList();
                     int totalDespachos = viajesActivos.Sum(v => v.CantidadDespachos);
 
-                    System.Diagnostics.Debug.WriteLine($"✅ {viajesActivos.Count} viaje(s) activo(s) encontrado(s): {string.Join(", ", viajesActivos.Select(v => v.NumeroViajeProgreso))}");
+                    Log($"✅ {viajesActivos.Count} viaje(s) activo(s) encontrado(s): {string.Join(", ", viajesActivos.Select(v => v.NumeroViajeProgreso))}");
                     MostrarViajesActivos(viajesActivos, totalDespachos);
                     CargarDespachosViajesActivos(idsViajes);
                     HabilitarLiquidacion(viajesActivos, totalDespachos);
@@ -280,17 +285,17 @@ namespace WebSGV.Views
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("ℹ️ No hay viajes activos");
+                    Log("ℹ️ No hay viajes activos");
                     MostrarSinViajes();
                 }
 
                 CargarHistorialLiquidaciones();
 
-                System.Diagnostics.Debug.WriteLine("✅ Dashboard inicializado correctamente");
+                Log("✅ Dashboard inicializado correctamente");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error inicializando dashboard: {ex.Message}");
+                Log($"❌ Error inicializando dashboard: {ex.Message}");
                 MostrarMensaje("Error al cargar el dashboard. Por favor, recarga la página o contacta al administrador.", "danger");
             }
         }
@@ -315,7 +320,7 @@ namespace WebSGV.Views
                                 lblDNIConductor.Text = reader["DNI"].ToString();
                                 hfIdConductor.Value = IdConductorActual.ToString();
 
-                                System.Diagnostics.Debug.WriteLine($"✅ Conductor cargado: {lblNombreConductor.Text}");
+                                Log($"✅ Conductor cargado: {lblNombreConductor.Text}");
                             }
                         }
                     }
@@ -323,7 +328,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error cargando datos del conductor: {ex.Message}");
+                Log($"❌ Error cargando datos del conductor: {ex.Message}");
                 throw;
             }
         }
@@ -336,7 +341,7 @@ namespace WebSGV.Views
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"Verificando observaciones de rechazo para {idsViajes.Count} viaje(s)");
+                Log($"Verificando observaciones de rechazo para {idsViajes.Count} viaje(s)");
 
                 using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
@@ -357,7 +362,7 @@ namespace WebSGV.Views
                                     : DateTime.Now;
                                 string rechazadoPor = reader["rechazadoPor"]?.ToString() ?? "Administrador";
 
-                                System.Diagnostics.Debug.WriteLine($"⚠️ LIQUIDACIÓN RECHAZADA ENCONTRADA: {numeroOrden}");
+                                Log($"⚠️ LIQUIDACIÓN RECHAZADA ENCONTRADA: {numeroOrden}");
 
                                 MostrarAlertaRechazo(numeroOrden, observaciones, fechaRechazo, rechazadoPor);
                             }
@@ -367,7 +372,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error verificando observaciones: {ex.Message}");
+                Log($"❌ Error verificando observaciones: {ex.Message}");
             }
         }
 
@@ -470,7 +475,7 @@ namespace WebSGV.Views
 
                     if (string.IsNullOrEmpty(ordenNumero)) return;
 
-                    System.Diagnostics.Debug.WriteLine($"✅ Orden rechazada encontrada: {ordenNumero}");
+                    Log($"✅ Orden rechazada encontrada: {ordenNumero}");
 
                     // 2. Store existing order number and populate TextBox controls
                     hfNumeroOrdenExistente.Value = ordenNumero;
@@ -739,12 +744,12 @@ namespace WebSGV.Views
                     sb.AppendLine("});");
 
                     ScriptManager.RegisterStartupScript(this, GetType(), "RestaurarOrdenRechazada", sb.ToString(), true);
-                    System.Diagnostics.Debug.WriteLine($"✅ Formulario pre-cargado con datos de orden rechazada: {ordenNumero}");
+                    Log($"✅ Formulario pre-cargado con datos de orden rechazada: {ordenNumero}");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error cargando orden rechazada: {ex.Message}");
+                Log($"❌ Error cargando orden rechazada: {ex.Message}");
             }
         }
 
@@ -791,7 +796,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error obteniendo viajes activos: {ex.Message}");
+                Log($"❌ Error obteniendo viajes activos: {ex.Message}");
                 return viajes;
             }
         }
@@ -825,11 +830,11 @@ namespace WebSGV.Views
                 pnlBadgeActivos.Visible = true;
                 lblCantidadActivos.Text = totalDespachos.ToString();
 
-                System.Diagnostics.Debug.WriteLine($"✅ {viajes.Count} viaje(s) activo(s) mostrado(s): {numerosViaje}");
+                Log($"✅ {viajes.Count} viaje(s) activo(s) mostrado(s): {numerosViaje}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error mostrando viajes activos: {ex.Message}");
+                Log($"❌ Error mostrando viajes activos: {ex.Message}");
                 throw;
             }
         }
@@ -888,11 +893,11 @@ namespace WebSGV.Views
                 gvDespachosActivos.DataSource = despachos;
                 gvDespachosActivos.DataBind();
 
-                System.Diagnostics.Debug.WriteLine($"✅ {despachos.Count} despachos cargados de {idsViajes.Count} viaje(s)");
+                Log($"✅ {despachos.Count} despachos cargados de {idsViajes.Count} viaje(s)");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error cargando despachos: {ex.Message}");
+                Log($"❌ Error cargando despachos: {ex.Message}");
                 throw;
             }
         }
@@ -917,11 +922,11 @@ namespace WebSGV.Views
                 txtHoraSalida.Text = "08:00";
                 txtHoraLlegada.Text = ahoraServidor.ToString("HH:mm");
 
-                System.Diagnostics.Debug.WriteLine("✅ Formulario de liquidación habilitado");
+                Log("✅ Formulario de liquidación habilitado");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error habilitando liquidación: {ex.Message}");
+                Log($"❌ Error habilitando liquidación: {ex.Message}");
                 throw;
             }
         }
@@ -934,7 +939,7 @@ namespace WebSGV.Views
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("=== INICIANDO ENVÍO DE LIQUIDACIÓN (CONDUCTOR) ===");
+                Log("=== INICIANDO ENVÍO DE LIQUIDACIÓN (CONDUCTOR) ===");
 
                 // Verificar sesión activa antes de proceder
                 if (Session["IdConductor"] == null || IdConductorActual == 0)
@@ -944,7 +949,7 @@ namespace WebSGV.Views
                 }
 
                 int idViajeProgreso = int.TryParse(hfIdViajeActivo.Value, out int ivp) ? ivp : 0;
-                System.Diagnostics.Debug.WriteLine($"idViajeProgreso del HiddenField: {idViajeProgreso} (raw: '{hfIdViajeActivo.Value}')");
+                Log($"idViajeProgreso del HiddenField: {idViajeProgreso} (raw: '{hfIdViajeActivo.Value}')");
 
                 if (idViajeProgreso == 0)
                 {
@@ -965,12 +970,12 @@ namespace WebSGV.Views
                 }
                 if (idsViajesActivos.Count == 0)
                     idsViajesActivos.Add(idViajeProgreso);
-                System.Diagnostics.Debug.WriteLine($"Viajes a cerrar: {string.Join(", ", idsViajesActivos)}");
+                Log($"Viajes a cerrar: {string.Join(", ", idsViajesActivos)}");
 
                 // Verificar que todos los IDs de viajes pertenecen al conductor actual (C-3)
                 if (!ValidarOwnershipViajes(idsViajesActivos, IdConductorActual))
                 {
-                    System.Diagnostics.Debug.WriteLine($"❌ Ownership inválido: los viajes {string.Join(", ", idsViajesActivos)} no pertenecen al conductor {IdConductorActual}");
+                    Log($"❌ Ownership inválido: los viajes {string.Join(", ", idsViajesActivos)} no pertenecen al conductor {IdConductorActual}");
                     MostrarMensaje("Acceso no autorizado", "danger");
                     return;
                 }
@@ -981,14 +986,14 @@ namespace WebSGV.Views
                     ? hfNumeroOrdenExistente.Value
                     : GenerarNumeroOrden();
 
-                System.Diagnostics.Debug.WriteLine(esReliquidacion
+                Log(esReliquidacion
                     ? $"♻️ Re-liquidación sobre orden existente: {numeroOrdenViaje}"
                     : $"Número de orden generado: {numeroOrdenViaje}");
 
                 // Verificar que la orden rechazada pertenece al conductor actual (C-4)
                 if (esReliquidacion && !ValidarOwnershipOrden(numeroOrdenViaje, IdConductorActual))
                 {
-                    System.Diagnostics.Debug.WriteLine($"❌ Ownership inválido: la orden {numeroOrdenViaje} no pertenece al conductor {IdConductorActual}");
+                    Log($"❌ Ownership inválido: la orden {numeroOrdenViaje} no pertenece al conductor {IdConductorActual}");
                     MostrarMensaje("Acceso no autorizado", "danger");
                     return;
                 }
@@ -1017,29 +1022,29 @@ namespace WebSGV.Views
                     return;
                 }
 
-                System.Diagnostics.Debug.WriteLine($"Datos del viaje: Conductor={datosViaje.IdConductor}, Tracto={datosViaje.IdTracto}, Carreta={datosViaje.IdCarreta}");
+                Log($"Datos del viaje: Conductor={datosViaje.IdConductor}, Tracto={datosViaje.IdTracto}, Carreta={datosViaje.IdCarreta}");
 
-                System.Diagnostics.Debug.WriteLine("Iniciando transacción de base de datos...");
+                Log("Iniciando transacción de base de datos...");
                 bool transaccionExitosa = false;
                 int idOrdenGuardada = 0;
 
                 using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
                     conn.Open();
-                    System.Diagnostics.Debug.WriteLine("Conexión abierta");
+                    Log("Conexión abierta");
 
                     using (SqlTransaction transaction = conn.BeginTransaction())
                     {
                         try
                         {
-                            System.Diagnostics.Debug.WriteLine("Transacción iniciada");
+                            Log("Transacción iniciada");
 
                             if (esReliquidacion)
                             {
-                                System.Diagnostics.Debug.WriteLine("Eliminando datos financieros anteriores de la orden rechazada...");
+                                Log("Eliminando datos financieros anteriores de la orden rechazada...");
                                 EliminarDatosFinancierosOrdenExistente(conn, transaction, numeroOrdenViaje);
 
-                                System.Diagnostics.Debug.WriteLine("Actualizando orden de viaje existente...");
+                                Log("Actualizando orden de viaje existente...");
                                 ActualizarOrdenViajeConductor(conn, transaction, numeroOrdenViaje,
                                     fechaSalida, fechaLlegada, horaSalida, horaLlegada, observaciones);
 
@@ -1053,7 +1058,7 @@ namespace WebSGV.Views
                             }
                             else
                             {
-                                System.Diagnostics.Debug.WriteLine("Insertando orden de viaje con estado PENDIENTE...");
+                                Log("Insertando orden de viaje con estado PENDIENTE...");
                                 int idOrdenViaje = InsertarOrdenViajeConductor(
                                     conn, transaction, numeroOrdenViaje,
                                     fechaSalida, fechaLlegada, horaSalida, horaLlegada,
@@ -1061,43 +1066,43 @@ namespace WebSGV.Views
                                     observaciones, idViajeProgreso
                                 );
                                 idOrdenGuardada = idOrdenViaje;
-                                System.Diagnostics.Debug.WriteLine($"Orden de viaje insertada: {idOrdenViaje}");
+                                Log($"Orden de viaje insertada: {idOrdenViaje}");
                             }
 
-                            System.Diagnostics.Debug.WriteLine("Insertando datos financieros...");
+                            Log("Insertando datos financieros...");
                             InsertarDatosFinancierosCompletos(conn, transaction, numeroOrdenViaje);
 
-                            System.Diagnostics.Debug.WriteLine("Insertando descuentos y reintegros...");
+                            Log("Insertando descuentos y reintegros...");
                             InsertarDescuentosReintegros(conn, transaction, numeroOrdenViaje);
 
-                            System.Diagnostics.Debug.WriteLine("Procesando datos detallados de modales...");
+                            Log("Procesando datos detallados de modales...");
                             var gastosFinancieros = ObtenerGastosFinancierosDeSession();
                             if (gastosFinancieros.Count > 0)
                             {
                                 InsertarGastosFinancierosDetallados(conn, transaction, numeroOrdenViaje, gastosFinancieros);
                             }
 
-                            System.Diagnostics.Debug.WriteLine($"⚡ Cerrando {idsViajesActivos.Count} viaje(s) en progreso: {string.Join(", ", idsViajesActivos)}");
+                            Log($"⚡ Cerrando {idsViajesActivos.Count} viaje(s) en progreso: {string.Join(", ", idsViajesActivos)}");
                             CerrarViajesProgreso(conn, transaction, idsViajesActivos, numeroOrdenViaje);
 
-                            System.Diagnostics.Debug.WriteLine("Haciendo commit de toda la transacción...");
+                            Log("Haciendo commit de toda la transacción...");
                             transaction.Commit();
                             transaccionExitosa = true;
-                            System.Diagnostics.Debug.WriteLine("✅ Commit exitoso");
+                            Log("✅ Commit exitoso");
                         }
                         catch (Exception ex)
                         {
-                            System.Diagnostics.Debug.WriteLine($"❌ ERROR EN TRANSACCIÓN: {ex.Message}");
-                            System.Diagnostics.Debug.WriteLine($"   StackTrace: {ex.StackTrace}");
+                            Log($"❌ ERROR EN TRANSACCIÓN: {ex.Message}");
+                            Log($"   StackTrace: {ex.StackTrace}");
 
                             try
                             {
                                 transaction.Rollback();
-                                System.Diagnostics.Debug.WriteLine("⚠️ Rollback ejecutado");
+                                Log("⚠️ Rollback ejecutado");
                             }
                             catch (Exception rollbackEx)
                             {
-                                System.Diagnostics.Debug.WriteLine($"⚠️ Error en Rollback (ignorado): {rollbackEx.Message}");
+                                Log($"⚠️ Error en Rollback (ignorado): {rollbackEx.Message}");
                             }
 
                             MostrarMensaje($"Error al enviar la liquidación: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
@@ -1111,7 +1116,7 @@ namespace WebSGV.Views
                     AuditoriaHelper.Registrar("LIQUIDAR", "OrdenViaje", numeroOrdenViaje,
                         $"Conductor envió liquidación - Orden: {numeroOrdenViaje}, Viajes: {string.Join(", ", idsViajesActivos)}");
 
-                    System.Diagnostics.Debug.WriteLine($"=== LIQUIDACIÓN ENVIADA EXITOSAMENTE (idOrdenViaje={idOrdenGuardada}) ===");
+                    Log($"=== LIQUIDACIÓN ENVIADA EXITOSAMENTE (idOrdenViaje={idOrdenGuardada}) ===");
 
                     // ✅ Fase 3.A: redirigir al conductor a la vista de firma digital
                     if (idOrdenGuardada > 0)
@@ -1134,8 +1139,8 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ ERROR GENERAL: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"   StackTrace: {ex.StackTrace}");
+                Log($"❌ ERROR GENERAL: {ex.Message}");
+                Log($"   StackTrace: {ex.StackTrace}");
                 MostrarMensaje("Error al enviar la liquidación. Por favor, intente nuevamente o contacte al administrador.", "danger");
             }
         }
@@ -1153,7 +1158,7 @@ namespace WebSGV.Views
                 cmd.ExecuteNonQuery();
             }
 
-            System.Diagnostics.Debug.WriteLine($"✅ Datos financieros eliminados para re-liquidación: {numeroOrdenViaje}");
+            Log($"✅ Datos financieros eliminados para re-liquidación: {numeroOrdenViaje}");
         }
 
         private void ActualizarOrdenViajeConductor(
@@ -1174,7 +1179,7 @@ namespace WebSGV.Views
                 cmd.ExecuteNonQuery();
             }
 
-            System.Diagnostics.Debug.WriteLine($"✅ OrdenViaje actualizada para re-liquidación: {numeroOrdenViaje}");
+            Log($"✅ OrdenViaje actualizada para re-liquidación: {numeroOrdenViaje}");
         }
 
         private int InsertarOrdenViajeConductor(
@@ -1214,7 +1219,7 @@ namespace WebSGV.Views
                     if (result != null && result != DBNull.Value)
                     {
                         int idOrdenViaje = Convert.ToInt32(result);
-                        System.Diagnostics.Debug.WriteLine($"✅ OrdenViaje creada por CONDUCTOR: ID={idOrdenViaje}");
+                        Log($"✅ OrdenViaje creada por CONDUCTOR: ID={idOrdenViaje}");
                         return idOrdenViaje;
                     }
                     else
@@ -1225,7 +1230,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error insertando orden: {ex.Message}");
+                Log($"❌ Error insertando orden: {ex.Message}");
                 throw;
             }
         }
@@ -1241,21 +1246,21 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ ERROR en datos financieros: {ex.Message}");
+                Log($"❌ ERROR en datos financieros: {ex.Message}");
                 throw;
             }
         }
 
         private void InsertarIngresosPrincipales(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje)
         {
-            decimal despachoSoles = decimal.TryParse(Request.Form["despachoSoles"], out decimal ds) ? ds : 0;
-            decimal despachoDolares = decimal.TryParse(Request.Form["despachoDolares"], out decimal dd) ? dd : 0;
-            decimal prestamoSoles = decimal.TryParse(Request.Form["prestamoSoles"], out decimal ps) ? ps : 0;
-            decimal prestamoDolares = decimal.TryParse(Request.Form["prestamoDolares"], out decimal pd) ? pd : 0;
-            decimal mensualidadSoles = decimal.TryParse(Request.Form["mensualidadSoles"], out decimal ms) ? ms : 0;
-            decimal mensualidadDolares = decimal.TryParse(Request.Form["mensualidadDolares"], out decimal md) ? md : 0;
-            decimal otrosSoles = decimal.TryParse(Request.Form["otrosSoles"], out decimal os) ? os : 0;
-            decimal otrosDolares = decimal.TryParse(Request.Form["otrosDolares"], out decimal od) ? od : 0;
+            decimal despachoSoles     = ParseMonto(Request.Form["despachoSoles"]);
+            decimal despachoDolares   = ParseMonto(Request.Form["despachoDolares"]);
+            decimal prestamoSoles     = ParseMonto(Request.Form["prestamoSoles"]);
+            decimal prestamoDolares   = ParseMonto(Request.Form["prestamoDolares"]);
+            decimal mensualidadSoles  = ParseMonto(Request.Form["mensualidadSoles"]);
+            decimal mensualidadDolares = ParseMonto(Request.Form["mensualidadDolares"]);
+            decimal otrosSoles        = ParseMonto(Request.Form["otrosSoles"]);
+            decimal otrosDolares      = ParseMonto(Request.Form["otrosDolares"]);
 
             string descDespacho = Request.Form["descDespacho"] ?? "";
             string descMensualidad = Request.Form["descMensualidad"] ?? "";
@@ -1289,22 +1294,22 @@ namespace WebSGV.Views
         private void InsertarGastosPrincipales(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje)
         {
             // Peajes simplificados: Nacionales solo en Soles (Perú), Extranjeros solo en Dólares (Ecuador)
-            decimal peajesSoles = decimal.TryParse(Request.Form["peajesNacSoles"], out decimal pns) ? pns : 0;
-            decimal peajesDolares = decimal.TryParse(Request.Form["peajesExtDolares"], out decimal ped) ? ped : 0;
-            decimal alimentacionSoles = decimal.TryParse(Request.Form["alimentacionSoles"], out decimal als) ? als : 0;
-            decimal alimentacionDolares = decimal.TryParse(Request.Form["alimentacionDolares"], out decimal ald) ? ald : 0;
-            decimal apoyoSeguridadSoles = decimal.TryParse(Request.Form["apoyoSeguridadSoles"], out decimal ass) ? ass : 0;
-            decimal apoyoSeguridadDolares = decimal.TryParse(Request.Form["apoyoSeguridadDolares"], out decimal asd) ? asd : 0;
-            decimal reparacionesSoles = decimal.TryParse(Request.Form["reparacionesSoles"], out decimal reps) ? reps : 0;
-            decimal reparacionesDolares = decimal.TryParse(Request.Form["reparacionesDolares"], out decimal repd) ? repd : 0;
-            decimal movilidadSoles = decimal.TryParse(Request.Form["movilidadSoles"], out decimal movs) ? movs : 0;
-            decimal movilidadDolares = decimal.TryParse(Request.Form["movilidadDolares"], out decimal movd) ? movd : 0;
-            decimal encapadaSoles = decimal.TryParse(Request.Form["encapadaSoles"], out decimal encs) ? encs : 0;
-            decimal encapadaDolares = decimal.TryParse(Request.Form["encapadaDolares"], out decimal encd) ? encd : 0;
-            decimal hospedajeSoles = decimal.TryParse(Request.Form["hospedajeSoles"], out decimal hoss) ? hoss : 0;
-            decimal hospedajeDolares = decimal.TryParse(Request.Form["hospedajeDolares"], out decimal hosd) ? hosd : 0;
-            decimal combustibleSoles = decimal.TryParse(Request.Form["combustibleSoles"], out decimal coms) ? coms : 0;
-            decimal combustibleDolares = decimal.TryParse(Request.Form["combustibleDolares"], out decimal comd) ? comd : 0;
+            decimal peajesSoles        = ParseMonto(Request.Form["peajesNacSoles"]);
+            decimal peajesDolares      = ParseMonto(Request.Form["peajesExtDolares"]);
+            decimal alimentacionSoles  = ParseMonto(Request.Form["alimentacionSoles"]);
+            decimal alimentacionDolares = ParseMonto(Request.Form["alimentacionDolares"]);
+            decimal apoyoSeguridadSoles = ParseMonto(Request.Form["apoyoSeguridadSoles"]);
+            decimal apoyoSeguridadDolares = ParseMonto(Request.Form["apoyoSeguridadDolares"]);
+            decimal reparacionesSoles   = ParseMonto(Request.Form["reparacionesSoles"]);
+            decimal reparacionesDolares = ParseMonto(Request.Form["reparacionesDolares"]);
+            decimal movilidadSoles     = ParseMonto(Request.Form["movilidadSoles"]);
+            decimal movilidadDolares   = ParseMonto(Request.Form["movilidadDolares"]);
+            decimal encapadaSoles      = ParseMonto(Request.Form["encapadaSoles"]);
+            decimal encapadaDolares    = ParseMonto(Request.Form["encapadaDolares"]);
+            decimal hospedajeSoles     = ParseMonto(Request.Form["hospedajeSoles"]);
+            decimal hospedajeDolares   = ParseMonto(Request.Form["hospedajeDolares"]);
+            decimal combustibleSoles   = ParseMonto(Request.Form["combustibleSoles"]);
+            decimal combustibleDolares = ParseMonto(Request.Form["combustibleDolares"]);
 
             // Descripción de peajes: combinar nacionales (S/) y extranjeros ($)
             string descPeajesNac = Request.Form["descPeajesNacionales"] ?? "";
@@ -1373,8 +1378,8 @@ namespace WebSGV.Views
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                         cmd.Parameters.AddWithValue("@nombreCategoria", ingreso.Categoria ?? ingreso.NombreCategoria ?? "");
-                        cmd.Parameters.AddWithValue("@soles", ingreso.Soles ?? 0);
-                        cmd.Parameters.AddWithValue("@dolares", ingreso.Dolares ?? 0);
+                        cmd.Parameters.AddWithValue("@soles",   ValidarMonto(ingreso.Soles,   "soles de ingreso adicional"));
+                        cmd.Parameters.AddWithValue("@dolares", ValidarMonto(ingreso.Dolares, "dólares de ingreso adicional"));
                         cmd.Parameters.AddWithValue("@descripcion", ingreso.Descripcion ?? "");
                         cmd.ExecuteNonQuery();
                     }
@@ -1382,7 +1387,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error insertando ingresos adicionales: {ex.Message}");
+                Log($"Error insertando ingresos adicionales: {ex.Message}");
                 throw;
             }
         }
@@ -1405,8 +1410,8 @@ namespace WebSGV.Views
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                         cmd.Parameters.AddWithValue("@nombreCategoria", gasto.Categoria ?? gasto.NombreCategoria ?? "");
-                        cmd.Parameters.AddWithValue("@soles", gasto.Soles ?? 0);
-                        cmd.Parameters.AddWithValue("@dolares", gasto.Dolares ?? 0);
+                        cmd.Parameters.AddWithValue("@soles",   ValidarMonto(gasto.Soles,   "soles de gasto adicional"));
+                        cmd.Parameters.AddWithValue("@dolares", ValidarMonto(gasto.Dolares, "dólares de gasto adicional"));
                         cmd.Parameters.AddWithValue("@descripcion", gasto.Descripcion ?? "");
                         cmd.ExecuteNonQuery();
                     }
@@ -1414,7 +1419,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error insertando gastos adicionales: {ex.Message}");
+                Log($"Error insertando gastos adicionales: {ex.Message}");
                 throw;
             }
         }
@@ -1423,10 +1428,10 @@ namespace WebSGV.Views
         {
             try
             {
-                decimal descuentoSoles = decimal.TryParse(Request.Form["descuentoSoles"], out decimal ds) ? ds : 0;
-                decimal descuentoDolares = decimal.TryParse(Request.Form["descuentoDolares"], out decimal dd) ? dd : 0;
-                decimal reintegroSoles = decimal.TryParse(Request.Form["reintegroSoles"], out decimal rs) ? rs : 0;
-                decimal reintegroDolares = decimal.TryParse(Request.Form["reintegroDolares"], out decimal rd) ? rd : 0;
+                decimal descuentoSoles   = ParseMonto(Request.Form["descuentoSoles"]);
+                decimal descuentoDolares = ParseMonto(Request.Form["descuentoDolares"]);
+                decimal reintegroSoles   = ParseMonto(Request.Form["reintegroSoles"]);
+                decimal reintegroDolares = ParseMonto(Request.Form["reintegroDolares"]);
 
                 if (descuentoSoles > 0 || descuentoDolares > 0 || reintegroSoles > 0 || reintegroDolares > 0)
                 {
@@ -1444,7 +1449,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error insertando descuentos/reintegros: {ex.Message}");
+                Log($"Error insertando descuentos/reintegros: {ex.Message}");
                 throw;
             }
         }
@@ -1458,7 +1463,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error obteniendo gastos financieros: {ex.Message}");
+                Log($"Error obteniendo gastos financieros: {ex.Message}");
                 return new List<GastoFinanciero>();
             }
         }
@@ -1490,7 +1495,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error insertando gastos detallados: {ex.Message}");
+                Log($"Error insertando gastos detallados: {ex.Message}");
                 throw;
             }
         }
@@ -1504,8 +1509,8 @@ namespace WebSGV.Views
                 cmd.Parameters.AddWithValue("@estacion", gasto.Estacion ?? gasto.Lugar ?? "");
                 cmd.Parameters.AddWithValue("@fecha", FechaSeguraSQL(gasto.Fecha));
                 cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles", gasto.Soles);
-                cmd.Parameters.AddWithValue("@montoDolares", gasto.Dolares);
+                cmd.Parameters.AddWithValue("@montoSoles",   ValidarMonto(gasto.Soles,   "soles de peaje"));
+                cmd.Parameters.AddWithValue("@montoDolares", ValidarMonto(gasto.Dolares, "dólares de peaje"));
                 cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
                 cmd.ExecuteNonQuery();
             }
@@ -1519,8 +1524,8 @@ namespace WebSGV.Views
                 cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                 cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
                 cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles", gasto.Soles);
-                cmd.Parameters.AddWithValue("@montoDolares", gasto.Dolares);
+                cmd.Parameters.AddWithValue("@montoSoles",   ValidarMonto(gasto.Soles,   "soles de reparación"));
+                cmd.Parameters.AddWithValue("@montoDolares", ValidarMonto(gasto.Dolares, "dólares de reparación"));
                 cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
                 cmd.ExecuteNonQuery();
             }
@@ -1534,8 +1539,8 @@ namespace WebSGV.Views
                 cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                 cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
                 cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles", gasto.Soles);
-                cmd.Parameters.AddWithValue("@montoDolares", gasto.Dolares);
+                cmd.Parameters.AddWithValue("@montoSoles",   ValidarMonto(gasto.Soles,   "soles de hospedaje"));
+                cmd.Parameters.AddWithValue("@montoDolares", ValidarMonto(gasto.Dolares, "dólares de hospedaje"));
                 cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
                 cmd.ExecuteNonQuery();
             }
@@ -1549,8 +1554,8 @@ namespace WebSGV.Views
                 cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                 cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
                 cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles", gasto.Soles);
-                cmd.Parameters.AddWithValue("@montoDolares", gasto.Dolares);
+                cmd.Parameters.AddWithValue("@montoSoles",   ValidarMonto(gasto.Soles,   "soles de combustible"));
+                cmd.Parameters.AddWithValue("@montoDolares", ValidarMonto(gasto.Dolares, "dólares de combustible"));
                 cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
                 cmd.ExecuteNonQuery();
             }
@@ -1580,13 +1585,13 @@ namespace WebSGV.Views
                     {
                         throw new Exception($"No se pudo cerrar ninguno de los viajes: {string.Join(", ", idsViajes)}");
                     }
-                    System.Diagnostics.Debug.WriteLine($"✅ {filasAfectadas} viaje(s) cerrado(s)");
-                    System.Diagnostics.Debug.WriteLine($"✅ {despachosActualizados} despacho(s) marcado(s) como COMPLETADO");
+                    Log($"✅ {filasAfectadas} viaje(s) cerrado(s)");
+                    Log($"✅ {despachosActualizados} despacho(s) marcado(s) como COMPLETADO");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error en CerrarViajesProgreso: {ex.Message}");
+                Log($"❌ Error en CerrarViajesProgreso: {ex.Message}");
                 throw;
             }
         }
@@ -1663,7 +1668,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error cargando historial: {ex.Message}");
+                Log($"❌ Error cargando historial: {ex.Message}");
                 MostrarMensaje($"Error al cargar el historial: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
@@ -1702,13 +1707,13 @@ namespace WebSGV.Views
                 }
 
                 string json = JsonConvert.SerializeObject(estaciones);
-                System.Diagnostics.Debug.WriteLine($"✅ JSON generado con {estaciones.Count} peajes: {json}");
+                Log($"✅ JSON generado con {estaciones.Count} peajes: {json}");
                 return json;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error obteniendo estaciones: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"Stack: {ex.StackTrace}");
+                Log($"❌ Error obteniendo estaciones: {ex.Message}");
+                Log($"Stack: {ex.StackTrace}");
                 return "[]";
             }
         }
@@ -1736,7 +1741,7 @@ namespace WebSGV.Views
 
                         if (!string.IsNullOrEmpty(nuevoNumero))
                         {
-                            System.Diagnostics.Debug.WriteLine($"✅ Número de orden generado: {nuevoNumero}");
+                            Log($"✅ Número de orden generado: {nuevoNumero}");
                             return nuevoNumero;
                         }
 
@@ -1746,10 +1751,11 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error generando número de orden: {ex.Message}");
-                // Fallback: formato que incluye conductor y ticks para unicidad
-                string fallbackNumero = $"OV-{DateTime.Now:yyyyMMddHHmmss}-{IdConductorActual:D4}-{DateTime.Now.Ticks % 1000:D3}";
-                System.Diagnostics.Debug.WriteLine($"⚠️ Usando número de orden fallback (SP falló): {fallbackNumero}");
+                Log($"❌ Error generando número de orden: {ex.Message}");
+                // Fallback: un solo snapshot de DateTime.Now garantiza consistencia del timestamp
+                var ahora = DateTime.Now;
+                string fallbackNumero = $"OV-{ahora:yyyyMMddHHmmss}-{IdConductorActual:D4}-{ahora.Ticks % 1000:D3}";
+                Log($"⚠️ Usando número de orden fallback (SP falló): {fallbackNumero}");
                 return fallbackNumero;
             }
         }
@@ -1758,7 +1764,7 @@ namespace WebSGV.Views
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"Obteniendo datos del viaje para idViajeProgreso={idViajeProgreso}");
+                Log($"Obteniendo datos del viaje para idViajeProgreso={idViajeProgreso}");
 
                 using (SqlConnection conn = new SqlConnection(ConnectionString))
                 {
@@ -1780,11 +1786,11 @@ namespace WebSGV.Views
 
                                 if (idConductor == 0 || idTracto == 0 || idCarreta == 0)
                                 {
-                                    System.Diagnostics.Debug.WriteLine($"⚠️ Datos incompletos ({origen}): Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
+                                    Log($"⚠️ Datos incompletos ({origen}): Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
                                 }
                                 else
                                 {
-                                    System.Diagnostics.Debug.WriteLine($"✅ Datos obtenidos desde {origen}: Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
+                                    Log($"✅ Datos obtenidos desde {origen}: Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
                                 }
 
                                 return new DatosViajeParaLiquidacion
@@ -1802,8 +1808,8 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error obteniendo datos del viaje: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"   StackTrace: {ex.StackTrace}");
+                Log($"❌ Error obteniendo datos del viaje: {ex.Message}");
+                Log($"   StackTrace: {ex.StackTrace}");
                 return null;
             }
         }
@@ -1842,13 +1848,18 @@ namespace WebSGV.Views
         }
 
         /// <summary>
-        /// Valida que una cadena tenga formato HH:mm con valores de rango válido.
+        /// Valida que una cadena represente una hora válida en formato H:mm o HH:mm (00:00–23:59).
+        /// Acepta con y sin cero inicial para interoperabilidad con distintos dispositivos.
+        /// Usa InvariantCulture para evitar dependencia del locale del servidor.
         /// </summary>
         private bool ValidarFormatoHora(string hora)
         {
-            if (TimeSpan.TryParseExact(hora.Trim(), @"hh\:mm", null, out TimeSpan ts))
-                return ts.Hours >= 0 && ts.Hours <= 23 && ts.Minutes >= 0 && ts.Minutes <= 59;
-            return false;
+            if (string.IsNullOrWhiteSpace(hora)) return false;
+            string[] formatos = { @"h\:mm", @"hh\:mm" };
+            if (!TimeSpan.TryParseExact(hora.Trim(), formatos, CultureInfo.InvariantCulture,
+                    TimeSpanStyles.None, out TimeSpan ts))
+                return false;
+            return ts.Hours >= 0 && ts.Hours <= 23 && ts.Minutes >= 0 && ts.Minutes <= 59;
         }
 
         private bool EsFechaValidaSQL(DateTime fecha)
@@ -1860,6 +1871,49 @@ namespace WebSGV.Views
         {
             return EsFechaValidaSQL(fecha) ? (object)fecha : DBNull.Value;
         }
+
+        /// <summary>
+        /// Logging condicional: solo activo en compilaciones DEBUG.
+        /// En Release el compilador elimina todos los call-sites sin overhead.
+        /// </summary>
+        [System.Diagnostics.Conditional("DEBUG")]
+        private static void Log(string mensaje)
+            => System.Diagnostics.Debug.WriteLine(mensaje);
+
+        /// <summary>
+        /// Parsea un monto proveniente de Request.Form con cultura invariante.
+        /// HTML type="number" siempre usa punto como separador decimal,
+        /// independientemente de la cultura del servidor (es-PE usa coma).
+        /// Valores negativos se clampean a 0 ya que los campos tienen min="0".
+        /// </summary>
+        private static decimal ParseMonto(string valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor)) return 0m;
+            if (!decimal.TryParse(valor, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal d))
+                return 0m;
+            return d < 0m ? 0m : d;
+        }
+
+        /// <summary>
+        /// Valida un monto desserializado desde un hidden field controlado por el cliente.
+        /// A diferencia de ParseMonto, aquí lanzamos excepción en lugar de clampar,
+        /// porque un valor negativo o excesivo indica manipulación intencional del payload.
+        /// La excepción propaga el rollback de la transacción en curso.
+        /// </summary>
+        private static decimal ValidarMonto(decimal? monto, string campo)
+        {
+            decimal valor = monto ?? 0m;
+            if (valor < 0m)
+                throw new InvalidOperationException(
+                    $"Monto inválido en '{campo}': los valores negativos no están permitidos.");
+            if (valor > 9_999_999m)
+                throw new InvalidOperationException(
+                    $"Monto inválido en '{campo}': excede el límite máximo de S/ 9,999,999.");
+            return valor;
+        }
+
+        private static decimal ValidarMonto(decimal monto, string campo)
+            => ValidarMonto((decimal?)monto, campo);
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
@@ -1890,7 +1944,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error mostrando resultado: {ex.Message}");
+                Log($"Error mostrando resultado: {ex.Message}");
             }
         }
 
@@ -1900,23 +1954,28 @@ namespace WebSGV.Views
             {
                 if (idsViajes == null || idsViajes.Count == 0) return false;
 
-                string inClause = string.Join(",", idsViajes.Select(id => id.ToString()));
-                string sql = $"SELECT COUNT(*) FROM ViajesEnProgreso WHERE idViajeProgreso IN ({inClause}) AND idConductor = @idConductor";
+                // Construcción parametrizada de la cláusula IN:
+                // nunca interpolamos valores del cliente directamente en el SQL.
+                var paramNames = idsViajes.Select((_, i) => $"@id{i}").ToList();
+                string sql = $"SELECT COUNT(*) FROM ViajesEnProgreso " +
+                             $"WHERE idViajeProgreso IN ({string.Join(",", paramNames)}) " +
+                             $"AND idConductor = @idConductor";
 
                 using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
                 {
-                    using (SqlCommand cmd = new SqlCommand(sql, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                        conn.Open();
-                        int count = (int)cmd.ExecuteScalar();
-                        return count == idsViajes.Count;
-                    }
+                    cmd.Parameters.AddWithValue("@idConductor", idConductor);
+                    for (int i = 0; i < idsViajes.Count; i++)
+                        cmd.Parameters.AddWithValue($"@id{i}", idsViajes[i]);
+
+                    conn.Open();
+                    int count = (int)cmd.ExecuteScalar();
+                    return count == idsViajes.Count;
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error en ValidarOwnershipViajes: {ex.Message}");
+                Log($"❌ Error en ValidarOwnershipViajes: {ex.Message}");
                 return false;
             }
         }
@@ -1942,7 +2001,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error en ValidarOwnershipOrden: {ex.Message}");
+                Log($"❌ Error en ValidarOwnershipOrden: {ex.Message}");
                 return false;
             }
         }
@@ -1993,14 +2052,14 @@ namespace WebSGV.Views
                 var session = HttpContext.Current.Session;
                 if (session["IdConductor"] == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("❌ RetirarLiquidacion: sesión no válida (IdConductor nulo)");
+                    Log("❌ RetirarLiquidacion: sesión no válida (IdConductor nulo)");
                     return new { success = false, message = "Sesión no válida" };
                 }
 
                 // Validar rol: solo CONDUCTOR / CHOFER pueden retirar liquidaciones propias
                 if (!RolesHelper.EsConductor())
                 {
-                    System.Diagnostics.Debug.WriteLine("❌ RetirarLiquidacion: rol no autorizado");
+                    Log("❌ RetirarLiquidacion: rol no autorizado");
                     return new { success = false, message = "Sesión no válida" };
                 }
 
@@ -2039,11 +2098,11 @@ namespace WebSGV.Views
                             AuditoriaHelper.Registrar("RETIRAR", "OrdenViaje", idOrdenViaje,
                                 $"Conductor retiró liquidación - OrdenViaje ID: {idOrdenViaje}, Número: {numeroOrdenViaje}, Viaje reabierto: {idViajeProgreso}");
 
-                            System.Diagnostics.Debug.WriteLine($"✅ Liquidación retirada: OrdenViaje {idOrdenViaje}, Viaje {idViajeProgreso} reabierto");
+                            Log($"✅ Liquidación retirada: OrdenViaje {idOrdenViaje}, Viaje {idViajeProgreso} reabierto");
                         }
                         else
                         {
-                            System.Diagnostics.Debug.WriteLine($"⚠️ RetirarLiquidacion falló: {mensaje}");
+                            Log($"⚠️ RetirarLiquidacion falló: {mensaje}");
                         }
 
                         return new { success = resultado == 1, message = mensaje };
@@ -2052,7 +2111,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error en RetirarLiquidacion: {ex.Message}");
+                Log($"❌ Error en RetirarLiquidacion: {ex.Message}");
                 return new { success = false, message = "Error al retirar la liquidación. Intente nuevamente." };
             }
         }

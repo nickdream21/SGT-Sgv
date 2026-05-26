@@ -2185,6 +2185,17 @@
 
 
     <script>
+        // === SEGURIDAD: escapado HTML para prevenir XSS en renderizado dinámico ===
+        function escHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         // === VARIABLES GLOBALES ===
         let contadorIngresosAdicionales = 0;
         let contadorGastosAdicionales = 0;
@@ -2388,9 +2399,9 @@
             reparacionesData.forEach(r => {
                 tbody.append(`
                 <tr>
-                    <td>${r.tipo}</td>
-                    <td>${r.fecha}</td>
-                    <td>${r.comprobante || 'N/A'}</td>
+                    <td>${escHtml(r.tipo)}</td>
+                    <td>${escHtml(r.fecha)}</td>
+                    <td>${escHtml(r.comprobante) || 'N/A'}</td>
                     <td>S/ ${r.soles.toFixed(2)}</td>
                     <td>$ ${r.dolares.toFixed(2)}</td>
                     <td class="text-center">
@@ -2467,9 +2478,9 @@
             hospedajesData.forEach(h => {
                 tbody.append(`
                 <tr>
-                    <td>${h.lugar}</td>
-                    <td>${h.fecha}</td>
-                    <td>${h.comprobante || 'N/A'}</td>
+                    <td>${escHtml(h.lugar)}</td>
+                    <td>${escHtml(h.fecha)}</td>
+                    <td>${escHtml(h.comprobante) || 'N/A'}</td>
                     <td>S/ ${h.soles.toFixed(2)}</td>
                     <td>$ ${h.dolares.toFixed(2)}</td>
                     <td class="text-center">
@@ -2546,9 +2557,9 @@
             combustiblesData.forEach(c => {
                 tbody.append(`
                 <tr>
-                    <td>${c.lugar}</td>
-                    <td>${c.fecha}</td>
-                    <td>${c.comprobante || 'N/A'}</td>
+                    <td>${escHtml(c.lugar)}</td>
+                    <td>${escHtml(c.fecha)}</td>
+                    <td>${escHtml(c.comprobante) || 'N/A'}</td>
                     <td>S/ ${c.soles.toFixed(2)}</td>
                     <td>$ ${c.dolares.toFixed(2)}</td>
                     <td class="text-center">
