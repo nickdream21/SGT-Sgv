@@ -453,95 +453,86 @@
                         </div>
                     </div>
 
-                    <div class="detail-section">
-                        <h6 class="detail-section-title">
-                            <i class="fas fa-route mr-2"></i>Información del Viaje
-                        </h6>
-                        <div class="row">
-                            <div class="col-md-3">
-                                <label class="detail-label">Conductor:</label>
-                                <p class="detail-value" id="detalleConductor"></p>
+                    <div class="detail-section viaje-info-section">
+                        <div class="viaje-info-strip">
+                            <div class="vi-item vi-item-conductor">
+                                <span class="vi-label"><i class="fas fa-user-tie mr-1"></i>Conductor</span>
+                                <span class="vi-value" id="detalleConductor"></span>
                             </div>
-                            <div class="col-md-3">
-                                <label class="detail-label">Tracto:</label>
-                                <p class="detail-value" id="detalleTracto"></p>
+                            <div class="vi-sep"></div>
+                            <div class="vi-item">
+                                <span class="vi-label"><i class="fas fa-truck mr-1"></i>Tracto</span>
+                                <span class="vi-value" id="detalleTracto"></span>
                             </div>
-                            <div class="col-md-3">
-                                <label class="detail-label">Carreta:</label>
-                                <p class="detail-value" id="detalleCarreta"></p>
+                            <div class="vi-sep"></div>
+                            <div class="vi-item">
+                                <span class="vi-label"><i class="fas fa-trailer mr-1"></i>Carreta</span>
+                                <span class="vi-value" id="detalleCarreta"></span>
                             </div>
-                            <div class="col-md-3">
-                                <label class="detail-label">Periodo:</label>
-                                <p class="detail-value" id="detallePeriodo"></p>
+                            <div class="vi-sep"></div>
+                            <div class="vi-item">
+                                <span class="vi-label"><i class="fas fa-calendar-alt mr-1"></i>Periodo</span>
+                                <span class="vi-value vi-value-periodo" id="detallePeriodo"></span>
                             </div>
                         </div>
-                        <div class="row mt-2" id="detalleObservacionesRow" style="display: none;">
-                            <div class="col-md-12">
-                                <label class="detail-label">Observaciones del Conductor:</label>
-                                <p class="detail-value detail-observaciones" id="detalleObservaciones"></p>
-                            </div>
+                        <div id="detalleObservacionesRow" style="display:none;" class="vi-obs-row">
+                            <i class="fas fa-comment-alt vi-obs-icon"></i>
+                            <span class="vi-obs-label">Obs. Conductor:</span>
+                            <span class="vi-obs-text" id="detalleObservaciones"></span>
                         </div>
                     </div>
 
-                    <div class="detail-section">
+                    <div class="detail-section rf-section">
                         <h6 class="detail-section-title">
                             <i class="fas fa-calculator mr-2"></i>Resumen Financiero
                         </h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="financial-card financial-card-success">
-                                    <div class="financial-header">
-                                        <i class="fas fa-plus-circle"></i>
-                                        <span>Total Ingresos</span>
+                        <div class="rf-grid">
+                            <div class="rf-cell rf-ingresos">
+                                <div class="rf-cell-header">
+                                    <i class="fas fa-arrow-up rf-icon-up"></i>
+                                    <span class="rf-cell-label">Ingresos</span>
+                                </div>
+                                <div class="rf-amounts">
+                                    <div class="rf-amount-row">
+                                        <span class="rf-currency">S/</span>
+                                        <span class="rf-number" id="detalleIngresosSoles">0.00</span>
                                     </div>
-                                    <div class="financial-amounts">
-                                        <div class="amount-row">
-                                            <span class="currency">S/</span>
-                                            <span class="amount" id="detalleIngresosSoles">0.00</span>
-                                        </div>
-                                        <div class="amount-row">
-                                            <span class="currency">$</span>
-                                            <span class="amount" id="detalleIngresosDolares">0.00</span>
-                                        </div>
+                                    <div class="rf-amount-row rf-amount-secondary">
+                                        <span class="rf-currency">$</span>
+                                        <span class="rf-number" id="detalleIngresosDolares">0.00</span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="financial-card financial-card-danger">
-                                    <div class="financial-header">
-                                        <i class="fas fa-minus-circle"></i>
-                                        <span>Total Gastos</span>
+                            <div class="rf-cell rf-gastos">
+                                <div class="rf-cell-header">
+                                    <i class="fas fa-arrow-down rf-icon-down"></i>
+                                    <span class="rf-cell-label">Gastos</span>
+                                </div>
+                                <div class="rf-amounts">
+                                    <div class="rf-amount-row">
+                                        <span class="rf-currency">S/</span>
+                                        <span class="rf-number" id="detalleGastosSoles">0.00</span>
                                     </div>
-                                    <div class="financial-amounts">
-                                        <div class="amount-row">
-                                            <span class="currency">S/</span>
-                                            <span class="amount" id="detalleGastosSoles">0.00</span>
-                                        </div>
-                                        <div class="amount-row">
-                                            <span class="currency">$</span>
-                                            <span class="amount" id="detalleGastosDolares">0.00</span>
-                                        </div>
+                                    <div class="rf-amount-row rf-amount-secondary">
+                                        <span class="rf-currency">$</span>
+                                        <span class="rf-number" id="detalleGastosDolares">0.00</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="row mt-3">
-                            <div class="col-md-12">
-                                <div class="financial-card financial-card-neutral">
-                                    <div class="financial-header">
-                                        <i class="fas fa-balance-scale"></i>
-                                        <span>Balance Final</span>
-                                    </div>
-                                    <div class="financial-amounts">
-                                        <div class="amount-row">
-                                            <span class="currency">S/</span>
-                                            <span class="amount balance-amount" id="detalleBalanceSoles">0.00</span>
-                                        </div>
-                                        <div class="amount-row">
-                                            <span class="currency">$</span>
-                                            <span class="amount balance-amount" id="detalleBalanceDolares">0.00</span>
-                                        </div>
-                                    </div>
+                        <div class="rf-balance-bar" id="rfBalanceBar">
+                            <div class="rf-balance-label">
+                                <i class="fas fa-balance-scale mr-2"></i>Balance Final
+                            </div>
+                            <div class="rf-balance-amounts">
+                                <div class="rf-bal-item">
+                                    <span class="rf-bal-currency">S/</span>
+                                    <span class="rf-bal-number" id="detalleBalanceSoles">0.00</span>
+                                </div>
+                                <div class="rf-bal-divider"></div>
+                                <div class="rf-bal-item">
+                                    <span class="rf-bal-currency">$</span>
+                                    <span class="rf-bal-number" id="detalleBalanceDolares">0.00</span>
                                 </div>
                             </div>
                         </div>
@@ -1724,6 +1715,227 @@
             margin-top: 0.5rem;
             font-style: italic;
         }
+
+        /* === VIAJE INFO STRIP === */
+        .viaje-info-section {
+            padding: 1rem 1.25rem;
+        }
+
+        .viaje-info-strip {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0;
+        }
+
+        .vi-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            padding: 0.5rem 1.125rem;
+            min-width: 0;
+        }
+
+        .vi-item-conductor {
+            padding-left: 0;
+            flex: 1.5;
+        }
+
+        .vi-item:not(.vi-item-conductor) {
+            flex: 1;
+        }
+
+        .vi-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--neutral-color);
+            white-space: nowrap;
+        }
+
+        .vi-value {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: #1e293b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .vi-value-periodo {
+            font-size: 0.8125rem;
+        }
+
+        .vi-sep {
+            width: 1px;
+            height: 2.5rem;
+            background: var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .vi-obs-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px dashed var(--border-color);
+            font-size: 0.875rem;
+        }
+
+        .vi-obs-icon {
+            color: var(--neutral-color);
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .vi-obs-label {
+            font-weight: 700;
+            color: var(--neutral-color);
+            white-space: nowrap;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .vi-obs-text {
+            color: #374151;
+            font-style: italic;
+        }
+
+        /* === RESUMEN FINANCIERO GRID === */
+        .rf-section {
+            padding: 1.25rem 1.25rem 0;
+        }
+
+        .rf-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .rf-cell {
+            border-radius: 0.5rem;
+            padding: 0.875rem 1rem;
+            border: 1px solid transparent;
+        }
+
+        .rf-ingresos {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .rf-gastos {
+            background: #fff1f2;
+            border-color: #fecdd3;
+        }
+
+        .rf-cell-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.625rem;
+        }
+
+        .rf-cell-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--neutral-color);
+        }
+
+        .rf-icon-up { color: #16a34a; font-size: 0.875rem; }
+        .rf-icon-down { color: #dc2626; font-size: 0.875rem; }
+
+        .rf-amounts {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .rf-amount-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.3rem;
+        }
+
+        .rf-currency {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--neutral-color);
+            width: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .rf-number {
+            font-size: 1.125rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: #1e293b;
+        }
+
+        .rf-amount-secondary .rf-number {
+            font-size: 0.9375rem;
+            color: #475569;
+        }
+
+        .rf-amount-secondary .rf-currency {
+            color: #94a3b8;
+        }
+
+        /* Balance bar */
+        .rf-balance-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #1e293b;
+            color: white;
+            border-radius: 0.5rem;
+            padding: 0.875rem 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .rf-balance-label {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.8;
+            white-space: nowrap;
+        }
+
+        .rf-balance-amounts {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .rf-bal-item {
+            display: flex;
+            align-items: baseline;
+            gap: 0.25rem;
+        }
+
+        .rf-bal-currency {
+            font-size: 0.8125rem;
+            font-weight: 700;
+            opacity: 0.65;
+        }
+
+        .rf-bal-number {
+            font-size: 1.375rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .rf-bal-divider {
+            width: 1px;
+            height: 1.75rem;
+            background: rgba(255,255,255,0.2);
+        }
     </style>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -1871,10 +2083,18 @@
             _balanceSoles = balanceSoles;
             _balanceDolares = balanceDolares;
 
+            var balPositivo = balanceSoles >= 0 && balanceDolares >= 0;
+            var balNegativo = balanceSoles < 0 || balanceDolares < 0;
+            var balColor = balNegativo ? '#7f1d1d' : '#064e3b';
+            var balBg = balNegativo
+                ? 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)'
+                : 'linear-gradient(135deg, #064e3b 0%, #065f46 100%)';
+
             $('#detalleBalanceSoles').text(balanceSoles.toFixed(2))
-                .css('color', balanceSoles >= 0 ? '#059669' : '#dc2626');
+                .css('color', balanceSoles >= 0 ? '#6ee7b7' : '#fca5a5');
             $('#detalleBalanceDolares').text(balanceDolares.toFixed(2))
-                .css('color', balanceDolares >= 0 ? '#059669' : '#dc2626');
+                .css('color', balanceDolares >= 0 ? '#6ee7b7' : '#fca5a5');
+            $('#rfBalanceBar').css('background', balBg);
 
             // --- Desglose de Ingresos ---
             var ingresosItems = [

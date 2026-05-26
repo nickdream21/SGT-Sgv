@@ -30,9 +30,9 @@
                 <div class="page-header d-flex justify-content-between align-items-center">
                     <div>
                         <h2 class="page-title mb-1">
-                            <i class="fas fa-route mr-2"></i>Crear Orden de Viaje
+                            <i class="fas fa-route mr-2" id="pageTitleIcon"></i><span id="pageTitleText">Crear Orden de Viaje</span>
                         </h2>
-                        <p class="text-muted mb-0">Complete la información del viaje y gestión financiera</p>
+                        <p class="text-muted mb-0" id="pageTitleSub">Complete la información del viaje y gestión financiera</p>
                     </div>
                     <a href="ListaDespachos.aspx" class="btn btn-outline-secondary btn-back">
                         <i class="fas fa-arrow-left mr-2"></i>Volver
@@ -611,19 +611,23 @@
                                     </div>
 
                                     <!-- Balance Final -->
-                                    <div class="balance-final mt-4">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="balance-item">
-                                                    <span class="balance-label">Balance en Soles:</span>
-                                                    <span class="balance-amount" id="diferenciaSoles">0.00</span>
-                                                </div>
+                                    <div class="balance-final mt-4" id="balanceFinalBar">
+                                        <div class="bf-header">
+                                            <i class="fas fa-balance-scale bf-icon"></i>
+                                            <span class="bf-title">Balance Final</span>
+                                            <span class="bf-hint">Ingresos − Gastos − Descuentos + Reintegros</span>
+                                        </div>
+                                        <div class="bf-amounts">
+                                            <div class="bf-amount-block">
+                                                <span class="bf-currency">S/</span>
+                                                <span class="bf-number" id="diferenciaSoles">0.00</span>
+                                                <span class="bf-label">Soles</span>
                                             </div>
-                                            <div class="col-md-6">
-                                                <div class="balance-item">
-                                                    <span class="balance-label">Balance en Dólares:</span>
-                                                    <span class="balance-amount" id="diferenciaDolares">0.00</span>
-                                                </div>
+                                            <div class="bf-divider"></div>
+                                            <div class="bf-amount-block">
+                                                <span class="bf-currency">$</span>
+                                                <span class="bf-number" id="diferenciaDolares">0.00</span>
+                                                <span class="bf-label">Dólares</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1424,32 +1428,86 @@
 
         /* === BALANCE FINAL === */
         .balance-final {
-            background-color: var(--light-gray);
-            border: 2px solid var(--border-color);
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-        }
-
-        .balance-item {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: 0.75rem;
+            padding: 1.25rem 1.5rem;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 0.75rem 1rem;
-            background-color: white;
-            border: 1px solid var(--border-color);
-            border-radius: 0.375rem;
+            justify-content: space-between;
+            gap: 1.5rem;
+            transition: background 0.3s ease;
         }
 
-        .balance-label {
-            font-weight: 600;
-            color: var(--text-primary);
-            font-size: 1rem;
+        .bf-header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
         }
 
-        .balance-amount {
-            font-size: 1.5rem;
+        .bf-icon {
+            display: none;
+        }
+
+        .bf-title {
+            font-size: 0.8125rem;
             font-weight: 700;
-            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .bf-hint {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.35);
+            font-style: italic;
+        }
+
+        .bf-amounts {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .bf-amount-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.1rem;
+        }
+
+        .bf-currency {
+            font-size: 0.8125rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .bf-number {
+            font-size: 1.75rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            color: white;
+            line-height: 1;
+        }
+
+        .bf-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .bf-divider {
+            width: 1px;
+            height: 3rem;
+            background: rgba(255,255,255,0.15);
+        }
+
+        .balance-final.balance-positivo {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+        }
+
+        .balance-final.balance-negativo {
+            background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
         }
 
         /* === MODALES === */
@@ -1521,8 +1579,14 @@
                 padding: 1rem;
             }
 
-            .balance-amount {
-                font-size: 1.25rem;
+            .bf-number {
+                font-size: 1.375rem;
+            }
+
+            .balance-final {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.875rem;
             }
         }
 
@@ -1607,11 +1671,20 @@
         // Inicialización
         $(document).ready(function () {
             console.log('✅ Sistema iniciado');
+            actualizarTituloPagina();
             detectarOrigenViaje();
             configurarFechasPorDefecto();
             cargarEstacionesPeaje();
             calcularTotales();
         });
+
+        function actualizarTituloPagina() {
+            var idOrden = parseInt($('#hfIdOrdenViaje').val()) || 0;
+            if (idOrden > 0) {
+                $('#pageTitleText').text('Editar Orden de Viaje');
+                $('#pageTitleSub').text('Modifique los datos del viaje y guarde los cambios');
+            }
+        }
 
         function detectarOrigenViaje() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -1707,8 +1780,16 @@
             $('#totalIngresosDolares').text(totalIngresosDolares.toFixed(2));
             $('#totalGastosSoles').text(totalGastosSoles.toFixed(2));
             $('#totalGastosDolares').text(totalGastosDolares.toFixed(2));
-            $('#diferenciaSoles').text(diferenciaSoles.toFixed(2)).css('color', diferenciaSoles >= 0 ? '#059669' : '#dc2626');
-            $('#diferenciaDolares').text(diferenciaDolares.toFixed(2)).css('color', diferenciaDolares >= 0 ? '#059669' : '#dc2626');
+            var solPos = diferenciaSoles >= 0, dolPos = diferenciaDolares >= 0;
+            $('#diferenciaSoles').text(diferenciaSoles.toFixed(2));
+            $('#diferenciaDolares').text(diferenciaDolares.toFixed(2));
+            var $bar = $('#balanceFinalBar');
+            $bar.removeClass('balance-positivo balance-negativo');
+            if (!solPos || !dolPos) {
+                $bar.addClass('balance-negativo');
+            } else {
+                $bar.addClass('balance-positivo');
+            }
         }
 
         // PEAJES
