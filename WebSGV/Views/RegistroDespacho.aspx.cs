@@ -160,7 +160,18 @@ namespace WebSGV.Views
                 EstablecerFechaPorDefecto();
                 ConfigurarEstadoPagina();
                 ActualizarVisibilidadNumeroPedido();
+
+                if (TieneLoteActivo)
+                    MostrarMensajeRecuperacion();
             }
+        }
+
+        protected override void OnPreRender(EventArgs e)
+        {
+            base.OnPreRender(e);
+            // Sincroniza el estado del lote con el cliente en cada postback
+            // (parcial o completo) para que el beforeunload JS esté siempre al día.
+            hfLoteActivo.Value = TieneLoteActivo ? "1" : "0";
         }
 
         private void ConfigurarEstadoPagina()
@@ -1461,6 +1472,27 @@ namespace WebSGV.Views
             lblMensaje.CssClass = $"alert alert-{tipo} alert-dismissible fade show";
             pnlMensajes.Visible = true;
             UpdatePanelMain.Update();
+        }
+
+        private void MostrarMensajeRecuperacion()
+        {
+            var lote = LoteActual;
+            string ambito = lote.EsInternacional ? "Internacional" : "Nacional";
+            string conductores = lote.CantidadConductores == 1
+                ? "1 conductor agregado"
+                : $"{lote.CantidadConductores} conductores agregados";
+
+            // HTML controlado — los datos de usuario van codificados
+            lblMensaje.Text =
+                $"<i class='fas fa-history mr-1'></i> <strong>Sesión recuperada.</strong> " +
+                $"Tiene un lote activo: <strong>{HttpUtility.HtmlEncode(lote.TipoOperacion)}</strong> " +
+                $"{HttpUtility.HtmlEncode(ambito)} · " +
+                $"Cliente: <strong>{HttpUtility.HtmlEncode(lote.NombreCliente)}</strong> · " +
+                $"{conductores} · " +
+                $"Iniciado: {lote.FechaCreacion:dd/MM/yyyy HH:mm}. " +
+                $"Puede continuar desde donde lo dejó.";
+            lblMensaje.CssClass = "alert alert-info alert-dismissible fade show";
+            pnlMensajes.Visible = true;
         }
 
         private void RegistrarError(string contexto, Exception ex)

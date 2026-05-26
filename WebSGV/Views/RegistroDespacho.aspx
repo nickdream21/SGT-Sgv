@@ -39,6 +39,9 @@
                         <asp:UpdatePanel ID="UpdatePanelMain" runat="server" UpdateMode="Conditional">
                             <ContentTemplate>
                                 
+                                <!-- Estado del lote para JS (se actualiza en cada postback parcial) -->
+                                <asp:HiddenField ID="hfLoteActivo" runat="server" Value="0" />
+
                                 <!-- Mensajes -->
                                 <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-3">
                                     <asp:Label ID="lblMensaje" runat="server" CssClass="alert"></asp:Label>
@@ -805,6 +808,7 @@
             initializeSelect2();
             setDefaultDate();
             autoHideMessages();
+            actualizarGuardiaLote();
         });
 
         function initializeSelect2() {
@@ -845,12 +849,13 @@
             modal.show();
         }
 
-        // Re-inicializar Select2 después de un postback parcial del UpdatePanel
+        // Re-inicializar después de un postback parcial del UpdatePanel
         var prm = Sys.WebForms.PageRequestManager.getInstance();
         prm.add_endRequest(function () {
             initializeSelect2();
             setDefaultDate();
             autoHideMessages();
+            actualizarGuardiaLote();
         });
 
         // Función para auto-ocultar mensajes después de 5 segundos
@@ -868,6 +873,26 @@
                     conductoresPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }, 100);
+        }
+
+        // ── Guardia de lote activo ──────────────────────────────────────────
+        // Función nombrada para poder registrarla y quitarla sin duplicar handlers.
+        function _guardiaLote(e) {
+            e.preventDefault();
+            e.returnValue = '';
+            return '';
+        }
+
+        // Lee el HiddenField que el servidor actualiza en cada postback
+        // y registra/quita el beforeunload según corresponda.
+        function actualizarGuardiaLote() {
+            var hf = document.getElementById('<%= hfLoteActivo.ClientID %>');
+            if (!hf) return;
+            if (hf.value === '1') {
+                window.addEventListener('beforeunload', _guardiaLote);
+            } else {
+                window.removeEventListener('beforeunload', _guardiaLote);
+            }
         }
     </script>
     <style>
