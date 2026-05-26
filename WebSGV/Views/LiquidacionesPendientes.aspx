@@ -414,12 +414,18 @@
     <div class="modal fade" id="modalDetalleLiquidacion" tabindex="-1">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <div class="modal-header modal-header-info">
-                    <h5 class="modal-title">
-                        <i class="fas fa-file-invoice-dollar mr-2"></i>
-                        Detalle de Liquidación - <span id="modalNumeroOrden"></span>
-                    </h5>
-                    <button type="button" class="close" data-dismiss="modal">
+                <div class="modal-header modal-header-info" id="modalDetalleLiquidacionHeader">
+                    <div class="d-flex align-items-center" style="flex:1;min-width:0;">
+                        <h5 class="modal-title mb-0">
+                            <i class="fas fa-file-invoice-dollar mr-2"></i>
+                            <span id="modalModeLabel">Detalle de Liquidación</span>
+                            <span class="modal-orden-ref ml-2" id="modalNumeroOrden"></span>
+                        </h5>
+                        <span class="badge-modo-aprobacion ml-3" id="modalModeBadge" style="display:none;">
+                            <i class="fas fa-check-circle mr-1"></i>APROBANDO
+                        </span>
+                    </div>
+                    <button type="button" class="close ml-2" data-dismiss="modal">
                         <span>&times;</span>
                     </button>
                 </div>
@@ -435,6 +441,16 @@
                     <div id="detalleError" class="text-center py-4" style="display:none;">
                         <i class="fas fa-exclamation-triangle text-danger fa-3x mb-3 d-block"></i>
                         <p class="text-muted">Error al cargar el detalle. Por favor, intente de nuevo.</p>
+                    </div>
+
+                    <div id="approvalBanner" class="approval-guidance-banner" style="display:none;">
+                        <div class="agb-content">
+                            <i class="fas fa-clipboard-check agb-icon"></i>
+                            <div class="agb-text">
+                                <strong>Revisión para Aprobación</strong>
+                                <span>Revise el balance financiero. Si aplica descuentos o reintegros, complételos en los <a href="#" onclick="scrollToAjustes(); return false;" class="agb-link">Ajustes Administrativos ↓</a>. Luego use el botón <strong>Aprobar Liquidación</strong>.</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="detail-section">
@@ -640,6 +656,15 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="form-group mt-3" id="notaAprobacionGroup">
+                            <label class="form-label">
+                                <i class="fas fa-comment-alt mr-1 text-muted"></i>Nota de Aprobación
+                                <span class="text-muted font-weight-normal">(opcional)</span>
+                            </label>
+                            <textarea id="notaAprobacion" class="form-control" rows="2" maxlength="500"
+                                placeholder="Ej: Aprobado. Comprobantes revisados y conformes."></textarea>
+                            <small class="text-muted">Máximo 500 caracteres. Se adjuntará a la liquidación como observación administrativa.</small>
+                        </div>
                     </div>
 
                 </div>
@@ -746,7 +771,7 @@
     <div class="modal fade" id="modalCorregirAjustes" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header" style="background:#fef3c7;border-bottom:2px solid #fbbf24;">
+                <div class="modal-header modal-header-corregir">
                     <h5 class="modal-title">
                         <i class="fas fa-edit mr-2"></i>Corregir Ajustes de Liquidación Aprobada
                     </h5>
@@ -770,28 +795,29 @@
                         </div>
                     </div>
 
-                    <div class="detail-section mb-3" style="padding:1rem;">
-                        <h6 style="font-weight:600;margin-bottom:0.75rem;">
-                            <i class="fas fa-history mr-1"></i>Valores Actuales
-                        </h6>
-                        <div class="row">
-                            <div class="col-md-3 text-center">
-                                <small class="text-muted d-block">Descuento S/</small>
-                                <strong id="corregirDescSolesActual">0.00</strong>
+                    <div class="valores-actuales-panel mb-3">
+                        <div class="vap-title">
+                            <i class="fas fa-history mr-1"></i>Valores Registrados Actualmente
+                        </div>
+                        <div class="vap-grid">
+                            <div class="vap-item vap-descuento">
+                                <span class="vap-label">Descuento S/</span>
+                                <span class="vap-number" id="corregirDescSolesActual">0.00</span>
                             </div>
-                            <div class="col-md-3 text-center">
-                                <small class="text-muted d-block">Descuento $</small>
-                                <strong id="corregirDescDolaresActual">0.00</strong>
+                            <div class="vap-item vap-descuento">
+                                <span class="vap-label">Descuento $</span>
+                                <span class="vap-number" id="corregirDescDolaresActual">0.00</span>
                             </div>
-                            <div class="col-md-3 text-center">
-                                <small class="text-muted d-block">Reintegro S/</small>
-                                <strong id="corregirReintSolesActual">0.00</strong>
+                            <div class="vap-item vap-reintegro">
+                                <span class="vap-label">Reintegro S/</span>
+                                <span class="vap-number" id="corregirReintSolesActual">0.00</span>
                             </div>
-                            <div class="col-md-3 text-center">
-                                <small class="text-muted d-block">Reintegro $</small>
-                                <strong id="corregirReintDolaresActual">0.00</strong>
+                            <div class="vap-item vap-reintegro">
+                                <span class="vap-label">Reintegro $</span>
+                                <span class="vap-number" id="corregirReintDolaresActual">0.00</span>
                             </div>
                         </div>
+                        <div class="vap-hint"><i class="fas fa-arrow-down mr-1"></i>Ingrese los nuevos valores a continuación</div>
                     </div>
 
                     <div class="row">
@@ -1544,6 +1570,160 @@
             font-size: 0.85rem;
             line-height: 1;
         }
+
+        /* === MODAL HEADER CORREGIR === */
+        .modal-header-corregir {
+            background: #fef3c7;
+            border-bottom: 2px solid #fbbf24;
+        }
+
+        /* === MODAL DETAIL: MODE INDICATOR === */
+        .modal-orden-ref {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--neutral-color);
+        }
+
+        .badge-modo-aprobacion {
+            display: inline-flex;
+            align-items: center;
+            background: #059669;
+            color: white;
+            padding: 0.3rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        #modalDetalleLiquidacionHeader.mode-aprobacion {
+            background: #d1fae5;
+            border-bottom: 2px solid #86efac;
+        }
+
+        /* === APPROVAL GUIDANCE BANNER === */
+        .approval-guidance-banner {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border: 1px solid #86efac;
+            border-left: 4px solid #059669;
+            border-radius: 0.375rem;
+            padding: 0.875rem 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .agb-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .agb-icon {
+            color: #059669;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+
+        .agb-text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .agb-text strong {
+            color: #065f46;
+            font-size: 0.9rem;
+        }
+
+        .agb-text span {
+            color: #374151;
+        }
+
+        .agb-link {
+            color: #065f46;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+        .agb-link:hover {
+            color: #059669;
+            text-decoration: none;
+        }
+
+        /* === VALORES ACTUALES PANEL (modal corregir) === */
+        .valores-actuales-panel {
+            background: var(--light-gray);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            padding: 0.875rem 1rem;
+        }
+
+        .vap-title {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--neutral-color);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin-bottom: 0.75rem;
+        }
+
+        .vap-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.625rem;
+        }
+
+        .vap-item {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.625rem;
+            text-align: center;
+        }
+
+        .vap-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--neutral-color);
+            letter-spacing: 0.03em;
+            margin-bottom: 0.2rem;
+        }
+
+        .vap-number {
+            font-size: 1.0625rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: #1e293b;
+        }
+
+        .vap-descuento {
+            border-color: #fca5a5;
+        }
+
+        .vap-descuento .vap-number {
+            color: var(--danger-color);
+        }
+
+        .vap-reintegro {
+            border-color: #86efac;
+        }
+
+        .vap-reintegro .vap-number {
+            color: var(--success-color);
+        }
+
+        .vap-hint {
+            font-size: 0.75rem;
+            color: var(--neutral-color);
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
     </style>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -1561,6 +1741,9 @@
             $('#btnAprobarDesdeModal').hide().prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar Liquidación');
             $('#detalleLoading').show();
             $('#detalleError').hide();
+            $('#approvalBanner').hide();
+            $('#modalModeBadge').hide();
+            $('#modalDetalleLiquidacionHeader').removeClass('mode-aprobacion');
             $('#modalDetalleLiquidacion .detail-section').hide();
             $('#modalNumeroOrden').text('');
             $('#modalDetalleLiquidacion').modal('show');
@@ -1780,9 +1963,24 @@
             $('#detalleLoading').hide();
             $('#modalDetalleLiquidacion .detail-section').show();
             $('#sectionAjustes').toggle(modoAprobacion);
+            $('#approvalBanner').toggle(modoAprobacion);
+            $('#modalModeBadge').toggle(modoAprobacion);
+            $('#modalDetalleLiquidacionHeader').toggleClass('mode-aprobacion', modoAprobacion);
 
             if (modoAprobacion) {
                 $('#btnAprobarDesdeModal').show();
+                // Scroll modal to top so admin sees the guidance banner first
+                setTimeout(function () {
+                    $('#modalDetalleLiquidacion .modal-body').scrollTop(0);
+                }, 50);
+            }
+        }
+
+        function scrollToAjustes() {
+            var $body = $('#modalDetalleLiquidacion .modal-body');
+            var $target = $('#sectionAjustes');
+            if ($body.length && $target.length) {
+                $body.animate({ scrollTop: $target.position().top + $body.scrollTop() - 16 }, 350);
             }
         }
 
@@ -1809,6 +2007,7 @@
                 return false;
             }
 
+            $('[name=observacionesRechazo]').remove();
             $('<input>').attr({
                 type: 'hidden',
                 name: 'observacionesRechazo',
@@ -2203,6 +2402,12 @@
             var descD = parseFloat($('#ajusteDescuentoDolares').val()) || 0;
             var reintS = parseFloat($('#ajusteReintegroSoles').val()) || 0;
             var reintD = parseFloat($('#ajusteReintegroDolares').val()) || 0;
+            var nota = $('#notaAprobacion').val().trim();
+
+            if (descS < 0 || descD < 0 || reintS < 0 || reintD < 0) {
+                alert('⚠️ Los montos de ajuste no pueden ser negativos.');
+                return;
+            }
 
             var confirmMsg = '¿Está seguro de APROBAR esta liquidación?\n\n';
             if (descS > 0 || descD > 0 || reintS > 0 || reintD > 0) {
@@ -2213,6 +2418,7 @@
                 if (reintD > 0) confirmMsg += '  \u2022 Reintegro $: ' + reintD.toFixed(2) + '\n';
                 confirmMsg += '\n';
             }
+            if (nota) confirmMsg += 'Nota: ' + nota + '\n\n';
             confirmMsg += 'Esta acción completará el viaje y no se podrá deshacer.';
 
             if (!confirm(confirmMsg)) return;
@@ -2228,7 +2434,8 @@
                     descuentoSoles: descS,
                     descuentoDolares: descD,
                     reintegroSoles: reintS,
-                    reintegroDolares: reintD
+                    reintegroDolares: reintD,
+                    notaAprobacion: nota || null
                 }),
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
@@ -2257,6 +2464,12 @@
                 modoAprobacion = false;
                 idOrdenParaAprobar = 0;
                 $('#btnAprobarDesdeModal').hide();
+                $('#approvalBanner').hide();
+                $('#modalModeBadge').hide();
+                $('#modalDetalleLiquidacionHeader').removeClass('mode-aprobacion');
+                $('#notaAprobacion').val('');
+                $('#ajusteDescuentoSoles, #ajusteDescuentoDolares, #ajusteReintegroSoles, #ajusteReintegroDolares').val('');
+                $('#balanceAjustadoPanel').hide();
             });
         });
 

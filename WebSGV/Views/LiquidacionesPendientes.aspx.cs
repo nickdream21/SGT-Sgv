@@ -161,6 +161,7 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            SecurityHelper.AgregarHeadersSeguridad();
             if (!IsPostBack)
             {
                 VerificarAcceso();
@@ -556,9 +557,16 @@ namespace WebSGV.Views
 
         #region Métodos Auxiliares Adicionales
 
-        /// <summary>
-        /// Obtiene el número de orden a partir del ID
-        /// </summary>
+        private static string ValidarMontosAjuste(decimal descS, decimal descD, decimal reintS, decimal reintD)
+        {
+            if (descS < 0 || descD < 0 || reintS < 0 || reintD < 0)
+                return "Los montos de descuento y reintegro no pueden ser negativos.";
+            const decimal max = 9_999_999m;
+            if (descS > max || descD > max || reintS > max || reintD > max)
+                return "Los montos no pueden superar S/ 9,999,999.";
+            return null;
+        }
+
         private string ObtenerNumeroOrdenViaje(int idOrdenViaje)
         {
             try
@@ -1022,7 +1030,7 @@ namespace WebSGV.Views
         }
 
         [WebMethod(EnableSession = true)]
-        public static object AprobarConAjustes(int idOrdenViaje, decimal descuentoSoles, decimal descuentoDolares, decimal reintegroSoles, decimal reintegroDolares)
+        public static object AprobarConAjustes(int idOrdenViaje, decimal descuentoSoles, decimal descuentoDolares, decimal reintegroSoles, decimal reintegroDolares, string notaAprobacion = null)
         {
             try
             {
@@ -1034,6 +1042,10 @@ namespace WebSGV.Views
 
                 if (idUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
+
+                string errorMonto = ValidarMontosAjuste(descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares);
+                if (errorMonto != null)
+                    return new { success = false, message = errorMonto };
 
                 string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
                 string numeroOrdenViaje = null;
@@ -1090,7 +1102,8 @@ namespace WebSGV.Views
                         cmd.CommandType = System.Data.CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
                         cmd.Parameters.AddWithValue("@idUsuarioAprobacion", idUsuario);
-                        cmd.Parameters.AddWithValue("@observaciones", DBNull.Value);
+                        cmd.Parameters.AddWithValue("@observaciones",
+                            string.IsNullOrWhiteSpace(notaAprobacion) ? (object)DBNull.Value : notaAprobacion.Trim());
 
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
@@ -1436,6 +1449,13 @@ namespace WebSGV.Views
                 if (idUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
 
+                string errorMonto = ValidarMontosAjuste(descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares);
+                if (errorMonto != null)
+                    return new { success = false, message = errorMonto };
+
+                if (string.IsNullOrWhiteSpace(motivo) || motivo.Trim().Length < 10)
+                    return new { success = false, message = "El motivo de corrección debe tener al menos 10 caracteres." };
+
                 string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
                 string numeroOrdenViaje = null;
 
@@ -1538,7 +1558,7 @@ namespace WebSGV.Views
             try
             {
                 var ctx = System.Web.HttpContext.Current;
-                int idUsuario = ctx.Session["IdUsuario"] != null ? Convert.ToInt32(ctx.Session["IdUsuario"]) : 0;
+                int idUsuario = ctx.Session["UsuarioID"] != null ? Convert.ToInt32(ctx.Session["UsuarioID"]) : 0;
                 string nombre = ctx.Session["Nombre"] as string ?? "";
                 string rol    = (ctx.Session["Rol"] as string ?? "").ToUpperInvariant();
 
@@ -1591,12 +1611,13 @@ namespace WebSGV.Views
             decimal descuentoSoles,
             decimal descuentoDolares,
             decimal reintegroSoles,
-            decimal reintegroDolares)
+            decimal reintegroDolares,
+            string notaAprobacion = null)
         {
             try
             {
                 var ctx = System.Web.HttpContext.Current;
-                int idUsuario = ctx.Session["IdUsuario"] != null ? Convert.ToInt32(ctx.Session["IdUsuario"]) : 0;
+                int idUsuario = ctx.Session["UsuarioID"] != null ? Convert.ToInt32(ctx.Session["UsuarioID"]) : 0;
                 string nombre = ctx.Session["Nombre"] as string ?? "";
                 string rol    = (ctx.Session["Rol"] as string ?? "").ToUpperInvariant();
 
@@ -1606,7 +1627,7 @@ namespace WebSGV.Views
                     return new { success = false, message = "Un conductor no puede aprobar liquidaciones." };
 
                 // 1) Ejecutar el flujo de aprobación existente (ajustes + sp_AprobarLiquidacion)
-                var resAprobacion = AprobarConAjustes(idOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares)
+                var resAprobacion = AprobarConAjustes(idOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, notaAprobacion)
                     as dynamic;
                 bool okAprobacion = resAprobacion != null && (bool)resAprobacion.success;
                 if (!okAprobacion)
@@ -1666,7 +1687,7 @@ namespace WebSGV.Views
             try
             {
                 var ctx = System.Web.HttpContext.Current;
-                int idUsuario = ctx.Session["IdUsuario"] != null ? Convert.ToInt32(ctx.Session["IdUsuario"]) : 0;
+                int idUsuario = ctx.Session["UsuarioID"] != null ? Convert.ToInt32(ctx.Session["UsuarioID"]) : 0;
                 string nombre = ctx.Session["Nombre"] as string ?? "";
                 string rol    = (ctx.Session["Rol"] as string ?? "").ToUpperInvariant();
 
@@ -1884,7 +1905,7 @@ namespace WebSGV.Views
             try
             {
                 var ctx = System.Web.HttpContext.Current;
-                int idUsuario = ctx.Session["IdUsuario"] != null ? Convert.ToInt32(ctx.Session["IdUsuario"]) : 0;
+                int idUsuario = ctx.Session["UsuarioID"] != null ? Convert.ToInt32(ctx.Session["UsuarioID"]) : 0;
                 if (idUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Inicie sesión nuevamente." };
 
