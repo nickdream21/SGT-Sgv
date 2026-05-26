@@ -598,7 +598,14 @@ namespace WebSGV.Views
         {
             List<string> errores = new List<string>();
 
-            // Validaciones básicas ya manejadas por RequiredFieldValidators
+            // Validar fecha no sea futura en más de 30 días
+            if (DateTime.TryParse(txtFechaDespachoBase.Text, out DateTime fechaDespacho))
+            {
+                if (fechaDespacho > DateTime.Today.AddDays(30))
+                    errores.Add("La fecha de programación no puede ser mayor a 30 días en el futuro");
+                if (fechaDespacho < DateTime.Today.AddDays(-365))
+                    errores.Add("La fecha de programación no puede ser anterior a un año");
+            }
 
             // Validaciones adicionales - solo si el campo es visible
             if (pnlNumeroPedido.Visible && !string.IsNullOrEmpty(txtNumeroPedidoBase.Text) && !ValidarNumeroPedido(txtNumeroPedidoBase.Text))
@@ -1076,7 +1083,7 @@ namespace WebSGV.Views
                     cmd.Parameters.AddWithValue("@idFactura", (object)idFactura ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@idCPIC", (object)idCPIC ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@guiaRemitente", string.IsNullOrWhiteSpace(conductor.GuiaRemitente) ? (object)DBNull.Value : conductor.GuiaRemitente.Trim());
-                    cmd.Parameters.AddWithValue("@guiaTransportista", (object)conductor.GuiaTransportista ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@guiaTransportista", string.IsNullOrWhiteSpace(conductor.GuiaTransportista) ? (object)DBNull.Value : conductor.GuiaTransportista.Trim());
                     cmd.Parameters.AddWithValue("@esInternacional", lote.EsInternacional);
                     cmd.Parameters.AddWithValue("@usuarioCreacion", lote.UsuarioCreacion);
                     cmd.Parameters.AddWithValue("@idViajeProgreso", (object)conductor.IdViajeProgreso ?? DBNull.Value);

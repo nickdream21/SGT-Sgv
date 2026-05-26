@@ -23,6 +23,18 @@
 .rd-list-header { background: #f8fafc; border-bottom: 1px solid #e2e8f0; border-radius: 5px 5px 0 0; padding: .85rem 1.25rem; }
 .rd-list-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: #1e293b; }
 /* MIN-002: .loading-overlay definido solo en Content2 (definición completa con width/height 100%) */
+
+/* ---- Stepper de progreso ---- */
+.rd-stepper { padding: .5rem 0 .25rem; }
+.rd-stepper-inner { display: flex; align-items: center; justify-content: center; gap: 0; }
+.rd-stepper-item { display: flex; flex-direction: column; align-items: center; gap: .3rem; min-width: 110px; }
+.rd-stepper-circle { width: 34px; height: 34px; border-radius: 50%; background: #e2e8f0; color: #94a3b8; font-size: .8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #e2e8f0; transition: background .3s, color .3s, border-color .3s; }
+.rd-stepper-item.active .rd-stepper-circle { background: #1e40af; color: #fff; border-color: #1e40af; }
+.rd-stepper-item.done .rd-stepper-circle { background: #16a34a; color: #fff; border-color: #16a34a; }
+.rd-stepper-label { font-size: .72rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .04em; transition: color .3s; }
+.rd-stepper-item.active .rd-stepper-label { color: #1e40af; }
+.rd-stepper-item.done .rd-stepper-label { color: #16a34a; }
+.rd-stepper-connector { flex: 1; height: 2px; background: #e2e8f0; max-width: 120px; margin-bottom: 1.4rem; }
 </style>
 
     <div class="container-fluid">
@@ -42,9 +54,28 @@
                                 <!-- Estado del lote para JS (se actualiza en cada postback parcial) -->
                                 <asp:HiddenField ID="hfLoteActivo" runat="server" Value="0" />
 
+                                <!-- Indicador de progreso de pasos -->
+                                <div class="rd-stepper mb-4">
+                                    <div class="rd-stepper-inner">
+                                        <div id="rdStep1" class="rd-stepper-item">
+                                            <div class="rd-stepper-circle">1</div>
+                                            <div class="rd-stepper-label">Configurar Lote</div>
+                                        </div>
+                                        <div class="rd-stepper-connector"></div>
+                                        <div id="rdStep2" class="rd-stepper-item">
+                                            <div class="rd-stepper-circle">2</div>
+                                            <div class="rd-stepper-label">Agregar Conductores</div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Mensajes -->
                                 <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-3">
-                                    <asp:Label ID="lblMensaje" runat="server" CssClass="alert"></asp:Label>
+                                    <div class="position-relative">
+                                        <asp:Label ID="lblMensaje" runat="server" CssClass="alert d-block mb-0 pe-5"></asp:Label>
+                                        <button type="button" class="btn-close position-absolute" style="top:.65rem;right:.75rem;"
+                                            onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"></button>
+                                    </div>
                                 </asp:Panel>
 
                                 <!-- ====== FASE 1: CONFIGURACIÓN BASE DEL LOTE ====== -->
@@ -682,7 +713,8 @@
                                             <h5><i class="fas fa-list mr-2"></i> Conductores del Lote</h5>
                                         </div>
                                         <div class="card-body">
-                                            <asp:GridView ID="gvConductoresLote" runat="server" 
+                                            <div class="table-responsive">
+                                            <asp:GridView ID="gvConductoresLote" runat="server"
                                                 CssClass="table table-striped table-hover"
                                                 AutoGenerateColumns="false"
                                                 EmptyDataText="No hay conductores agregados al lote"
@@ -706,6 +738,7 @@
                                                     </asp:TemplateField>
                                                 </Columns>
                                             </asp:GridView>
+                                            </div>
                                         </div>
                                     </div>
                                 </asp:Panel>
@@ -809,6 +842,8 @@
             setDefaultDate();
             autoHideMessages();
             actualizarGuardiaLote();
+            actualizarStepper();
+            inicializarValidacionNumeroPedido();
         });
 
         function initializeSelect2() {
@@ -856,6 +891,7 @@
             setDefaultDate();
             autoHideMessages();
             actualizarGuardiaLote();
+            actualizarStepper();
         });
 
         // Función para auto-ocultar mensajes después de 5 segundos
@@ -893,6 +929,36 @@
             } else {
                 window.removeEventListener('beforeunload', _guardiaLote);
             }
+        }
+
+        // Actualiza el indicador de progreso según el estado del lote
+        function actualizarStepper() {
+            var hf = document.getElementById('<%= hfLoteActivo.ClientID %>');
+            var loteActivo = hf && hf.value === '1';
+            var step1 = document.getElementById('rdStep1');
+            var step2 = document.getElementById('rdStep2');
+            if (!step1 || !step2) return;
+            step1.className = 'rd-stepper-item' + (loteActivo ? ' done' : ' active');
+            step2.className = 'rd-stepper-item' + (loteActivo ? ' active' : '');
+        }
+
+        // Validación en tiempo real del N° de Pedido (solo dígitos, máximo 10)
+        function inicializarValidacionNumeroPedido() {
+            var inputPedido = document.getElementById('<%= txtNumeroPedidoBase.ClientID %>');
+            if (!inputPedido) return;
+            inputPedido.addEventListener('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').substring(0, 10);
+                var len = this.value.length;
+                if (len === 0) {
+                    this.classList.remove('is-invalid', 'is-valid');
+                } else if (len === 10) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            });
         }
     </script>
     <style>

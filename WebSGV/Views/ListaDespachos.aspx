@@ -25,6 +25,8 @@
 .conductores-edit-container thead th { background: #f1f5f9 !important; color: #1e293b !important; }
 .data-table thead th { background: #f1f5f9 !important; color: #374151 !important; font-weight: 600 !important; border-bottom: 2px solid #e2e8f0 !important; }
 .card:hover { transform: none !important; box-shadow: 0 2px 8px rgba(0,0,0,.1) !important; }
+.active-nav { font-weight: 600 !important; }
+.btn.active-nav { box-shadow: 0 0 0 2px rgba(0,0,0,.15) inset; }
 </style>
 
     <div class="container-fluid">
@@ -43,7 +45,11 @@
                                 
                                 <!-- Mensajes -->
                                 <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-3">
-                                    <asp:Label ID="lblMensaje" runat="server" CssClass="alert"></asp:Label>
+                                    <div class="position-relative">
+                                        <asp:Label ID="lblMensaje" runat="server" CssClass="alert d-block mb-0 pe-5"></asp:Label>
+                                        <button type="button" class="btn-close position-absolute" style="top:.65rem;right:.75rem;"
+                                            onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"></button>
+                                    </div>
                                 </asp:Panel>
 
                                 <!-- NAVEGACIÓN PRINCIPAL -->
@@ -75,7 +81,7 @@
                                                 <div class="col-md-6">
                                                     <h5 class="section-title">
                                                             <i class="fas fa-route mr-2"></i> Viajes en Progreso
-                                                            <asp:Label ID="lblContadorViajes" runat="server" CssClass="badge badge-secondary ml-2"></asp:Label>
+                                                            <asp:Label ID="lblContadorViajes" runat="server" CssClass="badge bg-secondary text-white ml-2"></asp:Label>
                                                         </h5>
                                                 </div>
                                                 <div class="col-md-6">
@@ -218,7 +224,7 @@
                                                 <div class="col-md-6">
                                                     <h5 class="section-title">
                                                             <i class="fas fa-layer-group mr-2"></i> Lotes de Despacho
-                                                            <asp:Label ID="lblContadorLotes" runat="server" CssClass="badge badge-secondary ml-2"></asp:Label>
+                                                            <asp:Label ID="lblContadorLotes" runat="server" CssClass="badge bg-secondary text-white ml-2"></asp:Label>
                                                         </h5>
                                                 </div>
                                                 <div class="col-md-6">
@@ -393,7 +399,7 @@
                                                             <ItemTemplate>
                                                                 <asp:Label runat="server"
                                                                     Text='<%# Eval("EstadoLote") %>'
-                                                                    CssClass='<%# (string)Eval("EstadoLote") == "ANULADO" ? "badge badge-danger" : "badge badge-success" %>'>
+                                                                    CssClass='<%# (string)Eval("EstadoLote") == "ANULADO" ? "badge bg-danger text-white" : "badge bg-success text-white" %>'>
                                                                 </asp:Label>
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
@@ -606,7 +612,7 @@
                                                                 CssClass="form-control" 
                                                                 TextMode="Date">
                                                             </asp:TextBox>
-                                                            <asp:RequiredFieldValidator ID="RequiredFieldValidator1" runat="server"
+                                                            <asp:RequiredFieldValidator ID="rfvFechaProgramacionEdit" runat="server"
                                                                 ControlToValidate="txtFechaProgramacionEdit"
                                                                 ErrorMessage="Debe seleccionar una fecha de programación"
                                                                 CssClass="field-error"

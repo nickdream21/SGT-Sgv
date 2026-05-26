@@ -523,13 +523,60 @@ namespace WebSGV.Views
 
         private LoteRegistrado ObtenerLotePorId(string idLoteVirtual)
         {
-            var lotes = ObtenerLotesRegistrados();
-            var lote = lotes.FirstOrDefault(l => l.IdLoteVirtual == idLoteVirtual);
+            // Busca el lote directamente usando los criterios del ID virtual,
+            // ignorando los filtros del usuario para evitar que un filtro activo
+            // impida encontrar el lote que se está editando/anulando/eliminando.
+            var criterios = ParsearIdLoteVirtual(idLoteVirtual);
+            if (criterios == default) return null;
 
-            if (lote != null)
+            List<LoteRegistrado> lotes = new List<LoteRegistrado>();
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                lote.IdsDespachos = ObtenerIdsDespachosDeLote(idLoteVirtual);
+                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerLotesRegistrados", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@idCliente", criterios.IdCliente);
+                    cmd.Parameters.AddWithValue("@tipoOperacion", criterios.TipoOperacion);
+                    cmd.Parameters.AddWithValue("@planta", criterios.Planta);
+                    cmd.Parameters.AddWithValue("@numeroPedido",
+                        string.IsNullOrEmpty(criterios.NumeroPedido) ? (object)DBNull.Value : criterios.NumeroPedido);
+                    cmd.Parameters.AddWithValue("@fechaDesde", criterios.FechaDespacho.Date);
+                    cmd.Parameters.AddWithValue("@fechaHasta", criterios.FechaDespacho.Date);
+                    cmd.Parameters.AddWithValue("@estadoFiltro", DBNull.Value); // sin filtro de estado
+                    conn.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            lotes.Add(new LoteRegistrado
+                            {
+                                IdLoteVirtual = GetSafeValue<string>(reader, "IdLoteVirtual"),
+                                FechaProgramacion = GetSafeValue<DateTime>(reader, "FechaProgramacion"),
+                                IdCliente = GetSafeValue<int>(reader, "idCliente"),
+                                NombreCliente = GetSafeValue<string>(reader, "NombreCliente"),
+                                NumeroPedido = GetSafeValue<string>(reader, "numeroPedido"),
+                                TipoOperacion = GetSafeValue<string>(reader, "tipoOperacion"),
+                                EsInternacional = GetSafeValue<bool>(reader, "esInternacional"),
+                                PlantaOperacion = GetSafeValue<string>(reader, "PlantaOperacion"),
+                                CantidadDespachos = GetSafeValue<int>(reader, "CantidadDespachos"),
+                                NumeroFactura = GetSafeValue<string>(reader, "NumeroFactura"),
+                                NumeroCPIC = GetSafeValue<string>(reader, "NumeroCPIC"),
+                                FechaCreacion = GetSafeValue<DateTime>(reader, "FechaCreacion"),
+                                UsuarioCreacion = GetSafeValue<string>(reader, "UsuarioCreacion"),
+                                FechaEmisionFactura = GetSafeValue<DateTime?>(reader, "FechaEmisionFactura"),
+                                ValorTotalFactura = GetSafeValue<decimal?>(reader, "ValorTotalFactura"),
+                                FechaEmisionCPIC = GetSafeValue<DateTime?>(reader, "FechaEmisionCPIC"),
+                                ValorFlete = GetSafeValue<decimal?>(reader, "ValorFlete"),
+                                EstadoLote = GetSafeValue<string>(reader, "EstadoLote", "ACTIVO")
+                            });
+                        }
+                    }
+                }
             }
+
+            var lote = lotes.FirstOrDefault(l => l.IdLoteVirtual == idLoteVirtual);
+            if (lote != null)
+                lote.IdsDespachos = ObtenerIdsDespachosDeLote(idLoteVirtual);
 
             return lote;
         }
@@ -649,12 +696,35 @@ namespace WebSGV.Views
             }
         }
 
+        // Campo de instancia: solo válido durante el DataBind de gvConductoresLote
+        private List<ListItem> _conductoresLoteCache;
+
         private void CargarGridConductoresLote(List<int> idsDespachos)
         {
             if (idsDespachos.Count == 0) return;
 
-            List<DespachoConConductor> despachos = new List<DespachoConConductor>();
+            // Pre-cargar todos los conductores una sola vez para toda la grid
+            _conductoresLoteCache = new List<ListItem>();
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerTodosConductores", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    conn.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            _conductoresLoteCache.Add(new ListItem(
+                                reader["NombreCompleto"].ToString(),
+                                reader["idConductor"].ToString()
+                            ));
+                        }
+                    }
+                }
+            }
 
+            List<DespachoConConductor> despachos = new List<DespachoConConductor>();
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerDespachosConductoresLote", conn))
@@ -681,7 +751,8 @@ namespace WebSGV.Views
             }
 
             gvConductoresLote.DataSource = despachos;
-            gvConductoresLote.DataBind();
+            gvConductoresLote.DataBind(); // dispara RowDataBound usando _conductoresLoteCache
+            _conductoresLoteCache = null;
         }
 
 
@@ -868,28 +939,27 @@ namespace WebSGV.Views
 
         protected void gvConductoresLote_RowDataBound(object sender, GridViewRowEventArgs e)
         {
-            if (e.Row.RowType == DataControlRowType.DataRow)
+            if (e.Row.RowType != DataControlRowType.DataRow) return;
+
+            DropDownList ddlConductor = (DropDownList)e.Row.FindControl("ddlConductorDespacho");
+            if (ddlConductor == null) return;
+
+            // Usar el cache pre-cargado en CargarGridConductoresLote para evitar N conexiones SQL
+            ddlConductor.Items.Clear();
+            if (_conductoresLoteCache != null)
             {
-                // Encontrar el dropdown en la fila actual
-                DropDownList ddlConductor = (DropDownList)e.Row.FindControl("ddlConductorDespacho");
+                ddlConductor.Items.AddRange(_conductoresLoteCache.ToArray());
+            }
+            else
+            {
+                // Fallback: carga individual (solo si se llega aquí desde postback)
+                CargarConductoresEnDropDown(ddlConductor);
+            }
 
-                if (ddlConductor != null)
-                {
-                    // 1. PRIMERO llenar el dropdown con todos los conductores
-                    CargarConductoresEnDropDown(ddlConductor);
-
-                    // 2. Obtener el objeto DespachoConConductor (NO es DataRowView)
-                    DespachoConConductor despacho = (DespachoConConductor)e.Row.DataItem;
-
-                    if (despacho != null)
-                    {
-                        // 3. DESPUÉS seleccionar el conductor actual
-                        if (ddlConductor.Items.FindByValue(despacho.IdConductor.ToString()) != null)
-                        {
-                            ddlConductor.SelectedValue = despacho.IdConductor.ToString();
-                        }
-                    }
-                }
+            DespachoConConductor despacho = (DespachoConConductor)e.Row.DataItem;
+            if (despacho != null && ddlConductor.Items.FindByValue(despacho.IdConductor.ToString()) != null)
+            {
+                ddlConductor.SelectedValue = despacho.IdConductor.ToString();
             }
         }
 
@@ -901,11 +971,9 @@ namespace WebSGV.Views
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     conn.Open();
-
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         ddl.Items.Clear();
-
                         while (reader.Read())
                         {
                             ddl.Items.Add(new ListItem(
@@ -1270,9 +1338,12 @@ namespace WebSGV.Views
 
                 EliminarLoteCompleto(lote.IdsDespachos);
 
+                AuditoriaHelper.Registrar("DELETE", "Despachos", LoteSeleccionadoId,
+                    $"Lote eliminado físicamente - {lote.IdsDespachos.Count} despacho(s) - Cliente: {lote.NombreCliente}");
+
                 MostrarListaLotes();
                 CargarLotesRegistrados();
-                MostrarMensaje($"✅ Lote eliminado exitosamente. Se eliminaron {lote.IdsDespachos.Count} despacho(s).", "success");
+                MostrarMensaje($"Lote eliminado exitosamente. Se eliminaron {lote.IdsDespachos.Count} despacho(s).", "success");
             }
             catch (Exception ex)
             {
@@ -1315,6 +1386,9 @@ namespace WebSGV.Views
             pnlDetallesViaje.Visible = false;
             pnlEdicionLote.Visible = false;
             pnlDetallesLote.Visible = false;
+
+            btnMostrarViajes.CssClass = "btn btn-secondary btn-nav active-nav";
+            btnMostrarLotes.CssClass = "btn btn-outline-secondary btn-nav";
         }
 
         private void MostrarListaLotes()
@@ -1327,6 +1401,9 @@ namespace WebSGV.Views
             pnlDetallesViaje.Visible = false;
             pnlEdicionLote.Visible = false;
             pnlDetallesLote.Visible = false;
+
+            btnMostrarViajes.CssClass = "btn btn-outline-secondary btn-nav";
+            btnMostrarLotes.CssClass = "btn btn-success btn-nav active-nav";
         }
 
         private void MostrarDetallesViaje(int idViajeProgreso)
@@ -1643,9 +1720,9 @@ namespace WebSGV.Views
 
         private string ObtenerUsuarioActual()
         {
-            if (Session["Usuario"] != null)
+            if (Session["Nombre"] != null)
             {
-                return Session["Usuario"].ToString();
+                return Session["Nombre"].ToString();
             }
             else if (User.Identity.IsAuthenticated)
             {
@@ -1659,7 +1736,7 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            lblMensaje.Text = mensaje;
+            lblMensaje.Text = HttpUtility.HtmlEncode(mensaje ?? string.Empty);
             lblMensaje.CssClass = $"alert alert-{tipo} alert-dismissible fade show";
             pnlMensajes.Visible = true;
         }
