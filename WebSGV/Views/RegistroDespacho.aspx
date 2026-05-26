@@ -71,6 +71,7 @@
                                                             ErrorMessage="Debe seleccionar una fecha de programación"
                                                             CssClass="text-danger small"
                                                             Display="Dynamic"
+                                                            SetFocusOnError="true"
                                                             ValidationGroup="ConfiguracionBase">
                                                         </asp:RequiredFieldValidator>
                                                     </div>
@@ -94,6 +95,7 @@
                                                             ErrorMessage="Debe seleccionar un cliente"
                                                             CssClass="text-danger small"
                                                             Display="Dynamic"
+                                                            SetFocusOnError="true"
                                                             ValidationGroup="ConfiguracionBase">
                                                         </asp:RequiredFieldValidator>
                                                     </div>
@@ -104,12 +106,21 @@
                                                             <label for="txtNumeroPedidoBase" class="form-label">
                                                                 <strong>N° de Pedido:</strong>
                                                             </label>
-                                                            <asp:TextBox ID="txtNumeroPedidoBase" runat="server" 
-                                                                CssClass="form-control" 
+                                                            <asp:TextBox ID="txtNumeroPedidoBase" runat="server"
+                                                                CssClass="form-control"
                                                                 placeholder="Ej: 1234567890"
                                                                 MaxLength="10">
                                                             </asp:TextBox>
-                                                            <small class="form-text text-muted">Debe tener exactamente 10 dígitos numéricos</small>
+                                                            <asp:RegularExpressionValidator ID="revNumeroPedidoBase" runat="server"
+                                                                ControlToValidate="txtNumeroPedidoBase"
+                                                                ValidationExpression="^\d{10}$"
+                                                                ErrorMessage="Debe tener exactamente 10 dígitos numéricos"
+                                                                CssClass="text-danger small"
+                                                                Display="Dynamic"
+                                                                SetFocusOnError="true"
+                                                                ValidationGroup="ConfiguracionBase">
+                                                            </asp:RegularExpressionValidator>
+                                                            <small class="form-text text-muted">Opcional. Si se ingresa, debe tener exactamente 10 dígitos.</small>
                                                         </div>
                                                     </asp:Panel>
                                                 </div>
@@ -137,6 +148,7 @@
                                                             ErrorMessage="Debe seleccionar un tipo de operación"
                                                             CssClass="text-danger small"
                                                             Display="Dynamic"
+                                                            SetFocusOnError="true"
                                                             ValidationGroup="ConfiguracionBase">
                                                         </asp:RequiredFieldValidator>
                                                     </div>
@@ -173,6 +185,7 @@
                                                             ErrorMessage="Debe seleccionar una planta"
                                                             CssClass="text-danger small"
                                                             Display="Dynamic"
+                                                            SetFocusOnError="true"
                                                             ValidationGroup="ConfiguracionBase">
                                                         </asp:RequiredFieldValidator>
                                                     </div>
@@ -194,16 +207,25 @@
                                                         <div class="col-md-6">
                                                             <asp:Panel ID="pnlFacturaBase" runat="server" CssClass="rd-doc-box mb-3" Visible="false">
                                                                 <div class="rd-doc-title"><i class="fas fa-receipt mr-1"></i> Datos de Factura</div>
-                                                                
+
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtNumeroFacturaBase" class="form-label">
                                                                         <strong>N° Factura:</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
-                                                                    <asp:TextBox ID="txtNumeroFacturaBase" runat="server" 
-                                                                        CssClass="form-control" 
-                                                                        placeholder="Ej: F222 - 00004267">
+                                                                    <asp:TextBox ID="txtNumeroFacturaBase" runat="server"
+                                                                        CssClass="form-control"
+                                                                        placeholder="Ej: F222-00004267"
+                                                                        MaxLength="30">
                                                                     </asp:TextBox>
+                                                                    <asp:RequiredFieldValidator ID="rfvNumeroFacturaBase" runat="server"
+                                                                        ControlToValidate="txtNumeroFacturaBase"
+                                                                        ErrorMessage="El número de factura es obligatorio"
+                                                                        CssClass="text-danger small"
+                                                                        Display="Dynamic"
+                                                                        SetFocusOnError="true"
+                                                                        ValidationGroup="ConfiguracionBase">
+                                                                    </asp:RequiredFieldValidator>
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
@@ -211,23 +233,51 @@
                                                                         <strong>Fecha Emisión:</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
-                                                                    <asp:TextBox ID="txtFechaEmisionFacturaBase" runat="server" 
-                                                                        CssClass="form-control" 
+                                                                    <asp:TextBox ID="txtFechaEmisionFacturaBase" runat="server"
+                                                                        CssClass="form-control"
                                                                         TextMode="Date">
                                                                     </asp:TextBox>
+                                                                    <asp:RequiredFieldValidator ID="rfvFechaEmisionFacturaBase" runat="server"
+                                                                        ControlToValidate="txtFechaEmisionFacturaBase"
+                                                                        ErrorMessage="La fecha de emisión de la factura es obligatoria"
+                                                                        CssClass="text-danger small"
+                                                                        Display="Dynamic"
+                                                                        SetFocusOnError="true"
+                                                                        ValidationGroup="ConfiguracionBase">
+                                                                    </asp:RequiredFieldValidator>
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtValorTotalFacturaBase" class="form-label">
-                                                                        <strong>Valor Total:</strong>
+                                                                        <strong>Valor Total (S/):</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
-                                                                    <asp:TextBox ID="txtValorTotalFacturaBase" runat="server" 
-                                                                        CssClass="form-control" 
+                                                                    <asp:TextBox ID="txtValorTotalFacturaBase" runat="server"
+                                                                        CssClass="form-control"
                                                                         placeholder="0.00"
                                                                         TextMode="Number"
-                                                                        step="0.01">
+                                                                        step="0.01"
+                                                                        min="0">
                                                                     </asp:TextBox>
+                                                                    <asp:RequiredFieldValidator ID="rfvValorTotalFacturaBase" runat="server"
+                                                                        ControlToValidate="txtValorTotalFacturaBase"
+                                                                        ErrorMessage="El valor total de la factura es obligatorio"
+                                                                        CssClass="text-danger small"
+                                                                        Display="Dynamic"
+                                                                        SetFocusOnError="true"
+                                                                        ValidationGroup="ConfiguracionBase">
+                                                                    </asp:RequiredFieldValidator>
+                                                                    <asp:RangeValidator ID="rvValorTotalFacturaBase" runat="server"
+                                                                        ControlToValidate="txtValorTotalFacturaBase"
+                                                                        MinimumValue="0"
+                                                                        MaximumValue="99999999"
+                                                                        Type="Double"
+                                                                        CultureInvariantValues="true"
+                                                                        ErrorMessage="Ingrese un monto válido (mayor o igual a 0)"
+                                                                        CssClass="text-danger small"
+                                                                        Display="Dynamic"
+                                                                        ValidationGroup="ConfiguracionBase">
+                                                                    </asp:RangeValidator>
                                                                 </div>
                                                             </asp:Panel>
                                                         </div>
@@ -236,17 +286,25 @@
                                                         <div class="col-md-6">
                                                             <asp:Panel ID="pnlCPICBase" runat="server" CssClass="rd-doc-box mb-3" Visible="false">
                                                                 <div class="rd-doc-title"><i class="fas fa-shipping-fast mr-1"></i> Datos de CPIC</div>
-                                                                
+
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtNumeroCPICBase" class="form-label">
                                                                         <strong>N° CPIC:</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
-                                                                    <asp:TextBox ID="txtNumeroCPICBase" runat="server" 
-                                                                        CssClass="form-control" 
+                                                                    <asp:TextBox ID="txtNumeroCPICBase" runat="server"
+                                                                        CssClass="form-control"
                                                                         placeholder="Ej: 1234567"
-                                                                        MaxLength="7">
+                                                                        MaxLength="10">
                                                                     </asp:TextBox>
+                                                                    <asp:RequiredFieldValidator ID="rfvNumeroCPICBase" runat="server"
+                                                                        ControlToValidate="txtNumeroCPICBase"
+                                                                        ErrorMessage="El número de CPIC es obligatorio"
+                                                                        CssClass="text-danger small"
+                                                                        Display="Dynamic"
+                                                                        SetFocusOnError="true"
+                                                                        ValidationGroup="ConfiguracionBase">
+                                                                    </asp:RequiredFieldValidator>
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
@@ -254,23 +312,51 @@
                                                                         <strong>Fecha Emisión CPIC:</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
-                                                                    <asp:TextBox ID="txtFechaEmisionCPICBase" runat="server" 
-                                                                        CssClass="form-control" 
+                                                                    <asp:TextBox ID="txtFechaEmisionCPICBase" runat="server"
+                                                                        CssClass="form-control"
                                                                         TextMode="Date">
                                                                     </asp:TextBox>
+                                                                    <asp:RequiredFieldValidator ID="rfvFechaEmisionCPICBase" runat="server"
+                                                                        ControlToValidate="txtFechaEmisionCPICBase"
+                                                                        ErrorMessage="La fecha de emisión del CPIC es obligatoria"
+                                                                        CssClass="text-danger small"
+                                                                        Display="Dynamic"
+                                                                        SetFocusOnError="true"
+                                                                        ValidationGroup="ConfiguracionBase">
+                                                                    </asp:RequiredFieldValidator>
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtValorFleteBase" class="form-label">
-                                                                        <strong>Valor Flete:</strong>
+                                                                        <strong>Valor Flete (S/):</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
-                                                                    <asp:TextBox ID="txtValorFleteBase" runat="server" 
-                                                                        CssClass="form-control" 
+                                                                    <asp:TextBox ID="txtValorFleteBase" runat="server"
+                                                                        CssClass="form-control"
                                                                         placeholder="0.00"
                                                                         TextMode="Number"
-                                                                        step="0.01">
+                                                                        step="0.01"
+                                                                        min="0">
                                                                     </asp:TextBox>
+                                                                    <asp:RequiredFieldValidator ID="rfvValorFleteBase" runat="server"
+                                                                        ControlToValidate="txtValorFleteBase"
+                                                                        ErrorMessage="El valor del flete es obligatorio"
+                                                                        CssClass="text-danger small"
+                                                                        Display="Dynamic"
+                                                                        SetFocusOnError="true"
+                                                                        ValidationGroup="ConfiguracionBase">
+                                                                    </asp:RequiredFieldValidator>
+                                                                    <asp:RangeValidator ID="rvValorFleteBase" runat="server"
+                                                                        ControlToValidate="txtValorFleteBase"
+                                                                        MinimumValue="0"
+                                                                        MaximumValue="99999999"
+                                                                        Type="Double"
+                                                                        CultureInvariantValues="true"
+                                                                        ErrorMessage="Ingrese un monto válido (mayor o igual a 0)"
+                                                                        CssClass="text-danger small"
+                                                                        Display="Dynamic"
+                                                                        ValidationGroup="ConfiguracionBase">
+                                                                    </asp:RangeValidator>
                                                                 </div>
                                                             </asp:Panel>
                                                         </div>
@@ -449,6 +535,7 @@
                                                             ErrorMessage="Debe seleccionar un conductor"
                                                             CssClass="text-danger small"
                                                             Display="Dynamic"
+                                                            SetFocusOnError="true"
                                                             ValidationGroup="AgregarConductor">
                                                         </asp:RequiredFieldValidator>
                                                     </div>
@@ -472,6 +559,7 @@
                                                             ErrorMessage="Debe seleccionar una placa de tracto"
                                                             CssClass="text-danger small"
                                                             Display="Dynamic"
+                                                            SetFocusOnError="true"
                                                             ValidationGroup="AgregarConductor">
                                                         </asp:RequiredFieldValidator>
                                                     </div>
@@ -495,6 +583,7 @@
                                                             ErrorMessage="Debe seleccionar una placa de carreta"
                                                             CssClass="text-danger small"
                                                             Display="Dynamic"
+                                                            SetFocusOnError="true"
                                                             ValidationGroup="AgregarConductor">
                                                         </asp:RequiredFieldValidator>
                                                     </div>
@@ -520,6 +609,7 @@
                                                                 ErrorMessage="Guía remitente requerida"
                                                                 CssClass="text-danger small"
                                                                 Display="Dynamic"
+                                                                SetFocusOnError="true"
                                                                 ValidationGroup="AgregarConductor">
                                                             </asp:RequiredFieldValidator>
                                                         </div>
@@ -541,6 +631,7 @@
                                                                 ErrorMessage="Guía transportista requerida"
                                                                 CssClass="text-danger small"
                                                                 Display="Dynamic"
+                                                                SetFocusOnError="true"
                                                                 ValidationGroup="AgregarConductor">
                                                             </asp:RequiredFieldValidator>
                                                         </div>
@@ -979,11 +1070,11 @@
             .d-flex.justify-content-end {
                 justify-content: center !important;
             }
-            
+
             .gap-2 {
                 flex-direction: column;
             }
-            
+
             .gap-2 > * {
                 margin-right: 0;
                 margin-bottom: 0.5rem;
@@ -1034,5 +1125,84 @@
         .step.completed {
             background-color: #28a745;
         }
+
+        /* ── Validación Bootstrap is-invalid ── */
+        .form-control.is-invalid,
+        .form-select.is-invalid {
+            border-color: #dc3545;
+            padding-right: calc(1.5em + .75rem);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(.375em + .1875rem) center;
+            background-size: calc(.75em + .375rem) calc(.75em + .375rem);
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.15);
+        }
+        /* Select2 + is-invalid */
+        select.is-invalid + .select2-container .select2-selection--single {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.15) !important;
+        }
+        /* Mensajes de error */
+        .text-danger.small {
+            font-size: .8rem;
+            margin-top: .25rem;
+            display: block;
+        }
+        /* Quitar is-invalid al editar */
+        .form-control.is-invalid:focus,
+        .form-select.is-invalid:focus {
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
     </style>
+    <script type="text/javascript">
+        // Hook: sincroniza la clase Bootstrap is-invalid con el resultado de cada validator de ASP.NET
+        (function () {
+            function hookValidatorDisplay() {
+                if (typeof ValidatorUpdateDisplay === 'undefined') return;
+                var _orig = ValidatorUpdateDisplay;
+                ValidatorUpdateDisplay = function (val) {
+                    _orig(val);
+                    var ctrl = document.getElementById(val.controltovalidate);
+                    if (!ctrl) return;
+                    if (!val.isvalid) {
+                        ctrl.classList.add('is-invalid');
+                    } else {
+                        ctrl.classList.remove('is-invalid');
+                    }
+                    // Select2: propagar al contenedor visual
+                    if (ctrl.classList.contains('select2-searchable') || ctrl.tagName === 'SELECT') {
+                        var container = ctrl.nextElementSibling;
+                        if (container && container.classList.contains('select2-container')) {
+                            var selection = container.querySelector('.select2-selection');
+                            if (selection) {
+                                selection.style.borderColor = val.isvalid ? '' : '#dc3545';
+                                selection.style.boxShadow = val.isvalid ? '' : '0 0 0 0.2rem rgba(220,53,69,.15)';
+                            }
+                        }
+                    }
+                };
+            }
+
+            // Aplicar al cargar y tras cada postback parcial del UpdatePanel
+            hookValidatorDisplay();
+            if (typeof Sys !== 'undefined') {
+                Sys.WebForms.PageRequestManager.getInstance().add_endRequest(function () {
+                    hookValidatorDisplay();
+                });
+            }
+        })();
+
+        // Limpiar is-invalid cuando el usuario empieza a corregir un campo
+        $(document).on('input change', '.form-control.is-invalid, .form-select.is-invalid', function () {
+            if (this.value.trim() !== '') {
+                this.classList.remove('is-invalid');
+                // Select2
+                var container = this.nextElementSibling;
+                if (container && container.classList.contains('select2-container')) {
+                    var selection = container.querySelector('.select2-selection');
+                    if (selection) { selection.style.borderColor = ''; selection.style.boxShadow = ''; }
+                }
+            }
+        });
+    </script>
 </asp:Content>

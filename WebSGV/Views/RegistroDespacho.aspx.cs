@@ -562,7 +562,9 @@ namespace WebSGV.Views
             {
                 if (Page.IsValid && ValidarConfiguracionBase())
                 {
-                    CrearNuevoLote();
+                    if (!CrearNuevoLote())
+                        return;
+
                     MostrarFaseAdicionConductores();
                     ActualizarResumenLote();
                     MostrarOcultarPanelesDocumentacion();
@@ -630,14 +632,14 @@ namespace WebSGV.Views
             return true;
         }
 
-        private void CrearNuevoLote()
+        private bool CrearNuevoLote()
         {
             var lote = new LoteDespachos
             {
                 FechaProgramacion = txtFechaDespachoBase.Text,
                 IdCliente = Convert.ToInt32(ddlClienteBase.SelectedValue),
                 NombreCliente = ddlClienteBase.SelectedItem.Text,
-                NumeroPedido = pnlNumeroPedido.Visible ? txtNumeroPedidoBase.Text.Trim() : string.Empty, // Solo si es visible
+                NumeroPedido = pnlNumeroPedido.Visible ? txtNumeroPedidoBase.Text.Trim() : string.Empty,
                 TipoOperacion = ddlTipoOperacionBase.SelectedValue,
                 EsInternacional = rblAmbitoOperacionBase.SelectedValue == "1",
                 PlantaOperacion = ddlLugarOperacionBase.SelectedValue,
@@ -652,7 +654,7 @@ namespace WebSGV.Views
                 if (!decimal.TryParse(txtValorTotalFacturaBase.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out valorFactura))
                 {
                     MostrarMensaje("El valor total de la factura no tiene un formato numérico válido.", "danger");
-                    return;
+                    return false;
                 }
                 lote.Documentacion.NumeroFactura = txtNumeroFacturaBase.Text.Trim();
                 lote.Documentacion.FechaEmisionFactura = DateTime.Parse(txtFechaEmisionFacturaBase.Text);
@@ -666,7 +668,7 @@ namespace WebSGV.Views
                 if (!decimal.TryParse(txtValorFleteBase.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out valorFlete))
                 {
                     MostrarMensaje("El valor del flete no tiene un formato numérico válido.", "danger");
-                    return;
+                    return false;
                 }
                 lote.Documentacion.NumeroCPIC = txtNumeroCPICBase.Text.Trim();
                 lote.Documentacion.FechaEmisionCPIC = DateTime.Parse(txtFechaEmisionCPICBase.Text);
@@ -674,6 +676,7 @@ namespace WebSGV.Views
             }
 
             LoteActual = lote;
+            return true;
         }
 
         #endregion
