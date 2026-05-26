@@ -1,8 +1,9 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="FirmarLiquidacion.aspx.cs" Inherits="WebSGV.Views.FirmarLiquidacion" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="FirmarLiquidacion.aspx.cs" Inherits="WebSGV.Views.FirmarLiquidacion" ResponseEncoding="utf-8" %>
 <!DOCTYPE html>
 <html lang="es">
 <head runat="server">
     <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta name="theme-color" content="#0B3D91" />
     <title>Firmar Liquidación · SGV</title>
@@ -287,7 +288,7 @@
         <div class="logo">SGV</div>
         <div>
             <h1>Orden de Viaje</h1>
-            <div class="sub">Firma del Conductor · Declaración Jurada</div>
+            <div class="sub">Firma del Conductor - Declaración Jurada</div>
         </div>
         <div class="fl-format-chip">SGV-CDF-F-05 v01</div>
     </header>
@@ -356,7 +357,7 @@
                     <span>Dibuje aquí su firma</span>
                 </div>
                 <div class="fl-canvas-baseline"></div>
-                <div class="fl-canvas-x">✗</div>
+                <div class="fl-canvas-x">&times;</div>
                 <canvas id="canvasFirma"></canvas>
             </div>
 

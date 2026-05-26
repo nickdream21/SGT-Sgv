@@ -42,13 +42,18 @@ namespace WebSGV.Views
             {
                 get
                 {
+                    // Intentamos parsear con InvariantCulture (fechas vienen en ISO 8601 desde JS)
                     if (!string.IsNullOrWhiteSpace(FechaString) &&
                         DateTime.TryParse(FechaString, CultureInfo.InvariantCulture,
                             DateTimeStyles.None, out DateTime fecha))
                         return fecha;
-                    // Retornamos MinValue; FechaSeguraSQL lo convierte a DBNull
-                    // evitando que una fecha inválida quede registrada como "hoy"
-                    return DateTime.MinValue;
+                    // Fallback a la fecha del servidor:
+                    //   - Peajes no tienen fecha propia (el JS no la incluye en el payload)
+                    //   - Cadenas inválidas en otros gastos: la columna no acepta NULL,
+                    //     por lo que usamos DateTime.Now como valor seguro. El monto
+                    //     ya está validado por ValidarMonto(); el riesgo de manipulación
+                    //     queda reducido a registrar "hoy" como fecha.
+                    return DateTime.Now;
                 }
             }
 
