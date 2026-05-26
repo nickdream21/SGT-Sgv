@@ -598,11 +598,11 @@
                                                         <div class="form-group mb-3">
                                                             <label for="txtGuiaRemitente" class="form-label">
                                                                 <strong>Guía Remitente:</strong>
-                                                                <span class="text-danger">*</span>
+                                                                <span class="text-muted small">(Opcional)</span>
                                                             </label>
-                                                            <asp:TextBox ID="txtGuiaRemitente" runat="server" 
-                                                                CssClass="form-control" 
-                                                                placeholder="Número de guía remitente">
+                                                            <asp:TextBox ID="txtGuiaRemitente" runat="server"
+                                                                CssClass="form-control"
+                                                                placeholder="Número de guía remitente (puede completarse después)">
                                                             </asp:TextBox>
                                                             <asp:RequiredFieldValidator ID="rfvGuiaRemitente" runat="server"
                                                                 ControlToValidate="txtGuiaRemitente"
@@ -610,8 +610,10 @@
                                                                 CssClass="text-danger small"
                                                                 Display="Dynamic"
                                                                 SetFocusOnError="true"
+                                                                Enabled="false"
                                                                 ValidationGroup="AgregarConductor">
                                                             </asp:RequiredFieldValidator>
+                                                            <small class="form-text text-muted">Si no dispone del número ahora, puede dejarlo en blanco.</small>
                                                         </div>
                                                     </asp:Panel>
 

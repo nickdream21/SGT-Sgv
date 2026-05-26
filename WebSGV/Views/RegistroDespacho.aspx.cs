@@ -465,8 +465,9 @@ namespace WebSGV.Views
             pnlGuiaRemitenteConductor.Visible = necesitaGuiaRemitente;
             pnlGuiaTransportistaConductor.Visible = necesitaGuiaTransportista;
 
-            // Configurar validadores
-            rfvGuiaRemitente.Enabled = necesitaGuiaRemitente;
+            // Guía Remitente es opcional: el panel se muestra como guía visual
+            // pero nunca bloquea el guardado.
+            rfvGuiaRemitente.Enabled = false;
             rfvGuiaTransportista.Enabled = necesitaGuiaTransportista;
 
             // Mostrar información de documentos reutilizados
@@ -1063,7 +1064,7 @@ namespace WebSGV.Views
                     cmd.Parameters.AddWithValue("@numeroPedido", (object)lote.NumeroPedido ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@idFactura", (object)idFactura ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@idCPIC", (object)idCPIC ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@guiaRemitente", (object)conductor.GuiaRemitente ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@guiaRemitente", string.IsNullOrWhiteSpace(conductor.GuiaRemitente) ? (object)DBNull.Value : conductor.GuiaRemitente.Trim());
                     cmd.Parameters.AddWithValue("@guiaTransportista", (object)conductor.GuiaTransportista ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@esInternacional", lote.EsInternacional);
                     cmd.Parameters.AddWithValue("@usuarioCreacion", lote.UsuarioCreacion);
