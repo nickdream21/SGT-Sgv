@@ -224,6 +224,7 @@
     <Content Include="Database\Scripts\script_AgregarColumnaTipoAbastecimiento.sql" />
     <Content Include="Database\Scripts\script_AgregarPdfAbastecimiento.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminGrifo.sql" />
+    <Content Include="Database\Scripts\script_CrearUsuarioAdminSistema.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminMaquinaria.sql" />
     <Content Include="Database\Scripts\script_CrearTablasDespachoObra.sql" />
     <Content Include="Database\Scripts\script_CrearTablasIngresoEcuador.sql" />
@@ -382,6 +383,8 @@
     <Content Include="Views\CargarExcel.aspx" />
     <Content Include="Views\ConsultaAuditoria.aspx" />
     <Content Include="Views\Dashboard.aspx" />
+    <Content Include="Views\DashboardAdminSistema.aspx" />
+    <Content Include="Views\GestionUsuarios.aspx" />
     <Content Include="Views\DashboardConductor.aspx" />
     <Content Include="Views\DashboardGrifo.aspx" />
     <Content Include="Views\DashboardOperador.aspx" />
@@ -591,6 +594,20 @@
     </Compile>
     <Compile Include="Views\Exportacion\RegistroSeguimiento.aspx.designer.cs">
       <DependentUpon>RegistroSeguimiento.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\DashboardAdminSistema.aspx.cs">
+      <DependentUpon>DashboardAdminSistema.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\DashboardAdminSistema.aspx.designer.cs">
+      <DependentUpon>DashboardAdminSistema.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\GestionUsuarios.aspx.cs">
+      <DependentUpon>GestionUsuarios.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\GestionUsuarios.aspx.designer.cs">
+      <DependentUpon>GestionUsuarios.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\Dashboard.aspx.cs">
       <DependentUpon>Dashboard.aspx</DependentUpon>

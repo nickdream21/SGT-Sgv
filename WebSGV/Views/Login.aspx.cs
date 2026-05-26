@@ -29,10 +29,13 @@ namespace WebSGV.Views
                 {
                     Response.Redirect("~/Views/DashboardGrifo.aspx");
                 }
+                else if (rol.ToUpper() == "ADMINISTRADOR DE SISTEMA")
+                {
+                    Response.Redirect("~/Views/DashboardAdminSistema.aspx");
+                }
                 else if (rol.ToUpper() == "ADMIN" ||
                          rol.ToUpper() == "ADMINISTRADOR" ||
                          rol.ToUpper() == "SUPERVISOR" ||
-                         rol.ToUpper() == "ADMINISTRADOR DE SISTEMA" ||
                          rol.ToUpper() == "ADMINISTRADOR DE MAQUINARIA")
                 {
                     Response.Redirect("~/Views/Inicio.aspx");
@@ -177,6 +180,10 @@ namespace WebSGV.Views
                 else if (resultado.Rol.ToUpper() == "ADMINISTRADOR DE GRIFO")
                 {
                     Response.Redirect("~/Views/DashboardGrifo.aspx");
+                }
+                else if (resultado.Rol.ToUpper() == "ADMINISTRADOR DE SISTEMA")
+                {
+                    Response.Redirect("~/Views/DashboardAdminSistema.aspx");
                 }
                 else
                 {

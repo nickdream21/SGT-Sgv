@@ -61,6 +61,7 @@ namespace WebSGV.Helpers
             return rol == ROL_ADMIN || rol == ROL_ADMIN_LEGADO || rol == ROL_ADMIN_SISTEMA || rol == ROL_SUPERVISOR;
         }
 
+        public static bool EsAdminSistema()    => ObtenerRol() == ROL_ADMIN_SISTEMA;
         public static bool EsAdminGrifo()      => ObtenerRol() == ROL_ADMIN_GRIFO;
         public static bool EsAdminMaquinaria() => ObtenerRol() == ROL_ADMIN_MAQ;
         public static bool EsConductor()       => ObtenerRol() == ROL_CONDUCTOR;
@@ -98,6 +99,17 @@ namespace WebSGV.Helpers
         {
             ExigirSesion();
             if (!EsAdminOSupervisor())
+                Redirigir("~/Views/Login.aspx?error=sesion");
+        }
+
+        /// <summary>
+        /// Exige exclusivamente ADMINISTRADOR DE SISTEMA.
+        /// Usado en páginas de administración de usuarios y roles.
+        /// </summary>
+        public static void ExigirRolAdminSistema()
+        {
+            ExigirSesion();
+            if (!EsAdminSistema())
                 Redirigir("~/Views/Login.aspx?error=sesion");
         }
 
