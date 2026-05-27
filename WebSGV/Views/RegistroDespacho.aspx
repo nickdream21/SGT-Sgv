@@ -152,6 +152,7 @@
                                                             </label>
                                                             <asp:TextBox ID="txtNumeroPedidoBase" runat="server"
                                                                 CssClass="form-control"
+                                                                AutoCompleteType="Disabled" autocomplete="off"
                                                                 placeholder="Ej: 1234567890"
                                                                 MaxLength="10">
                                                             </asp:TextBox>
@@ -259,6 +260,7 @@
                                                                     </label>
                                                                     <asp:TextBox ID="txtNumeroFacturaBase" runat="server"
                                                                         CssClass="form-control"
+                                                                        AutoCompleteType="Disabled" autocomplete="off"
                                                                         placeholder="Ej: F222-00004267"
                                                                         MaxLength="30">
                                                                     </asp:TextBox>
@@ -357,6 +359,7 @@
                                                                     </label>
                                                                     <asp:TextBox ID="txtNumeroCPICBase" runat="server"
                                                                         CssClass="form-control"
+                                                                        AutoCompleteType="Disabled" autocomplete="off"
                                                                         placeholder="Ej: 1234567"
                                                                         MaxLength="10">
                                                                     </asp:TextBox>
@@ -684,6 +687,7 @@
                                                             </label>
                                                             <asp:TextBox ID="txtGuiaRemitente" runat="server"
                                                                 CssClass="form-control"
+                                                                AutoCompleteType="Disabled" autocomplete="off"
                                                                 MaxLength="30"
                                                                 placeholder="Número de guía remitente (puede completarse después)">
                                                             </asp:TextBox>
@@ -718,6 +722,7 @@
                                                             </label>
                                                             <asp:TextBox ID="txtGuiaTransportista" runat="server" 
                                                                 CssClass="form-control" 
+                                                                AutoCompleteType="Disabled" autocomplete="off"
                                                                 MaxLength="30"
                                                                 placeholder="Número de guía transportista">
                                                             </asp:TextBox>

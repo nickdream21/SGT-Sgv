@@ -63,7 +63,7 @@
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Estaciones Registradas</h5>
                         <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
-                            style="max-width:200px;" placeholder="Buscar..."
+                            style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_peajes"
                             oninput="filtrarTabla(this.value,'contenedorPeajes')">
                     </div>
                     <div class="card-body p-0">

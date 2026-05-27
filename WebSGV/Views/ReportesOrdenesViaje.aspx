@@ -275,7 +275,8 @@
                             <div class="form-group">
                                 <label class="form-label">Buscar Conductor</label>
                                  <asp:TextBox ID="txtBuscarConductor" runat="server" CssClass="form-control"
-                                     placeholder="Nombre, apellido o DNI"></asp:TextBox>
+                                     placeholder="Nombre, apellido o DNI" autocomplete="off" AutoCompleteType="Disabled"
+                                     spellcheck="false" autocapitalize="off" autocorrect="off"></asp:TextBox>
                                 <small id="errBuscarConductor" class="text-danger d-none"></small>
                             </div>
                         </div>

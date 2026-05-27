@@ -83,7 +83,7 @@
                             <label class="form-label">Conductor</label>
                             <div class="conductor-autocomplete-wrap">
                                  <input type="text" id="txtConductorBuscar" class="form-control"
-                                     placeholder="Buscar conductor..." autocomplete="off" />
+                                     placeholder="Buscar conductor..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_conductor_pendiente" />
                                  <asp:HiddenField ID="hfConductorId" runat="server" ClientIDMode="Static" />
                                  <small id="errorConductorBuscar" class="text-danger d-none"></small>
                                  <div id="conductorPendientesSugg" class="conductor-autocomplete-dropdown"></div>
@@ -324,7 +324,7 @@
                                 <label class="form-label">Conductor</label>
                                 <div class="conductor-autocomplete-wrap">
                                     <input type="text" id="txtConductorAprobadas" class="form-control"
-                                        placeholder="Buscar conductor..." autocomplete="off" />
+                                        placeholder="Buscar conductor..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_conductor_aprobada" />
                                     <input type="hidden" id="filtroCondAprobadasId" value="" />
                                     <div id="conductorAprobadasSugg" class="conductor-autocomplete-dropdown"></div>
                                 </div>
