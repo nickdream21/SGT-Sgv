@@ -13,8 +13,9 @@ namespace WebSGV.Helpers
         // Definición de roles
         public const string ROL_ADMIN = "ADMIN";
         public const string ROL_CONDUCTOR = "CONDUCTOR";
-        public const string ROL_SUPERVISOR = "SUPERVISOR"; // Por si lo necesitas en el futuro
+        public const string ROL_SUPERVISOR = "SUPERVISOR";
         public const string ROL_ADMIN_SISTEMA = "ADMINISTRADOR DE SISTEMA";
+        public const string ROL_ADMIN_TRANSPORTE = "ADMINISTRADOR DE TRANSPORTE";
         public const string ROL_ADMIN_GRIFO = "ADMINISTRADOR DE GRIFO";
         public const string ROL_ADMIN_MAQUINARIA = "ADMINISTRADOR DE MAQUINARIA";
         public const string ROL_OPERADOR = "OPERADOR";
@@ -38,7 +39,13 @@ namespace WebSGV.Helpers
         public static bool EsAdmin()
         {
             string rolActual = ObtenerRolActual();
-            return rolActual == ROL_ADMIN || rolActual == "ADMINISTRADOR" || rolActual == ROL_ADMIN_SISTEMA;
+            return rolActual == ROL_ADMIN || rolActual == "ADMINISTRADOR"
+                || rolActual == ROL_ADMIN_SISTEMA || rolActual == ROL_ADMIN_TRANSPORTE;
+        }
+
+        public static bool EsAdminTransporte()
+        {
+            return ObtenerRolActual() == ROL_ADMIN_TRANSPORTE;
         }
 
         /// <summary>

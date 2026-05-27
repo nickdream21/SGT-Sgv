@@ -34,7 +34,7 @@ namespace WebSGV.Views
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     string query = @"SELECT idConductor,
-                        ISNULL(DNI, ISNULL(carnetExtranjeria, ISNULL(pasaporte, ''))) AS documentoDisplay,
+                        ISNULL(DNI, ISNULL(carnetExtranjeria, '')) AS documentoDisplay,
                         ISNULL(nombre, '') AS nombre,
                         ISNULL(apPaterno, '') AS apPaterno,
                         ISNULL(apMaterno, '') AS apMaterno,

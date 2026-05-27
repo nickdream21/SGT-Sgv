@@ -36,7 +36,8 @@ namespace WebSGV.Views
                 else if (rol.ToUpper() == "ADMIN" ||
                          rol.ToUpper() == "ADMINISTRADOR" ||
                          rol.ToUpper() == "SUPERVISOR" ||
-                         rol.ToUpper() == "ADMINISTRADOR DE MAQUINARIA")
+                         rol.ToUpper() == "ADMINISTRADOR DE MAQUINARIA" ||
+                         rol.ToUpper() == "ADMINISTRADOR DE TRANSPORTE")
                 {
                     Response.Redirect("~/Views/Inicio.aspx");
                 }

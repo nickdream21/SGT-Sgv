@@ -13,13 +13,14 @@ namespace WebSGV.Helpers
     public static class SecurityHelper
     {
         // ── Roles reconocidos ──────────────────────────────────────────────
-        private const string ROL_ADMIN          = "ADMIN";
-        private const string ROL_ADMIN_SISTEMA  = "ADMINISTRADOR DE SISTEMA";
-        private const string ROL_SUPERVISOR     = "SUPERVISOR";
-        private const string ROL_ADMIN_GRIFO    = "ADMINISTRADOR DE GRIFO";
-        private const string ROL_ADMIN_MAQ      = "ADMINISTRADOR DE MAQUINARIA";
-        private const string ROL_CONDUCTOR      = "CONDUCTOR";
-        private const string ROL_OPERADOR       = "OPERADOR";
+        private const string ROL_ADMIN              = "ADMIN";
+        private const string ROL_ADMIN_SISTEMA      = "ADMINISTRADOR DE SISTEMA";
+        private const string ROL_ADMIN_TRANSPORTE   = "ADMINISTRADOR DE TRANSPORTE";
+        private const string ROL_SUPERVISOR         = "SUPERVISOR";
+        private const string ROL_ADMIN_GRIFO        = "ADMINISTRADOR DE GRIFO";
+        private const string ROL_ADMIN_MAQ          = "ADMINISTRADOR DE MAQUINARIA";
+        private const string ROL_CONDUCTOR          = "CONDUCTOR";
+        private const string ROL_OPERADOR           = "OPERADOR";
 
         // ── Acceso a sesión ────────────────────────────────────────────────
 
@@ -51,13 +52,12 @@ namespace WebSGV.Helpers
         public static bool EsAdmin()
         {
             string rol = ObtenerRol();
-            return rol == ROL_ADMIN || rol == "ADMINISTRADOR" || rol == ROL_ADMIN_SISTEMA;
+            return rol == ROL_ADMIN || rol == "ADMINISTRADOR" || rol == ROL_ADMIN_SISTEMA || rol == ROL_ADMIN_TRANSPORTE;
         }
 
         public static bool EsAdminOSupervisor()
         {
-            string rol = ObtenerRol();
-            return rol == ROL_ADMIN || rol == "ADMINISTRADOR" || rol == ROL_ADMIN_SISTEMA || rol == ROL_SUPERVISOR;
+            return EsAdmin() || ObtenerRol() == ROL_SUPERVISOR;
         }
 
         public static bool EsAdminGrifo()      => ObtenerRol() == ROL_ADMIN_GRIFO;
@@ -108,8 +108,7 @@ namespace WebSGV.Helpers
         {
             ExigirSesion();
             string rol = ObtenerRol();
-            bool permitido = rol == ROL_ADMIN || rol == "ADMINISTRADOR" || rol == ROL_ADMIN_SISTEMA
-                          || rol == ROL_SUPERVISOR || rol == ROL_ADMIN_GRIFO;
+            bool permitido = EsAdmin() || rol == ROL_SUPERVISOR || rol == ROL_ADMIN_GRIFO;
             if (!permitido)
                 Redirigir("~/Views/Login.aspx?error=sesion");
         }
