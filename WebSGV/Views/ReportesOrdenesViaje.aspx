@@ -82,13 +82,15 @@
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="form-label">Fecha Desde</label>
-                                <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                                 <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                                <small id="errFechaDesde" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="form-label">Fecha Hasta</label>
-                                <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                                 <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                                <small id="errFechaHasta" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -98,8 +100,9 @@
                                     <div class="input-group-prepend">
                                         <span class="input-group-text">S/</span>
                                     </div>
-                                    <asp:TextBox ID="txtFactorConversion" runat="server" CssClass="form-control" Text="3.75" step="0.01"></asp:TextBox>
-                                </div>
+                                     <asp:TextBox ID="txtFactorConversion" runat="server" CssClass="form-control" Text="3.75" step="0.01"></asp:TextBox>
+                                 </div>
+                                <small id="errFactorConversion" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -271,18 +274,20 @@
                         <div class="col-md-5">
                             <div class="form-group">
                                 <label class="form-label">Buscar Conductor</label>
-                                <asp:TextBox ID="txtBuscarConductor" runat="server" CssClass="form-control"
-                                    placeholder="Nombre, apellido o DNI"></asp:TextBox>
+                                 <asp:TextBox ID="txtBuscarConductor" runat="server" CssClass="form-control"
+                                     placeholder="Nombre, apellido o DNI"></asp:TextBox>
+                                <small id="errBuscarConductor" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label class="form-label">Estado del Viaje</label>
-                                <asp:DropDownList ID="ddlEstadoViaje" runat="server" CssClass="form-control">
+                                 <asp:DropDownList ID="ddlEstadoViaje" runat="server" CssClass="form-control">
                                     <asp:ListItem Value="TODOS" Text="Todos los estados"></asp:ListItem>
                                     <asp:ListItem Value="ABIERTO" Text="Abierto" Selected="True"></asp:ListItem>
                                     <asp:ListItem Value="CERRADO" Text="Cerrado"></asp:ListItem>
                                 </asp:DropDownList>
+                                <small id="errEstadoViaje" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -384,32 +389,36 @@
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="form-label">Fecha Desde</label>
-                                <asp:TextBox ID="txtPersFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                                 <asp:TextBox ID="txtPersFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                                <small id="errPersFechaDesde" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="form-label">Fecha Hasta</label>
-                                <asp:TextBox ID="txtPersFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                                 <asp:TextBox ID="txtPersFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                                <small id="errPersFechaHasta" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="form-label">Estado del Viaje</label>
-                                <asp:DropDownList ID="ddlPersEstado" runat="server" CssClass="form-control">
+                                 <asp:DropDownList ID="ddlPersEstado" runat="server" CssClass="form-control">
                                     <asp:ListItem Value="TODOS" Text="Todos" Selected="True"></asp:ListItem>
                                     <asp:ListItem Value="COMPLETADO" Text="Liquidados (Completado)"></asp:ListItem>
                                     <asp:ListItem Value="PENDIENTE" Text="Pendientes de Aprobación"></asp:ListItem>
                                     <asp:ListItem Value="RECHAZADO" Text="Rechazados"></asp:ListItem>
-                                </asp:DropDownList>
+                                 </asp:DropDownList>
+                                <small id="errPersEstado" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="form-label">Conductor</label>
-                                <asp:DropDownList ID="ddlPersConductor" runat="server" CssClass="form-control">
+                                 <asp:DropDownList ID="ddlPersConductor" runat="server" CssClass="form-control">
                                     <asp:ListItem Value="0" Text="Todos los conductores"></asp:ListItem>
                                 </asp:DropDownList>
+                                <small id="errPersConductor" class="text-danger d-none"></small>
                             </div>
                         </div>
                     </div>
@@ -417,15 +426,17 @@
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="form-label">Cliente</label>
-                                <asp:DropDownList ID="ddlPersCliente" runat="server" CssClass="form-control">
+                                 <asp:DropDownList ID="ddlPersCliente" runat="server" CssClass="form-control">
                                     <asp:ListItem Value="0" Text="Todos los clientes"></asp:ListItem>
                                 </asp:DropDownList>
+                                <small id="errPersCliente" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="form-label">Placa Tracto</label>
-                                <asp:TextBox ID="txtPersPlacaTracto" runat="server" CssClass="form-control" placeholder="Ej. ABC-123"></asp:TextBox>
+                                 <asp:TextBox ID="txtPersPlacaTracto" runat="server" CssClass="form-control" placeholder="Ej. ABC-123"></asp:TextBox>
+                                <small id="errPersPlaca" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -434,18 +445,20 @@
                                     Categoría de Gasto Adicional
                                     <i class="fas fa-info-circle ml-1 text-muted" title="Solo incluye viajes con la categoría indicada (ej: propina, cochera, lavado)"></i>
                                 </label>
-                                <asp:TextBox ID="txtPersCategoria" runat="server" CssClass="form-control" placeholder="Ej. propina, cochera..."></asp:TextBox>
+                                 <asp:TextBox ID="txtPersCategoria" runat="server" CssClass="form-control" placeholder="Ej. propina, cochera..."></asp:TextBox>
+                                <small id="errPersCategoria" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="form-label">Ordenar por</label>
-                                <asp:DropDownList ID="ddlPersOrden" runat="server" CssClass="form-control">
+                                 <asp:DropDownList ID="ddlPersOrden" runat="server" CssClass="form-control">
                                     <asp:ListItem Value="fecha_desc" Text="Fecha (más reciente primero)" Selected="True"></asp:ListItem>
                                     <asp:ListItem Value="fecha_asc" Text="Fecha (más antigua primero)"></asp:ListItem>
                                     <asp:ListItem Value="conductor" Text="Conductor (A-Z)"></asp:ListItem>
                                     <asp:ListItem Value="cliente" Text="Cliente (A-Z)"></asp:ListItem>
-                                </asp:DropDownList>
+                                 </asp:DropDownList>
+                                <small id="errPersOrden" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -455,8 +468,9 @@
                                     <div class="input-group-prepend">
                                         <span class="input-group-text">S/</span>
                                     </div>
-                                    <asp:TextBox ID="txtPersFactor" runat="server" CssClass="form-control" Text="3.75"></asp:TextBox>
-                                </div>
+                                     <asp:TextBox ID="txtPersFactor" runat="server" CssClass="form-control" Text="3.75"></asp:TextBox>
+                                 </div>
+                                <small id="errPersFactor" class="text-danger d-none"></small>
                             </div>
                         </div>
                     </div>
@@ -464,8 +478,9 @@
                         <div class="col-md-12">
                             <div class="form-group">
                                 <label class="form-label">Título del Reporte</label>
-                                <asp:TextBox ID="txtPersTitulo" runat="server" CssClass="form-control"
-                                    Text="Reporte Personalizado de Órdenes de Viaje"></asp:TextBox>
+                                 <asp:TextBox ID="txtPersTitulo" runat="server" CssClass="form-control"
+                                     Text="Reporte Personalizado de Órdenes de Viaje"></asp:TextBox>
+                                <small id="errPersTitulo" class="text-danger d-none"></small>
                             </div>
                         </div>
                     </div>
@@ -1223,12 +1238,12 @@
         }
 
         function exportarLiquidaciones() {
+            limpiarErroresValidacion();
             var fechaDesde = $('#<%= txtFechaDesde.ClientID %>').val();
             var fechaHasta = $('#<%= txtFechaHasta.ClientID %>').val();
             var factorConversion = $('#<%= txtFactorConversion.ClientID %>').val() || '3.75';
 
-            if (!fechaDesde || !fechaHasta) {
-                alert('Por favor seleccione el rango de fechas');
+            if (!validarFiltrosLiquidaciones(fechaDesde, fechaHasta, factorConversion)) {
                 return;
             }
 
@@ -1236,19 +1251,24 @@
         }
 
         function exportarViajesActivos() {
+            limpiarErroresValidacion();
             var buscarConductor = $('#<%= txtBuscarConductor.ClientID %>').val();
             var estadoViaje = $('#<%= ddlEstadoViaje.ClientID %>').val();
+
+            if (!validarFiltroViajesActivos(buscarConductor, estadoViaje)) {
+                return;
+            }
 
             window.location.href = 'ReportesOrdenesViaje.aspx?action=exportarViajesActivos&buscarConductor=' + encodeURIComponent(buscarConductor) + '&estadoViaje=' + estadoViaje;
         }
 
         function generarPDFLiquidaciones() {
+            limpiarErroresValidacion();
             var fechaDesde = $('#<%= txtFechaDesde.ClientID %>').val();
             var fechaHasta = $('#<%= txtFechaHasta.ClientID %>').val();
             var factorConversion = $('#<%= txtFactorConversion.ClientID %>').val() || '3.75';
 
-            if (!fechaDesde || !fechaHasta) {
-                alert('Por favor seleccione el rango de fechas');
+            if (!validarFiltrosLiquidaciones(fechaDesde, fechaHasta, factorConversion)) {
                 return;
             }
 
@@ -1260,6 +1280,7 @@
         }
 
         function generarPersonalizado(formato) {
+            limpiarErroresValidacion();
             var fechaDesde = $('#<%= txtPersFechaDesde.ClientID %>').val();
             var fechaHasta = $('#<%= txtPersFechaHasta.ClientID %>').val();
             var estado = $('#<%= ddlPersEstado.ClientID %>').val();
@@ -1273,8 +1294,7 @@
             var incluirTotales = $('#chkIncluirTotales').is(':checked') ? '1' : '0';
             var incluirResumen = $('#chkIncluirResumen').is(':checked') ? '1' : '0';
 
-            if (!fechaDesde || !fechaHasta) {
-                alert('Por favor seleccione el rango de fechas');
+            if (!validarFiltrosPersonalizados(fechaDesde, fechaHasta, estado, idConductor, idCliente, placaTracto, categoria, orden, factor, titulo)) {
                 return;
             }
 
@@ -1282,7 +1302,7 @@
             $('.col-pers:checked').each(function () { columnas.push($(this).val()); });
 
             if (columnas.length === 0) {
-                alert('Debe seleccionar al menos una columna para el reporte');
+                mostrarErrorCampo('errPersTitulo', 'Debe seleccionar al menos una columna para el reporte.');
                 return;
             }
 
@@ -1303,6 +1323,69 @@
                 + '&cols=' + encodeURIComponent(columnas.join(','));
 
             window.location.href = 'ReportesOrdenesViaje.aspx?' + qs;
+        }
+
+        function limpiarErroresValidacion() {
+            $('.text-danger[id^="err"]').each(function () {
+                $(this).addClass('d-none').text('');
+            });
+        }
+
+        function mostrarErrorCampo(id, mensaje) {
+            $('#' + id).removeClass('d-none').text(mensaje);
+        }
+
+        function validarFechaIso(valor) {
+            return /^\d{4}-\d{2}-\d{2}$/.test(valor);
+        }
+
+        function validarFiltrosLiquidaciones(fechaDesde, fechaHasta, factor) {
+            var ok = true;
+            if (!fechaDesde || !validarFechaIso(fechaDesde)) { mostrarErrorCampo('errFechaDesde', 'Ingrese una fecha inicial válida (aaaa-mm-dd).'); ok = false; }
+            if (!fechaHasta || !validarFechaIso(fechaHasta)) { mostrarErrorCampo('errFechaHasta', 'Ingrese una fecha final válida (aaaa-mm-dd).'); ok = false; }
+            if (ok && new Date(fechaDesde) > new Date(fechaHasta)) { mostrarErrorCampo('errFechaHasta', 'La fecha final debe ser mayor o igual a la fecha inicial.'); ok = false; }
+
+            var factorNumero = parseFloat((factor || '').replace(',', '.'));
+            if (isNaN(factorNumero) || factorNumero < 0.01 || factorNumero > 20) {
+                mostrarErrorCampo('errFactorConversion', 'Ingrese un factor entre 0.01 y 20.');
+                ok = false;
+            }
+            return ok;
+        }
+
+        function validarFiltroViajesActivos(buscarConductor, estadoViaje) {
+            var ok = true;
+            if (buscarConductor && buscarConductor.length > 100) {
+                mostrarErrorCampo('errBuscarConductor', 'La búsqueda no debe superar 100 caracteres.');
+                ok = false;
+            }
+            if (buscarConductor && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s\-\.]+$/.test(buscarConductor)) {
+                mostrarErrorCampo('errBuscarConductor', 'Solo se permiten letras, números, espacios, punto y guion.');
+                ok = false;
+            }
+            if (['TODOS', 'ABIERTO', 'CERRADO'].indexOf(estadoViaje) === -1) {
+                mostrarErrorCampo('errEstadoViaje', 'Seleccione un estado de viaje válido.');
+                ok = false;
+            }
+            return ok;
+        }
+
+        function validarFiltrosPersonalizados(fechaDesde, fechaHasta, estado, idConductor, idCliente, placaTracto, categoria, orden, factor, titulo) {
+            var ok = true;
+            if (!fechaDesde || !validarFechaIso(fechaDesde)) { mostrarErrorCampo('errPersFechaDesde', 'Ingrese una fecha inicial válida (aaaa-mm-dd).'); ok = false; }
+            if (!fechaHasta || !validarFechaIso(fechaHasta)) { mostrarErrorCampo('errPersFechaHasta', 'Ingrese una fecha final válida (aaaa-mm-dd).'); ok = false; }
+            if (ok && new Date(fechaDesde) > new Date(fechaHasta)) { mostrarErrorCampo('errPersFechaHasta', 'La fecha final debe ser mayor o igual a la fecha inicial.'); ok = false; }
+            if (['TODOS', 'COMPLETADO', 'PENDIENTE', 'RECHAZADO'].indexOf(estado) === -1) { mostrarErrorCampo('errPersEstado', 'Seleccione un estado válido.'); ok = false; }
+            if (!/^\d+$/.test(idConductor) || parseInt(idConductor, 10) < 0) { mostrarErrorCampo('errPersConductor', 'Seleccione un conductor válido.'); ok = false; }
+            if (!/^\d+$/.test(idCliente) || parseInt(idCliente, 10) < 0) { mostrarErrorCampo('errPersCliente', 'Seleccione un cliente válido.'); ok = false; }
+            if (placaTracto && !/^[a-zA-Z0-9\-\s]{0,15}$/.test(placaTracto)) { mostrarErrorCampo('errPersPlaca', 'La placa permite letras, números, espacios y guion (máx. 15).'); ok = false; }
+            if (categoria && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s\-\.]{0,60}$/.test(categoria)) { mostrarErrorCampo('errPersCategoria', 'Categoría inválida. Máximo 60 caracteres.'); ok = false; }
+            if (['fecha_desc', 'fecha_asc', 'conductor', 'cliente'].indexOf(orden) === -1) { mostrarErrorCampo('errPersOrden', 'Seleccione un orden válido.'); ok = false; }
+
+            var factorNumero = parseFloat((factor || '').replace(',', '.'));
+            if (isNaN(factorNumero) || factorNumero < 0.01 || factorNumero > 20) { mostrarErrorCampo('errPersFactor', 'Ingrese un factor entre 0.01 y 20.'); ok = false; }
+            if (!titulo || titulo.trim().length < 5 || titulo.trim().length > 120) { mostrarErrorCampo('errPersTitulo', 'El título debe tener entre 5 y 120 caracteres.'); ok = false; }
+            return ok;
         }
     </script>
 

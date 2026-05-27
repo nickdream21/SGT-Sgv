@@ -10,6 +10,8 @@ using System.Web.UI.WebControls;
 using System.Configuration;
 using System.Text;
 using System.IO;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using ClosedXML.Excel;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
@@ -27,6 +29,9 @@ namespace WebSGV.Views
     {
         // Cadena de conexión
         private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+        private static readonly string[] EstadosViajePermitidos = { "TODOS", "ABIERTO", "CERRADO" };
+        private static readonly string[] EstadosPersonalizadoPermitidos = { "TODOS", "COMPLETADO", "PENDIENTE", "RECHAZADO" };
+        private static readonly string[] OrdenesPersonalizadoPermitidas = { "fecha_desc", "fecha_asc", "conductor", "cliente" };
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -140,8 +145,16 @@ namespace WebSGV.Views
         {
             try
             {
-                DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-                DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+                string mensajeValidacion;
+                DateTime fechaDesde;
+                DateTime fechaHasta;
+                decimal factorConversion;
+                if (!ValidarFiltrosLiquidaciones(txtFechaDesde.Text, txtFechaHasta.Text, txtFactorConversion.Text,
+                    out fechaDesde, out fechaHasta, out factorConversion, out mensajeValidacion))
+                {
+                    MostrarMensaje(mensajeValidacion, "warning");
+                    return;
+                }
 
                 DataTable dt = ObtenerLiquidaciones(fechaDesde, fechaHasta);
 
@@ -153,7 +166,7 @@ namespace WebSGV.Views
                 lblTotalRegistrosTabla.Text = $"{dt.Rows.Count} registros";
 
                 // Calcular y mostrar totales
-                CalcularTotalesLiquidaciones(dt);
+                CalcularTotalesLiquidaciones(dt, factorConversion);
             }
             catch (Exception ex)
             {
@@ -216,16 +229,10 @@ namespace WebSGV.Views
             return dt;
         }
 
-        private void CalcularTotalesLiquidaciones(DataTable dt)
+        private void CalcularTotalesLiquidaciones(DataTable dt, decimal factorConversion)
         {
             decimal totalSoles = 0;
             decimal totalDolares = 0;
-            decimal factorConversion = 3.75m;
-
-            if (!string.IsNullOrEmpty(txtFactorConversion.Text))
-            {
-                decimal.TryParse(txtFactorConversion.Text, out factorConversion);
-            }
 
             foreach (DataRow row in dt.Rows)
             {
@@ -341,6 +348,13 @@ namespace WebSGV.Views
             {
                 string buscarConductor = txtBuscarConductor.Text.Trim();
                 string estadoViaje = ddlEstadoViaje.SelectedValue;
+
+                string mensajeValidacion;
+                if (!ValidarFiltrosViajesActivos(buscarConductor, estadoViaje, out mensajeValidacion))
+                {
+                    MostrarMensaje(mensajeValidacion, "warning");
+                    return;
+                }
 
                 DataTable dt = ObtenerViajesActivos(buscarConductor, estadoViaje);
 
@@ -468,11 +482,16 @@ namespace WebSGV.Views
         {
             try
             {
-                DateTime fechaDesde = DateTime.Parse(Request.QueryString["fechaDesde"]);
-                DateTime fechaHasta = DateTime.Parse(Request.QueryString["fechaHasta"]);
-                decimal factorConversion = 3.75m;
-                if (!string.IsNullOrEmpty(Request.QueryString["factor"]))
-                    decimal.TryParse(Request.QueryString["factor"], out factorConversion);
+                string mensajeValidacion;
+                DateTime fechaDesde;
+                DateTime fechaHasta;
+                decimal factorConversion;
+                if (!ValidarFiltrosLiquidaciones(Request.QueryString["fechaDesde"], Request.QueryString["fechaHasta"],
+                    Request.QueryString["factor"], out fechaDesde, out fechaHasta, out factorConversion, out mensajeValidacion))
+                {
+                    ResponderSolicitudInvalida(mensajeValidacion);
+                    return;
+                }
 
                 DataTable dt = ObtenerLiquidaciones(fechaDesde, fechaHasta);
 
@@ -694,6 +713,14 @@ namespace WebSGV.Views
             {
                 string buscarConductor = Request.QueryString["buscarConductor"] ?? "";
                 string estadoViaje = Request.QueryString["estadoViaje"] ?? "";
+
+                string mensajeValidacion;
+                if (!ValidarFiltrosViajesActivos(buscarConductor, estadoViaje, out mensajeValidacion))
+                {
+                    ResponderSolicitudInvalida(mensajeValidacion);
+                    return;
+                }
+
                 DataTable dt = ObtenerViajesActivos(buscarConductor, estadoViaje);
 
                 byte[] excelBytes;
@@ -839,11 +866,16 @@ namespace WebSGV.Views
         {
             try
             {
-                DateTime fechaDesde = DateTime.Parse(Request.QueryString["fechaDesde"]);
-                DateTime fechaHasta = DateTime.Parse(Request.QueryString["fechaHasta"]);
-                decimal factorConversion = 3.75m;
-                if (!string.IsNullOrEmpty(Request.QueryString["factor"]))
-                    decimal.TryParse(Request.QueryString["factor"], out factorConversion);
+                string mensajeValidacion;
+                DateTime fechaDesde;
+                DateTime fechaHasta;
+                decimal factorConversion;
+                if (!ValidarFiltrosLiquidaciones(Request.QueryString["fechaDesde"], Request.QueryString["fechaHasta"],
+                    Request.QueryString["factor"], out fechaDesde, out fechaHasta, out factorConversion, out mensajeValidacion))
+                {
+                    ResponderSolicitudInvalida(mensajeValidacion);
+                    return;
+                }
 
                 DataTable dt = ObtenerLiquidaciones(fechaDesde, fechaHasta);
 
@@ -1625,34 +1657,83 @@ namespace WebSGV.Views
         private FiltrosPersonalizado LeerFiltrosPersonalizado()
         {
             var q = Request.QueryString;
+
+            DateTime fechaDesde;
+            DateTime fechaHasta;
+            string errorFecha;
+            if (!TryParseFecha(q["fechaDesde"], "Fecha desde", out fechaDesde, out errorFecha))
+                throw new ArgumentException(errorFecha);
+            if (!TryParseFecha(q["fechaHasta"], "Fecha hasta", out fechaHasta, out errorFecha))
+                throw new ArgumentException(errorFecha);
+            if (fechaDesde > fechaHasta)
+                throw new ArgumentException("El rango de fechas del reporte personalizado es inválido: la fecha final debe ser mayor o igual a la inicial.");
+            if ((fechaHasta - fechaDesde).TotalDays > 3660)
+                throw new ArgumentException("El rango de fechas del reporte personalizado no puede exceder 10 años.");
+
             decimal factor;
-            if (!decimal.TryParse(q["factor"], System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture, out factor))
-                factor = 3.75m;
+            if (!TryParseFactor(q["factor"], out factor, out errorFecha))
+                throw new ArgumentException(errorFecha);
 
             int idConductor;
-            int.TryParse(q["idConductor"], out idConductor);
+            if (!TryParseIdentificadorNoNegativo(q["idConductor"], "Conductor", out idConductor, out errorFecha))
+                throw new ArgumentException(errorFecha);
+
             int idCliente;
-            int.TryParse(q["idCliente"], out idCliente);
+            if (!TryParseIdentificadorNoNegativo(q["idCliente"], "Cliente", out idCliente, out errorFecha))
+                throw new ArgumentException(errorFecha);
+
+            string estado = (q["estado"] ?? "TODOS").Trim().ToUpperInvariant();
+            if (!EstadosPersonalizadoPermitidos.Contains(estado))
+                throw new ArgumentException("El estado del viaje en reporte personalizado no es válido.");
+
+            string orden = (q["orden"] ?? "fecha_desc").Trim().ToLowerInvariant();
+            if (!OrdenesPersonalizadoPermitidas.Contains(orden))
+                throw new ArgumentException("El criterio de orden del reporte personalizado no es válido.");
+
+            string placaTracto = (q["placaTracto"] ?? "").Trim();
+            if (placaTracto.Length > 15 || !Regex.IsMatch(placaTracto, @"^[a-zA-Z0-9\-\s]*$"))
+                throw new ArgumentException("La placa de tracto es inválida. Solo se permiten letras, números, espacio y guion (máx. 15). ");
+
+            string categoria = (q["categoria"] ?? "").Trim();
+            if (categoria.Length > 60 || !Regex.IsMatch(categoria, @"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-\.]*$"))
+                throw new ArgumentException("La categoría de gasto adicional es inválida (máx. 60 caracteres). ");
+
+            string titulo = string.IsNullOrWhiteSpace(q["titulo"]) ? "Reporte Personalizado" : q["titulo"].Trim();
+            if (titulo.Length < 5 || titulo.Length > 120)
+                throw new ArgumentException("El título del reporte debe tener entre 5 y 120 caracteres.");
+
+            string formato = (q["formato"] ?? "excel").Trim().ToLowerInvariant();
+            if (formato != "excel" && formato != "pdf")
+                throw new ArgumentException("El formato de exportación personalizado no es válido.");
+
+            var columnasSolicitadas = (q["cols"] ?? "")
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(c => c.Trim())
+                .Where(c => c.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var columnasValidas = new HashSet<string>(ColumnasPersonalizadas.Select(c => c.Item1), StringComparer.OrdinalIgnoreCase);
+            var columnasInvalidas = columnasSolicitadas.Where(c => !columnasValidas.Contains(c)).ToList();
+            if (columnasInvalidas.Any())
+                throw new ArgumentException("Se enviaron columnas inválidas en el reporte personalizado.");
 
             return new FiltrosPersonalizado
             {
-                FechaDesde = DateTime.Parse(q["fechaDesde"]),
-                FechaHasta = DateTime.Parse(q["fechaHasta"]),
-                Estado = q["estado"] ?? "TODOS",
+                FechaDesde = fechaDesde,
+                FechaHasta = fechaHasta,
+                Estado = estado,
                 IdConductor = idConductor,
                 IdCliente = idCliente,
-                PlacaTracto = (q["placaTracto"] ?? "").Trim(),
-                Categoria = (q["categoria"] ?? "").Trim(),
-                Orden = q["orden"] ?? "fecha_desc",
+                PlacaTracto = placaTracto,
+                Categoria = categoria,
+                Orden = orden,
                 Factor = factor,
-                Titulo = string.IsNullOrWhiteSpace(q["titulo"]) ? "Reporte Personalizado" : q["titulo"],
+                Titulo = titulo,
                 IncluirTotales = q["totales"] != "0",
                 IncluirResumen = q["resumen"] != "0",
-                Columnas = (q["cols"] ?? "")
-                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(c => c.Trim()).Where(c => c.Length > 0).ToList(),
-                Formato = (q["formato"] ?? "excel").ToLowerInvariant()
+                Columnas = columnasSolicitadas,
+                Formato = formato
             };
         }
 
@@ -1921,6 +2002,10 @@ namespace WebSGV.Views
                     ExportarPersonalizadoExcel(dt, colsOrdenadas, f);
             }
             catch (System.Threading.ThreadAbortException) { /* normal */ }
+            catch (ArgumentException ex)
+            {
+                ResponderSolicitudInvalida(ex.Message);
+            }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine("Error reporte personalizado: " + ex.Message);
@@ -2407,6 +2492,140 @@ namespace WebSGV.Views
         #endregion
 
         #region UTILIDADES
+
+        private bool TryParseFecha(string valor, string nombreCampo, out DateTime fecha, out string error)
+        {
+            error = null;
+            fecha = DateTime.MinValue;
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                error = $"{nombreCampo}: el valor es obligatorio.";
+                return false;
+            }
+
+            if (!DateTime.TryParseExact(valor.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out fecha))
+            {
+                error = $"{nombreCampo}: formato inválido. Use aaaa-mm-dd.";
+                return false;
+            }
+
+            DateTime min = new DateTime(2010, 1, 1);
+            DateTime max = DateTime.Today.AddDays(1);
+            if (fecha < min || fecha > max)
+            {
+                error = $"{nombreCampo}: fuera de rango permitido ({min:dd/MM/yyyy} - {max:dd/MM/yyyy}).";
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryParseFactor(string valor, out decimal factor, out string error)
+        {
+            error = null;
+            factor = 3.75m;
+            if (string.IsNullOrWhiteSpace(valor))
+                return true;
+
+            string normalizado = valor.Trim().Replace(',', '.');
+            if (!decimal.TryParse(normalizado, NumberStyles.Number, CultureInfo.InvariantCulture, out factor))
+            {
+                error = "Factor de conversión: formato inválido.";
+                return false;
+            }
+
+            if (factor < 0.01m || factor > 20m)
+            {
+                error = "Factor de conversión: debe estar entre 0.01 y 20.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryParseIdentificadorNoNegativo(string valor, string nombreCampo, out int id, out string error)
+        {
+            error = null;
+            id = 0;
+            if (string.IsNullOrWhiteSpace(valor))
+                return true;
+
+            if (!int.TryParse(valor.Trim(), out id) || id < 0)
+            {
+                error = $"{nombreCampo}: identificador inválido.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool ValidarFiltrosLiquidaciones(string fechaDesdeTexto, string fechaHastaTexto, string factorTexto,
+            out DateTime fechaDesde, out DateTime fechaHasta, out decimal factorConversion, out string mensaje)
+        {
+            fechaDesde = DateTime.MinValue;
+            fechaHasta = DateTime.MinValue;
+            factorConversion = 3.75m;
+
+            if (!TryParseFecha(fechaDesdeTexto, "Fecha desde", out fechaDesde, out mensaje))
+                return false;
+
+            if (!TryParseFecha(fechaHastaTexto, "Fecha hasta", out fechaHasta, out mensaje))
+                return false;
+
+            if (fechaDesde > fechaHasta)
+            {
+                mensaje = "Rango de fechas inválido: la fecha final debe ser mayor o igual a la fecha inicial.";
+                return false;
+            }
+
+            if ((fechaHasta - fechaDesde).TotalDays > 3660)
+            {
+                mensaje = "El rango de fechas para liquidaciones no puede exceder 10 años.";
+                return false;
+            }
+
+            if (!TryParseFactor(factorTexto, out factorConversion, out mensaje))
+                return false;
+
+            return true;
+        }
+
+        private bool ValidarFiltrosViajesActivos(string buscarConductor, string estadoViaje, out string mensaje)
+        {
+            mensaje = null;
+            string texto = (buscarConductor ?? string.Empty).Trim();
+
+            if (texto.Length > 100)
+            {
+                mensaje = "Buscar conductor: no debe superar 100 caracteres.";
+                return false;
+            }
+
+            if (!Regex.IsMatch(texto, @"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-\.]*$"))
+            {
+                mensaje = "Buscar conductor: solo se permiten letras, números, espacios, punto y guion.";
+                return false;
+            }
+
+            string estadoNormalizado = (estadoViaje ?? string.Empty).Trim().ToUpperInvariant();
+            if (!EstadosViajePermitidos.Contains(estadoNormalizado))
+            {
+                mensaje = "Estado del viaje inválido. Seleccione Todos, Abierto o Cerrado.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private void ResponderSolicitudInvalida(string mensaje)
+        {
+            HttpContext.Current.Response.Clear();
+            HttpContext.Current.Response.StatusCode = 400;
+            HttpContext.Current.Response.ContentType = "text/plain";
+            HttpContext.Current.Response.Write(mensaje);
+            HttpContext.Current.Response.End();
+        }
 
         private void MostrarMensaje(string mensaje, string tipo)
         {

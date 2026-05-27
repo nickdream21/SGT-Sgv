@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "project": "WebSGV",
-  "last_updated": "2026-05-27T12:46:00-05:00",
+  "last_updated": "2026-05-27T13:00:00-05:00",
   "current_task_id": null,
   "global_plan": [
     {
@@ -15,6 +15,13 @@
       "task_id": "TASK-002",
       "intent": "bugfix",
       "title": "Validaciones por campo en LiquidacionesPendientes.aspx",
+      "status": "completed",
+      "created_at": "2026-05-27T00:00:00Z"
+    },
+    {
+      "task_id": "TASK-003",
+      "intent": "bugfix",
+      "title": "Validaciones por campo en ReportesOrdenesViaje.aspx",
       "status": "completed",
       "created_at": "2026-05-27T00:00:00Z"
     }
@@ -37,6 +44,20 @@
     {
       "task_id": "TASK-002.2",
       "parent_task_id": "TASK-002",
+      "owner": "developer",
+      "intent": "bugfix",
+      "status": "completed"
+    },
+    {
+      "task_id": "TASK-003.1",
+      "parent_task_id": "TASK-003",
+      "owner": "developer",
+      "intent": "bugfix",
+      "status": "needs_clarification"
+    },
+    {
+      "task_id": "TASK-003.2",
+      "parent_task_id": "TASK-003",
       "owner": "developer",
       "intent": "bugfix",
       "status": "completed"
@@ -266,10 +287,10 @@
     ]
   },
   "metrics": {
-    "total_tasks_completed": 2,
-    "total_handoffs": 3,
+    "total_tasks_completed": 3,
+    "total_handoffs": 5,
     "context_compactions": 0,
     "parallel_groups_executed": 0,
-    "verification_rejections": 1
+    "verification_rejections": 2
   }
 }
