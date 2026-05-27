@@ -82,23 +82,26 @@
                         <div class="form-group">
                             <label class="form-label">Conductor</label>
                             <div class="conductor-autocomplete-wrap">
-                                <input type="text" id="txtConductorBuscar" class="form-control"
-                                    placeholder="Buscar conductor..." autocomplete="off" />
-                                <asp:HiddenField ID="hfConductorId" runat="server" ClientIDMode="Static" />
-                                <div id="conductorPendientesSugg" class="conductor-autocomplete-dropdown"></div>
-                            </div>
+                                 <input type="text" id="txtConductorBuscar" class="form-control"
+                                     placeholder="Buscar conductor..." autocomplete="off" />
+                                 <asp:HiddenField ID="hfConductorId" runat="server" ClientIDMode="Static" />
+                                 <small id="errorConductorBuscar" class="text-danger d-none"></small>
+                                 <div id="conductorPendientesSugg" class="conductor-autocomplete-dropdown"></div>
+                             </div>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="form-group">
                             <label class="form-label">Desde</label>
-                            <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                             <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                             <small id="errorFechaDesde" class="text-danger d-none"></small>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="form-group">
                             <label class="form-label">Hasta</label>
-                            <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                             <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                             <small id="errorFechaHasta" class="text-danger d-none"></small>
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -110,6 +113,7 @@
                                 <asp:ListItem Value="ALTA">Alta (12-24h)</asp:ListItem>
                                 <asp:ListItem Value="NORMAL">Normal (<12h)</asp:ListItem>
                             </asp:DropDownList>
+                            <small id="errorPrioridad" class="text-danger d-none"></small>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -703,6 +707,7 @@
                         <label class="form-label">Motivo del Rechazo <span class="text-danger">*</span></label>
                         <textarea id="rechazarObservaciones" name="observacionesRechazo" class="form-control" rows="4" 
                             placeholder="Explique detalladamente qué debe corregir el conductor...&#13;&#10;Ejemplo: Los montos de peajes no coinciden con los comprobantes adjuntos. Por favor revisar."></textarea>
+                        <small id="errorRechazoObservaciones" class="text-danger d-none"></small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -746,6 +751,7 @@
                         <label class="form-label">Motivo de la Reversión <span class="text-danger">*</span></label>
                         <textarea id="revertirMotivo" class="form-control" rows="4"
                             placeholder="Explique por qué se revierte esta aprobación...&#13;&#10;Ej: Se detectó que el descuento aplicado es incorrecto y necesita re-evaluación."></textarea>
+                        <small id="errorRevertirMotivo" class="text-danger d-none"></small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -856,6 +862,7 @@
                         <label class="form-label">Motivo de la Corrección <span class="text-danger">*</span></label>
                         <textarea id="corregirMotivo" class="form-control" rows="3"
                             placeholder="Explique por qué se corrigen los ajustes..."></textarea>
+                        <small id="errorCorregirMotivo" class="text-danger d-none"></small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -2214,15 +2221,22 @@
 
         function validarRechazo() {
             const observaciones = $('#rechazarObservaciones').val().trim();
+            limpiarErroresFormulario();
 
             if (!observaciones) {
-                alert('Por favor, ingrese el motivo del rechazo');
+                mostrarErrorCampo('#rechazarObservaciones', '#errorRechazoObservaciones', 'Debe ingresar el motivo del rechazo.');
                 $('#rechazarObservaciones').focus();
                 return false;
             }
 
             if (observaciones.length < 10) {
-                alert('El motivo del rechazo debe tener al menos 10 caracteres');
+                mostrarErrorCampo('#rechazarObservaciones', '#errorRechazoObservaciones', 'El motivo del rechazo debe tener al menos 10 caracteres.');
+                $('#rechazarObservaciones').focus();
+                return false;
+            }
+
+            if (observaciones.length > 500) {
+                mostrarErrorCampo('#rechazarObservaciones', '#errorRechazoObservaciones', 'El motivo del rechazo no puede superar 500 caracteres.');
                 $('#rechazarObservaciones').focus();
                 return false;
             }
@@ -2617,6 +2631,7 @@
 
         function aprobarDesdeModal() {
             if (!idOrdenParaAprobar) return;
+            limpiarErroresFormulario();
 
             var descS = parseFloat($('#ajusteDescuentoSoles').val()) || 0;
             var descD = parseFloat($('#ajusteDescuentoDolares').val()) || 0;
@@ -2626,6 +2641,12 @@
 
             if (descS < 0 || descD < 0 || reintS < 0 || reintD < 0) {
                 alert('⚠️ Los montos de ajuste no pueden ser negativos.');
+                return;
+            }
+
+            if (nota.length > 500) {
+                alert('La nota de aprobación no puede superar 500 caracteres.');
+                $('#notaAprobacion').focus();
                 return;
             }
 
@@ -2740,6 +2761,9 @@
         }
 
         function cargarLiquidacionesAprobadas() {
+            limpiarErroresFormulario();
+            if (!validarFiltrosAprobadasCliente()) return;
+
             var filtros = {
                 idConductor: parseInt($('#filtroCondAprobadasId').val()) || 0,
                 fechaDesde: $('#filtroDesdeAprobadas').val() || '',
@@ -2905,14 +2929,20 @@
         function confirmarReversion() {
             var idOrden = parseInt($('#revertirIdOrden').val());
             var motivo = $('#revertirMotivo').val().trim();
+            limpiarErroresFormulario();
 
             if (!motivo) {
-                alert('Debe ingresar el motivo de la reversi\u00f3n.');
+                mostrarErrorCampo('#revertirMotivo', '#errorRevertirMotivo', 'Debe ingresar el motivo de la reversión.');
                 $('#revertirMotivo').focus();
                 return;
             }
             if (motivo.length < 10) {
-                alert('El motivo debe tener al menos 10 caracteres.');
+                mostrarErrorCampo('#revertirMotivo', '#errorRevertirMotivo', 'El motivo debe tener al menos 10 caracteres.');
+                $('#revertirMotivo').focus();
+                return;
+            }
+            if (motivo.length > 500) {
+                mostrarErrorCampo('#revertirMotivo', '#errorRevertirMotivo', 'El motivo no puede superar 500 caracteres.');
                 $('#revertirMotivo').focus();
                 return;
             }
@@ -2982,15 +3012,26 @@
             var descD = parseFloat($('#corregirDescDolares').val()) || 0;
             var reintS = parseFloat($('#corregirReintSoles').val()) || 0;
             var reintD = parseFloat($('#corregirReintDolares').val()) || 0;
+            limpiarErroresFormulario();
 
             if (!motivo) {
-                alert('Debe ingresar el motivo de la correcci\u00f3n.');
+                mostrarErrorCampo('#corregirMotivo', '#errorCorregirMotivo', 'Debe ingresar el motivo de la corrección.');
                 $('#corregirMotivo').focus();
                 return;
             }
             if (motivo.length < 10) {
-                alert('El motivo debe tener al menos 10 caracteres.');
+                mostrarErrorCampo('#corregirMotivo', '#errorCorregirMotivo', 'El motivo debe tener al menos 10 caracteres.');
                 $('#corregirMotivo').focus();
+                return;
+            }
+            if (motivo.length > 500) {
+                mostrarErrorCampo('#corregirMotivo', '#errorCorregirMotivo', 'El motivo no puede superar 500 caracteres.');
+                $('#corregirMotivo').focus();
+                return;
+            }
+
+            if (descS < 0 || descD < 0 || reintS < 0 || reintD < 0) {
+                alert('Los montos de descuento/reintegro no pueden ser negativos.');
                 return;
             }
 
@@ -3137,7 +3178,61 @@
         $(document).ready(function () {
             initConductorAutocomplete('txtConductorBuscar', 'conductorPendientesSugg', 'hfConductorId');
             initConductorAutocomplete('txtConductorAprobadas', 'conductorAprobadasSugg', 'filtroCondAprobadasId');
+            $('#<%= btnFiltrar.ClientID %>').on('click', function () {
+                return validarFiltrosPendientesCliente();
+            });
         });
+
+        function mostrarErrorCampo(selectorInput, selectorError, mensaje) {
+            $(selectorInput).addClass('is-invalid');
+            $(selectorError).text(mensaje).removeClass('d-none');
+        }
+
+        function limpiarErroresFormulario() {
+            $('.is-invalid').removeClass('is-invalid');
+            $('#errorConductorBuscar,#errorFechaDesde,#errorFechaHasta,#errorPrioridad,#errorRechazoObservaciones,#errorRevertirMotivo,#errorCorregirMotivo').addClass('d-none').text('');
+        }
+
+        function validarFiltrosPendientesCliente() {
+            limpiarErroresFormulario();
+            var valido = true;
+            var conductorTexto = $('#txtConductorBuscar').val().trim();
+            var conductorId = $('#hfConductorId').val().trim();
+            var fechaDesde = $('#<%= txtFechaDesde.ClientID %>').val();
+            var fechaHasta = $('#<%= txtFechaHasta.ClientID %>').val();
+            var prioridad = $('#<%= ddlPrioridad.ClientID %>').val();
+
+            if (conductorTexto && !conductorId) {
+                mostrarErrorCampo('#txtConductorBuscar', '#errorConductorBuscar', 'Seleccione un conductor de la lista sugerida.');
+                valido = false;
+            }
+            if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
+                mostrarErrorCampo('#<%= txtFechaHasta.ClientID %>', '#errorFechaHasta', 'La fecha "Hasta" debe ser mayor o igual a "Desde".');
+                valido = false;
+            }
+            if (prioridad && ['URGENTE', 'ALTA', 'NORMAL'].indexOf(prioridad) === -1) {
+                mostrarErrorCampo('#<%= ddlPrioridad.ClientID %>', '#errorPrioridad', 'La prioridad seleccionada no es válida.');
+                valido = false;
+            }
+            return valido;
+        }
+
+        function validarFiltrosAprobadasCliente() {
+            var fechaDesde = $('#filtroDesdeAprobadas').val();
+            var fechaHasta = $('#filtroHastaAprobadas').val();
+            var numeroOrden = ($('#filtroOrdenAprobadas').val() || '').trim();
+
+            if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
+                alert('En filtros de aprobadas, la fecha "Hasta" debe ser mayor o igual a "Desde".');
+                return false;
+            }
+            if (numeroOrden && !/^[A-Za-z0-9\-_/]{1,30}$/.test(numeroOrden)) {
+                alert('El filtro N° Orden solo permite letras, números, guion (-), guion bajo (_) y barra (/), máximo 30 caracteres.');
+                $('#filtroOrdenAprobadas').focus();
+                return false;
+            }
+            return true;
+        }
     </script>
 
 </asp:Content>

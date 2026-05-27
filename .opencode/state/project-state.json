@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "project": "WebSGV",
-  "last_updated": "2026-05-27T12:26:00-05:00",
+  "last_updated": "2026-05-27T12:46:00-05:00",
   "current_task_id": null,
   "global_plan": [
     {
@@ -10,12 +10,33 @@
       "title": "Validaciones por campo en RegistroDespacho.aspx",
       "status": "completed",
       "created_at": "2026-05-27T00:00:00Z"
+    },
+    {
+      "task_id": "TASK-002",
+      "intent": "bugfix",
+      "title": "Validaciones por campo en LiquidacionesPendientes.aspx",
+      "status": "completed",
+      "created_at": "2026-05-27T00:00:00Z"
     }
   ],
   "active_subtasks": [
     {
       "task_id": "TASK-001.1",
       "parent_task_id": "TASK-001",
+      "owner": "developer",
+      "intent": "bugfix",
+      "status": "completed"
+    },
+    {
+      "task_id": "TASK-002.1",
+      "parent_task_id": "TASK-002",
+      "owner": "developer",
+      "intent": "bugfix",
+      "status": "needs_clarification"
+    },
+    {
+      "task_id": "TASK-002.2",
+      "parent_task_id": "TASK-002",
       "owner": "developer",
       "intent": "bugfix",
       "status": "completed"
@@ -245,10 +266,10 @@
     ]
   },
   "metrics": {
-    "total_tasks_completed": 1,
-    "total_handoffs": 1,
+    "total_tasks_completed": 2,
+    "total_handoffs": 3,
     "context_compactions": 0,
     "parallel_groups_executed": 0,
-    "verification_rejections": 0
+    "verification_rejections": 1
   }
 }

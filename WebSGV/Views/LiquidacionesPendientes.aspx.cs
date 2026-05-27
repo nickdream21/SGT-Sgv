@@ -5,6 +5,8 @@ using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using System.Web.Hosting;
 using System.Web.Services;
 using System.Web.UI;
@@ -16,6 +18,10 @@ namespace WebSGV.Views
 {
     public partial class LiquidacionesPendientes : System.Web.UI.Page
     {
+        private const int MaxLongitudMotivo = 500;
+        private const int MaxLongitudNotaAprobacion = 500;
+        private static readonly DateTime FechaMinimaPermitida = new DateTime(2000, 1, 1);
+
         #region Clases de Datos
 
         public class DetallePeajeItem
@@ -161,6 +167,7 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            RolesHelper.ValidarAccesoSeccion("ORDEN_VIAJE");
             SecurityHelper.AgregarHeadersSeguridad();
             if (!IsPostBack)
             {
@@ -229,6 +236,16 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine("--- Cargando liquidaciones pendientes ---");
 
+                if (!TryObtenerFiltrosPendientes(out int? idConductor, out DateTime? fechaDesde, out DateTime? fechaHasta, out string prioridad, out string mensajeValidacion))
+                {
+                    MostrarMensaje(mensajeValidacion, "warning");
+                    gvLiquidacionesPendientes.DataSource = null;
+                    gvLiquidacionesPendientes.DataBind();
+                    lblTotalPendientes.Text = "0";
+                    lblTotalUrgentes.Text = "0";
+                    return;
+                }
+
                 string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
@@ -238,20 +255,9 @@ namespace WebSGV.Views
                         cmd.CommandType = CommandType.StoredProcedure;
 
                         // Parámetros opcionales de filtro
-                        if (!string.IsNullOrEmpty(hfConductorId.Value))
-                        {
-                            cmd.Parameters.AddWithValue("@idConductor", Convert.ToInt32(hfConductorId.Value));
-                        }
-
-                        if (!string.IsNullOrEmpty(txtFechaDesde.Text) && DateTime.TryParse(txtFechaDesde.Text, out DateTime fechaD))
-                        {
-                            cmd.Parameters.AddWithValue("@fechaDesde", fechaD);
-                        }
-
-                        if (!string.IsNullOrEmpty(txtFechaHasta.Text) && DateTime.TryParse(txtFechaHasta.Text, out DateTime fechaH))
-                        {
-                            cmd.Parameters.AddWithValue("@fechaHasta", fechaH);
-                        }
+                        if (idConductor.HasValue) cmd.Parameters.AddWithValue("@idConductor", idConductor.Value);
+                        if (fechaDesde.HasValue) cmd.Parameters.AddWithValue("@fechaDesde", fechaDesde.Value);
+                        if (fechaHasta.HasValue) cmd.Parameters.AddWithValue("@fechaHasta", fechaHasta.Value);
 
                         conn.Open();
 
@@ -262,15 +268,15 @@ namespace WebSGV.Views
                         }
 
                         // Aplicar filtro de prioridad si está seleccionado
-                        if (!string.IsNullOrEmpty(ddlPrioridad.SelectedValue))
+                        if (!string.IsNullOrEmpty(prioridad))
                         {
                             DataTable dtFiltrado = dt.Clone();
                             foreach (DataRow row in dt.Rows)
                             {
                                 int horas = row["HorasPendientes"] != DBNull.Value ? Convert.ToInt32(row["HorasPendientes"]) : 0;
-                                string prioridad = ObtenerPrioridad(horas);
+                                string prioridadFila = ObtenerPrioridad(horas).ToUpperInvariant();
 
-                                if (prioridad == ddlPrioridad.SelectedValue)
+                                if (prioridad == prioridadFila)
                                 {
                                     dtFiltrado.ImportRow(row);
                                 }
@@ -322,7 +328,11 @@ namespace WebSGV.Views
         {
             try
             {
-                int idOrdenViaje = Convert.ToInt32(e.CommandArgument);
+                if (!int.TryParse(Convert.ToString(e.CommandArgument), out int idOrdenViaje) || idOrdenViaje <= 0)
+                {
+                    MostrarMensaje("El identificador de la orden no es válido.", "warning");
+                    return;
+                }
 
                 System.Diagnostics.Debug.WriteLine($"Comando: {e.CommandName} - ID: {idOrdenViaje}");
 
@@ -468,6 +478,8 @@ namespace WebSGV.Views
                     return;
                 }
 
+                observaciones = NormalizarTexto(observaciones, MaxLongitudMotivo);
+
                 if (string.IsNullOrEmpty(observaciones))
                 {
                     MostrarMensaje("Debe ingresar el motivo del rechazo.", "warning");
@@ -477,6 +489,12 @@ namespace WebSGV.Views
                 if (observaciones.Length < 10)
                 {
                     MostrarMensaje("El motivo del rechazo debe tener al menos 10 caracteres.", "warning");
+                    return;
+                }
+
+                if (observaciones.Length > MaxLongitudMotivo)
+                {
+                    MostrarMensaje("El motivo del rechazo no puede superar 500 caracteres.", "warning");
                     return;
                 }
 
@@ -1036,6 +1054,9 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine($"=== APROBAR CON AJUSTES: {idOrdenViaje} ===");
 
+                if (idOrdenViaje <= 0)
+                    return new { success = false, message = "El ID de la orden de viaje es inválido." };
+
                 int idUsuario = 0;
                 if (System.Web.HttpContext.Current.Session["UsuarioID"] != null)
                     idUsuario = Convert.ToInt32(System.Web.HttpContext.Current.Session["UsuarioID"]);
@@ -1046,6 +1067,8 @@ namespace WebSGV.Views
                 string errorMonto = ValidarMontosAjuste(descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares);
                 if (errorMonto != null)
                     return new { success = false, message = errorMonto };
+
+                notaAprobacion = NormalizarTexto(notaAprobacion, MaxLongitudNotaAprobacion);
 
                 string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
                 string numeroOrdenViaje = null;
@@ -1154,6 +1177,11 @@ namespace WebSGV.Views
 
         protected void btnFiltrar_Click(object sender, EventArgs e)
         {
+            if (!Page.IsValid)
+            {
+                MostrarMensaje("Corrija los datos inválidos del filtro antes de buscar.", "warning");
+                return;
+            }
             CargarLiquidacionesPendientes();
         }
 
@@ -1267,6 +1295,19 @@ namespace WebSGV.Views
                 if (ctx.Session["UsuarioID"] == null)
                     return new List<LiquidacionAprobadaItem>();
 
+                if (idConductor < 0)
+                    return new List<LiquidacionAprobadaItem>();
+
+                if (!TryParseFechaFiltro(fechaDesde, out DateTime? fd) || !TryParseFechaFiltro(fechaHasta, out DateTime? fh))
+                    return new List<LiquidacionAprobadaItem>();
+
+                if (fd.HasValue && fh.HasValue && fd.Value.Date > fh.Value.Date)
+                    return new List<LiquidacionAprobadaItem>();
+
+                numeroOrden = NormalizarTexto(numeroOrden, 30);
+                if (!string.IsNullOrEmpty(numeroOrden) && !Regex.IsMatch(numeroOrden, "^[A-Za-z0-9_/-]+$"))
+                    return new List<LiquidacionAprobadaItem>();
+
                 System.Diagnostics.Debug.WriteLine("=== OBTENIENDO LIQUIDACIONES APROBADAS ===");
 
                 string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
@@ -1319,10 +1360,10 @@ namespace WebSGV.Views
                     {
                         if (idConductor > 0)
                             cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                        if (!string.IsNullOrEmpty(fechaDesde) && DateTime.TryParse(fechaDesde, out DateTime fdDesde))
-                            cmd.Parameters.AddWithValue("@fechaDesde", fdDesde);
-                        if (!string.IsNullOrEmpty(fechaHasta) && DateTime.TryParse(fechaHasta, out DateTime fdHasta))
-                            cmd.Parameters.AddWithValue("@fechaHasta", fdHasta);
+                        if (fd.HasValue)
+                            cmd.Parameters.AddWithValue("@fechaDesde", fd.Value);
+                        if (fh.HasValue)
+                            cmd.Parameters.AddWithValue("@fechaHasta", fh.Value);
                         if (!string.IsNullOrEmpty(numeroOrden))
                             cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
 
@@ -1378,6 +1419,13 @@ namespace WebSGV.Views
             try
             {
                 System.Diagnostics.Debug.WriteLine($"=== REVERTIR APROBACIÓN: {idOrdenViaje} ===");
+
+                if (idOrdenViaje <= 0)
+                    return new { success = false, message = "El ID de la orden de viaje es inválido." };
+
+                motivo = NormalizarTexto(motivo, MaxLongitudMotivo);
+                if (string.IsNullOrWhiteSpace(motivo) || motivo.Trim().Length < 10)
+                    return new { success = false, message = "El motivo de reversión debe tener al menos 10 caracteres." };
 
                 int idUsuario = 0;
                 if (System.Web.HttpContext.Current.Session["UsuarioID"] != null)
@@ -1442,6 +1490,9 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine($"=== CORREGIR AJUSTES APROBADA: {idOrdenViaje} ===");
 
+                if (idOrdenViaje <= 0)
+                    return new { success = false, message = "El ID de la orden de viaje es inválido." };
+
                 int idUsuario = 0;
                 if (System.Web.HttpContext.Current.Session["UsuarioID"] != null)
                     idUsuario = Convert.ToInt32(System.Web.HttpContext.Current.Session["UsuarioID"]);
@@ -1453,6 +1504,7 @@ namespace WebSGV.Views
                 if (errorMonto != null)
                     return new { success = false, message = errorMonto };
 
+                motivo = NormalizarTexto(motivo, MaxLongitudMotivo);
                 if (string.IsNullOrWhiteSpace(motivo) || motivo.Trim().Length < 10)
                     return new { success = false, message = "El motivo de corrección debe tener al menos 10 caracteres." };
 
@@ -1616,6 +1668,9 @@ namespace WebSGV.Views
         {
             try
             {
+                if (idOrdenViaje <= 0)
+                    return new { success = false, message = "El ID de la orden de viaje es inválido." };
+
                 var ctx = System.Web.HttpContext.Current;
                 int idUsuario = ctx.Session["UsuarioID"] != null ? Convert.ToInt32(ctx.Session["UsuarioID"]) : 0;
                 string nombre = ctx.Session["Nombre"] as string ?? "";
@@ -1625,6 +1680,8 @@ namespace WebSGV.Views
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
                 if (rol == "CONDUCTOR")
                     return new { success = false, message = "Un conductor no puede aprobar liquidaciones." };
+
+                notaAprobacion = NormalizarTexto(notaAprobacion, MaxLongitudNotaAprobacion);
 
                 // 1) Ejecutar el flujo de aprobación existente (ajustes + sp_AprobarLiquidacion)
                 var resAprobacion = AprobarConAjustes(idOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, notaAprobacion)
@@ -1686,6 +1743,9 @@ namespace WebSGV.Views
         {
             try
             {
+                if (idOrdenViaje <= 0)
+                    return new { success = false, message = "El ID de la orden de viaje es inválido." };
+
                 var ctx = System.Web.HttpContext.Current;
                 int idUsuario = ctx.Session["UsuarioID"] != null ? Convert.ToInt32(ctx.Session["UsuarioID"]) : 0;
                 string nombre = ctx.Session["Nombre"] as string ?? "";
@@ -1695,7 +1755,8 @@ namespace WebSGV.Views
                     return new { success = false, message = "Sesión no válida." };
                 if (rol == "CONDUCTOR")
                     return new { success = false, message = "Un conductor no puede rechazar liquidaciones." };
-                if (string.IsNullOrWhiteSpace(motivo))
+                motivo = NormalizarTexto(motivo, MaxLongitudMotivo);
+                if (string.IsNullOrWhiteSpace(motivo) || motivo.Length < 10)
                     return new { success = false, message = "Debe indicar el motivo del rechazo." };
 
                 string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
@@ -1802,6 +1863,73 @@ namespace WebSGV.Views
                 return (c > 0 ? fwd.Substring(0, c) : fwd).Trim();
             }
             return ctx.Request.UserHostAddress;
+        }
+
+        private bool TryObtenerFiltrosPendientes(out int? idConductor, out DateTime? fechaDesde, out DateTime? fechaHasta, out string prioridad, out string mensaje)
+        {
+            idConductor = null;
+            fechaDesde = null;
+            fechaHasta = null;
+            prioridad = string.Empty;
+            mensaje = null;
+
+            if (!string.IsNullOrWhiteSpace(hfConductorId.Value))
+            {
+                if (!int.TryParse(hfConductorId.Value, out int id) || id <= 0)
+                {
+                    mensaje = "El conductor seleccionado no es válido.";
+                    return false;
+                }
+                idConductor = id;
+            }
+
+            if (!TryParseFechaFiltro(txtFechaDesde.Text, out fechaDesde))
+            {
+                mensaje = "La fecha 'Desde' no tiene un formato válido.";
+                return false;
+            }
+            if (!TryParseFechaFiltro(txtFechaHasta.Text, out fechaHasta))
+            {
+                mensaje = "La fecha 'Hasta' no tiene un formato válido.";
+                return false;
+            }
+
+            if (fechaDesde.HasValue && fechaHasta.HasValue && fechaDesde.Value.Date > fechaHasta.Value.Date)
+            {
+                mensaje = "La fecha 'Desde' no puede ser mayor que la fecha 'Hasta'.";
+                return false;
+            }
+
+            prioridad = (ddlPrioridad.SelectedValue ?? string.Empty).Trim().ToUpperInvariant();
+            if (!string.IsNullOrEmpty(prioridad) && prioridad != "URGENTE" && prioridad != "ALTA" && prioridad != "NORMAL")
+            {
+                mensaje = "La prioridad seleccionada no es válida.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryParseFechaFiltro(string fechaTexto, out DateTime? fecha)
+        {
+            fecha = null;
+            if (string.IsNullOrWhiteSpace(fechaTexto)) return true;
+
+            if (!DateTime.TryParseExact(fechaTexto.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime valor))
+                return false;
+
+            if (valor.Date < FechaMinimaPermitida || valor.Date > DateTime.Today.AddYears(1))
+                return false;
+
+            fecha = valor.Date;
+            return true;
+        }
+
+        private static string NormalizarTexto(string texto, int maximo)
+        {
+            if (string.IsNullOrWhiteSpace(texto)) return string.Empty;
+            string limpio = texto.Trim();
+            return limpio.Length > maximo ? limpio.Substring(0, maximo) : limpio;
         }
 
         #endregion
