@@ -35,6 +35,7 @@
                     </div>
                     <div class="card-body">
                         <asp:Panel ID="pnlFormulario" runat="server">
+                            <asp:ValidationSummary ID="vsRegistroCliente" runat="server" ValidationGroup="vgRegistroCliente" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                             <div class="form-group">
                                 <label class="font-weight-bold">RUC (Opcional):</label>
                                 <div class="input-group">
@@ -43,20 +44,24 @@
                                         <asp:Button ID="btnBuscarRUC" runat="server" CssClass="btn btn-secondary" Text="Verificar" OnClientClick="verificarRUC(); return false;" />
                                     </div>
                                 </div>
+                                <asp:RegularExpressionValidator ID="revRuc" runat="server" ControlToValidate="txtRUC" ValidationGroup="vgRegistroCliente"
+                                    ValidationExpression="^$|^\d{11}$" ErrorMessage="RUC: ingrese exactamente 11 dígitos o deje el campo vacío." CssClass="text-danger small" Display="Dynamic" />
                                 <small class="form-text text-muted">Ingrese el RUC si lo conoce, o deje en blanco.</small>
                             </div>
                             <div class="form-group">
                                 <label class="font-weight-bold">Nombre / Raz&#xF3;n Social: <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control"></asp:TextBox>
-                                <asp:RequiredFieldValidator ID="rfvNombre" runat="server"
+                                <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ValidationGroup="vgRegistroCliente"
                                     ControlToValidate="txtNombre"
                                     ErrorMessage="El nombre del cliente es obligatorio."
                                     CssClass="text-danger small"
                                     Display="Dynamic">
                                 </asp:RequiredFieldValidator>
+                                <asp:RegularExpressionValidator ID="revNombre" runat="server" ControlToValidate="txtNombre" ValidationGroup="vgRegistroCliente"
+                                    ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.&]{3,200}$" ErrorMessage="Nombre/Razón Social: use entre 3 y 200 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
                             </div>
                             <asp:Button ID="btnRegistrar" runat="server" CssClass="btn btn-primary btn-block"
-                                Text="Registrar Cliente" OnClick="btnRegistrar_Click" />
+                                Text="Registrar Cliente" ValidationGroup="vgRegistroCliente" OnClick="btnRegistrar_Click" />
                         </asp:Panel>
                     </div>
                 </div>

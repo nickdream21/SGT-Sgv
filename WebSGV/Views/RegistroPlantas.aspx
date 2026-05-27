@@ -33,14 +33,17 @@
                         <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar Planta</h5>
                     </div>
                     <div class="card-body">
+                        <asp:ValidationSummary ID="vsRegistroPlanta" runat="server" ValidationGroup="vgRegistroPlanta" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                         <div class="form-group">
                             <label class="font-weight-bold">Nombre de la Planta <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control"
                                 placeholder="Ej: PLANTA TRUJILLO" MaxLength="200"></asp:TextBox>
-                            <asp:RequiredFieldValidator ID="rfvNombre" runat="server"
+                            <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ValidationGroup="vgRegistroPlanta"
                                 ControlToValidate="txtNombre"
                                 ErrorMessage="El nombre de la planta es requerido."
                                 CssClass="text-danger small" Display="Dynamic" />
+                            <asp:RegularExpressionValidator ID="revNombrePlanta" runat="server" ValidationGroup="vgRegistroPlanta"
+                                ControlToValidate="txtNombre" ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.,]{3,200}$" ErrorMessage="Nombre de planta: use entre 3 y 200 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
                             <small class="form-text text-muted">
                                 <i class="fas fa-info-circle mr-1"></i>El nombre se guardar&#xE1; en may&#xFA;sculas.
                             </small>
@@ -55,7 +58,7 @@
                                 Define si la planta se muestra en operaciones nacionales o internacionales.
                             </small>
                         </div>
-                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar Planta"
+                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar Planta" ValidationGroup="vgRegistroPlanta"
                             CssClass="btn btn-primary btn-block" OnClick="btnRegistrar_Click" />
                     </div>
                 </div>

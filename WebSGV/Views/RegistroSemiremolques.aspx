@@ -33,28 +33,35 @@
                         <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar Semiremolque</h5>
                     </div>
                     <div class="card-body">
+                        <asp:ValidationSummary ID="vsRegistroSemi" runat="server" ValidationGroup="vgRegistroSemi" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                         <div class="form-group">
                             <label class="font-weight-bold">N&#xBA; de Placa <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtPlaca" runat="server" CssClass="form-control"
                                 placeholder="Ej: ABC-123" MaxLength="20"></asp:TextBox>
-                            <asp:RequiredFieldValidator ID="rfvPlaca" runat="server" ControlToValidate="txtPlaca"
-                                ErrorMessage="La placa es requerida" CssClass="text-danger small" Display="Dynamic" />
+                            <asp:RequiredFieldValidator ID="rfvPlaca" runat="server" ControlToValidate="txtPlaca" ValidationGroup="vgRegistroSemi"
+                                ErrorMessage="Placa: este campo es obligatorio." CssClass="text-danger small" Display="Dynamic" />
+                            <asp:RegularExpressionValidator ID="revPlaca" runat="server" ControlToValidate="txtPlaca" ValidationGroup="vgRegistroSemi"
+                                ValidationExpression="^[A-Za-z0-9\-]{6,10}$" ErrorMessage="Placa: use 6 a 10 caracteres (letras, números o guion)." CssClass="text-danger small" Display="Dynamic" />
                         </div>
                         <div class="form-group">
                             <label class="font-weight-bold">Marca <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtMarca" runat="server" CssClass="form-control"
                                 placeholder="Ej: RANDON" MaxLength="100"></asp:TextBox>
-                            <asp:RequiredFieldValidator ID="rfvMarca" runat="server" ControlToValidate="txtMarca"
-                                ErrorMessage="La marca es requerida" CssClass="text-danger small" Display="Dynamic" />
+                            <asp:RequiredFieldValidator ID="rfvMarca" runat="server" ControlToValidate="txtMarca" ValidationGroup="vgRegistroSemi"
+                                ErrorMessage="Marca: este campo es obligatorio." CssClass="text-danger small" Display="Dynamic" />
+                            <asp:RegularExpressionValidator ID="revMarca" runat="server" ControlToValidate="txtMarca" ValidationGroup="vgRegistroSemi"
+                                ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.]{2,100}$" ErrorMessage="Marca: use entre 2 y 100 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
                         </div>
                         <div class="form-group">
                             <label class="font-weight-bold">Modelo <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtModelo" runat="server" CssClass="form-control"
                                 placeholder="Ej: SR GR 3E" MaxLength="100"></asp:TextBox>
-                            <asp:RequiredFieldValidator ID="rfvModelo" runat="server" ControlToValidate="txtModelo"
-                                ErrorMessage="El modelo es requerido" CssClass="text-danger small" Display="Dynamic" />
+                            <asp:RequiredFieldValidator ID="rfvModelo" runat="server" ControlToValidate="txtModelo" ValidationGroup="vgRegistroSemi"
+                                ErrorMessage="Modelo: este campo es obligatorio." CssClass="text-danger small" Display="Dynamic" />
+                            <asp:RegularExpressionValidator ID="revModelo" runat="server" ControlToValidate="txtModelo" ValidationGroup="vgRegistroSemi"
+                                ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.]{2,100}$" ErrorMessage="Modelo: use entre 2 y 100 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
                         </div>
-                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar Semiremolque"
+                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar Semiremolque" ValidationGroup="vgRegistroSemi"
                             CssClass="btn btn-primary btn-block" OnClick="btnRegistrar_Click" />
                     </div>
                 </div>

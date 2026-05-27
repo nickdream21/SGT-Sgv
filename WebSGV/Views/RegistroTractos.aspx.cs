@@ -2,6 +2,7 @@
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
@@ -14,8 +15,8 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            RolesHelper.ValidarAccesoSeccion("REGISTRO");
             SecurityHelper.AgregarHeadersSeguridad();
-            SecurityHelper.ExigirRolAdmin();
 
             if (!IsPostBack)
             {
@@ -49,6 +50,12 @@ namespace WebSGV.Views
 
         protected void btnRegistrar_Click(object sender, EventArgs e)
         {
+            if (!Page.IsValid)
+            {
+                MostrarMensaje("Corrija los campos marcados del tracto.");
+                return;
+            }
+
             string placa = txtPlaca.Text.Trim().ToUpper();
             string marca = txtMarca.Text.Trim().ToUpper();
             string modelo = txtModelo.Text.Trim().ToUpper();
@@ -58,6 +65,10 @@ namespace WebSGV.Views
                 MostrarMensaje("Debe completar todos los campos requeridos.");
                 return;
             }
+
+            if (!Regex.IsMatch(placa, "^[A-Z0-9-]{6,10}$")) { MostrarMensaje("Placa inválida: use 6 a 10 caracteres (letras, números o guion)."); return; }
+            if (!Regex.IsMatch(marca, "^[A-ZÁÉÍÓÚÑ0-9\\s\\-.]{2,100}$")) { MostrarMensaje("Marca inválida: use entre 2 y 100 caracteres válidos."); return; }
+            if (!Regex.IsMatch(modelo, "^[A-ZÁÉÍÓÚÑ0-9\\s\\-.]{2,100}$")) { MostrarMensaje("Modelo inválido: use entre 2 y 100 caracteres válidos."); return; }
 
             try
             {
@@ -178,6 +189,8 @@ namespace WebSGV.Views
                 MostrarMensaje("Debe completar todos los campos del tracto.");
                 return;
             }
+
+            if (!Regex.IsMatch(placa, "^[A-Z0-9-]{6,10}$")) { MostrarMensaje("Placa inválida en edición."); return; }
 
             try
             {

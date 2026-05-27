@@ -2,6 +2,7 @@
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
@@ -14,8 +15,8 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            RolesHelper.ValidarAccesoSeccion("REGISTRO");
             SecurityHelper.AgregarHeadersSeguridad();
-            SecurityHelper.ExigirRolAdmin();
 
             if (!IsPostBack)
             {
@@ -49,11 +50,22 @@ namespace WebSGV.Views
 
         protected void btnRegistrar_Click(object sender, EventArgs e)
         {
+            if (!Page.IsValid)
+            {
+                MostrarMensaje("Corrija los campos marcados de la estación.");
+                return;
+            }
+
             string nombre = txtNombre.Text.Trim().ToUpper();
 
             if (string.IsNullOrWhiteSpace(nombre))
             {
                 MostrarMensaje("Debe ingresar el nombre de la estación de peaje.");
+                return;
+            }
+            if (!Regex.IsMatch(nombre, "^[A-ZÁÉÍÓÚÑ0-9\\s\\-\\.,]{3,200}$"))
+            {
+                MostrarMensaje("Nombre de estación inválido: use entre 3 y 200 caracteres válidos.");
                 return;
             }
 

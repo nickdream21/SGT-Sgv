@@ -35,6 +35,7 @@
                     </div>
                     <div class="card-body">
                         <asp:Panel ID="pnlFormulario" runat="server">
+                            <asp:ValidationSummary ID="vsRegistroConductor" runat="server" ValidationGroup="vgRegistroConductor" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
 
                             <%-- Fila 1: Tipo documento + campo de documento (en la misma posición) --%>
                             <div class="row align-items-end">
@@ -63,6 +64,9 @@
                                     <label class="font-weight-bold">Pasaporte:</label>
                                     <asp:TextBox ID="txtPasaporte" runat="server" CssClass="form-control" placeholder="Núm. pasaporte"></asp:TextBox>
                                 </div>
+                                <asp:RegularExpressionValidator ID="revDni" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtDNI" ValidationExpression="^$|^\d{8}$" ErrorMessage="DNI: debe tener exactamente 8 dígitos." CssClass="text-danger small" Display="Dynamic" />
+                                <asp:RegularExpressionValidator ID="revCarnet" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtCarnetExtranjeria" ValidationExpression="^$|^[A-Za-z0-9\-]{6,12}$" ErrorMessage="Carnet de extranjería: use de 6 a 12 caracteres alfanuméricos." CssClass="text-danger small" Display="Dynamic" />
+                                <asp:RegularExpressionValidator ID="revPasaporte" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtPasaporte" ValidationExpression="^$|^[A-Za-z0-9\-]{6,12}$" ErrorMessage="Pasaporte: use de 6 a 12 caracteres alfanuméricos." CssClass="text-danger small" Display="Dynamic" />
                             </div>
 
                             <%-- Fila 2: Nombres + Apellido Paterno --%>
@@ -70,14 +74,16 @@
                                 <div class="col-md-6 form-group">
                                     <label class="font-weight-bold">Nombres: <span class="text-danger">*</span></label>
                                     <asp:TextBox ID="txtNombres" runat="server" CssClass="form-control"></asp:TextBox>
-                                    <asp:RequiredFieldValidator ID="rfvNombres" runat="server" ControlToValidate="txtNombres"
+                                    <asp:RequiredFieldValidator ID="rfvNombres" runat="server" ControlToValidate="txtNombres" ValidationGroup="vgRegistroConductor"
                                         ErrorMessage="El nombre es requerido" CssClass="text-danger small" Display="Dynamic"></asp:RequiredFieldValidator>
+                                    <asp:RegularExpressionValidator ID="revNombres" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtNombres" ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú\s]{2,100}$" ErrorMessage="Nombres: solo letras y espacios (2 a 100 caracteres)." CssClass="text-danger small" Display="Dynamic" />
                                 </div>
                                 <div class="col-md-6 form-group">
                                     <label class="font-weight-bold">Apellido Paterno: <span class="text-danger">*</span></label>
                                     <asp:TextBox ID="txtApellidoPaterno" runat="server" CssClass="form-control"></asp:TextBox>
-                                    <asp:RequiredFieldValidator ID="rfvApellidoPaterno" runat="server" ControlToValidate="txtApellidoPaterno"
+                                    <asp:RequiredFieldValidator ID="rfvApellidoPaterno" runat="server" ControlToValidate="txtApellidoPaterno" ValidationGroup="vgRegistroConductor"
                                         ErrorMessage="El apellido paterno es requerido" CssClass="text-danger small" Display="Dynamic"></asp:RequiredFieldValidator>
+                                    <asp:RegularExpressionValidator ID="revApellidoPaterno" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtApellidoPaterno" ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú\s]{2,100}$" ErrorMessage="Apellido paterno: solo letras y espacios (2 a 100 caracteres)." CssClass="text-danger small" Display="Dynamic" />
                                 </div>
                             </div>
 
@@ -86,14 +92,16 @@
                                 <div class="col-md-6 form-group">
                                     <label class="font-weight-bold">Apellido Materno:</label>
                                     <asp:TextBox ID="txtApellidoMaterno" runat="server" CssClass="form-control"></asp:TextBox>
+                                    <asp:RegularExpressionValidator ID="revApellidoMaterno" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtApellidoMaterno" ValidationExpression="^$|^[A-Za-zÁÉÍÓÚÑáéíóú\s]{2,100}$" ErrorMessage="Apellido materno: solo letras y espacios (2 a 100 caracteres)." CssClass="text-danger small" Display="Dynamic" />
                                 </div>
                                 <div class="col-md-6 form-group">
                                     <label class="font-weight-bold">Tel&#xE9;fono:</label>
                                     <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control"></asp:TextBox>
+                                    <asp:RegularExpressionValidator ID="revTelefono" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtTelefono" ValidationExpression="^$|^\d{7,9}$" ErrorMessage="Teléfono: ingrese entre 7 y 9 dígitos numéricos." CssClass="text-danger small" Display="Dynamic" />
                                 </div>
                             </div>
 
-                            <asp:Button ID="btnRegistrar" runat="server" CssClass="btn btn-primary btn-block" Text="Registrar Conductor" OnClick="btnRegistrar_Click" />
+                            <asp:Button ID="btnRegistrar" runat="server" CssClass="btn btn-primary btn-block" Text="Registrar Conductor" ValidationGroup="vgRegistroConductor" OnClick="btnRegistrar_Click" />
                         </asp:Panel>
                     </div>
                 </div>

@@ -2,6 +2,7 @@ using System;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
@@ -14,8 +15,8 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            RolesHelper.ValidarAccesoSeccion("REGISTRO");
             SecurityHelper.AgregarHeadersSeguridad();
-            SecurityHelper.ExigirRolAdmin();
 
             if (!IsPostBack)
             {
@@ -49,6 +50,12 @@ namespace WebSGV.Views
 
         protected void btnRegistrar_Click(object sender, EventArgs e)
         {
+            if (!Page.IsValid)
+            {
+                MostrarMensaje("Corrija los campos marcados del cliente.");
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(txtNombre.Text))
             {
                 MostrarMensaje("El nombre del cliente es obligatorio.");
@@ -63,6 +70,12 @@ namespace WebSGV.Views
                     MostrarMensaje("El RUC debe contener 11 d�gitos num�ricos.");
                     return;
                 }
+            }
+
+            if (!Regex.IsMatch(txtNombre.Text.Trim(), "^[A-Za-zÁÉÍÓÚÑáéíóú0-9\\s\\-\\.&]{3,200}$"))
+            {
+                MostrarMensaje("Nombre/Razón Social inválido: use entre 3 y 200 caracteres válidos.");
+                return;
             }
 
             try

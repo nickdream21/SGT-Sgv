@@ -34,15 +34,20 @@
                         <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar Estaci&#xF3;n</h5>
                     </div>
                     <div class="card-body">
+                        <asp:ValidationSummary ID="vsRegistroPeaje" runat="server" ValidationGroup="vgRegistroPeaje" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                         <div class="form-group">
                             <label class="font-weight-bold">Nombre de la Estaci&#xF3;n <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control"
                                 placeholder="Ej: ESTACION DE PEAJE CHICAMA" MaxLength="200"></asp:TextBox>
+                            <asp:RequiredFieldValidator ID="rfvNombrePeaje" runat="server" ValidationGroup="vgRegistroPeaje"
+                                ControlToValidate="txtNombre" ErrorMessage="Nombre de estación: este campo es obligatorio." CssClass="text-danger small" Display="Dynamic" />
+                            <asp:RegularExpressionValidator ID="revNombrePeaje" runat="server" ValidationGroup="vgRegistroPeaje"
+                                ControlToValidate="txtNombre" ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.,]{3,200}$" ErrorMessage="Nombre de estación: use entre 3 y 200 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
                             <small class="form-text text-muted">
                                 <i class="fas fa-info-circle mr-1"></i>El nombre se guardar&#xE1; en may&#xFA;sculas.
                             </small>
                         </div>
-                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar Peaje"
+                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar Peaje" ValidationGroup="vgRegistroPeaje"
                             CssClass="btn btn-primary btn-block" OnClick="btnRegistrar_Click" />
                     </div>
                 </div>

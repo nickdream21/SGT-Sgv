@@ -2,6 +2,7 @@ using System;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Text.RegularExpressions;
 using System.Web.Script.Services;
 using System.Web.Services;
 using System.Web.UI;
@@ -18,6 +19,7 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            RolesHelper.ValidarAccesoSeccion("REGISTRO_CONDUCTORES");
             SecurityHelper.AgregarHeadersSeguridad();
             SecurityHelper.ExigirSesion();
 
@@ -76,37 +78,45 @@ namespace WebSGV.Views
                 switch (tipoDocumento)
                 {
                     case "DNI":
-                        if (string.IsNullOrEmpty(txtDNI.Text))
+                        if (string.IsNullOrWhiteSpace(txtDNI.Text) || !Regex.IsMatch(txtDNI.Text.Trim(), "^\\d{8}$"))
                         {
-                            MostrarMensaje("Debe ingresar el n�mero de DNI.");
+                            MostrarMensaje("DNI inválido: debe contener exactamente 8 dígitos.");
                             return;
                         }
                         numeroDocumento = txtDNI.Text.Trim();
                         break;
-                    case "Carnet de Extranjer�a":
-                        if (string.IsNullOrEmpty(txtCarnetExtranjeria.Text))
+                    case "Carnet de Extranjería":
+                        if (string.IsNullOrWhiteSpace(txtCarnetExtranjeria.Text) || !Regex.IsMatch(txtCarnetExtranjeria.Text.Trim(), "^[A-Za-z0-9-]{6,12}$"))
                         {
-                            MostrarMensaje("Debe ingresar el n�mero de Carnet de Extranjer�a.");
+                            MostrarMensaje("Carnet de extranjería inválido: use de 6 a 12 caracteres alfanuméricos.");
                             return;
                         }
                         carnetExtranjeria = txtCarnetExtranjeria.Text.Trim();
                         break;
                     case "Pasaporte":
-                        if (string.IsNullOrEmpty(txtPasaporte.Text))
+                        if (string.IsNullOrWhiteSpace(txtPasaporte.Text) || !Regex.IsMatch(txtPasaporte.Text.Trim(), "^[A-Za-z0-9-]{6,12}$"))
                         {
-                            MostrarMensaje("Debe ingresar el n�mero de Pasaporte.");
+                            MostrarMensaje("Pasaporte inválido: use de 6 a 12 caracteres alfanuméricos.");
                             return;
                         }
                         pasaporte = txtPasaporte.Text.Trim();
                         break;
+                    default:
+                        MostrarMensaje("Tipo de documento inválido.");
+                        return;
                 }
+
+                if (!Regex.IsMatch(txtNombres.Text.Trim(), "^[A-Za-zÁÉÍÓÚÑáéíóú\\s]{2,100}$")) { MostrarMensaje("Nombres inválidos: solo letras y espacios (2 a 100 caracteres)."); return; }
+                if (!Regex.IsMatch(txtApellidoPaterno.Text.Trim(), "^[A-Za-zÁÉÍÓÚÑáéíóú\\s]{2,100}$")) { MostrarMensaje("Apellido paterno inválido: solo letras y espacios (2 a 100 caracteres)."); return; }
+                if (!string.IsNullOrWhiteSpace(txtApellidoMaterno.Text) && !Regex.IsMatch(txtApellidoMaterno.Text.Trim(), "^[A-Za-zÁÉÍÓÚÑáéíóú\\s]{2,100}$")) { MostrarMensaje("Apellido materno inválido: solo letras y espacios (2 a 100 caracteres)."); return; }
+                if (!string.IsNullOrWhiteSpace(txtTelefono.Text) && !Regex.IsMatch(txtTelefono.Text.Trim(), "^\\d{7,9}$")) { MostrarMensaje("Teléfono inválido: ingrese entre 7 y 9 dígitos."); return; }
 
                 if (tipoDocumento == "DNI" && ConductorExiste("DNI", numeroDocumento))
                 {
                     MostrarMensaje("Ya existe un conductor registrado con este DNI.");
                     return;
                 }
-                else if (tipoDocumento == "Carnet de Extranjer�a" && ConductorExiste("carnetExtranjeria", carnetExtranjeria))
+                else if (tipoDocumento == "Carnet de Extranjería" && ConductorExiste("carnetExtranjeria", carnetExtranjeria))
                 {
                     MostrarMensaje("Ya existe un conductor registrado con este Carnet de Extranjer�a.");
                     return;
@@ -187,7 +197,13 @@ namespace WebSGV.Views
 
         private bool ConductorExiste(string campo, string valor)
         {
-            string query = $"SELECT COUNT(*) FROM Conductor WHERE {campo} = @valor";
+            string columna = campo == "DNI" ? "DNI" : campo == "carnetExtranjeria" ? "carnetExtranjeria" : string.Empty;
+            if (string.IsNullOrEmpty(columna))
+            {
+                return false;
+            }
+
+            string query = $"SELECT COUNT(*) FROM Conductor WHERE {columna} = @valor";
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand(query, conn))
