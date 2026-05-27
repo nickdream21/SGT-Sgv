@@ -270,13 +270,19 @@
                                 <i class="fas fa-industry"></i>Plantas
                             </a>
                                 </div>
-                            </li>
+                             </li>
 
-                            <% } %>
+                             <% } %>
 
-                    <!-- ==================== MENÚ EXPORTACIÓN (ADMIN, ADMIN SISTEMA, SUPERVISOR) ==================== -->
-                    <% if (EsAdmin || EsAdminSistema || RolUsuario == "SUPERVISOR")
-                        { %>
+                    <li class="nav-item">
+                        <a class="nav-link" href="RegistroChoferes.aspx">
+                            <i class="fas fa-user-tie"></i>Conductores
+                        </a>
+                    </li>
+
+                     <!-- ==================== MENÚ EXPORTACIÓN (ADMIN, ADMIN SISTEMA, SUPERVISOR) ==================== -->
+                     <% if (EsAdmin || EsAdminSistema || RolUsuario == "SUPERVISOR")
+                         { %>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownExportacion" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             <i class="fas fa-ship"></i>Exportación
