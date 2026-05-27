@@ -108,6 +108,16 @@
                                                             SetFocusOnError="true"
                                                             ValidationGroup="ConfiguracionBase">
                                                         </asp:RequiredFieldValidator>
+                                                        <asp:CustomValidator ID="cvFechaDespachoBase" runat="server"
+                                                            ControlToValidate="txtFechaDespachoBase"
+                                                            ErrorMessage="Ingrese una fecha de programación válida (año realista y rango permitido)"
+                                                            CssClass="text-danger small"
+                                                            Display="Dynamic"
+                                                            SetFocusOnError="true"
+                                                            ClientValidationFunction="validarFechaProgramacionCliente"
+                                                            OnServerValidate="cvFechaDespachoBase_ServerValidate"
+                                                            ValidationGroup="ConfiguracionBase">
+                                                        </asp:CustomValidator>
                                                     </div>
 
                                                     <!-- Cliente -->
@@ -260,6 +270,15 @@
                                                                         SetFocusOnError="true"
                                                                         ValidationGroup="ConfiguracionBase">
                                                                     </asp:RequiredFieldValidator>
+                                                                    <asp:RegularExpressionValidator ID="revNumeroFacturaBase" runat="server"
+                                                                        ControlToValidate="txtNumeroFacturaBase"
+                                                                        ValidationExpression="^[A-Za-z0-9\-/]{3,30}$"
+                                                                        ErrorMessage="El N° de factura solo permite letras, números, guion o slash (3-30 caracteres)"
+                                                                        CssClass="text-danger small"
+                                                                        Display="Dynamic"
+                                                                        SetFocusOnError="true"
+                                                                        ValidationGroup="ConfiguracionBase">
+                                                                    </asp:RegularExpressionValidator>
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
@@ -279,6 +298,16 @@
                                                                         SetFocusOnError="true"
                                                                         ValidationGroup="ConfiguracionBase">
                                                                     </asp:RequiredFieldValidator>
+                                                                    <asp:CustomValidator ID="cvFechaEmisionFacturaBase" runat="server"
+                                                                        ControlToValidate="txtFechaEmisionFacturaBase"
+                                                                        ErrorMessage="La fecha de emisión de factura no es válida"
+                                                                        CssClass="text-danger small"
+                                                                        Display="Dynamic"
+                                                                        SetFocusOnError="true"
+                                                                        ClientValidationFunction="validarFechaEmisionCliente"
+                                                                        OnServerValidate="cvFechaEmisionFacturaBase_ServerValidate"
+                                                                        ValidationGroup="ConfiguracionBase">
+                                                                    </asp:CustomValidator>
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
@@ -303,11 +332,11 @@
                                                                     </asp:RequiredFieldValidator>
                                                                     <asp:RangeValidator ID="rvValorTotalFacturaBase" runat="server"
                                                                         ControlToValidate="txtValorTotalFacturaBase"
-                                                                        MinimumValue="0"
+                                                                        MinimumValue="0.01"
                                                                         MaximumValue="99999999"
                                                                         Type="Double"
                                                                         CultureInvariantValues="true"
-                                                                        ErrorMessage="Ingrese un monto válido (mayor o igual a 0)"
+                                                                        ErrorMessage="Ingrese un monto válido (mayor a 0)"
                                                                         CssClass="text-danger small"
                                                                         Display="Dynamic"
                                                                         ValidationGroup="ConfiguracionBase">
@@ -339,6 +368,15 @@
                                                                         SetFocusOnError="true"
                                                                         ValidationGroup="ConfiguracionBase">
                                                                     </asp:RequiredFieldValidator>
+                                                                    <asp:RegularExpressionValidator ID="revNumeroCPICBase" runat="server"
+                                                                        ControlToValidate="txtNumeroCPICBase"
+                                                                        ValidationExpression="^[A-Za-z0-9\-/]{3,20}$"
+                                                                        ErrorMessage="El N° de CPIC solo permite letras, números, guion o slash (3-20 caracteres)"
+                                                                        CssClass="text-danger small"
+                                                                        Display="Dynamic"
+                                                                        SetFocusOnError="true"
+                                                                        ValidationGroup="ConfiguracionBase">
+                                                                    </asp:RegularExpressionValidator>
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
@@ -358,6 +396,16 @@
                                                                         SetFocusOnError="true"
                                                                         ValidationGroup="ConfiguracionBase">
                                                                     </asp:RequiredFieldValidator>
+                                                                    <asp:CustomValidator ID="cvFechaEmisionCPICBase" runat="server"
+                                                                        ControlToValidate="txtFechaEmisionCPICBase"
+                                                                        ErrorMessage="La fecha de emisión de CPIC no es válida"
+                                                                        CssClass="text-danger small"
+                                                                        Display="Dynamic"
+                                                                        SetFocusOnError="true"
+                                                                        ClientValidationFunction="validarFechaEmisionCliente"
+                                                                        OnServerValidate="cvFechaEmisionCPICBase_ServerValidate"
+                                                                        ValidationGroup="ConfiguracionBase">
+                                                                    </asp:CustomValidator>
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
@@ -382,11 +430,11 @@
                                                                     </asp:RequiredFieldValidator>
                                                                     <asp:RangeValidator ID="rvValorFleteBase" runat="server"
                                                                         ControlToValidate="txtValorFleteBase"
-                                                                        MinimumValue="0"
+                                                                        MinimumValue="0.01"
                                                                         MaximumValue="99999999"
                                                                         Type="Double"
                                                                         CultureInvariantValues="true"
-                                                                        ErrorMessage="Ingrese un monto válido (mayor o igual a 0)"
+                                                                        ErrorMessage="Ingrese un monto válido (mayor a 0)"
                                                                         CssClass="text-danger small"
                                                                         Display="Dynamic"
                                                                         ValidationGroup="ConfiguracionBase">
@@ -636,6 +684,7 @@
                                                             </label>
                                                             <asp:TextBox ID="txtGuiaRemitente" runat="server"
                                                                 CssClass="form-control"
+                                                                MaxLength="30"
                                                                 placeholder="Número de guía remitente (puede completarse después)">
                                                             </asp:TextBox>
                                                             <asp:RequiredFieldValidator ID="rfvGuiaRemitente" runat="server"
@@ -648,6 +697,15 @@
                                                                 ValidationGroup="AgregarConductor">
                                                             </asp:RequiredFieldValidator>
                                                             <small class="form-text text-muted">Si no dispone del número ahora, puede dejarlo en blanco.</small>
+                                                            <asp:RegularExpressionValidator ID="revGuiaRemitente" runat="server"
+                                                                ControlToValidate="txtGuiaRemitente"
+                                                                ValidationExpression="^$|^[A-Za-z0-9\-/]{4,30}$"
+                                                                ErrorMessage="La guía remitente debe tener entre 4 y 30 caracteres (letras, números, guion o slash)"
+                                                                CssClass="text-danger small"
+                                                                Display="Dynamic"
+                                                                SetFocusOnError="true"
+                                                                ValidationGroup="AgregarConductor">
+                                                            </asp:RegularExpressionValidator>
                                                         </div>
                                                     </asp:Panel>
 
@@ -660,6 +718,7 @@
                                                             </label>
                                                             <asp:TextBox ID="txtGuiaTransportista" runat="server" 
                                                                 CssClass="form-control" 
+                                                                MaxLength="30"
                                                                 placeholder="Número de guía transportista">
                                                             </asp:TextBox>
                                                             <asp:RequiredFieldValidator ID="rfvGuiaTransportista" runat="server"
@@ -670,6 +729,15 @@
                                                                 SetFocusOnError="true"
                                                                 ValidationGroup="AgregarConductor">
                                                             </asp:RequiredFieldValidator>
+                                                            <asp:RegularExpressionValidator ID="revGuiaTransportista" runat="server"
+                                                                ControlToValidate="txtGuiaTransportista"
+                                                                ValidationExpression="^[A-Za-z0-9\-/]{4,30}$"
+                                                                ErrorMessage="La guía transportista debe tener entre 4 y 30 caracteres (letras, números, guion o slash)"
+                                                                CssClass="text-danger small"
+                                                                Display="Dynamic"
+                                                                SetFocusOnError="true"
+                                                                ValidationGroup="AgregarConductor">
+                                                            </asp:RegularExpressionValidator>
                                                         </div>
                                                     </asp:Panel>
 
@@ -959,6 +1027,57 @@
                     this.classList.add('is-invalid');
                 }
             });
+        }
+
+        function validarFechaProgramacionCliente(source, args) {
+            if (!args.Value) {
+                args.IsValid = true;
+                return;
+            }
+
+            var fecha = new Date(args.Value + 'T00:00:00');
+            if (isNaN(fecha.getTime())) {
+                args.IsValid = false;
+                return;
+            }
+
+            var anio = fecha.getFullYear();
+            if (anio < 2000 || anio > 2100) {
+                args.IsValid = false;
+                return;
+            }
+
+            var hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            var min = new Date(hoy);
+            min.setDate(hoy.getDate() - 365);
+            var max = new Date(hoy);
+            max.setDate(hoy.getDate() + 30);
+
+            args.IsValid = fecha >= min && fecha <= max;
+        }
+
+        function validarFechaEmisionCliente(source, args) {
+            if (!args.Value) {
+                args.IsValid = true;
+                return;
+            }
+
+            var fecha = new Date(args.Value + 'T00:00:00');
+            if (isNaN(fecha.getTime())) {
+                args.IsValid = false;
+                return;
+            }
+
+            var anio = fecha.getFullYear();
+            if (anio < 2000 || anio > 2100) {
+                args.IsValid = false;
+                return;
+            }
+
+            var hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            args.IsValid = fecha <= hoy;
         }
     </script>
     <style>

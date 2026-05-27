@@ -598,19 +598,37 @@ namespace WebSGV.Views
         {
             List<string> errores = new List<string>();
 
-            // Validar fecha no sea futura en más de 30 días
-            if (DateTime.TryParse(txtFechaDespachoBase.Text, out DateTime fechaDespacho))
-            {
-                if (fechaDespacho > DateTime.Today.AddDays(30))
-                    errores.Add("La fecha de programación no puede ser mayor a 30 días en el futuro");
-                if (fechaDespacho < DateTime.Today.AddDays(-365))
-                    errores.Add("La fecha de programación no puede ser anterior a un año");
-            }
+            if (!TryParseFechaIso(txtFechaDespachoBase.Text, out DateTime fechaDespacho))
+                errores.Add("La fecha de programación no tiene un formato válido");
 
             // Validaciones adicionales - solo si el campo es visible
             if (pnlNumeroPedido.Visible && !string.IsNullOrEmpty(txtNumeroPedidoBase.Text) && !ValidarNumeroPedido(txtNumeroPedidoBase.Text))
             {
                 errores.Add("El número de pedido debe tener exactamente 10 dígitos");
+            }
+
+            if (pnlFacturaBase.Visible && !string.IsNullOrWhiteSpace(txtFechaEmisionFacturaBase.Text))
+            {
+                if (!TryParseFechaIso(txtFechaEmisionFacturaBase.Text, out DateTime fechaFactura))
+                {
+                    errores.Add("La fecha de emisión de factura no tiene un formato válido");
+                }
+                else if (fechaFactura.Date > DateTime.Today)
+                {
+                    errores.Add("La fecha de emisión de factura no puede ser futura");
+                }
+            }
+
+            if (pnlCPICBase.Visible && !string.IsNullOrWhiteSpace(txtFechaEmisionCPICBase.Text))
+            {
+                if (!TryParseFechaIso(txtFechaEmisionCPICBase.Text, out DateTime fechaCpic))
+                {
+                    errores.Add("La fecha de emisión de CPIC no tiene un formato válido");
+                }
+                else if (fechaCpic.Date > DateTime.Today)
+                {
+                    errores.Add("La fecha de emisión de CPIC no puede ser futura");
+                }
             }
 
             // NUEVA VALIDACIÓN: Verificar duplicados de Factura y CPIC
@@ -653,9 +671,15 @@ namespace WebSGV.Views
 
         private bool CrearNuevoLote()
         {
+            if (!TryParseFechaIso(txtFechaDespachoBase.Text, out DateTime fechaProgramacion))
+            {
+                MostrarMensaje("La fecha de programación no tiene un formato válido.", "danger");
+                return false;
+            }
+
             var lote = new LoteDespachos
             {
-                FechaProgramacion = txtFechaDespachoBase.Text,
+                FechaProgramacion = fechaProgramacion.ToString("yyyy-MM-dd"),
                 IdCliente = Convert.ToInt32(ddlClienteBase.SelectedValue),
                 NombreCliente = ddlClienteBase.SelectedItem.Text,
                 NumeroPedido = pnlNumeroPedido.Visible ? txtNumeroPedidoBase.Text.Trim() : string.Empty,
@@ -675,8 +699,19 @@ namespace WebSGV.Views
                     MostrarMensaje("El valor total de la factura no tiene un formato numérico válido.", "danger");
                     return false;
                 }
+                if (valorFactura <= 0)
+                {
+                    MostrarMensaje("El valor total de la factura debe ser mayor a 0.", "danger");
+                    return false;
+                }
+
+                if (!TryParseFechaIso(txtFechaEmisionFacturaBase.Text, out DateTime fechaFactura))
+                {
+                    MostrarMensaje("La fecha de emisión de factura no tiene un formato válido.", "danger");
+                    return false;
+                }
                 lote.Documentacion.NumeroFactura = txtNumeroFacturaBase.Text.Trim();
-                lote.Documentacion.FechaEmisionFactura = DateTime.Parse(txtFechaEmisionFacturaBase.Text);
+                lote.Documentacion.FechaEmisionFactura = fechaFactura;
                 lote.Documentacion.ValorTotalFactura = valorFactura;
             }
 
@@ -689,8 +724,19 @@ namespace WebSGV.Views
                     MostrarMensaje("El valor del flete no tiene un formato numérico válido.", "danger");
                     return false;
                 }
+                if (valorFlete <= 0)
+                {
+                    MostrarMensaje("El valor del flete debe ser mayor a 0.", "danger");
+                    return false;
+                }
+
+                if (!TryParseFechaIso(txtFechaEmisionCPICBase.Text, out DateTime fechaCpic))
+                {
+                    MostrarMensaje("La fecha de emisión de CPIC no tiene un formato válido.", "danger");
+                    return false;
+                }
                 lote.Documentacion.NumeroCPIC = txtNumeroCPICBase.Text.Trim();
-                lote.Documentacion.FechaEmisionCPIC = DateTime.Parse(txtFechaEmisionCPICBase.Text);
+                lote.Documentacion.FechaEmisionCPIC = fechaCpic;
                 lote.Documentacion.ValorFlete = valorFlete;
             }
 
@@ -777,6 +823,16 @@ namespace WebSGV.Views
                 {
                     errores.Add("Este conductor ya está agregado al lote");
                 }
+
+                if (LoteActual.Conductores.Any(c => c.IdTracto == Convert.ToInt32(ddlPlacaTracto.SelectedValue)))
+                {
+                    errores.Add("La placa de tracto seleccionada ya fue asignada a otro conductor en este lote");
+                }
+
+                if (LoteActual.Conductores.Any(c => c.IdCarreta == Convert.ToInt32(ddlPlacaCarreta.SelectedValue)))
+                {
+                    errores.Add("La placa de carreta seleccionada ya fue asignada a otro conductor en este lote");
+                }
             }
 
             if (errores.Count > 0)
@@ -786,6 +842,48 @@ namespace WebSGV.Views
             }
 
             return true;
+        }
+
+        protected void cvFechaDespachoBase_ServerValidate(object source, ServerValidateEventArgs args)
+        {
+            args.IsValid = TryParseFechaIso(args.Value, out DateTime fecha) &&
+                           fecha.Year >= 2000 &&
+                           fecha.Year <= 2100 &&
+                           fecha.Date >= DateTime.Today.AddDays(-365) &&
+                           fecha.Date <= DateTime.Today.AddDays(30);
+        }
+
+        protected void cvFechaEmisionFacturaBase_ServerValidate(object source, ServerValidateEventArgs args)
+        {
+            if (!pnlFacturaBase.Visible)
+            {
+                args.IsValid = true;
+                return;
+            }
+
+            args.IsValid = TryParseFechaIso(args.Value, out DateTime fecha) &&
+                           fecha.Year >= 2000 &&
+                           fecha.Year <= 2100 &&
+                           fecha.Date <= DateTime.Today;
+        }
+
+        protected void cvFechaEmisionCPICBase_ServerValidate(object source, ServerValidateEventArgs args)
+        {
+            if (!pnlCPICBase.Visible)
+            {
+                args.IsValid = true;
+                return;
+            }
+
+            args.IsValid = TryParseFechaIso(args.Value, out DateTime fecha) &&
+                           fecha.Year >= 2000 &&
+                           fecha.Year <= 2100 &&
+                           fecha.Date <= DateTime.Today;
+        }
+
+        private bool TryParseFechaIso(string valor, out DateTime fecha)
+        {
+            return DateTime.TryParseExact(valor, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha);
         }
 
         private void AgregarConductorAlLote()
