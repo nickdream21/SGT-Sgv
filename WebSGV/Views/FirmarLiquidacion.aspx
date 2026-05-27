@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="FirmarLiquidacion.aspx.cs" Inherits="WebSGV.Views.FirmarLiquidacion" ResponseEncoding="utf-8" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="FirmarLiquidacion.aspx.cs" Inherits="WebSGV.Views.FirmarLiquidacion" ResponseEncoding="utf-8" %>
 <!DOCTYPE html>
 <html lang="es">
 <head runat="server">

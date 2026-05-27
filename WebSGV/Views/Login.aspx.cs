@@ -12,8 +12,25 @@ namespace WebSGV.Views
     {
         protected void Page_Load(object sender, EventArgs e)
         {
+            // ✅ ROMPE-LOOPS: si llegamos a Login.aspx con ?error=sesion y hay sesión,
+            // significa que una página protegida nos rebotó. Limpiar sesión y mostrar el form
+            // en lugar de reenviar al usuario al destino que ya falló.
+            string errParam = Request.QueryString["error"];
+            if (!string.IsNullOrEmpty(errParam) && errParam.ToLowerInvariant() == "sesion")
+            {
+                if (Session["UsuarioID"] != null)
+                {
+                    Session.Clear();
+                    Session.Abandon();
+                    HttpCookie sessionCookie = new HttpCookie("SGV_SessionId")
+                    {
+                        Expires = DateTime.Now.AddDays(-1)
+                    };
+                    Response.Cookies.Add(sessionCookie);
+                }
+            }
             // Si el usuario ya ha iniciado sesión, redireccionar según su rol
-            if (Session["UsuarioID"] != null)
+            else if (Session["UsuarioID"] != null)
             {
                 string rol = Session["Rol"]?.ToString() ?? "";
 
