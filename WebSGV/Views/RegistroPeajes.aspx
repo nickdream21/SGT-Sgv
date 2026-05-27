@@ -2,13 +2,14 @@
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
+    <asp:HiddenField ID="hfIdEstacion" runat="server" />
+
     <asp:Panel ID="pnlMensaje" runat="server" Visible="false">
         <asp:Label ID="lblMensaje" runat="server"></asp:Label>
     </asp:Panel>
 
     <div class="container-fluid px-3">
 
-        <!-- Encabezado -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-3">
@@ -27,42 +28,41 @@
 
         <div class="row">
 
-            <!-- Panel Agregar -->
             <div class="col-12 col-md-4 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar Estación</h5>
+                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar Estaci&#xF3;n</h5>
                     </div>
                     <div class="card-body">
                         <div class="form-group">
-                            <label class="font-weight-bold">Nombre de la Estación <span class="text-danger">*</span></label>
+                            <label class="font-weight-bold">Nombre de la Estaci&#xF3;n <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control"
                                 placeholder="Ej: ESTACION DE PEAJE CHICAMA" MaxLength="200"></asp:TextBox>
                             <small class="form-text text-muted">
-                                <i class="fas fa-info-circle mr-1"></i>El nombre se guardará en mayúsculas.
+                                <i class="fas fa-info-circle mr-1"></i>El nombre se guardar&#xE1; en may&#xFA;sculas.
                             </small>
                         </div>
                         <asp:Button ID="btnRegistrar" runat="server" Text="Registrar Peaje"
                             CssClass="btn btn-primary btn-block" OnClick="btnRegistrar_Click" />
                     </div>
                 </div>
-
-                <!-- Info -->
                 <div class="alert alert-info mt-3">
                     <i class="fas fa-lightbulb mr-2"></i>
-                    <strong>Información:</strong> Las estaciones <strong>activas</strong> aparecerán en el selector de peajes al registrar liquidaciones.
-                    Las inactivas quedan ocultas pero sus datos históricos se conservan.
+                    <strong>Informaci&#xF3;n:</strong> Las estaciones <strong>activas</strong> aparecer&#xE1;n en el selector de peajes al registrar liquidaciones.
+                    Las inactivas quedan ocultas pero sus datos hist&#xF3;ricos se conservan.
                 </div>
             </div>
 
-            <!-- Lista de Peajes -->
             <div class="col-12 col-md-8 mb-4">
                 <div class="card shadow-sm">
-                    <div class="card-header bg-light">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Estaciones Registradas</h5>
+                        <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
+                            style="max-width:200px;" placeholder="Buscar..."
+                            oninput="filtrarTabla(this.value,'contenedorPeajes')">
                     </div>
                     <div class="card-body p-0">
-                        <div class="table-responsive">
+                        <div class="table-responsive" id="contenedorPeajes">
                             <asp:GridView ID="gvPeajes" runat="server"
                                 CssClass="table table-hover mb-0"
                                 AutoGenerateColumns="false"
@@ -70,22 +70,31 @@
                                 OnRowCommand="gvPeajes_RowCommand">
                                 <Columns>
                                     <asp:BoundField DataField="idEstacion" HeaderText="ID"
-                                        ItemStyle-CssClass="text-center text-muted" ItemStyle-Width="60" />
-                                    <asp:BoundField DataField="nombre" HeaderText="NOMBRE DE LA ESTACIÓN" />
-                                    <asp:TemplateField HeaderText="ESTADO" ItemStyle-CssClass="text-center" ItemStyle-Width="100">
+                                        ItemStyle-CssClass="text-center text-muted" ItemStyle-Width="55" />
+                                    <asp:BoundField DataField="nombre" HeaderText="NOMBRE DE LA ESTACI&#xD3;N" />
+                                    <asp:TemplateField HeaderText="ESTADO" ItemStyle-CssClass="text-center" ItemStyle-Width="90">
                                         <ItemTemplate>
                                             <span class='badge <%# ObtenerClaseEstado(Eval("activo")) %>'>
                                                 <%# ObtenerTextoEstado(Eval("activo")) %>
                                             </span>
                                         </ItemTemplate>
                                     </asp:TemplateField>
-                                    <asp:TemplateField HeaderText="ACCIÓN" ItemStyle-CssClass="text-center" ItemStyle-Width="110">
+                                    <asp:TemplateField HeaderText="" ItemStyle-CssClass="text-center" ItemStyle-Width="40">
+                                        <ItemTemplate>
+                                            <button type="button" class="btn btn-outline-info btn-sm btn-editar" title="Editar"
+                                                data-id='<%# Eval("idEstacion") %>'
+                                                data-nombre='<%# AttrEncode(Eval("nombre")) %>'>
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="ACCI&#xD3;N" ItemStyle-CssClass="text-center" ItemStyle-Width="100">
                                         <ItemTemplate>
                                             <asp:LinkButton ID="lbToggle" runat="server"
                                                 CommandName="ToggleActivo"
                                                 CommandArgument='<%# Eval("idEstacion") %>'
                                                 CssClass='<%# ObtenerClaseBoton(Eval("activo")) %>'
-                                                OnClientClick="return confirm('¿Está seguro de cambiar el estado de este peaje?');">
+                                                OnClientClick="return confirm('&#xBF;Cambiar el estado de este peaje?');">
                                                 <%# ObtenerTextoBoton(Eval("activo")) %>
                                             </asp:LinkButton>
                                         </ItemTemplate>
@@ -99,5 +108,58 @@
 
         </div>
     </div>
+
+    <!-- Modal Editar Peaje -->
+    <div class="modal fade" id="modalEditar" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#0ea5e9;color:#fff;">
+                    <h5 class="modal-title"><i class="fas fa-road mr-2"></i>Editar Estaci&#xF3;n de Peaje</h5>
+                    <button type="button" class="close" style="color:#fff;" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-0">
+                        <label class="font-weight-bold">Nombre de la Estaci&#xF3;n <span class="text-danger">*</span></label>
+                        <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control text-uppercase" MaxLength="200"></asp:TextBox>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <asp:Button ID="btnActualizarPeaje" runat="server" CssClass="btn btn-info"
+                        Text="Guardar Cambios" OnClick="btnActualizarPeaje_Click" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.btn-editar');
+            if (!btn) return;
+            document.getElementById('<%= hfIdEstacion.ClientID %>').value = btn.dataset.id;
+            document.getElementById('<%= txtEditarNombre.ClientID %>').value = btn.dataset.nombre;
+            $('#modalEditar').modal('show');
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var hf = document.getElementById('<%= hfIdEstacion.ClientID %>');
+            var msgPanel = document.getElementById('<%= pnlMensaje.ClientID %>');
+            if (hf && hf.value > 0 && msgPanel && msgPanel.querySelector('.alert-danger'))
+                $('#modalEditar').modal('show');
+            if (msgPanel && msgPanel.querySelector('.alert-success')) {
+                var ok = msgPanel.querySelector('.alert-success');
+                setTimeout(function () {
+                    ok.style.transition = 'opacity .5s'; ok.style.opacity = '0';
+                    setTimeout(function () { msgPanel.style.display = 'none'; }, 500);
+                }, 4000);
+            }
+        });
+
+        function filtrarTabla(valor, id) {
+            var filas = document.querySelectorAll('#' + id + ' table tr');
+            valor = valor.toLowerCase();
+            filas.forEach(function (f, i) { if (i > 0) f.style.display = f.textContent.toLowerCase().includes(valor) ? '' : 'none'; });
+        }
+    </script>
 
 </asp:Content>

@@ -1,5 +1,7 @@
-﻿<%@ Page Title="Registro de Semiremolques" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistroSemiremolques.aspx.cs" Inherits="WebSGV.Views.RegistroSemiremolques" %>
+<%@ Page Title="Registro de Semiremolques" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistroSemiremolques.aspx.cs" Inherits="WebSGV.Views.RegistroSemiremolques" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
+
+    <asp:HiddenField ID="hfIdCarreta" runat="server" />
 
     <asp:Panel ID="pnlMensaje" runat="server" Visible="false">
         <asp:Label ID="lblMensaje" runat="server"></asp:Label>
@@ -7,7 +9,6 @@
 
     <div class="container-fluid px-3">
 
-        <!-- Encabezado -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-3">
@@ -26,7 +27,6 @@
 
         <div class="row">
 
-            <!-- Panel Agregar -->
             <div class="col-12 col-md-4 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white">
@@ -38,21 +38,21 @@
                             <asp:TextBox ID="txtPlaca" runat="server" CssClass="form-control"
                                 placeholder="Ej: ABC-123" MaxLength="20"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="rfvPlaca" runat="server" ControlToValidate="txtPlaca"
-                                ErrorMessage="La placa es requerida" CssClass="text-danger" Display="Dynamic" />
+                                ErrorMessage="La placa es requerida" CssClass="text-danger small" Display="Dynamic" />
                         </div>
                         <div class="form-group">
                             <label class="font-weight-bold">Marca <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtMarca" runat="server" CssClass="form-control"
                                 placeholder="Ej: RANDON" MaxLength="100"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="rfvMarca" runat="server" ControlToValidate="txtMarca"
-                                ErrorMessage="La marca es requerida" CssClass="text-danger" Display="Dynamic" />
+                                ErrorMessage="La marca es requerida" CssClass="text-danger small" Display="Dynamic" />
                         </div>
                         <div class="form-group">
                             <label class="font-weight-bold">Modelo <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtModelo" runat="server" CssClass="form-control"
                                 placeholder="Ej: SR GR 3E" MaxLength="100"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="rfvModelo" runat="server" ControlToValidate="txtModelo"
-                                ErrorMessage="El modelo es requerido" CssClass="text-danger" Display="Dynamic" />
+                                ErrorMessage="El modelo es requerido" CssClass="text-danger small" Display="Dynamic" />
                         </div>
                         <asp:Button ID="btnRegistrar" runat="server" Text="Registrar Semiremolque"
                             CssClass="btn btn-primary btn-block" OnClick="btnRegistrar_Click" />
@@ -65,14 +65,16 @@
                 </div>
             </div>
 
-            <!-- Lista de Semiremolques -->
             <div class="col-12 col-md-8 mb-4">
                 <div class="card shadow-sm">
-                    <div class="card-header bg-light">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Semiremolques Registrados</h5>
+                        <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
+                            style="max-width:200px;" placeholder="Buscar..."
+                            oninput="filtrarTabla(this.value,'contenedorSemi')">
                     </div>
                     <div class="card-body p-0">
-                        <div class="table-responsive">
+                        <div class="table-responsive" id="contenedorSemi">
                             <asp:GridView ID="gvSemiremolques" runat="server"
                                 CssClass="table table-hover mb-0"
                                 AutoGenerateColumns="false"
@@ -80,18 +82,29 @@
                                 OnRowCommand="gvSemiremolques_RowCommand">
                                 <Columns>
                                     <asp:BoundField DataField="idCarreta" HeaderText="ID"
-                                        ItemStyle-CssClass="text-center text-muted" ItemStyle-Width="60" />
+                                        ItemStyle-CssClass="text-center text-muted" ItemStyle-Width="55" />
                                     <asp:BoundField DataField="placaCarreta" HeaderText="PLACA" ItemStyle-CssClass="font-weight-bold" />
                                     <asp:BoundField DataField="marca" HeaderText="MARCA" />
                                     <asp:BoundField DataField="modelo" HeaderText="MODELO" />
-                                    <asp:TemplateField HeaderText="ESTADO" ItemStyle-CssClass="text-center" ItemStyle-Width="100">
+                                    <asp:TemplateField HeaderText="ESTADO" ItemStyle-CssClass="text-center" ItemStyle-Width="90">
                                         <ItemTemplate>
                                             <span class='badge <%# ObtenerClaseEstado(Eval("activo")) %>'>
                                                 <%# ObtenerTextoEstado(Eval("activo")) %>
                                             </span>
                                         </ItemTemplate>
                                     </asp:TemplateField>
-                                    <asp:TemplateField HeaderText="ACCION" ItemStyle-CssClass="text-center" ItemStyle-Width="110">
+                                    <asp:TemplateField HeaderText="" ItemStyle-CssClass="text-center" ItemStyle-Width="40">
+                                        <ItemTemplate>
+                                            <button type="button" class="btn btn-outline-info btn-sm btn-editar" title="Editar"
+                                                data-id='<%# Eval("idCarreta") %>'
+                                                data-placa='<%# AttrEncode(Eval("placaCarreta")) %>'
+                                                data-marca='<%# AttrEncode(Eval("marca")) %>'
+                                                data-modelo='<%# AttrEncode(Eval("modelo")) %>'>
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="ACCION" ItemStyle-CssClass="text-center" ItemStyle-Width="100">
                                         <ItemTemplate>
                                             <asp:LinkButton ID="lbToggle" runat="server"
                                                 CommandName="ToggleActivo"
@@ -111,5 +124,68 @@
 
         </div>
     </div>
+
+    <!-- Modal Editar Semiremolque -->
+    <div class="modal fade" id="modalEditar" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#0ea5e9;color:#fff;">
+                    <h5 class="modal-title"><i class="fas fa-trailer mr-2"></i>Editar Semiremolque</h5>
+                    <button type="button" class="close" style="color:#fff;" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="font-weight-bold">N&#xBA; de Placa <span class="text-danger">*</span></label>
+                        <asp:TextBox ID="txtEditarPlaca" runat="server" CssClass="form-control text-uppercase" MaxLength="20"></asp:TextBox>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Marca <span class="text-danger">*</span></label>
+                        <asp:TextBox ID="txtEditarMarca" runat="server" CssClass="form-control text-uppercase" MaxLength="100"></asp:TextBox>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="font-weight-bold">Modelo <span class="text-danger">*</span></label>
+                        <asp:TextBox ID="txtEditarModelo" runat="server" CssClass="form-control text-uppercase" MaxLength="100"></asp:TextBox>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <asp:Button ID="btnActualizarSemiremolque" runat="server" CssClass="btn btn-info"
+                        Text="Guardar Cambios" OnClick="btnActualizarSemiremolque_Click" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.btn-editar');
+            if (!btn) return;
+            document.getElementById('<%= hfIdCarreta.ClientID %>').value = btn.dataset.id;
+            document.getElementById('<%= txtEditarPlaca.ClientID %>').value = btn.dataset.placa;
+            document.getElementById('<%= txtEditarMarca.ClientID %>').value = btn.dataset.marca;
+            document.getElementById('<%= txtEditarModelo.ClientID %>').value = btn.dataset.modelo;
+            $('#modalEditar').modal('show');
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var hf = document.getElementById('<%= hfIdCarreta.ClientID %>');
+            var msgPanel = document.getElementById('<%= pnlMensaje.ClientID %>');
+            if (hf && hf.value > 0 && msgPanel && msgPanel.querySelector('.alert-danger'))
+                $('#modalEditar').modal('show');
+            if (msgPanel && msgPanel.querySelector('.alert-success')) {
+                var ok = msgPanel.querySelector('.alert-success');
+                setTimeout(function () {
+                    ok.style.transition = 'opacity .5s'; ok.style.opacity = '0';
+                    setTimeout(function () { msgPanel.style.display = 'none'; }, 500);
+                }, 4000);
+            }
+        });
+
+        function filtrarTabla(valor, id) {
+            var filas = document.querySelectorAll('#' + id + ' table tr');
+            valor = valor.toLowerCase();
+            filas.forEach(function (f, i) { if (i > 0) f.style.display = f.textContent.toLowerCase().includes(valor) ? '' : 'none'; });
+        }
+    </script>
 
 </asp:Content>

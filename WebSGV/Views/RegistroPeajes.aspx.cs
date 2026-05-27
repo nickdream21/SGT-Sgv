@@ -106,23 +106,21 @@ namespace WebSGV.Views
                 {
                     using (SqlConnection conn = new SqlConnection(connectionString))
                     {
-                        // Leer estado actual y alternarlo
-                        string query = @"
-                            UPDATE EstacionesPeaje 
+                        string query = @"UPDATE EstacionesPeaje
                             SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
                             WHERE idEstacion = @id";
                         using (SqlCommand cmd = new SqlCommand(query, conn))
                         {
-                                 cmd.Parameters.AddWithValue("@id", idEstacion);
-                                    conn.Open();
-                                    cmd.ExecuteNonQuery();
-                                }
-                            }
+                            cmd.Parameters.AddWithValue("@id", idEstacion);
+                            conn.Open();
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
 
-                            AuditoriaHelper.Registrar("UPDATE", "EstacionesPeaje", idEstacion,
-                                $"Estado de estacion de peaje actualizado (activar/desactivar)");
+                    AuditoriaHelper.Registrar("UPDATE", "EstacionesPeaje", idEstacion,
+                        "Estado de estacion de peaje actualizado (activar/desactivar)");
 
-                            CargarPeajes();
+                    CargarPeajes();
                 }
                 catch (Exception ex)
                 {
@@ -153,6 +151,61 @@ namespace WebSGV.Views
         {
             bool esActivo = activo != null && activo != DBNull.Value && Convert.ToBoolean(activo);
             return esActivo ? "btn btn-warning btn-sm" : "btn btn-success btn-sm";
+        }
+
+        protected string AttrEncode(object val) =>
+            System.Web.HttpUtility.HtmlAttributeEncode(val?.ToString() ?? "");
+
+        protected void btnActualizarPeaje_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(hfIdEstacion.Value, out int idEstacion) || idEstacion <= 0)
+            {
+                MostrarMensaje("ID de estación inválido.");
+                return;
+            }
+
+            string nombre = txtEditarNombre.Text.Trim().ToUpper();
+
+            if (string.IsNullOrWhiteSpace(nombre))
+            {
+                MostrarMensaje("Debe ingresar el nombre de la estación.");
+                return;
+            }
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string check = "SELECT COUNT(*) FROM EstacionesPeaje WHERE UPPER(nombre)=@nombre AND idEstacion<>@id";
+                    using (SqlCommand cmd = new SqlCommand(check, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@nombre", nombre);
+                        cmd.Parameters.AddWithValue("@id", idEstacion);
+                        if ((int)cmd.ExecuteScalar() > 0)
+                        {
+                            MostrarMensaje("Ya existe otra estación de peaje con ese nombre.");
+                            return;
+                        }
+                    }
+                    string update = "UPDATE EstacionesPeaje SET nombre=@nombre WHERE idEstacion=@id";
+                    using (SqlCommand cmd = new SqlCommand(update, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@nombre", nombre);
+                        cmd.Parameters.AddWithValue("@id", idEstacion);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                AuditoriaHelper.Registrar("UPDATE", "EstacionesPeaje", idEstacion,
+                    $"Estación de peaje editada — Nombre:{nombre}");
+                hfIdEstacion.Value = "";
+                MostrarMensaje("Estación de peaje actualizada correctamente.", true);
+                CargarPeajes();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al actualizar la estación: " + ex.Message);
+            }
         }
 
         private void MostrarMensaje(string mensaje, bool esExito = false)

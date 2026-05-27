@@ -103,5 +103,9 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnRegistrar;
+        protected global::System.Web.UI.WebControls.HiddenField hfIdCliente;
+        protected global::System.Web.UI.WebControls.TextBox txtEditarRUC;
+        protected global::System.Web.UI.WebControls.TextBox txtEditarNombre;
+        protected global::System.Web.UI.WebControls.Button btnActualizarCliente;
     }
 }

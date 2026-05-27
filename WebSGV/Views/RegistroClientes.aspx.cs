@@ -60,7 +60,7 @@ namespace WebSGV.Views
             {
                 if (ruc.Length != 11 || !EsNumerico(ruc))
                 {
-                    MostrarMensaje("El RUC debe contener 11 d�gitos num�ricos.");
+                    MostrarMensaje("El RUC debe contener 11 d�gitos num�ricos.");
                     return;
                 }
             }
@@ -85,23 +85,17 @@ namespace WebSGV.Views
                         }
                     }
 
-                    string insertQuery;
-                    SqlCommand insertCmd;
+                    string insertQuery = string.IsNullOrWhiteSpace(ruc)
+                        ? "INSERT INTO Cliente (nombre, activo) VALUES (@nombre, 1)"
+                        : "INSERT INTO Cliente (ruc, nombre, activo) VALUES (@ruc, @nombre, 1)";
 
-                    if (string.IsNullOrWhiteSpace(ruc))
+                    using (SqlCommand insertCmd = new SqlCommand(insertQuery, conn))
                     {
-                        insertQuery = "INSERT INTO Cliente (nombre, activo) VALUES (@nombre, 1)";
-                        insertCmd = new SqlCommand(insertQuery, conn);
+                        if (!string.IsNullOrWhiteSpace(ruc))
+                            insertCmd.Parameters.AddWithValue("@ruc", ruc);
+                        insertCmd.Parameters.AddWithValue("@nombre", txtNombre.Text.Trim());
+                        insertCmd.ExecuteNonQuery();
                     }
-                    else
-                    {
-                        insertQuery = "INSERT INTO Cliente (ruc, nombre, activo) VALUES (@ruc, @nombre, 1)";
-                        insertCmd = new SqlCommand(insertQuery, conn);
-                        insertCmd.Parameters.AddWithValue("@ruc", ruc);
-                    }
-
-                    insertCmd.Parameters.AddWithValue("@nombre", txtNombre.Text.Trim());
-                    insertCmd.ExecuteNonQuery();
 
                     AuditoriaHelper.Registrar("INSERT", "Cliente",
                         descripcion: $"Cliente registrado - Nombre: {txtNombre.Text.Trim()}, RUC: {(string.IsNullOrWhiteSpace(ruc) ? "Sin RUC" : ruc)}");
@@ -172,6 +166,76 @@ namespace WebSGV.Views
         {
             bool esActivo = activo != null && activo != DBNull.Value && Convert.ToBoolean(activo);
             return esActivo ? "btn btn-warning btn-sm" : "btn btn-success btn-sm";
+        }
+
+        protected string AttrEncode(object val) =>
+            System.Web.HttpUtility.HtmlAttributeEncode(val?.ToString() ?? "");
+
+        protected void btnActualizarCliente_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(hfIdCliente.Value, out int idCliente) || idCliente <= 0)
+            {
+                MostrarMensaje("ID de cliente inválido.");
+                return;
+            }
+
+            string ruc = txtEditarRUC.Text.Trim();
+            string nombre = txtEditarNombre.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(nombre))
+            {
+                MostrarMensaje("El nombre del cliente es obligatorio.");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(ruc) && (ruc.Length != 11 || !EsNumerico(ruc)))
+            {
+                MostrarMensaje("El RUC debe contener 11 dígitos numéricos.");
+                return;
+            }
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+
+                    if (!string.IsNullOrWhiteSpace(ruc))
+                    {
+                        string check = "SELECT COUNT(*) FROM Cliente WHERE ruc=@ruc AND idCliente<>@id";
+                        using (SqlCommand cmd = new SqlCommand(check, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@ruc", ruc);
+                            cmd.Parameters.AddWithValue("@id", idCliente);
+                            if ((int)cmd.ExecuteScalar() > 0)
+                            {
+                                MostrarMensaje("Ya existe otro cliente registrado con ese RUC.");
+                                return;
+                            }
+                        }
+                    }
+
+                    string update = "UPDATE Cliente SET ruc=@ruc, nombre=@nombre WHERE idCliente=@id";
+                    using (SqlCommand cmd = new SqlCommand(update, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@ruc", string.IsNullOrWhiteSpace(ruc) ? (object)DBNull.Value : ruc);
+                        cmd.Parameters.AddWithValue("@nombre", nombre);
+                        cmd.Parameters.AddWithValue("@id", idCliente);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                AuditoriaHelper.Registrar("UPDATE", "Cliente", idCliente,
+                    $"Cliente editado — Nombre:{nombre}, RUC:{(string.IsNullOrWhiteSpace(ruc) ? "Sin RUC" : ruc)}");
+
+                hfIdCliente.Value = "";
+                MostrarMensaje("Cliente actualizado correctamente.", true);
+                CargarClientes();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al actualizar el cliente: " + ex.Message);
+            }
         }
 
         private bool EsNumerico(string texto)

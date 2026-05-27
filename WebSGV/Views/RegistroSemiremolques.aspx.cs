@@ -158,6 +158,65 @@ namespace WebSGV.Views
             return esActivo ? "btn btn-warning btn-sm" : "btn btn-success btn-sm";
         }
 
+        protected string AttrEncode(object val) =>
+            System.Web.HttpUtility.HtmlAttributeEncode(val?.ToString() ?? "");
+
+        protected void btnActualizarSemiremolque_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(hfIdCarreta.Value, out int idCarreta) || idCarreta <= 0)
+            {
+                MostrarMensaje("ID de semiremolque inválido.");
+                return;
+            }
+
+            string placa = txtEditarPlaca.Text.Trim().ToUpper();
+            string marca = txtEditarMarca.Text.Trim().ToUpper();
+            string modelo = txtEditarModelo.Text.Trim().ToUpper();
+
+            if (string.IsNullOrWhiteSpace(placa) || string.IsNullOrWhiteSpace(marca) || string.IsNullOrWhiteSpace(modelo))
+            {
+                MostrarMensaje("Debe completar todos los campos del semiremolque.");
+                return;
+            }
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string check = "SELECT COUNT(*) FROM Carreta WHERE UPPER(placaCarreta)=@placa AND idCarreta<>@id";
+                    using (SqlCommand cmd = new SqlCommand(check, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@placa", placa);
+                        cmd.Parameters.AddWithValue("@id", idCarreta);
+                        if ((int)cmd.ExecuteScalar() > 0)
+                        {
+                            MostrarMensaje("Ya existe otro semiremolque con esa placa.");
+                            return;
+                        }
+                    }
+                    string update = "UPDATE Carreta SET placaCarreta=@placa, marca=@marca, modelo=@modelo WHERE idCarreta=@id";
+                    using (SqlCommand cmd = new SqlCommand(update, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@placa", placa);
+                        cmd.Parameters.AddWithValue("@marca", marca);
+                        cmd.Parameters.AddWithValue("@modelo", modelo);
+                        cmd.Parameters.AddWithValue("@id", idCarreta);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                AuditoriaHelper.Registrar("UPDATE", "Carreta", idCarreta,
+                    $"Semiremolque editado — Placa:{placa}, Marca:{marca}, Modelo:{modelo}");
+                hfIdCarreta.Value = "";
+                MostrarMensaje("Semiremolque actualizado correctamente.", true);
+                CargarSemiremolques();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al actualizar el semiremolque: " + ex.Message);
+            }
+        }
+
         private void MostrarMensaje(string mensaje, bool esExito = false)
         {
             pnlMensaje.Visible = true;

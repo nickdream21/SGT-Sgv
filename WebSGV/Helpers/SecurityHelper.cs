@@ -51,13 +51,13 @@ namespace WebSGV.Helpers
         public static bool EsAdmin()
         {
             string rol = ObtenerRol();
-            return rol == ROL_ADMIN || rol == ROL_ADMIN_SISTEMA;
+            return rol == ROL_ADMIN || rol == "ADMINISTRADOR" || rol == ROL_ADMIN_SISTEMA;
         }
 
         public static bool EsAdminOSupervisor()
         {
             string rol = ObtenerRol();
-            return rol == ROL_ADMIN || rol == ROL_ADMIN_SISTEMA || rol == ROL_SUPERVISOR;
+            return rol == ROL_ADMIN || rol == "ADMINISTRADOR" || rol == ROL_ADMIN_SISTEMA || rol == ROL_SUPERVISOR;
         }
 
         public static bool EsAdminGrifo()      => ObtenerRol() == ROL_ADMIN_GRIFO;
@@ -108,7 +108,7 @@ namespace WebSGV.Helpers
         {
             ExigirSesion();
             string rol = ObtenerRol();
-            bool permitido = rol == ROL_ADMIN || rol == ROL_ADMIN_SISTEMA
+            bool permitido = rol == ROL_ADMIN || rol == "ADMINISTRADOR" || rol == ROL_ADMIN_SISTEMA
                           || rol == ROL_SUPERVISOR || rol == ROL_ADMIN_GRIFO;
             if (!permitido)
                 Redirigir("~/Views/Login.aspx?error=sesion");

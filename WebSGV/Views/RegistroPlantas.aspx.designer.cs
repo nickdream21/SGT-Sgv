@@ -16,5 +16,9 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.DropDownList ddlAmbito;
         protected global::System.Web.UI.WebControls.Button btnRegistrar;
         protected global::System.Web.UI.WebControls.GridView gvPlantas;
+        protected global::System.Web.UI.WebControls.HiddenField hfIdPlanta;
+        protected global::System.Web.UI.WebControls.TextBox txtEditarNombre;
+        protected global::System.Web.UI.WebControls.DropDownList ddlEditarAmbito;
+        protected global::System.Web.UI.WebControls.Button btnActualizarPlanta;
     }
 }

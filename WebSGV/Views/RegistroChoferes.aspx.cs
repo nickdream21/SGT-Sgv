@@ -33,8 +33,12 @@ namespace WebSGV.Views
             {
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    string query = @"SELECT idConductor, ISNULL(DNI, ISNULL(carnetExtranjeria, '')) AS DNI,
-                        (nombre + ' ' + apPaterno + ' ' + apMaterno) AS nombreCompleto,
+                    string query = @"SELECT idConductor,
+                        ISNULL(DNI, ISNULL(carnetExtranjeria, ISNULL(pasaporte, ''))) AS documentoDisplay,
+                        ISNULL(nombre, '') AS nombre,
+                        ISNULL(apPaterno, '') AS apPaterno,
+                        ISNULL(apMaterno, '') AS apMaterno,
+                        (nombre + ' ' + apPaterno + ISNULL(' ' + NULLIF(apMaterno,''), '')) AS nombreCompleto,
                         ISNULL(telefono, '') AS telefono, activo
                         FROM Conductor ORDER BY apPaterno, nombre";
                     using (SqlCommand cmd = new SqlCommand(query, conn))
@@ -74,15 +78,15 @@ namespace WebSGV.Views
                     case "DNI":
                         if (string.IsNullOrEmpty(txtDNI.Text))
                         {
-                            MostrarMensaje("Debe ingresar el número de DNI.");
+                            MostrarMensaje("Debe ingresar el nï¿½mero de DNI.");
                             return;
                         }
                         numeroDocumento = txtDNI.Text.Trim();
                         break;
-                    case "Carnet de Extranjería":
+                    case "Carnet de Extranjerï¿½a":
                         if (string.IsNullOrEmpty(txtCarnetExtranjeria.Text))
                         {
-                            MostrarMensaje("Debe ingresar el número de Carnet de Extranjería.");
+                            MostrarMensaje("Debe ingresar el nï¿½mero de Carnet de Extranjerï¿½a.");
                             return;
                         }
                         carnetExtranjeria = txtCarnetExtranjeria.Text.Trim();
@@ -90,7 +94,7 @@ namespace WebSGV.Views
                     case "Pasaporte":
                         if (string.IsNullOrEmpty(txtPasaporte.Text))
                         {
-                            MostrarMensaje("Debe ingresar el número de Pasaporte.");
+                            MostrarMensaje("Debe ingresar el nï¿½mero de Pasaporte.");
                             return;
                         }
                         pasaporte = txtPasaporte.Text.Trim();
@@ -102,9 +106,9 @@ namespace WebSGV.Views
                     MostrarMensaje("Ya existe un conductor registrado con este DNI.");
                     return;
                 }
-                else if (tipoDocumento == "Carnet de Extranjería" && ConductorExiste("carnetExtranjeria", carnetExtranjeria))
+                else if (tipoDocumento == "Carnet de Extranjerï¿½a" && ConductorExiste("carnetExtranjeria", carnetExtranjeria))
                 {
-                    MostrarMensaje("Ya existe un conductor registrado con este Carnet de Extranjería.");
+                    MostrarMensaje("Ya existe un conductor registrado con este Carnet de Extranjerï¿½a.");
                     return;
                 }
 
@@ -121,7 +125,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine("Error en btnRegistrar_Click: " + ex.Message);
-                MostrarMensaje("Ocurrió un error al registrar el conductor: " + ex.Message);
+                MostrarMensaje("Ocurriï¿½ un error al registrar el conductor: " + ex.Message);
             }
         }
 
@@ -238,6 +242,58 @@ namespace WebSGV.Views
             pnlMensaje.Visible = true;
             string css = esExito ? "alert alert-success" : "alert alert-danger";
             lblMensaje.Text = $"<div class='{css}'>{mensaje}</div>";
+        }
+
+        protected string AttrEncode(object val) =>
+            System.Web.HttpUtility.HtmlAttributeEncode(val?.ToString() ?? "");
+
+        protected void btnActualizarConductor_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(hfIdConductor.Value, out int idConductor) || idConductor <= 0)
+            {
+                MostrarMensaje("ID de conductor invÃ¡lido.");
+                return;
+            }
+
+            string nombres = txtEditarNombres.Text.Trim();
+            string apPaterno = txtEditarApellidoPaterno.Text.Trim();
+            string apMaterno = txtEditarApellidoMaterno.Text.Trim();
+            string telefono = txtEditarTelefono.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(nombres) || string.IsNullOrWhiteSpace(apPaterno))
+            {
+                MostrarMensaje("Los nombres y el apellido paterno son obligatorios.");
+                return;
+            }
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    string update = @"UPDATE Conductor
+                        SET nombre=@nombres, apPaterno=@apPaterno, apMaterno=@apMaterno, telefono=@telefono
+                        WHERE idConductor=@id";
+                    using (SqlCommand cmd = new SqlCommand(update, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@nombres", nombres);
+                        cmd.Parameters.AddWithValue("@apPaterno", apPaterno);
+                        cmd.Parameters.AddWithValue("@apMaterno", string.IsNullOrWhiteSpace(apMaterno) ? (object)DBNull.Value : apMaterno);
+                        cmd.Parameters.AddWithValue("@telefono", string.IsNullOrWhiteSpace(telefono) ? (object)DBNull.Value : telefono);
+                        cmd.Parameters.AddWithValue("@id", idConductor);
+                        conn.Open();
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                AuditoriaHelper.Registrar("UPDATE", "Conductor", idConductor,
+                    $"Conductor editado â€” {nombres} {apPaterno} {apMaterno}");
+                hfIdConductor.Value = "";
+                MostrarMensaje("Conductor actualizado correctamente.", true);
+                CargarConductores();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al actualizar el conductor: " + ex.Message);
+            }
         }
 
         [WebMethod]

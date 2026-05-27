@@ -168,6 +168,64 @@ namespace WebSGV.Views
             return esActivo ? "btn btn-warning btn-sm" : "btn btn-success btn-sm";
         }
 
+        protected string AttrEncode(object val) =>
+            System.Web.HttpUtility.HtmlAttributeEncode(val?.ToString() ?? "");
+
+        protected void btnActualizarPlanta_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(hfIdPlanta.Value, out int idPlanta) || idPlanta <= 0)
+            {
+                MostrarMensaje("ID de planta inválido.");
+                return;
+            }
+
+            string nombre = txtEditarNombre.Text.Trim().ToUpper();
+            bool esInternacional = ddlEditarAmbito.SelectedValue == "1";
+
+            if (string.IsNullOrWhiteSpace(nombre))
+            {
+                MostrarMensaje("Debe ingresar el nombre de la planta.");
+                return;
+            }
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string check = "SELECT COUNT(*) FROM Planta WHERE UPPER(nombre)=@nombre AND esInternacional=@esInt AND idPlanta<>@id";
+                    using (SqlCommand cmd = new SqlCommand(check, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@nombre", nombre);
+                        cmd.Parameters.AddWithValue("@esInt", esInternacional);
+                        cmd.Parameters.AddWithValue("@id", idPlanta);
+                        if ((int)cmd.ExecuteScalar() > 0)
+                        {
+                            MostrarMensaje("Ya existe otra planta con ese nombre en el mismo ámbito.");
+                            return;
+                        }
+                    }
+                    string update = "UPDATE Planta SET nombre=@nombre, esInternacional=@esInt WHERE idPlanta=@id";
+                    using (SqlCommand cmd = new SqlCommand(update, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@nombre", nombre);
+                        cmd.Parameters.AddWithValue("@esInt", esInternacional);
+                        cmd.Parameters.AddWithValue("@id", idPlanta);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                AuditoriaHelper.Registrar("UPDATE", "Planta", idPlanta,
+                    $"Planta editada — Nombre:{nombre}, Ámbito:{(esInternacional ? "Internacional" : "Nacional")}");
+                hfIdPlanta.Value = "";
+                MostrarMensaje("Planta actualizada correctamente.", true);
+                CargarPlantas();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al actualizar la planta: " + ex.Message);
+            }
+        }
+
         private void MostrarMensaje(string mensaje, bool esExito = false)
         {
             pnlMensaje.Visible = true;

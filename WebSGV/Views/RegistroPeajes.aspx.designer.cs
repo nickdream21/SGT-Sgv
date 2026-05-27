@@ -14,5 +14,8 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Button btnRegistrar;
         protected global::System.Web.UI.WebControls.GridView gvPeajes;
         protected global::System.Web.UI.WebControls.Label lblTotalPeajes;
+        protected global::System.Web.UI.WebControls.HiddenField hfIdEstacion;
+        protected global::System.Web.UI.WebControls.TextBox txtEditarNombre;
+        protected global::System.Web.UI.WebControls.Button btnActualizarPeaje;
     }
 }

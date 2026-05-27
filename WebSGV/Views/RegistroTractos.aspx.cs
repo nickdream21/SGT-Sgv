@@ -158,6 +158,65 @@ namespace WebSGV.Views
             return esActivo ? "btn btn-warning btn-sm" : "btn btn-success btn-sm";
         }
 
+        protected string AttrEncode(object val) =>
+            System.Web.HttpUtility.HtmlAttributeEncode(val?.ToString() ?? "");
+
+        protected void btnActualizarTracto_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(hfIdTracto.Value, out int idTracto) || idTracto <= 0)
+            {
+                MostrarMensaje("ID de tracto inválido.");
+                return;
+            }
+
+            string placa = txtEditarPlaca.Text.Trim().ToUpper();
+            string marca = txtEditarMarca.Text.Trim().ToUpper();
+            string modelo = txtEditarModelo.Text.Trim().ToUpper();
+
+            if (string.IsNullOrWhiteSpace(placa) || string.IsNullOrWhiteSpace(marca) || string.IsNullOrWhiteSpace(modelo))
+            {
+                MostrarMensaje("Debe completar todos los campos del tracto.");
+                return;
+            }
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string check = "SELECT COUNT(*) FROM Tracto WHERE UPPER(placaTracto)=@placa AND idTracto<>@id";
+                    using (SqlCommand cmd = new SqlCommand(check, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@placa", placa);
+                        cmd.Parameters.AddWithValue("@id", idTracto);
+                        if ((int)cmd.ExecuteScalar() > 0)
+                        {
+                            MostrarMensaje("Ya existe otro tracto con esa placa.");
+                            return;
+                        }
+                    }
+                    string update = "UPDATE Tracto SET placaTracto=@placa, marca=@marca, modelo=@modelo WHERE idTracto=@id";
+                    using (SqlCommand cmd = new SqlCommand(update, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@placa", placa);
+                        cmd.Parameters.AddWithValue("@marca", marca);
+                        cmd.Parameters.AddWithValue("@modelo", modelo);
+                        cmd.Parameters.AddWithValue("@id", idTracto);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                AuditoriaHelper.Registrar("UPDATE", "Tracto", idTracto,
+                    $"Tracto editado — Placa:{placa}, Marca:{marca}, Modelo:{modelo}");
+                hfIdTracto.Value = "";
+                MostrarMensaje("Tracto actualizado correctamente.", true);
+                CargarTractos();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al actualizar el tracto: " + ex.Message);
+            }
+        }
+
         private void MostrarMensaje(string mensaje, bool esExito = false)
         {
             pnlMensaje.Visible = true;

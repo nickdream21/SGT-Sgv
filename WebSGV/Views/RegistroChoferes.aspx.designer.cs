@@ -114,15 +114,6 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.TextBox txtApellidoMaterno;
 
         /// <summary>
-        /// Control rfvApellidoMaterno.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvApellidoMaterno;
-
-        /// <summary>
         /// Control txtTelefono.
         /// </summary>
         /// <remarks>
@@ -175,5 +166,11 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnRegistrar;
+        protected global::System.Web.UI.WebControls.HiddenField hfIdConductor;
+        protected global::System.Web.UI.WebControls.TextBox txtEditarNombres;
+        protected global::System.Web.UI.WebControls.TextBox txtEditarApellidoPaterno;
+        protected global::System.Web.UI.WebControls.TextBox txtEditarApellidoMaterno;
+        protected global::System.Web.UI.WebControls.TextBox txtEditarTelefono;
+        protected global::System.Web.UI.WebControls.Button btnActualizarConductor;
     }
 }
