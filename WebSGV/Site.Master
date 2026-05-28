@@ -551,8 +551,17 @@
             return true;
         }
 
+        function deshabilitarAutocomplete() {
+            $('input[type="text"], input[type="number"], input[type="search"], input[type="email"], input[type="tel"], input[type="date"], input[type="time"], textarea')
+                .not('[type="password"]')
+                .not('[autocomplete]:not([autocomplete="off"])')
+                .attr('autocomplete', 'off');
+        }
+
         $(document).ready(function () {
             console.log("Inicializando scripts maestros del SGV...");
+
+            deshabilitarAutocomplete();
 
             // Inicializar componentes
             $('.dropdown-toggle').dropdown();
@@ -567,6 +576,8 @@
 
                     // Reinicializar dropdowns después de AJAX
                     $('.dropdown-toggle').dropdown();
+
+                    deshabilitarAutocomplete();
                 });
             }
 
