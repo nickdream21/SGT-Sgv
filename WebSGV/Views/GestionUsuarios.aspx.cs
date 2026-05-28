@@ -16,7 +16,26 @@ namespace WebSGV.Views
             SecurityHelper.AgregarHeadersSeguridad();
 
             if (!IsPostBack)
+            {
+                CargarRoles();
                 CargarUsuarios();
+            }
+        }
+
+        private void CargarRoles()
+        {
+            var rolesDisponibles = RolesHelper.ObtenerRolesDisponibles();
+
+            ddlFiltroRol.Items.Clear();
+            ddlFiltroRol.Items.Add(new ListItem("-- Todos los roles --", ""));
+
+            ddlRol.Items.Clear();
+
+            foreach (var rol in rolesDisponibles)
+            {
+                ddlFiltroRol.Items.Add(new ListItem(rol.Texto, rol.Valor));
+                ddlRol.Items.Add(new ListItem(rol.Texto, rol.Valor));
+            }
         }
 
         private void CargarUsuarios()
@@ -57,7 +76,10 @@ namespace WebSGV.Views
             txtNombreUsuario.Text   = "";
             txtNombreUsuario.Enabled = true;
             txtNombre.Text          = "";
-            ddlRol.SelectedIndex    = 0;
+            if (ddlRol.Items.Count > 0)
+            {
+                ddlRol.SelectedIndex = 0;
+            }
             txtContrasena.Text      = "";
             pnlContrasena.Visible   = true;
             pnlMensajeModal.Visible = false;
@@ -102,7 +124,13 @@ namespace WebSGV.Views
                         txtNombreUsuario.Text   = r["nombreUsuario"].ToString();
                         txtNombreUsuario.Enabled = false;
                         txtNombre.Text          = r["nombre"].ToString();
-                        ddlRol.SelectedValue    = r["rol"].ToString();
+                        string rolUsuario = r["rol"].ToString();
+                        ListItem itemRol = ddlRol.Items.FindByValue(rolUsuario);
+                        if (itemRol == null)
+                        {
+                            ddlRol.Items.Add(new ListItem(rolUsuario, rolUsuario));
+                        }
+                        ddlRol.SelectedValue = rolUsuario;
                         pnlContrasena.Visible   = false;
                         pnlMensajeModal.Visible = false;
                     }

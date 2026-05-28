@@ -22,18 +22,9 @@
                     <asp:TextBox ID="txtBuscar" runat="server" CssClass="form-control form-control-sm"
                         placeholder="Buscar por usuario o nombre..." />
                 </div>
-                <div class="col-md-3 mb-2 mb-md-0">
-                    <asp:DropDownList ID="ddlFiltroRol" runat="server" CssClass="form-control form-control-sm">
-                        <asp:ListItem Value="">-- Todos los roles --</asp:ListItem>
-                        <asp:ListItem Value="ADMIN">Administrador</asp:ListItem>
-                        <asp:ListItem Value="SUPERVISOR">Supervisor</asp:ListItem>
-                        <asp:ListItem Value="CONDUCTOR">Conductor</asp:ListItem>
-                        <asp:ListItem Value="ADMINISTRADOR DE GRIFO">Admin de Grifo</asp:ListItem>
-                        <asp:ListItem Value="ADMINISTRADOR DE MAQUINARIA">Admin de Maquinaria</asp:ListItem>
-                        <asp:ListItem Value="OPERADOR">Operador</asp:ListItem>
-                        <asp:ListItem Value="ADMINISTRADOR DE SISTEMA">Admin de Sistema</asp:ListItem>
-                    </asp:DropDownList>
-                </div>
+                 <div class="col-md-3 mb-2 mb-md-0">
+                      <asp:DropDownList ID="ddlFiltroRol" runat="server" CssClass="form-control form-control-sm" />
+                 </div>
                 <div class="col-md-2 mb-2 mb-md-0">
                     <asp:DropDownList ID="ddlFiltroEstado" runat="server" CssClass="form-control form-control-sm">
                         <asp:ListItem Value="">-- Estado --</asp:ListItem>
@@ -147,17 +138,9 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Rol <span class="text-danger">*</span></label>
-                                <asp:DropDownList ID="ddlRol" runat="server" CssClass="form-control">
-                                    <asp:ListItem Value="ADMIN">Administrador</asp:ListItem>
-                                    <asp:ListItem Value="SUPERVISOR">Supervisor</asp:ListItem>
-                                    <asp:ListItem Value="CONDUCTOR">Conductor</asp:ListItem>
-                                    <asp:ListItem Value="ADMINISTRADOR DE GRIFO">Administrador de Grifo</asp:ListItem>
-                                    <asp:ListItem Value="ADMINISTRADOR DE MAQUINARIA">Administrador de Maquinaria</asp:ListItem>
-                                    <asp:ListItem Value="OPERADOR">Operador</asp:ListItem>
-                                    <asp:ListItem Value="ADMINISTRADOR DE SISTEMA">Administrador de Sistema</asp:ListItem>
-                                </asp:DropDownList>
-                            </div>
-                        </div>
+                                 <asp:DropDownList ID="ddlRol" runat="server" CssClass="form-control" />
+                             </div>
+                         </div>
                         <asp:Panel ID="pnlContrasena" runat="server" CssClass="col-md-6">
                             <div class="form-group">
                                 <label>Contraseña <span class="text-danger">*</span></label>

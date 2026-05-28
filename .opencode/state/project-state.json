@@ -1,8 +1,8 @@
 {
   "schema_version": "2.0",
   "project": "WebSGV",
-  "last_updated": "2026-05-28T18:08:00-05:00",
-  "current_task_id": "TASK-011",
+  "last_updated": "2026-05-28T23:56:00-05:00",
+  "current_task_id": "TASK-013",
   "global_plan": [
     {
       "task_id": "TASK-001",
@@ -80,6 +80,20 @@
       "title": "Completar modal de detalle de liquidación para rol CONTABILIDAD",
       "status": "completed",
       "created_at": "2026-05-28T22:33:00Z"
+    },
+    {
+      "task_id": "TASK-012",
+      "intent": "bugfix",
+      "title": "Corregir carga de rol CONTABILIDAD en filtro de GestionUsuarios.aspx",
+      "status": "needs_clarification",
+      "created_at": "2026-05-28T23:10:00Z"
+    },
+    {
+      "task_id": "TASK-013",
+      "intent": "refactor",
+      "title": "Refactor permanente de carga de roles en GestionUsuarios.aspx",
+      "status": "completed",
+      "created_at": "2026-05-28T23:45:00Z"
     }
   ],
   "active_subtasks": [
@@ -194,6 +208,20 @@
       "owner": "developer",
       "intent": "bugfix",
       "status": "completed"
+    },
+    {
+      "task_id": "TASK-012.1",
+      "parent_task_id": "TASK-012",
+      "owner": "developer",
+      "intent": "bugfix",
+      "status": "needs_clarification"
+    },
+    {
+      "task_id": "TASK-013.1",
+      "parent_task_id": "TASK-013",
+      "owner": "developer",
+      "intent": "refactor",
+      "status": "completed"
     }
   ],
   "context_summary": "Proyecto ASP.NET Web Forms (.NET 4.8). Sistema multi-agente refactorizado a v2 (2026-04-29): 1 orquestador + 6 subagentes con paralelismo seguro, intent routing, evidence-gating obligatorio antes de cerrar tareas, y 11 skills cargables (frontend-design, systematic-debugging, verification-before-completion, test-driven-development, nueva-pagina-aspx, nueva-sp-sql, sql-injection-y-sqlcommand-seguro, itextsharp-pdf-webforms, auditoria-y-sesiones-sgv, msbuild-csproj-sync, viewstate-postback-webforms). El agente DBA usa SQL MCP Server (Data API Builder) — DDL sigue requiriendo despliegue manual.",
@@ -257,6 +285,16 @@
       "ts": "2026-05-28",
       "decision": "TASK-011.1 completa modal de detalle para CONTABILIDAD mostrando desglose integral de ingresos y gastos (incluyendo peajes S/ y US$) manteniendo UI minimalista y solo lectura.",
       "task_id": "TASK-011"
+    },
+    {
+      "ts": "2026-05-28",
+      "decision": "TASK-012.1 aplicó fix en GestionUsuarios.aspx agregando rol CONTABILIDAD al filtro y al combo de rol del modal, pero se rechaza por verification gate: build_exit_code!=0 (msbuild no disponible en entorno actual) y validación manual pendiente.",
+      "task_id": "TASK-012"
+    },
+    {
+      "ts": "2026-05-28",
+      "decision": "TASK-013.1 refactoriza de forma permanente la carga de roles en GestionUsuarios: se eliminan ListItem hardcodeados en ASPX y se centraliza en RolesHelper con catálogo base + roles dinámicos desde BD, con deduplicación y fallback seguro.",
+      "task_id": "TASK-013"
     }
   ],
   "intent_routing_table": {
@@ -440,10 +478,10 @@
     ]
   },
   "metrics": {
-    "total_tasks_completed": 9,
-    "total_handoffs": 17,
+    "total_tasks_completed": 10,
+    "total_handoffs": 19,
     "context_compactions": 0,
     "parallel_groups_executed": 0,
-    "verification_rejections": 7
+    "verification_rejections": 8
   }
 }

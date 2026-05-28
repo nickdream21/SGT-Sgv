@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Web;
 
@@ -10,6 +12,12 @@ namespace WebSGV.Helpers
     /// </summary>
     public static class RolesHelper
     {
+        public sealed class RolDisponible
+        {
+            public string Valor { get; set; }
+            public string Texto { get; set; }
+        }
+
         // Definición de roles
         public const string ROL_ADMIN = "ADMIN";
         public const string ROL_CONDUCTOR = "CONDUCTOR";
@@ -20,6 +28,20 @@ namespace WebSGV.Helpers
         public const string ROL_ADMIN_MAQUINARIA = "ADMINISTRADOR DE MAQUINARIA";
         public const string ROL_OPERADOR = "OPERADOR";
         public const string ROL_CONTABILIDAD = "CONTABILIDAD";
+
+        private static readonly Dictionary<string, string> EtiquetasRol =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { ROL_ADMIN, "Administrador" },
+                { ROL_SUPERVISOR, "Supervisor" },
+                { ROL_CONDUCTOR, "Conductor" },
+                { ROL_ADMIN_GRIFO, "Administrador de Grifo" },
+                { ROL_ADMIN_MAQUINARIA, "Administrador de Maquinaria" },
+                { ROL_OPERADOR, "Operador" },
+                { ROL_CONTABILIDAD, "Contabilidad" },
+                { ROL_ADMIN_SISTEMA, "Administrador de Sistema" },
+                { ROL_ADMIN_TRANSPORTE, "Administrador de Transporte" }
+            };
 
         /// <summary>
         /// Obtiene el rol del usuario actual desde la sesión
@@ -170,6 +192,55 @@ namespace WebSGV.Helpers
                 default:
                     return false;
             }
+        }
+
+        /// <summary>
+        /// Obtiene los roles disponibles centralizados desde BD + catálogo base.
+        /// Incluye roles históricos aunque actualmente no existan usuarios con ese rol.
+        /// </summary>
+        public static List<RolDisponible> ObtenerRolesDisponibles()
+        {
+            var roles = new List<string>();
+
+            // 1) Catálogo base del sistema (fuente canónica)
+            roles.AddRange(EtiquetasRol.Keys);
+
+            // 2) Roles existentes en BD para incluir valores dinámicos
+            try
+            {
+                string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                using (SqlConnection conn = new SqlConnection(cs))
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = new SqlCommand(
+                        "SELECT DISTINCT LTRIM(RTRIM(rol)) AS rol FROM Usuarios WHERE rol IS NOT NULL AND LTRIM(RTRIM(rol)) <> ''", conn))
+                    {
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                roles.Add(reader["rol"].ToString());
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Si la BD no responde, se mantiene el catálogo base para no romper la UI.
+            }
+
+            return roles
+                .Where(r => !string.IsNullOrWhiteSpace(r))
+                .Select(r => r.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(r => r, StringComparer.OrdinalIgnoreCase)
+                .Select(r => new RolDisponible
+                {
+                    Valor = r,
+                    Texto = EtiquetasRol.ContainsKey(r) ? EtiquetasRol[r] : r
+                })
+                .ToList();
         }
 
         /// <summary>
