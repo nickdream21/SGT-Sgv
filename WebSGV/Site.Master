@@ -274,12 +274,6 @@
 
                              <% } %>
 
-                    <li class="nav-item">
-                        <a class="nav-link" href="RegistroChoferes.aspx">
-                            <i class="fas fa-user-tie"></i>Conductores
-                        </a>
-                    </li>
-
                      <!-- ==================== MENÚ EXPORTACIÓN (ADMIN, ADMIN SISTEMA, SUPERVISOR) ==================== -->
                      <% if (EsAdmin || EsAdminSistema || RolUsuario == "SUPERVISOR")
                          { %>

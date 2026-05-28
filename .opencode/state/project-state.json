@@ -1,8 +1,8 @@
 {
   "schema_version": "2.0",
   "project": "WebSGV",
-  "last_updated": "2026-05-28T23:56:00-05:00",
-  "current_task_id": "TASK-013",
+  "last_updated": "2026-05-29T00:31:00-05:00",
+  "current_task_id": "TASK-014",
   "global_plan": [
     {
       "task_id": "TASK-001",
@@ -94,6 +94,13 @@
       "title": "Refactor permanente de carga de roles en GestionUsuarios.aspx",
       "status": "completed",
       "created_at": "2026-05-28T23:45:00Z"
+    },
+    {
+      "task_id": "TASK-014",
+      "intent": "bugfix",
+      "title": "Retirar acceso directo de Conductores en navbar y mantenerlo solo dentro de Registro",
+      "status": "needs_clarification",
+      "created_at": "2026-05-29T00:20:00Z"
     }
   ],
   "active_subtasks": [
@@ -222,6 +229,13 @@
       "owner": "developer",
       "intent": "refactor",
       "status": "completed"
+    },
+    {
+      "task_id": "TASK-014.1",
+      "parent_task_id": "TASK-014",
+      "owner": "developer",
+      "intent": "bugfix",
+      "status": "needs_clarification"
     }
   ],
   "context_summary": "Proyecto ASP.NET Web Forms (.NET 4.8). Sistema multi-agente refactorizado a v2 (2026-04-29): 1 orquestador + 6 subagentes con paralelismo seguro, intent routing, evidence-gating obligatorio antes de cerrar tareas, y 11 skills cargables (frontend-design, systematic-debugging, verification-before-completion, test-driven-development, nueva-pagina-aspx, nueva-sp-sql, sql-injection-y-sqlcommand-seguro, itextsharp-pdf-webforms, auditoria-y-sesiones-sgv, msbuild-csproj-sync, viewstate-postback-webforms). El agente DBA usa SQL MCP Server (Data API Builder) — DDL sigue requiriendo despliegue manual.",
@@ -295,6 +309,11 @@
       "ts": "2026-05-28",
       "decision": "TASK-013.1 refactoriza de forma permanente la carga de roles en GestionUsuarios: se eliminan ListItem hardcodeados en ASPX y se centraliza en RolesHelper con catálogo base + roles dinámicos desde BD, con deduplicación y fallback seguro.",
       "task_id": "TASK-013"
+    },
+    {
+      "ts": "2026-05-29",
+      "decision": "TASK-014.1 aplica cambio en Site.Master para eliminar el item directo 'Conductores' del navbar principal y mantenerlo dentro de 'Registro', pero se rechaza por verification gate al no contar con msbuild en entorno (build_exit_code=127).",
+      "task_id": "TASK-014"
     }
   ],
   "intent_routing_table": {
@@ -479,9 +498,9 @@
   },
   "metrics": {
     "total_tasks_completed": 10,
-    "total_handoffs": 19,
+    "total_handoffs": 20,
     "context_compactions": 0,
     "parallel_groups_executed": 0,
-    "verification_rejections": 8
+    "verification_rejections": 9
   }
 }
