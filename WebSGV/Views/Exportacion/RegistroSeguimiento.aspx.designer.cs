@@ -65,7 +65,8 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.TextBox txtMotivoRetraso;
 
         protected global::System.Web.UI.WebControls.Button btnLimpiar;
-        protected global::System.Web.UI.WebControls.Button btnGuardar;
+        protected global::System.Web.UI.WebControls.Button btnGuardarBorrador;
+        protected global::System.Web.UI.WebControls.Button btnGuardarFinal;
         protected global::System.Web.UI.WebControls.ValidationSummary vsGuardarSeguimiento;
         protected global::System.Web.UI.WebControls.FileUpload fileExcel;
         protected global::System.Web.UI.WebControls.Button btnImportar;
@@ -82,6 +83,7 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.Panel pnlFormBanner;
         protected global::System.Web.UI.WebControls.Literal litFormBannerTitle;
         protected global::System.Web.UI.WebControls.Literal litFormBannerSub;
+        protected global::System.Web.UI.WebControls.Literal litEstadoRegistro;
         protected global::System.Web.UI.WebControls.Button btnCancelarEdicion;
     }
 }

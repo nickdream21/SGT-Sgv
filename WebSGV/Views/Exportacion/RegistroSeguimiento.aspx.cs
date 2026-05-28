@@ -244,6 +244,7 @@ namespace WebSGV.Views.Exportacion
             pnlFormBanner.Visible = true;
             litFormBannerTitle.Text = "Nuevo viaje";
             litFormBannerSub.Text = "Llena al menos Cliente, F.H. Programación y Tracto 1 para abrir el viaje. El resto lo puedes ir registrando con el tiempo.";
+            ActualizarIndicadorEstado("BORRADOR");
             ActivarTab("panel-form");
         }
 
@@ -349,6 +350,7 @@ namespace WebSGV.Views.Exportacion
                 pnlFormBanner.Visible = true;
                 litFormBannerTitle.Text = $"Editando viaje #{id} — {txtCliente.Text}";
                 litFormBannerSub.Text = "Agrega solo los hitos nuevos. Los campos vacíos NO sobrescriben los datos ya guardados.";
+                ActualizarIndicadorEstado(estado);
                 ActivarTab("panel-form");
             }
             catch (Exception ex)
@@ -403,19 +405,36 @@ namespace WebSGV.Views.Exportacion
         // ============================================================
         //  Registro individual
         // ============================================================
-        protected void btnGuardar_Click(object sender, EventArgs e)
+        protected void btnGuardarBorrador_Click(object sender, EventArgs e)
+        {
+            GuardarSeguimiento(false);
+        }
+
+        protected void btnGuardarFinal_Click(object sender, EventArgs e)
+        {
+            GuardarSeguimiento(true);
+        }
+
+        private void GuardarSeguimiento(bool esFinal)
         {
             try
             {
-                if (!Page.IsValid)
+                if (esFinal && !Page.IsValid)
                 {
-                    MostrarAlerta("Hay campos con formato inválido. Revisa el detalle por campo.", "warning");
+                    MostrarAlerta("Hay campos con formato inválido. Revisa el detalle por campo para completar el guardado final.", "warning");
                     ActivarTab("panel-form");
                     return;
                 }
 
                 string mensajeValidacion;
-                if (!ValidarCamposCriticosServidor(out mensajeValidacion))
+                if (!ValidarFormatoBasicoServidor(out mensajeValidacion))
+                {
+                    MostrarAlerta(mensajeValidacion, "warning");
+                    ActivarTab("panel-form");
+                    return;
+                }
+
+                if (esFinal && !ValidarCamposFinalesServidor(out mensajeValidacion))
                 {
                     MostrarAlerta(mensajeValidacion, "warning");
                     ActivarTab("panel-form");
@@ -469,7 +488,8 @@ namespace WebSGV.Views.Exportacion
                     cmd.Parameters.Add("@sacosRobados", SqlDbType.Int).Value = ParseIntSafe(txtSacosRobados.Text);
                     cmd.Parameters.Add("@sacosRotos",   SqlDbType.Int).Value = ParseIntSafe(txtSacosRotos.Text);
                     cmd.Parameters.Add("@sacosMojados", SqlDbType.Int).Value = ParseIntSafe(txtSacosMojados.Text);
-                    cmd.Parameters.Add("@estado", SqlDbType.VarChar, 20).Value = ddlEstado.SelectedValue;
+                    string estadoObjetivo = DeterminarEstadoObjetivo(esFinal);
+                    cmd.Parameters.Add("@estado", SqlDbType.VarChar, 20).Value = estadoObjetivo;
                     cmd.Parameters.Add("@idUsuarioRegistro", SqlDbType.Int).Value = (object)idUsuario ?? DBNull.Value;
 
                     var outParam = new SqlParameter("@idSeguimiento", SqlDbType.Int) { Direction = ParameterDirection.Output };
@@ -484,11 +504,21 @@ namespace WebSGV.Views.Exportacion
                 try
                 {
                     bool fueUpdate = idGenerado == -2;
+                    string estadoAuditoria = DeterminarEstadoObjetivo(esFinal);
                     AuditoriaHelper.Registrar(
                         accion: fueUpdate ? "UPDATE" : "INSERT",
                         tablaAfectada: "SeguimientoExportacion",
                         idRegistroAfectado: fueUpdate ? hdnIdSeguimiento.Value : idGenerado.ToString(),
-                        descripcion: $"Seguimiento de exportación {(fueUpdate ? "actualizado" : "creado")} (Cliente: {txtCliente.Text})");
+                        descripcion: $"Seguimiento de exportación {(fueUpdate ? "actualizado" : "creado")} como {estadoAuditoria} (Cliente: {txtCliente.Text})");
+
+                    if (esFinal)
+                    {
+                        AuditoriaHelper.Registrar(
+                            accion: "FINALIZAR",
+                            tablaAfectada: "SeguimientoExportacion",
+                            idRegistroAfectado: fueUpdate ? hdnIdSeguimiento.Value : idGenerado.ToString(),
+                            descripcion: $"Registro marcado como FINALIZADO (Cliente: {txtCliente.Text}).");
+                    }
                 }
                 catch { /* No bloquear flujo si la auditoría falla */ }
 
@@ -498,18 +528,24 @@ namespace WebSGV.Views.Exportacion
                 }
                 else if (idGenerado == -2)
                 {
-                    MostrarAlerta($"Avance guardado en el viaje existente. Los campos llenos se actualizaron sin pisar lo anterior.", "success");
+                    MostrarAlerta(esFinal
+                        ? "Guardado final aplicado al viaje existente correctamente."
+                        : "Borrador guardado en el viaje existente. Los campos llenos se actualizaron sin pisar lo anterior.", "success");
                 }
                 else
                 {
-                    MostrarAlerta($"Viaje #{idGenerado} abierto correctamente. Puedes seguir registrando avances cuando quieras.", "success");
+                    MostrarAlerta(esFinal
+                        ? $"Viaje #{idGenerado} guardado como FINALIZADO correctamente."
+                        : $"Viaje #{idGenerado} guardado como BORRADOR. Puedes seguir registrando avances cuando quieras.", "success");
                     hdnIdSeguimiento.Value = idGenerado.ToString();
                 }
+
+                ActualizarIndicadorEstado(DeterminarEstadoObjetivo(esFinal));
 
                 CargarBandeja();
                 CargarRegistrosRecientes();
                 // Si se finaliza el viaje, volver a la bandeja; si no, mantener form abierto.
-                string estadoSel = ddlEstado.SelectedValue ?? "";
+                string estadoSel = DeterminarEstadoObjetivo(esFinal);
                 if (estadoSel == "FINALIZADO" || estadoSel == "COMPLETADO" || estadoSel == "CANCELADO")
                 {
                     LimpiarFormulario();
@@ -556,6 +592,7 @@ namespace WebSGV.Views.Exportacion
             ddlBodegaNacional.SelectedIndex    = 0;
             ddlBodegaEcuatoriana.SelectedIndex = 0;
             ddlBodegaDescarga.SelectedIndex    = 0;
+            ActualizarIndicadorEstado("BORRADOR");
         }
 
         // ============================================================
@@ -1053,27 +1090,49 @@ namespace WebSGV.Views.Exportacion
             textBox.Attributes["data-form-type"] = "other";
         }
 
-        private bool ValidarCamposCriticosServidor(out string mensaje)
+        private bool ValidarFormatoBasicoServidor(out string mensaje)
         {
             var errores = new List<string>();
 
-            if (string.IsNullOrWhiteSpace(txtCliente.Text))
-                errores.Add("Cliente es obligatorio.");
+            if (!EsEnteroNoNegativoOpcional(txtSacosRobados.Text))
+                errores.Add("Sacos Robados debe ser un número entero mayor o igual a 0.");
+            if (!EsEnteroNoNegativoOpcional(txtSacosRotos.Text))
+                errores.Add("Sacos Rotos debe ser un número entero mayor o igual a 0.");
+            if (!EsEnteroNoNegativoOpcional(txtSacosMojados.Text))
+                errores.Add("Sacos Mojados debe ser un número entero mayor o igual a 0.");
 
-            if (string.IsNullOrWhiteSpace(txtTracto1.Text))
-                errores.Add("Tracto 1 es obligatorio.");
+            foreach (var fecha in ObtenerCamposFecha())
+            {
+                if (!string.IsNullOrWhiteSpace(fecha.Valor) && !DateTime.TryParse(fecha.Valor, out _))
+                    errores.Add($"{fecha.Etiqueta} tiene un formato de fecha/hora inválido.");
+            }
 
-            if (string.IsNullOrWhiteSpace(txtFhProgramacion.Text))
-                errores.Add("F.H. Programación es obligatoria.");
+            if (errores.Count == 0)
+            {
+                mensaje = string.Empty;
+                return true;
+            }
+
+            mensaje = string.Join(" ", errores);
+            return false;
+        }
+
+        private bool ValidarCamposFinalesServidor(out string mensaje)
+        {
+            var errores = new List<string>();
+
+            foreach (var campo in ObtenerCamposObligatoriosFinal())
+            {
+                if (string.IsNullOrWhiteSpace(campo.Valor))
+                    errores.Add($"{campo.Etiqueta} es obligatorio para guardar final.");
+            }
 
             if (!EsEnteroNoNegativo(txtSacosRobados.Text))
-                errores.Add("Sacos Robados debe ser un número entero mayor o igual a 0.");
-
+                errores.Add("Sacos Robados debe ser un número entero mayor o igual a 0 para guardar final.");
             if (!EsEnteroNoNegativo(txtSacosRotos.Text))
-                errores.Add("Sacos Rotos debe ser un número entero mayor o igual a 0.");
-
+                errores.Add("Sacos Rotos debe ser un número entero mayor o igual a 0 para guardar final.");
             if (!EsEnteroNoNegativo(txtSacosMojados.Text))
-                errores.Add("Sacos Mojados debe ser un número entero mayor o igual a 0.");
+                errores.Add("Sacos Mojados debe ser un número entero mayor o igual a 0 para guardar final.");
 
             if (errores.Count == 0)
             {
@@ -1090,6 +1149,118 @@ namespace WebSGV.Views.Exportacion
             if (string.IsNullOrWhiteSpace(valor)) return false;
             int numero;
             return int.TryParse(valor.Trim(), out numero) && numero >= 0;
+        }
+
+        private static bool EsEnteroNoNegativoOpcional(string valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor)) return true;
+            int numero;
+            return int.TryParse(valor.Trim(), out numero) && numero >= 0;
+        }
+
+        private IEnumerable<(string Etiqueta, string Valor)> ObtenerCamposObligatoriosFinal()
+        {
+            return new List<(string Etiqueta, string Valor)>
+            {
+                ("Cliente", txtCliente.Text),
+                ("Conductor Origen", txtConductorOrigen.Text),
+                ("Tracto 1", txtTracto1.Text),
+                ("Carreta", txtCarreta.Text),
+                ("Conductor Destino", txtConductorDestino.Text),
+                ("Tracto 2", txtTracto2.Text),
+                ("F.H. Programación", txtFhProgramacion.Text),
+                ("F.H. Salida Base", txtFhSalidaBase1.Text),
+                ("F.H. Llegada Trujillo", txtFhLlegadaTrujillo.Text),
+                ("F.H. Registro", txtFhRegistro.Text),
+                ("F.H. Ingreso Planta", txtFhIngresoPlanta.Text),
+                ("F.H. Inicio Carga", txtFhInicioCarga.Text),
+                ("F.H. Término Carga", txtFhTerminoCarga.Text),
+                ("F.H. Salida Planta", txtFhSalidaPlanta.Text),
+                ("F.H. Llegada Base 2", txtFhLlegadaBase2.Text),
+                ("F.H. Salida Base 2", txtFhSalidaBase2.Text),
+                ("F.H. Llegada Bodega Nacional", txtFhLlegadaBodegaNacional.Text),
+                ("F.H. Ingreso Bodega Nacional", txtFhIngresoBodegaNacional.Text),
+                ("F.H. Salida Bodega Nacional", txtFhSalidaBodegaNacional.Text),
+                ("Bodega Nacional", ddlBodegaNacional.SelectedValue),
+                ("F.H. Llegada CEBAF", txtFhLlegadaCEBAF.Text),
+                ("F.H. Cruce Ecuador", txtFhCruceEcuador.Text),
+                ("F.H. Autorización Nacionalización", txtFhAutorizacionNacionalizacion.Text),
+                ("Bodega Ecuatoriana", ddlBodegaEcuatoriana.SelectedValue),
+                ("F.H. Llegada TCI", txtFhLlegadaTCI.Text),
+                ("F.H. Salida TCI", txtFhSalidaTCI.Text),
+                ("Bodega Descarga", ddlBodegaDescarga.SelectedValue),
+                ("F.H. Llegada Planta Ecuador", txtFhLlegadaPlantaEcuador.Text),
+                ("F.H. Llegada Almacén", txtFhLlegadaAlmacen.Text),
+                ("F.H. Ingreso", txtFhIngreso.Text),
+                ("F.H. Inicio Descarga", txtFhInicioDescarga.Text),
+                ("F.H. Término Descarga", txtFhTerminoDescarga.Text),
+                ("F.H. Salida", txtFhSalida.Text)
+            };
+        }
+
+        private IEnumerable<(string Etiqueta, string Valor)> ObtenerCamposFecha()
+        {
+            return new List<(string Etiqueta, string Valor)>
+            {
+                ("F.H. Programación", txtFhProgramacion.Text),
+                ("F.H. Salida Base", txtFhSalidaBase1.Text),
+                ("F.H. Llegada Trujillo", txtFhLlegadaTrujillo.Text),
+                ("F.H. Registro", txtFhRegistro.Text),
+                ("F.H. Ingreso Planta", txtFhIngresoPlanta.Text),
+                ("F.H. Inicio Carga", txtFhInicioCarga.Text),
+                ("F.H. Término Carga", txtFhTerminoCarga.Text),
+                ("F.H. Salida Planta", txtFhSalidaPlanta.Text),
+                ("F.H. Llegada Base 2", txtFhLlegadaBase2.Text),
+                ("F.H. Salida Base 2", txtFhSalidaBase2.Text),
+                ("F.H. Llegada Bodega Nacional", txtFhLlegadaBodegaNacional.Text),
+                ("F.H. Ingreso Bodega Nacional", txtFhIngresoBodegaNacional.Text),
+                ("F.H. Salida Bodega Nacional", txtFhSalidaBodegaNacional.Text),
+                ("F.H. Llegada CEBAF", txtFhLlegadaCEBAF.Text),
+                ("F.H. Cruce Ecuador", txtFhCruceEcuador.Text),
+                ("F.H. Autorización Nacionalización", txtFhAutorizacionNacionalizacion.Text),
+                ("F.H. Llegada TCI", txtFhLlegadaTCI.Text),
+                ("F.H. Salida TCI", txtFhSalidaTCI.Text),
+                ("F.H. Llegada Planta Ecuador", txtFhLlegadaPlantaEcuador.Text),
+                ("F.H. Llegada Almacén", txtFhLlegadaAlmacen.Text),
+                ("F.H. Ingreso", txtFhIngreso.Text),
+                ("F.H. Inicio Descarga", txtFhInicioDescarga.Text),
+                ("F.H. Término Descarga", txtFhTerminoDescarga.Text),
+                ("F.H. Salida", txtFhSalida.Text)
+            };
+        }
+
+        private string DeterminarEstadoObjetivo(bool esFinal)
+        {
+            if (esFinal)
+                return "FINALIZADO";
+
+            string estadoSeleccionado = (ddlEstado.SelectedValue ?? "").Trim().ToUpperInvariant();
+            if (estadoSeleccionado == "FINALIZADO" || estadoSeleccionado == "COMPLETADO" || estadoSeleccionado == "CANCELADO")
+                return estadoSeleccionado;
+
+            return "BORRADOR";
+        }
+
+        private void ActualizarIndicadorEstado(string estado)
+        {
+            string valor = (estado ?? "BORRADOR").Trim().ToUpperInvariant();
+            if (string.IsNullOrEmpty(valor)) valor = "BORRADOR";
+
+            string css = "se-badge-borrador";
+            string texto = "BORRADOR";
+
+            if (valor == "FINALIZADO" || valor == "COMPLETADO")
+            {
+                css = "se-badge-completo";
+                texto = "COMPLETO / FINALIZADO";
+            }
+            else if (valor != "BORRADOR")
+            {
+                css = "se-badge-encurso";
+                texto = valor.Replace("_", " ");
+            }
+
+            litEstadoRegistro.Text = $"<span class='se-badge {css}' style='margin-left:8px;'>Estado: {System.Web.HttpUtility.HtmlEncode(texto)}</span>";
         }
 
         private static void SetDdl(System.Web.UI.WebControls.DropDownList ddl, string value)

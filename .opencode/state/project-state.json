@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "project": "WebSGV",
-  "last_updated": "2026-05-28T09:45:00-05:00",
+  "last_updated": "2026-05-28T10:26:00-05:00",
   "current_task_id": null,
   "global_plan": [
     {
@@ -45,6 +45,20 @@
       "title": "Aplicar corrección de autocompletado/validación en RegistroSeguimiento.aspx",
       "status": "completed",
       "created_at": "2026-05-27T00:00:00Z"
+    },
+    {
+      "task_id": "TASK-007",
+      "intent": "bugfix",
+      "title": "Implementar flujo BORRADOR + GUARDADO FINAL en RegistroSeguimiento",
+      "status": "completed",
+      "created_at": "2026-05-28T00:00:00Z"
+    },
+    {
+      "task_id": "TASK-008",
+      "intent": "doc_update",
+      "title": "Crear README profesional, moderno y atractivo del proyecto",
+      "status": "completed",
+      "created_at": "2026-05-28T15:20:00Z"
     }
   ],
   "active_subtasks": [
@@ -117,6 +131,27 @@
       "owner": "developer",
       "intent": "bugfix",
       "status": "completed"
+    },
+    {
+      "task_id": "TASK-007.1",
+      "parent_task_id": "TASK-007",
+      "owner": "developer",
+      "intent": "bugfix",
+      "status": "needs_clarification"
+    },
+    {
+      "task_id": "TASK-007.2",
+      "parent_task_id": "TASK-007",
+      "owner": "developer",
+      "intent": "bugfix",
+      "status": "completed"
+    },
+    {
+      "task_id": "TASK-008.1",
+      "parent_task_id": "TASK-008",
+      "owner": "writer",
+      "intent": "doc_update",
+      "status": "completed"
     }
   ],
   "context_summary": "Proyecto ASP.NET Web Forms (.NET 4.8). Sistema multi-agente refactorizado a v2 (2026-04-29): 1 orquestador + 6 subagentes con paralelismo seguro, intent routing, evidence-gating obligatorio antes de cerrar tareas, y 11 skills cargables (frontend-design, systematic-debugging, verification-before-completion, test-driven-development, nueva-pagina-aspx, nueva-sp-sql, sql-injection-y-sqlcommand-seguro, itextsharp-pdf-webforms, auditoria-y-sesiones-sgv, msbuild-csproj-sync, viewstate-postback-webforms). El agente DBA usa SQL MCP Server (Data API Builder) — DDL sigue requiriendo despliegue manual.",
@@ -160,6 +195,11 @@
       "ts": "2026-04-29",
       "decision": "Firma canónica: RolesHelper.TienePermiso(seccion) y ValidarAccesoSeccion(seccion) toman UN solo parámetro (la sección). Variantes con (rol, seccion) son invenciones — no usar. AuditoriaHelper.Registrar firma real: (accion, tablaAfectada, idRegistroAfectado, descripcion, valoresAnteriores, valoresNuevos). Sesión usa DOS claves: Session['UsuarioID'] (string, validación) y Session['IdUsuario'] (int, FK).",
       "task_id": null
+    },
+    {
+      "ts": "2026-05-28",
+      "decision": "Se crea README.md raíz con estándar GitHub profesional para onboarding técnico, seguridad de secretos y flujo real de build/DB del proyecto.",
+      "task_id": "TASK-008"
     }
   ],
   "intent_routing_table": {
@@ -343,10 +383,10 @@
     ]
   },
   "metrics": {
-    "total_tasks_completed": 6,
-    "total_handoffs": 10,
+    "total_tasks_completed": 8,
+    "total_handoffs": 13,
     "context_compactions": 0,
     "parallel_groups_executed": 0,
-    "verification_rejections": 4
+    "verification_rejections": 5
   }
 }

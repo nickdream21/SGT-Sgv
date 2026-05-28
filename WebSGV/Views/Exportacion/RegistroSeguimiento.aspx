@@ -92,6 +92,8 @@
         .se-badge-finalizado { background: #D1FAE5; color: #065F46; }
         .se-badge-retrasado  { background: #FEF3C7; color: #92400E; }
         .se-badge-cancelado  { background: #FEE2E2; color: #991B1B; }
+        .se-badge-borrador   { background: #E0E7FF; color: #3730A3; }
+        .se-badge-completo   { background: #D1FAE5; color: #065F46; }
 
         .se-tab-panel { display: none; }
         .se-tab-panel.active { display: block; animation: fadeIn 0.3s ease; }
@@ -401,6 +403,7 @@
                     <strong><asp:Literal ID="litFormBannerTitle" runat="server" /></strong>
                     <small><asp:Literal ID="litFormBannerSub" runat="server" /></small>
                 </div>
+                <asp:Literal ID="litEstadoRegistro" runat="server" />
                 <asp:Button ID="btnCancelarEdicion" runat="server" Text="✕ Cancelar edición" CssClass="se-btn se-btn-ghost se-btn-cancel" CausesValidation="false" OnClick="btnCancelarEdicion_Click" />
             </asp:Panel>
 
@@ -574,11 +577,12 @@
             <div class="se-card">
                 <div class="se-actions">
                     <asp:Button ID="btnLimpiar" runat="server" Text="Limpiar" CssClass="se-btn se-btn-ghost" CausesValidation="false" OnClick="btnLimpiar_Click" />
-                    <asp:Button ID="btnGuardar" runat="server" Text="💾 Guardar avance" CssClass="se-btn se-btn-primary" OnClick="btnGuardar_Click" ValidationGroup="vgGuardarSeguimiento" />
+                    <asp:Button ID="btnGuardarBorrador" runat="server" Text="📝 Guardar borrador" CssClass="se-btn se-btn-ghost" OnClick="btnGuardarBorrador_Click" CausesValidation="false" />
+                    <asp:Button ID="btnGuardarFinal" runat="server" Text="✅ Guardar final" CssClass="se-btn se-btn-primary" OnClick="btnGuardarFinal_Click" ValidationGroup="vgGuardarSeguimiento" />
                 </div>
                 <asp:ValidationSummary ID="vsGuardarSeguimiento" runat="server" ValidationGroup="vgGuardarSeguimiento" DisplayMode="BulletList" CssClass="se-alert se-alert-warning" HeaderText="Corrige los siguientes campos:" />
                 <div style="text-align:right;font-size:12px;color:var(--se-muted);margin-top:8px;">
-                    Solo se guardan los campos llenos. Los que dejes vacíos no se sobrescriben — puedes seguir avanzando otro día.
+                    Borrador permite avance parcial con validaciones de formato. Guardado final exige todos los campos obligatorios del seguimiento completos.
                 </div>
             </div>
         </div>
