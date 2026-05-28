@@ -194,7 +194,7 @@
 </head>
 
 <body>
-    <form runat="server">
+    <form runat="server" autocomplete="off">
         <!-- ScriptManager básico sin scripts personalizados -->
         <asp:ScriptManager ID="ScriptManager1" runat="server" EnablePageMethods="true" />
 
@@ -497,17 +497,17 @@
                         <div class="form-group">
                             <label class="form-label">Contraseña Actual <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtContrasenaActual" runat="server" CssClass="form-control"
-                                TextMode="Password" placeholder="Ingresa tu contraseña actual"></asp:TextBox>
+                                TextMode="Password" placeholder="Ingresa tu contraseña actual" autocomplete="current-password"></asp:TextBox>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Nueva Contraseña <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtNuevaContrasena" runat="server" CssClass="form-control"
-                                TextMode="Password" placeholder="Mínimo 6 caracteres"></asp:TextBox>
+                                TextMode="Password" placeholder="Mínimo 6 caracteres" autocomplete="new-password"></asp:TextBox>
                         </div>
                         <div class="form-group mb-0">
                             <label class="form-label">Confirmar Nueva Contraseña <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtConfirmarContrasena" runat="server" CssClass="form-control"
-                                TextMode="Password" placeholder="Repite la nueva contraseña"></asp:TextBox>
+                                TextMode="Password" placeholder="Repite la nueva contraseña" autocomplete="new-password"></asp:TextBox>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -553,8 +553,7 @@
 
         function deshabilitarAutocomplete() {
             $('input[type="text"], input[type="number"], input[type="search"], input[type="email"], input[type="tel"], input[type="date"], input[type="time"], textarea')
-                .not('[type="password"]')
-                .not('[autocomplete]:not([autocomplete="off"])')
+                .not('[autocomplete]')
                 .attr('autocomplete', 'off');
         }
 
