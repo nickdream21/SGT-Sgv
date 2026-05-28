@@ -50,6 +50,10 @@ namespace WebSGV.Views
                 {
                     Response.Redirect("~/Views/DashboardAdminSistema.aspx");
                 }
+                else if (rol.ToUpper() == "CONTABILIDAD")
+                {
+                    Response.Redirect("~/Views/LiquidacionesAprobadasContabilidad.aspx");
+                }
                 else if (rol.ToUpper() == "ADMIN" ||
                          rol.ToUpper() == "ADMINISTRADOR" ||
                          rol.ToUpper() == "SUPERVISOR" ||
@@ -202,6 +206,10 @@ namespace WebSGV.Views
                 else if (resultado.Rol.ToUpper() == "ADMINISTRADOR DE SISTEMA")
                 {
                     Response.Redirect("~/Views/DashboardAdminSistema.aspx");
+                }
+                else if (resultado.Rol.ToUpper() == "CONTABILIDAD")
+                {
+                    Response.Redirect("~/Views/LiquidacionesAprobadasContabilidad.aspx");
                 }
                 else
                 {

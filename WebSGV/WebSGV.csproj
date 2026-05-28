@@ -397,6 +397,9 @@
     <Content Include="Views\Exportacion\RegistroSeguimiento.aspx" />
     <Content Include="Views\FirmarLiquidacion.aspx" />
     <Content Include="Views\Inicio.aspx" />
+    <Content Include="Views\LiquidacionesAprobadasContabilidad.aspx">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="Views\LiquidacionesPendientes.aspx" />
     <Content Include="Views\ListaDespachos.aspx" />
     <Content Include="Views\Login.aspx" />
@@ -683,6 +686,13 @@
     <Compile Include="Views\LiquidacionesPendientes.aspx.cs">
       <DependentUpon>LiquidacionesPendientes.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\LiquidacionesAprobadasContabilidad.aspx.cs">
+      <DependentUpon>LiquidacionesAprobadasContabilidad.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\LiquidacionesAprobadasContabilidad.aspx.designer.cs">
+      <DependentUpon>LiquidacionesAprobadasContabilidad.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\LiquidacionesPendientes.aspx.designer.cs">
       <DependentUpon>LiquidacionesPendientes.aspx</DependentUpon>

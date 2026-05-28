@@ -19,6 +19,7 @@ namespace WebSGV.Helpers
         public const string ROL_ADMIN_GRIFO = "ADMINISTRADOR DE GRIFO";
         public const string ROL_ADMIN_MAQUINARIA = "ADMINISTRADOR DE MAQUINARIA";
         public const string ROL_OPERADOR = "OPERADOR";
+        public const string ROL_CONTABILIDAD = "CONTABILIDAD";
 
         /// <summary>
         /// Obtiene el rol del usuario actual desde la sesión
@@ -95,6 +96,15 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
+        /// Verifica si el usuario actual es del área de Contabilidad
+        /// </summary>
+        public static bool EsContabilidad()
+        {
+            string rolActual = ObtenerRolActual();
+            return rolActual == ROL_CONTABILIDAD;
+        }
+
+        /// <summary>
         /// Verifica si el usuario tiene sesión activa
         /// </summary>
         public static bool TieneSesionActiva()
@@ -153,6 +163,10 @@ namespace WebSGV.Helpers
                 case "PARTE_DIARIO":
                     return EsOperador() || EsAdminMaquinaria() || EsAdmin();
 
+                // Páginas de consulta para Contabilidad (solo lectura)
+                case "LIQUIDACIONES_CONTABILIDAD":
+                    return EsContabilidad() || EsAdmin() || rol == ROL_SUPERVISOR;
+
                 default:
                     return false;
             }
@@ -200,6 +214,10 @@ namespace WebSGV.Helpers
             else if (EsAdmin())
             {
                 HttpContext.Current.Response.Redirect("~/Views/Inicio.aspx");
+            }
+            else if (EsContabilidad())
+            {
+                HttpContext.Current.Response.Redirect("~/Views/LiquidacionesAprobadasContabilidad.aspx");
             }
             else
             {

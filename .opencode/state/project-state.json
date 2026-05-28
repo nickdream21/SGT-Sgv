@@ -1,8 +1,8 @@
 {
   "schema_version": "2.0",
   "project": "WebSGV",
-  "last_updated": "2026-05-28T10:26:00-05:00",
-  "current_task_id": null,
+  "last_updated": "2026-05-28T18:08:00-05:00",
+  "current_task_id": "TASK-011",
   "global_plan": [
     {
       "task_id": "TASK-001",
@@ -59,6 +59,27 @@
       "title": "Crear README profesional, moderno y atractivo del proyecto",
       "status": "completed",
       "created_at": "2026-05-28T15:20:00Z"
+    },
+    {
+      "task_id": "TASK-009",
+      "intent": "new_page",
+      "title": "Nuevo rol CONTABILIDAD con vista de liquidaciones aprobadas y búsqueda",
+      "status": "needs_clarification",
+      "created_at": "2026-05-28T21:40:00Z"
+    },
+    {
+      "task_id": "TASK-010",
+      "intent": "new_sp",
+      "title": "Script SQL para alta de rol CONTABILIDAD en BD",
+      "status": "needs_clarification",
+      "created_at": "2026-05-28T22:18:00Z"
+    },
+    {
+      "task_id": "TASK-011",
+      "intent": "bugfix",
+      "title": "Completar modal de detalle de liquidación para rol CONTABILIDAD",
+      "status": "completed",
+      "created_at": "2026-05-28T22:33:00Z"
     }
   ],
   "active_subtasks": [
@@ -152,6 +173,27 @@
       "owner": "writer",
       "intent": "doc_update",
       "status": "completed"
+    },
+    {
+      "task_id": "TASK-009.1",
+      "parent_task_id": "TASK-009",
+      "owner": "developer",
+      "intent": "new_page",
+      "status": "blocked"
+    },
+    {
+      "task_id": "TASK-010.1",
+      "parent_task_id": "TASK-010",
+      "owner": "dba",
+      "intent": "new_sp",
+      "status": "needs_clarification"
+    },
+    {
+      "task_id": "TASK-011.1",
+      "parent_task_id": "TASK-011",
+      "owner": "developer",
+      "intent": "bugfix",
+      "status": "completed"
     }
   ],
   "context_summary": "Proyecto ASP.NET Web Forms (.NET 4.8). Sistema multi-agente refactorizado a v2 (2026-04-29): 1 orquestador + 6 subagentes con paralelismo seguro, intent routing, evidence-gating obligatorio antes de cerrar tareas, y 11 skills cargables (frontend-design, systematic-debugging, verification-before-completion, test-driven-development, nueva-pagina-aspx, nueva-sp-sql, sql-injection-y-sqlcommand-seguro, itextsharp-pdf-webforms, auditoria-y-sesiones-sgv, msbuild-csproj-sync, viewstate-postback-webforms). El agente DBA usa SQL MCP Server (Data API Builder) — DDL sigue requiriendo despliegue manual.",
@@ -200,6 +242,21 @@
       "ts": "2026-05-28",
       "decision": "Se crea README.md raíz con estándar GitHub profesional para onboarding técnico, seguridad de secretos y flujo real de build/DB del proyecto.",
       "task_id": "TASK-008"
+    },
+    {
+      "ts": "2026-05-28",
+      "decision": "TASK-009.1 rechazado por verification gate: evidencia de build OK, pero pruebas manuales quedaron en pending_manual_execution para el happy path requerido en intent new_page.",
+      "task_id": "TASK-009"
+    },
+    {
+      "ts": "2026-05-28",
+      "decision": "TASK-010.1 entregó script SQL para rol CONTABILIDAD pero quedó en partial con deployment_required=true; se pausa a espera de despliegue manual y verificación posterior.",
+      "task_id": "TASK-010"
+    },
+    {
+      "ts": "2026-05-28",
+      "decision": "TASK-011.1 completa modal de detalle para CONTABILIDAD mostrando desglose integral de ingresos y gastos (incluyendo peajes S/ y US$) manteniendo UI minimalista y solo lectura.",
+      "task_id": "TASK-011"
     }
   ],
   "intent_routing_table": {
@@ -383,10 +440,10 @@
     ]
   },
   "metrics": {
-    "total_tasks_completed": 8,
-    "total_handoffs": 13,
+    "total_tasks_completed": 9,
+    "total_handoffs": 17,
     "context_compactions": 0,
     "parallel_groups_executed": 0,
-    "verification_rejections": 5
+    "verification_rejections": 7
   }
 }
