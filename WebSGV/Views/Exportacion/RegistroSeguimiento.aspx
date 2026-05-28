@@ -1,4 +1,4 @@
-﻿<%@ Page Title="Registro de Seguimiento de Exportación" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistroSeguimiento.aspx.cs" Inherits="WebSGV.Views.Exportacion.RegistroSeguimiento" %>
+<%@ Page Title="Registro de Seguimiento de Exportación" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistroSeguimiento.aspx.cs" Inherits="WebSGV.Views.Exportacion.RegistroSeguimiento" %>
 
 <asp:Content ID="ContentSE" ContentPlaceHolderID="MainContent" runat="server">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -18,8 +18,6 @@
         }
 
         .se-wrap { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--se-bg); padding: 24px; margin: -20px -15px 0; min-height: calc(100vh - 56px); }
-        /* Para el panel grid rompemos el padding del wrap y usamos todo el viewport */
-        /* Técnica "full-bleed": saca el panel del container Bootstrap sin importar su ancho */
         #panel-grid {
             width: 100vw;
             position: relative;
@@ -40,7 +38,6 @@
             border-left: none;
             border-right: none;
             border-radius: 0;
-            /* Usa el ancho completo de la ventana menos el scrollbar vertical de la página */
             width: calc(100vw - 17px);
         }
         .se-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
@@ -171,24 +168,41 @@
         table.se-xls tbody tr.row-error td { background: #FEF2F2 !important; }
         table.se-xls .rownum { position: sticky; left: 0; z-index: 2; background: var(--se-bg) !important; color: var(--se-muted); font-weight: 700; text-align: center; padding: 4px 6px; width: 36px; min-width: 36px; max-width: 36px; border-right: 2px solid var(--se-border); }
         table.se-xls thead th.rownum { background: var(--se-ink) !important; color:#fff; z-index: 4; width: 36px; min-width: 36px; max-width: 36px; }
-        /* Anchos de columna ajustados para ver más columnas */
         table.se-xls th.col-text     { width: 120px; min-width: 100px; }
+        table.se-xls th.col-narrow   { width: 88px;  min-width: 76px;  }
         table.se-xls th.col-dt       { width: 148px; min-width: 140px; }
         table.se-xls th.col-num      { width: 72px;  min-width: 60px;  }
         table.se-xls th.col-estado   { width: 110px; min-width: 100px; }
+        table.se-xls th.col-bodega   { width: 100px; min-width: 90px;  }
         table.se-xls th.col-comentario { width: 160px; min-width: 140px; }
         table.se-xls td.col-text input,
-        table.se-xls td.col-text select  { width: 100%; }
+        table.se-xls td.col-narrow input { width: 100%; }
         table.se-xls input, table.se-xls select { width: 100%; border: none; padding: 5px 6px; background: transparent; font: inherit; font-size: 12px; color: var(--se-ink); outline: none; box-sizing: border-box; }
         table.se-xls input[type="datetime-local"] { font-size: 11.5px; padding: 5px 4px; }
         table.se-xls input[type="number"] { text-align:right; }
         table.se-xls td:focus-within { box-shadow: inset 0 0 0 2px var(--se-primary); background: #fff !important; z-index: 1; position: relative; }
         table.se-xls input:focus, table.se-xls select:focus { background:#fff; }
 
+        /* Autocomplete: deja que el input muestre el datalist nativo */
+        table.se-xls input[list] { cursor: text; }
+
         .se-xls-legend { display:flex; gap:14px; flex-wrap:wrap; font-size:11px; color:var(--se-muted); margin-top:8px; }
         .se-xls-legend span { display:inline-flex; align-items:center; gap:6px; }
         .se-xls-legend i { width:12px; height:12px; border-radius:3px; display:inline-block; border:1px solid var(--se-border); }
+
+        /* Hint de navegación */
+        .se-nav-hint { font-size:11px; color:var(--se-muted); margin-top:6px; }
+        .se-nav-hint kbd { background:var(--se-bg); border:1px solid var(--se-border); border-radius:4px; padding:1px 5px; font-family:monospace; font-size:11px; }
     </style>
+
+    <%-- Datos de autocompletado emitidos desde el code-behind --%>
+    <asp:Literal ID="litAutoComplete" runat="server" />
+
+    <%-- Datalist elements para autocompletado HTML5 nativo --%>
+    <datalist id="seListClientes"></datalist>
+    <datalist id="seListConductores"></datalist>
+    <datalist id="seListTractos"></datalist>
+    <datalist id="seListCarretas"></datalist>
 
     <div class="se-wrap">
         <div class="se-header">
@@ -210,10 +224,8 @@
             <button type="button" class="se-tab"        data-target="panel-list">📋 Historial</button>
         </div>
 
-        <!-- Hidden de estado: id del viaje en edición -->
         <asp:HiddenField ID="hdnIdSeguimiento" runat="server" Value="0" />
 
-        <!-- Mensajes globales -->
         <asp:Panel ID="pnlAlert" runat="server" Visible="false" CssClass="se-alert se-alert-info">
             <asp:Literal ID="litAlert" runat="server"></asp:Literal>
         </asp:Panel>
@@ -223,7 +235,7 @@
             <div class="se-card" style="padding:18px;">
                 <div class="se-section-title">Grid editable — captura tipo Excel</div>
                 <div class="se-alert se-alert-info" style="margin-bottom:12px;">
-                    💡 Edita cualquier celda como en Excel. Las filas modificadas se marcan en <strong>amarillo</strong>, las nuevas en <strong>azul</strong>. Pulsa <strong>Guardar cambios</strong> para enviar todo de una sola vez (UPSERT por cliente + F.H. programación + tracto 1).
+                    💡 Edita cualquier celda como en Excel. Columnas con <strong>autocompletado</strong>: Cliente, Conductor, Tracto, Carreta. Usa <kbd>Enter</kbd> para bajar a la fila siguiente; <kbd>Tab</kbd> para avanzar al campo siguiente.
                 </div>
 
                 <div class="se-grid-toolbar">
@@ -248,40 +260,46 @@
                         <thead>
                             <tr>
                                 <th class="rownum">#</th>
+                                <%-- Identidad del viaje — orden igual al Excel --%>
                                 <th class="col-text">Cliente</th>
-                                <th class="col-dt">F.H. Programación</th>
-                                <th class="col-text">Tracto 1</th>
                                 <th class="col-text">Conductor Origen</th>
-                                <th class="col-text">Carreta</th>
+                                <th class="col-narrow">Tracto 1</th>
+                                <th class="col-narrow">Carreta</th>
                                 <th class="col-text">Conductor Destino</th>
-                                <th class="col-text">Tracto 2</th>
+                                <th class="col-narrow">Tracto 2</th>
                                 <th class="col-estado">Estado</th>
+                                <%-- Tiempos Perú (igual que Excel: SalidaBase → Trujillo → Registro → Programación → ...) --%>
                                 <th class="colgroup-PE col-dt">F.H. Salida Base</th>
                                 <th class="colgroup-PE col-dt">F.H. Llegada Trujillo</th>
                                 <th class="colgroup-PE col-dt">F.H. Registro</th>
+                                <th class="colgroup-PE col-dt">F.H. Programación</th>
                                 <th class="colgroup-PE col-dt">F.H. Ingreso Planta</th>
                                 <th class="colgroup-PE col-dt">F.H. Inicio Carga</th>
                                 <th class="colgroup-PE col-dt">F.H. Término Carga</th>
                                 <th class="colgroup-PE col-dt">F.H. Salida Planta</th>
                                 <th class="colgroup-PE col-dt">F.H. Llegada Base 2</th>
                                 <th class="colgroup-PE col-dt">F.H. Salida Base 2</th>
+                                <%-- Bodega Nacional --%>
                                 <th class="colgroup-BN col-dt">F.H. Llegada Bodega Nac.</th>
                                 <th class="colgroup-BN col-dt">F.H. Ingreso Bodega Nac.</th>
                                 <th class="colgroup-BN col-dt">F.H. Salida Bodega Nac.</th>
-                                <th class="colgroup-BN col-text">Bodega Nacional</th>
+                                <th class="colgroup-BN col-bodega">Bodega Nacional</th>
+                                <%-- Frontera --%>
                                 <th class="colgroup-FR col-dt">F.H. Llegada CEBAF</th>
                                 <th class="colgroup-FR col-dt">F.H. Cruce Ecuador</th>
                                 <th class="colgroup-FR col-dt">F.H. Autoriz. Nac.</th>
-                                <th class="colgroup-EC col-text">Bodega Ecuatoriana</th>
+                                <%-- Ecuador --%>
+                                <th class="colgroup-EC col-bodega">Bodega Ecuatoriana</th>
                                 <th class="colgroup-EC col-dt">F.H. Llegada TCI</th>
                                 <th class="colgroup-EC col-dt">F.H. Salida TCI</th>
-                                <th class="colgroup-EC col-text">Bodega Descarga</th>
+                                <th class="colgroup-EC col-bodega">Bodega Descarga</th>
                                 <th class="colgroup-EC col-dt">F.H. Llegada Planta EC</th>
                                 <th class="colgroup-EC col-dt">F.H. Llegada Almacén</th>
                                 <th class="colgroup-EC col-dt">F.H. Ingreso</th>
                                 <th class="colgroup-EC col-dt">F.H. Inicio Descarga</th>
                                 <th class="colgroup-EC col-dt">F.H. Término Descarga</th>
                                 <th class="colgroup-EC col-dt">F.H. Salida</th>
+                                <%-- Incidencias --%>
                                 <th class="colgroup-INC col-num">S.Robados</th>
                                 <th class="colgroup-INC col-num">S.Rotos</th>
                                 <th class="colgroup-INC col-num">S.Mojados</th>
@@ -299,15 +317,18 @@
                     <span><i style="background:#ECFDF5;border-color:#10B981;"></i> Guardada</span>
                     <span><i style="background:#FEF2F2;border-color:#EF4444;"></i> Error</span>
                 </div>
+                <div class="se-nav-hint">
+                    <kbd>Enter</kbd> siguiente fila &nbsp;|&nbsp; <kbd>Tab</kbd> siguiente campo &nbsp;|&nbsp; <kbd>Shift+Tab</kbd> campo anterior
+                </div>
             </div>
         </div>
 
-        <!-- ========== TAB 0: BANDEJA DE VIAJES EN CURSO ========== -->
+        <!-- ========== TAB: BANDEJA DE VIAJES EN CURSO ========== -->
         <div id="panel-bandeja" class="se-tab-panel">
             <div class="se-card">
                 <div class="se-section-title">Viajes en curso (registro progresivo)</div>
                 <div class="se-alert se-alert-info" style="margin-bottom:14px;">
-                    💡 <strong>Captura progresiva:</strong> No necesitas llenar todo un viaje de golpe. Crea uno con los datos mínimos y ve agregando los hitos (fechas/horas) conforme avanza el viaje. Puedes tener varios viajes en paralelo.
+                    💡 <strong>Captura progresiva:</strong> No necesitas llenar todo un viaje de golpe. Crea uno con los datos mínimos y ve agregando los hitos conforme avanza el viaje.
                 </div>
 
                 <div class="se-bandeja-toolbar">
@@ -337,14 +358,12 @@
                                 </div>
                                 <span class='se-badge se-badge-<%# (Eval("estado") ?? "").ToString().ToLower().Replace("_","") %>'><%# Eval("estado") %></span>
                             </div>
-
                             <div class="se-trip-info">
                                 <span>Tracto 1</span><span><%# Eval("tracto1") %></span>
                                 <span>Conductor</span><span><%# Eval("conductorOrigen") %></span>
                                 <span>Carreta</span><span><%# Eval("carreta") %></span>
                                 <span>Destino</span><span><%# Eval("bodegaDescarga") %></span>
                             </div>
-
                             <div>
                                 <div class="se-progress-label">
                                     <span>Avance del viaje</span>
@@ -352,12 +371,10 @@
                                 </div>
                                 <div class="se-progress"><div class="se-progress-bar" style='width: <%# Eval("porcentaje") %>%;'></div></div>
                             </div>
-
                             <div class="se-trip-next">
                                 <small>Siguiente hito por registrar</small>
                                 <%# Eval("siguienteHito") %>
                             </div>
-
                             <div class="se-trip-actions">
                                 <asp:LinkButton runat="server" CssClass="se-btn se-btn-primary"
                                     CommandName="Continuar"
@@ -376,7 +393,7 @@
             </div>
         </div>
 
-        <!-- ========== TAB 1: FORMULARIO (registro/edición) ========== -->
+        <!-- ========== TAB: FORMULARIO (registro/edición) ========== -->
         <div id="panel-form" class="se-tab-panel">
             <asp:Panel ID="pnlFormBanner" runat="server" CssClass="se-form-banner" Visible="false">
                 <i class="fas fa-edit"></i>
@@ -387,96 +404,154 @@
                 <asp:Button ID="btnCancelarEdicion" runat="server" Text="✕ Cancelar edición" CssClass="se-btn se-btn-ghost se-btn-cancel" CausesValidation="false" OnClick="btnCancelarEdicion_Click" />
             </asp:Panel>
 
+            <%-- Sección ①: Identidad del viaje (orden igual al Excel) --%>
             <details class="se-accordion" open>
                 <summary>① Datos del viaje (obligatorios para abrir)</summary>
                 <div class="se-acc-body">
                     <div class="se-grid">
-                        <div class="se-field"><label>Cliente *</label><asp:TextBox ID="txtCliente" runat="server" /></div>
-                        <div class="se-field"><label>F.H. Programación *</label><asp:TextBox ID="txtFhProgramacion" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>Tracto 1 *</label><asp:TextBox ID="txtTracto1" runat="server" /></div>
-                        <div class="se-field"><label>Conductor Origen</label><asp:TextBox ID="txtConductorOrigen" runat="server" /></div>
-                        <div class="se-field"><label>Carreta</label><asp:TextBox ID="txtCarreta" runat="server" /></div>
-                        <div class="se-field"><label>Conductor Destino</label><asp:TextBox ID="txtConductorDestino" runat="server" /></div>
-                        <div class="se-field"><label>Tracto 2</label><asp:TextBox ID="txtTracto2" runat="server" /></div>
+                        <div class="se-field"><label>Cliente *</label>
+                            <asp:TextBox ID="txtCliente" runat="server" placeholder="Escribe para buscar..." /></div>
+                        <div class="se-field"><label>Conductor Origen</label>
+                            <asp:TextBox ID="txtConductorOrigen" runat="server" placeholder="Escribe el nombre..." /></div>
+                        <div class="se-field"><label>Tracto 1 *</label>
+                            <asp:TextBox ID="txtTracto1" runat="server" placeholder="Placa..." /></div>
+                        <div class="se-field"><label>Carreta</label>
+                            <asp:TextBox ID="txtCarreta" runat="server" placeholder="Placa..." /></div>
+                        <div class="se-field"><label>Conductor Destino</label>
+                            <asp:TextBox ID="txtConductorDestino" runat="server" placeholder="Escribe el nombre..." /></div>
+                        <div class="se-field"><label>Tracto 2</label>
+                            <asp:TextBox ID="txtTracto2" runat="server" placeholder="Placa..." /></div>
+                        <div class="se-field"><label>F.H. Programación *</label>
+                            <asp:TextBox ID="txtFhProgramacion" runat="server" TextMode="DateTimeLocal" /></div>
                         <div class="se-field"><label>Estado</label>
                             <asp:DropDownList ID="ddlEstado" runat="server">
-                                <asp:ListItem Text="En curso" Value="EN_CURSO" />
-                                <asp:ListItem Text="Pendiente" Value="PENDIENTE" />
+                                <asp:ListItem Text="En curso"   Value="EN_CURSO" />
+                                <asp:ListItem Text="Pendiente"  Value="PENDIENTE" />
                                 <asp:ListItem Text="Finalizado" Value="FINALIZADO" />
                                 <asp:ListItem Text="Completado" Value="COMPLETADO" />
-                                <asp:ListItem Text="Retrasado" Value="RETRASADO" />
-                                <asp:ListItem Text="Cancelado" Value="CANCELADO" />
+                                <asp:ListItem Text="Retrasado"  Value="RETRASADO" />
+                                <asp:ListItem Text="Cancelado"  Value="CANCELADO" />
                             </asp:DropDownList>
                         </div>
                     </div>
                 </div>
             </details>
 
+            <%-- Sección ②: Tiempos en Perú (orden: SalidaBase → Trujillo → Registro → IngresoPlanta → ...) --%>
             <details class="se-accordion">
                 <summary>② Tiempos en Perú</summary>
                 <div class="se-acc-body">
                     <div class="se-grid">
-                        <div class="se-field"><label>F.H. Salida Base</label><asp:TextBox ID="txtFhSalidaBase1" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Llegada Trujillo</label><asp:TextBox ID="txtFhLlegadaTrujillo" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Registro</label><asp:TextBox ID="txtFhRegistro" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Ingreso Planta</label><asp:TextBox ID="txtFhIngresoPlanta" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Inicio Carga</label><asp:TextBox ID="txtFhInicioCarga" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Término Carga</label><asp:TextBox ID="txtFhTerminoCarga" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Salida Planta</label><asp:TextBox ID="txtFhSalidaPlanta" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Llegada Base 2</label><asp:TextBox ID="txtFhLlegadaBase2" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Salida Base 2</label><asp:TextBox ID="txtFhSalidaBase2" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Salida Base</label>
+                            <asp:TextBox ID="txtFhSalidaBase1" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Llegada Trujillo</label>
+                            <asp:TextBox ID="txtFhLlegadaTrujillo" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Registro</label>
+                            <asp:TextBox ID="txtFhRegistro" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Ingreso Planta</label>
+                            <asp:TextBox ID="txtFhIngresoPlanta" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Inicio Carga</label>
+                            <asp:TextBox ID="txtFhInicioCarga" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Término Carga</label>
+                            <asp:TextBox ID="txtFhTerminoCarga" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Salida Planta</label>
+                            <asp:TextBox ID="txtFhSalidaPlanta" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Llegada Base 2</label>
+                            <asp:TextBox ID="txtFhLlegadaBase2" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Salida Base 2</label>
+                            <asp:TextBox ID="txtFhSalidaBase2" runat="server" TextMode="DateTimeLocal" /></div>
                     </div>
                 </div>
             </details>
 
+            <%-- Sección ③: Bodega Nacional --%>
             <details class="se-accordion">
                 <summary>③ Bodega Nacional</summary>
                 <div class="se-acc-body">
                     <div class="se-grid">
-                        <div class="se-field"><label>F.H. Llegada Bodega Nacional</label><asp:TextBox ID="txtFhLlegadaBodegaNacional" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Ingreso Bodega Nacional</label><asp:TextBox ID="txtFhIngresoBodegaNacional" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Salida Bodega Nacional</label><asp:TextBox ID="txtFhSalidaBodegaNacional" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>Bodega Nacional</label><asp:TextBox ID="txtBodegaNacional" runat="server" /></div>
+                        <div class="se-field"><label>F.H. Llegada Bodega Nacional</label>
+                            <asp:TextBox ID="txtFhLlegadaBodegaNacional" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Ingreso Bodega Nacional</label>
+                            <asp:TextBox ID="txtFhIngresoBodegaNacional" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Salida Bodega Nacional</label>
+                            <asp:TextBox ID="txtFhSalidaBodegaNacional" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>Bodega Nacional</label>
+                            <asp:DropDownList ID="ddlBodegaNacional" runat="server" CssClass="se-field-select">
+                                <asp:ListItem Text="-- Seleccionar --" Value="" />
+                                <asp:ListItem Text="DEPSA"    Value="DEPSA" />
+                                <asp:ListItem Text="COMPLEX"  Value="COMPLEX" />
+                            </asp:DropDownList>
+                        </div>
                     </div>
                 </div>
             </details>
 
+            <%-- Sección ④: Frontera (CEBAF / Nacionalización) --%>
             <details class="se-accordion">
                 <summary>④ Frontera (CEBAF / Nacionalización)</summary>
                 <div class="se-acc-body">
                     <div class="se-grid">
-                        <div class="se-field"><label>F.H. Llegada CEBAF</label><asp:TextBox ID="txtFhLlegadaCEBAF" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Cruce Ecuador</label><asp:TextBox ID="txtFhCruceEcuador" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Autorización Nacionalización</label><asp:TextBox ID="txtFhAutorizacionNacionalizacion" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Llegada CEBAF</label>
+                            <asp:TextBox ID="txtFhLlegadaCEBAF" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Cruce Ecuador</label>
+                            <asp:TextBox ID="txtFhCruceEcuador" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Autorización Nacionalización</label>
+                            <asp:TextBox ID="txtFhAutorizacionNacionalizacion" runat="server" TextMode="DateTimeLocal" /></div>
                     </div>
                 </div>
             </details>
 
+            <%-- Sección ⑤: Tiempos en Ecuador --%>
             <details class="se-accordion">
                 <summary>⑤ Tiempos en Ecuador</summary>
                 <div class="se-acc-body">
                     <div class="se-grid">
-                        <div class="se-field"><label>Bodega Ecuatoriana</label><asp:TextBox ID="txtBodegaEcuatoriana" runat="server" /></div>
-                        <div class="se-field"><label>F.H. Llegada TCI</label><asp:TextBox ID="txtFhLlegadaTCI" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Salida TCI</label><asp:TextBox ID="txtFhSalidaTCI" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>Bodega Descarga</label><asp:TextBox ID="txtBodegaDescarga" runat="server" /></div>
-                        <div class="se-field"><label>F.H. Llegada Planta Ecuador</label><asp:TextBox ID="txtFhLlegadaPlantaEcuador" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Llegada Almacén</label><asp:TextBox ID="txtFhLlegadaAlmacen" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Ingreso</label><asp:TextBox ID="txtFhIngreso" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Inicio Descarga</label><asp:TextBox ID="txtFhInicioDescarga" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Término Descarga</label><asp:TextBox ID="txtFhTerminoDescarga" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Salida</label><asp:TextBox ID="txtFhSalida" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>Bodega Ecuatoriana</label>
+                            <asp:DropDownList ID="ddlBodegaEcuatoriana" runat="server">
+                                <asp:ListItem Text="-- Seleccionar --" Value="" />
+                                <asp:ListItem Text="TCI"     Value="TCI" />
+                                <asp:ListItem Text="PUYANGO" Value="PUYANGO" />
+                            </asp:DropDownList>
+                        </div>
+                        <div class="se-field"><label>F.H. Llegada TCI</label>
+                            <asp:TextBox ID="txtFhLlegadaTCI" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Salida TCI</label>
+                            <asp:TextBox ID="txtFhSalidaTCI" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>Bodega Descarga</label>
+                            <asp:DropDownList ID="ddlBodegaDescarga" runat="server">
+                                <asp:ListItem Text="-- Seleccionar --" Value="" />
+                                <asp:ListItem Text="INBALNOR" Value="INBALNOR" />
+                                <asp:ListItem Text="JAVE"     Value="JAVE" />
+                                <asp:ListItem Text="OREMANS"  Value="OREMANS" />
+                            </asp:DropDownList>
+                        </div>
+                        <div class="se-field"><label>F.H. Llegada Planta Ecuador</label>
+                            <asp:TextBox ID="txtFhLlegadaPlantaEcuador" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Llegada Almacén</label>
+                            <asp:TextBox ID="txtFhLlegadaAlmacen" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Ingreso</label>
+                            <asp:TextBox ID="txtFhIngreso" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Inicio Descarga</label>
+                            <asp:TextBox ID="txtFhInicioDescarga" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Término Descarga</label>
+                            <asp:TextBox ID="txtFhTerminoDescarga" runat="server" TextMode="DateTimeLocal" /></div>
+                        <div class="se-field"><label>F.H. Salida</label>
+                            <asp:TextBox ID="txtFhSalida" runat="server" TextMode="DateTimeLocal" /></div>
                     </div>
                 </div>
             </details>
 
+            <%-- Sección ⑥: Incidencias --%>
             <details class="se-accordion">
                 <summary>⑥ Incidencias y Observaciones</summary>
                 <div class="se-acc-body">
                     <div class="se-grid">
-                        <div class="se-field"><label>Sacos Robados</label><asp:TextBox ID="txtSacosRobados" runat="server" TextMode="Number" Text="0" /></div>
-                        <div class="se-field"><label>Sacos Rotos</label><asp:TextBox ID="txtSacosRotos" runat="server" TextMode="Number" Text="0" /></div>
-                        <div class="se-field"><label>Sacos Mojados</label><asp:TextBox ID="txtSacosMojados" runat="server" TextMode="Number" Text="0" /></div>
+                        <div class="se-field"><label>Sacos Robados</label>
+                            <asp:TextBox ID="txtSacosRobados" runat="server" TextMode="Number" Text="0" /></div>
+                        <div class="se-field"><label>Sacos Rotos</label>
+                            <asp:TextBox ID="txtSacosRotos" runat="server" TextMode="Number" Text="0" /></div>
+                        <div class="se-field"><label>Sacos Mojados</label>
+                            <asp:TextBox ID="txtSacosMojados" runat="server" TextMode="Number" Text="0" /></div>
                     </div>
                     <div class="se-field" style="margin-top:14px;"><label>Motivo de retraso / Comentario</label>
                         <asp:TextBox ID="txtMotivoRetraso" runat="server" TextMode="MultiLine" Rows="3" />
@@ -495,12 +570,12 @@
             </div>
         </div>
 
-        <!-- ========== TAB 2: IMPORT EXCEL ========== -->
+        <!-- ========== TAB: IMPORT EXCEL ========== -->
         <div id="panel-import" class="se-tab-panel">
             <div class="se-card">
                 <div class="se-section-title">Importación masiva desde Excel</div>
                 <div class="se-alert se-alert-info" style="border-color: var(--se-primary);">
-                    <strong>Formato esperado:</strong> el archivo Excel debe tener una hoja con los encabezados del STATUS GENERAL VIVIANA. El sistema mapea automáticamente las columnas reconocidas (Cliente, Conductor Origen, Tracto 1, Carreta, F.H.S.Base, F.H.LL. Trujillo, etc.).
+                    <strong>Formato esperado:</strong> el archivo Excel debe tener una hoja con los encabezados del STATUS GENERAL VIVIANA. El sistema mapea automáticamente las columnas reconocidas.
                 </div>
 
                 <div id="dropZone" class="se-import-zone" onclick="document.getElementById('<%= fileExcel.ClientID %>').click();">
@@ -517,7 +592,7 @@
             </div>
         </div>
 
-        <!-- ========== TAB 3: LISTA ========== -->
+        <!-- ========== TAB: HISTORIAL ========== -->
         <div id="panel-list" class="se-tab-panel">
             <div class="se-card">
                 <div class="se-section-title">Últimos registros</div>
@@ -527,11 +602,11 @@
                         EmptyDataText="No hay registros aún. Comienza usando el formulario o importando un Excel."
                         OnPageIndexChanging="gvRecientes_PageIndexChanging">
                         <Columns>
-                            <asp:BoundField DataField="idSeguimiento" HeaderText="ID" ItemStyle-Width="60px" />
-                            <asp:BoundField DataField="cliente" HeaderText="Cliente" />
-                            <asp:BoundField DataField="conductorOrigen" HeaderText="Conductor Origen" />
-                            <asp:BoundField DataField="tracto1" HeaderText="Tracto 1" />
-                            <asp:BoundField DataField="bodegaDescarga" HeaderText="Bodega Destino" />
+                            <asp:BoundField DataField="idSeguimiento"   HeaderText="ID" ItemStyle-Width="60px" />
+                            <asp:BoundField DataField="cliente"          HeaderText="Cliente" />
+                            <asp:BoundField DataField="conductorOrigen"  HeaderText="Conductor Origen" />
+                            <asp:BoundField DataField="tracto1"          HeaderText="Tracto 1" />
+                            <asp:BoundField DataField="bodegaDescarga"   HeaderText="Bodega Destino" />
                             <asp:TemplateField HeaderText="Estado">
                                 <ItemTemplate>
                                     <span class='se-badge se-badge-<%# (Eval("estado") ?? "").ToString().ToLower().Replace("_","") %>'>
@@ -548,7 +623,9 @@
     </div>
 
     <script type="text/javascript">
-        // Tabs
+        // ============================================================
+        //  Tabs
+        // ============================================================
         document.querySelectorAll('.se-tab').forEach(function (tab) {
             tab.addEventListener('click', function () {
                 var target = this.getAttribute('data-target');
@@ -560,34 +637,32 @@
             });
         });
 
-        // File preview
+        // ============================================================
+        //  File upload preview
+        // ============================================================
         function seUpdateFileName(input) {
             var info = document.getElementById('fileInfo');
             if (input.files && input.files[0]) {
-                info.innerHTML = 'Archivo seleccionado: <strong>' + input.files[0].name + '</strong> (' + (input.files[0].size / 1024 / 1024).toFixed(2) + ' MB)';
+                info.innerHTML = 'Archivo: <strong>' + input.files[0].name + '</strong> (' + (input.files[0].size / 1024 / 1024).toFixed(2) + ' MB)';
             } else {
                 info.innerHTML = 'Ningún archivo seleccionado';
             }
         }
-
         var dropZone = document.getElementById('dropZone');
         if (dropZone) {
-            ['dragover', 'dragenter'].forEach(function (ev) {
+            ['dragover','dragenter'].forEach(function (ev) {
                 dropZone.addEventListener(ev, function (e) { e.preventDefault(); e.stopPropagation(); this.classList.add('drag-over'); });
             });
-            ['dragleave', 'drop'].forEach(function (ev) {
+            ['dragleave','drop'].forEach(function (ev) {
                 dropZone.addEventListener(ev, function (e) { e.preventDefault(); e.stopPropagation(); this.classList.remove('drag-over'); });
             });
             dropZone.addEventListener('drop', function (e) {
                 var fu = document.getElementById('<%= fileExcel.ClientID %>');
-                if (fu && e.dataTransfer.files.length) {
-                    fu.files = e.dataTransfer.files;
-                    seUpdateFileName(fu);
-                }
+                if (fu && e.dataTransfer.files.length) { fu.files = e.dataTransfer.files; seUpdateFileName(fu); }
             });
         }
 
-        // Mantener tab activo después de postback si lo dejamos guardado en hidden
+        // Restaurar tab activo si viene en hash
         (function restoreTab() {
             var hash = window.location.hash;
             if (hash && hash.indexOf('#tab=') === 0) {
@@ -598,20 +673,45 @@
         })();
 
         // ============================================================
-        //  GRID ESTILO EXCEL — render, edición, dirty tracking y serialización
+        //  Datalist: poblar desde window.SE_AC (emitido por code-behind)
+        // ============================================================
+        function sePopulateDatalist(id, items) {
+            var dl = document.getElementById(id);
+            if (!dl || !items) return;
+            var html = '';
+            for (var i = 0; i < items.length; i++) {
+                var v = items[i].replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+                html += '<option value="' + v + '">';
+            }
+            dl.innerHTML = html;
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.SE_AC) return;
+            sePopulateDatalist('seListClientes',    window.SE_AC.clientes);
+            sePopulateDatalist('seListConductores', window.SE_AC.conductores);
+            sePopulateDatalist('seListTractos',     window.SE_AC.tractos);
+            sePopulateDatalist('seListCarretas',    window.SE_AC.carretas);
+        });
+
+        // ============================================================
+        //  GRID ESTILO EXCEL
+        //  Columnas en el mismo orden que el Excel STATUS GENERAL VIVIANA:
+        //  cliente → conductorOrigen → tracto1 → carreta → conductorDestino → tracto2 → estado
+        //  → fhSalidaBase1 → fhLlegadaTrujillo → fhRegistro → fhProgramacion → ...
         // ============================================================
         var SE_GRID_COLS = [
-            { key: 'cliente',                       type: 'text'     },
-            { key: 'fhProgramacion',                type: 'datetime' },
-            { key: 'tracto1',                       type: 'text'     },
-            { key: 'conductorOrigen',               type: 'text'     },
-            { key: 'carreta',                       type: 'text'     },
-            { key: 'conductorDestino',              type: 'text'     },
-            { key: 'tracto2',                       type: 'text'     },
+            { key: 'cliente',                       type: 'autocomplete', list: 'seListClientes'    },
+            { key: 'conductorOrigen',               type: 'autocomplete', list: 'seListConductores' },
+            { key: 'tracto1',                       type: 'autocomplete', list: 'seListTractos'     },
+            { key: 'carreta',                       type: 'autocomplete', list: 'seListCarretas'    },
+            { key: 'conductorDestino',              type: 'autocomplete', list: 'seListConductores' },
+            { key: 'tracto2',                       type: 'autocomplete', list: 'seListTractos'     },
             { key: 'estado',                        type: 'select', options: ['EN_CURSO','PENDIENTE','FINALIZADO','COMPLETADO','RETRASADO','CANCELADO'] },
             { key: 'fhSalidaBase1',                 type: 'datetime' },
             { key: 'fhLlegadaTrujillo',             type: 'datetime' },
             { key: 'fhRegistro',                    type: 'datetime' },
+            { key: 'fhProgramacion',                type: 'datetime' },
             { key: 'fhIngresoPlanta',               type: 'datetime' },
             { key: 'fhInicioCarga',                 type: 'datetime' },
             { key: 'fhTerminoCarga',                type: 'datetime' },
@@ -621,14 +721,14 @@
             { key: 'fhLlegadaBodegaNacional',       type: 'datetime' },
             { key: 'fhIngresoBodegaNacional',       type: 'datetime' },
             { key: 'fhSalidaBodegaNacional',        type: 'datetime' },
-            { key: 'bodegaNacional',                type: 'text'     },
+            { key: 'bodegaNacional',                type: 'select', options: ['','DEPSA','COMPLEX'] },
             { key: 'fhLlegadaCEBAF',                type: 'datetime' },
             { key: 'fhCruceEcuador',                type: 'datetime' },
             { key: 'fhAutorizacionNacionalizacion', type: 'datetime' },
-            { key: 'bodegaEcuatoriana',             type: 'text'     },
+            { key: 'bodegaEcuatoriana',             type: 'select', options: ['','TCI','PUYANGO'] },
             { key: 'fhLlegadaTCI',                  type: 'datetime' },
             { key: 'fhSalidaTCI',                   type: 'datetime' },
-            { key: 'bodegaDescarga',                type: 'text'     },
+            { key: 'bodegaDescarga',                type: 'select', options: ['','INBALNOR','JAVE','OREMANS'] },
             { key: 'fhLlegadaPlantaEcuador',        type: 'datetime' },
             { key: 'fhLlegadaAlmacen',              type: 'datetime' },
             { key: 'fhIngreso',                     type: 'datetime' },
@@ -641,13 +741,12 @@
             { key: 'motivoRetraso',                 type: 'text'     }
         ];
 
-        var SE_GRID_DATA   = [];   // snapshot original (cargado del server)
-        var SE_GRID_ROWS   = [];   // estado actual editable
-        var SE_GRID_NEXTID = -1;   // ids temporales negativos para filas nuevas
+        var SE_GRID_DATA   = [];
+        var SE_GRID_ROWS   = [];
+        var SE_GRID_NEXTID = -1;
 
         function seToInputDate(v) {
             if (!v) return '';
-            // espera "yyyy-MM-ddTHH:mm" o "yyyy-MM-dd HH:mm:ss"
             var s = String(v).replace(' ', 'T');
             if (s.length >= 16) return s.substring(0, 16);
             return s;
@@ -658,12 +757,20 @@
             var el;
             if (col.type === 'select') {
                 el = document.createElement('select');
+                // Opción vacía si la columna lo necesita (bodegas)
                 col.options.forEach(function (o) {
                     var op = document.createElement('option');
-                    op.value = o; op.textContent = o;
+                    op.value = o;
+                    op.textContent = o === '' ? '—' : o;
                     if ((value || '') === o) op.selected = true;
                     el.appendChild(op);
                 });
+            } else if (col.type === 'autocomplete') {
+                el = document.createElement('input');
+                el.type = 'text';
+                if (col.list) el.setAttribute('list', col.list);
+                el.setAttribute('autocomplete', 'off');
+                el.value = value == null ? '' : value;
             } else if (col.type === 'datetime') {
                 el = document.createElement('input');
                 el.type = 'datetime-local';
@@ -743,14 +850,12 @@
             var body = document.getElementById('seGridBody');
             body.appendChild(seGridRenderRow(nr, SE_GRID_ROWS.length - 1));
             seGridUpdateStatus();
-            // foco al cliente de la nueva fila
             var tr = body.lastElementChild;
             var first = tr.querySelector('input,select');
-            if (first) first.focus();
+            if (first) { first.focus(); if (first.select) first.select(); }
         }
 
         function seGridSerialize() {
-            // Recolecta solo filas dirty
             var changes = [];
             SE_GRID_ROWS.forEach(function (r) {
                 if (!r._dirty) return;
@@ -785,8 +890,33 @@
         }
 
         document.addEventListener('DOMContentLoaded', seGridInit);
+
+        // ============================================================
+        //  Navegación con Enter en el grid: baja a la siguiente fila
+        // ============================================================
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter') return;
+            var target = e.target;
+            if (!target || !target.closest('#seGrid')) return;
+            if (target.tagName === 'TEXTAREA') return;
+            var td  = target.closest('td');
+            if (!td) return;
+            var tr  = td.closest('tr');
+            var colIdx = Array.from(tr.cells).indexOf(td);
+            var nextTr = tr.nextElementSibling;
+            if (!nextTr) {
+                seGridAddRow();
+                nextTr = document.getElementById('seGridBody').lastElementChild;
+            }
+            var nextTd = nextTr.cells[colIdx];
+            if (nextTd) {
+                var nextInput = nextTd.querySelector('input,select');
+                if (nextInput) { nextInput.focus(); if (nextInput.select) nextInput.select(); }
+            }
+            e.preventDefault();
+        });
     </script>
 
-    <%-- Payload inicial del grid (lo emite el code-behind como JSON) --%>
+    <%-- Payload inicial del grid --%>
     <script type="application/json" id="seGridInitialData"><asp:Literal ID="litGridDataJson" runat="server" /></script>
 </asp:Content>

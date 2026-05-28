@@ -68,15 +68,90 @@ namespace WebSGV.Views.Exportacion
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            // Validación de sesión + rol
             RolesHelper.ValidarAccesoSeccion("SEGUIMIENTO_EXPORTACION");
+
+            // Añadir atributos datalist a los campos de autocompletado del formulario
+            txtCliente.Attributes["list"]          = "seListClientes";
+            txtConductorOrigen.Attributes["list"]  = "seListConductores";
+            txtConductorDestino.Attributes["list"] = "seListConductores";
+            txtTracto1.Attributes["list"]          = "seListTractos";
+            txtTracto2.Attributes["list"]          = "seListTractos";
+            txtCarreta.Attributes["list"]          = "seListCarretas";
 
             if (!IsPostBack)
             {
+                CargarAutoComplete();
                 CargarGrid();
                 CargarBandeja();
                 CargarRegistrosRecientes();
             }
+        }
+
+        // ============================================================
+        //  Carga datos para autocompletado (conductores, tractos, clientes)
+        // ============================================================
+        private void CargarAutoComplete()
+        {
+            var conductores = new System.Collections.Generic.List<string>();
+            var tractos     = new System.Collections.Generic.List<string>();
+            var carretas    = new System.Collections.Generic.List<string>();
+            var clientes    = new System.Collections.Generic.List<string>();
+
+            try
+            {
+                using (var conn = new SqlConnection(ConnStr))
+                {
+                    conn.Open();
+
+                    using (var cmd = new SqlCommand(
+                        "SELECT LTRIM(RTRIM(ISNULL(nombre,'') + ' ' + ISNULL(apPaterno,'') + ISNULL(' ' + NULLIF(LTRIM(RTRIM(apMaterno)),''),'')))" +
+                        " AS nombre FROM Conductor WHERE activo = 1 ORDER BY apPaterno, nombre", conn))
+                    using (var rd = cmd.ExecuteReader())
+                        while (rd.Read())
+                        {
+                            string n = rd[0]?.ToString()?.Trim() ?? "";
+                            if (n.Length > 0) conductores.Add(n);
+                        }
+
+                    using (var cmd = new SqlCommand(
+                        "SELECT ISNULL(NULLIF(LTRIM(RTRIM(placaTracto)),''), '') AS placa FROM Tracto WHERE ISNULL(activo,1)=1 ORDER BY placaTracto", conn))
+                    using (var rd = cmd.ExecuteReader())
+                        while (rd.Read())
+                        {
+                            string p = rd[0]?.ToString()?.Trim() ?? "";
+                            if (p.Length > 0) tractos.Add(p);
+                        }
+
+                    using (var cmd = new SqlCommand(
+                        "SELECT ISNULL(NULLIF(LTRIM(RTRIM(placaCarreta)),''), '') AS placa FROM Carreta WHERE ISNULL(activo,1)=1 ORDER BY placaCarreta", conn))
+                    using (var rd = cmd.ExecuteReader())
+                        while (rd.Read())
+                        {
+                            string p = rd[0]?.ToString()?.Trim() ?? "";
+                            if (p.Length > 0) carretas.Add(p);
+                        }
+
+                    using (var cmd = new SqlCommand(
+                        "SELECT ISNULL(NULLIF(LTRIM(RTRIM(nombre)),''), '') AS nombre FROM Cliente WHERE activo = 1 ORDER BY nombre", conn))
+                    using (var rd = cmd.ExecuteReader())
+                        while (rd.Read())
+                        {
+                            string n = rd[0]?.ToString()?.Trim() ?? "";
+                            if (n.Length > 0) clientes.Add(n);
+                        }
+                }
+            }
+            catch { /* silencioso: si no carga el autocompletado el resto funciona igual */ }
+
+            var data = new
+            {
+                conductores,
+                tractos,
+                carretas,
+                clientes
+            };
+            litAutoComplete.Text = "<script>window.SE_AC=" +
+                Newtonsoft.Json.JsonConvert.SerializeObject(data) + ";</script>";
         }
 
         // ============================================================
@@ -235,14 +310,14 @@ namespace WebSGV.Views.Exportacion
                 txtFhLlegadaBodegaNacional.Text       = ToDtLocal(row, "fhLlegadaBodegaNacional");
                 txtFhIngresoBodegaNacional.Text       = ToDtLocal(row, "fhIngresoBodegaNacional");
                 txtFhSalidaBodegaNacional.Text        = ToDtLocal(row, "fhSalidaBodegaNacional");
-                txtBodegaNacional.Text                = ToStr(row, "bodegaNacional");
+                SetDdl(ddlBodegaNacional,    ToStr(row, "bodegaNacional"));
                 txtFhLlegadaCEBAF.Text                = ToDtLocal(row, "fhLlegadaCEBAF");
                 txtFhCruceEcuador.Text                = ToDtLocal(row, "fhCruceEcuador");
                 txtFhAutorizacionNacionalizacion.Text = ToDtLocal(row, "fhAutorizacionNacionalizacion");
-                txtBodegaEcuatoriana.Text             = ToStr(row, "bodegaEcuatoriana");
+                SetDdl(ddlBodegaEcuatoriana, ToStr(row, "bodegaEcuatoriana"));
                 txtFhLlegadaTCI.Text                  = ToDtLocal(row, "fhLlegadaTCI");
                 txtFhSalidaTCI.Text                   = ToDtLocal(row, "fhSalidaTCI");
-                txtBodegaDescarga.Text                = ToStr(row, "bodegaDescarga");
+                SetDdl(ddlBodegaDescarga,    ToStr(row, "bodegaDescarga"));
                 txtFhLlegadaPlantaEcuador.Text        = ToDtLocal(row, "fhLlegadaPlantaEcuador");
                 txtFhLlegadaAlmacen.Text              = ToDtLocal(row, "fhLlegadaAlmacen");
                 txtFhIngreso.Text                     = ToDtLocal(row, "fhIngreso");
@@ -362,14 +437,14 @@ namespace WebSGV.Views.Exportacion
                     AgregarFecha(cmd, "@fhLlegadaBodegaNacional",        txtFhLlegadaBodegaNacional.Text);
                     AgregarFecha(cmd, "@fhIngresoBodegaNacional",        txtFhIngresoBodegaNacional.Text);
                     AgregarFecha(cmd, "@fhSalidaBodegaNacional",         txtFhSalidaBodegaNacional.Text);
-                    AgregarTexto(cmd, "@bodegaNacional",                 txtBodegaNacional.Text, 150);
+                    AgregarTexto(cmd, "@bodegaNacional",                 ddlBodegaNacional.SelectedValue,    150);
                     AgregarFecha(cmd, "@fhLlegadaCEBAF",                 txtFhLlegadaCEBAF.Text);
                     AgregarFecha(cmd, "@fhCruceEcuador",                 txtFhCruceEcuador.Text);
                     AgregarFecha(cmd, "@fhAutorizacionNacionalizacion",  txtFhAutorizacionNacionalizacion.Text);
-                    AgregarTexto(cmd, "@bodegaEcuatoriana",              txtBodegaEcuatoriana.Text, 150);
+                    AgregarTexto(cmd, "@bodegaEcuatoriana",              ddlBodegaEcuatoriana.SelectedValue,  150);
                     AgregarFecha(cmd, "@fhLlegadaTCI",                   txtFhLlegadaTCI.Text);
                     AgregarFecha(cmd, "@fhSalidaTCI",                    txtFhSalidaTCI.Text);
-                    AgregarTexto(cmd, "@bodegaDescarga",                 txtBodegaDescarga.Text, 150);
+                    AgregarTexto(cmd, "@bodegaDescarga",                 ddlBodegaDescarga.SelectedValue,     150);
                     AgregarFecha(cmd, "@fhLlegadaPlantaEcuador",         txtFhLlegadaPlantaEcuador.Text);
                     AgregarFecha(cmd, "@fhLlegadaAlmacen",               txtFhLlegadaAlmacen.Text);
                     AgregarFecha(cmd, "@fhIngreso",                      txtFhIngreso.Text);
@@ -452,9 +527,9 @@ namespace WebSGV.Views.Exportacion
                 txtFhSalidaBase1, txtFhLlegadaTrujillo, txtFhRegistro, txtFhProgramacion,
                 txtFhIngresoPlanta, txtFhInicioCarga, txtFhTerminoCarga, txtFhSalidaPlanta,
                 txtFhLlegadaBase2, txtFhSalidaBase2, txtFhLlegadaBodegaNacional,
-                txtFhIngresoBodegaNacional, txtFhSalidaBodegaNacional, txtBodegaNacional,
+                txtFhIngresoBodegaNacional, txtFhSalidaBodegaNacional,
                 txtFhLlegadaCEBAF, txtFhCruceEcuador, txtFhAutorizacionNacionalizacion,
-                txtBodegaEcuatoriana, txtFhLlegadaTCI, txtFhSalidaTCI, txtBodegaDescarga,
+                txtFhLlegadaTCI, txtFhSalidaTCI,
                 txtFhLlegadaPlantaEcuador, txtFhLlegadaAlmacen, txtFhIngreso,
                 txtFhInicioDescarga, txtFhTerminoDescarga, txtFhSalida, txtMotivoRetraso
             })
@@ -464,7 +539,10 @@ namespace WebSGV.Views.Exportacion
             txtSacosRobados.Text = "0";
             txtSacosRotos.Text   = "0";
             txtSacosMojados.Text = "0";
-            ddlEstado.SelectedValue = "EN_CURSO";
+            ddlEstado.SelectedIndex         = 0;
+            ddlBodegaNacional.SelectedIndex    = 0;
+            ddlBodegaEcuatoriana.SelectedIndex = 0;
+            ddlBodegaDescarga.SelectedIndex    = 0;
         }
 
         // ============================================================
@@ -948,6 +1026,13 @@ namespace WebSGV.Views.Exportacion
         {
             int v;
             return int.TryParse(s, out v) ? v : 0;
+        }
+
+        private static void SetDdl(System.Web.UI.WebControls.DropDownList ddl, string value)
+        {
+            if (string.IsNullOrEmpty(value)) { ddl.SelectedIndex = 0; return; }
+            var item = ddl.Items.FindByValue(value);
+            ddl.SelectedIndex = item != null ? ddl.Items.IndexOf(item) : 0;
         }
 
         // ============================================================
