@@ -70,6 +70,14 @@ namespace WebSGV.Views.Exportacion
         {
             RolesHelper.ValidarAccesoSeccion("SEGUIMIENTO_EXPORTACION");
 
+            ConfigurarAtributosBusqueda(txtFiltroBandeja);
+            ConfigurarAtributosBusqueda(txtCliente);
+            ConfigurarAtributosBusqueda(txtConductorOrigen);
+            ConfigurarAtributosBusqueda(txtConductorDestino);
+            ConfigurarAtributosBusqueda(txtTracto1);
+            ConfigurarAtributosBusqueda(txtTracto2);
+            ConfigurarAtributosBusqueda(txtCarreta);
+
             // Añadir atributos datalist a los campos de autocompletado del formulario
             txtCliente.Attributes["list"]          = "seListClientes";
             txtConductorOrigen.Attributes["list"]  = "seListConductores";
@@ -399,12 +407,17 @@ namespace WebSGV.Views.Exportacion
         {
             try
             {
-                // Validación mínima: para crear/editar necesitamos al menos cliente + tracto1 + fhProgramacion
-                if (string.IsNullOrWhiteSpace(txtCliente.Text) ||
-                    string.IsNullOrWhiteSpace(txtTracto1.Text) ||
-                    string.IsNullOrWhiteSpace(txtFhProgramacion.Text))
+                if (!Page.IsValid)
                 {
-                    MostrarAlerta("Para abrir o actualizar un viaje necesitas al menos: Cliente, Tracto 1 y F.H. Programación.", "warning");
+                    MostrarAlerta("Hay campos con formato inválido. Revisa el detalle por campo.", "warning");
+                    ActivarTab("panel-form");
+                    return;
+                }
+
+                string mensajeValidacion;
+                if (!ValidarCamposCriticosServidor(out mensajeValidacion))
+                {
+                    MostrarAlerta(mensajeValidacion, "warning");
                     ActivarTab("panel-form");
                     return;
                 }
@@ -1025,7 +1038,58 @@ namespace WebSGV.Views.Exportacion
         private static int ParseIntSafe(string s)
         {
             int v;
-            return int.TryParse(s, out v) ? v : 0;
+            if (!int.TryParse(s, out v)) return 0;
+            return v < 0 ? 0 : v;
+        }
+
+        private static void ConfigurarAtributosBusqueda(TextBox textBox)
+        {
+            if (textBox == null) return;
+            textBox.Attributes["autocomplete"] = "off";
+            textBox.Attributes["autocorrect"] = "off";
+            textBox.Attributes["autocapitalize"] = "none";
+            textBox.Attributes["spellcheck"] = "false";
+            textBox.Attributes["data-lpignore"] = "true";
+            textBox.Attributes["data-form-type"] = "other";
+        }
+
+        private bool ValidarCamposCriticosServidor(out string mensaje)
+        {
+            var errores = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(txtCliente.Text))
+                errores.Add("Cliente es obligatorio.");
+
+            if (string.IsNullOrWhiteSpace(txtTracto1.Text))
+                errores.Add("Tracto 1 es obligatorio.");
+
+            if (string.IsNullOrWhiteSpace(txtFhProgramacion.Text))
+                errores.Add("F.H. Programación es obligatoria.");
+
+            if (!EsEnteroNoNegativo(txtSacosRobados.Text))
+                errores.Add("Sacos Robados debe ser un número entero mayor o igual a 0.");
+
+            if (!EsEnteroNoNegativo(txtSacosRotos.Text))
+                errores.Add("Sacos Rotos debe ser un número entero mayor o igual a 0.");
+
+            if (!EsEnteroNoNegativo(txtSacosMojados.Text))
+                errores.Add("Sacos Mojados debe ser un número entero mayor o igual a 0.");
+
+            if (errores.Count == 0)
+            {
+                mensaje = string.Empty;
+                return true;
+            }
+
+            mensaje = string.Join(" ", errores);
+            return false;
+        }
+
+        private static bool EsEnteroNoNegativo(string valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor)) return false;
+            int numero;
+            return int.TryParse(valor.Trim(), out numero) && numero >= 0;
         }
 
         private static void SetDdl(System.Web.UI.WebControls.DropDownList ddl, string value)

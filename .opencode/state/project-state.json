@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "project": "WebSGV",
-  "last_updated": "2026-05-27T13:26:00-05:00",
+  "last_updated": "2026-05-28T09:45:00-05:00",
   "current_task_id": null,
   "global_plan": [
     {
@@ -36,6 +36,13 @@
       "task_id": "TASK-005",
       "intent": "bugfix",
       "title": "Corregir autocompletado no deseado en campos de búsqueda",
+      "status": "completed",
+      "created_at": "2026-05-27T00:00:00Z"
+    },
+    {
+      "task_id": "TASK-006",
+      "intent": "bugfix",
+      "title": "Aplicar corrección de autocompletado/validación en RegistroSeguimiento.aspx",
       "status": "completed",
       "created_at": "2026-05-27T00:00:00Z"
     }
@@ -100,6 +107,13 @@
     {
       "task_id": "TASK-005.2",
       "parent_task_id": "TASK-005",
+      "owner": "developer",
+      "intent": "bugfix",
+      "status": "completed"
+    },
+    {
+      "task_id": "TASK-006.1",
+      "parent_task_id": "TASK-006",
       "owner": "developer",
       "intent": "bugfix",
       "status": "completed"
@@ -329,8 +343,8 @@
     ]
   },
   "metrics": {
-    "total_tasks_completed": 5,
-    "total_handoffs": 9,
+    "total_tasks_completed": 6,
+    "total_handoffs": 10,
     "context_compactions": 0,
     "parallel_groups_executed": 0,
     "verification_rejections": 4

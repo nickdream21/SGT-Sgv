@@ -332,7 +332,7 @@
                 </div>
 
                 <div class="se-bandeja-toolbar">
-                    <asp:TextBox ID="txtFiltroBandeja" runat="server" placeholder="Buscar por cliente, conductor o tracto..." />
+                    <asp:TextBox ID="txtFiltroBandeja" runat="server" placeholder="Buscar por cliente, conductor o tracto..." AutoCompleteType="Disabled" />
                     <asp:Button ID="btnBuscarBandeja" runat="server" Text="🔍 Buscar" CssClass="se-btn se-btn-ghost" OnClick="btnBuscarBandeja_Click" CausesValidation="false" />
                     <asp:Button ID="btnRefrescarBandeja" runat="server" Text="↻ Refrescar" CssClass="se-btn se-btn-ghost" OnClick="btnRefrescarBandeja_Click" CausesValidation="false" />
                     <asp:Button ID="btnNuevoViaje" runat="server" Text="➕ Nuevo viaje" CssClass="se-btn se-btn-primary" OnClick="btnNuevoViaje_Click" CausesValidation="false" />
@@ -410,11 +410,15 @@
                 <div class="se-acc-body">
                     <div class="se-grid">
                         <div class="se-field"><label>Cliente *</label>
-                            <asp:TextBox ID="txtCliente" runat="server" placeholder="Escribe para buscar..." /></div>
+                            <asp:TextBox ID="txtCliente" runat="server" placeholder="Escribe para buscar..." AutoCompleteType="Disabled" />
+                            <asp:RequiredFieldValidator ID="rfvCliente" runat="server" ControlToValidate="txtCliente" ValidationGroup="vgGuardarSeguimiento" Display="Dynamic" CssClass="text-danger" ErrorMessage="Cliente es obligatorio." />
+                        </div>
                         <div class="se-field"><label>Conductor Origen</label>
                             <asp:TextBox ID="txtConductorOrigen" runat="server" placeholder="Escribe el nombre..." /></div>
                         <div class="se-field"><label>Tracto 1 *</label>
-                            <asp:TextBox ID="txtTracto1" runat="server" placeholder="Placa..." /></div>
+                            <asp:TextBox ID="txtTracto1" runat="server" placeholder="Placa..." AutoCompleteType="Disabled" />
+                            <asp:RequiredFieldValidator ID="rfvTracto1" runat="server" ControlToValidate="txtTracto1" ValidationGroup="vgGuardarSeguimiento" Display="Dynamic" CssClass="text-danger" ErrorMessage="Tracto 1 es obligatorio." />
+                        </div>
                         <div class="se-field"><label>Carreta</label>
                             <asp:TextBox ID="txtCarreta" runat="server" placeholder="Placa..." /></div>
                         <div class="se-field"><label>Conductor Destino</label>
@@ -422,7 +426,9 @@
                         <div class="se-field"><label>Tracto 2</label>
                             <asp:TextBox ID="txtTracto2" runat="server" placeholder="Placa..." /></div>
                         <div class="se-field"><label>F.H. Programación *</label>
-                            <asp:TextBox ID="txtFhProgramacion" runat="server" TextMode="DateTimeLocal" /></div>
+                            <asp:TextBox ID="txtFhProgramacion" runat="server" TextMode="DateTimeLocal" />
+                            <asp:RequiredFieldValidator ID="rfvFhProgramacion" runat="server" ControlToValidate="txtFhProgramacion" ValidationGroup="vgGuardarSeguimiento" Display="Dynamic" CssClass="text-danger" ErrorMessage="F.H. Programación es obligatoria." />
+                        </div>
                         <div class="se-field"><label>Estado</label>
                             <asp:DropDownList ID="ddlEstado" runat="server">
                                 <asp:ListItem Text="En curso"   Value="EN_CURSO" />
@@ -547,11 +553,17 @@
                 <div class="se-acc-body">
                     <div class="se-grid">
                         <div class="se-field"><label>Sacos Robados</label>
-                            <asp:TextBox ID="txtSacosRobados" runat="server" TextMode="Number" Text="0" /></div>
+                            <asp:TextBox ID="txtSacosRobados" runat="server" TextMode="Number" Text="0" min="0" step="1" />
+                            <asp:RegularExpressionValidator ID="revSacosRobados" runat="server" ControlToValidate="txtSacosRobados" ValidationGroup="vgGuardarSeguimiento" Display="Dynamic" CssClass="text-danger" ValidationExpression="^\d+$" ErrorMessage="Sacos Robados debe ser un número entero mayor o igual a 0." />
+                        </div>
                         <div class="se-field"><label>Sacos Rotos</label>
-                            <asp:TextBox ID="txtSacosRotos" runat="server" TextMode="Number" Text="0" /></div>
+                            <asp:TextBox ID="txtSacosRotos" runat="server" TextMode="Number" Text="0" min="0" step="1" />
+                            <asp:RegularExpressionValidator ID="revSacosRotos" runat="server" ControlToValidate="txtSacosRotos" ValidationGroup="vgGuardarSeguimiento" Display="Dynamic" CssClass="text-danger" ValidationExpression="^\d+$" ErrorMessage="Sacos Rotos debe ser un número entero mayor o igual a 0." />
+                        </div>
                         <div class="se-field"><label>Sacos Mojados</label>
-                            <asp:TextBox ID="txtSacosMojados" runat="server" TextMode="Number" Text="0" /></div>
+                            <asp:TextBox ID="txtSacosMojados" runat="server" TextMode="Number" Text="0" min="0" step="1" />
+                            <asp:RegularExpressionValidator ID="revSacosMojados" runat="server" ControlToValidate="txtSacosMojados" ValidationGroup="vgGuardarSeguimiento" Display="Dynamic" CssClass="text-danger" ValidationExpression="^\d+$" ErrorMessage="Sacos Mojados debe ser un número entero mayor o igual a 0." />
+                        </div>
                     </div>
                     <div class="se-field" style="margin-top:14px;"><label>Motivo de retraso / Comentario</label>
                         <asp:TextBox ID="txtMotivoRetraso" runat="server" TextMode="MultiLine" Rows="3" />
@@ -562,8 +574,9 @@
             <div class="se-card">
                 <div class="se-actions">
                     <asp:Button ID="btnLimpiar" runat="server" Text="Limpiar" CssClass="se-btn se-btn-ghost" CausesValidation="false" OnClick="btnLimpiar_Click" />
-                    <asp:Button ID="btnGuardar" runat="server" Text="💾 Guardar avance" CssClass="se-btn se-btn-primary" OnClick="btnGuardar_Click" />
+                    <asp:Button ID="btnGuardar" runat="server" Text="💾 Guardar avance" CssClass="se-btn se-btn-primary" OnClick="btnGuardar_Click" ValidationGroup="vgGuardarSeguimiento" />
                 </div>
+                <asp:ValidationSummary ID="vsGuardarSeguimiento" runat="server" ValidationGroup="vgGuardarSeguimiento" DisplayMode="BulletList" CssClass="se-alert se-alert-warning" HeaderText="Corrige los siguientes campos:" />
                 <div style="text-align:right;font-size:12px;color:var(--se-muted);margin-top:8px;">
                     Solo se guardan los campos llenos. Los que dejes vacíos no se sobrescriben — puedes seguir avanzando otro día.
                 </div>
@@ -770,6 +783,11 @@
                 el.type = 'text';
                 if (col.list) el.setAttribute('list', col.list);
                 el.setAttribute('autocomplete', 'off');
+                el.setAttribute('autocorrect', 'off');
+                el.setAttribute('autocapitalize', 'none');
+                el.setAttribute('spellcheck', 'false');
+                el.setAttribute('data-lpignore', 'true');
+                el.setAttribute('data-form-type', 'other');
                 el.value = value == null ? '' : value;
             } else if (col.type === 'datetime') {
                 el = document.createElement('input');

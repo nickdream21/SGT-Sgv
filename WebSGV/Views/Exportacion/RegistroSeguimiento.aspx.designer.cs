@@ -14,8 +14,10 @@ namespace WebSGV.Views.Exportacion
 
         // Form fields
         protected global::System.Web.UI.WebControls.TextBox txtCliente;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvCliente;
         protected global::System.Web.UI.WebControls.TextBox txtConductorOrigen;
         protected global::System.Web.UI.WebControls.TextBox txtTracto1;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvTracto1;
         protected global::System.Web.UI.WebControls.TextBox txtCarreta;
         protected global::System.Web.UI.WebControls.TextBox txtConductorDestino;
         protected global::System.Web.UI.WebControls.TextBox txtTracto2;
@@ -25,6 +27,7 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.TextBox txtFhLlegadaTrujillo;
         protected global::System.Web.UI.WebControls.TextBox txtFhRegistro;
         protected global::System.Web.UI.WebControls.TextBox txtFhProgramacion;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvFhProgramacion;
         protected global::System.Web.UI.WebControls.TextBox txtFhIngresoPlanta;
         protected global::System.Web.UI.WebControls.TextBox txtFhInicioCarga;
         protected global::System.Web.UI.WebControls.TextBox txtFhTerminoCarga;
@@ -54,12 +57,16 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.TextBox txtFhSalida;
 
         protected global::System.Web.UI.WebControls.TextBox txtSacosRobados;
+        protected global::System.Web.UI.WebControls.RegularExpressionValidator revSacosRobados;
         protected global::System.Web.UI.WebControls.TextBox txtSacosRotos;
+        protected global::System.Web.UI.WebControls.RegularExpressionValidator revSacosRotos;
         protected global::System.Web.UI.WebControls.TextBox txtSacosMojados;
+        protected global::System.Web.UI.WebControls.RegularExpressionValidator revSacosMojados;
         protected global::System.Web.UI.WebControls.TextBox txtMotivoRetraso;
 
         protected global::System.Web.UI.WebControls.Button btnLimpiar;
         protected global::System.Web.UI.WebControls.Button btnGuardar;
+        protected global::System.Web.UI.WebControls.ValidationSummary vsGuardarSeguimiento;
         protected global::System.Web.UI.WebControls.FileUpload fileExcel;
         protected global::System.Web.UI.WebControls.Button btnImportar;
         protected global::System.Web.UI.WebControls.GridView gvRecientes;
