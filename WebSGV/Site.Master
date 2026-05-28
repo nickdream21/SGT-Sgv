@@ -557,10 +557,38 @@
                 .attr('autocomplete', 'off');
         }
 
+        // Oculta los campos de contraseña del modal convirtiéndolos a type="text"
+        // mientras el modal está cerrado. Chrome no ofrece credenciales guardadas
+        // en páginas que no tienen campos type="password" visibles.
+        var _passIds = [
+            '<%= txtContrasenaActual.ClientID %>',
+            '<%= txtNuevaContrasena.ClientID %>',
+            '<%= txtConfirmarContrasena.ClientID %>'
+        ];
+
+        function ocultarCamposPassword() {
+            _passIds.forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) { el.type = 'text'; el.value = ''; }
+            });
+        }
+
+        function mostrarCamposPassword() {
+            _passIds.forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) { el.type = 'password'; }
+            });
+        }
+
         $(document).ready(function () {
             console.log("Inicializando scripts maestros del SGV...");
 
             deshabilitarAutocomplete();
+            ocultarCamposPassword();
+
+            $('#modalCambiarContrasena')
+                .on('show.bs.modal', function () { mostrarCamposPassword(); })
+                .on('hidden.bs.modal', function () { ocultarCamposPassword(); });
 
             // Inicializar componentes
             $('.dropdown-toggle').dropdown();
