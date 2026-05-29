@@ -3,7 +3,44 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-3">
         <asp:Label ID="lblMensaje" runat="server"></asp:Label>
-    </asp:Panel>
+</asp:Panel>
+
+    <style type="text/css">
+        .pdf-liquidacion-contenedor {
+            position: relative;
+            height: calc(100vh - 230px);
+            min-height: 420px;
+            overflow: hidden;
+            background-color: #f8f9fa;
+        }
+
+        .pdf-liquidacion-loader {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            background-color: #f8f9fa;
+            z-index: 2;
+        }
+
+        .pdf-liquidacion-iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
+            visibility: hidden;
+        }
+
+        .pdf-liquidacion-contenedor.cargado .pdf-liquidacion-loader {
+            display: none;
+        }
+
+        .pdf-liquidacion-contenedor.cargado .pdf-liquidacion-iframe {
+            visibility: visible;
+        }
+    </style>
 
     <div class="container-fluid px-4">
         <div class="row mb-4">
@@ -155,7 +192,47 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalPdfLiquidacion" tabindex="-1" role="dialog" aria-labelledby="modalPdfLiquidacionTitle" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content shadow-sm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalPdfLiquidacionTitle">
+                        <i class="fas fa-file-pdf text-danger mr-2"></i>PDF firmado de liquidación
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-0">
+                    <div id="pdfContenedor" class="pdf-liquidacion-contenedor">
+                        <div id="pdfCargando" class="pdf-liquidacion-loader" role="status" aria-live="polite">
+                            <div class="text-center">
+                                <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                                <div>Cargando documento...</div>
+                            </div>
+                        </div>
+                        <iframe id="iframePdfLiquidacion" class="pdf-liquidacion-iframe" title="Vista previa de PDF de liquidación"></iframe>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <div class="text-muted small" id="lblEstadoPdfLiquidacion">Vista previa en línea del documento oficial.</div>
+                    <div>
+                        <button type="button" class="btn btn-outline-primary mr-2" id="btnAbrirPdfNuevaPestana">
+                            <i class="fas fa-external-link-alt mr-1"></i>Abrir en nueva pestaña
+                        </button>
+                        <button type="button" class="btn btn-primary mr-2" id="btnDescargarPdfLiquidacion">
+                            <i class="fas fa-download mr-1"></i>Descargar PDF
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="text/javascript">
+        var _urlPdfActual = '';
+
         function htmlEncode(value) {
             return $('<div/>').text(value == null ? '' : value).html();
         }
@@ -330,7 +407,7 @@
                 success: function (response) {
                     var r = response && response.d ? response.d : null;
                     if (r && r.success && r.url) {
-                        window.open(r.url, '_blank');
+                        abrirModalPdfLiquidacion(r.url);
                         return;
                     }
 
@@ -342,6 +419,22 @@
                     alert('Error al abrir el PDF de la liquidación.');
                 }
             });
+        }
+
+        function abrirModalPdfLiquidacion(url) {
+            _urlPdfActual = url || '';
+            if (!_urlPdfActual) {
+                return;
+            }
+
+            var $contenedor = $('#pdfContenedor');
+            var $iframe = $('#iframePdfLiquidacion');
+
+            $contenedor.removeClass('cargado');
+            $iframe.attr('src', 'about:blank');
+            $iframe.attr('src', _urlPdfActual);
+            $('#lblEstadoPdfLiquidacion').text('Vista previa en línea del documento oficial.');
+            $('#modalPdfLiquidacion').modal('show');
         }
 
         var _timerConductor = null;
@@ -386,6 +479,35 @@
         });
 
         $(document).ready(function () {
+            $('#iframePdfLiquidacion').on('load', function () {
+                if (!_urlPdfActual) {
+                    return;
+                }
+                $('#pdfContenedor').addClass('cargado');
+            });
+
+            $('#btnAbrirPdfNuevaPestana').on('click', function () {
+                if (!_urlPdfActual) {
+                    return;
+                }
+                window.open(_urlPdfActual, '_blank');
+            });
+
+            $('#btnDescargarPdfLiquidacion').on('click', function () {
+                if (!_urlPdfActual) {
+                    return;
+                }
+
+                var separador = _urlPdfActual.indexOf('?') >= 0 ? '&' : '?';
+                window.open(_urlPdfActual + separador + 'download=1', '_blank');
+            });
+
+            $('#modalPdfLiquidacion').on('hidden.bs.modal', function () {
+                _urlPdfActual = '';
+                $('#pdfContenedor').removeClass('cargado');
+                $('#iframePdfLiquidacion').attr('src', 'about:blank');
+            });
+
             buscarLiquidaciones();
         });
     </script>

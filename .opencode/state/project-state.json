@@ -1,8 +1,8 @@
 {
   "schema_version": "2.0",
   "project": "WebSGV",
-  "last_updated": "2026-05-29T08:32:00-05:00",
-  "current_task_id": "TASK-015",
+  "last_updated": "2026-05-29T09:30:00-05:00",
+  "current_task_id": "TASK-017",
   "global_plan": [
     {
       "task_id": "TASK-001",
@@ -108,6 +108,20 @@
       "title": "Mostrar PDF firmado al dar Ver en LiquidacionesAprobadasContabilidad.aspx",
       "status": "needs_clarification",
       "created_at": "2026-05-29T08:25:00Z"
+    },
+    {
+      "task_id": "TASK-016",
+      "intent": "bugfix",
+      "title": "Visualización profesional en modal del PDF firmado y ajuste de permisos para CONTABILIDAD",
+      "status": "needs_clarification",
+      "created_at": "2026-05-29T09:05:00Z"
+    },
+    {
+      "task_id": "TASK-017",
+      "intent": "bugfix",
+      "title": "Corregir loader persistente y scroll artificial en modal PDF de LiquidacionesAprobadasContabilidad",
+      "status": "needs_clarification",
+      "created_at": "2026-05-29T09:25:00Z"
     }
   ],
   "active_subtasks": [
@@ -250,6 +264,20 @@
       "owner": "developer",
       "intent": "bugfix",
       "status": "needs_clarification"
+    },
+    {
+      "task_id": "TASK-016.1",
+      "parent_task_id": "TASK-016",
+      "owner": "developer",
+      "intent": "bugfix",
+      "status": "needs_clarification"
+    },
+    {
+      "task_id": "TASK-017.1",
+      "parent_task_id": "TASK-017",
+      "owner": "developer",
+      "intent": "bugfix",
+      "status": "needs_clarification"
     }
   ],
   "context_summary": "Proyecto ASP.NET Web Forms (.NET 4.8). Sistema multi-agente refactorizado a v2 (2026-04-29): 1 orquestador + 6 subagentes con paralelismo seguro, intent routing, evidence-gating obligatorio antes de cerrar tareas, y 11 skills cargables (frontend-design, systematic-debugging, verification-before-completion, test-driven-development, nueva-pagina-aspx, nueva-sp-sql, sql-injection-y-sqlcommand-seguro, itextsharp-pdf-webforms, auditoria-y-sesiones-sgv, msbuild-csproj-sync, viewstate-postback-webforms). El agente DBA usa SQL MCP Server (Data API Builder) — DDL sigue requiriendo despliegue manual.",
@@ -333,6 +361,16 @@
       "ts": "2026-05-29",
       "decision": "TASK-015.1 implementa que el botón 'Ver' en LiquidacionesAprobadasContabilidad abra el PDF firmado y agrega botón separado 'Detalle' para preservar el modal; se rechaza por verification gate porque build_exit_code=127 (msbuild no disponible en entorno actual).",
       "task_id": "TASK-015"
+    },
+    {
+      "ts": "2026-05-29",
+      "decision": "TASK-016.1 implementa visualización profesional del PDF firmado en modal (iframe + acciones abrir/descargar) y corrige autorización en DescargarPdfOrdenViaje.aspx.cs para rol CONTABILIDAD usando RolesHelper; se rechaza por verification gate por build_exit_code=127 al no haber msbuild en entorno actual.",
+      "task_id": "TASK-016"
+    },
+    {
+      "ts": "2026-05-29",
+      "decision": "TASK-017.1 corrige bug visual del modal PDF aplicando loader como overlay absoluto y estado por clase para ocultarlo al cargar el iframe, evitando scroll artificial; se rechaza por verification gate por build_exit_code=127 (msbuild no disponible en entorno actual).",
+      "task_id": "TASK-017"
     }
   ],
   "intent_routing_table": {
@@ -517,9 +555,9 @@
   },
   "metrics": {
     "total_tasks_completed": 10,
-    "total_handoffs": 21,
+    "total_handoffs": 23,
     "context_compactions": 0,
     "parallel_groups_executed": 0,
-    "verification_rejections": 10
+    "verification_rejections": 12
   }
 }

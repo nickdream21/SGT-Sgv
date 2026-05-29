@@ -34,14 +34,12 @@ namespace WebSGV.Views
             if (Session["IdUsuario"] != null)
                 int.TryParse(Session["IdUsuario"].ToString(), out idUsuario);
 
-            if (idUsuario == 0)
+            if (Session["UsuarioID"] == null || idUsuario == 0)
             {
                 Response.Redirect(ResolveUrl("~/Views/Login.aspx?returnUrl=" +
                     Server.UrlEncode(Request.RawUrl)), true);
                 return;
             }
-
-            string rol = (Session["Rol"] as string ?? "").ToUpperInvariant();
 
             // 2) Parámetros
             int idOrdenViaje;
@@ -55,7 +53,7 @@ namespace WebSGV.Views
             try
             {
                 // 3) Autorización por rol
-                if (!UsuarioPuedeVerOrden(rol, idUsuario, idOrdenViaje))
+                if (!UsuarioPuedeVerOrden(idUsuario, idOrdenViaje))
                 {
                     EscribirError(403, "No tiene permisos para descargar este documento.");
                     return;
@@ -133,12 +131,12 @@ namespace WebSGV.Views
             }
         }
 
-        private static bool UsuarioPuedeVerOrden(string rol, int idUsuario, int idOrdenViaje)
+        private static bool UsuarioPuedeVerOrden(int idUsuario, int idOrdenViaje)
         {
-            if (rol == "ADMIN" || rol == "ADMINISTRADOR" || rol == "ADMINISTRADOR DE SISTEMA")
+            if (RolesHelper.EsAdmin() || RolesHelper.EsContabilidad())
                 return true;
 
-            if (rol != "CONDUCTOR" && rol != "CHOFER")
+            if (!RolesHelper.EsConductor())
                 return false;
 
             // Verificar que la orden pertenezca al conductor autenticado.
