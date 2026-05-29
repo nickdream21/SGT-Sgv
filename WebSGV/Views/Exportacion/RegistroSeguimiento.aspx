@@ -248,8 +248,11 @@
                     <div class="spacer"></div>
                     <div class="se-grid-status" id="seGridStatus">
                         <span id="seGridRowCount">0</span> filas ·
-                        <span id="seGridDirtyCount" class="dirty">0</span> con cambios
+                        <span id="seGridDirtyCount" class="dirty">0</span> con cambios ·
+                        <span id="seGridDraftStatus">sin borrador local</span>
                     </div>
+                    <button type="button" class="se-btn se-btn-ghost" onclick="seGridSaveDraftNow()">📝 Guardar borrador</button>
+                    <button type="button" class="se-btn se-btn-ghost" onclick="seGridClearDraft(true)">🗑 Limpiar borrador</button>
                     <asp:Button ID="btnGuardarGrid" runat="server" Text="💾 Guardar cambios" CssClass="se-btn se-btn-primary" OnClick="btnGuardarGrid_Click" OnClientClick="return seGridSerialize();" />
                 </div>
 
@@ -759,6 +762,8 @@
         var SE_GRID_DATA   = [];
         var SE_GRID_ROWS   = [];
         var SE_GRID_NEXTID = -1;
+        var SE_GRID_AUTOSAVE_TIMER = null;
+        var SE_GRID_DRAFT_KEY = 'SGV_SE_GRID_DRAFT_V1';
 
         function seToInputDate(v) {
             if (!v) return '';
@@ -828,6 +833,7 @@
                 tr.classList.add('row-new');
             }
             seGridUpdateStatus();
+            seGridQueueDraftSave();
         }
 
         function seGridUpdateStatus() {
@@ -835,8 +841,96 @@
             SE_GRID_ROWS.forEach(function (r) { if (r._dirty) dirty++; });
             var rc = document.getElementById('seGridRowCount');
             var dc = document.getElementById('seGridDirtyCount');
+            var ds = document.getElementById('seGridDraftStatus');
             if (rc) rc.textContent = SE_GRID_ROWS.length;
             if (dc) dc.textContent = dirty;
+            if (ds) {
+                var m = seGridGetDraftMeta();
+                ds.textContent = m.hasDraft ? ('borrador: ' + m.updatedAt) : 'sin borrador local';
+            }
+        }
+
+        function seGridGetDraftMeta() {
+            try {
+                var raw = localStorage.getItem(SE_GRID_DRAFT_KEY);
+                if (!raw) return { hasDraft: false, updatedAt: '' };
+                var d = JSON.parse(raw);
+                if (!d || !d.updatedAt) return { hasDraft: false, updatedAt: '' };
+                return { hasDraft: true, updatedAt: d.updatedAt };
+            } catch (e) {
+                return { hasDraft: false, updatedAt: '' };
+            }
+        }
+
+        function seGridSnapshotDraftRows() {
+            return SE_GRID_ROWS.map(function (r) {
+                var c = { idSeguimiento: r.idSeguimiento || 0, _dirty: !!r._dirty };
+                SE_GRID_COLS.forEach(function (col) {
+                    var v = r[col.key];
+                    c[col.key] = (v === undefined || v === null) ? '' : String(v);
+                });
+                return c;
+            });
+        }
+
+        function seGridSaveDraftNow() {
+            try {
+                var payload = {
+                    version: 1,
+                    updatedAt: new Date().toLocaleString('es-PE'),
+                    rows: seGridSnapshotDraftRows()
+                };
+                localStorage.setItem(SE_GRID_DRAFT_KEY, JSON.stringify(payload));
+            } catch (e) { }
+            seGridUpdateStatus();
+        }
+
+        function seGridQueueDraftSave() {
+            if (SE_GRID_AUTOSAVE_TIMER) clearTimeout(SE_GRID_AUTOSAVE_TIMER);
+            SE_GRID_AUTOSAVE_TIMER = setTimeout(function () {
+                seGridSaveDraftNow();
+            }, 700);
+        }
+
+        function seGridClearDraft(askConfirm) {
+            if (askConfirm && !confirm('¿Eliminar borrador local del navegador para esta grilla?')) return;
+            try { localStorage.removeItem(SE_GRID_DRAFT_KEY); } catch (e) { }
+            seGridUpdateStatus();
+        }
+
+        function seGridMergeDraftWithServer(serverRows, draftRows) {
+            var merged = [];
+            var byId = {};
+            (serverRows || []).forEach(function (s) {
+                var c = Object.assign({}, s, { _dirty: false });
+                byId[String(c.idSeguimiento || 0)] = c;
+                merged.push(c);
+            });
+
+            (draftRows || []).forEach(function (d) {
+                var key = String(d.idSeguimiento || 0);
+                if ((d.idSeguimiento || 0) > 0 && byId[key]) {
+                    SE_GRID_COLS.forEach(function (col) {
+                        byId[key][col.key] = d[col.key] == null ? '' : d[col.key];
+                    });
+                    byId[key]._dirty = true;
+                } else {
+                    var n = { idSeguimiento: d.idSeguimiento || SE_GRID_NEXTID--, _dirty: true };
+                    SE_GRID_COLS.forEach(function (col) { n[col.key] = d[col.key] == null ? '' : d[col.key]; });
+                    merged.push(n);
+                }
+            });
+            return merged;
+        }
+
+        function seGridRestoreDraft() {
+            try {
+                var raw = localStorage.getItem(SE_GRID_DRAFT_KEY);
+                if (!raw) return;
+                var d = JSON.parse(raw);
+                if (!d || !d.rows || !d.rows.length) return;
+                SE_GRID_ROWS = seGridMergeDraftWithServer(SE_GRID_ROWS, d.rows);
+            } catch (e) { }
         }
 
         function seGridRenderRow(row, idx) {
@@ -873,6 +967,7 @@
             var tr = body.lastElementChild;
             var first = tr.querySelector('input,select');
             if (first) { first.focus(); if (first.select) first.select(); }
+            seGridQueueDraftSave();
         }
 
         function seGridSerialize() {
@@ -906,8 +1001,13 @@
                 SE_GRID_DATA = [];
             }
             SE_GRID_ROWS = SE_GRID_DATA.map(function (r) { return Object.assign({}, r, { _dirty: false }); });
+            seGridRestoreDraft();
             seGridRender();
         }
+
+        window.addEventListener('beforeunload', function () {
+            seGridSaveDraftNow();
+        });
 
         document.addEventListener('DOMContentLoaded', seGridInit);
 

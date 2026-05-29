@@ -1449,6 +1449,7 @@ namespace WebSGV.Views.Exportacion
             }
 
             hdnGridChanges.Value = "";
+            ScriptManager.RegisterStartupScript(this, GetType(), "seGridClearDraftAfterServerSave", "try{localStorage.removeItem('SGV_SE_GRID_DRAFT_V1');}catch(e){}", true);
             CargarGrid();
             CargarBandeja();
             CargarRegistrosRecientes();

@@ -200,7 +200,7 @@
 
         <!-- Navbar -->
         <nav class="navbar navbar-expand-lg navbar-light bg-light" runat="server" id="Navbar">
-            <a class="navbar-brand" href="<%= EsAdminGrifo ? "DashboardGrifo.aspx" : (EsAdminSistema ? "DashboardAdminSistema.aspx" : (EsAdmin ? "Inicio.aspx" : "DashboardConductor.aspx")) %>">
+            <a class="navbar-brand" href="<%= EsAdminGrifo ? ResolveUrl("~/Views/DashboardGrifo.aspx") : (EsAdminSistema ? ResolveUrl("~/Views/DashboardAdminSistema.aspx") : (EsAdmin ? ResolveUrl("~/Views/Inicio.aspx") : ResolveUrl("~/Views/DashboardConductor.aspx"))) %>">
                 <i class="fas fa-truck-moving"></i>Sistema SGV
             </a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
@@ -220,10 +220,10 @@
                             <i class="fas fa-box-open"></i>Despacho
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdownDespacho">
-                            <a class="dropdown-item" href="RegistroDespacho.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroDespacho.aspx") %>'>
                                 <i class="fas fa-plus-circle"></i>Agregar Despacho
                             </a>
-                            <a class="dropdown-item" href="ListaDespachos.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ListaDespachos.aspx") %>'>
                                 <i class="fas fa-list-ul"></i>Listar Despachos
                             </a>
                         </div>
@@ -235,10 +235,10 @@
                             <i class="fas fa-route"></i>Orden de Viaje
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdownOrdenViaje">
-                            <a class="dropdown-item" href="LiquidacionesPendientes.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/LiquidacionesPendientes.aspx") %>'>
                                 <i class="fas fa-clock"></i>Liquidaciones Pendientes
                             </a>
-                            <a class="dropdown-item" href="ReportesOrdenesViaje.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ReportesOrdenesViaje.aspx") %>'>
                                 <i class="fas fa-file-invoice-dollar"></i>Reportes
                             </a>
                         </div>
@@ -250,23 +250,23 @@
                             <i class="fas fa-database"></i>Registro
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdownRegistro">
-                            <a class="dropdown-item" href="RegistroChoferes.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroChoferes.aspx") %>'>
                                 <i class="fas fa-user-tie"></i>Conductores
                             </a>
-                            <a class="dropdown-item" href="RegistroTractos.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroTractos.aspx") %>'>
                                 <i class="fas fa-truck"></i>Tractos
                             </a>
-                            <a class="dropdown-item" href="RegistroSemiremolques.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroSemiremolques.aspx") %>'>
                                 <i class="fas fa-trailer"></i>Semiremolques
                             </a>
-                            <a class="dropdown-item" href="RegistroClientes.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroClientes.aspx") %>'>
                                 <i class="fas fa-building"></i>Clientes
                             </a>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="RegistroPeajes.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroPeajes.aspx") %>'>
                                 <i class="fas fa-road"></i>Peajes
                             </a>
-                            <a class="dropdown-item" href="RegistroPlantas.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroPlantas.aspx") %>'>
                                 <i class="fas fa-industry"></i>Plantas
                             </a>
                                 </div>
@@ -300,14 +300,14 @@
                             <i class="fas fa-shield-alt"></i>Administración
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdownAdminSistema">
-                            <a class="dropdown-item" href="DashboardAdminSistema.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/DashboardAdminSistema.aspx") %>'>
                                 <i class="fas fa-tachometer-alt"></i>Mi Panel
                             </a>
-                            <a class="dropdown-item" href="GestionUsuarios.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/GestionUsuarios.aspx") %>'>
                                 <i class="fas fa-users-cog"></i>Gestión de Usuarios
                             </a>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="Auditoria.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/Auditoria.aspx") %>'>
                                 <i class="fas fa-history"></i>Auditoría del Sistema
                             </a>
                         </div>
@@ -319,7 +319,7 @@
                         { %>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="DashboardGrifo.aspx">
+                        <a class="nav-link" href='<%= ResolveUrl("~/Views/DashboardGrifo.aspx") %>'>
                             <i class="fas fa-home"></i>Inicio
                         </a>
                     </li>
@@ -329,14 +329,14 @@
                             <i class="fas fa-gas-pump"></i>Abastecimiento
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdownAbastecimiento">
-                            <a class="dropdown-item" href="AgregarAbastecimiento.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/AgregarAbastecimiento.aspx") %>'>
                                 <i class="fas fa-plus-circle"></i>Registrar Abastecimiento
                             </a>
-                            <a class="dropdown-item" href="BuscarAbastecimiento.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/BuscarAbastecimiento.aspx") %>'>
                                 <i class="fas fa-search"></i>Buscar Abastecimiento
                             </a>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="ReporteAbastecimiento.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ReporteAbastecimiento.aspx") %>'>
                                 <i class="fas fa-file-alt"></i>Reporte
                             </a>
                         </div>
@@ -347,7 +347,7 @@
                             <i class="fas fa-database"></i>Registro
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdownRegistroGrifo">
-                            <a class="dropdown-item" href="RegistroChoferes.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroChoferes.aspx") %>'>
                                 <i class="fas fa-user-tie"></i>Conductores
                             </a>
                         </div>
@@ -360,7 +360,7 @@
                         { %>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="Inicio.aspx">
+                        <a class="nav-link" href='<%= ResolveUrl("~/Views/Inicio.aspx") %>'>
                             <i class="fas fa-home"></i>Inicio
                         </a>
                     </li>
@@ -370,24 +370,24 @@
                             <i class="fas fa-database"></i>Registro
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdownRegistroMaquinaria">
-                            <a class="dropdown-item" href="RegistroOperadores.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroOperadores.aspx") %>'>
                                 <i class="fas fa-hard-hat"></i>Operadores
                             </a>
-                            <a class="dropdown-item" href="RegistroEquiposMaquinaria.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroEquiposMaquinaria.aspx") %>'>
                                 <i class="fas fa-cogs"></i>Equipos / Maquinaria
                             </a>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="RegistroClientesObra.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroClientesObra.aspx") %>'>
                                 <i class="fas fa-building"></i>Clientes de Obra
                             </a>
-                            <a class="dropdown-item" href="RegistroObras.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroObras.aspx") %>'>
                                 <i class="fas fa-hard-hat"></i>Obras
                             </a>
                         </div>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="AsignacionesMaquinaria.aspx">
+                        <a class="nav-link" href='<%= ResolveUrl("~/Views/AsignacionesMaquinaria.aspx") %>'>
                             <i class="fas fa-project-diagram"></i>Asignaciones
                         </a>
                     </li>
@@ -399,7 +399,7 @@
                         { %>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="DashboardOperador.aspx">
+                        <a class="nav-link" href='<%= ResolveUrl("~/Views/DashboardOperador.aspx") %>'>
                             <i class="fas fa-hard-hat"></i>Mi Dashboard
                         </a>
                     </li>
@@ -411,7 +411,7 @@
                         { %>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="DashboardConductor.aspx">
+                        <a class="nav-link" href='<%= ResolveUrl("~/Views/DashboardConductor.aspx") %>'>
                             <i class="fas fa-home"></i>Inicio
                         </a>
                     </li>
@@ -429,7 +429,7 @@
                             </a>
                             <% if (EsAdminSistema) { %>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="Auditoria.aspx">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/Auditoria.aspx") %>'>
                                 <i class="fas fa-shield-alt"></i>Auditoría del Sistema
                             </a>
                             <% } %>
