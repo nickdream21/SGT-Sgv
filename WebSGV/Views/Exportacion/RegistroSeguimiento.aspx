@@ -220,8 +220,6 @@
         <!-- Tabs -->
         <div class="se-tabs" role="tablist">
             <button type="button" class="se-tab active" data-target="panel-grid">📊 Grid (Excel)</button>
-            <button type="button" class="se-tab"        data-target="panel-bandeja">🚛 Viajes en curso</button>
-            <button type="button" class="se-tab"        data-target="panel-form">📝 Registro / Edición</button>
             <button type="button" class="se-tab"        data-target="panel-import">📂 Importar Excel</button>
             <button type="button" class="se-tab"        data-target="panel-list">📋 Historial</button>
         </div>

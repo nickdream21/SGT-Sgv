@@ -65,7 +65,7 @@
                         <input type="text" id="txtNumeroLiquidacion" class="form-control" placeholder="Ej. OV-000123" maxlength="30" />
                     </div>
                     <div class="col-md-4 d-flex align-items-end">
-                        <button type="button" class="btn btn-primary mr-2" onclick="buscarLiquidaciones()">Buscar</button>
+                        <button type="button" class="btn btn-primary mr-2" onclick="buscarLiquidaciones(true)">Buscar</button>
                         <button type="button" class="btn btn-secondary" onclick="limpiarFiltros()">Limpiar</button>
                     </div>
                 </div>
@@ -313,23 +313,75 @@
             $('#tbodyDetallePeajes').html(html);
         }
 
+        var _timerBusquedaProgresiva = null;
+        var _timerConductor = null;
+        var _ultimaClaveBusqueda = '';
+
+        function obtenerFiltrosBusqueda() {
+            return {
+                idConductor: parseInt($('#hfConductorId').val() || '0', 10),
+                conductor: ($('#txtConductor').val() || '').trim(),
+                numero: ($('#txtNumeroLiquidacion').val() || '').trim()
+            };
+        }
+
+        function puedeBuscarAutomaticamente(filtros) {
+            if (!filtros) {
+                return false;
+            }
+
+            if (!filtros.conductor && !filtros.numero && filtros.idConductor <= 0) {
+                return true;
+            }
+
+            if (filtros.idConductor > 0) {
+                return true;
+            }
+
+            return filtros.conductor.length >= 2 || filtros.numero.length >= 2;
+        }
+
+        function programarBusquedaProgresiva() {
+            clearTimeout(_timerBusquedaProgresiva);
+            clearTimeout(_timerConductor);
+            _timerBusquedaProgresiva = setTimeout(function () {
+                var filtros = obtenerFiltrosBusqueda();
+                if (!puedeBuscarAutomaticamente(filtros)) {
+                    return;
+                }
+
+                buscarLiquidaciones(false);
+            }, 400);
+        }
+
         function limpiarFiltros() {
             $('#txtConductor').val('');
             $('#hfConductorId').val('');
             $('#txtNumeroLiquidacion').val('');
-            buscarLiquidaciones();
+            _ultimaClaveBusqueda = '';
+            buscarLiquidaciones(false);
         }
 
-        function buscarLiquidaciones() {
-            var idConductor = parseInt($('#hfConductorId').val() || '0', 10);
-            var numero = ($('#txtNumeroLiquidacion').val() || '').trim();
+        function buscarLiquidaciones(forzarManual) {
+            var filtros = obtenerFiltrosBusqueda();
+            var esManual = !!forzarManual;
+
+            if (!esManual && !puedeBuscarAutomaticamente(filtros)) {
+                return;
+            }
+
+            var clave = [filtros.idConductor, filtros.conductor.toLowerCase(), filtros.numero.toLowerCase()].join('|');
+            if (!esManual && clave === _ultimaClaveBusqueda) {
+                return;
+            }
+            _ultimaClaveBusqueda = clave;
 
             $.ajax({
                 type: 'POST',
-                url: 'LiquidacionesPendientes.aspx/ObtenerLiquidacionesAprobadas',
+                url: 'LiquidacionesAprobadasContabilidad.aspx/ObtenerLiquidacionesAprobadasContabilidad',
                 contentType: 'application/json; charset=utf-8',
                 dataType: 'json',
-                data: JSON.stringify({ idConductor: idConductor, fechaDesde: '', fechaHasta: '', numeroOrden: numero }),
+                data: JSON.stringify({ idConductor: filtros.idConductor, numeroOrden: filtros.numero, nombreConductor: filtros.idConductor > 0 ? '' : filtros.conductor }),
                 success: function (response) {
                     var data = response && response.d ? response.d : [];
                     $('#lblTotalResultados').text(data.length);
@@ -437,23 +489,30 @@
             $('#modalPdfLiquidacion').modal('show');
         }
 
-        var _timerConductor = null;
         $('#txtConductor').on('input', function () {
-            clearTimeout(_timerConductor);
+            clearTimeout(_timerBusquedaProgresiva);
             var termino = ($(this).val() || '').trim();
-            if (termino.length < 2) {
+            $('#hfConductorId').val('');
+
+            if (!termino.length) {
                 $('#conductorSugg').hide().empty();
-                $('#hfConductorId').val('');
+                programarBusquedaProgresiva();
                 return;
             }
 
+            if (termino.length < 2) {
+                $('#conductorSugg').hide().empty();
+                return;
+            }
+
+            var terminoSolicitud = termino;
             _timerConductor = setTimeout(function () {
                 $.ajax({
                     type: 'POST',
                     url: 'LiquidacionesPendientes.aspx/BuscarConductores',
                     contentType: 'application/json; charset=utf-8',
                     dataType: 'json',
-                    data: JSON.stringify({ termino: termino }),
+                    data: JSON.stringify({ termino: terminoSolicitud }),
                     success: function (response) {
                         var data = response && response.d ? response.d : [];
                         if (!data.length) {
@@ -469,6 +528,8 @@
                         $('#conductorSugg').html(html).show();
                     }
                 });
+
+                programarBusquedaProgresiva();
             }, 250);
         });
 
@@ -476,6 +537,11 @@
             $('#txtConductor').val($(this).attr('data-text'));
             $('#hfConductorId').val($(this).attr('data-id'));
             $('#conductorSugg').hide().empty();
+            buscarLiquidaciones(false);
+        });
+
+        $('#txtNumeroLiquidacion').on('input', function () {
+            programarBusquedaProgresiva();
         });
 
         $(document).ready(function () {
@@ -508,7 +574,7 @@
                 $('#iframePdfLiquidacion').attr('src', 'about:blank');
             });
 
-            buscarLiquidaciones();
+            buscarLiquidaciones(false);
         });
     </script>
 </asp:Content>
