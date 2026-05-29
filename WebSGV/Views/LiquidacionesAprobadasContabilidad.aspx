@@ -271,7 +271,10 @@
                             '<td>' + htmlEncode(item.FechaSalida) + ' al ' + htmlEncode(item.FechaLlegada) + '</td>' +
                             '<td class="text-right">' + Number(item.BalanceSoles || 0).toFixed(2) + '</td>' +
                             '<td class="text-right">' + Number(item.BalanceDolares || 0).toFixed(2) + '</td>' +
-                            '<td class="text-center"><button type="button" class="btn btn-info btn-sm" onclick="verDetalle(' + item.IdOrdenViaje + ')"><i class="fas fa-eye"></i> Ver</button></td>' +
+                            '<td class="text-center">' +
+                                '<button type="button" class="btn btn-info btn-sm mr-1" onclick="verPdfLiquidacion(' + item.IdOrdenViaje + ')"><i class="fas fa-eye"></i> Ver</button>' +
+                                '<button type="button" class="btn btn-outline-secondary btn-sm" onclick="verDetalle(' + item.IdOrdenViaje + ')"><i class="fas fa-list"></i> Detalle</button>' +
+                            '</td>' +
                             '</tr>';
                     }
                     $('#tbodyLiquidaciones').html(html);
@@ -309,6 +312,34 @@
                     renderDetallePeajes(d);
 
                     $('#modalDetalleLiquidacion').modal('show');
+                }
+            });
+        }
+
+        function verPdfLiquidacion(idOrdenViaje) {
+            if (!idOrdenViaje) {
+                return;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: 'LiquidacionesPendientes.aspx/ObtenerUrlPdfOrdenViaje',
+                contentType: 'application/json; charset=utf-8',
+                dataType: 'json',
+                data: JSON.stringify({ idOrdenViaje: idOrdenViaje }),
+                success: function (response) {
+                    var r = response && response.d ? response.d : null;
+                    if (r && r.success && r.url) {
+                        window.open(r.url, '_blank');
+                        return;
+                    }
+
+                    alert(r && r.message
+                        ? r.message
+                        : 'No se encontró el PDF firmado para esta liquidación.');
+                },
+                error: function () {
+                    alert('Error al abrir el PDF de la liquidación.');
                 }
             });
         }
