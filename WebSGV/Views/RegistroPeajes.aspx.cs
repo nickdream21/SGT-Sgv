@@ -9,10 +9,8 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RegistroPeajes : System.Web.UI.Page
+    public partial class RegistroPeajes : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             RolesHelper.ValidarAccesoSeccion("REGISTRO");
@@ -28,19 +26,11 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = "SELECT idEstacion, nombre, activo FROM EstacionesPeaje ORDER BY nombre";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        conn.Open();
-                        DataTable dt = new DataTable();
-                        dt.Load(cmd.ExecuteReader());
-                        gvPeajes.DataSource = dt;
-                        gvPeajes.DataBind();
-                        lblTotalPeajes.Text = dt.Rows.Count + " registro(s)";
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(
+                    "SELECT idEstacion, nombre, activo FROM EstacionesPeaje ORDER BY nombre");
+                gvPeajes.DataSource = dt;
+                gvPeajes.DataBind();
+                lblTotalPeajes.Text = dt.Rows.Count + " registro(s)";
             }
             catch (Exception ex)
             {
@@ -71,30 +61,18 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                int existe = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM EstacionesPeaje WHERE UPPER(nombre) = @nombre",
+                    DbHelper.Param("@nombre", nombre)));
+                if (existe > 0)
                 {
-                    conn.Open();
-
-                    // Verificar duplicado
-                    string checkQuery = "SELECT COUNT(*) FROM EstacionesPeaje WHERE UPPER(nombre) = @nombre";
-                    using (SqlCommand checkCmd = new SqlCommand(checkQuery, conn))
-                    {
-                        checkCmd.Parameters.AddWithValue("@nombre", nombre);
-                        int existe = (int)checkCmd.ExecuteScalar();
-                        if (existe > 0)
-                        {
-                            MostrarMensaje("Ya existe una estación de peaje con ese nombre.");
-                            return;
-                        }
-                    }
-
-                    string insertQuery = "INSERT INTO EstacionesPeaje (nombre, activo) VALUES (@nombre, 1)";
-                    using (SqlCommand insertCmd = new SqlCommand(insertQuery, conn))
-                    {
-                        insertCmd.Parameters.AddWithValue("@nombre", nombre);
-                        insertCmd.ExecuteNonQuery();
-                    }
+                    MostrarMensaje("Ya existe una estación de peaje con ese nombre.");
+                    return;
                 }
+
+                DbHelper.EjecutarNonQuery(
+                    "INSERT INTO EstacionesPeaje (nombre, activo) VALUES (@nombre, 1)",
+                    DbHelper.Param("@nombre", nombre));
 
                 AuditoriaHelper.Registrar("INSERT", "EstacionesPeaje",
                     descripcion: $"Estacion de peaje registrada - Nombre: {nombre}");
@@ -116,18 +94,11 @@ namespace WebSGV.Views
                 int idEstacion = Convert.ToInt32(e.CommandArgument);
                 try
                 {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        string query = @"UPDATE EstacionesPeaje
+                    DbHelper.EjecutarNonQuery(
+                        @"UPDATE EstacionesPeaje
                             SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
-                            WHERE idEstacion = @id";
-                        using (SqlCommand cmd = new SqlCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", idEstacion);
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
+                            WHERE idEstacion = @id",
+                        DbHelper.Param("@id", idEstacion));
 
                     AuditoriaHelper.Registrar("UPDATE", "EstacionesPeaje", idEstacion,
                         "Estado de estacion de peaje actualizado (activar/desactivar)");
@@ -186,28 +157,21 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                int dup = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM EstacionesPeaje WHERE UPPER(nombre)=@nombre AND idEstacion<>@id",
+                    DbHelper.Param("@nombre", nombre),
+                    DbHelper.Param("@id", idEstacion)));
+                if (dup > 0)
                 {
-                    conn.Open();
-                    string check = "SELECT COUNT(*) FROM EstacionesPeaje WHERE UPPER(nombre)=@nombre AND idEstacion<>@id";
-                    using (SqlCommand cmd = new SqlCommand(check, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@nombre", nombre);
-                        cmd.Parameters.AddWithValue("@id", idEstacion);
-                        if ((int)cmd.ExecuteScalar() > 0)
-                        {
-                            MostrarMensaje("Ya existe otra estación de peaje con ese nombre.");
-                            return;
-                        }
-                    }
-                    string update = "UPDATE EstacionesPeaje SET nombre=@nombre WHERE idEstacion=@id";
-                    using (SqlCommand cmd = new SqlCommand(update, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@nombre", nombre);
-                        cmd.Parameters.AddWithValue("@id", idEstacion);
-                        cmd.ExecuteNonQuery();
-                    }
+                    MostrarMensaje("Ya existe otra estación de peaje con ese nombre.");
+                    return;
                 }
+
+                DbHelper.EjecutarNonQuery(
+                    "UPDATE EstacionesPeaje SET nombre=@nombre WHERE idEstacion=@id",
+                    DbHelper.Param("@nombre", nombre),
+                    DbHelper.Param("@id", idEstacion));
+
                 AuditoriaHelper.Registrar("UPDATE", "EstacionesPeaje", idEstacion,
                     $"Estación de peaje editada — Nombre:{nombre}");
                 hfIdEstacion.Value = "";

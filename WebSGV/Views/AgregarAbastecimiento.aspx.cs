@@ -13,7 +13,7 @@ using WebSGV.Services;
 
 namespace WebSGV.Views
 {
-    public partial class AgregarAbastecimiento : System.Web.UI.Page
+    public partial class AgregarAbastecimiento : PaginaBase
     {
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -194,67 +194,55 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    // Obtener TODOS los despachos del viaje para construir la ruta completa
-                    string query = @"
-                        SELECT 
+                string query = @"
+                        SELECT
                             ISNULL(d.lugarOperacion, '') AS Destino,
                             ISNULL(d.tipoOperacion, '') AS TipoOperacion,
                             d.esInternacional,
                             d.idDespacho
-                        FROM Despachos d 
+                        FROM Despachos d
                         WHERE d.idViajeProgreso = @idViaje AND d.activo = 1
                         ORDER BY d.idDespacho";
 
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                DataTable dt = DbHelper.ConsultarTabla(query, DbHelper.Param("@idViaje", Convert.ToInt32(idViaje)));
+
+                List<string> operaciones = new List<string>();
+                string ultimoDestino = "";
+
+                foreach (DataRow row in dt.Rows)
+                {
+                    string destino = row["Destino"].ToString();
+                    string tipoOp = row["TipoOperacion"].ToString();
+
+                    if (!string.IsNullOrEmpty(tipoOp) && !string.IsNullOrEmpty(destino))
                     {
-                        cmd.Parameters.AddWithValue("@idViaje", Convert.ToInt32(idViaje));
-                        conn.Open();
-
-                        List<string> operaciones = new List<string>();
-                        string ultimoDestino = "";
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                string destino = reader["Destino"].ToString();
-                                string tipoOp = reader["TipoOperacion"].ToString();
-
-                                if (!string.IsNullOrEmpty(tipoOp) && !string.IsNullOrEmpty(destino))
-                                {
-                                    operaciones.Add($"{tipoOp} - {destino}");
-                                    ultimoDestino = destino.ToUpper();
-                                }
-                            }
-                        }
-
-                        // Construir descripción de ruta
-                        string rutaDesc = operaciones.Count > 0 
-                            ? string.Join(" → ", operaciones) 
-                            : "Sin definir";
-                        litRutaViaje.Text = rutaDesc;
-
-                        RegistrarInfo($"Ruta viaje: {rutaDesc}");
-
-                        // Aplicar reglas de galones según destino final
-                        string glSugeridos = "—";
-                        if (ultimoDestino.Contains("FRONTERA"))
-                        {
-                            txtGLRuta.Text = "50";
-                            glSugeridos = "50 GL";
-                        }
-                        else if (ultimoDestino.Contains("TRUJILLO"))
-                        {
-                            txtGLRuta.Text = "130";
-                            glSugeridos = "130 GL";
-                        }
-
-                        litGLAsignados.Text = glSugeridos;
+                        operaciones.Add($"{tipoOp} - {destino}");
+                        ultimoDestino = destino.ToUpper();
                     }
                 }
+
+                // Construir descripción de ruta
+                string rutaDesc = operaciones.Count > 0
+                    ? string.Join(" → ", operaciones)
+                    : "Sin definir";
+                litRutaViaje.Text = rutaDesc;
+
+                RegistrarInfo($"Ruta viaje: {rutaDesc}");
+
+                // Aplicar reglas de galones según destino final
+                string glSugeridos = "—";
+                if (ultimoDestino.Contains("FRONTERA"))
+                {
+                    txtGLRuta.Text = "50";
+                    glSugeridos = "50 GL";
+                }
+                else if (ultimoDestino.Contains("TRUJILLO"))
+                {
+                    txtGLRuta.Text = "130";
+                    glSugeridos = "130 GL";
+                }
+
+                litGLAsignados.Text = glSugeridos;
 
                 // Recalcular totales después de establecer GL Ruta
                 if (!string.IsNullOrEmpty(txtGLRuta.Text))
@@ -354,33 +342,15 @@ namespace WebSGV.Views
 
         private DataTable ObtenerDatosDeBD(string query)
         {
-            DataTable dt = new DataTable();
-            string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            try
             {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    try
-                    {
-                        conn.Open();
-                        SqlDataAdapter da = new SqlDataAdapter(cmd);
-                        da.Fill(dt);
-                    }
-                    catch (Exception ex)
-                    {
-                        RegistrarError("Error al ejecutar consulta: " + ex.Message);
-                        throw;
-                    }
-                    finally
-                    {
-                        if (conn.State == ConnectionState.Open)
-                            conn.Close();
-                    }
-                }
+                return DbHelper.ConsultarTabla(query);
             }
-
-            return dt;
+            catch (Exception ex)
+            {
+                RegistrarError("Error al ejecutar consulta: " + ex.Message);
+                throw;
+            }
         }
 
         #endregion
@@ -871,30 +841,18 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    using (SqlCommand cmd = new SqlCommand())
-                    {
-                        // Buscar órdenes de viaje con el mismo conductor y fecha similar (mismo día)
-                        cmd.CommandText = @"SELECT TOP 1 idOrdenViaje 
-                                   FROM OrdenViaje 
-                                   WHERE idConductor = @idConductor 
+                object result = DbHelper.EjecutarEscalar(
+                    @"SELECT TOP 1 idOrdenViaje
+                                   FROM OrdenViaje
+                                   WHERE idConductor = @idConductor
                                    AND CONVERT(date, fechaLlegada) = CONVERT(date, @fecha)
-                                   ORDER BY fechaLlegada DESC";
+                                   ORDER BY fechaLlegada DESC",
+                    DbHelper.Param("@idConductor", idConductor),
+                    DbHelper.Param("@fecha", fecha.Date));
 
-                        cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                        cmd.Parameters.AddWithValue("@fecha", fecha.Date);
-                        cmd.Connection = conn;
-
-                        conn.Open();
-                        object result = cmd.ExecuteScalar();
-
-                        if (result != null && result != DBNull.Value)
-                        {
-                            return Convert.ToInt32(result);
-                        }
-                    }
+                if (result != null && result != DBNull.Value)
+                {
+                    return Convert.ToInt32(result);
                 }
             }
             catch (Exception ex)
@@ -915,18 +873,10 @@ namespace WebSGV.Views
                     return;
                 }
 
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = "UPDATE ViajesEnProgreso SET estadoViaje = 'ABASTECIDO' WHERE idViajeProgreso = @idViaje";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@idViaje", idViaje);
-                        conn.Open();
-                        int rows = cmd.ExecuteNonQuery();
-                        RegistrarInfo($"ViajesEnProgreso actualizado a ABASTECIDO para idViaje={idViaje}, filas={rows}");
-                    }
-                }
+                int rows = DbHelper.EjecutarNonQuery(
+                    "UPDATE ViajesEnProgreso SET estadoViaje = 'ABASTECIDO' WHERE idViajeProgreso = @idViaje",
+                    DbHelper.Param("@idViaje", idViaje));
+                RegistrarInfo($"ViajesEnProgreso actualizado a ABASTECIDO para idViaje={idViaje}, filas={rows}");
             }
             catch (Exception ex)
             {

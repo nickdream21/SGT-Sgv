@@ -9,10 +9,8 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RegistroTractos : System.Web.UI.Page
+    public partial class RegistroTractos : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             RolesHelper.ValidarAccesoSeccion("REGISTRO");
@@ -28,19 +26,11 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = "SELECT idTracto, placaTracto, marca, modelo, activo FROM Tracto ORDER BY placaTracto";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        conn.Open();
-                        DataTable dt = new DataTable();
-                        dt.Load(cmd.ExecuteReader());
-                        gvTractos.DataSource = dt;
-                        gvTractos.DataBind();
-                        lblTotalTractos.Text = dt.Rows.Count + " registro(s)";
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(
+                    "SELECT idTracto, placaTracto, marca, modelo, activo FROM Tracto ORDER BY placaTracto");
+                gvTractos.DataSource = dt;
+                gvTractos.DataBind();
+                lblTotalTractos.Text = dt.Rows.Count + " registro(s)";
             }
             catch (Exception ex)
             {
@@ -66,37 +56,26 @@ namespace WebSGV.Views
                 return;
             }
 
-            if (!Regex.IsMatch(placa, "^[A-Z0-9-]{6,10}$")) { MostrarMensaje("Placa inválida: use 6 a 10 caracteres (letras, números o guion)."); return; }
+            if (!ValidacionHelper.EsPlaca(placa)) { MostrarMensaje("Placa inválida: use 6 a 10 caracteres (letras, números o guion)."); return; }
             if (!Regex.IsMatch(marca, "^[A-ZÁÉÍÓÚÑ0-9\\s\\-.]{2,100}$")) { MostrarMensaje("Marca inválida: use entre 2 y 100 caracteres válidos."); return; }
             if (!Regex.IsMatch(modelo, "^[A-ZÁÉÍÓÚÑ0-9\\s\\-.]{2,100}$")) { MostrarMensaje("Modelo inválido: use entre 2 y 100 caracteres válidos."); return; }
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                int existe = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM Tracto WHERE UPPER(placaTracto) = @placa",
+                    DbHelper.Param("@placa", placa)));
+                if (existe > 0)
                 {
-                    conn.Open();
-
-                    string checkQuery = "SELECT COUNT(*) FROM Tracto WHERE UPPER(placaTracto) = @placa";
-                    using (SqlCommand checkCmd = new SqlCommand(checkQuery, conn))
-                    {
-                        checkCmd.Parameters.AddWithValue("@placa", placa);
-                        int existe = (int)checkCmd.ExecuteScalar();
-                        if (existe > 0)
-                        {
-                            MostrarMensaje("Ya existe un tracto registrado con esa placa.");
-                            return;
-                        }
-                    }
-
-                    string insertQuery = "INSERT INTO Tracto (placaTracto, marca, modelo, activo) VALUES (@placa, @marca, @modelo, 1)";
-                    using (SqlCommand insertCmd = new SqlCommand(insertQuery, conn))
-                    {
-                        insertCmd.Parameters.AddWithValue("@placa", placa);
-                        insertCmd.Parameters.AddWithValue("@marca", marca);
-                        insertCmd.Parameters.AddWithValue("@modelo", modelo);
-                        insertCmd.ExecuteNonQuery();
-                    }
+                    MostrarMensaje("Ya existe un tracto registrado con esa placa.");
+                    return;
                 }
+
+                DbHelper.EjecutarNonQuery(
+                    "INSERT INTO Tracto (placaTracto, marca, modelo, activo) VALUES (@placa, @marca, @modelo, 1)",
+                    DbHelper.Param("@placa", placa),
+                    DbHelper.Param("@marca", marca),
+                    DbHelper.Param("@modelo", modelo));
 
                 AuditoriaHelper.Registrar("INSERT", "Tracto",
                     descripcion: $"Tracto registrado - Placa: {placa}, Marca: {marca}, Modelo: {modelo}");
@@ -120,18 +99,11 @@ namespace WebSGV.Views
                 int idTracto = Convert.ToInt32(e.CommandArgument);
                 try
                 {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        string query = @"UPDATE Tracto 
+                    DbHelper.EjecutarNonQuery(
+                        @"UPDATE Tracto
                             SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
-                            WHERE idTracto = @id";
-                        using (SqlCommand cmd = new SqlCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", idTracto);
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
+                            WHERE idTracto = @id",
+                        DbHelper.Param("@id", idTracto));
 
                     AuditoriaHelper.Registrar("UPDATE", "Tracto", idTracto,
                         "Estado de tracto actualizado (activar/desactivar)");
@@ -190,34 +162,27 @@ namespace WebSGV.Views
                 return;
             }
 
-            if (!Regex.IsMatch(placa, "^[A-Z0-9-]{6,10}$")) { MostrarMensaje("Placa inválida en edición."); return; }
+            if (!ValidacionHelper.EsPlaca(placa)) { MostrarMensaje("Placa inválida en edición."); return; }
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                int dup = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM Tracto WHERE UPPER(placaTracto)=@placa AND idTracto<>@id",
+                    DbHelper.Param("@placa", placa),
+                    DbHelper.Param("@id", idTracto)));
+                if (dup > 0)
                 {
-                    conn.Open();
-                    string check = "SELECT COUNT(*) FROM Tracto WHERE UPPER(placaTracto)=@placa AND idTracto<>@id";
-                    using (SqlCommand cmd = new SqlCommand(check, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@placa", placa);
-                        cmd.Parameters.AddWithValue("@id", idTracto);
-                        if ((int)cmd.ExecuteScalar() > 0)
-                        {
-                            MostrarMensaje("Ya existe otro tracto con esa placa.");
-                            return;
-                        }
-                    }
-                    string update = "UPDATE Tracto SET placaTracto=@placa, marca=@marca, modelo=@modelo WHERE idTracto=@id";
-                    using (SqlCommand cmd = new SqlCommand(update, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@placa", placa);
-                        cmd.Parameters.AddWithValue("@marca", marca);
-                        cmd.Parameters.AddWithValue("@modelo", modelo);
-                        cmd.Parameters.AddWithValue("@id", idTracto);
-                        cmd.ExecuteNonQuery();
-                    }
+                    MostrarMensaje("Ya existe otro tracto con esa placa.");
+                    return;
                 }
+
+                DbHelper.EjecutarNonQuery(
+                    "UPDATE Tracto SET placaTracto=@placa, marca=@marca, modelo=@modelo WHERE idTracto=@id",
+                    DbHelper.Param("@placa", placa),
+                    DbHelper.Param("@marca", marca),
+                    DbHelper.Param("@modelo", modelo),
+                    DbHelper.Param("@id", idTracto));
+
                 AuditoriaHelper.Registrar("UPDATE", "Tracto", idTracto,
                     $"Tracto editado — Placa:{placa}, Marca:{marca}, Modelo:{modelo}");
                 hfIdTracto.Value = "";

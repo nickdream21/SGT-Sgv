@@ -9,10 +9,8 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RegistroClientes : System.Web.UI.Page
+    public partial class RegistroClientes : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             RolesHelper.ValidarAccesoSeccion("REGISTRO");
@@ -28,19 +26,11 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = "SELECT idCliente, ISNULL(ruc, '') AS ruc, nombre, activo FROM Cliente ORDER BY nombre";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        conn.Open();
-                        DataTable dt = new DataTable();
-                        dt.Load(cmd.ExecuteReader());
-                        gvClientes.DataSource = dt;
-                        gvClientes.DataBind();
-                        lblTotalClientes.Text = dt.Rows.Count + " registro(s)";
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(
+                    "SELECT idCliente, ISNULL(ruc, '') AS ruc, nombre, activo FROM Cliente ORDER BY nombre");
+                gvClientes.DataSource = dt;
+                gvClientes.DataBind();
+                lblTotalClientes.Text = dt.Rows.Count + " registro(s)";
             }
             catch (Exception ex)
             {
@@ -80,43 +70,38 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                if (!string.IsNullOrWhiteSpace(ruc))
                 {
-                    conn.Open();
-
-                    if (!string.IsNullOrWhiteSpace(ruc))
+                    int existeRuc = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                        "SELECT COUNT(*) FROM Cliente WHERE ruc = @ruc",
+                        DbHelper.Param("@ruc", ruc)));
+                    if (existeRuc > 0)
                     {
-                        string checkQuery = "SELECT COUNT(*) FROM Cliente WHERE ruc = @ruc";
-                        using (SqlCommand checkCmd = new SqlCommand(checkQuery, conn))
-                        {
-                            checkCmd.Parameters.AddWithValue("@ruc", ruc);
-                            if ((int)checkCmd.ExecuteScalar() > 0)
-                            {
-                                MostrarMensaje("Ya existe un cliente registrado con ese RUC.");
-                                return;
-                            }
-                        }
+                        MostrarMensaje("Ya existe un cliente registrado con ese RUC.");
+                        return;
                     }
-
-                    string insertQuery = string.IsNullOrWhiteSpace(ruc)
-                        ? "INSERT INTO Cliente (nombre, activo) VALUES (@nombre, 1)"
-                        : "INSERT INTO Cliente (ruc, nombre, activo) VALUES (@ruc, @nombre, 1)";
-
-                    using (SqlCommand insertCmd = new SqlCommand(insertQuery, conn))
-                    {
-                        if (!string.IsNullOrWhiteSpace(ruc))
-                            insertCmd.Parameters.AddWithValue("@ruc", ruc);
-                        insertCmd.Parameters.AddWithValue("@nombre", txtNombre.Text.Trim());
-                        insertCmd.ExecuteNonQuery();
-                    }
-
-                    AuditoriaHelper.Registrar("INSERT", "Cliente",
-                        descripcion: $"Cliente registrado - Nombre: {txtNombre.Text.Trim()}, RUC: {(string.IsNullOrWhiteSpace(ruc) ? "Sin RUC" : ruc)}");
-
-                    LimpiarFormulario();
-                    MostrarMensaje("Cliente registrado correctamente.", true);
-                    CargarClientes();
                 }
+
+                if (string.IsNullOrWhiteSpace(ruc))
+                {
+                    DbHelper.EjecutarNonQuery(
+                        "INSERT INTO Cliente (nombre, activo) VALUES (@nombre, 1)",
+                        DbHelper.Param("@nombre", txtNombre.Text.Trim()));
+                }
+                else
+                {
+                    DbHelper.EjecutarNonQuery(
+                        "INSERT INTO Cliente (ruc, nombre, activo) VALUES (@ruc, @nombre, 1)",
+                        DbHelper.Param("@ruc", ruc),
+                        DbHelper.Param("@nombre", txtNombre.Text.Trim()));
+                }
+
+                AuditoriaHelper.Registrar("INSERT", "Cliente",
+                    descripcion: $"Cliente registrado - Nombre: {txtNombre.Text.Trim()}, RUC: {(string.IsNullOrWhiteSpace(ruc) ? "Sin RUC" : ruc)}");
+
+                LimpiarFormulario();
+                MostrarMensaje("Cliente registrado correctamente.", true);
+                CargarClientes();
             }
             catch (Exception ex)
             {
@@ -132,18 +117,11 @@ namespace WebSGV.Views
                 int idCliente = Convert.ToInt32(e.CommandArgument);
                 try
                 {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        string query = @"UPDATE Cliente 
+                    DbHelper.EjecutarNonQuery(
+                        @"UPDATE Cliente
                             SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
-                            WHERE idCliente = @id";
-                        using (SqlCommand cmd = new SqlCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", idCliente);
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
+                            WHERE idCliente = @id",
+                        DbHelper.Param("@id", idCliente));
 
                     AuditoriaHelper.Registrar("UPDATE", "Cliente", idCliente,
                         "Estado de cliente actualizado (activar/desactivar)");
@@ -209,34 +187,24 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                if (!string.IsNullOrWhiteSpace(ruc))
                 {
-                    conn.Open();
-
-                    if (!string.IsNullOrWhiteSpace(ruc))
+                    int dup = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                        "SELECT COUNT(*) FROM Cliente WHERE ruc=@ruc AND idCliente<>@id",
+                        DbHelper.Param("@ruc", ruc),
+                        DbHelper.Param("@id", idCliente)));
+                    if (dup > 0)
                     {
-                        string check = "SELECT COUNT(*) FROM Cliente WHERE ruc=@ruc AND idCliente<>@id";
-                        using (SqlCommand cmd = new SqlCommand(check, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@ruc", ruc);
-                            cmd.Parameters.AddWithValue("@id", idCliente);
-                            if ((int)cmd.ExecuteScalar() > 0)
-                            {
-                                MostrarMensaje("Ya existe otro cliente registrado con ese RUC.");
-                                return;
-                            }
-                        }
-                    }
-
-                    string update = "UPDATE Cliente SET ruc=@ruc, nombre=@nombre WHERE idCliente=@id";
-                    using (SqlCommand cmd = new SqlCommand(update, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@ruc", string.IsNullOrWhiteSpace(ruc) ? (object)DBNull.Value : ruc);
-                        cmd.Parameters.AddWithValue("@nombre", nombre);
-                        cmd.Parameters.AddWithValue("@id", idCliente);
-                        cmd.ExecuteNonQuery();
+                        MostrarMensaje("Ya existe otro cliente registrado con ese RUC.");
+                        return;
                     }
                 }
+
+                DbHelper.EjecutarNonQuery(
+                    "UPDATE Cliente SET ruc=@ruc, nombre=@nombre WHERE idCliente=@id",
+                    DbHelper.Param("@ruc", string.IsNullOrWhiteSpace(ruc) ? null : ruc),
+                    DbHelper.Param("@nombre", nombre),
+                    DbHelper.Param("@id", idCliente));
 
                 AuditoriaHelper.Registrar("UPDATE", "Cliente", idCliente,
                     $"Cliente editado — Nombre:{nombre}, RUC:{(string.IsNullOrWhiteSpace(ruc) ? "Sin RUC" : ruc)}");

@@ -9,10 +9,8 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RegistroSemiremolques : System.Web.UI.Page
+    public partial class RegistroSemiremolques : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             RolesHelper.ValidarAccesoSeccion("REGISTRO");
@@ -28,19 +26,11 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = "SELECT idCarreta, placaCarreta, marca, modelo, activo FROM Carreta ORDER BY placaCarreta";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        conn.Open();
-                        DataTable dt = new DataTable();
-                        dt.Load(cmd.ExecuteReader());
-                        gvSemiremolques.DataSource = dt;
-                        gvSemiremolques.DataBind();
-                        lblTotalSemiremolques.Text = dt.Rows.Count + " registro(s)";
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(
+                    "SELECT idCarreta, placaCarreta, marca, modelo, activo FROM Carreta ORDER BY placaCarreta");
+                gvSemiremolques.DataSource = dt;
+                gvSemiremolques.DataBind();
+                lblTotalSemiremolques.Text = dt.Rows.Count + " registro(s)";
             }
             catch (Exception ex)
             {
@@ -66,37 +56,26 @@ namespace WebSGV.Views
                 return;
             }
 
-            if (!Regex.IsMatch(placa, "^[A-Z0-9-]{6,10}$")) { MostrarMensaje("Placa inválida: use 6 a 10 caracteres (letras, números o guion)."); return; }
+            if (!ValidacionHelper.EsPlaca(placa)) { MostrarMensaje("Placa inválida: use 6 a 10 caracteres (letras, números o guion)."); return; }
             if (!Regex.IsMatch(marca, "^[A-ZÁÉÍÓÚÑ0-9\\s\\-.]{2,100}$")) { MostrarMensaje("Marca inválida: use entre 2 y 100 caracteres válidos."); return; }
             if (!Regex.IsMatch(modelo, "^[A-ZÁÉÍÓÚÑ0-9\\s\\-.]{2,100}$")) { MostrarMensaje("Modelo inválido: use entre 2 y 100 caracteres válidos."); return; }
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                int existe = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM Carreta WHERE UPPER(placaCarreta) = @placa",
+                    DbHelper.Param("@placa", placa)));
+                if (existe > 0)
                 {
-                    conn.Open();
-
-                    string checkQuery = "SELECT COUNT(*) FROM Carreta WHERE UPPER(placaCarreta) = @placa";
-                    using (SqlCommand checkCmd = new SqlCommand(checkQuery, conn))
-                    {
-                        checkCmd.Parameters.AddWithValue("@placa", placa);
-                        int existe = (int)checkCmd.ExecuteScalar();
-                        if (existe > 0)
-                        {
-                            MostrarMensaje("Ya existe un semiremolque registrado con esa placa.");
-                            return;
-                        }
-                    }
-
-                    string insertQuery = "INSERT INTO Carreta (placaCarreta, marca, modelo, activo) VALUES (@placa, @marca, @modelo, 1)";
-                    using (SqlCommand insertCmd = new SqlCommand(insertQuery, conn))
-                    {
-                        insertCmd.Parameters.AddWithValue("@placa", placa);
-                        insertCmd.Parameters.AddWithValue("@marca", marca);
-                        insertCmd.Parameters.AddWithValue("@modelo", modelo);
-                        insertCmd.ExecuteNonQuery();
-                    }
+                    MostrarMensaje("Ya existe un semiremolque registrado con esa placa.");
+                    return;
                 }
+
+                DbHelper.EjecutarNonQuery(
+                    "INSERT INTO Carreta (placaCarreta, marca, modelo, activo) VALUES (@placa, @marca, @modelo, 1)",
+                    DbHelper.Param("@placa", placa),
+                    DbHelper.Param("@marca", marca),
+                    DbHelper.Param("@modelo", modelo));
 
                 AuditoriaHelper.Registrar("INSERT", "Carreta",
                     descripcion: $"Semiremolque registrado - Placa: {placa}, Marca: {marca}, Modelo: {modelo}");
@@ -120,18 +99,11 @@ namespace WebSGV.Views
                 int idCarreta = Convert.ToInt32(e.CommandArgument);
                 try
                 {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        string query = @"UPDATE Carreta 
+                    DbHelper.EjecutarNonQuery(
+                        @"UPDATE Carreta
                             SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
-                            WHERE idCarreta = @id";
-                        using (SqlCommand cmd = new SqlCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", idCarreta);
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
+                            WHERE idCarreta = @id",
+                        DbHelper.Param("@id", idCarreta));
 
                     AuditoriaHelper.Registrar("UPDATE", "Carreta", idCarreta,
                         "Estado de semiremolque actualizado (activar/desactivar)");
@@ -192,30 +164,23 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                int dup = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM Carreta WHERE UPPER(placaCarreta)=@placa AND idCarreta<>@id",
+                    DbHelper.Param("@placa", placa),
+                    DbHelper.Param("@id", idCarreta)));
+                if (dup > 0)
                 {
-                    conn.Open();
-                    string check = "SELECT COUNT(*) FROM Carreta WHERE UPPER(placaCarreta)=@placa AND idCarreta<>@id";
-                    using (SqlCommand cmd = new SqlCommand(check, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@placa", placa);
-                        cmd.Parameters.AddWithValue("@id", idCarreta);
-                        if ((int)cmd.ExecuteScalar() > 0)
-                        {
-                            MostrarMensaje("Ya existe otro semiremolque con esa placa.");
-                            return;
-                        }
-                    }
-                    string update = "UPDATE Carreta SET placaCarreta=@placa, marca=@marca, modelo=@modelo WHERE idCarreta=@id";
-                    using (SqlCommand cmd = new SqlCommand(update, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@placa", placa);
-                        cmd.Parameters.AddWithValue("@marca", marca);
-                        cmd.Parameters.AddWithValue("@modelo", modelo);
-                        cmd.Parameters.AddWithValue("@id", idCarreta);
-                        cmd.ExecuteNonQuery();
-                    }
+                    MostrarMensaje("Ya existe otro semiremolque con esa placa.");
+                    return;
                 }
+
+                DbHelper.EjecutarNonQuery(
+                    "UPDATE Carreta SET placaCarreta=@placa, marca=@marca, modelo=@modelo WHERE idCarreta=@id",
+                    DbHelper.Param("@placa", placa),
+                    DbHelper.Param("@marca", marca),
+                    DbHelper.Param("@modelo", modelo),
+                    DbHelper.Param("@id", idCarreta));
+
                 AuditoriaHelper.Registrar("UPDATE", "Carreta", idCarreta,
                     $"Semiremolque editado — Placa:{placa}, Marca:{marca}, Modelo:{modelo}");
                 hfIdCarreta.Value = "";

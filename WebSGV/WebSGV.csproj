@@ -425,7 +425,6 @@
     <Content Include="Views\ReportesOrdenesViaje.aspx" />
     <Content Include="Views\RestablecerContrasena.aspx" />
     <Content Include="Views\TestGenerarPdfOrdenViaje.aspx" />
-    <Content Include="Views\WebForm2.aspx" />
     <Content Include="Web.config" />
     <Content Include="Bundle.config" />
     <Content Include="Site.Mobile.Master" />
@@ -459,11 +458,16 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Helpers\AuditoriaHelper.cs" />
+    <Compile Include="Helpers\DbHelper.cs" />
     <Compile Include="Helpers\EmpresaConfigHelper.cs" />
     <Compile Include="Helpers\FechaHelper.cs" />
     <Compile Include="Helpers\HashHelper.cs" />
     <Compile Include="Helpers\NumeroALetrasHelper.cs" />
+    <Compile Include="Helpers\PaginaBase.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="Helpers\PasswordHelper.cs" />
+    <Compile Include="Helpers\ValidacionHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\FirmaService.cs" />
     <Compile Include="Services\PdfAbastecimientoService.cs" />
@@ -856,13 +860,6 @@
     <Compile Include="Views\TestGenerarPdfOrdenViaje.aspx.cs">
       <DependentUpon>TestGenerarPdfOrdenViaje.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\WebForm2.aspx.cs">
-      <DependentUpon>WebForm2.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\WebForm2.aspx.designer.cs">
-      <DependentUpon>WebForm2.aspx</DependentUpon>
     </Compile>
     <Compile Include="WebSGV\Helpers\SecurityHelper.cs" />
     <Compile Include="WebSGV\Views\Inicio.aspx.cs" />

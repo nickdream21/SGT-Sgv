@@ -11,7 +11,7 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class AgregarOrdenViaje : System.Web.UI.Page
+    public partial class AgregarOrdenViaje : PaginaBase
     {
         #region Clases de Datos
 
@@ -1943,20 +1943,10 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = "SELECT COUNT(*) FROM OrdenViaje WHERE numeroOrdenViaje = @numeroOrden";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
-                        conn.Open();
-                        int count = Convert.ToInt32(cmd.ExecuteScalar());
-                        return count > 0;
-                    }
-                }
+                int count = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM OrdenViaje WHERE numeroOrdenViaje = @numeroOrden",
+                    DbHelper.Param("@numeroOrden", numeroOrden)));
+                return count > 0;
             }
             catch (Exception ex)
             {
@@ -2026,30 +2016,18 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    // Ajusta esta query según tu estructura de tabla de usuarios
                     string query = @"
-                        SELECT idUsuario 
+                        SELECT idUsuario
                         FROM Usuarios 
                         WHERE nombreUsuario = @nombreUsuario 
                            OR usuario = @nombreUsuario
                            OR email = @nombreUsuario";
 
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    object result = DbHelper.EjecutarEscalar(query, DbHelper.Param("@nombreUsuario", nombreUsuario));
+                    if (result != null && result != DBNull.Value)
                     {
-                        cmd.Parameters.AddWithValue("@nombreUsuario", nombreUsuario);
-                        conn.Open();
-
-                        object result = cmd.ExecuteScalar();
-                        if (result != null && result != DBNull.Value)
-                        {
-                            return Convert.ToInt32(result);
-                        }
+                        return Convert.ToInt32(result);
                     }
-                }
 
                 return 0;
             }
@@ -2109,21 +2087,14 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
                     string queryVerificar = @"
                         SELECT COUNT(*) 
                         FROM INFORMATION_SCHEMA.TABLES 
                         WHERE TABLE_NAME = 'EstacionesPeaje'";
 
-                    using (SqlCommand cmdVerificar = new SqlCommand(queryVerificar, conn))
-                    {
-                        conn.Open();
-                        int tablaExiste = Convert.ToInt32(cmdVerificar.ExecuteScalar());
+                    int tablaExiste = Convert.ToInt32(DbHelper.EjecutarEscalar(queryVerificar));
 
-                        if (tablaExiste == 0)
+                    if (tablaExiste == 0)
                         {
                             var estacionesPrueba = new List<object>
                             {
@@ -2140,7 +2111,6 @@ namespace WebSGV.Views
                             };
                             return JsonConvert.SerializeObject(estacionesPrueba);
                         }
-                    }
 
                     string query = @"
                         SELECT idEstacion, nombre
@@ -2148,25 +2118,19 @@ namespace WebSGV.Views
                         WHERE activo = 1
                         ORDER BY nombre";
 
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    DataTable dt = DbHelper.ConsultarTabla(query);
+                    var estaciones = new List<object>();
+
+                    foreach (DataRow reader in dt.Rows)
                     {
-                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        estaciones.Add(new
                         {
-                            var estaciones = new List<object>();
-
-                            while (reader.Read())
-                            {
-                                estaciones.Add(new
-                                {
-                                    idEstacion = Convert.ToInt32(reader["idEstacion"]),
-                                    nombre = reader["nombre"].ToString()
-                                });
-                            }
-
-                            return JsonConvert.SerializeObject(estaciones);
-                        }
+                            idEstacion = Convert.ToInt32(reader["idEstacion"]),
+                            nombre = reader["nombre"].ToString()
+                        });
                     }
-                }
+
+                    return JsonConvert.SerializeObject(estaciones);
             }
             catch (Exception ex)
             {

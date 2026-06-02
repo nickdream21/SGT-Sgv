@@ -16,7 +16,7 @@ using WebSGV.Services;
 
 namespace WebSGV.Views
 {
-    public partial class LiquidacionesPendientes : System.Web.UI.Page
+    public partial class LiquidacionesPendientes : PaginaBase
     {
         private const int MaxLongitudMotivo = 500;
         private const int MaxLongitudNotaAprobacion = 500;
@@ -246,26 +246,12 @@ namespace WebSGV.Views
                     return;
                 }
 
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                var pars = new List<SqlParameter>();
+                if (idConductor.HasValue) pars.Add(DbHelper.Param("@idConductor", idConductor.Value));
+                if (fechaDesde.HasValue) pars.Add(DbHelper.Param("@fechaDesde", fechaDesde.Value));
+                if (fechaHasta.HasValue) pars.Add(DbHelper.Param("@fechaHasta", fechaHasta.Value));
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    using (SqlCommand cmd = new SqlCommand("sp_ObtenerLiquidacionesPendientes", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-
-                        // Parámetros opcionales de filtro
-                        if (idConductor.HasValue) cmd.Parameters.AddWithValue("@idConductor", idConductor.Value);
-                        if (fechaDesde.HasValue) cmd.Parameters.AddWithValue("@fechaDesde", fechaDesde.Value);
-                        if (fechaHasta.HasValue) cmd.Parameters.AddWithValue("@fechaHasta", fechaHasta.Value);
-
-                        conn.Open();
-
-                        DataTable dt = new DataTable();
-                        using (SqlDataAdapter da = new SqlDataAdapter(cmd))
-                        {
-                            da.Fill(dt);
-                        }
+                DataTable dt = DbHelper.ConsultarTablaSp("sp_ObtenerLiquidacionesPendientes", pars.ToArray());
 
                         // Aplicar filtro de prioridad si está seleccionado
                         if (!string.IsNullOrEmpty(prioridad))
@@ -309,9 +295,7 @@ namespace WebSGV.Views
 
                         System.Diagnostics.Debug.WriteLine($"✅ {dt.Rows.Count} liquidaciones cargadas en GridView");
                         System.Diagnostics.Debug.WriteLine($"   - Total pendientes: {totalPendientes}");
-                        System.Diagnostics.Debug.WriteLine($"   - Total urgentes: {totalUrgentes}");
-                    }
-                }
+                System.Diagnostics.Debug.WriteLine($"   - Total urgentes: {totalUrgentes}");
             }
             catch (Exception ex)
             {
@@ -375,39 +359,23 @@ namespace WebSGV.Views
 
                 System.Diagnostics.Debug.WriteLine($"Número Orden: {numeroOrdenViaje}");
 
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                DataTable dt = DbHelper.ConsultarTablaSp("sp_AprobarLiquidacion",
+                    DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje),
+                    DbHelper.Param("@idUsuarioAprobacion", IdUsuarioActual),
+                    DbHelper.Param("@observaciones", DBNull.Value)); // Parámetro opcional como NULL
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                if (dt.Rows.Count > 0)
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_AprobarLiquidacion", conn))
+                    int resultado = Convert.ToInt32(dt.Rows[0]["Resultado"]);
+                    string mensaje = dt.Rows[0]["Mensaje"].ToString();
+
+                    if (resultado == 1)
                     {
-                        cmd.CommandType = CommandType.StoredProcedure;
-
-                        // ✅ LOS 3 PARÁMETROS DEL SP
-                        cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                        cmd.Parameters.AddWithValue("@idUsuarioAprobacion", IdUsuarioActual);
-                        cmd.Parameters.AddWithValue("@observaciones", DBNull.Value); // ✅ Parámetro opcional como NULL
-
-                        conn.Open();
-
-                        // ✅ Leer el resultado del SP
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                int resultado = Convert.ToInt32(reader["Resultado"]);
-                                string mensaje = reader["Mensaje"].ToString();
-
-                                if (resultado == 1)
-                                {
-                                    System.Diagnostics.Debug.WriteLine($"✅ {mensaje}");
-                                }
-                                else
-                                {
-                                    throw new Exception(mensaje);
-                                }
-                            }
-                        }
+                        System.Diagnostics.Debug.WriteLine($"✅ {mensaje}");
+                    }
+                    else
+                    {
+                        throw new Exception(mensaje);
                     }
                 }
 
@@ -512,39 +480,23 @@ namespace WebSGV.Views
                 System.Diagnostics.Debug.WriteLine($"Observaciones: {observaciones}");
 
                 // Llamar al stored procedure
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                DataTable dt = DbHelper.ConsultarTablaSp("sp_RechazarLiquidacion",
+                    DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje),
+                    DbHelper.Param("@idUsuarioAprobacion", IdUsuarioActual),
+                    DbHelper.Param("@observaciones", observaciones));
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                if (dt.Rows.Count > 0)
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_RechazarLiquidacion", conn))
+                    int resultado = Convert.ToInt32(dt.Rows[0]["Resultado"]);
+                    string mensaje = dt.Rows[0]["Mensaje"].ToString();
+
+                    if (resultado == 1)
                     {
-                        cmd.CommandType = CommandType.StoredProcedure;
-
-                        // ✅ LOS 3 PARÁMETROS DEL SP
-                        cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                        cmd.Parameters.AddWithValue("@idUsuarioAprobacion", IdUsuarioActual);
-                        cmd.Parameters.AddWithValue("@observaciones", observaciones);
-
-                        conn.Open();
-
-                        // ✅ Leer el resultado del SP
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                int resultado = Convert.ToInt32(reader["Resultado"]);
-                                string mensaje = reader["Mensaje"].ToString();
-
-                                if (resultado == 1)
-                                {
-                                    System.Diagnostics.Debug.WriteLine($"✅ {mensaje}");
-                                }
-                                else
-                                {
-                                    throw new Exception(mensaje);
-                                }
-                            }
-                        }
+                        System.Diagnostics.Debug.WriteLine($"✅ {mensaje}");
+                    }
+                    else
+                    {
+                        throw new Exception(mensaje);
                     }
                 }
 
@@ -589,24 +541,13 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                object result = DbHelper.EjecutarEscalar(
+                    "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @idOrdenViaje",
+                    DbHelper.Param("@idOrdenViaje", idOrdenViaje));
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                if (result != null && result != DBNull.Value)
                 {
-                    string query = "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @idOrdenViaje";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@idOrdenViaje", idOrdenViaje);
-                        conn.Open();
-
-                        object result = cmd.ExecuteScalar();
-
-                        if (result != null && result != DBNull.Value)
-                        {
-                            return result.ToString();
-                        }
-                    }
+                    return result.ToString();
                 }
 
                 return null;
@@ -635,11 +576,8 @@ namespace WebSGV.Views
                     return "[]";
 
                 var results = new List<object>();
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"
+                string query = @"
                         SELECT TOP 15
                             c.idConductor,
                             c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS nombreCompleto
@@ -649,24 +587,16 @@ namespace WebSGV.Views
                           AND (c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '')) LIKE @term
                         ORDER BY nombreCompleto";
 
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@term", "%" + term.Trim() + "%");
-                        conn.Open();
+                    DataTable dt = DbHelper.ConsultarTabla(query, DbHelper.Param("@term", "%" + term.Trim() + "%"));
 
-                        using (SqlDataReader reader = cmd.ExecuteReader())
+                    foreach (DataRow reader in dt.Rows)
+                    {
+                        results.Add(new
                         {
-                            while (reader.Read())
-                            {
-                                results.Add(new
-                                {
-                                    id = reader["idConductor"].ToString(),
-                                    text = reader["nombreCompleto"].ToString().Trim()
-                                });
-                            }
-                        }
+                            id = reader["idConductor"].ToString(),
+                            text = reader["nombreCompleto"].ToString().Trim()
+                        });
                     }
-                }
 
                 return JsonConvert.SerializeObject(results);
             }
@@ -1310,13 +1240,10 @@ namespace WebSGV.Views
 
                 System.Diagnostics.Debug.WriteLine("=== OBTENIENDO LIQUIDACIONES APROBADAS ===");
 
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
                 var lista = new List<LiquidacionAprobadaItem>();
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"
-                        SELECT 
+                string query = @"
+                        SELECT
                             ov.idOrdenViaje,
                             ov.numeroOrdenViaje,
                             c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS NombreConductor,
@@ -1356,23 +1283,20 @@ namespace WebSGV.Views
 
                     query += " ORDER BY ov.fechaSalida DESC";
 
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    var pars = new List<SqlParameter>();
+                    if (idConductor > 0)
+                        pars.Add(DbHelper.Param("@idConductor", idConductor));
+                    if (fd.HasValue)
+                        pars.Add(DbHelper.Param("@fechaDesde", fd.Value));
+                    if (fh.HasValue)
+                        pars.Add(DbHelper.Param("@fechaHasta", fh.Value));
+                    if (!string.IsNullOrEmpty(numeroOrden))
+                        pars.Add(DbHelper.Param("@numeroOrden", numeroOrden));
+
+                    DataTable dt = DbHelper.ConsultarTabla(query, pars.ToArray());
+
+                    foreach (DataRow reader in dt.Rows)
                     {
-                        if (idConductor > 0)
-                            cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                        if (fd.HasValue)
-                            cmd.Parameters.AddWithValue("@fechaDesde", fd.Value);
-                        if (fh.HasValue)
-                            cmd.Parameters.AddWithValue("@fechaHasta", fh.Value);
-                        if (!string.IsNullOrEmpty(numeroOrden))
-                            cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
-
-                        conn.Open();
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
                                 decimal ingresosSoles = Convert.ToDecimal(reader["IngresosSoles"]) + Convert.ToDecimal(reader["IngresosAdSoles"]);
                                 decimal ingresosDolares = Convert.ToDecimal(reader["IngresosDolares"]) + Convert.ToDecimal(reader["IngresosAdDolares"]);
                                 decimal gastosSoles = Convert.ToDecimal(reader["GastosSoles"]) + Convert.ToDecimal(reader["GastosAdSoles"]);
@@ -1398,10 +1322,7 @@ namespace WebSGV.Views
                                     BalanceSoles = (ingresosSoles - gastosSoles) - descS + reintS,
                                     BalanceDolares = (ingresosDolares - gastosDolares) - descD + reintD
                                 });
-                            }
-                        }
                     }
-                }
 
                 System.Diagnostics.Debug.WriteLine($"✅ {lista.Count} liquidaciones aprobadas encontradas");
                 return lista;
@@ -1434,42 +1355,30 @@ namespace WebSGV.Views
                 if (idUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
 
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
                 string numeroOrdenViaje = null;
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    conn.Open();
+                // 1. Obtener datos de la orden y verificar que esté COMPLETADO
+                object result = DbHelper.EjecutarEscalar(
+                    "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id AND estadoViaje = 'COMPLETADO'",
+                    DbHelper.Param("@id", idOrdenViaje));
+                if (result == null || result == DBNull.Value)
+                    return new { success = false, message = "La orden no se encontró o ya no está en estado COMPLETADO." };
+                numeroOrdenViaje = result.ToString();
 
-                    // 1. Obtener datos de la orden y verificar que esté COMPLETADO
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id AND estadoViaje = 'COMPLETADO'", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@id", idOrdenViaje);
-                        object result = cmd.ExecuteScalar();
-                        if (result == null || result == DBNull.Value)
-                            return new { success = false, message = "La orden no se encontró o ya no está en estado COMPLETADO." };
-                        numeroOrdenViaje = result.ToString();
-                    }
-
-                    // 2. Revertir estado de la OrdenViaje a PENDIENTE
-                    using (SqlCommand cmd = new SqlCommand(@"
-                        UPDATE OrdenViaje 
+                // 2. Revertir estado de la OrdenViaje a PENDIENTE
+                int affected = DbHelper.EjecutarNonQuery(@"
+                        UPDATE OrdenViaje
                         SET estadoViaje = 'PENDIENTE',
                             estadoAprobacion = 'PENDIENTE',
-                            observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) + 
+                            observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) +
                                 '[REVERSION ' + CONVERT(varchar, GETDATE(), 120) + '] ' + @motivo
-                        WHERE idOrdenViaje = @id AND estadoViaje = 'COMPLETADO'", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@id", idOrdenViaje);
-                        cmd.Parameters.AddWithValue("@motivo", motivo);
-                        int affected = cmd.ExecuteNonQuery();
-                        if (affected == 0)
-                            return new { success = false, message = "No se pudo revertir. Es posible que otro usuario ya haya modificado esta liquidación." };
-                    }
+                        WHERE idOrdenViaje = @id AND estadoViaje = 'COMPLETADO'",
+                    DbHelper.Param("@id", idOrdenViaje),
+                    DbHelper.Param("@motivo", motivo));
+                if (affected == 0)
+                    return new { success = false, message = "No se pudo revertir. Es posible que otro usuario ya haya modificado esta liquidación." };
 
-                    System.Diagnostics.Debug.WriteLine($"✅ Liquidación {numeroOrdenViaje} revertida por usuario {idUsuario}. Motivo: {motivo}");
-                }
+                System.Diagnostics.Debug.WriteLine($"✅ Liquidación {numeroOrdenViaje} revertida por usuario {idUsuario}. Motivo: {motivo}");
 
                 AuditoriaHelper.Registrar("REVERTIR", "OrdenViaje", idOrdenViaje,
                     $"Reversión de aprobación - Orden: {numeroOrdenViaje}. Motivo: {motivo}");
@@ -1508,27 +1417,21 @@ namespace WebSGV.Views
                 if (string.IsNullOrWhiteSpace(motivo) || motivo.Trim().Length < 10)
                     return new { success = false, message = "El motivo de corrección debe tener al menos 10 caracteres." };
 
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
                 string numeroOrdenViaje = null;
+                bool ordenEncontrada = true;
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                DbHelper.EnTransaccion((conn, tran) =>
                 {
-                    conn.Open();
-                    using (SqlTransaction tran = conn.BeginTransaction())
-                    {
-                    try
-                    {
-
                     // 1. Obtener número de orden
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id", conn, tran))
+                    object result = DbHelper.EjecutarEscalar(conn, tran,
+                        "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id",
+                        DbHelper.Param("@id", idOrdenViaje));
+                    if (result == null || result == DBNull.Value)
                     {
-                        cmd.Parameters.AddWithValue("@id", idOrdenViaje);
-                        object result = cmd.ExecuteScalar();
-                        if (result == null || result == DBNull.Value)
-                            return new { success = false, message = "No se encontró la orden de viaje." };
-                        numeroOrdenViaje = result.ToString();
+                        ordenEncontrada = false;
+                        return;
                     }
+                    numeroOrdenViaje = result.ToString();
 
                     // 2. UPSERT DescuentosReintegros
                     string upsertSql = @"
@@ -1543,46 +1446,34 @@ namespace WebSGV.Views
                                 (numeroOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, activo)
                             VALUES (@numeroOrden, @descS, @descD, @reintS, @reintD, 1)";
 
-                    using (SqlCommand cmd = new SqlCommand(upsertSql, conn, tran))
-                    {
-                        cmd.Parameters.AddWithValue("@numeroOrden", numeroOrdenViaje);
-                        cmd.Parameters.AddWithValue("@descS", descuentoSoles);
-                        cmd.Parameters.AddWithValue("@descD", descuentoDolares);
-                        cmd.Parameters.AddWithValue("@reintS", reintegroSoles);
-                        cmd.Parameters.AddWithValue("@reintD", reintegroDolares);
-                        cmd.ExecuteNonQuery();
-                    }
+                    DbHelper.EjecutarNonQuery(conn, tran, upsertSql,
+                        DbHelper.Param("@numeroOrden", numeroOrdenViaje),
+                        DbHelper.Param("@descS", descuentoSoles),
+                        DbHelper.Param("@descD", descuentoDolares),
+                        DbHelper.Param("@reintS", reintegroSoles),
+                        DbHelper.Param("@reintD", reintegroDolares));
 
                     // 3. Registrar la corrección en observaciones para auditoría
-                    using (SqlCommand cmd = new SqlCommand(@"
-                        UPDATE OrdenViaje 
-                        SET observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) + 
+                    DbHelper.EjecutarNonQuery(conn, tran, @"
+                        UPDATE OrdenViaje
+                        SET observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) +
                             '[CORRECCION AJUSTES ' + CONVERT(varchar, GETDATE(), 120) + '] ' + @motivo +
                             ' | Desc S/' + CAST(@descS AS varchar) + ' $' + CAST(@descD AS varchar) +
                             ' | Reint S/' + CAST(@reintS AS varchar) + ' $' + CAST(@reintD AS varchar)
-                        WHERE idOrdenViaje = @id", conn, tran))
-                    {
-                        cmd.Parameters.AddWithValue("@id", idOrdenViaje);
-                        cmd.Parameters.AddWithValue("@motivo", motivo);
-                        cmd.Parameters.AddWithValue("@descS", descuentoSoles);
-                        cmd.Parameters.AddWithValue("@descD", descuentoDolares);
-                        cmd.Parameters.AddWithValue("@reintS", reintegroSoles);
-                        cmd.Parameters.AddWithValue("@reintD", reintegroDolares);
-                        cmd.ExecuteNonQuery();
-                    }
+                        WHERE idOrdenViaje = @id",
+                        DbHelper.Param("@id", idOrdenViaje),
+                        DbHelper.Param("@motivo", motivo),
+                        DbHelper.Param("@descS", descuentoSoles),
+                        DbHelper.Param("@descD", descuentoDolares),
+                        DbHelper.Param("@reintS", reintegroSoles),
+                        DbHelper.Param("@reintD", reintegroDolares));
 
                     System.Diagnostics.Debug.WriteLine($"✅ Ajustes corregidos para {numeroOrdenViaje} por usuario {idUsuario}");
                     System.Diagnostics.Debug.WriteLine($"   DescS={descuentoSoles} DescD={descuentoDolares} ReintS={reintegroSoles} ReintD={reintegroDolares}");
+                });
 
-                    tran.Commit();
-                    }
-                    catch
-                    {
-                        tran.Rollback();
-                        throw;
-                    }
-                    }
-                }
+                if (!ordenEncontrada)
+                    return new { success = false, message = "No se encontró la orden de viaje." };
 
                 return new { success = true, message = $"Ajustes de la liquidación {numeroOrdenViaje} corregidos exitosamente. Los cambios se reflejan en los reportes." };
             }
@@ -1759,44 +1650,30 @@ namespace WebSGV.Views
                 if (string.IsNullOrWhiteSpace(motivo) || motivo.Length < 10)
                     return new { success = false, message = "Debe indicar el motivo del rechazo." };
 
-                string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
                 int? idFirmaConductor = null;
                 string numeroOrden = null;
 
-                using (var conn = new SqlConnection(cs))
-                {
-                    conn.Open();
+                // 1) Obtener datos actuales
+                DataTable dtOrden = DbHelper.ConsultarTabla(
+                    "SELECT numeroOrdenViaje, idFirmaConductor FROM OrdenViaje WHERE idOrdenViaje = @id AND estadoAprobacion = 'PENDIENTE'",
+                    DbHelper.Param("@id", idOrdenViaje));
+                if (dtOrden.Rows.Count == 0)
+                    return new { success = false, message = "La orden no se encontró o ya no está pendiente." };
+                numeroOrden = dtOrden.Rows[0]["numeroOrdenViaje"].ToString();
+                if (dtOrden.Rows[0]["idFirmaConductor"] != DBNull.Value)
+                    idFirmaConductor = Convert.ToInt32(dtOrden.Rows[0]["idFirmaConductor"]);
 
-                    // 1) Obtener datos actuales
-                    using (var cmd = new SqlCommand(
-                        "SELECT numeroOrdenViaje, idFirmaConductor FROM OrdenViaje WHERE idOrdenViaje = @id AND estadoAprobacion = 'PENDIENTE'", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@id", idOrdenViaje);
-                        using (var r = cmd.ExecuteReader())
-                        {
-                            if (!r.Read())
-                                return new { success = false, message = "La orden no se encontró o ya no está pendiente." };
-                            numeroOrden = r["numeroOrdenViaje"].ToString();
-                            if (r["idFirmaConductor"] != DBNull.Value)
-                                idFirmaConductor = Convert.ToInt32(r["idFirmaConductor"]);
-                        }
-                    }
-
-                    // 2) Marcar como rechazada (habilita re-envío y re-firma del conductor)
-                    using (var cmd = new SqlCommand(@"
+                // 2) Marcar como rechazada (habilita re-envío y re-firma del conductor)
+                int a = DbHelper.EjecutarNonQuery(@"
                         UPDATE OrdenViaje
                         SET estadoAprobacion = 'RECHAZADO',
                             observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) +
                                 '[RECHAZO ' + CONVERT(varchar, GETDATE(), 120) + '] ' + @motivo
-                        WHERE idOrdenViaje = @id AND estadoAprobacion = 'PENDIENTE'", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@id", idOrdenViaje);
-                        cmd.Parameters.AddWithValue("@motivo", motivo);
-                        int a = cmd.ExecuteNonQuery();
-                        if (a == 0)
-                            return new { success = false, message = "No se pudo rechazar (otro usuario la modificó)." };
-                    }
-                }
+                        WHERE idOrdenViaje = @id AND estadoAprobacion = 'PENDIENTE'",
+                    DbHelper.Param("@id", idOrdenViaje),
+                    DbHelper.Param("@motivo", motivo));
+                if (a == 0)
+                    return new { success = false, message = "No se pudo rechazar (otro usuario la modificó)." };
 
                 // 3) Opcional: revocar la firma del conductor (append-only)
                 int idRevocacion = 0;
@@ -1949,18 +1826,10 @@ namespace WebSGV.Views
         /// </summary>
         private static string GarantizarPdfArchivadoOV(int idOrdenViaje, string origenLog)
         {
-            string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-            string rutaExistente = null;
-
-            using (var conn = new SqlConnection(connectionString))
-            using (var cmd = new SqlCommand(
-                "SELECT rutaPdfFirmado FROM OrdenViaje WHERE idOrdenViaje = @id", conn))
-            {
-                cmd.Parameters.AddWithValue("@id", idOrdenViaje);
-                conn.Open();
-                object r = cmd.ExecuteScalar();
-                rutaExistente = r == null || r == DBNull.Value ? null : r.ToString();
-            }
+            object r = DbHelper.EjecutarEscalar(
+                "SELECT rutaPdfFirmado FROM OrdenViaje WHERE idOrdenViaje = @id",
+                DbHelper.Param("@id", idOrdenViaje));
+            string rutaExistente = r == null || r == DBNull.Value ? null : r.ToString();
 
             // Si hay ruta y el archivo físico existe, reusamos.
             if (!string.IsNullOrEmpty(rutaExistente))
@@ -1982,19 +1851,14 @@ namespace WebSGV.Views
 
             // Persistir ruta y hash si la columna acepta (idempotente: sobrescribe
             // si ya había una ruta huérfana apuntando a un archivo inexistente).
-            using (var conn = new SqlConnection(connectionString))
-            using (var cmd = new SqlCommand(@"
+            DbHelper.EjecutarNonQuery(@"
                 UPDATE OrdenViaje
                    SET rutaPdfFirmado = @ruta,
                        hashPdfFirmado = @hash
-                 WHERE idOrdenViaje = @id", conn))
-            {
-                cmd.Parameters.AddWithValue("@ruta", (object)pdf.RutaRelativa ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@hash", (object)pdf.Hash ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@id", idOrdenViaje);
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
+                 WHERE idOrdenViaje = @id",
+                DbHelper.Param("@ruta", pdf.RutaRelativa),
+                DbHelper.Param("@hash", pdf.Hash),
+                DbHelper.Param("@id", idOrdenViaje));
 
             System.Diagnostics.Debug.WriteLine(
                 $"📄 [{origenLog}] PDF archivado para OV id={idOrdenViaje}: {pdf.RutaRelativa}");

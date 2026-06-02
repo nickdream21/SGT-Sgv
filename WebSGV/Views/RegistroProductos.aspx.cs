@@ -7,10 +7,8 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RegistroProductos : System.Web.UI.Page
+    public partial class RegistroProductos : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             SecurityHelper.AgregarHeadersSeguridad();
@@ -27,23 +25,16 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                DataTable dt = DbHelper.ConsultarTabla("SELECT idCliente, nombre FROM Cliente ORDER BY nombre");
+
+                // Crear el elemento "Seleccione un cliente"
+                ddlCliente.Items.Clear();
+                ddlCliente.Items.Add(new System.Web.UI.WebControls.ListItem("-- Seleccione un cliente --", "0"));
+
+                foreach (DataRow row in dt.Rows)
                 {
-                    string query = "SELECT idCliente, nombre FROM Cliente ORDER BY nombre";
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    conn.Open();
-
-                    // Crear el elemento "Seleccione un cliente"
-                    ddlCliente.Items.Clear();
-                    ddlCliente.Items.Add(new System.Web.UI.WebControls.ListItem("-- Seleccione un cliente --", "0"));
-
-                    SqlDataReader reader = cmd.ExecuteReader();
-                    while (reader.Read())
-                    {
-                        int idCliente = reader.GetInt32(0);
-                        string nombreCliente = reader.GetString(1);
-                        ddlCliente.Items.Add(new System.Web.UI.WebControls.ListItem(nombreCliente, idCliente.ToString()));
-                    }
+                    ddlCliente.Items.Add(new System.Web.UI.WebControls.ListItem(
+                        row["nombre"].ToString(), row["idCliente"].ToString()));
                 }
             }
             catch (Exception ex)
@@ -71,40 +62,32 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                // Verificar si el producto ya existe para este cliente
+                int productoExistente = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM Producto WHERE nombre = @nombre AND idCliente = @idCliente",
+                    DbHelper.Param("@nombre", txtNombre.Text.Trim()),
+                    DbHelper.Param("@idCliente", ddlCliente.SelectedValue)));
+
+                if (productoExistente > 0)
                 {
-                    // Verificar si el producto ya existe para este cliente
-                    string checkQuery = "SELECT COUNT(*) FROM Producto WHERE nombre = @nombre AND idCliente = @idCliente";
-                    SqlCommand checkCmd = new SqlCommand(checkQuery, conn);
-                    checkCmd.Parameters.AddWithValue("@nombre", txtNombre.Text.Trim());
-                    checkCmd.Parameters.AddWithValue("@idCliente", ddlCliente.SelectedValue);
-
-                    conn.Open();
-                    int productoExistente = (int)checkCmd.ExecuteScalar();
-
-                    if (productoExistente > 0)
-                    {
-                        MostrarMensaje("Ya existe un producto con ese nombre para el cliente seleccionado.");
-                        return;
-                    }
-
-                    // Insertar el nuevo producto asociado al cliente
-                    string insertQuery = "INSERT INTO Producto (nombre, idCliente) VALUES (@nombre, @idCliente)";
-                    SqlCommand insertCmd = new SqlCommand(insertQuery, conn);
-                    insertCmd.Parameters.AddWithValue("@nombre", txtNombre.Text.Trim());
-                    insertCmd.Parameters.AddWithValue("@idCliente", ddlCliente.SelectedValue);
-
-                    insertCmd.ExecuteNonQuery();
-
-                    AuditoriaHelper.Registrar("INSERT", "Producto",
-                        descripcion: $"Producto registrado - Nombre: {txtNombre.Text.Trim()}, Cliente: {ddlCliente.SelectedItem?.Text}");
-
-                    // Limpiar el formulario
-                    LimpiarFormulario();
-
-                    // Mostrar mensaje de éxito
-                    MostrarMensaje("Producto registrado correctamente para el cliente seleccionado.", true);
+                    MostrarMensaje("Ya existe un producto con ese nombre para el cliente seleccionado.");
+                    return;
                 }
+
+                // Insertar el nuevo producto asociado al cliente
+                DbHelper.EjecutarNonQuery(
+                    "INSERT INTO Producto (nombre, idCliente) VALUES (@nombre, @idCliente)",
+                    DbHelper.Param("@nombre", txtNombre.Text.Trim()),
+                    DbHelper.Param("@idCliente", ddlCliente.SelectedValue));
+
+                AuditoriaHelper.Registrar("INSERT", "Producto",
+                    descripcion: $"Producto registrado - Nombre: {txtNombre.Text.Trim()}, Cliente: {ddlCliente.SelectedItem?.Text}");
+
+                // Limpiar el formulario
+                LimpiarFormulario();
+
+                // Mostrar mensaje de éxito
+                MostrarMensaje("Producto registrado correctamente para el cliente seleccionado.", true);
             }
             catch (Exception ex)
             {

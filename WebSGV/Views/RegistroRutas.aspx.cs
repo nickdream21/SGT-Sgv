@@ -8,10 +8,8 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RegistroRutas : System.Web.UI.Page
+    public partial class RegistroRutas : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             SecurityHelper.AgregarHeadersSeguridad();
@@ -27,27 +25,18 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = "SELECT idCliente, nombre FROM Cliente ORDER BY nombre";
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    conn.Open();
+                DataTable dt = DbHelper.ConsultarTabla("SELECT idCliente, nombre FROM Cliente ORDER BY nombre");
 
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataTable dt = new DataTable();
-                    adapter.Fill(dt);
+                // Agregar un item predeterminado
+                DataRow dr = dt.NewRow();
+                dr["idCliente"] = 0;
+                dr["nombre"] = "-- Seleccione un Cliente --";
+                dt.Rows.InsertAt(dr, 0);
 
-                    // Agregar un item predeterminado
-                    DataRow dr = dt.NewRow();
-                    dr["idCliente"] = 0;
-                    dr["nombre"] = "-- Seleccione un Cliente --";
-                    dt.Rows.InsertAt(dr, 0);
-
-                    ddlCliente.DataSource = dt;
-                    ddlCliente.DataTextField = "nombre";
-                    ddlCliente.DataValueField = "idCliente";
-                    ddlCliente.DataBind();
-                }
+                ddlCliente.DataSource = dt;
+                ddlCliente.DataTextField = "nombre";
+                ddlCliente.DataValueField = "idCliente";
+                ddlCliente.DataBind();
             }
             catch (Exception ex)
             {
@@ -75,45 +64,35 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                // Verificar si la ruta ya existe para este cliente
+                int rutaExistente = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    @"SELECT COUNT(*) FROM Ruta
+                      WHERE nombre = @nombre AND idCliente = @idCliente",
+                    DbHelper.Param("@nombre", txtNombreRuta.Text.Trim()),
+                    DbHelper.Param("@idCliente", Convert.ToInt32(ddlCliente.SelectedValue))));
+
+                if (rutaExistente > 0)
                 {
-                    conn.Open();
-
-                    // Verificar si la ruta ya existe para este cliente
-                    string checkQuery = @"SELECT COUNT(*) FROM Ruta 
-                                         WHERE nombre = @nombre AND idCliente = @idCliente";
-                    SqlCommand checkCmd = new SqlCommand(checkQuery, conn);
-                    checkCmd.Parameters.AddWithValue("@nombre", txtNombreRuta.Text.Trim());
-                    checkCmd.Parameters.AddWithValue("@idCliente", Convert.ToInt32(ddlCliente.SelectedValue));
-
-                    int rutaExistente = (int)checkCmd.ExecuteScalar();
-
-                    if (rutaExistente > 0)
-                    {
-                        MostrarMensaje("Ya existe una ruta con ese nombre para el cliente seleccionado.");
-                        return;
-                    }
-
-                    // Insertar la nueva ruta
-                    string insertQuery = @"INSERT INTO Ruta (nombre, descripcion, idCliente) 
-                                          VALUES (@nombre, @descripcion, @idCliente)";
-
-                    SqlCommand insertCmd = new SqlCommand(insertQuery, conn);
-                    insertCmd.Parameters.AddWithValue("@nombre", txtNombreRuta.Text.Trim());
-                    insertCmd.Parameters.AddWithValue("@descripcion", txtDescripcion.Text.Trim());
-                    insertCmd.Parameters.AddWithValue("@idCliente", Convert.ToInt32(ddlCliente.SelectedValue));
-
-                    insertCmd.ExecuteNonQuery();
-
-                    AuditoriaHelper.Registrar("INSERT", "Ruta",
-                        descripcion: $"Ruta registrada - Nombre: {txtNombreRuta.Text.Trim()}, Cliente: {ddlCliente.SelectedItem.Text}");
-
-                    // Limpiar el formulario
-                    LimpiarFormulario();
-
-                    // Mostrar mensaje de éxito
-                    MostrarMensaje("Ruta registrada correctamente.", true);
+                    MostrarMensaje("Ya existe una ruta con ese nombre para el cliente seleccionado.");
+                    return;
                 }
+
+                // Insertar la nueva ruta
+                DbHelper.EjecutarNonQuery(
+                    @"INSERT INTO Ruta (nombre, descripcion, idCliente)
+                      VALUES (@nombre, @descripcion, @idCliente)",
+                    DbHelper.Param("@nombre", txtNombreRuta.Text.Trim()),
+                    DbHelper.Param("@descripcion", txtDescripcion.Text.Trim()),
+                    DbHelper.Param("@idCliente", Convert.ToInt32(ddlCliente.SelectedValue)));
+
+                AuditoriaHelper.Registrar("INSERT", "Ruta",
+                    descripcion: $"Ruta registrada - Nombre: {txtNombreRuta.Text.Trim()}, Cliente: {ddlCliente.SelectedItem.Text}");
+
+                // Limpiar el formulario
+                LimpiarFormulario();
+
+                // Mostrar mensaje de éxito
+                MostrarMensaje("Ruta registrada correctamente.", true);
             }
             catch (Exception ex)
             {

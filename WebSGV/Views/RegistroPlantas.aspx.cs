@@ -9,10 +9,8 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RegistroPlantas : System.Web.UI.Page
+    public partial class RegistroPlantas : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             RolesHelper.ValidarAccesoSeccion("REGISTRO");
@@ -28,19 +26,11 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = "SELECT idPlanta, nombre, esInternacional, activo FROM Planta ORDER BY esInternacional, nombre";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        conn.Open();
-                        DataTable dt = new DataTable();
-                        dt.Load(cmd.ExecuteReader());
-                        gvPlantas.DataSource = dt;
-                        gvPlantas.DataBind();
-                        lblTotalPlantas.Text = dt.Rows.Count + " registro(s)";
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(
+                    "SELECT idPlanta, nombre, esInternacional, activo FROM Planta ORDER BY esInternacional, nombre");
+                gvPlantas.DataSource = dt;
+                gvPlantas.DataBind();
+                lblTotalPlantas.Text = dt.Rows.Count + " registro(s)";
             }
             catch (Exception ex)
             {
@@ -72,31 +62,20 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                int existe = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM Planta WHERE UPPER(nombre) = @nombre AND esInternacional = @esInternacional",
+                    DbHelper.Param("@nombre", nombre),
+                    DbHelper.Param("@esInternacional", esInternacional)));
+                if (existe > 0)
                 {
-                    conn.Open();
-
-                    string checkQuery = "SELECT COUNT(*) FROM Planta WHERE UPPER(nombre) = @nombre AND esInternacional = @esInternacional";
-                    using (SqlCommand checkCmd = new SqlCommand(checkQuery, conn))
-                    {
-                        checkCmd.Parameters.AddWithValue("@nombre", nombre);
-                        checkCmd.Parameters.AddWithValue("@esInternacional", esInternacional);
-                        int existe = (int)checkCmd.ExecuteScalar();
-                        if (existe > 0)
-                        {
-                            MostrarMensaje("Ya existe una planta con ese nombre en el mismo ámbito.");
-                            return;
-                        }
-                    }
-
-                    string insertQuery = "INSERT INTO Planta (nombre, esInternacional, activo) VALUES (@nombre, @esInternacional, 1)";
-                    using (SqlCommand insertCmd = new SqlCommand(insertQuery, conn))
-                    {
-                        insertCmd.Parameters.AddWithValue("@nombre", nombre);
-                        insertCmd.Parameters.AddWithValue("@esInternacional", esInternacional);
-                        insertCmd.ExecuteNonQuery();
-                    }
+                    MostrarMensaje("Ya existe una planta con ese nombre en el mismo ámbito.");
+                    return;
                 }
+
+                DbHelper.EjecutarNonQuery(
+                    "INSERT INTO Planta (nombre, esInternacional, activo) VALUES (@nombre, @esInternacional, 1)",
+                    DbHelper.Param("@nombre", nombre),
+                    DbHelper.Param("@esInternacional", esInternacional));
 
                 AuditoriaHelper.Registrar("INSERT", "Planta",
                     descripcion: $"Planta registrada - Nombre: {nombre}, Ámbito: {(esInternacional ? "Internacional" : "Nacional")}");
@@ -119,18 +98,11 @@ namespace WebSGV.Views
                 int idPlanta = Convert.ToInt32(e.CommandArgument);
                 try
                 {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        string query = @"UPDATE Planta 
+                    DbHelper.EjecutarNonQuery(
+                        @"UPDATE Planta
                             SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
-                            WHERE idPlanta = @id";
-                        using (SqlCommand cmd = new SqlCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", idPlanta);
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
+                            WHERE idPlanta = @id",
+                        DbHelper.Param("@id", idPlanta));
 
                     AuditoriaHelper.Registrar("UPDATE", "Planta", idPlanta,
                         "Estado de planta actualizado (activar/desactivar)");
@@ -202,30 +174,23 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                int dup = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM Planta WHERE UPPER(nombre)=@nombre AND esInternacional=@esInt AND idPlanta<>@id",
+                    DbHelper.Param("@nombre", nombre),
+                    DbHelper.Param("@esInt", esInternacional),
+                    DbHelper.Param("@id", idPlanta)));
+                if (dup > 0)
                 {
-                    conn.Open();
-                    string check = "SELECT COUNT(*) FROM Planta WHERE UPPER(nombre)=@nombre AND esInternacional=@esInt AND idPlanta<>@id";
-                    using (SqlCommand cmd = new SqlCommand(check, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@nombre", nombre);
-                        cmd.Parameters.AddWithValue("@esInt", esInternacional);
-                        cmd.Parameters.AddWithValue("@id", idPlanta);
-                        if ((int)cmd.ExecuteScalar() > 0)
-                        {
-                            MostrarMensaje("Ya existe otra planta con ese nombre en el mismo ámbito.");
-                            return;
-                        }
-                    }
-                    string update = "UPDATE Planta SET nombre=@nombre, esInternacional=@esInt WHERE idPlanta=@id";
-                    using (SqlCommand cmd = new SqlCommand(update, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@nombre", nombre);
-                        cmd.Parameters.AddWithValue("@esInt", esInternacional);
-                        cmd.Parameters.AddWithValue("@id", idPlanta);
-                        cmd.ExecuteNonQuery();
-                    }
+                    MostrarMensaje("Ya existe otra planta con ese nombre en el mismo ámbito.");
+                    return;
                 }
+
+                DbHelper.EjecutarNonQuery(
+                    "UPDATE Planta SET nombre=@nombre, esInternacional=@esInt WHERE idPlanta=@id",
+                    DbHelper.Param("@nombre", nombre),
+                    DbHelper.Param("@esInt", esInternacional),
+                    DbHelper.Param("@id", idPlanta));
+
                 AuditoriaHelper.Registrar("UPDATE", "Planta", idPlanta,
                     $"Planta editada — Nombre:{nombre}, Ámbito:{(esInternacional ? "Internacional" : "Nacional")}");
                 hfIdPlanta.Value = "";
