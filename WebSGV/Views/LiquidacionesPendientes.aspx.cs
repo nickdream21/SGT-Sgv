@@ -503,6 +503,8 @@ namespace WebSGV.Views
                 AuditoriaHelper.Registrar("RECHAZAR", "OrdenViaje", idOrdenViaje,
                     $"Liquidación rechazada - Orden: {numeroOrdenViaje}, Motivo: {observaciones}");
 
+                Services.NotificacionService.NotificarLiquidacionRechazada(idOrdenViaje, numeroOrdenViaje, observaciones);
+
                 MostrarMensaje(
                     $"Liquidación <strong>{System.Web.HttpUtility.HtmlEncode(numeroOrdenViaje)}</strong> rechazada exitosamente. El viaje ha sido reabierto para correcciones del conductor.",
                     "warning"

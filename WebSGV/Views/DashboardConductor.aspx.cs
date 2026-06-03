@@ -1117,6 +1117,9 @@ namespace WebSGV.Views
                     AuditoriaHelper.Registrar("LIQUIDAR", "OrdenViaje", numeroOrdenViaje,
                         $"Conductor envió liquidación - Orden: {numeroOrdenViaje}, Viajes: {string.Join(", ", idsViajesActivos)}");
 
+                    string nombreConductorNotif = Session["Nombre"]?.ToString() ?? lblNombreConductor.Text;
+                    Services.NotificacionService.NotificarLiquidacionPendiente(numeroOrdenViaje, nombreConductorNotif);
+
                     Log($"=== LIQUIDACIÓN ENVIADA EXITOSAMENTE (idOrdenViaje={idOrdenGuardada}) ===");
 
                     // ✅ Fase 3.A: redirigir al conductor a la vista de firma digital

@@ -470,6 +470,7 @@
     <Compile Include="Helpers\ValidacionHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\FirmaService.cs" />
+    <Compile Include="Services\NotificacionService.cs" />
     <Compile Include="Services\PdfAbastecimientoService.cs" />
     <Compile Include="Services\PdfOrdenViajeService.cs" />
     <Compile Include="Site.Master.cs">
