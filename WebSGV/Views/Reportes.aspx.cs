@@ -19,9 +19,8 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class Reportes : System.Web.UI.Page
+    public partial class Reportes : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -96,33 +95,15 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT idConductor, 
-                                    CONCAT(nombre, ' ', apPaterno, ' ', apMaterno) as NombreCompleto 
-                                    FROM Conductor 
-                                    ORDER BY apPaterno, apMaterno, nombre";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    conn.Open();
-
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataTable dt = new DataTable();
-                    adapter.Fill(dt);
-
-                    ddlConductor.DataSource = dt;
-                    ddlConductor.DataBind();
-
-                    // Agregar el item por defecto
-                    ddlConductor.Items.Insert(0, new ListItem("Todos los conductores", ""));
-                }
+                ddlConductor.DataSource = DbHelper.ConsultarTabla(
+                    "SELECT idConductor, CONCAT(nombre,' ',apPaterno,' ',apMaterno) as NombreCompleto FROM Conductor ORDER BY apPaterno, apMaterno, nombre");
+                ddlConductor.DataBind();
+                ddlConductor.Items.Insert(0, new ListItem("Todos los conductores", ""));
             }
             catch (Exception ex)
             {
-                // En caso de error, simplemente asegurarse de que el dropdown tenga al menos un item
                 if (ddlConductor.Items.Count == 0)
                     ddlConductor.Items.Add(new ListItem("Todos los conductores", ""));
-
                 System.Diagnostics.Debug.WriteLine("Error al cargar conductores: " + ex.Message);
             }
         }
@@ -131,68 +112,32 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT idTracto, placaTracto, marca, modelo 
-                                  FROM Tracto 
-                                  ORDER BY placaTracto";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    conn.Open();
-
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataTable dt = new DataTable();
-                    adapter.Fill(dt);
-
-                    ddlVehiculo.DataSource = dt;
-                    ddlVehiculo.DataBind();
-
-                    // Agregar el item por defecto
-                    ddlVehiculo.Items.Insert(0, new ListItem("Todos los vehículos", ""));
-                }
+                ddlVehiculo.DataSource = DbHelper.ConsultarTabla(
+                    "SELECT idTracto, placaTracto, marca, modelo FROM Tracto ORDER BY placaTracto");
+                ddlVehiculo.DataBind();
+                ddlVehiculo.Items.Insert(0, new ListItem("Todos los vehículos", ""));
             }
             catch (Exception ex)
             {
-                // En caso de error, simplemente asegurarse de que el dropdown tenga al menos un item
                 if (ddlVehiculo.Items.Count == 0)
                     ddlVehiculo.Items.Add(new ListItem("Todos los vehículos", ""));
-
                 System.Diagnostics.Debug.WriteLine("Error al cargar vehículos: " + ex.Message);
             }
         }
-
-
 
         private void CargarProductos()
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT idProducto, nombre 
-                                  FROM Producto 
-                                  ORDER BY nombre";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    conn.Open();
-
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataTable dt = new DataTable();
-                    adapter.Fill(dt);
-
-                    ddlProducto.DataSource = dt;
-                    ddlProducto.DataBind();
-
-                    // Agregar el item por defecto
-                    ddlProducto.Items.Insert(0, new ListItem("Todos los productos", ""));
-                }
+                ddlProducto.DataSource = DbHelper.ConsultarTabla(
+                    "SELECT idProducto, nombre FROM Producto ORDER BY nombre");
+                ddlProducto.DataBind();
+                ddlProducto.Items.Insert(0, new ListItem("Todos los productos", ""));
             }
             catch (Exception ex)
             {
-                // En caso de error, simplemente asegurarse de que el dropdown tenga al menos un item
                 if (ddlProducto.Items.Count == 0)
                     ddlProducto.Items.Add(new ListItem("Todos los productos", ""));
-
                 System.Diagnostics.Debug.WriteLine("Error al cargar productos: " + ex.Message);
             }
         }
@@ -203,8 +148,8 @@ namespace WebSGV.Views
             {
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    string query = @"SELECT idLugarAbastecimiento, nombreAbastecimiento 
-                                  FROM LugarAbastecimiento 
+                    string query = @"SELECT idLugarAbastecimiento, nombreAbastecimiento
+                                  FROM LugarAbastecimiento
                                   ORDER BY nombreAbastecimiento";
 
                     SqlCommand cmd = new SqlCommand(query, conn);
