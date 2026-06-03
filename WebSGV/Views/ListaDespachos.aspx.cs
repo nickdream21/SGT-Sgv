@@ -14,12 +14,8 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class ListaDespachos : System.Web.UI.Page
+    public partial class ListaDespachos : PaginaBase
     {
-        private string ConnectionString
-        {
-            get { return ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString; }
-        }
 
         #region Clases Auxiliares
 
@@ -240,7 +236,7 @@ namespace WebSGV.Views
 
         private void CargarDropDownListSP(DropDownList ddl, string spName, SqlParameter[] parametros, string textField, string valueField, string defaultText)
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand(spName, conn))
                 {
@@ -323,7 +319,7 @@ namespace WebSGV.Views
         {
             List<ViajeActivo> viajes = new List<ViajeActivo>();
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerViajesActivos", conn))
                 {
@@ -382,7 +378,7 @@ namespace WebSGV.Views
         {
             List<DespachoViaje> despachos = new List<DespachoViaje>();
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerDespachosViaje", conn))
                 {
@@ -405,7 +401,7 @@ namespace WebSGV.Views
 
         private void ActualizarInformacionViajeDetalle(int idViajeProgreso)
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerInfoViajeDetalle", conn))
                 {
@@ -464,7 +460,7 @@ namespace WebSGV.Views
         {
             List<LoteRegistrado> lotes = new List<LoteRegistrado>();
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerLotesRegistrados", conn))
                 {
@@ -530,7 +526,7 @@ namespace WebSGV.Views
             if (criterios == default) return null;
 
             List<LoteRegistrado> lotes = new List<LoteRegistrado>();
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerLotesRegistrados", conn))
                 {
@@ -588,7 +584,7 @@ namespace WebSGV.Views
             var criterios = ParsearIdLoteVirtual(idLoteVirtual);
             if (criterios == default) return ids;
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerIdsDespachosDeLote", conn))
                 {
@@ -645,7 +641,7 @@ namespace WebSGV.Views
 
             if (idsDespachos.Count == 0) return despachos;
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerDespachosPorIds", conn))
                 {
@@ -705,7 +701,7 @@ namespace WebSGV.Views
 
             // Pre-cargar todos los conductores una sola vez para toda la grid
             _conductoresLoteCache = new List<ListItem>();
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerTodosConductores", conn))
                 {
@@ -725,7 +721,7 @@ namespace WebSGV.Views
             }
 
             List<DespachoConConductor> despachos = new List<DespachoConConductor>();
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerDespachosConductoresLote", conn))
                 {
@@ -965,7 +961,7 @@ namespace WebSGV.Views
 
         private void CargarConductoresEnDropDown(DropDownList ddl)
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerTodosConductores", conn))
                 {
@@ -1122,7 +1118,7 @@ namespace WebSGV.Views
 
             Dictionary<int, int> cambiosConductores = ObtenerCambiosConductoresDesdeGrid();
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 conn.Open();
                 using (SqlTransaction transaction = conn.BeginTransaction())
@@ -1296,7 +1292,7 @@ namespace WebSGV.Views
         {
             if (idsDespachos == null || idsDespachos.Count == 0) return 0;
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_LD_AnularLote", conn))
                 {
@@ -1355,7 +1351,7 @@ namespace WebSGV.Views
         {
             if (idsDespachos.Count == 0) return;
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_LD_EliminarLote", conn))
                 {
@@ -1664,7 +1660,7 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     using (SqlCommand cmd = new SqlCommand("sp_LD_ContarViajesActivos", conn))
                     {

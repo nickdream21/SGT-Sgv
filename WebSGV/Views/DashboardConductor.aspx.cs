@@ -14,7 +14,7 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class DashboardConductor : System.Web.UI.Page
+    public partial class DashboardConductor : PaginaBase
     {
         #region Clases de Datos
 
@@ -153,10 +153,6 @@ namespace WebSGV.Views
 
         #region Variables Globales
 
-        private string ConnectionString
-        {
-            get { return ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString; }
-        }
 
         private int IdConductorActual
         {
@@ -309,7 +305,7 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerDatosConductor", conn))
                     {
@@ -348,7 +344,7 @@ namespace WebSGV.Views
             {
                 Log($"Verificando observaciones de rechazo para {idsViajes.Count} viaje(s)");
 
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     using (SqlCommand cmd = new SqlCommand("sp_DC_VerificarObservacionesRechazo", conn))
                     {
@@ -452,7 +448,7 @@ namespace WebSGV.Views
         {
             try
             {
-                string connStr = ConnectionString;
+                string connStr = connectionString;
                 using (SqlConnection conn = new SqlConnection(connStr))
                 {
                     conn.Open();
@@ -767,7 +763,7 @@ namespace WebSGV.Views
             List<ViajeActivo> viajes = new List<ViajeActivo>();
             try
             {
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerViajesActivosConductor", conn))
                     {
@@ -863,7 +859,7 @@ namespace WebSGV.Views
             {
                 List<DespachoInfo> despachos = new List<DespachoInfo>();
 
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerDespachosViajesActivos", conn))
                     {
@@ -1033,7 +1029,7 @@ namespace WebSGV.Views
                 bool transaccionExitosa = false;
                 int idOrdenGuardada = 0;
 
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     conn.Open();
                     Log("Conexión abierta");
@@ -1614,7 +1610,7 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerHistorialLiquidaciones", conn))
                     {
@@ -1692,7 +1688,7 @@ namespace WebSGV.Views
             {
                 List<EstacionPeaje> estaciones = new List<EstacionPeaje>();
 
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerEstacionesPeaje", conn))
                     {
@@ -1727,7 +1723,7 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     using (SqlCommand cmd = new SqlCommand("sp_DC_GenerarNumeroOrden", conn))
                     {
@@ -1771,7 +1767,7 @@ namespace WebSGV.Views
             {
                 Log($"Obteniendo datos del viaje para idViajeProgreso={idViajeProgreso}");
 
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerDatosViajeParaLiquidacion", conn))
                     {
@@ -1966,7 +1962,7 @@ namespace WebSGV.Views
                              $"WHERE idViajeProgreso IN ({string.Join(",", paramNames)}) " +
                              $"AND idConductor = @idConductor";
 
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 using (SqlCommand cmd = new SqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@idConductor", idConductor);
@@ -1991,7 +1987,7 @@ namespace WebSGV.Views
             {
                 if (string.IsNullOrEmpty(numeroOrden)) return false;
 
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     using (SqlCommand cmd = new SqlCommand(
                         "SELECT COUNT(*) FROM OrdenViaje WHERE numeroOrdenViaje = @numeroOrden AND idConductor = @idConductor", conn))
@@ -2070,7 +2066,7 @@ namespace WebSGV.Views
 
                 int idConductorActual = Convert.ToInt32(session["IdConductor"]);
 
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                string connectionString = DbHelper.ConnectionString;
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {

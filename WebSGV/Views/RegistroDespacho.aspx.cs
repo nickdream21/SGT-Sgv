@@ -13,12 +13,8 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RegistroDespacho : System.Web.UI.Page
+    public partial class RegistroDespacho : PaginaBase
     {
-        private string ConnectionString
-        {
-            get { return ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString; }
-        }
 
         #region Clases Auxiliares
 
@@ -227,7 +223,7 @@ namespace WebSGV.Views
 
         private void CargarConductores()
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_ObtenerConductoresActivos", conn))
                 {
@@ -251,7 +247,7 @@ namespace WebSGV.Views
 
         private void CargarTractos()
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_ObtenerTractosActivos", conn))
                 {
@@ -275,7 +271,7 @@ namespace WebSGV.Views
 
         private void CargarCarretas()
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_ObtenerCarretasActivas", conn))
                 {
@@ -299,7 +295,7 @@ namespace WebSGV.Views
 
         private void CargarClientes()
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_ObtenerClientesActivos", conn))
                 {
@@ -331,7 +327,7 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     using (SqlCommand cmd = new SqlCommand("sp_ObtenerPlantasPorAmbito", conn))
                     {
@@ -1066,7 +1062,7 @@ namespace WebSGV.Views
 
         private int? CrearDocumentoBaseSeparado(string tipo, LoteDespachos lote, int? idFactura = null)
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand())
                 {
@@ -1120,7 +1116,7 @@ namespace WebSGV.Views
             string numeroCPIC = (pnlCPICBase.Visible && !string.IsNullOrEmpty(txtNumeroCPICBase.Text))
                 ? txtNumeroCPICBase.Text.Trim() : null;
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_ValidarDocumentosDuplicados", conn))
                 {
@@ -1157,7 +1153,7 @@ namespace WebSGV.Views
 
         private int CrearDespachoIndividual(LoteDespachos lote, ConductorLote conductor, int? idFactura, int? idCPIC)
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_CrearDespacho", conn))
                 {
@@ -1206,7 +1202,7 @@ namespace WebSGV.Views
         {
             List<ViajeEnProgreso> viajes = new List<ViajeEnProgreso>();
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_ObtenerViajesAbiertosConductor", conn))
                 {
@@ -1238,7 +1234,7 @@ namespace WebSGV.Views
 
         private ViajeEnProgreso ObtenerInfoViaje(int idViajeProgreso)
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_ObtenerInfoViaje", conn))
                 {
@@ -1269,7 +1265,7 @@ namespace WebSGV.Views
 
         private int CrearNuevoViajeProgreso(int idConductor, string descripcion = null)
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_CrearViajeProgreso", conn))
                 {
@@ -1454,7 +1450,7 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     using (SqlCommand cmd = new SqlCommand("sp_ObtenerHistorialViajesConductor", conn))
                     {
@@ -1493,7 +1489,7 @@ namespace WebSGV.Views
                 {
                     int idViajeProgreso = Convert.ToInt32(e.CommandArgument);
 
-                    using (SqlConnection conn = new SqlConnection(ConnectionString))
+                    using (SqlConnection conn = new SqlConnection(connectionString))
                     {
                         using (SqlCommand cmd = new SqlCommand("sp_ReabrirViajeProgreso", conn))
                         {
