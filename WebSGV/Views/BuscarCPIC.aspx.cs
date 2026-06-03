@@ -12,7 +12,7 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class BusquedaCPIC : System.Web.UI.Page
+    public partial class BusquedaCPIC : PaginaBase
     {
         // Configuración para archivos
         private const long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -93,88 +93,59 @@ namespace WebSGV.Views
 
         private CPIC_Actualizado ObtenerCPIC(string numeroCPIC)
         {
-            CPIC_Actualizado cpic = null;
-
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                DataTable dtCPIC = DbHelper.ConsultarTabla(@"
+                    SELECT c.idCPIC, c.numeroCPIC, c.idFactura, c.valorTotalFlete, c.fechaEmision,
+                           c.pesoNeto, c.pesoBruto, f.numeroFactura
+                    FROM CPIC c
+                    LEFT JOIN Factura f ON c.idFactura = f.idFactura
+                    WHERE c.numeroCPIC = @numeroCPIC",
+                    DbHelper.Param("@numeroCPIC", numeroCPIC));
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                if (dtCPIC.Rows.Count == 0) return null;
+
+                DataRow row = dtCPIC.Rows[0];
+                var cpic = new CPIC_Actualizado
                 {
-                    connection.Open();
+                    IdCPIC         = Convert.ToInt32(row["idCPIC"]),
+                    NumeroCPIC     = row["numeroCPIC"].ToString(),
+                    IdFactura      = row["idFactura"]    != DBNull.Value ? Convert.ToInt32(row["idFactura"])    : 0,
+                    NumeroFactura  = row["numeroFactura"] != DBNull.Value ? row["numeroFactura"].ToString()     : "",
+                    FechaEmision   = Convert.ToDateTime(row["fechaEmision"]),
+                    ValorTotalFlete= Convert.ToDecimal(row["valorTotalFlete"]),
+                    PesoNeto       = row["pesoNeto"]  != DBNull.Value ? Convert.ToDecimal(row["pesoNeto"])  : 0,
+                    PesoBruto      = row["pesoBruto"] != DBNull.Value ? Convert.ToDecimal(row["pesoBruto"]) : 0,
+                    Productos      = new List<ProductoCPIC_Actualizado>()
+                };
 
-                    // 1. Obtener información del CPIC (con campos de peso)
-                    string queryCPIC = @"
-                        SELECT c.idCPIC, c.numeroCPIC, c.idFactura, c.valorTotalFlete, c.fechaEmision, 
-                               c.pesoNeto, c.pesoBruto, f.numeroFactura 
-                        FROM CPIC c 
-                        LEFT JOIN Factura f ON c.idFactura = f.idFactura 
-                        WHERE c.numeroCPIC = @numeroCPIC";
+                DataTable dtProd = DbHelper.ConsultarTabla(@"
+                    SELECT cp.idCPIC, cp.idProducto, cp.cantidadBolsasProducto, p.nombre as nombreProducto
+                    FROM CPIC_Productos cp
+                    JOIN Producto p ON cp.idProducto = p.idProducto
+                    WHERE cp.idCPIC = @idCPIC",
+                    DbHelper.Param("@idCPIC", cpic.IdCPIC));
 
-                    using (SqlCommand command = new SqlCommand(queryCPIC, connection))
+                int id = 1;
+                foreach (DataRow r in dtProd.Rows)
+                {
+                    cpic.Productos.Add(new ProductoCPIC_Actualizado
                     {
-                        command.Parameters.AddWithValue("@numeroCPIC", numeroCPIC);
-
-                        using (SqlDataReader reader = command.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                cpic = new CPIC_Actualizado
-                                {
-                                    IdCPIC = Convert.ToInt32(reader["idCPIC"]),
-                                    NumeroCPIC = reader["numeroCPIC"].ToString(),
-                                    IdFactura = reader["idFactura"] != DBNull.Value ? Convert.ToInt32(reader["idFactura"]) : 0,
-                                    NumeroFactura = reader["numeroFactura"] != DBNull.Value ? reader["numeroFactura"].ToString() : "",
-                                    FechaEmision = Convert.ToDateTime(reader["fechaEmision"]),
-                                    ValorTotalFlete = Convert.ToDecimal(reader["valorTotalFlete"]),
-                                    PesoNeto = reader["pesoNeto"] != DBNull.Value ? Convert.ToDecimal(reader["pesoNeto"]) : 0,
-                                    PesoBruto = reader["pesoBruto"] != DBNull.Value ? Convert.ToDecimal(reader["pesoBruto"]) : 0,
-                                    Productos = new List<ProductoCPIC_Actualizado>()
-                                };
-                            }
-                        }
-                    }
-
-                    // 2. Si encontramos el CPIC, obtener sus productos (sin peso individual)
-                    if (cpic != null)
-                    {
-                        string queryProductos = @"
-                            SELECT cp.idCPIC, cp.idProducto, cp.cantidadBolsasProducto, p.nombre as nombreProducto 
-                            FROM CPIC_Productos cp 
-                            JOIN Producto p ON cp.idProducto = p.idProducto 
-                            WHERE cp.idCPIC = @idCPIC";
-
-                        using (SqlCommand command = new SqlCommand(queryProductos, connection))
-                        {
-                            command.Parameters.AddWithValue("@idCPIC", cpic.IdCPIC);
-
-                            using (SqlDataReader reader = command.ExecuteReader())
-                            {
-                                int id = 1; // ID para el GridView
-                                while (reader.Read())
-                                {
-                                    cpic.Productos.Add(new ProductoCPIC_Actualizado
-                                    {
-                                        ID = id++,
-                                        IdCPIC = cpic.IdCPIC,
-                                        IdProducto = Convert.ToInt32(reader["idProducto"]),
-                                        NombreProducto = reader["nombreProducto"].ToString(),
-                                        CantidadBolsas = Convert.ToInt32(reader["cantidadBolsasProducto"])
-                                        // Se elimina el campo Peso
-                                    });
-                                }
-                            }
-                        }
-                    }
+                        ID            = id++,
+                        IdCPIC        = cpic.IdCPIC,
+                        IdProducto    = Convert.ToInt32(r["idProducto"]),
+                        NombreProducto= r["nombreProducto"].ToString(),
+                        CantidadBolsas= Convert.ToInt32(r["cantidadBolsasProducto"])
+                    });
                 }
+
+                return cpic;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Error al obtener CPIC: " + ex.Message);
                 throw new Exception("Error al obtener el CPIC: " + ex.Message);
             }
-
-            return cpic;
         }
 
         private void CargarDocumentosCPIC(int idCPIC)
@@ -194,46 +165,21 @@ namespace WebSGV.Views
 
         private DataTable ObtenerDocumentosCPIC(int idCPIC)
         {
-            DataTable dt = new DataTable();
-
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = @"
-                        SELECT 
-                            idDocumento,
-                            nombreOriginal,
-                            tipoArchivo,
-                            tamanoBytes,
-                            fechaSubida,
-                            usuarioSubida,
-                            descripcion,
-                            rutaArchivo
-                        FROM DocumentosCPIC 
-                        WHERE idCPIC = @idCPIC AND activo = 1
-                        ORDER BY fechaSubida DESC";
-
-                    using (SqlCommand cmd = new SqlCommand(query, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@idCPIC", idCPIC);
-
-                        using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
-                        {
-                            adapter.Fill(dt);
-                        }
-                    }
-                }
+                return DbHelper.ConsultarTabla(@"
+                    SELECT idDocumento, nombreOriginal, tipoArchivo, tamanoBytes,
+                           fechaSubida, usuarioSubida, descripcion, rutaArchivo
+                    FROM DocumentosCPIC
+                    WHERE idCPIC = @idCPIC AND activo = 1
+                    ORDER BY fechaSubida DESC",
+                    DbHelper.Param("@idCPIC", idCPIC));
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Error al obtener documentos: " + ex.Message);
+                return new DataTable();
             }
-
-            return dt;
         }
 
         private void MostrarDatosCPIC(CPIC_Actualizado cpic)
@@ -378,68 +324,36 @@ namespace WebSGV.Views
 
         private bool ActualizarCPIC(string numeroCPIC, string numeroFactura, DateTime fechaEmision, decimal pesoNeto, decimal pesoBruto)
         {
-            bool actualizado = false;
-
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                object resFactura = DbHelper.EjecutarEscalar(
+                    "SELECT idFactura FROM Factura WHERE numeroFactura = @numeroFactura",
+                    DbHelper.Param("@numeroFactura", numeroFactura));
+                int idFactura = (resFactura != null && resFactura != DBNull.Value) ? Convert.ToInt32(resFactura) : 0;
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                var parametros = new List<SqlParameter>
                 {
-                    connection.Open();
+                    DbHelper.Param("@fechaEmision", fechaEmision),
+                    DbHelper.Param("@pesoNeto",     pesoNeto),
+                    DbHelper.Param("@pesoBruto",    pesoBruto),
+                    DbHelper.Param("@numeroCPIC",   numeroCPIC)
+                };
 
-                    // 1. Obtener o validar factura
-                    int idFactura = 0;
-                    string queryBuscarFactura = "SELECT idFactura FROM Factura WHERE numeroFactura = @numeroFactura";
-                    using (SqlCommand command = new SqlCommand(queryBuscarFactura, connection))
-                    {
-                        command.Parameters.AddWithValue("@numeroFactura", numeroFactura);
-                        object result = command.ExecuteScalar();
-
-                        if (result != null && result != DBNull.Value)
-                        {
-                            idFactura = Convert.ToInt32(result);
-                        }
-                    }
-
-                    // 2. Actualizar el CPIC (con nuevos campos de peso)
-                    string queryActualizarCPIC = @"
-                        UPDATE CPIC 
-                        SET fechaEmision = @fechaEmision, 
-                            pesoNeto = @pesoNeto, 
-                            pesoBruto = @pesoBruto";
-
-                    if (idFactura > 0)
-                    {
-                        queryActualizarCPIC += ", idFactura = @idFactura";
-                    }
-
-                    queryActualizarCPIC += " WHERE numeroCPIC = @numeroCPIC";
-
-                    using (SqlCommand command = new SqlCommand(queryActualizarCPIC, connection))
-                    {
-                        command.Parameters.AddWithValue("@fechaEmision", fechaEmision);
-                        command.Parameters.AddWithValue("@pesoNeto", pesoNeto);
-                        command.Parameters.AddWithValue("@pesoBruto", pesoBruto);
-                        command.Parameters.AddWithValue("@numeroCPIC", numeroCPIC);
-
-                        if (idFactura > 0)
-                        {
-                            command.Parameters.AddWithValue("@idFactura", idFactura);
-                        }
-
-                        int rowsAffected = command.ExecuteNonQuery();
-                        actualizado = rowsAffected > 0;
-                    }
+                string query = @"UPDATE CPIC SET fechaEmision=@fechaEmision, pesoNeto=@pesoNeto, pesoBruto=@pesoBruto";
+                if (idFactura > 0)
+                {
+                    query += ", idFactura=@idFactura";
+                    parametros.Add(DbHelper.Param("@idFactura", idFactura));
                 }
+                query += " WHERE numeroCPIC=@numeroCPIC";
+
+                return DbHelper.EjecutarNonQuery(query, parametros.ToArray()) > 0;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Error al actualizar CPIC: " + ex.Message);
                 throw new Exception("Error al actualizar el CPIC: " + ex.Message);
             }
-
-            return actualizado;
         }
 
         protected void Cancelar(object sender, EventArgs e)
@@ -493,36 +407,11 @@ namespace WebSGV.Views
                 DocumentoInfo docInfo = ProcesarArchivo(cpic.IdCPIC, cpic.NumeroCPIC);
                 if (docInfo != null)
                 {
-                    string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-                    using (SqlConnection connection = new SqlConnection(connectionString))
-                    {
-                        connection.Open();
-                        using (SqlTransaction transaction = connection.BeginTransaction())
-                        {
-                            try
-                            {
-                                GuardarDocumentoEnBD(cpic.IdCPIC, docInfo, connection, transaction);
-                                transaction.Commit();
-
-                                MostrarMensaje("Documento subido correctamente.", "success");
-
-                                // Limpiar campos de upload
-                                txtDescripcionDoc.Text = "";
-
-                                // Recargar documentos
-                                CargarDocumentosCPIC(cpic.IdCPIC);
-
-                                // Ejecutar JavaScript para limpiar archivo
-                                ScriptManager.RegisterStartupScript(this, GetType(), "clearFile",
-                                    "clearFileSelection();", true);
-                            }
-                            catch (Exception ex)
-                            {
-                                transaction.Rollback();
-                                throw new Exception("Error al guardar documento: " + ex.Message);
-                            }
-                        }
-                    }
+                    GuardarDocumentoEnBD(cpic.IdCPIC, docInfo);
+                    MostrarMensaje("Documento subido correctamente.", "success");
+                    txtDescripcionDoc.Text = "";
+                    CargarDocumentosCPIC(cpic.IdCPIC);
+                    ScriptManager.RegisterStartupScript(this, GetType(), "clearFile", "clearFileSelection();", true);
                 }
             }
             catch (Exception ex)
@@ -562,68 +451,23 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                int rows = DbHelper.EjecutarNonQuery(@"
+                    UPDATE DocumentosCPIC
+                    SET activo=0, fechaEliminacion=@fechaEliminacion, usuarioEliminacion=@usuarioEliminacion
+                    WHERE idDocumento=@idDocumento",
+                    DbHelper.Param("@idDocumento",         idDocumento),
+                    DbHelper.Param("@fechaEliminacion",    DateTime.Now),
+                    DbHelper.Param("@usuarioEliminacion",  ObtenerUsuarioActual()));
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                if (rows > 0)
                 {
-                    connection.Open();
-
-                    // Obtener información del documento antes de eliminarlo
-                    string queryInfo = "SELECT rutaArchivo FROM DocumentosCPIC WHERE idDocumento = @idDocumento";
-                    string rutaArchivo = "";
-
-                    using (SqlCommand cmd = new SqlCommand(queryInfo, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@idDocumento", idDocumento);
-                        object result = cmd.ExecuteScalar();
-                        if (result != null)
-                        {
-                            rutaArchivo = result.ToString();
-                        }
-                    }
-
-                    // Marcar como inactivo en lugar de eliminar físicamente
-                    string queryEliminar = @"
-                        UPDATE DocumentosCPIC 
-                        SET activo = 0, fechaEliminacion = @fechaEliminacion, usuarioEliminacion = @usuarioEliminacion
-                        WHERE idDocumento = @idDocumento";
-
-                    using (SqlCommand cmd = new SqlCommand(queryEliminar, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@idDocumento", idDocumento);
-                        cmd.Parameters.AddWithValue("@fechaEliminacion", DateTime.Now);
-                        cmd.Parameters.AddWithValue("@usuarioEliminacion", ObtenerUsuarioActual());
-
-                        int rowsAffected = cmd.ExecuteNonQuery();
-
-                        if (rowsAffected > 0)
-                        {
-                            // Opcional: Eliminar archivo físico (comentado por seguridad)
-                            /*
-                            if (!string.IsNullOrEmpty(rutaArchivo))
-                            {
-                                string rutaCompleta = Server.MapPath(rutaArchivo);
-                                if (File.Exists(rutaCompleta))
-                                {
-                                    File.Delete(rutaCompleta);
-                                }
-                            }
-                            */
-
-                            MostrarMensaje("Documento eliminado correctamente.", "success");
-
-                            // Recargar documentos
-                            CPIC_Actualizado cpic = ObtenerCPIC(txtNumCPIC.Text);
-                            if (cpic != null)
-                            {
-                                CargarDocumentosCPIC(cpic.IdCPIC);
-                            }
-                        }
-                        else
-                        {
-                            MostrarMensaje("No se pudo eliminar el documento.", "danger");
-                        }
-                    }
+                    MostrarMensaje("Documento eliminado correctamente.", "success");
+                    CPIC_Actualizado cpic = ObtenerCPIC(txtNumCPIC.Text);
+                    if (cpic != null) CargarDocumentosCPIC(cpic.IdCPIC);
+                }
+                else
+                {
+                    MostrarMensaje("No se pudo eliminar el documento.", "danger");
                 }
             }
             catch (Exception ex)
@@ -703,37 +547,16 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = @"
-                        SELECT nombreOriginal, rutaArchivo, tipoArchivo
-                        FROM DocumentosCPIC 
-                        WHERE idDocumento = @idDocumento AND activo = 1";
-
-                    using (SqlCommand cmd = new SqlCommand(query, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@idDocumento", idDocumento);
-
-                        DataTable dt = new DataTable();
-                        using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
-                        {
-                            adapter.Fill(dt);
-                        }
-
-                        if (dt.Rows.Count > 0)
-                            return dt.Rows[0];
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(
+                    "SELECT nombreOriginal, rutaArchivo, tipoArchivo FROM DocumentosCPIC WHERE idDocumento=@idDocumento AND activo=1",
+                    DbHelper.Param("@idDocumento", idDocumento));
+                return dt.Rows.Count > 0 ? dt.Rows[0] : null;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Error al obtener info documento: " + ex.Message);
+                return null;
             }
-
-            return null;
         }
 
         // ============ MÉTODOS DE ARCHIVOS (Reutilizados de AgregarCPIC) ============
@@ -814,28 +637,22 @@ namespace WebSGV.Views
             }
         }
 
-        private void GuardarDocumentoEnBD(int idCPIC, DocumentoInfo docInfo, SqlConnection connection, SqlTransaction transaction)
+        private void GuardarDocumentoEnBD(int idCPIC, DocumentoInfo docInfo)
         {
-            string queryInsertDoc = @"
-                INSERT INTO DocumentosCPIC 
+            DbHelper.EjecutarNonQuery(@"
+                INSERT INTO DocumentosCPIC
                 (idCPIC, nombreOriginal, nombreArchivo, rutaArchivo, tipoArchivo, tamanoBytes, fechaSubida, usuarioSubida, descripcion, activo)
-                VALUES 
-                (@idCPIC, @nombreOriginal, @nombreArchivo, @rutaArchivo, @tipoArchivo, @tamanoBytes, @fechaSubida, @usuarioSubida, @descripcion, 1)";
-
-            using (SqlCommand cmd = new SqlCommand(queryInsertDoc, connection, transaction))
-            {
-                cmd.Parameters.AddWithValue("@idCPIC", idCPIC);
-                cmd.Parameters.AddWithValue("@nombreOriginal", docInfo.NombreOriginal);
-                cmd.Parameters.AddWithValue("@nombreArchivo", docInfo.NombreArchivo);
-                cmd.Parameters.AddWithValue("@rutaArchivo", docInfo.RutaCompleta);
-                cmd.Parameters.AddWithValue("@tipoArchivo", docInfo.TipoArchivo);
-                cmd.Parameters.AddWithValue("@tamanoBytes", docInfo.TamanoBytes);
-                cmd.Parameters.AddWithValue("@fechaSubida", DateTime.Now);
-                cmd.Parameters.AddWithValue("@usuarioSubida", ObtenerUsuarioActual());
-                cmd.Parameters.AddWithValue("@descripcion", string.IsNullOrEmpty(docInfo.Descripcion) ? DBNull.Value : (object)docInfo.Descripcion);
-
-                cmd.ExecuteNonQuery();
-            }
+                VALUES
+                (@idCPIC, @nombreOriginal, @nombreArchivo, @rutaArchivo, @tipoArchivo, @tamanoBytes, @fechaSubida, @usuarioSubida, @descripcion, 1)",
+                DbHelper.Param("@idCPIC",          idCPIC),
+                DbHelper.Param("@nombreOriginal",  docInfo.NombreOriginal),
+                DbHelper.Param("@nombreArchivo",   docInfo.NombreArchivo),
+                DbHelper.Param("@rutaArchivo",     docInfo.RutaCompleta),
+                DbHelper.Param("@tipoArchivo",     docInfo.TipoArchivo),
+                DbHelper.Param("@tamanoBytes",     docInfo.TamanoBytes),
+                DbHelper.Param("@fechaSubida",     DateTime.Now),
+                DbHelper.Param("@usuarioSubida",   ObtenerUsuarioActual()),
+                DbHelper.Param("@descripcion",     (object)docInfo.Descripcion ?? DBNull.Value));
         }
 
         private void CrearDirectoriosUpload()
@@ -963,42 +780,17 @@ namespace WebSGV.Views
 
         private void CargarProductos(DropDownList ddl)
         {
-            DataTable dt = new DataTable();
-            dt.Columns.Add("IdProducto", typeof(int));
-            dt.Columns.Add("Nombre", typeof(string));
-
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = "SELECT idProducto, nombre FROM Producto ORDER BY nombre";
-
-                    using (SqlCommand command = new SqlCommand(query, connection))
-                    {
-                        using (SqlDataReader reader = command.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                dt.Rows.Add(
-                                    Convert.ToInt32(reader["idProducto"]),
-                                    reader["nombre"].ToString()
-                                );
-                            }
-                        }
-                    }
-                }
+                ddl.DataSource     = DbHelper.ConsultarTabla("SELECT idProducto, nombre FROM Producto ORDER BY nombre");
+                ddl.DataTextField  = "nombre";
+                ddl.DataValueField = "idProducto";
+                ddl.DataBind();
             }
             catch (Exception ex)
             {
                 MostrarMensaje("Error al cargar los productos: " + ex.Message, "danger");
-                dt.Rows.Add(1, "Error al cargar productos");
             }
-
-            ddl.DataSource = dt;
-            ddl.DataBind();
         }
 
         protected void gvProductos_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
@@ -1057,8 +849,6 @@ namespace WebSGV.Views
 
         private bool ActualizarProductoCPIC(int id, int idProducto, string nombreProducto, int cantidad)
         {
-            bool actualizado = false;
-
             try
             {
                 CPIC_Actualizado cpic = ObtenerCPIC(txtNumCPIC.Text);
@@ -1066,72 +856,37 @@ namespace WebSGV.Views
 
                 int idCPIC = cpic.IdCPIC;
                 ProductoCPIC_Actualizado productoOriginal = cpic.Productos.FirstOrDefault(p => p.ID == id);
+                int idProductoOriginal = productoOriginal != null ? productoOriginal.IdProducto : idProducto;
 
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                int existeRegistro = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM CPIC_Productos WHERE idCPIC=@idCPIC AND idProducto=@idProductoOriginal",
+                    DbHelper.Param("@idCPIC",             idCPIC),
+                    DbHelper.Param("@idProductoOriginal", idProductoOriginal)));
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                if (existeRegistro > 0 && idProductoOriginal != idProducto)
                 {
-                    connection.Open();
+                    DbHelper.EjecutarNonQuery(
+                        "DELETE FROM CPIC_Productos WHERE idCPIC=@idCPIC AND idProducto=@idProductoOriginal",
+                        DbHelper.Param("@idCPIC",             idCPIC),
+                        DbHelper.Param("@idProductoOriginal", idProductoOriginal));
+                    existeRegistro = 0;
+                }
 
-                    string queryComprobar = "SELECT COUNT(*) FROM CPIC_Productos WHERE idCPIC = @idCPIC AND idProducto = @idProductoOriginal";
-                    int existeRegistro = 0;
-                    int idProductoOriginal = productoOriginal != null ? productoOriginal.IdProducto : idProducto;
-
-                    using (SqlCommand command = new SqlCommand(queryComprobar, connection))
-                    {
-                        command.Parameters.AddWithValue("@idCPIC", idCPIC);
-                        command.Parameters.AddWithValue("@idProductoOriginal", idProductoOriginal);
-                        existeRegistro = (int)command.ExecuteScalar();
-                    }
-
-                    if (existeRegistro > 0 && idProductoOriginal != idProducto)
-                    {
-                        string queryEliminar = "DELETE FROM CPIC_Productos WHERE idCPIC = @idCPIC AND idProducto = @idProductoOriginal";
-                        using (SqlCommand command = new SqlCommand(queryEliminar, connection))
-                        {
-                            command.Parameters.AddWithValue("@idCPIC", idCPIC);
-                            command.Parameters.AddWithValue("@idProductoOriginal", idProductoOriginal);
-                            command.ExecuteNonQuery();
-                        }
-                        existeRegistro = 0;
-                    }
-
-                    if (existeRegistro > 0)
-                    {
-                        // Actualizar (sin campo peso)
-                        string queryActualizar = @"
-                            UPDATE CPIC_Productos 
-                            SET cantidadBolsasProducto = @cantidad 
-                            WHERE idCPIC = @idCPIC AND idProducto = @idProducto";
-
-                        using (SqlCommand command = new SqlCommand(queryActualizar, connection))
-                        {
-                            command.Parameters.AddWithValue("@idCPIC", idCPIC);
-                            command.Parameters.AddWithValue("@idProducto", idProducto);
-                            command.Parameters.AddWithValue("@cantidad", cantidad);
-
-                            int rowsAffected = command.ExecuteNonQuery();
-                            actualizado = rowsAffected > 0;
-                        }
-                    }
-                    else
-                    {
-                        // Insertar (peso = 0 por defecto)
-                        string queryInsertar = @"
-                            INSERT INTO CPIC_Productos 
-                            (idCPIC, idProducto, cantidadBolsasProducto, pesoKg) 
-                            VALUES (@idCPIC, @idProducto, @cantidad, 0)";
-
-                        using (SqlCommand command = new SqlCommand(queryInsertar, connection))
-                        {
-                            command.Parameters.AddWithValue("@idCPIC", idCPIC);
-                            command.Parameters.AddWithValue("@idProducto", idProducto);
-                            command.Parameters.AddWithValue("@cantidad", cantidad);
-
-                            int rowsAffected = command.ExecuteNonQuery();
-                            actualizado = rowsAffected > 0;
-                        }
-                    }
+                if (existeRegistro > 0)
+                {
+                    return DbHelper.EjecutarNonQuery(
+                        "UPDATE CPIC_Productos SET cantidadBolsasProducto=@cantidad WHERE idCPIC=@idCPIC AND idProducto=@idProducto",
+                        DbHelper.Param("@idCPIC",    idCPIC),
+                        DbHelper.Param("@idProducto",idProducto),
+                        DbHelper.Param("@cantidad",  cantidad)) > 0;
+                }
+                else
+                {
+                    return DbHelper.EjecutarNonQuery(
+                        "INSERT INTO CPIC_Productos (idCPIC, idProducto, cantidadBolsasProducto, pesoKg) VALUES (@idCPIC, @idProducto, @cantidad, 0)",
+                        DbHelper.Param("@idCPIC",    idCPIC),
+                        DbHelper.Param("@idProducto",idProducto),
+                        DbHelper.Param("@cantidad",  cantidad)) > 0;
                 }
             }
             catch (Exception ex)
@@ -1139,8 +894,6 @@ namespace WebSGV.Views
                 Debug.WriteLine("Error al actualizar producto: " + ex.Message);
                 throw new Exception("Error al actualizar el producto: " + ex.Message);
             }
-
-            return actualizado;
         }
 
         private void MostrarMensaje(string mensaje, string tipo)

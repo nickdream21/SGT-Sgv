@@ -6,7 +6,7 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class WebForm1 : System.Web.UI.Page
+    public partial class WebForm1 : PaginaBase
     {
         protected void Page_Load(object sender, EventArgs e)
         {
