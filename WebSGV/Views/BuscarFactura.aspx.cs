@@ -13,7 +13,7 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class BusquedaFactura : System.Web.UI.Page
+    public partial class BusquedaFactura : PaginaBase
     {
         // Configuración para archivos
         private const long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -58,48 +58,21 @@ namespace WebSGV.Views
         /// </summary>
         private DataTable ObtenerTodasLasFacturas()
         {
-            DataTable dt = new DataTable();
-
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-
-                    string query = @"
-                        SELECT 
-                            f.idFactura,
-                            f.numeroFactura,
-                            f.numeroPedido,
-                            f.valorTotal,
-                            f.fechaEmision,
-                            f.idCliente,
-                            c.nombre as nombreCliente,
-                            c.ruc as rucCliente,
-                            cp.numeroCPIC
-                        FROM Factura f
-                        INNER JOIN Cliente c ON f.idCliente = c.idCliente
-                        LEFT JOIN CPIC cp ON f.idFactura = cp.idFactura
-                        ORDER BY f.fechaEmision DESC, f.numeroFactura DESC";
-
-                    using (SqlCommand cmd = new SqlCommand(query, connection))
-                    {
-                        using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
-                        {
-                            adapter.Fill(dt);
-                        }
-                    }
-                }
+                return DbHelper.ConsultarTabla(@"
+                    SELECT f.idFactura, f.numeroFactura, f.numeroPedido, f.valorTotal, f.fechaEmision,
+                           f.idCliente, c.nombre as nombreCliente, c.ruc as rucCliente, cp.numeroCPIC
+                    FROM Factura f
+                    INNER JOIN Cliente c ON f.idCliente = c.idCliente
+                    LEFT JOIN CPIC cp ON f.idFactura = cp.idFactura
+                    ORDER BY f.fechaEmision DESC, f.numeroFactura DESC");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Error al obtener todas las facturas: " + ex.Message);
                 throw new Exception("Error al obtener las facturas: " + ex.Message);
             }
-
-            return dt;
         }
 
         /// <summary>
@@ -159,53 +132,34 @@ namespace WebSGV.Views
         /// </summary>
         private FacturaModel ObtenerFacturaPorId(int idFactura)
         {
-            FacturaModel factura = null;
-
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                DataTable dt = DbHelper.ConsultarTabla(
+                    @"SELECT f.idFactura, f.numeroFactura, f.numeroPedido, f.valorTotal, f.fechaEmision,
+                             f.idCliente, c.nombre as nombreCliente, c.ruc
+                      FROM Factura f INNER JOIN Cliente c ON f.idCliente = c.idCliente
+                      WHERE f.idFactura = @idFactura",
+                    DbHelper.Param("@idFactura", idFactura));
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                if (dt.Rows.Count == 0) return null;
+                DataRow reader = dt.Rows[0];
+                return new FacturaModel
                 {
-                    connection.Open();
-
-                    string query = @"SELECT f.idFactura, f.numeroFactura, f.numeroPedido, f.valorTotal, f.fechaEmision, 
-                                          f.idCliente, c.nombre as nombreCliente, c.ruc
-                                    FROM Factura f
-                                    INNER JOIN Cliente c ON f.idCliente = c.idCliente
-                                    WHERE f.idFactura = @idFactura";
-
-                    using (SqlCommand command = new SqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@idFactura", idFactura);
-
-                        using (SqlDataReader reader = command.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                factura = new FacturaModel
-                                {
-                                    IdFactura = Convert.ToInt32(reader["idFactura"]),
-                                    NumeroFactura = reader["numeroFactura"].ToString(),
-                                    NumeroPedido = reader["numeroPedido"] != DBNull.Value ? reader["numeroPedido"].ToString() : "",
-                                    ValorTotal = Convert.ToDecimal(reader["valorTotal"]),
-                                    FechaEmision = Convert.ToDateTime(reader["fechaEmision"]),
-                                    IdCliente = Convert.ToInt32(reader["idCliente"]),
-                                    NombreCliente = reader["nombreCliente"].ToString(),
-                                    RucCliente = reader["ruc"] != DBNull.Value ? reader["ruc"].ToString() : ""
-                                };
-                            }
-                        }
-                    }
-                }
+                    IdFactura     = Convert.ToInt32(reader["idFactura"]),
+                    NumeroFactura = reader["numeroFactura"].ToString(),
+                    NumeroPedido  = reader["numeroPedido"] != DBNull.Value ? reader["numeroPedido"].ToString() : "",
+                    ValorTotal    = Convert.ToDecimal(reader["valorTotal"]),
+                    FechaEmision  = Convert.ToDateTime(reader["fechaEmision"]),
+                    IdCliente     = Convert.ToInt32(reader["idCliente"]),
+                    NombreCliente = reader["nombreCliente"].ToString(),
+                    RucCliente    = reader["ruc"] != DBNull.Value ? reader["ruc"].ToString() : ""
+                };
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Error al obtener factura por ID: " + ex.Message);
                 throw new Exception("Error al obtener la factura: " + ex.Message);
             }
-
-            return factura;
         }
 
         /// <summary>
@@ -266,35 +220,15 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT idCliente, 
-                                           CASE 
-                                               WHEN ruc IS NOT NULL AND ruc != '' THEN ruc + ' - ' + nombre
-                                               ELSE nombre 
-                                           END as nombreCompleto
-                                    FROM Cliente 
-                                    ORDER BY nombre";
-
-                    using (SqlCommand cmd = new SqlCommand(query, connection))
-                    {
-                        connection.Open();
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            ddlCliente.Items.Clear();
-                            ddlCliente.Items.Add(new ListItem("-- Seleccione un Cliente --", ""));
-
-                            while (reader.Read())
-                            {
-                                string idCliente = reader["idCliente"].ToString();
-                                string nombreCompleto = reader["nombreCompleto"].ToString();
-                                ddlCliente.Items.Add(new ListItem(nombreCompleto, idCliente));
-                            }
-                        }
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(@"SELECT idCliente,
+                    CASE WHEN ruc IS NOT NULL AND ruc != '' THEN ruc + ' - ' + nombre
+                         ELSE nombre END as nombreCompleto
+                    FROM Cliente ORDER BY nombre");
+                ddlCliente.DataSource = dt;
+                ddlCliente.DataTextField = "nombreCompleto";
+                ddlCliente.DataValueField = "idCliente";
+                ddlCliente.DataBind();
+                ddlCliente.Items.Insert(0, new ListItem("-- Seleccione un Cliente --", ""));
             }
             catch (Exception ex)
             {
@@ -344,55 +278,34 @@ namespace WebSGV.Views
 
         private FacturaModel ObtenerFactura(string numeroFactura)
         {
-            FacturaModel factura = null;
-
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                DataTable dt = DbHelper.ConsultarTabla(
+                    @"SELECT f.idFactura, f.numeroFactura, f.numeroPedido, f.valorTotal, f.fechaEmision,
+                             f.idCliente, c.nombre as nombreCliente, c.ruc
+                      FROM Factura f INNER JOIN Cliente c ON f.idCliente = c.idCliente
+                      WHERE f.numeroFactura = @numeroFactura",
+                    DbHelper.Param("@numeroFactura", numeroFactura));
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                if (dt.Rows.Count == 0) return null;
+                DataRow reader = dt.Rows[0];
+                return new FacturaModel
                 {
-                    connection.Open();
-
-                    // Consulta SQL para obtener la factura CON cliente
-                    string queryFactura = @"SELECT f.idFactura, f.numeroFactura, f.numeroPedido, f.valorTotal, f.fechaEmision, 
-                                                  f.idCliente, c.nombre as nombreCliente, c.ruc
-                                          FROM Factura f
-                                          INNER JOIN Cliente c ON f.idCliente = c.idCliente
-                                          WHERE f.numeroFactura = @numeroFactura";
-
-                    using (SqlCommand command = new SqlCommand(queryFactura, connection))
-                    {
-                        command.Parameters.AddWithValue("@numeroFactura", numeroFactura);
-
-                        using (SqlDataReader reader = command.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                factura = new FacturaModel
-                                {
-                                    IdFactura = Convert.ToInt32(reader["idFactura"]),
-                                    NumeroFactura = reader["numeroFactura"].ToString(),
-                                    NumeroPedido = reader["numeroPedido"] != DBNull.Value ? reader["numeroPedido"].ToString() : "",
-                                    ValorTotal = Convert.ToDecimal(reader["valorTotal"]),
-                                    FechaEmision = Convert.ToDateTime(reader["fechaEmision"]),
-                                    // Campos del cliente
-                                    IdCliente = Convert.ToInt32(reader["idCliente"]),
-                                    NombreCliente = reader["nombreCliente"].ToString(),
-                                    RucCliente = reader["ruc"] != DBNull.Value ? reader["ruc"].ToString() : ""
-                                };
-                            }
-                        }
-                    }
-                }
+                    IdFactura     = Convert.ToInt32(reader["idFactura"]),
+                    NumeroFactura = reader["numeroFactura"].ToString(),
+                    NumeroPedido  = reader["numeroPedido"] != DBNull.Value ? reader["numeroPedido"].ToString() : "",
+                    ValorTotal    = Convert.ToDecimal(reader["valorTotal"]),
+                    FechaEmision  = Convert.ToDateTime(reader["fechaEmision"]),
+                    IdCliente     = Convert.ToInt32(reader["idCliente"]),
+                    NombreCliente = reader["nombreCliente"].ToString(),
+                    RucCliente    = reader["ruc"] != DBNull.Value ? reader["ruc"].ToString() : ""
+                };
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Error al obtener factura: " + ex.Message);
                 throw new Exception("Error al obtener la factura: " + ex.Message);
             }
-
-            return factura;
         }
 
         private void CargarDocumentosFactura(int idFactura)
@@ -412,46 +325,20 @@ namespace WebSGV.Views
 
         private DataTable ObtenerDocumentosFactura(int idFactura)
         {
-            DataTable dt = new DataTable();
-
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = @"
-                        SELECT 
-                            idDocumento,
-                            nombreOriginal,
-                            tipoArchivo,
-                            tamanoBytes,
-                            fechaSubida,
-                            usuarioSubida,
-                            descripcion,
-                            rutaArchivo
-                        FROM DocumentosFactura 
-                        WHERE idFactura = @idFactura AND activo = 1
-                        ORDER BY fechaSubida DESC";
-
-                    using (SqlCommand cmd = new SqlCommand(query, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@idFactura", idFactura);
-
-                        using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
-                        {
-                            adapter.Fill(dt);
-                        }
-                    }
-                }
+                return DbHelper.ConsultarTabla(
+                    @"SELECT idDocumento, nombreOriginal, tipoArchivo, tamanoBytes, fechaSubida,
+                             usuarioSubida, descripcion, rutaArchivo
+                      FROM DocumentosFactura WHERE idFactura = @idFactura AND activo = 1
+                      ORDER BY fechaSubida DESC",
+                    DbHelper.Param("@idFactura", idFactura));
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Error al obtener documentos: " + ex.Message);
+                return new DataTable();
             }
-
-            return dt;
         }
 
         private void MostrarDatosFactura(FacturaModel factura)
@@ -617,25 +504,14 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = "SELECT COUNT(*) FROM Factura WHERE numeroFactura = @numeroFactura";
-
-                    using (SqlCommand cmd = new SqlCommand(query, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@numeroFactura", numeroFactura);
-                        int count = (int)cmd.ExecuteScalar();
-                        return count > 0;
-                    }
-                }
+                return Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM Factura WHERE numeroFactura = @numeroFactura",
+                    DbHelper.Param("@numeroFactura", numeroFactura))) > 0;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Error al verificar número de factura: " + ex.Message);
-                return true; // Por seguridad, asumir que existe
+                return true;
             }
         }
 
@@ -914,37 +790,16 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = @"
-                        SELECT nombreOriginal, rutaArchivo, tipoArchivo
-                        FROM DocumentosFactura 
-                        WHERE idDocumento = @idDocumento AND activo = 1";
-
-                    using (SqlCommand cmd = new SqlCommand(query, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@idDocumento", idDocumento);
-
-                        DataTable dt = new DataTable();
-                        using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
-                        {
-                            adapter.Fill(dt);
-                        }
-
-                        if (dt.Rows.Count > 0)
-                            return dt.Rows[0];
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(
+                    "SELECT nombreOriginal, rutaArchivo, tipoArchivo FROM DocumentosFactura WHERE idDocumento = @idDocumento AND activo = 1",
+                    DbHelper.Param("@idDocumento", idDocumento));
+                return dt.Rows.Count > 0 ? dt.Rows[0] : null;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Error al obtener info documento: " + ex.Message);
+                return null;
             }
-
-            return null;
         }
 
         private string ObtenerContentType(string extension)

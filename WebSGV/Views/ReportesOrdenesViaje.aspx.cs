@@ -25,10 +25,8 @@ using iTextPageSize = iTextSharp.text.PageSize;
 
 namespace WebSGV.Views
 {
-    public partial class ReportesOrdenesViaje : System.Web.UI.Page
+    public partial class ReportesOrdenesViaje : PaginaBase
     {
-        // Cadena de conexión
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
         private static readonly string[] EstadosViajePermitidos = { "TODOS", "ABIERTO", "CERRADO" };
         private static readonly string[] EstadosPersonalizadoPermitidos = { "TODOS", "COMPLETADO", "PENDIENTE", "RECHAZADO" };
         private static readonly string[] OrdenesPersonalizadoPermitidas = { "fecha_desc", "fecha_asc", "conductor", "cliente" };
@@ -88,25 +86,14 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    conn.Open();
-                    string query = @"SELECT idConductor, 
-                                        CONCAT(nombre, ' ', apPaterno, ' ', ISNULL(apMaterno,'')) AS NombreCompleto
-                                     FROM Conductor
-                                     WHERE activo = 1
-                                     ORDER BY nombre, apPaterno";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    using (SqlDataReader dr = cmd.ExecuteReader())
-                    {
-                        while (dr.Read())
-                        {
-                            ddlPersConductor.Items.Add(new System.Web.UI.WebControls.ListItem(
-                                dr["NombreCompleto"].ToString().Trim(),
-                                dr["idConductor"].ToString()));
-                        }
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(@"
+                    SELECT idConductor,
+                           CONCAT(nombre, ' ', apPaterno, ' ', ISNULL(apMaterno,'')) AS NombreCompleto
+                    FROM Conductor WHERE activo = 1 ORDER BY nombre, apPaterno");
+                foreach (DataRow dr in dt.Rows)
+                    ddlPersConductor.Items.Add(new System.Web.UI.WebControls.ListItem(
+                        dr["NombreCompleto"].ToString().Trim(),
+                        dr["idConductor"].ToString()));
             }
             catch { /* silencioso: el combo sigue con "Todos" */ }
         }
@@ -115,21 +102,10 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    conn.Open();
-                    string query = @"SELECT idCliente, nombre FROM Cliente ORDER BY nombre";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    using (SqlDataReader dr = cmd.ExecuteReader())
-                    {
-                        while (dr.Read())
-                        {
-                            ddlPersCliente.Items.Add(new System.Web.UI.WebControls.ListItem(
-                                dr["nombre"].ToString(),
-                                dr["idCliente"].ToString()));
-                        }
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla("SELECT idCliente, nombre FROM Cliente ORDER BY nombre");
+                foreach (DataRow dr in dt.Rows)
+                    ddlPersCliente.Items.Add(new System.Web.UI.WebControls.ListItem(
+                        dr["nombre"].ToString(), dr["idCliente"].ToString()));
             }
             catch { /* silencioso */ }
         }
@@ -176,39 +152,24 @@ namespace WebSGV.Views
 
         private DataTable ObtenerLiquidaciones(DateTime fechaDesde, DateTime fechaHasta)
         {
-            DataTable dt = new DataTable();
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                string query = @"
-                    SELECT 
-                        c.DNI,
-                        CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) AS Conductor,
-                        ov.fechaSalida AS FechaSalida,
-                        ov.numeroOrdenViaje AS NumeroLiquidacion,
-                        ov.idOrdenViaje AS IdOrdenViaje,
-                        
-                        -- ✅ DESCUENTOS Y REINTEGROS (lo que realmente importa ahora)
-                        ISNULL((SELECT dr.descuentoSoles FROM DescuentosReintegros dr WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS DescuentoSoles,
-                        ISNULL((SELECT dr.descuentoDolares FROM DescuentosReintegros dr WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS DescuentoDolares,
-                        ISNULL((SELECT dr.reintegroSoles FROM DescuentosReintegros dr WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS ReintegroSoles,
-                        ISNULL((SELECT dr.reintegroDolares FROM DescuentosReintegros dr WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS ReintegroDolares
-                        
-                    FROM OrdenViaje ov
-                    INNER JOIN Conductor c ON ov.idConductor = c.idConductor
-                    WHERE ov.fechaSalida BETWEEN @FechaDesde AND @FechaHasta
-                    AND ov.estadoViaje = 'COMPLETADO'
-                    ORDER BY ov.fechaSalida DESC, c.nombre";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@FechaDesde", fechaDesde);
-                    cmd.Parameters.AddWithValue("@FechaHasta", fechaHasta);
-
-                    SqlDataAdapter da = new SqlDataAdapter(cmd);
-                    da.Fill(dt);
-                }
-            }
+            DataTable dt = DbHelper.ConsultarTabla(@"
+                SELECT
+                    c.DNI,
+                    CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) AS Conductor,
+                    ov.fechaSalida AS FechaSalida,
+                    ov.numeroOrdenViaje AS NumeroLiquidacion,
+                    ov.idOrdenViaje AS IdOrdenViaje,
+                    ISNULL((SELECT dr.descuentoSoles FROM DescuentosReintegros dr WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS DescuentoSoles,
+                    ISNULL((SELECT dr.descuentoDolares FROM DescuentosReintegros dr WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS DescuentoDolares,
+                    ISNULL((SELECT dr.reintegroSoles FROM DescuentosReintegros dr WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS ReintegroSoles,
+                    ISNULL((SELECT dr.reintegroDolares FROM DescuentosReintegros dr WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS ReintegroDolares
+                FROM OrdenViaje ov
+                INNER JOIN Conductor c ON ov.idConductor = c.idConductor
+                WHERE ov.fechaSalida BETWEEN @FechaDesde AND @FechaHasta
+                AND ov.estadoViaje = 'COMPLETADO'
+                ORDER BY ov.fechaSalida DESC, c.nombre",
+                DbHelper.Param("@FechaDesde", fechaDesde),
+                DbHelper.Param("@FechaHasta", fechaHasta));
 
             // ✅ CALCULAR MONTOS FINALES (Reintegros - Descuentos)
             dt.Columns.Add("MontoSoles", typeof(decimal));
@@ -376,8 +337,8 @@ namespace WebSGV.Views
         {
             DataTable dt = new DataTable();
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
             {
+                var parametrosViajes = new System.Collections.Generic.List<System.Data.SqlClient.SqlParameter>();
                 StringBuilder query = new StringBuilder(@"
                     SELECT 
                         c.DNI,
@@ -424,31 +385,19 @@ namespace WebSGV.Views
                 if (!string.IsNullOrEmpty(buscarConductor))
                 {
                     query.Append(" AND (c.nombre LIKE @BuscarConductor OR c.apPaterno LIKE @BuscarConductor OR c.DNI LIKE @BuscarConductor)");
+                    parametrosViajes.Add(DbHelper.Param("@BuscarConductor", $"%{buscarConductor}%"));
                 }
 
                 if (!string.IsNullOrEmpty(estadoViaje) && estadoViaje != "TODOS")
                 {
                     query.Append(" AND vp.estadoViaje = @EstadoViaje");
+                    parametrosViajes.Add(DbHelper.Param("@EstadoViaje", estadoViaje));
                 }
 
                 query.Append(" GROUP BY c.DNI, c.nombre, c.apPaterno, c.apMaterno, vp.fechaInicio, vp.estadoViaje, vp.idViajeProgreso");
                 query.Append(" ORDER BY vp.fechaInicio DESC");
 
-                using (SqlCommand cmd = new SqlCommand(query.ToString(), conn))
-                {
-                    if (!string.IsNullOrEmpty(buscarConductor))
-                    {
-                        cmd.Parameters.AddWithValue("@BuscarConductor", $"%{buscarConductor}%");
-                    }
-
-                    if (!string.IsNullOrEmpty(estadoViaje) && estadoViaje != "TODOS")
-                    {
-                        cmd.Parameters.AddWithValue("@EstadoViaje", estadoViaje);
-                    }
-
-                    SqlDataAdapter da = new SqlDataAdapter(cmd);
-                    da.Fill(dt);
-                }
+                dt = DbHelper.ConsultarTabla(query.ToString(), parametrosViajes.ToArray());
             }
 
             return dt;
@@ -1877,23 +1826,21 @@ namespace WebSGV.Views
 
             sb.Append(" ORDER BY ").Append(orderBy);
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            using (SqlCommand cmd = new SqlCommand(sb.ToString(), conn))
             {
-                cmd.Parameters.AddWithValue("@FechaDesde", f.FechaDesde);
-                cmd.Parameters.AddWithValue("@FechaHasta", f.FechaHasta);
+                var prs = new System.Collections.Generic.List<System.Data.SqlClient.SqlParameter>();
+                prs.Add(DbHelper.Param("@FechaDesde", f.FechaDesde));
+                prs.Add(DbHelper.Param("@FechaHasta", f.FechaHasta));
                 if (!string.IsNullOrEmpty(f.Estado) && f.Estado != "TODOS")
-                    cmd.Parameters.AddWithValue("@Estado", f.Estado);
+                    prs.Add(DbHelper.Param("@Estado", f.Estado));
                 if (f.IdConductor > 0)
-                    cmd.Parameters.AddWithValue("@IdConductor", f.IdConductor);
+                    prs.Add(DbHelper.Param("@IdConductor", f.IdConductor));
                 if (!string.IsNullOrEmpty(f.PlacaTracto))
-                    cmd.Parameters.AddWithValue("@PlacaTracto", "%" + f.PlacaTracto + "%");
+                    prs.Add(DbHelper.Param("@PlacaTracto", "%" + f.PlacaTracto + "%"));
                 if (f.IdCliente > 0)
-                    cmd.Parameters.AddWithValue("@IdCliente", f.IdCliente);
+                    prs.Add(DbHelper.Param("@IdCliente", f.IdCliente));
                 if (!string.IsNullOrEmpty(f.Categoria))
-                    cmd.Parameters.AddWithValue("@Categoria", "%" + f.Categoria + "%");
-
-                new SqlDataAdapter(cmd).Fill(dt);
+                    prs.Add(DbHelper.Param("@Categoria", "%" + f.Categoria + "%"));
+                dt = DbHelper.ConsultarTabla(sb.ToString(), prs.ToArray());
             }
 
             // Balance Neto = Ingresos - Gastos - Descuento + Reintegro
