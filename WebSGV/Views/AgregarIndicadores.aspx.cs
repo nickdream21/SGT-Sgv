@@ -1,13 +1,11 @@
-﻿using System;
-using System.Configuration;
+using System;
 using System.Data;
-using System.Data.SqlClient;
 using System.Web.UI;
 using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class AgregarIndicadores : System.Web.UI.Page
+    public partial class AgregarIndicadores : PaginaBase
     {
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -16,17 +14,14 @@ namespace WebSGV.Views
 
             if (!IsPostBack)
             {
-                // Establecer la fecha actual en los controles de fecha
                 SetDefaultDates();
             }
         }
 
         private void SetDefaultDates()
         {
-            // Establecer la fecha actual en los controles de fecha
             string today = DateTime.Now.ToString("yyyy-MM-dd");
 
-            // Aplicar fecha actual a todos los controles de fecha
             txtFHSBase_Date.Text = today;
             txtFHLLTrujillo_Date.Text = today;
             txtFHRegistro_Date.Text = today;
@@ -57,21 +52,18 @@ namespace WebSGV.Views
         {
             try
             {
-                // Validar número de pedido
                 if (string.IsNullOrEmpty(txtNumeroPedido.Text.Trim()))
                 {
                     MostrarAlerta("Por favor, ingrese el número de pedido.", "warning");
                     return;
                 }
 
-                // Verificar si el número de pedido ya existe
                 if (PedidoExiste(txtNumeroPedido.Text.Trim()))
                 {
                     MostrarAlerta("El número de pedido ya existe en el sistema.", "warning");
                     return;
                 }
 
-                // Guardar el indicador
                 GuardarIndicador();
             }
             catch (Exception ex)
@@ -82,39 +74,23 @@ namespace WebSGV.Views
 
         private bool PedidoExiste(string numeroPedido)
         {
-            bool existe = false;
-
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-
-                    string query = "SELECT COUNT(*) FROM Indicadores WHERE numeroPedido = @numeroPedido";
-
-                    using (SqlCommand command = new SqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@numeroPedido", numeroPedido);
-                        int count = (int)command.ExecuteScalar();
-                        existe = count > 0;
-                    }
-                }
+                int count = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM Indicadores WHERE numeroPedido = @numeroPedido",
+                    DbHelper.Param("@numeroPedido", numeroPedido)));
+                return count > 0;
             }
             catch (Exception ex)
             {
                 throw new Exception("Error al verificar si el pedido existe: " + ex.Message);
             }
-
-            return existe;
         }
 
         private void GuardarIndicador()
         {
             try
             {
-                // Combinar fechas y horas
                 DateTime? fechaHoraSalidaBase = CombinarFechaHora(txtFHSBase_Date.Text, txtFHSBase_Time.Text);
                 DateTime? fechaHoraLlegadaTrujillo = CombinarFechaHora(txtFHLLTrujillo_Date.Text, txtFHLLTrujillo_Time.Text);
                 DateTime? fechaHoraRegistro = CombinarFechaHora(txtFHRegistro_Date.Text, txtFHRegistro_Time.Text);
@@ -140,80 +116,54 @@ namespace WebSGV.Views
                 DateTime? fechaHoraTerminoDescarga = CombinarFechaHora(txtFHTDescarga_Date.Text, txtFHTDescarga_Time.Text);
                 DateTime? fechaHoraSalida = CombinarFechaHora(txtFHLLSalida_Date.Text, txtFHLLSalida_Time.Text);
 
-                // Conexión a la base de datos para insertar el indicador
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                object resultado = DbHelper.EjecutarEscalarSp("sp_InsertarIndicador",
+                    DbHelper.Param("@numeroPedido", txtNumeroPedido.Text.Trim()),
+                    DbHelper.Param("@conductorOrigen", string.IsNullOrEmpty(txtConductorOrigen.Text) ? null : (object)txtConductorOrigen.Text.Trim()),
+                    DbHelper.Param("@tracto1", string.IsNullOrEmpty(txtTracto1.Text) ? null : (object)txtTracto1.Text.Trim()),
+                    DbHelper.Param("@carreta", string.IsNullOrEmpty(txtCarreta.Text) ? null : (object)txtCarreta.Text.Trim()),
+                    DbHelper.Param("@conductorDestino", string.IsNullOrEmpty(txtConductorDestino.Text) ? null : (object)txtConductorDestino.Text.Trim()),
+                    DbHelper.Param("@tracto2", string.IsNullOrEmpty(txtTracto2.Text) ? null : (object)txtTracto2.Text.Trim()),
+                    DbHelper.Param("@fechaHoraSalidaBase", (object)fechaHoraSalidaBase),
+                    DbHelper.Param("@fechaHoraLlegadaTrujillo", (object)fechaHoraLlegadaTrujillo),
+                    DbHelper.Param("@fechaHoraRegistro", (object)fechaHoraRegistro),
+                    DbHelper.Param("@fechaHoraProgramacion", (object)fechaHoraProgramacion),
+                    DbHelper.Param("@fechaHoraIngresoPlanta", (object)fechaHoraIngresoPlanta),
+                    DbHelper.Param("@fechaHoraInicioCarga", (object)fechaHoraInicioCarga),
+                    DbHelper.Param("@fechaHoraTerminoCarga", (object)fechaHoraTerminoCarga),
+                    DbHelper.Param("@fechaHoraSalidaPlanta", (object)fechaHoraSalidaPlanta),
+                    DbHelper.Param("@fechaHoraLlegadaBase", (object)fechaHoraLlegadaBase),
+                    DbHelper.Param("@fechaHoraSalidaBaseDepsa", (object)fechaHoraSalidaBaseDepsa),
+                    DbHelper.Param("@fechaHoraLlegadaDepsa", (object)fechaHoraLlegadaDepsa),
+                    DbHelper.Param("@fechaHoraInicioDepsa", (object)fechaHoraInicioDepsa),
+                    DbHelper.Param("@fechaHoraSalidaDepsa", (object)fechaHoraSalidaDepsa),
+                    DbHelper.Param("@bodega", string.IsNullOrEmpty(txtBodega.Text) ? null : (object)txtBodega.Text.Trim()),
+                    DbHelper.Param("@fechaHoraLlegadaCebafE", (object)fechaHoraLlegadaCebafE),
+                    DbHelper.Param("@fechaHoraCruceE", (object)fechaHoraCruceE),
+                    DbHelper.Param("@fechaHoraAutorizacionNacionalizacion", (object)fechaHoraAutorizacionNacionalizacion),
+                    DbHelper.Param("@bodegaEcuatoriana", string.IsNullOrEmpty(txtBodegaEcuatoriana.Text) ? null : (object)txtBodegaEcuatoriana.Text.Trim()),
+                    DbHelper.Param("@fechaHoraLlegadaTCI", (object)fechaHoraLlegadaTCI),
+                    DbHelper.Param("@fechaHoraSalidaTCI", (object)fechaHoraSalidaTCI),
+                    DbHelper.Param("@bodegaDescarga", string.IsNullOrEmpty(txtBodegaDescarga.Text) ? null : (object)txtBodegaDescarga.Text.Trim()),
+                    DbHelper.Param("@fechaHoraLlegadaPlantaDescarga", (object)fechaHoraLlegadaPlantaDescarga),
+                    DbHelper.Param("@fechaHoraLlegadaAlmacen", (object)fechaHoraLlegadaAlmacen),
+                    DbHelper.Param("@fechaHoraIngreso", (object)fechaHoraIngreso),
+                    DbHelper.Param("@fechaHoraInicioDescarga", (object)fechaHoraInicioDescarga),
+                    DbHelper.Param("@fechaHoraTerminoDescarga", (object)fechaHoraTerminoDescarga),
+                    DbHelper.Param("@fechaHoraSalida", (object)fechaHoraSalida),
+                    DbHelper.Param("@usuarioCreacion", User.Identity.IsAuthenticated ? User.Identity.Name : "Sistema"));
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                if (resultado != null)
                 {
-                    connection.Open();
-
-                    // Usar el procedimiento almacenado para insertar
-                    using (SqlCommand command = new SqlCommand("sp_InsertarIndicador", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-
-                        // Agregar parámetros al procedimiento almacenado
-                        command.Parameters.AddWithValue("@numeroPedido", txtNumeroPedido.Text.Trim());
-                        command.Parameters.AddWithValue("@conductorOrigen", string.IsNullOrEmpty(txtConductorOrigen.Text) ? DBNull.Value : (object)txtConductorOrigen.Text.Trim());
-                        command.Parameters.AddWithValue("@tracto1", string.IsNullOrEmpty(txtTracto1.Text) ? DBNull.Value : (object)txtTracto1.Text.Trim());
-                        command.Parameters.AddWithValue("@carreta", string.IsNullOrEmpty(txtCarreta.Text) ? DBNull.Value : (object)txtCarreta.Text.Trim());
-                        command.Parameters.AddWithValue("@conductorDestino", string.IsNullOrEmpty(txtConductorDestino.Text) ? DBNull.Value : (object)txtConductorDestino.Text.Trim());
-                        command.Parameters.AddWithValue("@tracto2", string.IsNullOrEmpty(txtTracto2.Text) ? DBNull.Value : (object)txtTracto2.Text.Trim());
-                        command.Parameters.AddWithValue("@fechaHoraSalidaBase", fechaHoraSalidaBase ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraLlegadaTrujillo", fechaHoraLlegadaTrujillo ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraRegistro", fechaHoraRegistro ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraProgramacion", fechaHoraProgramacion ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraIngresoPlanta", fechaHoraIngresoPlanta ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraInicioCarga", fechaHoraInicioCarga ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraTerminoCarga", fechaHoraTerminoCarga ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraSalidaPlanta", fechaHoraSalidaPlanta ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraLlegadaBase", fechaHoraLlegadaBase ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraSalidaBaseDepsa", fechaHoraSalidaBaseDepsa ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraLlegadaDepsa", fechaHoraLlegadaDepsa ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraInicioDepsa", fechaHoraInicioDepsa ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraSalidaDepsa", fechaHoraSalidaDepsa ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@bodega", string.IsNullOrEmpty(txtBodega.Text) ? DBNull.Value : (object)txtBodega.Text.Trim());
-                        command.Parameters.AddWithValue("@fechaHoraLlegadaCebafE", fechaHoraLlegadaCebafE ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraCruceE", fechaHoraCruceE ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraAutorizacionNacionalizacion", fechaHoraAutorizacionNacionalizacion ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@bodegaEcuatoriana", string.IsNullOrEmpty(txtBodegaEcuatoriana.Text) ? DBNull.Value : (object)txtBodegaEcuatoriana.Text.Trim());
-                        command.Parameters.AddWithValue("@fechaHoraLlegadaTCI", fechaHoraLlegadaTCI ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraSalidaTCI", fechaHoraSalidaTCI ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@bodegaDescarga", string.IsNullOrEmpty(txtBodegaDescarga.Text) ? DBNull.Value : (object)txtBodegaDescarga.Text.Trim());
-                        command.Parameters.AddWithValue("@fechaHoraLlegadaPlantaDescarga", fechaHoraLlegadaPlantaDescarga ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraLlegadaAlmacen", fechaHoraLlegadaAlmacen ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraIngreso", fechaHoraIngreso ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraInicioDescarga", fechaHoraInicioDescarga ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraTerminoDescarga", fechaHoraTerminoDescarga ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@fechaHoraSalida", fechaHoraSalida ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@usuarioCreacion", User.Identity.IsAuthenticated ? User.Identity.Name : "Sistema");
-
-                        // Ejecutar el procedimiento almacenado
-                        object resultado = command.ExecuteScalar();
-
-                        if (resultado != null)
-                        {
-                            int idIndicador = Convert.ToInt32(resultado);
-
-                            // Limpiar el formulario
-                            LimpiarFormulario();
-
-                            AuditoriaHelper.Registrar("INSERT", "Indicadores", idIndicador,
-                                $"Indicador registrado - Pedido: {txtNumeroPedido.Text.Trim()}, ID: {idIndicador}");
-
-                            // Mostrar mensaje de éxito
-                            MostrarAlerta($"Indicador guardado correctamente. ID: {idIndicador}", "success");
-                        }
-                        else
-                        {
-                            MostrarAlerta("No se pudo guardar el indicador.", "danger");
-                        }
-                    }
+                    int idIndicador = Convert.ToInt32(resultado);
+                    LimpiarFormulario();
+                    AuditoriaHelper.Registrar("INSERT", "Indicadores", idIndicador,
+                        $"Indicador registrado - Pedido: {txtNumeroPedido.Text.Trim()}, ID: {idIndicador}");
+                    MostrarAlerta($"Indicador guardado correctamente. ID: {idIndicador}", "success");
                 }
-            }
-            catch (SqlException ex)
-            {
-                MostrarAlerta("Error de base de datos: " + ex.Message, "danger");
+                else
+                {
+                    MostrarAlerta("No se pudo guardar el indicador.", "danger");
+                }
             }
             catch (Exception ex)
             {
@@ -248,7 +198,6 @@ namespace WebSGV.Views
 
         private void LimpiarFormulario()
         {
-            // Limpiar campos de texto
             txtNumeroPedido.Text = string.Empty;
             txtConductorOrigen.Text = string.Empty;
             txtTracto1.Text = string.Empty;
@@ -258,14 +207,11 @@ namespace WebSGV.Views
             txtBodega.Text = string.Empty;
             txtBodegaEcuatoriana.Text = string.Empty;
             txtBodegaDescarga.Text = string.Empty;
-
-            // Limpiar todos los campos de hora (mantenemos las fechas por conveniencia)
             LimpiarCamposHora();
         }
 
         private void LimpiarCamposHora()
         {
-            // Limpiar todos los campos de hora
             txtFHSBase_Time.Text = string.Empty;
             txtFHLLTrujillo_Time.Text = string.Empty;
             txtFHRegistro_Time.Text = string.Empty;

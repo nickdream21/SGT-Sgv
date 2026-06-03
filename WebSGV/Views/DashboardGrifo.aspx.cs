@@ -1,5 +1,5 @@
 using System;
-using System.Configuration;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Text;
@@ -9,13 +9,10 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class DashboardGrifo : System.Web.UI.Page
+    public partial class DashboardGrifo : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
-            // Validar acceso: solo Admin Grifo y Admin general
             if (!RolesHelper.TieneSesionActiva())
             {
                 Response.Redirect("~/Views/Login.aspx");
@@ -32,7 +29,6 @@ namespace WebSGV.Views
             {
                 CargarDatos();
 
-                // Mostrar mensaje de exito si viene de un abastecimiento completado
                 if (Request.QueryString["msg"] == "abastecido")
                 {
                     string num = Request.QueryString["num"] ?? "";
@@ -99,106 +95,88 @@ namespace WebSGV.Views
 
         private DataTable ObtenerViajesActivos(string buscarConductor, string estadoViaje)
         {
-            DataTable dt = new DataTable();
+            var parametros = new List<SqlParameter>();
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                // Un viaje se abastece UNA vez (la salida desde el grifo). Internacional solo se
-                // marca visualmente; la eventual compra de combustible en Ecuador se registra
-                // aparte como "Retorno Ecuador" (no es abastecimiento al vehiculo).
-                StringBuilder query = new StringBuilder(@"
-                    ;WITH ViajesBase AS (
-                        SELECT 
-                            vp.idViajeProgreso,
-                            vp.numeroViajeProgreso,
-                            vp.fechaInicio,
-                            vp.estadoViaje,
-                            c.idConductor,
-                            c.DNI,
-                            CONCAT(c.nombre, ' ', c.apPaterno, ' ', ISNULL(c.apMaterno, '')) AS Conductor,
-                            ISNULL(MAX(t.placaTracto), 'N/A') AS PlacaTracto,
-                            ISNULL(MAX(t.idTracto), 0) AS IdTracto,
-                            ISNULL(MAX(ca.placaCarreta), 'N/A') AS PlacaCarreta,
-                            ISNULL(MAX(ca.idCarreta), 0) AS IdCarreta,
-                            ISNULL(MAX(cl.nombre), 'N/A') AS Cliente,
-                            ISNULL(MAX(d.lugarOperacion), 'N/A') AS Destino,
-                            MAX(CASE WHEN ISNULL(d.esInternacional, 0) = 1 THEN 1 ELSE 0 END) AS EsInternacional
-                        FROM ViajesEnProgreso vp
-                        INNER JOIN Conductor c ON c.idConductor = (
-                            SELECT TOP 1 idConductor FROM Despachos
-                            WHERE idViajeProgreso = vp.idViajeProgreso AND activo = 1
-                            GROUP BY idConductor ORDER BY COUNT(*) DESC
-                        )
-                        INNER JOIN Despachos d ON vp.idViajeProgreso = d.idViajeProgreso AND d.activo = 1
-                        LEFT JOIN Tracto t ON d.idTracto = t.idTracto
-                        LEFT JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-                        LEFT JOIN Cliente cl ON d.idCliente = cl.idCliente
-                        WHERE vp.activo = 1
-                        GROUP BY vp.idViajeProgreso, vp.numeroViajeProgreso, vp.fechaInicio, 
-                                 vp.estadoViaje, c.DNI, c.nombre, c.apPaterno, c.apMaterno, c.idConductor
-                    ),
-                    ViajesConCargas AS (
-                        SELECT vb.*,
-                            (SELECT COUNT(*) FROM AbastecimientoCombustible abc
-                             WHERE abc.idConductor = vb.idConductor
-                               AND (vb.IdTracto = 0 OR abc.idTracto = vb.IdTracto)
-                               AND abc.fechaHora >= vb.fechaInicio) AS CargasRealizadas,
-                            (SELECT COUNT(*) FROM IngresoCombustibleEcuador ice
-                             WHERE ice.idViajeProgreso = vb.idViajeProgreso
-                               AND ISNULL(ice.activo, 1) = 1) AS RetornoRegistrado
-                        FROM ViajesBase vb
+            StringBuilder query = new StringBuilder(@"
+                ;WITH ViajesBase AS (
+                    SELECT
+                        vp.idViajeProgreso,
+                        vp.numeroViajeProgreso,
+                        vp.fechaInicio,
+                        vp.estadoViaje,
+                        c.idConductor,
+                        c.DNI,
+                        CONCAT(c.nombre, ' ', c.apPaterno, ' ', ISNULL(c.apMaterno, '')) AS Conductor,
+                        ISNULL(MAX(t.placaTracto), 'N/A') AS PlacaTracto,
+                        ISNULL(MAX(t.idTracto), 0) AS IdTracto,
+                        ISNULL(MAX(ca.placaCarreta), 'N/A') AS PlacaCarreta,
+                        ISNULL(MAX(ca.idCarreta), 0) AS IdCarreta,
+                        ISNULL(MAX(cl.nombre), 'N/A') AS Cliente,
+                        ISNULL(MAX(d.lugarOperacion), 'N/A') AS Destino,
+                        MAX(CASE WHEN ISNULL(d.esInternacional, 0) = 1 THEN 1 ELSE 0 END) AS EsInternacional
+                    FROM ViajesEnProgreso vp
+                    INNER JOIN Conductor c ON c.idConductor = (
+                        SELECT TOP 1 idConductor FROM Despachos
+                        WHERE idViajeProgreso = vp.idViajeProgreso AND activo = 1
+                        GROUP BY idConductor ORDER BY COUNT(*) DESC
                     )
-                    SELECT 
-                        numeroViajeProgreso AS NumeroViajeProgreso,
-                        DNI,
-                        Conductor,
-                        idConductor AS IdConductor,
-                        PlacaTracto,
-                        IdTracto,
-                        PlacaCarreta,
-                        IdCarreta,
-                        Cliente,
-                        Destino,
-                        EsInternacional,
-                        fechaInicio AS FechaInicio,
-                        DATEDIFF(DAY, fechaInicio, GETDATE()) AS DiasEnViaje,
-                        estadoViaje AS Estado,
-                        idViajeProgreso AS IdViaje,
-                        CargasRealizadas,
-                        RetornoRegistrado,
-                        CASE WHEN CargasRealizadas = 0 THEN 'PENDIENTE' ELSE 'COMPLETO' END AS FaseCarga
-                    FROM ViajesConCargas
-                    WHERE 1 = 1");
+                    INNER JOIN Despachos d ON vp.idViajeProgreso = d.idViajeProgreso AND d.activo = 1
+                    LEFT JOIN Tracto t ON d.idTracto = t.idTracto
+                    LEFT JOIN Carreta ca ON d.idCarreta = ca.idCarreta
+                    LEFT JOIN Cliente cl ON d.idCliente = cl.idCliente
+                    WHERE vp.activo = 1
+                    GROUP BY vp.idViajeProgreso, vp.numeroViajeProgreso, vp.fechaInicio,
+                             vp.estadoViaje, c.DNI, c.nombre, c.apPaterno, c.apMaterno, c.idConductor
+                ),
+                ViajesConCargas AS (
+                    SELECT vb.*,
+                        (SELECT COUNT(*) FROM AbastecimientoCombustible abc
+                         WHERE abc.idConductor = vb.idConductor
+                           AND (vb.IdTracto = 0 OR abc.idTracto = vb.IdTracto)
+                           AND abc.fechaHora >= vb.fechaInicio) AS CargasRealizadas,
+                        (SELECT COUNT(*) FROM IngresoCombustibleEcuador ice
+                         WHERE ice.idViajeProgreso = vb.idViajeProgreso
+                           AND ISNULL(ice.activo, 1) = 1) AS RetornoRegistrado
+                    FROM ViajesBase vb
+                )
+                SELECT
+                    numeroViajeProgreso AS NumeroViajeProgreso,
+                    DNI,
+                    Conductor,
+                    idConductor AS IdConductor,
+                    PlacaTracto,
+                    IdTracto,
+                    PlacaCarreta,
+                    IdCarreta,
+                    Cliente,
+                    Destino,
+                    EsInternacional,
+                    fechaInicio AS FechaInicio,
+                    DATEDIFF(DAY, fechaInicio, GETDATE()) AS DiasEnViaje,
+                    estadoViaje AS Estado,
+                    idViajeProgreso AS IdViaje,
+                    CargasRealizadas,
+                    RetornoRegistrado,
+                    CASE WHEN CargasRealizadas = 0 THEN 'PENDIENTE' ELSE 'COMPLETO' END AS FaseCarga
+                FROM ViajesConCargas
+                WHERE 1 = 1");
 
-                if (estadoViaje == "PENDIENTE" || estadoViaje == "ACTIVO" || string.IsNullOrEmpty(estadoViaje))
-                    query.Append(" AND CargasRealizadas = 0");
-                else if (estadoViaje == "COMPLETO")
-                    query.Append(" AND CargasRealizadas >= 1");
-                else if (estadoViaje == "RETORNO_PEND")
-                    query.Append(" AND EsInternacional = 1 AND CargasRealizadas >= 1 AND RetornoRegistrado = 0");
-                // "TODOS" no agrega filtro
+            if (estadoViaje == "PENDIENTE" || estadoViaje == "ACTIVO" || string.IsNullOrEmpty(estadoViaje))
+                query.Append(" AND CargasRealizadas = 0");
+            else if (estadoViaje == "COMPLETO")
+                query.Append(" AND CargasRealizadas >= 1");
+            else if (estadoViaje == "RETORNO_PEND")
+                query.Append(" AND EsInternacional = 1 AND CargasRealizadas >= 1 AND RetornoRegistrado = 0");
 
-                if (!string.IsNullOrEmpty(buscarConductor))
-                {
-                    query.Append(" AND (Conductor LIKE @BuscarConductor OR DNI LIKE @BuscarConductor)");
-                }
-
-                query.Append(" ORDER BY FechaInicio DESC");
-
-                using (SqlCommand cmd = new SqlCommand(query.ToString(), conn))
-                {
-                    if (!string.IsNullOrEmpty(buscarConductor))
-                    {
-                        cmd.Parameters.AddWithValue("@BuscarConductor", $"%{buscarConductor}%");
-                    }
-
-                    conn.Open();
-                    SqlDataAdapter da = new SqlDataAdapter(cmd);
-                    da.Fill(dt);
-                }
+            if (!string.IsNullOrEmpty(buscarConductor))
+            {
+                query.Append(" AND (Conductor LIKE @BuscarConductor OR DNI LIKE @BuscarConductor)");
+                parametros.Add(DbHelper.Param("@BuscarConductor", $"%{buscarConductor}%"));
             }
 
-            return dt;
+            query.Append(" ORDER BY FechaInicio DESC");
+
+            return DbHelper.ConsultarTabla(query.ToString(), parametros.ToArray());
         }
 
         #endregion
@@ -209,7 +187,6 @@ namespace WebSGV.Views
         {
             CargarViajesActivos(txtBuscarConductor.Text.Trim(), ddlEstado.SelectedValue);
 
-            // Mantener historial visible con filtros actuales
             string buscar = txtBuscarAbastecimiento.Text.Trim();
             DateTime? fechaDesde = null;
             DateTime? fechaHasta = null;
@@ -229,7 +206,7 @@ namespace WebSGV.Views
 
         #endregion
 
-            #region Historial de Abastecimientos
+        #region Historial de Abastecimientos
 
         private void CargarHistorialAbastecimientos(string buscar, DateTime? fechaDesde, DateTime? fechaHasta)
         {
@@ -262,59 +239,49 @@ namespace WebSGV.Views
 
         private DataTable ObtenerAbastecimientos(string buscar, DateTime? fechaDesde, DateTime? fechaHasta)
         {
-            DataTable dt = new DataTable();
+            var parametros = new List<SqlParameter>();
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            StringBuilder query = new StringBuilder(@"
+                SELECT
+                    a.idAbastecimientoCombustible AS IdAbastecimiento,
+                    RTRIM(a.numeroAbastecimientoCombustible) AS NumeroAbastecimiento,
+                    a.fechaHora AS FechaHora,
+                    ISNULL(CONCAT(c.nombre, ' ', c.apPaterno), 'N/A') AS Conductor,
+                    ISNULL(t.placaTracto, 'N/A') AS PlacaTracto,
+                    ISNULL(cr.placaCarreta, 'N/A') AS PlacaCarreta,
+                    ISNULL(la.nombreAbastecimiento, 'N/A') AS Lugar,
+                    a.galonesTotalAbastecidos AS GLAbastecidos,
+                    a.galonesTotalConsumidos AS GLConsumidos,
+                    a.montoTotalGalonesComprados AS MontoTotal,
+                    a.rendimientoPromedio AS Rendimiento
+                FROM AbastecimientoCombustible a
+                LEFT JOIN Conductor c ON a.idConductor = c.idConductor
+                LEFT JOIN Tracto t ON a.idTracto = t.idTracto
+                LEFT JOIN Carreta cr ON a.idCarreta = cr.idCarreta
+                LEFT JOIN LugarAbastecimiento la ON a.idLugarAbastecimiento = la.idLugarAbastecimiento
+                WHERE 1=1");
+
+            if (fechaDesde.HasValue)
             {
-                StringBuilder query = new StringBuilder(@"
-                    SELECT 
-                        a.idAbastecimientoCombustible AS IdAbastecimiento,
-                        RTRIM(a.numeroAbastecimientoCombustible) AS NumeroAbastecimiento,
-                        a.fechaHora AS FechaHora,
-                        ISNULL(CONCAT(c.nombre, ' ', c.apPaterno), 'N/A') AS Conductor,
-                        ISNULL(t.placaTracto, 'N/A') AS PlacaTracto,
-                        ISNULL(cr.placaCarreta, 'N/A') AS PlacaCarreta,
-                        ISNULL(la.nombreAbastecimiento, 'N/A') AS Lugar,
-                        a.galonesTotalAbastecidos AS GLAbastecidos,
-                        a.galonesTotalConsumidos AS GLConsumidos,
-                        a.montoTotalGalonesComprados AS MontoTotal,
-                        a.rendimientoPromedio AS Rendimiento
-                    FROM AbastecimientoCombustible a
-                    LEFT JOIN Conductor c ON a.idConductor = c.idConductor
-                    LEFT JOIN Tracto t ON a.idTracto = t.idTracto
-                    LEFT JOIN Carreta cr ON a.idCarreta = cr.idCarreta
-                    LEFT JOIN LugarAbastecimiento la ON a.idLugarAbastecimiento = la.idLugarAbastecimiento
-                    WHERE 1=1");
-
-                if (fechaDesde.HasValue)
-                    query.Append(" AND a.fechaHora >= @FechaDesde");
-
-                if (fechaHasta.HasValue)
-                    query.Append(" AND a.fechaHora < @FechaHasta");
-
-                if (!string.IsNullOrEmpty(buscar))
-                    query.Append(" AND (c.nombre LIKE @Buscar OR c.apPaterno LIKE @Buscar OR t.placaTracto LIKE @Buscar OR cr.placaCarreta LIKE @Buscar OR RTRIM(a.numeroAbastecimientoCombustible) LIKE @Buscar)");
-
-                query.Append(" ORDER BY a.fechaHora DESC");
-
-                using (SqlCommand cmd = new SqlCommand(query.ToString(), conn))
-                {
-                    if (fechaDesde.HasValue)
-                        cmd.Parameters.AddWithValue("@FechaDesde", fechaDesde.Value.Date);
-
-                    if (fechaHasta.HasValue)
-                        cmd.Parameters.AddWithValue("@FechaHasta", fechaHasta.Value.Date.AddDays(1));
-
-                    if (!string.IsNullOrEmpty(buscar))
-                        cmd.Parameters.AddWithValue("@Buscar", $"%{buscar}%");
-
-                    conn.Open();
-                    SqlDataAdapter da = new SqlDataAdapter(cmd);
-                    da.Fill(dt);
-                }
+                query.Append(" AND a.fechaHora >= @FechaDesde");
+                parametros.Add(DbHelper.Param("@FechaDesde", fechaDesde.Value.Date));
             }
 
-            return dt;
+            if (fechaHasta.HasValue)
+            {
+                query.Append(" AND a.fechaHora < @FechaHasta");
+                parametros.Add(DbHelper.Param("@FechaHasta", fechaHasta.Value.Date.AddDays(1)));
+            }
+
+            if (!string.IsNullOrEmpty(buscar))
+            {
+                query.Append(" AND (c.nombre LIKE @Buscar OR c.apPaterno LIKE @Buscar OR t.placaTracto LIKE @Buscar OR cr.placaCarreta LIKE @Buscar OR RTRIM(a.numeroAbastecimientoCombustible) LIKE @Buscar)");
+                parametros.Add(DbHelper.Param("@Buscar", $"%{buscar}%"));
+            }
+
+            query.Append(" ORDER BY a.fechaHora DESC");
+
+            return DbHelper.ConsultarTabla(query.ToString(), parametros.ToArray());
         }
 
         protected void btnFiltrarHistorial_Click(object sender, EventArgs e)
@@ -329,8 +296,6 @@ namespace WebSGV.Views
                 fechaHasta = fh;
 
             CargarHistorialAbastecimientos(buscar, fechaDesde, fechaHasta);
-
-            // Mantener los viajes activos visibles
             CargarViajesActivos(txtBuscarConductor.Text.Trim(), ddlEstado.SelectedValue);
         }
 
@@ -350,51 +315,31 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = new DataTable();
-                decimal totalGal = 0m, totalUsd = 0m;
+                DataTable dt = DbHelper.ConsultarTabla(@"
+                    SELECT
+                        ice.idIngreso,
+                        ice.fechaRecepcion AS FechaRecepcion,
+                        ISNULL(vp.numeroViajeProgreso, '-') AS NumeroViajeProgreso,
+                        ISNULL(CONCAT(c.nombre, ' ', c.apPaterno), 'N/A') AS Conductor,
+                        ISNULL(t.placaTracto, 'N/A') AS PlacaTracto,
+                        ice.totalGalones AS TotalGalones,
+                        ice.totalUSD AS TotalUSD,
+                        ISNULL(ice.observaciones, '') AS Observaciones,
+                        (SELECT COUNT(*) FROM DetalleTicketEcuador dte
+                         WHERE dte.idIngreso = ice.idIngreso) AS CantidadTickets
+                    FROM IngresoCombustibleEcuador ice
+                    LEFT JOIN ViajesEnProgreso vp ON ice.idViajeProgreso = vp.idViajeProgreso
+                    LEFT JOIN Conductor c ON ice.idConductor = c.idConductor
+                    LEFT JOIN Tracto t ON ice.idTracto = t.idTracto
+                    WHERE ISNULL(ice.activo, 1) = 1
+                    ORDER BY ice.fechaRecepcion DESC");
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"
-                        SELECT 
-                            ice.idIngreso,
-                            ice.fechaRecepcion AS FechaRecepcion,
-                            ISNULL(vp.numeroViajeProgreso, '-') AS NumeroViajeProgreso,
-                            ISNULL(CONCAT(c.nombre, ' ', c.apPaterno), 'N/A') AS Conductor,
-                            ISNULL(t.placaTracto, 'N/A') AS PlacaTracto,
-                            ice.totalGalones AS TotalGalones,
-                            ice.totalUSD AS TotalUSD,
-                            ISNULL(ice.observaciones, '') AS Observaciones,
-                            (SELECT COUNT(*) FROM DetalleTicketEcuador dte 
-                             WHERE dte.idIngreso = ice.idIngreso) AS CantidadTickets
-                        FROM IngresoCombustibleEcuador ice
-                        LEFT JOIN ViajesEnProgreso vp ON ice.idViajeProgreso = vp.idViajeProgreso
-                        LEFT JOIN Conductor c ON ice.idConductor = c.idConductor
-                        LEFT JOIN Tracto t ON ice.idTracto = t.idTracto
-                        WHERE ISNULL(ice.activo, 1) = 1
-                        ORDER BY ice.fechaRecepcion DESC";
+                DataTable dtTotales = DbHelper.ConsultarTabla(@"
+                    SELECT ISNULL(SUM(totalGalones),0) AS G, ISNULL(SUM(totalUSD),0) AS U
+                    FROM IngresoCombustibleEcuador WHERE ISNULL(activo,1) = 1");
 
-                    conn.Open();
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        SqlDataAdapter da = new SqlDataAdapter(cmd);
-                        da.Fill(dt);
-                    }
-
-                    using (SqlCommand cmdTot = new SqlCommand(@"
-                        SELECT ISNULL(SUM(totalGalones),0) AS G, ISNULL(SUM(totalUSD),0) AS U
-                        FROM IngresoCombustibleEcuador WHERE ISNULL(activo,1) = 1", conn))
-                    {
-                        using (var r = cmdTot.ExecuteReader())
-                        {
-                            if (r.Read())
-                            {
-                                totalGal = Convert.ToDecimal(r["G"]);
-                                totalUsd = Convert.ToDecimal(r["U"]);
-                            }
-                        }
-                    }
-                }
+                decimal totalGal = dtTotales.Rows.Count > 0 ? Convert.ToDecimal(dtTotales.Rows[0]["G"]) : 0m;
+                decimal totalUsd = dtTotales.Rows.Count > 0 ? Convert.ToDecimal(dtTotales.Rows[0]["U"]) : 0m;
 
                 lblTotalRetornos.Text = dt.Rows.Count.ToString();
                 lblTotalGalonesEcuador.Text = totalGal.ToString("N2");
@@ -425,9 +370,6 @@ namespace WebSGV.Views
 
         #region Helpers de Formato
 
-        /// <summary>
-        /// Genera la clase CSS para el badge de estado del viaje.
-        /// </summary>
         protected string GetEstadoClass(object estado)
         {
             string val = (estado ?? "").ToString().ToUpper();
@@ -436,9 +378,6 @@ namespace WebSGV.Views
             return "vj-estado-abierto";
         }
 
-        /// <summary>
-        /// Genera un badge HTML con color según el destino.
-        /// </summary>
         protected string FormatDestinoBadge(object destino)
         {
             string val = destino?.ToString() ?? "N/A";
@@ -453,9 +392,6 @@ namespace WebSGV.Views
             return $"<span class=\"destino-badge {cssClass}\">{HttpUtility.HtmlEncode(val)}</span>";
         }
 
-        /// <summary>
-        /// Genera un badge HTML con color según los días en viaje.
-        /// </summary>
         protected string FormatDiasBadge(object dias)
         {
             int d = 0;
@@ -468,10 +404,6 @@ namespace WebSGV.Views
             return $"<span class=\"dias-badge {cssClass}\">{d}</span>";
         }
 
-        /// <summary>
-        /// Badge visual para la fase del viaje: pendiente de IDA o COMPLETO.
-        /// Los viajes internacionales se marcan con el icono 🌎 pero siguen el mismo flujo de 1 carga.
-        /// </summary>
         protected string FormatFaseBadge(object fase, object esInternacional, object cargas)
         {
             string f = (fase ?? "").ToString().ToUpper();
@@ -499,27 +431,18 @@ namespace WebSGV.Views
             return $"<span class=\"fase-badge {cls}\"><i class=\"fas {icon}\"></i> {label}{intlTag}{cargasTxt}</span>";
         }
 
-        /// <summary>
-        /// Devuelve true si el viaje aún no tiene ninguna carga de combustible registrada.
-        /// </summary>
         protected bool PuedeAbastecer(object fase)
         {
-            string f = (fase ?? "").ToString().ToUpper();
-            return f == "PENDIENTE";
+            return (fase ?? "").ToString().ToUpper() == "PENDIENTE";
         }
 
-        /// <summary>
-        /// Devuelve true si el viaje es internacional, ya fue abastecido y aún no tiene retorno registrado.
-        /// Habilita el botón "Registrar Retorno Ecuador".
-        /// </summary>
         protected bool PuedeRegistrarRetorno(object esInternacional, object fase, object retornoRegistrado)
         {
             string intlStr = (esInternacional ?? "0").ToString().ToLower();
             bool intl = intlStr == "1" || intlStr == "true";
             if (!intl) return false;
 
-            string f = (fase ?? "").ToString().ToUpper();
-            if (f != "COMPLETO") return false;
+            if ((fase ?? "").ToString().ToUpper() != "COMPLETO") return false;
 
             int rr = 0;
             int.TryParse((retornoRegistrado ?? "0").ToString(), out rr);

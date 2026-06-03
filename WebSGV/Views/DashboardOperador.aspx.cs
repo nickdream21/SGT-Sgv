@@ -1,21 +1,13 @@
 using System;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
-using System.Linq;
 using System.Web.UI;
 using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class DashboardOperador : System.Web.UI.Page
+    public partial class DashboardOperador : PaginaBase
     {
         #region Propiedades
-
-        private string ConnectionString
-        {
-            get { return ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString; }
-        }
 
         private int IdOperadorActual
         {
@@ -89,7 +81,6 @@ namespace WebSGV.Views
                     pnlAsignacion.Visible = false;
                     pnlSinAsignacion.Visible = true;
                     pnlContenido.Visible = false;
-                    // Mostrar historial de partes previos aunque no tenga asignacion activa
                     CargarHistorialSinAsignacion();
                 }
             }
@@ -102,51 +93,32 @@ namespace WebSGV.Views
 
         private void CargarDatosOperador()
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_MQ_ObtenerDatosOperador", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idOperador", IdOperadorActual);
-                    conn.Open();
+            DataTable dt = DbHelper.ConsultarTablaSp("sp_MQ_ObtenerDatosOperador",
+                DbHelper.Param("@idOperador", IdOperadorActual));
 
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            lblNombreOperador.Text = reader["nombreCompleto"].ToString();
-                            lblDNIOperador.Text = reader["dni"].ToString();
-                            hfIdOperador.Value = IdOperadorActual.ToString();
-                        }
-                    }
-                }
+            if (dt.Rows.Count > 0)
+            {
+                DataRow reader = dt.Rows[0];
+                lblNombreOperador.Text = reader["nombreCompleto"].ToString();
+                lblDNIOperador.Text = reader["dni"].ToString();
+                hfIdOperador.Value = IdOperadorActual.ToString();
             }
         }
 
         private bool CargarAsignacionActiva()
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_MQ_ObtenerAsignacionActiva", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idOperador", IdOperadorActual);
-                    conn.Open();
+            DataTable dt = DbHelper.ConsultarTablaSp("sp_MQ_ObtenerAsignacionActiva",
+                DbHelper.Param("@idOperador", IdOperadorActual));
 
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            hfIdAsignacion.Value = reader["idAsignacion"].ToString();
-                            lblPlacaEquipo.Text = reader["placa"].ToString();
-                            lblTipoEquipo.Text = reader["tipoEquipo"] != DBNull.Value
-                                ? reader["tipoEquipo"].ToString() : "\u2014";
-                            lblClienteObra.Text = reader["nombreCliente"].ToString();
-                            lblNombreObra.Text = reader["nombreObra"].ToString();
-                            return true;
-                        }
-                    }
-                }
+            if (dt.Rows.Count > 0)
+            {
+                DataRow reader = dt.Rows[0];
+                hfIdAsignacion.Value = reader["idAsignacion"].ToString();
+                lblPlacaEquipo.Text = reader["placa"].ToString();
+                lblTipoEquipo.Text = reader["tipoEquipo"] != DBNull.Value ? reader["tipoEquipo"].ToString() : "—";
+                lblClienteObra.Text = reader["nombreCliente"].ToString();
+                lblNombreObra.Text = reader["nombreObra"].ToString();
+                return true;
             }
 
             return false;
@@ -154,85 +126,63 @@ namespace WebSGV.Views
 
         private void CargarHistorialPartes()
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            DataTable dt = DbHelper.ConsultarTablaSp("sp_MQ_ObtenerHistorialPartes",
+                DbHelper.Param("@idOperador", IdOperadorActual));
+
+            if (dt.Rows.Count > 0)
             {
-                using (SqlCommand cmd = new SqlCommand("sp_MQ_ObtenerHistorialPartes", conn))
+                pnlHistorial.Visible = true;
+                pnlHistorialVacio.Visible = false;
+
+                rptHistorial.DataSource = dt;
+                rptHistorial.DataBind();
+
+                lblCantidadPartes.Text = dt.Rows.Count.ToString();
+                lblCantidadPartes.Visible = true;
+                lblTotalPartes.Text = dt.Rows.Count.ToString();
+
+                decimal totalHoras = 0;
+                foreach (DataRow row in dt.Rows)
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idOperador", IdOperadorActual);
-                    conn.Open();
-
-                    DataTable dt = new DataTable();
-                    dt.Load(cmd.ExecuteReader());
-
-                    if (dt.Rows.Count > 0)
-                    {
-                        pnlHistorial.Visible = true;
-                        pnlHistorialVacio.Visible = false;
-
-                        rptHistorial.DataSource = dt;
-                        rptHistorial.DataBind();
-
-                        // Estadisticas resumen
-                        lblCantidadPartes.Text = dt.Rows.Count.ToString();
-                        lblCantidadPartes.Visible = true;
-                        lblTotalPartes.Text = dt.Rows.Count.ToString();
-
-                        decimal totalHoras = 0;
-                        foreach (DataRow row in dt.Rows)
-                        {
-                            if (row["horometroHoras"] != DBNull.Value)
-                                totalHoras += Convert.ToDecimal(row["horometroHoras"]);
-                        }
-                        lblTotalHoras.Text = totalHoras.ToString("N1");
-                    }
-                    else
-                    {
-                        pnlHistorial.Visible = false;
-                        pnlHistorialVacio.Visible = true;
-                    }
+                    if (row["horometroHoras"] != DBNull.Value)
+                        totalHoras += Convert.ToDecimal(row["horometroHoras"]);
                 }
+                lblTotalHoras.Text = totalHoras.ToString("N1");
+            }
+            else
+            {
+                pnlHistorial.Visible = false;
+                pnlHistorialVacio.Visible = true;
             }
         }
 
         private void CargarHistorialSinAsignacion()
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            DataTable dt = DbHelper.ConsultarTablaSp("sp_MQ_ObtenerHistorialPartes",
+                DbHelper.Param("@idOperador", IdOperadorActual));
+
+            if (dt.Rows.Count > 0)
             {
-                using (SqlCommand cmd = new SqlCommand("sp_MQ_ObtenerHistorialPartes", conn))
+                pnlHistorialSinAsignacion.Visible = true;
+                pnlHistSA.Visible = true;
+                pnlHistSAVacio.Visible = false;
+
+                rptHistorialSA.DataSource = dt;
+                rptHistorialSA.DataBind();
+
+                lblTotalPartesSA.Text = dt.Rows.Count.ToString();
+
+                decimal totalHoras = 0;
+                foreach (DataRow row in dt.Rows)
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idOperador", IdOperadorActual);
-                    conn.Open();
-
-                    DataTable dt = new DataTable();
-                    dt.Load(cmd.ExecuteReader());
-
-                    if (dt.Rows.Count > 0)
-                    {
-                        pnlHistorialSinAsignacion.Visible = true;
-                        pnlHistSA.Visible = true;
-                        pnlHistSAVacio.Visible = false;
-
-                        rptHistorialSA.DataSource = dt;
-                        rptHistorialSA.DataBind();
-
-                        lblTotalPartesSA.Text = dt.Rows.Count.ToString();
-
-                        decimal totalHoras = 0;
-                        foreach (DataRow row in dt.Rows)
-                        {
-                            if (row["horometroHoras"] != DBNull.Value)
-                                totalHoras += Convert.ToDecimal(row["horometroHoras"]);
-                        }
-                        lblTotalHorasSA.Text = totalHoras.ToString("N1");
-                    }
-                    else
-                    {
-                        // Sin historial previo: no mostrar nada extra
-                        pnlHistorialSinAsignacion.Visible = false;
-                    }
+                    if (row["horometroHoras"] != DBNull.Value)
+                        totalHoras += Convert.ToDecimal(row["horometroHoras"]);
                 }
+                lblTotalHorasSA.Text = totalHoras.ToString("N1");
+            }
+            else
+            {
+                pnlHistorialSinAsignacion.Visible = false;
             }
         }
 
@@ -259,68 +209,36 @@ namespace WebSGV.Views
                 int idAsignacion = Convert.ToInt32(hfIdAsignacion.Value);
                 DateTime fecha = DateTime.Parse(txtFechaParte.Text);
 
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                DataTable dtResult = DbHelper.ConsultarTablaSp("sp_MQ_InsertarParteDiario",
+                    DbHelper.Param("@idAsignacion", idAsignacion),
+                    DbHelper.Param("@idOperador", IdOperadorActual),
+                    DbHelper.Param("@fecha", fecha),
+                    DbHelper.Param("@odometroComienzo", string.IsNullOrEmpty(txtOdometroComienzo.Text) ? null : (object)Convert.ToDecimal(txtOdometroComienzo.Text)),
+                    DbHelper.Param("@odometroTermino", string.IsNullOrEmpty(txtOdometroTermino.Text) ? null : (object)Convert.ToDecimal(txtOdometroTermino.Text)),
+                    DbHelper.Param("@horometroComienzo", string.IsNullOrEmpty(txtHorometroComienzo.Text) ? null : (object)Convert.ToDecimal(txtHorometroComienzo.Text)),
+                    DbHelper.Param("@horometroTermino", string.IsNullOrEmpty(txtHorometroTermino.Text) ? null : (object)Convert.ToDecimal(txtHorometroTermino.Text)),
+                    DbHelper.Param("@consumoPetroleo", string.IsNullOrEmpty(txtConsumoPetroleo.Text) ? (object)0m : Convert.ToDecimal(txtConsumoPetroleo.Text)),
+                    DbHelper.Param("@consumoGasolina", string.IsNullOrEmpty(txtConsumoGasolina.Text) ? (object)0m : Convert.ToDecimal(txtConsumoGasolina.Text)),
+                    DbHelper.Param("@consumoAceite", string.IsNullOrEmpty(txtConsumoAceite.Text) ? (object)0m : Convert.ToDecimal(txtConsumoAceite.Text)),
+                    DbHelper.Param("@consumoGrasa", string.IsNullOrEmpty(txtConsumoGrasa.Text) ? (object)0m : Convert.ToDecimal(txtConsumoGrasa.Text)),
+                    DbHelper.Param("@carretera", string.IsNullOrEmpty(txtCarretera.Text) ? null : (object)txtCarretera.Text.Trim()),
+                    DbHelper.Param("@sector", string.IsNullOrEmpty(txtSector.Text) ? null : (object)txtSector.Text.Trim()),
+                    DbHelper.Param("@sectorKm", string.IsNullOrEmpty(txtSectorKm.Text) ? null : (object)txtSectorKm.Text.Trim()),
+                    DbHelper.Param("@alKm", string.IsNullOrEmpty(txtAlKm.Text) ? null : (object)txtAlKm.Text.Trim()),
+                    DbHelper.Param("@labor", string.IsNullOrEmpty(txtLabor.Text) ? null : (object)txtLabor.Text.Trim()),
+                    DbHelper.Param("@codigo", string.IsNullOrEmpty(txtCodigo.Text) ? null : (object)txtCodigo.Text.Trim()),
+                    DbHelper.Param("@cantidadViajes", string.IsNullOrEmpty(txtCantidadViajes.Text) ? null : (object)Convert.ToInt32(txtCantidadViajes.Text)),
+                    DbHelper.Param("@reclamo", string.IsNullOrEmpty(txtReclamo.Text) ? null : (object)txtReclamo.Text.Trim()),
+                    DbHelper.Param("@observaciones", string.IsNullOrEmpty(txtObservaciones.Text) ? null : (object)txtObservaciones.Text.Trim()));
+
+                if (dtResult.Rows.Count > 0)
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_MQ_InsertarParteDiario", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
+                    string numeroParte = dtResult.Rows[0]["numeroParte"].ToString();
+                    MostrarMensaje("Parte Diario <strong>" + numeroParte + "</strong> registrado exitosamente.", "success");
 
-                        cmd.Parameters.AddWithValue("@idAsignacion", idAsignacion);
-                        cmd.Parameters.AddWithValue("@idOperador", IdOperadorActual);
-                        cmd.Parameters.AddWithValue("@fecha", fecha);
-
-                        cmd.Parameters.AddWithValue("@odometroComienzo",
-                            string.IsNullOrEmpty(txtOdometroComienzo.Text) ? (object)DBNull.Value : Convert.ToDecimal(txtOdometroComienzo.Text));
-                        cmd.Parameters.AddWithValue("@odometroTermino",
-                            string.IsNullOrEmpty(txtOdometroTermino.Text) ? (object)DBNull.Value : Convert.ToDecimal(txtOdometroTermino.Text));
-                        cmd.Parameters.AddWithValue("@horometroComienzo",
-                            string.IsNullOrEmpty(txtHorometroComienzo.Text) ? (object)DBNull.Value : Convert.ToDecimal(txtHorometroComienzo.Text));
-                        cmd.Parameters.AddWithValue("@horometroTermino",
-                            string.IsNullOrEmpty(txtHorometroTermino.Text) ? (object)DBNull.Value : Convert.ToDecimal(txtHorometroTermino.Text));
-
-                        cmd.Parameters.AddWithValue("@consumoPetroleo",
-                            string.IsNullOrEmpty(txtConsumoPetroleo.Text) ? 0m : Convert.ToDecimal(txtConsumoPetroleo.Text));
-                        cmd.Parameters.AddWithValue("@consumoGasolina",
-                            string.IsNullOrEmpty(txtConsumoGasolina.Text) ? 0m : Convert.ToDecimal(txtConsumoGasolina.Text));
-                        cmd.Parameters.AddWithValue("@consumoAceite",
-                            string.IsNullOrEmpty(txtConsumoAceite.Text) ? 0m : Convert.ToDecimal(txtConsumoAceite.Text));
-                        cmd.Parameters.AddWithValue("@consumoGrasa",
-                            string.IsNullOrEmpty(txtConsumoGrasa.Text) ? 0m : Convert.ToDecimal(txtConsumoGrasa.Text));
-
-                        cmd.Parameters.AddWithValue("@carretera",
-                            string.IsNullOrEmpty(txtCarretera.Text) ? (object)DBNull.Value : txtCarretera.Text.Trim());
-                        cmd.Parameters.AddWithValue("@sector",
-                            string.IsNullOrEmpty(txtSector.Text) ? (object)DBNull.Value : txtSector.Text.Trim());
-                        cmd.Parameters.AddWithValue("@sectorKm",
-                            string.IsNullOrEmpty(txtSectorKm.Text) ? (object)DBNull.Value : txtSectorKm.Text.Trim());
-                        cmd.Parameters.AddWithValue("@alKm",
-                            string.IsNullOrEmpty(txtAlKm.Text) ? (object)DBNull.Value : txtAlKm.Text.Trim());
-                        cmd.Parameters.AddWithValue("@labor",
-                            string.IsNullOrEmpty(txtLabor.Text) ? (object)DBNull.Value : txtLabor.Text.Trim());
-                        cmd.Parameters.AddWithValue("@codigo",
-                            string.IsNullOrEmpty(txtCodigo.Text) ? (object)DBNull.Value : txtCodigo.Text.Trim());
-                        cmd.Parameters.AddWithValue("@cantidadViajes",
-                            string.IsNullOrEmpty(txtCantidadViajes.Text) ? (object)DBNull.Value : Convert.ToInt32(txtCantidadViajes.Text));
-                        cmd.Parameters.AddWithValue("@reclamo",
-                            string.IsNullOrEmpty(txtReclamo.Text) ? (object)DBNull.Value : txtReclamo.Text.Trim());
-                        cmd.Parameters.AddWithValue("@observaciones",
-                            string.IsNullOrEmpty(txtObservaciones.Text) ? (object)DBNull.Value : txtObservaciones.Text.Trim());
-
-                        conn.Open();
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                string numeroParte = reader["numeroParte"].ToString();
-                                MostrarMensaje("Parte Diario <strong>" + numeroParte + "</strong> registrado exitosamente.", "success");
-
-                                AuditoriaHelper.Registrar("INSERT", "PartesDiariosTrabajo",
-                                    Convert.ToInt32(reader["idParte"]),
-                                    "Parte " + numeroParte + " registrado por operador ID " + IdOperadorActual);
-                            }
-                        }
-                    }
+                    AuditoriaHelper.Registrar("INSERT", "PartesDiariosTrabajo",
+                        Convert.ToInt32(dtResult.Rows[0]["idParte"]),
+                        "Parte " + numeroParte + " registrado por operador ID " + IdOperadorActual);
                 }
 
                 LimpiarCamposFormulario();

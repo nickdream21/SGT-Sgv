@@ -1,17 +1,13 @@
 using System;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RegistroOperadores : System.Web.UI.Page
+    public partial class RegistroOperadores : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!RolesHelper.EsAdminMaquinaria() && !RolesHelper.EsAdmin())
@@ -31,20 +27,12 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT idOperador, dni, nombre, ISNULL(telefono, '') AS telefono, activo
-                                     FROM Operadores ORDER BY nombre";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        conn.Open();
-                        DataTable dt = new DataTable();
-                        dt.Load(cmd.ExecuteReader());
-                        gvOperadores.DataSource = dt;
-                        gvOperadores.DataBind();
-                        lblTotalOperadores.Text = dt.Rows.Count + " registro(s)";
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(
+                    @"SELECT idOperador, dni, nombre, ISNULL(telefono, '') AS telefono, activo
+                      FROM Operadores ORDER BY nombre");
+                gvOperadores.DataSource = dt;
+                gvOperadores.DataBind();
+                lblTotalOperadores.Text = dt.Rows.Count + " registro(s)";
             }
             catch (Exception ex)
             {
@@ -68,19 +56,11 @@ namespace WebSGV.Views
                     return;
                 }
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"INSERT INTO Operadores (nombre, dni, telefono, activo)
-                                     VALUES (@nombre, @dni, @telefono, 1)";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@nombre", nombre);
-                        cmd.Parameters.AddWithValue("@dni", dni);
-                        cmd.Parameters.AddWithValue("@telefono", string.IsNullOrEmpty(telefono) ? (object)DBNull.Value : telefono);
-                        conn.Open();
-                        cmd.ExecuteNonQuery();
-                    }
-                }
+                DbHelper.EjecutarNonQuery(
+                    @"INSERT INTO Operadores (nombre, dni, telefono, activo) VALUES (@nombre, @dni, @telefono, 1)",
+                    DbHelper.Param("@nombre", nombre),
+                    DbHelper.Param("@dni", dni),
+                    DbHelper.Param("@telefono", string.IsNullOrEmpty(telefono) ? null : (object)telefono));
 
                 AuditoriaHelper.Registrar("INSERT", "Operadores",
                     descripcion: $"Operador registrado - Nombre: {nombre}, DNI: {dni}");
@@ -102,18 +82,9 @@ namespace WebSGV.Views
                 int idOperador = Convert.ToInt32(e.CommandArgument);
                 try
                 {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        string query = @"UPDATE Operadores 
-                                         SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
-                                         WHERE idOperador = @id";
-                        using (SqlCommand cmd = new SqlCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", idOperador);
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
+                    DbHelper.EjecutarNonQuery(
+                        @"UPDATE Operadores SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END WHERE idOperador = @id",
+                        DbHelper.Param("@id", idOperador));
 
                     AuditoriaHelper.Registrar("UPDATE", "Operadores", idOperador,
                         "Estado de operador actualizado (activar/desactivar)");
@@ -129,16 +100,9 @@ namespace WebSGV.Views
 
         private bool OperadorExiste(string dni)
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                string query = "SELECT COUNT(*) FROM Operadores WHERE dni = @dni";
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@dni", dni);
-                    conn.Open();
-                    return (int)cmd.ExecuteScalar() > 0;
-                }
-            }
+            return Convert.ToInt32(DbHelper.EjecutarEscalar(
+                "SELECT COUNT(*) FROM Operadores WHERE dni = @dni",
+                DbHelper.Param("@dni", dni))) > 0;
         }
 
         private void LimpiarFormulario()

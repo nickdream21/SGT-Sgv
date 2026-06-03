@@ -1,17 +1,13 @@
 using System;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RegistroClientesObra : System.Web.UI.Page
+    public partial class RegistroClientesObra : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!RolesHelper.EsAdminMaquinaria() && !RolesHelper.EsAdmin())
@@ -31,21 +27,13 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT idClienteObra, nombre, ISNULL(ruc,'') AS ruc, 
-                                            ISNULL(contacto,'') AS contacto, ISNULL(telefono,'') AS telefono, activo
-                                     FROM ClientesObra ORDER BY nombre";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        conn.Open();
-                        DataTable dt = new DataTable();
-                        dt.Load(cmd.ExecuteReader());
-                        gvClientes.DataSource = dt;
-                        gvClientes.DataBind();
-                        lblTotalClientes.Text = dt.Rows.Count + " registro(s)";
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(
+                    @"SELECT idClienteObra, nombre, ISNULL(ruc,'') AS ruc,
+                             ISNULL(contacto,'') AS contacto, ISNULL(telefono,'') AS telefono, activo
+                      FROM ClientesObra ORDER BY nombre");
+                gvClientes.DataSource = dt;
+                gvClientes.DataBind();
+                lblTotalClientes.Text = dt.Rows.Count + " registro(s)";
             }
             catch (Exception ex)
             {
@@ -64,20 +52,13 @@ namespace WebSGV.Views
                 string contacto = txtContacto.Text.Trim();
                 string telefono = txtTelefono.Text.Trim();
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"INSERT INTO ClientesObra (nombre, ruc, contacto, telefono, activo)
-                                     VALUES (@nombre, @ruc, @contacto, @telefono, 1)";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@nombre", nombre);
-                        cmd.Parameters.AddWithValue("@ruc", string.IsNullOrEmpty(ruc) ? (object)DBNull.Value : ruc);
-                        cmd.Parameters.AddWithValue("@contacto", string.IsNullOrEmpty(contacto) ? (object)DBNull.Value : contacto);
-                        cmd.Parameters.AddWithValue("@telefono", string.IsNullOrEmpty(telefono) ? (object)DBNull.Value : telefono);
-                        conn.Open();
-                        cmd.ExecuteNonQuery();
-                    }
-                }
+                DbHelper.EjecutarNonQuery(
+                    @"INSERT INTO ClientesObra (nombre, ruc, contacto, telefono, activo)
+                      VALUES (@nombre, @ruc, @contacto, @telefono, 1)",
+                    DbHelper.Param("@nombre", nombre),
+                    DbHelper.Param("@ruc", string.IsNullOrEmpty(ruc) ? null : (object)ruc),
+                    DbHelper.Param("@contacto", string.IsNullOrEmpty(contacto) ? null : (object)contacto),
+                    DbHelper.Param("@telefono", string.IsNullOrEmpty(telefono) ? null : (object)telefono));
 
                 AuditoriaHelper.Registrar("INSERT", "ClientesObra",
                     descripcion: $"Cliente de obra registrado - Nombre: {nombre}");
@@ -99,18 +80,9 @@ namespace WebSGV.Views
                 int idCliente = Convert.ToInt32(e.CommandArgument);
                 try
                 {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        string query = @"UPDATE ClientesObra 
-                                         SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
-                                         WHERE idClienteObra = @id";
-                        using (SqlCommand cmd = new SqlCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", idCliente);
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
+                    DbHelper.EjecutarNonQuery(
+                        @"UPDATE ClientesObra SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END WHERE idClienteObra = @id",
+                        DbHelper.Param("@id", idCliente));
 
                     AuditoriaHelper.Registrar("UPDATE", "ClientesObra", idCliente,
                         "Estado de cliente actualizado (activar/desactivar)");

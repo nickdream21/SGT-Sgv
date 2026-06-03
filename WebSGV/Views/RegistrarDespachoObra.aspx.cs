@@ -1,5 +1,4 @@
 using System;
-using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI;
@@ -8,10 +7,8 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RegistrarDespachoObra : System.Web.UI.Page
+    public partial class RegistrarDespachoObra : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!RolesHelper.TieneSesionActiva())
@@ -35,53 +32,30 @@ namespace WebSGV.Views
 
         private void CargarCombos()
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                conn.Open();
+            DataTable dtTracto = DbHelper.ConsultarTabla(
+                "SELECT idTracto, placaTracto FROM Tracto WHERE ISNULL(activo,1)=1 ORDER BY placaTracto");
+            ddlTracto.Items.Clear();
+            ddlTracto.Items.Add(new ListItem("Seleccione cisterna", ""));
+            foreach (DataRow dr in dtTracto.Rows)
+                ddlTracto.Items.Add(new ListItem(dr["placaTracto"].ToString(), dr["idTracto"].ToString()));
 
-                // Tractos (cisternas)
-                using (SqlCommand cmd = new SqlCommand(
-                    "SELECT idTracto, placaTracto FROM Tracto WHERE ISNULL(activo,1)=1 ORDER BY placaTracto", conn))
-                {
-                    using (SqlDataReader dr = cmd.ExecuteReader())
-                    {
-                        ddlTracto.Items.Clear();
-                        ddlTracto.Items.Add(new ListItem("Seleccione cisterna", ""));
-                        while (dr.Read())
-                            ddlTracto.Items.Add(new ListItem(dr["placaTracto"].ToString(), dr["idTracto"].ToString()));
-                    }
-                }
+            DataTable dtConductor = DbHelper.ConsultarTabla(
+                "SELECT idConductor, nombre + ' ' + apPaterno + ' ' + ISNULL(apMaterno,'') AS nom FROM Conductor ORDER BY nombre");
+            ddlConductor.Items.Clear();
+            ddlConductor.Items.Add(new ListItem("Seleccione conductor", ""));
+            foreach (DataRow dr in dtConductor.Rows)
+                ddlConductor.Items.Add(new ListItem(dr["nom"].ToString(), dr["idConductor"].ToString()));
 
-                // Conductores
-                using (SqlCommand cmd = new SqlCommand(
-                    "SELECT idConductor, nombre + ' ' + apPaterno + ' ' + ISNULL(apMaterno,'') AS nom FROM Conductor ORDER BY nombre", conn))
-                {
-                    using (SqlDataReader dr = cmd.ExecuteReader())
-                    {
-                        ddlConductor.Items.Clear();
-                        ddlConductor.Items.Add(new ListItem("Seleccione conductor", ""));
-                        while (dr.Read())
-                            ddlConductor.Items.Add(new ListItem(dr["nom"].ToString(), dr["idConductor"].ToString()));
-                    }
-                }
-
-                // Obras (usa tabla Obras existente)
-                using (SqlCommand cmd = new SqlCommand(
-                    @"SELECT o.idObra, o.nombre + ISNULL(' - ' + co.nombre, '') AS nom
-                      FROM Obras o
-                      LEFT JOIN ClientesObra co ON co.idClienteObra = o.idClienteObra
-                      WHERE o.estado = 'ACTIVA'
-                      ORDER BY o.nombre", conn))
-                {
-                    using (SqlDataReader dr = cmd.ExecuteReader())
-                    {
-                        ddlObra.Items.Clear();
-                        ddlObra.Items.Add(new ListItem("Seleccione obra", ""));
-                        while (dr.Read())
-                            ddlObra.Items.Add(new ListItem(dr["nom"].ToString(), dr["idObra"].ToString()));
-                    }
-                }
-            }
+            DataTable dtObra = DbHelper.ConsultarTabla(
+                @"SELECT o.idObra, o.nombre + ISNULL(' - ' + co.nombre, '') AS nom
+                  FROM Obras o
+                  LEFT JOIN ClientesObra co ON co.idClienteObra = o.idClienteObra
+                  WHERE o.estado = 'ACTIVA'
+                  ORDER BY o.nombre");
+            ddlObra.Items.Clear();
+            ddlObra.Items.Add(new ListItem("Seleccione obra", ""));
+            foreach (DataRow dr in dtObra.Rows)
+                ddlObra.Items.Add(new ListItem(dr["nom"].ToString(), dr["idObra"].ToString()));
         }
 
         protected void btnGuardar_Click(object sender, EventArgs e)
@@ -125,6 +99,7 @@ namespace WebSGV.Views
                 DateTime? fRetorno = null;
                 if (DateTime.TryParse(txtFechaRetorno.Text, out DateTime fr)) fRetorno = fr;
 
+                // SP con parámetro OUTPUT — se mantiene con SqlConnection directo
                 int idDespacho;
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 using (SqlCommand cmd = new SqlCommand("sp_InsertarDespachoObra", conn))

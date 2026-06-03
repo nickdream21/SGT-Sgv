@@ -1,5 +1,5 @@
 using System;
-using System.Configuration;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI;
@@ -8,10 +8,8 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class AsignacionesMaquinariaPage : System.Web.UI.Page
+    public partial class AsignacionesMaquinariaPage : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!RolesHelper.EsAdminMaquinaria() && !RolesHelper.EsAdmin())
@@ -33,51 +31,31 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    conn.Open();
+                DataTable dtOp = DbHelper.ConsultarTabla(
+                    "SELECT idOperador, nombre + ' (' + dni + ')' AS display FROM Operadores WHERE activo = 1 ORDER BY nombre");
+                ddlOperador.DataSource = dtOp;
+                ddlOperador.DataTextField = "display";
+                ddlOperador.DataValueField = "idOperador";
+                ddlOperador.DataBind();
+                ddlOperador.Items.Insert(0, new ListItem("-- Seleccione Operador --", ""));
 
-                    // Operadores activos
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT idOperador, nombre + ' (' + dni + ')' AS display FROM Operadores WHERE activo = 1 ORDER BY nombre", conn))
-                    {
-                        DataTable dt = new DataTable();
-                        dt.Load(cmd.ExecuteReader());
-                        ddlOperador.DataSource = dt;
-                        ddlOperador.DataTextField = "display";
-                        ddlOperador.DataValueField = "idOperador";
-                        ddlOperador.DataBind();
-                        ddlOperador.Items.Insert(0, new ListItem("-- Seleccione Operador --", ""));
-                    }
+                DataTable dtEq = DbHelper.ConsultarTabla(
+                    "SELECT idEquipo, placa + ISNULL(' - ' + tipo, '') AS display FROM EquiposMaquinaria WHERE activo = 1 ORDER BY placa");
+                ddlEquipo.DataSource = dtEq;
+                ddlEquipo.DataTextField = "display";
+                ddlEquipo.DataValueField = "idEquipo";
+                ddlEquipo.DataBind();
+                ddlEquipo.Items.Insert(0, new ListItem("-- Seleccione Equipo --", ""));
 
-                    // Equipos activos
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT idEquipo, placa + ISNULL(' - ' + tipo, '') AS display FROM EquiposMaquinaria WHERE activo = 1 ORDER BY placa", conn))
-                    {
-                        DataTable dt = new DataTable();
-                        dt.Load(cmd.ExecuteReader());
-                        ddlEquipo.DataSource = dt;
-                        ddlEquipo.DataTextField = "display";
-                        ddlEquipo.DataValueField = "idEquipo";
-                        ddlEquipo.DataBind();
-                        ddlEquipo.Items.Insert(0, new ListItem("-- Seleccione Equipo --", ""));
-                    }
-
-                    // Obras activas (con nombre del cliente)
-                    using (SqlCommand cmd = new SqlCommand(
-                        @"SELECT o.idObra, o.nombre + ' (' + c.nombre + ')' AS display 
-                          FROM Obras o INNER JOIN ClientesObra c ON o.idClienteObra = c.idClienteObra
-                          WHERE o.estado = 'ACTIVA' ORDER BY o.nombre", conn))
-                    {
-                        DataTable dt = new DataTable();
-                        dt.Load(cmd.ExecuteReader());
-                        ddlObra.DataSource = dt;
-                        ddlObra.DataTextField = "display";
-                        ddlObra.DataValueField = "idObra";
-                        ddlObra.DataBind();
-                        ddlObra.Items.Insert(0, new ListItem("-- Seleccione Obra --", ""));
-                    }
-                }
+                DataTable dtOb = DbHelper.ConsultarTabla(
+                    @"SELECT o.idObra, o.nombre + ' (' + c.nombre + ')' AS display
+                      FROM Obras o INNER JOIN ClientesObra c ON o.idClienteObra = c.idClienteObra
+                      WHERE o.estado = 'ACTIVA' ORDER BY o.nombre");
+                ddlObra.DataSource = dtOb;
+                ddlObra.DataTextField = "display";
+                ddlObra.DataValueField = "idObra";
+                ddlObra.DataBind();
+                ddlObra.Items.Insert(0, new ListItem("-- Seleccione Obra --", ""));
             }
             catch (Exception ex)
             {
@@ -90,36 +68,29 @@ namespace WebSGV.Views
             try
             {
                 string filtroEstado = ddlFiltroEstado.SelectedValue;
+                var parametros = new List<SqlParameter>();
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                string query = @"SELECT a.idAsignacion, op.nombre AS operadorNombre,
+                                        eq.placa AS equipoPlaca, ob.nombre AS obraNombre,
+                                        co.nombre AS clienteNombre, a.fechaAsignacion, a.estado
+                                 FROM AsignacionesMaquinaria a
+                                 INNER JOIN Operadores op ON a.idOperador = op.idOperador
+                                 INNER JOIN EquiposMaquinaria eq ON a.idEquipo = eq.idEquipo
+                                 INNER JOIN Obras ob ON a.idObra = ob.idObra
+                                 INNER JOIN ClientesObra co ON ob.idClienteObra = co.idClienteObra";
+
+                if (filtroEstado != "TODAS")
                 {
-                    string query = @"SELECT a.idAsignacion, op.nombre AS operadorNombre, 
-                                            eq.placa AS equipoPlaca, ob.nombre AS obraNombre,
-                                            co.nombre AS clienteNombre, a.fechaAsignacion, a.estado
-                                     FROM AsignacionesMaquinaria a
-                                     INNER JOIN Operadores op ON a.idOperador = op.idOperador
-                                     INNER JOIN EquiposMaquinaria eq ON a.idEquipo = eq.idEquipo
-                                     INNER JOIN Obras ob ON a.idObra = ob.idObra
-                                     INNER JOIN ClientesObra co ON ob.idClienteObra = co.idClienteObra";
-
-                    if (filtroEstado != "TODAS")
-                        query += " WHERE a.estado = @estado";
-
-                    query += " ORDER BY CASE a.estado WHEN 'ACTIVA' THEN 0 ELSE 1 END, a.fechaAsignacion DESC";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        if (filtroEstado != "TODAS")
-                            cmd.Parameters.AddWithValue("@estado", filtroEstado);
-
-                        conn.Open();
-                        DataTable dt = new DataTable();
-                        dt.Load(cmd.ExecuteReader());
-                        gvAsignaciones.DataSource = dt;
-                        gvAsignaciones.DataBind();
-                        lblTotalAsignaciones.Text = dt.Rows.Count + " asignación(es)";
-                    }
+                    query += " WHERE a.estado = @estado";
+                    parametros.Add(DbHelper.Param("@estado", filtroEstado));
                 }
+
+                query += " ORDER BY CASE a.estado WHEN 'ACTIVA' THEN 0 ELSE 1 END, a.fechaAsignacion DESC";
+
+                DataTable dt = DbHelper.ConsultarTabla(query, parametros.ToArray());
+                gvAsignaciones.DataSource = dt;
+                gvAsignaciones.DataBind();
+                lblTotalAsignaciones.Text = dt.Rows.Count + " asignación(es)";
             }
             catch (Exception ex)
             {
@@ -139,35 +110,23 @@ namespace WebSGV.Views
                 DateTime fechaAsignacion = DateTime.Parse(txtFechaAsignacion.Text);
                 string observaciones = txtObservaciones.Text.Trim();
 
-                // Verificar que el operador no tenga asignacion activa
                 if (OperadorTieneAsignacionActiva(idOperador))
                 {
                     MostrarMensaje("Este operador ya tiene una asignación activa. Debe finalizarla antes de crear una nueva.");
                     return;
                 }
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"INSERT INTO AsignacionesMaquinaria (idOperador, idEquipo, idObra, fechaAsignacion, estado, observaciones)
-                                     VALUES (@idOperador, @idEquipo, @idObra, @fechaAsignacion, 'ACTIVA', @observaciones)";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@idOperador", idOperador);
-                        cmd.Parameters.AddWithValue("@idEquipo", idEquipo);
-                        cmd.Parameters.AddWithValue("@idObra", idObra);
-                        cmd.Parameters.AddWithValue("@fechaAsignacion", fechaAsignacion);
-                        cmd.Parameters.AddWithValue("@observaciones", string.IsNullOrEmpty(observaciones) ? (object)DBNull.Value : observaciones);
-                        conn.Open();
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-
-                string opNombre = ddlOperador.SelectedItem.Text;
-                string eqPlaca = ddlEquipo.SelectedItem.Text;
-                string obNombre = ddlObra.SelectedItem.Text;
+                DbHelper.EjecutarNonQuery(
+                    @"INSERT INTO AsignacionesMaquinaria (idOperador, idEquipo, idObra, fechaAsignacion, estado, observaciones)
+                      VALUES (@idOperador, @idEquipo, @idObra, @fechaAsignacion, 'ACTIVA', @observaciones)",
+                    DbHelper.Param("@idOperador", idOperador),
+                    DbHelper.Param("@idEquipo", idEquipo),
+                    DbHelper.Param("@idObra", idObra),
+                    DbHelper.Param("@fechaAsignacion", fechaAsignacion),
+                    DbHelper.Param("@observaciones", string.IsNullOrEmpty(observaciones) ? null : (object)observaciones));
 
                 AuditoriaHelper.Registrar("INSERT", "AsignacionesMaquinaria",
-                    descripcion: $"Asignación creada - Operador: {opNombre}, Equipo: {eqPlaca}, Obra: {obNombre}");
+                    descripcion: $"Asignación creada - Operador: {ddlOperador.SelectedItem.Text}, Equipo: {ddlEquipo.SelectedItem.Text}, Obra: {ddlObra.SelectedItem.Text}");
 
                 LimpiarFormulario();
                 MostrarMensaje("Asignación creada correctamente.", true);
@@ -186,18 +145,10 @@ namespace WebSGV.Views
                 int idAsignacion = Convert.ToInt32(e.CommandArgument);
                 try
                 {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        string query = @"UPDATE AsignacionesMaquinaria 
-                                         SET estado = 'FINALIZADA', fechaFinAsignacion = GETDATE()
-                                         WHERE idAsignacion = @id AND estado = 'ACTIVA'";
-                        using (SqlCommand cmd = new SqlCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", idAsignacion);
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
+                    DbHelper.EjecutarNonQuery(
+                        @"UPDATE AsignacionesMaquinaria SET estado = 'FINALIZADA', fechaFinAsignacion = GETDATE()
+                          WHERE idAsignacion = @id AND estado = 'ACTIVA'",
+                        DbHelper.Param("@id", idAsignacion));
 
                     AuditoriaHelper.Registrar("UPDATE", "AsignacionesMaquinaria", idAsignacion,
                         "Asignación finalizada");
@@ -219,16 +170,9 @@ namespace WebSGV.Views
 
         private bool OperadorTieneAsignacionActiva(int idOperador)
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                string query = "SELECT COUNT(*) FROM AsignacionesMaquinaria WHERE idOperador = @idOperador AND estado = 'ACTIVA'";
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@idOperador", idOperador);
-                    conn.Open();
-                    return (int)cmd.ExecuteScalar() > 0;
-                }
-            }
+            return Convert.ToInt32(DbHelper.EjecutarEscalar(
+                "SELECT COUNT(*) FROM AsignacionesMaquinaria WHERE idOperador = @idOperador AND estado = 'ACTIVA'",
+                DbHelper.Param("@idOperador", idOperador))) > 0;
         }
 
         private void LimpiarFormulario()

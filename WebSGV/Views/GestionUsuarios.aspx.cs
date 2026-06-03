@@ -1,5 +1,5 @@
-﻿using System;
-using System.Configuration;
+using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI;
@@ -8,7 +8,7 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class GestionUsuarios : System.Web.UI.Page
+    public partial class GestionUsuarios : PaginaBase
     {
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -44,29 +44,29 @@ namespace WebSGV.Views
             string rol    = ddlFiltroRol.SelectedValue;
             string estado = ddlFiltroEstado.SelectedValue;
 
-            string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-            using (SqlConnection conn = new SqlConnection(cs))
+            var parametros = new List<SqlParameter>();
+            string query = "SELECT idUsuario, nombreUsuario, nombre, rol, activo FROM Usuarios WHERE 1=1";
+
+            if (!string.IsNullOrEmpty(buscar))
             {
-                conn.Open();
-
-                string query = @"SELECT idUsuario, nombreUsuario, nombre, rol, activo FROM Usuarios WHERE 1=1";
-                if (!string.IsNullOrEmpty(buscar))  query += " AND (nombreUsuario LIKE @Buscar OR nombre LIKE @Buscar)";
-                if (!string.IsNullOrEmpty(rol))     query += " AND rol = @Rol";
-                if (!string.IsNullOrEmpty(estado))  query += " AND activo = @Estado";
-                query += " ORDER BY activo DESC, rol, nombre";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    if (!string.IsNullOrEmpty(buscar))  cmd.Parameters.AddWithValue("@Buscar", "%" + buscar + "%");
-                    if (!string.IsNullOrEmpty(rol))     cmd.Parameters.AddWithValue("@Rol", rol);
-                    if (!string.IsNullOrEmpty(estado))  cmd.Parameters.AddWithValue("@Estado", Convert.ToInt32(estado));
-
-                    DataTable dt = new DataTable();
-                    new SqlDataAdapter(cmd).Fill(dt);
-                    gvUsuarios.DataSource = dt;
-                    gvUsuarios.DataBind();
-                }
+                query += " AND (nombreUsuario LIKE @Buscar OR nombre LIKE @Buscar)";
+                parametros.Add(DbHelper.Param("@Buscar", "%" + buscar + "%"));
             }
+            if (!string.IsNullOrEmpty(rol))
+            {
+                query += " AND rol = @Rol";
+                parametros.Add(DbHelper.Param("@Rol", rol));
+            }
+            if (!string.IsNullOrEmpty(estado))
+            {
+                query += " AND activo = @Estado";
+                parametros.Add(DbHelper.Param("@Estado", Convert.ToInt32(estado)));
+            }
+            query += " ORDER BY activo DESC, rol, nombre";
+
+            DataTable dt = DbHelper.ConsultarTabla(query, parametros.ToArray());
+            gvUsuarios.DataSource = dt;
+            gvUsuarios.DataBind();
         }
 
         protected void btnNuevoUsuario_Click(object sender, EventArgs e)
@@ -77,9 +77,7 @@ namespace WebSGV.Views
             txtNombreUsuario.Enabled = true;
             txtNombre.Text          = "";
             if (ddlRol.Items.Count > 0)
-            {
                 ddlRol.SelectedIndex = 0;
-            }
             txtContrasena.Text      = "";
             pnlContrasena.Visible   = true;
             pnlMensajeModal.Visible = false;
@@ -107,35 +105,26 @@ namespace WebSGV.Views
 
         private void CargarUsuarioEnModal(int idUsuario)
         {
-            string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-            using (SqlConnection conn = new SqlConnection(cs))
-            {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand(
-                    "SELECT idUsuario, nombreUsuario, nombre, rol FROM Usuarios WHERE idUsuario = @id", conn))
-                {
-                    cmd.Parameters.AddWithValue("@id", idUsuario);
-                    using (SqlDataReader r = cmd.ExecuteReader())
-                    {
-                        if (!r.Read()) return;
+            DataTable dt = DbHelper.ConsultarTabla(
+                "SELECT idUsuario, nombreUsuario, nombre, rol FROM Usuarios WHERE idUsuario = @id",
+                DbHelper.Param("@id", idUsuario));
 
-                        hfIdUsuario.Value       = r["idUsuario"].ToString();
-                        lblTituloModal.Text     = "Editar Usuario";
-                        txtNombreUsuario.Text   = r["nombreUsuario"].ToString();
-                        txtNombreUsuario.Enabled = false;
-                        txtNombre.Text          = r["nombre"].ToString();
-                        string rolUsuario = r["rol"].ToString();
-                        ListItem itemRol = ddlRol.Items.FindByValue(rolUsuario);
-                        if (itemRol == null)
-                        {
-                            ddlRol.Items.Add(new ListItem(rolUsuario, rolUsuario));
-                        }
-                        ddlRol.SelectedValue = rolUsuario;
-                        pnlContrasena.Visible   = false;
-                        pnlMensajeModal.Visible = false;
-                    }
-                }
-            }
+            if (dt.Rows.Count == 0) return;
+            DataRow r = dt.Rows[0];
+
+            hfIdUsuario.Value        = r["idUsuario"].ToString();
+            lblTituloModal.Text      = "Editar Usuario";
+            txtNombreUsuario.Text    = r["nombreUsuario"].ToString();
+            txtNombreUsuario.Enabled = false;
+            txtNombre.Text           = r["nombre"].ToString();
+            string rolUsuario = r["rol"].ToString();
+            ListItem itemRol = ddlRol.Items.FindByValue(rolUsuario);
+            if (itemRol == null)
+                ddlRol.Items.Add(new ListItem(rolUsuario, rolUsuario));
+            ddlRol.SelectedValue     = rolUsuario;
+            pnlContrasena.Visible    = false;
+            pnlMensajeModal.Visible  = false;
+
             AbrirModal("modalUsuario");
         }
 
@@ -148,17 +137,9 @@ namespace WebSGV.Views
                 return;
             }
 
-            string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-            using (SqlConnection conn = new SqlConnection(cs))
-            {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand(
-                    "UPDATE Usuarios SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END WHERE idUsuario = @id", conn))
-                {
-                    cmd.Parameters.AddWithValue("@id", idUsuario);
-                    cmd.ExecuteNonQuery();
-                }
-            }
+            DbHelper.EjecutarNonQuery(
+                "UPDATE Usuarios SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END WHERE idUsuario = @id",
+                DbHelper.Param("@id", idUsuario));
 
             AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario, "Cambio de estado activo/inactivo por Admin Sistema");
             MostrarMensaje("Estado del usuario actualizado correctamente.", "success");
@@ -167,18 +148,10 @@ namespace WebSGV.Views
 
         private void PrepararResetPassword(int idUsuario)
         {
-            string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-            using (SqlConnection conn = new SqlConnection(cs))
-            {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand(
-                    "SELECT nombreUsuario FROM Usuarios WHERE idUsuario = @id", conn))
-                {
-                    cmd.Parameters.AddWithValue("@id", idUsuario);
-                    object result = cmd.ExecuteScalar();
-                    lblUsuarioReset.Text = result?.ToString() ?? "";
-                }
-            }
+            object result = DbHelper.EjecutarEscalar(
+                "SELECT nombreUsuario FROM Usuarios WHERE idUsuario = @id",
+                DbHelper.Param("@id", idUsuario));
+            lblUsuarioReset.Text = result?.ToString() ?? "";
 
             hfIdUsuarioReset.Value   = idUsuario.ToString();
             txtNuevaPass.Text        = "";
@@ -219,54 +192,44 @@ namespace WebSGV.Views
                 }
             }
 
-            string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
             try
             {
-                using (SqlConnection conn = new SqlConnection(cs))
+                if (idUsuario == 0)
                 {
-                    conn.Open();
+                    int existe = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                        "SELECT COUNT(*) FROM Usuarios WHERE nombreUsuario = @user",
+                        DbHelper.Param("@user", nombreUsuario)));
 
-                    if (idUsuario == 0)
+                    if (existe > 0)
                     {
-                        using (SqlCommand check = new SqlCommand(
-                            "SELECT COUNT(*) FROM Usuarios WHERE nombreUsuario = @user", conn))
-                        {
-                            check.Parameters.AddWithValue("@user", nombreUsuario);
-                            if ((int)check.ExecuteScalar() > 0)
-                            {
-                                MostrarMensajeModal("El nombre de usuario ya existe. Elige otro.", "danger");
-                                AbrirModal("modalUsuario");
-                                return;
-                            }
-                        }
+                        MostrarMensajeModal("El nombre de usuario ya existe. Elige otro.", "danger");
+                        AbrirModal("modalUsuario");
+                        return;
+                    }
 
-                        string hash = PasswordHelper.HashPassword(contrasena);
-                        using (SqlCommand cmd = new SqlCommand(
-                            "INSERT INTO Usuarios (nombreUsuario, nombre, contrasena, rol, activo) VALUES (@user, @nombre, @pass, @rol, 1)", conn))
-                        {
-                            cmd.Parameters.AddWithValue("@user",   nombreUsuario);
-                            cmd.Parameters.AddWithValue("@nombre", nombre);
-                            cmd.Parameters.AddWithValue("@pass",   hash);
-                            cmd.Parameters.AddWithValue("@rol",    rol);
-                            cmd.ExecuteNonQuery();
-                        }
-                        AuditoriaHelper.Registrar("INSERT", "Usuarios", 0, $"Nuevo usuario creado: {nombreUsuario}, rol: {rol}");
-                        MostrarMensaje($"Usuario '{nombreUsuario}' creado exitosamente.", "success");
-                    }
-                    else
-                    {
-                        using (SqlCommand cmd = new SqlCommand(
-                            "UPDATE Usuarios SET nombre = @nombre, rol = @rol WHERE idUsuario = @id", conn))
-                        {
-                            cmd.Parameters.AddWithValue("@nombre", nombre);
-                            cmd.Parameters.AddWithValue("@rol",    rol);
-                            cmd.Parameters.AddWithValue("@id",     idUsuario);
-                            cmd.ExecuteNonQuery();
-                        }
-                        AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario, $"Usuario actualizado: nombre={nombre}, rol={rol}");
-                        MostrarMensaje("Usuario actualizado exitosamente.", "success");
-                    }
+                    string hash = PasswordHelper.HashPassword(contrasena);
+                    DbHelper.EjecutarNonQuery(
+                        "INSERT INTO Usuarios (nombreUsuario, nombre, contrasena, rol, activo) VALUES (@user, @nombre, @pass, @rol, 1)",
+                        DbHelper.Param("@user",   nombreUsuario),
+                        DbHelper.Param("@nombre", nombre),
+                        DbHelper.Param("@pass",   hash),
+                        DbHelper.Param("@rol",    rol));
+
+                    AuditoriaHelper.Registrar("INSERT", "Usuarios", 0, $"Nuevo usuario creado: {nombreUsuario}, rol: {rol}");
+                    MostrarMensaje($"Usuario '{nombreUsuario}' creado exitosamente.", "success");
                 }
+                else
+                {
+                    DbHelper.EjecutarNonQuery(
+                        "UPDATE Usuarios SET nombre = @nombre, rol = @rol WHERE idUsuario = @id",
+                        DbHelper.Param("@nombre", nombre),
+                        DbHelper.Param("@rol",    rol),
+                        DbHelper.Param("@id",     idUsuario));
+
+                    AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario, $"Usuario actualizado: nombre={nombre}, rol={rol}");
+                    MostrarMensaje("Usuario actualizado exitosamente.", "success");
+                }
+
                 CargarUsuarios();
             }
             catch (Exception ex)
@@ -278,8 +241,8 @@ namespace WebSGV.Views
 
         protected void btnResetPass_Click(object sender, EventArgs e)
         {
-            int    idUsuario    = Convert.ToInt32(hfIdUsuarioReset.Value);
-            string nuevaPass    = txtNuevaPass.Text;
+            int    idUsuario     = Convert.ToInt32(hfIdUsuarioReset.Value);
+            string nuevaPass     = txtNuevaPass.Text;
             string confirmarPass = txtConfirmarPass.Text;
 
             if (string.IsNullOrEmpty(nuevaPass) || nuevaPass.Length < 6)
@@ -296,20 +259,11 @@ namespace WebSGV.Views
                 return;
             }
 
-            string cs   = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
             string hash = PasswordHelper.HashPassword(nuevaPass);
-
-            using (SqlConnection conn = new SqlConnection(cs))
-            {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand(
-                    "UPDATE Usuarios SET contrasena = @hash WHERE idUsuario = @id", conn))
-                {
-                    cmd.Parameters.AddWithValue("@hash", hash);
-                    cmd.Parameters.AddWithValue("@id",   idUsuario);
-                    cmd.ExecuteNonQuery();
-                }
-            }
+            DbHelper.EjecutarNonQuery(
+                "UPDATE Usuarios SET contrasena = @hash WHERE idUsuario = @id",
+                DbHelper.Param("@hash", hash),
+                DbHelper.Param("@id",   idUsuario));
 
             AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario, "Contraseña restablecida por Admin Sistema");
             MostrarMensaje("Contraseña restablecida exitosamente.", "success");
@@ -320,18 +274,18 @@ namespace WebSGV.Views
 
         protected void btnLimpiar_Click(object sender, EventArgs e)
         {
-            txtBuscar.Text           = "";
-            ddlFiltroRol.SelectedIndex   = 0;
+            txtBuscar.Text                = "";
+            ddlFiltroRol.SelectedIndex    = 0;
             ddlFiltroEstado.SelectedIndex = 0;
-            pnlMensaje.Visible       = false;
+            pnlMensaje.Visible            = false;
             CargarUsuarios();
         }
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            lblMensaje.Text      = mensaje;
-            lblMensaje.CssClass  = $"alert alert-{tipo} d-block mb-0";
-            pnlMensaje.Visible   = true;
+            lblMensaje.Text     = mensaje;
+            lblMensaje.CssClass = $"alert alert-{tipo} d-block mb-0";
+            pnlMensaje.Visible  = true;
         }
 
         private void MostrarMensajeModal(string mensaje, string tipo)

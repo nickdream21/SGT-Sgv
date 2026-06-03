@@ -1,5 +1,5 @@
-﻿using System;
-using System.Configuration;
+using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO;
@@ -10,16 +10,10 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class Auditoria : System.Web.UI.Page
+    public partial class Auditoria : PaginaBase
     {
-        private string ConnectionString
-        {
-            get { return ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString; }
-        }
-
         protected void Page_Load(object sender, EventArgs e)
         {
-            // Verificar acceso: solo ADMINISTRADOR DE SISTEMA
             if (!RolesHelper.EsAdminSistema())
             {
                 Response.Redirect("~/Views/Inicio.aspx", false);
@@ -29,7 +23,6 @@ namespace WebSGV.Views
 
             if (!IsPostBack)
             {
-                // Fechas por defecto: último mes
                 txtFechaDesde.Text = DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd");
                 txtFechaHasta.Text = DateTime.Now.ToString("yyyy-MM-dd");
 
@@ -45,20 +38,14 @@ namespace WebSGV.Views
         {
             try
             {
-                string query = @"
-                    SELECT DISTINCT TablaAfectada 
-                    FROM AuditoriaLog 
-                    ORDER BY TablaAfectada";
-
-                DataTable dt = EjecutarConsulta(query);
+                DataTable dt = DbHelper.ConsultarTabla(
+                    "SELECT DISTINCT TablaAfectada FROM AuditoriaLog ORDER BY TablaAfectada");
 
                 ddlTabla.Items.Clear();
                 ddlTabla.Items.Add(new ListItem("-- Todas --", ""));
 
                 foreach (DataRow row in dt.Rows)
-                {
                     ddlTabla.Items.Add(new ListItem(row["TablaAfectada"].ToString()));
-                }
             }
             catch (Exception ex)
             {
@@ -70,21 +57,19 @@ namespace WebSGV.Views
         {
             try
             {
-                string query = @"
-                    SELECT 
+                DataTable dt = DbHelper.ConsultarTabla(@"
+                    SELECT
                         (SELECT COUNT(*) FROM AuditoriaLog) AS TotalRegistros,
                         (SELECT COUNT(*) FROM AuditoriaLog WHERE CAST(FechaHora AS DATE) = CAST(GETDATE() AS DATE)) AS RegistrosHoy,
                         (SELECT COUNT(DISTINCT NombreUsuario) FROM AuditoriaLog WHERE FechaHora >= DATEADD(DAY, -7, GETDATE())) AS UsuariosActivos,
-                        (SELECT COUNT(DISTINCT TablaAfectada) FROM AuditoriaLog) AS TablasAfectadas";
-
-                DataTable dt = EjecutarConsulta(query);
+                        (SELECT COUNT(DISTINCT TablaAfectada) FROM AuditoriaLog) AS TablasAfectadas");
 
                 if (dt.Rows.Count > 0)
                 {
-                    lblTotalRegistros.Text = dt.Rows[0]["TotalRegistros"].ToString();
-                    lblRegistrosHoy.Text = dt.Rows[0]["RegistrosHoy"].ToString();
-                    lblUsuariosActivos.Text = dt.Rows[0]["UsuariosActivos"].ToString();
-                    lblTablasAfectadas.Text = dt.Rows[0]["TablasAfectadas"].ToString();
+                    lblTotalRegistros.Text    = dt.Rows[0]["TotalRegistros"].ToString();
+                    lblRegistrosHoy.Text      = dt.Rows[0]["RegistrosHoy"].ToString();
+                    lblUsuariosActivos.Text   = dt.Rows[0]["UsuariosActivos"].ToString();
+                    lblTablasAfectadas.Text   = dt.Rows[0]["TablasAfectadas"].ToString();
                 }
             }
             catch (Exception ex)
@@ -97,70 +82,50 @@ namespace WebSGV.Views
         {
             try
             {
-                StringBuilder sb = new StringBuilder();
-                sb.Append(@"
-                    SELECT IdAuditoria, FechaHora, IdUsuario, NombreUsuario, RolUsuario, Accion, 
-                           TablaAfectada, IdRegistroAfectado, Descripcion, 
+                var parametros = new List<SqlParameter>();
+                StringBuilder sb = new StringBuilder(@"
+                    SELECT IdAuditoria, FechaHora, IdUsuario, NombreUsuario, RolUsuario, Accion,
+                           TablaAfectada, IdRegistroAfectado, Descripcion,
                            ValoresAnteriores, ValoresNuevos, DireccionIP, Navegador
                     FROM AuditoriaLog
                     WHERE 1=1");
 
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                if (!string.IsNullOrEmpty(txtFechaDesde.Text))
                 {
-                    using (SqlCommand cmd = new SqlCommand())
-                    {
-                        cmd.Connection = conn;
-
-                        // Filtro fecha desde
-                        if (!string.IsNullOrEmpty(txtFechaDesde.Text))
-                        {
-                            sb.Append(" AND FechaHora >= @FechaDesde");
-                            cmd.Parameters.AddWithValue("@FechaDesde", DateTime.Parse(txtFechaDesde.Text));
-                        }
-
-                        // Filtro fecha hasta
-                        if (!string.IsNullOrEmpty(txtFechaHasta.Text))
-                        {
-                            sb.Append(" AND FechaHora < DATEADD(DAY, 1, @FechaHasta)");
-                            cmd.Parameters.AddWithValue("@FechaHasta", DateTime.Parse(txtFechaHasta.Text));
-                        }
-
-                        // Filtro acción
-                        if (!string.IsNullOrEmpty(ddlAccion.SelectedValue))
-                        {
-                            sb.Append(" AND Accion = @Accion");
-                            cmd.Parameters.AddWithValue("@Accion", ddlAccion.SelectedValue);
-                        }
-
-                        // Filtro tabla
-                        if (!string.IsNullOrEmpty(ddlTabla.SelectedValue))
-                        {
-                            sb.Append(" AND TablaAfectada = @Tabla");
-                            cmd.Parameters.AddWithValue("@Tabla", ddlTabla.SelectedValue);
-                        }
-
-                        // Filtro usuario
-                        if (!string.IsNullOrEmpty(txtUsuario.Text.Trim()))
-                        {
-                            sb.Append(" AND NombreUsuario LIKE @Usuario");
-                            cmd.Parameters.AddWithValue("@Usuario", "%" + txtUsuario.Text.Trim() + "%");
-                        }
-
-                        sb.Append(" ORDER BY FechaHora DESC");
-
-                        cmd.CommandText = sb.ToString();
-                        conn.Open();
-
-                        SqlDataAdapter da = new SqlDataAdapter(cmd);
-                        DataTable dt = new DataTable();
-                        da.Fill(dt);
-
-                        gvAuditoria.DataSource = dt;
-                        gvAuditoria.DataBind();
-
-                        lblCantidadResultados.Text = dt.Rows.Count + " registros";
-                    }
+                    sb.Append(" AND FechaHora >= @FechaDesde");
+                    parametros.Add(DbHelper.Param("@FechaDesde", DateTime.Parse(txtFechaDesde.Text)));
                 }
+
+                if (!string.IsNullOrEmpty(txtFechaHasta.Text))
+                {
+                    sb.Append(" AND FechaHora < DATEADD(DAY, 1, @FechaHasta)");
+                    parametros.Add(DbHelper.Param("@FechaHasta", DateTime.Parse(txtFechaHasta.Text)));
+                }
+
+                if (!string.IsNullOrEmpty(ddlAccion.SelectedValue))
+                {
+                    sb.Append(" AND Accion = @Accion");
+                    parametros.Add(DbHelper.Param("@Accion", ddlAccion.SelectedValue));
+                }
+
+                if (!string.IsNullOrEmpty(ddlTabla.SelectedValue))
+                {
+                    sb.Append(" AND TablaAfectada = @Tabla");
+                    parametros.Add(DbHelper.Param("@Tabla", ddlTabla.SelectedValue));
+                }
+
+                if (!string.IsNullOrEmpty(txtUsuario.Text.Trim()))
+                {
+                    sb.Append(" AND NombreUsuario LIKE @Usuario");
+                    parametros.Add(DbHelper.Param("@Usuario", "%" + txtUsuario.Text.Trim() + "%"));
+                }
+
+                sb.Append(" ORDER BY FechaHora DESC");
+
+                DataTable dt = DbHelper.ConsultarTabla(sb.ToString(), parametros.ToArray());
+                gvAuditoria.DataSource = dt;
+                gvAuditoria.DataBind();
+                lblCantidadResultados.Text = dt.Rows.Count + " registros";
             }
             catch (Exception ex)
             {
@@ -190,7 +155,6 @@ namespace WebSGV.Views
         {
             try
             {
-                // Temporalmente desactivar paginación para exportar todo
                 gvAuditoria.AllowPaging = false;
                 CargarDatos();
 
@@ -200,7 +164,7 @@ namespace WebSGV.Views
                 Response.Charset = "";
                 Response.ContentType = "application/vnd.ms-excel";
                 Response.ContentEncoding = Encoding.UTF8;
-                Response.Write("\uFEFF"); // BOM para UTF-8
+                Response.Write("﻿");
 
                 using (StringWriter sw = new StringWriter())
                 {
@@ -282,21 +246,6 @@ namespace WebSGV.Views
             string str = text.ToString();
             if (str.Length <= maxLength) return str;
             return str.Substring(0, maxLength) + "...";
-        }
-
-        private DataTable EjecutarConsulta(string query)
-        {
-            DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    conn.Open();
-                    SqlDataAdapter da = new SqlDataAdapter(cmd);
-                    da.Fill(dt);
-                }
-            }
-            return dt;
         }
 
         #endregion

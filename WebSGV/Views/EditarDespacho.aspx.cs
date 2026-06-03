@@ -1,16 +1,13 @@
-﻿using System;
-using System.Configuration;
+using System;
 using System.Data;
-using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class EditarDespacho : System.Web.UI.Page
+    public partial class EditarDespacho : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
         private int idDespacho = 0;
 
         protected void Page_Load(object sender, EventArgs e)
@@ -52,24 +49,14 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT estadoDespacho FROM Despachos 
-                                    WHERE idDespacho = @idDespacho";
+                DataTable dt = DbHelper.ConsultarTabla(
+                    "SELECT estadoDespacho FROM Despachos WHERE idDespacho = @idDespacho",
+                    DbHelper.Param("@idDespacho", id));
 
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@idDespacho", id);
+                if (dt.Rows.Count > 0)
+                    return dt.Rows[0]["estadoDespacho"].ToString() == "PROGRAMADO";
 
-                    conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader();
-
-                    if (reader.Read())
-                    {
-                        string estado = reader["estadoDespacho"].ToString();
-                        return estado == "PROGRAMADO";
-                    }
-                    return false;
-                }
+                return false;
             }
             catch (Exception ex)
             {
@@ -91,23 +78,14 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT idConductor, 
-                                           CONCAT(nombre, ' ', apPaterno, ' ', apMaterno) as NombreCompleto
-                                    FROM Conductor 
-                                    ORDER BY nombre, apPaterno";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    conn.Open();
-
-                    ddlConductor.DataSource = cmd.ExecuteReader();
-                    ddlConductor.DataTextField = "NombreCompleto";
-                    ddlConductor.DataValueField = "idConductor";
-                    ddlConductor.DataBind();
-
-                    ddlConductor.Items.Insert(0, new ListItem("-- Seleccionar Conductor --", ""));
-                }
+                DataTable dt = DbHelper.ConsultarTabla(
+                    @"SELECT idConductor, CONCAT(nombre, ' ', apPaterno, ' ', apMaterno) as NombreCompleto
+                      FROM Conductor ORDER BY nombre, apPaterno");
+                ddlConductor.DataSource = dt;
+                ddlConductor.DataTextField = "NombreCompleto";
+                ddlConductor.DataValueField = "idConductor";
+                ddlConductor.DataBind();
+                ddlConductor.Items.Insert(0, new ListItem("-- Seleccionar Conductor --", ""));
             }
             catch (Exception ex)
             {
@@ -119,21 +97,12 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT idCliente, nombre FROM Cliente 
-                                    ORDER BY nombre";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    conn.Open();
-
-                    ddlCliente.DataSource = cmd.ExecuteReader();
-                    ddlCliente.DataTextField = "nombre";
-                    ddlCliente.DataValueField = "idCliente";
-                    ddlCliente.DataBind();
-
-                    ddlCliente.Items.Insert(0, new ListItem("-- Seleccionar Cliente --", ""));
-                }
+                DataTable dt = DbHelper.ConsultarTabla("SELECT idCliente, nombre FROM Cliente ORDER BY nombre");
+                ddlCliente.DataSource = dt;
+                ddlCliente.DataTextField = "nombre";
+                ddlCliente.DataValueField = "idCliente";
+                ddlCliente.DataBind();
+                ddlCliente.Items.Insert(0, new ListItem("-- Seleccionar Cliente --", ""));
             }
             catch (Exception ex)
             {
@@ -145,21 +114,12 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT idTracto, placaTracto FROM Tracto 
-                                    ORDER BY placaTracto";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    conn.Open();
-
-                    ddlTracto.DataSource = cmd.ExecuteReader();
-                    ddlTracto.DataTextField = "placaTracto";
-                    ddlTracto.DataValueField = "idTracto";
-                    ddlTracto.DataBind();
-
-                    ddlTracto.Items.Insert(0, new ListItem("-- Seleccionar Tracto --", ""));
-                }
+                DataTable dt = DbHelper.ConsultarTabla("SELECT idTracto, placaTracto FROM Tracto ORDER BY placaTracto");
+                ddlTracto.DataSource = dt;
+                ddlTracto.DataTextField = "placaTracto";
+                ddlTracto.DataValueField = "idTracto";
+                ddlTracto.DataBind();
+                ddlTracto.Items.Insert(0, new ListItem("-- Seleccionar Tracto --", ""));
             }
             catch (Exception ex)
             {
@@ -171,21 +131,12 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT idCarreta, placaCarreta FROM Carreta 
-                                    ORDER BY placaCarreta";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    conn.Open();
-
-                    ddlCarreta.DataSource = cmd.ExecuteReader();
-                    ddlCarreta.DataTextField = "placaCarreta";
-                    ddlCarreta.DataValueField = "idCarreta";
-                    ddlCarreta.DataBind();
-
-                    ddlCarreta.Items.Insert(0, new ListItem("-- Seleccionar Carreta --", ""));
-                }
+                DataTable dt = DbHelper.ConsultarTabla("SELECT idCarreta, placaCarreta FROM Carreta ORDER BY placaCarreta");
+                ddlCarreta.DataSource = dt;
+                ddlCarreta.DataTextField = "placaCarreta";
+                ddlCarreta.DataValueField = "idCarreta";
+                ddlCarreta.DataBind();
+                ddlCarreta.Items.Insert(0, new ListItem("-- Seleccionar Carreta --", ""));
             }
             catch (Exception ex)
             {
@@ -193,27 +144,17 @@ namespace WebSGV.Views
             }
         }
 
-        // CARGAR LUGARES desde tabla Lugares, pero usar nombre como Value para compatibilidad
         private void CargarLugares()
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT nombre FROM Lugares 
-                                    WHERE activo = 1 
-                                    ORDER BY nombre";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    conn.Open();
-
-                    ddlLugar.DataSource = cmd.ExecuteReader();
-                    ddlLugar.DataTextField = "nombre";
-                    ddlLugar.DataValueField = "nombre";  // Usar nombre como Value
-                    ddlLugar.DataBind();
-
-                    ddlLugar.Items.Insert(0, new ListItem("-- Seleccionar Lugar --", ""));
-                }
+                DataTable dt = DbHelper.ConsultarTabla(
+                    "SELECT nombre FROM Lugares WHERE activo = 1 ORDER BY nombre");
+                ddlLugar.DataSource = dt;
+                ddlLugar.DataTextField = "nombre";
+                ddlLugar.DataValueField = "nombre";
+                ddlLugar.DataBind();
+                ddlLugar.Items.Insert(0, new ListItem("-- Seleccionar Lugar --", ""));
             }
             catch (Exception ex)
             {
@@ -225,45 +166,36 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                DataTable dt = DbHelper.ConsultarTabla(
+                    @"SELECT d.*,
+                             CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) as conductorNombre,
+                             cl.nombre as clienteNombre,
+                             t.placaTracto,
+                             ca.placaCarreta
+                      FROM Despachos d
+                      INNER JOIN Conductor c ON d.idConductor = c.idConductor
+                      INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
+                      INNER JOIN Tracto t ON d.idTracto = t.idTracto
+                      INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
+                      WHERE d.idDespacho = @idDespacho",
+                    DbHelper.Param("@idDespacho", idDespacho));
+
+                if (dt.Rows.Count > 0)
                 {
-                    // MANTENER consulta original sin JOIN a Lugares
-                    string query = @"SELECT d.*, 
-                                           CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) as conductorNombre,
-                                           cl.nombre as clienteNombre,
-                                           t.placaTracto,
-                                           ca.placaCarreta
-                                    FROM Despachos d
-                                    INNER JOIN Conductor c ON d.idConductor = c.idConductor
-                                    INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
-                                    INNER JOIN Tracto t ON d.idTracto = t.idTracto
-                                    INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-                                    WHERE d.idDespacho = @idDespacho";
+                    DataRow reader = dt.Rows[0];
+                    txtFechaDespacho.Text = Convert.ToDateTime(reader["fechaDespacho"]).ToString("yyyy-MM-dd");
 
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@idDespacho", idDespacho);
-
-                    conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader();
-
-                    if (reader.Read())
-                    {
-                        txtFechaDespacho.Text = Convert.ToDateTime(reader["fechaDespacho"]).ToString("yyyy-MM-dd");
-
-                        ddlConductor.SelectedValue = reader["idConductor"].ToString();
-                        ddlCliente.SelectedValue = reader["idCliente"].ToString();
-                        ddlTracto.SelectedValue = reader["idTracto"].ToString();
-                        ddlCarreta.SelectedValue = reader["idCarreta"].ToString();
-
-                        // Seleccionar lugar usando lugarOperacion existente
-                        ddlLugar.SelectedValue = reader["lugarOperacion"].ToString();
-                        ddlTipoOperacion.SelectedValue = reader["tipoOperacion"].ToString();
-                    }
-                    else
-                    {
-                        MostrarMensaje("No se encontró el despacho especificado", "warning");
-                        Response.Redirect("~/Views/ListaDespachos.aspx");
-                    }
+                    ddlConductor.SelectedValue     = reader["idConductor"].ToString();
+                    ddlCliente.SelectedValue        = reader["idCliente"].ToString();
+                    ddlTracto.SelectedValue         = reader["idTracto"].ToString();
+                    ddlCarreta.SelectedValue        = reader["idCarreta"].ToString();
+                    ddlLugar.SelectedValue          = reader["lugarOperacion"].ToString();
+                    ddlTipoOperacion.SelectedValue  = reader["tipoOperacion"].ToString();
+                }
+                else
+                {
+                    MostrarMensaje("No se encontró el despacho especificado", "warning");
+                    Response.Redirect("~/Views/ListaDespachos.aspx");
                 }
             }
             catch (Exception ex)
@@ -316,49 +248,28 @@ namespace WebSGV.Views
                     esValido = false;
                     mensajes += "La fecha de despacho no es válida.<br/>";
                 }
-                // Quitamos la validación de fecha anterior a hoy
             }
 
             if (string.IsNullOrWhiteSpace(ddlConductor.SelectedValue))
-            {
-                esValido = false;
-                mensajes += "Debe seleccionar un conductor.<br/>";
-            }
+            { esValido = false; mensajes += "Debe seleccionar un conductor.<br/>"; }
 
             if (string.IsNullOrWhiteSpace(ddlCliente.SelectedValue))
-            {
-                esValido = false;
-                mensajes += "Debe seleccionar un cliente.<br/>";
-            }
+            { esValido = false; mensajes += "Debe seleccionar un cliente.<br/>"; }
 
             if (string.IsNullOrWhiteSpace(ddlTracto.SelectedValue))
-            {
-                esValido = false;
-                mensajes += "Debe seleccionar un tracto.<br/>";
-            }
+            { esValido = false; mensajes += "Debe seleccionar un tracto.<br/>"; }
 
             if (string.IsNullOrWhiteSpace(ddlCarreta.SelectedValue))
-            {
-                esValido = false;
-                mensajes += "Debe seleccionar una carreta.<br/>";
-            }
+            { esValido = false; mensajes += "Debe seleccionar una carreta.<br/>"; }
 
             if (string.IsNullOrWhiteSpace(ddlLugar.SelectedValue))
-            {
-                esValido = false;
-                mensajes += "Debe seleccionar un lugar de operación.<br/>";
-            }
+            { esValido = false; mensajes += "Debe seleccionar un lugar de operación.<br/>"; }
 
             if (string.IsNullOrWhiteSpace(ddlTipoOperacion.SelectedValue))
-            {
-                esValido = false;
-                mensajes += "Debe seleccionar un tipo de operación.<br/>";
-            }
+            { esValido = false; mensajes += "Debe seleccionar un tipo de operación.<br/>"; }
 
             if (!esValido)
-            {
                 MostrarMensaje("Por favor, corrija los siguientes errores:<br/>" + mensajes, "danger");
-            }
 
             return esValido;
         }
@@ -367,47 +278,39 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                int filas = DbHelper.EjecutarNonQuery(
+                    @"UPDATE Despachos SET
+                        fechaDespacho = @fechaDespacho,
+                        idConductor = @idConductor,
+                        idCliente = @idCliente,
+                        idTracto = @idTracto,
+                        idCarreta = @idCarreta,
+                        lugarOperacion = @lugarOperacion,
+                        tipoOperacion = @tipoOperacion,
+                        fechaModificacion = @fechaActual,
+                        usuarioModificacion = @usuario
+                      WHERE idDespacho = @idDespacho",
+                    DbHelper.Param("@fechaActual",    FechaHelper.Ahora()),
+                    DbHelper.Param("@fechaDespacho",  DateTime.Parse(txtFechaDespacho.Text)),
+                    DbHelper.Param("@idConductor",    Convert.ToInt32(ddlConductor.SelectedValue)),
+                    DbHelper.Param("@idCliente",      Convert.ToInt32(ddlCliente.SelectedValue)),
+                    DbHelper.Param("@idTracto",       Convert.ToInt32(ddlTracto.SelectedValue)),
+                    DbHelper.Param("@idCarreta",      Convert.ToInt32(ddlCarreta.SelectedValue)),
+                    DbHelper.Param("@lugarOperacion", ddlLugar.SelectedValue),
+                    DbHelper.Param("@tipoOperacion",  ddlTipoOperacion.SelectedValue),
+                    DbHelper.Param("@usuario",        Session["Usuario"]?.ToString() ?? "SISTEMA"),
+                    DbHelper.Param("@idDespacho",     idDespacho));
+
+                if (filas > 0)
                 {
-                    // MANTENER estructura original - guardar en lugarOperacion
-                    string query = @"UPDATE Despachos SET 
-                                        fechaDespacho = @fechaDespacho,
-                                        idConductor = @idConductor,
-                                        idCliente = @idCliente,
-                                        idTracto = @idTracto,
-                                        idCarreta = @idCarreta,
-                                        lugarOperacion = @lugarOperacion,
-                                        tipoOperacion = @tipoOperacion,
-                                        fechaModificacion = @fechaActual,
-                                        usuarioModificacion = @usuario
-                                    WHERE idDespacho = @idDespacho";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-                    cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(txtFechaDespacho.Text));
-                    cmd.Parameters.AddWithValue("@idConductor", Convert.ToInt32(ddlConductor.SelectedValue));
-                    cmd.Parameters.AddWithValue("@idCliente", Convert.ToInt32(ddlCliente.SelectedValue));
-                    cmd.Parameters.AddWithValue("@idTracto", Convert.ToInt32(ddlTracto.SelectedValue));
-                    cmd.Parameters.AddWithValue("@idCarreta", Convert.ToInt32(ddlCarreta.SelectedValue));
-                    cmd.Parameters.AddWithValue("@lugarOperacion", ddlLugar.SelectedValue);  // Sigue usando lugarOperacion
-                    cmd.Parameters.AddWithValue("@tipoOperacion", ddlTipoOperacion.SelectedValue);
-                    cmd.Parameters.AddWithValue("@usuario", Session["Usuario"]?.ToString() ?? "SISTEMA");
-                    cmd.Parameters.AddWithValue("@idDespacho", idDespacho);
-
-                    conn.Open();
-                    int rowsAffected = cmd.ExecuteNonQuery();
-
-                    if (rowsAffected > 0)
-                    {
-                        AuditoriaHelper.Registrar("UPDATE", "Despachos", idDespacho,
-                            $"Despacho editado - Conductor: {ddlConductor.SelectedItem?.Text}, Cliente: {ddlCliente.SelectedItem?.Text}, Lugar: {ddlLugar.SelectedValue}, Operación: {ddlTipoOperacion.SelectedValue}");
-                        return true;
-                    }
-                    else
-                    {
-                        MostrarMensaje("No se pudo actualizar el despacho.", "warning");
-                        return false;
-                    }
+                    AuditoriaHelper.Registrar("UPDATE", "Despachos", idDespacho,
+                        $"Despacho editado - Conductor: {ddlConductor.SelectedItem?.Text}, Cliente: {ddlCliente.SelectedItem?.Text}, Lugar: {ddlLugar.SelectedValue}, Operación: {ddlTipoOperacion.SelectedValue}");
+                    return true;
+                }
+                else
+                {
+                    MostrarMensaje("No se pudo actualizar el despacho.", "warning");
+                    return false;
                 }
             }
             catch (Exception ex)

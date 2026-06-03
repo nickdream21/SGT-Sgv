@@ -1,17 +1,13 @@
 using System;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RegistroEquiposMaquinaria : System.Web.UI.Page
+    public partial class RegistroEquiposMaquinaria : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!RolesHelper.EsAdminMaquinaria() && !RolesHelper.EsAdmin())
@@ -31,22 +27,14 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT idEquipo, placa, ISNULL(descripcion,'') AS descripcion, 
-                                            ISNULL(tipo,'') AS tipo, ISNULL(marca,'') AS marca, 
-                                            ISNULL(modelo,'') AS modelo, anio, activo
-                                     FROM EquiposMaquinaria ORDER BY placa";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        conn.Open();
-                        DataTable dt = new DataTable();
-                        dt.Load(cmd.ExecuteReader());
-                        gvEquipos.DataSource = dt;
-                        gvEquipos.DataBind();
-                        lblTotalEquipos.Text = dt.Rows.Count + " registro(s)";
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(
+                    @"SELECT idEquipo, placa, ISNULL(descripcion,'') AS descripcion,
+                             ISNULL(tipo,'') AS tipo, ISNULL(marca,'') AS marca,
+                             ISNULL(modelo,'') AS modelo, anio, activo
+                      FROM EquiposMaquinaria ORDER BY placa");
+                gvEquipos.DataSource = dt;
+                gvEquipos.DataBind();
+                lblTotalEquipos.Text = dt.Rows.Count + " registro(s)";
             }
             catch (Exception ex)
             {
@@ -75,22 +63,15 @@ namespace WebSGV.Views
                     return;
                 }
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"INSERT INTO EquiposMaquinaria (placa, descripcion, tipo, marca, modelo, anio, activo)
-                                     VALUES (@placa, @descripcion, @tipo, @marca, @modelo, @anio, 1)";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@placa", placa);
-                        cmd.Parameters.AddWithValue("@descripcion", string.IsNullOrEmpty(descripcion) ? (object)DBNull.Value : descripcion);
-                        cmd.Parameters.AddWithValue("@tipo", string.IsNullOrEmpty(tipo) ? (object)DBNull.Value : tipo);
-                        cmd.Parameters.AddWithValue("@marca", string.IsNullOrEmpty(marca) ? (object)DBNull.Value : marca);
-                        cmd.Parameters.AddWithValue("@modelo", string.IsNullOrEmpty(modelo) ? (object)DBNull.Value : modelo);
-                        cmd.Parameters.AddWithValue("@anio", anio.HasValue ? (object)anio.Value : DBNull.Value);
-                        conn.Open();
-                        cmd.ExecuteNonQuery();
-                    }
-                }
+                DbHelper.EjecutarNonQuery(
+                    @"INSERT INTO EquiposMaquinaria (placa, descripcion, tipo, marca, modelo, anio, activo)
+                      VALUES (@placa, @descripcion, @tipo, @marca, @modelo, @anio, 1)",
+                    DbHelper.Param("@placa", placa),
+                    DbHelper.Param("@descripcion", string.IsNullOrEmpty(descripcion) ? null : (object)descripcion),
+                    DbHelper.Param("@tipo", string.IsNullOrEmpty(tipo) ? null : (object)tipo),
+                    DbHelper.Param("@marca", string.IsNullOrEmpty(marca) ? null : (object)marca),
+                    DbHelper.Param("@modelo", string.IsNullOrEmpty(modelo) ? null : (object)modelo),
+                    DbHelper.Param("@anio", anio.HasValue ? (object)anio.Value : null));
 
                 AuditoriaHelper.Registrar("INSERT", "EquiposMaquinaria",
                     descripcion: $"Equipo registrado - Placa: {placa}, Tipo: {tipo}");
@@ -112,18 +93,9 @@ namespace WebSGV.Views
                 int idEquipo = Convert.ToInt32(e.CommandArgument);
                 try
                 {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        string query = @"UPDATE EquiposMaquinaria 
-                                         SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
-                                         WHERE idEquipo = @id";
-                        using (SqlCommand cmd = new SqlCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", idEquipo);
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
+                    DbHelper.EjecutarNonQuery(
+                        @"UPDATE EquiposMaquinaria SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END WHERE idEquipo = @id",
+                        DbHelper.Param("@id", idEquipo));
 
                     AuditoriaHelper.Registrar("UPDATE", "EquiposMaquinaria", idEquipo,
                         "Estado de equipo actualizado (activar/desactivar)");
@@ -139,16 +111,9 @@ namespace WebSGV.Views
 
         private bool EquipoExiste(string placa)
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                string query = "SELECT COUNT(*) FROM EquiposMaquinaria WHERE placa = @placa";
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@placa", placa);
-                    conn.Open();
-                    return (int)cmd.ExecuteScalar() > 0;
-                }
-            }
+            return Convert.ToInt32(DbHelper.EjecutarEscalar(
+                "SELECT COUNT(*) FROM EquiposMaquinaria WHERE placa = @placa",
+                DbHelper.Param("@placa", placa))) > 0;
         }
 
         private void LimpiarFormulario()

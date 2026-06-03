@@ -1,12 +1,10 @@
 using System;
-using System.Configuration;
-using System.Data.SqlClient;
 using System.Web.UI;
 using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RestablecerContrasena : Page
+    public partial class RestablecerContrasena : PaginaBase
     {
         private string TokenActual
         {
@@ -22,18 +20,16 @@ namespace WebSGV.Views
 
                 if (string.IsNullOrEmpty(token))
                 {
-                    MostrarError("Enlace inv·lido. No se proporcionÛ un token de recuperaciÛn.");
+                    MostrarError("Enlace inv√°lido. No se proporcion√≥ un token de recuperaci√≥n.");
                     return;
                 }
 
-                // Validar que el token exista y no haya expirado
                 if (!ValidarToken(token))
                 {
-                    MostrarError("El enlace ha expirado o no es v·lido. Solicite uno nuevo desde la p·gina de recuperaciÛn.");
+                    MostrarError("El enlace ha expirado o no es v√°lido. Solicite uno nuevo desde la p√°gina de recuperaci√≥n.");
                     return;
                 }
 
-                // Guardar token para el PostBack
                 TokenActual = token;
             }
         }
@@ -43,7 +39,6 @@ namespace WebSGV.Views
             string nuevaContrasena = txtNuevaContrasena.Text.Trim();
             string confirmarContrasena = txtConfirmarContrasena.Text.Trim();
 
-            // Validaciones
             if (string.IsNullOrEmpty(nuevaContrasena) || string.IsNullOrEmpty(confirmarContrasena))
             {
                 MostrarMensaje("Por favor, complete ambos campos.", false);
@@ -52,31 +47,30 @@ namespace WebSGV.Views
 
             if (nuevaContrasena.Length < 6)
             {
-                MostrarMensaje("La contraseÒa debe tener al menos 6 caracteres.", false);
+                MostrarMensaje("La contrase√±a debe tener al menos 6 caracteres.", false);
                 return;
             }
 
             if (nuevaContrasena != confirmarContrasena)
             {
-                MostrarMensaje("Las contraseÒas no coinciden.", false);
+                MostrarMensaje("Las contrase√±as no coinciden.", false);
                 return;
             }
 
             if (string.IsNullOrEmpty(TokenActual))
             {
-                MostrarError("SesiÛn expirada. Solicite un nuevo enlace de recuperaciÛn.");
+                MostrarError("Sesi√≥n expirada. Solicite un nuevo enlace de recuperaci√≥n.");
                 return;
             }
 
-            // Actualizar la contraseÒa en la base de datos (ahora con hash)
             if (ActualizarContrasena(TokenActual, nuevaContrasena))
             {
-                MostrarMensaje("°ContraseÒa restablecida exitosamente! Ahora puede iniciar sesiÛn.", true);
+                MostrarMensaje("¬°Contrase√±a restablecida exitosamente! Ahora puede iniciar sesi√≥n.", true);
                 pnlFormulario.Visible = false;
             }
             else
             {
-                MostrarError("Error al restablecer la contraseÒa. El enlace puede haber expirado.");
+                MostrarError("Error al restablecer la contrase√±a. El enlace puede haber expirado.");
             }
         }
 
@@ -87,67 +81,48 @@ namespace WebSGV.Views
 
         private bool ValidarToken(string token)
         {
-            string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            try
             {
-                string query = @"SELECT COUNT(*) FROM Usuarios 
-                                WHERE resetToken = @Token 
-                                AND resetTokenExpira > @FechaActual 
-                                AND activo = 1";
-
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@Token", token);
-                cmd.Parameters.AddWithValue("@FechaActual", FechaHelper.Ahora());
-
-                try
-                {
-                    conn.Open();
-                    int count = (int)cmd.ExecuteScalar();
-                    return count > 0;
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error al validar token: {ex.Message}");
-                    return false;
-                }
+                int count = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    @"SELECT COUNT(*) FROM Usuarios
+                      WHERE resetToken = @Token
+                      AND resetTokenExpira > @FechaActual
+                      AND activo = 1",
+                    DbHelper.Param("@Token", token),
+                    DbHelper.Param("@FechaActual", FechaHelper.Ahora())));
+                return count > 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al validar token: {ex.Message}");
+                return false;
             }
         }
 
         private bool ActualizarContrasena(string token, string nuevaContrasena)
         {
-            string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            try
             {
-                // Generar hash seguro de la nueva contraseÒa
                 string hashedPassword = PasswordHelper.HashPassword(nuevaContrasena);
 
-                // Actualizar contraseÒa con hash y limpiar el token (uso ˙nico)
-                string query = @"UPDATE Usuarios 
-                                SET contrasena = @NuevaContrasena, 
-                                    resetToken = NULL, 
-                                    resetTokenExpira = NULL 
-                                WHERE resetToken = @Token 
-                                AND resetTokenExpira > @FechaActual 
-                                AND activo = 1";
+                int filasAfectadas = DbHelper.EjecutarNonQuery(
+                    @"UPDATE Usuarios
+                      SET contrasena = @NuevaContrasena,
+                          resetToken = NULL,
+                          resetTokenExpira = NULL
+                      WHERE resetToken = @Token
+                      AND resetTokenExpira > @FechaActual
+                      AND activo = 1",
+                    DbHelper.Param("@NuevaContrasena", hashedPassword),
+                    DbHelper.Param("@Token", token),
+                    DbHelper.Param("@FechaActual", FechaHelper.Ahora()));
 
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@NuevaContrasena", hashedPassword);
-                cmd.Parameters.AddWithValue("@Token", token);
-                cmd.Parameters.AddWithValue("@FechaActual", FechaHelper.Ahora());
-
-                try
-                {
-                    conn.Open();
-                    int filasAfectadas = cmd.ExecuteNonQuery();
-                    return filasAfectadas > 0;
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error al actualizar contraseÒa: {ex.Message}");
-                    return false;
-                }
+                return filasAfectadas > 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al actualizar contrase√±a: {ex.Message}");
+                return false;
             }
         }
 
@@ -164,8 +139,6 @@ namespace WebSGV.Views
             pnlFormulario.Visible = false;
         }
 
-        // Aseg˙rese de que las siguientes declaraciones estÈn presentes en la clase RestablecerContrasena
-        // Esto asume que los controles txtConfirmarContrasena y pnlMensaje existen en el archivo .aspx
         protected global::System.Web.UI.WebControls.TextBox txtConfirmarContrasena;
         protected global::System.Web.UI.WebControls.Panel pnlMensaje;
         protected global::System.Web.UI.WebControls.Label lblMensaje;

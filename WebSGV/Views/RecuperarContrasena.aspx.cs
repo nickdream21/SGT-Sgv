@@ -1,6 +1,6 @@
 using System;
 using System.Configuration;
-using System.Data.SqlClient;
+using System.Data;
 using System.Net;
 using System.Net.Mail;
 using System.Web.UI;
@@ -8,7 +8,7 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RecuperarContrasena : Page
+    public partial class RecuperarContrasena : PaginaBase
     {
         protected System.Web.UI.WebControls.TextBox txtUsuarioEmail;
         protected System.Web.UI.WebControls.Panel pnlMensaje;
@@ -24,38 +24,33 @@ namespace WebSGV.Views
 
             if (string.IsNullOrEmpty(usuarioEmail))
             {
-                MostrarMensaje("Por favor, ingrese su usuario o correo electrÛnico.", false);
+                MostrarMensaje("Por favor, ingrese su usuario o correo electr√≥nico.", false);
                 return;
             }
 
-            // Buscar usuario en la base de datos
             var datosUsuario = BuscarUsuario(usuarioEmail);
 
             if (datosUsuario.encontrado)
             {
-                // Generar token ˙nico
                 string token = Guid.NewGuid().ToString();
-                DateTime expiracion = FechaHelper.Ahora().AddHours(1); // Token v·lido por 1 hora
+                DateTime expiracion = FechaHelper.Ahora().AddHours(1);
 
-                // Guardar token en la base de datos
                 if (GuardarTokenRecuperacion(datosUsuario.idUsuario, token, expiracion))
                 {
-                    // Enviar correo
                     if (EnviarCorreoRecuperacion(datosUsuario.email, datosUsuario.nombre, token))
                     {
-                        MostrarMensaje("Se ha enviado un enlace de recuperaciÛn a su correo electrÛnico.", true);
+                        MostrarMensaje("Se ha enviado un enlace de recuperaci√≥n a su correo electr√≥nico.", true);
                         txtUsuarioEmail.Text = "";
                     }
                     else
                     {
-                        MostrarMensaje("Error al enviar el correo. Verifique la configuraciÛn SMTP.", false);
+                        MostrarMensaje("Error al enviar el correo. Verifique la configuraci√≥n SMTP.", false);
                     }
                 }
             }
             else
             {
-                // Por seguridad, mostrar mensaje genÈrico
-                MostrarMensaje("Si el usuario existe, recibir· un correo con las instrucciones.", true);
+                MostrarMensaje("Si el usuario existe, recibir√° un correo con las instrucciones.", true);
             }
         }
 
@@ -66,37 +61,29 @@ namespace WebSGV.Views
 
         private (bool encontrado, int idUsuario, string email, string nombre) BuscarUsuario(string usuarioEmail)
         {
-            string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            try
             {
-                string query = @"SELECT idUsuario, email, nombre 
-                               FROM Usuarios 
-                               WHERE (nombreUsuario = @UsuarioEmail OR email = @UsuarioEmail) 
-                               AND activo = 1";
+                DataTable dt = DbHelper.ConsultarTabla(
+                    @"SELECT idUsuario, email, nombre
+                      FROM Usuarios
+                      WHERE (nombreUsuario = @UsuarioEmail OR email = @UsuarioEmail)
+                      AND activo = 1",
+                    DbHelper.Param("@UsuarioEmail", usuarioEmail));
 
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@UsuarioEmail", usuarioEmail);
-
-                try
+                if (dt.Rows.Count > 0)
                 {
-                    conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader();
-
-                    if (reader.Read())
-                    {
-                        return (
-                            true,
-                            Convert.ToInt32(reader["idUsuario"]),
-                            reader["email"].ToString(),
-                            reader["nombre"].ToString()             
-                        );
-                    }
+                    DataRow r = dt.Rows[0];
+                    return (
+                        true,
+                        Convert.ToInt32(r["idUsuario"]),
+                        r["email"].ToString(),
+                        r["nombre"].ToString()
+                    );
                 }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error al buscar usuario: {ex.Message}");
-                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al buscar usuario: {ex.Message}");
             }
 
             return (false, 0, "", "");
@@ -104,30 +91,22 @@ namespace WebSGV.Views
 
         private bool GuardarTokenRecuperacion(int idUsuario, string token, DateTime expiracion)
         {
-            string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            try
             {
-                string query = @"UPDATE Usuarios 
-                               SET resetToken = @Token, 
-                                   resetTokenExpira = @Expiracion 
-                               WHERE idUsuario = @IdUsuario";
-
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@Token", token);
-                cmd.Parameters.AddWithValue("@Expiracion", expiracion);
-                cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
-
-                try
-                {
-                    conn.Open();
-                    return cmd.ExecuteNonQuery() > 0;
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error al guardar token: {ex.Message}");
-                    return false;
-                }
+                int filas = DbHelper.EjecutarNonQuery(
+                    @"UPDATE Usuarios
+                      SET resetToken = @Token,
+                          resetTokenExpira = @Expiracion
+                      WHERE idUsuario = @IdUsuario",
+                    DbHelper.Param("@Token", token),
+                    DbHelper.Param("@Expiracion", expiracion),
+                    DbHelper.Param("@IdUsuario", idUsuario));
+                return filas > 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al guardar token: {ex.Message}");
+                return false;
             }
         }
 
@@ -135,28 +114,27 @@ namespace WebSGV.Views
         {
             try
             {
-                // Configurar desde Web.config
                 string smtpHost = ConfigurationManager.AppSettings["SmtpHost"];
-                int smtpPort = int.Parse(ConfigurationManager.AppSettings["SmtpPort"]);
+                int smtpPort    = int.Parse(ConfigurationManager.AppSettings["SmtpPort"]);
                 string smtpUser = ConfigurationManager.AppSettings["SmtpUser"];
                 string smtpPass = ConfigurationManager.AppSettings["SmtpPass"];
-                bool smtpSSL = bool.Parse(ConfigurationManager.AppSettings["SmtpSSL"]);
+                bool smtpSSL    = bool.Parse(ConfigurationManager.AppSettings["SmtpSSL"]);
 
                 string enlaceRecuperacion = $"{Request.Url.Scheme}://{Request.Url.Authority}/Views/RestablecerContrasena.aspx?token={token}";
 
                 MailMessage mail = new MailMessage();
-                mail.From = new MailAddress(smtpUser, "SGV - Sistema de GestiÛn");
+                mail.From = new MailAddress(smtpUser, "SGV - Sistema de Gesti√≥n");
                 mail.To.Add(emailDestino);
-                mail.Subject = "RecuperaciÛn de ContraseÒa - SGV";
+                mail.Subject = "Recuperaci√≥n de Contrase√±a - SGV";
                 mail.IsBodyHtml = true;
                 mail.Body = $@"
                     <html>
                     <body style='font-family: Arial, sans-serif;'>
-                        <h2>RecuperaciÛn de ContraseÒa</h2>
+                        <h2>Recuperaci√≥n de Contrase√±a</h2>
                         <p>Hola {nombreUsuario},</p>
-                        <p>Recibimos una solicitud para restablecer tu contraseÒa. Haz clic en el siguiente enlace:</p>
-                        <p><a href='{enlaceRecuperacion}' style='background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Restablecer ContraseÒa</a></p>
-                        <p>Este enlace expirar· en 1 hora.</p>
+                        <p>Recibimos una solicitud para restablecer tu contrase√±a. Haz clic en el siguiente enlace:</p>
+                        <p><a href='{enlaceRecuperacion}' style='background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Restablecer Contrase√±a</a></p>
+                        <p>Este enlace expirar√° en 1 hora.</p>
                         <p>Si no solicitaste este cambio, puedes ignorar este correo.</p>
                         <br>
                         <p>Saludos,<br>Equipo SGV</p>

@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
 using System.Web.UI;
 using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class DetalleOrdenViaje : System.Web.UI.Page
+    public partial class DetalleOrdenViaje : PaginaBase
     {
         #region Clases de Datos
 
@@ -69,7 +67,6 @@ namespace WebSGV.Views
 
         private void VerificarSesion()
         {
-            // Verificar sesión activa
             if (Session["UsuarioID"] == null)
             {
                 Response.Redirect("~/Views/Login.aspx?error=sesion", false);
@@ -77,7 +74,6 @@ namespace WebSGV.Views
                 return;
             }
 
-            // Permitir ADMIN, ADMIN_SISTEMA y SUPERVISOR sin restricción de conductor
             string rol = Session["Rol"]?.ToString().Trim().ToUpperInvariant() ?? "";
             bool esAdmin = rol == "ADMIN" || rol == "ADMINISTRADOR DE SISTEMA" || rol == "SUPERVISOR";
             if (!esAdmin && IdConductorActual == 0)
@@ -97,20 +93,14 @@ namespace WebSGV.Views
                     return;
                 }
 
-                string connStr = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection conn = new SqlConnection(connStr))
-                {
-                    conn.Open();
-                    CargarCabecera(conn, idOrdenViaje);
-                    CargarIngresos(conn);
-                    CargarGastos(conn);
-                    CargarDetallesPeajes(conn);
-                    CargarDetallesReparaciones(conn);
-                    CargarDetallesHospedaje(conn);
-                    CargarDetallesCombustible(conn);
-                    CalcularBalance();
-                }
+                CargarCabecera(idOrdenViaje);
+                CargarIngresos();
+                CargarGastos();
+                CargarDetallesPeajes();
+                CargarDetallesReparaciones();
+                CargarDetallesHospedaje();
+                CargarDetallesCombustible();
+                CalcularBalance();
 
                 pnlContenido.Visible = true;
             }
@@ -135,9 +125,9 @@ namespace WebSGV.Views
 
         #region Carga de datos
 
-        private void CargarCabecera(SqlConnection conn, int idOrdenViaje)
+        private void CargarCabecera(int idOrdenViaje)
         {
-            string query = @"
+            DataTable dt = DbHelper.ConsultarTabla(@"
                 SELECT
                     ov.idOrdenViaje,
                     ov.numeroOrdenViaje,
@@ -155,101 +145,73 @@ namespace WebSGV.Views
                 INNER JOIN Conductor c  ON ov.idConductor = c.idConductor
                 INNER JOIN Tracto t     ON ov.idTracto    = t.idTracto
                 INNER JOIN Carreta ca   ON ov.idCarreta   = ca.idCarreta
-                WHERE ov.idOrdenViaje = @idOrdenViaje";
+                WHERE ov.idOrdenViaje = @idOrdenViaje",
+                DbHelper.Param("@idOrdenViaje", idOrdenViaje));
 
-            using (SqlCommand cmd = new SqlCommand(query, conn))
-            {
-                cmd.Parameters.AddWithValue("@idOrdenViaje", idOrdenViaje);
+            if (dt.Rows.Count == 0)
+                throw new Exception("No se encontró la liquidación solicitada.");
 
-                using (SqlDataReader r = cmd.ExecuteReader())
-                {
-                    if (!r.Read())
-                    {
-                        throw new Exception("No se encontró la liquidación solicitada.");
-                    }
+            DataRow r = dt.Rows[0];
 
-                    // Verificar que pertenece al conductor en sesión
-                    int idConductorOrden = Convert.ToInt32(r["idConductor"]);
-                    if (idConductorOrden != IdConductorActual)
-                    {
-                        throw new Exception("No tienes permiso para ver esta liquidación.");
-                    }
+            int idConductorOrden = Convert.ToInt32(r["idConductor"]);
+            if (idConductorOrden != IdConductorActual)
+                throw new Exception("No tienes permiso para ver esta liquidación.");
 
-                    _numeroOrden = r["numeroOrdenViaje"].ToString();
+            _numeroOrden = r["numeroOrdenViaje"].ToString();
 
-                    lblNumeroOrden.Text      = System.Web.HttpUtility.HtmlEncode(_numeroOrden);
-                    lblOrdenDetalle.Text     = System.Web.HttpUtility.HtmlEncode(_numeroOrden);
-                    lblConductorDetalle.Text = System.Web.HttpUtility.HtmlEncode(r["nombreConductor"].ToString());
-                    lblTractoDetalle.Text    = System.Web.HttpUtility.HtmlEncode(r["placaTracto"].ToString());
-                    lblCarretaDetalle.Text   = System.Web.HttpUtility.HtmlEncode(r["placaCarreta"].ToString());
+            lblNumeroOrden.Text      = System.Web.HttpUtility.HtmlEncode(_numeroOrden);
+            lblOrdenDetalle.Text     = System.Web.HttpUtility.HtmlEncode(_numeroOrden);
+            lblConductorDetalle.Text = System.Web.HttpUtility.HtmlEncode(r["nombreConductor"].ToString());
+            lblTractoDetalle.Text    = System.Web.HttpUtility.HtmlEncode(r["placaTracto"].ToString());
+            lblCarretaDetalle.Text   = System.Web.HttpUtility.HtmlEncode(r["placaCarreta"].ToString());
 
-                    if (r["fechaSalida"] != DBNull.Value)
-                        lblFechaSalidaDetalle.Text = Convert.ToDateTime(r["fechaSalida"]).ToString("dd/MM/yyyy");
+            if (r["fechaSalida"] != DBNull.Value)
+                lblFechaSalidaDetalle.Text = Convert.ToDateTime(r["fechaSalida"]).ToString("dd/MM/yyyy");
 
-                    if (r["fechaLlegada"] != DBNull.Value)
-                        lblFechaLlegadaDetalle.Text = Convert.ToDateTime(r["fechaLlegada"]).ToString("dd/MM/yyyy");
+            if (r["fechaLlegada"] != DBNull.Value)
+                lblFechaLlegadaDetalle.Text = Convert.ToDateTime(r["fechaLlegada"]).ToString("dd/MM/yyyy");
 
-                    string horaSalida  = r["horaSalida"]?.ToString()  ?? "";
-                    string horaLlegada = r["horaLlegada"]?.ToString() ?? "";
-                    lblHoraSalidaDetalle.Text  = string.IsNullOrEmpty(horaSalida)  ? "-" : horaSalida;
-                    lblHoraLlegadaDetalle.Text = string.IsNullOrEmpty(horaLlegada) ? "-" : horaLlegada;
+            string horaSalida  = r["horaSalida"]?.ToString()  ?? "";
+            string horaLlegada = r["horaLlegada"]?.ToString() ?? "";
+            lblHoraSalidaDetalle.Text  = string.IsNullOrEmpty(horaSalida)  ? "-" : horaSalida;
+            lblHoraLlegadaDetalle.Text = string.IsNullOrEmpty(horaLlegada) ? "-" : horaLlegada;
 
-                    string obs = r["observaciones"]?.ToString() ?? "";
-                    lblObservacionesDetalle.Text = string.IsNullOrEmpty(obs) ? "-" : System.Web.HttpUtility.HtmlEncode(obs);
+            string obs = r["observaciones"]?.ToString() ?? "";
+            lblObservacionesDetalle.Text = string.IsNullOrEmpty(obs) ? "-" : System.Web.HttpUtility.HtmlEncode(obs);
 
-                    string estado = r["estadoAprobacion"]?.ToString() ?? "PENDIENTE";
-                    lblEstadoDetalle.Text = ObtenerBadgeEstado(estado);
-                }
-            }
+            string estado = r["estadoAprobacion"]?.ToString() ?? "PENDIENTE";
+            lblEstadoDetalle.Text = ObtenerBadgeEstado(estado);
         }
 
-        private void CargarIngresos(SqlConnection conn)
+        private void CargarIngresos()
         {
             var filas = new List<FilaFinanciera>();
 
-            // Ingresos principales
-            string queryPrinc = @"
+            DataTable dtPrinc = DbHelper.ConsultarTabla(@"
                 SELECT despachoSoles, despachoDolares, descDespacho,
                        mensualidadSoles, mensualidadDolares, descMensualidad,
                        otrosSoles, otrosDolares, descOtrosAutorizados,
                        prestamoSoles, prestamosDolares, descPrestamo
-                FROM Ingresos WHERE numeroOrdenViaje = @n";
+                FROM Ingresos WHERE numeroOrdenViaje = @n",
+                DbHelper.Param("@n", _numeroOrden));
 
-            using (SqlCommand cmd = new SqlCommand(queryPrinc, conn))
+            if (dtPrinc.Rows.Count > 0)
             {
-                cmd.Parameters.AddWithValue("@n", _numeroOrden);
-                using (SqlDataReader r = cmd.ExecuteReader())
-                {
-                    if (r.Read())
-                    {
-                        AgregarFila(filas, "Despacho",          r["descDespacho"],         r["despachoSoles"],    r["despachoDolares"]);
-                        AgregarFila(filas, "Mensualidad",        r["descMensualidad"],      r["mensualidadSoles"], r["mensualidadDolares"]);
-                        AgregarFila(filas, "Otros Autorizados",  r["descOtrosAutorizados"], r["otrosSoles"],       r["otrosDolares"]);
-                        AgregarFila(filas, "Préstamo",           r["descPrestamo"],         r["prestamoSoles"],    r["prestamosDolares"]);
-                    }
-                }
+                DataRow r = dtPrinc.Rows[0];
+                AgregarFila(filas, "Despacho",          r["descDespacho"],         r["despachoSoles"],    r["despachoDolares"]);
+                AgregarFila(filas, "Mensualidad",        r["descMensualidad"],      r["mensualidadSoles"], r["mensualidadDolares"]);
+                AgregarFila(filas, "Otros Autorizados",  r["descOtrosAutorizados"], r["otrosSoles"],       r["otrosDolares"]);
+                AgregarFila(filas, "Préstamo",           r["descPrestamo"],         r["prestamoSoles"],    r["prestamosDolares"]);
             }
 
-            // Ingresos adicionales
-            string queryAd = "SELECT nombreCategoria, descripcion, soles, dolares FROM IngresosAdicionales WHERE numeroOrdenViaje = @n ORDER BY idIngresoAdicional";
-            using (SqlCommand cmd = new SqlCommand(queryAd, conn))
-            {
-                cmd.Parameters.AddWithValue("@n", _numeroOrden);
-                using (SqlDataReader r = cmd.ExecuteReader())
-                {
-                    while (r.Read())
-                    {
-                        AgregarFila(filas,
-                            r["nombreCategoria"].ToString(),
-                            r["descripcion"],
-                            r["soles"],
-                            r["dolares"]);
-                    }
-                }
-            }
+            DataTable dtAd = DbHelper.ConsultarTabla(
+                "SELECT nombreCategoria, descripcion, soles, dolares FROM IngresosAdicionales WHERE numeroOrdenViaje = @n ORDER BY idIngresoAdicional",
+                DbHelper.Param("@n", _numeroOrden));
 
-            _totalIngresosSoles   = 0;
-            _totalIngresosDolares = 0;
+            foreach (DataRow r in dtAd.Rows)
+                AgregarFila(filas, r["nombreCategoria"].ToString(), r["descripcion"], r["soles"], r["dolares"]);
+
+            _totalIngresosSoles = _totalIngresosDolares = 0;
             foreach (var f in filas) { _totalIngresosSoles += f.Soles; _totalIngresosDolares += f.Dolares; }
 
             rptIngresos.DataSource = filas;
@@ -259,11 +221,11 @@ namespace WebSGV.Views
             lblTotalIngresosDolares.Text = _totalIngresosDolares.ToString("N2");
         }
 
-        private void CargarGastos(SqlConnection conn)
+        private void CargarGastos()
         {
             var filas = new List<FilaFinanciera>();
 
-            string queryEg = @"
+            DataTable dtEg = DbHelper.ConsultarTabla(@"
                 SELECT peajesSoles, peajesDolares, descPeajes,
                        alimentacionSoles, alimentacionDolares, descAlimentacion,
                        apoyoseguridadSoles, apoyoseguridadDolares, descApoyoSeguridad,
@@ -272,47 +234,30 @@ namespace WebSGV.Views
                        encarpada_desencarpadaSoles, encarpada_desencarpadaDolares, descEncarpadaDesencarpada,
                        hospedajeSoles, hospedajeDolares, descHospedaje,
                        combustibleSoles, combustibleDolares, descCombustible
-                FROM Egresos WHERE numeroOrdenViaje = @n";
+                FROM Egresos WHERE numeroOrdenViaje = @n",
+                DbHelper.Param("@n", _numeroOrden));
 
-            using (SqlCommand cmd = new SqlCommand(queryEg, conn))
+            if (dtEg.Rows.Count > 0)
             {
-                cmd.Parameters.AddWithValue("@n", _numeroOrden);
-                using (SqlDataReader r = cmd.ExecuteReader())
-                {
-                    if (r.Read())
-                    {
-                        AgregarFila(filas, "Peajes",                r["descPeajes"],                   r["peajesSoles"],                   r["peajesDolares"]);
-                        AgregarFila(filas, "Alimentación",           r["descAlimentacion"],             r["alimentacionSoles"],             r["alimentacionDolares"]);
-                        AgregarFila(filas, "Apoyo-Seguridad",        r["descApoyoSeguridad"],           r["apoyoseguridadSoles"],           r["apoyoseguridadDolares"]);
-                        AgregarFila(filas, "Reparaciones Varios",    r["descReparacionesVarios"],       r["reparacionesVariosSoles"],       r["repacionesVariosDolares"]);
-                        AgregarFila(filas, "Movilidad",              r["descMovilidad"],                r["movilidadSoles"],                r["movilidadDolares"]);
-                        AgregarFila(filas, "Encarpada/Desencarpada", r["descEncarpadaDesencarpada"],    r["encarpada_desencarpadaSoles"],   r["encarpada_desencarpadaDolares"]);
-                        AgregarFila(filas, "Hospedaje",              r["descHospedaje"],                r["hospedajeSoles"],                r["hospedajeDolares"]);
-                        AgregarFila(filas, "Combustible",            r["descCombustible"],              r["combustibleSoles"],              r["combustibleDolares"]);
-                    }
-                }
+                DataRow r = dtEg.Rows[0];
+                AgregarFila(filas, "Peajes",                r["descPeajes"],                   r["peajesSoles"],                   r["peajesDolares"]);
+                AgregarFila(filas, "Alimentación",           r["descAlimentacion"],             r["alimentacionSoles"],             r["alimentacionDolares"]);
+                AgregarFila(filas, "Apoyo-Seguridad",        r["descApoyoSeguridad"],           r["apoyoseguridadSoles"],           r["apoyoseguridadDolares"]);
+                AgregarFila(filas, "Reparaciones Varios",    r["descReparacionesVarios"],       r["reparacionesVariosSoles"],       r["repacionesVariosDolares"]);
+                AgregarFila(filas, "Movilidad",              r["descMovilidad"],                r["movilidadSoles"],                r["movilidadDolares"]);
+                AgregarFila(filas, "Encarpada/Desencarpada", r["descEncarpadaDesencarpada"],    r["encarpada_desencarpadaSoles"],   r["encarpada_desencarpadaDolares"]);
+                AgregarFila(filas, "Hospedaje",              r["descHospedaje"],                r["hospedajeSoles"],                r["hospedajeDolares"]);
+                AgregarFila(filas, "Combustible",            r["descCombustible"],              r["combustibleSoles"],              r["combustibleDolares"]);
             }
 
-            // Gastos adicionales
-            string queryAd = "SELECT nombreCategoria, descripcion, soles, dolares FROM CategoriasAdicionales WHERE numeroOrdenViaje = @n ORDER BY idCategoriaAdicional";
-            using (SqlCommand cmd = new SqlCommand(queryAd, conn))
-            {
-                cmd.Parameters.AddWithValue("@n", _numeroOrden);
-                using (SqlDataReader r = cmd.ExecuteReader())
-                {
-                    while (r.Read())
-                    {
-                        AgregarFila(filas,
-                            r["nombreCategoria"].ToString(),
-                            r["descripcion"],
-                            r["soles"],
-                            r["dolares"]);
-                    }
-                }
-            }
+            DataTable dtAd = DbHelper.ConsultarTabla(
+                "SELECT nombreCategoria, descripcion, soles, dolares FROM CategoriasAdicionales WHERE numeroOrdenViaje = @n ORDER BY idCategoriaAdicional",
+                DbHelper.Param("@n", _numeroOrden));
 
-            _totalGastosSoles   = 0;
-            _totalGastosDolares = 0;
+            foreach (DataRow r in dtAd.Rows)
+                AgregarFila(filas, r["nombreCategoria"].ToString(), r["descripcion"], r["soles"], r["dolares"]);
+
+            _totalGastosSoles = _totalGastosDolares = 0;
             foreach (var f in filas) { _totalGastosSoles += f.Soles; _totalGastosDolares += f.Dolares; }
 
             rptGastos.DataSource = filas;
@@ -322,29 +267,26 @@ namespace WebSGV.Views
             lblTotalGastosDolares.Text = _totalGastosDolares.ToString("N2");
         }
 
-        private void CargarDetallesPeajes(SqlConnection conn)
+        private void CargarDetallesPeajes()
         {
             var lista = new List<FilaPeaje>();
-            string q = "SELECT estacion, fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetallePeajes WHERE numeroOrdenViaje = @n ORDER BY fecha";
-            using (SqlCommand cmd = new SqlCommand(q, conn))
+            DataTable dt = DbHelper.ConsultarTabla(
+                "SELECT estacion, fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetallePeajes WHERE numeroOrdenViaje = @n ORDER BY fecha",
+                DbHelper.Param("@n", _numeroOrden));
+
+            foreach (DataRow r in dt.Rows)
             {
-                cmd.Parameters.AddWithValue("@n", _numeroOrden);
-                using (SqlDataReader r = cmd.ExecuteReader())
+                lista.Add(new FilaPeaje
                 {
-                    while (r.Read())
-                    {
-                        lista.Add(new FilaPeaje
-                        {
-                            Estacion     = r["estacion"].ToString(),
-                            Fecha        = r["fecha"] != DBNull.Value ? Convert.ToDateTime(r["fecha"]) : DateTime.MinValue,
-                            Comprobante  = r["numeroComprobante"]?.ToString() ?? "",
-                            Soles        = r["montoSoles"] != DBNull.Value ? Convert.ToDecimal(r["montoSoles"]) : 0,
-                            Dolares      = r["montoDolares"] != DBNull.Value ? Convert.ToDecimal(r["montoDolares"]) : 0,
-                            Observaciones = r["observaciones"]?.ToString() ?? ""
-                        });
-                    }
-                }
+                    Estacion      = r["estacion"].ToString(),
+                    Fecha         = r["fecha"] != DBNull.Value ? Convert.ToDateTime(r["fecha"]) : DateTime.MinValue,
+                    Comprobante   = r["numeroComprobante"]?.ToString() ?? "",
+                    Soles         = r["montoSoles"]   != DBNull.Value ? Convert.ToDecimal(r["montoSoles"])   : 0,
+                    Dolares       = r["montoDolares"]  != DBNull.Value ? Convert.ToDecimal(r["montoDolares"]) : 0,
+                    Observaciones = r["observaciones"]?.ToString() ?? ""
+                });
             }
+
             if (lista.Count > 0)
             {
                 gvPeajes.DataSource = lista;
@@ -353,29 +295,26 @@ namespace WebSGV.Views
             }
         }
 
-        private void CargarDetallesReparaciones(SqlConnection conn)
+        private void CargarDetallesReparaciones()
         {
             var lista = new List<FilaGenerico>();
-            string q = "SELECT observaciones AS tipo, fechaComprobante, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleReparacionesVarios WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante";
-            using (SqlCommand cmd = new SqlCommand(q, conn))
+            DataTable dt = DbHelper.ConsultarTabla(
+                "SELECT observaciones AS tipo, fechaComprobante, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleReparacionesVarios WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante",
+                DbHelper.Param("@n", _numeroOrden));
+
+            foreach (DataRow r in dt.Rows)
             {
-                cmd.Parameters.AddWithValue("@n", _numeroOrden);
-                using (SqlDataReader r = cmd.ExecuteReader())
+                lista.Add(new FilaGenerico
                 {
-                    while (r.Read())
-                    {
-                        lista.Add(new FilaGenerico
-                        {
-                            Tipo         = r["tipo"]?.ToString() ?? "",
-                            Fecha        = r["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(r["fechaComprobante"]) : DateTime.MinValue,
-                            Comprobante  = r["numeroComprobante"]?.ToString() ?? "",
-                            Soles        = r["montoSoles"] != DBNull.Value ? Convert.ToDecimal(r["montoSoles"]) : 0,
-                            Dolares      = r["montoDolares"] != DBNull.Value ? Convert.ToDecimal(r["montoDolares"]) : 0,
-                            Observaciones = r["observaciones"]?.ToString() ?? ""
-                        });
-                    }
-                }
+                    Tipo          = r["tipo"]?.ToString() ?? "",
+                    Fecha         = r["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(r["fechaComprobante"]) : DateTime.MinValue,
+                    Comprobante   = r["numeroComprobante"]?.ToString() ?? "",
+                    Soles         = r["montoSoles"]   != DBNull.Value ? Convert.ToDecimal(r["montoSoles"])   : 0,
+                    Dolares       = r["montoDolares"]  != DBNull.Value ? Convert.ToDecimal(r["montoDolares"]) : 0,
+                    Observaciones = r["observaciones"]?.ToString() ?? ""
+                });
             }
+
             if (lista.Count > 0)
             {
                 gvReparaciones.DataSource = lista;
@@ -384,29 +323,26 @@ namespace WebSGV.Views
             }
         }
 
-        private void CargarDetallesHospedaje(SqlConnection conn)
+        private void CargarDetallesHospedaje()
         {
             var lista = new List<FilaGenerico>();
-            string q = "SELECT observaciones AS lugar, fechaComprobante, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleHospedaje WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante";
-            using (SqlCommand cmd = new SqlCommand(q, conn))
+            DataTable dt = DbHelper.ConsultarTabla(
+                "SELECT observaciones AS lugar, fechaComprobante, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleHospedaje WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante",
+                DbHelper.Param("@n", _numeroOrden));
+
+            foreach (DataRow r in dt.Rows)
             {
-                cmd.Parameters.AddWithValue("@n", _numeroOrden);
-                using (SqlDataReader r = cmd.ExecuteReader())
+                lista.Add(new FilaGenerico
                 {
-                    while (r.Read())
-                    {
-                        lista.Add(new FilaGenerico
-                        {
-                            Lugar        = r["lugar"]?.ToString() ?? "",
-                            Fecha        = r["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(r["fechaComprobante"]) : DateTime.MinValue,
-                            Comprobante  = r["numeroComprobante"]?.ToString() ?? "",
-                            Soles        = r["montoSoles"] != DBNull.Value ? Convert.ToDecimal(r["montoSoles"]) : 0,
-                            Dolares      = r["montoDolares"] != DBNull.Value ? Convert.ToDecimal(r["montoDolares"]) : 0,
-                            Observaciones = r["observaciones"]?.ToString() ?? ""
-                        });
-                    }
-                }
+                    Lugar         = r["lugar"]?.ToString() ?? "",
+                    Fecha         = r["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(r["fechaComprobante"]) : DateTime.MinValue,
+                    Comprobante   = r["numeroComprobante"]?.ToString() ?? "",
+                    Soles         = r["montoSoles"]   != DBNull.Value ? Convert.ToDecimal(r["montoSoles"])   : 0,
+                    Dolares       = r["montoDolares"]  != DBNull.Value ? Convert.ToDecimal(r["montoDolares"]) : 0,
+                    Observaciones = r["observaciones"]?.ToString() ?? ""
+                });
             }
+
             if (lista.Count > 0)
             {
                 gvHospedaje.DataSource = lista;
@@ -415,29 +351,26 @@ namespace WebSGV.Views
             }
         }
 
-        private void CargarDetallesCombustible(SqlConnection conn)
+        private void CargarDetallesCombustible()
         {
             var lista = new List<FilaGenerico>();
-            string q = "SELECT observaciones AS lugar, fechaComprobante, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleCombustible WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante";
-            using (SqlCommand cmd = new SqlCommand(q, conn))
+            DataTable dt = DbHelper.ConsultarTabla(
+                "SELECT observaciones AS lugar, fechaComprobante, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleCombustible WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante",
+                DbHelper.Param("@n", _numeroOrden));
+
+            foreach (DataRow r in dt.Rows)
             {
-                cmd.Parameters.AddWithValue("@n", _numeroOrden);
-                using (SqlDataReader r = cmd.ExecuteReader())
+                lista.Add(new FilaGenerico
                 {
-                    while (r.Read())
-                    {
-                        lista.Add(new FilaGenerico
-                        {
-                            Lugar        = r["lugar"]?.ToString() ?? "",
-                            Fecha        = r["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(r["fechaComprobante"]) : DateTime.MinValue,
-                            Comprobante  = r["numeroComprobante"]?.ToString() ?? "",
-                            Soles        = r["montoSoles"] != DBNull.Value ? Convert.ToDecimal(r["montoSoles"]) : 0,
-                            Dolares      = r["montoDolares"] != DBNull.Value ? Convert.ToDecimal(r["montoDolares"]) : 0,
-                            Observaciones = r["observaciones"]?.ToString() ?? ""
-                        });
-                    }
-                }
+                    Lugar         = r["lugar"]?.ToString() ?? "",
+                    Fecha         = r["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(r["fechaComprobante"]) : DateTime.MinValue,
+                    Comprobante   = r["numeroComprobante"]?.ToString() ?? "",
+                    Soles         = r["montoSoles"]   != DBNull.Value ? Convert.ToDecimal(r["montoSoles"])   : 0,
+                    Dolares       = r["montoDolares"]  != DBNull.Value ? Convert.ToDecimal(r["montoDolares"]) : 0,
+                    Observaciones = r["observaciones"]?.ToString() ?? ""
+                });
             }
+
             if (lista.Count > 0)
             {
                 gvCombustible.DataSource = lista;
@@ -502,8 +435,8 @@ namespace WebSGV.Views
 
         private void MostrarError(string mensaje)
         {
-            lblError.Text   = System.Web.HttpUtility.HtmlEncode(mensaje);
-            pnlError.Visible    = true;
+            lblError.Text        = System.Web.HttpUtility.HtmlEncode(mensaje);
+            pnlError.Visible     = true;
             pnlContenido.Visible = false;
         }
 

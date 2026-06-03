@@ -1,7 +1,7 @@
-﻿using System;
+using System;
+using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
-using System.Configuration;
 using System.Web.UI.WebControls;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +9,7 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class BuscarOrdenViaje : System.Web.UI.Page
+    public partial class BuscarOrdenViaje : PaginaBase
     {
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -30,8 +30,7 @@ namespace WebSGV.Views
         #region Métodos para cargar datos en los DropDownList
         private void CargarClientes()
         {
-            string query = "SELECT idCliente, nombre FROM Cliente";
-            DataTable dt = ObtenerDatosDeBD(query);
+            DataTable dt = DbHelper.ConsultarTabla("SELECT idCliente, nombre FROM Cliente");
 
             if (dt.Rows.Count > 0)
             {
@@ -46,8 +45,7 @@ namespace WebSGV.Views
 
         private void CargarPlacasTracto()
         {
-            string query = "SELECT idTracto, placaTracto FROM Tracto";
-            DataTable dt = ObtenerDatosDeBD(query);
+            DataTable dt = DbHelper.ConsultarTabla("SELECT idTracto, placaTracto FROM Tracto");
 
             if (dt.Rows.Count > 0)
             {
@@ -62,8 +60,7 @@ namespace WebSGV.Views
 
         private void CargarPlacasCarreta()
         {
-            string query = "SELECT idCarreta, placaCarreta FROM Carreta";
-            DataTable dt = ObtenerDatosDeBD(query);
+            DataTable dt = DbHelper.ConsultarTabla("SELECT idCarreta, placaCarreta FROM Carreta");
 
             if (dt.Rows.Count > 0)
             {
@@ -78,8 +75,8 @@ namespace WebSGV.Views
 
         private void CargarConductores()
         {
-            string query = "SELECT idConductor, CONCAT(nombre, ' ', apPaterno, ' ', apMaterno) AS nombreCompleto FROM Conductor";
-            DataTable dt = ObtenerDatosDeBD(query);
+            DataTable dt = DbHelper.ConsultarTabla(
+                "SELECT idConductor, CONCAT(nombre, ' ', apPaterno, ' ', apMaterno) AS nombreCompleto FROM Conductor");
 
             if (dt.Rows.Count > 0)
             {
@@ -94,8 +91,7 @@ namespace WebSGV.Views
 
         private void CargarRutas()
         {
-            string query = "SELECT idRuta, nombre FROM Ruta";
-            DataTable dt = ObtenerDatosDeBD(query);
+            DataTable dt = DbHelper.ConsultarTabla("SELECT idRuta, nombre FROM Ruta");
 
             if (dt.Rows.Count > 0)
             {
@@ -110,44 +106,28 @@ namespace WebSGV.Views
 
         private void CargarPlantasDescarga(int? idCliente = null)
         {
-            string query = "SELECT idPlanta, nombre FROM PlantaDescarga";
-            if (idCliente.HasValue)
+            try
             {
-                query += " WHERE idCliente = @idCliente";
-            }
+                DataTable dt = idCliente.HasValue
+                    ? DbHelper.ConsultarTabla(
+                        "SELECT idPlanta, nombre FROM PlantaDescarga WHERE idCliente = @idCliente",
+                        DbHelper.Param("@idCliente", idCliente.Value))
+                    : DbHelper.ConsultarTabla("SELECT idPlanta, nombre FROM PlantaDescarga");
 
-            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                ddlPlantaDescarga.Items.Clear();
+                if (dt.Rows.Count > 0)
                 {
-                    if (idCliente.HasValue)
-                    {
-                        cmd.Parameters.AddWithValue("@idCliente", idCliente.Value);
-                    }
-
-                    try
-                    {
-                        conn.Open();
-                        SqlDataAdapter da = new SqlDataAdapter(cmd);
-                        DataTable dt = new DataTable();
-                        da.Fill(dt);
-
-                        ddlPlantaDescarga.Items.Clear();
-                        if (dt.Rows.Count > 0)
-                        {
-                            ddlPlantaDescarga.DataSource = dt;
-                            ddlPlantaDescarga.DataTextField = "nombre";
-                            ddlPlantaDescarga.DataValueField = "idPlanta";
-                            ddlPlantaDescarga.DataBind();
-                        }
-
-                        ddlPlantaDescarga.Items.Insert(0, new ListItem("Seleccione una planta", ""));
-                    }
-                    catch (Exception ex)
-                    {
-                        MostrarMensaje("Error al cargar las plantas de descarga: " + ex.Message, true);
-                    }
+                    ddlPlantaDescarga.DataSource = dt;
+                    ddlPlantaDescarga.DataTextField = "nombre";
+                    ddlPlantaDescarga.DataValueField = "idPlanta";
+                    ddlPlantaDescarga.DataBind();
                 }
+
+                ddlPlantaDescarga.Items.Insert(0, new ListItem("Seleccione una planta", ""));
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al cargar las plantas de descarga: " + ex.Message, true);
             }
         }
         #endregion
@@ -163,40 +143,29 @@ namespace WebSGV.Views
                 return;
             }
 
-            // Verificar si la orden existe
             if (!OrdenViajeExiste(numeroOrdenViaje))
             {
                 MostrarMensaje("La Orden de Viaje N° " + numeroOrdenViaje + " no existe en el sistema.", true);
                 return;
             }
 
-            // Cargar datos de la orden de viaje
             CargarDatosOrdenViaje(numeroOrdenViaje);
             pnlResultados.Visible = true;
         }
 
         private bool OrdenViajeExiste(string numeroOrdenViaje)
         {
-            string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-            string query = "SELECT COUNT(*) FROM OrdenViaje WHERE numeroOrdenViaje = @numeroOrdenViaje";
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            try
             {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                    try
-                    {
-                        conn.Open();
-                        int count = (int)cmd.ExecuteScalar();
-                        return count > 0;
-                    }
-                    catch (Exception ex)
-                    {
-                        MostrarMensaje("Error al verificar la orden de viaje: " + ex.Message, true);
-                        return false;
-                    }
-                }
+                int count = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM OrdenViaje WHERE numeroOrdenViaje = @numeroOrdenViaje",
+                    DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje)));
+                return count > 0;
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al verificar la orden de viaje: " + ex.Message, true);
+                return false;
             }
         }
 
@@ -204,16 +173,9 @@ namespace WebSGV.Views
         {
             try
             {
-                // Cargar datos básicos de la orden de viaje
                 CargarDatosBasicos(numeroOrdenViaje);
-
-                // Cargar datos de liquidación (ingresos y gastos)
                 CargarDatosLiquidacion(numeroOrdenViaje);
-
-                // Cargar datos de guías de transporte
                 CargarDatosGuias(numeroOrdenViaje);
-
-                // Cargar productos asociados
                 CargarProductos(numeroOrdenViaje);
 
                 MostrarMensaje("Datos de la Orden de Viaje cargados correctamente.", false);
@@ -227,238 +189,185 @@ namespace WebSGV.Views
         private void CargarDatosBasicos(string numeroOrdenViaje)
         {
             string query = @"
-                SELECT ov.numeroOrdenViaje, c.numeroCPIC, ov.fechaSalida, ov.horaSalida, 
-                       ov.fechaLlegada, ov.horaLlegada, ov.idCliente, ov.idTracto, 
-                       ov.idCarreta, ov.idConductor, ov.observaciones, ov.observacionesLiquidacion 
+                SELECT ov.numeroOrdenViaje, c.numeroCPIC, ov.fechaSalida, ov.horaSalida,
+                       ov.fechaLlegada, ov.horaLlegada, ov.idCliente, ov.idTracto,
+                       ov.idCarreta, ov.idConductor, ov.observaciones, ov.observacionesLiquidacion
                 FROM OrdenViaje ov
                 INNER JOIN CPIC c ON ov.idCPIC = c.idCPIC
                 WHERE ov.numeroOrdenViaje = @numeroOrdenViaje";
 
-            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString))
+            try
             {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                    try
-                    {
-                        conn.Open();
-                        SqlDataReader reader = cmd.ExecuteReader();
+                DataTable dt = DbHelper.ConsultarTabla(query, DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje));
+                if (dt.Rows.Count == 0) return;
+                DataRow reader = dt.Rows[0];
 
-                        if (reader.Read())
-                        {
-                            // Cargar datos en los controles
-                            txtOrdenViaje.Text = reader["numeroOrdenViaje"].ToString();
-                            txtCPI.Text = reader["numeroCPIC"].ToString();
+                txtOrdenViaje.Text = reader["numeroOrdenViaje"].ToString();
+                txtCPI.Text = reader["numeroCPIC"].ToString();
 
-                            // Convertir fechas y horas
-                            if (reader["fechaSalida"] != DBNull.Value)
-                                txtFechaSalida.Text = Convert.ToDateTime(reader["fechaSalida"]).ToString("yyyy-MM-dd");
+                if (reader["fechaSalida"] != DBNull.Value)
+                    txtFechaSalida.Text = Convert.ToDateTime(reader["fechaSalida"]).ToString("yyyy-MM-dd");
 
-                            if (reader["horaSalida"] != DBNull.Value)
-                                txtHoraSalida.Text = reader["horaSalida"].ToString();
+                if (reader["horaSalida"] != DBNull.Value)
+                    txtHoraSalida.Text = reader["horaSalida"].ToString();
 
-                            if (reader["fechaLlegada"] != DBNull.Value)
-                                txtFechaLlegada.Text = Convert.ToDateTime(reader["fechaLlegada"]).ToString("yyyy-MM-dd");
+                if (reader["fechaLlegada"] != DBNull.Value)
+                    txtFechaLlegada.Text = Convert.ToDateTime(reader["fechaLlegada"]).ToString("yyyy-MM-dd");
 
-                            if (reader["horaLlegada"] != DBNull.Value)
-                                txtHoraLlegada.Text = reader["horaLlegada"].ToString();
+                if (reader["horaLlegada"] != DBNull.Value)
+                    txtHoraLlegada.Text = reader["horaLlegada"].ToString();
 
-                            // Seleccionar valores en los DropDownList
-                            if (reader["idCliente"] != DBNull.Value)
-                                SetDropDownListValue(ddlCliente, reader["idCliente"].ToString());
+                if (reader["idCliente"] != DBNull.Value)
+                    SetDropDownListValue(ddlCliente, reader["idCliente"].ToString());
 
-                            if (reader["idTracto"] != DBNull.Value)
-                                SetDropDownListValue(ddlPlacaTracto, reader["idTracto"].ToString());
+                if (reader["idTracto"] != DBNull.Value)
+                    SetDropDownListValue(ddlPlacaTracto, reader["idTracto"].ToString());
 
-                            if (reader["idCarreta"] != DBNull.Value)
-                                SetDropDownListValue(ddlPlacaCarreta, reader["idCarreta"].ToString());
+                if (reader["idCarreta"] != DBNull.Value)
+                    SetDropDownListValue(ddlPlacaCarreta, reader["idCarreta"].ToString());
 
-                            if (reader["idConductor"] != DBNull.Value)
-                                SetDropDownListValue(ddlConductor, reader["idConductor"].ToString());
+                if (reader["idConductor"] != DBNull.Value)
+                    SetDropDownListValue(ddlConductor, reader["idConductor"].ToString());
 
-                            txtObservaciones.Text = reader["observaciones"].ToString();
-                            txtObservacionesLiquidacion.Text = reader["observacionesLiquidacion"].ToString();
-                        }
-                        reader.Close();
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception("Error al cargar datos básicos: " + ex.Message);
-                    }
-                }
+                txtObservaciones.Text = reader["observaciones"].ToString();
+                txtObservacionesLiquidacion.Text = reader["observacionesLiquidacion"].ToString();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error al cargar datos básicos: " + ex.Message);
             }
         }
 
         private void CargarDatosLiquidacion(string numeroOrdenViaje)
         {
-            // Cargar ingresos fijos
+            // Ingresos fijos
             string queryIngresos = @"
-                SELECT despachoSoles, despachoDolares, descDespacho, 
-                       mensualidadSoles, mensualidadDolares, descMensualidad, 
-                       otrosSoles, otrosDolares, descOtrosAutorizados, 
+                SELECT despachoSoles, despachoDolares, descDespacho,
+                       mensualidadSoles, mensualidadDolares, descMensualidad,
+                       otrosSoles, otrosDolares, descOtrosAutorizados,
                        prestamoSoles, prestamosDolares, descPrestamo
-                FROM Ingresos 
+                FROM Ingresos
                 WHERE numeroOrdenViaje = @numeroOrdenViaje";
 
-            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString))
+            try
             {
-                using (SqlCommand cmd = new SqlCommand(queryIngresos, conn))
+                DataTable dtIngresos = DbHelper.ConsultarTabla(queryIngresos, DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje));
+                if (dtIngresos.Rows.Count > 0)
                 {
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                    try
-                    {
-                        conn.Open();
-                        SqlDataReader reader = cmd.ExecuteReader();
+                    DataRow reader = dtIngresos.Rows[0];
+                    txtDespachoSoles.Text = reader["despachoSoles"].ToString();
+                    txtDespachoDolares.Text = reader["despachoDolares"].ToString();
+                    txtDescDespacho.Text = reader["descDespacho"].ToString();
 
-                        if (reader.Read())
-                        {
-                            // Cargar datos de ingresos fijos
-                            txtDespachoSoles.Text = reader["despachoSoles"].ToString();
-                            txtDespachoDolares.Text = reader["despachoDolares"].ToString();
-                            txtDescDespacho.Text = reader["descDespacho"].ToString();
+                    txtMensualidadSoles.Text = reader["mensualidadSoles"].ToString();
+                    txtMensualidadDolares.Text = reader["mensualidadDolares"].ToString();
+                    txtDescMensualidad.Text = reader["descMensualidad"].ToString();
 
-                            txtMensualidadSoles.Text = reader["mensualidadSoles"].ToString();
-                            txtMensualidadDolares.Text = reader["mensualidadDolares"].ToString();
-                            txtDescMensualidad.Text = reader["descMensualidad"].ToString();
+                    txtOtrosSoles.Text = reader["otrosSoles"].ToString();
+                    txtOtrosDolares.Text = reader["otrosDolares"].ToString();
+                    txtDescOtros.Text = reader["descOtrosAutorizados"].ToString();
 
-                            txtOtrosSoles.Text = reader["otrosSoles"].ToString();
-                            txtOtrosDolares.Text = reader["otrosDolares"].ToString();
-                            txtDescOtros.Text = reader["descOtrosAutorizados"].ToString();
-
-                            txtPrestamoSoles.Text = reader["prestamoSoles"].ToString();
-                            txtPrestamoDolares.Text = reader["prestamosDolares"].ToString();
-                            txtDescPrestamo.Text = reader["descPrestamo"].ToString();
-                        }
-                        reader.Close();
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception("Error al cargar ingresos: " + ex.Message);
-                    }
+                    txtPrestamoSoles.Text = reader["prestamoSoles"].ToString();
+                    txtPrestamoDolares.Text = reader["prestamosDolares"].ToString();
+                    txtDescPrestamo.Text = reader["descPrestamo"].ToString();
                 }
             }
+            catch (Exception ex)
+            {
+                throw new Exception("Error al cargar ingresos: " + ex.Message);
+            }
 
-            // Cargar ingresos adicionales
+            // Ingresos adicionales
             string queryIngresosAdicionales = @"
-                SELECT idIngresoAdicional, nombreCategoria, soles, dolares, descripcion 
-                FROM IngresosAdicionales 
+                SELECT idIngresoAdicional, nombreCategoria, soles, dolares, descripcion
+                FROM IngresosAdicionales
                 WHERE numeroOrdenViaje = @numeroOrdenViaje";
 
-            DataTable dtIngresosAdicionales = new DataTable();
-            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString))
+            try
             {
-                using (SqlCommand cmd = new SqlCommand(queryIngresosAdicionales, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                    try
-                    {
-                        conn.Open();
-                        SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                        adapter.Fill(dtIngresosAdicionales);
-
-                        rptIngresosAdicionales.DataSource = dtIngresosAdicionales;
-                        rptIngresosAdicionales.DataBind();
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception("Error al cargar ingresos adicionales: " + ex.Message);
-                    }
-                }
+                DataTable dtIngresosAdicionales = DbHelper.ConsultarTabla(
+                    queryIngresosAdicionales, DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje));
+                rptIngresosAdicionales.DataSource = dtIngresosAdicionales;
+                rptIngresosAdicionales.DataBind();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error al cargar ingresos adicionales: " + ex.Message);
             }
 
-            // Cargar gastos fijos
+            // Gastos fijos
             string queryGastos = @"
-                SELECT peajesSoles, peajesDolares, descPeajes, 
-                       alimentacionSoles, alimentacionDolares, descAlimentacion, 
-                       apoyoseguridadSoles, apoyoseguridadDolares, descApoyoSeguridad, 
-                       reparacionesVariosSoles, repacionesVariosDolares, descReparacionesVarios, 
-                       movilidadSoles, movilidadDolares, descMovilidad, 
-                       encarpada_desencarpadaSoles, encarpada_desencarpadaDolares, descEncarpadaDesencarpada, 
-                       hospedajeSoles, hospedajeDolares, descHospedaje, 
+                SELECT peajesSoles, peajesDolares, descPeajes,
+                       alimentacionSoles, alimentacionDolares, descAlimentacion,
+                       apoyoseguridadSoles, apoyoseguridadDolares, descApoyoSeguridad,
+                       reparacionesVariosSoles, repacionesVariosDolares, descReparacionesVarios,
+                       movilidadSoles, movilidadDolares, descMovilidad,
+                       encarpada_desencarpadaSoles, encarpada_desencarpadaDolares, descEncarpadaDesencarpada,
+                       hospedajeSoles, hospedajeDolares, descHospedaje,
                        combustibleSoles, combustibleDolares, descCombustible
-                FROM Egresos 
+                FROM Egresos
                 WHERE numeroOrdenViaje = @numeroOrdenViaje";
 
-            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString))
+            try
             {
-                using (SqlCommand cmd = new SqlCommand(queryGastos, conn))
+                DataTable dtGastos = DbHelper.ConsultarTabla(queryGastos, DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje));
+                if (dtGastos.Rows.Count > 0)
                 {
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                    try
-                    {
-                        conn.Open();
-                        SqlDataReader reader = cmd.ExecuteReader();
+                    DataRow reader = dtGastos.Rows[0];
+                    txtPeajesSoles.Text = reader["peajesSoles"].ToString();
+                    txtPeajesDolares.Text = reader["peajesDolares"].ToString();
+                    txtDescPeajes.Text = reader["descPeajes"].ToString();
 
-                        if (reader.Read())
-                        {
-                            // Cargar datos de gastos fijos
-                            txtPeajesSoles.Text = reader["peajesSoles"].ToString();
-                            txtPeajesDolares.Text = reader["peajesDolares"].ToString();
-                            txtDescPeajes.Text = reader["descPeajes"].ToString();
+                    txtAlimentacionSoles.Text = reader["alimentacionSoles"].ToString();
+                    txtAlimentacionDolares.Text = reader["alimentacionDolares"].ToString();
+                    txtDescAlimentacion.Text = reader["descAlimentacion"].ToString();
 
-                            txtAlimentacionSoles.Text = reader["alimentacionSoles"].ToString();
-                            txtAlimentacionDolares.Text = reader["alimentacionDolares"].ToString();
-                            txtDescAlimentacion.Text = reader["descAlimentacion"].ToString();
+                    txtApoyoSeguridadSoles.Text = reader["apoyoseguridadSoles"].ToString();
+                    txtApoyoSeguridadDolares.Text = reader["apoyoseguridadDolares"].ToString();
+                    txtDescApoyoSeguridad.Text = reader["descApoyoSeguridad"].ToString();
 
-                            txtApoyoSeguridadSoles.Text = reader["apoyoseguridadSoles"].ToString();
-                            txtApoyoSeguridadDolares.Text = reader["apoyoseguridadDolares"].ToString();
-                            txtDescApoyoSeguridad.Text = reader["descApoyoSeguridad"].ToString();
+                    txtReparacionesSoles.Text = reader["reparacionesVariosSoles"].ToString();
+                    txtReparacionesDolares.Text = reader["repacionesVariosDolares"].ToString();
+                    txtDescReparaciones.Text = reader["descReparacionesVarios"].ToString();
 
-                            txtReparacionesSoles.Text = reader["reparacionesVariosSoles"].ToString();
-                            txtReparacionesDolares.Text = reader["repacionesVariosDolares"].ToString();
-                            txtDescReparaciones.Text = reader["descReparacionesVarios"].ToString();
+                    txtMovilidadSoles.Text = reader["movilidadSoles"].ToString();
+                    txtMovilidadDolares.Text = reader["movilidadDolares"].ToString();
+                    txtDescMovilidad.Text = reader["descMovilidad"].ToString();
 
-                            txtMovilidadSoles.Text = reader["movilidadSoles"].ToString();
-                            txtMovilidadDolares.Text = reader["movilidadDolares"].ToString();
-                            txtDescMovilidad.Text = reader["descMovilidad"].ToString();
+                    txtEncapadaSoles.Text = reader["encarpada_desencarpadaSoles"].ToString();
+                    txtEncapadaDolares.Text = reader["encarpada_desencarpadaDolares"].ToString();
+                    txtDescEncapada.Text = reader["descEncarpadaDesencarpada"].ToString();
 
-                            txtEncapadaSoles.Text = reader["encarpada_desencarpadaSoles"].ToString();
-                            txtEncapadaDolares.Text = reader["encarpada_desencarpadaDolares"].ToString();
-                            txtDescEncapada.Text = reader["descEncarpadaDesencarpada"].ToString();
+                    txtHospedajeSoles.Text = reader["hospedajeSoles"].ToString();
+                    txtHospedajeDolares.Text = reader["hospedajeDolares"].ToString();
+                    txtDescHospedaje.Text = reader["descHospedaje"].ToString();
 
-                            txtHospedajeSoles.Text = reader["hospedajeSoles"].ToString();
-                            txtHospedajeDolares.Text = reader["hospedajeDolares"].ToString();
-                            txtDescHospedaje.Text = reader["descHospedaje"].ToString();
-
-                            txtCombustibleSoles.Text = reader["combustibleSoles"].ToString();
-                            txtCombustibleDolares.Text = reader["combustibleDolares"].ToString();
-                            txtDescCombustible.Text = reader["descCombustible"].ToString();
-                        }
-                        reader.Close();
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception("Error al cargar gastos: " + ex.Message);
-                    }
+                    txtCombustibleSoles.Text = reader["combustibleSoles"].ToString();
+                    txtCombustibleDolares.Text = reader["combustibleDolares"].ToString();
+                    txtDescCombustible.Text = reader["descCombustible"].ToString();
                 }
             }
+            catch (Exception ex)
+            {
+                throw new Exception("Error al cargar gastos: " + ex.Message);
+            }
 
-            // Cargar gastos adicionales
+            // Gastos adicionales
             string queryGastosAdicionales = @"
-                SELECT idCategoriaAdicional, nombreCategoria, soles, dolares, descripcion 
-                FROM CategoriasAdicionales 
+                SELECT idCategoriaAdicional, nombreCategoria, soles, dolares, descripcion
+                FROM CategoriasAdicionales
                 WHERE numeroOrdenViaje = @numeroOrdenViaje";
 
-            DataTable dtGastosAdicionales = new DataTable();
-            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString))
+            try
             {
-                using (SqlCommand cmd = new SqlCommand(queryGastosAdicionales, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                    try
-                    {
-                        conn.Open();
-                        SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                        adapter.Fill(dtGastosAdicionales);
-
-                        rptGastosAdicionales.DataSource = dtGastosAdicionales;
-                        rptGastosAdicionales.DataBind();
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception("Error al cargar gastos adicionales: " + ex.Message);
-                    }
-                }
+                DataTable dtGastosAdicionales = DbHelper.ConsultarTabla(
+                    queryGastosAdicionales, DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje));
+                rptGastosAdicionales.DataSource = dtGastosAdicionales;
+                rptGastosAdicionales.DataBind();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error al cargar gastos adicionales: " + ex.Message);
             }
         }
 
@@ -469,47 +378,32 @@ namespace WebSGV.Views
                 FROM GuiasTransportista gt
                 WHERE gt.numeroOrdenViaje = @numeroOrdenViaje";
 
-            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString))
+            try
             {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                    try
-                    {
-                        conn.Open();
-                        SqlDataReader reader = cmd.ExecuteReader();
+                DataTable dt = DbHelper.ConsultarTabla(query, DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje));
+                if (dt.Rows.Count == 0) return;
+                DataRow reader = dt.Rows[0];
 
-                        if (reader.Read())
-                        {
-                            txtGuiaTransportista.Text = reader["numeroGuiaTransportista"].ToString();
-                            txtGuiaCliente.Text = reader["numeroGuiaCliente"].ToString();
+                txtGuiaTransportista.Text = reader["numeroGuiaTransportista"].ToString();
+                txtGuiaCliente.Text = reader["numeroGuiaCliente"].ToString();
 
-                            if (reader["ruta1"] != DBNull.Value)
-                                SetDropDownListValue(ddlRuta, reader["ruta1"].ToString());
+                if (reader["ruta1"] != DBNull.Value)
+                    SetDropDownListValue(ddlRuta, reader["ruta1"].ToString());
 
-                            if (reader["plantaDescarga"] != DBNull.Value)
-                                SetDropDownListValue(ddlPlantaDescarga, reader["plantaDescarga"].ToString());
+                if (reader["plantaDescarga"] != DBNull.Value)
+                    SetDropDownListValue(ddlPlantaDescarga, reader["plantaDescarga"].ToString());
 
-                            txtManifiesto.Text = reader["numeroManifiesto"].ToString();
+                txtManifiesto.Text = reader["numeroManifiesto"].ToString();
 
-                            // Ajustar visibilidad de los campos de ruta
-                            string ruta = reader["ruta1"].ToString();
-                            if (ruta == "2") // Sullana-Guayaquil-Sullana
-                            {
-                                ClientScript.RegisterStartupScript(this.GetType(), "ShowRutaDetails", "$(document).ready(function() { $('#rutaDetails').show(); });", true);
-                            }
-                            else
-                            {
-                                ClientScript.RegisterStartupScript(this.GetType(), "HideRutaDetails", "$(document).ready(function() { $('#rutaDetails').hide(); });", true);
-                            }
-                        }
-                        reader.Close();
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception("Error al cargar datos de guías: " + ex.Message);
-                    }
-                }
+                string ruta = reader["ruta1"].ToString();
+                if (ruta == "2")
+                    ClientScript.RegisterStartupScript(this.GetType(), "ShowRutaDetails", "$(document).ready(function() { $('#rutaDetails').show(); });", true);
+                else
+                    ClientScript.RegisterStartupScript(this.GetType(), "HideRutaDetails", "$(document).ready(function() { $('#rutaDetails').hide(); });", true);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error al cargar datos de guías: " + ex.Message);
             }
         }
 
@@ -522,26 +416,15 @@ namespace WebSGV.Views
                 INNER JOIN Producto p ON dov.idProducto = p.idProducto
                 WHERE gt.numeroOrdenViaje = @numeroOrdenViaje";
 
-            DataTable dtProductos = new DataTable();
-            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString))
+            try
             {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                    try
-                    {
-                        conn.Open();
-                        SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                        adapter.Fill(dtProductos);
-
-                        gvProductos.DataSource = dtProductos;
-                        gvProductos.DataBind();
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception("Error al cargar productos: " + ex.Message);
-                    }
-                }
+                DataTable dtProductos = DbHelper.ConsultarTabla(query, DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje));
+                gvProductos.DataSource = dtProductos;
+                gvProductos.DataBind();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error al cargar productos: " + ex.Message);
             }
         }
 
@@ -557,13 +440,9 @@ namespace WebSGV.Views
         #region Métodos para editar y guardar cambios
         protected void btnHabilitarEdicion_Click(object sender, EventArgs e)
         {
-            // Habilitar campos para edición
             HabilitarDeshabilitarCampos(true);
-
-            // Ocultar botón de habilitar edición y mostrar botón de guardar cambios
             btnHabilitarEdicion.Visible = false;
             btnGuardarCambios.Visible = true;
-
             MostrarMensaje("Modo de edición activado. Realice los cambios necesarios y presione 'Guardar Cambios'.", false);
         }
 
@@ -571,7 +450,6 @@ namespace WebSGV.Views
         {
             try
             {
-                // Validar campos antes de guardar
                 string mensajeError = ValidarCampos();
                 if (!string.IsNullOrEmpty(mensajeError))
                 {
@@ -579,19 +457,13 @@ namespace WebSGV.Views
                     return;
                 }
 
-                // Guardar los cambios en la base de datos
                 GuardarCambios();
 
                 AuditoriaHelper.Registrar("UPDATE", "OrdenViaje", txtOrdenViaje.Text,
                     $"Orden de viaje editada desde busqueda - Numero: {txtOrdenViaje.Text}");
 
-                // Recargar los datos para mostrar la información actualizada
                 CargarDatosOrdenViaje(txtOrdenViaje.Text);
-
-                // Deshabilitar campos después de guardar
                 HabilitarDeshabilitarCampos(false);
-
-                // Mostrar botón de habilitar edición y ocultar botón de guardar cambios
                 btnHabilitarEdicion.Visible = true;
                 btnGuardarCambios.Visible = false;
 
@@ -605,16 +477,12 @@ namespace WebSGV.Views
 
         protected void btnCancelar_Click(object sender, EventArgs e)
         {
-            // Recargar los datos originales
             if (!string.IsNullOrEmpty(txtOrdenViaje.Text))
             {
                 CargarDatosOrdenViaje(txtOrdenViaje.Text);
             }
 
-            // Deshabilitar campos
             HabilitarDeshabilitarCampos(false);
-
-            // Restablecer botones
             btnHabilitarEdicion.Visible = true;
             btnGuardarCambios.Visible = false;
 
@@ -623,27 +491,19 @@ namespace WebSGV.Views
 
         private void HabilitarDeshabilitarCampos(bool habilitar)
         {
-            // No permitir editar campos clave como N° CPI y N° Orden Viaje
-            // txtCPI.Enabled = false;
-            // txtOrdenViaje.Enabled = false;
-
-            // Habilitar/deshabilitar campos de fechas y horas
             txtFechaSalida.Enabled = habilitar;
             txtHoraSalida.Enabled = habilitar;
             txtFechaLlegada.Enabled = habilitar;
             txtHoraLlegada.Enabled = habilitar;
 
-            // Habilitar/deshabilitar dropdowns
             ddlCliente.Enabled = habilitar;
             ddlPlacaTracto.Enabled = habilitar;
             ddlPlacaCarreta.Enabled = habilitar;
             ddlConductor.Enabled = habilitar;
 
-            // Habilitar/deshabilitar campos de observaciones
             txtObservaciones.Enabled = habilitar;
             txtObservacionesLiquidacion.Enabled = habilitar;
 
-            // Habilitar/deshabilitar campos de liquidación - Ingresos
             txtDescDespacho.Enabled = habilitar;
             txtDespachoSoles.Enabled = habilitar;
             txtDespachoDolares.Enabled = habilitar;
@@ -660,7 +520,6 @@ namespace WebSGV.Views
             txtPrestamoSoles.Enabled = habilitar;
             txtPrestamoDolares.Enabled = habilitar;
 
-            // Habilitar/deshabilitar ingresos adicionales
             foreach (RepeaterItem item in rptIngresosAdicionales.Items)
             {
                 ((TextBox)item.FindControl("txtNombreIngreso")).Enabled = habilitar;
@@ -669,7 +528,6 @@ namespace WebSGV.Views
                 ((TextBox)item.FindControl("txtIngresoDolares")).Enabled = habilitar;
             }
 
-            // Habilitar/deshabilitar campos de liquidación - Gastos
             txtDescPeajes.Enabled = habilitar;
             txtPeajesSoles.Enabled = habilitar;
             txtPeajesDolares.Enabled = habilitar;
@@ -702,7 +560,6 @@ namespace WebSGV.Views
             txtCombustibleSoles.Enabled = habilitar;
             txtCombustibleDolares.Enabled = habilitar;
 
-            // Habilitar/deshabilitar gastos adicionales
             foreach (RepeaterItem item in rptGastosAdicionales.Items)
             {
                 ((TextBox)item.FindControl("txtNombreGasto")).Enabled = habilitar;
@@ -711,21 +568,17 @@ namespace WebSGV.Views
                 ((TextBox)item.FindControl("txtGastoDolares")).Enabled = habilitar;
             }
 
-            // Habilitar/deshabilitar campos de guías de transporte
             txtGuiaTransportista.Enabled = habilitar;
             txtGuiaCliente.Enabled = habilitar;
             ddlRuta.Enabled = habilitar;
             ddlPlantaDescarga.Enabled = habilitar;
             txtManifiesto.Enabled = habilitar;
-
-            // Nota: Los productos no se pueden editar directamente en esta interfaz
         }
 
         private string ValidarCampos()
         {
             string mensajeError = "";
 
-            // Validar fechas
             DateTime fechaSalida;
             DateTime fechaLlegada;
 
@@ -747,68 +600,42 @@ namespace WebSGV.Views
                 mensajeError += "El formato de la Fecha de Llegada es inválido.<br/>";
             }
 
-            // Validar horas
             if (string.IsNullOrEmpty(txtHoraSalida.Text))
-            {
                 mensajeError += "La Hora de Salida es obligatoria.<br/>";
-            }
 
             if (string.IsNullOrEmpty(txtHoraLlegada.Text))
-            {
                 mensajeError += "La Hora de Llegada es obligatoria.<br/>";
-            }
 
-            // Validar selección de dropdowns
             if (ddlCliente.SelectedValue == "")
-            {
                 mensajeError += "Debe seleccionar un Cliente.<br/>";
-            }
 
             if (ddlPlacaTracto.SelectedValue == "")
-            {
                 mensajeError += "Debe seleccionar una Placa Tracto.<br/>";
-            }
 
             if (ddlPlacaCarreta.SelectedValue == "")
-            {
                 mensajeError += "Debe seleccionar una Placa Carreta.<br/>";
-            }
 
             if (ddlConductor.SelectedValue == "")
-            {
                 mensajeError += "Debe seleccionar un Conductor.<br/>";
-            }
 
-            // Validar datos de guías
             if (string.IsNullOrEmpty(txtGuiaTransportista.Text))
-            {
                 mensajeError += "El N° Guía Transportista es obligatorio.<br/>";
-            }
 
             if (string.IsNullOrEmpty(txtGuiaCliente.Text))
-            {
                 mensajeError += "El N° Guía Cliente es obligatorio.<br/>";
-            }
 
             if (ddlRuta.SelectedValue == "")
-            {
                 mensajeError += "Debe seleccionar una Ruta.<br/>";
-            }
 
-            if (ddlRuta.SelectedValue == "2") // Sullana-Guayaquil-Sullana
+            if (ddlRuta.SelectedValue == "2")
             {
                 if (ddlPlantaDescarga.SelectedValue == "")
-                {
                     mensajeError += "Debe seleccionar una Planta de Descarga para la ruta Sullana-Guayaquil-Sullana.<br/>";
-                }
 
                 if (string.IsNullOrEmpty(txtManifiesto.Text))
-                {
                     mensajeError += "El N° Manifiesto es obligatorio para la ruta Sullana-Guayaquil-Sullana.<br/>";
-                }
             }
 
-            // Validar montos no negativos
             if (!ValidarMontoNoNegativo(txtDespachoSoles.Text))
                 mensajeError += "El valor de Despacho en Soles no puede ser negativo.<br/>";
 
@@ -833,14 +660,11 @@ namespace WebSGV.Views
             if (!ValidarMontoNoNegativo(txtPrestamoDolares.Text))
                 mensajeError += "El valor de Préstamo en Dólares no puede ser negativo.<br/>";
 
-            // Validar montos no negativos para gastos
             if (!ValidarMontoNoNegativo(txtPeajesSoles.Text))
                 mensajeError += "El valor de Peajes en Soles no puede ser negativo.<br/>";
 
             if (!ValidarMontoNoNegativo(txtPeajesDolares.Text))
                 mensajeError += "El valor de Peajes en Dólares no puede ser negativo.<br/>";
-
-            // Continuar con las validaciones para los demás campos de gastos...
 
             return mensajeError;
         }
@@ -848,7 +672,7 @@ namespace WebSGV.Views
         private bool ValidarMontoNoNegativo(string valor)
         {
             if (string.IsNullOrEmpty(valor))
-                return true; // Se considera válido si está vacío
+                return true;
 
             decimal monto;
             if (decimal.TryParse(valor, out monto))
@@ -871,7 +695,6 @@ namespace WebSGV.Views
                 {
                     try
                     {
-                        // Actualizar datos básicos
                         string queryActualizarDatosBasicos = @"
                     UPDATE OrdenViaje SET
                         fechaSalida = @fechaSalida,
@@ -903,7 +726,6 @@ namespace WebSGV.Views
                             cmd.ExecuteNonQuery();
                         }
 
-                        // Actualizar ingresos
                         string queryActualizarIngresos = @"
                     UPDATE Ingresos SET
                         despachoSoles = @despachoSoles,
@@ -922,7 +744,6 @@ namespace WebSGV.Views
                         totalDolares = @totalDolares
                     WHERE numeroOrdenViaje = @numeroOrdenViaje";
 
-                        // Calcular totales
                         decimal despachoSoles = ConvertToDecimal(txtDespachoSoles.Text);
                         decimal despachoDolares = ConvertToDecimal(txtDespachoDolares.Text);
                         decimal mensualidadSoles = ConvertToDecimal(txtMensualidadSoles.Text);
@@ -935,7 +756,6 @@ namespace WebSGV.Views
                         decimal totalIngresosSoles = despachoSoles + mensualidadSoles + otrosSoles + prestamoSoles;
                         decimal totalIngresosDolares = despachoDolares + mensualidadDolares + otrosDolares + prestamoDolares;
 
-                        // Agregar los ingresos adicionales a los totales
                         if (rptIngresosAdicionales.Items.Count > 0)
                         {
                             foreach (RepeaterItem item in rptIngresosAdicionales.Items)
@@ -945,11 +765,8 @@ namespace WebSGV.Views
 
                                 if (txtIngresoSoles != null && txtIngresoDolares != null)
                                 {
-                                    decimal ingresoSoles = ConvertToDecimal(txtIngresoSoles.Text);
-                                    decimal ingresoDolares = ConvertToDecimal(txtIngresoDolares.Text);
-
-                                    totalIngresosSoles += ingresoSoles;
-                                    totalIngresosDolares += ingresoDolares;
+                                    totalIngresosSoles += ConvertToDecimal(txtIngresoSoles.Text);
+                                    totalIngresosDolares += ConvertToDecimal(txtIngresoDolares.Text);
                                 }
                             }
                         }
@@ -975,7 +792,6 @@ namespace WebSGV.Views
                             cmd.ExecuteNonQuery();
                         }
 
-                        // Actualizar ingresos adicionales
                         if (rptIngresosAdicionales.Items.Count > 0)
                         {
                             foreach (RepeaterItem item in rptIngresosAdicionales.Items)
@@ -1012,7 +828,6 @@ namespace WebSGV.Views
                             }
                         }
 
-                        // Actualizar egresos
                         string queryActualizarEgresos = @"
                     UPDATE Egresos SET
                         peajesSoles = @peajesSoles,
@@ -1072,7 +887,6 @@ namespace WebSGV.Views
                             cmd.ExecuteNonQuery();
                         }
 
-                        // Actualizar gastos adicionales
                         if (rptGastosAdicionales.Items.Count > 0)
                         {
                             foreach (RepeaterItem item in rptGastosAdicionales.Items)
@@ -1109,7 +923,6 @@ namespace WebSGV.Views
                             }
                         }
 
-                        // Actualizar datos de guías
                         string queryActualizarGuias = @"
                     UPDATE GuiasTransportista SET
                         numeroGuiaTransportista = @numeroGuiaTransportista,
@@ -1139,7 +952,6 @@ namespace WebSGV.Views
                             cmd.ExecuteNonQuery();
                         }
 
-                        // Confirmar transacción
                         transaction.Commit();
                     }
                     catch (Exception ex)
@@ -1153,30 +965,6 @@ namespace WebSGV.Views
         #endregion
 
         #region Métodos auxiliares
-        private DataTable ObtenerDatosDeBD(string query)
-        {
-            string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    try
-                    {
-                        conn.Open();
-                        SqlDataAdapter da = new SqlDataAdapter(cmd);
-                        DataTable dt = new DataTable();
-                        da.Fill(dt);
-                        return dt;
-                    }
-                    catch (Exception ex)
-                    {
-                        MostrarMensaje("Error al obtener datos de la base de datos: " + ex.Message, true);
-                        return new DataTable();
-                    }
-                }
-            }
-        }
-
         private void MostrarMensaje(string mensaje, bool esError)
         {
             lblMensaje.Text = mensaje;

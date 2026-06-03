@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
 using System.Text.RegularExpressions;
 using System.Web.Services;
 using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class LiquidacionesAprobadasContabilidad : System.Web.UI.Page
+    public partial class LiquidacionesAprobadasContabilidad : PaginaBase
     {
         public class LiquidacionAprobadaItem
         {
@@ -38,7 +36,7 @@ namespace WebSGV.Views
             if (idConductor < 0)
                 return new List<LiquidacionAprobadaItem>();
 
-            numeroOrden = (numeroOrden ?? string.Empty).Trim();
+            numeroOrden     = (numeroOrden ?? string.Empty).Trim();
             nombreConductor = (nombreConductor ?? string.Empty).Trim();
 
             if (numeroOrden.Length > 30)
@@ -49,11 +47,9 @@ namespace WebSGV.Views
             if (!string.IsNullOrWhiteSpace(numeroOrden) && !Regex.IsMatch(numeroOrden, "^[A-Za-z0-9_/-]+$"))
                 return new List<LiquidacionAprobadaItem>();
 
-            string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
             var lista = new List<LiquidacionAprobadaItem>();
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            using (SqlCommand cmd = new SqlCommand(@"
+            DataTable dt = DbHelper.ConsultarTabla(@"
                 SELECT
                     ov.idOrdenViaje,
                     ov.numeroOrdenViaje,
@@ -81,41 +77,34 @@ namespace WebSGV.Views
                   AND (@IdConductor <= 0 OR ov.idConductor = @IdConductor)
                   AND (@NumeroOrden = '' OR ov.numeroOrdenViaje LIKE @NumeroOrdenLike)
                   AND (@NombreConductor = '' OR (c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '')) LIKE @NombreConductorLike)
-                ORDER BY ov.fechaSalida DESC", conn))
+                ORDER BY ov.fechaSalida DESC",
+                DbHelper.Param("@IdConductor",        idConductor),
+                DbHelper.Param("@NumeroOrden",         numeroOrden),
+                DbHelper.Param("@NumeroOrdenLike",     "%" + numeroOrden + "%"),
+                DbHelper.Param("@NombreConductor",     nombreConductor),
+                DbHelper.Param("@NombreConductorLike", "%" + nombreConductor + "%"));
+
+            foreach (DataRow reader in dt.Rows)
             {
-                cmd.CommandType = CommandType.Text;
-                cmd.Parameters.Add("@IdConductor", SqlDbType.Int).Value = idConductor;
-                cmd.Parameters.Add("@NumeroOrden", SqlDbType.NVarChar, 30).Value = numeroOrden;
-                cmd.Parameters.Add("@NumeroOrdenLike", SqlDbType.NVarChar, 64).Value = "%" + numeroOrden + "%";
-                cmd.Parameters.Add("@NombreConductor", SqlDbType.NVarChar, 120).Value = nombreConductor;
-                cmd.Parameters.Add("@NombreConductorLike", SqlDbType.NVarChar, 140).Value = "%" + nombreConductor + "%";
+                decimal ingresosSoles   = Convert.ToDecimal(reader["IngresosSoles"])   + Convert.ToDecimal(reader["IngresosAdSoles"]);
+                decimal ingresosDolares = Convert.ToDecimal(reader["IngresosDolares"]) + Convert.ToDecimal(reader["IngresosAdDolares"]);
+                decimal gastosSoles     = Convert.ToDecimal(reader["GastosSoles"])     + Convert.ToDecimal(reader["GastosAdSoles"]);
+                decimal gastosDolares   = Convert.ToDecimal(reader["GastosDolares"])   + Convert.ToDecimal(reader["GastosAdDolares"]);
+                decimal descuentoSoles  = Convert.ToDecimal(reader["DescuentoSoles"]);
+                decimal descuentoDolares = Convert.ToDecimal(reader["DescuentoDolares"]);
+                decimal reintegroSoles  = Convert.ToDecimal(reader["ReintegroSoles"]);
+                decimal reintegroDolares = Convert.ToDecimal(reader["ReintegroDolares"]);
 
-                conn.Open();
-                using (SqlDataReader reader = cmd.ExecuteReader())
+                lista.Add(new LiquidacionAprobadaItem
                 {
-                    while (reader.Read())
-                    {
-                        decimal ingresosSoles = Convert.ToDecimal(reader["IngresosSoles"]) + Convert.ToDecimal(reader["IngresosAdSoles"]);
-                        decimal ingresosDolares = Convert.ToDecimal(reader["IngresosDolares"]) + Convert.ToDecimal(reader["IngresosAdDolares"]);
-                        decimal gastosSoles = Convert.ToDecimal(reader["GastosSoles"]) + Convert.ToDecimal(reader["GastosAdSoles"]);
-                        decimal gastosDolares = Convert.ToDecimal(reader["GastosDolares"]) + Convert.ToDecimal(reader["GastosAdDolares"]);
-                        decimal descuentoSoles = Convert.ToDecimal(reader["DescuentoSoles"]);
-                        decimal descuentoDolares = Convert.ToDecimal(reader["DescuentoDolares"]);
-                        decimal reintegroSoles = Convert.ToDecimal(reader["ReintegroSoles"]);
-                        decimal reintegroDolares = Convert.ToDecimal(reader["ReintegroDolares"]);
-
-                        lista.Add(new LiquidacionAprobadaItem
-                        {
-                            IdOrdenViaje = Convert.ToInt32(reader["idOrdenViaje"]),
-                            NumeroOrdenViaje = reader["numeroOrdenViaje"].ToString(),
-                            NombreConductor = reader["NombreConductor"].ToString(),
-                            FechaSalida = Convert.ToDateTime(reader["fechaSalida"]).ToString("dd/MM/yyyy"),
-                            FechaLlegada = Convert.ToDateTime(reader["fechaLlegada"]).ToString("dd/MM/yyyy"),
-                            BalanceSoles = (ingresosSoles - gastosSoles) - descuentoSoles + reintegroSoles,
-                            BalanceDolares = (ingresosDolares - gastosDolares) - descuentoDolares + reintegroDolares
-                        });
-                    }
-                }
+                    IdOrdenViaje      = Convert.ToInt32(reader["idOrdenViaje"]),
+                    NumeroOrdenViaje  = reader["numeroOrdenViaje"].ToString(),
+                    NombreConductor   = reader["NombreConductor"].ToString(),
+                    FechaSalida       = Convert.ToDateTime(reader["fechaSalida"]).ToString("dd/MM/yyyy"),
+                    FechaLlegada      = Convert.ToDateTime(reader["fechaLlegada"]).ToString("dd/MM/yyyy"),
+                    BalanceSoles      = (ingresosSoles   - gastosSoles)   - descuentoSoles   + reintegroSoles,
+                    BalanceDolares    = (ingresosDolares - gastosDolares) - descuentoDolares + reintegroDolares
+                });
             }
 
             return lista;

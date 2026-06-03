@@ -1,15 +1,12 @@
 using System;
-using System.Configuration;
-using System.Data.SqlClient;
+using System.Data;
 using System.Web.UI;
 using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class RegistrarRetornoEcuador : System.Web.UI.Page
+    public partial class RegistrarRetornoEcuador : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!RolesHelper.TieneSesionActiva())
@@ -26,9 +23,9 @@ namespace WebSGV.Views
 
             if (!IsPostBack)
             {
-                hfIdViaje.Value = Request.QueryString["idViaje"] ?? "";
+                hfIdViaje.Value     = Request.QueryString["idViaje"] ?? "";
                 hfIdConductor.Value = Request.QueryString["idConductor"] ?? "";
-                hfIdTracto.Value = Request.QueryString["idTracto"] ?? "";
+                hfIdTracto.Value    = Request.QueryString["idTracto"] ?? "";
 
                 txtFecha.Text = DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
 
@@ -42,35 +39,25 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                DataTable dt = DbHelper.ConsultarTabla(@"
+                    SELECT TOP 1
+                        vp.numeroViajeProgreso AS NumViaje,
+                        CONCAT(c.nombre, ' ', c.apPaterno) AS Conductor,
+                        ISNULL(t.placaTracto, 'N/A') AS PlacaTracto
+                    FROM ViajesEnProgreso vp
+                    LEFT JOIN Conductor c ON c.idConductor = @idConductor
+                    LEFT JOIN Tracto t ON t.idTracto = @idTracto
+                    WHERE vp.idViajeProgreso = @idViaje",
+                    DbHelper.Param("@idViaje", Convert.ToInt32(hfIdViaje.Value)),
+                    DbHelper.Param("@idConductor", string.IsNullOrEmpty(hfIdConductor.Value) ? 0 : Convert.ToInt32(hfIdConductor.Value)),
+                    DbHelper.Param("@idTracto", string.IsNullOrEmpty(hfIdTracto.Value) ? 0 : Convert.ToInt32(hfIdTracto.Value)));
+
+                if (dt.Rows.Count > 0)
                 {
-                    string query = @"
-                        SELECT TOP 1
-                            vp.numeroViajeProgreso AS NumViaje,
-                            CONCAT(c.nombre, ' ', c.apPaterno) AS Conductor,
-                            ISNULL(t.placaTracto, 'N/A') AS PlacaTracto
-                        FROM ViajesEnProgreso vp
-                        LEFT JOIN Conductor c ON c.idConductor = @idConductor
-                        LEFT JOIN Tracto t ON t.idTracto = @idTracto
-                        WHERE vp.idViajeProgreso = @idViaje";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@idViaje", Convert.ToInt32(hfIdViaje.Value));
-                        cmd.Parameters.AddWithValue("@idConductor", string.IsNullOrEmpty(hfIdConductor.Value) ? 0 : Convert.ToInt32(hfIdConductor.Value));
-                        cmd.Parameters.AddWithValue("@idTracto", string.IsNullOrEmpty(hfIdTracto.Value) ? 0 : Convert.ToInt32(hfIdTracto.Value));
-
-                        conn.Open();
-                        using (var r = cmd.ExecuteReader())
-                        {
-                            if (r.Read())
-                            {
-                                litNumeroViaje.Text = r["NumViaje"].ToString();
-                                litConductor.Text = r["Conductor"].ToString();
-                                litTracto.Text = r["PlacaTracto"].ToString();
-                            }
-                        }
-                    }
+                    DataRow r = dt.Rows[0];
+                    litNumeroViaje.Text = r["NumViaje"].ToString();
+                    litConductor.Text   = r["Conductor"].ToString();
+                    litTracto.Text      = r["PlacaTracto"].ToString();
                 }
             }
             catch (Exception ex)
@@ -88,9 +75,9 @@ namespace WebSGV.Views
                 return;
             }
 
-            int? idViaje = ParseNullableInt(hfIdViaje.Value);
+            int? idViaje     = ParseNullableInt(hfIdViaje.Value);
             int? idConductor = ParseNullableInt(hfIdConductor.Value);
-            int? idTracto = ParseNullableInt(hfIdTracto.Value);
+            int? idTracto    = ParseNullableInt(hfIdTracto.Value);
 
             DateTime fecha;
             if (!DateTime.TryParse(txtFecha.Text, out fecha))
@@ -98,26 +85,19 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                using (SqlCommand cmd = new SqlCommand("sp_InsertarIngresoEcuador", conn))
-                {
-                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idViajeProgreso", (object)idViaje ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@idConductor", (object)idConductor ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@idTracto", (object)idTracto ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@fechaRecepcion", fecha);
-                    cmd.Parameters.AddWithValue("@observaciones",
-                        string.IsNullOrWhiteSpace(txtObservaciones.Text) ? (object)DBNull.Value : txtObservaciones.Text.Trim());
-                    cmd.Parameters.AddWithValue("@usuarioRegistro",
-                        Session["Usuario"]?.ToString() ?? "grifo");
-                    cmd.Parameters.AddWithValue("@ticketsJson", ticketsJson);
-
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-                }
+                DbHelper.EjecutarNonQuerySp("sp_InsertarIngresoEcuador",
+                    DbHelper.Param("@idViajeProgreso", (object)idViaje),
+                    DbHelper.Param("@idConductor",     (object)idConductor),
+                    DbHelper.Param("@idTracto",        (object)idTracto),
+                    DbHelper.Param("@fechaRecepcion",  fecha),
+                    DbHelper.Param("@observaciones",
+                        string.IsNullOrWhiteSpace(txtObservaciones.Text) ? null : (object)txtObservaciones.Text.Trim()),
+                    DbHelper.Param("@usuarioRegistro",
+                        Session["Usuario"]?.ToString() ?? "grifo"),
+                    DbHelper.Param("@ticketsJson", ticketsJson));
 
                 try { AuditoriaHelper.Registrar("IngresoEcuador", "Registro retorno Ecuador viaje " + litNumeroViaje.Text); }
-                catch { /* auditoria no crítica */ }
+                catch { }
 
                 Response.Redirect("DashboardGrifo.aspx?msg=retorno_ok", false);
                 Context.ApplicationInstance.CompleteRequest();

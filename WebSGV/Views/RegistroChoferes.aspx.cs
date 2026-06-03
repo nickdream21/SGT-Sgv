@@ -1,7 +1,5 @@
 using System;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
 using System.Text.RegularExpressions;
 using System.Web.Script.Services;
 using System.Web.Services;
@@ -13,10 +11,8 @@ using WebSGV.Models;
 namespace WebSGV.Views
 {
     [ScriptService]
-    public partial class RegistroChoferes : System.Web.UI.Page
+    public partial class RegistroChoferes : PaginaBase
     {
-        private string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             RolesHelper.ValidarAccesoSeccion("REGISTRO_CONDUCTORES");
@@ -33,26 +29,17 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT idConductor,
-                        ISNULL(DNI, ISNULL(carnetExtranjeria, '')) AS documentoDisplay,
-                        ISNULL(nombre, '') AS nombre,
-                        ISNULL(apPaterno, '') AS apPaterno,
-                        ISNULL(apMaterno, '') AS apMaterno,
-                        (nombre + ' ' + apPaterno + ISNULL(' ' + NULLIF(apMaterno,''), '')) AS nombreCompleto,
-                        ISNULL(telefono, '') AS telefono, activo
-                        FROM Conductor ORDER BY apPaterno, nombre";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        conn.Open();
-                        DataTable dt = new DataTable();
-                        dt.Load(cmd.ExecuteReader());
-                        gvConductores.DataSource = dt;
-                        gvConductores.DataBind();
-                        lblTotalConductores.Text = dt.Rows.Count + " registro(s)";
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(@"SELECT idConductor,
+                    ISNULL(DNI, ISNULL(carnetExtranjeria, '')) AS documentoDisplay,
+                    ISNULL(nombre, '') AS nombre,
+                    ISNULL(apPaterno, '') AS apPaterno,
+                    ISNULL(apMaterno, '') AS apMaterno,
+                    (nombre + ' ' + apPaterno + ISNULL(' ' + NULLIF(apMaterno,''), '')) AS nombreCompleto,
+                    ISNULL(telefono, '') AS telefono, activo
+                    FROM Conductor ORDER BY apPaterno, nombre");
+                gvConductores.DataSource = dt;
+                gvConductores.DataBind();
+                lblTotalConductores.Text = dt.Rows.Count + " registro(s)";
             }
             catch (Exception ex)
             {
@@ -118,7 +105,7 @@ namespace WebSGV.Views
                 }
                 else if (tipoDocumento == "Carnet de Extranjería" && ConductorExiste("carnetExtranjeria", carnetExtranjeria))
                 {
-                    MostrarMensaje("Ya existe un conductor registrado con este Carnet de Extranjer�a.");
+                    MostrarMensaje("Ya existe un conductor registrado con este Carnet de Extranjería.");
                     return;
                 }
 
@@ -135,7 +122,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine("Error en btnRegistrar_Click: " + ex.Message);
-                MostrarMensaje("Ocurri� un error al registrar el conductor: " + ex.Message);
+                MostrarMensaje("Ocurrió un error al registrar el conductor: " + ex.Message);
             }
         }
 
@@ -146,18 +133,9 @@ namespace WebSGV.Views
                 int idConductor = Convert.ToInt32(e.CommandArgument);
                 try
                 {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        string query = @"UPDATE Conductor 
-                            SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
-                            WHERE idConductor = @id";
-                        using (SqlCommand cmd = new SqlCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", idConductor);
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
+                    DbHelper.EjecutarNonQuery(
+                        @"UPDATE Conductor SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END WHERE idConductor = @id",
+                        DbHelper.Param("@id", idConductor));
 
                     AuditoriaHelper.Registrar("UPDATE", "Conductor", idConductor,
                         "Estado de conductor actualizado (activar/desactivar)");
@@ -199,47 +177,27 @@ namespace WebSGV.Views
         {
             string columna = campo == "DNI" ? "DNI" : campo == "carnetExtranjeria" ? "carnetExtranjeria" : string.Empty;
             if (string.IsNullOrEmpty(columna))
-            {
                 return false;
-            }
 
             string query = $"SELECT COUNT(*) FROM Conductor WHERE {columna} = @valor";
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@valor", valor);
-                    conn.Open();
-                    return (int)cmd.ExecuteScalar() > 0;
-                }
-            }
+            return Convert.ToInt32(DbHelper.EjecutarEscalar(query, DbHelper.Param("@valor", valor))) > 0;
         }
 
         private void GuardarConductor(string dni, string nombre, string apPaterno, string apMaterno,
                                     string telefono, string carnetExtranjeria)
         {
-            string query = @"INSERT INTO Conductor (DNI, nombre, apPaterno, apMaterno, fechaNacimiento,
-                            direccion, telefono, correo, carnetExtranjeria, activo)
-                            VALUES (@DNI, @nombre, @apPaterno, @apMaterno, @fechaNacimiento,
-                            @direccion, @telefono, @correo, @carnetExtranjeria, 1)";
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@DNI", string.IsNullOrEmpty(dni) ? DBNull.Value : (object)dni);
-                    cmd.Parameters.AddWithValue("@nombre", nombre);
-                    cmd.Parameters.AddWithValue("@apPaterno", apPaterno);
-                    cmd.Parameters.AddWithValue("@apMaterno", apMaterno);
-                    cmd.Parameters.AddWithValue("@fechaNacimiento", DBNull.Value);
-                    cmd.Parameters.AddWithValue("@direccion", DBNull.Value);
-                    cmd.Parameters.AddWithValue("@telefono", string.IsNullOrEmpty(telefono) ? DBNull.Value : (object)telefono);
-                    cmd.Parameters.AddWithValue("@correo", DBNull.Value);
-                    cmd.Parameters.AddWithValue("@carnetExtranjeria", string.IsNullOrEmpty(carnetExtranjeria) ? DBNull.Value : (object)carnetExtranjeria);
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-                }
-            }
+            DbHelper.EjecutarNonQuery(
+                @"INSERT INTO Conductor (DNI, nombre, apPaterno, apMaterno, fechaNacimiento, direccion, telefono, correo, carnetExtranjeria, activo)
+                  VALUES (@DNI, @nombre, @apPaterno, @apMaterno, @fechaNacimiento, @direccion, @telefono, @correo, @carnetExtranjeria, 1)",
+                DbHelper.Param("@DNI", string.IsNullOrEmpty(dni) ? null : (object)dni),
+                DbHelper.Param("@nombre", nombre),
+                DbHelper.Param("@apPaterno", apPaterno),
+                DbHelper.Param("@apMaterno", apMaterno),
+                DbHelper.Param("@fechaNacimiento", null),
+                DbHelper.Param("@direccion", null),
+                DbHelper.Param("@telefono", string.IsNullOrEmpty(telefono) ? null : (object)telefono),
+                DbHelper.Param("@correo", null),
+                DbHelper.Param("@carnetExtranjeria", string.IsNullOrEmpty(carnetExtranjeria) ? null : (object)carnetExtranjeria));
         }
 
         private void LimpiarFormulario()
@@ -284,22 +242,14 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string update = @"UPDATE Conductor
-                        SET nombre=@nombres, apPaterno=@apPaterno, apMaterno=@apMaterno, telefono=@telefono
-                        WHERE idConductor=@id";
-                    using (SqlCommand cmd = new SqlCommand(update, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@nombres", nombres);
-                        cmd.Parameters.AddWithValue("@apPaterno", apPaterno);
-                        cmd.Parameters.AddWithValue("@apMaterno", string.IsNullOrWhiteSpace(apMaterno) ? (object)DBNull.Value : apMaterno);
-                        cmd.Parameters.AddWithValue("@telefono", string.IsNullOrWhiteSpace(telefono) ? (object)DBNull.Value : telefono);
-                        cmd.Parameters.AddWithValue("@id", idConductor);
-                        conn.Open();
-                        cmd.ExecuteNonQuery();
-                    }
-                }
+                DbHelper.EjecutarNonQuery(
+                    @"UPDATE Conductor SET nombre=@nombres, apPaterno=@apPaterno, apMaterno=@apMaterno, telefono=@telefono WHERE idConductor=@id",
+                    DbHelper.Param("@nombres", nombres),
+                    DbHelper.Param("@apPaterno", apPaterno),
+                    DbHelper.Param("@apMaterno", string.IsNullOrWhiteSpace(apMaterno) ? null : (object)apMaterno),
+                    DbHelper.Param("@telefono", string.IsNullOrWhiteSpace(telefono) ? null : (object)telefono),
+                    DbHelper.Param("@id", idConductor));
+
                 AuditoriaHelper.Registrar("UPDATE", "Conductor", idConductor,
                     $"Conductor editado — {nombres} {apPaterno} {apMaterno}");
                 hfIdConductor.Value = "";
