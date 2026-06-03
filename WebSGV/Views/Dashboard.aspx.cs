@@ -6,13 +6,12 @@ using System.Linq;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using Newtonsoft.Json;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class Dashboard : System.Web.UI.Page
+    public partial class Dashboard : PaginaBase
     {
-        // Cadena de conexión a la base de datos
-        private static readonly string ConnectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -199,110 +198,67 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                int mes  = Convert.ToInt32(ddlMes.SelectedValue);
+                int anio = Convert.ToInt32(ddlAnio.SelectedValue);
+
+                // PASO 1: Verificar si hay registros para el mes/año seleccionados
+                int totalRegistros = Convert.ToInt32(DbHelper.EjecutarEscalar(@"
+                    SELECT COUNT(*) FROM Indicadores
+                    WHERE MONTH(fechaHoraSalidaBase) = @Mes AND YEAR(fechaHoraSalidaBase) = @Anio",
+                    DbHelper.Param("@Mes", mes), DbHelper.Param("@Anio", anio)));
+
+                System.Diagnostics.Debug.WriteLine($"Total de registros para {ddlMes.SelectedItem.Text} {ddlAnio.SelectedValue}: {totalRegistros}");
+
+                if (totalRegistros == 0)
                 {
-                    conn.Open();
+                    ScriptManager.RegisterStartupScript(this, GetType(), "AlertNoData",
+                        "alert('No hay datos para el período seleccionado');", true);
+                    return;
+                }
 
-                    // PASO 1: Verificar si hay registros para el mes/año seleccionados
-                    string sqlConteo = @"
-                SELECT COUNT(*) 
-                FROM Indicadores 
-                WHERE MONTH(fechaHoraSalidaBase) = @Mes AND YEAR(fechaHoraSalidaBase) = @Anio";
+                // PASO 2: Analizar los registros específicos
+                DataTable dtDetalles = DbHelper.ConsultarTabla(@"
+                    SELECT TOP 10 numeroPedido, fechaHoraSalidaBase, fechaHoraProgramacion,
+                        ABS(DATEDIFF(MINUTE, fechaHoraSalidaBase, fechaHoraProgramacion)) AS DiferenciaMinutos,
+                        CASE WHEN ABS(DATEDIFF(MINUTE, fechaHoraSalidaBase, fechaHoraProgramacion)) <= 30
+                             THEN 'CUMPLE' ELSE 'NO CUMPLE' END AS Estado
+                    FROM Indicadores
+                    WHERE MONTH(fechaHoraSalidaBase) = @Mes AND YEAR(fechaHoraSalidaBase) = @Anio
+                    ORDER BY fechaHoraSalidaBase",
+                    DbHelper.Param("@Mes", mes), DbHelper.Param("@Anio", anio));
 
-                    using (SqlCommand cmd = new SqlCommand(sqlConteo, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@Mes", Convert.ToInt32(ddlMes.SelectedValue));
-                        cmd.Parameters.AddWithValue("@Anio", Convert.ToInt32(ddlAnio.SelectedValue));
+                System.Diagnostics.Debug.WriteLine("=== DETALLE DE REGISTROS ===");
+                int analizados = 0, cumpleDetalle = 0;
+                foreach (DataRow reader in dtDetalles.Rows)
+                {
+                    analizados++;
+                    if (reader["Estado"].ToString() == "CUMPLE") cumpleDetalle++;
+                    System.Diagnostics.Debug.WriteLine(
+                        $"Pedido: {reader["numeroPedido"]}, Salida: {reader["fechaHoraSalidaBase"]}, " +
+                        $"Programado: {reader["fechaHoraProgramacion"]}, " +
+                        $"Diferencia: {reader["DiferenciaMinutos"]} min, Estado: {reader["Estado"]}");
+                }
+                double porcentajeDetalle = analizados > 0 ? Math.Round(((double)cumpleDetalle / analizados) * 100) : 0;
+                System.Diagnostics.Debug.WriteLine($"De {analizados} registros analizados, {cumpleDetalle} cumplen el criterio ({porcentajeDetalle}% cumplimiento)");
 
-                        int totalRegistros = (int)cmd.ExecuteScalar();
-                        System.Diagnostics.Debug.WriteLine($"Total de registros para {ddlMes.SelectedItem.Text} {ddlAnio.SelectedValue}: {totalRegistros}");
+                // PASO 3: Calcular el porcentaje correcto
+                DataTable dtTotal = DbHelper.ConsultarTabla(@"
+                    SELECT COUNT(*) AS Total,
+                        SUM(CASE WHEN ABS(DATEDIFF(MINUTE, fechaHoraSalidaBase, fechaHoraProgramacion)) <= 30 THEN 1 ELSE 0 END) AS Cumplen
+                    FROM Indicadores
+                    WHERE MONTH(fechaHoraSalidaBase) = @Mes AND YEAR(fechaHoraSalidaBase) = @Anio",
+                    DbHelper.Param("@Mes", mes), DbHelper.Param("@Anio", anio));
 
-                        if (totalRegistros == 0)
-                        {
-                            ScriptManager.RegisterStartupScript(this, GetType(), "AlertNoData",
-                                "alert('No hay datos para el período seleccionado');", true);
-                            return;
-                        }
-                    }
-
-                    // PASO 2: Analizar los registros específicos
-                    string sqlDetalles = @"
-                SELECT TOP 10
-                    numeroPedido,
-                    fechaHoraSalidaBase,
-                    fechaHoraProgramacion,
-                    ABS(DATEDIFF(MINUTE, fechaHoraSalidaBase, fechaHoraProgramacion)) AS DiferenciaMinutos,
-                    CASE WHEN ABS(DATEDIFF(MINUTE, fechaHoraSalidaBase, fechaHoraProgramacion)) <= 30 
-                         THEN 'CUMPLE' ELSE 'NO CUMPLE' END AS Estado
-                FROM Indicadores
-                WHERE MONTH(fechaHoraSalidaBase) = @Mes AND YEAR(fechaHoraSalidaBase) = @Anio
-                ORDER BY fechaHoraSalidaBase";
-
-                    using (SqlCommand cmd = new SqlCommand(sqlDetalles, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@Mes", Convert.ToInt32(ddlMes.SelectedValue));
-                        cmd.Parameters.AddWithValue("@Anio", Convert.ToInt32(ddlAnio.SelectedValue));
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            System.Diagnostics.Debug.WriteLine("=== DETALLE DE REGISTROS ===");
-                            int analizados = 0, cumplen = 0;
-
-                            while (reader.Read())
-                            {
-                                analizados++;
-                                if (reader["Estado"].ToString() == "CUMPLE") cumplen++;
-
-                                System.Diagnostics.Debug.WriteLine(
-                                    $"Pedido: {reader["numeroPedido"]}, " +
-                                    $"Salida: {reader["fechaHoraSalidaBase"]}, " +
-                                    $"Programado: {reader["fechaHoraProgramacion"]}, " +
-                                    $"Diferencia: {reader["DiferenciaMinutos"]} min, " +
-                                    $"Estado: {reader["Estado"]}");
-                            }
-
-                            double porcentajeDetalle = analizados > 0 ?
-                                Math.Round(((double)cumplen / analizados) * 100) : 0;
-
-                            System.Diagnostics.Debug.WriteLine(
-                                $"De {analizados} registros analizados, {cumplen} cumplen el criterio " +
-                                $"({porcentajeDetalle}% cumplimiento)");
-                        }
-                    }
-
-                    // PASO 3: Calcular el porcentaje correcto
-                    string sqlCumplimientoCorrecto = @"
-                SELECT 
-                    COUNT(*) AS Total,
-                    SUM(CASE WHEN ABS(DATEDIFF(MINUTE, fechaHoraSalidaBase, fechaHoraProgramacion)) <= 30 THEN 1 ELSE 0 END) AS Cumplen
-                FROM Indicadores
-                WHERE MONTH(fechaHoraSalidaBase) = @Mes AND YEAR(fechaHoraSalidaBase) = @Anio";
-
-                    using (SqlCommand cmd = new SqlCommand(sqlCumplimientoCorrecto, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@Mes", Convert.ToInt32(ddlMes.SelectedValue));
-                        cmd.Parameters.AddWithValue("@Anio", Convert.ToInt32(ddlAnio.SelectedValue));
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                int total = Convert.ToInt32(reader["Total"]);
-                                int cumplen = Convert.ToInt32(reader["Cumplen"]);
-                                double porcentaje = total > 0 ? Math.Round(((double)cumplen / total) * 100) : 0;
-
-                                System.Diagnostics.Debug.WriteLine(
-                                    $"RESULTADO FINAL: {cumplen} de {total} cumplen = {porcentaje}%");
-
-                                // Actualizar el valor en la UI
-                                litCumplimiento.Text = porcentaje.ToString();
-
-                                // Mostrar mensaje para confirmar
-                                ScriptManager.RegisterStartupScript(this, GetType(), "AlertDiagnostico",
-                                    $"alert('Diagnóstico completado: {porcentaje}% de cumplimiento');", true);
-                            }
-                        }
-                    }
+                if (dtTotal.Rows.Count > 0)
+                {
+                    DataRow reader = dtTotal.Rows[0];
+                    int total   = Convert.ToInt32(reader["Total"]);
+                    int cumplen = Convert.ToInt32(reader["Cumplen"]);
+                    double porcentaje = total > 0 ? Math.Round(((double)cumplen / total) * 100) : 0;
+                    System.Diagnostics.Debug.WriteLine($"RESULTADO FINAL: {cumplen} de {total} cumplen = {porcentaje}%");
+                    litCumplimiento.Text = porcentaje.ToString();
+                    ScriptManager.RegisterStartupScript(this, GetType(), "AlertDiagnostico",
+                        $"alert('Diagnóstico completado: {porcentaje}% de cumplimiento');", true);
                 }
             }
             catch (Exception ex)
@@ -317,7 +273,7 @@ namespace WebSGV.Views
         // Método para cargar los KPIs
         private void CargarKPIs(int mes, int anio)
         {
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
             {
                 conn.Open();
 
@@ -469,7 +425,7 @@ namespace WebSGV.Views
         {
             Dictionary<string, object> datos = new Dictionary<string, object>();
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
             {
                 conn.Open();
 

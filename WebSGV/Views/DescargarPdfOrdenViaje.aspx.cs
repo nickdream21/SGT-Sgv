@@ -1,7 +1,5 @@
 using System;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
 using System.IO;
 using System.Web;
 using System.Web.Hosting;
@@ -139,22 +137,14 @@ namespace WebSGV.Views
             if (!RolesHelper.EsConductor())
                 return false;
 
-            // Verificar que la orden pertenezca al conductor autenticado.
-            string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-            const string sql = @"
-                SELECT TOP 1 c.idUsuario
-                FROM OrdenViaje ov
-                INNER JOIN Conductor c ON c.idConductor = ov.idConductor
-                WHERE ov.idOrdenViaje = @id;";
-            using (var conn = new SqlConnection(cs))
-            using (var cmd = new SqlCommand(sql, conn))
-            {
-                cmd.Parameters.AddWithValue("@id", idOrdenViaje);
-                conn.Open();
-                object r = cmd.ExecuteScalar();
-                if (r == null || r == DBNull.Value) return false;
-                return Convert.ToInt32(r) == idUsuario;
-            }
+            object r = DbHelper.EjecutarEscalar(
+                @"SELECT TOP 1 c.idUsuario
+                  FROM OrdenViaje ov
+                  INNER JOIN Conductor c ON c.idConductor = ov.idConductor
+                  WHERE ov.idOrdenViaje = @id",
+                DbHelper.Param("@id", idOrdenViaje));
+            if (r == null || r == DBNull.Value) return false;
+            return Convert.ToInt32(r) == idUsuario;
         }
 
         private static void CargarEstadoFirma(
@@ -171,8 +161,7 @@ namespace WebSGV.Views
             nombreAdmin = null;
             fechaAprobacionAdmin = null;
 
-            string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-            const string sql = @"
+            DataTable dt = DbHelper.ConsultarTabla(@"
                 SELECT TOP 1
                     ov.rutaPdfFirmado,
                     ov.hashPdfFirmado,
@@ -182,49 +171,34 @@ namespace WebSGV.Views
                         CONVERT(VARCHAR(8), ov.fechaAprobacionFirmada, 108) AS fechaAprobAdmin
                 FROM OrdenViaje ov
                 LEFT JOIN FirmaDigital fd
-                       ON fd.idFirma = ov.idFirmaConductor
-                      AND fd.estadoFirma = 'V'
+                       ON fd.idFirma = ov.idFirmaConductor AND fd.estadoFirma = 'V'
                 LEFT JOIN FirmaDigital fda
-                       ON fda.idFirma = ov.idFirmaAdmin
-                      AND fda.estadoFirma = 'V'
-                WHERE ov.idOrdenViaje = @id;";
+                       ON fda.idFirma = ov.idFirmaAdmin AND fda.estadoFirma = 'V'
+                WHERE ov.idOrdenViaje = @id",
+                DbHelper.Param("@id", idOrdenViaje));
 
-            using (var conn = new SqlConnection(cs))
-            using (var cmd = new SqlCommand(sql, conn))
+            if (dt.Rows.Count > 0)
             {
-                cmd.Parameters.AddWithValue("@id", idOrdenViaje);
-                conn.Open();
-                using (var rd = cmd.ExecuteReader(CommandBehavior.SingleRow))
-                {
-                    if (rd.Read())
-                    {
-                        if (!rd.IsDBNull(0)) rutaPdfFirmado = rd.GetString(0);
-                        if (!rd.IsDBNull(1)) hashPdfFirmado = rd.GetString(1);
-                        if (!rd.IsDBNull(2)) imagenTrazoPng = (byte[])rd[2];
-                        if (!rd.IsDBNull(3)) nombreAdmin = rd.GetString(3);
-                        if (!rd.IsDBNull(4)) fechaAprobacionAdmin = rd.GetString(4);
-                    }
-                }
+                DataRow rd = dt.Rows[0];
+                if (rd["rutaPdfFirmado"] != DBNull.Value) rutaPdfFirmado = rd["rutaPdfFirmado"].ToString();
+                if (rd["hashPdfFirmado"] != DBNull.Value) hashPdfFirmado = rd["hashPdfFirmado"].ToString();
+                if (rd["imagenTrazoPng"] != DBNull.Value) imagenTrazoPng = (byte[])rd["imagenTrazoPng"];
+                if (rd["nombreFirmante"]  != DBNull.Value) nombreAdmin = rd["nombreFirmante"].ToString();
+                if (rd["fechaAprobAdmin"]  != DBNull.Value) fechaAprobacionAdmin = rd["fechaAprobAdmin"].ToString();
             }
         }
 
         private static void PersistirRutaHash(int idOrdenViaje, string rutaRelativa, string hash)
         {
             if (string.IsNullOrEmpty(rutaRelativa)) return;
-            string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-            using (var conn = new SqlConnection(cs))
-            using (var cmd = new SqlCommand(@"
+            DbHelper.EjecutarNonQuery(@"
                 UPDATE OrdenViaje
                    SET rutaPdfFirmado = @ruta,
                        hashPdfFirmado = @hash
-                 WHERE idOrdenViaje = @id", conn))
-            {
-                cmd.Parameters.AddWithValue("@ruta", (object)rutaRelativa ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@hash", (object)hash ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@id", idOrdenViaje);
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
+                 WHERE idOrdenViaje = @id",
+                DbHelper.Param("@ruta", rutaRelativa),
+                DbHelper.Param("@hash", hash),
+                DbHelper.Param("@id", idOrdenViaje));
         }
 
         private static string ResolverRutaFisica(string rutaRelativa)

@@ -13,7 +13,7 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class AgregarFactura : System.Web.UI.Page
+    public partial class AgregarFactura : PaginaBase
     {
         // Configuración para archivos
         private const long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -39,35 +39,15 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    string query = @"SELECT idCliente, 
-                                   CASE 
-                                       WHEN ruc IS NOT NULL AND ruc != '' THEN ruc + ' - ' + nombre
-                                       ELSE nombre 
-                                   END as nombreCompleto
-                            FROM Cliente 
-                            ORDER BY nombre";
-
-                    using (SqlCommand cmd = new SqlCommand(query, connection))
-                    {
-                        connection.Open();
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            ddlCliente.Items.Clear();
-                            ddlCliente.Items.Add(new ListItem("-- Seleccione un Cliente --", ""));
-
-                            while (reader.Read())
-                            {
-                                string idCliente = reader["idCliente"].ToString();
-                                string nombreCompleto = reader["nombreCompleto"].ToString();
-                                ddlCliente.Items.Add(new ListItem(nombreCompleto, idCliente));
-                            }
-                        }
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(@"SELECT idCliente,
+                    CASE WHEN ruc IS NOT NULL AND ruc != '' THEN ruc + ' - ' + nombre
+                         ELSE nombre END as nombreCompleto
+                    FROM Cliente ORDER BY nombre");
+                ddlCliente.DataSource = dt;
+                ddlCliente.DataTextField = "nombreCompleto";
+                ddlCliente.DataValueField = "idCliente";
+                ddlCliente.DataBind();
+                ddlCliente.Items.Insert(0, new ListItem("-- Seleccione un Cliente --", ""));
             }
             catch (Exception ex)
             {
@@ -200,21 +180,9 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    string query = "SELECT COUNT(*) FROM Factura WHERE numeroFactura = @numeroFactura";
-
-                    using (SqlCommand cmd = new SqlCommand(query, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@numeroFactura", numeroFactura);
-
-                        connection.Open();
-                        int count = (int)cmd.ExecuteScalar();
-                        return count > 0;
-                    }
-                }
+                return Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM Factura WHERE numeroFactura = @numeroFactura",
+                    DbHelper.Param("@numeroFactura", numeroFactura))) > 0;
             }
             catch (Exception ex)
             {

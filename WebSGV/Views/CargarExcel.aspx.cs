@@ -9,10 +9,11 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using System.Configuration;
 using System.Linq;
+using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class CargarExcel : System.Web.UI.Page
+    public partial class CargarExcel : PaginaBase
     {
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -474,49 +475,19 @@ namespace WebSGV.Views
         private void LoadUploadHistory()
         {
             int? monthFilter = ddlMesFilter.SelectedValue != "0" ? Convert.ToInt32(ddlMesFilter.SelectedValue) : (int?)null;
-            int? yearFilter = ddlAnioFilter.SelectedValue != "0" ? Convert.ToInt32(ddlAnioFilter.SelectedValue) : (int?)null;
+            int? yearFilter  = ddlAnioFilter.SelectedValue != "0" ? Convert.ToInt32(ddlAnioFilter.SelectedValue) : (int?)null;
 
-            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString))
-            {
-                conn.Open();
-                string query = @"
-                    SELECT UploadID, FileName, UploadDate, Month, Year, RowsProcessed, Status
-                    FROM UploadHistory
-                    WHERE Status != 'Eliminado'";
+            var parametros = new List<SqlParameter>();
+            string query = "SELECT UploadID, FileName, UploadDate, Month, Year, RowsProcessed, Status FROM UploadHistory WHERE Status != 'Eliminado'";
 
-                if (monthFilter.HasValue)
-                {
-                    query += " AND Month = @Month";
-                }
+            if (monthFilter.HasValue) { query += " AND Month = @Month"; parametros.Add(DbHelper.Param("@Month", monthFilter.Value)); }
+            if (yearFilter.HasValue)  { query += " AND Year = @Year";   parametros.Add(DbHelper.Param("@Year",  yearFilter.Value));  }
 
-                if (yearFilter.HasValue)
-                {
-                    query += " AND Year = @Year";
-                }
+            query += " ORDER BY UploadDate DESC";
 
-                query += " ORDER BY UploadDate DESC";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    if (monthFilter.HasValue)
-                    {
-                        cmd.Parameters.AddWithValue("@Month", monthFilter.Value);
-                    }
-
-                    if (yearFilter.HasValue)
-                    {
-                        cmd.Parameters.AddWithValue("@Year", yearFilter.Value);
-                    }
-
-                    using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
-                    {
-                        DataTable dt = new DataTable();
-                        adapter.Fill(dt);
-                        gvHistorial.DataSource = dt;
-                        gvHistorial.DataBind();
-                    }
-                }
-            }
+            DataTable dt = DbHelper.ConsultarTabla(query, parametros.ToArray());
+            gvHistorial.DataSource = dt;
+            gvHistorial.DataBind();
         }
 
         protected void UpdateHistorial(object sender, EventArgs e)
@@ -555,43 +526,19 @@ namespace WebSGV.Views
 
                 try
                 {
-                    using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString))
-                    {
-                        conn.Open();
-                        using (SqlTransaction transaction = conn.BeginTransaction())
-                        {
-                            try
-                            {
-                                // Eliminar registros de la tabla Indicadores
-                                string deleteRecordsQuery = "DELETE FROM Indicadores WHERE UploadID = @UploadID";
-                                using (SqlCommand cmd = new SqlCommand(deleteRecordsQuery, conn, transaction))
-                                {
-                                    cmd.Parameters.AddWithValue("@UploadID", uploadId);
-                                    cmd.ExecuteNonQuery();
-                                }
-
-                                // Actualizar estado en UploadHistory a 'Eliminado'
-                                string updateHistoryQuery = "UPDATE UploadHistory SET Status = 'Eliminado' WHERE UploadID = @UploadID";
-                                using (SqlCommand cmd = new SqlCommand(updateHistoryQuery, conn, transaction))
-                                {
-                                    cmd.Parameters.AddWithValue("@UploadID", uploadId);
-                                    cmd.ExecuteNonQuery();
-                                }
-
-                                transaction.Commit();
-                                ShowAlert("La carga y sus registros asociados han sido eliminados exitosamente.", "success");
-                            }
-                            catch (Exception ex)
-                            {
-                                transaction.Rollback();
-                                ShowAlert("Error al eliminar la carga: " + ex.Message, "danger");
-                            }
-                        }
-                    }
+                    DbHelper.EnTransaccion((conn, tx) => {
+                        DbHelper.EjecutarNonQuery(conn, tx,
+                            "DELETE FROM Indicadores WHERE UploadID = @UploadID",
+                            DbHelper.Param("@UploadID", uploadId));
+                        DbHelper.EjecutarNonQuery(conn, tx,
+                            "UPDATE UploadHistory SET Status = 'Eliminado' WHERE UploadID = @UploadID",
+                            DbHelper.Param("@UploadID", uploadId));
+                    });
+                    ShowAlert("La carga y sus registros asociados han sido eliminados exitosamente.", "success");
                 }
                 catch (Exception ex)
                 {
-                    ShowAlert("Error de conexión: " + ex.Message, "danger");
+                    ShowAlert("Error al eliminar la carga: " + ex.Message, "danger");
                 }
 
                 // Actualizar la grilla

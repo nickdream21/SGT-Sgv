@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Data.SqlClient;
+using System.Data;
 using System.Linq;
 using System.Web;
 
@@ -208,22 +207,10 @@ namespace WebSGV.Helpers
             // 2) Roles existentes en BD para incluir valores dinámicos
             try
             {
-                string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-                using (SqlConnection conn = new SqlConnection(cs))
-                {
-                    conn.Open();
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT DISTINCT LTRIM(RTRIM(rol)) AS rol FROM Usuarios WHERE rol IS NOT NULL AND LTRIM(RTRIM(rol)) <> ''", conn))
-                    {
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                roles.Add(reader["rol"].ToString());
-                            }
-                        }
-                    }
-                }
+                DataTable dt = DbHelper.ConsultarTabla(
+                    "SELECT DISTINCT LTRIM(RTRIM(rol)) AS rol FROM Usuarios WHERE rol IS NOT NULL AND LTRIM(RTRIM(rol)) <> ''");
+                foreach (DataRow row in dt.Rows)
+                    roles.Add(row["rol"].ToString());
             }
             catch
             {
