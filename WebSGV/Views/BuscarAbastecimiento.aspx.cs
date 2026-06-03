@@ -10,7 +10,7 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class BusquedaAbastecimiento : System.Web.UI.Page
+    public partial class BusquedaAbastecimiento : PaginaBase
     {
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -96,34 +96,23 @@ namespace WebSGV.Views
 
         private AbastecimientoModel ObtenerAbastecimiento(string numeroAbastecimiento)
         {
-            AbastecimientoModel abastecimiento = null;
-
             try
             {
-                // Asegurar formato adecuado: eliminar espacios y rellenar con ceros
                 numeroAbastecimiento = numeroAbastecimiento.Trim().PadLeft(6, '0');
 
-                // Cadena de conexión - Ajustar según tu configuración
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                bool tieneTipoAbast = ColumnaExisteEnTabla("AbastecimientoCombustible", "tipoAbastecimiento");
+                bool tieneRutaDesc  = ColumnaExisteEnTabla("AbastecimientoCombustible", "rutaDescripcion");
+                string columnasExtra = "";
+                if (tieneTipoAbast) columnasExtra += ", a.tipoAbastecimiento";
+                if (tieneRutaDesc)  columnasExtra += ", a.rutaDescripcion";
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-
-                    // Detectar columnas dinámicas
-                    bool tieneTipoAbast = ColumnaExisteEnTabla(connection, "AbastecimientoCombustible", "tipoAbastecimiento");
-                    bool tieneRutaDesc = ColumnaExisteEnTabla(connection, "AbastecimientoCombustible", "rutaDescripcion");
-                    string columnasExtra = "";
-                    if (tieneTipoAbast) columnasExtra += ", a.tipoAbastecimiento";
-                    if (tieneRutaDesc) columnasExtra += ", a.rutaDescripcion";
-
-                    string baseSelect = @"
-                SELECT a.idAbastecimientoCombustible, a.numeroAbastecimientoCombustible, 
-                       a.producto, a.fechaHora, a.galonesRutaAsignada, a.galonesCompradosRuta, 
-                       a.galonesTotalAbastecidos, a.galonesAlFinalizar, a.galonesTotalConsumidos, 
-                       a.precioDolar, a.montoTotalGalonesComprados, a.distanciaRutaKM, 
+                string baseSelect = @"
+                SELECT a.idAbastecimientoCombustible, a.numeroAbastecimientoCombustible,
+                       a.producto, a.fechaHora, a.galonesRutaAsignada, a.galonesCompradosRuta,
+                       a.galonesTotalAbastecidos, a.galonesAlFinalizar, a.galonesTotalConsumidos,
+                       a.precioDolar, a.montoTotalGalonesComprados, a.distanciaRutaKM,
                        a.consumoComputador, a.observaciones, a.horaRetorno, a.rendimientoPromedio,
-                       t.placaTracto, t.idTracto, 
+                       t.placaTracto, t.idTracto,
                        cr.placaCarreta, cr.idCarreta,
                        c.nombre + ' ' + c.apPaterno + ' ' + c.apMaterno AS nombreConductor, c.idConductor,
                        r.nombre AS nombreRuta, r.idRuta,
@@ -137,131 +126,72 @@ namespace WebSGV.Views
                 LEFT JOIN LugarAbastecimiento la ON a.idLugarAbastecimiento = la.idLugarAbastecimiento
                 LEFT JOIN TipoCarro tc ON a.idTipoCarro = tc.idTipoCarro";
 
-                    // Búsqueda exacta
-                    string query = baseSelect + @"
-                WHERE RTRIM(a.numeroAbastecimientoCombustible) = @numeroAbastecimiento";
+                System.Diagnostics.Debug.WriteLine($"Buscando abastecimiento con número: '{numeroAbastecimiento}'");
+                DataTable dt = DbHelper.ConsultarTabla(
+                    baseSelect + " WHERE RTRIM(a.numeroAbastecimientoCombustible) = @numeroAbastecimiento",
+                    DbHelper.Param("@numeroAbastecimiento", numeroAbastecimiento));
 
-                    using (SqlCommand command = new SqlCommand(query, connection))
-                    {
-                        // Logueamos la búsqueda para depuración
-                        System.Diagnostics.Debug.WriteLine($"Buscando abastecimiento con número: '{numeroAbastecimiento}'");
-
-                        command.Parameters.AddWithValue("@numeroAbastecimiento", numeroAbastecimiento);
-
-                        using (SqlDataReader reader = command.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                // Logueamos el valor encontrado para depuración
-                                System.Diagnostics.Debug.WriteLine($"Encontrado abastecimiento: '{reader["numeroAbastecimientoCombustible"]}'");
-
-                                abastecimiento = new AbastecimientoModel
-                                {
-                                    IdAbastecimientoCombustible = Convert.ToInt32(reader["idAbastecimientoCombustible"]),
-                                    NumeroAbastecimientoCombustible = reader["numeroAbastecimientoCombustible"].ToString().Trim(),
-                                    IdTracto = reader["idTracto"] != DBNull.Value ? Convert.ToInt32(reader["idTracto"]) : 0,
-                                    PlacaTracto = reader["placaTracto"] != DBNull.Value ? reader["placaTracto"].ToString() : string.Empty,
-                                    IdCarreta = reader["idCarreta"] != DBNull.Value ? Convert.ToInt32(reader["idCarreta"]) : 0,
-                                    PlacaCarreta = reader["placaCarreta"] != DBNull.Value ? reader["placaCarreta"].ToString() : string.Empty,
-                                    IdConductor = reader["idConductor"] != DBNull.Value ? Convert.ToInt32(reader["idConductor"]) : 0,
-                                    NombreConductor = reader["nombreConductor"] != DBNull.Value ? reader["nombreConductor"].ToString() : string.Empty,
-                                    IdRuta = reader["idRuta"] != DBNull.Value ? Convert.ToInt32(reader["idRuta"]) : 0,
-                                    NombreRuta = reader["nombreRuta"] != DBNull.Value ? reader["nombreRuta"].ToString() : string.Empty,
-                                    Producto = reader["producto"].ToString(),
-                                    IdLugarAbastecimiento = reader["idLugarAbastecimiento"] != DBNull.Value ? Convert.ToInt32(reader["idLugarAbastecimiento"]) : 0,
-                                    LugarAbastecimiento = reader["lugarAbastecimiento"] != DBNull.Value ? reader["lugarAbastecimiento"].ToString() : string.Empty,
-                                    FechaHora = Convert.ToDateTime(reader["fechaHora"]),
-                                    GalonesRutaAsignada = Convert.ToDecimal(reader["galonesRutaAsignada"]),
-                                    GalonesCompradosRuta = Convert.ToDecimal(reader["galonesCompradosRuta"]),
-                                    GalonesTotalAbastecidos = Convert.ToDecimal(reader["galonesTotalAbastecidos"]),
-                                    GalonesAlFinalizar = Convert.ToDecimal(reader["galonesAlFinalizar"]),
-                                    GalonesTotalConsumidos = Convert.ToDecimal(reader["galonesTotalConsumidos"]),
-                                    PrecioDolar = Convert.ToDecimal(reader["precioDolar"]),
-                                    MontoTotalGalonesComprados = Convert.ToDecimal(reader["montoTotalGalonesComprados"]),
-                                    DistanciaRutaKM = Convert.ToDecimal(reader["distanciaRutaKM"]),
-                                    ConsumoComputador = Convert.ToDecimal(reader["consumoComputador"]),
-                                    Observaciones = reader["observaciones"] != DBNull.Value ? reader["observaciones"].ToString() : string.Empty,
-                                    HoraRetorno = reader["horaRetorno"] != DBNull.Value ? TimeSpan.Parse(reader["horaRetorno"].ToString()) : TimeSpan.Zero,
-                                    RendimientoPromedio = reader["rendimientoPromedio"] != DBNull.Value ? Convert.ToDecimal(reader["rendimientoPromedio"]) : 0,
-                                    IdTipoCarro = reader["idTipoCarro"] != DBNull.Value ? Convert.ToInt32(reader["idTipoCarro"]) : 0
-                                };
-
-                                // Columnas dinámicas
-                                if (tieneTipoAbast)
-                                    abastecimiento.TipoAbastecimiento = reader["tipoAbastecimiento"] != DBNull.Value ? reader["tipoAbastecimiento"].ToString() : "";
-                                if (tieneRutaDesc)
-                                    abastecimiento.RutaDescripcion = reader["rutaDescripcion"] != DBNull.Value ? reader["rutaDescripcion"].ToString() : "";
-                            }
-                        }
-
-                        // Si no se encontró con la búsqueda exacta, intentar con LIKE
-                        if (abastecimiento == null)
-                        {
-                            System.Diagnostics.Debug.WriteLine("No se encontró con búsqueda exacta, intentando con LIKE");
-
-                            string queryLike = baseSelect + @"
-                        WHERE a.numeroAbastecimientoCombustible LIKE @numeroAbastecimientoLike";
-
-                            using (SqlCommand cmdLike = new SqlCommand(queryLike, connection))
-                            {
-                                cmdLike.Parameters.AddWithValue("@numeroAbastecimientoLike", numeroAbastecimiento + "%");
-
-                                using (SqlDataReader readerLike = cmdLike.ExecuteReader())
-                                {
-                                    if (readerLike.Read())
-                                    {
-                                        System.Diagnostics.Debug.WriteLine($"Encontrado con LIKE: '{readerLike["numeroAbastecimientoCombustible"]}'");
-
-                                        abastecimiento = new AbastecimientoModel
-                                        {
-                                            IdAbastecimientoCombustible = Convert.ToInt32(readerLike["idAbastecimientoCombustible"]),
-                                            NumeroAbastecimientoCombustible = readerLike["numeroAbastecimientoCombustible"].ToString().Trim(),
-                                            IdTracto = readerLike["idTracto"] != DBNull.Value ? Convert.ToInt32(readerLike["idTracto"]) : 0,
-                                            PlacaTracto = readerLike["placaTracto"] != DBNull.Value ? readerLike["placaTracto"].ToString() : string.Empty,
-                                            IdCarreta = readerLike["idCarreta"] != DBNull.Value ? Convert.ToInt32(readerLike["idCarreta"]) : 0,
-                                            PlacaCarreta = readerLike["placaCarreta"] != DBNull.Value ? readerLike["placaCarreta"].ToString() : string.Empty,
-                                            IdConductor = readerLike["idConductor"] != DBNull.Value ? Convert.ToInt32(readerLike["idConductor"]) : 0,
-                                            NombreConductor = readerLike["nombreConductor"] != DBNull.Value ? readerLike["nombreConductor"].ToString() : string.Empty,
-                                            IdRuta = readerLike["idRuta"] != DBNull.Value ? Convert.ToInt32(readerLike["idRuta"]) : 0,
-                                            NombreRuta = readerLike["nombreRuta"] != DBNull.Value ? readerLike["nombreRuta"].ToString() : string.Empty,
-                                            Producto = readerLike["producto"].ToString(),
-                                            IdLugarAbastecimiento = readerLike["idLugarAbastecimiento"] != DBNull.Value ? Convert.ToInt32(readerLike["idLugarAbastecimiento"]) : 0,
-                                            LugarAbastecimiento = readerLike["lugarAbastecimiento"] != DBNull.Value ? readerLike["lugarAbastecimiento"].ToString() : string.Empty,
-                                            FechaHora = Convert.ToDateTime(readerLike["fechaHora"]),
-                                            GalonesRutaAsignada = Convert.ToDecimal(readerLike["galonesRutaAsignada"]),
-                                            GalonesCompradosRuta = Convert.ToDecimal(readerLike["galonesCompradosRuta"]),
-                                            GalonesTotalAbastecidos = Convert.ToDecimal(readerLike["galonesTotalAbastecidos"]),
-                                            GalonesAlFinalizar = Convert.ToDecimal(readerLike["galonesAlFinalizar"]),
-                                            GalonesTotalConsumidos = Convert.ToDecimal(readerLike["galonesTotalConsumidos"]),
-                                            PrecioDolar = Convert.ToDecimal(readerLike["precioDolar"]),
-                                            MontoTotalGalonesComprados = Convert.ToDecimal(readerLike["montoTotalGalonesComprados"]),
-                                            DistanciaRutaKM = Convert.ToDecimal(readerLike["distanciaRutaKM"]),
-                                            ConsumoComputador = Convert.ToDecimal(readerLike["consumoComputador"]),
-                                            Observaciones = readerLike["observaciones"] != DBNull.Value ? readerLike["observaciones"].ToString() : string.Empty,
-                                            HoraRetorno = readerLike["horaRetorno"] != DBNull.Value ? TimeSpan.Parse(readerLike["horaRetorno"].ToString()) : TimeSpan.Zero,
-                                            RendimientoPromedio = readerLike["rendimientoPromedio"] != DBNull.Value ? Convert.ToDecimal(readerLike["rendimientoPromedio"]) : 0,
-                                            IdTipoCarro = readerLike["idTipoCarro"] != DBNull.Value ? Convert.ToInt32(readerLike["idTipoCarro"]) : 0
-                                        };
-
-                                        // Columnas dinámicas
-                                        if (tieneTipoAbast)
-                                            abastecimiento.TipoAbastecimiento = readerLike["tipoAbastecimiento"] != DBNull.Value ? readerLike["tipoAbastecimiento"].ToString() : "";
-                                        if (tieneRutaDesc)
-                                            abastecimiento.RutaDescripcion = readerLike["rutaDescripcion"] != DBNull.Value ? readerLike["rutaDescripcion"].ToString() : "";
-                                    }
-                                }
-                            }
-                        }
-                    }
+                if (dt.Rows.Count > 0)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Encontrado abastecimiento: '{dt.Rows[0]["numeroAbastecimientoCombustible"]}'");
+                    return BuildAbastecimientoModel(dt.Rows[0], tieneTipoAbast, tieneRutaDesc);
                 }
+
+                System.Diagnostics.Debug.WriteLine("No se encontró con búsqueda exacta, intentando con LIKE");
+                DataTable dtLike = DbHelper.ConsultarTabla(
+                    baseSelect + " WHERE a.numeroAbastecimientoCombustible LIKE @numeroAbastecimientoLike",
+                    DbHelper.Param("@numeroAbastecimientoLike", numeroAbastecimiento + "%"));
+
+                if (dtLike.Rows.Count > 0)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Encontrado con LIKE: '{dtLike.Rows[0]["numeroAbastecimientoCombustible"]}'");
+                    return BuildAbastecimientoModel(dtLike.Rows[0], tieneTipoAbast, tieneRutaDesc);
+                }
+
+                return null;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error en ObtenerAbastecimiento: {ex.Message}");
                 throw new Exception("Error al obtener los datos del abastecimiento: " + ex.Message);
             }
+        }
 
-            return abastecimiento;
+        private static AbastecimientoModel BuildAbastecimientoModel(DataRow reader, bool tieneTipoAbast, bool tieneRutaDesc)
+        {
+            var m = new AbastecimientoModel
+            {
+                IdAbastecimientoCombustible     = Convert.ToInt32(reader["idAbastecimientoCombustible"]),
+                NumeroAbastecimientoCombustible = reader["numeroAbastecimientoCombustible"].ToString().Trim(),
+                IdTracto          = reader["idTracto"]          != DBNull.Value ? Convert.ToInt32(reader["idTracto"])          : 0,
+                PlacaTracto       = reader["placaTracto"]       != DBNull.Value ? reader["placaTracto"].ToString()             : string.Empty,
+                IdCarreta         = reader["idCarreta"]         != DBNull.Value ? Convert.ToInt32(reader["idCarreta"])         : 0,
+                PlacaCarreta      = reader["placaCarreta"]      != DBNull.Value ? reader["placaCarreta"].ToString()            : string.Empty,
+                IdConductor       = reader["idConductor"]       != DBNull.Value ? Convert.ToInt32(reader["idConductor"])       : 0,
+                NombreConductor   = reader["nombreConductor"]   != DBNull.Value ? reader["nombreConductor"].ToString()         : string.Empty,
+                IdRuta            = reader["idRuta"]            != DBNull.Value ? Convert.ToInt32(reader["idRuta"])            : 0,
+                NombreRuta        = reader["nombreRuta"]        != DBNull.Value ? reader["nombreRuta"].ToString()              : string.Empty,
+                Producto          = reader["producto"].ToString(),
+                IdLugarAbastecimiento = reader["idLugarAbastecimiento"] != DBNull.Value ? Convert.ToInt32(reader["idLugarAbastecimiento"]) : 0,
+                LugarAbastecimiento   = reader["lugarAbastecimiento"]   != DBNull.Value ? reader["lugarAbastecimiento"].ToString()         : string.Empty,
+                FechaHora                   = Convert.ToDateTime(reader["fechaHora"]),
+                GalonesRutaAsignada         = Convert.ToDecimal(reader["galonesRutaAsignada"]),
+                GalonesCompradosRuta        = Convert.ToDecimal(reader["galonesCompradosRuta"]),
+                GalonesTotalAbastecidos     = Convert.ToDecimal(reader["galonesTotalAbastecidos"]),
+                GalonesAlFinalizar          = Convert.ToDecimal(reader["galonesAlFinalizar"]),
+                GalonesTotalConsumidos      = Convert.ToDecimal(reader["galonesTotalConsumidos"]),
+                PrecioDolar                 = Convert.ToDecimal(reader["precioDolar"]),
+                MontoTotalGalonesComprados  = Convert.ToDecimal(reader["montoTotalGalonesComprados"]),
+                DistanciaRutaKM             = Convert.ToDecimal(reader["distanciaRutaKM"]),
+                ConsumoComputador           = Convert.ToDecimal(reader["consumoComputador"]),
+                Observaciones       = reader["observaciones"]      != DBNull.Value ? reader["observaciones"].ToString()      : string.Empty,
+                HoraRetorno         = reader["horaRetorno"]        != DBNull.Value ? TimeSpan.Parse(reader["horaRetorno"].ToString()) : TimeSpan.Zero,
+                RendimientoPromedio = reader["rendimientoPromedio"] != DBNull.Value ? Convert.ToDecimal(reader["rendimientoPromedio"]) : 0,
+                IdTipoCarro         = reader["idTipoCarro"]        != DBNull.Value ? Convert.ToInt32(reader["idTipoCarro"])   : 0
+            };
+            if (tieneTipoAbast) m.TipoAbastecimiento = reader["tipoAbastecimiento"] != DBNull.Value ? reader["tipoAbastecimiento"].ToString() : "";
+            if (tieneRutaDesc)  m.RutaDescripcion    = reader["rutaDescripcion"]    != DBNull.Value ? reader["rutaDescripcion"].ToString()    : "";
+            return m;
         }
         private string TipoCarroAValor(int idTipoCarro)
         {
@@ -280,15 +210,12 @@ namespace WebSGV.Views
             }
         }
 
-        private bool ColumnaExisteEnTabla(SqlConnection connection, string tabla, string columna)
+        private static bool ColumnaExisteEnTabla(string tabla, string columna)
         {
-            string query = "SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID(@tabla) AND name = @columna";
-            using (SqlCommand cmd = new SqlCommand(query, connection))
-            {
-                cmd.Parameters.AddWithValue("@tabla", tabla);
-                cmd.Parameters.AddWithValue("@columna", columna);
-                return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
-            }
+            return Convert.ToInt32(DbHelper.EjecutarEscalar(
+                "SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID(@tabla) AND name = @columna",
+                DbHelper.Param("@tabla", tabla),
+                DbHelper.Param("@columna", columna))) > 0;
         }
 
         private void MostrarDatosAbastecimiento(AbastecimientoModel abastecimiento)
@@ -713,8 +640,8 @@ namespace WebSGV.Views
                     connection.Open();
 
                     // Detectar columnas dinámicas
-                    bool tieneRutaDesc = ColumnaExisteEnTabla(connection, "AbastecimientoCombustible", "rutaDescripcion");
-                    bool tieneTipoAbast = ColumnaExisteEnTabla(connection, "AbastecimientoCombustible", "tipoAbastecimiento");
+                    bool tieneRutaDesc = ColumnaExisteEnTabla("AbastecimientoCombustible", "rutaDescripcion");
+                    bool tieneTipoAbast = ColumnaExisteEnTabla("AbastecimientoCombustible", "tipoAbastecimiento");
                     string setRutaDesc = tieneRutaDesc ? ", rutaDescripcion = @rutaDescripcion" : "";
                     string setTipoAbast = tieneTipoAbast ? ", tipoAbastecimiento = @tipoAbastecimiento" : "";
 
@@ -847,7 +774,7 @@ namespace WebSGV.Views
                 {
                     connection.Open();
 
-                    bool tieneTipoAbast = ColumnaExisteEnTabla(connection, "AbastecimientoCombustible", "tipoAbastecimiento");
+                    bool tieneTipoAbast = ColumnaExisteEnTabla("AbastecimientoCombustible", "tipoAbastecimiento");
                     if (!tieneTipoAbast)
                     {
                         MostrarMensaje("La columna tipoAbastecimiento no existe en la base de datos. Ejecute la migración primero.", "danger");

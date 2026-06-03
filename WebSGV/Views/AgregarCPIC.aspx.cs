@@ -13,7 +13,7 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
-    public partial class AgregarCPIC : System.Web.UI.Page
+    public partial class AgregarCPIC : PaginaBase
     {
         // Configuración para archivos
         private const long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -429,26 +429,10 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = "SELECT idFactura FROM Factura WHERE numeroFactura = @numeroFactura";
-
-                    using (SqlCommand cmd = new SqlCommand(query, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@numeroFactura", numeroFactura);
-                        object result = cmd.ExecuteScalar();
-
-                        if (result != null && result != DBNull.Value)
-                        {
-                            return Convert.ToInt32(result);
-                        }
-
-                        return null;
-                    }
-                }
+                object result = DbHelper.EjecutarEscalar(
+                    "SELECT idFactura FROM Factura WHERE numeroFactura = @numeroFactura",
+                    DbHelper.Param("@numeroFactura", numeroFactura));
+                return result != null && result != DBNull.Value ? (int?)Convert.ToInt32(result) : null;
             }
             catch (Exception ex)
             {
@@ -473,20 +457,9 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = "SELECT COUNT(*) FROM CPIC WHERE numeroCPIC = @numeroCPIC";
-
-                    using (SqlCommand command = new SqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@numeroCPIC", numeroCPIC);
-                        int count = (int)command.ExecuteScalar();
-                        return count > 0;
-                    }
-                }
+                return Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM CPIC WHERE numeroCPIC = @numeroCPIC",
+                    DbHelper.Param("@numeroCPIC", numeroCPIC))) > 0;
             }
             catch (Exception ex)
             {
@@ -500,36 +473,16 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                object resultadoFactura = DbHelper.EjecutarEscalar(
+                    "SELECT idFactura FROM Factura WHERE numeroFactura = @numeroFactura",
+                    DbHelper.Param("@numeroFactura", numeroFactura));
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string queryBuscarFactura = "SELECT idFactura FROM Factura WHERE numeroFactura = @numeroFactura";
+                if (resultadoFactura == null || resultadoFactura == DBNull.Value) return false;
 
-                    using (SqlCommand cmdBuscarFactura = new SqlCommand(queryBuscarFactura, connection))
-                    {
-                        cmdBuscarFactura.Parameters.AddWithValue("@numeroFactura", numeroFactura);
-                        object resultadoFactura = cmdBuscarFactura.ExecuteScalar();
-
-                        if (resultadoFactura != null && resultadoFactura != DBNull.Value)
-                        {
-                            int idFactura = Convert.ToInt32(resultadoFactura);
-                            string queryBuscarCPIC = "SELECT COUNT(*) FROM CPIC WHERE idFactura = @idFactura";
-
-                            using (SqlCommand cmdBuscarCPIC = new SqlCommand(queryBuscarCPIC, connection))
-                            {
-                                cmdBuscarCPIC.Parameters.AddWithValue("@idFactura", idFactura);
-                                int count = (int)cmdBuscarCPIC.ExecuteScalar();
-                                return count > 0;
-                            }
-                        }
-                        else
-                        {
-                            return false;
-                        }
-                    }
-                }
+                int idFactura = Convert.ToInt32(resultadoFactura);
+                return Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM CPIC WHERE idFactura = @idFactura",
+                    DbHelper.Param("@idFactura", idFactura))) > 0;
             }
             catch (Exception ex)
             {
@@ -553,71 +506,30 @@ namespace WebSGV.Views
                     return;
                 }
 
-                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
                 {
                     try
                     {
-                        connection.Open();
-                        string query = "SELECT valorTotal FROM Factura WHERE numeroFactura = @numeroFactura";
+                        object result = DbHelper.EjecutarEscalar(
+                            "SELECT valorTotal FROM Factura WHERE numeroFactura = @numeroFactura",
+                            DbHelper.Param("@numeroFactura", numeroFactura));
 
-                        using (SqlCommand command = new SqlCommand(query, connection))
+                        if (result != null)
                         {
-                            command.Parameters.AddWithValue("@numeroFactura", numeroFactura);
-                            object result = command.ExecuteScalar();
+                            decimal valorTotal = Convert.ToDecimal(result);
+                            txtTotalFlete.Text = valorTotal.ToString("0.00");
 
-                            if (result != null)
-                            {
-                                decimal valorTotal = Convert.ToDecimal(result);
-                                txtTotalFlete.Text = valorTotal.ToString("0.00");
-
-                                // Verificar si la factura ya está asociada
-                                if (ExisteFactura(numeroFactura))
-                                {
-                                    lblErrorFactura.Text = "Esta factura ya está asociada a un CPIC.";
-                                }
-                            }
-                            else
-                            {
-                                lblErrorFactura.Text = "El número de factura no existe.";
-                                txtTotalFlete.Text = string.Empty;
-                            }
+                            if (ExisteFactura(numeroFactura))
+                                lblErrorFactura.Text = "Esta factura ya está asociada a un CPIC.";
+                        }
+                        else
+                        {
+                            lblErrorFactura.Text = "El número de factura no existe.";
+                            txtTotalFlete.Text = string.Empty;
                         }
                     }
                     catch (Exception)
                     {
-                        // Si ocurre un error en la consulta, intentamos obtener directamente el valor
-                        try
-                        {
-                            string queryDirecto = @"
-                                SELECT valorTotal 
-                                FROM Factura 
-                                WHERE numeroFactura = '" + numeroFactura.Replace("'", "''") + "'";
-
-                            using (SqlCommand cmd = new SqlCommand(queryDirecto, connection))
-                            {
-                                if (connection.State != ConnectionState.Open)
-                                    connection.Open();
-
-                                object result = cmd.ExecuteScalar();
-                                if (result != null)
-                                {
-                                    decimal valorTotal = Convert.ToDecimal(result);
-                                    txtTotalFlete.Text = valorTotal.ToString("0.00");
-                                }
-                                else
-                                {
-                                    lblErrorFactura.Text = "No se encontró la factura.";
-                                    txtTotalFlete.Text = string.Empty;
-                                }
-                            }
-                        }
-                        catch
-                        {
-                            // Si aún falla, solo mostramos un mensaje genérico
-                            lblErrorFactura.Text = "Error al obtener el valor. Continúe con el valor manualmente.";
-                        }
+                        lblErrorFactura.Text = "Error al obtener el valor. Continúe con el valor manualmente.";
                     }
                 }
             }
