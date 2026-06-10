@@ -11,6 +11,7 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using static WebSGV.Views.ListaDespachos;
 using WebSGV.Helpers;
+using WebSGV.Services.Despachos;
 
 namespace WebSGV.Views
 {
@@ -961,24 +962,14 @@ namespace WebSGV.Views
 
         private void CargarConductoresEnDropDown(DropDownList ddl)
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            DataTable dt = ListaDespachosService.ObtenerTodosConductores();
+            ddl.Items.Clear();
+            foreach (DataRow row in dt.Rows)
             {
-                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerTodosConductores", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        ddl.Items.Clear();
-                        while (reader.Read())
-                        {
-                            ddl.Items.Add(new ListItem(
-                                reader["NombreCompleto"].ToString(),
-                                reader["idConductor"].ToString()
-                            ));
-                        }
-                    }
-                }
+                ddl.Items.Add(new ListItem(
+                    row["NombreCompleto"].ToString(),
+                    row["idConductor"].ToString()
+                ));
             }
         }
 
@@ -1292,27 +1283,7 @@ namespace WebSGV.Views
         {
             if (idsDespachos == null || idsDespachos.Count == 0) return 0;
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_LD_AnularLote", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idsDespachos", IdsACsv(idsDespachos));
-                    cmd.Parameters.AddWithValue("@usuario", ObtenerUsuarioActual());
-                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-
-                    SqlParameter outputParam = new SqlParameter("@viajesAnulados", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.Output
-                    };
-                    cmd.Parameters.Add(outputParam);
-
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-
-                    return (int)outputParam.Value;
-                }
-            }
+            return ListaDespachosService.AnularLote(IdsACsv(idsDespachos), ObtenerUsuarioActual());
         }
 
         protected void btnEliminarLote_Click(object sender, EventArgs e)
@@ -1351,19 +1322,7 @@ namespace WebSGV.Views
         {
             if (idsDespachos.Count == 0) return;
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_LD_EliminarLote", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idsDespachos", IdsACsv(idsDespachos));
-                    cmd.Parameters.AddWithValue("@usuario", ObtenerUsuarioActual());
-                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-                }
-            }
+            ListaDespachosService.EliminarLote(IdsACsv(idsDespachos), ObtenerUsuarioActual());
         }
 
 
@@ -1660,17 +1619,8 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    using (SqlCommand cmd = new SqlCommand("sp_LD_ContarViajesActivos", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        conn.Open();
-
-                        int totalViajes = Convert.ToInt32(cmd.ExecuteScalar());
-                        lblContadorViajes.Text = $"{totalViajes}";
-                    }
-                }
+                int totalViajes = ListaDespachosService.ContarViajesActivos();
+                lblContadorViajes.Text = $"{totalViajes}";
 
                 ActualizarContadorGeneral();
             }
