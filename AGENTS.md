@@ -7,8 +7,8 @@ Repo-specific notes for OpenCode sessions. Generic .NET / ASP.NET advice is omit
 - ASP.NET **Web Forms** app (`.aspx` + code-behind), **.NET Framework 4.8**, MSBuild / Visual Studio 2022 solution.
 - Single project: `WebSGV/WebSGV.csproj`, solution `WebSGV.sln`.
 - NuGet uses the **legacy `packages.config`** model (`WebSGV/packages.config`) with packages restored to the top-level `packages/` directory. Do **not** convert to PackageReference casually.
-- No JS/Node build, no test project, no CI workflow (the `.github/workflows/` folder is empty).
-- There is an Azure Data API Builder config (`dab-config.json` + `.env`) exposing the same DB over REST/GraphQL/MCP, but it is **not** wired into the Web Forms app — it's a side tool.
+- No JS/Node build. Tests: xUnit project `WebSGV.Tests/`. CI: `.github/workflows/build.yml` (nuget restore + msbuild on windows-latest).
+- There is an Azure Data API Builder config (`dab-config.json` + gitignored `.env`) exposing the same DB over REST/GraphQL/MCP, but it is **not** wired into the Web Forms app — it's a side tool.
 
 ## Build / run
 
@@ -53,7 +53,7 @@ Role comparisons are uppercase and trimmed — keep new roles consistent.
 
 ### PDF / signature flow
 
-- `Services/PdfOrdenViajeService.cs`, `Services/PdfAbastecimientoService.cs`, `Services/FirmaService.cs` use **iTextSharp 5.5.13.4** (note: the legacy AGPL version, not iText 7) plus EPPlus 8 / ClosedXML.
+- `Services/PdfOrdenViajeService.cs`, `Services/PdfAbastecimientoService.cs`, `Services/FirmaService.cs` use **QuestPDF 2026.5.0** (Community license set at startup; native Skia binaries deploy to `bin\runtimes\`). Excel uses **ClosedXML** only (iTextSharp and EPPlus were removed for licensing reasons).
 - Signed PDFs are archived under `~/App_Data/OrdenesViaje` (`OrdenViaje.RutaArchivo` in `Web.config`). `App_Data/` and `Uploads/` contain runtime artifacts — don't commit churn there.
 
 ## Conventions

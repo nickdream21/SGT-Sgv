@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-**SGV (Sistema de Gestión de Viajes)** — a transport/logistics management system for a Peruvian company. ASP.NET **Web Forms** (.NET Framework 4.8), single Visual Studio 2022 solution: `WebSGV.sln` / `WebSGV/WebSGV.csproj`. All source lives under `WebSGV/`. There is no JS/Node build pipeline, no CI workflow, and no test project.
+**SGV (Sistema de Gestión de Viajes)** — a transport/logistics management system for a Peruvian company. ASP.NET **Web Forms** (.NET Framework 4.8), single Visual Studio 2022 solution: `WebSGV.sln` (web project `WebSGV/WebSGV.csproj` + xUnit tests in `WebSGV.Tests/`). All web source lives under `WebSGV/`. There is no JS/Node build pipeline. CI: `.github/workflows/build.yml` runs `nuget restore` + `msbuild /t:Build` on every PR/push to master (windows-latest).
 
 A side tool (`dab-config.json` + `.env`) exposes the database over REST/GraphQL via Azure Data API Builder — it is not consumed by the web app.
 
@@ -95,7 +95,7 @@ The digital signature is a PNG biometric trace captured on canvas, stored in the
 - `Services/PdfAbastecimientoService.cs` — fuel supply vouchers.
 - `Services/FirmaService.cs` — digital signature embedding.
 
-All use **iTextSharp 5.5.13.4** (legacy AGPL version, not iText 7) + EPPlus 8 / ClosedXML. EPPlus requires `ExcelPackage.License.SetNonCommercialPersonal(...)` called at startup (done in `Global.asax.cs`).
+PDFs use **QuestPDF 2026.5.0** (Community license, set in `Global.asax.cs` and in the services' static constructors — do NOT reintroduce iTextSharp/iText). QuestPDF ships native Skia binaries that MSBuild copies to `bin\runtimes\win-x86|x64\native\` via the package's `build\net4\QuestPDF.targets` import in the csproj — they must be deployed along with the app. Excel import/export uses **ClosedXML 0.105** only (EPPlus was removed for licensing reasons).
 
 ### Helper inventory
 
