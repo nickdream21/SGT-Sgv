@@ -10,6 +10,7 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Despachos;
 
 namespace WebSGV.Views
 {
@@ -842,11 +843,7 @@ namespace WebSGV.Views
 
         protected void cvFechaDespachoBase_ServerValidate(object source, ServerValidateEventArgs args)
         {
-            args.IsValid = TryParseFechaIso(args.Value, out DateTime fecha) &&
-                           fecha.Year >= 2000 &&
-                           fecha.Year <= 2100 &&
-                           fecha.Date >= DateTime.Today.AddDays(-365) &&
-                           fecha.Date <= DateTime.Today.AddDays(30);
+            args.IsValid = DespachoValidaciones.FechaDespachoEsValida(args.Value, DateTime.Today);
         }
 
         protected void cvFechaEmisionFacturaBase_ServerValidate(object source, ServerValidateEventArgs args)
@@ -857,10 +854,7 @@ namespace WebSGV.Views
                 return;
             }
 
-            args.IsValid = TryParseFechaIso(args.Value, out DateTime fecha) &&
-                           fecha.Year >= 2000 &&
-                           fecha.Year <= 2100 &&
-                           fecha.Date <= DateTime.Today;
+            args.IsValid = DespachoValidaciones.FechaEmisionEsValida(args.Value, DateTime.Today);
         }
 
         protected void cvFechaEmisionCPICBase_ServerValidate(object source, ServerValidateEventArgs args)
@@ -871,16 +865,11 @@ namespace WebSGV.Views
                 return;
             }
 
-            args.IsValid = TryParseFechaIso(args.Value, out DateTime fecha) &&
-                           fecha.Year >= 2000 &&
-                           fecha.Year <= 2100 &&
-                           fecha.Date <= DateTime.Today;
+            args.IsValid = DespachoValidaciones.FechaEmisionEsValida(args.Value, DateTime.Today);
         }
 
-        private bool TryParseFechaIso(string valor, out DateTime fecha)
-        {
-            return DateTime.TryParseExact(valor, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha);
-        }
+        private bool TryParseFechaIso(string valor, out DateTime fecha) =>
+            DespachoValidaciones.TryParseFechaIso(valor, out fecha);
 
         private void AgregarConductorAlLote()
         {
@@ -1521,10 +1510,8 @@ namespace WebSGV.Views
 
         #region Métodos de Utilidad
 
-        private bool ValidarNumeroPedido(string numeroPedido)
-        {
-            return Regex.IsMatch(numeroPedido, @"^\d{10}$");
-        }
+        private bool ValidarNumeroPedido(string numeroPedido) =>
+            DespachoValidaciones.ValidarNumeroPedido(numeroPedido);
 
         private string ObtenerUsuarioActual()
         {

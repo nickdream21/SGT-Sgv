@@ -375,3 +375,8 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
+# Data API Builder: la config LOCAL queda abierta (Unauthenticated, MCP/introspeccion
+# activos) por comodidad de desarrollo y NO debe versionarse ni desplegarse.
+# La de produccion (dab-config.production.json) si se versiona y esta bloqueada.
+dab-config.json
+

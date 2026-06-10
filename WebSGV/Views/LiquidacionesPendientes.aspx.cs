@@ -13,6 +13,7 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 using WebSGV.Services;
+using WebSGV.Services.Liquidaciones;
 
 namespace WebSGV.Views
 {
@@ -20,7 +21,6 @@ namespace WebSGV.Views
     {
         private const int MaxLongitudMotivo = 500;
         private const int MaxLongitudNotaAprobacion = 500;
-        private static readonly DateTime FechaMinimaPermitida = new DateTime(2000, 1, 1);
 
         #region Clases de Datos
 
@@ -529,15 +529,8 @@ namespace WebSGV.Views
 
         #region Métodos Auxiliares Adicionales
 
-        private static string ValidarMontosAjuste(decimal descS, decimal descD, decimal reintS, decimal reintD)
-        {
-            if (descS < 0 || descD < 0 || reintS < 0 || reintD < 0)
-                return "Los montos de descuento y reintegro no pueden ser negativos.";
-            const decimal max = 9_999_999m;
-            if (descS > max || descD > max || reintS > max || reintD > max)
-                return "Los montos no pueden superar S/ 9,999,999.";
-            return null;
-        }
+        private static string ValidarMontosAjuste(decimal descS, decimal descD, decimal reintS, decimal reintD) =>
+            LiquidacionCalculos.ValidarMontosAjuste(descS, descD, reintS, reintD);
 
         private string ObtenerNumeroOrdenViaje(int idOrdenViaje)
         {
@@ -1158,9 +1151,7 @@ namespace WebSGV.Views
             if (balance == null || balance == DBNull.Value)
                 return "";
 
-            decimal balanceDecimal = Convert.ToDecimal(balance);
-
-            return balanceDecimal >= 0 ? "balance-positivo" : "balance-negativo";
+            return LiquidacionCalculos.ClaseBalance(Convert.ToDecimal(balance));
         }
 
         protected string ObtenerPrioridad(object horasPendientes)
@@ -1168,14 +1159,7 @@ namespace WebSGV.Views
             if (horasPendientes == null || horasPendientes == DBNull.Value)
                 return "normal";
 
-            int horas = Convert.ToInt32(horasPendientes);
-
-            if (horas > 24)
-                return "urgente";
-            else if (horas >= 12)
-                return "alta";
-            else
-                return "normal";
+            return LiquidacionCalculos.Prioridad(Convert.ToInt32(horasPendientes));
         }
 
         protected string FormatearTiempo(object horasPendientes)
@@ -1183,18 +1167,7 @@ namespace WebSGV.Views
             if (horasPendientes == null || horasPendientes == DBNull.Value)
                 return "0h";
 
-            int horas = Convert.ToInt32(horasPendientes);
-
-            if (horas >= 24)
-            {
-                int dias = horas / 24;
-                int horasRestantes = horas % 24;
-                return horasRestantes > 0 ? $"{dias}d {horasRestantes}h" : $"{dias}d";
-            }
-            else
-            {
-                return $"{horas}h";
-            }
+            return LiquidacionCalculos.FormatearTiempo(Convert.ToInt32(horasPendientes));
         }
 
         #endregion
@@ -1714,22 +1687,8 @@ namespace WebSGV.Views
         // --------------------------------------------------------------------
 
         /// <summary>Decodifica un PNG en Base64 (con o sin prefijo data URI).</summary>
-        private static byte[] DecodificarPngBase64(string s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return null;
-            try
-            {
-                int comma = s.IndexOf(',');
-                string body = (comma >= 0 && s.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
-                    ? s.Substring(comma + 1)
-                    : s;
-                return Convert.FromBase64String(body);
-            }
-            catch
-            {
-                return null;
-            }
-        }
+        private static byte[] DecodificarPngBase64(string s) =>
+            LiquidacionCalculos.DecodificarPngBase64(s);
 
         /// <summary>Obtiene la IP del cliente respetando X-Forwarded-For si existe.</summary>
         private static string ObtenerIpCliente(System.Web.HttpContext ctx)
@@ -1789,27 +1748,11 @@ namespace WebSGV.Views
             return true;
         }
 
-        private static bool TryParseFechaFiltro(string fechaTexto, out DateTime? fecha)
-        {
-            fecha = null;
-            if (string.IsNullOrWhiteSpace(fechaTexto)) return true;
+        private static bool TryParseFechaFiltro(string fechaTexto, out DateTime? fecha) =>
+            LiquidacionCalculos.TryParseFechaFiltro(fechaTexto, DateTime.Today, out fecha);
 
-            if (!DateTime.TryParseExact(fechaTexto.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime valor))
-                return false;
-
-            if (valor.Date < FechaMinimaPermitida || valor.Date > DateTime.Today.AddYears(1))
-                return false;
-
-            fecha = valor.Date;
-            return true;
-        }
-
-        private static string NormalizarTexto(string texto, int maximo)
-        {
-            if (string.IsNullOrWhiteSpace(texto)) return string.Empty;
-            string limpio = texto.Trim();
-            return limpio.Length > maximo ? limpio.Substring(0, maximo) : limpio;
-        }
+        private static string NormalizarTexto(string texto, int maximo) =>
+            LiquidacionCalculos.NormalizarTexto(texto, maximo);
 
         #endregion
 
