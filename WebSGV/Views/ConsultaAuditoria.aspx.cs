@@ -1,4 +1,4 @@
-using OfficeOpenXml;
+using ClosedXML.Excel;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -51,54 +51,52 @@ namespace WebSGV.Views
             {
                 DataTable dt = ObtenerDatosAuditoria(false);
 
-                using (ExcelPackage package = new ExcelPackage())
+                using (XLWorkbook workbook = new XLWorkbook())
                 {
-                    var worksheet = package.Workbook.Worksheets.Add("Auditoría");
+                    var worksheet = workbook.AddWorksheet("Auditoría");
 
-                    worksheet.Cells[1, 1].Value = "ID";
-                    worksheet.Cells[1, 2].Value = "Tabla";
-                    worksheet.Cells[1, 3].Value = "Operación";
-                    worksheet.Cells[1, 4].Value = "ID Registro";
-                    worksheet.Cells[1, 5].Value = "Campo";
-                    worksheet.Cells[1, 6].Value = "Valor Anterior";
-                    worksheet.Cells[1, 7].Value = "Valor Nuevo";
-                    worksheet.Cells[1, 8].Value = "Usuario";
-                    worksheet.Cells[1, 9].Value = "Fecha y Hora";
-                    worksheet.Cells[1, 10].Value = "Estación";
-                    worksheet.Cells[1, 11].Value = "IP";
+                    worksheet.Cell(1, 1).Value = "ID";
+                    worksheet.Cell(1, 2).Value = "Tabla";
+                    worksheet.Cell(1, 3).Value = "Operación";
+                    worksheet.Cell(1, 4).Value = "ID Registro";
+                    worksheet.Cell(1, 5).Value = "Campo";
+                    worksheet.Cell(1, 6).Value = "Valor Anterior";
+                    worksheet.Cell(1, 7).Value = "Valor Nuevo";
+                    worksheet.Cell(1, 8).Value = "Usuario";
+                    worksheet.Cell(1, 9).Value = "Fecha y Hora";
+                    worksheet.Cell(1, 10).Value = "Estación";
+                    worksheet.Cell(1, 11).Value = "IP";
 
-                    using (var range = worksheet.Cells[1, 1, 1, 11])
-                    {
-                        range.Style.Font.Bold = true;
-                        range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                        range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightBlue);
-                    }
+                    var range = worksheet.Range(1, 1, 1, 11);
+                    range.Style.Font.Bold = true;
+                    range.Style.Fill.PatternType = XLFillPatternValues.Solid;
+                    range.Style.Fill.BackgroundColor = XLColor.LightBlue;
 
                     int row = 2;
                     foreach (DataRow dr in dt.Rows)
                     {
-                        worksheet.Cells[row, 1].Value = dr["idAuditoria"];
-                        worksheet.Cells[row, 2].Value = dr["TablaAfectada"];
-                        worksheet.Cells[row, 3].Value = dr["TipoOperacion"];
-                        worksheet.Cells[row, 4].Value = dr["IdRegistro"];
-                        worksheet.Cells[row, 5].Value = dr["Campo"];
-                        worksheet.Cells[row, 6].Value = dr["ValorAnterior"];
-                        worksheet.Cells[row, 7].Value = dr["ValorNuevo"];
-                        worksheet.Cells[row, 8].Value = dr["Usuario"];
+                        worksheet.Cell(row, 1).Value = ValorExcel(dr["idAuditoria"]);
+                        worksheet.Cell(row, 2).Value = ValorExcel(dr["TablaAfectada"]);
+                        worksheet.Cell(row, 3).Value = ValorExcel(dr["TipoOperacion"]);
+                        worksheet.Cell(row, 4).Value = ValorExcel(dr["IdRegistro"]);
+                        worksheet.Cell(row, 5).Value = ValorExcel(dr["Campo"]);
+                        worksheet.Cell(row, 6).Value = ValorExcel(dr["ValorAnterior"]);
+                        worksheet.Cell(row, 7).Value = ValorExcel(dr["ValorNuevo"]);
+                        worksheet.Cell(row, 8).Value = ValorExcel(dr["Usuario"]);
 
                         if (dr["FechaHora"] != DBNull.Value)
                         {
                             DateTime fecha = (DateTime)dr["FechaHora"];
-                            worksheet.Cells[row, 9].Value = fecha.ToString("dd/MM/yyyy HH:mm:ss");
+                            worksheet.Cell(row, 9).Value = fecha.ToString("dd/MM/yyyy HH:mm:ss");
                         }
 
-                        worksheet.Cells[row, 10].Value = dr["Estacion"];
-                        worksheet.Cells[row, 11].Value = dr["IP"];
+                        worksheet.Cell(row, 10).Value = ValorExcel(dr["Estacion"]);
+                        worksheet.Cell(row, 11).Value = ValorExcel(dr["IP"]);
 
                         row++;
                     }
 
-                    worksheet.Cells.AutoFitColumns();
+                    worksheet.Columns().AdjustToContents();
 
                     Response.Clear();
                     Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -106,7 +104,7 @@ namespace WebSGV.Views
 
                     using (MemoryStream memoryStream = new MemoryStream())
                     {
-                        package.SaveAs(memoryStream);
+                        workbook.SaveAs(memoryStream);
                         memoryStream.WriteTo(Response.OutputStream);
                         Response.Flush();
                         Response.End();
@@ -118,6 +116,12 @@ namespace WebSGV.Views
                 ScriptManager.RegisterStartupScript(this, GetType(), "showalert",
                     "alert('Error al exportar a Excel: " + ex.Message.Replace("'", "\\'") + "');", true);
             }
+        }
+
+        private static XLCellValue ValorExcel(object valor)
+        {
+            if (valor == null || valor == DBNull.Value) return Blank.Value;
+            return XLCellValue.FromObject(valor);
         }
 
         protected void gvAuditoria_PageIndexChanging(object sender, GridViewPageEventArgs e)

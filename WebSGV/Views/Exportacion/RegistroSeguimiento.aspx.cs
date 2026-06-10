@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using OfficeOpenXml;
+using ClosedXML.Excel;
 using WebSGV.Helpers;
 
 namespace WebSGV.Views.Exportacion
@@ -643,24 +643,24 @@ namespace WebSGV.Views.Exportacion
         {
             int procesados = 0;
 
-            // EPPlus 8 — licencia es opcional para no-comercial; el resto del proyecto la deja sin set.
-            using (var package = new ExcelPackage(new FileInfo(path)))
+            using (var workbook = new XLWorkbook(path))
             {
-                if (package.Workbook.Worksheets.Count == 0)
+                if (!workbook.Worksheets.Any())
                     throw new Exception("El archivo Excel no contiene hojas.");
 
-                ExcelWorksheet ws = package.Workbook.Worksheets
-                                        .FirstOrDefault(w => (w.Name ?? "").ToUpper().Contains("SEGUIMIENTO"))
-                                    ?? package.Workbook.Worksheets.First();
+                IXLWorksheet ws = workbook.Worksheets
+                                      .FirstOrDefault(w => (w.Name ?? "").ToUpper().Contains("SEGUIMIENTO"))
+                                  ?? workbook.Worksheets.First();
 
-                if (ws.Dimension == null)
+                var ultimaCelda = ws.LastCellUsed();
+                if (ultimaCelda == null)
                     throw new Exception("La hoja seleccionada está vacía.");
 
-                int rows = ws.Dimension.Rows;
-                int cols = ws.Dimension.Columns;
+                int rows = ultimaCelda.Address.RowNumber;
+                int cols = ultimaCelda.Address.ColumnNumber;
 
                 // Detectar fila de headers (puede estar en fila 1 o más abajo si hay título)
-                int headerRow = DetectarFilaHeaders(ws, cols);
+                int headerRow = DetectarFilaHeaders(ws, rows, cols);
                 if (headerRow == -1)
                     throw new Exception("No se pudo identificar la fila de encabezados (se busca CLIENTE / CONDUCTOR).");
 
@@ -671,7 +671,7 @@ namespace WebSGV.Views.Exportacion
                 var headersExcel = new Dictionary<int, string>();
                 for (int c = 1; c <= cols; c++)
                 {
-                    string h = ws.Cells[headerRow, c].Value?.ToString()?.Trim() ?? "";
+                    string h = ws.Cell(headerRow, c).GetString().Trim();
                     if (h.Length > 0) headersExcel[c] = NormalizarHeader(h);
                 }
 
@@ -716,7 +716,7 @@ namespace WebSGV.Views.Exportacion
                     if (!kv.Key.StartsWith("fh", StringComparison.OrdinalIgnoreCase)) continue;
                     int next = kv.Value + 1;
                     if (next > cols) continue;
-                    string nextHeader = ws.Cells[headerRow, next].Value?.ToString()?.Trim() ?? "";
+                    string nextHeader = ws.Cell(headerRow, next).GetString().Trim();
                     if (nextHeader.Length == 0)
                     {
                         horaColMap[kv.Key] = next;
@@ -770,7 +770,7 @@ namespace WebSGV.Views.Exportacion
                                         var celda = LeerCelda(ws, r, colMap, key);
                                         object celdaHora = null;
                                         if (horaColMap.ContainsKey(key))
-                                            celdaHora = ws.Cells[r, horaColMap[key]].Value;
+                                            celdaHora = ValorCelda(ws.Cell(r, horaColMap[key]));
                                         var fecha = AgregarFechaCelda(cmd, "@" + key, celda, celdaHora);
                                         fechasFila[key] = fecha;
                                     }
@@ -823,15 +823,15 @@ namespace WebSGV.Views.Exportacion
             return procesados;
         }
 
-        private static int DetectarFilaHeaders(ExcelWorksheet ws, int cols)
+        private static int DetectarFilaHeaders(IXLWorksheet ws, int rows, int cols)
         {
-            int maxFila = Math.Min(15, ws.Dimension.Rows);
+            int maxFila = Math.Min(15, rows);
             for (int r = 1; r <= maxFila; r++)
             {
                 int hits = 0;
                 for (int c = 1; c <= cols; c++)
                 {
-                    string val = ws.Cells[r, c].Value?.ToString()?.Trim()?.ToUpper() ?? "";
+                    string val = ws.Cell(r, c).GetString().Trim().ToUpper();
                     if (val.Contains("CLIENTE") || val.Contains("CONDUCTOR") || val.Contains("TRACTO") || val.Contains("CARRETA"))
                         hits++;
                     if (hits >= 2) return r;
@@ -840,27 +840,43 @@ namespace WebSGV.Views.Exportacion
             return -1;
         }
 
-        private static bool FilaVacia(ExcelWorksheet ws, int row, Dictionary<string, int> colMap)
+        private static bool FilaVacia(IXLWorksheet ws, int row, Dictionary<string, int> colMap)
         {
             foreach (var kv in colMap)
             {
-                var v = ws.Cells[row, kv.Value].Value;
+                var v = ValorCelda(ws.Cell(row, kv.Value));
                 if (v != null && !string.IsNullOrWhiteSpace(v.ToString())) return false;
             }
             return true;
         }
 
-        private static string LeerTexto(ExcelWorksheet ws, int row, Dictionary<string, int> colMap, string key)
+        private static string LeerTexto(IXLWorksheet ws, int row, Dictionary<string, int> colMap, string key)
         {
             if (!colMap.ContainsKey(key)) return null;
-            object v = ws.Cells[row, colMap[key]].Value;
+            object v = ValorCelda(ws.Cell(row, colMap[key]));
             return v?.ToString()?.Trim();
         }
 
-        private static object LeerCelda(ExcelWorksheet ws, int row, Dictionary<string, int> colMap, string key)
+        private static object LeerCelda(IXLWorksheet ws, int row, Dictionary<string, int> colMap, string key)
         {
             if (!colMap.ContainsKey(key)) return null;
-            return ws.Cells[row, colMap[key]].Value;
+            return ValorCelda(ws.Cell(row, colMap[key]));
+        }
+
+        // Convierte una celda ClosedXML al mismo tipo de objeto que devolvía EPPlus
+        // (null, double, string, DateTime, TimeSpan o bool) para no alterar la lógica posterior.
+        private static object ValorCelda(IXLCell cell)
+        {
+            var v = cell.Value;
+            switch (v.Type)
+            {
+                case XLDataType.Boolean: return v.GetBoolean();
+                case XLDataType.Number: return v.GetNumber();
+                case XLDataType.Text: return v.GetText();
+                case XLDataType.DateTime: return v.GetDateTime();
+                case XLDataType.TimeSpan: return v.GetTimeSpan();
+                default: return null; // Blank o Error
+            }
         }
 
         /// <summary>

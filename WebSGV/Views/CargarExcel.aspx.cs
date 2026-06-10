@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using OfficeOpenXml;
+using ClosedXML.Excel;
 using System.IO;
 using System.Data;
 using System.Data.SqlClient;
@@ -59,8 +59,8 @@ namespace WebSGV.Views
                     string tempFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + fileExtension);
                     fileUpload.SaveAs(tempFilePath);
 
-                    // Procesar el archivo Excel (usando EPPlus)
-                    int rowsProcessed = ProcessExcelWithEPPlus(tempFilePath, selectedMonth, selectedYear);
+                    // Procesar el archivo Excel (usando ClosedXML)
+                    int rowsProcessed = ProcessExcelWithClosedXML(tempFilePath, selectedMonth, selectedYear);
 
                     // Eliminar el archivo temporal
                     if (File.Exists(tempFilePath))
@@ -84,46 +84,33 @@ namespace WebSGV.Views
             }
         }
 
-        private int ProcessExcelWithEPPlus(string filePath, int month, int year)
+        private int ProcessExcelWithClosedXML(string filePath, int month, int year)
         {
             int rowsProcessed = 0;
 
-            // EPPlus 4.5.3 no requiere configuración de licencia
-
-            using (var package = new ExcelPackage(new FileInfo(filePath)))
+            using (var workbook = new XLWorkbook(filePath))
             {
                 // Verificar que el archivo tenga hojas
-                if (package.Workbook.Worksheets.Count == 0)
+                if (!workbook.Worksheets.Any())
                 {
                     throw new Exception("El archivo Excel no contiene hojas de trabajo.");
                 }
 
-                // Obtener la primera hoja (usando el índice más seguro)
-                ExcelWorksheet worksheet = null;
-
-                // Intentar obtener la hoja por nombre primero, luego por índice
-                if (package.Workbook.Worksheets["Hoja1"] != null)
-                {
-                    worksheet = package.Workbook.Worksheets["Hoja1"];
-                }
-                else if (package.Workbook.Worksheets.Count > 0)
-                {
-                    worksheet = package.Workbook.Worksheets.First();
-                }
-                else
-                {
-                    throw new Exception("No se pudo acceder a ninguna hoja del archivo Excel.");
-                }
+                // Intentar obtener la hoja por nombre primero, luego la primera disponible
+                IXLWorksheet worksheet = workbook.Worksheets.Contains("Hoja1")
+                    ? workbook.Worksheet("Hoja1")
+                    : workbook.Worksheets.First();
 
                 // Verificar que la hoja tenga datos
-                if (worksheet.Dimension == null)
+                var ultimaCelda = worksheet.LastCellUsed();
+                if (ultimaCelda == null)
                 {
                     throw new Exception("La hoja del archivo Excel está vacía.");
                 }
 
                 // Determinar el número de filas con datos
-                int rowCount = worksheet.Dimension.Rows;
-                int colCount = worksheet.Dimension.Columns;
+                int rowCount = ultimaCelda.Address.RowNumber;
+                int colCount = ultimaCelda.Address.ColumnNumber;
 
                 // Verificar que tenga al menos encabezados
                 if (rowCount < 1)
@@ -137,7 +124,7 @@ namespace WebSGV.Views
                 {
                     try
                     {
-                        string header = worksheet.Cells[1, col].Value?.ToString().Trim() ?? "";
+                        string header = worksheet.Cell(1, col).GetString().Trim();
                         if (!string.IsNullOrEmpty(header))
                         {
                             headers.Add(header);
@@ -194,7 +181,7 @@ namespace WebSGV.Views
                                         continue; // Saltar si no se encuentra la columna
                                     }
 
-                                    string numeroPedido = worksheet.Cells[row, numeroPedidoIndex + 1].Value?.ToString() ?? "";
+                                    string numeroPedido = ValorCelda(worksheet.Cell(row, numeroPedidoIndex + 1))?.ToString() ?? "";
 
                                     if (!string.IsNullOrEmpty(numeroPedido))
                                     {
@@ -204,7 +191,7 @@ namespace WebSGV.Views
                                         {
                                             try
                                             {
-                                                var cellValue = worksheet.Cells[row, col + 1].Value;
+                                                var cellValue = ValorCelda(worksheet.Cell(row, col + 1));
                                                 rowData[headers[col]] = cellValue;
                                             }
                                             catch (Exception)
@@ -242,6 +229,22 @@ namespace WebSGV.Views
             }
 
             return rowsProcessed;
+        }
+
+        // Convierte una celda ClosedXML al mismo tipo de objeto que devolvía EPPlus
+        // (null, double, string, DateTime, TimeSpan o bool) para no alterar la lógica posterior.
+        private static object ValorCelda(IXLCell cell)
+        {
+            var v = cell.Value;
+            switch (v.Type)
+            {
+                case XLDataType.Boolean: return v.GetBoolean();
+                case XLDataType.Number: return v.GetNumber();
+                case XLDataType.Text: return v.GetText();
+                case XLDataType.DateTime: return v.GetDateTime();
+                case XLDataType.TimeSpan: return v.GetTimeSpan();
+                default: return null; // Blank o Error
+            }
         }
 
         private int RecordUploadHistory(SqlConnection conn, SqlTransaction transaction, string fileName, int month, int year)
