@@ -12,6 +12,7 @@ using System.Linq;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 using WebSGV.Services.Common;
+using WebSGV.Services.Conductor;
 using WebSGV.Services.OrdenViaje;
 
 namespace WebSGV.Views
@@ -1693,23 +1694,13 @@ namespace WebSGV.Views
             {
                 List<EstacionPeaje> estaciones = new List<EstacionPeaje>();
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                DataTable dtEstaciones = DashboardConductorService.ObtenerEstacionesPeaje();
+                foreach (DataRow row in dtEstaciones.Rows)
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerEstacionesPeaje", conn))
+                    estaciones.Add(new EstacionPeaje
                     {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        conn.Open();
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                estaciones.Add(new EstacionPeaje
-                                {
-                                    Nombre = reader["nombre"].ToString()
-                                });
-                            }
-                        }
-                    }
+                        Nombre = row["nombre"].ToString()
+                    });
                 }
 
                 string json = JsonConvert.SerializeObject(estaciones);
@@ -1728,32 +1719,15 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                string nuevoNumero = DashboardConductorService.GenerarNumeroOrden();
+
+                if (!string.IsNullOrEmpty(nuevoNumero))
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_DC_GenerarNumeroOrden", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-
-                        SqlParameter pNumeroGenerado = new SqlParameter("@numeroGenerado", SqlDbType.VarChar, 50)
-                        {
-                            Direction = ParameterDirection.Output
-                        };
-                        cmd.Parameters.Add(pNumeroGenerado);
-
-                        conn.Open();
-                        cmd.ExecuteNonQuery();
-
-                        string nuevoNumero = pNumeroGenerado.Value?.ToString();
-
-                        if (!string.IsNullOrEmpty(nuevoNumero))
-                        {
-                            Log($"✅ Número de orden generado: {nuevoNumero}");
-                            return nuevoNumero;
-                        }
-
-                        throw new Exception("El SP no retornó un número de orden");
-                    }
+                    Log($"✅ Número de orden generado: {nuevoNumero}");
+                    return nuevoNumero;
                 }
+
+                throw new Exception("El SP no retornó un número de orden");
             }
             catch (Exception ex)
             {
@@ -1772,42 +1746,30 @@ namespace WebSGV.Views
             {
                 Log($"Obteniendo datos del viaje para idViajeProgreso={idViajeProgreso}");
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                DataTable dtViaje = DashboardConductorService.ObtenerDatosViajeParaLiquidacion(idViajeProgreso, IdConductorActual);
+                if (dtViaje.Rows.Count > 0)
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerDatosViajeParaLiquidacion", conn))
+                    DataRow reader = dtViaje.Rows[0];
+                    int idConductor = reader["idConductor"] != DBNull.Value ? Convert.ToInt32(reader["idConductor"]) : IdConductorActual;
+                    int idTracto = reader["idTracto"] != DBNull.Value ? Convert.ToInt32(reader["idTracto"]) : 0;
+                    int idCarreta = reader["idCarreta"] != DBNull.Value ? Convert.ToInt32(reader["idCarreta"]) : 0;
+                    string origen = reader["origen"]?.ToString() ?? "";
+
+                    if (idConductor == 0 || idTracto == 0 || idCarreta == 0)
                     {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
-                        cmd.Parameters.AddWithValue("@idConductorFallback", IdConductorActual);
-                        conn.Open();
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                int idConductor = reader["idConductor"] != DBNull.Value ? Convert.ToInt32(reader["idConductor"]) : IdConductorActual;
-                                int idTracto = reader["idTracto"] != DBNull.Value ? Convert.ToInt32(reader["idTracto"]) : 0;
-                                int idCarreta = reader["idCarreta"] != DBNull.Value ? Convert.ToInt32(reader["idCarreta"]) : 0;
-                                string origen = reader["origen"]?.ToString() ?? "";
-
-                                if (idConductor == 0 || idTracto == 0 || idCarreta == 0)
-                                {
-                                    Log($"⚠️ Datos incompletos ({origen}): Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
-                                }
-                                else
-                                {
-                                    Log($"✅ Datos obtenidos desde {origen}: Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
-                                }
-
-                                return new DatosViajeParaLiquidacion
-                                {
-                                    IdConductor = idConductor > 0 ? idConductor : IdConductorActual,
-                                    IdTracto = idTracto,
-                                    IdCarreta = idCarreta
-                                };
-                            }
-                        }
+                        Log($"⚠️ Datos incompletos ({origen}): Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
                     }
+                    else
+                    {
+                        Log($"✅ Datos obtenidos desde {origen}: Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
+                    }
+
+                    return new DatosViajeParaLiquidacion
+                    {
+                        IdConductor = idConductor > 0 ? idConductor : IdConductorActual,
+                        IdTracto = idTracto,
+                        IdCarreta = idCarreta
+                    };
                 }
 
                 return null;
@@ -1936,24 +1898,8 @@ namespace WebSGV.Views
             {
                 if (idsViajes == null || idsViajes.Count == 0) return false;
 
-                // Construcción parametrizada de la cláusula IN:
-                // nunca interpolamos valores del cliente directamente en el SQL.
-                var paramNames = idsViajes.Select((_, i) => $"@id{i}").ToList();
-                string sql = $"SELECT COUNT(*) FROM ViajesEnProgreso " +
-                             $"WHERE idViajeProgreso IN ({string.Join(",", paramNames)}) " +
-                             $"AND idConductor = @idConductor";
-
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                using (SqlCommand cmd = new SqlCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                    for (int i = 0; i < idsViajes.Count; i++)
-                        cmd.Parameters.AddWithValue($"@id{i}", idsViajes[i]);
-
-                    conn.Open();
-                    int count = (int)cmd.ExecuteScalar();
-                    return count == idsViajes.Count;
-                }
+                int count = DashboardConductorService.ContarViajesDelConductor(idsViajes, idConductor);
+                return count == idsViajes.Count;
             }
             catch (Exception ex)
             {
@@ -1968,18 +1914,8 @@ namespace WebSGV.Views
             {
                 if (string.IsNullOrEmpty(numeroOrden)) return false;
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT COUNT(*) FROM OrdenViaje WHERE numeroOrdenViaje = @numeroOrden AND idConductor = @idConductor", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
-                        cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                        conn.Open();
-                        int count = (int)cmd.ExecuteScalar();
-                        return count > 0;
-                    }
-                }
+                int count = DashboardConductorService.ContarOrdenDelConductor(numeroOrden, idConductor);
+                return count > 0;
             }
             catch (Exception ex)
             {
@@ -2047,49 +1983,25 @@ namespace WebSGV.Views
 
                 int idConductorActual = Convert.ToInt32(session["IdConductor"]);
 
-                string connectionString = DbHelper.ConnectionString;
+                var r = DashboardConductorService.RetirarLiquidacion(idOrdenViaje, idConductorActual);
+                int resultado = r.Resultado;
+                string mensaje = r.Mensaje;
+                string numeroOrdenViaje = r.NumeroOrdenViaje;
+                int idViajeProgreso = r.IdViajeProgreso;
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                if (resultado == 1)
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_DC_RetirarLiquidacion", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@idOrdenViaje", idOrdenViaje);
-                        cmd.Parameters.AddWithValue("@idConductor", idConductorActual);
+                    AuditoriaHelper.Registrar("RETIRAR", "OrdenViaje", idOrdenViaje,
+                        $"Conductor retiró liquidación - OrdenViaje ID: {idOrdenViaje}, Número: {numeroOrdenViaje}, Viaje reabierto: {idViajeProgreso}");
 
-                        SqlParameter pResultado = new SqlParameter("@resultado", SqlDbType.Int) { Direction = ParameterDirection.Output };
-                        SqlParameter pMensaje = new SqlParameter("@mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
-                        SqlParameter pNumeroOrden = new SqlParameter("@numeroOrdenViajeSalida", SqlDbType.VarChar, 50) { Direction = ParameterDirection.Output };
-                        SqlParameter pIdViaje = new SqlParameter("@idViajeProgresoSalida", SqlDbType.Int) { Direction = ParameterDirection.Output };
-
-                        cmd.Parameters.Add(pResultado);
-                        cmd.Parameters.Add(pMensaje);
-                        cmd.Parameters.Add(pNumeroOrden);
-                        cmd.Parameters.Add(pIdViaje);
-
-                        conn.Open();
-                        cmd.ExecuteNonQuery();
-
-                        int resultado = (int)pResultado.Value;
-                        string mensaje = pMensaje.Value?.ToString() ?? "";
-                        string numeroOrdenViaje = pNumeroOrden.Value?.ToString() ?? "";
-                        int idViajeProgreso = pIdViaje.Value != DBNull.Value ? (int)pIdViaje.Value : 0;
-
-                        if (resultado == 1)
-                        {
-                            AuditoriaHelper.Registrar("RETIRAR", "OrdenViaje", idOrdenViaje,
-                                $"Conductor retiró liquidación - OrdenViaje ID: {idOrdenViaje}, Número: {numeroOrdenViaje}, Viaje reabierto: {idViajeProgreso}");
-
-                            Log($"✅ Liquidación retirada: OrdenViaje {idOrdenViaje}, Viaje {idViajeProgreso} reabierto");
-                        }
-                        else
-                        {
-                            Log($"⚠️ RetirarLiquidacion falló: {mensaje}");
-                        }
-
-                        return new { success = resultado == 1, message = mensaje };
-                    }
+                    Log($"✅ Liquidación retirada: OrdenViaje {idOrdenViaje}, Viaje {idViajeProgreso} reabierto");
                 }
+                else
+                {
+                    Log($"⚠️ RetirarLiquidacion falló: {mensaje}");
+                }
+
+                return new { success = resultado == 1, message = mensaje };
             }
             catch (Exception ex)
             {
