@@ -1,10 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Web.Hosting;
-using iTextSharp.text;
-using iTextSharp.text.pdf;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using WebSGV.Helpers;
 
 namespace WebSGV.Services
@@ -36,32 +36,25 @@ namespace WebSGV.Services
     public sealed class PdfOrdenViajeService
     {
         // ============ PALETA CORPORATIVA (corresponde a Fase 1 HTML/CSS) ============
-        private static readonly BaseColor AZUL_CORP     = new BaseColor(0x0B, 0x3D, 0x91);
-        private static readonly BaseColor ROJO_CORP     = new BaseColor(0xC8, 0x10, 0x2E);
-        private static readonly BaseColor GRIS_TEXTO    = new BaseColor(0x1F, 0x29, 0x37);
-        private static readonly BaseColor GRIS_SECUND   = new BaseColor(0x6B, 0x72, 0x80);
-        private static readonly BaseColor GRIS_BORDE    = new BaseColor(0xD1, 0xD5, 0xDB);
-        private static readonly BaseColor GRIS_BORDE_B  = new BaseColor(0x9C, 0xA3, 0xAF);
-        private static readonly BaseColor AZUL_CLARO    = new BaseColor(0xE8, 0xEE, 0xF7);
-        private static readonly BaseColor GRIS_FONDO    = new BaseColor(0xF3, 0xF4, 0xF6);
-        private static readonly BaseColor FONDO_DASHED  = new BaseColor(0xF9, 0xFA, 0xFB);
-        private static readonly BaseColor FONDO_OBS     = new BaseColor(0xFA, 0xFA, 0xFA);
+        private static readonly Color AZUL_CORP    = Color.FromHex("#0B3D91");
+        private static readonly Color ROJO_CORP    = Color.FromHex("#C8102E");
+        private static readonly Color GRIS_TEXTO   = Color.FromHex("#1F2937");
+        private static readonly Color GRIS_SECUND  = Color.FromHex("#6B7280");
+        private static readonly Color GRIS_BORDE   = Color.FromHex("#D1D5DB");
+        private static readonly Color GRIS_BORDE_B = Color.FromHex("#9CA3AF");
+        private static readonly Color AZUL_CLARO   = Color.FromHex("#E8EEF7");
+        private static readonly Color GRIS_FONDO   = Color.FromHex("#F3F4F6");
+        private static readonly Color FONDO_DASHED = Color.FromHex("#F9FAFB");
+        private static readonly Color FONDO_OBS    = Color.FromHex("#FAFAFA");
 
         // ============ FUENTES ============
-        private readonly BaseFont _bfRegular;
-        private readonly BaseFont _bfBold;
-        private readonly BaseFont _bfMono;
+        private const string FUENTE      = "Arial";
+        private const string FUENTE_MONO = "Courier New";
 
-        public PdfOrdenViajeService()
+        static PdfOrdenViajeService()
         {
-            _bfRegular = BaseFont.CreateFont(BaseFont.HELVETICA,          BaseFont.WINANSI, BaseFont.EMBEDDED);
-            _bfBold    = BaseFont.CreateFont(BaseFont.HELVETICA_BOLD,     BaseFont.WINANSI, BaseFont.EMBEDDED);
-            _bfMono    = BaseFont.CreateFont(BaseFont.COURIER,            BaseFont.WINANSI, BaseFont.EMBEDDED);
-        }
-
-        private Font Fuente(BaseFont bf, float size, BaseColor color = null)
-        {
-            return new Font(bf, size, Font.NORMAL, color ?? GRIS_TEXTO);
+            // Licencia Community (empresa con ingresos < 1M USD anuales).
+            QuestPDF.Settings.License = LicenseType.Community;
         }
 
         // ============================================================================
@@ -122,215 +115,161 @@ namespace WebSGV.Services
         private byte[] ConstruirPdf(object d, EmpresaInfo emp, FormatoControladoInfo fmt, byte[] firmaPng,
             string nombreAdminAprobador = null, string fechaAprobacionAdmin = null)
         {
-            // A4: 595 x 842 pt. Márgenes ~12mm = 34pt (laterales), 14mm = 40pt inferior.
-            using (var ms = new MemoryStream())
-            using (var doc = new Document(PageSize.A4, 34f, 34f, 34f, 50f))
+            return Document.Create(doc =>
             {
-                var writer = PdfWriter.GetInstance(doc, ms);
-                writer.PageEvent = new PieDePaginaControlado(this, fmt);
-                doc.Open();
-
-                // 1) Encabezado controlado (logo | empresa | formato)
-                doc.Add(ConstruirEncabezadoControlado(emp, fmt));
-                doc.Add(new Paragraph(" ") { SpacingAfter = 2f });
-
-                // 2) Sub-header (datos empresa + número documento)
-                doc.Add(ConstruirSubHeader(d, emp));
-
-                // 3) Sección 1 - Información del viaje
-                doc.Add(ConstruirTituloSeccion(1, "Información del Viaje"));
-                doc.Add(ConstruirInfoViaje(d));
-
-                // 4) Sección 2 - Resumen financiero + monto en letras
-                doc.Add(ConstruirTituloSeccion(2, "Resumen Financiero"));
-                doc.Add(ConstruirResumenFinanciero(d));
-                doc.Add(ConstruirMontoEnLetras(d));
-
-                // 5) Sección 3 - Desglose Ingresos
-                doc.Add(ConstruirTituloSeccion(3, "Desglose de Ingresos"));
-                doc.Add(ConstruirDesgloseIngresos(d));
-
-                // 6) Sección 4 - Desglose Gastos
-                doc.Add(ConstruirTituloSeccion(4, "Desglose de Gastos"));
-                doc.Add(ConstruirDesgloseGastos(d));
-
-                // 7) Sección 5 - Observaciones (opcional)
-                string obs = ObtenerStringProp(d, "Observaciones");
-                if (!string.IsNullOrWhiteSpace(obs))
+                doc.Page(page =>
                 {
-                    doc.Add(ConstruirTituloSeccion(5, "Observaciones"));
-                    doc.Add(ConstruirCajaObservaciones(obs));
-                }
+                    // A4: 595 x 842 pt. Márgenes ~12mm = 34pt (laterales).
+                    page.Size(PageSizes.A4);
+                    page.MarginHorizontal(34);
+                    page.MarginTop(34);
+                    page.MarginBottom(12);
+                    page.DefaultTextStyle(t => t.FontFamily(FUENTE).FontSize(9.5f).FontColor(GRIS_TEXTO));
 
-                // 8) Constancia + Firma del conductor
-                doc.Add(ConstruirConstanciaYFirma(d, firmaPng, nombreAdminAprobador, fechaAprobacionAdmin));
+                    page.Content().Column(col =>
+                    {
+                        // 1) Encabezado controlado (logo | empresa | formato)
+                        col.Item().Element(c => ComponerEncabezadoControlado(c, emp, fmt));
 
-                doc.Close();
-                return ms.ToArray();
-            }
+                        // 2) Sub-header (datos empresa + número documento)
+                        col.Item().PaddingTop(6).PaddingBottom(8).Element(c => ComponerSubHeader(c, d, emp));
+
+                        // 3) Sección 1 - Información del viaje
+                        col.Item().Element(c => ComponerTituloSeccion(c, 1, "Información del Viaje"));
+                        col.Item().PaddingBottom(6).Element(c => ComponerInfoViaje(c, d));
+
+                        // 4) Sección 2 - Resumen financiero + monto en letras
+                        col.Item().Element(c => ComponerTituloSeccion(c, 2, "Resumen Financiero"));
+                        col.Item().PaddingBottom(4).Element(c => ComponerResumenFinanciero(c, d));
+                        col.Item().PaddingBottom(8).Element(c => ComponerMontoEnLetras(c, d));
+
+                        // 5) Sección 3 - Desglose Ingresos
+                        col.Item().Element(c => ComponerTituloSeccion(c, 3, "Desglose de Ingresos"));
+                        col.Item().PaddingBottom(6).Element(c => ComponerDesgloseIngresos(c, d));
+
+                        // 6) Sección 4 - Desglose Gastos
+                        col.Item().Element(c => ComponerTituloSeccion(c, 4, "Desglose de Gastos"));
+                        col.Item().PaddingBottom(6).Element(c => ComponerDesgloseGastos(c, d));
+
+                        // 7) Sección 5 - Observaciones (opcional)
+                        string obs = ObtenerStringProp(d, "Observaciones");
+                        if (!string.IsNullOrWhiteSpace(obs))
+                        {
+                            col.Item().Element(c => ComponerTituloSeccion(c, 5, "Observaciones"));
+                            col.Item().PaddingBottom(6).Element(c => ComponerCajaObservaciones(c, obs));
+                        }
+
+                        // 8) Constancia + Firma del conductor (no dividir el bloque entre páginas)
+                        col.Item().PaddingTop(4).ShowEntire().Element(c =>
+                            ComponerConstanciaYFirma(c, d, firmaPng, nombreAdminAprobador, fechaAprobacionAdmin));
+                    });
+
+                    page.Footer().Element(c => ComponerPieDePagina(c, fmt));
+                });
+            }).GeneratePdf();
         }
 
         // ============================================================================
         // BLOQUES
         // ============================================================================
 
-        private PdfPTable ConstruirEncabezadoControlado(EmpresaInfo emp, FormatoControladoInfo fmt)
+        private void ComponerEncabezadoControlado(IContainer cont, EmpresaInfo emp, FormatoControladoInfo fmt)
         {
-            var tb = new PdfPTable(new float[] { 1.4f, 5.6f, 2.3f })
+            cont.Row(row =>
             {
-                WidthPercentage = 100f,
-                SpacingAfter = 4f
-            };
+                // --- Celda 1: logo ---
+                row.RelativeItem(1.4f).Border(1.2f).BorderColor(AZUL_CORP).Padding(6)
+                    .AlignCenter().AlignMiddle().Element(logo =>
+                    {
+                        string logoPath = null;
+                        try { logoPath = HostingEnvironment.MapPath("~/Content/favicon.png"); }
+                        catch { /* fuera de contexto web */ }
 
-            // --- Celda 1: logo ---
-            var celLogo = new PdfPCell { Border = Rectangle.BOX, BorderColor = AZUL_CORP, BorderWidth = 1.2f,
-                HorizontalAlignment = Element.ALIGN_CENTER, VerticalAlignment = Element.ALIGN_MIDDLE,
-                Padding = 6f };
-            try
-            {
-                string logoPath = HostingEnvironment.MapPath("~/Content/favicon.png");
-                if (!string.IsNullOrEmpty(logoPath) && File.Exists(logoPath))
+                        if (!string.IsNullOrEmpty(logoPath) && File.Exists(logoPath))
+                            logo.MaxHeight(55).MaxWidth(55).Image(logoPath).FitArea();
+                        else
+                            logo.Text("SGV").Bold().FontSize(14).FontColor(AZUL_CORP);
+                    });
+
+                // --- Celda 2: razón social + rubro + titulo doc ---
+                row.RelativeItem(5.6f)
+                    .BorderTop(1.2f).BorderBottom(1.2f).BorderColor(AZUL_CORP)
+                    .Padding(6).AlignMiddle().Column(c =>
+                    {
+                        c.Item().AlignCenter().Text(emp.RazonSocial.ToUpper(CultureInfo.CurrentCulture))
+                            .Bold().FontSize(12).FontColor(AZUL_CORP);
+                        c.Item().AlignCenter().Text(emp.Rubro).FontSize(9.5f).FontColor(GRIS_SECUND);
+                        c.Item().PaddingTop(4).AlignCenter().Text("ORDEN DE VIAJE").Bold().FontSize(14);
+                    });
+
+                // --- Celda 3: formato controlado ---
+                row.RelativeItem(2.3f).Border(1.2f).BorderColor(AZUL_CORP).Column(c =>
                 {
-                    var img = Image.GetInstance(logoPath);
-                    img.ScaleToFit(55f, 55f);
-                    celLogo.AddElement(img);
-                }
-                else
+                    AgregarFilaFormato(c, "Código",   fmt != null ? fmt.CodigoFormato : "SGV-CDF-F-05");
+                    AgregarFilaFormato(c, "Versión",  fmt != null ? fmt.Version       : "01");
+                    AgregarFilaFormato(c, "Vigencia", fmt != null ? fmt.FechaVigencia.ToString("dd/MM/yyyy") : "01/01/2025");
+                    AgregarFilaFormato(c, "Página",   "1 de 1");
+                });
+            });
+        }
+
+        private void AgregarFilaFormato(ColumnDescriptor col, string lbl, string val)
+        {
+            col.Item().BorderBottom(0.3f).BorderColor(GRIS_BORDE).Padding(3).Row(r =>
+            {
+                r.RelativeItem(1.1f).AlignMiddle().Text(lbl.ToUpperInvariant())
+                    .Bold().FontSize(7.5f).FontColor(GRIS_SECUND);
+                r.RelativeItem(1f).AlignRight().AlignMiddle().Text(val)
+                    .Bold().FontSize(8.5f).FontColor(AZUL_CORP);
+            });
+        }
+
+        private void ComponerSubHeader(IContainer cont, object d, EmpresaInfo emp)
+        {
+            cont.Row(row =>
+            {
+                // --- Izquierda: datos empresa ---
+                row.RelativeItem(3f).Padding(2).Column(c =>
                 {
-                    celLogo.AddElement(new Phrase("SGV", Fuente(_bfBold, 14f, AZUL_CORP)));
-                }
-            }
-            catch
+                    c.Spacing(1);
+                    c.Item().Element(x => FraseEtiqueta(x, "RUC:", emp.Ruc));
+                    c.Item().Element(x => FraseEtiqueta(x, "Domicilio Fiscal:", emp.DomicilioFiscal));
+                    c.Item().Element(x => FraseEtiqueta(x, "Web:", emp.Web));
+                });
+
+                // --- Derecha: número de documento ---
+                string numero = ObtenerStringProp(d, "NumeroOrdenViaje") ?? "";
+                row.RelativeItem(1.5f).Column(c =>
+                {
+                    c.Item().AlignRight().Text("N.° DE ORDEN").Bold().FontSize(8).FontColor(GRIS_SECUND);
+                    c.Item().Border(1.2f).BorderColor(ROJO_CORP).Background(Colors.White).Padding(5)
+                        .AlignCenter().Text(numero).Bold().FontSize(15).FontColor(ROJO_CORP);
+                    c.Item().AlignRight().Text("Emitido: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm"))
+                        .FontSize(8).FontColor(GRIS_SECUND);
+                });
+            });
+        }
+
+        private void FraseEtiqueta(IContainer cont, string etiqueta, string valor)
+        {
+            cont.Text(t =>
             {
-                celLogo.AddElement(new Phrase("SGV", Fuente(_bfBold, 14f, AZUL_CORP)));
-            }
-            tb.AddCell(celLogo);
-
-            // --- Celda 2: razón social + rubro + titulo doc ---
-            var celEmp = new PdfPCell { Border = Rectangle.TOP_BORDER | Rectangle.BOTTOM_BORDER,
-                BorderColor = AZUL_CORP, BorderWidth = 1.2f,
-                HorizontalAlignment = Element.ALIGN_CENTER, VerticalAlignment = Element.ALIGN_MIDDLE,
-                Padding = 6f };
-
-            var pRazon = new Paragraph(emp.RazonSocial.ToUpper(CultureInfo.CurrentCulture),
-                Fuente(_bfBold, 12f, AZUL_CORP)) { Alignment = Element.ALIGN_CENTER };
-            celEmp.AddElement(pRazon);
-            celEmp.AddElement(new Paragraph(emp.Rubro, Fuente(_bfRegular, 9.5f, GRIS_SECUND))
-                { Alignment = Element.ALIGN_CENTER });
-            celEmp.AddElement(new Paragraph(" ", Fuente(_bfRegular, 3f)));
-            celEmp.AddElement(new Paragraph("ORDEN DE VIAJE", Fuente(_bfBold, 14f, GRIS_TEXTO))
-                { Alignment = Element.ALIGN_CENTER });
-
-            tb.AddCell(celEmp);
-
-            // --- Celda 3: formato controlado ---
-            var celFmt = new PdfPCell { Border = Rectangle.BOX, BorderColor = AZUL_CORP, BorderWidth = 1.2f,
-                Padding = 0f };
-
-            var tFmt = new PdfPTable(2) { WidthPercentage = 100f };
-            tFmt.SetWidths(new float[] { 1.1f, 1f });
-            AgregarFilaFormato(tFmt, "Código",   fmt != null ? fmt.CodigoFormato : "SGV-CDF-F-05");
-            AgregarFilaFormato(tFmt, "Versión",  fmt != null ? fmt.Version       : "01");
-            AgregarFilaFormato(tFmt, "Vigencia", fmt != null ? fmt.FechaVigencia.ToString("dd/MM/yyyy") : "01/01/2025");
-            AgregarFilaFormato(tFmt, "Página",   "1 de 1");
-            celFmt.AddElement(tFmt);
-
-            tb.AddCell(celFmt);
-            return tb;
+                t.Span(etiqueta + " ").Bold().FontSize(9).FontColor(AZUL_CORP);
+                t.Span(valor ?? "").FontSize(9);
+            });
         }
 
-        private void AgregarFilaFormato(PdfPTable t, string lbl, string val)
+        private void ComponerTituloSeccion(IContainer cont, int numero, string titulo)
         {
-            var cL = new PdfPCell(new Phrase(lbl.ToUpperInvariant(), Fuente(_bfBold, 7.5f, GRIS_SECUND)))
-            { Border = Rectangle.BOTTOM_BORDER, BorderColor = GRIS_BORDE, BorderWidthBottom = 0.3f,
-              Padding = 3f, VerticalAlignment = Element.ALIGN_MIDDLE };
-            var cV = new PdfPCell(new Phrase(val, Fuente(_bfBold, 8.5f, AZUL_CORP)))
-            { Border = Rectangle.BOTTOM_BORDER, BorderColor = GRIS_BORDE, BorderWidthBottom = 0.3f,
-              HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 3f, VerticalAlignment = Element.ALIGN_MIDDLE };
-            t.AddCell(cL);
-            t.AddCell(cV);
-        }
-
-        private PdfPTable ConstruirSubHeader(object d, EmpresaInfo emp)
-        {
-            var tb = new PdfPTable(new float[] { 3f, 1.5f })
+            cont.PaddingTop(4).Background(AZUL_CORP).Padding(5).PaddingLeft(8).Text(t =>
             {
-                WidthPercentage = 100f,
-                SpacingAfter = 8f
-            };
-
-            // --- Izquierda: datos empresa ---
-            var celDatos = new PdfPCell { Border = Rectangle.NO_BORDER, Padding = 2f };
-            celDatos.AddElement(FraseEtiqueta("RUC:", emp.Ruc));
-            celDatos.AddElement(FraseEtiqueta("Domicilio Fiscal:", emp.DomicilioFiscal));
-            celDatos.AddElement(FraseEtiqueta("Web:", emp.Web));
-            tb.AddCell(celDatos);
-
-            // --- Derecha: número de documento ---
-            var celNum = new PdfPCell { Border = Rectangle.NO_BORDER,
-                HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 0f };
-
-            celNum.AddElement(new Paragraph("N.° DE ORDEN", Fuente(_bfBold, 8f, GRIS_SECUND))
-                { Alignment = Element.ALIGN_RIGHT });
-
-            string numero = ObtenerStringProp(d, "NumeroOrdenViaje") ?? "";
-            var tblNro = new PdfPTable(1) { WidthPercentage = 100f, HorizontalAlignment = Element.ALIGN_RIGHT };
-            var celNroInner = new PdfPCell(new Phrase(numero, Fuente(_bfBold, 15f, ROJO_CORP)))
-            {
-                Border = Rectangle.BOX, BorderColor = ROJO_CORP, BorderWidth = 1.2f,
-                HorizontalAlignment = Element.ALIGN_CENTER, Padding = 5f,
-                BackgroundColor = BaseColor.WHITE
-            };
-            tblNro.AddCell(celNroInner);
-            celNum.AddElement(tblNro);
-
-            celNum.AddElement(new Paragraph("Emitido: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
-                Fuente(_bfRegular, 8f, GRIS_SECUND)) { Alignment = Element.ALIGN_RIGHT });
-
-            tb.AddCell(celNum);
-            return tb;
+                t.Span(" " + numero + " ").Bold().FontSize(9.5f).FontColor(AZUL_CORP).BackgroundColor(Colors.White);
+                t.Span("   " + titulo.ToUpperInvariant()).Bold().FontSize(10).FontColor(Colors.White);
+            });
         }
 
-        private Paragraph FraseEtiqueta(string etiqueta, string valor)
+        private void ComponerInfoViaje(IContainer cont, object d)
         {
-            var p = new Paragraph { SpacingAfter = 1f };
-            p.Add(new Chunk(etiqueta + " ", Fuente(_bfBold, 9f, AZUL_CORP)));
-            p.Add(new Chunk(valor ?? "", Fuente(_bfRegular, 9f, GRIS_TEXTO)));
-            return p;
-        }
-
-        private PdfPTable ConstruirTituloSeccion(int numero, string titulo)
-        {
-            var t = new PdfPTable(1) { WidthPercentage = 100f, SpacingBefore = 4f, SpacingAfter = 0f };
-            var c = new PdfPCell
-            {
-                BackgroundColor = AZUL_CORP,
-                Border = Rectangle.NO_BORDER,
-                Padding = 5f,
-                PaddingLeft = 8f
-            };
-
-            // Chunk con fondo blanco para el número (efecto "badge")
-            var chNum = new Chunk(" " + numero + " ", new Font(_bfBold, 9.5f, Font.NORMAL, AZUL_CORP));
-            chNum.SetBackground(BaseColor.WHITE, 2f, 1.5f, 2f, 1.5f);
-
-            var chTit = new Chunk("   " + titulo.ToUpperInvariant(),
-                new Font(_bfBold, 10f, Font.NORMAL, BaseColor.WHITE));
-
-            var pFinal = new Paragraph();
-            pFinal.Add(chNum);
-            pFinal.Add(chTit);
-            c.AddElement(pFinal);
-
-            t.AddCell(c);
-            return t;
-        }
-
-        private PdfPTable ConstruirInfoViaje(object d)
-        {
-            var t = new PdfPTable(4) { WidthPercentage = 100f, SpacingAfter = 6f };
-            t.SetWidths(new float[] { 1.5f, 1f, 1f, 1.5f });
-
             string conductor = ObtenerStringProp(d, "NombreConductor");
             string tracto = ObtenerStringProp(d, "PlacaTracto");
             string carreta = ObtenerStringProp(d, "PlacaCarreta");
@@ -338,38 +277,26 @@ namespace WebSGV.Services
             string fLle = ObtenerStringProp(d, "FechaLlegada");
             string periodo = (fSal ?? "") + " al " + (fLle ?? "");
 
-            AgregarCeldaInfo(t, "Conductor", conductor);
-            AgregarCeldaInfo(t, "Tracto", tracto);
-            AgregarCeldaInfo(t, "Carreta", carreta);
-            AgregarCeldaInfo(t, "Periodo", periodo);
-
-            return t;
-        }
-
-        private void AgregarCeldaInfo(PdfPTable t, string lbl, string val)
-        {
-            var c = new PdfPCell
+            cont.Row(row =>
             {
-                Border = Rectangle.BOX,
-                BorderColor = GRIS_BORDE,
-                BorderWidth = 0.5f,
-                Padding = 5f
-            };
-            c.AddElement(new Paragraph(lbl.ToUpperInvariant(), Fuente(_bfBold, 7.5f, GRIS_SECUND)));
-            c.AddElement(new Paragraph(val ?? "", Fuente(_bfBold, 10f, GRIS_TEXTO)));
-            t.AddCell(c);
+                AgregarCeldaInfo(row.RelativeItem(1.5f), "Conductor", conductor);
+                AgregarCeldaInfo(row.RelativeItem(1f),   "Tracto", tracto);
+                AgregarCeldaInfo(row.RelativeItem(1f),   "Carreta", carreta);
+                AgregarCeldaInfo(row.RelativeItem(1.5f), "Periodo", periodo);
+            });
         }
 
-        private PdfPTable ConstruirResumenFinanciero(object d)
+        private void AgregarCeldaInfo(IContainer cont, string lbl, string val)
         {
-            var t = new PdfPTable(3) { WidthPercentage = 100f, SpacingAfter = 4f };
-            t.SetWidths(new float[] { 3f, 1.5f, 1.5f });
+            cont.Border(0.5f).BorderColor(GRIS_BORDE).Padding(5).Column(c =>
+            {
+                c.Item().Text(lbl.ToUpperInvariant()).Bold().FontSize(7.5f).FontColor(GRIS_SECUND);
+                c.Item().Text(val ?? "").Bold().FontSize(10);
+            });
+        }
 
-            // Cabecera
-            AgregarHeaderCell(t, "CONCEPTO", Element.ALIGN_LEFT, GRIS_FONDO, GRIS_TEXTO);
-            AgregarHeaderCell(t, "SOLES (S/)", Element.ALIGN_RIGHT, GRIS_FONDO, GRIS_TEXTO);
-            AgregarHeaderCell(t, "DÓLARES ($)", Element.ALIGN_RIGHT, GRIS_FONDO, GRIS_TEXTO);
-
+        private void ComponerResumenFinanciero(IContainer cont, object d)
+        {
             decimal iS = ObtenerDecimal(d, "TotalIngresosSoles");
             decimal iD = ObtenerDecimal(d, "TotalIngresosDolares");
             decimal gS = CalcularTotalGastosSoles(d);
@@ -377,80 +304,71 @@ namespace WebSGV.Services
             decimal bS = iS - gS;
             decimal bD = iD - gD;
 
-            AgregarFilaResumen(t, "Total Ingresos", iS, iD, false, false);
-            AgregarFilaResumen(t, "Total Gastos",   gS, gD, false, false);
-            AgregarFilaResumen(t, "BALANCE FINAL DEL VIAJE", bS, bD, true, false);
-
-            return t;
-        }
-
-        private void AgregarHeaderCell(PdfPTable t, string text, int align, BaseColor bg, BaseColor fg)
-        {
-            var c = new PdfPCell(new Phrase(text, Fuente(_bfBold, 9f, fg)))
+            cont.Table(table =>
             {
-                BackgroundColor = bg,
-                HorizontalAlignment = align,
-                VerticalAlignment = Element.ALIGN_MIDDLE,
-                Padding = 5f,
-                BorderColor = GRIS_BORDE,
-                BorderWidth = 0.5f
-            };
-            t.AddCell(c);
+                table.ColumnsDefinition(c =>
+                {
+                    c.RelativeColumn(3f);
+                    c.RelativeColumn(1.5f);
+                    c.RelativeColumn(1.5f);
+                });
+
+                // Cabecera
+                AgregarHeaderCell(table, "CONCEPTO", false, GRIS_FONDO, GRIS_TEXTO);
+                AgregarHeaderCell(table, "SOLES (S/)", true, GRIS_FONDO, GRIS_TEXTO);
+                AgregarHeaderCell(table, "DÓLARES ($)", true, GRIS_FONDO, GRIS_TEXTO);
+
+                AgregarFilaResumen(table, "Total Ingresos", iS, iD, false);
+                AgregarFilaResumen(table, "Total Gastos",   gS, gD, false);
+                AgregarFilaResumen(table, "BALANCE FINAL DEL VIAJE", bS, bD, true);
+            });
         }
 
-        private void AgregarFilaResumen(PdfPTable t, string concepto, decimal s, decimal dol, bool balance, bool total)
+        private void AgregarHeaderCell(TableDescriptor table, string text, bool derecha, Color bg, Color fg)
         {
-            BaseColor bg = balance ? AZUL_CORP : (total ? AZUL_CLARO : BaseColor.WHITE);
-            BaseColor fg = balance ? BaseColor.WHITE : GRIS_TEXTO;
-            BaseFont font = balance || total ? _bfBold : _bfRegular;
+            var cel = table.Cell().Background(bg).Border(0.5f).BorderColor(GRIS_BORDE).Padding(5).AlignMiddle();
+            (derecha ? cel.AlignRight() : cel).Text(text).Bold().FontSize(9).FontColor(fg);
+        }
+
+        private void AgregarFilaResumen(TableDescriptor table, string concepto, decimal s, decimal dol, bool balance)
+        {
+            Color bg = balance ? AZUL_CORP : Colors.White;
+            Color fg = balance ? Colors.White : GRIS_TEXTO;
             float sz = balance ? 11f : 10f;
 
-            var cConcepto = new PdfPCell(new Phrase(concepto, Fuente(font, sz, fg)))
-            { BackgroundColor = bg, Padding = 5f, BorderColor = GRIS_BORDE, BorderWidth = 0.5f,
-              HorizontalAlignment = Element.ALIGN_LEFT, VerticalAlignment = Element.ALIGN_MIDDLE };
-            var cS = new PdfPCell(new Phrase(FormatearMoneda(s, "S/"), Fuente(_bfBold, sz, fg)))
-            { BackgroundColor = bg, Padding = 5f, BorderColor = GRIS_BORDE, BorderWidth = 0.5f,
-              HorizontalAlignment = Element.ALIGN_RIGHT, VerticalAlignment = Element.ALIGN_MIDDLE };
-            var cD = new PdfPCell(new Phrase(FormatearMoneda(dol, "$"), Fuente(_bfBold, sz, fg)))
-            { BackgroundColor = bg, Padding = 5f, BorderColor = GRIS_BORDE, BorderWidth = 0.5f,
-              HorizontalAlignment = Element.ALIGN_RIGHT, VerticalAlignment = Element.ALIGN_MIDDLE };
+            var c1 = table.Cell().Background(bg).Border(0.5f).BorderColor(GRIS_BORDE).Padding(5).AlignMiddle();
+            var t1 = c1.Text(concepto).FontSize(sz).FontColor(fg);
+            if (balance) t1.Bold();
 
-            t.AddCell(cConcepto);
-            t.AddCell(cS);
-            t.AddCell(cD);
+            table.Cell().Background(bg).Border(0.5f).BorderColor(GRIS_BORDE).Padding(5).AlignMiddle()
+                .AlignRight().Text(FormatearMoneda(s, "S/")).Bold().FontSize(sz).FontColor(fg);
+            table.Cell().Background(bg).Border(0.5f).BorderColor(GRIS_BORDE).Padding(5).AlignMiddle()
+                .AlignRight().Text(FormatearMoneda(dol, "$")).Bold().FontSize(sz).FontColor(fg);
         }
 
-        private PdfPTable ConstruirMontoEnLetras(object d)
+        private void ComponerMontoEnLetras(IContainer cont, object d)
         {
             decimal bS = ObtenerDecimal(d, "TotalIngresosSoles") - CalcularTotalGastosSoles(d);
             decimal bD = ObtenerDecimal(d, "TotalIngresosDolares") - CalcularTotalGastosDolares(d);
 
-            var t = new PdfPTable(1) { WidthPercentage = 100f, SpacingAfter = 8f };
-
-            var cS = new PdfPCell { Border = Rectangle.BOX, BorderColor = GRIS_BORDE_B,
-                BorderWidth = 0.5f, BackgroundColor = FONDO_DASHED, Padding = 5f };
-            var pS = new Paragraph();
-            pS.Add(new Chunk("SOLES:   ", Fuente(_bfBold, 8.5f, AZUL_CORP)));
-            pS.Add(new Chunk(NumeroALetrasHelper.Convertir(bS, "SOLES"), Fuente(_bfRegular, 8.5f, GRIS_TEXTO)));
-            cS.AddElement(pS);
-            t.AddCell(cS);
-
-            var cD = new PdfPCell { Border = Rectangle.BOX, BorderColor = GRIS_BORDE_B,
-                BorderWidth = 0.5f, BackgroundColor = FONDO_DASHED, Padding = 5f };
-            var pD = new Paragraph();
-            pD.Add(new Chunk("DÓLARES:   ", Fuente(_bfBold, 8.5f, AZUL_CORP)));
-            pD.Add(new Chunk(NumeroALetrasHelper.Convertir(bD, "DÓLARES AMERICANOS"), Fuente(_bfRegular, 8.5f, GRIS_TEXTO)));
-            cD.AddElement(pD);
-            t.AddCell(cD);
-
-            return t;
+            cont.Column(col =>
+            {
+                col.Item().Border(0.5f).BorderColor(GRIS_BORDE_B).Background(FONDO_DASHED).Padding(5).Text(t =>
+                {
+                    t.Span("SOLES:   ").Bold().FontSize(8.5f).FontColor(AZUL_CORP);
+                    t.Span(NumeroALetrasHelper.Convertir(bS, "SOLES")).FontSize(8.5f);
+                });
+                col.Item().Border(0.5f).BorderColor(GRIS_BORDE_B).Background(FONDO_DASHED).Padding(5).Text(t =>
+                {
+                    t.Span("DÓLARES:   ").Bold().FontSize(8.5f).FontColor(AZUL_CORP);
+                    t.Span(NumeroALetrasHelper.Convertir(bD, "DÓLARES AMERICANOS")).FontSize(8.5f);
+                });
+            });
         }
 
-        private PdfPTable ConstruirDesgloseIngresos(object d)
+        private void ComponerDesgloseIngresos(IContainer cont, object d)
         {
-            var t = NuevaTablaDesglose();
-
-            var items = new List<Tuple<string, decimal, decimal>>
+            var items = new System.Collections.Generic.List<Tuple<string, decimal, decimal>>
             {
                 Tuple.Create("Despacho / Flete",       ObtenerDecimal(d, "DespachoSoles"),    ObtenerDecimal(d, "DespachoDolares")),
                 Tuple.Create("Préstamo",               ObtenerDecimal(d, "PrestamoSoles"),    ObtenerDecimal(d, "PrestamoDolares")),
@@ -471,26 +389,15 @@ namespace WebSGV.Services
                 }
             }
 
-            bool alt = false;
-            foreach (var it in items)
-            {
-                if (it.Item2 == 0 && it.Item3 == 0) continue;
-                AgregarFilaDesglose(t, it.Item1, it.Item2, it.Item3, alt);
-                alt = !alt;
-            }
-
             decimal tS = ObtenerDecimal(d, "TotalIngresosSoles");
             decimal tD = ObtenerDecimal(d, "TotalIngresosDolares");
-            AgregarFilaTotal(t, "Total Ingresos", tS, tD);
 
-            return t;
+            ComponerTablaDesglose(cont, items, "Total Ingresos", tS, tD);
         }
 
-        private PdfPTable ConstruirDesgloseGastos(object d)
+        private void ComponerDesgloseGastos(IContainer cont, object d)
         {
-            var t = NuevaTablaDesglose();
-
-            var items = new List<Tuple<string, decimal, decimal>>
+            var items = new System.Collections.Generic.List<Tuple<string, decimal, decimal>>
             {
                 Tuple.Create("Peajes",               ObtenerDecimal(d, "GastosPeajesSoles"),         ObtenerDecimal(d, "GastosPeajesDolares")),
                 Tuple.Create("Combustible",          ObtenerDecimal(d, "GastosCombustibleSoles"),    ObtenerDecimal(d, "GastosCombustibleDolares")),
@@ -514,97 +421,67 @@ namespace WebSGV.Services
                 }
             }
 
-            bool alt = false;
-            foreach (var it in items)
-            {
-                if (it.Item2 == 0 && it.Item3 == 0) continue;
-                AgregarFilaDesglose(t, it.Item1, it.Item2, it.Item3, alt);
-                alt = !alt;
-            }
-
             decimal tS = CalcularTotalGastosSoles(d);
             decimal tD = CalcularTotalGastosDolares(d);
-            AgregarFilaTotal(t, "Total Gastos", tS, tD);
 
-            return t;
+            ComponerTablaDesglose(cont, items, "Total Gastos", tS, tD);
         }
 
-        private PdfPTable NuevaTablaDesglose()
+        private void ComponerTablaDesglose(IContainer cont,
+            System.Collections.Generic.List<Tuple<string, decimal, decimal>> items,
+            string tituloTotal, decimal totalSoles, decimal totalDolares)
         {
-            var t = new PdfPTable(3) { WidthPercentage = 100f, SpacingAfter = 6f };
-            t.SetWidths(new float[] { 3f, 1.5f, 1.5f });
+            cont.Table(table =>
+            {
+                table.ColumnsDefinition(c =>
+                {
+                    c.RelativeColumn(3f);
+                    c.RelativeColumn(1.5f);
+                    c.RelativeColumn(1.5f);
+                });
 
-            AgregarHeaderCell(t, "CONCEPTO", Element.ALIGN_LEFT, AZUL_CORP, BaseColor.WHITE);
-            AgregarHeaderCell(t, "SOLES (S/)", Element.ALIGN_RIGHT, AZUL_CORP, BaseColor.WHITE);
-            AgregarHeaderCell(t, "DÓLARES ($)", Element.ALIGN_RIGHT, AZUL_CORP, BaseColor.WHITE);
+                AgregarHeaderCell(table, "CONCEPTO", false, AZUL_CORP, Colors.White);
+                AgregarHeaderCell(table, "SOLES (S/)", true, AZUL_CORP, Colors.White);
+                AgregarHeaderCell(table, "DÓLARES ($)", true, AZUL_CORP, Colors.White);
 
-            return t;
+                bool alt = false;
+                foreach (var it in items)
+                {
+                    if (it.Item2 == 0 && it.Item3 == 0) continue;
+                    Color bg = alt ? AZUL_CLARO : Colors.White;
+
+                    table.Cell().Background(bg).Border(0.3f).BorderColor(GRIS_BORDE).Padding(4)
+                        .Text(it.Item1).FontSize(9.5f);
+                    table.Cell().Background(bg).Border(0.3f).BorderColor(GRIS_BORDE).Padding(4)
+                        .AlignRight().Text(FormatearMoneda(it.Item2, "S/")).FontSize(9.5f);
+                    table.Cell().Background(bg).Border(0.3f).BorderColor(GRIS_BORDE).Padding(4)
+                        .AlignRight().Text(FormatearMoneda(it.Item3, "$")).FontSize(9.5f);
+                    alt = !alt;
+                }
+
+                // Fila de total
+                table.Cell().Background(GRIS_FONDO).Border(0.3f).BorderTop(1.2f).BorderColor(AZUL_CORP).Padding(6)
+                    .Text(tituloTotal).Bold().FontSize(10.5f).FontColor(AZUL_CORP);
+                table.Cell().Background(GRIS_FONDO).Border(0.3f).BorderTop(1.2f).BorderColor(AZUL_CORP).Padding(6)
+                    .AlignRight().Text(FormatearMoneda(totalSoles, "S/")).Bold().FontSize(10.5f).FontColor(AZUL_CORP);
+                table.Cell().Background(GRIS_FONDO).Border(0.3f).BorderTop(1.2f).BorderColor(AZUL_CORP).Padding(6)
+                    .AlignRight().Text(FormatearMoneda(totalDolares, "$")).Bold().FontSize(10.5f).FontColor(AZUL_CORP);
+            });
         }
 
-        private void AgregarFilaDesglose(PdfPTable t, string concepto, decimal s, decimal dol, bool alt)
+        private void ComponerCajaObservaciones(IContainer cont, string obs)
         {
-            BaseColor bg = alt ? AZUL_CLARO : BaseColor.WHITE;
-
-            var cC = new PdfPCell(new Phrase(concepto, Fuente(_bfRegular, 9.5f)))
-            { BackgroundColor = bg, Padding = 4f, BorderColor = GRIS_BORDE, BorderWidth = 0.3f };
-            var cS = new PdfPCell(new Phrase(FormatearMoneda(s, "S/"), Fuente(_bfRegular, 9.5f)))
-            { BackgroundColor = bg, Padding = 4f, BorderColor = GRIS_BORDE, BorderWidth = 0.3f,
-              HorizontalAlignment = Element.ALIGN_RIGHT };
-            var cD = new PdfPCell(new Phrase(FormatearMoneda(dol, "$"), Fuente(_bfRegular, 9.5f)))
-            { BackgroundColor = bg, Padding = 4f, BorderColor = GRIS_BORDE, BorderWidth = 0.3f,
-              HorizontalAlignment = Element.ALIGN_RIGHT };
-
-            t.AddCell(cC);
-            t.AddCell(cS);
-            t.AddCell(cD);
+            cont.BorderLeft(2.5f).BorderColor(ROJO_CORP)
+                .Element(inner => inner
+                    .BorderTop(0.5f).BorderRight(0.5f).BorderBottom(0.5f).BorderColor(GRIS_BORDE)
+                    .Background(FONDO_OBS).Padding(7)
+                    .Text(obs).FontSize(10));
         }
 
-        private void AgregarFilaTotal(PdfPTable t, string titulo, decimal s, decimal dol)
-        {
-            var cC = new PdfPCell(new Phrase(titulo, Fuente(_bfBold, 10.5f, AZUL_CORP)))
-            { BackgroundColor = GRIS_FONDO, Padding = 6f, BorderColor = AZUL_CORP, BorderWidthTop = 1.2f,
-              BorderWidthBottom = 0.3f, BorderWidthLeft = 0.3f, BorderWidthRight = 0.3f };
-            var cS = new PdfPCell(new Phrase(FormatearMoneda(s, "S/"), Fuente(_bfBold, 10.5f, AZUL_CORP)))
-            { BackgroundColor = GRIS_FONDO, Padding = 6f, BorderColor = AZUL_CORP, BorderWidthTop = 1.2f,
-              BorderWidthBottom = 0.3f, BorderWidthLeft = 0.3f, BorderWidthRight = 0.3f,
-              HorizontalAlignment = Element.ALIGN_RIGHT };
-            var cD = new PdfPCell(new Phrase(FormatearMoneda(dol, "$"), Fuente(_bfBold, 10.5f, AZUL_CORP)))
-            { BackgroundColor = GRIS_FONDO, Padding = 6f, BorderColor = AZUL_CORP, BorderWidthTop = 1.2f,
-              BorderWidthBottom = 0.3f, BorderWidthLeft = 0.3f, BorderWidthRight = 0.3f,
-              HorizontalAlignment = Element.ALIGN_RIGHT };
-
-            t.AddCell(cC);
-            t.AddCell(cS);
-            t.AddCell(cD);
-        }
-
-        private PdfPTable ConstruirCajaObservaciones(string obs)
-        {
-            var t = new PdfPTable(1) { WidthPercentage = 100f, SpacingAfter = 6f };
-            var c = new PdfPCell(new Phrase(obs, Fuente(_bfRegular, 10f, GRIS_TEXTO)))
-            { BackgroundColor = FONDO_OBS, Padding = 7f,
-              BorderColor = GRIS_BORDE, BorderWidth = 0.5f,
-              BorderColorLeft = ROJO_CORP, BorderWidthLeft = 2.5f };
-            t.AddCell(c);
-            return t;
-        }
-
-        private PdfPTable ConstruirConstanciaYFirma(object d, byte[] firmaPng,
+        private void ComponerConstanciaYFirma(IContainer cont, object d, byte[] firmaPng,
             string nombreAdminAprobador = null, string fechaAprobacionAdmin = null)
         {
             bool conAdmin = !string.IsNullOrWhiteSpace(nombreAdminAprobador);
-
-            var t = new PdfPTable(1) { WidthPercentage = 100f, SpacingBefore = 4f };
-            var c = new PdfPCell
-            {
-                Border = Rectangle.BOX,
-                BorderColor = GRIS_BORDE,
-                BorderWidth = 0.5f,
-                Padding = 10f
-            };
-
-            c.AddElement(new Paragraph("CONSTANCIA DE CONFORMIDAD Y APROBACIÓN",
-                Fuente(_bfBold, 10f, AZUL_CORP)));
 
             string conductor = ObtenerStringProp(d, "NombreConductor") ?? "";
             string numero = ObtenerStringProp(d, "NumeroOrdenViaje") ?? "";
@@ -614,185 +491,121 @@ namespace WebSGV.Services
                            "consignados en el presente documento, y manifiesto mi conformidad con la información registrada. " +
                            "Firmo en señal de aceptación y asumo las obligaciones derivadas de la presente liquidación.";
 
-            var pTexto = new Paragraph(texto, Fuente(_bfRegular, 9.5f, GRIS_TEXTO))
-            { Alignment = Element.ALIGN_JUSTIFIED, SpacingBefore = 4f, SpacingAfter = 8f };
-            c.AddElement(pTexto);
-
-            // --- Tabla de firmas: 1 ó 2 columnas según haya aprobación admin ---
-            var tblFirmas = new PdfPTable(conAdmin ? 2 : 1)
+            cont.Border(0.5f).BorderColor(GRIS_BORDE).Padding(10).Column(col =>
             {
-                WidthPercentage = conAdmin ? 95f : 55f,
-                HorizontalAlignment = Element.ALIGN_CENTER
-            };
-            if (conAdmin) tblFirmas.SetWidths(new float[] { 1f, 1f });
+                col.Item().Text("CONSTANCIA DE CONFORMIDAD Y APROBACIÓN").Bold().FontSize(10).FontColor(AZUL_CORP);
+                col.Item().PaddingTop(4).PaddingBottom(8).Text(texto).FontSize(9.5f).Justify();
 
-            // ---------- Bloque CONDUCTOR ----------
-            tblFirmas.AddCell(ConstruirCeldaFirmaImagen(firmaPng,
-                esperaTexto: "[Espacio reservado para firma del conductor]"));
-            tblFirmas.AddCell(ConstruirCeldaFirmaPie(
-                nombre: conductor,
-                rolTexto: "Conductor",
-                metaTexto: firmaPng != null
-                    ? ("Firmado electrónicamente el " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"))
-                    : "Firma pendiente de registro digital"));
-
-            // ---------- Bloque ADMIN (sólo si hay aprobación) ----------
-            if (conAdmin)
-            {
-                // Celda con sello "APROBADO" estilizado
-                var celSello = new PdfPCell
+                col.Item().Row(row =>
                 {
-                    FixedHeight = 65f,
-                    Border = Rectangle.BOX,
-                    BorderColor = GRIS_BORDE_B,
-                    BorderWidth = 0.5f,
-                    BackgroundColor = FONDO_OBS,
-                    HorizontalAlignment = Element.ALIGN_CENTER,
-                    VerticalAlignment = Element.ALIGN_MIDDLE
-                };
-                // "APROBADO" en grande + rojo corporativo (sello visual)
-                var pSello = new Paragraph("✓ APROBADO",
-                    new Font(_bfBold, 18f, Font.NORMAL, ROJO_CORP))
-                { Alignment = Element.ALIGN_CENTER };
-                celSello.AddElement(pSello);
-                var pRef = new Paragraph("Aprobación administrativa mediante credenciales autenticadas",
-                    Fuente(_bfRegular, 7f, GRIS_SECUND))
-                { Alignment = Element.ALIGN_CENTER };
-                celSello.AddElement(pRef);
-                tblFirmas.AddCell(celSello);
+                    if (conAdmin)
+                    {
+                        row.Spacing(14);
 
-                // Pie con nombre del admin + fecha de aprobación
-                tblFirmas.AddCell(ConstruirCeldaFirmaPie(
-                    nombre: nombreAdminAprobador,
-                    rolTexto: "Administrador de Transporte",
-                    metaTexto: !string.IsNullOrWhiteSpace(fechaAprobacionAdmin)
-                        ? ("Aprobado el " + fechaAprobacionAdmin)
-                        : ("Aprobado el " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"))));
-            }
+                        // ---------- Bloque CONDUCTOR ----------
+                        row.RelativeItem().Element(c => ComponerBloqueFirmaConductor(c, conductor, firmaPng));
 
-            c.AddElement(tblFirmas);
-            t.AddCell(c);
-            return t;
+                        // ---------- Bloque ADMIN ----------
+                        row.RelativeItem().Column(bc =>
+                        {
+                            bc.Item().Height(65).Border(0.5f).BorderColor(GRIS_BORDE_B).Background(FONDO_OBS)
+                                .AlignCenter().AlignMiddle().Column(sello =>
+                                {
+                                    sello.Item().AlignCenter().Text("APROBADO").Bold().FontSize(18).FontColor(ROJO_CORP);
+                                    sello.Item().AlignCenter()
+                                        .Text("Aprobación administrativa mediante credenciales autenticadas")
+                                        .FontSize(7).FontColor(GRIS_SECUND);
+                                });
+                            bc.Item().Element(c => ComponerPieFirma(c,
+                                nombre: nombreAdminAprobador,
+                                rolTexto: "Administrador de Transporte",
+                                metaTexto: !string.IsNullOrWhiteSpace(fechaAprobacionAdmin)
+                                    ? ("Aprobado el " + fechaAprobacionAdmin)
+                                    : ("Aprobado el " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"))));
+                        });
+                    }
+                    else
+                    {
+                        // Solo conductor: bloque centrado al 55% del ancho
+                        row.RelativeItem(0.225f);
+                        row.RelativeItem(0.55f).Element(c => ComponerBloqueFirmaConductor(c, conductor, firmaPng));
+                        row.RelativeItem(0.225f);
+                    }
+                });
+            });
         }
 
-        private PdfPCell ConstruirCeldaFirmaImagen(byte[] firmaPng, string esperaTexto)
+        private void ComponerBloqueFirmaConductor(IContainer cont, string conductor, byte[] firmaPng)
         {
-            var celArea = new PdfPCell
+            cont.Column(bc =>
             {
-                FixedHeight = 65f,
-                Border = Rectangle.BOX,
-                BorderColor = GRIS_BORDE_B,
-                BorderWidth = 0.5f,
-                BackgroundColor = FONDO_OBS,
-                HorizontalAlignment = Element.ALIGN_CENTER,
-                VerticalAlignment = Element.ALIGN_MIDDLE
-            };
-
-            if (firmaPng != null && firmaPng.Length > 0)
-            {
-                try
-                {
-                    var img = Image.GetInstance(firmaPng);
-                    img.ScaleToFit(200f, 55f);
-                    celArea.AddElement(img);
-                }
-                catch
-                {
-                    celArea.AddElement(new Phrase("[Firma no disponible]", Fuente(_bfRegular, 8f, GRIS_SECUND)));
-                }
-            }
-            else
-            {
-                var pPend = new Paragraph(esperaTexto,
-                    Fuente(_bfRegular, 8f, GRIS_SECUND)) { Alignment = Element.ALIGN_CENTER };
-                celArea.AddElement(pPend);
-            }
-            return celArea;
+                bc.Item().Height(65).Border(0.5f).BorderColor(GRIS_BORDE_B).Background(FONDO_OBS)
+                    .AlignCenter().AlignMiddle().Element(area =>
+                    {
+                        if (firmaPng != null && firmaPng.Length > 0)
+                        {
+                            try { area.Padding(4).Image(firmaPng).FitArea(); }
+                            catch { area.Text("[Firma no disponible]").FontSize(8).FontColor(GRIS_SECUND); }
+                        }
+                        else
+                        {
+                            area.Text("[Espacio reservado para firma del conductor]")
+                                .FontSize(8).FontColor(GRIS_SECUND);
+                        }
+                    });
+                bc.Item().Element(c => ComponerPieFirma(c,
+                    nombre: conductor,
+                    rolTexto: "Conductor",
+                    metaTexto: firmaPng != null
+                        ? ("Firmado electrónicamente el " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"))
+                        : "Firma pendiente de registro digital"));
+            });
         }
 
-        private PdfPCell ConstruirCeldaFirmaPie(string nombre, string rolTexto, string metaTexto)
+        private void ComponerPieFirma(IContainer cont, string nombre, string rolTexto, string metaTexto)
         {
-            var celLinea = new PdfPCell
+            cont.BorderTop(0.6f).BorderColor(GRIS_TEXTO).Padding(3).Column(c =>
             {
-                Border = Rectangle.TOP_BORDER,
-                BorderColorTop = GRIS_TEXTO,
-                BorderWidthTop = 0.6f,
-                Padding = 3f
-            };
-            celLinea.AddElement(new Paragraph((nombre ?? "").ToUpperInvariant(), Fuente(_bfBold, 10f, GRIS_TEXTO))
-            { Alignment = Element.ALIGN_CENTER });
-            celLinea.AddElement(new Paragraph(rolTexto ?? "", Fuente(_bfRegular, 8.5f, GRIS_SECUND))
-            { Alignment = Element.ALIGN_CENTER });
-            if (!string.IsNullOrWhiteSpace(metaTexto))
-            {
-                celLinea.AddElement(new Paragraph(metaTexto,
-                    new Font(_bfMono, 7.5f, Font.NORMAL, GRIS_SECUND))
-                { Alignment = Element.ALIGN_CENTER, SpacingBefore = 3f });
-            }
-            return celLinea;
+                c.Item().AlignCenter().Text((nombre ?? "").ToUpperInvariant()).Bold().FontSize(10);
+                c.Item().AlignCenter().Text(rolTexto ?? "").FontSize(8.5f).FontColor(GRIS_SECUND);
+                if (!string.IsNullOrWhiteSpace(metaTexto))
+                {
+                    c.Item().PaddingTop(3).AlignCenter().Text(metaTexto)
+                        .FontFamily(FUENTE_MONO).FontSize(7.5f).FontColor(GRIS_SECUND);
+                }
+            });
         }
 
         // ============================================================================
-        // PIE DE PÁGINA (PageEvent)
+        // PIE DE PÁGINA
         // ============================================================================
 
-        private sealed class PieDePaginaControlado : PdfPageEventHelper
+        private void ComponerPieDePagina(IContainer cont, FormatoControladoInfo fmt)
         {
-            private readonly PdfOrdenViajeService _svc;
-            private readonly FormatoControladoInfo _fmt;
+            string codigo = fmt != null ? fmt.CodigoFormato : "SGV-CDF-F-05";
+            string version = fmt != null ? fmt.Version : "01";
 
-            public PieDePaginaControlado(PdfOrdenViajeService svc, FormatoControladoInfo fmt)
+            cont.PaddingTop(6).BorderTop(1f).BorderColor(AZUL_CORP).PaddingTop(4).Row(row =>
             {
-                _svc = svc;
-                _fmt = fmt;
-            }
-
-            public override void OnEndPage(PdfWriter writer, Document doc)
-            {
-                var cb = writer.DirectContent;
-
-                // Línea azul superior del pie
-                cb.SaveState();
-                cb.SetLineWidth(1f);
-                cb.SetColorStroke(AZUL_CORP);
-                cb.MoveTo(doc.LeftMargin, 44f);
-                cb.LineTo(doc.PageSize.Width - doc.RightMargin, 44f);
-                cb.Stroke();
-                cb.RestoreState();
-
-                string codigo = _fmt != null ? _fmt.CodigoFormato : "SGV-CDF-F-05";
-                string version = _fmt != null ? _fmt.Version : "01";
-
                 // Izquierda: texto legal
-                var legal = new Phrase();
-                legal.Add(new Chunk("Documento interno controlado. ", new Font(_svc._bfBold, 7.5f, Font.NORMAL, AZUL_CORP)));
-                legal.Add(new Chunk(
-                    "Generado electrónicamente por el Sistema SGV. Los comprobantes tributarios (facturas, " +
-                    "boletas, guías, tickets) que respaldan los importes se conservan digitalmente vinculados a " +
-                    "este documento conforme al art. 87 del Código Tributario (mínimo 5 años).",
-                    new Font(_svc._bfRegular, 7.5f, Font.NORMAL, GRIS_SECUND)));
-
-                var ct = new ColumnText(cb);
-                ct.SetSimpleColumn(
-                    doc.LeftMargin, 8f,
-                    doc.PageSize.Width - doc.RightMargin - 110f, 40f);
-                ct.AddElement(new Paragraph(legal) { Alignment = Element.ALIGN_LEFT, Leading = 9f });
-                ct.Go();
+                row.RelativeItem().Text(t =>
+                {
+                    t.Span("Documento interno controlado. ").Bold().FontSize(7.5f).FontColor(AZUL_CORP);
+                    t.Span("Generado electrónicamente por el Sistema SGV. Los comprobantes tributarios (facturas, " +
+                           "boletas, guías, tickets) que respaldan los importes se conservan digitalmente vinculados a " +
+                           "este documento conforme al art. 87 del Código Tributario (mínimo 5 años).")
+                        .FontSize(7.5f).FontColor(GRIS_SECUND);
+                });
 
                 // Derecha: código + página
-                var derecha = new Phrase();
-                derecha.Add(new Chunk(codigo + " v." + version + "\n",
-                    new Font(_svc._bfBold, 7.5f, Font.NORMAL, AZUL_CORP)));
-                derecha.Add(new Chunk("Página " + writer.PageNumber,
-                    new Font(_svc._bfMono, 7.5f, Font.NORMAL, GRIS_SECUND)));
-
-                var ctD = new ColumnText(cb);
-                ctD.SetSimpleColumn(
-                    doc.PageSize.Width - doc.RightMargin - 110f, 8f,
-                    doc.PageSize.Width - doc.RightMargin, 40f);
-                ctD.AddElement(new Paragraph(derecha) { Alignment = Element.ALIGN_RIGHT, Leading = 10f });
-                ctD.Go();
-            }
+                row.ConstantItem(110).AlignRight().Text(t =>
+                {
+                    t.AlignRight();
+                    t.Line(codigo + " v." + version).Bold().FontSize(7.5f).FontColor(AZUL_CORP);
+                    t.Span("Página ").FontFamily(FUENTE_MONO).FontSize(7.5f).FontColor(GRIS_SECUND);
+                    t.CurrentPageNumber().FontFamily(FUENTE_MONO).FontSize(7.5f).FontColor(GRIS_SECUND);
+                });
+            });
         }
 
         // ============================================================================

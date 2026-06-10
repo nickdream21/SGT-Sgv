@@ -13,15 +13,13 @@ using System.IO;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
-using iTextSharp.text;
-using iTextSharp.text.pdf;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
 using WebSGV.Helpers;
 
-// Alias para resolver ambigüedades
-using iTextParagraph = iTextSharp.text.Paragraph;
-using iTextDocument = iTextSharp.text.Document;
-using iTextFont = iTextSharp.text.Font;
-using iTextPageSize = iTextSharp.text.PageSize;
+// Alias para evitar ambigüedades con System.Web.UI.WebControls (Unit, etc.)
+using QuestPdfColor = QuestPDF.Infrastructure.Color;
+using QuestPdfContainer = QuestPDF.Infrastructure.IContainer;
 
 namespace WebSGV.Views
 {
@@ -828,250 +826,179 @@ namespace WebSGV.Views
 
                 DataTable dt = ObtenerLiquidaciones(fechaDesde, fechaHasta);
 
-                byte[] pdfBytes;
-                using (MemoryStream ms = new MemoryStream())
+                // Colores del tema
+                QuestPdfColor textDark = QuestPdfColor.FromHex("#1E293B");     // slate-800
+                QuestPdfColor headerBg = textDark;
+                QuestPdfColor altRow = QuestPdfColor.FromHex("#F8FAFC");       // slate-50
+                QuestPdfColor borderColor = QuestPdfColor.FromHex("#E2E8F0");  // slate-200
+                QuestPdfColor accentGreen = QuestPdfColor.FromHex("#059669");  // emerald-600
+                QuestPdfColor accentBlue = QuestPdfColor.FromHex("#1E40AF");   // blue-800
+                QuestPdfColor redColor = QuestPdfColor.FromHex("#DC2626");     // red-600
+                QuestPdfColor blueColor = QuestPdfColor.FromHex("#2563EB");    // blue-600
+                QuestPdfColor subtleText = QuestPdfColor.FromHex("#64748B");   // slate-500
+                QuestPdfColor totalBg = QuestPdfColor.FromHex("#F1F5F9");      // slate-100
+                QuestPdfColor rowLight1 = QuestPdfColor.FromHex("#FEF3C7");    // amber-100
+                QuestPdfColor rowLight2 = QuestPdfColor.FromHex("#F0FDF4");    // green-50
+                QuestPdfColor rowLight3 = QuestPdfColor.FromHex("#ECFEFF");    // cyan-50
+                QuestPdfColor rowTotal = QuestPdfColor.FromHex("#D1FAE5");     // emerald-100
+
+                // Totales (precalculados para el resumen)
+                decimal totalSoles = 0;
+                decimal totalDolares = 0;
+                foreach (DataRow dr in dt.Rows)
                 {
-                    iTextDocument document = new iTextDocument(iTextPageSize.A4.Rotate(), 25, 25, 30, 30);
-                    PdfWriter writer = PdfWriter.GetInstance(document, ms);
-                    writer.CloseStream = false;
-
-                    document.Open();
-
-                    // Colores del tema
-                    BaseColor headerBg = new BaseColor(30, 41, 59);   // slate-800
-                    BaseColor headerText = BaseColor.WHITE;
-                    BaseColor altRow = new BaseColor(248, 250, 252);   // slate-50
-                    BaseColor borderColor = new BaseColor(226, 232, 240); // slate-200
-                    BaseColor accentGreen = new BaseColor(5, 150, 105); // emerald-600
-                    BaseColor accentBlue = new BaseColor(30, 64, 175);  // blue-800
-                    BaseColor redColor = new BaseColor(220, 38, 38);    // red-600
-                    BaseColor blueColor = new BaseColor(37, 99, 235);   // blue-600
-
-                    // Header del documento
-                    PdfPTable headerTable = new PdfPTable(1);
-                    headerTable.WidthPercentage = 100;
-                    PdfPCell brandCell = new PdfPCell(new Phrase("SISTEMA SGV", FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, headerText)));
-                    brandCell.BackgroundColor = accentBlue;
-                    brandCell.HorizontalAlignment = Element.ALIGN_CENTER;
-                    brandCell.Padding = 12;
-                    brandCell.Border = 0;
-                    headerTable.AddCell(brandCell);
-                    document.Add(headerTable);
-
-                    iTextFont titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 14, new BaseColor(30, 41, 59));
-                    iTextParagraph title = new iTextParagraph("REPORTE DE LIQUIDACIONES (Descuentos y Reintegros)", titleFont);
-                    title.Alignment = Element.ALIGN_CENTER;
-                    title.SpacingBefore = 12;
-                    document.Add(title);
-
-                    iTextFont subtitleFont = FontFactory.GetFont(FontFactory.HELVETICA, 10, new BaseColor(100, 116, 139));
-                    iTextParagraph subtitle = new iTextParagraph($"Período: {fechaDesde:dd/MM/yyyy} - {fechaHasta:dd/MM/yyyy}  |  Generado: {DateTime.Now:dd/MM/yyyy HH:mm}", subtitleFont);
-                    subtitle.Alignment = Element.ALIGN_CENTER;
-                    subtitle.SpacingAfter = 15;
-                    document.Add(subtitle);
-
-                    // Línea separadora
-                    PdfPTable lineTable = new PdfPTable(1);
-                    lineTable.WidthPercentage = 100;
-                    PdfPCell lineCell = new PdfPCell();
-                    lineCell.Border = PdfPCell.BOTTOM_BORDER;
-                    lineCell.BorderColor = borderColor;
-                    lineCell.BorderWidth = 2;
-                    lineCell.FixedHeight = 5;
-                    lineTable.AddCell(lineCell);
-                    lineTable.SpacingAfter = 15;
-                    document.Add(lineTable);
-
-                    // Tabla principal
-                    PdfPTable table = new PdfPTable(6);
-                    table.WidthPercentage = 100;
-                    table.SetWidths(new float[] { 12f, 28f, 12f, 13f, 17.5f, 17.5f });
-
-                    iTextFont headerFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, headerText);
-                    string[] headers = { "DNI", "CONDUCTOR", "FECHA", "N° DE LIQ", "MONTO S/ (Reint.-Desc.)", "MONTO $ (Reint.-Desc.)" };
-                    foreach (string header in headers)
-                    {
-                        PdfPCell hCell = new PdfPCell(new Phrase(header, headerFont));
-                        hCell.BackgroundColor = headerBg;
-                        hCell.HorizontalAlignment = Element.ALIGN_CENTER;
-                        hCell.VerticalAlignment = Element.ALIGN_MIDDLE;
-                        hCell.Padding = 8;
-                        hCell.BorderColor = headerBg;
-                        table.AddCell(hCell);
-                    }
-
-                    iTextFont dataFont = FontFactory.GetFont(FontFactory.HELVETICA, 9);
-                    decimal totalSoles = 0;
-                    decimal totalDolares = 0;
-                    bool isAlt = false;
-
-                    foreach (DataRow dr in dt.Rows)
-                    {
-                        BaseColor rowBg = isAlt ? altRow : BaseColor.WHITE;
-
-                        PdfPCell c1 = new PdfPCell(new Phrase(dr["DNI"].ToString(), dataFont));
-                        c1.HorizontalAlignment = Element.ALIGN_CENTER;
-                        c1.Padding = 6;
-                        c1.BackgroundColor = rowBg;
-                        c1.BorderColor = borderColor;
-                        table.AddCell(c1);
-
-                        PdfPCell c2 = new PdfPCell(new Phrase(dr["Conductor"].ToString(), dataFont));
-                        c2.Padding = 6;
-                        c2.BackgroundColor = rowBg;
-                        c2.BorderColor = borderColor;
-                        table.AddCell(c2);
-
-                        PdfPCell c3 = new PdfPCell(new Phrase(Convert.ToDateTime(dr["FechaSalida"]).ToString("dd/MM/yyyy"), dataFont));
-                        c3.HorizontalAlignment = Element.ALIGN_CENTER;
-                        c3.Padding = 6;
-                        c3.BackgroundColor = rowBg;
-                        c3.BorderColor = borderColor;
-                        table.AddCell(c3);
-
-                        PdfPCell c4 = new PdfPCell(new Phrase(dr["NumeroLiquidacion"].ToString(), dataFont));
-                        c4.HorizontalAlignment = Element.ALIGN_CENTER;
-                        c4.Padding = 6;
-                        c4.BackgroundColor = rowBg;
-                        c4.BorderColor = borderColor;
-                        table.AddCell(c4);
-
-                        decimal montoSoles = Convert.ToDecimal(dr["MontoSoles"]);
-                        decimal montoDolares = Convert.ToDecimal(dr["MontoDolares"]);
-
-                        // Color coding for amounts
-                        BaseColor solesColor = montoSoles < 0 ? redColor : (montoSoles > 0 ? blueColor : new BaseColor(30, 41, 59));
-                        BaseColor dolaresColor = montoDolares < 0 ? redColor : (montoDolares > 0 ? blueColor : new BaseColor(30, 41, 59));
-
-                        iTextFont solesFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, solesColor);
-                        iTextFont dolaresFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, dolaresColor);
-
-                        string solesText = montoSoles < 0 ? $"-S/ {Math.Abs(montoSoles):N2}" : $"S/ {montoSoles:N2}";
-                        string dolaresText = montoDolares < 0 ? $"-$ {Math.Abs(montoDolares):N2}" : $"$ {montoDolares:N2}";
-
-                        PdfPCell c5 = new PdfPCell(new Phrase(solesText, solesFont));
-                        c5.HorizontalAlignment = Element.ALIGN_RIGHT;
-                        c5.Padding = 6;
-                        c5.BackgroundColor = rowBg;
-                        c5.BorderColor = borderColor;
-                        table.AddCell(c5);
-
-                        PdfPCell c6 = new PdfPCell(new Phrase(dolaresText, dolaresFont));
-                        c6.HorizontalAlignment = Element.ALIGN_RIGHT;
-                        c6.Padding = 6;
-                        c6.BackgroundColor = rowBg;
-                        c6.BorderColor = borderColor;
-                        table.AddCell(c6);
-
-                        totalSoles += montoSoles;
-                        totalDolares += montoDolares;
-                        isAlt = !isAlt;
-                    }
-
-                    // Fila de totales
-                    iTextFont totalFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, new BaseColor(30, 41, 59));
-                    BaseColor totalBg = new BaseColor(241, 245, 249); // slate-100
-
-                    PdfPCell totalLabelCell = new PdfPCell(new Phrase("TOTAL:", totalFont));
-                    totalLabelCell.Colspan = 4;
-                    totalLabelCell.HorizontalAlignment = Element.ALIGN_RIGHT;
-                    totalLabelCell.Padding = 8;
-                    totalLabelCell.BackgroundColor = totalBg;
-                    totalLabelCell.BorderColor = headerBg;
-                    totalLabelCell.BorderWidthTop = 2;
-                    totalLabelCell.BorderWidthBottom = 2;
-                    table.AddCell(totalLabelCell);
-
-                    PdfPCell totalSolesCell = new PdfPCell(new Phrase($"S/ {totalSoles:N2}", totalFont));
-                    totalSolesCell.HorizontalAlignment = Element.ALIGN_RIGHT;
-                    totalSolesCell.Padding = 8;
-                    totalSolesCell.BackgroundColor = totalBg;
-                    totalSolesCell.BorderColor = headerBg;
-                    totalSolesCell.BorderWidthTop = 2;
-                    totalSolesCell.BorderWidthBottom = 2;
-                    table.AddCell(totalSolesCell);
-
-                    PdfPCell totalDolaresCell = new PdfPCell(new Phrase($"$ {totalDolares:N2}", totalFont));
-                    totalDolaresCell.HorizontalAlignment = Element.ALIGN_RIGHT;
-                    totalDolaresCell.Padding = 8;
-                    totalDolaresCell.BackgroundColor = totalBg;
-                    totalDolaresCell.BorderColor = headerBg;
-                    totalDolaresCell.BorderWidthTop = 2;
-                    totalDolaresCell.BorderWidthBottom = 2;
-                    table.AddCell(totalDolaresCell);
-
-                    document.Add(table);
-                    document.Add(new iTextParagraph("\n"));
-
-                    // Resumen
-                    iTextFont resumenTitleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, BaseColor.WHITE);
-                    PdfPTable resumenHeaderTable = new PdfPTable(1);
-                    resumenHeaderTable.WidthPercentage = 60;
-                    resumenHeaderTable.HorizontalAlignment = Element.ALIGN_CENTER;
-                    PdfPCell resumenHeaderCell = new PdfPCell(new Phrase("RESUMEN TOTAL EN SOLES", resumenTitleFont));
-                    resumenHeaderCell.BackgroundColor = accentGreen;
-                    resumenHeaderCell.HorizontalAlignment = Element.ALIGN_CENTER;
-                    resumenHeaderCell.Padding = 10;
-                    resumenHeaderCell.Border = 0;
-                    resumenHeaderTable.AddCell(resumenHeaderCell);
-                    resumenHeaderTable.SpacingAfter = 5;
-                    document.Add(resumenHeaderTable);
-
-                    PdfPTable resumenTable = new PdfPTable(2);
-                    resumenTable.WidthPercentage = 60;
-                    resumenTable.HorizontalAlignment = Element.ALIGN_CENTER;
-                    resumenTable.SetWidths(new float[] { 60f, 40f });
-
-                    iTextFont resumenLabelFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, new BaseColor(30, 41, 59));
-                    iTextFont resumenValueFont = FontFactory.GetFont(FontFactory.HELVETICA, 10, new BaseColor(30, 41, 59));
-                    iTextFont resumenTotalValueFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, accentGreen);
-
-                    BaseColor rowLight1 = new BaseColor(254, 243, 199); // amber-100
-                    BaseColor rowLight2 = new BaseColor(240, 253, 244); // green-50
-                    BaseColor rowLight3 = new BaseColor(236, 254, 255); // cyan-50
-                    BaseColor rowTotal = new BaseColor(209, 250, 229);  // emerald-100
-
-                    PdfPCell rlc1 = new PdfPCell(new Phrase("Factor de Conversión ($ a S/):", resumenLabelFont)) { BackgroundColor = rowLight1, Padding = 8, BorderColor = borderColor };
-                    PdfPCell rvc1 = new PdfPCell(new Phrase(factorConversion.ToString("0.00"), resumenValueFont)) { BackgroundColor = rowLight1, HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 8, BorderColor = borderColor };
-                    resumenTable.AddCell(rlc1);
-                    resumenTable.AddCell(rvc1);
-
-                    PdfPCell rlc2 = new PdfPCell(new Phrase("Total en Soles (S/):", resumenLabelFont)) { BackgroundColor = rowLight2, Padding = 8, BorderColor = borderColor };
-                    PdfPCell rvc2 = new PdfPCell(new Phrase($"S/ {totalSoles:N2}", resumenValueFont)) { BackgroundColor = rowLight2, HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 8, BorderColor = borderColor };
-                    resumenTable.AddCell(rlc2);
-                    resumenTable.AddCell(rvc2);
-
-                    PdfPCell rlc3 = new PdfPCell(new Phrase("Total en Dólares ($):", resumenLabelFont)) { BackgroundColor = rowLight2, Padding = 8, BorderColor = borderColor };
-                    PdfPCell rvc3 = new PdfPCell(new Phrase($"$ {totalDolares:N2}", resumenValueFont)) { BackgroundColor = rowLight2, HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 8, BorderColor = borderColor };
-                    resumenTable.AddCell(rlc3);
-                    resumenTable.AddCell(rvc3);
-
-                    decimal totalDolaresConvertido = totalDolares * factorConversion;
-                    PdfPCell rlc4 = new PdfPCell(new Phrase("Conversión a Soles ($ × Factor):", resumenLabelFont)) { BackgroundColor = rowLight3, Padding = 8, BorderColor = borderColor };
-                    PdfPCell rvc4 = new PdfPCell(new Phrase($"S/ {totalDolaresConvertido:N2}", resumenValueFont)) { BackgroundColor = rowLight3, HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 8, BorderColor = borderColor };
-                    resumenTable.AddCell(rlc4);
-                    resumenTable.AddCell(rvc4);
-
-                    decimal totalGeneral = totalSoles + totalDolaresConvertido;
-                    PdfPCell rlc5 = new PdfPCell(new Phrase("TOTAL GENERAL EN SOLES:", FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11, new BaseColor(30, 41, 59)))) { BackgroundColor = rowTotal, Padding = 10, BorderColor = accentGreen, BorderWidthTop = 2 };
-                    PdfPCell rvc5 = new PdfPCell(new Phrase($"S/ {totalGeneral:N2}", resumenTotalValueFont)) { BackgroundColor = rowTotal, HorizontalAlignment = Element.ALIGN_RIGHT, Padding = 10, BorderColor = accentGreen, BorderWidthTop = 2 };
-                    resumenTable.AddCell(rlc5);
-                    resumenTable.AddCell(rvc5);
-
-                    document.Add(resumenTable);
-
-                    // Leyenda
-                    iTextFont legendFont = FontFactory.GetFont(FontFactory.HELVETICA_OBLIQUE, 8, new BaseColor(100, 116, 139));
-                    iTextParagraph legend = new iTextParagraph("Leyenda: Rojo = Descuento Neto  |  Azul = Reintegro Neto  |  Negro = Cero", legendFont);
-                    legend.Alignment = Element.ALIGN_CENTER;
-                    legend.SpacingBefore = 15;
-                    document.Add(legend);
-
-                    document.Close();
-                    writer.Close();
-
-                    pdfBytes = ms.ToArray();
+                    totalSoles += Convert.ToDecimal(dr["MontoSoles"]);
+                    totalDolares += Convert.ToDecimal(dr["MontoDolares"]);
                 }
+                decimal totalDolaresConvertido = totalDolares * factorConversion;
+                decimal totalGeneral = totalSoles + totalDolaresConvertido;
+
+                byte[] pdfBytes = Document.Create(qdoc =>
+                {
+                    qdoc.Page(page =>
+                    {
+                        page.Size(PageSizes.A4.Landscape());
+                        page.MarginHorizontal(25);
+                        page.MarginVertical(30);
+                        page.DefaultTextStyle(t => t.FontFamily("Arial").FontSize(9).FontColor(textDark));
+
+                        page.Content().Column(col =>
+                        {
+                            // Header del documento
+                            col.Item().Background(accentBlue).Padding(12).AlignCenter()
+                                .Text("SISTEMA SGV").Bold().FontSize(16).FontColor(Colors.White);
+
+                            col.Item().PaddingTop(12).AlignCenter()
+                                .Text("REPORTE DE LIQUIDACIONES (Descuentos y Reintegros)").Bold().FontSize(14);
+
+                            col.Item().AlignCenter()
+                                .Text($"Período: {fechaDesde:dd/MM/yyyy} - {fechaHasta:dd/MM/yyyy}  |  Generado: {DateTime.Now:dd/MM/yyyy HH:mm}")
+                                .FontSize(10).FontColor(subtleText);
+
+                            // Línea separadora
+                            col.Item().PaddingTop(15).PaddingBottom(15)
+                                .Height(5).BorderBottom(2).BorderColor(borderColor);
+
+                            // Tabla principal
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(c =>
+                                {
+                                    c.RelativeColumn(12f);
+                                    c.RelativeColumn(28f);
+                                    c.RelativeColumn(12f);
+                                    c.RelativeColumn(13f);
+                                    c.RelativeColumn(17.5f);
+                                    c.RelativeColumn(17.5f);
+                                });
+
+                                string[] headers = { "DNI", "CONDUCTOR", "FECHA", "N° DE LIQ", "MONTO S/ (Reint.-Desc.)", "MONTO $ (Reint.-Desc.)" };
+                                foreach (string header in headers)
+                                {
+                                    table.Cell().Background(headerBg).Border(0.5f).BorderColor(headerBg)
+                                        .Padding(8).AlignCenter().AlignMiddle()
+                                        .Text(header).Bold().FontSize(9).FontColor(Colors.White);
+                                }
+
+                                bool isAlt = false;
+                                foreach (DataRow dr in dt.Rows)
+                                {
+                                    QuestPdfColor rowBg = isAlt ? altRow : Colors.White;
+
+                                    table.Cell().Background(rowBg).Border(0.5f).BorderColor(borderColor)
+                                        .Padding(6).AlignCenter().Text(dr["DNI"].ToString()).FontSize(9);
+                                    table.Cell().Background(rowBg).Border(0.5f).BorderColor(borderColor)
+                                        .Padding(6).Text(dr["Conductor"].ToString()).FontSize(9);
+                                    table.Cell().Background(rowBg).Border(0.5f).BorderColor(borderColor)
+                                        .Padding(6).AlignCenter()
+                                        .Text(Convert.ToDateTime(dr["FechaSalida"]).ToString("dd/MM/yyyy")).FontSize(9);
+                                    table.Cell().Background(rowBg).Border(0.5f).BorderColor(borderColor)
+                                        .Padding(6).AlignCenter().Text(dr["NumeroLiquidacion"].ToString()).FontSize(9);
+
+                                    decimal montoSoles = Convert.ToDecimal(dr["MontoSoles"]);
+                                    decimal montoDolares = Convert.ToDecimal(dr["MontoDolares"]);
+
+                                    // Codificación por color: rojo = descuento, azul = reintegro
+                                    QuestPdfColor solesColor = montoSoles < 0 ? redColor : (montoSoles > 0 ? blueColor : textDark);
+                                    QuestPdfColor dolaresColor = montoDolares < 0 ? redColor : (montoDolares > 0 ? blueColor : textDark);
+
+                                    string solesText = montoSoles < 0 ? $"-S/ {Math.Abs(montoSoles):N2}" : $"S/ {montoSoles:N2}";
+                                    string dolaresText = montoDolares < 0 ? $"-$ {Math.Abs(montoDolares):N2}" : $"$ {montoDolares:N2}";
+
+                                    table.Cell().Background(rowBg).Border(0.5f).BorderColor(borderColor)
+                                        .Padding(6).AlignRight().Text(solesText).Bold().FontSize(9).FontColor(solesColor);
+                                    table.Cell().Background(rowBg).Border(0.5f).BorderColor(borderColor)
+                                        .Padding(6).AlignRight().Text(dolaresText).Bold().FontSize(9).FontColor(dolaresColor);
+
+                                    isAlt = !isAlt;
+                                }
+
+                                // Fila de totales
+                                table.Cell().ColumnSpan(4).Background(totalBg)
+                                    .BorderTop(2).BorderBottom(2).BorderColor(headerBg)
+                                    .Padding(8).AlignRight().Text("TOTAL:").Bold().FontSize(10);
+                                table.Cell().Background(totalBg)
+                                    .BorderTop(2).BorderBottom(2).BorderColor(headerBg)
+                                    .Padding(8).AlignRight().Text($"S/ {totalSoles:N2}").Bold().FontSize(10);
+                                table.Cell().Background(totalBg)
+                                    .BorderTop(2).BorderBottom(2).BorderColor(headerBg)
+                                    .Padding(8).AlignRight().Text($"$ {totalDolares:N2}").Bold().FontSize(10);
+                            });
+
+                            // Resumen (centrado al 60% del ancho)
+                            col.Item().PaddingTop(15).Row(r =>
+                            {
+                                r.RelativeItem(0.2f);
+                                r.RelativeItem(0.6f).Column(rc =>
+                                {
+                                    rc.Item().Background(accentGreen).Padding(10).AlignCenter()
+                                        .Text("RESUMEN TOTAL EN SOLES").Bold().FontSize(12).FontColor(Colors.White);
+
+                                    rc.Item().PaddingTop(5).Table(rt =>
+                                    {
+                                        rt.ColumnsDefinition(c =>
+                                        {
+                                            c.RelativeColumn(60f);
+                                            c.RelativeColumn(40f);
+                                        });
+
+                                        Action<string, string, QuestPdfColor, bool> filaResumen = (lbl, val, bg, esTotal) =>
+                                        {
+                                            QuestPdfContainer lc = rt.Cell().Background(bg);
+                                            QuestPdfContainer vc = rt.Cell().Background(bg);
+                                            if (esTotal)
+                                            {
+                                                lc = lc.BorderTop(2).BorderColor(accentGreen).Padding(10);
+                                                vc = vc.BorderTop(2).BorderColor(accentGreen).Padding(10);
+                                                lc.Text(lbl).Bold().FontSize(11);
+                                                vc.AlignRight().Text(val).Bold().FontSize(12).FontColor(accentGreen);
+                                            }
+                                            else
+                                            {
+                                                lc = lc.Border(0.5f).BorderColor(borderColor).Padding(8);
+                                                vc = vc.Border(0.5f).BorderColor(borderColor).Padding(8);
+                                                lc.Text(lbl).Bold().FontSize(10);
+                                                vc.AlignRight().Text(val).FontSize(10);
+                                            }
+                                        };
+
+                                        filaResumen("Factor de Conversión ($ a S/):", factorConversion.ToString("0.00"), rowLight1, false);
+                                        filaResumen("Total en Soles (S/):", $"S/ {totalSoles:N2}", rowLight2, false);
+                                        filaResumen("Total en Dólares ($):", $"$ {totalDolares:N2}", rowLight2, false);
+                                        filaResumen("Conversión a Soles ($ × Factor):", $"S/ {totalDolaresConvertido:N2}", rowLight3, false);
+                                        filaResumen("TOTAL GENERAL EN SOLES:", $"S/ {totalGeneral:N2}", rowTotal, true);
+                                    });
+                                });
+                                r.RelativeItem(0.2f);
+                            });
+
+                            // Leyenda
+                            col.Item().PaddingTop(15).AlignCenter()
+                                .Text("Leyenda: Rojo = Descuento Neto  |  Azul = Reintegro Neto  |  Negro = Cero")
+                                .Italic().FontSize(8).FontColor(subtleText);
+                        });
+                    });
+                }).GeneratePdf();
 
                 HttpContext.Current.Response.Clear();
                 HttpContext.Current.Response.ClearContent();
@@ -2163,260 +2090,238 @@ namespace WebSGV.Views
         private void ExportarPersonalizadoPDF(DataTable dt,
             List<Tuple<string, string, string>> cols, FiltrosPersonalizado f)
         {
-            byte[] pdfBytes;
             int colCount = cols.Count;
 
-            using (MemoryStream ms = new MemoryStream())
+            QuestPdfColor textDark = QuestPdfColor.FromHex("#1E293B");
+            QuestPdfColor headerBg = textDark;
+            QuestPdfColor accentBlue = QuestPdfColor.FromHex("#1E40AF");
+            QuestPdfColor accentGreen = QuestPdfColor.FromHex("#059669");
+            QuestPdfColor altRow = QuestPdfColor.FromHex("#F8FAFC");
+            QuestPdfColor borderColor = QuestPdfColor.FromHex("#E2E8F0");
+            QuestPdfColor redColor = QuestPdfColor.FromHex("#DC2626");
+            QuestPdfColor blueColor = QuestPdfColor.FromHex("#2563EB");
+            QuestPdfColor subtleText = QuestPdfColor.FromHex("#64748B");
+            QuestPdfColor totalBg = QuestPdfColor.FromHex("#F1F5F9");
+
+            // Anchos relativos por tipo de columna
+            float[] widths = new float[colCount];
+            for (int i = 0; i < colCount; i++)
             {
-                iTextDocument document = new iTextDocument(iTextPageSize.A4.Rotate(), 25, 25, 30, 30);
-                PdfWriter writer = PdfWriter.GetInstance(document, ms);
-                writer.CloseStream = false;
-                document.Open();
-
-                BaseColor headerBg = new BaseColor(30, 41, 59);
-                BaseColor accentBlue = new BaseColor(30, 64, 175);
-                BaseColor accentGreen = new BaseColor(5, 150, 105);
-                BaseColor altRow = new BaseColor(248, 250, 252);
-                BaseColor borderColor = new BaseColor(226, 232, 240);
-                BaseColor redColor = new BaseColor(220, 38, 38);
-                BaseColor blueColor = new BaseColor(37, 99, 235);
-
-                // Banner
-                PdfPTable headerTable = new PdfPTable(1) { WidthPercentage = 100 };
-                PdfPCell brandCell = new PdfPCell(new Phrase("SISTEMA SGV",
-                    FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, BaseColor.WHITE)))
-                {
-                    BackgroundColor = accentBlue,
-                    HorizontalAlignment = Element.ALIGN_CENTER,
-                    Padding = 12,
-                    Border = 0
-                };
-                headerTable.AddCell(brandCell);
-                document.Add(headerTable);
-
-                iTextParagraph title = new iTextParagraph(f.Titulo,
-                    FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 14, new BaseColor(30, 41, 59)))
-                { Alignment = Element.ALIGN_CENTER, SpacingBefore = 12 };
-                document.Add(title);
-
-                iTextParagraph subtitle = new iTextParagraph(
-                    $"Período: {f.FechaDesde:dd/MM/yyyy} - {f.FechaHasta:dd/MM/yyyy}  |  Estado: {f.Estado}  |  Generado: {DateTime.Now:dd/MM/yyyy HH:mm}",
-                    FontFactory.GetFont(FontFactory.HELVETICA, 10, new BaseColor(100, 116, 139)))
-                { Alignment = Element.ALIGN_CENTER, SpacingAfter = 15 };
-                document.Add(subtitle);
-
-                // Tabla
-                PdfPTable table = new PdfPTable(colCount) { WidthPercentage = 100 };
-                float[] widths = new float[colCount];
-                for (int i = 0; i < colCount; i++)
-                {
-                    string t = cols[i].Item3;
-                    widths[i] = (t == "money-sol" || t == "money-dol") ? 14f :
-                                t == "date" || t == "time" ? 12f :
-                                cols[i].Item1 == "conductor" || cols[i].Item1 == "cliente" ||
-                                cols[i].Item1 == "destino" || cols[i].Item1 == "observaciones" ? 22f : 12f;
-                }
-                table.SetWidths(widths);
-
-                iTextFont headerFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 8, BaseColor.WHITE);
-                foreach (var c in cols)
-                {
-                    PdfPCell h = new PdfPCell(new Phrase(c.Item2, headerFont))
-                    {
-                        BackgroundColor = headerBg,
-                        HorizontalAlignment = Element.ALIGN_CENTER,
-                        VerticalAlignment = Element.ALIGN_MIDDLE,
-                        Padding = 6,
-                        BorderColor = headerBg
-                    };
-                    table.AddCell(h);
-                }
-
-                iTextFont dataFont = FontFactory.GetFont(FontFactory.HELVETICA, 8);
-                var totales = new decimal[colCount];
-                bool[] esMoneda = new bool[colCount];
-                for (int i = 0; i < colCount; i++)
-                    esMoneda[i] = cols[i].Item3 == "money-sol" || cols[i].Item3 == "money-dol";
-
-                bool alt = false;
-                foreach (DataRow dr in dt.Rows)
-                {
-                    BaseColor rowBg = alt ? altRow : BaseColor.WHITE;
-                    for (int i = 0; i < colCount; i++)
-                    {
-                        var col = cols[i];
-                        string dkey = ColumnaDataKey(col.Item1);
-                        object v = dkey != null && dt.Columns.Contains(dkey) ? dr[dkey] : null;
-                        string texto = "";
-                        int align = Element.ALIGN_LEFT;
-                        BaseColor fontColor = new BaseColor(30, 41, 59);
-                        bool bold = false;
-
-                        if (v != null && v != DBNull.Value)
-                        {
-                            switch (col.Item3)
-                            {
-                                case "date":
-                                    texto = Convert.ToDateTime(v).ToString("dd/MM/yyyy");
-                                    align = Element.ALIGN_CENTER; break;
-                                case "time":
-                                    texto = v.ToString(); align = Element.ALIGN_CENTER; break;
-                                case "money-sol":
-                                case "money-dol":
-                                    decimal mv = Convert.ToDecimal(v);
-                                    string sym = col.Item3 == "money-sol" ? "S/" : "$";
-                                    texto = mv < 0 ? $"-{sym} {Math.Abs(mv):N2}" : $"{sym} {mv:N2}";
-                                    align = Element.ALIGN_RIGHT;
-                                    bold = true;
-                                    if (mv < 0) fontColor = redColor;
-                                    else if (mv > 0 && (col.Item1.StartsWith("reintegro") || col.Item1.StartsWith("balance")))
-                                        fontColor = blueColor;
-                                    totales[i] += mv;
-                                    break;
-                                default:
-                                    texto = v.ToString();
-                                    align = col.Item1 == "numero" || col.Item1 == "estado" ||
-                                            col.Item1 == "dni" ? Element.ALIGN_CENTER : Element.ALIGN_LEFT;
-                                    break;
-                            }
-                        }
-
-                        iTextFont cellFont = bold
-                            ? FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 8, fontColor)
-                            : FontFactory.GetFont(FontFactory.HELVETICA, 8, fontColor);
-
-                        PdfPCell cell = new PdfPCell(new Phrase(texto, cellFont))
-                        {
-                            HorizontalAlignment = align,
-                            VerticalAlignment = Element.ALIGN_MIDDLE,
-                            Padding = 5,
-                            BackgroundColor = rowBg,
-                            BorderColor = borderColor
-                        };
-                        table.AddCell(cell);
-                    }
-                    alt = !alt;
-                }
-
-                // Totales
-                if (f.IncluirTotales && dt.Rows.Count > 0)
-                {
-                    iTextFont totalFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, new BaseColor(30, 41, 59));
-                    BaseColor totalBg = new BaseColor(241, 245, 249);
-                    int labelIdx = 0;
-                    for (int i = 0; i < colCount; i++) { if (!esMoneda[i]) { labelIdx = i; break; } }
-
-                    for (int i = 0; i < colCount; i++)
-                    {
-                        string texto = "";
-                        int align = Element.ALIGN_LEFT;
-                        if (i == labelIdx) { texto = "TOTAL:"; align = Element.ALIGN_RIGHT; }
-                        else if (esMoneda[i])
-                        {
-                            string sym = cols[i].Item3 == "money-sol" ? "S/" : "$";
-                            decimal mv = totales[i];
-                            texto = mv < 0 ? $"-{sym} {Math.Abs(mv):N2}" : $"{sym} {mv:N2}";
-                            align = Element.ALIGN_RIGHT;
-                        }
-                        PdfPCell tc = new PdfPCell(new Phrase(texto, totalFont))
-                        {
-                            BackgroundColor = totalBg,
-                            HorizontalAlignment = align,
-                            Padding = 7,
-                            BorderColor = headerBg,
-                            BorderWidthTop = 2,
-                            BorderWidthBottom = 2
-                        };
-                        table.AddCell(tc);
-                    }
-                }
-
-                document.Add(table);
-
-                // Resumen
-                if (f.IncluirResumen)
-                {
-                    document.Add(new iTextParagraph(" "));
-                    PdfPTable rh = new PdfPTable(1) { WidthPercentage = 70, HorizontalAlignment = Element.ALIGN_CENTER };
-                    PdfPCell rhc = new PdfPCell(new Phrase("RESUMEN EJECUTIVO",
-                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, BaseColor.WHITE)))
-                    {
-                        BackgroundColor = accentGreen,
-                        HorizontalAlignment = Element.ALIGN_CENTER,
-                        Padding = 10,
-                        Border = 0
-                    };
-                    rh.AddCell(rhc);
-                    rh.SpacingBefore = 10;
-                    rh.SpacingAfter = 5;
-                    document.Add(rh);
-
-                    decimal totIngS = SumaColumna(dt, "IngresosSoles");
-                    decimal totGasS = SumaColumna(dt, "GastosSoles");
-                    decimal totDesS = SumaColumna(dt, "DescuentoSoles");
-                    decimal totReiS = SumaColumna(dt, "ReintegroSoles");
-                    decimal totBalS = SumaColumna(dt, "BalanceSoles");
-                    decimal totIngD = SumaColumna(dt, "IngresosDolares");
-                    decimal totGasD = SumaColumna(dt, "GastosDolares");
-                    decimal totBalD = SumaColumna(dt, "BalanceDolares");
-                    decimal balanceGeneral = totBalS + totBalD * f.Factor;
-
-                    string[,] resumen = {
-                        { "Total de liquidaciones:",        dt.Rows.Count.ToString() },
-                        { "Total Ingresos (S/):",           $"S/ {totIngS:N2}" },
-                        { "Total Gastos (S/):",             $"S/ {totGasS:N2}" },
-                        { "Total Descuentos (S/):",         $"S/ {totDesS:N2}" },
-                        { "Total Reintegros (S/):",         $"S/ {totReiS:N2}" },
-                        { "Total Balance Neto (S/):",       $"S/ {totBalS:N2}" },
-                        { "Total Ingresos ($):",            $"$ {totIngD:N2}" },
-                        { "Total Gastos ($):",              $"$ {totGasD:N2}" },
-                        { "Total Balance Neto ($):",        $"$ {totBalD:N2}" },
-                        { "Factor de conversión:",          f.Factor.ToString("0.00") },
-                        { "BALANCE GENERAL EN SOLES:",      $"S/ {balanceGeneral:N2}" },
-                    };
-
-                    PdfPTable rt = new PdfPTable(2) { WidthPercentage = 70, HorizontalAlignment = Element.ALIGN_CENTER };
-                    rt.SetWidths(new float[] { 60f, 40f });
-                    iTextFont labelFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, new BaseColor(30, 41, 59));
-                    iTextFont valueFont = FontFactory.GetFont(FontFactory.HELVETICA, 9, new BaseColor(30, 41, 59));
-                    iTextFont totValFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11, accentGreen);
-
-                    for (int i = 0; i < resumen.GetLength(0); i++)
-                    {
-                        bool ultima = i == resumen.GetLength(0) - 1;
-                        BaseColor bg = ultima ? new BaseColor(209, 250, 229) :
-                            (i % 2 == 0 ? new BaseColor(240, 253, 244) : new BaseColor(236, 253, 245));
-
-                        PdfPCell lc = new PdfPCell(new Phrase(resumen[i, 0], labelFont))
-                        {
-                            BackgroundColor = bg,
-                            Padding = 7,
-                            BorderColor = borderColor
-                        };
-                        PdfPCell vc = new PdfPCell(new Phrase(resumen[i, 1], ultima ? totValFont : valueFont))
-                        {
-                            BackgroundColor = bg,
-                            HorizontalAlignment = Element.ALIGN_RIGHT,
-                            Padding = 7,
-                            BorderColor = borderColor
-                        };
-                        if (ultima)
-                        {
-                            lc.BorderColor = accentGreen;
-                            vc.BorderColor = accentGreen;
-                            lc.BorderWidthTop = 2;
-                            vc.BorderWidthTop = 2;
-                        }
-                        rt.AddCell(lc);
-                        rt.AddCell(vc);
-                    }
-                    document.Add(rt);
-                }
-
-                document.Close();
-                writer.Close();
-                pdfBytes = ms.ToArray();
+                string t = cols[i].Item3;
+                widths[i] = (t == "money-sol" || t == "money-dol") ? 14f :
+                            t == "date" || t == "time" ? 12f :
+                            cols[i].Item1 == "conductor" || cols[i].Item1 == "cliente" ||
+                            cols[i].Item1 == "destino" || cols[i].Item1 == "observaciones" ? 22f : 12f;
             }
+
+            var totales = new decimal[colCount];
+            bool[] esMoneda = new bool[colCount];
+            for (int i = 0; i < colCount; i++)
+                esMoneda[i] = cols[i].Item3 == "money-sol" || cols[i].Item3 == "money-dol";
+
+            // Precalcular totales por columna de moneda
+            foreach (DataRow dr in dt.Rows)
+            {
+                for (int i = 0; i < colCount; i++)
+                {
+                    if (!esMoneda[i]) continue;
+                    string dkey = ColumnaDataKey(cols[i].Item1);
+                    object v = dkey != null && dt.Columns.Contains(dkey) ? dr[dkey] : null;
+                    if (v != null && v != DBNull.Value) totales[i] += Convert.ToDecimal(v);
+                }
+            }
+
+            byte[] pdfBytes = Document.Create(qdoc =>
+            {
+                qdoc.Page(page =>
+                {
+                    page.Size(PageSizes.A4.Landscape());
+                    page.MarginHorizontal(25);
+                    page.MarginVertical(30);
+                    page.DefaultTextStyle(t => t.FontFamily("Arial").FontSize(8).FontColor(textDark));
+
+                    page.Content().Column(col =>
+                    {
+                        // Banner
+                        col.Item().Background(accentBlue).Padding(12).AlignCenter()
+                            .Text("SISTEMA SGV").Bold().FontSize(16).FontColor(Colors.White);
+
+                        col.Item().PaddingTop(12).AlignCenter().Text(f.Titulo).Bold().FontSize(14);
+
+                        col.Item().PaddingBottom(15).AlignCenter()
+                            .Text($"Período: {f.FechaDesde:dd/MM/yyyy} - {f.FechaHasta:dd/MM/yyyy}  |  Estado: {f.Estado}  |  Generado: {DateTime.Now:dd/MM/yyyy HH:mm}")
+                            .FontSize(10).FontColor(subtleText);
+
+                        // Tabla
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(c =>
+                            {
+                                for (int i = 0; i < colCount; i++)
+                                    c.RelativeColumn(widths[i]);
+                            });
+
+                            foreach (var cdef in cols)
+                            {
+                                table.Cell().Background(headerBg).Border(0.5f).BorderColor(headerBg)
+                                    .Padding(6).AlignCenter().AlignMiddle()
+                                    .Text(cdef.Item2).Bold().FontSize(8).FontColor(Colors.White);
+                            }
+
+                            bool alt = false;
+                            foreach (DataRow dr in dt.Rows)
+                            {
+                                QuestPdfColor rowBg = alt ? altRow : Colors.White;
+                                for (int i = 0; i < colCount; i++)
+                                {
+                                    var cdef = cols[i];
+                                    string dkey = ColumnaDataKey(cdef.Item1);
+                                    object v = dkey != null && dt.Columns.Contains(dkey) ? dr[dkey] : null;
+                                    string texto = "";
+                                    string align = "left";
+                                    QuestPdfColor fontColor = textDark;
+                                    bool bold = false;
+
+                                    if (v != null && v != DBNull.Value)
+                                    {
+                                        switch (cdef.Item3)
+                                        {
+                                            case "date":
+                                                texto = Convert.ToDateTime(v).ToString("dd/MM/yyyy");
+                                                align = "center"; break;
+                                            case "time":
+                                                texto = v.ToString(); align = "center"; break;
+                                            case "money-sol":
+                                            case "money-dol":
+                                                decimal mv = Convert.ToDecimal(v);
+                                                string sym = cdef.Item3 == "money-sol" ? "S/" : "$";
+                                                texto = mv < 0 ? $"-{sym} {Math.Abs(mv):N2}" : $"{sym} {mv:N2}";
+                                                align = "right";
+                                                bold = true;
+                                                if (mv < 0) fontColor = redColor;
+                                                else if (mv > 0 && (cdef.Item1.StartsWith("reintegro") || cdef.Item1.StartsWith("balance")))
+                                                    fontColor = blueColor;
+                                                break;
+                                            default:
+                                                texto = v.ToString();
+                                                align = cdef.Item1 == "numero" || cdef.Item1 == "estado" ||
+                                                        cdef.Item1 == "dni" ? "center" : "left";
+                                                break;
+                                        }
+                                    }
+
+                                    QuestPdfContainer cell = table.Cell().Background(rowBg)
+                                        .Border(0.5f).BorderColor(borderColor).Padding(5).AlignMiddle();
+                                    if (align == "center") cell = cell.AlignCenter();
+                                    else if (align == "right") cell = cell.AlignRight();
+
+                                    var txt = cell.Text(texto).FontSize(8).FontColor(fontColor);
+                                    if (bold) txt.Bold();
+                                }
+                                alt = !alt;
+                            }
+
+                            // Totales
+                            if (f.IncluirTotales && dt.Rows.Count > 0)
+                            {
+                                int labelIdx = 0;
+                                for (int i = 0; i < colCount; i++) { if (!esMoneda[i]) { labelIdx = i; break; } }
+
+                                for (int i = 0; i < colCount; i++)
+                                {
+                                    string texto = "";
+                                    bool derecha = false;
+                                    if (i == labelIdx) { texto = "TOTAL:"; derecha = true; }
+                                    else if (esMoneda[i])
+                                    {
+                                        string sym = cols[i].Item3 == "money-sol" ? "S/" : "$";
+                                        decimal mv = totales[i];
+                                        texto = mv < 0 ? $"-{sym} {Math.Abs(mv):N2}" : $"{sym} {mv:N2}";
+                                        derecha = true;
+                                    }
+
+                                    QuestPdfContainer tc = table.Cell().Background(totalBg)
+                                        .BorderTop(2).BorderBottom(2).BorderColor(headerBg).Padding(7);
+                                    if (derecha) tc = tc.AlignRight();
+                                    tc.Text(texto).Bold().FontSize(9);
+                                }
+                            }
+                        });
+
+                        // Resumen
+                        if (f.IncluirResumen)
+                        {
+                            decimal totIngS = SumaColumna(dt, "IngresosSoles");
+                            decimal totGasS = SumaColumna(dt, "GastosSoles");
+                            decimal totDesS = SumaColumna(dt, "DescuentoSoles");
+                            decimal totReiS = SumaColumna(dt, "ReintegroSoles");
+                            decimal totBalS = SumaColumna(dt, "BalanceSoles");
+                            decimal totIngD = SumaColumna(dt, "IngresosDolares");
+                            decimal totGasD = SumaColumna(dt, "GastosDolares");
+                            decimal totBalD = SumaColumna(dt, "BalanceDolares");
+                            decimal balanceGeneral = totBalS + totBalD * f.Factor;
+
+                            string[,] resumen = {
+                                { "Total de liquidaciones:",        dt.Rows.Count.ToString() },
+                                { "Total Ingresos (S/):",           $"S/ {totIngS:N2}" },
+                                { "Total Gastos (S/):",             $"S/ {totGasS:N2}" },
+                                { "Total Descuentos (S/):",         $"S/ {totDesS:N2}" },
+                                { "Total Reintegros (S/):",         $"S/ {totReiS:N2}" },
+                                { "Total Balance Neto (S/):",       $"S/ {totBalS:N2}" },
+                                { "Total Ingresos ($):",            $"$ {totIngD:N2}" },
+                                { "Total Gastos ($):",              $"$ {totGasD:N2}" },
+                                { "Total Balance Neto ($):",        $"$ {totBalD:N2}" },
+                                { "Factor de conversión:",          f.Factor.ToString("0.00") },
+                                { "BALANCE GENERAL EN SOLES:",      $"S/ {balanceGeneral:N2}" },
+                            };
+
+                            // Centrado al 70% del ancho
+                            col.Item().PaddingTop(10).Row(r =>
+                            {
+                                r.RelativeItem(0.15f);
+                                r.RelativeItem(0.7f).Column(rc =>
+                                {
+                                    rc.Item().Background(accentGreen).Padding(10).AlignCenter()
+                                        .Text("RESUMEN EJECUTIVO").Bold().FontSize(12).FontColor(Colors.White);
+
+                                    rc.Item().PaddingTop(5).Table(rt =>
+                                    {
+                                        rt.ColumnsDefinition(c =>
+                                        {
+                                            c.RelativeColumn(60f);
+                                            c.RelativeColumn(40f);
+                                        });
+
+                                        for (int i = 0; i < resumen.GetLength(0); i++)
+                                        {
+                                            bool ultima = i == resumen.GetLength(0) - 1;
+                                            QuestPdfColor bg = ultima ? QuestPdfColor.FromHex("#D1FAE5") :
+                                                (i % 2 == 0 ? QuestPdfColor.FromHex("#F0FDF4") : QuestPdfColor.FromHex("#ECFDF5"));
+                                            QuestPdfColor bordeFila = ultima ? accentGreen : borderColor;
+
+                                            QuestPdfContainer lc = rt.Cell().Background(bg)
+                                                .Border(0.5f).BorderColor(bordeFila);
+                                            QuestPdfContainer vc = rt.Cell().Background(bg)
+                                                .Border(0.5f).BorderColor(bordeFila);
+                                            if (ultima)
+                                            {
+                                                lc = lc.BorderTop(2);
+                                                vc = vc.BorderTop(2);
+                                            }
+
+                                            lc.Padding(7).Text(resumen[i, 0]).Bold().FontSize(9);
+                                            var vtxt = vc.Padding(7).AlignRight().Text(resumen[i, 1]);
+                                            if (ultima) vtxt.Bold().FontSize(11).FontColor(accentGreen);
+                                            else vtxt.FontSize(9);
+                                        }
+                                    });
+                                });
+                                r.RelativeItem(0.15f);
+                            });
+                        }
+                    });
+                });
+            }).GeneratePdf();
 
             HttpContext.Current.Response.Clear();
             HttpContext.Current.Response.ContentType = "application/pdf";

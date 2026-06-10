@@ -20,6 +20,9 @@ namespace WebSGV
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
 
+            // QuestPDF: licencia Community (empresa con ingresos < 1M USD anuales)
+            QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
             // Crear tabla de auditoría si no existe
             AuditoriaHelper.CrearTablaAuditoriaSiNoExiste();
         }
