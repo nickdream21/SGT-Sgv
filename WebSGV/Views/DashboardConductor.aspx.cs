@@ -11,6 +11,8 @@ using System.Globalization;
 using System.Linq;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Common;
+using WebSGV.Services.OrdenViaje;
 
 namespace WebSGV.Views
 {
@@ -1856,20 +1858,11 @@ namespace WebSGV.Views
         /// Acepta con y sin cero inicial para interoperabilidad con distintos dispositivos.
         /// Usa InvariantCulture para evitar dependencia del locale del servidor.
         /// </summary>
-        private bool ValidarFormatoHora(string hora)
-        {
-            if (string.IsNullOrWhiteSpace(hora)) return false;
-            string[] formatos = { @"h\:mm", @"hh\:mm" };
-            if (!TimeSpan.TryParseExact(hora.Trim(), formatos, CultureInfo.InvariantCulture,
-                    TimeSpanStyles.None, out TimeSpan ts))
-                return false;
-            return ts.Hours >= 0 && ts.Hours <= 23 && ts.Minutes >= 0 && ts.Minutes <= 59;
-        }
+        private bool ValidarFormatoHora(string hora) =>
+            OrdenViajeValidaciones.ValidarFormatoHora(hora);
 
-        private bool EsFechaValidaSQL(DateTime fecha)
-        {
-            return fecha >= new DateTime(1753, 1, 1) && fecha <= new DateTime(9999, 12, 31) && fecha != DateTime.MinValue;
-        }
+        private bool EsFechaValidaSQL(DateTime fecha) =>
+            OrdenViajeValidaciones.EsFechaValidaSQL(fecha);
 
         private object FechaSeguraSQL(DateTime fecha)
         {
@@ -1890,13 +1883,7 @@ namespace WebSGV.Views
         /// independientemente de la cultura del servidor (es-PE usa coma).
         /// Valores negativos se clampean a 0 ya que los campos tienen min="0".
         /// </summary>
-        private static decimal ParseMonto(string valor)
-        {
-            if (string.IsNullOrWhiteSpace(valor)) return 0m;
-            if (!decimal.TryParse(valor, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal d))
-                return 0m;
-            return d < 0m ? 0m : d;
-        }
+        private static decimal ParseMonto(string valor) => MontoHelper.ParseMonto(valor);
 
         /// <summary>
         /// Valida un monto desserializado desde un hidden field controlado por el cliente.
@@ -1905,19 +1892,10 @@ namespace WebSGV.Views
         /// La excepción propaga el rollback de la transacción en curso.
         /// </summary>
         private static decimal ValidarMonto(decimal? monto, string campo)
-        {
-            decimal valor = monto ?? 0m;
-            if (valor < 0m)
-                throw new InvalidOperationException(
-                    $"Monto inválido en '{campo}': los valores negativos no están permitidos.");
-            if (valor > 9_999_999m)
-                throw new InvalidOperationException(
-                    $"Monto inválido en '{campo}': excede el límite máximo de S/ 9,999,999.");
-            return valor;
-        }
+            => MontoHelper.ValidarMonto(monto, campo);
 
         private static decimal ValidarMonto(decimal monto, string campo)
-            => ValidarMonto((decimal?)monto, campo);
+            => MontoHelper.ValidarMonto(monto, campo);
 
         private void MostrarMensaje(string mensaje, string tipo)
         {

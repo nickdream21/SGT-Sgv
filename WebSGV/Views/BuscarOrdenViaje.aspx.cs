@@ -6,6 +6,7 @@ using System.Web.UI.WebControls;
 using System.Collections.Generic;
 using System.Linq;
 using WebSGV.Helpers;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Views
 {
@@ -669,19 +670,8 @@ namespace WebSGV.Views
             return mensajeError;
         }
 
-        private bool ValidarMontoNoNegativo(string valor)
-        {
-            if (string.IsNullOrEmpty(valor))
-                return true;
-
-            decimal monto;
-            if (decimal.TryParse(valor, out monto))
-            {
-                return monto >= 0;
-            }
-
-            return false;
-        }
+        private bool ValidarMontoNoNegativo(string valor) =>
+            MontoHelper.EsMontoNoNegativo(valor);
 
         private void GuardarCambios()
         {
@@ -972,15 +962,8 @@ namespace WebSGV.Views
             lblMensaje.Visible = true;
         }
 
-        private decimal ConvertToDecimal(string value)
-        {
-            decimal result;
-            if (decimal.TryParse(value, out result))
-            {
-                return result;
-            }
-            return 0;
-        }
+        private decimal ConvertToDecimal(string value) =>
+            MontoHelper.ConvertToDecimal(value);
         #endregion
     }
 }

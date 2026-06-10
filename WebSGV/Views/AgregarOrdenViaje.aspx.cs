@@ -8,6 +8,7 @@ using System.Linq;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.OrdenViaje;
 
 namespace WebSGV.Views
 {
@@ -1922,22 +1923,8 @@ namespace WebSGV.Views
             return mensajeError;
         }
 
-        private string ValidarFormatoNumeroOrden(string numero)
-        {
-            if (string.IsNullOrWhiteSpace(numero))
-                return "El número de orden es obligatorio.";
-
-            if (numero.Length != 6)
-                return $"El número de orden debe tener exactamente 6 dígitos. Ingresado: {numero.Length} caracteres.";
-
-            if (!numero.All(char.IsDigit))
-                return "El número de orden debe contener solo números (0-9).";
-
-            if (numero == "000000")
-                return "El número de orden no puede ser '000000'.";
-
-            return string.Empty;
-        }
+        private string ValidarFormatoNumeroOrden(string numero) =>
+            OrdenViajeValidaciones.ValidarFormatoNumeroOrden(numero);
 
         private bool NumeroOrdenExiste(string numeroOrden)
         {
@@ -1959,10 +1946,8 @@ namespace WebSGV.Views
 
         #region Métodos Auxiliares
 
-        private bool EsFechaValidaSQL(DateTime fecha)
-        {
-            return fecha >= new DateTime(1753, 1, 1) && fecha <= new DateTime(9999, 12, 31) && fecha != DateTime.MinValue;
-        }
+        private bool EsFechaValidaSQL(DateTime fecha) =>
+            OrdenViajeValidaciones.EsFechaValidaSQL(fecha);
 
         private object FechaSeguraSQL(DateTime fecha)
         {

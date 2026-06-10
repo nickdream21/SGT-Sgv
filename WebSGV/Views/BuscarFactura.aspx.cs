@@ -10,6 +10,7 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Despachos;
 
 namespace WebSGV.Views
 {
@@ -849,11 +850,8 @@ namespace WebSGV.Views
         /// <summary>
         /// Valida que el número de pedido tenga exactamente 10 dígitos.
         /// </summary>
-        private bool ValidarNumeroPedido(string numeroPedido)
-        {
-            string pattern = @"^\d{10}$"; // Exactamente 10 dígitos
-            return Regex.IsMatch(numeroPedido, pattern);
-        }
+        private bool ValidarNumeroPedido(string numeroPedido) =>
+            DespachoValidaciones.ValidarNumeroPedido(numeroPedido);
 
         private void MostrarMensaje(string mensaje, string tipo)
         {

@@ -448,10 +448,13 @@
     <Compile Include="Helpers\PasswordHelper.cs" />
     <Compile Include="Helpers\ValidacionHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\Common\MontoHelper.cs" />
     <Compile Include="Services\Despachos\DespachoValidaciones.cs" />
+    <Compile Include="Services\Facturas\FacturaValidaciones.cs" />
     <Compile Include="Services\FirmaService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionCalculos.cs" />
     <Compile Include="Services\NotificacionService.cs" />
+    <Compile Include="Services\OrdenViaje\OrdenViajeValidaciones.cs" />
     <Compile Include="Services\PdfAbastecimientoService.cs" />
     <Compile Include="Services\PdfOrdenViajeService.cs" />
     <Compile Include="Site.Master.cs">

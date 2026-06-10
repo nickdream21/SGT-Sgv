@@ -10,6 +10,8 @@ using System.Text.RegularExpressions;
 using System.IO;
 using System.Diagnostics;
 using WebSGV.Helpers;
+using WebSGV.Services.Despachos;
+using WebSGV.Services.Facturas;
 
 namespace WebSGV.Views
 {
@@ -454,55 +456,13 @@ namespace WebSGV.Views
         /// <summary>
         /// Valida que el número de pedido tenga exactamente 10 dígitos.
         /// </summary>
-        private bool ValidarNumeroPedido(string numeroPedido)
-        {
-            string pattern = @"^\d{10}$"; // Exactamente 10 dígitos
-            return Regex.IsMatch(numeroPedido, pattern);
-        }
+        private bool ValidarNumeroPedido(string numeroPedido) =>
+            DespachoValidaciones.ValidarNumeroPedido(numeroPedido);
 
         /// <summary>
         /// Valida y ajusta el formato del número de factura.
         /// </summary>
-        private string ValidarYFormatearNumeroFactura(string numeroFactura)
-        {
-            if (string.IsNullOrWhiteSpace(numeroFactura))
-                throw new FormatException("El número de factura no puede estar vacío.");
-
-            // Formato 1: F222 - 00004267 (formato original)
-            string pattern1 = @"^F\d{3} - \d{8}$";
-
-            // Formato 2: 001-098-000326757 (nuevo formato)
-            string pattern2 = @"^\d{3}-\d{3}-\d{9}$";
-
-            // Si ya cumple alguno de los formatos, retornarlo sin cambios
-            if (Regex.IsMatch(numeroFactura, pattern1) || Regex.IsMatch(numeroFactura, pattern2))
-            {
-                return numeroFactura;
-            }
-
-            // Intentar corregir el formato tipo F222 - 00004267
-            string soloNumerosYLetras = Regex.Replace(numeroFactura, @"[^A-Za-z0-9]", "");
-
-            if (soloNumerosYLetras.Length == 12 && soloNumerosYLetras.StartsWith("F", StringComparison.OrdinalIgnoreCase))
-            {
-                string codigo = soloNumerosYLetras.Substring(0, 4).ToUpper(); // Ejemplo: "F222"
-                string secuencia = soloNumerosYLetras.Substring(4); // Ejemplo: "00004267"                     
-                return $"{codigo} - {secuencia}";
-            }
-
-            // Intentar corregir el formato tipo 001-098-000326757
-            string soloNumeros = Regex.Replace(numeroFactura, @"[^0-9]", "");
-
-            if (soloNumeros.Length == 15) // 3 + 3 + 9 = 15 dígitos
-            {
-                string parte1 = soloNumeros.Substring(0, 3);   // 001
-                string parte2 = soloNumeros.Substring(3, 3);   // 098  
-                string parte3 = soloNumeros.Substring(6, 9);   // 000326757
-                return $"{parte1}-{parte2}-{parte3}";
-            }
-
-            // Si no es posible corregir con ningún formato, lanzar excepción
-            throw new FormatException("El número de factura debe tener uno de estos formatos: 'F222 - 00004267' o '001-098-000326757'.");
-        }
+        private string ValidarYFormatearNumeroFactura(string numeroFactura) =>
+            FacturaValidaciones.ValidarYFormatearNumeroFactura(numeroFactura);
     }
 }
