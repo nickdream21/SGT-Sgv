@@ -4,6 +4,7 @@ using System.Data;
 using System.Text.RegularExpressions;
 using System.Web.Services;
 using WebSGV.Helpers;
+using WebSGV.Services.Liquidaciones;
 
 namespace WebSGV.Views
 {
@@ -49,40 +50,7 @@ namespace WebSGV.Views
 
             var lista = new List<LiquidacionAprobadaItem>();
 
-            DataTable dt = DbHelper.ConsultarTabla(@"
-                SELECT
-                    ov.idOrdenViaje,
-                    ov.numeroOrdenViaje,
-                    c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS NombreConductor,
-                    ov.fechaSalida,
-                    ov.fechaLlegada,
-                    ISNULL(dr.descuentoSoles, 0) AS DescuentoSoles,
-                    ISNULL(dr.descuentoDolares, 0) AS DescuentoDolares,
-                    ISNULL(dr.reintegroSoles, 0) AS ReintegroSoles,
-                    ISNULL(dr.reintegroDolares, 0) AS ReintegroDolares,
-                    ISNULL(i.despachoSoles, 0) + ISNULL(i.prestamoSoles, 0) + ISNULL(i.mensualidadSoles, 0) + ISNULL(i.otrosSoles, 0) AS IngresosSoles,
-                    ISNULL(i.despachoDolares, 0) + ISNULL(i.prestamosDolares, 0) + ISNULL(i.mensualidadDolares, 0) + ISNULL(i.otrosDolares, 0) AS IngresosDolares,
-                    ISNULL(e.peajesSoles, 0) + ISNULL(e.alimentacionSoles, 0) + ISNULL(e.apoyoseguridadSoles, 0) + ISNULL(e.reparacionesVariosSoles, 0) + ISNULL(e.movilidadSoles, 0) + ISNULL(e.encarpada_desencarpadaSoles, 0) + ISNULL(e.hospedajeSoles, 0) + ISNULL(e.combustibleSoles, 0) AS GastosSoles,
-                    ISNULL(e.peajesDolares, 0) + ISNULL(e.alimentacionDolares, 0) + ISNULL(e.apoyoseguridadDolares, 0) + ISNULL(e.repacionesVariosDolares, 0) + ISNULL(e.movilidadDolares, 0) + ISNULL(e.encarpada_desencarpadaDolares, 0) + ISNULL(e.hospedajeDolares, 0) + ISNULL(e.combustibleDolares, 0) AS GastosDolares,
-                    ISNULL((SELECT SUM(soles) FROM IngresosAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IngresosAdSoles,
-                    ISNULL((SELECT SUM(dolares) FROM IngresosAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IngresosAdDolares,
-                    ISNULL((SELECT SUM(soles) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GastosAdSoles,
-                    ISNULL((SELECT SUM(dolares) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GastosAdDolares
-                FROM OrdenViaje ov
-                INNER JOIN Conductor c ON ov.idConductor = c.idConductor
-                LEFT JOIN DescuentosReintegros dr ON dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1
-                LEFT JOIN Ingresos i ON i.numeroOrdenViaje = ov.numeroOrdenViaje
-                LEFT JOIN Egresos e ON e.numeroOrdenViaje = ov.numeroOrdenViaje
-                WHERE ov.estadoViaje = 'COMPLETADO'
-                  AND (@IdConductor <= 0 OR ov.idConductor = @IdConductor)
-                  AND (@NumeroOrden = '' OR ov.numeroOrdenViaje LIKE @NumeroOrdenLike)
-                  AND (@NombreConductor = '' OR (c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '')) LIKE @NombreConductorLike)
-                ORDER BY ov.fechaSalida DESC",
-                DbHelper.Param("@IdConductor",        idConductor),
-                DbHelper.Param("@NumeroOrden",         numeroOrden),
-                DbHelper.Param("@NumeroOrdenLike",     "%" + numeroOrden + "%"),
-                DbHelper.Param("@NombreConductor",     nombreConductor),
-                DbHelper.Param("@NombreConductorLike", "%" + nombreConductor + "%"));
+            DataTable dt = LiquidacionesContabilidadService.ObtenerAprobadas(idConductor, numeroOrden, nombreConductor);
 
             foreach (DataRow reader in dt.Rows)
             {
