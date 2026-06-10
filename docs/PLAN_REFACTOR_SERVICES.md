@@ -1,0 +1,121 @@
+# Plan — Refactor de lógica y acceso a datos hacia `Services/`
+
+> Documento de seguimiento del esfuerzo de extracción de lógica de negocio y SQL
+> desde los code-behind (`.aspx.cs`) hacia clases en `WebSGV/Services/`.
+> Sirve para no perder el objetivo entre sesiones. Última actualización: 2026-06-10.
+
+## 1. Objetivo
+
+Sacar lógica de negocio y acceso a datos de los code-behind de Web Forms hacia clases
+**`Services/`** reutilizables y testeables, **empezando por el flujo de dinero**
+(despacho → viaje → liquidación → revisión). Reduce duplicación, permite pruebas
+unitarias y aísla el SQL.
+
+**Fuera de alcance acordado:** todo lo de **grifo/combustible** (Abastecimiento,
+DashboardGrifo, etc.) y **operadores/maquinaria**. También quedan fuera los reportes
+generales (`Reportes.aspx`).
+
+## 2. Mecánica acordada (reglas del refactor)
+
+- **Lógica pura** → clases `public static` sin dependencias (`System.Web`, BD, HttpContext).
+  El code-behind conserva el método original como **adaptador delgado** que delega.
+- **Acceso a datos (orquestación BD)** → clases `Service` estáticas que usan `DbHelper`
+  (estilo `NotificacionService`). **Sin dobles de prueba ni interfaces de repositorio.**
+  El code-behind llama al Service; el Service ejecuta el SQL. **SQL/SP movido verbatim**:
+  no se cambian consultas, stored procedures ni el comportamiento.
+- En BD, el code-behind **conserva**: sesión, validación, saneamiento, enlace a controles,
+  lectura de `Request.Form`, mapeo a DTO, auditoría, PDF, firma y `try/catch`.
+- **Un módulo (página) = un commit** que compila.
+- **Verificación** (sin BD real): `MSBuild` limpio + los **177 tests xUnit** existentes en verde.
+  No se añaden tests de BD (no hay dobles, por decisión).
+- Servicios deben permanecer **sin `System.Web`** (Session/Request/controles se pasan como
+  parámetros o se quedan en el code-behind).
+
+## 3. Lo hecho hasta hoy ✅
+
+### Fase A — Lógica pura (sin System.Web) + tests + seguridad dab
+| Commit | Contenido |
+|---|---|
+| `df9fbfb` | Pass 1: `LiquidacionCalculos`, `DespachoValidaciones` + tests xUnit; **dab-config**: `dab-config.production.json` bloqueado (auth AzureAD/JWT, sin introspección/MCP, sin anonymous) y `dab-config.json` local gitignored. |
+| `825bc0b` | Pass 2: `Common/MontoHelper`, `OrdenViaje/OrdenViajeValidaciones`, `Facturas/FacturaValidaciones` + tests; unifica `ValidarNumeroPedido`. |
+
+Resultado: **177 tests** xUnit en verde (montos, validaciones de fecha/hora/orden,
+formato de factura, etc.).
+
+### Fase B — Orquestación de BD (un módulo por commit)
+| Commit | Página | Service | Qué se extrajo |
+|---|---|---|---|
+| `bbd4484` | DetalleOrdenViaje | `OrdenViaje/DetalleOrdenViajeService` | 9 consultas de lectura (cabecera, ingresos, egresos, peajes, reparaciones, hospedaje, combustible). |
+| `d3d5548` | LiquidacionesAprobadasContabilidad | `Liquidaciones/LiquidacionesContabilidadService` | Consulta de aprobadas (sesión/saneamiento/balance quedan fuera). |
+| `6322b22` | EditarDespacho | `Despachos/EditarDespachoService` | Estado, catálogos, carga del despacho y UPDATE. |
+| `8a18bfa` | LiquidacionesPendientes | `Liquidaciones/LiquidacionesPendientesService` | nº de orden, SPs (pendientes/aprobar/rechazar), buscar conductores, aprobadas, revertir, marcar rechazada. |
+| `46bff5b` | DashboardConductor | `Conductor/DashboardConductorService` | estaciones peaje, generar nº orden, datos de viaje, conteos de ownership, retirar liquidación. |
+| `087eaf6` | RegistroDespacho | `Despachos/RegistroDespachoService` | catálogos, plantas por ámbito, crear viaje en progreso, validar documentos duplicados. |
+| `54ed2af` | BuscarOrdenViaje | `OrdenViaje/BuscarOrdenViajeService` | catálogos + cargas de la orden (básicos, ingresos, egresos, adicionales, guías, productos, existencia). |
+| `fc30015` | ListaDespachos | `Despachos/ListaDespachosService` | contar viajes activos, todos los conductores, anular/eliminar lote. |
+| `12b4994` | Facturas (Agregar+Buscar) | `Facturas/FacturaConsultasService` | clientes, contar por número, todas, por id/número, documentos, info documento. |
+| `3c68f22` | AgregarOrdenViaje | `OrdenViaje/AgregarOrdenViajeService` | contar por número, buscar id usuario por nombre, tabla/estaciones de peaje. |
+
+## 4. Lo que queda — "Pase de transacciones y modelos diferidos" ⏳
+
+Es lo **entrelazado** con `Request.Form` / controles / modelos anidados de la página, que
+**no** se puede mover a un service sin `System.Web` sin **reestructurar primero**. Es
+código de **escritura/dinero**, así que requiere cuidado (idealmente, prueba en runtime).
+
+**Prerrequisito común:** mover los modelos `[Serializable]` anidados en las páginas
+(`LoteDespachos`, `ConductorLote`, `ViajeEnProgreso`, `DespachoViaje`, `LoteRegistrado`,
+`DatosViajeParaLiquidacion`, `GastoFinanciero`, etc.) a `WebSGV/Models/` para que los
+services puedan recibirlos/devolverlos sin depender de la página. Cuidar la serialización
+en Session/ViewState.
+
+Pendientes por página:
+- **DashboardConductor** — transacción de **envío de liquidación**
+  (`btnEnviarLiquidacion_Click` + helpers `Insertar*`/`Cerrar*`, ~1158-1583): leen
+  `Request.Form`/hidden fields. Mover el parseo al code-behind y pasar valores/DTO al service.
+- **RegistroDespacho** — creadores que reciben modelos: `CrearDocumentoBaseSeparado`,
+  `CrearDespachoIndividual`, `ObtenerViajesAbiertosConductor`, `ObtenerInfoViaje` + la
+  transacción de finalización del lote.
+- **LiquidacionesPendientes** — `ObtenerDetalleLiquidacion` (armador de DTO con múltiples
+  readers), `AprobarConAjustes` y `CorregirAjustesAprobada` (transacciones crudas con
+  PDF/Firma), `GarantizarPdfArchivadoOV`, `ObtenerUrlPdfOrdenViaje`.
+- **BuscarOrdenViaje** — transacción `GuardarCambios` (edición de la orden).
+- **ListaDespachos** — lecturas con DTO anidados (viajes/lotes), `CargarDropDownListSP`,
+  transacción `GuardarCambiosLote`.
+- **Facturas** — escrituras transaccionales con **blobs de archivo** (guardar/editar factura,
+  subir documentos) en Agregar/Buscar.
+- **AgregarOrdenViaje** — transacción de **guardado** (insert/update de la orden + financiero)
+  y los lectores que cargan el formulario de edición.
+- **ReportesOrdenesViaje** — pendiente de revisar (no empezado).
+
+## 5. Decisiones diferidas (otras mejoras)
+
+- **Serilog / logging centralizado**: pospuesto (no se añadieron paquetes). Hoy se usa
+  `System.Diagnostics.Debug/Trace`. Evaluar `ILogSGV` + Serilog en un pase aparte.
+- **Dedup cosmético** (no toca dinero): `FormatearTamano(long)` y
+  `ObtenerContentType`/`ObtenerIconoArchivo` duplicados en BuscarFactura/BuscarCPIC; familia
+  `ObtenerClaseEstado/ObtenerTextoEstado/ObtenerClaseBoton` repetida en ~10 `Registro*.aspx.cs`.
+- **Seguridad dab**: el `dab-config.json` abierto sigue en el **historial git** (sin secretos;
+  connection string por `@env`). Ver rotación de password de somee pendiente.
+
+## 6. Próximos pasos sugeridos (orden propuesto)
+
+1. Mover modelos anidados a `WebSGV/Models/` (habilita casi todo lo de la sección 4).
+2. Pase de transacciones de escritura, empezando por las de **mayor valor de dinero**:
+   DashboardConductor (envío liquidación) → LiquidacionesPendientes (AprobarConAjustes/
+   Corregir/ObtenerDetalle) → RegistroDespacho (creación de lote).
+3. Transacciones restantes: BuscarOrdenViaje, AgregarOrdenViaje, ListaDespachos, Facturas.
+4. ReportesOrdenesViaje.
+5. Logging (Serilog) y dedup cosmético.
+
+> Idealmente, los pasos de la sección 4 se validan ejecutando la app (no sólo compilando),
+> porque tocan transacciones de dinero y no hay pruebas de BD.
+
+## 7. Cómo verificar (recordatorio)
+
+```powershell
+# Build del proyecto web
+& "<ruta>\MSBuild.exe" WebSGV\WebSGV.csproj /t:Build /p:Configuration=Debug /nologo /verbosity:minimal
+
+# Tests
+dotnet test WebSGV.Tests\WebSGV.Tests.csproj -c Debug
+```
