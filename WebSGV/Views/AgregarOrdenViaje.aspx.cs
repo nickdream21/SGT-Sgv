@@ -1930,9 +1930,7 @@ namespace WebSGV.Views
         {
             try
             {
-                int count = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM OrdenViaje WHERE numeroOrdenViaje = @numeroOrden",
-                    DbHelper.Param("@numeroOrden", numeroOrden)));
+                int count = AgregarOrdenViajeService.ContarPorNumero(numeroOrden);
                 return count > 0;
             }
             catch (Exception ex)
@@ -2001,14 +1999,7 @@ namespace WebSGV.Views
         {
             try
             {
-                    string query = @"
-                        SELECT idUsuario
-                        FROM Usuarios 
-                        WHERE nombreUsuario = @nombreUsuario 
-                           OR usuario = @nombreUsuario
-                           OR email = @nombreUsuario";
-
-                    object result = DbHelper.EjecutarEscalar(query, DbHelper.Param("@nombreUsuario", nombreUsuario));
+                    object result = AgregarOrdenViajeService.BuscarIdUsuarioPorNombre(nombreUsuario);
                     if (result != null && result != DBNull.Value)
                     {
                         return Convert.ToInt32(result);
@@ -2072,12 +2063,7 @@ namespace WebSGV.Views
         {
             try
             {
-                    string queryVerificar = @"
-                        SELECT COUNT(*) 
-                        FROM INFORMATION_SCHEMA.TABLES 
-                        WHERE TABLE_NAME = 'EstacionesPeaje'";
-
-                    int tablaExiste = Convert.ToInt32(DbHelper.EjecutarEscalar(queryVerificar));
+                    int tablaExiste = AgregarOrdenViajeService.ContarTablaEstacionesPeaje();
 
                     if (tablaExiste == 0)
                         {
@@ -2097,13 +2083,7 @@ namespace WebSGV.Views
                             return JsonConvert.SerializeObject(estacionesPrueba);
                         }
 
-                    string query = @"
-                        SELECT idEstacion, nombre
-                        FROM EstacionesPeaje 
-                        WHERE activo = 1
-                        ORDER BY nombre";
-
-                    DataTable dt = DbHelper.ConsultarTabla(query);
+                    DataTable dt = AgregarOrdenViajeService.ObtenerEstacionesPeaje();
                     var estaciones = new List<object>();
 
                     foreach (DataRow reader in dt.Rows)
