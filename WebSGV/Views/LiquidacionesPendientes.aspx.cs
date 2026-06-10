@@ -246,12 +246,7 @@ namespace WebSGV.Views
                     return;
                 }
 
-                var pars = new List<SqlParameter>();
-                if (idConductor.HasValue) pars.Add(DbHelper.Param("@idConductor", idConductor.Value));
-                if (fechaDesde.HasValue) pars.Add(DbHelper.Param("@fechaDesde", fechaDesde.Value));
-                if (fechaHasta.HasValue) pars.Add(DbHelper.Param("@fechaHasta", fechaHasta.Value));
-
-                DataTable dt = DbHelper.ConsultarTablaSp("sp_ObtenerLiquidacionesPendientes", pars.ToArray());
+                DataTable dt = LiquidacionesPendientesService.ObtenerPendientes(idConductor, fechaDesde, fechaHasta);
 
                         // Aplicar filtro de prioridad si está seleccionado
                         if (!string.IsNullOrEmpty(prioridad))
@@ -359,10 +354,7 @@ namespace WebSGV.Views
 
                 System.Diagnostics.Debug.WriteLine($"Número Orden: {numeroOrdenViaje}");
 
-                DataTable dt = DbHelper.ConsultarTablaSp("sp_AprobarLiquidacion",
-                    DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje),
-                    DbHelper.Param("@idUsuarioAprobacion", IdUsuarioActual),
-                    DbHelper.Param("@observaciones", DBNull.Value)); // Parámetro opcional como NULL
+                DataTable dt = LiquidacionesPendientesService.Aprobar(numeroOrdenViaje, IdUsuarioActual, DBNull.Value);
 
                 if (dt.Rows.Count > 0)
                 {
@@ -480,10 +472,7 @@ namespace WebSGV.Views
                 System.Diagnostics.Debug.WriteLine($"Observaciones: {observaciones}");
 
                 // Llamar al stored procedure
-                DataTable dt = DbHelper.ConsultarTablaSp("sp_RechazarLiquidacion",
-                    DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje),
-                    DbHelper.Param("@idUsuarioAprobacion", IdUsuarioActual),
-                    DbHelper.Param("@observaciones", observaciones));
+                DataTable dt = LiquidacionesPendientesService.Rechazar(numeroOrdenViaje, IdUsuarioActual, observaciones);
 
                 if (dt.Rows.Count > 0)
                 {
@@ -536,9 +525,7 @@ namespace WebSGV.Views
         {
             try
             {
-                object result = DbHelper.EjecutarEscalar(
-                    "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @idOrdenViaje",
-                    DbHelper.Param("@idOrdenViaje", idOrdenViaje));
+                object result = LiquidacionesPendientesService.ObtenerNumeroOrden(idOrdenViaje);
 
                 if (result != null && result != DBNull.Value)
                 {
@@ -572,17 +559,7 @@ namespace WebSGV.Views
 
                 var results = new List<object>();
 
-                string query = @"
-                        SELECT TOP 15
-                            c.idConductor,
-                            c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS nombreCompleto
-                        FROM Conductor c
-                        INNER JOIN Usuarios u ON c.idConductor = u.idConductor
-                        WHERE c.activo = 1
-                          AND (c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '')) LIKE @term
-                        ORDER BY nombreCompleto";
-
-                    DataTable dt = DbHelper.ConsultarTabla(query, DbHelper.Param("@term", "%" + term.Trim() + "%"));
+                    DataTable dt = LiquidacionesPendientesService.BuscarConductores(term);
 
                     foreach (DataRow reader in dt.Rows)
                     {
@@ -1217,58 +1194,8 @@ namespace WebSGV.Views
 
                 var lista = new List<LiquidacionAprobadaItem>();
 
-                string query = @"
-                        SELECT
-                            ov.idOrdenViaje,
-                            ov.numeroOrdenViaje,
-                            c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS NombreConductor,
-                            t.placaTracto,
-                            ca.placaCarreta,
-                            ov.fechaSalida,
-                            ov.fechaLlegada,
-                            ISNULL(dr.descuentoSoles, 0) AS DescuentoSoles,
-                            ISNULL(dr.descuentoDolares, 0) AS DescuentoDolares,
-                            ISNULL(dr.reintegroSoles, 0) AS ReintegroSoles,
-                            ISNULL(dr.reintegroDolares, 0) AS ReintegroDolares,
-                            ISNULL(i.despachoSoles, 0) + ISNULL(i.prestamoSoles, 0) + ISNULL(i.mensualidadSoles, 0) + ISNULL(i.otrosSoles, 0) AS IngresosSoles,
-                            ISNULL(i.despachoDolares, 0) + ISNULL(i.prestamosDolares, 0) + ISNULL(i.mensualidadDolares, 0) + ISNULL(i.otrosDolares, 0) AS IngresosDolares,
-                            ISNULL(e.peajesSoles, 0) + ISNULL(e.alimentacionSoles, 0) + ISNULL(e.apoyoseguridadSoles, 0) + ISNULL(e.reparacionesVariosSoles, 0) + ISNULL(e.movilidadSoles, 0) + ISNULL(e.encarpada_desencarpadaSoles, 0) + ISNULL(e.hospedajeSoles, 0) + ISNULL(e.combustibleSoles, 0) AS GastosSoles,
-                            ISNULL(e.peajesDolares, 0) + ISNULL(e.alimentacionDolares, 0) + ISNULL(e.apoyoseguridadDolares, 0) + ISNULL(e.repacionesVariosDolares, 0) + ISNULL(e.movilidadDolares, 0) + ISNULL(e.encarpada_desencarpadaDolares, 0) + ISNULL(e.hospedajeDolares, 0) + ISNULL(e.combustibleDolares, 0) AS GastosDolares,
-                            ISNULL((SELECT SUM(soles) FROM IngresosAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IngresosAdSoles,
-                            ISNULL((SELECT SUM(dolares) FROM IngresosAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IngresosAdDolares,
-                            ISNULL((SELECT SUM(soles) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GastosAdSoles,
-                            ISNULL((SELECT SUM(dolares) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GastosAdDolares
-                        FROM OrdenViaje ov
-                        INNER JOIN Conductor c ON ov.idConductor = c.idConductor
-                        INNER JOIN Tracto t ON ov.idTracto = t.idTracto
-                        INNER JOIN Carreta ca ON ov.idCarreta = ca.idCarreta
-                        LEFT JOIN DescuentosReintegros dr ON dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1
-                        LEFT JOIN Ingresos i ON i.numeroOrdenViaje = ov.numeroOrdenViaje
-                        LEFT JOIN Egresos e ON e.numeroOrdenViaje = ov.numeroOrdenViaje
-                        WHERE ov.estadoViaje = 'COMPLETADO'";
-
-                    if (idConductor > 0)
-                        query += " AND ov.idConductor = @idConductor";
-                    if (!string.IsNullOrEmpty(fechaDesde))
-                        query += " AND ov.fechaSalida >= @fechaDesde";
-                    if (!string.IsNullOrEmpty(fechaHasta))
-                        query += " AND ov.fechaSalida <= @fechaHasta";
-                    if (!string.IsNullOrEmpty(numeroOrden))
-                        query += " AND ov.numeroOrdenViaje LIKE '%' + @numeroOrden + '%'";
-
-                    query += " ORDER BY ov.fechaSalida DESC";
-
-                    var pars = new List<SqlParameter>();
-                    if (idConductor > 0)
-                        pars.Add(DbHelper.Param("@idConductor", idConductor));
-                    if (fd.HasValue)
-                        pars.Add(DbHelper.Param("@fechaDesde", fd.Value));
-                    if (fh.HasValue)
-                        pars.Add(DbHelper.Param("@fechaHasta", fh.Value));
-                    if (!string.IsNullOrEmpty(numeroOrden))
-                        pars.Add(DbHelper.Param("@numeroOrden", numeroOrden));
-
-                    DataTable dt = DbHelper.ConsultarTabla(query, pars.ToArray());
+                    DataTable dt = LiquidacionesPendientesService.ObtenerAprobadas(
+                        idConductor, fechaDesde, fechaHasta, numeroOrden, fd, fh);
 
                     foreach (DataRow reader in dt.Rows)
                     {
@@ -1333,23 +1260,13 @@ namespace WebSGV.Views
                 string numeroOrdenViaje = null;
 
                 // 1. Obtener datos de la orden y verificar que esté COMPLETADO
-                object result = DbHelper.EjecutarEscalar(
-                    "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id AND estadoViaje = 'COMPLETADO'",
-                    DbHelper.Param("@id", idOrdenViaje));
+                object result = LiquidacionesPendientesService.ObtenerNumeroOrdenCompletado(idOrdenViaje);
                 if (result == null || result == DBNull.Value)
                     return new { success = false, message = "La orden no se encontró o ya no está en estado COMPLETADO." };
                 numeroOrdenViaje = result.ToString();
 
                 // 2. Revertir estado de la OrdenViaje a PENDIENTE
-                int affected = DbHelper.EjecutarNonQuery(@"
-                        UPDATE OrdenViaje
-                        SET estadoViaje = 'PENDIENTE',
-                            estadoAprobacion = 'PENDIENTE',
-                            observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) +
-                                '[REVERSION ' + CONVERT(varchar, GETDATE(), 120) + '] ' + @motivo
-                        WHERE idOrdenViaje = @id AND estadoViaje = 'COMPLETADO'",
-                    DbHelper.Param("@id", idOrdenViaje),
-                    DbHelper.Param("@motivo", motivo));
+                int affected = LiquidacionesPendientesService.RevertirEstado(idOrdenViaje, motivo);
                 if (affected == 0)
                     return new { success = false, message = "No se pudo revertir. Es posible que otro usuario ya haya modificado esta liquidación." };
 
@@ -1629,9 +1546,7 @@ namespace WebSGV.Views
                 string numeroOrden = null;
 
                 // 1) Obtener datos actuales
-                DataTable dtOrden = DbHelper.ConsultarTabla(
-                    "SELECT numeroOrdenViaje, idFirmaConductor FROM OrdenViaje WHERE idOrdenViaje = @id AND estadoAprobacion = 'PENDIENTE'",
-                    DbHelper.Param("@id", idOrdenViaje));
+                DataTable dtOrden = LiquidacionesPendientesService.ObtenerOrdenParaRechazo(idOrdenViaje);
                 if (dtOrden.Rows.Count == 0)
                     return new { success = false, message = "La orden no se encontró o ya no está pendiente." };
                 numeroOrden = dtOrden.Rows[0]["numeroOrdenViaje"].ToString();
@@ -1639,14 +1554,7 @@ namespace WebSGV.Views
                     idFirmaConductor = Convert.ToInt32(dtOrden.Rows[0]["idFirmaConductor"]);
 
                 // 2) Marcar como rechazada (habilita re-envío y re-firma del conductor)
-                int a = DbHelper.EjecutarNonQuery(@"
-                        UPDATE OrdenViaje
-                        SET estadoAprobacion = 'RECHAZADO',
-                            observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) +
-                                '[RECHAZO ' + CONVERT(varchar, GETDATE(), 120) + '] ' + @motivo
-                        WHERE idOrdenViaje = @id AND estadoAprobacion = 'PENDIENTE'",
-                    DbHelper.Param("@id", idOrdenViaje),
-                    DbHelper.Param("@motivo", motivo));
+                int a = LiquidacionesPendientesService.MarcarRechazada(idOrdenViaje, motivo);
                 if (a == 0)
                     return new { success = false, message = "No se pudo rechazar (otro usuario la modificó)." };
 

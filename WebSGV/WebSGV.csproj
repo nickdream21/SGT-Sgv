@@ -455,6 +455,7 @@
     <Compile Include="Services\FirmaService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionCalculos.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionesContabilidadService.cs" />
+    <Compile Include="Services\Liquidaciones\LiquidacionesPendientesService.cs" />
     <Compile Include="Services\NotificacionService.cs" />
     <Compile Include="Services\OrdenViaje\DetalleOrdenViajeService.cs" />
     <Compile Include="Services\OrdenViaje\OrdenViajeValidaciones.cs" />
