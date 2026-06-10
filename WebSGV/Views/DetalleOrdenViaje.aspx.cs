@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Web.UI;
 using WebSGV.Helpers;
+using WebSGV.Services.OrdenViaje;
 
 namespace WebSGV.Views
 {
@@ -127,26 +128,7 @@ namespace WebSGV.Views
 
         private void CargarCabecera(int idOrdenViaje)
         {
-            DataTable dt = DbHelper.ConsultarTabla(@"
-                SELECT
-                    ov.idOrdenViaje,
-                    ov.numeroOrdenViaje,
-                    ov.idConductor,
-                    ov.fechaSalida,
-                    ov.fechaLlegada,
-                    ov.horaSalida,
-                    ov.horaLlegada,
-                    ov.observaciones,
-                    ov.estadoAprobacion,
-                    c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS nombreConductor,
-                    t.placaTracto,
-                    ca.placaCarreta
-                FROM OrdenViaje ov
-                INNER JOIN Conductor c  ON ov.idConductor = c.idConductor
-                INNER JOIN Tracto t     ON ov.idTracto    = t.idTracto
-                INNER JOIN Carreta ca   ON ov.idCarreta   = ca.idCarreta
-                WHERE ov.idOrdenViaje = @idOrdenViaje",
-                DbHelper.Param("@idOrdenViaje", idOrdenViaje));
+            DataTable dt = DetalleOrdenViajeService.ObtenerCabecera(idOrdenViaje);
 
             if (dt.Rows.Count == 0)
                 throw new Exception("No se encontró la liquidación solicitada.");
@@ -187,13 +169,7 @@ namespace WebSGV.Views
         {
             var filas = new List<FilaFinanciera>();
 
-            DataTable dtPrinc = DbHelper.ConsultarTabla(@"
-                SELECT despachoSoles, despachoDolares, descDespacho,
-                       mensualidadSoles, mensualidadDolares, descMensualidad,
-                       otrosSoles, otrosDolares, descOtrosAutorizados,
-                       prestamoSoles, prestamosDolares, descPrestamo
-                FROM Ingresos WHERE numeroOrdenViaje = @n",
-                DbHelper.Param("@n", _numeroOrden));
+            DataTable dtPrinc = DetalleOrdenViajeService.ObtenerIngresosPrincipales(_numeroOrden);
 
             if (dtPrinc.Rows.Count > 0)
             {
@@ -204,9 +180,7 @@ namespace WebSGV.Views
                 AgregarFila(filas, "Préstamo",           r["descPrestamo"],         r["prestamoSoles"],    r["prestamosDolares"]);
             }
 
-            DataTable dtAd = DbHelper.ConsultarTabla(
-                "SELECT nombreCategoria, descripcion, soles, dolares FROM IngresosAdicionales WHERE numeroOrdenViaje = @n ORDER BY idIngresoAdicional",
-                DbHelper.Param("@n", _numeroOrden));
+            DataTable dtAd = DetalleOrdenViajeService.ObtenerIngresosAdicionales(_numeroOrden);
 
             foreach (DataRow r in dtAd.Rows)
                 AgregarFila(filas, r["nombreCategoria"].ToString(), r["descripcion"], r["soles"], r["dolares"]);
@@ -225,17 +199,7 @@ namespace WebSGV.Views
         {
             var filas = new List<FilaFinanciera>();
 
-            DataTable dtEg = DbHelper.ConsultarTabla(@"
-                SELECT peajesSoles, peajesDolares, descPeajes,
-                       alimentacionSoles, alimentacionDolares, descAlimentacion,
-                       apoyoseguridadSoles, apoyoseguridadDolares, descApoyoSeguridad,
-                       reparacionesVariosSoles, repacionesVariosDolares, descReparacionesVarios,
-                       movilidadSoles, movilidadDolares, descMovilidad,
-                       encarpada_desencarpadaSoles, encarpada_desencarpadaDolares, descEncarpadaDesencarpada,
-                       hospedajeSoles, hospedajeDolares, descHospedaje,
-                       combustibleSoles, combustibleDolares, descCombustible
-                FROM Egresos WHERE numeroOrdenViaje = @n",
-                DbHelper.Param("@n", _numeroOrden));
+            DataTable dtEg = DetalleOrdenViajeService.ObtenerEgresos(_numeroOrden);
 
             if (dtEg.Rows.Count > 0)
             {
@@ -250,9 +214,7 @@ namespace WebSGV.Views
                 AgregarFila(filas, "Combustible",            r["descCombustible"],              r["combustibleSoles"],              r["combustibleDolares"]);
             }
 
-            DataTable dtAd = DbHelper.ConsultarTabla(
-                "SELECT nombreCategoria, descripcion, soles, dolares FROM CategoriasAdicionales WHERE numeroOrdenViaje = @n ORDER BY idCategoriaAdicional",
-                DbHelper.Param("@n", _numeroOrden));
+            DataTable dtAd = DetalleOrdenViajeService.ObtenerCategoriasAdicionales(_numeroOrden);
 
             foreach (DataRow r in dtAd.Rows)
                 AgregarFila(filas, r["nombreCategoria"].ToString(), r["descripcion"], r["soles"], r["dolares"]);
@@ -270,9 +232,7 @@ namespace WebSGV.Views
         private void CargarDetallesPeajes()
         {
             var lista = new List<FilaPeaje>();
-            DataTable dt = DbHelper.ConsultarTabla(
-                "SELECT estacion, fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetallePeajes WHERE numeroOrdenViaje = @n ORDER BY fecha",
-                DbHelper.Param("@n", _numeroOrden));
+            DataTable dt = DetalleOrdenViajeService.ObtenerDetallePeajes(_numeroOrden);
 
             foreach (DataRow r in dt.Rows)
             {
@@ -298,9 +258,7 @@ namespace WebSGV.Views
         private void CargarDetallesReparaciones()
         {
             var lista = new List<FilaGenerico>();
-            DataTable dt = DbHelper.ConsultarTabla(
-                "SELECT observaciones AS tipo, fechaComprobante, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleReparacionesVarios WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante",
-                DbHelper.Param("@n", _numeroOrden));
+            DataTable dt = DetalleOrdenViajeService.ObtenerDetalleReparaciones(_numeroOrden);
 
             foreach (DataRow r in dt.Rows)
             {
@@ -326,9 +284,7 @@ namespace WebSGV.Views
         private void CargarDetallesHospedaje()
         {
             var lista = new List<FilaGenerico>();
-            DataTable dt = DbHelper.ConsultarTabla(
-                "SELECT observaciones AS lugar, fechaComprobante, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleHospedaje WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante",
-                DbHelper.Param("@n", _numeroOrden));
+            DataTable dt = DetalleOrdenViajeService.ObtenerDetalleHospedaje(_numeroOrden);
 
             foreach (DataRow r in dt.Rows)
             {
@@ -354,9 +310,7 @@ namespace WebSGV.Views
         private void CargarDetallesCombustible()
         {
             var lista = new List<FilaGenerico>();
-            DataTable dt = DbHelper.ConsultarTabla(
-                "SELECT observaciones AS lugar, fechaComprobante, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleCombustible WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante",
-                DbHelper.Param("@n", _numeroOrden));
+            DataTable dt = DetalleOrdenViajeService.ObtenerDetalleCombustible(_numeroOrden);
 
             foreach (DataRow r in dt.Rows)
             {
