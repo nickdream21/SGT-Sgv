@@ -224,98 +224,50 @@ namespace WebSGV.Views
 
         private void CargarConductores()
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_ObtenerConductoresActivos", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        DataTable dt = new DataTable();
-                        dt.Load(reader);
+            DataTable dt = RegistroDespachoService.ObtenerConductoresActivos();
 
-                        ddlConductor.Items.Clear();
-                        ddlConductor.Items.Add(new ListItem("-- Seleccione un conductor --", "0"));
-                        ddlConductor.DataSource = dt;
-                        ddlConductor.DataTextField = "NombreCompleto";
-                        ddlConductor.DataValueField = "idConductor";
-                        ddlConductor.DataBind();
-                    }
-                }
-            }
+            ddlConductor.Items.Clear();
+            ddlConductor.Items.Add(new ListItem("-- Seleccione un conductor --", "0"));
+            ddlConductor.DataSource = dt;
+            ddlConductor.DataTextField = "NombreCompleto";
+            ddlConductor.DataValueField = "idConductor";
+            ddlConductor.DataBind();
         }
 
         private void CargarTractos()
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_ObtenerTractosActivos", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        DataTable dt = new DataTable();
-                        dt.Load(reader);
+            DataTable dt = RegistroDespachoService.ObtenerTractosActivos();
 
-                        ddlPlacaTracto.Items.Clear();
-                        ddlPlacaTracto.Items.Add(new ListItem("-- Seleccione una placa --", "0"));
-                        ddlPlacaTracto.DataSource = dt;
-                        ddlPlacaTracto.DataTextField = "placaTracto";
-                        ddlPlacaTracto.DataValueField = "idTracto";
-                        ddlPlacaTracto.DataBind();
-                    }
-                }
-            }
+            ddlPlacaTracto.Items.Clear();
+            ddlPlacaTracto.Items.Add(new ListItem("-- Seleccione una placa --", "0"));
+            ddlPlacaTracto.DataSource = dt;
+            ddlPlacaTracto.DataTextField = "placaTracto";
+            ddlPlacaTracto.DataValueField = "idTracto";
+            ddlPlacaTracto.DataBind();
         }
 
         private void CargarCarretas()
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_ObtenerCarretasActivas", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        DataTable dt = new DataTable();
-                        dt.Load(reader);
+            DataTable dt = RegistroDespachoService.ObtenerCarretasActivas();
 
-                        ddlPlacaCarreta.Items.Clear();
-                        ddlPlacaCarreta.Items.Add(new ListItem("-- Seleccione una placa --", "0"));
-                        ddlPlacaCarreta.DataSource = dt;
-                        ddlPlacaCarreta.DataTextField = "placaCarreta";
-                        ddlPlacaCarreta.DataValueField = "idCarreta";
-                        ddlPlacaCarreta.DataBind();
-                    }
-                }
-            }
+            ddlPlacaCarreta.Items.Clear();
+            ddlPlacaCarreta.Items.Add(new ListItem("-- Seleccione una placa --", "0"));
+            ddlPlacaCarreta.DataSource = dt;
+            ddlPlacaCarreta.DataTextField = "placaCarreta";
+            ddlPlacaCarreta.DataValueField = "idCarreta";
+            ddlPlacaCarreta.DataBind();
         }
 
         private void CargarClientes()
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_ObtenerClientesActivos", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        DataTable dt = new DataTable();
-                        dt.Load(reader);
+            DataTable dt = RegistroDespachoService.ObtenerClientesActivos();
 
-                        ddlClienteBase.Items.Clear();
-                        ddlClienteBase.Items.Add(new ListItem("-- Seleccione un cliente --", "0"));
-                        ddlClienteBase.DataSource = dt;
-                        ddlClienteBase.DataTextField = "nombre";
-                        ddlClienteBase.DataValueField = "idCliente";
-                        ddlClienteBase.DataBind();
-                    }
-                }
-            }
+            ddlClienteBase.Items.Clear();
+            ddlClienteBase.Items.Add(new ListItem("-- Seleccione un cliente --", "0"));
+            ddlClienteBase.DataSource = dt;
+            ddlClienteBase.DataTextField = "nombre";
+            ddlClienteBase.DataValueField = "idCliente";
+            ddlClienteBase.DataBind();
         }
 
         private void ActualizarPlantasPorAmbito()
@@ -328,22 +280,11 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                DataTable dt = RegistroDespachoService.ObtenerPlantasPorAmbito(esInternacional);
+                foreach (DataRow row in dt.Rows)
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_ObtenerPlantasPorAmbito", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@esInternacional", esInternacional);
-                        conn.Open();
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                string nombre = reader["nombre"].ToString();
-                                ddlLugarOperacionBase.Items.Add(new ListItem(nombre, nombre));
-                            }
-                        }
-                    }
+                    string nombre = row["nombre"].ToString();
+                    ddlLugarOperacionBase.Items.Add(new ListItem(nombre, nombre));
                 }
             }
             catch (Exception ex)
@@ -1105,31 +1046,13 @@ namespace WebSGV.Views
             string numeroCPIC = (pnlCPICBase.Visible && !string.IsNullOrEmpty(txtNumeroCPICBase.Text))
                 ? txtNumeroCPICBase.Text.Trim() : null;
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_ValidarDocumentosDuplicados", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
+            var dup = RegistroDespachoService.ValidarDocumentosDuplicados(numeroFactura, numeroCPIC);
 
-                    cmd.Parameters.AddWithValue("@numeroFactura", (object)numeroFactura ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@numeroCPIC", (object)numeroCPIC ?? DBNull.Value);
+            if (numeroFactura != null && dup.FacturaExiste)
+                errores.Add($"El número de factura '{numeroFactura}' ya está registrado en el sistema");
 
-                    SqlParameter pFacturaExiste = cmd.Parameters.Add("@facturaExiste", SqlDbType.Bit);
-                    pFacturaExiste.Direction = ParameterDirection.Output;
-
-                    SqlParameter pCpicExiste = cmd.Parameters.Add("@cpicExiste", SqlDbType.Bit);
-                    pCpicExiste.Direction = ParameterDirection.Output;
-
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-
-                    if (numeroFactura != null && pFacturaExiste.Value != DBNull.Value && (bool)pFacturaExiste.Value)
-                        errores.Add($"El número de factura '{numeroFactura}' ya está registrado en el sistema");
-
-                    if (numeroCPIC != null && pCpicExiste.Value != DBNull.Value && (bool)pCpicExiste.Value)
-                        errores.Add($"El número de CPIC '{numeroCPIC}' ya está registrado en el sistema");
-                }
-            }
+            if (numeroCPIC != null && dup.CpicExiste)
+                errores.Add($"El número de CPIC '{numeroCPIC}' ya está registrado en el sistema");
 
             if (errores.Count > 0)
             {
@@ -1254,26 +1177,7 @@ namespace WebSGV.Views
 
         private int CrearNuevoViajeProgreso(int idConductor, string descripcion = null)
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_CrearViajeProgreso", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                    cmd.Parameters.AddWithValue("@descripcion", string.IsNullOrEmpty(descripcion) ? (object)DBNull.Value : descripcion);
-                    cmd.Parameters.AddWithValue("@usuario", ObtenerUsuarioActual());
-                    cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-
-                    SqlParameter pId = cmd.Parameters.Add("@idViajeProgreso", SqlDbType.Int);
-                    pId.Direction = ParameterDirection.Output;
-
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-
-                    return Convert.ToInt32(pId.Value);
-                }
-            }
+            return RegistroDespachoService.CrearNuevoViajeProgreso(idConductor, descripcion, ObtenerUsuarioActual());
         }
 
         private int? DeterminarViajeProgreso(int idConductor, bool esInternacional, string tipoOperacion)
