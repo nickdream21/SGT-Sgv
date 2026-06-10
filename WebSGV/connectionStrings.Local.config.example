@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<connectionStrings>
-  <!-- Ejemplo: copia este archivo como connectionStrings.config y completa los valores -->
-  <!-- <add name="ConexionSGV" connectionString="Data Source=...;Initial Catalog=...;User ID=...;Password=...;" providerName="System.Data.SqlClient" /> -->
-</connectionStrings>

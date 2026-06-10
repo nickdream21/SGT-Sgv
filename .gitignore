@@ -271,6 +271,9 @@ ServiceFabricBackup/
 .claude/settings.json
 .claude/settings.local.json
 
+# Variables de entorno (Data API Builder) - NUNCA subir
+.env
+
 # SQL Server files
 *.mdf
 *.ldf
