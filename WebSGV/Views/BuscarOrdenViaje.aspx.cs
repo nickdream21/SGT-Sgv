@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using WebSGV.Helpers;
 using WebSGV.Services.Common;
+using WebSGV.Services.OrdenViaje;
 
 namespace WebSGV.Views
 {
@@ -31,7 +32,7 @@ namespace WebSGV.Views
         #region Métodos para cargar datos en los DropDownList
         private void CargarClientes()
         {
-            DataTable dt = DbHelper.ConsultarTabla("SELECT idCliente, nombre FROM Cliente");
+            DataTable dt = BuscarOrdenViajeService.ObtenerClientes();
 
             if (dt.Rows.Count > 0)
             {
@@ -46,7 +47,7 @@ namespace WebSGV.Views
 
         private void CargarPlacasTracto()
         {
-            DataTable dt = DbHelper.ConsultarTabla("SELECT idTracto, placaTracto FROM Tracto");
+            DataTable dt = BuscarOrdenViajeService.ObtenerTractos();
 
             if (dt.Rows.Count > 0)
             {
@@ -61,7 +62,7 @@ namespace WebSGV.Views
 
         private void CargarPlacasCarreta()
         {
-            DataTable dt = DbHelper.ConsultarTabla("SELECT idCarreta, placaCarreta FROM Carreta");
+            DataTable dt = BuscarOrdenViajeService.ObtenerCarretas();
 
             if (dt.Rows.Count > 0)
             {
@@ -76,8 +77,7 @@ namespace WebSGV.Views
 
         private void CargarConductores()
         {
-            DataTable dt = DbHelper.ConsultarTabla(
-                "SELECT idConductor, CONCAT(nombre, ' ', apPaterno, ' ', apMaterno) AS nombreCompleto FROM Conductor");
+            DataTable dt = BuscarOrdenViajeService.ObtenerConductores();
 
             if (dt.Rows.Count > 0)
             {
@@ -92,7 +92,7 @@ namespace WebSGV.Views
 
         private void CargarRutas()
         {
-            DataTable dt = DbHelper.ConsultarTabla("SELECT idRuta, nombre FROM Ruta");
+            DataTable dt = BuscarOrdenViajeService.ObtenerRutas();
 
             if (dt.Rows.Count > 0)
             {
@@ -109,11 +109,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = idCliente.HasValue
-                    ? DbHelper.ConsultarTabla(
-                        "SELECT idPlanta, nombre FROM PlantaDescarga WHERE idCliente = @idCliente",
-                        DbHelper.Param("@idCliente", idCliente.Value))
-                    : DbHelper.ConsultarTabla("SELECT idPlanta, nombre FROM PlantaDescarga");
+                DataTable dt = BuscarOrdenViajeService.ObtenerPlantasDescarga(idCliente);
 
                 ddlPlantaDescarga.Items.Clear();
                 if (dt.Rows.Count > 0)
@@ -158,9 +154,7 @@ namespace WebSGV.Views
         {
             try
             {
-                int count = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM OrdenViaje WHERE numeroOrdenViaje = @numeroOrdenViaje",
-                    DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje)));
+                int count = BuscarOrdenViajeService.ContarPorNumero(numeroOrdenViaje);
                 return count > 0;
             }
             catch (Exception ex)
@@ -189,17 +183,9 @@ namespace WebSGV.Views
 
         private void CargarDatosBasicos(string numeroOrdenViaje)
         {
-            string query = @"
-                SELECT ov.numeroOrdenViaje, c.numeroCPIC, ov.fechaSalida, ov.horaSalida,
-                       ov.fechaLlegada, ov.horaLlegada, ov.idCliente, ov.idTracto,
-                       ov.idCarreta, ov.idConductor, ov.observaciones, ov.observacionesLiquidacion
-                FROM OrdenViaje ov
-                INNER JOIN CPIC c ON ov.idCPIC = c.idCPIC
-                WHERE ov.numeroOrdenViaje = @numeroOrdenViaje";
-
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(query, DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje));
+                DataTable dt = BuscarOrdenViajeService.ObtenerDatosBasicos(numeroOrdenViaje);
                 if (dt.Rows.Count == 0) return;
                 DataRow reader = dt.Rows[0];
 
@@ -242,17 +228,9 @@ namespace WebSGV.Views
         private void CargarDatosLiquidacion(string numeroOrdenViaje)
         {
             // Ingresos fijos
-            string queryIngresos = @"
-                SELECT despachoSoles, despachoDolares, descDespacho,
-                       mensualidadSoles, mensualidadDolares, descMensualidad,
-                       otrosSoles, otrosDolares, descOtrosAutorizados,
-                       prestamoSoles, prestamosDolares, descPrestamo
-                FROM Ingresos
-                WHERE numeroOrdenViaje = @numeroOrdenViaje";
-
             try
             {
-                DataTable dtIngresos = DbHelper.ConsultarTabla(queryIngresos, DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje));
+                DataTable dtIngresos = BuscarOrdenViajeService.ObtenerIngresos(numeroOrdenViaje);
                 if (dtIngresos.Rows.Count > 0)
                 {
                     DataRow reader = dtIngresos.Rows[0];
@@ -279,15 +257,9 @@ namespace WebSGV.Views
             }
 
             // Ingresos adicionales
-            string queryIngresosAdicionales = @"
-                SELECT idIngresoAdicional, nombreCategoria, soles, dolares, descripcion
-                FROM IngresosAdicionales
-                WHERE numeroOrdenViaje = @numeroOrdenViaje";
-
             try
             {
-                DataTable dtIngresosAdicionales = DbHelper.ConsultarTabla(
-                    queryIngresosAdicionales, DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje));
+                DataTable dtIngresosAdicionales = BuscarOrdenViajeService.ObtenerIngresosAdicionales(numeroOrdenViaje);
                 rptIngresosAdicionales.DataSource = dtIngresosAdicionales;
                 rptIngresosAdicionales.DataBind();
             }
@@ -297,21 +269,9 @@ namespace WebSGV.Views
             }
 
             // Gastos fijos
-            string queryGastos = @"
-                SELECT peajesSoles, peajesDolares, descPeajes,
-                       alimentacionSoles, alimentacionDolares, descAlimentacion,
-                       apoyoseguridadSoles, apoyoseguridadDolares, descApoyoSeguridad,
-                       reparacionesVariosSoles, repacionesVariosDolares, descReparacionesVarios,
-                       movilidadSoles, movilidadDolares, descMovilidad,
-                       encarpada_desencarpadaSoles, encarpada_desencarpadaDolares, descEncarpadaDesencarpada,
-                       hospedajeSoles, hospedajeDolares, descHospedaje,
-                       combustibleSoles, combustibleDolares, descCombustible
-                FROM Egresos
-                WHERE numeroOrdenViaje = @numeroOrdenViaje";
-
             try
             {
-                DataTable dtGastos = DbHelper.ConsultarTabla(queryGastos, DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje));
+                DataTable dtGastos = BuscarOrdenViajeService.ObtenerEgresos(numeroOrdenViaje);
                 if (dtGastos.Rows.Count > 0)
                 {
                     DataRow reader = dtGastos.Rows[0];
@@ -354,15 +314,9 @@ namespace WebSGV.Views
             }
 
             // Gastos adicionales
-            string queryGastosAdicionales = @"
-                SELECT idCategoriaAdicional, nombreCategoria, soles, dolares, descripcion
-                FROM CategoriasAdicionales
-                WHERE numeroOrdenViaje = @numeroOrdenViaje";
-
             try
             {
-                DataTable dtGastosAdicionales = DbHelper.ConsultarTabla(
-                    queryGastosAdicionales, DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje));
+                DataTable dtGastosAdicionales = BuscarOrdenViajeService.ObtenerGastosAdicionales(numeroOrdenViaje);
                 rptGastosAdicionales.DataSource = dtGastosAdicionales;
                 rptGastosAdicionales.DataBind();
             }
@@ -374,14 +328,9 @@ namespace WebSGV.Views
 
         private void CargarDatosGuias(string numeroOrdenViaje)
         {
-            string query = @"
-                SELECT gt.numeroGuiaTransportista, gt.numeroGuiaCliente, gt.ruta1, gt.plantaDescarga, gt.numeroManifiesto
-                FROM GuiasTransportista gt
-                WHERE gt.numeroOrdenViaje = @numeroOrdenViaje";
-
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(query, DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje));
+                DataTable dt = BuscarOrdenViajeService.ObtenerGuias(numeroOrdenViaje);
                 if (dt.Rows.Count == 0) return;
                 DataRow reader = dt.Rows[0];
 
@@ -410,16 +359,9 @@ namespace WebSGV.Views
 
         private void CargarProductos(string numeroOrdenViaje)
         {
-            string query = @"
-                SELECT dov.idProducto, p.nombre AS NombreProducto, dov.cantidadBolsas AS CantidadBolsas
-                FROM DetalleOrdenViaje dov
-                INNER JOIN GuiasTransportista gt ON dov.idGuia = gt.idGuia
-                INNER JOIN Producto p ON dov.idProducto = p.idProducto
-                WHERE gt.numeroOrdenViaje = @numeroOrdenViaje";
-
             try
             {
-                DataTable dtProductos = DbHelper.ConsultarTabla(query, DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje));
+                DataTable dtProductos = BuscarOrdenViajeService.ObtenerProductos(numeroOrdenViaje);
                 gvProductos.DataSource = dtProductos;
                 gvProductos.DataBind();
             }
