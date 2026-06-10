@@ -1,0 +1,28 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Crear archivos de configuracion locales (stubs para compilar)
+        shell: pwsh
+        run: |
+          Set-Content WebSGV/connectionStrings.config '<connectionStrings><add name="ConexionSGV" connectionString="Data Source=stub;Initial Catalog=stub;" providerName="System.Data.SqlClient" /></connectionStrings>'
+          Set-Content WebSGV/appSettings.Secrets.config '<appSettings></appSettings>'
+
+      - name: Restaurar paquetes NuGet
+        run: nuget restore WebSGV.sln
+
+      - name: Compilar
+        run: msbuild WebSGV.sln /t:Build /p:Configuration=Release /nologo /verbosity:minimal
