@@ -11,6 +11,7 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 using WebSGV.Services.Despachos;
+using WebSGV.Services.Facturas;
 
 namespace WebSGV.Views
 {
@@ -61,13 +62,7 @@ namespace WebSGV.Views
         {
             try
             {
-                return DbHelper.ConsultarTabla(@"
-                    SELECT f.idFactura, f.numeroFactura, f.numeroPedido, f.valorTotal, f.fechaEmision,
-                           f.idCliente, c.nombre as nombreCliente, c.ruc as rucCliente, cp.numeroCPIC
-                    FROM Factura f
-                    INNER JOIN Cliente c ON f.idCliente = c.idCliente
-                    LEFT JOIN CPIC cp ON f.idFactura = cp.idFactura
-                    ORDER BY f.fechaEmision DESC, f.numeroFactura DESC");
+                return FacturaConsultasService.ObtenerTodas();
             }
             catch (Exception ex)
             {
@@ -135,12 +130,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    @"SELECT f.idFactura, f.numeroFactura, f.numeroPedido, f.valorTotal, f.fechaEmision,
-                             f.idCliente, c.nombre as nombreCliente, c.ruc
-                      FROM Factura f INNER JOIN Cliente c ON f.idCliente = c.idCliente
-                      WHERE f.idFactura = @idFactura",
-                    DbHelper.Param("@idFactura", idFactura));
+                DataTable dt = FacturaConsultasService.ObtenerPorId(idFactura);
 
                 if (dt.Rows.Count == 0) return null;
                 DataRow reader = dt.Rows[0];
@@ -221,10 +211,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(@"SELECT idCliente,
-                    CASE WHEN ruc IS NOT NULL AND ruc != '' THEN ruc + ' - ' + nombre
-                         ELSE nombre END as nombreCompleto
-                    FROM Cliente ORDER BY nombre");
+                DataTable dt = FacturaConsultasService.ObtenerClientes();
                 ddlCliente.DataSource = dt;
                 ddlCliente.DataTextField = "nombreCompleto";
                 ddlCliente.DataValueField = "idCliente";
@@ -281,12 +268,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    @"SELECT f.idFactura, f.numeroFactura, f.numeroPedido, f.valorTotal, f.fechaEmision,
-                             f.idCliente, c.nombre as nombreCliente, c.ruc
-                      FROM Factura f INNER JOIN Cliente c ON f.idCliente = c.idCliente
-                      WHERE f.numeroFactura = @numeroFactura",
-                    DbHelper.Param("@numeroFactura", numeroFactura));
+                DataTable dt = FacturaConsultasService.ObtenerPorNumero(numeroFactura);
 
                 if (dt.Rows.Count == 0) return null;
                 DataRow reader = dt.Rows[0];
@@ -328,12 +310,7 @@ namespace WebSGV.Views
         {
             try
             {
-                return DbHelper.ConsultarTabla(
-                    @"SELECT idDocumento, nombreOriginal, tipoArchivo, tamanoBytes, fechaSubida,
-                             usuarioSubida, descripcion, rutaArchivo
-                      FROM DocumentosFactura WHERE idFactura = @idFactura AND activo = 1
-                      ORDER BY fechaSubida DESC",
-                    DbHelper.Param("@idFactura", idFactura));
+                return FacturaConsultasService.ObtenerDocumentos(idFactura);
             }
             catch (Exception ex)
             {
@@ -505,9 +482,7 @@ namespace WebSGV.Views
         {
             try
             {
-                return Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM Factura WHERE numeroFactura = @numeroFactura",
-                    DbHelper.Param("@numeroFactura", numeroFactura))) > 0;
+                return FacturaConsultasService.ContarPorNumero(numeroFactura) > 0;
             }
             catch (Exception ex)
             {
@@ -791,9 +766,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    "SELECT nombreOriginal, rutaArchivo, tipoArchivo FROM DocumentosFactura WHERE idDocumento = @idDocumento AND activo = 1",
-                    DbHelper.Param("@idDocumento", idDocumento));
+                DataTable dt = FacturaConsultasService.ObtenerInfoDocumento(idDocumento);
                 return dt.Rows.Count > 0 ? dt.Rows[0] : null;
             }
             catch (Exception ex)

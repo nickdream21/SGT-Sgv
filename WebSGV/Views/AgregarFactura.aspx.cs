@@ -41,10 +41,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(@"SELECT idCliente,
-                    CASE WHEN ruc IS NOT NULL AND ruc != '' THEN ruc + ' - ' + nombre
-                         ELSE nombre END as nombreCompleto
-                    FROM Cliente ORDER BY nombre");
+                DataTable dt = FacturaConsultasService.ObtenerClientes();
                 ddlCliente.DataSource = dt;
                 ddlCliente.DataTextField = "nombreCompleto";
                 ddlCliente.DataValueField = "idCliente";
@@ -182,9 +179,7 @@ namespace WebSGV.Views
         {
             try
             {
-                return Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM Factura WHERE numeroFactura = @numeroFactura",
-                    DbHelper.Param("@numeroFactura", numeroFactura))) > 0;
+                return FacturaConsultasService.ContarPorNumero(numeroFactura) > 0;
             }
             catch (Exception ex)
             {

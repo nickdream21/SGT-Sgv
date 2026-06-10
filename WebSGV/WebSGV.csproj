@@ -454,6 +454,7 @@
     <Compile Include="Services\Despachos\EditarDespachoService.cs" />
     <Compile Include="Services\Despachos\ListaDespachosService.cs" />
     <Compile Include="Services\Despachos\RegistroDespachoService.cs" />
+    <Compile Include="Services\Facturas\FacturaConsultasService.cs" />
     <Compile Include="Services\Facturas\FacturaValidaciones.cs" />
     <Compile Include="Services\FirmaService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionCalculos.cs" />
