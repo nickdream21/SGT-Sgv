@@ -3,6 +3,7 @@ using System.Data;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Despachos;
 
 namespace WebSGV.Views
 {
@@ -49,9 +50,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    "SELECT estadoDespacho FROM Despachos WHERE idDespacho = @idDespacho",
-                    DbHelper.Param("@idDespacho", id));
+                DataTable dt = EditarDespachoService.ObtenerEstado(id);
 
                 if (dt.Rows.Count > 0)
                     return dt.Rows[0]["estadoDespacho"].ToString() == "PROGRAMADO";
@@ -78,9 +77,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    @"SELECT idConductor, CONCAT(nombre, ' ', apPaterno, ' ', apMaterno) as NombreCompleto
-                      FROM Conductor ORDER BY nombre, apPaterno");
+                DataTable dt = EditarDespachoService.ObtenerConductores();
                 ddlConductor.DataSource = dt;
                 ddlConductor.DataTextField = "NombreCompleto";
                 ddlConductor.DataValueField = "idConductor";
@@ -97,7 +94,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla("SELECT idCliente, nombre FROM Cliente ORDER BY nombre");
+                DataTable dt = EditarDespachoService.ObtenerClientes();
                 ddlCliente.DataSource = dt;
                 ddlCliente.DataTextField = "nombre";
                 ddlCliente.DataValueField = "idCliente";
@@ -114,7 +111,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla("SELECT idTracto, placaTracto FROM Tracto ORDER BY placaTracto");
+                DataTable dt = EditarDespachoService.ObtenerTractos();
                 ddlTracto.DataSource = dt;
                 ddlTracto.DataTextField = "placaTracto";
                 ddlTracto.DataValueField = "idTracto";
@@ -131,7 +128,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla("SELECT idCarreta, placaCarreta FROM Carreta ORDER BY placaCarreta");
+                DataTable dt = EditarDespachoService.ObtenerCarretas();
                 ddlCarreta.DataSource = dt;
                 ddlCarreta.DataTextField = "placaCarreta";
                 ddlCarreta.DataValueField = "idCarreta";
@@ -148,8 +145,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    "SELECT nombre FROM Lugares WHERE activo = 1 ORDER BY nombre");
+                DataTable dt = EditarDespachoService.ObtenerLugares();
                 ddlLugar.DataSource = dt;
                 ddlLugar.DataTextField = "nombre";
                 ddlLugar.DataValueField = "nombre";
@@ -166,19 +162,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    @"SELECT d.*,
-                             CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) as conductorNombre,
-                             cl.nombre as clienteNombre,
-                             t.placaTracto,
-                             ca.placaCarreta
-                      FROM Despachos d
-                      INNER JOIN Conductor c ON d.idConductor = c.idConductor
-                      INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
-                      INNER JOIN Tracto t ON d.idTracto = t.idTracto
-                      INNER JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-                      WHERE d.idDespacho = @idDespacho",
-                    DbHelper.Param("@idDespacho", idDespacho));
+                DataTable dt = EditarDespachoService.ObtenerDespacho(idDespacho);
 
                 if (dt.Rows.Count > 0)
                 {
@@ -278,28 +262,16 @@ namespace WebSGV.Views
         {
             try
             {
-                int filas = DbHelper.EjecutarNonQuery(
-                    @"UPDATE Despachos SET
-                        fechaDespacho = @fechaDespacho,
-                        idConductor = @idConductor,
-                        idCliente = @idCliente,
-                        idTracto = @idTracto,
-                        idCarreta = @idCarreta,
-                        lugarOperacion = @lugarOperacion,
-                        tipoOperacion = @tipoOperacion,
-                        fechaModificacion = @fechaActual,
-                        usuarioModificacion = @usuario
-                      WHERE idDespacho = @idDespacho",
-                    DbHelper.Param("@fechaActual",    FechaHelper.Ahora()),
-                    DbHelper.Param("@fechaDespacho",  DateTime.Parse(txtFechaDespacho.Text)),
-                    DbHelper.Param("@idConductor",    Convert.ToInt32(ddlConductor.SelectedValue)),
-                    DbHelper.Param("@idCliente",      Convert.ToInt32(ddlCliente.SelectedValue)),
-                    DbHelper.Param("@idTracto",       Convert.ToInt32(ddlTracto.SelectedValue)),
-                    DbHelper.Param("@idCarreta",      Convert.ToInt32(ddlCarreta.SelectedValue)),
-                    DbHelper.Param("@lugarOperacion", ddlLugar.SelectedValue),
-                    DbHelper.Param("@tipoOperacion",  ddlTipoOperacion.SelectedValue),
-                    DbHelper.Param("@usuario",        Session["Usuario"]?.ToString() ?? "SISTEMA"),
-                    DbHelper.Param("@idDespacho",     idDespacho));
+                int filas = EditarDespachoService.Actualizar(
+                    idDespacho,
+                    DateTime.Parse(txtFechaDespacho.Text),
+                    Convert.ToInt32(ddlConductor.SelectedValue),
+                    Convert.ToInt32(ddlCliente.SelectedValue),
+                    Convert.ToInt32(ddlTracto.SelectedValue),
+                    Convert.ToInt32(ddlCarreta.SelectedValue),
+                    ddlLugar.SelectedValue,
+                    ddlTipoOperacion.SelectedValue,
+                    Session["Usuario"]?.ToString() ?? "SISTEMA");
 
                 if (filas > 0)
                 {
