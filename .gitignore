@@ -380,3 +380,9 @@ FodyWeavers.xsd
 # La de produccion (dab-config.production.json) si se versiona y esta bloqueada.
 dab-config.json
 
+
+# Datos de runtime generados/subidos por la app: liquidaciones firmadas (SGV-CDF-F-05),
+# vales de combustible, facturas y CPIC. Contienen datos personales/financieros reales
+# y firmas biometricas: NUNCA versionar.
+WebSGV/App_Data/
+WebSGV/Uploads/
