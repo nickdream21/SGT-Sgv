@@ -522,85 +522,16 @@ namespace WebSGV.Views
 
                 notaAprobacion = NormalizarTexto(notaAprobacion, MaxLongitudNotaAprobacion);
 
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-                string numeroOrdenViaje = null;
+                // Transacción (UPSERT ajustes + sp_AprobarLiquidacion) en el Service;
+                // la sesión/validación de montos y el objeto de respuesta quedan aquí.
+                var resultado = LiquidacionesPendientesService.AprobarConAjustes(
+                    idOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares,
+                    notaAprobacion, idUsuario);
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    conn.Open();
-                    using (SqlTransaction tran = conn.BeginTransaction())
-                    {
-                    try
-                    {
+                if (!resultado.Exito)
+                    return new { success = false, message = resultado.Mensaje };
 
-                    // 1. Obtener numeroOrdenViaje
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id", conn, tran))
-                    {
-                        cmd.Parameters.AddWithValue("@id", idOrdenViaje);
-                        object result = cmd.ExecuteScalar();
-                        if (result == null || result == DBNull.Value)
-                            return new { success = false, message = "No se encontró la orden de viaje." };
-                        numeroOrdenViaje = result.ToString();
-                    }
-
-                    // 2. UPSERT DescuentosReintegros (solo si hay valores)
-                    if (descuentoSoles != 0 || descuentoDolares != 0 || reintegroSoles != 0 || reintegroDolares != 0)
-                    {
-                        string upsertSql = @"
-                            IF EXISTS (SELECT 1 FROM DescuentosReintegros WHERE numeroOrdenViaje = @numeroOrden)
-                                UPDATE DescuentosReintegros
-                                SET descuentoSoles = @descS, descuentoDolares = @descD,
-                                    reintegroSoles = @reintS, reintegroDolares = @reintD,
-                                    activo = 1
-                                WHERE numeroOrdenViaje = @numeroOrden
-                            ELSE
-                                INSERT INTO DescuentosReintegros
-                                    (numeroOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, activo)
-                                VALUES (@numeroOrden, @descS, @descD, @reintS, @reintD, 1)";
-
-                        using (SqlCommand cmd = new SqlCommand(upsertSql, conn, tran))
-                        {
-                            cmd.Parameters.AddWithValue("@numeroOrden", numeroOrdenViaje);
-                            cmd.Parameters.AddWithValue("@descS", descuentoSoles);
-                            cmd.Parameters.AddWithValue("@descD", descuentoDolares);
-                            cmd.Parameters.AddWithValue("@reintS", reintegroSoles);
-                            cmd.Parameters.AddWithValue("@reintD", reintegroDolares);
-                            cmd.ExecuteNonQuery();
-                            System.Diagnostics.Debug.WriteLine($"✅ Ajustes guardados: DescS={descuentoSoles} DescD={descuentoDolares} ReintS={reintegroSoles} ReintD={reintegroDolares}");
-                        }
-                    }
-
-                    // 3. Llamar sp_AprobarLiquidacion
-                    using (SqlCommand cmd = new SqlCommand("sp_AprobarLiquidacion", conn, tran))
-                    {
-                        cmd.CommandType = System.Data.CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                        cmd.Parameters.AddWithValue("@idUsuarioAprobacion", idUsuario);
-                        cmd.Parameters.AddWithValue("@observaciones",
-                            string.IsNullOrWhiteSpace(notaAprobacion) ? (object)DBNull.Value : notaAprobacion.Trim());
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                int resultado = Convert.ToInt32(reader["Resultado"]);
-                                string mensaje = reader["Mensaje"].ToString();
-                                if (resultado != 1)
-                                    return new { success = false, message = mensaje };
-                            }
-                        }
-                    }
-
-                    tran.Commit();
-                    }
-                    catch
-                    {
-                        tran.Rollback();
-                        throw;
-                    }
-                    }
-                }
+                string numeroOrdenViaje = resultado.NumeroOrdenViaje;
 
                 System.Diagnostics.Debug.WriteLine($"✅ Liquidación {numeroOrdenViaje} aprobada con éxito");
 
@@ -859,65 +790,16 @@ namespace WebSGV.Views
                 if (string.IsNullOrWhiteSpace(motivo) || motivo.Trim().Length < 10)
                     return new { success = false, message = "El motivo de corrección debe tener al menos 10 caracteres." };
 
-                string numeroOrdenViaje = null;
-                bool ordenEncontrada = true;
+                // Transacción (UPSERT ajustes + registro en observaciones) en el Service;
+                // la sesión/validación de montos/motivo y el objeto de respuesta quedan aquí.
+                var resultado = LiquidacionesPendientesService.CorregirAjustesAprobada(
+                    idOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares,
+                    motivo, idUsuario);
 
-                DbHelper.EnTransaccion((conn, tran) =>
-                {
-                    // 1. Obtener número de orden
-                    object result = DbHelper.EjecutarEscalar(conn, tran,
-                        "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id",
-                        DbHelper.Param("@id", idOrdenViaje));
-                    if (result == null || result == DBNull.Value)
-                    {
-                        ordenEncontrada = false;
-                        return;
-                    }
-                    numeroOrdenViaje = result.ToString();
-
-                    // 2. UPSERT DescuentosReintegros
-                    string upsertSql = @"
-                        IF EXISTS (SELECT 1 FROM DescuentosReintegros WHERE numeroOrdenViaje = @numeroOrden)
-                            UPDATE DescuentosReintegros
-                            SET descuentoSoles = @descS, descuentoDolares = @descD,
-                                reintegroSoles = @reintS, reintegroDolares = @reintD,
-                                activo = 1
-                            WHERE numeroOrdenViaje = @numeroOrden
-                        ELSE
-                            INSERT INTO DescuentosReintegros
-                                (numeroOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, activo)
-                            VALUES (@numeroOrden, @descS, @descD, @reintS, @reintD, 1)";
-
-                    DbHelper.EjecutarNonQuery(conn, tran, upsertSql,
-                        DbHelper.Param("@numeroOrden", numeroOrdenViaje),
-                        DbHelper.Param("@descS", descuentoSoles),
-                        DbHelper.Param("@descD", descuentoDolares),
-                        DbHelper.Param("@reintS", reintegroSoles),
-                        DbHelper.Param("@reintD", reintegroDolares));
-
-                    // 3. Registrar la corrección en observaciones para auditoría
-                    DbHelper.EjecutarNonQuery(conn, tran, @"
-                        UPDATE OrdenViaje
-                        SET observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) +
-                            '[CORRECCION AJUSTES ' + CONVERT(varchar, GETDATE(), 120) + '] ' + @motivo +
-                            ' | Desc S/' + CAST(@descS AS varchar) + ' $' + CAST(@descD AS varchar) +
-                            ' | Reint S/' + CAST(@reintS AS varchar) + ' $' + CAST(@reintD AS varchar)
-                        WHERE idOrdenViaje = @id",
-                        DbHelper.Param("@id", idOrdenViaje),
-                        DbHelper.Param("@motivo", motivo),
-                        DbHelper.Param("@descS", descuentoSoles),
-                        DbHelper.Param("@descD", descuentoDolares),
-                        DbHelper.Param("@reintS", reintegroSoles),
-                        DbHelper.Param("@reintD", reintegroDolares));
-
-                    System.Diagnostics.Debug.WriteLine($"✅ Ajustes corregidos para {numeroOrdenViaje} por usuario {idUsuario}");
-                    System.Diagnostics.Debug.WriteLine($"   DescS={descuentoSoles} DescD={descuentoDolares} ReintS={reintegroSoles} ReintD={reintegroDolares}");
-                });
-
-                if (!ordenEncontrada)
+                if (!resultado.OrdenEncontrada)
                     return new { success = false, message = "No se encontró la orden de viaje." };
 
-                return new { success = true, message = $"Ajustes de la liquidación {numeroOrdenViaje} corregidos exitosamente. Los cambios se reflejan en los reportes." };
+                return new { success = true, message = $"Ajustes de la liquidación {resultado.NumeroOrdenViaje} corregidos exitosamente. Los cambios se reflejan en los reportes." };
             }
             catch (Exception ex)
             {
@@ -1229,10 +1111,7 @@ namespace WebSGV.Views
         /// </summary>
         private static string GarantizarPdfArchivadoOV(int idOrdenViaje, string origenLog)
         {
-            object r = DbHelper.EjecutarEscalar(
-                "SELECT rutaPdfFirmado FROM OrdenViaje WHERE idOrdenViaje = @id",
-                DbHelper.Param("@id", idOrdenViaje));
-            string rutaExistente = r == null || r == DBNull.Value ? null : r.ToString();
+            string rutaExistente = LiquidacionesPendientesService.ObtenerRutaPdfArchivado(idOrdenViaje);
 
             // Si hay ruta y el archivo físico existe, reusamos.
             if (!string.IsNullOrEmpty(rutaExistente))
@@ -1254,14 +1133,7 @@ namespace WebSGV.Views
 
             // Persistir ruta y hash si la columna acepta (idempotente: sobrescribe
             // si ya había una ruta huérfana apuntando a un archivo inexistente).
-            DbHelper.EjecutarNonQuery(@"
-                UPDATE OrdenViaje
-                   SET rutaPdfFirmado = @ruta,
-                       hashPdfFirmado = @hash
-                 WHERE idOrdenViaje = @id",
-                DbHelper.Param("@ruta", pdf.RutaRelativa),
-                DbHelper.Param("@hash", pdf.Hash),
-                DbHelper.Param("@id", idOrdenViaje));
+            LiquidacionesPendientesService.GuardarRutaPdfArchivado(idOrdenViaje, pdf.RutaRelativa, pdf.Hash);
 
             System.Diagnostics.Debug.WriteLine(
                 $"📄 [{origenLog}] PDF archivado para OV id={idOrdenViaje}: {pdf.RutaRelativa}");

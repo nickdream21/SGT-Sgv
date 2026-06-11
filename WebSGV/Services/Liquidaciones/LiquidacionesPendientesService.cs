@@ -14,11 +14,12 @@ namespace WebSGV.Services.Liquidaciones
     /// las firmas permanecen en el code-behind; este servicio solo ejecuta el SQL.
     /// No se modifica ninguna consulta ni stored procedure.
     ///
-    /// Nota: los métodos transaccionales con efectos colaterales (AprobarConAjustes,
-    /// CorregirAjustesAprobada) siguen en el code-behind a la espera de un pase dedicado,
-    /// por estar entrelazados con HttpContext/PDF/Firma y para no reestructurar la
-    /// transacción crítica sin pruebas. El armador de DTO ObtenerDetalleLiquidacion ya
-    /// vive aquí (sólo lectura); el WebMethod del code-behind valida sesión y delega.
+    /// Las transacciones de aprobación/corrección (AprobarConAjustes, CorregirAjustesAprobada)
+    /// y el armador de DTO ObtenerDetalleLiquidacion también viven aquí: el SQL/SP se movió
+    /// verbatim y los WebMethods del code-behind conservan sesión, validación, el objeto de
+    /// respuesta, el PDF/Firma y la auditoría. La orquestación de PDF (archivado en disco vía
+    /// HostingEnvironment + PdfOrdenViajeService) permanece en el code-behind; aquí sólo están
+    /// sus dos consultas (ObtenerRutaPdfArchivado / GuardarRutaPdfArchivado).
     /// </summary>
     public static class LiquidacionesPendientesService
     {
@@ -162,6 +163,207 @@ namespace WebSGV.Services.Liquidaciones
                         WHERE idOrdenViaje = @id AND estadoAprobacion = 'PENDIENTE'",
                 DbHelper.Param("@id", idOrdenViaje),
                 DbHelper.Param("@motivo", motivo));
+
+        /// <summary>Resultado de <see cref="AprobarConAjustes"/> (sin presentación).</summary>
+        public class ResultadoAprobacionAjustes
+        {
+            /// <summary><c>true</c> si la transacción se confirmó (commit).</summary>
+            public bool Exito { get; set; }
+            /// <summary>Mensaje de error de negocio (orden inexistente o rechazo del SP) cuando <see cref="Exito"/> es <c>false</c>.</summary>
+            public string Mensaje { get; set; }
+            /// <summary>Número de orden de viaje resuelto (disponible en éxito).</summary>
+            public string NumeroOrdenViaje { get; set; }
+        }
+
+        /// <summary>
+        /// Transacción de aprobación con ajustes: resuelve el número de orden, hace UPSERT de
+        /// <c>DescuentosReintegros</c> (sólo si hay valores) y ejecuta <c>sp_AprobarLiquidacion</c>.
+        /// SQL/SP movido verbatim del code-behind. Hace rollback (vía dispose en los retornos
+        /// tempranos de negocio, y explícito + re-propagación ante excepción). La validación de
+        /// sesión/montos, el objeto de respuesta, el PDF y la auditoría quedan en el WebMethod.
+        /// </summary>
+        public static ResultadoAprobacionAjustes AprobarConAjustes(
+            int idOrdenViaje, decimal descuentoSoles, decimal descuentoDolares,
+            decimal reintegroSoles, decimal reintegroDolares, string notaAprobacion, int idUsuario)
+        {
+            string numeroOrdenViaje = null;
+
+            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
+            {
+                conn.Open();
+                using (SqlTransaction tran = conn.BeginTransaction())
+                {
+                try
+                {
+
+                // 1. Obtener numeroOrdenViaje
+                using (SqlCommand cmd = new SqlCommand(
+                    "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id", conn, tran))
+                {
+                    cmd.Parameters.AddWithValue("@id", idOrdenViaje);
+                    object result = cmd.ExecuteScalar();
+                    if (result == null || result == DBNull.Value)
+                        return new ResultadoAprobacionAjustes { Exito = false, Mensaje = "No se encontró la orden de viaje." };
+                    numeroOrdenViaje = result.ToString();
+                }
+
+                // 2. UPSERT DescuentosReintegros (solo si hay valores)
+                if (descuentoSoles != 0 || descuentoDolares != 0 || reintegroSoles != 0 || reintegroDolares != 0)
+                {
+                    string upsertSql = @"
+                            IF EXISTS (SELECT 1 FROM DescuentosReintegros WHERE numeroOrdenViaje = @numeroOrden)
+                                UPDATE DescuentosReintegros
+                                SET descuentoSoles = @descS, descuentoDolares = @descD,
+                                    reintegroSoles = @reintS, reintegroDolares = @reintD,
+                                    activo = 1
+                                WHERE numeroOrdenViaje = @numeroOrden
+                            ELSE
+                                INSERT INTO DescuentosReintegros
+                                    (numeroOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, activo)
+                                VALUES (@numeroOrden, @descS, @descD, @reintS, @reintD, 1)";
+
+                    using (SqlCommand cmd = new SqlCommand(upsertSql, conn, tran))
+                    {
+                        cmd.Parameters.AddWithValue("@numeroOrden", numeroOrdenViaje);
+                        cmd.Parameters.AddWithValue("@descS", descuentoSoles);
+                        cmd.Parameters.AddWithValue("@descD", descuentoDolares);
+                        cmd.Parameters.AddWithValue("@reintS", reintegroSoles);
+                        cmd.Parameters.AddWithValue("@reintD", reintegroDolares);
+                        cmd.ExecuteNonQuery();
+                        System.Diagnostics.Debug.WriteLine($"✅ Ajustes guardados: DescS={descuentoSoles} DescD={descuentoDolares} ReintS={reintegroSoles} ReintD={reintegroDolares}");
+                    }
+                }
+
+                // 3. Llamar sp_AprobarLiquidacion
+                using (SqlCommand cmd = new SqlCommand("sp_AprobarLiquidacion", conn, tran))
+                {
+                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
+                    cmd.Parameters.AddWithValue("@idUsuarioAprobacion", idUsuario);
+                    cmd.Parameters.AddWithValue("@observaciones",
+                        string.IsNullOrWhiteSpace(notaAprobacion) ? (object)DBNull.Value : notaAprobacion.Trim());
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            int resultado = Convert.ToInt32(reader["Resultado"]);
+                            string mensaje = reader["Mensaje"].ToString();
+                            if (resultado != 1)
+                                return new ResultadoAprobacionAjustes { Exito = false, Mensaje = mensaje };
+                        }
+                    }
+                }
+
+                tran.Commit();
+                }
+                catch
+                {
+                    tran.Rollback();
+                    throw;
+                }
+                }
+            }
+
+            return new ResultadoAprobacionAjustes { Exito = true, NumeroOrdenViaje = numeroOrdenViaje };
+        }
+
+        /// <summary>Resultado de <see cref="CorregirAjustesAprobada"/>.</summary>
+        public class ResultadoCorreccionAjustes
+        {
+            /// <summary><c>false</c> si la orden de viaje no existe (no se aplicó nada).</summary>
+            public bool OrdenEncontrada { get; set; }
+            /// <summary>Número de orden de viaje corregido (cuando existe).</summary>
+            public string NumeroOrdenViaje { get; set; }
+        }
+
+        /// <summary>
+        /// Transacción de corrección de ajustes de una liquidación ya aprobada: UPSERT de
+        /// <c>DescuentosReintegros</c> + registro del cambio en <c>observaciones</c> para
+        /// auditoría. SQL movido verbatim (usa <see cref="DbHelper.EnTransaccion"/>). La
+        /// validación de sesión/montos/motivo y el objeto de respuesta quedan en el WebMethod.
+        /// </summary>
+        public static ResultadoCorreccionAjustes CorregirAjustesAprobada(
+            int idOrdenViaje, decimal descuentoSoles, decimal descuentoDolares,
+            decimal reintegroSoles, decimal reintegroDolares, string motivo, int idUsuario)
+        {
+            string numeroOrdenViaje = null;
+            bool ordenEncontrada = true;
+
+            DbHelper.EnTransaccion((conn, tran) =>
+            {
+                // 1. Obtener número de orden
+                object result = DbHelper.EjecutarEscalar(conn, tran,
+                    "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id",
+                    DbHelper.Param("@id", idOrdenViaje));
+                if (result == null || result == DBNull.Value)
+                {
+                    ordenEncontrada = false;
+                    return;
+                }
+                numeroOrdenViaje = result.ToString();
+
+                // 2. UPSERT DescuentosReintegros
+                string upsertSql = @"
+                        IF EXISTS (SELECT 1 FROM DescuentosReintegros WHERE numeroOrdenViaje = @numeroOrden)
+                            UPDATE DescuentosReintegros
+                            SET descuentoSoles = @descS, descuentoDolares = @descD,
+                                reintegroSoles = @reintS, reintegroDolares = @reintD,
+                                activo = 1
+                            WHERE numeroOrdenViaje = @numeroOrden
+                        ELSE
+                            INSERT INTO DescuentosReintegros
+                                (numeroOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, activo)
+                            VALUES (@numeroOrden, @descS, @descD, @reintS, @reintD, 1)";
+
+                DbHelper.EjecutarNonQuery(conn, tran, upsertSql,
+                    DbHelper.Param("@numeroOrden", numeroOrdenViaje),
+                    DbHelper.Param("@descS", descuentoSoles),
+                    DbHelper.Param("@descD", descuentoDolares),
+                    DbHelper.Param("@reintS", reintegroSoles),
+                    DbHelper.Param("@reintD", reintegroDolares));
+
+                // 3. Registrar la corrección en observaciones para auditoría
+                DbHelper.EjecutarNonQuery(conn, tran, @"
+                        UPDATE OrdenViaje
+                        SET observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) +
+                            '[CORRECCION AJUSTES ' + CONVERT(varchar, GETDATE(), 120) + '] ' + @motivo +
+                            ' | Desc S/' + CAST(@descS AS varchar) + ' $' + CAST(@descD AS varchar) +
+                            ' | Reint S/' + CAST(@reintS AS varchar) + ' $' + CAST(@reintD AS varchar)
+                        WHERE idOrdenViaje = @id",
+                    DbHelper.Param("@id", idOrdenViaje),
+                    DbHelper.Param("@motivo", motivo),
+                    DbHelper.Param("@descS", descuentoSoles),
+                    DbHelper.Param("@descD", descuentoDolares),
+                    DbHelper.Param("@reintS", reintegroSoles),
+                    DbHelper.Param("@reintD", reintegroDolares));
+
+                System.Diagnostics.Debug.WriteLine($"✅ Ajustes corregidos para {numeroOrdenViaje} por usuario {idUsuario}");
+                System.Diagnostics.Debug.WriteLine($"   DescS={descuentoSoles} DescD={descuentoDolares} ReintS={reintegroSoles} ReintD={reintegroDolares}");
+            });
+
+            return new ResultadoCorreccionAjustes { OrdenEncontrada = ordenEncontrada, NumeroOrdenViaje = numeroOrdenViaje };
+        }
+
+        /// <summary>Ruta relativa del PDF archivado de la orden (o <c>null</c> si no hay).</summary>
+        public static string ObtenerRutaPdfArchivado(int idOrdenViaje)
+        {
+            object r = DbHelper.EjecutarEscalar(
+                "SELECT rutaPdfFirmado FROM OrdenViaje WHERE idOrdenViaje = @id",
+                DbHelper.Param("@id", idOrdenViaje));
+            return r == null || r == DBNull.Value ? null : r.ToString();
+        }
+
+        /// <summary>Persiste la ruta relativa y el hash del PDF archivado en <c>OrdenViaje</c>.</summary>
+        public static void GuardarRutaPdfArchivado(int idOrdenViaje, string rutaRelativa, string hash) =>
+            DbHelper.EjecutarNonQuery(@"
+                UPDATE OrdenViaje
+                   SET rutaPdfFirmado = @ruta,
+                       hashPdfFirmado = @hash
+                 WHERE idOrdenViaje = @id",
+                DbHelper.Param("@ruta", rutaRelativa),
+                DbHelper.Param("@hash", hash),
+                DbHelper.Param("@id", idOrdenViaje));
 
         /// <summary>
         /// Arma el DTO completo del detalle de una liquidación (cabecera + ingresos/egresos
