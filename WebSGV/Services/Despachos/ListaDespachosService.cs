@@ -289,6 +289,116 @@ namespace WebSGV.Services.Despachos
             return despachos;
         }
 
+        /// <summary>
+        /// Transacción de edición de lote: actualiza cada despacho (<c>sp_LD_ActualizarDespachoEnLote</c>),
+        /// recalcula el conductor dominante si hubo cambios (<c>sp_LD_ActualizarConductorDominanteViajes</c>)
+        /// y gestiona/desvincula factura y CPIC (<c>sp_LD_GestionarFacturaLote</c>/<c>sp_LD_GestionarCPICLote</c>/
+        /// <c>sp_LD_DesvincularDocumentoLote</c>). SQL/SP movido verbatim; los valores de los controles
+        /// ya vienen leídos/parseados en <paramref name="input"/>. Rollback + re-propagación ante excepción.
+        /// </summary>
+        public static void GuardarCambiosLote(GuardarCambiosLoteInput input)
+        {
+            string idsStr = string.Join(",", input.IdsDespachos);
+
+            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
+            {
+                conn.Open();
+                using (SqlTransaction transaction = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        // 1. Actualizar cada despacho del lote
+                        foreach (int idDespacho in input.IdsDespachos)
+                        {
+                            using (SqlCommand cmd = new SqlCommand("sp_LD_ActualizarDespachoEnLote", conn, transaction))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@idDespacho", idDespacho);
+                                cmd.Parameters.AddWithValue("@fechaDespacho", input.FechaDespacho);
+                                cmd.Parameters.AddWithValue("@numeroPedido",
+                                    string.IsNullOrEmpty(input.NumeroPedido) ? (object)DBNull.Value : input.NumeroPedido);
+                                cmd.Parameters.AddWithValue("@lugarOperacion", input.LugarOperacion);
+                                cmd.Parameters.AddWithValue("@tipoOperacion", input.TipoOperacion);
+                                cmd.Parameters.AddWithValue("@esInternacional", input.EsInternacional);
+                                cmd.Parameters.AddWithValue("@idConductor",
+                                    input.CambiosConductores.ContainsKey(idDespacho) ? (object)input.CambiosConductores[idDespacho] : DBNull.Value);
+                                cmd.Parameters.AddWithValue("@usuarioModificacion", input.UsuarioModificacion);
+                                cmd.Parameters.AddWithValue("@fechaActual", input.FechaActual);
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+
+                        // 2. Recalcular conductor dominante de viajes afectados
+                        if (input.CambiosConductores.Count > 0)
+                        {
+                            using (SqlCommand cmd = new SqlCommand("sp_LD_ActualizarConductorDominanteViajes", conn, transaction))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
+                                cmd.Parameters.AddWithValue("@fechaActual", input.FechaActual);
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+
+                        // 3. Gestionar Factura
+                        if (input.GestionarFactura)
+                        {
+                            using (SqlCommand cmd = new SqlCommand("sp_LD_GestionarFacturaLote", conn, transaction))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
+                                cmd.Parameters.AddWithValue("@numeroFactura", input.NumeroFactura);
+                                cmd.Parameters.AddWithValue("@fechaEmision", input.FechaEmisionFactura);
+                                cmd.Parameters.AddWithValue("@valorTotal", input.ValorTotalFactura);
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                        else if (input.DesvincularFactura)
+                        {
+                            using (SqlCommand cmd = new SqlCommand("sp_LD_DesvincularDocumentoLote", conn, transaction))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
+                                cmd.Parameters.AddWithValue("@tipoDocumento", "FACTURA");
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+
+                        // 4. Gestionar CPIC
+                        if (input.GestionarCpic)
+                        {
+                            using (SqlCommand cmd = new SqlCommand("sp_LD_GestionarCPICLote", conn, transaction))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
+                                cmd.Parameters.AddWithValue("@numeroCPIC", input.NumeroCPIC);
+                                cmd.Parameters.AddWithValue("@fechaEmision", input.FechaEmisionCPIC);
+                                cmd.Parameters.AddWithValue("@valorTotalFlete", input.ValorFlete);
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                        else if (input.DesvincularCpic)
+                        {
+                            using (SqlCommand cmd = new SqlCommand("sp_LD_DesvincularDocumentoLote", conn, transaction))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
+                                cmd.Parameters.AddWithValue("@tipoDocumento", "CPIC");
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+
+                        transaction.Commit();
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+
         // ------------------------------------------------------------------
         // Mapeo y utilidades de lectura (movidas verbatim del code-behind)
         // ------------------------------------------------------------------

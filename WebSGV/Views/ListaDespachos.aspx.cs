@@ -758,119 +758,43 @@ namespace WebSGV.Views
             var lote = ObtenerLotePorId(LoteSeleccionadoId);
             if (lote == null || lote.IdsDespachos.Count == 0) return;
 
-            string idsStr = IdsACsv(lote.IdsDespachos);
-            DateTime fechaActual = FechaHelper.Ahora();
-            string usuario = ObtenerUsuarioActual();
+            // Leer/parsear los controles del formulario de edición; la transacción va al Service.
+            DateTime fechaEmisionFactura = DateTime.Today;
+            DateTime.TryParse(txtFechaEmisionFacturaEdit.Text, out fechaEmisionFactura);
+            decimal valorTotalFactura = 0;
+            decimal.TryParse(txtValorTotalFacturaEdit.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorTotalFactura);
 
-            Dictionary<int, int> cambiosConductores = ObtenerCambiosConductoresDesdeGrid();
+            DateTime fechaEmisionCPIC = DateTime.Today;
+            DateTime.TryParse(txtFechaEmisionCPICEdit.Text, out fechaEmisionCPIC);
+            decimal valorFlete = 0;
+            decimal.TryParse(txtValorFleteEdit.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorFlete);
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            var input = new GuardarCambiosLoteInput
             {
-                conn.Open();
-                using (SqlTransaction transaction = conn.BeginTransaction())
-                {
-                    try
-                    {
-                        // 1. Actualizar cada despacho del lote
-                        foreach (int idDespacho in lote.IdsDespachos)
-                        {
-                            using (SqlCommand cmd = new SqlCommand("sp_LD_ActualizarDespachoEnLote", conn, transaction))
-                            {
-                                cmd.CommandType = CommandType.StoredProcedure;
-                                cmd.Parameters.AddWithValue("@idDespacho", idDespacho);
-                                cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(txtFechaProgramacionEdit.Text));
-                                cmd.Parameters.AddWithValue("@numeroPedido",
-                                    string.IsNullOrEmpty(txtNumeroPedidoEdit.Text) ? (object)DBNull.Value : txtNumeroPedidoEdit.Text);
-                                cmd.Parameters.AddWithValue("@lugarOperacion", ddlPlantaEdit.SelectedValue);
-                                cmd.Parameters.AddWithValue("@tipoOperacion", ddlTipoOperacionEdit.SelectedValue);
-                                cmd.Parameters.AddWithValue("@esInternacional", rblAmbitoEdit.SelectedValue == "1");
-                                cmd.Parameters.AddWithValue("@idConductor",
-                                    cambiosConductores.ContainsKey(idDespacho) ? (object)cambiosConductores[idDespacho] : DBNull.Value);
-                                cmd.Parameters.AddWithValue("@usuarioModificacion", usuario);
-                                cmd.Parameters.AddWithValue("@fechaActual", fechaActual);
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
+                IdsDespachos = lote.IdsDespachos,
+                FechaDespacho = DateTime.Parse(txtFechaProgramacionEdit.Text),
+                NumeroPedido = string.IsNullOrEmpty(txtNumeroPedidoEdit.Text) ? null : txtNumeroPedidoEdit.Text,
+                LugarOperacion = ddlPlantaEdit.SelectedValue,
+                TipoOperacion = ddlTipoOperacionEdit.SelectedValue,
+                EsInternacional = rblAmbitoEdit.SelectedValue == "1",
+                UsuarioModificacion = ObtenerUsuarioActual(),
+                FechaActual = FechaHelper.Ahora(),
+                CambiosConductores = ObtenerCambiosConductoresDesdeGrid(),
 
-                        // 2. Recalcular conductor dominante de viajes afectados
-                        if (cambiosConductores.Count > 0)
-                        {
-                            using (SqlCommand cmd = new SqlCommand("sp_LD_ActualizarConductorDominanteViajes", conn, transaction))
-                            {
-                                cmd.CommandType = CommandType.StoredProcedure;
-                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
-                                cmd.Parameters.AddWithValue("@fechaActual", fechaActual);
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
+                GestionarFactura = pnlFacturaEdit.Visible && !string.IsNullOrEmpty(txtNumeroFacturaEdit.Text),
+                DesvincularFactura = !pnlFacturaEdit.Visible,
+                NumeroFactura = txtNumeroFacturaEdit.Text,
+                FechaEmisionFactura = fechaEmisionFactura,
+                ValorTotalFactura = valorTotalFactura,
 
-                        // 3. Gestionar Factura
-                        if (pnlFacturaEdit.Visible && !string.IsNullOrEmpty(txtNumeroFacturaEdit.Text))
-                        {
-                            DateTime fechaEmisionFactura = DateTime.Today;
-                            DateTime.TryParse(txtFechaEmisionFacturaEdit.Text, out fechaEmisionFactura);
-                            decimal valorTotal = 0;
-                            decimal.TryParse(txtValorTotalFacturaEdit.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorTotal);
+                GestionarCpic = pnlCPICEdit.Visible && !string.IsNullOrEmpty(txtNumeroCPICEdit.Text),
+                DesvincularCpic = !pnlCPICEdit.Visible,
+                NumeroCPIC = txtNumeroCPICEdit.Text,
+                FechaEmisionCPIC = fechaEmisionCPIC,
+                ValorFlete = valorFlete
+            };
 
-                            using (SqlCommand cmd = new SqlCommand("sp_LD_GestionarFacturaLote", conn, transaction))
-                            {
-                                cmd.CommandType = CommandType.StoredProcedure;
-                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
-                                cmd.Parameters.AddWithValue("@numeroFactura", txtNumeroFacturaEdit.Text);
-                                cmd.Parameters.AddWithValue("@fechaEmision", fechaEmisionFactura);
-                                cmd.Parameters.AddWithValue("@valorTotal", valorTotal);
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
-                        else if (!pnlFacturaEdit.Visible)
-                        {
-                            using (SqlCommand cmd = new SqlCommand("sp_LD_DesvincularDocumentoLote", conn, transaction))
-                            {
-                                cmd.CommandType = CommandType.StoredProcedure;
-                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
-                                cmd.Parameters.AddWithValue("@tipoDocumento", "FACTURA");
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
-
-                        // 4. Gestionar CPIC
-                        if (pnlCPICEdit.Visible && !string.IsNullOrEmpty(txtNumeroCPICEdit.Text))
-                        {
-                            DateTime fechaEmisionCPIC = DateTime.Today;
-                            DateTime.TryParse(txtFechaEmisionCPICEdit.Text, out fechaEmisionCPIC);
-                            decimal valorFlete = 0;
-                            decimal.TryParse(txtValorFleteEdit.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorFlete);
-
-                            using (SqlCommand cmd = new SqlCommand("sp_LD_GestionarCPICLote", conn, transaction))
-                            {
-                                cmd.CommandType = CommandType.StoredProcedure;
-                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
-                                cmd.Parameters.AddWithValue("@numeroCPIC", txtNumeroCPICEdit.Text);
-                                cmd.Parameters.AddWithValue("@fechaEmision", fechaEmisionCPIC);
-                                cmd.Parameters.AddWithValue("@valorTotalFlete", valorFlete);
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
-                        else if (!pnlCPICEdit.Visible)
-                        {
-                            using (SqlCommand cmd = new SqlCommand("sp_LD_DesvincularDocumentoLote", conn, transaction))
-                            {
-                                cmd.CommandType = CommandType.StoredProcedure;
-                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
-                                cmd.Parameters.AddWithValue("@tipoDocumento", "CPIC");
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
-
-                        transaction.Commit();
-                    }
-                    catch
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
-                }
-            }
+            ListaDespachosService.GuardarCambiosLote(input);
         }
 
         private Dictionary<int, int> ObtenerCambiosConductoresDesdeGrid()

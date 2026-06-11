@@ -97,4 +97,37 @@ namespace WebSGV.Models.Despachos
             EstadoLote = "ACTIVO";
         }
     }
+
+    /// <summary>
+    /// Entrada para la transacción de edición de lote
+    /// (<c>ListaDespachosService.GuardarCambiosLote</c>). El code-behind lee y parsea los
+    /// controles del formulario de edición; el servicio sólo ejecuta el SQL/SPs.
+    /// </summary>
+    public class GuardarCambiosLoteInput
+    {
+        public List<int> IdsDespachos { get; set; } = new List<int>();
+        public DateTime FechaDespacho { get; set; }
+        public string NumeroPedido { get; set; }
+        public string LugarOperacion { get; set; }
+        public string TipoOperacion { get; set; }
+        public bool EsInternacional { get; set; }
+        public string UsuarioModificacion { get; set; }
+        public DateTime FechaActual { get; set; }
+        /// <summary>idDespacho → nuevo idConductor (sólo los que cambiaron en la grilla).</summary>
+        public Dictionary<int, int> CambiosConductores { get; set; } = new Dictionary<int, int>();
+
+        // Factura: gestionar (panel visible y con número) o desvincular (panel oculto).
+        public bool GestionarFactura { get; set; }
+        public bool DesvincularFactura { get; set; }
+        public string NumeroFactura { get; set; }
+        public DateTime FechaEmisionFactura { get; set; }
+        public decimal ValorTotalFactura { get; set; }
+
+        // CPIC: gestionar o desvincular.
+        public bool GestionarCpic { get; set; }
+        public bool DesvincularCpic { get; set; }
+        public string NumeroCPIC { get; set; }
+        public DateTime FechaEmisionCPIC { get; set; }
+        public decimal ValorFlete { get; set; }
+    }
 }
