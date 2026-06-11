@@ -1689,43 +1689,9 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    conn.Open();
-
-                    // Crear comando para el procedimiento almacenado
-                    SqlCommand cmd = new SqlCommand("sp_ReporteProductosConductor", conn);
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    // Añadir parámetros
-                    cmd.Parameters.AddWithValue("@fechaDesde", fechaDesde);
-                    cmd.Parameters.AddWithValue("@fechaHasta", fechaHasta);
-
-                    // Parámetros opcionales
-                    if (!string.IsNullOrEmpty(idConductor))
-                        cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                    else
-                        cmd.Parameters.AddWithValue("@idConductor", DBNull.Value);
-
-                    if (!string.IsNullOrEmpty(dniConductor))
-                        cmd.Parameters.AddWithValue("@dniConductor", dniConductor);
-                    else
-                        cmd.Parameters.AddWithValue("@dniConductor", DBNull.Value);
-
-                    if (!string.IsNullOrEmpty(nombreConductor))
-                        cmd.Parameters.AddWithValue("@nombreConductor", nombreConductor);
-                    else
-                        cmd.Parameters.AddWithValue("@nombreConductor", DBNull.Value);
-
-                    if (!string.IsNullOrEmpty(idProducto))
-                        cmd.Parameters.AddWithValue("@idProducto", idProducto);
-                    else
-                        cmd.Parameters.AddWithValue("@idProducto", DBNull.Value);
-
-                    // Obtener datos e indicadores
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataSet ds = new DataSet();
-                    adapter.Fill(ds);
+                    DataSet ds = ReportesService.ReporteProductosConductor(
+                        fechaDesde, fechaHasta, idConductor, dniConductor, nombreConductor, idProducto);
 
                     // El primer DataTable contiene los datos principales
                     DataTable dtProductos = ds.Tables[0];
@@ -1835,54 +1801,11 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    conn.Open();
-
-                    // Crear comando para el procedimiento almacenado
-                    SqlCommand cmd = new SqlCommand("sp_ReporteFinancieroConductor", conn);
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    // Añadir parámetros
-                    cmd.Parameters.AddWithValue("@fechaDesde", fechaDesde);
-                    cmd.Parameters.AddWithValue("@fechaHasta", fechaHasta);
-
-                    // Parámetros opcionales de conductor
-                    if (!string.IsNullOrEmpty(idConductor))
-                        cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                    else
-                        cmd.Parameters.AddWithValue("@idConductor", DBNull.Value);
-
-                    if (!string.IsNullOrEmpty(dniConductor))
-                        cmd.Parameters.AddWithValue("@dniConductor", dniConductor);
-                    else
-                        cmd.Parameters.AddWithValue("@dniConductor", DBNull.Value);
-
-                    if (!string.IsNullOrEmpty(nombreConductor))
-                        cmd.Parameters.AddWithValue("@nombreConductor", nombreConductor);
-                    else
-                        cmd.Parameters.AddWithValue("@nombreConductor", DBNull.Value);
-
-                    // Parámetros adicionales de filtrado
-                    if (!string.IsNullOrEmpty(tipoTransaccion))
-                        cmd.Parameters.AddWithValue("@tipoTransaccion", tipoTransaccion);
-                    else
-                        cmd.Parameters.AddWithValue("@tipoTransaccion", DBNull.Value);
-
-                    if (!string.IsNullOrEmpty(txtMontoMinimo.Text))
-                        cmd.Parameters.AddWithValue("@montoMinimo", decimal.Parse(txtMontoMinimo.Text));
-                    else
-                        cmd.Parameters.AddWithValue("@montoMinimo", DBNull.Value);
-
-                    if (!string.IsNullOrEmpty(txtMontoMaximo.Text))
-                        cmd.Parameters.AddWithValue("@montoMaximo", decimal.Parse(txtMontoMaximo.Text));
-                    else
-                        cmd.Parameters.AddWithValue("@montoMaximo", DBNull.Value);
-
-                    // Obtener datos e indicadores
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataSet ds = new DataSet();
-                    adapter.Fill(ds);
+                    DataSet ds = ReportesService.ReporteFinancieroConductor(
+                        fechaDesde, fechaHasta, idConductor, dniConductor, nombreConductor, tipoTransaccion,
+                        string.IsNullOrEmpty(txtMontoMinimo.Text) ? (decimal?)null : decimal.Parse(txtMontoMinimo.Text),
+                        string.IsNullOrEmpty(txtMontoMaximo.Text) ? (decimal?)null : decimal.Parse(txtMontoMaximo.Text));
 
                     // El primer DataTable contiene los datos de transacciones
                     DataTable dtTransacciones = ds.Tables[0];
@@ -2016,28 +1939,8 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    conn.Open();
-
-                    // Crear comando para el procedimiento almacenado
-                    SqlCommand cmd = new SqlCommand("sp_ReporteCombustibleConductor", conn);
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    // Añadir parámetros
-                    cmd.Parameters.AddWithValue("@fechaDesde", fechaDesde);
-                    cmd.Parameters.AddWithValue("@fechaHasta", fechaHasta);
-
-                    // Parámetro opcional del conductor
-                    if (!string.IsNullOrEmpty(idConductor) && idConductor != "0")
-                        cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                    else
-                        cmd.Parameters.AddWithValue("@idConductor", DBNull.Value);
-
-                    // Obtener datos e indicadores
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataSet ds = new DataSet();
-                    adapter.Fill(ds);
+                    DataSet ds = ReportesService.ReporteCombustibleConductor(fechaDesde, fechaHasta, idConductor);
 
                     // El primer DataTable contiene los datos de abastecimiento
                     DataTable dtAbastecimiento = ds.Tables[0];
@@ -2178,43 +2081,10 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    conn.Open();
-
-                    // Crear comando para el procedimiento almacenado
-                    SqlCommand cmd = new SqlCommand("sp_ReporteViajesVehiculo", conn);
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    // Añadir parámetros
-                    cmd.Parameters.AddWithValue("@fechaDesde", fechaDesde);
-                    cmd.Parameters.AddWithValue("@fechaHasta", fechaHasta);
-
-                    // Parámetros opcionales
-                    if (!string.IsNullOrEmpty(idVehiculo))
-                        cmd.Parameters.AddWithValue("@idTracto", idVehiculo);
-                    else
-                        cmd.Parameters.AddWithValue("@idTracto", DBNull.Value);
-
-                    if (!string.IsNullOrEmpty(txtPlacaVehiculo.Text))
-                        cmd.Parameters.AddWithValue("@placaTracto", txtPlacaVehiculo.Text);
-                    else
-                        cmd.Parameters.AddWithValue("@placaTracto", DBNull.Value);
-
-                    if (!string.IsNullOrEmpty(ddlMarcaVehiculo.SelectedValue))
-                        cmd.Parameters.AddWithValue("@marcaVehiculo", ddlMarcaVehiculo.SelectedValue);
-                    else
-                        cmd.Parameters.AddWithValue("@marcaVehiculo", DBNull.Value);
-
-                    if (!string.IsNullOrEmpty(ddlModeloVehiculo.SelectedValue))
-                        cmd.Parameters.AddWithValue("@modeloVehiculo", ddlModeloVehiculo.SelectedValue);
-                    else
-                        cmd.Parameters.AddWithValue("@modeloVehiculo", DBNull.Value);
-
-                    // Ejecutar y obtener resultados en un DataSet
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataSet ds = new DataSet();
-                    adapter.Fill(ds);
+                    DataSet ds = ReportesService.ReporteViajesVehiculo(
+                        fechaDesde, fechaHasta, idVehiculo, txtPlacaVehiculo.Text,
+                        ddlMarcaVehiculo.SelectedValue, ddlModeloVehiculo.SelectedValue);
 
                     // El primer DataTable contiene los datos de viajes
                     DataTable dtViajes = ds.Tables[0];
@@ -2437,70 +2307,17 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    conn.Open();
+                    int? idLugar = string.IsNullOrEmpty(ddlLugarAbastecimiento.SelectedValue)
+                        ? (int?)null : Convert.ToInt32(ddlLugarAbastecimiento.SelectedValue);
+                    decimal? galones = (!string.IsNullOrEmpty(txtGalonesMinimos.Text) && decimal.TryParse(txtGalonesMinimos.Text, out decimal galTmp))
+                        ? galTmp : (decimal?)null;
+                    decimal? rendimiento = (!string.IsNullOrEmpty(txtRendimientoMinimo.Text) && decimal.TryParse(txtRendimientoMinimo.Text, out decimal rendTmp))
+                        ? rendTmp : (decimal?)null;
 
-                    // Crear comando para el procedimiento almacenado
-                    SqlCommand cmd = new SqlCommand("sp_ReporteConsumoCombustibleVehiculo", conn);
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    // Añadir parámetros obligatorios
-                    cmd.Parameters.AddWithValue("@fechaDesde", fechaDesde);
-                    cmd.Parameters.AddWithValue("@fechaHasta", fechaHasta);
-
-                    // Parámetros opcionales - Corrección de manejo de nulos
-                    cmd.Parameters.Add("@idTracto", SqlDbType.VarChar, 10).Value =
-                        !string.IsNullOrEmpty(idVehiculo) ? idVehiculo : (object)DBNull.Value;
-
-                    cmd.Parameters.Add("@placaTracto", SqlDbType.VarChar, 10).Value =
-                        !string.IsNullOrEmpty(txtPlacaVehiculo.Text) ? txtPlacaVehiculo.Text : (object)DBNull.Value;
-
-                    cmd.Parameters.Add("@numeroAbastecimiento", SqlDbType.VarChar, 10).Value =
-                        !string.IsNullOrEmpty(txtNumeroAbastecimiento.Text) ? txtNumeroAbastecimiento.Text : (object)DBNull.Value;
-
-                    cmd.Parameters.Add("@productoCombustible", SqlDbType.VarChar, 100).Value =
-                        !string.IsNullOrEmpty(txtProductoCombustible.Text) ? txtProductoCombustible.Text : (object)DBNull.Value;
-
-                    // Para el lugar de abastecimiento
-                    if (!string.IsNullOrEmpty(ddlLugarAbastecimiento.SelectedValue))
-                    {
-                        cmd.Parameters.Add("@idLugarAbastecimiento", SqlDbType.Int).Value =
-                            Convert.ToInt32(ddlLugarAbastecimiento.SelectedValue);
-                    }
-                    else
-                    {
-                        cmd.Parameters.Add("@idLugarAbastecimiento", SqlDbType.Int).Value = DBNull.Value;
-                    }
-
-                    // Para los valores decimales, usamos TryParse para evitar excepciones
-                    decimal galonesMinimos;
-                    if (!string.IsNullOrEmpty(txtGalonesMinimos.Text) && decimal.TryParse(txtGalonesMinimos.Text, out galonesMinimos))
-                    {
-                        cmd.Parameters.Add("@galonesMinimos", SqlDbType.Decimal).Value = galonesMinimos;
-                    }
-                    else
-                    {
-                        cmd.Parameters.Add("@galonesMinimos", SqlDbType.Decimal).Value = DBNull.Value;
-                    }
-
-                    decimal rendimientoMinimo;
-                    if (!string.IsNullOrEmpty(txtRendimientoMinimo.Text) && decimal.TryParse(txtRendimientoMinimo.Text, out rendimientoMinimo))
-                    {
-                        cmd.Parameters.Add("@rendimientoMinimo", SqlDbType.Decimal).Value = rendimientoMinimo;
-                    }
-                    else
-                    {
-                        cmd.Parameters.Add("@rendimientoMinimo", SqlDbType.Decimal).Value = DBNull.Value;
-                    }
-
-                    cmd.Parameters.Add("@tipoReporte", SqlDbType.VarChar, 20).Value =
-                        !string.IsNullOrEmpty(ddlTipoReporteCombustible.SelectedValue) ? ddlTipoReporteCombustible.SelectedValue : (object)DBNull.Value;
-
-                    // Ejecutar y obtener resultados en un DataSet
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataSet ds = new DataSet();
-                    adapter.Fill(ds);
+                    DataSet ds = ReportesService.ReporteConsumoCombustibleVehiculo(
+                        fechaDesde, fechaHasta, idVehiculo, txtPlacaVehiculo.Text, txtNumeroAbastecimiento.Text,
+                        txtProductoCombustible.Text, idLugar, galones, rendimiento, ddlTipoReporteCombustible.SelectedValue);
 
                     // El primer DataTable contiene los datos de abastecimientos
                     DataTable dtAbastecimientos = ds.Tables[0];
