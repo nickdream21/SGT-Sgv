@@ -526,6 +526,7 @@
       <DependentUpon>AgregarOrdenViaje.aspx</DependentUpon>
     </Compile>
     <Compile Include="Models\Conductor\LiquidacionConductorModels.cs" />
+    <Compile Include="Models\Despachos\ListaDespachosModels.cs" />
     <Compile Include="Models\Despachos\RegistroDespachoModels.cs" />
     <Compile Include="Models\Liquidaciones\DetalleLiquidacionModels.cs" />
     <Compile Include="Models\DniResponse.cs" />

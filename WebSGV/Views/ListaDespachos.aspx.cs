@@ -11,6 +11,7 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using static WebSGV.Views.ListaDespachos;
 using WebSGV.Helpers;
+using WebSGV.Models.Despachos;
 using WebSGV.Services.Despachos;
 
 namespace WebSGV.Views
@@ -20,96 +21,8 @@ namespace WebSGV.Views
 
         #region Clases Auxiliares
 
-        [Serializable]
-        public class ViajeActivo
-        {
-            public int IdViajeProgreso { get; set; }
-            public string NumeroViajeProgreso { get; set; }
-            public int IdConductor { get; set; }
-            public string NombreConductor { get; set; }
-            public DateTime FechaInicio { get; set; }
-            public DateTime FechaUltimaActividad { get; set; }
-            public int CantidadDespachos { get; set; }
-            public bool EsInternacional { get; set; }
-            public string EstadoViaje { get; set; }
-            public string DescripcionViaje { get; set; }
-        }
-
-        [Serializable]
-        public class DespachoViaje
-        {
-            public int IdDespacho { get; set; }
-            public string NumeroDespacho { get; set; }
-            public DateTime FechaDespacho { get; set; }
-
-            // Información básica
-            public string NombreCliente { get; set; }
-            public string NombreConductor { get; set; }
-            public string PlacaTracto { get; set; }
-            public string PlacaCarreta { get; set; }
-            public string TipoOperacion { get; set; }
-            public string LugarOperacion { get; set; }
-            public string EstadoDespacho { get; set; }
-            public string GuiaRemitente { get; set; }
-            public string GuiaTransportista { get; set; }
-            public string NumeroViaje { get; set; }
-
-            // ✅ NUEVOS: IDs necesarios para la Orden de Viaje
-            public int IdConductor { get; set; }
-            public int IdTracto { get; set; }
-            public int IdCarreta { get; set; }
-            public int IdCliente { get; set; }
-
-            // ✅ NUEVOS: Datos para operaciones internacionales
-            public bool EsInternacional { get; set; }
-            public string NumeroCPIC { get; set; }
-            public int? IdCPIC { get; set; }
-        }
-
-        [Serializable]
-        public class DespachoConConductor
-        {
-            public int IdDespacho { get; set; }
-            public string NumeroDespacho { get; set; }
-            public DateTime FechaDespacho { get; set; }
-            public int IdConductor { get; set; }
-            public string NombreConductorActual { get; set; }
-        }
-
-        [Serializable]
-        public class LoteRegistrado
-        {
-            public string IdLoteVirtual { get; set; }
-            public DateTime FechaProgramacion { get; set; }
-            public int IdCliente { get; set; }
-            public string NombreCliente { get; set; }
-            public string NumeroPedido { get; set; }
-            public string TipoOperacion { get; set; }
-            public bool EsInternacional { get; set; }
-            public string PlantaOperacion { get; set; }
-            public int CantidadDespachos { get; set; }
-            public string NumeroFactura { get; set; }
-            public string NumeroCPIC { get; set; }
-            public DateTime FechaCreacion { get; set; }
-            public string UsuarioCreacion { get; set; }
-
-            public DateTime? FechaEmisionFactura { get; set; }
-            public decimal? ValorTotalFactura { get; set; }
-            public DateTime? FechaEmisionCPIC { get; set; }
-            public decimal? ValorFlete { get; set; }
-            public List<int> IdsDespachos { get; set; }
-            public string EstadoLote { get; set; }
-
-            public LoteRegistrado()
-            {
-                IdsDespachos = new List<int>();
-                NumeroPedido = "";
-                NumeroFactura = "";
-                NumeroCPIC = "";
-                UsuarioCreacion = "";
-                EstadoLote = "ACTIVO";
-            }
-        }
+        // Los modelos ViajeActivo, DespachoViaje, DespachoConConductor y LoteRegistrado
+        // se movieron a WebSGV.Models.Despachos (los arma/usa ListaDespachosService).
 
         #endregion
 
@@ -263,33 +176,6 @@ namespace WebSGV.Views
             }
         }
 
-        private DespachoViaje LeerDespachoDesdeReader(SqlDataReader reader)
-        {
-            return new DespachoViaje
-            {
-                IdDespacho = GetSafeValue<int>(reader, "idDespacho"),
-                NumeroDespacho = GetSafeValue<string>(reader, "numeroDespacho"),
-                FechaDespacho = GetSafeValue<DateTime>(reader, "fechaDespacho"),
-                NombreCliente = GetSafeValue<string>(reader, "NombreCliente"),
-                NombreConductor = GetSafeValue<string>(reader, "NombreConductor"),
-                PlacaTracto = GetSafeValue<string>(reader, "placaTracto"),
-                PlacaCarreta = GetSafeValue<string>(reader, "placaCarreta"),
-                TipoOperacion = GetSafeValue<string>(reader, "tipoOperacion"),
-                LugarOperacion = GetSafeValue<string>(reader, "lugarOperacion"),
-                EstadoDespacho = GetSafeValue<string>(reader, "estadoDespacho"),
-                GuiaRemitente = GetSafeValue<string>(reader, "guiaRemitente", "N/A"),
-                GuiaTransportista = GetSafeValue<string>(reader, "guiaTransportista", "N/A"),
-                NumeroViaje = GetSafeValue<string>(reader, "NumeroViaje", "N/A"),
-                IdConductor = GetSafeValue<int>(reader, "idConductor"),
-                IdTracto = GetSafeValue<int>(reader, "idTracto"),
-                IdCarreta = GetSafeValue<int>(reader, "idCarreta"),
-                IdCliente = GetSafeValue<int>(reader, "idCliente"),
-                EsInternacional = GetSafeValue<bool>(reader, "EsInternacional"),
-                NumeroCPIC = GetSafeValue<string>(reader, "numeroCPIC"),
-                IdCPIC = reader["idCPIC"] == DBNull.Value ? (int?)null : GetSafeValue<int>(reader, "idCPIC")
-            };
-        }
-
         private string IdsACsv(List<int> ids)
         {
             return string.Join(",", ids);
@@ -318,45 +204,14 @@ namespace WebSGV.Views
 
         private List<ViajeActivo> ObtenerViajesActivos()
         {
-            List<ViajeActivo> viajes = new List<ViajeActivo>();
+            int? idConductor = string.IsNullOrEmpty(ddlFiltroConductorViajes.SelectedValue)
+                ? (int?)null : Convert.ToInt32(ddlFiltroConductorViajes.SelectedValue);
+            bool? esInternacional = string.IsNullOrEmpty(ddlFiltroTipoViajes.SelectedValue)
+                ? (bool?)null : (ddlFiltroTipoViajes.SelectedValue == "1");
+            string numeroViaje = string.IsNullOrEmpty(txtBuscarViaje.Text.Trim())
+                ? null : txtBuscarViaje.Text.Trim();
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerViajesActivos", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    cmd.Parameters.AddWithValue("@idConductor",
-                        string.IsNullOrEmpty(ddlFiltroConductorViajes.SelectedValue) ? (object)DBNull.Value : Convert.ToInt32(ddlFiltroConductorViajes.SelectedValue));
-                    cmd.Parameters.AddWithValue("@esInternacional",
-                        string.IsNullOrEmpty(ddlFiltroTipoViajes.SelectedValue) ? (object)DBNull.Value : (ddlFiltroTipoViajes.SelectedValue == "1"));
-                    cmd.Parameters.AddWithValue("@numeroViaje",
-                        string.IsNullOrEmpty(txtBuscarViaje.Text.Trim()) ? (object)DBNull.Value : txtBuscarViaje.Text.Trim());
-
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            viajes.Add(new ViajeActivo
-                            {
-                                IdViajeProgreso = GetSafeValue<int>(reader, "idViajeProgreso"),
-                                NumeroViajeProgreso = GetSafeValue<string>(reader, "numeroViajeProgreso"),
-                                IdConductor = GetSafeValue<int>(reader, "idConductor"),
-                                NombreConductor = GetSafeValue<string>(reader, "NombreConductor"),
-                                FechaInicio = GetSafeValue<DateTime>(reader, "fechaInicio"),
-                                FechaUltimaActividad = GetSafeValue<DateTime>(reader, "fechaUltimaActividad"),
-                                CantidadDespachos = GetSafeValue<int>(reader, "cantidadDespachos"),
-                                EsInternacional = GetSafeValue<bool>(reader, "EsInternacional"),
-                                EstadoViaje = GetSafeValue<string>(reader, "estadoViaje"),
-                                DescripcionViaje = GetSafeValue<string>(reader, "descripcionViaje")
-                            });
-                        }
-                    }
-                }
-            }
-
-            return viajes;
+            return ListaDespachosService.ObtenerViajesActivos(idConductor, esInternacional, numeroViaje);
         }
 
         private void CargarDespachosViaje(int idViajeProgreso)
@@ -376,29 +231,7 @@ namespace WebSGV.Views
         }
 
         private List<DespachoViaje> ObtenerDespachosDelViaje(int idViajeProgreso)
-        {
-            List<DespachoViaje> despachos = new List<DespachoViaje>();
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerDespachosViaje", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
-                    conn.Open();
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            despachos.Add(LeerDespachoDesdeReader(reader));
-                        }
-                    }
-                }
-            }
-
-            return despachos;
-        }
+            => ListaDespachosService.ObtenerDespachosDelViaje(idViajeProgreso);
 
         private void ActualizarInformacionViajeDetalle(int idViajeProgreso)
         {
@@ -459,209 +292,31 @@ namespace WebSGV.Views
 
         private List<LoteRegistrado> ObtenerLotesRegistrados()
         {
-            List<LoteRegistrado> lotes = new List<LoteRegistrado>();
+            int? idCliente = string.IsNullOrEmpty(ddlFiltroClienteLotes.SelectedValue)
+                ? (int?)null : Convert.ToInt32(ddlFiltroClienteLotes.SelectedValue);
+            string tipoOperacion = string.IsNullOrEmpty(ddlFiltroOperacionLotes.SelectedValue)
+                ? null : ddlFiltroOperacionLotes.SelectedValue;
+            string planta = string.IsNullOrEmpty(ddlFiltroPlantaLotes.SelectedValue)
+                ? null : ddlFiltroPlantaLotes.SelectedValue;
+            string numeroPedido = string.IsNullOrEmpty(txtBuscarLote.Text.Trim())
+                ? null : txtBuscarLote.Text.Trim();
+            DateTime? fechaDesde = DateTime.TryParse(txtFechaDesde.Text, out DateTime fd) ? fd : (DateTime?)null;
+            DateTime? fechaHasta = DateTime.TryParse(txtFechaHasta.Text, out DateTime fh) ? fh : (DateTime?)null;
+            string estadoFiltro = string.IsNullOrEmpty(ddlFiltroEstadoLotes.SelectedValue)
+                ? null : ddlFiltroEstadoLotes.SelectedValue;
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerLotesRegistrados", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    cmd.Parameters.AddWithValue("@idCliente",
-                        string.IsNullOrEmpty(ddlFiltroClienteLotes.SelectedValue) ? (object)DBNull.Value : Convert.ToInt32(ddlFiltroClienteLotes.SelectedValue));
-                    cmd.Parameters.AddWithValue("@tipoOperacion",
-                        string.IsNullOrEmpty(ddlFiltroOperacionLotes.SelectedValue) ? (object)DBNull.Value : ddlFiltroOperacionLotes.SelectedValue);
-                    cmd.Parameters.AddWithValue("@planta",
-                        string.IsNullOrEmpty(ddlFiltroPlantaLotes.SelectedValue) ? (object)DBNull.Value : ddlFiltroPlantaLotes.SelectedValue);
-                    cmd.Parameters.AddWithValue("@numeroPedido",
-                        string.IsNullOrEmpty(txtBuscarLote.Text.Trim()) ? (object)DBNull.Value : txtBuscarLote.Text.Trim());
-
-                    DateTime fechaDesde, fechaHasta;
-                    cmd.Parameters.AddWithValue("@fechaDesde",
-                        DateTime.TryParse(txtFechaDesde.Text, out fechaDesde) ? (object)fechaDesde : DBNull.Value);
-                    cmd.Parameters.AddWithValue("@fechaHasta",
-                        DateTime.TryParse(txtFechaHasta.Text, out fechaHasta) ? (object)fechaHasta : DBNull.Value);
-                    cmd.Parameters.AddWithValue("@estadoFiltro",
-                        string.IsNullOrEmpty(ddlFiltroEstadoLotes.SelectedValue) ? (object)DBNull.Value : ddlFiltroEstadoLotes.SelectedValue);
-
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            lotes.Add(new LoteRegistrado
-                            {
-                                IdLoteVirtual = GetSafeValue<string>(reader, "IdLoteVirtual"),
-                                FechaProgramacion = GetSafeValue<DateTime>(reader, "FechaProgramacion"),
-                                IdCliente = GetSafeValue<int>(reader, "idCliente"),
-                                NombreCliente = GetSafeValue<string>(reader, "NombreCliente"),
-                                NumeroPedido = GetSafeValue<string>(reader, "numeroPedido"),
-                                TipoOperacion = GetSafeValue<string>(reader, "tipoOperacion"),
-                                EsInternacional = GetSafeValue<bool>(reader, "esInternacional"),
-                                PlantaOperacion = GetSafeValue<string>(reader, "PlantaOperacion"),
-                                CantidadDespachos = GetSafeValue<int>(reader, "CantidadDespachos"),
-                                NumeroFactura = GetSafeValue<string>(reader, "NumeroFactura"),
-                                NumeroCPIC = GetSafeValue<string>(reader, "NumeroCPIC"),
-                                FechaCreacion = GetSafeValue<DateTime>(reader, "FechaCreacion"),
-                                UsuarioCreacion = GetSafeValue<string>(reader, "UsuarioCreacion"),
-                                FechaEmisionFactura = GetSafeValue<DateTime?>(reader, "FechaEmisionFactura"),
-                                ValorTotalFactura = GetSafeValue<decimal?>(reader, "ValorTotalFactura"),
-                                FechaEmisionCPIC = GetSafeValue<DateTime?>(reader, "FechaEmisionCPIC"),
-                                ValorFlete = GetSafeValue<decimal?>(reader, "ValorFlete"),
-                                EstadoLote = GetSafeValue<string>(reader, "EstadoLote", "ACTIVO")
-                            });
-                        }
-                    }
-                }
-            }
-
-            return lotes;
+            return ListaDespachosService.ObtenerLotesRegistrados(
+                idCliente, tipoOperacion, planta, numeroPedido, fechaDesde, fechaHasta, estadoFiltro);
         }
 
         private LoteRegistrado ObtenerLotePorId(string idLoteVirtual)
-        {
-            // Busca el lote directamente usando los criterios del ID virtual,
-            // ignorando los filtros del usuario para evitar que un filtro activo
-            // impida encontrar el lote que se está editando/anulando/eliminando.
-            var criterios = ParsearIdLoteVirtual(idLoteVirtual);
-            if (criterios == default) return null;
-
-            List<LoteRegistrado> lotes = new List<LoteRegistrado>();
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerLotesRegistrados", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idCliente", criterios.IdCliente);
-                    cmd.Parameters.AddWithValue("@tipoOperacion", criterios.TipoOperacion);
-                    cmd.Parameters.AddWithValue("@planta", criterios.Planta);
-                    cmd.Parameters.AddWithValue("@numeroPedido",
-                        string.IsNullOrEmpty(criterios.NumeroPedido) ? (object)DBNull.Value : criterios.NumeroPedido);
-                    cmd.Parameters.AddWithValue("@fechaDesde", criterios.FechaDespacho.Date);
-                    cmd.Parameters.AddWithValue("@fechaHasta", criterios.FechaDespacho.Date);
-                    cmd.Parameters.AddWithValue("@estadoFiltro", DBNull.Value); // sin filtro de estado
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            lotes.Add(new LoteRegistrado
-                            {
-                                IdLoteVirtual = GetSafeValue<string>(reader, "IdLoteVirtual"),
-                                FechaProgramacion = GetSafeValue<DateTime>(reader, "FechaProgramacion"),
-                                IdCliente = GetSafeValue<int>(reader, "idCliente"),
-                                NombreCliente = GetSafeValue<string>(reader, "NombreCliente"),
-                                NumeroPedido = GetSafeValue<string>(reader, "numeroPedido"),
-                                TipoOperacion = GetSafeValue<string>(reader, "tipoOperacion"),
-                                EsInternacional = GetSafeValue<bool>(reader, "esInternacional"),
-                                PlantaOperacion = GetSafeValue<string>(reader, "PlantaOperacion"),
-                                CantidadDespachos = GetSafeValue<int>(reader, "CantidadDespachos"),
-                                NumeroFactura = GetSafeValue<string>(reader, "NumeroFactura"),
-                                NumeroCPIC = GetSafeValue<string>(reader, "NumeroCPIC"),
-                                FechaCreacion = GetSafeValue<DateTime>(reader, "FechaCreacion"),
-                                UsuarioCreacion = GetSafeValue<string>(reader, "UsuarioCreacion"),
-                                FechaEmisionFactura = GetSafeValue<DateTime?>(reader, "FechaEmisionFactura"),
-                                ValorTotalFactura = GetSafeValue<decimal?>(reader, "ValorTotalFactura"),
-                                FechaEmisionCPIC = GetSafeValue<DateTime?>(reader, "FechaEmisionCPIC"),
-                                ValorFlete = GetSafeValue<decimal?>(reader, "ValorFlete"),
-                                EstadoLote = GetSafeValue<string>(reader, "EstadoLote", "ACTIVO")
-                            });
-                        }
-                    }
-                }
-            }
-
-            var lote = lotes.FirstOrDefault(l => l.IdLoteVirtual == idLoteVirtual);
-            if (lote != null)
-                lote.IdsDespachos = ObtenerIdsDespachosDeLote(idLoteVirtual);
-
-            return lote;
-        }
+            => ListaDespachosService.ObtenerLotePorId(idLoteVirtual);
 
         private List<int> ObtenerIdsDespachosDeLote(string idLoteVirtual)
-        {
-            List<int> ids = new List<int>();
-
-            var criterios = ParsearIdLoteVirtual(idLoteVirtual);
-            if (criterios == default) return ids;
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerIdsDespachosDeLote", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idCliente", criterios.IdCliente);
-                    cmd.Parameters.AddWithValue("@fechaDespacho", criterios.FechaDespacho);
-                    cmd.Parameters.AddWithValue("@tipoOperacion", criterios.TipoOperacion);
-                    cmd.Parameters.AddWithValue("@esInternacional", criterios.EsInternacional);
-                    cmd.Parameters.AddWithValue("@planta", criterios.Planta);
-                    cmd.Parameters.AddWithValue("@numeroPedido",
-                        string.IsNullOrEmpty(criterios.NumeroPedido) || criterios.NumeroPedido == "NOPEDIDO"
-                            ? (object)DBNull.Value : criterios.NumeroPedido);
-
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            ids.Add(GetSafeValue<int>(reader, "idDespacho"));
-                        }
-                    }
-                }
-            }
-
-            return ids;
-        }
-
-        private (int IdCliente, DateTime FechaDespacho, string TipoOperacion, bool EsInternacional, string Planta, string NumeroPedido) ParsearIdLoteVirtual(string idLoteVirtual)
-        {
-            try
-            {
-                var partes = idLoteVirtual.Split('_');
-                if (partes.Length < 6) return default;
-
-                return (
-                    IdCliente: int.Parse(partes[0]),
-                    FechaDespacho: DateTime.Parse(partes[2]),
-                    TipoOperacion: partes[3],
-                    EsInternacional: partes[4] == "1",
-                    Planta: partes[5],
-                    NumeroPedido: partes[1] == "NOPEDIDO" ? null : partes[1]
-                );
-            }
-            catch
-            {
-                return default;
-            }
-        }
+            => ListaDespachosService.ObtenerIdsDespachosDeLote(idLoteVirtual);
 
         private List<DespachoViaje> ObtenerDespachosDelLote(string idLoteVirtual)
-        {
-            var idsDespachos = ObtenerIdsDespachosDeLote(idLoteVirtual);
-            List<DespachoViaje> despachos = new List<DespachoViaje>();
-
-            if (idsDespachos.Count == 0) return despachos;
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerDespachosPorIds", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idsDespachos", IdsACsv(idsDespachos));
-                    conn.Open();
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            despachos.Add(LeerDespachoDesdeReader(reader));
-                        }
-                    }
-                }
-            }
-
-            return despachos;
-        }
+            => ListaDespachosService.ObtenerDespachosDelLote(idLoteVirtual);
 
         private void CargarDespachosLote(string idLoteVirtual)
         {
