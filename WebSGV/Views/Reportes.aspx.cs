@@ -2573,41 +2573,10 @@ namespace WebSGV.Views
                 string idVehiculo = ddlVehiculo.SelectedValue;
                 string placaVehiculo = txtPlacaVehiculo.Text;
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    conn.Open();
-
-                    using (SqlCommand cmd = new SqlCommand("sp_GenerarReporteRendimientoPorRuta", conn))
                     {
-                        cmd.CommandType = CommandType.StoredProcedure;
-
-                        // Agregar parámetros
-                        cmd.Parameters.AddWithValue("@fechaDesde", fechaDesde);
-                        cmd.Parameters.AddWithValue("@fechaHasta", fechaHasta);
-
-                        // Parámetros opcionales
-                        if (!string.IsNullOrEmpty(idVehiculo))
-                        {
-                            cmd.Parameters.AddWithValue("@idTracto", idVehiculo);
-                        }
-                        else
-                        {
-                            cmd.Parameters.AddWithValue("@idTracto", DBNull.Value);
-                        }
-
-                        if (!string.IsNullOrEmpty(placaVehiculo))
-                        {
-                            cmd.Parameters.AddWithValue("@placaTracto", placaVehiculo);
-                        }
-                        else
-                        {
-                            cmd.Parameters.AddWithValue("@placaTracto", DBNull.Value);
-                        }
-
-                        // Crear conjunto de datos para almacenar resultados múltiples
-                        DataSet ds = new DataSet();
-                        SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                        adapter.Fill(ds);
+                        DataSet ds = ReportesService.ReporteRendimientoPorRuta(
+                            fechaDesde, fechaHasta, idVehiculo, placaVehiculo);
 
                         // Procesar los resultados principales (primer resultado)
                         if (ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
@@ -2828,59 +2797,10 @@ namespace WebSGV.Views
                 string marcaVehiculo = ddlMarcaVehiculo.SelectedValue;
                 string modeloVehiculo = ddlModeloVehiculo.SelectedValue;
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    conn.Open();
-
-                    using (SqlCommand cmd = new SqlCommand("sp_GenerarReporteMantenimientoVehiculo", conn))
                     {
-                        cmd.CommandType = CommandType.StoredProcedure;
-
-                        // Agregar parámetros
-                        cmd.Parameters.AddWithValue("@fechaDesde", fechaDesde);
-                        cmd.Parameters.AddWithValue("@fechaHasta", fechaHasta);
-
-                        // Parámetros opcionales
-                        if (!string.IsNullOrEmpty(idVehiculo))
-                        {
-                            cmd.Parameters.AddWithValue("@idTracto", idVehiculo);
-                        }
-                        else
-                        {
-                            cmd.Parameters.AddWithValue("@idTracto", DBNull.Value);
-                        }
-
-                        if (!string.IsNullOrEmpty(placaVehiculo))
-                        {
-                            cmd.Parameters.AddWithValue("@placaTracto", placaVehiculo);
-                        }
-                        else
-                        {
-                            cmd.Parameters.AddWithValue("@placaTracto", DBNull.Value);
-                        }
-
-                        if (!string.IsNullOrEmpty(marcaVehiculo))
-                        {
-                            cmd.Parameters.AddWithValue("@marcaVehiculo", marcaVehiculo);
-                        }
-                        else
-                        {
-                            cmd.Parameters.AddWithValue("@marcaVehiculo", DBNull.Value);
-                        }
-
-                        if (!string.IsNullOrEmpty(modeloVehiculo))
-                        {
-                            cmd.Parameters.AddWithValue("@modeloVehiculo", modeloVehiculo);
-                        }
-                        else
-                        {
-                            cmd.Parameters.AddWithValue("@modeloVehiculo", DBNull.Value);
-                        }
-
-                        // Crear conjunto de datos para almacenar resultados múltiples
-                        DataSet ds = new DataSet();
-                        SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                        adapter.Fill(ds);
+                        DataSet ds = ReportesService.ReporteMantenimientoVehiculo(
+                            fechaDesde, fechaHasta, idVehiculo, placaVehiculo, marcaVehiculo, modeloVehiculo);
 
                         // Procesar los resultados principales (primer resultado)
                         if (ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
@@ -3165,28 +3085,8 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    conn.Open();
-
-                    // Crear comando para el procedimiento almacenado
-                    SqlCommand cmd = new SqlCommand("sp_ReporteProductosMasTransportados", conn);
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    // Añadir parámetros
-                    cmd.Parameters.AddWithValue("@fechaDesde", fechaDesde);
-                    cmd.Parameters.AddWithValue("@fechaHasta", fechaHasta);
-
-                    // Parámetro opcional del producto
-                    if (!string.IsNullOrEmpty(idProducto) && idProducto != "0")
-                        cmd.Parameters.AddWithValue("@idProducto", idProducto);
-                    else
-                        cmd.Parameters.AddWithValue("@idProducto", DBNull.Value);
-
-                    // Obtener datos e indicadores
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataSet ds = new DataSet();
-                    adapter.Fill(ds);
+                    DataSet ds = ReportesService.ReporteProductosMasTransportados(fechaDesde, fechaHasta, idProducto);
 
                     // El primer DataTable contiene los datos de productos
                     DataTable dtProductos = ds.Tables[0];
@@ -3285,33 +3185,8 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    conn.Open();
-
-                    // Crear comando para el procedimiento almacenado
-                    SqlCommand cmd = new SqlCommand("sp_ReporteProductosPorCliente", conn);
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    // Añadir parámetros
-                    cmd.Parameters.AddWithValue("@fechaDesde", fechaDesde);
-                    cmd.Parameters.AddWithValue("@fechaHasta", fechaHasta);
-
-                    // Parámetros opcionales
-                    if (!string.IsNullOrEmpty(idCliente) && idCliente != "0")
-                        cmd.Parameters.AddWithValue("@idCliente", idCliente);
-                    else
-                        cmd.Parameters.AddWithValue("@idCliente", DBNull.Value);
-
-                    if (!string.IsNullOrEmpty(idProducto) && idProducto != "0")
-                        cmd.Parameters.AddWithValue("@idProducto", idProducto);
-                    else
-                        cmd.Parameters.AddWithValue("@idProducto", DBNull.Value);
-
-                    // Obtener datos e indicadores
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataSet ds = new DataSet();
-                    adapter.Fill(ds);
+                    DataSet ds = ReportesService.ReporteProductosPorCliente(fechaDesde, fechaHasta, idCliente, idProducto);
 
                     // El primer DataTable contiene los datos de clientes y sus productos
                     DataTable dtClientes = ds.Tables[0];
@@ -3422,33 +3297,8 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    conn.Open();
-
-                    // Crear comando para el procedimiento almacenado
-                    SqlCommand cmd = new SqlCommand("sp_ReporteProductosPorDestino", conn);
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    // Añadir parámetros
-                    cmd.Parameters.AddWithValue("@fechaDesde", fechaDesde);
-                    cmd.Parameters.AddWithValue("@fechaHasta", fechaHasta);
-
-                    // Parámetros opcionales
-                    if (!string.IsNullOrEmpty(idProducto) && idProducto != "0")
-                        cmd.Parameters.AddWithValue("@idProducto", idProducto);
-                    else
-                        cmd.Parameters.AddWithValue("@idProducto", DBNull.Value);
-
-                    if (!string.IsNullOrEmpty(idPlanta) && idPlanta != "0")
-                        cmd.Parameters.AddWithValue("@idPlanta", idPlanta);
-                    else
-                        cmd.Parameters.AddWithValue("@idPlanta", DBNull.Value);
-
-                    // Obtener datos e indicadores
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataSet ds = new DataSet();
-                    adapter.Fill(ds);
+                    DataSet ds = ReportesService.ReporteProductosPorDestino(fechaDesde, fechaHasta, idProducto, idPlanta);
 
                     // El primer DataTable contiene los datos de destinos y sus productos
                     DataTable dtDestinos = ds.Tables[0];
@@ -3554,33 +3404,11 @@ namespace WebSGV.Views
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    conn.Open();
+                    int? idLugar = (!string.IsNullOrEmpty(ddlLugarAbastecimiento.SelectedValue) && ddlLugarAbastecimiento.SelectedValue != "0")
+                        ? Convert.ToInt32(ddlLugarAbastecimiento.SelectedValue) : (int?)null;
 
-                    // Crear comando para el procedimiento almacenado
-                    SqlCommand cmd = new SqlCommand("sp_ReporteConsumoGeneralCombustible", conn);
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    // Añadir parámetros obligatorios
-                    cmd.Parameters.AddWithValue("@fechaDesde", fechaDesde);
-                    cmd.Parameters.AddWithValue("@fechaHasta", fechaHasta);
-
-                    // Parámetros opcionales
-                    if (!string.IsNullOrEmpty(ddlLugarAbastecimiento.SelectedValue) && ddlLugarAbastecimiento.SelectedValue != "0")
-                    {
-                        cmd.Parameters.Add("@idLugarAbastecimiento", SqlDbType.Int).Value =
-                            Convert.ToInt32(ddlLugarAbastecimiento.SelectedValue);
-                    }
-                    else
-                    {
-                        cmd.Parameters.Add("@idLugarAbastecimiento", SqlDbType.Int).Value = DBNull.Value;
-                    }
-
-                    // Ejecutar y obtener resultados en un DataSet
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataSet ds = new DataSet();
-                    adapter.Fill(ds);
+                    DataSet ds = ReportesService.ReporteConsumoGeneralCombustible(fechaDesde, fechaHasta, idLugar);
 
                     // Asegurarse de que tenemos todas las tablas de resultados
                     if (ds.Tables.Count < 3)
@@ -3780,39 +3608,10 @@ namespace WebSGV.Views
                 DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
                 string tipoTransaccion = ddlTipoTransaccion.SelectedValue;
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    conn.Open();
-
-                    using (SqlCommand cmd = new SqlCommand("sp_ReporteFinanciero_BalanceGeneral", conn))
                     {
-                        cmd.CommandType = CommandType.StoredProcedure;
-
-                        // Add parameters
-                        cmd.Parameters.AddWithValue("@fechaDesde", fechaDesde);
-                        cmd.Parameters.AddWithValue("@fechaHasta", fechaHasta);
-
-                        // Handle the transaction type parameter
-                        if (!string.IsNullOrEmpty(tipoTransaccion) && tipoTransaccion != "Todas")
-                        {
-                            cmd.Parameters.AddWithValue("@tipoTransaccion", tipoTransaccion);
-                        }
-                        else
-                        {
-                            cmd.Parameters.AddWithValue("@tipoTransaccion", DBNull.Value);
-                        }
-
-                        // Debug: Print the SQL command
-                        System.Diagnostics.Debug.WriteLine("SQL Command: " + cmd.CommandText);
-                        foreach (SqlParameter param in cmd.Parameters)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"Parameter: {param.ParameterName} = {param.Value}");
-                        }
-
-                        // Get multiple result sets
-                        DataSet ds = new DataSet();
-                        SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                        adapter.Fill(ds);
+                        DataSet ds = ReportesService.ReporteFinancieroBalanceGeneral(
+                            fechaDesde, fechaHasta, tipoTransaccion);
 
                         // Process main results (first result)
                         if (ds.Tables.Count > 0)
@@ -4093,30 +3892,10 @@ namespace WebSGV.Views
                 // Titular el reporte
                 litTituloResultados.Text = "Reporte de Rendimiento por Vehículo";
 
-                using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString))
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_ReporteRendimientoPorVehiculo", con))
                     {
-                        cmd.CommandType = CommandType.StoredProcedure;
-
-                        // Agregar los parámetros
-                        cmd.Parameters.Add("@FechaDesde", SqlDbType.DateTime).Value = fechaDesde;
-                        cmd.Parameters.Add("@FechaHasta", SqlDbType.DateTime).Value = fechaHasta;
-                        cmd.Parameters.Add("@IdLugarAbastecimiento", SqlDbType.Int).Value =
-                            (object)idLugarAbastecimiento ?? DBNull.Value;
-
-                        // Abrir la conexión
-                        con.Open();
-
-                        // Crear conjuntos de datos para los resultados del procedimiento
-                        DataSet ds = new DataSet();
-
-                        // Configurar adaptador para llenar el DataSet
-                        using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
-                        {
-                            // Llenar el DataSet con los resultados
-                            adapter.Fill(ds);
-                        }
+                        DataSet ds = ReportesService.ReporteRendimientoPorVehiculo(
+                            fechaDesde, fechaHasta, idLugarAbastecimiento);
 
                         // Verificar si hay datos - El primer resultado contiene la verificación
                         bool hayDatos = false;
@@ -4322,30 +4101,10 @@ namespace WebSGV.Views
                 // Titular el reporte
                 litTituloResultados.Text = "Reporte de Rendimiento por Ruta";
 
-                using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString))
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_ReporteRendimientoPorRutaCombustible", con))
                     {
-                        cmd.CommandType = CommandType.StoredProcedure;
-
-                        // Agregar los parámetros
-                        cmd.Parameters.Add("@FechaDesde", SqlDbType.DateTime).Value = fechaDesde;
-                        cmd.Parameters.Add("@FechaHasta", SqlDbType.DateTime).Value = fechaHasta;
-                        cmd.Parameters.Add("@IdLugarAbastecimiento", SqlDbType.Int).Value =
-                            (object)idLugarAbastecimiento ?? DBNull.Value;
-
-                        // Abrir la conexión
-                        con.Open();
-
-                        // Crear conjuntos de datos para los resultados
-                        DataSet ds = new DataSet();
-
-                        // Configurar adaptador para llenar el DataSet
-                        using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
-                        {
-                            // Llenar el DataSet con los resultados
-                            adapter.Fill(ds);
-                        }
+                        DataSet ds = ReportesService.ReporteRendimientoPorRutaCombustible(
+                            fechaDesde, fechaHasta, idLugarAbastecimiento);
 
                         // Verificar si hay datos - El primer resultado contiene la verificación
                         bool hayDatos = false;

@@ -152,12 +152,89 @@ namespace WebSGV.Services.Reportes
                 new SqlParameter("@rendimientoMinimo", SqlDbType.Decimal) { Value = (object)rendimientoMinimo ?? DBNull.Value },
                 new SqlParameter("@tipoReporte", SqlDbType.VarChar, 20) { Value = ValorODbNull(tipoReporte) });
 
+        /// <summary>Productos más transportados (<c>sp_ReporteProductosMasTransportados</c>): Tables[0]=datos, Tables[1]=indicadores.</summary>
+        public static DataSet ReporteProductosMasTransportados(DateTime fechaDesde, DateTime fechaHasta, string idProducto) =>
+            LlenarDataSetSp("sp_ReporteProductosMasTransportados",
+                DbHelper.Param("@fechaDesde", fechaDesde),
+                DbHelper.Param("@fechaHasta", fechaHasta),
+                DbHelper.Param("@idProducto", OpcionalNoCero(idProducto)));
+
+        /// <summary>Productos por cliente (<c>sp_ReporteProductosPorCliente</c>): Tables[0]=datos, Tables[1]=indicadores.</summary>
+        public static DataSet ReporteProductosPorCliente(DateTime fechaDesde, DateTime fechaHasta,
+            string idCliente, string idProducto) =>
+            LlenarDataSetSp("sp_ReporteProductosPorCliente",
+                DbHelper.Param("@fechaDesde", fechaDesde),
+                DbHelper.Param("@fechaHasta", fechaHasta),
+                DbHelper.Param("@idCliente", OpcionalNoCero(idCliente)),
+                DbHelper.Param("@idProducto", OpcionalNoCero(idProducto)));
+
+        /// <summary>Productos por destino (<c>sp_ReporteProductosPorDestino</c>): Tables[0]=datos, Tables[1]=indicadores.</summary>
+        public static DataSet ReporteProductosPorDestino(DateTime fechaDesde, DateTime fechaHasta,
+            string idProducto, string idPlanta) =>
+            LlenarDataSetSp("sp_ReporteProductosPorDestino",
+                DbHelper.Param("@fechaDesde", fechaDesde),
+                DbHelper.Param("@fechaHasta", fechaHasta),
+                DbHelper.Param("@idProducto", OpcionalNoCero(idProducto)),
+                DbHelper.Param("@idPlanta", OpcionalNoCero(idPlanta)));
+
+        /// <summary>Consumo general de combustible (<c>sp_ReporteConsumoGeneralCombustible</c>): hasta 3 tablas de resultados.</summary>
+        public static DataSet ReporteConsumoGeneralCombustible(DateTime fechaDesde, DateTime fechaHasta, int? idLugarAbastecimiento) =>
+            LlenarDataSetSp("sp_ReporteConsumoGeneralCombustible",
+                new SqlParameter("@fechaDesde", fechaDesde),
+                new SqlParameter("@fechaHasta", fechaHasta),
+                new SqlParameter("@idLugarAbastecimiento", SqlDbType.Int) { Value = (object)idLugarAbastecimiento ?? DBNull.Value });
+
+        /// <summary>Rendimiento por ruta (<c>sp_GenerarReporteRendimientoPorRuta</c>): múltiples tablas.</summary>
+        public static DataSet ReporteRendimientoPorRuta(DateTime fechaDesde, DateTime fechaHasta,
+            string idTracto, string placaTracto) =>
+            LlenarDataSetSp("sp_GenerarReporteRendimientoPorRuta",
+                DbHelper.Param("@fechaDesde", fechaDesde),
+                DbHelper.Param("@fechaHasta", fechaHasta),
+                DbHelper.Param("@idTracto", Opcional(idTracto)),
+                DbHelper.Param("@placaTracto", Opcional(placaTracto)));
+
+        /// <summary>Mantenimiento por vehículo (<c>sp_GenerarReporteMantenimientoVehiculo</c>): múltiples tablas.</summary>
+        public static DataSet ReporteMantenimientoVehiculo(DateTime fechaDesde, DateTime fechaHasta,
+            string idTracto, string placaTracto, string marcaVehiculo, string modeloVehiculo) =>
+            LlenarDataSetSp("sp_GenerarReporteMantenimientoVehiculo",
+                DbHelper.Param("@fechaDesde", fechaDesde),
+                DbHelper.Param("@fechaHasta", fechaHasta),
+                DbHelper.Param("@idTracto", Opcional(idTracto)),
+                DbHelper.Param("@placaTracto", Opcional(placaTracto)),
+                DbHelper.Param("@marcaVehiculo", Opcional(marcaVehiculo)),
+                DbHelper.Param("@modeloVehiculo", Opcional(modeloVehiculo)));
+
+        /// <summary>Balance general financiero (<c>sp_ReporteFinanciero_BalanceGeneral</c>): múltiples tablas. <c>"Todas"</c> ⇒ sin filtro.</summary>
+        public static DataSet ReporteFinancieroBalanceGeneral(DateTime fechaDesde, DateTime fechaHasta, string tipoTransaccion) =>
+            LlenarDataSetSp("sp_ReporteFinanciero_BalanceGeneral",
+                DbHelper.Param("@fechaDesde", fechaDesde),
+                DbHelper.Param("@fechaHasta", fechaHasta),
+                DbHelper.Param("@tipoTransaccion",
+                    (!string.IsNullOrEmpty(tipoTransaccion) && tipoTransaccion != "Todas") ? tipoTransaccion : (object)null));
+
+        /// <summary>Rendimiento por vehículo (<c>sp_ReporteRendimientoPorVehiculo</c>): múltiples tablas. Conserva los tipos de parámetro del original.</summary>
+        public static DataSet ReporteRendimientoPorVehiculo(DateTime fechaDesde, DateTime fechaHasta, int? idLugarAbastecimiento) =>
+            LlenarDataSetSp("sp_ReporteRendimientoPorVehiculo",
+                new SqlParameter("@FechaDesde", SqlDbType.DateTime) { Value = fechaDesde },
+                new SqlParameter("@FechaHasta", SqlDbType.DateTime) { Value = fechaHasta },
+                new SqlParameter("@IdLugarAbastecimiento", SqlDbType.Int) { Value = (object)idLugarAbastecimiento ?? DBNull.Value });
+
+        /// <summary>Rendimiento por ruta de combustible (<c>sp_ReporteRendimientoPorRutaCombustible</c>): múltiples tablas.</summary>
+        public static DataSet ReporteRendimientoPorRutaCombustible(DateTime fechaDesde, DateTime fechaHasta, int? idLugarAbastecimiento) =>
+            LlenarDataSetSp("sp_ReporteRendimientoPorRutaCombustible",
+                new SqlParameter("@FechaDesde", SqlDbType.DateTime) { Value = fechaDesde },
+                new SqlParameter("@FechaHasta", SqlDbType.DateTime) { Value = fechaHasta },
+                new SqlParameter("@IdLugarAbastecimiento", SqlDbType.Int) { Value = (object)idLugarAbastecimiento ?? DBNull.Value });
+
         // ------------------------------------------------------------------
         // Implementación
         // ------------------------------------------------------------------
 
         /// <summary>Convierte cadena vacía/null en <c>null</c> (para que <see cref="DbHelper.Param"/> envíe DBNull).</summary>
         private static object Opcional(string valor) => string.IsNullOrEmpty(valor) ? null : valor;
+
+        /// <summary>Como <see cref="Opcional"/> pero también trata <c>"0"</c> como sin valor (DBNull).</summary>
+        private static object OpcionalNoCero(string valor) => (!string.IsNullOrEmpty(valor) && valor != "0") ? valor : (object)null;
 
         /// <summary>Valor de cadena o <see cref="DBNull"/> si está vacía (para <see cref="SqlParameter.Value"/>).</summary>
         private static object ValorODbNull(string valor) => string.IsNullOrEmpty(valor) ? (object)DBNull.Value : valor;
