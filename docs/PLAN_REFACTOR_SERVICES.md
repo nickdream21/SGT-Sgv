@@ -61,7 +61,8 @@ formato de factura, etc.).
 |---|---|---|---|
 | `29b40e3` | DashboardConductor | `Conductor/LiquidacionConductorService` + `Models/Conductor/LiquidacionConductorModels` | **Transacción completa de envío de liquidación** (`btnEnviarLiquidacion_Click`): orden (insertar/actualizar re-liquidación), ingresos/egresos principales, ingresos/gastos adicionales, descuentos/reintegros, gastos detallados (peaje/reparación/hospedaje/combustible) y cierre de viajes en progreso — todos los `sp_DC_*` movidos verbatim dentro de una única transacción. Los modelos `GastoFinanciero`, `IngresoAdicionalData`, `GastoAdicionalData` se movieron a `WebSGV.Models.Conductor`; el code-behind arma un `LiquidacionConductorInput` (parseo de `Request.Form`/hidden fields/JSON) y conserva sesión, validación, ownership, auditoría, notificación, redirect y el `try/catch` que muestra el mensaje. |
 | `4bd2d24` | LiquidacionesPendientes | `Liquidaciones/LiquidacionesPendientesService.ObtenerDetalleLiquidacion` + `Models/Liquidaciones/DetalleLiquidacionModels` | **Armador de DTO `ObtenerDetalleLiquidacion`** (sólo lectura): cabecera + ingresos/egresos principales y desglosados + ítems detallados (peajes/reparaciones/hospedaje/combustible) + adicionales + descuentos/reintegros, sobre una sola conexión con varios readers — SQL movido verbatim. Los DTO `DetalleLiquidacion`/`DetallePeajeItem`/`DetalleGenericoItem`/`ItemAdicional` se movieron a `WebSGV.Models.Liquidaciones` (los consumen también los services de PDF/Firma por reflexión/`var`). El `[WebMethod]` del code-behind conserva la validación de sesión y delega. |
-| _(este)_ | LiquidacionesPendientes | `Liquidaciones/LiquidacionesPendientesService` (Aprobar/Corregir/PDF) | **Transacciones de aprobación con ajustes y corrección de aprobada** + las dos consultas de archivado de PDF. `AprobarConAjustes` (resuelve nº orden → UPSERT `DescuentosReintegros` → `sp_AprobarLiquidacion`) y `CorregirAjustesAprobada` (UPSERT + registro en `observaciones`) movidas verbatim, devolviendo DTOs de resultado (`ResultadoAprobacionAjustes`/`ResultadoCorreccionAjustes`); los `[WebMethod]` conservan sesión, validación de montos/motivo, el objeto anónimo `{success,message}` (que `AprobarLiquidacionConFirma` consume por `dynamic`), el PDF y la auditoría. `GarantizarPdfArchivadoOV` delega su `SELECT rutaPdfFirmado`/`UPDATE ruta+hash` a `ObtenerRutaPdfArchivado`/`GuardarRutaPdfArchivado`; la orquestación de disco/PDF (HostingEnvironment + `PdfOrdenViajeService`) sigue en el code-behind. |
+| `22b4bea` | LiquidacionesPendientes | `Liquidaciones/LiquidacionesPendientesService` (Aprobar/Corregir/PDF) | **Transacciones de aprobación con ajustes y corrección de aprobada** + las dos consultas de archivado de PDF. `AprobarConAjustes` (resuelve nº orden → UPSERT `DescuentosReintegros` → `sp_AprobarLiquidacion`) y `CorregirAjustesAprobada` (UPSERT + registro en `observaciones`) movidas verbatim, devolviendo DTOs de resultado (`ResultadoAprobacionAjustes`/`ResultadoCorreccionAjustes`); los `[WebMethod]` conservan sesión, validación de montos/motivo, el objeto anónimo `{success,message}` (que `AprobarLiquidacionConFirma` consume por `dynamic`), el PDF y la auditoría. `GarantizarPdfArchivadoOV` delega su `SELECT rutaPdfFirmado`/`UPDATE ruta+hash` a `ObtenerRutaPdfArchivado`/`GuardarRutaPdfArchivado`; la orquestación de disco/PDF (HostingEnvironment + `PdfOrdenViajeService`) sigue en el code-behind. |
+| _(este)_ | RegistroDespacho | `Despachos/RegistroDespachoService` + `Models/Despachos/RegistroDespachoModels` | **Creadores del lote y lectores de viaje**: `CrearDocumentoBaseSeparado` (`sp_CrearFactura`/`sp_CrearCPIC`), `CrearDespachoIndividual` (`sp_CrearDespacho`), `ObtenerViajesAbiertosConductor` y `ObtenerInfoViaje` movidos verbatim (SP con parámetros de salida y readers→DTO). Los modelos `LoteDespachos`/`DocumentacionBase`/`ConductorLote`/`ViajeEnProgreso` se movieron a `WebSGV.Models.Despachos`; el code-behind conserva la orquestación del lote (`ProcesarLoteCompleto`: recorrer conductores, auditoría, limpieza de UI, `Session`) y los métodos quedaron como adaptadores delgados. |
 
 > **Pendiente de validación en runtime:** toca dinero y no hay pruebas de BD. Verificado
 > con MSBuild limpio + 177 tests; falta una corrida real (envío y re-liquidación) antes
@@ -82,9 +83,10 @@ en Session/ViewState.
 Pendientes por página:
 - ~~**DashboardConductor** — transacción de **envío de liquidación**~~ ✅ **Hecho** (Fase C):
   extraída a `LiquidacionConductorService.EnviarLiquidacion(LiquidacionConductorInput)`.
-- **RegistroDespacho** — creadores que reciben modelos: `CrearDocumentoBaseSeparado`,
-  `CrearDespachoIndividual`, `ObtenerViajesAbiertosConductor`, `ObtenerInfoViaje` + la
-  transacción de finalización del lote.
+- ~~**RegistroDespacho** — creadores que reciben modelos: `CrearDocumentoBaseSeparado`,
+  `CrearDespachoIndividual`, `ObtenerViajesAbiertosConductor`, `ObtenerInfoViaje`~~ ✅ **Hecho**
+  (Fase C). La "finalización del lote" (`ProcesarLoteCompleto`) es orquestación in-memory
+  (recorre conductores y llama a los creadores ya extraídos); no hay más SQL que mover.
 - ~~**LiquidacionesPendientes**~~ ✅ **Hecho** (Fase C): `ObtenerDetalleLiquidacion`,
   `AprobarConAjustes`, `CorregirAjustesAprobada` y las consultas SQL de
   `GarantizarPdfArchivadoOV` extraídas al service. Sólo queda en el code-behind la
@@ -112,13 +114,14 @@ Pendientes por página:
 ## 6. Próximos pasos sugeridos (orden propuesto)
 
 1. Mover modelos anidados a `WebSGV/Models/` (habilita casi todo lo de la sección 4).
-   Empezado: `GastoFinanciero`/`IngresoAdicionalData`/`GastoAdicionalData` →
-   `WebSGV.Models.Conductor` (DashboardConductor). Falta mover los de las demás páginas
-   (incl. las copias propias de `AgregarOrdenViaje`, cuyo `GastoFinanciero` difiere por la
-   fecha y **no** debe fusionarse sin cuidado).
+   Hecho: `WebSGV.Models.Conductor` (DashboardConductor), `WebSGV.Models.Liquidaciones`
+   (DetalleLiquidacion y sus ítems) y `WebSGV.Models.Despachos` (LoteDespachos/
+   DocumentacionBase/ConductorLote/ViajeEnProgreso). Falta mover los de las páginas aún
+   pendientes (incl. las copias propias de `AgregarOrdenViaje`, cuyo `GastoFinanciero`
+   difiere por la fecha y **no** debe fusionarse sin cuidado).
 2. Pase de transacciones de escritura, empezando por las de **mayor valor de dinero**:
    ~~DashboardConductor (envío liquidación)~~ ✅ → ~~LiquidacionesPendientes (AprobarConAjustes/
-   Corregir/ObtenerDetalle)~~ ✅ → RegistroDespacho (creación de lote).
+   Corregir/ObtenerDetalle)~~ ✅ → ~~RegistroDespacho (creación de lote)~~ ✅.
 3. Transacciones restantes: BuscarOrdenViaje, AgregarOrdenViaje, ListaDespachos, Facturas.
 4. ReportesOrdenesViaje.
 5. Logging (Serilog) y dedup cosmético.

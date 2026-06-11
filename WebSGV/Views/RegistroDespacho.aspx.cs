@@ -10,6 +10,7 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Models.Despachos;
 using WebSGV.Services.Despachos;
 
 namespace WebSGV.Views
@@ -17,100 +18,8 @@ namespace WebSGV.Views
     public partial class RegistroDespacho : PaginaBase
     {
 
-        #region Clases Auxiliares
-
-        [Serializable]
-        public class LoteDespachos
-        {
-            public string FechaProgramacion { get; set; }
-            public int IdCliente { get; set; }
-            public string NombreCliente { get; set; }
-            public string NumeroPedido { get; set; }
-            public string TipoOperacion { get; set; }
-            public bool EsInternacional { get; set; }
-            public string PlantaOperacion { get; set; }
-
-            // Documentación base
-            public DocumentacionBase Documentacion { get; set; }
-
-            // Lista de conductores
-            public List<ConductorLote> Conductores { get; set; }
-
-            public DateTime FechaCreacion { get; set; }
-            public string UsuarioCreacion { get; set; }
-
-            public LoteDespachos()
-            {
-                Conductores = new List<ConductorLote>();
-                Documentacion = new DocumentacionBase();
-                FechaCreacion = DateTime.Now;
-            }
-
-            public int CantidadConductores => Conductores?.Count ?? 0;
-        }
-
-        [Serializable]
-        public class DocumentacionBase
-        {
-            // Factura
-            public string NumeroFactura { get; set; }
-            public DateTime? FechaEmisionFactura { get; set; }
-            public decimal? ValorTotalFactura { get; set; }
-
-            // CPIC
-            public string NumeroCPIC { get; set; }
-            public DateTime? FechaEmisionCPIC { get; set; }
-            public decimal? ValorFlete { get; set; }
-        }
-
-        [Serializable]
-        public class ConductorLote
-        {
-            public int IdConductor { get; set; }
-            public string NombreConductor { get; set; }
-            public int IdTracto { get; set; }
-            public string PlacaTracto { get; set; }
-            public int IdCarreta { get; set; }
-            public string PlacaCarreta { get; set; }
-
-            // Guías específicas del conductor
-            public string GuiaRemitente { get; set; }
-            public string GuiaTransportista { get; set; }
-
-            // Información de viaje
-            public int? IdViajeProgreso { get; set; }
-            public string NumeroViajeProgreso { get; set; }
-            public string EstadoViaje { get; set; }
-
-            // Control
-            public DateTime FechaAgregado { get; set; }
-            public int IdDespachoGenerado { get; set; }
-
-            public ConductorLote()
-            {
-                FechaAgregado = DateTime.Now;
-            }
-        }
-
-        private class ViajeEnProgreso
-        {
-            public int IdViajeProgreso { get; set; }
-            public string NumeroViajeProgreso { get; set; }
-            public DateTime FechaInicio { get; set; }
-            public DateTime? FechaCierre { get; set; }
-            public int CantidadDespachos { get; set; }
-            public bool? EsInternacional { get; set; }
-            public string DescripcionViaje { get; set; }
-            public string EstadoViaje { get; set; }
-            public string Display => $"{NumeroViajeProgreso} - {FechaInicio:dd/MM} ({CantidadDespachos} despachos)";
-
-            // MAJ-001: Propiedad calculada para tipo de viaje descriptivo
-            public string TipoViaje => EsInternacional.HasValue
-                ? (EsInternacional.Value ? "Internacional" : "Nacional")
-                : DescripcionViaje ?? "Por determinar";
-        }
-
-        #endregion
+        // Los modelos LoteDespachos, DocumentacionBase, ConductorLote y ViajeEnProgreso
+        // se movieron a WebSGV.Models.Despachos (los recibe/devuelve RegistroDespachoService).
 
         #region Propiedades para Manejo de Estado
 
@@ -991,49 +900,7 @@ namespace WebSGV.Views
         }
 
         private int? CrearDocumentoBaseSeparado(string tipo, LoteDespachos lote, int? idFactura = null)
-        {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand())
-                {
-                    cmd.Connection = conn;
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.CommandTimeout = 120;
-
-                    SqlParameter pId;
-
-                    if (tipo == "FACTURA")
-                    {
-                        cmd.CommandText = "sp_CrearFactura";
-                        cmd.Parameters.AddWithValue("@numeroFactura", lote.Documentacion.NumeroFactura);
-                        cmd.Parameters.AddWithValue("@valorTotal", lote.Documentacion.ValorTotalFactura ?? 0);
-                        cmd.Parameters.AddWithValue("@fechaEmision", (lote.Documentacion.FechaEmisionFactura ?? FechaHelper.Ahora()).Date);
-                        cmd.Parameters.AddWithValue("@numeroPedido", (object)lote.NumeroPedido ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@idCliente", lote.IdCliente);
-                        pId = cmd.Parameters.Add("@idFactura", SqlDbType.Int);
-                    }
-                    else if (tipo == "CPIC")
-                    {
-                        cmd.CommandText = "sp_CrearCPIC";
-                        cmd.Parameters.AddWithValue("@numeroCPIC", lote.Documentacion.NumeroCPIC);
-                        cmd.Parameters.AddWithValue("@idFactura", (object)idFactura ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@valorTotalFlete", lote.Documentacion.ValorFlete ?? 0);
-                        cmd.Parameters.AddWithValue("@fechaEmision", (lote.Documentacion.FechaEmisionCPIC ?? FechaHelper.Ahora()).Date);
-                        pId = cmd.Parameters.Add("@idCPIC", SqlDbType.Int);
-                    }
-                    else
-                    {
-                        return null;
-                    }
-
-                    pId.Direction = ParameterDirection.Output;
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-
-                    return pId.Value != DBNull.Value ? Convert.ToInt32(pId.Value) : (int?)null;
-                }
-            }
-        }
+            => RegistroDespachoService.CrearDocumentoBaseSeparado(tipo, lote, idFactura);
 
 
         private bool ValidarDocumentosDuplicados(out string mensajeError)
@@ -1064,116 +931,17 @@ namespace WebSGV.Views
         }
 
         private int CrearDespachoIndividual(LoteDespachos lote, ConductorLote conductor, int? idFactura, int? idCPIC)
-        {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_CrearDespacho", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.CommandTimeout = 120;
-
-                    DateTime fechaCreacion = FechaHelper.Ahora();
-                    string descripcionViaje = conductor.IdViajeProgreso.HasValue ? null
-                        : $"Viaje {(lote.EsInternacional ? "Internacional" : "Nacional")} - {lote.TipoOperacion}";
-
-                    cmd.Parameters.AddWithValue("@idConductor", conductor.IdConductor);
-                    cmd.Parameters.AddWithValue("@idTracto", conductor.IdTracto);
-                    cmd.Parameters.AddWithValue("@idCarreta", conductor.IdCarreta);
-                    cmd.Parameters.AddWithValue("@idCliente", lote.IdCliente);
-                    cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(lote.FechaProgramacion).Date);
-                    cmd.Parameters.AddWithValue("@horaDespacho", fechaCreacion.TimeOfDay);
-                    cmd.Parameters.AddWithValue("@fechaCreacion", fechaCreacion);
-                    cmd.Parameters.AddWithValue("@lugarOperacion", lote.PlantaOperacion);
-                    cmd.Parameters.AddWithValue("@tipoOperacion", lote.TipoOperacion);
-                    cmd.Parameters.AddWithValue("@numeroPedido", (object)lote.NumeroPedido ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@idFactura", (object)idFactura ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@idCPIC", (object)idCPIC ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@guiaRemitente", string.IsNullOrWhiteSpace(conductor.GuiaRemitente) ? (object)DBNull.Value : conductor.GuiaRemitente.Trim());
-                    cmd.Parameters.AddWithValue("@guiaTransportista", string.IsNullOrWhiteSpace(conductor.GuiaTransportista) ? (object)DBNull.Value : conductor.GuiaTransportista.Trim());
-                    cmd.Parameters.AddWithValue("@esInternacional", lote.EsInternacional);
-                    cmd.Parameters.AddWithValue("@usuarioCreacion", lote.UsuarioCreacion);
-                    cmd.Parameters.AddWithValue("@idViajeProgreso", (object)conductor.IdViajeProgreso ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@descripcionViaje", (object)descripcionViaje ?? DBNull.Value);
-
-                    SqlParameter pIdDespacho = cmd.Parameters.Add("@idDespacho", SqlDbType.Int);
-                    pIdDespacho.Direction = ParameterDirection.Output;
-
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-
-                    return Convert.ToInt32(pIdDespacho.Value);
-                }
-            }
-        }
+            => RegistroDespachoService.CrearDespachoIndividual(lote, conductor, idFactura, idCPIC);
 
         #endregion
 
         #region Métodos para Gestión de Viajes
 
         private List<ViajeEnProgreso> ObtenerViajesAbiertosConductor(int idConductor)
-        {
-            List<ViajeEnProgreso> viajes = new List<ViajeEnProgreso>();
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_ObtenerViajesAbiertosConductor", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                    conn.Open();
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            viajes.Add(new ViajeEnProgreso
-                            {
-                                IdViajeProgreso = Convert.ToInt32(reader["idViajeProgreso"]),
-                                NumeroViajeProgreso = reader["numeroViajeProgreso"].ToString(),
-                                FechaInicio = Convert.ToDateTime(reader["fechaInicio"]),
-                                CantidadDespachos = Convert.ToInt32(reader["cantidadDespachos"]),
-                                EsInternacional = reader["esInternacional"] as bool?,
-                                DescripcionViaje = reader["descripcionViaje"]?.ToString(),
-                                EstadoViaje = reader["estadoViaje"].ToString()
-                            });
-                        }
-                    }
-                }
-            }
-
-            return viajes;
-        }
+            => RegistroDespachoService.ObtenerViajesAbiertosConductor(idConductor);
 
         private ViajeEnProgreso ObtenerInfoViaje(int idViajeProgreso)
-        {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_ObtenerInfoViaje", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
-                    conn.Open();
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            return new ViajeEnProgreso
-                            {
-                                IdViajeProgreso = Convert.ToInt32(reader["idViajeProgreso"]),
-                                NumeroViajeProgreso = reader["numeroViajeProgreso"].ToString(),
-                                FechaInicio = Convert.ToDateTime(reader["fechaInicio"]),
-                                CantidadDespachos = Convert.ToInt32(reader["cantidadDespachos"]),
-                                EsInternacional = reader["esInternacional"] as bool?,
-                                DescripcionViaje = reader["descripcionViaje"]?.ToString(),
-                                EstadoViaje = reader["estadoViaje"].ToString()
-                            };
-                        }
-                    }
-                }
-            }
-            return null;
-        }
+            => RegistroDespachoService.ObtenerInfoViaje(idViajeProgreso);
 
         private int CrearNuevoViajeProgreso(int idConductor, string descripcion = null)
         {

@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using WebSGV.Helpers;
+using WebSGV.Models.Despachos;
 
 namespace WebSGV.Services.Despachos
 {
@@ -11,11 +13,11 @@ namespace WebSGV.Services.Despachos
     /// la sesión, la lectura de Request.Form y la orquestación permanecen en el
     /// code-behind; este servicio sólo ejecuta el SQL. No se modifica ningún SP.
     ///
-    /// Nota: los creadores que reciben los modelos anidados de la página
-    /// (<c>LoteDespachos</c>/<c>ConductorLote</c>): <c>CrearDocumentoBaseSeparado</c>,
+    /// Los creadores que reciben los modelos (<c>LoteDespachos</c>/<c>ConductorLote</c>,
+    /// movidos a <c>WebSGV.Models.Despachos</c>) ya viven aquí: <c>CrearDocumentoBaseSeparado</c>,
     /// <c>CrearDespachoIndividual</c>, <c>ObtenerViajesAbiertosConductor</c> y
-    /// <c>ObtenerInfoViaje</c> siguen en el code-behind a la espera de un pase que mueva
-    /// esos modelos fuera de la página.
+    /// <c>ObtenerInfoViaje</c>. La orquestación del lote (recorrer conductores, auditoría,
+    /// limpieza de UI, Session) permanece en el code-behind.
     /// </summary>
     public static class RegistroDespachoService
     {
@@ -103,6 +105,170 @@ namespace WebSGV.Services.Despachos
                     CpicExiste = pCpicExiste.Value != DBNull.Value && (bool)pCpicExiste.Value
                 };
             }
+        }
+
+        /// <summary>
+        /// Crea el documento base (factura o CPIC) vía <c>sp_CrearFactura</c>/<c>sp_CrearCPIC</c>
+        /// (parámetro de salida) y devuelve su id. SQL movido verbatim; <c>tipo</c> distinto de
+        /// FACTURA/CPIC devuelve <c>null</c>.
+        /// </summary>
+        public static int? CrearDocumentoBaseSeparado(string tipo, LoteDespachos lote, int? idFactura = null)
+        {
+            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand())
+                {
+                    cmd.Connection = conn;
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandTimeout = 120;
+
+                    SqlParameter pId;
+
+                    if (tipo == "FACTURA")
+                    {
+                        cmd.CommandText = "sp_CrearFactura";
+                        cmd.Parameters.AddWithValue("@numeroFactura", lote.Documentacion.NumeroFactura);
+                        cmd.Parameters.AddWithValue("@valorTotal", lote.Documentacion.ValorTotalFactura ?? 0);
+                        cmd.Parameters.AddWithValue("@fechaEmision", (lote.Documentacion.FechaEmisionFactura ?? FechaHelper.Ahora()).Date);
+                        cmd.Parameters.AddWithValue("@numeroPedido", (object)lote.NumeroPedido ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@idCliente", lote.IdCliente);
+                        pId = cmd.Parameters.Add("@idFactura", SqlDbType.Int);
+                    }
+                    else if (tipo == "CPIC")
+                    {
+                        cmd.CommandText = "sp_CrearCPIC";
+                        cmd.Parameters.AddWithValue("@numeroCPIC", lote.Documentacion.NumeroCPIC);
+                        cmd.Parameters.AddWithValue("@idFactura", (object)idFactura ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@valorTotalFlete", lote.Documentacion.ValorFlete ?? 0);
+                        cmd.Parameters.AddWithValue("@fechaEmision", (lote.Documentacion.FechaEmisionCPIC ?? FechaHelper.Ahora()).Date);
+                        pId = cmd.Parameters.Add("@idCPIC", SqlDbType.Int);
+                    }
+                    else
+                    {
+                        return null;
+                    }
+
+                    pId.Direction = ParameterDirection.Output;
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+
+                    return pId.Value != DBNull.Value ? Convert.ToInt32(pId.Value) : (int?)null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Crea un despacho individual del lote para un conductor vía <c>sp_CrearDespacho</c>
+        /// (parámetro de salida) y devuelve su id. SQL movido verbatim.
+        /// </summary>
+        public static int CrearDespachoIndividual(LoteDespachos lote, ConductorLote conductor, int? idFactura, int? idCPIC)
+        {
+            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand("sp_CrearDespacho", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandTimeout = 120;
+
+                    DateTime fechaCreacion = FechaHelper.Ahora();
+                    string descripcionViaje = conductor.IdViajeProgreso.HasValue ? null
+                        : $"Viaje {(lote.EsInternacional ? "Internacional" : "Nacional")} - {lote.TipoOperacion}";
+
+                    cmd.Parameters.AddWithValue("@idConductor", conductor.IdConductor);
+                    cmd.Parameters.AddWithValue("@idTracto", conductor.IdTracto);
+                    cmd.Parameters.AddWithValue("@idCarreta", conductor.IdCarreta);
+                    cmd.Parameters.AddWithValue("@idCliente", lote.IdCliente);
+                    cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(lote.FechaProgramacion).Date);
+                    cmd.Parameters.AddWithValue("@horaDespacho", fechaCreacion.TimeOfDay);
+                    cmd.Parameters.AddWithValue("@fechaCreacion", fechaCreacion);
+                    cmd.Parameters.AddWithValue("@lugarOperacion", lote.PlantaOperacion);
+                    cmd.Parameters.AddWithValue("@tipoOperacion", lote.TipoOperacion);
+                    cmd.Parameters.AddWithValue("@numeroPedido", (object)lote.NumeroPedido ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@idFactura", (object)idFactura ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@idCPIC", (object)idCPIC ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@guiaRemitente", string.IsNullOrWhiteSpace(conductor.GuiaRemitente) ? (object)DBNull.Value : conductor.GuiaRemitente.Trim());
+                    cmd.Parameters.AddWithValue("@guiaTransportista", string.IsNullOrWhiteSpace(conductor.GuiaTransportista) ? (object)DBNull.Value : conductor.GuiaTransportista.Trim());
+                    cmd.Parameters.AddWithValue("@esInternacional", lote.EsInternacional);
+                    cmd.Parameters.AddWithValue("@usuarioCreacion", lote.UsuarioCreacion);
+                    cmd.Parameters.AddWithValue("@idViajeProgreso", (object)conductor.IdViajeProgreso ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@descripcionViaje", (object)descripcionViaje ?? DBNull.Value);
+
+                    SqlParameter pIdDespacho = cmd.Parameters.Add("@idDespacho", SqlDbType.Int);
+                    pIdDespacho.Direction = ParameterDirection.Output;
+
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+
+                    return Convert.ToInt32(pIdDespacho.Value);
+                }
+            }
+        }
+
+        /// <summary>Viajes en progreso abiertos del conductor (<c>sp_ObtenerViajesAbiertosConductor</c>).</summary>
+        public static List<ViajeEnProgreso> ObtenerViajesAbiertosConductor(int idConductor)
+        {
+            List<ViajeEnProgreso> viajes = new List<ViajeEnProgreso>();
+
+            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand("sp_ObtenerViajesAbiertosConductor", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@idConductor", idConductor);
+                    conn.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            viajes.Add(new ViajeEnProgreso
+                            {
+                                IdViajeProgreso = Convert.ToInt32(reader["idViajeProgreso"]),
+                                NumeroViajeProgreso = reader["numeroViajeProgreso"].ToString(),
+                                FechaInicio = Convert.ToDateTime(reader["fechaInicio"]),
+                                CantidadDespachos = Convert.ToInt32(reader["cantidadDespachos"]),
+                                EsInternacional = reader["esInternacional"] as bool?,
+                                DescripcionViaje = reader["descripcionViaje"]?.ToString(),
+                                EstadoViaje = reader["estadoViaje"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return viajes;
+        }
+
+        /// <summary>Información de un viaje en progreso por id (<c>sp_ObtenerInfoViaje</c>); <c>null</c> si no existe.</summary>
+        public static ViajeEnProgreso ObtenerInfoViaje(int idViajeProgreso)
+        {
+            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand("sp_ObtenerInfoViaje", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
+                    conn.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            return new ViajeEnProgreso
+                            {
+                                IdViajeProgreso = Convert.ToInt32(reader["idViajeProgreso"]),
+                                NumeroViajeProgreso = reader["numeroViajeProgreso"].ToString(),
+                                FechaInicio = Convert.ToDateTime(reader["fechaInicio"]),
+                                CantidadDespachos = Convert.ToInt32(reader["cantidadDespachos"]),
+                                EsInternacional = reader["esInternacional"] as bool?,
+                                DescripcionViaje = reader["descripcionViaje"]?.ToString(),
+                                EstadoViaje = reader["estadoViaje"].ToString()
+                            };
+                        }
+                    }
+                }
+            }
+            return null;
         }
     }
 }
