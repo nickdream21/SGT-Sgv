@@ -59,7 +59,8 @@ formato de factura, etc.).
 ### Fase C — Transacciones de escritura (modelos a `Models/` + DTO de entrada)
 | Commit | Página | Service / Modelos | Qué se extrajo |
 |---|---|---|---|
-| _(este)_ | DashboardConductor | `Conductor/LiquidacionConductorService` + `Models/Conductor/LiquidacionConductorModels` | **Transacción completa de envío de liquidación** (`btnEnviarLiquidacion_Click`): orden (insertar/actualizar re-liquidación), ingresos/egresos principales, ingresos/gastos adicionales, descuentos/reintegros, gastos detallados (peaje/reparación/hospedaje/combustible) y cierre de viajes en progreso — todos los `sp_DC_*` movidos verbatim dentro de una única transacción. Los modelos `GastoFinanciero`, `IngresoAdicionalData`, `GastoAdicionalData` se movieron a `WebSGV.Models.Conductor`; el code-behind arma un `LiquidacionConductorInput` (parseo de `Request.Form`/hidden fields/JSON) y conserva sesión, validación, ownership, auditoría, notificación, redirect y el `try/catch` que muestra el mensaje. |
+| `29b40e3` | DashboardConductor | `Conductor/LiquidacionConductorService` + `Models/Conductor/LiquidacionConductorModels` | **Transacción completa de envío de liquidación** (`btnEnviarLiquidacion_Click`): orden (insertar/actualizar re-liquidación), ingresos/egresos principales, ingresos/gastos adicionales, descuentos/reintegros, gastos detallados (peaje/reparación/hospedaje/combustible) y cierre de viajes en progreso — todos los `sp_DC_*` movidos verbatim dentro de una única transacción. Los modelos `GastoFinanciero`, `IngresoAdicionalData`, `GastoAdicionalData` se movieron a `WebSGV.Models.Conductor`; el code-behind arma un `LiquidacionConductorInput` (parseo de `Request.Form`/hidden fields/JSON) y conserva sesión, validación, ownership, auditoría, notificación, redirect y el `try/catch` que muestra el mensaje. |
+| _(este)_ | LiquidacionesPendientes | `Liquidaciones/LiquidacionesPendientesService.ObtenerDetalleLiquidacion` + `Models/Liquidaciones/DetalleLiquidacionModels` | **Armador de DTO `ObtenerDetalleLiquidacion`** (sólo lectura): cabecera + ingresos/egresos principales y desglosados + ítems detallados (peajes/reparaciones/hospedaje/combustible) + adicionales + descuentos/reintegros, sobre una sola conexión con varios readers — SQL movido verbatim. Los DTO `DetalleLiquidacion`/`DetallePeajeItem`/`DetalleGenericoItem`/`ItemAdicional` se movieron a `WebSGV.Models.Liquidaciones` (los consumen también los services de PDF/Firma por reflexión/`var`). El `[WebMethod]` del code-behind conserva la validación de sesión y delega. |
 
 > **Pendiente de validación en runtime:** toca dinero y no hay pruebas de BD. Verificado
 > con MSBuild limpio + 177 tests; falta una corrida real (envío y re-liquidación) antes
@@ -83,9 +84,9 @@ Pendientes por página:
 - **RegistroDespacho** — creadores que reciben modelos: `CrearDocumentoBaseSeparado`,
   `CrearDespachoIndividual`, `ObtenerViajesAbiertosConductor`, `ObtenerInfoViaje` + la
   transacción de finalización del lote.
-- **LiquidacionesPendientes** — `ObtenerDetalleLiquidacion` (armador de DTO con múltiples
-  readers), `AprobarConAjustes` y `CorregirAjustesAprobada` (transacciones crudas con
-  PDF/Firma), `GarantizarPdfArchivadoOV`, `ObtenerUrlPdfOrdenViaje`.
+- **LiquidacionesPendientes** — ~~`ObtenerDetalleLiquidacion` (armador de DTO con múltiples
+  readers)~~ ✅ **Hecho** (Fase C). Quedan `AprobarConAjustes` y `CorregirAjustesAprobada`
+  (transacciones crudas con PDF/Firma), `GarantizarPdfArchivadoOV`, `ObtenerUrlPdfOrdenViaje`.
 - **BuscarOrdenViaje** — transacción `GuardarCambios` (edición de la orden).
 - **ListaDespachos** — lecturas con DTO anidados (viajes/lotes), `CargarDropDownListSP`,
   transacción `GuardarCambiosLote`.
