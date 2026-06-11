@@ -12,8 +12,10 @@ Sacar lógica de negocio y acceso a datos de los code-behind de Web Forms hacia 
 unitarias y aísla el SQL.
 
 **Fuera de alcance acordado:** todo lo de **grifo/combustible** (Abastecimiento,
-DashboardGrifo, etc.) y **operadores/maquinaria**. También quedan fuera los reportes
-generales (`Reportes.aspx`).
+DashboardGrifo, etc.) y **operadores/maquinaria**.
+
+> **Nota (2026-06-11):** a pedido del usuario se incorporó `Reportes.aspx` (4.920 líneas,
+> antes fuera de alcance). Todo su SQL crudo se extrajo a `ReportesService` (ver Fase D).
 
 ## 2. Mecánica acordada (reglas del refactor)
 
@@ -64,11 +66,23 @@ formato de factura, etc.).
 | `22b4bea` | LiquidacionesPendientes | `Liquidaciones/LiquidacionesPendientesService` (Aprobar/Corregir/PDF) | **Transacciones de aprobación con ajustes y corrección de aprobada** + las dos consultas de archivado de PDF. `AprobarConAjustes` (resuelve nº orden → UPSERT `DescuentosReintegros` → `sp_AprobarLiquidacion`) y `CorregirAjustesAprobada` (UPSERT + registro en `observaciones`) movidas verbatim, devolviendo DTOs de resultado (`ResultadoAprobacionAjustes`/`ResultadoCorreccionAjustes`); los `[WebMethod]` conservan sesión, validación de montos/motivo, el objeto anónimo `{success,message}` (que `AprobarLiquidacionConFirma` consume por `dynamic`), el PDF y la auditoría. `GarantizarPdfArchivadoOV` delega su `SELECT rutaPdfFirmado`/`UPDATE ruta+hash` a `ObtenerRutaPdfArchivado`/`GuardarRutaPdfArchivado`; la orquestación de disco/PDF (HostingEnvironment + `PdfOrdenViajeService`) sigue en el code-behind. |
 | `904cbf2` | RegistroDespacho | `Despachos/RegistroDespachoService` + `Models/Despachos/RegistroDespachoModels` | **Creadores del lote y lectores de viaje**: `CrearDocumentoBaseSeparado` (`sp_CrearFactura`/`sp_CrearCPIC`), `CrearDespachoIndividual` (`sp_CrearDespacho`), `ObtenerViajesAbiertosConductor` y `ObtenerInfoViaje` movidos verbatim (SP con parámetros de salida y readers→DTO). Los modelos `LoteDespachos`/`DocumentacionBase`/`ConductorLote`/`ViajeEnProgreso` se movieron a `WebSGV.Models.Despachos`; el code-behind conserva la orquestación del lote (`ProcesarLoteCompleto`: recorrer conductores, auditoría, limpieza de UI, `Session`) y los métodos quedaron como adaptadores delgados. |
 | `24918c1` | ListaDespachos (1/2) | `Despachos/ListaDespachosService` + `Models/Despachos/ListaDespachosModels` | **Lectores de DTO**: `ObtenerViajesActivos`, `ObtenerDespachosDelViaje`, `ObtenerLotesRegistrados`, `ObtenerLotePorId`, `ObtenerIdsDespachosDeLote`, `ObtenerDespachosDelLote` (filtros como parámetros). Helpers `GetSafeValue`/`LeerDespachoDesdeReader`/`LeerLoteDesdeReader`/`ParsearIdLoteVirtual` movidos al service; modelos `ViajeActivo`/`DespachoViaje`/`DespachoConConductor`/`LoteRegistrado` a `WebSGV.Models.Despachos`. El code-behind lee los controles de filtro y delega. |
-| _(este)_ | ListaDespachos (2/2) | `Despachos/ListaDespachosService.GuardarCambiosLote` | **Transacción de edición de lote**: actualizar despachos + recalcular conductor dominante + gestionar/desvincular factura y CPIC (`sp_LD_*`). El code-behind lee/parsea los controles del formulario de edición y arma un `GuardarCambiosLoteInput`; el service ejecuta la transacción (rollback + re-propagación). |
+| `ca51ded` | ListaDespachos (2/2) | `Despachos/ListaDespachosService.GuardarCambiosLote` | **Transacción de edición de lote**: actualizar despachos + recalcular conductor dominante + gestionar/desvincular factura y CPIC (`sp_LD_*`). El code-behind lee/parsea los controles del formulario de edición y arma un `GuardarCambiosLoteInput`; el service ejecuta la transacción (rollback + re-propagación). |
 
 > **Pendiente de validación en runtime:** toca dinero y no hay pruebas de BD. Verificado
 > con MSBuild limpio + 177 tests; falta una corrida real (envío y re-liquidación) antes
 > de desplegar.
+
+### Fase D — `Reportes.aspx` (incorporada a pedido del usuario)
+Sólo lecturas (SP que rellenan `DataSet`); el code-behind conserva la lectura/parseo de
+filtros, el armado de GridViews, los literales de indicadores y el manejo de errores.
+| Commit | Qué se extrajo |
+|---|---|
+| `ea651f1` | **Lote 1/3**: nuevo `Reportes/ReportesService` con helper `LlenarDataSetSp`; catálogo `ObtenerLugaresAbastecimiento` + `ReportePedido`, `ReporteVehiculosAsignados`, `ReporteConductoresAsignados`, `ReporteBalanceFinanciero`, `ReporteViajesConductor`. |
+| `a467465` | **Lote 2/3**: `ReporteProductosConductor`, `ReporteFinancieroConductor`, `ReporteCombustibleConductor`, `ReporteViajesVehiculo`, `ReporteConsumoCombustibleVehiculo` (conserva tipos/tamaños `SqlDbType`). |
+| `fa14b2f` | **Lote 3/3**: `ReporteProductosMasTransportados`, `ReporteProductosPorCliente`, `ReporteProductosPorDestino`, `ReporteConsumoGeneralCombustible`, `ReporteRendimientoPorRuta`, `ReporteMantenimientoVehiculo`, `ReporteFinancieroBalanceGeneral`, `ReporteRendimientoPorVehiculo`, `ReporteRendimientoPorRutaCombustible`. |
+
+Resultado: `Reportes.aspx.cs` quedó con **0** `SqlConnection`/`SqlCommand`/`SqlDataAdapter`.
+SQL/SP movido verbatim (guardas `!= "0"`/`!= "Todas"` y tipos de parámetro preservados).
 
 ## 4. Lo que queda — "Pase de transacciones y modelos diferidos" ⏳
 
