@@ -11,6 +11,7 @@ using System.Globalization;
 using System.Linq;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Models.Conductor;
 using WebSGV.Services.Common;
 using WebSGV.Services.Conductor;
 using WebSGV.Services.OrdenViaje;
@@ -21,93 +22,8 @@ namespace WebSGV.Views
     {
         #region Clases de Datos
 
-        public class GastoFinanciero
-        {
-            [JsonProperty("categoria")]
-            public string Categoria { get; set; }
-
-            [JsonProperty("id")]
-            public int Id { get; set; }
-
-            [JsonProperty("estacion")]
-            public string Estacion { get; set; }
-
-            [JsonProperty("lugar")]
-            public string Lugar { get; set; }
-
-            [JsonProperty("tipo")]
-            public string Tipo { get; set; }
-
-            [JsonProperty("fecha")]
-            public string FechaString { get; set; }
-
-            public DateTime Fecha
-            {
-                get
-                {
-                    // Intentamos parsear con InvariantCulture (fechas vienen en ISO 8601 desde JS)
-                    if (!string.IsNullOrWhiteSpace(FechaString) &&
-                        DateTime.TryParse(FechaString, CultureInfo.InvariantCulture,
-                            DateTimeStyles.None, out DateTime fecha))
-                        return fecha;
-                    // Fallback a la fecha del servidor:
-                    //   - Peajes no tienen fecha propia (el JS no la incluye en el payload)
-                    //   - Cadenas inválidas en otros gastos: la columna no acepta NULL,
-                    //     por lo que usamos DateTime.Now como valor seguro. El monto
-                    //     ya está validado por ValidarMonto(); el riesgo de manipulación
-                    //     queda reducido a registrar "hoy" como fecha.
-                    return DateTime.Now;
-                }
-            }
-
-            [JsonProperty("comprobante")]
-            public string Comprobante { get; set; }
-
-            [JsonProperty("soles")]
-            public decimal Soles { get; set; }
-
-            [JsonProperty("dolares")]
-            public decimal Dolares { get; set; }
-
-            [JsonProperty("observaciones")]
-            public string Observaciones { get; set; }
-        }
-
-        public class IngresoAdicionalData
-        {
-            [JsonProperty("categoria")]
-            public string Categoria { get; set; }
-
-            [JsonProperty("nombreCategoria")]
-            public string NombreCategoria { get; set; }
-
-            [JsonProperty("descripcion")]
-            public string Descripcion { get; set; }
-
-            [JsonProperty("soles")]
-            public decimal? Soles { get; set; }
-
-            [JsonProperty("dolares")]
-            public decimal? Dolares { get; set; }
-        }
-
-        public class GastoAdicionalData
-        {
-            [JsonProperty("categoria")]
-            public string Categoria { get; set; }
-
-            [JsonProperty("nombreCategoria")]
-            public string NombreCategoria { get; set; }
-
-            [JsonProperty("descripcion")]
-            public string Descripcion { get; set; }
-
-            [JsonProperty("soles")]
-            public decimal? Soles { get; set; }
-
-            [JsonProperty("dolares")]
-            public decimal? Dolares { get; set; }
-        }
+        // Los modelos GastoFinanciero, IngresoAdicionalData y GastoAdicionalData se
+        // movieron a WebSGV.Models.Conductor (compartidos con LiquidacionConductorService).
 
         public class ViajeActivo
         {
@@ -1028,90 +944,28 @@ namespace WebSGV.Views
 
                 Log($"Datos del viaje: Conductor={datosViaje.IdConductor}, Tracto={datosViaje.IdTracto}, Carreta={datosViaje.IdCarreta}");
 
+                // Armar el DTO de entrada leyendo Request.Form/hidden fields (el parseo
+                // queda en el code-behind; el Service sólo ejecuta el SQL/SPs).
+                LiquidacionConductorInput input = ConstruirInputLiquidacion(
+                    esReliquidacion, numeroOrdenViaje, fechaSalida, fechaLlegada,
+                    horaSalida, horaLlegada, observaciones, datosViaje,
+                    idViajeProgreso, idsViajesActivos);
+
                 Log("Iniciando transacción de base de datos...");
                 bool transaccionExitosa = false;
                 int idOrdenGuardada = 0;
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                try
                 {
-                    conn.Open();
-                    Log("Conexión abierta");
-
-                    using (SqlTransaction transaction = conn.BeginTransaction())
-                    {
-                        try
-                        {
-                            Log("Transacción iniciada");
-
-                            if (esReliquidacion)
-                            {
-                                Log("Eliminando datos financieros anteriores de la orden rechazada...");
-                                EliminarDatosFinancierosOrdenExistente(conn, transaction, numeroOrdenViaje);
-
-                                Log("Actualizando orden de viaje existente...");
-                                ActualizarOrdenViajeConductor(conn, transaction, numeroOrdenViaje,
-                                    fechaSalida, fechaLlegada, horaSalida, horaLlegada, observaciones);
-
-                                using (SqlCommand cmdId = new SqlCommand(
-                                    "SELECT idOrdenViaje FROM OrdenViaje WHERE numeroOrdenViaje = @n", conn, transaction))
-                                {
-                                    cmdId.Parameters.AddWithValue("@n", numeroOrdenViaje);
-                                    object obj = cmdId.ExecuteScalar();
-                                    idOrdenGuardada = (obj != null && obj != DBNull.Value) ? Convert.ToInt32(obj) : 0;
-                                }
-                            }
-                            else
-                            {
-                                Log("Insertando orden de viaje con estado PENDIENTE...");
-                                int idOrdenViaje = InsertarOrdenViajeConductor(
-                                    conn, transaction, numeroOrdenViaje,
-                                    fechaSalida, fechaLlegada, horaSalida, horaLlegada,
-                                    datosViaje.IdConductor, datosViaje.IdTracto, datosViaje.IdCarreta,
-                                    observaciones, idViajeProgreso
-                                );
-                                idOrdenGuardada = idOrdenViaje;
-                                Log($"Orden de viaje insertada: {idOrdenViaje}");
-                            }
-
-                            Log("Insertando datos financieros...");
-                            InsertarDatosFinancierosCompletos(conn, transaction, numeroOrdenViaje);
-
-                            Log("Insertando descuentos y reintegros...");
-                            InsertarDescuentosReintegros(conn, transaction, numeroOrdenViaje);
-
-                            Log("Procesando datos detallados de modales...");
-                            var gastosFinancieros = ObtenerGastosFinancierosDeSession();
-                            if (gastosFinancieros.Count > 0)
-                            {
-                                InsertarGastosFinancierosDetallados(conn, transaction, numeroOrdenViaje, gastosFinancieros);
-                            }
-
-                            Log($"⚡ Cerrando {idsViajesActivos.Count} viaje(s) en progreso: {string.Join(", ", idsViajesActivos)}");
-                            CerrarViajesProgreso(conn, transaction, idsViajesActivos, numeroOrdenViaje);
-
-                            Log("Haciendo commit de toda la transacción...");
-                            transaction.Commit();
-                            transaccionExitosa = true;
-                            Log("✅ Commit exitoso");
-                        }
-                        catch (Exception ex)
-                        {
-                            Log($"❌ ERROR EN TRANSACCIÓN: {ex.Message}");
-                            Log($"   StackTrace: {ex.StackTrace}");
-
-                            try
-                            {
-                                transaction.Rollback();
-                                Log("⚠️ Rollback ejecutado");
-                            }
-                            catch (Exception rollbackEx)
-                            {
-                                Log($"⚠️ Error en Rollback (ignorado): {rollbackEx.Message}");
-                            }
-
-                            MostrarMensaje($"Error al enviar la liquidación: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
-                        }
-                    }
+                    idOrdenGuardada = LiquidacionConductorService.EnviarLiquidacion(input);
+                    transaccionExitosa = true;
+                    Log("✅ Commit exitoso");
+                }
+                catch (Exception ex)
+                {
+                    Log($"❌ ERROR EN TRANSACCIÓN: {ex.Message}");
+                    Log($"   StackTrace: {ex.StackTrace}");
+                    MostrarMensaje($"Error al enviar la liquidación: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
                 }
 
                 // Post-commit: mostrar resultado y programar redirect (fuera del using de la transacción)
@@ -1156,167 +1010,22 @@ namespace WebSGV.Views
 
         #region Métodos de Inserción en Base de Datos
 
-        private void EliminarDatosFinancierosOrdenExistente(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje)
-        {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_EliminarDatosFinancierosOrden", conn, transaction))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.ExecuteNonQuery();
-            }
-
-            Log($"✅ Datos financieros eliminados para re-liquidación: {numeroOrdenViaje}");
-        }
-
-        private void ActualizarOrdenViajeConductor(
-            SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje,
-            DateTime fechaSalida, DateTime fechaLlegada, string horaSalida, string horaLlegada,
-            string observaciones)
-        {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_ActualizarOrdenViajeConductor", conn, transaction))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@fechaSalida", FechaSeguraSQL(fechaSalida));
-                cmd.Parameters.AddWithValue("@horaSalida", string.IsNullOrEmpty(horaSalida) ? (object)DBNull.Value : horaSalida);
-                cmd.Parameters.AddWithValue("@fechaLlegada", FechaSeguraSQL(fechaLlegada));
-                cmd.Parameters.AddWithValue("@horaLlegada", string.IsNullOrEmpty(horaLlegada) ? (object)DBNull.Value : horaLlegada);
-                cmd.Parameters.AddWithValue("@observaciones", string.IsNullOrEmpty(observaciones) ? (object)DBNull.Value : observaciones);
-                cmd.Parameters.AddWithValue("@idUsuarioRegistro", IdUsuarioActual > 0 ? (object)IdUsuarioActual : DBNull.Value);
-                cmd.ExecuteNonQuery();
-            }
-
-            Log($"✅ OrdenViaje actualizada para re-liquidación: {numeroOrdenViaje}");
-        }
-
-        private int InsertarOrdenViajeConductor(
-            SqlConnection conn,
-            SqlTransaction transaction,
-            string numeroOrdenViaje,
-            DateTime fechaSalida,
-            DateTime fechaLlegada,
-            string horaSalida,
-            string horaLlegada,
-            int idConductor,
-            int idTracto,
-            int idCarreta,
-            string observaciones,
-            int idViajeProgreso
-        )
-        {
-            try
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarOrdenViajeConductor", conn, transaction))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                    cmd.Parameters.AddWithValue("@fechaSalida", FechaSeguraSQL(fechaSalida));
-                    cmd.Parameters.AddWithValue("@horaSalida", string.IsNullOrEmpty(horaSalida) ? (object)DBNull.Value : horaSalida);
-                    cmd.Parameters.AddWithValue("@fechaLlegada", FechaSeguraSQL(fechaLlegada));
-                    cmd.Parameters.AddWithValue("@horaLlegada", string.IsNullOrEmpty(horaLlegada) ? (object)DBNull.Value : horaLlegada);
-                    cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                    cmd.Parameters.AddWithValue("@idTracto", idTracto);
-                    cmd.Parameters.AddWithValue("@idCarreta", idCarreta);
-                    cmd.Parameters.AddWithValue("@observaciones", string.IsNullOrEmpty(observaciones) ? (object)DBNull.Value : observaciones);
-                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
-                    cmd.Parameters.AddWithValue("@idUsuarioRegistro", IdUsuarioActual > 0 ? (object)IdUsuarioActual : DBNull.Value);
-
-                    object result = cmd.ExecuteScalar();
-
-                    if (result != null && result != DBNull.Value)
-                    {
-                        int idOrdenViaje = Convert.ToInt32(result);
-                        Log($"✅ OrdenViaje creada por CONDUCTOR: ID={idOrdenViaje}");
-                        return idOrdenViaje;
-                    }
-                    else
-                    {
-                        throw new Exception("No se pudo insertar la orden de viaje");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"❌ Error insertando orden: {ex.Message}");
-                throw;
-            }
-        }
-
-        private void InsertarDatosFinancierosCompletos(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje)
-        {
-            try
-            {
-                InsertarIngresosPrincipales(conn, transaction, numeroOrdenViaje);
-                InsertarGastosPrincipales(conn, transaction, numeroOrdenViaje);
-                InsertarIngresosAdicionales(conn, transaction, numeroOrdenViaje);
-                InsertarGastosAdicionales(conn, transaction, numeroOrdenViaje);
-            }
-            catch (Exception ex)
-            {
-                Log($"❌ ERROR en datos financieros: {ex.Message}");
-                throw;
-            }
-        }
-
-        private void InsertarIngresosPrincipales(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje)
-        {
-            decimal despachoSoles     = ParseMonto(Request.Form["despachoSoles"]);
-            decimal despachoDolares   = ParseMonto(Request.Form["despachoDolares"]);
-            decimal prestamoSoles     = ParseMonto(Request.Form["prestamoSoles"]);
-            decimal prestamoDolares   = ParseMonto(Request.Form["prestamoDolares"]);
-            decimal mensualidadSoles  = ParseMonto(Request.Form["mensualidadSoles"]);
-            decimal mensualidadDolares = ParseMonto(Request.Form["mensualidadDolares"]);
-            decimal otrosSoles        = ParseMonto(Request.Form["otrosSoles"]);
-            decimal otrosDolares      = ParseMonto(Request.Form["otrosDolares"]);
-
-            string descDespacho = Request.Form["descDespacho"] ?? "";
-            string descMensualidad = Request.Form["descMensualidad"] ?? "";
-            string descOtros = Request.Form["descOtros"] ?? "";
-            string descPrestamo = Request.Form["descPrestamo"] ?? "";
-
-            if (despachoSoles > 0 || despachoDolares > 0 || prestamoSoles > 0 || prestamoDolares > 0 ||
-                mensualidadSoles > 0 || mensualidadDolares > 0 || otrosSoles > 0 || otrosDolares > 0)
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarIngresos", conn, transaction))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                    cmd.Parameters.AddWithValue("@despachoSoles", despachoSoles);
-                    cmd.Parameters.AddWithValue("@despachoDolares", despachoDolares);
-                    cmd.Parameters.AddWithValue("@prestamoSoles", prestamoSoles);
-                    cmd.Parameters.AddWithValue("@prestamoDolares", prestamoDolares);
-                    cmd.Parameters.AddWithValue("@mensualidadSoles", mensualidadSoles);
-                    cmd.Parameters.AddWithValue("@mensualidadDolares", mensualidadDolares);
-                    cmd.Parameters.AddWithValue("@otrosSoles", otrosSoles);
-                    cmd.Parameters.AddWithValue("@otrosDolares", otrosDolares);
-                    cmd.Parameters.AddWithValue("@descDespacho", string.IsNullOrEmpty(descDespacho) ? (object)DBNull.Value : descDespacho);
-                    cmd.Parameters.AddWithValue("@descMensualidad", string.IsNullOrEmpty(descMensualidad) ? (object)DBNull.Value : descMensualidad);
-                    cmd.Parameters.AddWithValue("@descOtros", string.IsNullOrEmpty(descOtros) ? (object)DBNull.Value : descOtros);
-                    cmd.Parameters.AddWithValue("@descPrestamo", string.IsNullOrEmpty(descPrestamo) ? (object)DBNull.Value : descPrestamo);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        private void InsertarGastosPrincipales(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje)
+        /// <summary>
+        /// Construye el DTO de liquidación leyendo Request.Form y los hidden fields.
+        /// El parseo (montos, descripciones, JSON) permanece en el code-behind; el
+        /// Service (<see cref="LiquidacionConductorService"/>) sólo recibe valores ya
+        /// parseados/validados y ejecuta el SQL/SPs.
+        /// </summary>
+        private LiquidacionConductorInput ConstruirInputLiquidacion(
+            bool esReliquidacion, string numeroOrdenViaje,
+            DateTime fechaSalida, DateTime fechaLlegada,
+            string horaSalida, string horaLlegada, string observaciones,
+            DatosViajeParaLiquidacion datosViaje,
+            int idViajeProgreso, List<int> idsViajesActivos)
         {
             // Peajes simplificados: Nacionales solo en Soles (Perú), Extranjeros solo en Dólares (Ecuador)
-            decimal peajesSoles        = ParseMonto(Request.Form["peajesNacSoles"]);
-            decimal peajesDolares      = ParseMonto(Request.Form["peajesExtDolares"]);
-            decimal alimentacionSoles  = ParseMonto(Request.Form["alimentacionSoles"]);
-            decimal alimentacionDolares = ParseMonto(Request.Form["alimentacionDolares"]);
-            decimal apoyoSeguridadSoles = ParseMonto(Request.Form["apoyoSeguridadSoles"]);
-            decimal apoyoSeguridadDolares = ParseMonto(Request.Form["apoyoSeguridadDolares"]);
-            decimal reparacionesSoles   = ParseMonto(Request.Form["reparacionesSoles"]);
-            decimal reparacionesDolares = ParseMonto(Request.Form["reparacionesDolares"]);
-            decimal movilidadSoles     = ParseMonto(Request.Form["movilidadSoles"]);
-            decimal movilidadDolares   = ParseMonto(Request.Form["movilidadDolares"]);
-            decimal encapadaSoles      = ParseMonto(Request.Form["encapadaSoles"]);
-            decimal encapadaDolares    = ParseMonto(Request.Form["encapadaDolares"]);
-            decimal hospedajeSoles     = ParseMonto(Request.Form["hospedajeSoles"]);
-            decimal hospedajeDolares   = ParseMonto(Request.Form["hospedajeDolares"]);
-            decimal combustibleSoles   = ParseMonto(Request.Form["combustibleSoles"]);
-            decimal combustibleDolares = ParseMonto(Request.Form["combustibleDolares"]);
+            decimal peajesSoles   = ParseMonto(Request.Form["peajesNacSoles"]);
+            decimal peajesDolares = ParseMonto(Request.Form["peajesExtDolares"]);
 
             // Descripción de peajes: combinar nacionales (S/) y extranjeros ($)
             string descPeajesNac = Request.Form["descPeajesNacionales"] ?? "";
@@ -1327,138 +1036,93 @@ namespace WebSGV.Views
             if (peajesDolares > 0)
                 partesPeajes.Add("Ext: $" + peajesDolares.ToString("F2") + (!string.IsNullOrEmpty(descPeajesExt) ? " - " + descPeajesExt : ""));
             string descPeajes = partesPeajes.Count > 0 ? string.Join(" | ", partesPeajes) : "";
-            string descAlimentacion = Request.Form["descAlimentacion"] ?? "";
-            string descApoyoSeguridad = Request.Form["descApoyoSeguridad"] ?? "";
-            string descReparaciones = Request.Form["descReparaciones"] ?? "";
-            string descMovilidad = Request.Form["descMovilidad"] ?? "";
-            string descEncapada = Request.Form["descEncapada"] ?? "";
-            string descHospedaje = Request.Form["descHospedaje"] ?? "";
-            string descCombustible = Request.Form["descCombustible"] ?? "";
 
-            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarEgresos", conn, transaction))
+            return new LiquidacionConductorInput
             {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@peajesSoles", peajesSoles);
-                cmd.Parameters.AddWithValue("@peajesDolares", peajesDolares);
-                cmd.Parameters.AddWithValue("@descPeajes", string.IsNullOrEmpty(descPeajes) ? (object)DBNull.Value : descPeajes);
-                cmd.Parameters.AddWithValue("@alimentacionSoles", alimentacionSoles);
-                cmd.Parameters.AddWithValue("@alimentacionDolares", alimentacionDolares);
-                cmd.Parameters.AddWithValue("@descAlimentacion", string.IsNullOrEmpty(descAlimentacion) ? (object)DBNull.Value : descAlimentacion);
-                cmd.Parameters.AddWithValue("@apoyoSeguridadSoles", apoyoSeguridadSoles);
-                cmd.Parameters.AddWithValue("@apoyoSeguridadDolares", apoyoSeguridadDolares);
-                cmd.Parameters.AddWithValue("@descApoyoSeguridad", string.IsNullOrEmpty(descApoyoSeguridad) ? (object)DBNull.Value : descApoyoSeguridad);
-                cmd.Parameters.AddWithValue("@reparacionesSoles", reparacionesSoles);
-                cmd.Parameters.AddWithValue("@reparacionesDolares", reparacionesDolares);
-                cmd.Parameters.AddWithValue("@descReparaciones", string.IsNullOrEmpty(descReparaciones) ? (object)DBNull.Value : descReparaciones);
-                cmd.Parameters.AddWithValue("@movilidadSoles", movilidadSoles);
-                cmd.Parameters.AddWithValue("@movilidadDolares", movilidadDolares);
-                cmd.Parameters.AddWithValue("@descMovilidad", string.IsNullOrEmpty(descMovilidad) ? (object)DBNull.Value : descMovilidad);
-                cmd.Parameters.AddWithValue("@encapadaSoles", encapadaSoles);
-                cmd.Parameters.AddWithValue("@encapadaDolares", encapadaDolares);
-                cmd.Parameters.AddWithValue("@descEncapada", string.IsNullOrEmpty(descEncapada) ? (object)DBNull.Value : descEncapada);
-                cmd.Parameters.AddWithValue("@hospedajeSoles", hospedajeSoles);
-                cmd.Parameters.AddWithValue("@hospedajeDolares", hospedajeDolares);
-                cmd.Parameters.AddWithValue("@descHospedaje", string.IsNullOrEmpty(descHospedaje) ? (object)DBNull.Value : descHospedaje);
-                cmd.Parameters.AddWithValue("@combustibleSoles", combustibleSoles);
-                cmd.Parameters.AddWithValue("@combustibleDolares", combustibleDolares);
-                cmd.Parameters.AddWithValue("@descCombustible", string.IsNullOrEmpty(descCombustible) ? (object)DBNull.Value : descCombustible);
-                cmd.ExecuteNonQuery();
-            }
+                EsReliquidacion = esReliquidacion,
+                NumeroOrdenViaje = numeroOrdenViaje,
+                FechaSalida = fechaSalida,
+                FechaLlegada = fechaLlegada,
+                HoraSalida = horaSalida,
+                HoraLlegada = horaLlegada,
+                Observaciones = observaciones,
+                IdConductor = datosViaje.IdConductor,
+                IdTracto = datosViaje.IdTracto,
+                IdCarreta = datosViaje.IdCarreta,
+                IdViajeProgreso = idViajeProgreso,
+                IdUsuarioRegistro = IdUsuarioActual,
+                IdConductorActual = IdConductorActual,
+                IdsViajesActivos = idsViajesActivos,
+
+                // Ingresos principales
+                DespachoSoles      = ParseMonto(Request.Form["despachoSoles"]),
+                DespachoDolares    = ParseMonto(Request.Form["despachoDolares"]),
+                PrestamoSoles      = ParseMonto(Request.Form["prestamoSoles"]),
+                PrestamoDolares    = ParseMonto(Request.Form["prestamoDolares"]),
+                MensualidadSoles   = ParseMonto(Request.Form["mensualidadSoles"]),
+                MensualidadDolares = ParseMonto(Request.Form["mensualidadDolares"]),
+                OtrosSoles         = ParseMonto(Request.Form["otrosSoles"]),
+                OtrosDolares       = ParseMonto(Request.Form["otrosDolares"]),
+                DescDespacho       = Request.Form["descDespacho"] ?? "",
+                DescMensualidad    = Request.Form["descMensualidad"] ?? "",
+                DescOtros          = Request.Form["descOtros"] ?? "",
+                DescPrestamo       = Request.Form["descPrestamo"] ?? "",
+
+                // Egresos principales
+                PeajesSoles           = peajesSoles,
+                PeajesDolares         = peajesDolares,
+                DescPeajes            = descPeajes,
+                AlimentacionSoles     = ParseMonto(Request.Form["alimentacionSoles"]),
+                AlimentacionDolares   = ParseMonto(Request.Form["alimentacionDolares"]),
+                DescAlimentacion      = Request.Form["descAlimentacion"] ?? "",
+                ApoyoSeguridadSoles   = ParseMonto(Request.Form["apoyoSeguridadSoles"]),
+                ApoyoSeguridadDolares = ParseMonto(Request.Form["apoyoSeguridadDolares"]),
+                DescApoyoSeguridad    = Request.Form["descApoyoSeguridad"] ?? "",
+                ReparacionesSoles     = ParseMonto(Request.Form["reparacionesSoles"]),
+                ReparacionesDolares   = ParseMonto(Request.Form["reparacionesDolares"]),
+                DescReparaciones      = Request.Form["descReparaciones"] ?? "",
+                MovilidadSoles        = ParseMonto(Request.Form["movilidadSoles"]),
+                MovilidadDolares      = ParseMonto(Request.Form["movilidadDolares"]),
+                DescMovilidad         = Request.Form["descMovilidad"] ?? "",
+                EncapadaSoles         = ParseMonto(Request.Form["encapadaSoles"]),
+                EncapadaDolares       = ParseMonto(Request.Form["encapadaDolares"]),
+                DescEncapada          = Request.Form["descEncapada"] ?? "",
+                HospedajeSoles        = ParseMonto(Request.Form["hospedajeSoles"]),
+                HospedajeDolares      = ParseMonto(Request.Form["hospedajeDolares"]),
+                DescHospedaje         = Request.Form["descHospedaje"] ?? "",
+                CombustibleSoles      = ParseMonto(Request.Form["combustibleSoles"]),
+                CombustibleDolares    = ParseMonto(Request.Form["combustibleDolares"]),
+                DescCombustible       = Request.Form["descCombustible"] ?? "",
+
+                // Descuentos / reintegros
+                DescuentoSoles   = ParseMonto(Request.Form["descuentoSoles"]),
+                DescuentoDolares = ParseMonto(Request.Form["descuentoDolares"]),
+                ReintegroSoles   = ParseMonto(Request.Form["reintegroSoles"]),
+                ReintegroDolares = ParseMonto(Request.Form["reintegroDolares"]),
+
+                // Listas dinámicas / detalladas
+                IngresosAdicionales = DeserializarIngresosAdicionales(),
+                GastosAdicionales   = DeserializarGastosAdicionales(),
+                GastosFinancieros   = ObtenerGastosFinancierosDeSession()
+            };
         }
 
-        private void InsertarIngresosAdicionales(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje)
+        private List<IngresoAdicionalData> DeserializarIngresosAdicionales()
         {
-            try
-            {
-                string ingresosAdicionalesJson = hfIngresosAdicionales.Value ?? "[]";
+            string ingresosAdicionalesJson = hfIngresosAdicionales.Value ?? "[]";
+            if (string.IsNullOrEmpty(ingresosAdicionalesJson) || ingresosAdicionalesJson == "[]")
+                return new List<IngresoAdicionalData>();
 
-                if (string.IsNullOrEmpty(ingresosAdicionalesJson) || ingresosAdicionalesJson == "[]")
-                    return;
-
-                List<IngresoAdicionalData> ingresosAdicionales = JsonConvert.DeserializeObject<List<IngresoAdicionalData>>(ingresosAdicionalesJson) ?? new List<IngresoAdicionalData>();
-
-                foreach (var ingreso in ingresosAdicionales)
-                {
-                    using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarIngresoAdicional", conn, transaction))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                        cmd.Parameters.AddWithValue("@nombreCategoria", ingreso.Categoria ?? ingreso.NombreCategoria ?? "");
-                        cmd.Parameters.AddWithValue("@soles",   ValidarMonto(ingreso.Soles,   "soles de ingreso adicional"));
-                        cmd.Parameters.AddWithValue("@dolares", ValidarMonto(ingreso.Dolares, "dólares de ingreso adicional"));
-                        cmd.Parameters.AddWithValue("@descripcion", ingreso.Descripcion ?? "");
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Error insertando ingresos adicionales: {ex.Message}");
-                throw;
-            }
+            return JsonConvert.DeserializeObject<List<IngresoAdicionalData>>(ingresosAdicionalesJson) ?? new List<IngresoAdicionalData>();
         }
 
-        private void InsertarGastosAdicionales(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje)
+        private List<GastoAdicionalData> DeserializarGastosAdicionales()
         {
-            try
-            {
-                string gastosAdicionalesJson = hfGastosAdicionales.Value ?? "[]";
+            string gastosAdicionalesJson = hfGastosAdicionales.Value ?? "[]";
+            if (string.IsNullOrEmpty(gastosAdicionalesJson) || gastosAdicionalesJson == "[]")
+                return new List<GastoAdicionalData>();
 
-                if (string.IsNullOrEmpty(gastosAdicionalesJson) || gastosAdicionalesJson == "[]")
-                    return;
-
-                List<GastoAdicionalData> gastosAdicionales = JsonConvert.DeserializeObject<List<GastoAdicionalData>>(gastosAdicionalesJson) ?? new List<GastoAdicionalData>();
-
-                foreach (var gasto in gastosAdicionales)
-                {
-                    using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarGastoAdicional", conn, transaction))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                        cmd.Parameters.AddWithValue("@nombreCategoria", gasto.Categoria ?? gasto.NombreCategoria ?? "");
-                        cmd.Parameters.AddWithValue("@soles",   ValidarMonto(gasto.Soles,   "soles de gasto adicional"));
-                        cmd.Parameters.AddWithValue("@dolares", ValidarMonto(gasto.Dolares, "dólares de gasto adicional"));
-                        cmd.Parameters.AddWithValue("@descripcion", gasto.Descripcion ?? "");
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Error insertando gastos adicionales: {ex.Message}");
-                throw;
-            }
-        }
-
-        private void InsertarDescuentosReintegros(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje)
-        {
-            try
-            {
-                decimal descuentoSoles   = ParseMonto(Request.Form["descuentoSoles"]);
-                decimal descuentoDolares = ParseMonto(Request.Form["descuentoDolares"]);
-                decimal reintegroSoles   = ParseMonto(Request.Form["reintegroSoles"]);
-                decimal reintegroDolares = ParseMonto(Request.Form["reintegroDolares"]);
-
-                if (descuentoSoles > 0 || descuentoDolares > 0 || reintegroSoles > 0 || reintegroDolares > 0)
-                {
-                    using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDescuentosReintegros", conn, transaction))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                        cmd.Parameters.AddWithValue("@descuentoSoles", descuentoSoles);
-                        cmd.Parameters.AddWithValue("@descuentoDolares", descuentoDolares);
-                        cmd.Parameters.AddWithValue("@reintegroSoles", reintegroSoles);
-                        cmd.Parameters.AddWithValue("@reintegroDolares", reintegroDolares);
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Error insertando descuentos/reintegros: {ex.Message}");
-                throw;
-            }
+            return JsonConvert.DeserializeObject<List<GastoAdicionalData>>(gastosAdicionalesJson) ?? new List<GastoAdicionalData>();
         }
 
         private List<GastoFinanciero> ObtenerGastosFinancierosDeSession()
@@ -1472,134 +1136,6 @@ namespace WebSGV.Views
             {
                 Log($"Error obteniendo gastos financieros: {ex.Message}");
                 return new List<GastoFinanciero>();
-            }
-        }
-
-        private void InsertarGastosFinancierosDetallados(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, List<GastoFinanciero> gastos)
-        {
-            try
-            {
-                foreach (var gasto in gastos)
-                {
-                    string categoria = gasto.Categoria?.ToLower() ?? "";
-
-                    switch (categoria)
-                    {
-                        case "peajes":
-                            InsertarPeajeDetallado(conn, transaction, numeroOrdenViaje, gasto);
-                            break;
-                        case "reparaciones":
-                            InsertarReparacionDetallada(conn, transaction, numeroOrdenViaje, gasto);
-                            break;
-                        case "hospedaje":
-                            InsertarHospedajeDetallado(conn, transaction, numeroOrdenViaje, gasto);
-                            break;
-                        case "combustible":
-                            InsertarCombustibleDetallado(conn, transaction, numeroOrdenViaje, gasto);
-                            break;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Error insertando gastos detallados: {ex.Message}");
-                throw;
-            }
-        }
-
-        private void InsertarPeajeDetallado(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
-        {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDetallePeaje", conn, transaction))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@estacion", gasto.Estacion ?? gasto.Lugar ?? "");
-                cmd.Parameters.AddWithValue("@fecha", FechaSeguraSQL(gasto.Fecha));
-                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles",   ValidarMonto(gasto.Soles,   "soles de peaje"));
-                cmd.Parameters.AddWithValue("@montoDolares", ValidarMonto(gasto.Dolares, "dólares de peaje"));
-                cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        private void InsertarReparacionDetallada(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
-        {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDetalleReparacion", conn, transaction))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
-                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles",   ValidarMonto(gasto.Soles,   "soles de reparación"));
-                cmd.Parameters.AddWithValue("@montoDolares", ValidarMonto(gasto.Dolares, "dólares de reparación"));
-                cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        private void InsertarHospedajeDetallado(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
-        {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDetalleHospedaje", conn, transaction))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
-                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles",   ValidarMonto(gasto.Soles,   "soles de hospedaje"));
-                cmd.Parameters.AddWithValue("@montoDolares", ValidarMonto(gasto.Dolares, "dólares de hospedaje"));
-                cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        private void InsertarCombustibleDetallado(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
-        {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDetalleCombustible", conn, transaction))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
-                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles",   ValidarMonto(gasto.Soles,   "soles de combustible"));
-                cmd.Parameters.AddWithValue("@montoDolares", ValidarMonto(gasto.Dolares, "dólares de combustible"));
-                cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        private void CerrarViajesProgreso(SqlConnection conn, SqlTransaction transaction, List<int> idsViajes, string numeroOrdenViaje)
-        {
-            try
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_DC_CerrarViajesProgreso", conn, transaction))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idsViajes", string.Join(",", idsViajes));
-                    cmd.Parameters.AddWithValue("@idConductor", IdConductorActual); // IDOR guard: el SP valida que los viajes pertenecen a este conductor
-
-                    SqlParameter pViajesCerrados = new SqlParameter("@filasViajesCerrados", SqlDbType.Int) { Direction = ParameterDirection.Output };
-                    SqlParameter pDespachosCerrados = new SqlParameter("@filasDespachosCerrados", SqlDbType.Int) { Direction = ParameterDirection.Output };
-                    cmd.Parameters.Add(pViajesCerrados);
-                    cmd.Parameters.Add(pDespachosCerrados);
-
-                    cmd.ExecuteNonQuery();
-
-                    int filasAfectadas = (int)pViajesCerrados.Value;
-                    int despachosActualizados = (int)pDespachosCerrados.Value;
-
-                    if (filasAfectadas == 0)
-                    {
-                        throw new Exception($"No se pudo cerrar ninguno de los viajes: {string.Join(", ", idsViajes)}");
-                    }
-                    Log($"✅ {filasAfectadas} viaje(s) cerrado(s)");
-                    Log($"✅ {despachosActualizados} despacho(s) marcado(s) como COMPLETADO");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"❌ Error en CerrarViajesProgreso: {ex.Message}");
-                throw;
             }
         }
 
@@ -1823,14 +1359,6 @@ namespace WebSGV.Views
         private bool ValidarFormatoHora(string hora) =>
             OrdenViajeValidaciones.ValidarFormatoHora(hora);
 
-        private bool EsFechaValidaSQL(DateTime fecha) =>
-            OrdenViajeValidaciones.EsFechaValidaSQL(fecha);
-
-        private object FechaSeguraSQL(DateTime fecha)
-        {
-            return EsFechaValidaSQL(fecha) ? (object)fecha : DBNull.Value;
-        }
-
         /// <summary>
         /// Logging condicional: solo activo en compilaciones DEBUG.
         /// En Release el compilador elimina todos los call-sites sin overhead.
@@ -1846,18 +1374,6 @@ namespace WebSGV.Views
         /// Valores negativos se clampean a 0 ya que los campos tienen min="0".
         /// </summary>
         private static decimal ParseMonto(string valor) => MontoHelper.ParseMonto(valor);
-
-        /// <summary>
-        /// Valida un monto desserializado desde un hidden field controlado por el cliente.
-        /// A diferencia de ParseMonto, aquí lanzamos excepción en lugar de clampar,
-        /// porque un valor negativo o excesivo indica manipulación intencional del payload.
-        /// La excepción propaga el rollback de la transacción en curso.
-        /// </summary>
-        private static decimal ValidarMonto(decimal? monto, string campo)
-            => MontoHelper.ValidarMonto(monto, campo);
-
-        private static decimal ValidarMonto(decimal monto, string campo)
-            => MontoHelper.ValidarMonto(monto, campo);
 
         private void MostrarMensaje(string mensaje, string tipo)
         {

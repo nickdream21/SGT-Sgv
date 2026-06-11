@@ -2,7 +2,7 @@
 
 > Documento de seguimiento del esfuerzo de extracción de lógica de negocio y SQL
 > desde los code-behind (`.aspx.cs`) hacia clases en `WebSGV/Services/`.
-> Sirve para no perder el objetivo entre sesiones. Última actualización: 2026-06-10.
+> Sirve para no perder el objetivo entre sesiones. Última actualización: 2026-06-11.
 
 ## 1. Objetivo
 
@@ -56,6 +56,15 @@ formato de factura, etc.).
 | `12b4994` | Facturas (Agregar+Buscar) | `Facturas/FacturaConsultasService` | clientes, contar por número, todas, por id/número, documentos, info documento. |
 | `3c68f22` | AgregarOrdenViaje | `OrdenViaje/AgregarOrdenViajeService` | contar por número, buscar id usuario por nombre, tabla/estaciones de peaje. |
 
+### Fase C — Transacciones de escritura (modelos a `Models/` + DTO de entrada)
+| Commit | Página | Service / Modelos | Qué se extrajo |
+|---|---|---|---|
+| _(este)_ | DashboardConductor | `Conductor/LiquidacionConductorService` + `Models/Conductor/LiquidacionConductorModels` | **Transacción completa de envío de liquidación** (`btnEnviarLiquidacion_Click`): orden (insertar/actualizar re-liquidación), ingresos/egresos principales, ingresos/gastos adicionales, descuentos/reintegros, gastos detallados (peaje/reparación/hospedaje/combustible) y cierre de viajes en progreso — todos los `sp_DC_*` movidos verbatim dentro de una única transacción. Los modelos `GastoFinanciero`, `IngresoAdicionalData`, `GastoAdicionalData` se movieron a `WebSGV.Models.Conductor`; el code-behind arma un `LiquidacionConductorInput` (parseo de `Request.Form`/hidden fields/JSON) y conserva sesión, validación, ownership, auditoría, notificación, redirect y el `try/catch` que muestra el mensaje. |
+
+> **Pendiente de validación en runtime:** toca dinero y no hay pruebas de BD. Verificado
+> con MSBuild limpio + 177 tests; falta una corrida real (envío y re-liquidación) antes
+> de desplegar.
+
 ## 4. Lo que queda — "Pase de transacciones y modelos diferidos" ⏳
 
 Es lo **entrelazado** con `Request.Form` / controles / modelos anidados de la página, que
@@ -69,9 +78,8 @@ services puedan recibirlos/devolverlos sin depender de la página. Cuidar la ser
 en Session/ViewState.
 
 Pendientes por página:
-- **DashboardConductor** — transacción de **envío de liquidación**
-  (`btnEnviarLiquidacion_Click` + helpers `Insertar*`/`Cerrar*`, ~1158-1583): leen
-  `Request.Form`/hidden fields. Mover el parseo al code-behind y pasar valores/DTO al service.
+- ~~**DashboardConductor** — transacción de **envío de liquidación**~~ ✅ **Hecho** (Fase C):
+  extraída a `LiquidacionConductorService.EnviarLiquidacion(LiquidacionConductorInput)`.
 - **RegistroDespacho** — creadores que reciben modelos: `CrearDocumentoBaseSeparado`,
   `CrearDespachoIndividual`, `ObtenerViajesAbiertosConductor`, `ObtenerInfoViaje` + la
   transacción de finalización del lote.
@@ -100,8 +108,12 @@ Pendientes por página:
 ## 6. Próximos pasos sugeridos (orden propuesto)
 
 1. Mover modelos anidados a `WebSGV/Models/` (habilita casi todo lo de la sección 4).
+   Empezado: `GastoFinanciero`/`IngresoAdicionalData`/`GastoAdicionalData` →
+   `WebSGV.Models.Conductor` (DashboardConductor). Falta mover los de las demás páginas
+   (incl. las copias propias de `AgregarOrdenViaje`, cuyo `GastoFinanciero` difiere por la
+   fecha y **no** debe fusionarse sin cuidado).
 2. Pase de transacciones de escritura, empezando por las de **mayor valor de dinero**:
-   DashboardConductor (envío liquidación) → LiquidacionesPendientes (AprobarConAjustes/
+   ~~DashboardConductor (envío liquidación)~~ ✅ → LiquidacionesPendientes (AprobarConAjustes/
    Corregir/ObtenerDetalle) → RegistroDespacho (creación de lote).
 3. Transacciones restantes: BuscarOrdenViaje, AgregarOrdenViaje, ListaDespachos, Facturas.
 4. ReportesOrdenesViaje.
