@@ -157,7 +157,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 MostrarError("Error al registrar la factura: " + ex.Message);
-                Debug.WriteLine("Error en GuardarFactura: " + ex.Message);
+                LogSGV.Error(ex, "Error al registrar la factura {Numero}", txtNumFactura.Text);
             }
         }
 
@@ -224,7 +224,7 @@ namespace WebSGV.Views
                     catch (Exception ex)
                     {
                         transaction.Rollback();
-                        Debug.WriteLine("Error al insertar factura: " + ex.Message);
+                        LogSGV.Error(ex, "Error al insertar la factura {Numero} en BD", numeroFactura);
                         throw new Exception("Error al guardar la factura: " + ex.Message);
                     }
                 }

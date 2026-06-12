@@ -471,7 +471,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 MostrarMensaje("Error al guardar los cambios: " + ex.Message, "danger");
-                Debug.WriteLine("Error en GuardarCambios: " + ex.Message);
+                LogSGV.Error(ex, "Error al guardar los cambios de la factura");
             }
         }
 
@@ -546,7 +546,7 @@ namespace WebSGV.Views
                     catch (Exception ex)
                     {
                         transaction.Rollback();
-                        Debug.WriteLine("Error al actualizar factura con documento: " + ex.Message);
+                        LogSGV.Error(ex, "Error al actualizar la factura {NumeroOriginal} (nuevo {NumeroNuevo}) en BD", numeroFacturaOriginal, numeroFacturaNuevo);
                         throw new Exception("Error al actualizar la factura: " + ex.Message);
                     }
                 }
