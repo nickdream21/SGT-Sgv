@@ -834,6 +834,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                RegistrarError("btnFinalizarLote_Click", ex);
                 MostrarMensaje("Error al finalizar lote: " + ex.Message, "danger");
             }
         }
@@ -1257,7 +1258,7 @@ namespace WebSGV.Views
 
         private void RegistrarError(string contexto, Exception ex)
         {
-            System.Diagnostics.Trace.TraceError($"{contexto}: {ex}");
+            LogSGV.Error(ex, "Error en {Contexto}", contexto);
         }
 
         private void MostrarErrorOperacion(string mensajeUsuario, string contexto, Exception ex)

@@ -714,6 +714,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al guardar cambios del lote {Lote}", LoteSeleccionadoId);
                 MostrarMensaje("Error al guardar cambios: " + ex.Message, "danger");
             }
         }
@@ -854,6 +855,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al anular el lote {Lote}", LoteSeleccionadoId);
                 MostrarMensaje("❌ Error al anular lote: " + ex.Message, "danger");
             }
         }
@@ -893,6 +895,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al eliminar el lote {Lote}", LoteSeleccionadoId);
                 MostrarMensaje("❌ Error al eliminar lote: " + ex.Message, "danger");
             }
         }
