@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Web;
 using System.Web.Services;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using System.Configuration;
 using System.Text;
 using System.IO;
 using System.Globalization;
@@ -16,6 +14,7 @@ using ClosedXML.Excel;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using WebSGV.Helpers;
+using WebSGV.Services.Reportes;
 
 // Alias para evitar ambigüedades con System.Web.UI.WebControls (Unit, etc.)
 using QuestPdfColor = QuestPDF.Infrastructure.Color;
@@ -84,10 +83,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(@"
-                    SELECT idConductor,
-                           CONCAT(nombre, ' ', apPaterno, ' ', ISNULL(apMaterno,'')) AS NombreCompleto
-                    FROM Conductor WHERE activo = 1 ORDER BY nombre, apPaterno");
+                DataTable dt = ReportesOrdenesViajeService.ObtenerConductoresActivos();
                 foreach (DataRow dr in dt.Rows)
                     ddlPersConductor.Items.Add(new System.Web.UI.WebControls.ListItem(
                         dr["NombreCompleto"].ToString().Trim(),
@@ -100,7 +96,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla("SELECT idCliente, nombre FROM Cliente ORDER BY nombre");
+                DataTable dt = ReportesOrdenesViajeService.ObtenerClientes();
                 foreach (DataRow dr in dt.Rows)
                     ddlPersCliente.Items.Add(new System.Web.UI.WebControls.ListItem(
                         dr["nombre"].ToString(), dr["idCliente"].ToString()));
@@ -150,24 +146,7 @@ namespace WebSGV.Views
 
         private DataTable ObtenerLiquidaciones(DateTime fechaDesde, DateTime fechaHasta)
         {
-            DataTable dt = DbHelper.ConsultarTabla(@"
-                SELECT
-                    c.DNI,
-                    CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) AS Conductor,
-                    ov.fechaSalida AS FechaSalida,
-                    ov.numeroOrdenViaje AS NumeroLiquidacion,
-                    ov.idOrdenViaje AS IdOrdenViaje,
-                    ISNULL((SELECT dr.descuentoSoles FROM DescuentosReintegros dr WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS DescuentoSoles,
-                    ISNULL((SELECT dr.descuentoDolares FROM DescuentosReintegros dr WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS DescuentoDolares,
-                    ISNULL((SELECT dr.reintegroSoles FROM DescuentosReintegros dr WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS ReintegroSoles,
-                    ISNULL((SELECT dr.reintegroDolares FROM DescuentosReintegros dr WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS ReintegroDolares
-                FROM OrdenViaje ov
-                INNER JOIN Conductor c ON ov.idConductor = c.idConductor
-                WHERE ov.fechaSalida BETWEEN @FechaDesde AND @FechaHasta
-                AND ov.estadoViaje = 'COMPLETADO'
-                ORDER BY ov.fechaSalida DESC, c.nombre",
-                DbHelper.Param("@FechaDesde", fechaDesde),
-                DbHelper.Param("@FechaHasta", fechaHasta));
+            DataTable dt = ReportesOrdenesViajeService.ObtenerLiquidaciones(fechaDesde, fechaHasta);
 
             // ✅ CALCULAR MONTOS FINALES (Reintegros - Descuentos)
             dt.Columns.Add("MontoSoles", typeof(decimal));
@@ -331,75 +310,8 @@ namespace WebSGV.Views
             }
         }
 
-        private DataTable ObtenerViajesActivos(string buscarConductor, string estadoViaje)
-        {
-            DataTable dt = new DataTable();
-
-            {
-                var parametrosViajes = new System.Collections.Generic.List<System.Data.SqlClient.SqlParameter>();
-                StringBuilder query = new StringBuilder(@"
-                    SELECT 
-                        c.DNI,
-                        CONCAT(c.nombre, ' ', c.apPaterno, ' ', ISNULL(c.apMaterno, '')) AS Conductor,
-                        ISNULL(MAX(t.placaTracto), 'N/A') AS PlacaTracto,
-                        ISNULL(MAX(ca.placaCarreta), 'N/A') AS PlacaCarreta,
-                        ISNULL(MAX(cl.nombre), 'N/A') AS Cliente,
-                        MAX(d.fechaDespacho) AS FechaProgramacion,
-                        ISNULL(MAX(d.lugarOperacion), 'N/A') AS Destino,
-                        vp.fechaInicio AS FechaInicio,
-                        DATEDIFF(DAY, vp.fechaInicio, GETDATE()) AS DiasEnViaje,
-                        vp.estadoViaje AS Estado,
-                        vp.idViajeProgreso AS IdViaje,
-                        MAX(d.numeroDespacho) AS NumeroDespacho
-                    FROM ViajesEnProgreso vp
-                    INNER JOIN Conductor c ON c.idConductor = (
-                        SELECT TOP 1 idConductor FROM Despachos
-                        WHERE idViajeProgreso = vp.idViajeProgreso AND activo = 1
-                        GROUP BY idConductor ORDER BY COUNT(*) DESC
-                    )
-                    INNER JOIN Despachos d ON vp.idViajeProgreso = d.idViajeProgreso AND d.activo = 1
-                    LEFT JOIN Tracto t ON d.idTracto = t.idTracto
-                    LEFT JOIN Carreta ca ON d.idCarreta = ca.idCarreta
-                    LEFT JOIN Cliente cl ON d.idCliente = cl.idCliente
-                    /*
-                        Definición de 'Viaje activo sin liquidación':
-                        Mismo criterio que la pantalla ListaDespachos (sp_LD_ObtenerViajesActivos):
-                        - El viaje en progreso sigue ABIERTO (al liquidar pasa a CERRADO).
-                        - El viaje está activo (no anulado).
-                        - Tiene al menos un despacho activo asociado.
-
-                        Salvaguarda: si por inconsistencia de datos quedó vinculada una OrdenViaje
-                        ya COMPLETADA al viaje, igual lo excluimos. Las órdenes en otros estados
-                        (borradores, rechazadas, etc.) NO se consideran liquidación válida.
-                    */
-                    WHERE vp.estadoViaje = 'ABIERTO'
-                      AND vp.activo = 1
-                      AND NOT EXISTS (
-                          SELECT 1 FROM OrdenViaje ov
-                          WHERE ov.idViajeProgreso = vp.idViajeProgreso
-                            AND ov.estadoViaje = 'COMPLETADO'
-                      )");
-
-                if (!string.IsNullOrEmpty(buscarConductor))
-                {
-                    query.Append(" AND (c.nombre LIKE @BuscarConductor OR c.apPaterno LIKE @BuscarConductor OR c.DNI LIKE @BuscarConductor)");
-                    parametrosViajes.Add(DbHelper.Param("@BuscarConductor", $"%{buscarConductor}%"));
-                }
-
-                if (!string.IsNullOrEmpty(estadoViaje) && estadoViaje != "TODOS")
-                {
-                    query.Append(" AND vp.estadoViaje = @EstadoViaje");
-                    parametrosViajes.Add(DbHelper.Param("@EstadoViaje", estadoViaje));
-                }
-
-                query.Append(" GROUP BY c.DNI, c.nombre, c.apPaterno, c.apMaterno, vp.fechaInicio, vp.estadoViaje, vp.idViajeProgreso");
-                query.Append(" ORDER BY vp.fechaInicio DESC");
-
-                dt = DbHelper.ConsultarTabla(query.ToString(), parametrosViajes.ToArray());
-            }
-
-            return dt;
-        }
+        private DataTable ObtenerViajesActivos(string buscarConductor, string estadoViaje) =>
+            ReportesOrdenesViajeService.ObtenerViajesActivos(buscarConductor, estadoViaje);
 
         protected void gvViajesActivos_RowDataBound(object sender, GridViewRowEventArgs e)
         {
@@ -1033,79 +945,51 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
                 StringBuilder html = new StringBuilder();
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                // SQL movido a ReportesOrdenesViajeService; el armado del HTML queda aquí.
+                DataTable dtGeneral = ReportesOrdenesViajeService.ObtenerCabeceraDetalle(idOrden);
+
+                if (dtGeneral.Rows.Count > 0)
                 {
-                    conn.Open();
+                    DataRow reader = dtGeneral.Rows[0];
+                    string numeroOrden = reader["numeroOrdenViaje"].ToString();
 
-                    // ✅ Obtener información general de la orden
-                    string queryGeneral = @"
-                        SELECT 
-                            ov.numeroOrdenViaje,
-                            ov.fechaSalida,
-                            ov.fechaLlegada,
-                            ov.horaSalida,
-                            ov.horaLlegada,
-                            CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) AS Conductor,
-                            t.placaTracto AS PlacaTracto,
-                            ISNULL(ca.placaCarreta, 'N/A') AS PlacaCarreta,
-                            ov.observaciones
-                        FROM OrdenViaje ov
-                        INNER JOIN Conductor c ON ov.idConductor = c.idConductor
-                        LEFT JOIN Tracto t ON ov.idTracto = t.idTracto
-                        LEFT JOIN Carreta ca ON ov.idCarreta = ca.idCarreta
-                        WHERE ov.idOrdenViaje = @IdOrden";
+                    html.Append("<div class='orden-detalle'>");
 
-                    SqlCommand cmdGeneral = new SqlCommand(queryGeneral, conn);
-                    cmdGeneral.Parameters.AddWithValue("@IdOrden", idOrden);
+                    // Información general
+                    html.Append("<div class='card mb-3'>");
+                    html.Append("<div class='card-header bg-primary text-white'><h6 class='mb-0'>Información General</h6></div>");
+                    html.Append("<div class='card-body'>");
+                    html.Append("<div class='row'>");
+                    html.Append($"<div class='col-md-3'><strong>N° Orden:</strong> {reader["numeroOrdenViaje"]}</div>");
+                    html.Append($"<div class='col-md-3'><strong>Conductor:</strong> {reader["Conductor"]}</div>");
+                    html.Append($"<div class='col-md-3'><strong>Tracto:</strong> {reader["PlacaTracto"]}</div>");
+                    html.Append($"<div class='col-md-3'><strong>Carreta:</strong> {reader["PlacaCarreta"]}</div>");
+                    html.Append("</div>");
+                    html.Append("<div class='row mt-2'>");
+                    html.Append($"<div class='col-md-3'><strong>Fecha Salida:</strong> {Convert.ToDateTime(reader["fechaSalida"]):dd/MM/yyyy}</div>");
+                    html.Append($"<div class='col-md-3'><strong>Fecha Llegada:</strong> {Convert.ToDateTime(reader["fechaLlegada"]):dd/MM/yyyy}</div>");
+                    html.Append($"<div class='col-md-3'><strong>Hora Salida:</strong> {reader["horaSalida"]}</div>");
+                    html.Append($"<div class='col-md-3'><strong>Hora Llegada:</strong> {reader["horaLlegada"]}</div>");
+                    html.Append("</div>");
+                    html.Append("</div>");
+                    html.Append("</div>");
 
-                    SqlDataReader reader = cmdGeneral.ExecuteReader();
+                    // ✅ INGRESOS
+                    html.Append(ObtenerSeccionIngresos(numeroOrden));
 
-                    if (reader.Read())
-                    {
-                        string numeroOrden = reader["numeroOrdenViaje"].ToString();
+                    // ✅ GASTOS
+                    html.Append(ObtenerSeccionGastos(numeroOrden));
 
-                        html.Append("<div class='orden-detalle'>");
+                    // ✅ BALANCE FINAL
+                    html.Append(ObtenerBalanceFinal(numeroOrden));
 
-                        // Información general
-                        html.Append("<div class='card mb-3'>");
-                        html.Append("<div class='card-header bg-primary text-white'><h6 class='mb-0'>Información General</h6></div>");
-                        html.Append("<div class='card-body'>");
-                        html.Append("<div class='row'>");
-                        html.Append($"<div class='col-md-3'><strong>N° Orden:</strong> {reader["numeroOrdenViaje"]}</div>");
-                        html.Append($"<div class='col-md-3'><strong>Conductor:</strong> {reader["Conductor"]}</div>");
-                        html.Append($"<div class='col-md-3'><strong>Tracto:</strong> {reader["PlacaTracto"]}</div>");
-                        html.Append($"<div class='col-md-3'><strong>Carreta:</strong> {reader["PlacaCarreta"]}</div>");
-                        html.Append("</div>");
-                        html.Append("<div class='row mt-2'>");
-                        html.Append($"<div class='col-md-3'><strong>Fecha Salida:</strong> {Convert.ToDateTime(reader["fechaSalida"]):dd/MM/yyyy}</div>");
-                        html.Append($"<div class='col-md-3'><strong>Fecha Llegada:</strong> {Convert.ToDateTime(reader["fechaLlegada"]):dd/MM/yyyy}</div>");
-                        html.Append($"<div class='col-md-3'><strong>Hora Salida:</strong> {reader["horaSalida"]}</div>");
-                        html.Append($"<div class='col-md-3'><strong>Hora Llegada:</strong> {reader["horaLlegada"]}</div>");
-                        html.Append("</div>");
-                        html.Append("</div>");
-                        html.Append("</div>");
-
-                        reader.Close();
-
-                        // ✅ INGRESOS
-                        html.Append(ObtenerSeccionIngresos(conn, numeroOrden));
-
-                        // ✅ GASTOS
-                        html.Append(ObtenerSeccionGastos(conn, numeroOrden));
-
-                        // ✅ BALANCE FINAL
-                        html.Append(ObtenerBalanceFinal(conn, numeroOrden));
-
-                        html.Append("</div>");
-                    }
-                    else
-                    {
-                        reader.Close();
-                        html.Append("<div class='alert alert-warning'>No se encontró información de la orden</div>");
-                    }
+                    html.Append("</div>");
+                }
+                else
+                {
+                    html.Append("<div class='alert alert-warning'>No se encontró información de la orden</div>");
                 }
 
                 return html.ToString();
@@ -1116,7 +1000,7 @@ namespace WebSGV.Views
             }
         }
 
-        private static string ObtenerSeccionIngresos(SqlConnection conn, string numeroOrden)
+        private static string ObtenerSeccionIngresos(string numeroOrden)
         {
             StringBuilder html = new StringBuilder();
             decimal totalIngresosSoles = 0;
@@ -1129,82 +1013,58 @@ namespace WebSGV.Views
             html.Append("<thead><tr><th>Concepto</th><th>Descripción</th><th>Soles</th><th>Dólares</th></tr></thead>");
             html.Append("<tbody>");
 
-            // Ingresos principales
-            string queryIngresosPrincipales = @"
-                SELECT 
-                    despachoSoles, despachoDolares, descDespacho,
-                    prestamoSoles, prestamosDolares, descPrestamo,
-                    mensualidadSoles, mensualidadDolares, descMensualidad,
-                    otrosSoles, otrosDolares, descOtrosAutorizados
-                FROM Ingresos 
-                WHERE numeroOrdenViaje = @numeroOrden";
-
-            using (SqlCommand cmd = new SqlCommand(queryIngresosPrincipales, conn))
+            // Ingresos principales (SQL movido a ReportesOrdenesViajeService)
+            DataTable dtPrincipales = ReportesOrdenesViajeService.ObtenerIngresosPrincipales(numeroOrden);
+            if (dtPrincipales.Rows.Count > 0)
             {
-                cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
-                using (SqlDataReader reader = cmd.ExecuteReader())
+                DataRow reader = dtPrincipales.Rows[0];
+
+                decimal despachoS = Convert.ToDecimal(reader["despachoSoles"]);
+                decimal despachoD = Convert.ToDecimal(reader["despachoDolares"]);
+                if (despachoS > 0 || despachoD > 0)
                 {
-                    if (reader.Read())
-                    {
-                        decimal despachoS = Convert.ToDecimal(reader["despachoSoles"]);
-                        decimal despachoD = Convert.ToDecimal(reader["despachoDolares"]);
-                        if (despachoS > 0 || despachoD > 0)
-                        {
-                            html.Append($"<tr><td>Despacho</td><td>{reader["descDespacho"]}</td><td>S/ {despachoS:N2}</td><td>$ {despachoD:N2}</td></tr>");
-                            totalIngresosSoles += despachoS;
-                            totalIngresosDolares += despachoD;
-                        }
+                    html.Append($"<tr><td>Despacho</td><td>{reader["descDespacho"]}</td><td>S/ {despachoS:N2}</td><td>$ {despachoD:N2}</td></tr>");
+                    totalIngresosSoles += despachoS;
+                    totalIngresosDolares += despachoD;
+                }
 
-                        decimal prestamoS = Convert.ToDecimal(reader["prestamoSoles"]);
-                        decimal prestamoD = Convert.ToDecimal(reader["prestamosDolares"]);
-                        if (prestamoS > 0 || prestamoD > 0)
-                        {
-                            html.Append($"<tr><td>Préstamo</td><td>{reader["descPrestamo"]}</td><td>S/ {prestamoS:N2}</td><td>$ {prestamoD:N2}</td></tr>");
-                            totalIngresosSoles += prestamoS;
-                            totalIngresosDolares += prestamoD;
-                        }
+                decimal prestamoS = Convert.ToDecimal(reader["prestamoSoles"]);
+                decimal prestamoD = Convert.ToDecimal(reader["prestamosDolares"]);
+                if (prestamoS > 0 || prestamoD > 0)
+                {
+                    html.Append($"<tr><td>Préstamo</td><td>{reader["descPrestamo"]}</td><td>S/ {prestamoS:N2}</td><td>$ {prestamoD:N2}</td></tr>");
+                    totalIngresosSoles += prestamoS;
+                    totalIngresosDolares += prestamoD;
+                }
 
-                        decimal mensualidadS = Convert.ToDecimal(reader["mensualidadSoles"]);
-                        decimal mensualidadD = Convert.ToDecimal(reader["mensualidadDolares"]);
-                        if (mensualidadS > 0 || mensualidadD > 0)
-                        {
-                            html.Append($"<tr><td>Mensualidad</td><td>{reader["descMensualidad"]}</td><td>S/ {mensualidadS:N2}</td><td>$ {mensualidadD:N2}</td></tr>");
-                            totalIngresosSoles += mensualidadS;
-                            totalIngresosDolares += mensualidadD;
-                        }
+                decimal mensualidadS = Convert.ToDecimal(reader["mensualidadSoles"]);
+                decimal mensualidadD = Convert.ToDecimal(reader["mensualidadDolares"]);
+                if (mensualidadS > 0 || mensualidadD > 0)
+                {
+                    html.Append($"<tr><td>Mensualidad</td><td>{reader["descMensualidad"]}</td><td>S/ {mensualidadS:N2}</td><td>$ {mensualidadD:N2}</td></tr>");
+                    totalIngresosSoles += mensualidadS;
+                    totalIngresosDolares += mensualidadD;
+                }
 
-                        decimal otrosS = Convert.ToDecimal(reader["otrosSoles"]);
-                        decimal otrosD = Convert.ToDecimal(reader["otrosDolares"]);
-                        if (otrosS > 0 || otrosD > 0)
-                        {
-                            html.Append($"<tr><td>Otros Autorizados</td><td>{reader["descOtrosAutorizados"]}</td><td>S/ {otrosS:N2}</td><td>$ {otrosD:N2}</td></tr>");
-                            totalIngresosSoles += otrosS;
-                            totalIngresosDolares += otrosD;
-                        }
-                    }
+                decimal otrosS = Convert.ToDecimal(reader["otrosSoles"]);
+                decimal otrosD = Convert.ToDecimal(reader["otrosDolares"]);
+                if (otrosS > 0 || otrosD > 0)
+                {
+                    html.Append($"<tr><td>Otros Autorizados</td><td>{reader["descOtrosAutorizados"]}</td><td>S/ {otrosS:N2}</td><td>$ {otrosD:N2}</td></tr>");
+                    totalIngresosSoles += otrosS;
+                    totalIngresosDolares += otrosD;
                 }
             }
 
             // Ingresos adicionales
-            string queryIngresosAdicionales = @"
-                SELECT nombreCategoria, descripcion, soles, dolares
-                FROM IngresosAdicionales
-                WHERE numeroOrdenViaje = @numeroOrden";
-
-            using (SqlCommand cmd = new SqlCommand(queryIngresosAdicionales, conn))
+            DataTable dtAdicionales = ReportesOrdenesViajeService.ObtenerIngresosAdicionales(numeroOrden);
+            foreach (DataRow reader in dtAdicionales.Rows)
             {
-                cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        decimal soles = Convert.ToDecimal(reader["soles"]);
-                        decimal dolares = Convert.ToDecimal(reader["dolares"]);
-                        html.Append($"<tr><td>{reader["nombreCategoria"]}</td><td>{reader["descripcion"]}</td><td>S/ {soles:N2}</td><td>$ {dolares:N2}</td></tr>");
-                        totalIngresosSoles += soles;
-                        totalIngresosDolares += dolares;
-                    }
-                }
+                decimal soles = Convert.ToDecimal(reader["soles"]);
+                decimal dolares = Convert.ToDecimal(reader["dolares"]);
+                html.Append($"<tr><td>{reader["nombreCategoria"]}</td><td>{reader["descripcion"]}</td><td>S/ {soles:N2}</td><td>$ {dolares:N2}</td></tr>");
+                totalIngresosSoles += soles;
+                totalIngresosDolares += dolares;
             }
 
             html.Append("<tr class='font-weight-bold'>");
@@ -1219,7 +1079,7 @@ namespace WebSGV.Views
             return html.ToString();
         }
 
-        private static string ObtenerSeccionGastos(SqlConnection conn, string numeroOrden)
+        private static string ObtenerSeccionGastos(string numeroOrden)
         {
             StringBuilder html = new StringBuilder();
             decimal totalGastosSoles = 0;
@@ -1232,130 +1092,102 @@ namespace WebSGV.Views
             html.Append("<thead><tr><th>Concepto</th><th>Descripción</th><th>Soles</th><th>Dólares</th></tr></thead>");
             html.Append("<tbody>");
 
-            // Gastos principales
-            string queryGastosPrincipales = @"
-                SELECT 
-                    peajesSoles, peajesDolares, descPeajes,
-                    alimentacionSoles, alimentacionDolares, descAlimentacion,
-                    apoyoseguridadSoles, apoyoseguridadDolares, descApoyoSeguridad,
-                    reparacionesVariosSoles, repacionesVariosDolares, descReparacionesVarios,
-                    movilidadSoles, movilidadDolares, descMovilidad,
-                    hospedajeSoles, hospedajeDolares, descHospedaje,
-                    combustibleSoles, combustibleDolares, descCombustible,
-                    encarpada_desencarpadaSoles, encarpada_desencarpadaDolares, descEncarpadaDesencarpada
-                FROM Egresos 
-                WHERE numeroOrdenViaje = @numeroOrden";
-
-            using (SqlCommand cmd = new SqlCommand(queryGastosPrincipales, conn))
+            // Gastos principales (SQL movido a ReportesOrdenesViajeService)
+            DataTable dtPrincipales = ReportesOrdenesViajeService.ObtenerGastosPrincipales(numeroOrden);
+            if (dtPrincipales.Rows.Count > 0)
             {
-                cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
-                using (SqlDataReader reader = cmd.ExecuteReader())
+                DataRow reader = dtPrincipales.Rows[0];
+
+                // Peajes
+                decimal peajesS = Convert.ToDecimal(reader["peajesSoles"]);
+                decimal peajesD = Convert.ToDecimal(reader["peajesDolares"]);
+                if (peajesS > 0 || peajesD > 0)
                 {
-                    if (reader.Read())
-                    {
-                        // Peajes
-                        decimal peajesS = Convert.ToDecimal(reader["peajesSoles"]);
-                        decimal peajesD = Convert.ToDecimal(reader["peajesDolares"]);
-                        if (peajesS > 0 || peajesD > 0)
-                        {
-                            html.Append($"<tr><td>Peajes</td><td>{reader["descPeajes"]}</td><td>S/ {peajesS:N2}</td><td>$ {peajesD:N2}</td></tr>");
-                            totalGastosSoles += peajesS;
-                            totalGastosDolares += peajesD;
-                        }
+                    html.Append($"<tr><td>Peajes</td><td>{reader["descPeajes"]}</td><td>S/ {peajesS:N2}</td><td>$ {peajesD:N2}</td></tr>");
+                    totalGastosSoles += peajesS;
+                    totalGastosDolares += peajesD;
+                }
 
-                        // Alimentación
-                        decimal alimentacionS = Convert.ToDecimal(reader["alimentacionSoles"]);
-                        decimal alimentacionD = Convert.ToDecimal(reader["alimentacionDolares"]);
-                        if (alimentacionS > 0 || alimentacionD > 0)
-                        {
-                            html.Append($"<tr><td>Alimentación</td><td>{reader["descAlimentacion"]}</td><td>S/ {alimentacionS:N2}</td><td>$ {alimentacionD:N2}</td></tr>");
-                            totalGastosSoles += alimentacionS;
-                            totalGastosDolares += alimentacionD;
-                        }
+                // Alimentación
+                decimal alimentacionS = Convert.ToDecimal(reader["alimentacionSoles"]);
+                decimal alimentacionD = Convert.ToDecimal(reader["alimentacionDolares"]);
+                if (alimentacionS > 0 || alimentacionD > 0)
+                {
+                    html.Append($"<tr><td>Alimentación</td><td>{reader["descAlimentacion"]}</td><td>S/ {alimentacionS:N2}</td><td>$ {alimentacionD:N2}</td></tr>");
+                    totalGastosSoles += alimentacionS;
+                    totalGastosDolares += alimentacionD;
+                }
 
-                        // Apoyo Seguridad
-                        decimal apoyoS = Convert.ToDecimal(reader["apoyoseguridadSoles"]);
-                        decimal apoyoD = Convert.ToDecimal(reader["apoyoseguridadDolares"]);
-                        if (apoyoS > 0 || apoyoD > 0)
-                        {
-                            html.Append($"<tr><td>Apoyo Seguridad</td><td>{reader["descApoyoSeguridad"]}</td><td>S/ {apoyoS:N2}</td><td>$ {apoyoD:N2}</td></tr>");
-                            totalGastosSoles += apoyoS;
-                            totalGastosDolares += apoyoD;
-                        }
+                // Apoyo Seguridad
+                decimal apoyoS = Convert.ToDecimal(reader["apoyoseguridadSoles"]);
+                decimal apoyoD = Convert.ToDecimal(reader["apoyoseguridadDolares"]);
+                if (apoyoS > 0 || apoyoD > 0)
+                {
+                    html.Append($"<tr><td>Apoyo Seguridad</td><td>{reader["descApoyoSeguridad"]}</td><td>S/ {apoyoS:N2}</td><td>$ {apoyoD:N2}</td></tr>");
+                    totalGastosSoles += apoyoS;
+                    totalGastosDolares += apoyoD;
+                }
 
-                        // Reparaciones
-                        decimal reparacionesS = Convert.ToDecimal(reader["reparacionesVariosSoles"]);
-                        decimal reparacionesD = Convert.ToDecimal(reader["repacionesVariosDolares"]);
-                        if (reparacionesS > 0 || reparacionesD > 0)
-                        {
-                            html.Append($"<tr><td>Reparaciones</td><td>{reader["descReparacionesVarios"]}</td><td>S/ {reparacionesS:N2}</td><td>$ {reparacionesD:N2}</td></tr>");
-                            totalGastosSoles += reparacionesS;
-                            totalGastosDolares += reparacionesD;
-                        }
+                // Reparaciones
+                decimal reparacionesS = Convert.ToDecimal(reader["reparacionesVariosSoles"]);
+                decimal reparacionesD = Convert.ToDecimal(reader["repacionesVariosDolares"]);
+                if (reparacionesS > 0 || reparacionesD > 0)
+                {
+                    html.Append($"<tr><td>Reparaciones</td><td>{reader["descReparacionesVarios"]}</td><td>S/ {reparacionesS:N2}</td><td>$ {reparacionesD:N2}</td></tr>");
+                    totalGastosSoles += reparacionesS;
+                    totalGastosDolares += reparacionesD;
+                }
 
-                        // Movilidad
-                        decimal movilidadS = Convert.ToDecimal(reader["movilidadSoles"]);
-                        decimal movilidadD = Convert.ToDecimal(reader["movilidadDolares"]);
-                        if (movilidadS > 0 || movilidadD > 0)
-                        {
-                            html.Append($"<tr><td>Movilidad</td><td>{reader["descMovilidad"]}</td><td>S/ {movilidadS:N2}</td><td>$ {movilidadD:N2}</td></tr>");
-                            totalGastosSoles += movilidadS;
-                            totalGastosDolares += movilidadD;
-                        }
+                // Movilidad
+                decimal movilidadS = Convert.ToDecimal(reader["movilidadSoles"]);
+                decimal movilidadD = Convert.ToDecimal(reader["movilidadDolares"]);
+                if (movilidadS > 0 || movilidadD > 0)
+                {
+                    html.Append($"<tr><td>Movilidad</td><td>{reader["descMovilidad"]}</td><td>S/ {movilidadS:N2}</td><td>$ {movilidadD:N2}</td></tr>");
+                    totalGastosSoles += movilidadS;
+                    totalGastosDolares += movilidadD;
+                }
 
-                        // Hospedaje
-                        decimal hospedajeS = Convert.ToDecimal(reader["hospedajeSoles"]);
-                        decimal hospedajeD = Convert.ToDecimal(reader["hospedajeDolares"]);
-                        if (hospedajeS > 0 || hospedajeD > 0)
-                        {
-                            html.Append($"<tr><td>Hospedaje</td><td>{reader["descHospedaje"]}</td><td>S/ {hospedajeS:N2}</td><td>$ {hospedajeD:N2}</td></tr>");
-                            totalGastosSoles += hospedajeS;
-                            totalGastosDolares += hospedajeD;
-                        }
+                // Hospedaje
+                decimal hospedajeS = Convert.ToDecimal(reader["hospedajeSoles"]);
+                decimal hospedajeD = Convert.ToDecimal(reader["hospedajeDolares"]);
+                if (hospedajeS > 0 || hospedajeD > 0)
+                {
+                    html.Append($"<tr><td>Hospedaje</td><td>{reader["descHospedaje"]}</td><td>S/ {hospedajeS:N2}</td><td>$ {hospedajeD:N2}</td></tr>");
+                    totalGastosSoles += hospedajeS;
+                    totalGastosDolares += hospedajeD;
+                }
 
-                        // Combustible
-                        decimal combustibleS = Convert.ToDecimal(reader["combustibleSoles"]);
-                        decimal combustibleD = Convert.ToDecimal(reader["combustibleDolares"]);
-                        if (combustibleS > 0 || combustibleD > 0)
-                        {
-                            html.Append($"<tr><td>Combustible</td><td>{reader["descCombustible"]}</td><td>S/ {combustibleS:N2}</td><td>$ {combustibleD:N2}</td></tr>");
-                            totalGastosSoles += combustibleS;
-                            totalGastosDolares += combustibleD;
-                        }
+                // Combustible
+                decimal combustibleS = Convert.ToDecimal(reader["combustibleSoles"]);
+                decimal combustibleD = Convert.ToDecimal(reader["combustibleDolares"]);
+                if (combustibleS > 0 || combustibleD > 0)
+                {
+                    html.Append($"<tr><td>Combustible</td><td>{reader["descCombustible"]}</td><td>S/ {combustibleS:N2}</td><td>$ {combustibleD:N2}</td></tr>");
+                    totalGastosSoles += combustibleS;
+                    totalGastosDolares += combustibleD;
+                }
 
-                        // Encarpada
-                        decimal encapadaS = Convert.ToDecimal(reader["encarpada_desencarpadaSoles"]);
-                        decimal encapadaD = Convert.ToDecimal(reader["encarpada_desencarpadaDolares"]);
-                        if (encapadaS > 0 || encapadaD > 0)
-                        {
-                            html.Append($"<tr><td>Encarpada/Desencarpada</td><td>{reader["descEncarpadaDesencarpada"]}</td><td>S/ {encapadaS:N2}</td><td>$ {encapadaD:N2}</td></tr>");
-                            totalGastosSoles += encapadaS;
-                            totalGastosDolares += encapadaD;
-                        }
-                    }
+                // Encarpada
+                decimal encapadaS = Convert.ToDecimal(reader["encarpada_desencarpadaSoles"]);
+                decimal encapadaD = Convert.ToDecimal(reader["encarpada_desencarpadaDolares"]);
+                if (encapadaS > 0 || encapadaD > 0)
+                {
+                    html.Append($"<tr><td>Encarpada/Desencarpada</td><td>{reader["descEncarpadaDesencarpada"]}</td><td>S/ {encapadaS:N2}</td><td>$ {encapadaD:N2}</td></tr>");
+                    totalGastosSoles += encapadaS;
+                    totalGastosDolares += encapadaD;
                 }
             }
 
             // Gastos adicionales (Categorías Adicionales)
-            string queryGastosAdicionales = @"
-                SELECT nombreCategoria, descripcion, soles, dolares
-                FROM CategoriasAdicionales
-                WHERE numeroOrdenViaje = @numeroOrden";
-
-            using (SqlCommand cmd = new SqlCommand(queryGastosAdicionales, conn))
+            DataTable dtAdicionales = ReportesOrdenesViajeService.ObtenerGastosAdicionales(numeroOrden);
+            foreach (DataRow reader in dtAdicionales.Rows)
             {
-                cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        decimal soles = Convert.ToDecimal(reader["soles"]);
-                        decimal dolares = Convert.ToDecimal(reader["dolares"]);
-                        html.Append($"<tr><td>{reader["nombreCategoria"]}</td><td>{reader["descripcion"]}</td><td>S/ {soles:N2}</td><td>$ {dolares:N2}</td></tr>");
-                        totalGastosSoles += soles;
-                        totalGastosDolares += dolares;
-                    }
-                }
+                decimal soles = Convert.ToDecimal(reader["soles"]);
+                decimal dolares = Convert.ToDecimal(reader["dolares"]);
+                html.Append($"<tr><td>{reader["nombreCategoria"]}</td><td>{reader["descripcion"]}</td><td>S/ {soles:N2}</td><td>$ {dolares:N2}</td></tr>");
+                totalGastosSoles += soles;
+                totalGastosDolares += dolares;
             }
 
             html.Append("<tr class='font-weight-bold'>");
@@ -1370,7 +1202,7 @@ namespace WebSGV.Views
             return html.ToString();
         }
 
-        private static string ObtenerBalanceFinal(SqlConnection conn, string numeroOrden)
+        private static string ObtenerBalanceFinal(string numeroOrden)
         {
             StringBuilder html = new StringBuilder();
 
@@ -1378,58 +1210,24 @@ namespace WebSGV.Views
             decimal balanceSoles = 0;
             decimal balanceDolares = 0;
 
-            // Obtener todos los valores
-            string queryBalance = @"
-                SELECT 
-                    -- Ingresos
-                    ISNULL((SELECT totalSoles FROM Ingresos WHERE numeroOrdenViaje = @numeroOrden), 0) +
-                    ISNULL((SELECT SUM(soles) FROM IngresosAdicionales WHERE numeroOrdenViaje = @numeroOrden), 0) AS TotalIngresosSoles,
-                    
-                    ISNULL((SELECT totalDolares FROM Ingresos WHERE numeroOrdenViaje = @numeroOrden), 0) +
-                    ISNULL((SELECT SUM(dolares) FROM IngresosAdicionales WHERE numeroOrdenViaje = @numeroOrden), 0) AS TotalIngresosDolares,
-                    
-                    -- Gastos
-                    ISNULL((SELECT 
-                        ISNULL(peajesSoles, 0) + ISNULL(alimentacionSoles, 0) + ISNULL(apoyoseguridadSoles, 0) + 
-                        ISNULL(reparacionesVariosSoles, 0) + ISNULL(movilidadSoles, 0) + ISNULL(hospedajeSoles, 0) + 
-                        ISNULL(combustibleSoles, 0) + ISNULL(encarpada_desencarpadaSoles, 0)
-                    FROM Egresos WHERE numeroOrdenViaje = @numeroOrden), 0) +
-                    ISNULL((SELECT SUM(soles) FROM CategoriasAdicionales WHERE numeroOrdenViaje = @numeroOrden), 0) AS TotalGastosSoles,
-                    
-                    ISNULL((SELECT 
-                        ISNULL(peajesDolares, 0) + ISNULL(alimentacionDolares, 0) + ISNULL(apoyoseguridadDolares, 0) + 
-                        ISNULL(repacionesVariosDolares, 0) + ISNULL(movilidadDolares, 0) + ISNULL(hospedajeDolares, 0) + 
-                        ISNULL(combustibleDolares, 0) + ISNULL(encarpada_desencarpadaDolares, 0)
-                    FROM Egresos WHERE numeroOrdenViaje = @numeroOrden), 0) +
-                    ISNULL((SELECT SUM(dolares) FROM CategoriasAdicionales WHERE numeroOrdenViaje = @numeroOrden), 0) AS TotalGastosDolares,
-                    
-                    -- Descuentos y Reintegros
-                    ISNULL((SELECT descuentoSoles FROM DescuentosReintegros WHERE numeroOrdenViaje = @numeroOrden AND activo = 1), 0) AS DescuentoSoles,
-                    ISNULL((SELECT descuentoDolares FROM DescuentosReintegros WHERE numeroOrdenViaje = @numeroOrden AND activo = 1), 0) AS DescuentoDolares,
-                    ISNULL((SELECT reintegroSoles FROM DescuentosReintegros WHERE numeroOrdenViaje = @numeroOrden AND activo = 1), 0) AS ReintegroSoles,
-                    ISNULL((SELECT reintegroDolares FROM DescuentosReintegros WHERE numeroOrdenViaje = @numeroOrden AND activo = 1), 0) AS ReintegroDolares";
-
-            using (SqlCommand cmd = new SqlCommand(queryBalance, conn))
+            // Obtener todos los valores (SQL movido a ReportesOrdenesViajeService)
+            DataTable dtBalance = ReportesOrdenesViajeService.ObtenerBalanceDetalle(numeroOrden);
+            if (dtBalance.Rows.Count > 0)
             {
-                cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        decimal ingresosSoles = Convert.ToDecimal(reader["TotalIngresosSoles"]);
-                        decimal gastosSoles = Convert.ToDecimal(reader["TotalGastosSoles"]);
-                        decimal descuentoSoles = Convert.ToDecimal(reader["DescuentoSoles"]);
-                        decimal reintegroSoles = Convert.ToDecimal(reader["ReintegroSoles"]);
+                DataRow reader = dtBalance.Rows[0];
 
-                        decimal ingresosDolares = Convert.ToDecimal(reader["TotalIngresosDolares"]);
-                        decimal gastosDolares = Convert.ToDecimal(reader["TotalGastosDolares"]);
-                        decimal descuentoDolares = Convert.ToDecimal(reader["DescuentoDolares"]);
-                        decimal reintegroDolares = Convert.ToDecimal(reader["ReintegroDolares"]);
+                decimal ingresosSoles = Convert.ToDecimal(reader["TotalIngresosSoles"]);
+                decimal gastosSoles = Convert.ToDecimal(reader["TotalGastosSoles"]);
+                decimal descuentoSoles = Convert.ToDecimal(reader["DescuentoSoles"]);
+                decimal reintegroSoles = Convert.ToDecimal(reader["ReintegroSoles"]);
 
-                        balanceSoles = ingresosSoles - gastosSoles - descuentoSoles + reintegroSoles;
-                        balanceDolares = ingresosDolares - gastosDolares - descuentoDolares + reintegroDolares;
-                    }
-                }
+                decimal ingresosDolares = Convert.ToDecimal(reader["TotalIngresosDolares"]);
+                decimal gastosDolares = Convert.ToDecimal(reader["TotalGastosDolares"]);
+                decimal descuentoDolares = Convert.ToDecimal(reader["DescuentoDolares"]);
+                decimal reintegroDolares = Convert.ToDecimal(reader["ReintegroDolares"]);
+
+                balanceSoles = ingresosSoles - gastosSoles - descuentoSoles + reintegroSoles;
+                balanceDolares = ingresosDolares - gastosDolares - descuentoDolares + reintegroDolares;
             }
 
             html.Append("<div class='card'>");
@@ -1615,160 +1413,10 @@ namespace WebSGV.Views
 
         private DataTable ObtenerReportePersonalizado(FiltrosPersonalizado f)
         {
-            DataTable dt = new DataTable();
-
-            string orderBy;
-            switch (f.Orden)
-            {
-                case "fecha_asc": orderBy = "ov.fechaSalida ASC"; break;
-                case "conductor": orderBy = "Conductor ASC, ov.fechaSalida DESC"; break;
-                case "cliente": orderBy = "Cliente ASC, ov.fechaSalida DESC"; break;
-                default: orderBy = "ov.fechaSalida DESC"; break;
-            }
-
-            StringBuilder sb = new StringBuilder(@"
-                SELECT
-                    c.DNI AS DNI,
-                    CONCAT(c.nombre, ' ', c.apPaterno, ' ', ISNULL(c.apMaterno,'')) AS Conductor,
-                    ov.fechaSalida AS FechaSalida,
-                    ov.fechaLlegada AS FechaLlegada,
-                    ov.horaSalida AS HoraSalida,
-                    ov.horaLlegada AS HoraLlegada,
-                    ISNULL(t.placaTracto, 'N/A') AS PlacaTracto,
-                    ISNULL(ca.placaCarreta, 'N/A') AS PlacaCarreta,
-                    ISNULL((SELECT TOP 1 cl.nombre FROM Despachos d
-                                INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
-                            WHERE d.idViajeProgreso = ov.idViajeProgreso AND d.activo = 1
-                            ORDER BY d.idDespacho DESC), 'N/A') AS Cliente,
-                    ISNULL((SELECT TOP 1 d.lugarOperacion FROM Despachos d
-                            WHERE d.idViajeProgreso = ov.idViajeProgreso AND d.activo = 1
-                            ORDER BY d.idDespacho DESC), 'N/A') AS Destino,
-                    ov.numeroOrdenViaje AS NumeroLiquidacion,
-                    ov.estadoViaje AS Estado,
-                    ISNULL(ov.observaciones, '') AS Observaciones,
-
-                    -- Ingresos por categoría
-                    ISNULL((SELECT i.despachoSoles FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IDespachoSoles,
-                    ISNULL((SELECT i.despachoDolares FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IDespachoDolares,
-                    ISNULL((SELECT i.prestamoSoles FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IPrestamoSoles,
-                    ISNULL((SELECT i.prestamosDolares FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IPrestamoDolares,
-                    ISNULL((SELECT i.mensualidadSoles FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IMensualidadSoles,
-                    ISNULL((SELECT i.mensualidadDolares FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IMensualidadDolares,
-                    ISNULL((SELECT i.otrosSoles FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IOtrosSoles,
-                    ISNULL((SELECT i.otrosDolares FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IOtrosDolares,
-                    ISNULL((SELECT SUM(soles) FROM IngresosAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IAdicionalesSoles,
-                    ISNULL((SELECT SUM(dolares) FROM IngresosAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IAdicionalesDolares,
-                    ISNULL(STUFF((SELECT '; ' + ia.nombreCategoria + ' S/' + CONVERT(varchar, CAST(ISNULL(ia.soles,0) AS decimal(18,2)))
-                                        + CASE WHEN ISNULL(ia.dolares,0) > 0 THEN ' / $' + CONVERT(varchar, CAST(ia.dolares AS decimal(18,2))) ELSE '' END
-                                 FROM IngresosAdicionales ia
-                                 WHERE ia.numeroOrdenViaje = ov.numeroOrdenViaje
-                                   AND (ISNULL(ia.soles,0) > 0 OR ISNULL(ia.dolares,0) > 0)
-                                 FOR XML PATH(''), TYPE).value('.', 'nvarchar(max)'), 1, 2, ''), '') AS IAdicionalesDetalle,
-
-                    -- Gastos por categoría
-                    ISNULL((SELECT e.peajesSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GPeajesSoles,
-                    ISNULL((SELECT e.peajesDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GPeajesDolares,
-                    ISNULL((SELECT e.alimentacionSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GAlimentacionSoles,
-                    ISNULL((SELECT e.alimentacionDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GAlimentacionDolares,
-                    ISNULL((SELECT e.apoyoseguridadSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GApoyoSeguridadSoles,
-                    ISNULL((SELECT e.apoyoseguridadDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GApoyoSeguridadDolares,
-                    ISNULL((SELECT e.reparacionesVariosSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GReparacionesSoles,
-                    ISNULL((SELECT e.repacionesVariosDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GReparacionesDolares,
-                    ISNULL((SELECT e.movilidadSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GMovilidadSoles,
-                    ISNULL((SELECT e.movilidadDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GMovilidadDolares,
-                    ISNULL((SELECT e.hospedajeSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GHospedajeSoles,
-                    ISNULL((SELECT e.hospedajeDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GHospedajeDolares,
-                    ISNULL((SELECT e.combustibleSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GCombustibleSoles,
-                    ISNULL((SELECT e.combustibleDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GCombustibleDolares,
-                    ISNULL((SELECT e.encarpada_desencarpadaSoles FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GEncarpadaSoles,
-                    ISNULL((SELECT e.encarpada_desencarpadaDolares FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GEncarpadaDolares,
-                    ISNULL((SELECT SUM(soles) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GAdicionalesSoles,
-                    ISNULL((SELECT SUM(dolares) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GAdicionalesDolares,
-                    ISNULL(STUFF((SELECT '; ' + gca.nombreCategoria + ' S/' + CONVERT(varchar, CAST(ISNULL(gca.soles,0) AS decimal(18,2)))
-                                        + CASE WHEN ISNULL(gca.dolares,0) > 0 THEN ' / $' + CONVERT(varchar, CAST(gca.dolares AS decimal(18,2))) ELSE '' END
-                                 FROM CategoriasAdicionales gca
-                                 WHERE gca.numeroOrdenViaje = ov.numeroOrdenViaje
-                                   AND (ISNULL(gca.soles,0) > 0 OR ISNULL(gca.dolares,0) > 0)
-                                 FOR XML PATH(''), TYPE).value('.', 'nvarchar(max)'), 1, 2, ''), '') AS GAdicionalesDetalle,
-
-                    -- Totales agregados (para columnas agregadas y balance)
-                    ISNULL((SELECT ISNULL(i.despachoSoles,0) + ISNULL(i.prestamoSoles,0)
-                                   + ISNULL(i.mensualidadSoles,0) + ISNULL(i.otrosSoles,0)
-                            FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0)
-                    + ISNULL((SELECT SUM(soles) FROM IngresosAdicionales
-                              WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IngresosSoles,
-
-                    ISNULL((SELECT ISNULL(i.despachoDolares,0) + ISNULL(i.prestamosDolares,0)
-                                   + ISNULL(i.mensualidadDolares,0) + ISNULL(i.otrosDolares,0)
-                            FROM Ingresos i WHERE i.numeroOrdenViaje = ov.numeroOrdenViaje), 0)
-                    + ISNULL((SELECT SUM(dolares) FROM IngresosAdicionales
-                              WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IngresosDolares,
-
-                    ISNULL((SELECT ISNULL(e.peajesSoles,0) + ISNULL(e.alimentacionSoles,0)
-                                   + ISNULL(e.apoyoseguridadSoles,0) + ISNULL(e.reparacionesVariosSoles,0)
-                                   + ISNULL(e.movilidadSoles,0) + ISNULL(e.hospedajeSoles,0)
-                                   + ISNULL(e.combustibleSoles,0) + ISNULL(e.encarpada_desencarpadaSoles,0)
-                            FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0)
-                    + ISNULL((SELECT SUM(soles) FROM CategoriasAdicionales
-                              WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GastosSoles,
-
-                    ISNULL((SELECT ISNULL(e.peajesDolares,0) + ISNULL(e.alimentacionDolares,0)
-                                   + ISNULL(e.apoyoseguridadDolares,0) + ISNULL(e.repacionesVariosDolares,0)
-                                   + ISNULL(e.movilidadDolares,0) + ISNULL(e.hospedajeDolares,0)
-                                   + ISNULL(e.combustibleDolares,0) + ISNULL(e.encarpada_desencarpadaDolares,0)
-                            FROM Egresos e WHERE e.numeroOrdenViaje = ov.numeroOrdenViaje), 0)
-                    + ISNULL((SELECT SUM(dolares) FROM CategoriasAdicionales
-                              WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GastosDolares,
-
-                    ISNULL((SELECT dr.descuentoSoles FROM DescuentosReintegros dr
-                            WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS DescuentoSoles,
-                    ISNULL((SELECT dr.descuentoDolares FROM DescuentosReintegros dr
-                            WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS DescuentoDolares,
-                    ISNULL((SELECT dr.reintegroSoles FROM DescuentosReintegros dr
-                            WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS ReintegroSoles,
-                    ISNULL((SELECT dr.reintegroDolares FROM DescuentosReintegros dr
-                            WHERE dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1), 0) AS ReintegroDolares
-
-                FROM OrdenViaje ov
-                INNER JOIN Conductor c ON ov.idConductor = c.idConductor
-                LEFT JOIN Tracto t ON ov.idTracto = t.idTracto
-                LEFT JOIN Carreta ca ON ov.idCarreta = ca.idCarreta
-                WHERE ov.fechaSalida BETWEEN @FechaDesde AND @FechaHasta ");
-
-            if (!string.IsNullOrEmpty(f.Estado) && f.Estado != "TODOS")
-                sb.Append(" AND ov.estadoViaje = @Estado ");
-            if (f.IdConductor > 0)
-                sb.Append(" AND ov.idConductor = @IdConductor ");
-            if (!string.IsNullOrEmpty(f.PlacaTracto))
-                sb.Append(" AND t.placaTracto LIKE @PlacaTracto ");
-            if (f.IdCliente > 0)
-                sb.Append(@" AND EXISTS (SELECT 1 FROM Despachos d
-                                         WHERE d.idViajeProgreso = ov.idViajeProgreso
-                                           AND d.activo = 1 AND d.idCliente = @IdCliente) ");
-            if (!string.IsNullOrEmpty(f.Categoria))
-                sb.Append(@" AND EXISTS (SELECT 1 FROM CategoriasAdicionales gca
-                                         WHERE gca.numeroOrdenViaje = ov.numeroOrdenViaje
-                                           AND gca.nombreCategoria LIKE @Categoria
-                                           AND (ISNULL(gca.soles,0) > 0 OR ISNULL(gca.dolares,0) > 0)) ");
-
-            sb.Append(" ORDER BY ").Append(orderBy);
-
-            {
-                var prs = new System.Collections.Generic.List<System.Data.SqlClient.SqlParameter>();
-                prs.Add(DbHelper.Param("@FechaDesde", f.FechaDesde));
-                prs.Add(DbHelper.Param("@FechaHasta", f.FechaHasta));
-                if (!string.IsNullOrEmpty(f.Estado) && f.Estado != "TODOS")
-                    prs.Add(DbHelper.Param("@Estado", f.Estado));
-                if (f.IdConductor > 0)
-                    prs.Add(DbHelper.Param("@IdConductor", f.IdConductor));
-                if (!string.IsNullOrEmpty(f.PlacaTracto))
-                    prs.Add(DbHelper.Param("@PlacaTracto", "%" + f.PlacaTracto + "%"));
-                if (f.IdCliente > 0)
-                    prs.Add(DbHelper.Param("@IdCliente", f.IdCliente));
-                if (!string.IsNullOrEmpty(f.Categoria))
-                    prs.Add(DbHelper.Param("@Categoria", "%" + f.Categoria + "%"));
-                dt = DbHelper.ConsultarTabla(sb.ToString(), prs.ToArray());
-            }
+            // SQL (incl. construcción dinámica de filtros/orden) movido al servicio.
+            DataTable dt = ReportesOrdenesViajeService.ObtenerReportePersonalizado(
+                f.FechaDesde, f.FechaHasta, f.Estado, f.IdConductor, f.IdCliente,
+                f.PlacaTracto, f.Categoria, f.Orden);
 
             // Balance Neto = Ingresos - Gastos - Descuento + Reintegro
             dt.Columns.Add("BalanceSoles", typeof(decimal));

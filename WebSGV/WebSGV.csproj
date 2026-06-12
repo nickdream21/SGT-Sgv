@@ -451,6 +451,7 @@
     <Compile Include="Services\Common\MontoHelper.cs" />
     <Compile Include="Services\Conductor\DashboardConductorService.cs" />
     <Compile Include="Services\Conductor\LiquidacionConductorService.cs" />
+    <Compile Include="Services\Reportes\ReportesOrdenesViajeService.cs" />
     <Compile Include="Services\Reportes\ReportesService.cs" />
     <Compile Include="Services\Despachos\DespachoValidaciones.cs" />
     <Compile Include="Services\Despachos\EditarDespachoService.cs" />
