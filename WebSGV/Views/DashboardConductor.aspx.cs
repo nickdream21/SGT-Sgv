@@ -963,8 +963,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    Log($"❌ ERROR EN TRANSACCIÓN: {ex.Message}");
-                    Log($"   StackTrace: {ex.StackTrace}");
+                    LogSGV.Error(ex, "Error en la transacción de liquidación del conductor (orden {Numero})", numeroOrdenViaje);
                     MostrarMensaje($"Error al enviar la liquidación: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
                 }
 
@@ -1000,8 +999,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ ERROR GENERAL: {ex.Message}");
-                Log($"   StackTrace: {ex.StackTrace}");
+                LogSGV.Error(ex, "Error general al enviar la liquidación del conductor");
                 MostrarMensaje("Error al enviar la liquidación. Por favor, intente nuevamente o contacte al administrador.", "danger");
             }
         }
@@ -1521,7 +1519,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error en RetirarLiquidacion: {ex.Message}");
+                LogSGV.Error(ex, "Error al retirar la liquidación (orden {IdOrden})", idOrdenViaje);
                 return new { success = false, message = "Error al retirar la liquidación. Intente nuevamente." };
             }
         }
