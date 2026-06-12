@@ -128,6 +128,15 @@
     <Reference Include="QuestPDF, Version=2026.5.0.0, Culture=neutral, PublicKeyToken=0f3c2b2315ff52c8, processorArchitecture=MSIL">
       <HintPath>..\packages\QuestPDF.2026.5.0\lib\netstandard2.0\QuestPDF.dll</HintPath>
     </Reference>
+    <Reference Include="Serilog">
+      <HintPath>..\packages\Serilog.2.12.0\lib\net47\Serilog.dll</HintPath>
+    </Reference>
+    <Reference Include="Serilog.Sinks.Debug">
+      <HintPath>..\packages\Serilog.Sinks.Debug.2.0.0\lib\net46\Serilog.Sinks.Debug.dll</HintPath>
+    </Reference>
+    <Reference Include="Serilog.Sinks.File">
+      <HintPath>..\packages\Serilog.Sinks.File.5.0.0\lib\net45\Serilog.Sinks.File.dll</HintPath>
+    </Reference>
     <Reference Include="WebGrease">
       <Private>True</Private>
       <HintPath>..\packages\WebGrease.1.6.0\lib\WebGrease.dll</HintPath>
@@ -441,6 +450,7 @@
     <Compile Include="Helpers\EmpresaConfigHelper.cs" />
     <Compile Include="Helpers\FechaHelper.cs" />
     <Compile Include="Helpers\HashHelper.cs" />
+    <Compile Include="Helpers\LogSGV.cs" />
     <Compile Include="Helpers\NumeroALetrasHelper.cs" />
     <Compile Include="Helpers\PaginaBase.cs">
       <SubType>ASPXCodeBehind</SubType>

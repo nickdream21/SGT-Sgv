@@ -15,6 +15,12 @@ namespace WebSGV
     {
         void Application_Start(object sender, EventArgs e)
         {
+            // Logging centralizado (Serilog): a la ventana Output (local) y a
+            // ~/App_Data/logs/sgv-AAAAMMDD.log (producción). MapPath aquí para no
+            // acoplar el helper a System.Web.
+            LogSGV.Inicializar(System.Web.Hosting.HostingEnvironment.MapPath("~/App_Data/logs"));
+            LogSGV.Info("Aplicación SGV iniciada");
+
             // Código que se ejecuta al iniciar la aplicación
             AreaRegistration.RegisterAllAreas();
             RouteConfig.RegisterRoutes(RouteTable.Routes);
@@ -25,6 +31,12 @@ namespace WebSGV
 
             // Crear tabla de auditoría si no existe
             AuditoriaHelper.CrearTablaAuditoriaSiNoExiste();
+        }
+
+        void Application_End(object sender, EventArgs e)
+        {
+            // Vaciar y cerrar los sinks de log al apagar la aplicación.
+            LogSGV.Cerrar();
         }
 
         void Application_Error(object sender, EventArgs e)

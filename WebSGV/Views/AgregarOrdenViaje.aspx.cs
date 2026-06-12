@@ -752,14 +752,13 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"❌ ERROR: {ex.Message}");
-                    System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
+                    LogSGV.Error(ex, "Error al guardar orden de viaje {Numero} (edicion={EsEdicion})", numeroOrdenViaje, esEdicion);
                     MostrarMensaje($"Error al guardar: {ex.Message}", "danger");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ ERROR GENERAL: {ex.Message}");
+                LogSGV.Error(ex, "Error del sistema al guardar orden de viaje");
                 MostrarMensaje($"Error del sistema: {ex.Message}", "danger");
             }
         }
