@@ -68,6 +68,8 @@ formato de factura, etc.).
 | `24918c1` | ListaDespachos (1/2) | `Despachos/ListaDespachosService` + `Models/Despachos/ListaDespachosModels` | **Lectores de DTO**: `ObtenerViajesActivos`, `ObtenerDespachosDelViaje`, `ObtenerLotesRegistrados`, `ObtenerLotePorId`, `ObtenerIdsDespachosDeLote`, `ObtenerDespachosDelLote` (filtros como parámetros). Helpers `GetSafeValue`/`LeerDespachoDesdeReader`/`LeerLoteDesdeReader`/`ParsearIdLoteVirtual` movidos al service; modelos `ViajeActivo`/`DespachoViaje`/`DespachoConConductor`/`LoteRegistrado` a `WebSGV.Models.Despachos`. El code-behind lee los controles de filtro y delega. |
 | `ca51ded` | ListaDespachos (2/2) | `Despachos/ListaDespachosService.GuardarCambiosLote` | **Transacción de edición de lote**: actualizar despachos + recalcular conductor dominante + gestionar/desvincular factura y CPIC (`sp_LD_*`). El code-behind lee/parsea los controles del formulario de edición y arma un `GuardarCambiosLoteInput`; el service ejecuta la transacción (rollback + re-propagación). |
 | `48aca26` | BuscarOrdenViaje | `OrdenViaje/BuscarOrdenViajeService.GuardarCambios` + `Models/OrdenViaje/EditarOrdenViajeModels` | **Transacción de edición de orden de viaje desde la búsqueda**: `UPDATE` verbatim de OrdenViaje, Ingresos (recalculando totales base + adicionales en el service), IngresosAdicionales, Egresos, CategoriasAdicionales y GuiasTransportista en una sola transacción. El code-behind lee/parsea los controles (TextBox/DropDownList/Repeater) y arma un `EditarOrdenViajeInput`; los modelos `EditarOrdenViajeInput`/`IngresoAdicionalEditar`/`GastoAdicionalEditar` viven en `WebSGV.Models.OrdenViaje`. Validación de campos, auditoría, recarga de la UI y `try/catch` permanecen en la página. |
+| `5fcbede` | AgregarOrdenViaje (1/2) | `OrdenViaje/AgregarOrdenViajeService.GuardarOrden` + `Models/OrdenViaje/AgregarOrdenViajeModels` | **Transacción de guardado/edición**: `INSERT`/`UPDATE OrdenViaje` (estado COMPLETADO/APROBADO), borrado del financiero anterior en edición, ingresos/egresos principales, adicionales, descuentos/reintegros, gastos detallados (DetallePeajes/Reparaciones/Hospedaje/Combustible) y cierre de viaje en progreso — todo verbatim en una transacción. El code-behind arma el `AgregarOrdenViajeInput` leyendo `Request.Form`, hidden fields (JSON) y sesión (id usuario), y conserva validación/auditoría/resultado UI. Los modelos `GastoFinanciero`/`IngresoAdicionalData`/`GastoAdicionalData` se movieron a `WebSGV.Models.OrdenViaje` (tipos **propios**: su `GastoFinanciero` deserializa la fecha como `DateTime` directo y **no** se fusiona con el de `Models.Conductor`). |
+| `6d90067` | AgregarOrdenViaje (2/2) | `OrdenViaje/AgregarOrdenViajeService` (lectores) | **Lectores de carga del formulario de edición**: `ObtenerOrdenParaEdicion` (cabecera + ingresos/egresos), `ObtenerIngresosAdicionalesParaEdicion`, `ObtenerGastosAdicionalesParaEdicion`, `ObtenerGastosDetalladosParaEdicion` (4 tablas de detalle con Id por categoría). El code-behind conserva el binding a controles y los scripts de carga (`ScriptManager`); las lecturas pasan de `SqlDataReader` a `DataTable`/`DataRow` con semántica idéntica. `AgregarOrdenViaje.aspx.cs` ya no abre `SqlConnection`/`SqlCommand`. |
 
 > **Pendiente de validación en runtime:** toca dinero y no hay pruebas de BD. Verificado
 > con MSBuild limpio + 177 tests; falta una corrida real (envío y re-liquidación) antes
@@ -118,8 +120,10 @@ Pendientes por página:
   permanece en la página. Dedup/extracción de esos binders es opcional (no es flujo de dinero).
 - **Facturas** — escrituras transaccionales con **blobs de archivo** (guardar/editar factura,
   subir documentos) en Agregar/Buscar.
-- **AgregarOrdenViaje** — transacción de **guardado** (insert/update de la orden + financiero)
-  y los lectores que cargan el formulario de edición.
+- ~~**AgregarOrdenViaje** — transacción de **guardado** (insert/update de la orden + financiero)
+  y los lectores que cargan el formulario de edición.~~ ✅ **Hecho** (commits `5fcbede` 1/2 +
+  `6d90067` 2/2): guardado en `AgregarOrdenViajeService.GuardarOrden(AgregarOrdenViajeInput)`;
+  lectores de edición en `Obtener*ParaEdicion`.
 - **ReportesOrdenesViaje** — pendiente de revisar (no empezado).
 
 ## 5. Decisiones diferidas (otras mejoras)
@@ -143,7 +147,7 @@ Pendientes por página:
 2. Pase de transacciones de escritura, empezando por las de **mayor valor de dinero**:
    ~~DashboardConductor (envío liquidación)~~ ✅ → ~~LiquidacionesPendientes (AprobarConAjustes/
    Corregir/ObtenerDetalle)~~ ✅ → ~~RegistroDespacho (creación de lote)~~ ✅.
-3. Transacciones restantes: ~~BuscarOrdenViaje~~ ✅, AgregarOrdenViaje, ~~ListaDespachos~~ ✅, Facturas.
+3. Transacciones restantes: ~~BuscarOrdenViaje~~ ✅, ~~AgregarOrdenViaje~~ ✅, ~~ListaDespachos~~ ✅, Facturas.
 4. ReportesOrdenesViaje.
 5. Logging (Serilog) y dedup cosmético.
 
