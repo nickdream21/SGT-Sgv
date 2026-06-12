@@ -143,9 +143,12 @@ Pendientes por página:
   2.12.0 + sinks Debug/File (libs net4x, sin deps transitivas); fachada `Helpers/LogSGV.cs`
   que escribe al sink Debug (Output de VS en local) **y** a `~/App_Data/logs/sgv-AAAAMMDD.log`
   (rotación diaria) para producción; init en `Application_Start`, cierre en `Application_End`.
-  **Migración gradual en curso:** sólo migrado el piloto (catch del guardado de
-  `AgregarOrdenViaje`); falta reemplazar los `Debug.WriteLine` restantes módulo a módulo
-  (priorizar flujos de dinero: liquidación conductor, aprobación, despachos, facturas).
+  **Migración gradual:** los **cinco flujos de dinero** ya registran sus errores en
+  producción vía `LogSGV.Error` (commits `0b754d7` AgregarOrdenViaje · `6520f5f`
+  DashboardConductor envío/retiro · `6765aad` LiquidacionesPendientes aprobación/rechazo ·
+  `f55abe9` RegistroDespacho/ListaDespachos · `c30cf7f` Facturas). **Pendiente:** migrar los
+  `Debug.WriteLine`/`Trace` informativos y los catch de lectura/UI del resto de páginas
+  (no urgente; los flujos críticos ya están cubiertos).
 - **Dedup cosmético** (no toca dinero): `FormatearTamano(long)` y
   `ObtenerContentType`/`ObtenerIconoArchivo` duplicados en BuscarFactura/BuscarCPIC; familia
   `ObtenerClaseEstado/ObtenerTextoEstado/ObtenerClaseBoton` repetida en ~10 `Registro*.aspx.cs`.
