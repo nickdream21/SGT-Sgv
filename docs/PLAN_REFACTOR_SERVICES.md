@@ -139,8 +139,13 @@ Pendientes por página:
 
 ## 5. Decisiones diferidas (otras mejoras)
 
-- **Serilog / logging centralizado**: pospuesto (no se añadieron paquetes). Hoy se usa
-  `System.Diagnostics.Debug/Trace`. Evaluar `ILogSGV` + Serilog en un pase aparte.
+- **Serilog / logging centralizado**: ✅ **Base hecha** (commit `0b754d7`). Paquetes Serilog
+  2.12.0 + sinks Debug/File (libs net4x, sin deps transitivas); fachada `Helpers/LogSGV.cs`
+  que escribe al sink Debug (Output de VS en local) **y** a `~/App_Data/logs/sgv-AAAAMMDD.log`
+  (rotación diaria) para producción; init en `Application_Start`, cierre en `Application_End`.
+  **Migración gradual en curso:** sólo migrado el piloto (catch del guardado de
+  `AgregarOrdenViaje`); falta reemplazar los `Debug.WriteLine` restantes módulo a módulo
+  (priorizar flujos de dinero: liquidación conductor, aprobación, despachos, facturas).
 - **Dedup cosmético** (no toca dinero): `FormatearTamano(long)` y
   `ObtenerContentType`/`ObtenerIconoArchivo` duplicados en BuscarFactura/BuscarCPIC; familia
   `ObtenerClaseEstado/ObtenerTextoEstado/ObtenerClaseBoton` repetida en ~10 `Registro*.aspx.cs`.
