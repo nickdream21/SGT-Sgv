@@ -530,6 +530,7 @@
     <Compile Include="Models\Despachos\ListaDespachosModels.cs" />
     <Compile Include="Models\Despachos\RegistroDespachoModels.cs" />
     <Compile Include="Models\Liquidaciones\DetalleLiquidacionModels.cs" />
+    <Compile Include="Models\OrdenViaje\EditarOrdenViajeModels.cs" />
     <Compile Include="Models\DniResponse.cs" />
     <Compile Include="Models\DniService.cs" />
     <Compile Include="Views\AsignacionesMaquinaria.aspx.cs">

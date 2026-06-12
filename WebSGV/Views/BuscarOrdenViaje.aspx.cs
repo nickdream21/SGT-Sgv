@@ -1,11 +1,10 @@
 using System;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
 using System.Web.UI.WebControls;
 using System.Collections.Generic;
 using System.Linq;
 using WebSGV.Helpers;
+using WebSGV.Models.OrdenViaje;
 using WebSGV.Services.Common;
 using WebSGV.Services.OrdenViaje;
 
@@ -617,282 +616,126 @@ namespace WebSGV.Views
 
         private void GuardarCambios()
         {
-            string numeroOrdenViaje = txtOrdenViaje.Text.Trim();
-            string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+            // El code-behind lee/parsea los controles y arma el DTO; el servicio ejecuta
+            // la transacción (UPDATE OrdenViaje/Ingresos/IngresosAdicionales/Egresos/
+            // CategoriasAdicionales/GuiasTransportista). SQL movido verbatim al servicio.
+            EditarOrdenViajeInput input = ConstruirInputEdicion();
+            BuscarOrdenViajeService.GuardarCambios(input);
+        }
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+        private EditarOrdenViajeInput ConstruirInputEdicion()
+        {
+            var input = new EditarOrdenViajeInput
             {
-                conn.Open();
-                using (SqlTransaction transaction = conn.BeginTransaction())
+                NumeroOrdenViaje = txtOrdenViaje.Text.Trim(),
+
+                FechaSalida = Convert.ToDateTime(txtFechaSalida.Text),
+                HoraSalida = txtHoraSalida.Text,
+                FechaLlegada = Convert.ToDateTime(txtFechaLlegada.Text),
+                HoraLlegada = txtHoraLlegada.Text,
+                IdCliente = ddlCliente.SelectedValue,
+                IdTracto = ddlPlacaTracto.SelectedValue,
+                IdCarreta = ddlPlacaCarreta.SelectedValue,
+                IdConductor = ddlConductor.SelectedValue,
+                Observaciones = txtObservaciones.Text,
+                ObservacionesLiquidacion = txtObservacionesLiquidacion.Text,
+
+                DespachoSoles = ConvertToDecimal(txtDespachoSoles.Text),
+                DespachoDolares = ConvertToDecimal(txtDespachoDolares.Text),
+                DescDespacho = txtDescDespacho.Text,
+                MensualidadSoles = ConvertToDecimal(txtMensualidadSoles.Text),
+                MensualidadDolares = ConvertToDecimal(txtMensualidadDolares.Text),
+                DescMensualidad = txtDescMensualidad.Text,
+                OtrosSoles = ConvertToDecimal(txtOtrosSoles.Text),
+                OtrosDolares = ConvertToDecimal(txtOtrosDolares.Text),
+                DescOtrosAutorizados = txtDescOtros.Text,
+                PrestamoSoles = ConvertToDecimal(txtPrestamoSoles.Text),
+                PrestamoDolares = ConvertToDecimal(txtPrestamoDolares.Text),
+                DescPrestamo = txtDescPrestamo.Text,
+
+                PeajesSoles = ConvertToDecimal(txtPeajesSoles.Text),
+                PeajesDolares = ConvertToDecimal(txtPeajesDolares.Text),
+                DescPeajes = txtDescPeajes.Text,
+                AlimentacionSoles = ConvertToDecimal(txtAlimentacionSoles.Text),
+                AlimentacionDolares = ConvertToDecimal(txtAlimentacionDolares.Text),
+                DescAlimentacion = txtDescAlimentacion.Text,
+                ApoyoSeguridadSoles = ConvertToDecimal(txtApoyoSeguridadSoles.Text),
+                ApoyoSeguridadDolares = ConvertToDecimal(txtApoyoSeguridadDolares.Text),
+                DescApoyoSeguridad = txtDescApoyoSeguridad.Text,
+                ReparacionesSoles = ConvertToDecimal(txtReparacionesSoles.Text),
+                ReparacionesDolares = ConvertToDecimal(txtReparacionesDolares.Text),
+                DescReparaciones = txtDescReparaciones.Text,
+                MovilidadSoles = ConvertToDecimal(txtMovilidadSoles.Text),
+                MovilidadDolares = ConvertToDecimal(txtMovilidadDolares.Text),
+                DescMovilidad = txtDescMovilidad.Text,
+                EncarpadaSoles = ConvertToDecimal(txtEncapadaSoles.Text),
+                EncarpadaDolares = ConvertToDecimal(txtEncapadaDolares.Text),
+                DescEncarpada = txtDescEncapada.Text,
+                HospedajeSoles = ConvertToDecimal(txtHospedajeSoles.Text),
+                HospedajeDolares = ConvertToDecimal(txtHospedajeDolares.Text),
+                DescHospedaje = txtDescHospedaje.Text,
+                CombustibleSoles = ConvertToDecimal(txtCombustibleSoles.Text),
+                CombustibleDolares = ConvertToDecimal(txtCombustibleDolares.Text),
+                DescCombustible = txtDescCombustible.Text,
+
+                NumeroGuiaTransportista = txtGuiaTransportista.Text,
+                NumeroGuiaCliente = txtGuiaCliente.Text,
+                Ruta1 = ddlRuta.SelectedValue
+            };
+
+            // Planta/manifiesto sólo se persisten para la ruta "2"; en caso contrario, DBNull.
+            if (ddlRuta.SelectedValue == "2" && !string.IsNullOrEmpty(ddlPlantaDescarga.SelectedValue))
+                input.PlantaDescarga = ddlPlantaDescarga.SelectedValue;
+            if (ddlRuta.SelectedValue == "2" && !string.IsNullOrEmpty(txtManifiesto.Text))
+                input.NumeroManifiesto = txtManifiesto.Text;
+
+            // Ingresos adicionales (repeater) -> sólo filas con todos los controles presentes.
+            foreach (RepeaterItem item in rptIngresosAdicionales.Items)
+            {
+                HiddenField hfIdIngresoAdicional = item.FindControl("hfIdIngresoAdicional") as HiddenField;
+                TextBox txtNombreIngreso = item.FindControl("txtNombreIngreso") as TextBox;
+                TextBox txtDescripcionIngreso = item.FindControl("txtDescripcionIngreso") as TextBox;
+                TextBox txtIngresoSoles = item.FindControl("txtIngresoSoles") as TextBox;
+                TextBox txtIngresoDolares = item.FindControl("txtIngresoDolares") as TextBox;
+
+                if (hfIdIngresoAdicional != null && txtNombreIngreso != null &&
+                    txtDescripcionIngreso != null && txtIngresoSoles != null && txtIngresoDolares != null)
                 {
-                    try
+                    input.IngresosAdicionales.Add(new IngresoAdicionalEditar
                     {
-                        string queryActualizarDatosBasicos = @"
-                    UPDATE OrdenViaje SET
-                        fechaSalida = @fechaSalida,
-                        horaSalida = @horaSalida,
-                        fechaLlegada = @fechaLlegada,
-                        horaLlegada = @horaLlegada,
-                        idCliente = @idCliente,
-                        idTracto = @idTracto,
-                        idCarreta = @idCarreta,
-                        idConductor = @idConductor,
-                        observaciones = @observaciones,
-                        observacionesLiquidacion = @observacionesLiquidacion
-                    WHERE numeroOrdenViaje = @numeroOrdenViaje";
-
-                        using (SqlCommand cmd = new SqlCommand(queryActualizarDatosBasicos, conn, transaction))
-                        {
-                            cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                            cmd.Parameters.AddWithValue("@fechaSalida", Convert.ToDateTime(txtFechaSalida.Text));
-                            cmd.Parameters.AddWithValue("@horaSalida", txtHoraSalida.Text);
-                            cmd.Parameters.AddWithValue("@fechaLlegada", Convert.ToDateTime(txtFechaLlegada.Text));
-                            cmd.Parameters.AddWithValue("@horaLlegada", txtHoraLlegada.Text);
-                            cmd.Parameters.AddWithValue("@idCliente", ddlCliente.SelectedValue);
-                            cmd.Parameters.AddWithValue("@idTracto", ddlPlacaTracto.SelectedValue);
-                            cmd.Parameters.AddWithValue("@idCarreta", ddlPlacaCarreta.SelectedValue);
-                            cmd.Parameters.AddWithValue("@idConductor", ddlConductor.SelectedValue);
-                            cmd.Parameters.AddWithValue("@observaciones", txtObservaciones.Text);
-                            cmd.Parameters.AddWithValue("@observacionesLiquidacion", txtObservacionesLiquidacion.Text);
-
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        string queryActualizarIngresos = @"
-                    UPDATE Ingresos SET
-                        despachoSoles = @despachoSoles,
-                        despachoDolares = @despachoDolares,
-                        descDespacho = @descDespacho,
-                        mensualidadSoles = @mensualidadSoles,
-                        mensualidadDolares = @mensualidadDolares,
-                        descMensualidad = @descMensualidad,
-                        otrosSoles = @otrosSoles,
-                        otrosDolares = @otrosDolares,
-                        descOtrosAutorizados = @descOtrosAutorizados,
-                        prestamoSoles = @prestamoSoles,
-                        prestamosDolares = @prestamosDolares,
-                        descPrestamo = @descPrestamo,
-                        totalSoles = @totalSoles,
-                        totalDolares = @totalDolares
-                    WHERE numeroOrdenViaje = @numeroOrdenViaje";
-
-                        decimal despachoSoles = ConvertToDecimal(txtDespachoSoles.Text);
-                        decimal despachoDolares = ConvertToDecimal(txtDespachoDolares.Text);
-                        decimal mensualidadSoles = ConvertToDecimal(txtMensualidadSoles.Text);
-                        decimal mensualidadDolares = ConvertToDecimal(txtMensualidadDolares.Text);
-                        decimal otrosSoles = ConvertToDecimal(txtOtrosSoles.Text);
-                        decimal otrosDolares = ConvertToDecimal(txtOtrosDolares.Text);
-                        decimal prestamoSoles = ConvertToDecimal(txtPrestamoSoles.Text);
-                        decimal prestamoDolares = ConvertToDecimal(txtPrestamoDolares.Text);
-
-                        decimal totalIngresosSoles = despachoSoles + mensualidadSoles + otrosSoles + prestamoSoles;
-                        decimal totalIngresosDolares = despachoDolares + mensualidadDolares + otrosDolares + prestamoDolares;
-
-                        if (rptIngresosAdicionales.Items.Count > 0)
-                        {
-                            foreach (RepeaterItem item in rptIngresosAdicionales.Items)
-                            {
-                                TextBox txtIngresoSoles = item.FindControl("txtIngresoSoles") as TextBox;
-                                TextBox txtIngresoDolares = item.FindControl("txtIngresoDolares") as TextBox;
-
-                                if (txtIngresoSoles != null && txtIngresoDolares != null)
-                                {
-                                    totalIngresosSoles += ConvertToDecimal(txtIngresoSoles.Text);
-                                    totalIngresosDolares += ConvertToDecimal(txtIngresoDolares.Text);
-                                }
-                            }
-                        }
-
-                        using (SqlCommand cmd = new SqlCommand(queryActualizarIngresos, conn, transaction))
-                        {
-                            cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                            cmd.Parameters.AddWithValue("@despachoSoles", despachoSoles);
-                            cmd.Parameters.AddWithValue("@despachoDolares", despachoDolares);
-                            cmd.Parameters.AddWithValue("@descDespacho", txtDescDespacho.Text);
-                            cmd.Parameters.AddWithValue("@mensualidadSoles", mensualidadSoles);
-                            cmd.Parameters.AddWithValue("@mensualidadDolares", mensualidadDolares);
-                            cmd.Parameters.AddWithValue("@descMensualidad", txtDescMensualidad.Text);
-                            cmd.Parameters.AddWithValue("@otrosSoles", otrosSoles);
-                            cmd.Parameters.AddWithValue("@otrosDolares", otrosDolares);
-                            cmd.Parameters.AddWithValue("@descOtrosAutorizados", txtDescOtros.Text);
-                            cmd.Parameters.AddWithValue("@prestamoSoles", prestamoSoles);
-                            cmd.Parameters.AddWithValue("@prestamosDolares", prestamoDolares);
-                            cmd.Parameters.AddWithValue("@descPrestamo", txtDescPrestamo.Text);
-                            cmd.Parameters.AddWithValue("@totalSoles", totalIngresosSoles);
-                            cmd.Parameters.AddWithValue("@totalDolares", totalIngresosDolares);
-
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        if (rptIngresosAdicionales.Items.Count > 0)
-                        {
-                            foreach (RepeaterItem item in rptIngresosAdicionales.Items)
-                            {
-                                HiddenField hfIdIngresoAdicional = item.FindControl("hfIdIngresoAdicional") as HiddenField;
-                                TextBox txtNombreIngreso = item.FindControl("txtNombreIngreso") as TextBox;
-                                TextBox txtDescripcionIngreso = item.FindControl("txtDescripcionIngreso") as TextBox;
-                                TextBox txtIngresoSoles = item.FindControl("txtIngresoSoles") as TextBox;
-                                TextBox txtIngresoDolares = item.FindControl("txtIngresoDolares") as TextBox;
-
-                                if (hfIdIngresoAdicional != null && txtNombreIngreso != null &&
-                                    txtDescripcionIngreso != null && txtIngresoSoles != null && txtIngresoDolares != null)
-                                {
-                                    string queryActualizarIngresoAdicional = @"
-                                UPDATE IngresosAdicionales SET
-                                    nombreCategoria = @nombreCategoria,
-                                    soles = @soles,
-                                    dolares = @dolares,
-                                    descripcion = @descripcion
-                                WHERE idIngresoAdicional = @idIngresoAdicional AND numeroOrdenViaje = @numeroOrdenViaje";
-
-                                    using (SqlCommand cmd = new SqlCommand(queryActualizarIngresoAdicional, conn, transaction))
-                                    {
-                                        cmd.Parameters.AddWithValue("@idIngresoAdicional", hfIdIngresoAdicional.Value);
-                                        cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                                        cmd.Parameters.AddWithValue("@nombreCategoria", txtNombreIngreso.Text);
-                                        cmd.Parameters.AddWithValue("@soles", ConvertToDecimal(txtIngresoSoles.Text));
-                                        cmd.Parameters.AddWithValue("@dolares", ConvertToDecimal(txtIngresoDolares.Text));
-                                        cmd.Parameters.AddWithValue("@descripcion", txtDescripcionIngreso.Text);
-
-                                        cmd.ExecuteNonQuery();
-                                    }
-                                }
-                            }
-                        }
-
-                        string queryActualizarEgresos = @"
-                    UPDATE Egresos SET
-                        peajesSoles = @peajesSoles,
-                        peajesDolares = @peajesDolares,
-                        descPeajes = @descPeajes,
-                        alimentacionSoles = @alimentacionSoles,
-                        alimentacionDolares = @alimentacionDolares,
-                        descAlimentacion = @descAlimentacion,
-                        apoyoseguridadSoles = @apoyoseguridadSoles,
-                        apoyoseguridadDolares = @apoyoseguridadDolares,
-                        descApoyoSeguridad = @descApoyoSeguridad,
-                        reparacionesVariosSoles = @reparacionesVariosSoles,
-                        repacionesVariosDolares = @repacionesVariosDolares,
-                        descReparacionesVarios = @descReparacionesVarios,
-                        movilidadSoles = @movilidadSoles,
-                        movilidadDolares = @movilidadDolares,
-                        descMovilidad = @descMovilidad,
-                        encarpada_desencarpadaSoles = @encarpada_desencarpadaSoles,
-                        encarpada_desencarpadaDolares = @encarpada_desencarpadaDolares,
-                        descEncarpadaDesencarpada = @descEncarpadaDesencarpada,
-                        hospedajeSoles = @hospedajeSoles,
-                        hospedajeDolares = @hospedajeDolares,
-                        descHospedaje = @descHospedaje,
-                        combustibleSoles = @combustibleSoles,
-                        combustibleDolares = @combustibleDolares,
-                        descCombustible = @descCombustible
-                    WHERE numeroOrdenViaje = @numeroOrdenViaje";
-
-                        using (SqlCommand cmd = new SqlCommand(queryActualizarEgresos, conn, transaction))
-                        {
-                            cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                            cmd.Parameters.AddWithValue("@peajesSoles", ConvertToDecimal(txtPeajesSoles.Text));
-                            cmd.Parameters.AddWithValue("@peajesDolares", ConvertToDecimal(txtPeajesDolares.Text));
-                            cmd.Parameters.AddWithValue("@descPeajes", txtDescPeajes.Text);
-                            cmd.Parameters.AddWithValue("@alimentacionSoles", ConvertToDecimal(txtAlimentacionSoles.Text));
-                            cmd.Parameters.AddWithValue("@alimentacionDolares", ConvertToDecimal(txtAlimentacionDolares.Text));
-                            cmd.Parameters.AddWithValue("@descAlimentacion", txtDescAlimentacion.Text);
-                            cmd.Parameters.AddWithValue("@apoyoseguridadSoles", ConvertToDecimal(txtApoyoSeguridadSoles.Text));
-                            cmd.Parameters.AddWithValue("@apoyoseguridadDolares", ConvertToDecimal(txtApoyoSeguridadDolares.Text));
-                            cmd.Parameters.AddWithValue("@descApoyoSeguridad", txtDescApoyoSeguridad.Text);
-                            cmd.Parameters.AddWithValue("@reparacionesVariosSoles", ConvertToDecimal(txtReparacionesSoles.Text));
-                            cmd.Parameters.AddWithValue("@repacionesVariosDolares", ConvertToDecimal(txtReparacionesDolares.Text));
-                            cmd.Parameters.AddWithValue("@descReparacionesVarios", txtDescReparaciones.Text);
-                            cmd.Parameters.AddWithValue("@movilidadSoles", ConvertToDecimal(txtMovilidadSoles.Text));
-                            cmd.Parameters.AddWithValue("@movilidadDolares", ConvertToDecimal(txtMovilidadDolares.Text));
-                            cmd.Parameters.AddWithValue("@descMovilidad", txtDescMovilidad.Text);
-                            cmd.Parameters.AddWithValue("@encarpada_desencarpadaSoles", ConvertToDecimal(txtEncapadaSoles.Text));
-                            cmd.Parameters.AddWithValue("@encarpada_desencarpadaDolares", ConvertToDecimal(txtEncapadaDolares.Text));
-                            cmd.Parameters.AddWithValue("@descEncarpadaDesencarpada", txtDescEncapada.Text);
-                            cmd.Parameters.AddWithValue("@hospedajeSoles", ConvertToDecimal(txtHospedajeSoles.Text));
-                            cmd.Parameters.AddWithValue("@hospedajeDolares", ConvertToDecimal(txtHospedajeDolares.Text));
-                            cmd.Parameters.AddWithValue("@descHospedaje", txtDescHospedaje.Text);
-                            cmd.Parameters.AddWithValue("@combustibleSoles", ConvertToDecimal(txtCombustibleSoles.Text));
-                            cmd.Parameters.AddWithValue("@combustibleDolares", ConvertToDecimal(txtCombustibleDolares.Text));
-                            cmd.Parameters.AddWithValue("@descCombustible", txtDescCombustible.Text);
-
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        if (rptGastosAdicionales.Items.Count > 0)
-                        {
-                            foreach (RepeaterItem item in rptGastosAdicionales.Items)
-                            {
-                                HiddenField hfidCategoriaAdicional = item.FindControl("hfidCategoriaAdicional") as HiddenField;
-                                TextBox txtNombreGasto = item.FindControl("txtNombreGasto") as TextBox;
-                                TextBox txtDescripcionGasto = item.FindControl("txtDescripcionGasto") as TextBox;
-                                TextBox txtGastoSoles = item.FindControl("txtGastoSoles") as TextBox;
-                                TextBox txtGastoDolares = item.FindControl("txtGastoDolares") as TextBox;
-
-                                if (hfidCategoriaAdicional != null && txtNombreGasto != null &&
-                                    txtDescripcionGasto != null && txtGastoSoles != null && txtGastoDolares != null)
-                                {
-                                    string queryActualizarGastoAdicional = @"
-                                UPDATE CategoriasAdicionales SET
-                                    nombreCategoria = @nombreCategoria,
-                                    soles = @soles,
-                                    dolares = @dolares,
-                                    descripcion = @descripcion
-                                WHERE idCategoriaAdicional = @idCategoriaAdicional AND numeroOrdenViaje = @numeroOrdenViaje";
-
-                                    using (SqlCommand cmd = new SqlCommand(queryActualizarGastoAdicional, conn, transaction))
-                                    {
-                                        cmd.Parameters.AddWithValue("@idCategoriaAdicional", hfidCategoriaAdicional.Value);
-                                        cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                                        cmd.Parameters.AddWithValue("@nombreCategoria", txtNombreGasto.Text);
-                                        cmd.Parameters.AddWithValue("@soles", ConvertToDecimal(txtGastoSoles.Text));
-                                        cmd.Parameters.AddWithValue("@dolares", ConvertToDecimal(txtGastoDolares.Text));
-                                        cmd.Parameters.AddWithValue("@descripcion", txtDescripcionGasto.Text);
-
-                                        cmd.ExecuteNonQuery();
-                                    }
-                                }
-                            }
-                        }
-
-                        string queryActualizarGuias = @"
-                    UPDATE GuiasTransportista SET
-                        numeroGuiaTransportista = @numeroGuiaTransportista,
-                        numeroGuiaCliente = @numeroGuiaCliente,
-                        ruta1 = @ruta1,
-                        plantaDescarga = @plantaDescarga,
-                        numeroManifiesto = @numeroManifiesto
-                    WHERE numeroOrdenViaje = @numeroOrdenViaje";
-
-                        using (SqlCommand cmd = new SqlCommand(queryActualizarGuias, conn, transaction))
-                        {
-                            cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                            cmd.Parameters.AddWithValue("@numeroGuiaTransportista", txtGuiaTransportista.Text);
-                            cmd.Parameters.AddWithValue("@numeroGuiaCliente", txtGuiaCliente.Text);
-                            cmd.Parameters.AddWithValue("@ruta1", ddlRuta.SelectedValue);
-
-                            if (ddlRuta.SelectedValue == "2" && ddlPlantaDescarga.SelectedValue != null && ddlPlantaDescarga.SelectedValue != "")
-                                cmd.Parameters.AddWithValue("@plantaDescarga", ddlPlantaDescarga.SelectedValue);
-                            else
-                                cmd.Parameters.AddWithValue("@plantaDescarga", DBNull.Value);
-
-                            if (ddlRuta.SelectedValue == "2" && !string.IsNullOrEmpty(txtManifiesto.Text))
-                                cmd.Parameters.AddWithValue("@numeroManifiesto", txtManifiesto.Text);
-                            else
-                                cmd.Parameters.AddWithValue("@numeroManifiesto", DBNull.Value);
-
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        transaction.Commit();
-                    }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        throw new Exception("Error al guardar los cambios: " + ex.Message);
-                    }
+                        IdIngresoAdicional = hfIdIngresoAdicional.Value,
+                        NombreCategoria = txtNombreIngreso.Text,
+                        Soles = ConvertToDecimal(txtIngresoSoles.Text),
+                        Dolares = ConvertToDecimal(txtIngresoDolares.Text),
+                        Descripcion = txtDescripcionIngreso.Text
+                    });
                 }
             }
+
+            // Gastos adicionales (repeater) -> sólo filas con todos los controles presentes.
+            foreach (RepeaterItem item in rptGastosAdicionales.Items)
+            {
+                HiddenField hfidCategoriaAdicional = item.FindControl("hfidCategoriaAdicional") as HiddenField;
+                TextBox txtNombreGasto = item.FindControl("txtNombreGasto") as TextBox;
+                TextBox txtDescripcionGasto = item.FindControl("txtDescripcionGasto") as TextBox;
+                TextBox txtGastoSoles = item.FindControl("txtGastoSoles") as TextBox;
+                TextBox txtGastoDolares = item.FindControl("txtGastoDolares") as TextBox;
+
+                if (hfidCategoriaAdicional != null && txtNombreGasto != null &&
+                    txtDescripcionGasto != null && txtGastoSoles != null && txtGastoDolares != null)
+                {
+                    input.GastosAdicionales.Add(new GastoAdicionalEditar
+                    {
+                        IdCategoriaAdicional = hfidCategoriaAdicional.Value,
+                        NombreCategoria = txtNombreGasto.Text,
+                        Soles = ConvertToDecimal(txtGastoSoles.Text),
+                        Dolares = ConvertToDecimal(txtGastoDolares.Text),
+                        Descripcion = txtDescripcionGasto.Text
+                    });
+                }
+            }
+
+            return input;
         }
         #endregion
 
