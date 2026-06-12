@@ -2,7 +2,7 @@
 
 > Documento de seguimiento del esfuerzo de extracción de lógica de negocio y SQL
 > desde los code-behind (`.aspx.cs`) hacia clases en `WebSGV/Services/`.
-> Sirve para no perder el objetivo entre sesiones. Última actualización: 2026-06-12.
+> Sirve para no perder el objetivo entre sesiones. Última actualización: 2026-06-12 (Fase E).
 
 ## 1. Objetivo
 
@@ -88,6 +88,11 @@ filtros, el armado de GridViews, los literales de indicadores y el manejo de err
 Resultado: `Reportes.aspx.cs` quedó con **0** `SqlConnection`/`SqlCommand`/`SqlDataAdapter`.
 SQL/SP movido verbatim (guardas `!= "0"`/`!= "Todas"` y tipos de parámetro preservados).
 
+### Fase E — `ReportesOrdenesViaje.aspx`
+| Commit | Qué se extrajo |
+|---|---|
+| `a3d8a58` | Nuevo `Reportes/ReportesOrdenesViajeService` con todo el SQL de la página: combos (`ObtenerConductoresActivos`/`ObtenerClientes`), `ObtenerLiquidaciones`, `ObtenerViajesActivos` (dinámico), el detalle AJAX (`ObtenerCabeceraDetalle` + ingresos/gastos/balance, antes `SqlConnection`/`SqlDataReader` crudos → `DataTable`/`DataRow`) y `ObtenerReportePersonalizado` (query dinámico grande). El code-behind conserva GridViews/HTML/PDF, totales en memoria, columnas calculadas (`Monto*`/`Balance*`) y `FiltrosPersonalizado`. La página ya no abre `SqlConnection`/`SqlCommand`. |
+
 ## 4. Lo que queda — "Pase de transacciones y modelos diferidos" ⏳
 
 Es lo **entrelazado** con `Request.Form` / controles / modelos anidados de la página, que
@@ -127,7 +132,10 @@ Pendientes por página:
   y los lectores que cargan el formulario de edición.~~ ✅ **Hecho** (commits `5fcbede` 1/2 +
   `6d90067` 2/2): guardado en `AgregarOrdenViajeService.GuardarOrden(AgregarOrdenViajeInput)`;
   lectores de edición en `Obtener*ParaEdicion`.
-- **ReportesOrdenesViaje** — pendiente de revisar (no empezado).
+- ~~**ReportesOrdenesViaje** — pendiente de revisar (no empezado).~~ ✅ **Hecho** (commit `a3d8a58`):
+  todo el SQL movido a `ReportesOrdenesViajeService` (combos, liquidaciones, viajes activos,
+  detalle AJAX y reporte personalizado dinámico). La página ya no abre `SqlConnection`/`SqlCommand`;
+  el armado de GridViews/HTML/PDF y los cálculos en memoria siguen en el code-behind.
 
 ## 5. Decisiones diferidas (otras mejoras)
 
@@ -151,7 +159,7 @@ Pendientes por página:
    ~~DashboardConductor (envío liquidación)~~ ✅ → ~~LiquidacionesPendientes (AprobarConAjustes/
    Corregir/ObtenerDetalle)~~ ✅ → ~~RegistroDespacho (creación de lote)~~ ✅.
 3. Transacciones restantes: ~~BuscarOrdenViaje~~ ✅, ~~AgregarOrdenViaje~~ ✅, ~~ListaDespachos~~ ✅, ~~Facturas~~ ✅.
-4. ReportesOrdenesViaje.
+4. ~~ReportesOrdenesViaje.~~ ✅ (commit `a3d8a58`, Fase E).
 5. Logging (Serilog) y dedup cosmético.
 
 > Idealmente, los pasos de la sección 4 se validan ejecutando la app (no sólo compilando),
