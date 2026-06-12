@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -150,51 +149,14 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine($"--- Cargando datos de orden {idOrdenViaje} ---");
 
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                // SQL movido a AgregarOrdenViajeService.ObtenerOrdenParaEdicion; el binding a
+                // controles y el script de carga permanecen aquí.
+                DataTable dtOrden = AgregarOrdenViajeService.ObtenerOrdenParaEdicion(idOrdenViaje);
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                if (dtOrden.Rows.Count > 0)
                 {
-                    // ✅ CONSULTA CORREGIDA con nombres exactos de columnas
-                    string query = @"
-                SELECT 
-                    ov.*,
-                    c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS nombreConductor,
-                    t.placaTracto,
-                    ca.placaCarreta,
-                    
-                    -- Ingresos
-                    i.despachoSoles, i.despachoDolares, i.descDespacho,
-                    i.prestamoSoles, i.prestamosDolares, i.descPrestamo,
-                    i.mensualidadSoles, i.mensualidadDolares, i.descMensualidad,
-                    i.otrosSoles, i.otrosDolares, i.descOtrosAutorizados,
-                    
-                    -- Gastos
-                    e.peajesSoles, e.peajesDolares, e.descPeajes,
-                    e.alimentacionSoles, e.alimentacionDolares, e.descAlimentacion,
-                    e.apoyoseguridadSoles, e.apoyoseguridadDolares, e.descApoyoSeguridad,
-                    e.reparacionesVariosSoles, e.repacionesVariosDolares, e.descReparacionesVarios,
-                    e.movilidadSoles, e.movilidadDolares, e.descMovilidad,
-                    e.encarpada_desencarpadaSoles, e.encarpada_desencarpadaDolares, e.descEncarpadaDesencarpada,
-                    e.hospedajeSoles, e.hospedajeDolares, e.descHospedaje,
-                    e.combustibleSoles, e.combustibleDolares, e.descCombustible
+                    DataRow reader = dtOrden.Rows[0];
 
-                FROM OrdenViaje ov
-                INNER JOIN Conductor c ON ov.idConductor = c.idConductor
-                INNER JOIN Tracto t ON ov.idTracto = t.idTracto
-                INNER JOIN Carreta ca ON ov.idCarreta = ca.idCarreta
-                LEFT JOIN Ingresos i ON ov.numeroOrdenViaje = i.numeroOrdenViaje
-                LEFT JOIN Egresos e ON ov.numeroOrdenViaje = e.numeroOrdenViaje
-                WHERE ov.idOrdenViaje = @idOrdenViaje";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@idOrdenViaje", idOrdenViaje);
-                        conn.Open();
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
                                 string numeroOrdenViaje = reader["numeroOrdenViaje"].ToString();
 
                                 // === DATOS GENERALES ===
@@ -280,27 +242,22 @@ namespace WebSGV.Views
 
                                 ScriptManager.RegisterStartupScript(this, GetType(), "cargarDatosPrincipales", scriptDatos, false);
 
-                                reader.Close();
+                    // === CARGAR INGRESOS ADICIONALES ===
+                    CargarIngresosAdicionalesEdicion(numeroOrdenViaje);
 
-                                // === CARGAR INGRESOS ADICIONALES ===
-                                CargarIngresosAdicionalesEdicion(conn, numeroOrdenViaje);
+                    // === CARGAR GASTOS ADICIONALES ===
+                    CargarGastosAdicionalesEdicion(numeroOrdenViaje);
 
-                                // === CARGAR GASTOS ADICIONALES ===
-                                CargarGastosAdicionalesEdicion(conn, numeroOrdenViaje);
+                    // === CARGAR DATOS DE MODALES ===
+                    CargarDatosModalesEdicion(numeroOrdenViaje);
 
-                                // === CARGAR DATOS DE MODALES ===
-                                CargarDatosModalesEdicion(conn, numeroOrdenViaje);
-
-                                System.Diagnostics.Debug.WriteLine($"✅ Datos de orden {idOrdenViaje} cargados completamente");
-                                MostrarMensaje($"Orden <strong>{numeroOrdenViaje}</strong> cargada para edición. Modifica los datos necesarios y guarda los cambios.", "info");
-                            }
-                            else
-                            {
-                                MostrarMensaje($"No se encontró la orden con ID {idOrdenViaje}", "warning");
-                                CargarDatosNormales();
-                            }
-                        }
-                    }
+                    System.Diagnostics.Debug.WriteLine($"✅ Datos de orden {idOrdenViaje} cargados completamente");
+                    MostrarMensaje($"Orden <strong>{numeroOrdenViaje}</strong> cargada para edición. Modifica los datos necesarios y guarda los cambios.", "info");
+                }
+                else
+                {
+                    MostrarMensaje($"No se encontró la orden con ID {idOrdenViaje}", "warning");
+                    CargarDatosNormales();
                 }
             }
             catch (Exception ex)
@@ -314,43 +271,14 @@ namespace WebSGV.Views
 
 
 
-        private void CargarIngresosAdicionalesEdicion(SqlConnection conn, string numeroOrden)
+        private void CargarIngresosAdicionalesEdicion(string numeroOrden)
         {
             try
             {
                 System.Diagnostics.Debug.WriteLine($"--- Cargando ingresos adicionales de orden {numeroOrden} ---");
 
-                string query = @"
-            SELECT 
-                nombreCategoria,
-                descripcion,
-                soles,
-                dolares
-            FROM IngresosAdicionales
-            WHERE numeroOrdenViaje = @numeroOrden
-            ORDER BY idIngresoAdicional";
-
-                List<IngresoAdicionalData> ingresosAdicionales = new List<IngresoAdicionalData>();
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            ingresosAdicionales.Add(new IngresoAdicionalData
-                            {
-                                Categoria = reader["nombreCategoria"]?.ToString() ?? "",
-                                NombreCategoria = reader["nombreCategoria"]?.ToString() ?? "",
-                                Descripcion = reader["descripcion"]?.ToString() ?? "",
-                                Soles = reader["soles"] != DBNull.Value ? Convert.ToDecimal(reader["soles"]) : 0,
-                                Dolares = reader["dolares"] != DBNull.Value ? Convert.ToDecimal(reader["dolares"]) : 0
-                            });
-                        }
-                    }
-                }
+                List<IngresoAdicionalData> ingresosAdicionales =
+                    AgregarOrdenViajeService.ObtenerIngresosAdicionalesParaEdicion(numeroOrden);
 
                 if (ingresosAdicionales.Count > 0)
                 {
@@ -426,43 +354,14 @@ namespace WebSGV.Views
             }
         }
 
-        private void CargarGastosAdicionalesEdicion(SqlConnection conn, string numeroOrden)
+        private void CargarGastosAdicionalesEdicion(string numeroOrden)
         {
             try
             {
                 System.Diagnostics.Debug.WriteLine($"--- Cargando gastos adicionales de orden {numeroOrden} ---");
 
-                string query = @"
-            SELECT 
-                nombreCategoria,
-                descripcion,
-                soles,
-                dolares
-            FROM CategoriasAdicionales
-            WHERE numeroOrdenViaje = @numeroOrden
-            ORDER BY idCategoriaAdicional";
-
-                List<GastoAdicionalData> gastosAdicionales = new List<GastoAdicionalData>();
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            gastosAdicionales.Add(new GastoAdicionalData
-                            {
-                                Categoria = reader["nombreCategoria"]?.ToString() ?? "",
-                                NombreCategoria = reader["nombreCategoria"]?.ToString() ?? "",
-                                Descripcion = reader["descripcion"]?.ToString() ?? "",
-                                Soles = reader["soles"] != DBNull.Value ? Convert.ToDecimal(reader["soles"]) : 0,
-                                Dolares = reader["dolares"] != DBNull.Value ? Convert.ToDecimal(reader["dolares"]) : 0
-                            });
-                        }
-                    }
-                }
+                List<GastoAdicionalData> gastosAdicionales =
+                    AgregarOrdenViajeService.ObtenerGastosAdicionalesParaEdicion(numeroOrden);
 
                 if (gastosAdicionales.Count > 0)
                 {
@@ -539,171 +438,14 @@ namespace WebSGV.Views
         }
 
 
-        private void CargarDatosModalesEdicion(SqlConnection conn, string numeroOrden)
+        private void CargarDatosModalesEdicion(string numeroOrden)
         {
             try
             {
                 System.Diagnostics.Debug.WriteLine($"--- Cargando datos de modales de orden {numeroOrden} ---");
 
-                List<GastoFinanciero> todosLosGastos = new List<GastoFinanciero>();
-
-                // ========== PEAJES ==========
-                string queryPeajes = @"
-            SELECT 
-                estacion,
-                fecha,
-                numeroComprobante,
-                montoSoles,
-                montoDolares,
-                observaciones
-            FROM DetallePeajes
-            WHERE numeroOrdenViaje = @numeroOrden
-            ORDER BY fecha";
-
-                using (SqlCommand cmd = new SqlCommand(queryPeajes, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        int contador = 0;
-                        while (reader.Read())
-                        {
-                            contador++;
-                            todosLosGastos.Add(new GastoFinanciero
-                            {
-                                Categoria = "peajes",
-                                Id = contador,
-                                Estacion = reader["estacion"]?.ToString() ?? "",
-                                Lugar = reader["estacion"]?.ToString() ?? "",
-                                Fecha = reader["fecha"] != DBNull.Value ? Convert.ToDateTime(reader["fecha"]) : DateTime.Now,
-                                Comprobante = reader["numeroComprobante"]?.ToString() ?? "",
-                                Soles = reader["montoSoles"] != DBNull.Value ? Convert.ToDecimal(reader["montoSoles"]) : 0,
-                                Dolares = reader["montoDolares"] != DBNull.Value ? Convert.ToDecimal(reader["montoDolares"]) : 0,
-                                Observaciones = reader["observaciones"]?.ToString() ?? ""
-                            });
-                        }
-                        if (contador > 0)
-                            System.Diagnostics.Debug.WriteLine($"✅ {contador} peajes cargados");
-                    }
-                }
-
-                // ========== REPARACIONES ==========
-                string queryReparaciones = @"
-            SELECT 
-                fechaComprobante,
-                numeroComprobante,
-                montoSoles,
-                montoDolares,
-                observaciones
-            FROM DetalleReparacionesVarios
-            WHERE numeroOrdenViaje = @numeroOrden
-            ORDER BY fechaComprobante";
-
-                using (SqlCommand cmd = new SqlCommand(queryReparaciones, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        int contador = 0;
-                        while (reader.Read())
-                        {
-                            contador++;
-                            todosLosGastos.Add(new GastoFinanciero
-                            {
-                                Categoria = "reparaciones",
-                                Id = contador,
-                                Tipo = reader["observaciones"]?.ToString()?.Split('-')[0]?.Trim() ?? "Reparación",
-                                Fecha = reader["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(reader["fechaComprobante"]) : DateTime.Now,
-                                Comprobante = reader["numeroComprobante"]?.ToString() ?? "",
-                                Soles = reader["montoSoles"] != DBNull.Value ? Convert.ToDecimal(reader["montoSoles"]) : 0,
-                                Dolares = reader["montoDolares"] != DBNull.Value ? Convert.ToDecimal(reader["montoDolares"]) : 0,
-                                Observaciones = reader["observaciones"]?.ToString() ?? ""
-                            });
-                        }
-                        if (contador > 0)
-                            System.Diagnostics.Debug.WriteLine($"✅ {contador} reparaciones cargadas");
-                    }
-                }
-
-                // ========== HOSPEDAJE ==========
-                string queryHospedaje = @"
-            SELECT 
-                fechaComprobante,
-                numeroComprobante,
-                montoSoles,
-                montoDolares,
-                observaciones
-            FROM DetalleHospedaje
-            WHERE numeroOrdenViaje = @numeroOrden
-            ORDER BY fechaComprobante";
-
-                using (SqlCommand cmd = new SqlCommand(queryHospedaje, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        int contador = 0;
-                        while (reader.Read())
-                        {
-                            contador++;
-                            todosLosGastos.Add(new GastoFinanciero
-                            {
-                                Categoria = "hospedaje",
-                                Id = contador,
-                                Lugar = reader["observaciones"]?.ToString()?.Split('-')[0]?.Trim() ?? "Hotel",
-                                Fecha = reader["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(reader["fechaComprobante"]) : DateTime.Now,
-                                Comprobante = reader["numeroComprobante"]?.ToString() ?? "",
-                                Soles = reader["montoSoles"] != DBNull.Value ? Convert.ToDecimal(reader["montoSoles"]) : 0,
-                                Dolares = reader["montoDolares"] != DBNull.Value ? Convert.ToDecimal(reader["montoDolares"]) : 0,
-                                Observaciones = reader["observaciones"]?.ToString() ?? ""
-                            });
-                        }
-                        if (contador > 0)
-                            System.Diagnostics.Debug.WriteLine($"✅ {contador} hospedajes cargados");
-                    }
-                }
-
-                // ========== COMBUSTIBLE ==========
-                string queryCombustible = @"
-            SELECT 
-                fechaComprobante,
-                numeroComprobante,
-                montoSoles,
-                montoDolares,
-                observaciones
-            FROM DetalleCombustible
-            WHERE numeroOrdenViaje = @numeroOrden
-            ORDER BY fechaComprobante";
-
-                using (SqlCommand cmd = new SqlCommand(queryCombustible, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numeroOrden", numeroOrden);
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        int contador = 0;
-                        while (reader.Read())
-                        {
-                            contador++;
-                            todosLosGastos.Add(new GastoFinanciero
-                            {
-                                Categoria = "combustible",
-                                Id = contador,
-                                Lugar = reader["observaciones"]?.ToString()?.Split('-')[0]?.Trim() ?? "Grifo",
-                                Fecha = reader["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(reader["fechaComprobante"]) : DateTime.Now,
-                                Comprobante = reader["numeroComprobante"]?.ToString() ?? "",
-                                Soles = reader["montoSoles"] != DBNull.Value ? Convert.ToDecimal(reader["montoSoles"]) : 0,
-                                Dolares = reader["montoDolares"] != DBNull.Value ? Convert.ToDecimal(reader["montoDolares"]) : 0,
-                                Observaciones = reader["observaciones"]?.ToString() ?? ""
-                            });
-                        }
-                        if (contador > 0)
-                            System.Diagnostics.Debug.WriteLine($"✅ {contador} combustibles cargados");
-                    }
-                }
+                List<GastoFinanciero> todosLosGastos =
+                    AgregarOrdenViajeService.ObtenerGastosDetalladosParaEdicion(numeroOrden);
 
                 // ========== SERIALIZAR TODO A JSON ==========
                 if (todosLosGastos.Count > 0)

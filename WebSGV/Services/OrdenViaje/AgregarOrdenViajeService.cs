@@ -54,6 +54,240 @@ namespace WebSGV.Services.OrdenViaje
                         ORDER BY nombre");
 
         // ------------------------------------------------------------------
+        // Lectores de carga del formulario de edición
+        // (el binding a controles / ScriptManager permanece en el code-behind)
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Cabecera + ingresos/egresos principales de una orden para editar (una sola fila).
+        /// SQL movido verbatim; el code-behind lee la fila y arma el script de carga.
+        /// </summary>
+        public static DataTable ObtenerOrdenParaEdicion(int idOrdenViaje) =>
+            DbHelper.ConsultarTabla(@"
+                SELECT
+                    ov.*,
+                    c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS nombreConductor,
+                    t.placaTracto,
+                    ca.placaCarreta,
+
+                    -- Ingresos
+                    i.despachoSoles, i.despachoDolares, i.descDespacho,
+                    i.prestamoSoles, i.prestamosDolares, i.descPrestamo,
+                    i.mensualidadSoles, i.mensualidadDolares, i.descMensualidad,
+                    i.otrosSoles, i.otrosDolares, i.descOtrosAutorizados,
+
+                    -- Gastos
+                    e.peajesSoles, e.peajesDolares, e.descPeajes,
+                    e.alimentacionSoles, e.alimentacionDolares, e.descAlimentacion,
+                    e.apoyoseguridadSoles, e.apoyoseguridadDolares, e.descApoyoSeguridad,
+                    e.reparacionesVariosSoles, e.repacionesVariosDolares, e.descReparacionesVarios,
+                    e.movilidadSoles, e.movilidadDolares, e.descMovilidad,
+                    e.encarpada_desencarpadaSoles, e.encarpada_desencarpadaDolares, e.descEncarpadaDesencarpada,
+                    e.hospedajeSoles, e.hospedajeDolares, e.descHospedaje,
+                    e.combustibleSoles, e.combustibleDolares, e.descCombustible
+
+                FROM OrdenViaje ov
+                INNER JOIN Conductor c ON ov.idConductor = c.idConductor
+                INNER JOIN Tracto t ON ov.idTracto = t.idTracto
+                INNER JOIN Carreta ca ON ov.idCarreta = ca.idCarreta
+                LEFT JOIN Ingresos i ON ov.numeroOrdenViaje = i.numeroOrdenViaje
+                LEFT JOIN Egresos e ON ov.numeroOrdenViaje = e.numeroOrdenViaje
+                WHERE ov.idOrdenViaje = @idOrdenViaje",
+                DbHelper.Param("@idOrdenViaje", idOrdenViaje));
+
+        /// <summary>Ingresos adicionales de una orden, para reconstruir la tabla en edición.</summary>
+        public static List<IngresoAdicionalData> ObtenerIngresosAdicionalesParaEdicion(string numeroOrden)
+        {
+            DataTable dt = DbHelper.ConsultarTabla(@"
+            SELECT
+                nombreCategoria,
+                descripcion,
+                soles,
+                dolares
+            FROM IngresosAdicionales
+            WHERE numeroOrdenViaje = @numeroOrden
+            ORDER BY idIngresoAdicional",
+                DbHelper.Param("@numeroOrden", numeroOrden));
+
+            var lista = new List<IngresoAdicionalData>();
+            foreach (DataRow reader in dt.Rows)
+            {
+                lista.Add(new IngresoAdicionalData
+                {
+                    Categoria = reader["nombreCategoria"]?.ToString() ?? "",
+                    NombreCategoria = reader["nombreCategoria"]?.ToString() ?? "",
+                    Descripcion = reader["descripcion"]?.ToString() ?? "",
+                    Soles = reader["soles"] != DBNull.Value ? Convert.ToDecimal(reader["soles"]) : 0,
+                    Dolares = reader["dolares"] != DBNull.Value ? Convert.ToDecimal(reader["dolares"]) : 0
+                });
+            }
+            return lista;
+        }
+
+        /// <summary>Gastos adicionales de una orden, para reconstruir la tabla en edición.</summary>
+        public static List<GastoAdicionalData> ObtenerGastosAdicionalesParaEdicion(string numeroOrden)
+        {
+            DataTable dt = DbHelper.ConsultarTabla(@"
+            SELECT
+                nombreCategoria,
+                descripcion,
+                soles,
+                dolares
+            FROM CategoriasAdicionales
+            WHERE numeroOrdenViaje = @numeroOrden
+            ORDER BY idCategoriaAdicional",
+                DbHelper.Param("@numeroOrden", numeroOrden));
+
+            var lista = new List<GastoAdicionalData>();
+            foreach (DataRow reader in dt.Rows)
+            {
+                lista.Add(new GastoAdicionalData
+                {
+                    Categoria = reader["nombreCategoria"]?.ToString() ?? "",
+                    NombreCategoria = reader["nombreCategoria"]?.ToString() ?? "",
+                    Descripcion = reader["descripcion"]?.ToString() ?? "",
+                    Soles = reader["soles"] != DBNull.Value ? Convert.ToDecimal(reader["soles"]) : 0,
+                    Dolares = reader["dolares"] != DBNull.Value ? Convert.ToDecimal(reader["dolares"]) : 0
+                });
+            }
+            return lista;
+        }
+
+        /// <summary>
+        /// Gastos detallados de los modales (peajes/reparaciones/hospedaje/combustible) de una
+        /// orden, combinados en una sola lista con el Id por categoría, para reconstruir los
+        /// modales en edición. SQL movido verbatim.
+        /// </summary>
+        public static List<GastoFinanciero> ObtenerGastosDetalladosParaEdicion(string numeroOrden)
+        {
+            var todosLosGastos = new List<GastoFinanciero>();
+
+            // ========== PEAJES ==========
+            DataTable dtPeajes = DbHelper.ConsultarTabla(@"
+            SELECT
+                estacion,
+                fecha,
+                numeroComprobante,
+                montoSoles,
+                montoDolares,
+                observaciones
+            FROM DetallePeajes
+            WHERE numeroOrdenViaje = @numeroOrden
+            ORDER BY fecha",
+                DbHelper.Param("@numeroOrden", numeroOrden));
+
+            int contador = 0;
+            foreach (DataRow reader in dtPeajes.Rows)
+            {
+                contador++;
+                todosLosGastos.Add(new GastoFinanciero
+                {
+                    Categoria = "peajes",
+                    Id = contador,
+                    Estacion = reader["estacion"]?.ToString() ?? "",
+                    Lugar = reader["estacion"]?.ToString() ?? "",
+                    Fecha = reader["fecha"] != DBNull.Value ? Convert.ToDateTime(reader["fecha"]) : DateTime.Now,
+                    Comprobante = reader["numeroComprobante"]?.ToString() ?? "",
+                    Soles = reader["montoSoles"] != DBNull.Value ? Convert.ToDecimal(reader["montoSoles"]) : 0,
+                    Dolares = reader["montoDolares"] != DBNull.Value ? Convert.ToDecimal(reader["montoDolares"]) : 0,
+                    Observaciones = reader["observaciones"]?.ToString() ?? ""
+                });
+            }
+
+            // ========== REPARACIONES ==========
+            DataTable dtReparaciones = DbHelper.ConsultarTabla(@"
+            SELECT
+                fechaComprobante,
+                numeroComprobante,
+                montoSoles,
+                montoDolares,
+                observaciones
+            FROM DetalleReparacionesVarios
+            WHERE numeroOrdenViaje = @numeroOrden
+            ORDER BY fechaComprobante",
+                DbHelper.Param("@numeroOrden", numeroOrden));
+
+            contador = 0;
+            foreach (DataRow reader in dtReparaciones.Rows)
+            {
+                contador++;
+                todosLosGastos.Add(new GastoFinanciero
+                {
+                    Categoria = "reparaciones",
+                    Id = contador,
+                    Tipo = reader["observaciones"]?.ToString()?.Split('-')[0]?.Trim() ?? "Reparación",
+                    Fecha = reader["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(reader["fechaComprobante"]) : DateTime.Now,
+                    Comprobante = reader["numeroComprobante"]?.ToString() ?? "",
+                    Soles = reader["montoSoles"] != DBNull.Value ? Convert.ToDecimal(reader["montoSoles"]) : 0,
+                    Dolares = reader["montoDolares"] != DBNull.Value ? Convert.ToDecimal(reader["montoDolares"]) : 0,
+                    Observaciones = reader["observaciones"]?.ToString() ?? ""
+                });
+            }
+
+            // ========== HOSPEDAJE ==========
+            DataTable dtHospedaje = DbHelper.ConsultarTabla(@"
+            SELECT
+                fechaComprobante,
+                numeroComprobante,
+                montoSoles,
+                montoDolares,
+                observaciones
+            FROM DetalleHospedaje
+            WHERE numeroOrdenViaje = @numeroOrden
+            ORDER BY fechaComprobante",
+                DbHelper.Param("@numeroOrden", numeroOrden));
+
+            contador = 0;
+            foreach (DataRow reader in dtHospedaje.Rows)
+            {
+                contador++;
+                todosLosGastos.Add(new GastoFinanciero
+                {
+                    Categoria = "hospedaje",
+                    Id = contador,
+                    Lugar = reader["observaciones"]?.ToString()?.Split('-')[0]?.Trim() ?? "Hotel",
+                    Fecha = reader["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(reader["fechaComprobante"]) : DateTime.Now,
+                    Comprobante = reader["numeroComprobante"]?.ToString() ?? "",
+                    Soles = reader["montoSoles"] != DBNull.Value ? Convert.ToDecimal(reader["montoSoles"]) : 0,
+                    Dolares = reader["montoDolares"] != DBNull.Value ? Convert.ToDecimal(reader["montoDolares"]) : 0,
+                    Observaciones = reader["observaciones"]?.ToString() ?? ""
+                });
+            }
+
+            // ========== COMBUSTIBLE ==========
+            DataTable dtCombustible = DbHelper.ConsultarTabla(@"
+            SELECT
+                fechaComprobante,
+                numeroComprobante,
+                montoSoles,
+                montoDolares,
+                observaciones
+            FROM DetalleCombustible
+            WHERE numeroOrdenViaje = @numeroOrden
+            ORDER BY fechaComprobante",
+                DbHelper.Param("@numeroOrden", numeroOrden));
+
+            contador = 0;
+            foreach (DataRow reader in dtCombustible.Rows)
+            {
+                contador++;
+                todosLosGastos.Add(new GastoFinanciero
+                {
+                    Categoria = "combustible",
+                    Id = contador,
+                    Lugar = reader["observaciones"]?.ToString()?.Split('-')[0]?.Trim() ?? "Grifo",
+                    Fecha = reader["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(reader["fechaComprobante"]) : DateTime.Now,
+                    Comprobante = reader["numeroComprobante"]?.ToString() ?? "",
+                    Soles = reader["montoSoles"] != DBNull.Value ? Convert.ToDecimal(reader["montoSoles"]) : 0,
+                    Dolares = reader["montoDolares"] != DBNull.Value ? Convert.ToDecimal(reader["montoDolares"]) : 0,
+                    Observaciones = reader["observaciones"]?.ToString() ?? ""
+                });
+            }
+
+            return todosLosGastos;
+        }
+
+        // ------------------------------------------------------------------
         // Transacción de guardado (creación / edición)
         // ------------------------------------------------------------------
 
