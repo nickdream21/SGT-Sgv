@@ -272,7 +272,7 @@ namespace WebSGV.Views
                 catch (Exception exPdf)
                 {
                     // El fallo al archivar no debe bloquear la aprobación.
-                    System.Diagnostics.Debug.WriteLine($"⚠ No se pudo garantizar PDF: {exPdf.Message}");
+                    LogSGV.Advertencia("No se pudo garantizar el PDF archivado al aprobar (orden {IdOrden}): {Mensaje}", idOrdenViaje, exPdf.Message);
                 }
 
                 MostrarMensaje(
@@ -285,7 +285,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error aprobando liquidación: {ex.Message}");
+                LogSGV.Error(ex, "Error al aprobar la liquidación (orden {IdOrden})", idOrdenViaje);
                 MostrarMensaje($"Error al aprobar la liquidación: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
@@ -396,7 +396,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error rechazando liquidación: {ex.Message}");
+                LogSGV.Error(ex, "Error al rechazar la liquidación");
                 MostrarMensaje($"Error al rechazar la liquidación: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
@@ -542,14 +542,14 @@ namespace WebSGV.Views
                 }
                 catch (Exception exPdf)
                 {
-                    System.Diagnostics.Debug.WriteLine($"⚠ No se pudo garantizar PDF (AprobarConAjustes): {exPdf.Message}");
+                    LogSGV.Advertencia("No se pudo garantizar el PDF archivado al aprobar con ajustes (orden {IdOrden}): {Mensaje}", idOrdenViaje, exPdf.Message);
                 }
 
                 return new { success = true, message = $"Liquidación {numeroOrdenViaje} aprobada exitosamente. El viaje ha sido completado." };
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error en AprobarConAjustes: {ex.Message}");
+                LogSGV.Error(ex, "Error en AprobarConAjustes (orden {IdOrden})", idOrdenViaje);
                 return new { success = false, message = "Error interno al aprobar. Contacte al administrador." };
             }
         }
@@ -760,7 +760,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error revirtiendo aprobación: {ex.Message}");
+                LogSGV.Error(ex, "Error al revertir la aprobación (orden {IdOrden})", idOrdenViaje);
                 return new { success = false, message = "Error interno al revertir. Contacte al administrador." };
             }
         }
@@ -803,7 +803,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error corrigiendo ajustes: {ex.Message}");
+                LogSGV.Error(ex, "Error al corregir ajustes de la liquidación aprobada (orden {IdOrden})", idOrdenViaje);
                 return new { success = false, message = "Error interno al corregir ajustes. Contacte al administrador." };
             }
         }
@@ -862,7 +862,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error RegistrarFirmaConductor: {ex.Message}");
+                LogSGV.Error(ex, "Error al registrar la firma del conductor (orden {IdOrden})", idOrdenViaje);
                 return new { success = false, message = "Error al registrar la firma: " + ex.Message };
             }
         }
@@ -942,7 +942,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error AprobarLiquidacionConFirma: {ex.Message}");
+                LogSGV.Error(ex, "Error al aprobar la liquidación con firma (orden {IdOrden})", idOrdenViaje);
                 return new { success = false, message = "Error al aprobar con firma: " + ex.Message };
             }
         }
@@ -1017,7 +1017,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error RechazarLiquidacion: {ex.Message}");
+                LogSGV.Error(ex, "Error al rechazar la liquidación con firma (orden {IdOrden})", idOrdenViaje);
                 return new { success = false, message = "Error al rechazar: " + ex.Message };
             }
         }
