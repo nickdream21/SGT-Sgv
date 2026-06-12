@@ -2,7 +2,7 @@
 
 > Documento de seguimiento del esfuerzo de extracción de lógica de negocio y SQL
 > desde los code-behind (`.aspx.cs`) hacia clases en `WebSGV/Services/`.
-> Sirve para no perder el objetivo entre sesiones. Última actualización: 2026-06-11.
+> Sirve para no perder el objetivo entre sesiones. Última actualización: 2026-06-12.
 
 ## 1. Objetivo
 
@@ -67,6 +67,7 @@ formato de factura, etc.).
 | `904cbf2` | RegistroDespacho | `Despachos/RegistroDespachoService` + `Models/Despachos/RegistroDespachoModels` | **Creadores del lote y lectores de viaje**: `CrearDocumentoBaseSeparado` (`sp_CrearFactura`/`sp_CrearCPIC`), `CrearDespachoIndividual` (`sp_CrearDespacho`), `ObtenerViajesAbiertosConductor` y `ObtenerInfoViaje` movidos verbatim (SP con parámetros de salida y readers→DTO). Los modelos `LoteDespachos`/`DocumentacionBase`/`ConductorLote`/`ViajeEnProgreso` se movieron a `WebSGV.Models.Despachos`; el code-behind conserva la orquestación del lote (`ProcesarLoteCompleto`: recorrer conductores, auditoría, limpieza de UI, `Session`) y los métodos quedaron como adaptadores delgados. |
 | `24918c1` | ListaDespachos (1/2) | `Despachos/ListaDespachosService` + `Models/Despachos/ListaDespachosModels` | **Lectores de DTO**: `ObtenerViajesActivos`, `ObtenerDespachosDelViaje`, `ObtenerLotesRegistrados`, `ObtenerLotePorId`, `ObtenerIdsDespachosDeLote`, `ObtenerDespachosDelLote` (filtros como parámetros). Helpers `GetSafeValue`/`LeerDespachoDesdeReader`/`LeerLoteDesdeReader`/`ParsearIdLoteVirtual` movidos al service; modelos `ViajeActivo`/`DespachoViaje`/`DespachoConConductor`/`LoteRegistrado` a `WebSGV.Models.Despachos`. El code-behind lee los controles de filtro y delega. |
 | `ca51ded` | ListaDespachos (2/2) | `Despachos/ListaDespachosService.GuardarCambiosLote` | **Transacción de edición de lote**: actualizar despachos + recalcular conductor dominante + gestionar/desvincular factura y CPIC (`sp_LD_*`). El code-behind lee/parsea los controles del formulario de edición y arma un `GuardarCambiosLoteInput`; el service ejecuta la transacción (rollback + re-propagación). |
+| `48aca26` | BuscarOrdenViaje | `OrdenViaje/BuscarOrdenViajeService.GuardarCambios` + `Models/OrdenViaje/EditarOrdenViajeModels` | **Transacción de edición de orden de viaje desde la búsqueda**: `UPDATE` verbatim de OrdenViaje, Ingresos (recalculando totales base + adicionales en el service), IngresosAdicionales, Egresos, CategoriasAdicionales y GuiasTransportista en una sola transacción. El code-behind lee/parsea los controles (TextBox/DropDownList/Repeater) y arma un `EditarOrdenViajeInput`; los modelos `EditarOrdenViajeInput`/`IngresoAdicionalEditar`/`GastoAdicionalEditar` viven en `WebSGV.Models.OrdenViaje`. Validación de campos, auditoría, recarga de la UI y `try/catch` permanecen en la página. |
 
 > **Pendiente de validación en runtime:** toca dinero y no hay pruebas de BD. Verificado
 > con MSBuild limpio + 177 tests; falta una corrida real (envío y re-liquidación) antes
@@ -108,7 +109,8 @@ Pendientes por página:
   `GarantizarPdfArchivadoOV` extraídas al service. Sólo queda en el code-behind la
   orquestación PDF/disco (`GarantizarPdfArchivadoOV`/`ObtenerUrlPdfOrdenViaje`), que no
   es acceso a BD (HostingEnvironment + `PdfOrdenViajeService`).
-- **BuscarOrdenViaje** — transacción `GuardarCambios` (edición de la orden).
+- ~~**BuscarOrdenViaje** — transacción `GuardarCambios` (edición de la orden).~~ ✅ **Hecho**
+  (commit `48aca26`): extraída a `BuscarOrdenViajeService.GuardarCambios(EditarOrdenViajeInput)`.
 - ~~**ListaDespachos** — lecturas con DTO anidados (viajes/lotes), transacción
   `GuardarCambiosLote`~~ ✅ **Hecho** (Fase C). Quedan en el code-behind sólo binders de UI
   con SQL inline (`CargarDropDownListSP`, `ActualizarInformacionViajeDetalle`,
@@ -141,7 +143,7 @@ Pendientes por página:
 2. Pase de transacciones de escritura, empezando por las de **mayor valor de dinero**:
    ~~DashboardConductor (envío liquidación)~~ ✅ → ~~LiquidacionesPendientes (AprobarConAjustes/
    Corregir/ObtenerDetalle)~~ ✅ → ~~RegistroDespacho (creación de lote)~~ ✅.
-3. Transacciones restantes: BuscarOrdenViaje, AgregarOrdenViaje, ~~ListaDespachos~~ ✅, Facturas.
+3. Transacciones restantes: ~~BuscarOrdenViaje~~ ✅, AgregarOrdenViaje, ~~ListaDespachos~~ ✅, Facturas.
 4. ReportesOrdenesViaje.
 5. Logging (Serilog) y dedup cosmético.
 
