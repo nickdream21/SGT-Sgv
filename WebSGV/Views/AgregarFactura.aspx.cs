@@ -204,27 +204,9 @@ namespace WebSGV.Views
                 {
                     try
                     {
-                        int idFactura;
-
-                        // 1. MODIFICADO: Insertar la factura CON idCliente
-                        using (SqlCommand command = new SqlCommand(@"
-                    INSERT INTO Factura (numeroFactura, valorTotal, fechaEmision, numeroPedido, idCliente) 
-                    VALUES (@numeroFactura, @valorTotal, @fechaEmision, @numeroPedido, @idCliente);
-                    SELECT SCOPE_IDENTITY();", connection, transaction))
-                        {
-                            command.Parameters.AddWithValue("@numeroFactura", numeroFactura);
-                            command.Parameters.AddWithValue("@valorTotal", valorTotal);
-                            command.Parameters.AddWithValue("@fechaEmision", fechaEmision);
-                            command.Parameters.AddWithValue("@idCliente", idCliente); // NUEVO PARÁMETRO
-
-                            // Si numeroPedido está vacío, usar DBNull
-                            if (string.IsNullOrEmpty(numeroPedido))
-                                command.Parameters.AddWithValue("@numeroPedido", DBNull.Value);
-                            else
-                                command.Parameters.AddWithValue("@numeroPedido", numeroPedido);
-
-                            idFactura = Convert.ToInt32(command.ExecuteScalar());
-                        }
+                        // 1. Insertar la factura CON idCliente (SQL movido a FacturaEscrituraService)
+                        int idFactura = FacturaEscrituraService.InsertarFactura(
+                            connection, transaction, numeroFactura, valorTotal, fechaEmision, numeroPedido, idCliente);
 
                         // 2. Procesar archivo si existe
                         if (fileUploadFactura.HasFile)
@@ -328,29 +310,13 @@ namespace WebSGV.Views
             }
         }
 
-        // Guardar información del documento en BD
+        // Guardar información del documento en BD (SQL movido a FacturaEscrituraService;
+        // la fecha y el usuario se resuelven aquí porque dependen de la sesión)
         private void GuardarDocumentoEnBD(int idFactura, DocumentoInfoFactura docInfo, SqlConnection connection, SqlTransaction transaction)
         {
-            string queryInsertDoc = @"
-                INSERT INTO DocumentosFactura 
-                (idFactura, nombreOriginal, nombreArchivo, rutaArchivo, tipoArchivo, tamanoBytes, fechaSubida, usuarioSubida, descripcion)
-                VALUES 
-                (@idFactura, @nombreOriginal, @nombreArchivo, @rutaArchivo, @tipoArchivo, @tamanoBytes, @fechaSubida, @usuarioSubida, @descripcion)";
-
-            using (SqlCommand cmd = new SqlCommand(queryInsertDoc, connection, transaction))
-            {
-                cmd.Parameters.AddWithValue("@idFactura", idFactura);
-                cmd.Parameters.AddWithValue("@nombreOriginal", docInfo.NombreOriginal);
-                cmd.Parameters.AddWithValue("@nombreArchivo", docInfo.NombreArchivo);
-                cmd.Parameters.AddWithValue("@rutaArchivo", docInfo.RutaCompleta);
-                cmd.Parameters.AddWithValue("@tipoArchivo", docInfo.TipoArchivo);
-                cmd.Parameters.AddWithValue("@tamanoBytes", docInfo.TamanoBytes);
-                cmd.Parameters.AddWithValue("@fechaSubida", DateTime.Now);
-                cmd.Parameters.AddWithValue("@usuarioSubida", ObtenerUsuarioActual());
-                cmd.Parameters.AddWithValue("@descripcion", string.IsNullOrEmpty(docInfo.Descripcion) ? DBNull.Value : (object)docInfo.Descripcion);
-
-                cmd.ExecuteNonQuery();
-            }
+            FacturaEscrituraService.InsertarDocumento(connection, transaction, idFactura,
+                docInfo.NombreOriginal, docInfo.NombreArchivo, docInfo.RutaCompleta, docInfo.TipoArchivo,
+                docInfo.TamanoBytes, DateTime.Now, ObtenerUsuarioActual(), docInfo.Descripcion);
         }
 
         // Crear directorios de upload si no existen

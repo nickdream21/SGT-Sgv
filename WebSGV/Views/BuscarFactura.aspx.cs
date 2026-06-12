@@ -510,47 +510,21 @@ namespace WebSGV.Views
                         // 1. Verificar si el número de pedido ya está asociado a otra factura
                         if (!string.IsNullOrEmpty(numeroPedido))
                         {
-                            string queryVerificarPedido = @"SELECT COUNT(*) 
-                                                          FROM Factura 
-                                                          WHERE numeroPedido = @numeroPedido 
-                                                          AND numeroFactura <> @numeroFacturaOriginal";
-
-                            using (SqlCommand command = new SqlCommand(queryVerificarPedido, connection, transaction))
+                            int count = FacturaEscrituraService.ContarPedidoEnOtraFactura(
+                                connection, transaction, numeroPedido, numeroFacturaOriginal);
+                            if (count > 0)
                             {
-                                command.Parameters.AddWithValue("@numeroPedido", numeroPedido);
-                                command.Parameters.AddWithValue("@numeroFacturaOriginal", numeroFacturaOriginal);
-
-                                int count = (int)command.ExecuteScalar();
-                                if (count > 0)
-                                {
-                                    throw new Exception("El número de pedido ya está asociado a otra factura.");
-                                }
+                                throw new Exception("El número de pedido ya está asociado a otra factura.");
                             }
                         }
 
                         // 2. Actualizar factura con el nuevo número
-                        string queryActualizar = @"UPDATE Factura 
-                                                 SET numeroFactura = @numeroFacturaNuevo,
-                                                     numeroPedido = @numeroPedido, 
-                                                     valorTotal = @valorTotal, 
-                                                     fechaEmision = @fechaEmision,
-                                                     idCliente = @idCliente
-                                                 WHERE numeroFactura = @numeroFacturaOriginal";
-
-                        using (SqlCommand command = new SqlCommand(queryActualizar, connection, transaction))
+                        int rowsAffected = FacturaEscrituraService.ActualizarFactura(
+                            connection, transaction, numeroFacturaOriginal, numeroFacturaNuevo,
+                            numeroPedido, valorTotal, fechaEmision, idCliente);
+                        if (rowsAffected == 0)
                         {
-                            command.Parameters.AddWithValue("@numeroFacturaOriginal", numeroFacturaOriginal);
-                            command.Parameters.AddWithValue("@numeroFacturaNuevo", numeroFacturaNuevo);
-                            command.Parameters.AddWithValue("@numeroPedido", string.IsNullOrEmpty(numeroPedido) ? (object)DBNull.Value : numeroPedido);
-                            command.Parameters.AddWithValue("@valorTotal", valorTotal);
-                            command.Parameters.AddWithValue("@fechaEmision", fechaEmision);
-                            command.Parameters.AddWithValue("@idCliente", idCliente);
-
-                            int rowsAffected = command.ExecuteNonQuery();
-                            if (rowsAffected == 0)
-                            {
-                                throw new Exception("No se pudo actualizar la factura.");
-                            }
+                            throw new Exception("No se pudo actualizar la factura.");
                         }
 
                         // 3. Procesar archivo si existe
@@ -584,20 +558,14 @@ namespace WebSGV.Views
         /// </summary>
         private int ObtenerIdFactura(string numeroFactura, SqlConnection connection, SqlTransaction transaction)
         {
-            string query = "SELECT idFactura FROM Factura WHERE numeroFactura = @numeroFactura";
+            object result = FacturaEscrituraService.ObtenerIdFactura(connection, transaction, numeroFactura);
 
-            using (SqlCommand cmd = new SqlCommand(query, connection, transaction))
+            if (result != null && result != DBNull.Value)
             {
-                cmd.Parameters.AddWithValue("@numeroFactura", numeroFactura);
-                object result = cmd.ExecuteScalar();
-
-                if (result != null && result != DBNull.Value)
-                {
-                    return Convert.ToInt32(result);
-                }
-
-                throw new Exception("No se encontró la factura especificada.");
+                return Convert.ToInt32(result);
             }
+
+            throw new Exception("No se encontró la factura especificada.");
         }
 
         protected void Cancelar(object sender, EventArgs e)
@@ -923,26 +891,9 @@ namespace WebSGV.Views
         /// </summary>
         private void GuardarDocumentoEnBD(int idFactura, DocumentoInfoFactura docInfo, SqlConnection connection, SqlTransaction transaction)
         {
-            string queryInsertDoc = @"
-                INSERT INTO DocumentosFactura 
-                (idFactura, nombreOriginal, nombreArchivo, rutaArchivo, tipoArchivo, tamanoBytes, fechaSubida, usuarioSubida, descripcion)
-                VALUES 
-                (@idFactura, @nombreOriginal, @nombreArchivo, @rutaArchivo, @tipoArchivo, @tamanoBytes, @fechaSubida, @usuarioSubida, @descripcion)";
-
-            using (SqlCommand cmd = new SqlCommand(queryInsertDoc, connection, transaction))
-            {
-                cmd.Parameters.AddWithValue("@idFactura", idFactura);
-                cmd.Parameters.AddWithValue("@nombreOriginal", docInfo.NombreOriginal);
-                cmd.Parameters.AddWithValue("@nombreArchivo", docInfo.NombreArchivo);
-                cmd.Parameters.AddWithValue("@rutaArchivo", docInfo.RutaCompleta);
-                cmd.Parameters.AddWithValue("@tipoArchivo", docInfo.TipoArchivo);
-                cmd.Parameters.AddWithValue("@tamanoBytes", docInfo.TamanoBytes);
-                cmd.Parameters.AddWithValue("@fechaSubida", DateTime.Now);
-                cmd.Parameters.AddWithValue("@usuarioSubida", ObtenerUsuarioActual());
-                cmd.Parameters.AddWithValue("@descripcion", string.IsNullOrEmpty(docInfo.Descripcion) ? DBNull.Value : (object)docInfo.Descripcion);
-
-                cmd.ExecuteNonQuery();
-            }
+            FacturaEscrituraService.InsertarDocumento(connection, transaction, idFactura,
+                docInfo.NombreOriginal, docInfo.NombreArchivo, docInfo.RutaCompleta, docInfo.TipoArchivo,
+                docInfo.TamanoBytes, DateTime.Now, ObtenerUsuarioActual(), docInfo.Descripcion);
         }
 
         /// <summary>
