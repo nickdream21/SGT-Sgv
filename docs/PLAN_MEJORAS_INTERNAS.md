@@ -115,7 +115,7 @@ de compilación del proyecto en alcance.
 |---|---|---|---|
 | **M3-A** ArchivoHelper (BuscarFactura+BuscarCPIC) | ✅ Hecho | _(este commit)_ | `Helpers/ArchivoHelper.cs`; code-behind delega (markup `<%# %>` intacto). Build limpio + 177 tests. |
 | **M3-B** Familia `ObtenerClaseEstado/Texto/Boton` | ✅ Hecho | _(este commit)_ | `Helpers/EstadoUiHelper.cs`; dedup en 6 `Registro*` en alcance (Clientes, Choferes, Plantas, Peajes, Semiremolques, Tractos). Excluidos: maquinaria/operadores/obra y DashboardConductor/ReportesOrdenesViaje (estado de flujo, semántica distinta). Build limpio + 177 tests. |
-| **M6** Limpieza warnings/usings | ⏳ Pendiente | — | — |
+| **M6** Limpieza warnings/usings | ✅ Verificado | _(este commit)_ | `Rebuild` **sin warnings**; 0 `catch` vacíos; `TestGenerarPdfOrdenViaje` conservado (endpoint vivo). Eliminar `using` sin usar se **difiere** (no genera warnings; churn alto/valor bajo sin analizador). |
 | **M1** Logging restante | ⏳ Pendiente | — | — |
 | **M2** DbHelper residual | ⏳ Pendiente | — | — |
 | **M5** Lógica pura + tests | ⏳ Pendiente | — | — |
