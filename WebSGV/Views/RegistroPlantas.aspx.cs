@@ -128,29 +128,13 @@ namespace WebSGV.Views
             return esInt ? "Internacional" : "Nacional";
         }
 
-        protected string ObtenerClaseEstado(object activo)
-        {
-            bool esActivo = activo != null && activo != DBNull.Value && Convert.ToBoolean(activo);
-            return esActivo ? "badge-success" : "badge-secondary";
-        }
+        protected string ObtenerClaseEstado(object activo) => EstadoUiHelper.ObtenerClaseEstado(activo);
 
-        protected string ObtenerTextoEstado(object activo)
-        {
-            bool esActivo = activo != null && activo != DBNull.Value && Convert.ToBoolean(activo);
-            return esActivo ? "Activo" : "Inactivo";
-        }
+        protected string ObtenerTextoEstado(object activo) => EstadoUiHelper.ObtenerTextoEstado(activo);
 
-        protected string ObtenerTextoBoton(object activo)
-        {
-            bool esActivo = activo != null && activo != DBNull.Value && Convert.ToBoolean(activo);
-            return esActivo ? "Desactivar" : "Activar";
-        }
+        protected string ObtenerTextoBoton(object activo) => EstadoUiHelper.ObtenerTextoBoton(activo);
 
-        protected string ObtenerClaseBoton(object activo)
-        {
-            bool esActivo = activo != null && activo != DBNull.Value && Convert.ToBoolean(activo);
-            return esActivo ? "btn btn-warning btn-sm" : "btn btn-success btn-sm";
-        }
+        protected string ObtenerClaseBoton(object activo) => EstadoUiHelper.ObtenerClaseBoton(activo);
 
         protected string AttrEncode(object val) =>
             System.Web.HttpUtility.HtmlAttributeEncode(val?.ToString() ?? "");

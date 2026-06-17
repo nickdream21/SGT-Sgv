@@ -449,6 +449,7 @@
     <Compile Include="Helpers\AuditoriaHelper.cs" />
     <Compile Include="Helpers\DbHelper.cs" />
     <Compile Include="Helpers\EmpresaConfigHelper.cs" />
+    <Compile Include="Helpers\EstadoUiHelper.cs" />
     <Compile Include="Helpers\FechaHelper.cs" />
     <Compile Include="Helpers\HashHelper.cs" />
     <Compile Include="Helpers\LogSGV.cs" />
