@@ -50,7 +50,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al cargar lista de facturas: " + ex.Message);
+                LogSGV.Error(ex, "Error al cargar la lista de facturas en BuscarFactura");
                 MostrarMensaje("Error al cargar la lista de facturas: " + ex.Message, "danger");
             }
         }
@@ -66,7 +66,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al obtener todas las facturas: " + ex.Message);
+                LogSGV.Error(ex, "Error al obtener todas las facturas en BuscarFactura");
                 throw new Exception("Error al obtener las facturas: " + ex.Message);
             }
         }
@@ -92,7 +92,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 MostrarMensaje("Error al procesar la acción: " + ex.Message, "danger");
-                Debug.WriteLine("Error en gvFacturas_RowCommand: " + ex.Message);
+                LogSGV.Error(ex, "Error en gvFacturas_RowCommand en BuscarFactura");
             }
         }
 
@@ -118,7 +118,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al redirigir a crear CPIC: " + ex.Message);
+                LogSGV.Error(ex, "Error al redirigir a crear CPIC en BuscarFactura");
                 MostrarMensaje("Error al acceder a la creación de CPIC: " + ex.Message, "danger");
             }
         }
@@ -148,7 +148,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al obtener factura por ID: " + ex.Message);
+                LogSGV.Error(ex, "Error al obtener la factura por ID en BuscarFactura");
                 throw new Exception("Error al obtener la factura: " + ex.Message);
             }
         }
@@ -165,7 +165,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al cargar factura para edición: " + ex.Message);
+                LogSGV.Error(ex, "Error al cargar la factura para edición en BuscarFactura");
                 MostrarMensaje("Error al cargar la factura: " + ex.Message, "danger");
             }
         }
@@ -182,7 +182,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al cambiar página: " + ex.Message);
+                LogSGV.Error(ex, "Error al cambiar de página en BuscarFactura");
                 MostrarMensaje("Error al cambiar de página: " + ex.Message, "danger");
             }
         }
@@ -199,7 +199,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al refrescar lista: " + ex.Message);
+                LogSGV.Error(ex, "Error al refrescar la lista en BuscarFactura");
                 MostrarMensaje("Error al actualizar la lista: " + ex.Message, "danger");
             }
         }
@@ -220,7 +220,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al cargar clientes: " + ex.Message);
+                LogSGV.Error(ex, "Error al cargar clientes en BuscarFactura");
                 MostrarMensaje("Error al cargar la lista de clientes.", "danger");
             }
         }
@@ -260,7 +260,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 MostrarMensaje("Error al buscar la factura: " + ex.Message, "danger");
-                Debug.WriteLine("Error en BuscarFacturaClick: " + ex.Message);
+                LogSGV.Error(ex, "Error en BuscarFacturaClick en BuscarFactura");
             }
         }
 
@@ -286,7 +286,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al obtener factura: " + ex.Message);
+                LogSGV.Error(ex, "Error al obtener la factura en BuscarFactura");
                 throw new Exception("Error al obtener la factura: " + ex.Message);
             }
         }
@@ -301,7 +301,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al cargar documentos: " + ex.Message);
+                LogSGV.Error(ex, "Error al cargar documentos en BuscarFactura");
                 MostrarMensaje("Error al cargar documentos: " + ex.Message, "warning");
             }
         }
@@ -314,7 +314,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al obtener documentos: " + ex.Message);
+                LogSGV.Error(ex, "Error al obtener documentos en BuscarFactura");
                 return new DataTable();
             }
         }
@@ -486,7 +486,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al verificar número de factura: " + ex.Message);
+                LogSGV.Error(ex, "Error al verificar el número de factura en BuscarFactura");
                 return true;
             }
         }
@@ -608,7 +608,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine("Error al cancelar: " + ex.Message);
+                    LogSGV.Error(ex, "Error al cancelar la edición de la factura en BuscarFactura");
                 }
             }
 
@@ -660,7 +660,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 MostrarMensaje("Error al procesar documento: " + ex.Message, "danger");
-                Debug.WriteLine("Error en gvDocumentos_RowCommand: " + ex.Message);
+                LogSGV.Error(ex, "Error en gvDocumentos_RowCommand en BuscarFactura");
             }
         }
 
@@ -693,7 +693,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al descargar documento: " + ex.Message);
+                LogSGV.Error(ex, "Error al descargar el documento en BuscarFactura");
                 MostrarMensaje("Error al descargar el documento.", "danger");
             }
         }
@@ -725,7 +725,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al ver documento: " + ex.Message);
+                LogSGV.Error(ex, "Error al ver el documento en BuscarFactura");
                 MostrarMensaje("Error al abrir el documento.", "danger");
             }
         }
@@ -739,7 +739,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al obtener info documento: " + ex.Message);
+                LogSGV.Error(ex, "Error al obtener la información del documento en BuscarFactura");
                 return null;
             }
         }
@@ -847,7 +847,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al procesar archivo: " + ex.Message);
+                LogSGV.Error(ex, "Error al procesar el archivo del documento en BuscarFactura");
                 throw new Exception("Error al guardar el archivo: " + ex.Message);
             }
         }
@@ -890,7 +890,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al crear directorios: " + ex.Message);
+                LogSGV.Error(ex, "Error al crear directorios de archivos en BuscarFactura");
             }
         }
 

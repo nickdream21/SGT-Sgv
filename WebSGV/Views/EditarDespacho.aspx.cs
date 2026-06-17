@@ -59,7 +59,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error validando despacho: {ex.Message}");
+                LogSGV.Error(ex, "Error validando despacho en EditarDespacho");
                 return false;
             }
         }
@@ -86,6 +86,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar conductores en EditarDespacho");
                 MostrarMensaje("Error al cargar conductores: " + ex.Message, "danger");
             }
         }
@@ -103,6 +104,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar clientes en EditarDespacho");
                 MostrarMensaje("Error al cargar clientes: " + ex.Message, "danger");
             }
         }
@@ -120,6 +122,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar tractos en EditarDespacho");
                 MostrarMensaje("Error al cargar tractos: " + ex.Message, "danger");
             }
         }
@@ -137,6 +140,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar carretas en EditarDespacho");
                 MostrarMensaje("Error al cargar carretas: " + ex.Message, "danger");
             }
         }
@@ -154,6 +158,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar lugares en EditarDespacho");
                 MostrarMensaje("Error al cargar lugares: " + ex.Message, "danger");
             }
         }
@@ -184,6 +189,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar datos del despacho en EditarDespacho");
                 MostrarMensaje("Error al cargar datos del despacho: " + ex.Message, "danger");
             }
         }
@@ -287,8 +293,8 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al guardar los cambios en EditarDespacho");
                 MostrarMensaje("Error al guardar los cambios: " + ex.Message, "danger");
-                System.Diagnostics.Debug.WriteLine($"Error guardando despacho: {ex.Message}");
                 return false;
             }
         }

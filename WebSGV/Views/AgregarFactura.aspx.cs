@@ -50,7 +50,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al cargar clientes: " + ex.Message);
+                LogSGV.Error(ex, "Error al cargar clientes en AgregarFactura");
                 MostrarError("Error al cargar la lista de clientes.");
             }
         }
@@ -183,7 +183,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al verificar factura: " + ex.Message);
+                LogSGV.Error(ex, "Error al verificar la existencia de la factura en AgregarFactura");
                 return false;
             }
         }
@@ -305,7 +305,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al procesar archivo: " + ex.Message);
+                LogSGV.Error(ex, "Error al procesar el archivo de la factura en AgregarFactura");
                 throw new Exception("Error al guardar el archivo: " + ex.Message);
             }
         }
@@ -345,7 +345,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al crear directorios: " + ex.Message);
+                LogSGV.Error(ex, "Error al crear directorios de archivos en AgregarFactura");
             }
         }
 

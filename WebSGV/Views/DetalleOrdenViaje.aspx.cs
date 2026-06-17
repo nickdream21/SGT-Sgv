@@ -107,7 +107,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error en CargarDetalle: {ex.Message}");
+                LogSGV.Error(ex, "Error al cargar el detalle de la orden de viaje");
                 MostrarError($"Error al cargar la liquidación: {ex.Message}");
             }
         }

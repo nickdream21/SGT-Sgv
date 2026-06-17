@@ -87,7 +87,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 MostrarMensaje("Error al buscar el CPIC: " + ex.Message, "danger");
-                Debug.WriteLine("Error en BuscarCPICClick: " + ex.Message);
+                LogSGV.Error(ex, "Error en BuscarCPICClick en BuscarCPIC");
             }
         }
 
@@ -143,7 +143,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al obtener CPIC: " + ex.Message);
+                LogSGV.Error(ex, "Error al obtener el CPIC en BuscarCPIC");
                 throw new Exception("Error al obtener el CPIC: " + ex.Message);
             }
         }
@@ -158,7 +158,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al cargar documentos: " + ex.Message);
+                LogSGV.Error(ex, "Error al cargar documentos en BuscarCPIC");
                 MostrarMensaje("Error al cargar documentos: " + ex.Message, "warning");
             }
         }
@@ -177,7 +177,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al obtener documentos: " + ex.Message);
+                LogSGV.Error(ex, "Error al obtener documentos en BuscarCPIC");
                 return new DataTable();
             }
         }
@@ -291,7 +291,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 MostrarMensaje("Error al guardar los cambios: " + ex.Message, "danger");
-                Debug.WriteLine("Error en GuardarCambios: " + ex.Message);
+                LogSGV.Error(ex, "Error al guardar los cambios del CPIC en BuscarCPIC");
             }
         }
 
@@ -351,7 +351,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al actualizar CPIC: " + ex.Message);
+                LogSGV.Error(ex, "Error al actualizar el CPIC en BD en BuscarCPIC");
                 throw new Exception("Error al actualizar el CPIC: " + ex.Message);
             }
         }
@@ -417,7 +417,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 MostrarMensaje("Error al subir documento: " + ex.Message, "danger");
-                Debug.WriteLine("Error en SubirDocumento: " + ex.Message);
+                LogSGV.Error(ex, "Error al subir el documento en BuscarCPIC");
             }
         }
 
@@ -443,7 +443,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 MostrarMensaje("Error al procesar documento: " + ex.Message, "danger");
-                Debug.WriteLine("Error en gvDocumentos_RowCommand: " + ex.Message);
+                LogSGV.Error(ex, "Error en gvDocumentos_RowCommand en BuscarCPIC");
             }
         }
 
@@ -472,7 +472,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al eliminar documento: " + ex.Message);
+                LogSGV.Error(ex, "Error al eliminar el documento en BuscarCPIC");
                 MostrarMensaje("Error al eliminar documento: " + ex.Message, "danger");
             }
         }
@@ -506,7 +506,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al descargar documento: " + ex.Message);
+                LogSGV.Error(ex, "Error al descargar el documento en BuscarCPIC");
                 MostrarMensaje("Error al descargar el documento.", "danger");
             }
         }
@@ -538,7 +538,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al ver documento: " + ex.Message);
+                LogSGV.Error(ex, "Error al ver el documento en BuscarCPIC");
                 MostrarMensaje("Error al abrir el documento.", "danger");
             }
         }
@@ -554,7 +554,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al obtener info documento: " + ex.Message);
+                LogSGV.Error(ex, "Error al obtener la información del documento en BuscarCPIC");
                 return null;
             }
         }
@@ -632,7 +632,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al procesar archivo: " + ex.Message);
+                LogSGV.Error(ex, "Error al procesar el archivo del documento en BuscarCPIC");
                 throw new Exception("Error al guardar el archivo: " + ex.Message);
             }
         }
@@ -680,7 +680,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al crear directorios: " + ex.Message);
+                LogSGV.Error(ex, "Error al crear directorios de archivos en BuscarCPIC");
             }
         }
 
@@ -755,6 +755,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar los productos en BuscarCPIC");
                 MostrarMensaje("Error al cargar los productos: " + ex.Message, "danger");
             }
         }
@@ -809,7 +810,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 MostrarMensaje("Error al actualizar el producto: " + ex.Message, "danger");
-                Debug.WriteLine("Error en gvProductos_RowUpdating: " + ex.Message);
+                LogSGV.Error(ex, "Error en gvProductos_RowUpdating en BuscarCPIC");
             }
         }
 
@@ -857,7 +858,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al actualizar producto: " + ex.Message);
+                LogSGV.Error(ex, "Error al actualizar el producto en BD en BuscarCPIC");
                 throw new Exception("Error al actualizar el producto: " + ex.Message);
             }
         }

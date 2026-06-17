@@ -69,7 +69,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al cargar datos desde query string: " + ex.Message);
+                LogSGV.Error(ex, "Error al cargar datos desde query string en AgregarCPIC");
                 MostrarMensaje("Error al cargar datos automáticamente: " + ex.Message, "warning");
             }
         }
@@ -102,7 +102,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al validar factura: " + ex.Message);
+                LogSGV.Error(ex, "Error al validar la factura en AgregarCPIC");
                 lblErrorFactura.Text = "Error al validar la factura.";
                 lblErrorFactura.CssClass = "text-danger";
             }
@@ -197,6 +197,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al registrar el CPIC en AgregarCPIC");
                 MostrarMensaje("Error: " + ex.Message, "error");
             }
         }
@@ -259,6 +260,7 @@ namespace WebSGV.Views
                     catch (Exception ex)
                     {
                         transaction.Rollback();
+                        LogSGV.Error(ex, "Error al guardar el CPIC en BD (rollback)");
                         throw new Exception("Error al guardar el CPIC: " + ex.Message);
                     }
                 }
@@ -338,7 +340,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al procesar archivo: " + ex.Message);
+                LogSGV.Error(ex, "Error al procesar el archivo del CPIC en AgregarCPIC");
                 throw new Exception("Error al guardar el archivo: " + ex.Message);
             }
         }
@@ -394,7 +396,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al crear directorios: " + ex.Message);
+                LogSGV.Error(ex, "Error al crear directorios de archivos en AgregarCPIC");
             }
         }
 
@@ -436,7 +438,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al obtener ID de factura: " + ex.Message);
+                LogSGV.Error(ex, "Error al obtener el ID de factura en AgregarCPIC");
                 return null;
             }
         }
@@ -463,7 +465,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al verificar CPIC: " + ex.Message);
+                LogSGV.Error(ex, "Error al verificar la existencia del CPIC en AgregarCPIC");
                 return false;
             }
         }
@@ -486,7 +488,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error al verificar factura: " + ex.Message);
+                LogSGV.Error(ex, "Error al verificar la existencia de la factura en AgregarCPIC");
                 return false;
             }
         }
@@ -535,6 +537,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al obtener el total de flete de la factura en AgregarCPIC");
                 lblErrorFactura.Text = "Error: " + ex.Message;
                 txtTotalFlete.Text = string.Empty;
             }
