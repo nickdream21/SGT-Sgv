@@ -744,49 +744,15 @@ namespace WebSGV.Views
             }
         }
 
-        private string ObtenerContentType(string extension)
-        {
-            switch (extension.ToLower())
-            {
-                case ".pdf": return "application/pdf";
-                case ".doc": return "application/msword";
-                case ".docx": return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-                case ".jpg":
-                case ".jpeg": return "image/jpeg";
-                case ".png": return "image/png";
-                default: return "application/octet-stream";
-            }
-        }
+        private string ObtenerContentType(string extension) =>
+            ArchivoHelper.ObtenerContentType(extension);
 
         // FUNCIONES AUXILIARES PARA LA VISTA
-        protected string ObtenerIconoArchivo(string tipoArchivo)
-        {
-            switch (tipoArchivo.ToLower())
-            {
-                case ".pdf": return "fa-file-pdf-o";
-                case ".doc":
-                case ".docx": return "fa-file-word-o";
-                case ".jpg":
-                case ".jpeg":
-                case ".png": return "fa-file-image-o";
-                default: return "fa-file-o";
-            }
-        }
+        protected string ObtenerIconoArchivo(string tipoArchivo) =>
+            ArchivoHelper.ObtenerIconoArchivo(tipoArchivo);
 
-        protected string FormatearTamano(long bytes)
-        {
-            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
-            int counter = 0;
-            decimal number = bytes;
-
-            while (Math.Round(number / 1024) >= 1)
-            {
-                number = number / 1024;
-                counter++;
-            }
-
-            return string.Format("{0:n1} {1}", number, suffixes[counter]);
-        }
+        protected string FormatearTamano(long bytes) =>
+            ArchivoHelper.FormatearTamano(bytes);
 
         /// <summary>
         /// Valida que el número de pedido tenga exactamente 10 dígitos.
