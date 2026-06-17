@@ -825,9 +825,9 @@ namespace WebSGV.Views
             try
             {
                 var ctx = System.Web.HttpContext.Current;
-                int idUsuario = ctx.Session["UsuarioID"] != null ? Convert.ToInt32(ctx.Session["UsuarioID"]) : 0;
-                string nombre = ctx.Session["Nombre"] as string ?? "";
-                string rol    = (ctx.Session["Rol"] as string ?? "").ToUpperInvariant();
+                int idUsuario = SesionHelper.ObtenerUsuarioId(ctx.Session);
+                string nombre = SesionHelper.ObtenerNombre(ctx.Session);
+                string rol    = SesionHelper.ObtenerRolNormalizado(ctx.Session);
 
                 if (idUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
@@ -887,9 +887,9 @@ namespace WebSGV.Views
                     return new { success = false, message = "El ID de la orden de viaje es inválido." };
 
                 var ctx = System.Web.HttpContext.Current;
-                int idUsuario = ctx.Session["UsuarioID"] != null ? Convert.ToInt32(ctx.Session["UsuarioID"]) : 0;
-                string nombre = ctx.Session["Nombre"] as string ?? "";
-                string rol    = (ctx.Session["Rol"] as string ?? "").ToUpperInvariant();
+                int idUsuario = SesionHelper.ObtenerUsuarioId(ctx.Session);
+                string nombre = SesionHelper.ObtenerNombre(ctx.Session);
+                string rol    = SesionHelper.ObtenerRolNormalizado(ctx.Session);
 
                 if (idUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
@@ -962,9 +962,9 @@ namespace WebSGV.Views
                     return new { success = false, message = "El ID de la orden de viaje es inválido." };
 
                 var ctx = System.Web.HttpContext.Current;
-                int idUsuario = ctx.Session["UsuarioID"] != null ? Convert.ToInt32(ctx.Session["UsuarioID"]) : 0;
-                string nombre = ctx.Session["Nombre"] as string ?? "";
-                string rol    = (ctx.Session["Rol"] as string ?? "").ToUpperInvariant();
+                int idUsuario = SesionHelper.ObtenerUsuarioId(ctx.Session);
+                string nombre = SesionHelper.ObtenerNombre(ctx.Session);
+                string rol    = SesionHelper.ObtenerRolNormalizado(ctx.Session);
 
                 if (idUsuario == 0)
                     return new { success = false, message = "Sesión no válida." };
@@ -1172,7 +1172,7 @@ namespace WebSGV.Views
             try
             {
                 var ctx = System.Web.HttpContext.Current;
-                int idUsuario = ctx.Session["UsuarioID"] != null ? Convert.ToInt32(ctx.Session["UsuarioID"]) : 0;
+                int idUsuario = SesionHelper.ObtenerUsuarioId(ctx.Session);
                 if (idUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Inicie sesión nuevamente." };
 

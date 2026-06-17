@@ -452,6 +452,7 @@
     <Compile Include="Helpers\EstadoUiHelper.cs" />
     <Compile Include="Helpers\FechaHelper.cs" />
     <Compile Include="Helpers\HashHelper.cs" />
+    <Compile Include="Helpers\SesionHelper.cs" />
     <Compile Include="Helpers\LogSGV.cs" />
     <Compile Include="Helpers\NumeroALetrasHelper.cs" />
     <Compile Include="Helpers\PaginaBase.cs">
