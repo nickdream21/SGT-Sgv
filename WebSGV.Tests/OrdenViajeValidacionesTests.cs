@@ -97,5 +97,91 @@ namespace WebSGV.Tests
         {
             Assert.False(OrdenViajeValidaciones.EsFechaValidaSQL(new DateTime(1752, 12, 31)));
         }
+
+        // ---- ValidarDatosGeneralesOrdenViaje ----
+
+        [Fact]
+        public void ValidarDatosGeneralesOrdenViaje_TodoValido_RetornaVacio()
+        {
+            string r = OrdenViajeValidaciones.ValidarDatosGeneralesOrdenViaje(
+                new DateTime(2026, 6, 10), new DateTime(2026, 6, 11), "08:30", "18:00");
+            Assert.Equal(string.Empty, r);
+        }
+
+        [Fact]
+        public void ValidarDatosGeneralesOrdenViaje_FaltanCampos_AcumulaCuatroErrores()
+        {
+            string r = OrdenViajeValidaciones.ValidarDatosGeneralesOrdenViaje(
+                DateTime.MinValue, DateTime.MinValue, "", "");
+            Assert.Contains("'Fecha de Salida'", r);
+            Assert.Contains("'Hora de Salida'", r);
+            Assert.Contains("'Fecha de Llegada'", r);
+            Assert.Contains("'Hora de Llegada'", r);
+        }
+
+        [Fact]
+        public void ValidarDatosGeneralesOrdenViaje_SalidaPosteriorALlegada_Error()
+        {
+            string r = OrdenViajeValidaciones.ValidarDatosGeneralesOrdenViaje(
+                new DateTime(2026, 6, 12), new DateTime(2026, 6, 10), "08:30", "18:00");
+            Assert.Contains("no puede ser mayor a la 'Fecha de Llegada'", r);
+        }
+
+        [Fact]
+        public void ValidarDatosGeneralesOrdenViaje_NoValidaFormatoHora()
+        {
+            // A diferencia de la variante de liquidación, esta NO valida el formato de hora.
+            string r = OrdenViajeValidaciones.ValidarDatosGeneralesOrdenViaje(
+                new DateTime(2026, 6, 10), new DateTime(2026, 6, 11), "25:99", "xx:yy");
+            Assert.Equal(string.Empty, r);
+        }
+
+        // ---- ValidarDatosGeneralesLiquidacion ----
+
+        [Fact]
+        public void ValidarDatosGeneralesLiquidacion_TodoValido_RetornaVacio()
+        {
+            DateTime salida = DateTime.Today;
+            string r = OrdenViajeValidaciones.ValidarDatosGeneralesLiquidacion(
+                salida, salida, "08:30", "18:00");
+            Assert.Equal(string.Empty, r);
+        }
+
+        [Fact]
+        public void ValidarDatosGeneralesLiquidacion_FaltanFechas_AcumulaErrores()
+        {
+            string r = OrdenViajeValidaciones.ValidarDatosGeneralesLiquidacion(
+                DateTime.MinValue, DateTime.MinValue, "08:30", "18:00");
+            Assert.Contains("'Fecha de Salida'", r);
+            Assert.Contains("'Fecha de Llegada'", r);
+        }
+
+        [Fact]
+        public void ValidarDatosGeneralesLiquidacion_FechasMayoresAUnAnio_Error()
+        {
+            DateTime lejana = DateTime.Today.AddYears(2);
+            string r = OrdenViajeValidaciones.ValidarDatosGeneralesLiquidacion(
+                lejana, lejana, "08:30", "18:00");
+            Assert.Contains("superiores a un año desde hoy", r);
+        }
+
+        [Fact]
+        public void ValidarDatosGeneralesLiquidacion_HoraConFormatoInvalido_Error()
+        {
+            DateTime hoy = DateTime.Today;
+            string r = OrdenViajeValidaciones.ValidarDatosGeneralesLiquidacion(
+                hoy, hoy, "25:99", "18:00");
+            Assert.Contains("'Hora de Salida' es incorrecto", r);
+        }
+
+        [Fact]
+        public void ValidarDatosGeneralesLiquidacion_SalidaPosteriorALlegada_Error()
+        {
+            DateTime salida = DateTime.Today;
+            DateTime llegada = DateTime.Today.AddDays(-1);
+            string r = OrdenViajeValidaciones.ValidarDatosGeneralesLiquidacion(
+                salida, llegada, "08:30", "18:00");
+            Assert.Contains("no puede ser mayor a la 'Fecha de Llegada'", r);
+        }
     }
 }

@@ -57,5 +57,75 @@ namespace WebSGV.Services.OrdenViaje
                 && fecha <= new DateTime(9999, 12, 31)
                 && fecha != DateTime.MinValue;
         }
+
+        /// <summary>
+        /// Valida los datos generales (fechas/horas) al guardar/editar una orden de viaje
+        /// desde <c>AgregarOrdenViaje</c>: exige las cuatro (fecha y hora de salida/llegada)
+        /// y que la salida no sea posterior a la llegada. Devuelve el mensaje de error
+        /// acumulado (líneas separadas por <c>\n</c>), o cadena vacía si todo es válido.
+        /// </summary>
+        public static string ValidarDatosGeneralesOrdenViaje(DateTime fechaSalida, DateTime fechaLlegada, string horaSalida, string horaLlegada)
+        {
+            string mensajeError = "";
+
+            if (fechaSalida == DateTime.MinValue)
+                mensajeError += "Por favor, seleccione una 'Fecha de Salida'.\n";
+
+            if (string.IsNullOrEmpty(horaSalida))
+                mensajeError += "Por favor, seleccione una 'Hora de Salida'.\n";
+
+            if (fechaLlegada == DateTime.MinValue)
+                mensajeError += "Por favor, seleccione una 'Fecha de Llegada'.\n";
+
+            if (string.IsNullOrEmpty(horaLlegada))
+                mensajeError += "Por favor, seleccione una 'Hora de Llegada'.\n";
+
+            if (fechaSalida != DateTime.MinValue && fechaLlegada != DateTime.MinValue)
+            {
+                if (fechaSalida > fechaLlegada)
+                    mensajeError += "La 'Fecha de Salida' no puede ser mayor a la 'Fecha de Llegada'.\n";
+            }
+
+            return mensajeError;
+        }
+
+        /// <summary>
+        /// Valida los datos generales al enviar una liquidación desde
+        /// <c>DashboardConductor</c>: exige ambas fechas, que la salida no sea posterior a
+        /// la llegada, que ninguna supere un año desde hoy y que las horas (si vienen)
+        /// tengan formato HH:mm válido. Devuelve el mensaje acumulado o cadena vacía.
+        /// </summary>
+        public static string ValidarDatosGeneralesLiquidacion(DateTime fechaSalida, DateTime fechaLlegada, string horaSalida, string horaLlegada)
+        {
+            string mensajeError = "";
+
+            // Validar fechas obligatorias
+            if (fechaSalida == DateTime.MinValue)
+                mensajeError += "Por favor, seleccione una 'Fecha de Salida'.\n";
+
+            if (fechaLlegada == DateTime.MinValue)
+                mensajeError += "Por favor, seleccione una 'Fecha de Llegada'.\n";
+
+            // Validar orden lógico de fechas
+            if (fechaSalida != DateTime.MinValue && fechaLlegada != DateTime.MinValue)
+            {
+                if (fechaSalida > fechaLlegada)
+                    mensajeError += "La 'Fecha de Salida' no puede ser mayor a la 'Fecha de Llegada'.\n";
+
+                // M-3: Detectar fechas absurdamente futuras (más de 1 año desde hoy)
+                DateTime limiteMaximo = DateTime.Today.AddYears(1);
+                if (fechaSalida > limiteMaximo || fechaLlegada > limiteMaximo)
+                    mensajeError += "Las fechas no pueden ser superiores a un año desde hoy.\n";
+            }
+
+            // M-2: Validar formato de hora (HH:mm, rango 00:00-23:59)
+            if (!string.IsNullOrEmpty(horaSalida) && !ValidarFormatoHora(horaSalida))
+                mensajeError += "El formato de 'Hora de Salida' es incorrecto. Use HH:MM (ej. 08:30).\n";
+
+            if (!string.IsNullOrEmpty(horaLlegada) && !ValidarFormatoHora(horaLlegada))
+                mensajeError += "El formato de 'Hora de Llegada' es incorrecto. Use HH:MM (ej. 18:00).\n";
+
+            return mensajeError;
+        }
     }
 }

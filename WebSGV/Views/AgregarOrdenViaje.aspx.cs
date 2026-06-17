@@ -884,30 +884,8 @@ namespace WebSGV.Views
 
         #region Métodos de Validación
 
-        private string ValidarDatosGenerales(DateTime fechaSalida, DateTime fechaLlegada, string horaSalida, string horaLlegada)
-        {
-            string mensajeError = "";
-
-            if (fechaSalida == DateTime.MinValue)
-                mensajeError += "Por favor, seleccione una 'Fecha de Salida'.\n";
-
-            if (string.IsNullOrEmpty(horaSalida))
-                mensajeError += "Por favor, seleccione una 'Hora de Salida'.\n";
-
-            if (fechaLlegada == DateTime.MinValue)
-                mensajeError += "Por favor, seleccione una 'Fecha de Llegada'.\n";
-
-            if (string.IsNullOrEmpty(horaLlegada))
-                mensajeError += "Por favor, seleccione una 'Hora de Llegada'.\n";
-
-            if (fechaSalida != DateTime.MinValue && fechaLlegada != DateTime.MinValue)
-            {
-                if (fechaSalida > fechaLlegada)
-                    mensajeError += "La 'Fecha de Salida' no puede ser mayor a la 'Fecha de Llegada'.\n";
-            }
-
-            return mensajeError;
-        }
+        private string ValidarDatosGenerales(DateTime fechaSalida, DateTime fechaLlegada, string horaSalida, string horaLlegada) =>
+            OrdenViajeValidaciones.ValidarDatosGeneralesOrdenViaje(fechaSalida, fechaLlegada, horaSalida, horaLlegada);
 
         private string ValidarFormatoNumeroOrden(string numero) =>
             OrdenViajeValidaciones.ValidarFormatoNumeroOrden(numero);

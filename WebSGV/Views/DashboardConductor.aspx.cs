@@ -1314,46 +1314,8 @@ namespace WebSGV.Views
             }
         }
 
-        private string ValidarDatosGenerales(DateTime fechaSalida, DateTime fechaLlegada, string horaSalida, string horaLlegada)
-        {
-            string mensajeError = "";
-
-            // Validar fechas obligatorias
-            if (fechaSalida == DateTime.MinValue)
-                mensajeError += "Por favor, seleccione una 'Fecha de Salida'.\n";
-
-            if (fechaLlegada == DateTime.MinValue)
-                mensajeError += "Por favor, seleccione una 'Fecha de Llegada'.\n";
-
-            // Validar orden lógico de fechas
-            if (fechaSalida != DateTime.MinValue && fechaLlegada != DateTime.MinValue)
-            {
-                if (fechaSalida > fechaLlegada)
-                    mensajeError += "La 'Fecha de Salida' no puede ser mayor a la 'Fecha de Llegada'.\n";
-
-                // M-3: Detectar fechas absurdamente futuras (más de 1 año desde hoy)
-                DateTime limiteMaximo = DateTime.Today.AddYears(1);
-                if (fechaSalida > limiteMaximo || fechaLlegada > limiteMaximo)
-                    mensajeError += "Las fechas no pueden ser superiores a un año desde hoy.\n";
-            }
-
-            // M-2: Validar formato de hora (HH:mm, rango 00:00-23:59)
-            if (!string.IsNullOrEmpty(horaSalida) && !ValidarFormatoHora(horaSalida))
-                mensajeError += "El formato de 'Hora de Salida' es incorrecto. Use HH:MM (ej. 08:30).\n";
-
-            if (!string.IsNullOrEmpty(horaLlegada) && !ValidarFormatoHora(horaLlegada))
-                mensajeError += "El formato de 'Hora de Llegada' es incorrecto. Use HH:MM (ej. 18:00).\n";
-
-            return mensajeError;
-        }
-
-        /// <summary>
-        /// Valida que una cadena represente una hora válida en formato H:mm o HH:mm (00:00–23:59).
-        /// Acepta con y sin cero inicial para interoperabilidad con distintos dispositivos.
-        /// Usa InvariantCulture para evitar dependencia del locale del servidor.
-        /// </summary>
-        private bool ValidarFormatoHora(string hora) =>
-            OrdenViajeValidaciones.ValidarFormatoHora(hora);
+        private string ValidarDatosGenerales(DateTime fechaSalida, DateTime fechaLlegada, string horaSalida, string horaLlegada) =>
+            OrdenViajeValidaciones.ValidarDatosGeneralesLiquidacion(fechaSalida, fechaLlegada, horaSalida, horaLlegada);
 
         /// <summary>
         /// Logging condicional: solo activo en compilaciones DEBUG.
