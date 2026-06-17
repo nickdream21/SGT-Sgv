@@ -193,7 +193,7 @@ namespace WebSGV.Views
         /// </summary>
         private bool InsertarFactura(string numeroFactura, string numeroPedido, decimal valorTotal, DateTime fechaEmision, int idCliente)
         {
-            string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+            string connectionString = DbHelper.ConnectionString;
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {

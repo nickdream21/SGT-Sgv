@@ -1101,7 +1101,7 @@ namespace WebSGV.Views
         {
             try
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+                string connectionString = DbHelper.ConnectionString;
                 if (string.IsNullOrEmpty(connectionString))
                 {
                     MostrarMensaje("Error: No se encontró la cadena de conexión 'ConexionSGV'", "danger");

@@ -496,7 +496,7 @@ namespace WebSGV.Views
         /// </summary>
         private bool ActualizarFacturaConDocumento(string numeroFacturaOriginal, string numeroFacturaNuevo, string numeroPedido, decimal valorTotal, DateTime fechaEmision, int idCliente)
         {
-            string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+            string connectionString = DbHelper.ConnectionString;
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {

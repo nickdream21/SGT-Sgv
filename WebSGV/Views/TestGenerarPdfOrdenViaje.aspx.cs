@@ -131,7 +131,7 @@ namespace WebSGV.Views
             hashPdfFirmado = null;
             imagenTrazoPng = null;
 
-            string cs = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+            string cs = WebSGV.Helpers.DbHelper.ConnectionString;
             const string sql = @"
                 SELECT TOP 1
                     ov.rutaPdfFirmado,

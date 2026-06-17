@@ -217,7 +217,7 @@ namespace WebSGV.Views
         private void GuardarCPICEnBaseDeDatos(string numeroCPIC, int idFactura, decimal valorTotalFlete,
                                            DateTime fechaEmision, decimal pesoNeto, decimal pesoBruto)
         {
-            string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
+            string connectionString = DbHelper.ConnectionString;
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
