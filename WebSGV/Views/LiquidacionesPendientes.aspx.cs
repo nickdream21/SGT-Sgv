@@ -92,7 +92,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error verificando acceso: {ex.Message}");
+                LogSGV.Error(ex, "Error al verificar el acceso en LiquidacionesPendientes");
                 Response.Redirect("~/Views/Login.aspx?error=sistema");
             }
         }
@@ -109,7 +109,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error inicializando página: {ex.Message}");
+                LogSGV.Error(ex, "Error al inicializar la página en LiquidacionesPendientes");
                 MostrarMensaje($"Error al cargar la página: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
@@ -182,7 +182,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error cargando liquidaciones: {ex.Message}");
+                LogSGV.Error(ex, "Error al cargar liquidaciones en LiquidacionesPendientes");
                 MostrarMensaje($"Error al cargar las liquidaciones: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
@@ -216,7 +216,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error en RowCommand: {ex.Message}");
+                LogSGV.Error(ex, "Error en RowCommand en LiquidacionesPendientes");
                 MostrarMensaje($"Error: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
@@ -301,7 +301,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error redirigiendo a edición: {ex.Message}");
+                LogSGV.Error(ex, "Error al redirigir a edición en LiquidacionesPendientes");
                 MostrarMensaje($"Error al redirigir: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
@@ -424,7 +424,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error obteniendo número de orden: {ex.Message}");
+                LogSGV.Error(ex, "Error al obtener el número de orden en LiquidacionesPendientes");
                 return null;
             }
         }
@@ -462,7 +462,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error en BuscarConductores: {ex.Message}");
+                LogSGV.Error(ex, "Error en BuscarConductores en LiquidacionesPendientes");
                 return "[]";
             }
         }
@@ -493,7 +493,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error obteniendo detalle: {ex.Message}");
+                LogSGV.Error(ex, "Error al obtener el detalle de la liquidación en LiquidacionesPendientes");
                 System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
                 throw;
             }
@@ -712,7 +712,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error obteniendo liquidaciones aprobadas: {ex.Message}");
+                LogSGV.Error(ex, "Error al obtener liquidaciones aprobadas en LiquidacionesPendientes");
                 throw;
             }
         }

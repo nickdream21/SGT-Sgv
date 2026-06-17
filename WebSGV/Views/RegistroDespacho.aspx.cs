@@ -199,7 +199,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 // MAJ-005: Logging básico para diagnóstico en lugar de swallow silencioso
-                System.Diagnostics.Trace.TraceError("ActualizarPlantasPorAmbito: " + ex.Message);
+                RegistrarError("ActualizarPlantasPorAmbito", ex);
                 // Fallback a valores por defecto si la tabla Planta no existe aún
                 if (esInternacional)
                 {
@@ -791,6 +791,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                RegistrarError("CancelarLote", ex);
                 MostrarMensaje("Error al cancelar lote: " + ex.Message, "danger");
             }
         }

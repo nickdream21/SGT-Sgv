@@ -170,7 +170,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error verificando sesión: {ex.Message}");
+                LogSGV.Error(ex, "Error al verificar la sesión en DashboardConductor");
                 Response.Redirect("~/Views/Login.aspx?error=sesion", false);
                 Context.ApplicationInstance.CompleteRequest();
                 return false;
@@ -215,7 +215,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error inicializando dashboard: {ex.Message}");
+                LogSGV.Error(ex, "Error al inicializar el dashboard en DashboardConductor");
                 MostrarMensaje("Error al cargar el dashboard. Por favor, recarga la página o contacta al administrador.", "danger");
             }
         }
@@ -248,7 +248,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error cargando datos del conductor: {ex.Message}");
+                LogSGV.Error(ex, "Error al cargar datos del conductor en DashboardConductor");
                 throw;
             }
         }
@@ -292,7 +292,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error verificando observaciones: {ex.Message}");
+                LogSGV.Error(ex, "Error al verificar observaciones en DashboardConductor");
             }
         }
 
@@ -669,7 +669,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error cargando orden rechazada: {ex.Message}");
+                LogSGV.Error(ex, "Error al cargar la orden rechazada en DashboardConductor");
             }
         }
 
@@ -716,7 +716,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error obteniendo viajes activos: {ex.Message}");
+                LogSGV.Error(ex, "Error al obtener viajes activos en DashboardConductor");
                 return viajes;
             }
         }
@@ -754,7 +754,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error mostrando viajes activos: {ex.Message}");
+                LogSGV.Error(ex, "Error al mostrar viajes activos en DashboardConductor");
                 throw;
             }
         }
@@ -817,7 +817,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error cargando despachos: {ex.Message}");
+                LogSGV.Error(ex, "Error al cargar despachos en DashboardConductor");
                 throw;
             }
         }
@@ -846,7 +846,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error habilitando liquidación: {ex.Message}");
+                LogSGV.Error(ex, "Error al habilitar la liquidación en DashboardConductor");
                 throw;
             }
         }
@@ -1132,7 +1132,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"Error obteniendo gastos financieros: {ex.Message}");
+                LogSGV.Error(ex, "Error al obtener gastos financieros en DashboardConductor");
                 return new List<GastoFinanciero>();
             }
         }
@@ -1209,7 +1209,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error cargando historial: {ex.Message}");
+                LogSGV.Error(ex, "Error al cargar el historial en DashboardConductor");
                 MostrarMensaje($"Error al cargar el historial: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
             }
         }
@@ -1243,8 +1243,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error obteniendo estaciones: {ex.Message}");
-                Log($"Stack: {ex.StackTrace}");
+                LogSGV.Error(ex, "Error al obtener estaciones en DashboardConductor");
                 return "[]";
             }
         }
@@ -1265,7 +1264,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error generando número de orden: {ex.Message}");
+                LogSGV.Error(ex, "Error al generar el número de orden en DashboardConductor");
                 // Fallback: un solo snapshot de DateTime.Now garantiza consistencia del timestamp
                 var ahora = DateTime.Now;
                 string fallbackNumero = $"OV-{ahora:yyyyMMddHHmmss}-{IdConductorActual:D4}-{ahora.Ticks % 1000:D3}";
@@ -1310,8 +1309,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error obteniendo datos del viaje: {ex.Message}");
-                Log($"   StackTrace: {ex.StackTrace}");
+                LogSGV.Error(ex, "Error al obtener los datos del viaje en DashboardConductor");
                 return null;
             }
         }
@@ -1402,7 +1400,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"Error mostrando resultado: {ex.Message}");
+                LogSGV.Error(ex, "Error al mostrar el resultado en DashboardConductor");
             }
         }
 
@@ -1417,7 +1415,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error en ValidarOwnershipViajes: {ex.Message}");
+                LogSGV.Error(ex, "Error en ValidarOwnershipViajes en DashboardConductor");
                 return false;
             }
         }
@@ -1433,7 +1431,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                Log($"❌ Error en ValidarOwnershipOrden: {ex.Message}");
+                LogSGV.Error(ex, "Error en ValidarOwnershipOrden en DashboardConductor");
                 return false;
             }
         }

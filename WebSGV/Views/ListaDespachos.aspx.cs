@@ -92,6 +92,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
+                    LogSGV.Error(ex, "Error al cargar la página en ListaDespachos");
                     MostrarMensaje("Error al cargar página: " + ex.Message, "danger");
                 }
             }
@@ -111,6 +112,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar datos iniciales en ListaDespachos");
                 MostrarMensaje("Error al cargar datos iniciales: " + ex.Message, "danger");
             }
         }
@@ -132,6 +134,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar conductores en ListaDespachos");
                 MostrarMensaje("Error al cargar conductores: " + ex.Message, "warning");
             }
         }
@@ -144,6 +147,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar clientes en ListaDespachos");
                 MostrarMensaje("Error al cargar clientes: " + ex.Message, "warning");
             }
         }
@@ -198,6 +202,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar viajes activos en ListaDespachos");
                 MostrarMensaje("Error al cargar viajes activos: " + ex.Message, "danger");
             }
         }
@@ -226,6 +231,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar despachos del viaje en ListaDespachos");
                 MostrarMensaje("Error al cargar despachos del viaje: " + ex.Message, "danger");
             }
         }
@@ -286,6 +292,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar lotes registrados en ListaDespachos");
                 MostrarMensaje("Error al cargar lotes registrados: " + ex.Message, "danger");
             }
         }
@@ -330,6 +337,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar despachos del lote en ListaDespachos");
                 MostrarMensaje("Error al cargar despachos del lote: " + ex.Message, "danger");
             }
         }
@@ -422,6 +430,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al mostrar viajes en ListaDespachos");
                 MostrarMensaje("Error al mostrar viajes: " + ex.Message, "danger");
             }
         }
@@ -435,6 +444,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al mostrar lotes en ListaDespachos");
                 MostrarMensaje("Error al mostrar lotes: " + ex.Message, "danger");
             }
         }
@@ -474,6 +484,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al refrescar viajes en ListaDespachos");
                 MostrarMensaje("Error al refrescar viajes: " + ex.Message, "danger");
             }
         }
@@ -522,6 +533,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al limpiar filtros en ListaDespachos");
                 MostrarMensaje("Error al limpiar filtros: " + ex.Message, "danger");
             }
         }
@@ -537,6 +549,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al refrescar lotes en ListaDespachos");
                 MostrarMensaje("Error al refrescar lotes: " + ex.Message, "danger");
             }
         }
@@ -564,6 +577,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al procesar acción en viaje en ListaDespachos");
                 MostrarMensaje("Error al procesar acción en viaje: " + ex.Message, "danger");
             }
         }
@@ -585,6 +599,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al procesar acción en lote en ListaDespachos");
                 MostrarMensaje("Error al procesar acción en lote: " + ex.Message, "danger");
             }
         }
@@ -652,6 +667,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al finalizar viaje en ListaDespachos");
                 MostrarMensaje("Error al finalizar viaje: " + ex.Message, "danger");
             }
         }
@@ -1208,6 +1224,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al establecer contadores en ListaDespachos");
                 MostrarMensaje("Error al establecer contadores: " + ex.Message, "warning");
             }
         }

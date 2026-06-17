@@ -123,6 +123,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar las plantas de descarga en BuscarOrdenViaje");
                 MostrarMensaje("Error al cargar las plantas de descarga: " + ex.Message, true);
             }
         }
@@ -158,6 +159,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al verificar la orden de viaje en BuscarOrdenViaje");
                 MostrarMensaje("Error al verificar la orden de viaje: " + ex.Message, true);
                 return false;
             }
@@ -176,6 +178,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cargar los datos de la orden de viaje en BuscarOrdenViaje");
                 MostrarMensaje("Error al cargar los datos de la orden de viaje: " + ex.Message, true);
             }
         }
@@ -413,6 +416,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al guardar los cambios de la orden de viaje en BuscarOrdenViaje");
                 MostrarMensaje("Error al guardar los cambios: " + ex.Message, true);
             }
         }

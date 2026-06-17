@@ -561,7 +561,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 // NO tocar Response aquí - solo logear el error
-                System.Diagnostics.Debug.WriteLine($"Error exportando Excel: {ex.Message}");
+                LogSGV.Error(ex, "Error al exportar a Excel en ReportesOrdenesViaje");
                 throw; // Re-lanzar para que lo maneje ASP.NET
             }
         }
@@ -712,7 +712,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error: {ex.Message}");
+                LogSGV.Error(ex, "Error al exportar el reporte de órdenes de viaje");
                 throw;
             }
         }
@@ -931,7 +931,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error: {ex.Message}");
+                LogSGV.Error(ex, "Error al exportar el reporte de órdenes de viaje");
                 throw;
             }
         }
@@ -1530,7 +1530,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("Error reporte personalizado: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte personalizado en ReportesOrdenesViaje");
                 throw;
             }
         }

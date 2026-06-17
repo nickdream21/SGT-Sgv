@@ -138,7 +138,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error en carga normal: {ex.Message}");
+                LogSGV.Error(ex, "Error en la carga normal de AgregarOrdenViaje");
                 MostrarMensaje("Error al cargar la página: " + ex.Message, "danger");
             }
         }
@@ -262,7 +262,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error cargando orden: {ex.Message}");
+                LogSGV.Error(ex, "Error al cargar la orden para edición en AgregarOrdenViaje");
                 System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
                 MostrarMensaje($"Error al cargar la orden: {ex.Message}", "danger");
                 CargarDatosNormales();
@@ -350,7 +350,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error cargando ingresos adicionales: {ex.Message}");
+                LogSGV.Error(ex, "Error al cargar ingresos adicionales en AgregarOrdenViaje");
             }
         }
 
@@ -433,7 +433,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error cargando gastos adicionales: {ex.Message}");
+                LogSGV.Error(ex, "Error al cargar gastos adicionales en AgregarOrdenViaje");
             }
         }
 
@@ -507,7 +507,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error cargando datos de modales: {ex.Message}");
+                LogSGV.Error(ex, "Error al cargar datos de modales en AgregarOrdenViaje");
             }
         }
 
@@ -566,7 +566,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error: {ex.Message}");
+                LogSGV.Error(ex, "Error al cargar datos del viaje finalizado en AgregarOrdenViaje");
                 MostrarMensaje("Error al cargar datos del viaje: " + ex.Message, "danger");
                 CargarDatosNormales();
             }
@@ -626,7 +626,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error precargando campos: {ex.Message}");
+                LogSGV.Error(ex, "Error al precargar campos desde el viaje en AgregarOrdenViaje");
                 throw;
             }
         }
@@ -644,7 +644,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error cargando despachos en GridView: {ex.Message}");
+                LogSGV.Error(ex, "Error al cargar despachos en GridView en AgregarOrdenViaje");
                 throw;
             }
         }
@@ -874,7 +874,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error obteniendo gastos financieros: {ex.Message}");
+                LogSGV.Error(ex, "Error al obtener gastos financieros en AgregarOrdenViaje");
                 return new List<GastoFinanciero>();
             }
         }
@@ -921,7 +921,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error verificando número de orden: {ex.Message}");
+                LogSGV.Error(ex, "Error al verificar el número de orden en AgregarOrdenViaje");
                 return true;
             }
         }
@@ -968,7 +968,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error obteniendo ID usuario: {ex.Message}");
+                LogSGV.Error(ex, "Error al obtener el ID de usuario en AgregarOrdenViaje");
                 return 0;
             }
         }
@@ -990,7 +990,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error buscando usuario: {ex.Message}");
+                LogSGV.Error(ex, "Error al buscar el usuario en AgregarOrdenViaje");
                 return 0;
             }
         }
@@ -1032,7 +1032,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error mostrando resultado: {ex.Message}");
+                LogSGV.Error(ex, "Error al mostrar el resultado en AgregarOrdenViaje");
             }
         }
 
@@ -1080,7 +1080,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error al obtener estaciones de peaje: {ex.Message}");
+                LogSGV.Error(ex, "Error al obtener estaciones de peaje en AgregarOrdenViaje");
 
                 var estacionesEmergencia = new List<object>
                 {
@@ -1112,7 +1112,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error inicializando sistema: {ex.Message}");
+                LogSGV.Error(ex, "Error al inicializar el sistema en AgregarOrdenViaje");
                 MostrarMensaje("Error al inicializar el sistema: " + ex.Message, "danger");
             }
         }

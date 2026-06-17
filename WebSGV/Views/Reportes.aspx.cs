@@ -105,7 +105,7 @@ namespace WebSGV.Views
             {
                 if (ddlConductor.Items.Count == 0)
                     ddlConductor.Items.Add(new ListItem("Todos los conductores", ""));
-                System.Diagnostics.Debug.WriteLine("Error al cargar conductores: " + ex.Message);
+                LogSGV.Error(ex, "Error al cargar conductores en Reportes");
             }
         }
 
@@ -122,7 +122,7 @@ namespace WebSGV.Views
             {
                 if (ddlVehiculo.Items.Count == 0)
                     ddlVehiculo.Items.Add(new ListItem("Todos los vehículos", ""));
-                System.Diagnostics.Debug.WriteLine("Error al cargar vehículos: " + ex.Message);
+                LogSGV.Error(ex, "Error al cargar vehículos en Reportes");
             }
         }
 
@@ -139,7 +139,7 @@ namespace WebSGV.Views
             {
                 if (ddlProducto.Items.Count == 0)
                     ddlProducto.Items.Add(new ListItem("Todos los productos", ""));
-                System.Diagnostics.Debug.WriteLine("Error al cargar productos: " + ex.Message);
+                LogSGV.Error(ex, "Error al cargar productos en Reportes");
             }
         }
 
@@ -159,7 +159,7 @@ namespace WebSGV.Views
                 if (ddlLugarAbastecimiento.Items.Count == 0)
                     ddlLugarAbastecimiento.Items.Add(new ListItem("Todos los lugares", ""));
 
-                System.Diagnostics.Debug.WriteLine("Error al cargar lugares de abastecimiento: " + ex.Message);
+                LogSGV.Error(ex, "Error al cargar lugares de abastecimiento en Reportes");
             }
         }
 
@@ -660,7 +660,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 // Registrar error y mostrar error amigable
-                System.Diagnostics.Debug.WriteLine("Error al exportar a Excel: " + ex.Message);
+                LogSGV.Error(ex, "Error al exportar a Excel en Reportes");
 
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorExport",
                     "alert('Ocurrió un error al exportar a Excel. Por favor, intente nuevamente.\\n" +
@@ -1145,7 +1145,7 @@ namespace WebSGV.Views
                 gvReporte.DataBind();
 
                 // Registrar el error
-                System.Diagnostics.Debug.WriteLine("Error al generar reporte de pedido: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte de pedido en Reportes");
             }
         }
 
@@ -1276,7 +1276,7 @@ namespace WebSGV.Views
                 gvReporte.DataBind();
 
                 // Registrar el error
-                System.Diagnostics.Debug.WriteLine("Error al generar reporte de vehículos asignados: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte de vehículos asignados en Reportes");
             }
         }
 
@@ -1403,7 +1403,7 @@ namespace WebSGV.Views
                 gvReporte.DataBind();
 
                 // Registrar el error
-                System.Diagnostics.Debug.WriteLine("Error al generar reporte de conductores asignados: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte de conductores asignados en Reportes");
             }
         }
 
@@ -1546,7 +1546,7 @@ namespace WebSGV.Views
                 gvReporte.DataBind();
 
                 // Registrar el error y mostrar mensaje
-                System.Diagnostics.Debug.WriteLine("Error al generar balance financiero: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el balance financiero en Reportes");
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorReporte",
                     "alert('Error al generar el balance financiero: " + ex.Message.Replace("'", "\\'") + "');", true);
             }
@@ -1766,7 +1766,7 @@ namespace WebSGV.Views
                 gvReporte.DataBind();
 
                 // Considere registrar el error
-                System.Diagnostics.Debug.WriteLine("Error al generar reporte de productos transportados: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte de productos transportados en Reportes");
             }
         }
 
@@ -1910,7 +1910,7 @@ namespace WebSGV.Views
                 gvReporte.DataBind();
 
                 // Registrar el error
-                System.Diagnostics.Debug.WriteLine("Error al generar reporte financiero por conductor: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte financiero por conductor en Reportes");
             }
         }
 
@@ -2047,7 +2047,7 @@ namespace WebSGV.Views
                 gvReporte.DataBind();
 
                 // Registrar el error
-                System.Diagnostics.Debug.WriteLine("Error al generar reporte de combustible: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte de combustible en Reportes");
             }
         }
 
@@ -2193,7 +2193,7 @@ namespace WebSGV.Views
                     $"alert('Error al generar reporte: {ex.Message.Replace("'", "\\'")}');", true);
 
                 // Registrar el error
-                System.Diagnostics.Debug.WriteLine("Error al generar reporte de viajes por vehículo: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte de viajes por vehículo en Reportes");
             }
         }
 
@@ -2440,7 +2440,7 @@ namespace WebSGV.Views
                     $"alert('Error al generar reporte: {ex.Message.Replace("'", "\\'")}');", true);
 
                 // Registrar el error
-                System.Diagnostics.Debug.WriteLine("Error al generar reporte de consumo de combustible: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte de consumo de combustible en Reportes");
             }
         }
 
@@ -2688,7 +2688,7 @@ namespace WebSGV.Views
                 gvReporte.DataSource = dt;
                 gvReporte.DataBind();
 
-                System.Diagnostics.Debug.WriteLine("Error al generar reporte de rendimiento por ruta: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte de rendimiento por ruta en Reportes");
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorReporte",
                     "alert('Error al generar el reporte: " + ex.Message.Replace("'", "\\'") + "');", true);
             }
@@ -2924,7 +2924,7 @@ namespace WebSGV.Views
                 gvReporte.DataSource = dt;
                 gvReporte.DataBind();
 
-                System.Diagnostics.Debug.WriteLine("Error al generar reporte de mantenimiento: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte de mantenimiento en Reportes");
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorReporte",
                     "alert('Error al generar el reporte: " + ex.Message.Replace("'", "\\'") + "');", true);
             }
@@ -3158,7 +3158,7 @@ namespace WebSGV.Views
                 gvReporte.DataBind();
 
                 // Registrar el error
-                System.Diagnostics.Debug.WriteLine("Error al generar reporte de productos más transportados: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte de productos más transportados en Reportes");
             }
         }
 
@@ -3267,7 +3267,7 @@ namespace WebSGV.Views
                     $"alert('Error al generar reporte: {ex.Message.Replace("'", "\\'")}');", true);
 
                 // Registrar el error
-                System.Diagnostics.Debug.WriteLine("Error al generar reporte de productos por cliente: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte de productos por cliente en Reportes");
             }
         }
 
@@ -3379,7 +3379,7 @@ namespace WebSGV.Views
                     $"alert('Error al generar reporte: {ex.Message.Replace("'", "\\'")}');", true);
 
                 // Registrar el error
-                System.Diagnostics.Debug.WriteLine("Error al generar reporte de productos por destino: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte de productos por destino en Reportes");
             }
         }
 
@@ -3516,7 +3516,7 @@ namespace WebSGV.Views
                     $"alert('Error al generar reporte: {ex.Message.Replace("'", "\\'")}');", true);
 
                 // Registrar el error
-                System.Diagnostics.Debug.WriteLine("Error al generar reporte de consumo general: " + ex.Message);
+                LogSGV.Error(ex, "Error al generar el reporte de consumo general en Reportes");
             }
         }
 
@@ -4005,7 +4005,7 @@ namespace WebSGV.Views
                 pnlResultados.Visible = true;
                  
                 // Registrar el error para debugging
-                System.Diagnostics.Debug.WriteLine("Error en GenerarReporteRendimientoPorVehiculo: " + ex.ToString());
+                LogSGV.Error(ex, "Error al generar el reporte de rendimiento por vehículo en Reportes");
 
                 // Mostrar el modal con el error
                 ScriptManager.RegisterStartupScript(this, this.GetType(), "showResultModal",
@@ -4212,7 +4212,7 @@ namespace WebSGV.Views
                 pnlResultados.Visible = true;
 
                 // Registrar el error para debugging
-                System.Diagnostics.Debug.WriteLine("Error en GenerarReporteRendimientoPorRutaCombustible: " + ex.ToString());
+                LogSGV.Error(ex, "Error al generar el reporte de rendimiento por ruta (combustible) en Reportes");
 
                 // Mostrar el modal con el error
                 ScriptManager.RegisterStartupScript(this, this.GetType(), "showResultModal",
