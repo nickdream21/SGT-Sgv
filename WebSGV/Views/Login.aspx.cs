@@ -144,7 +144,21 @@ namespace WebSGV.Views
             }
 
             // Verificar credenciales en la base de datos (fuera del lock para no retenerlo durante I/O)
-            var resultado = ValidarUsuario(usuario, contrasena);
+            (bool EsValido, string Rol, string Nombre, string NombreUsuario,
+             int IdUsuario, int? IdConductor, int? IdOperador) resultado;
+            try
+            {
+                resultado = ValidarUsuario(usuario, contrasena);
+            }
+            catch (Exception)
+            {
+                // El detalle ya quedó logueado en ValidarUsuario. Una caída de BD NO debe
+                // mostrarse como "credenciales incorrectas" ni contar como intento fallido
+                // (no toca el contador anti-fuerza-bruta): se avisa que el servicio no está
+                // disponible.
+                MostrarMensaje("El servicio no está disponible en este momento. Por favor, intente nuevamente en unos minutos.");
+                return;
+            }
 
             if (resultado.EsValido)
             {
@@ -283,7 +297,13 @@ namespace WebSGV.Views
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // No tragar el error: un fallo de BD/lectura se registra y se propaga para
+                // que el llamador lo distinga de "credenciales incorrectas".
+                LogSGV.Error(ex, "Error de BD al validar credenciales del usuario {Usuario}", usuario);
+                throw;
+            }
 
             return (esValido, rol, nombre, nombreUsuario, idUsuario, idConductor, idOperador);
         }
@@ -302,7 +322,14 @@ namespace WebSGV.Views
                     DbHelper.Param("@NuevoHash", nuevoHash),
                     DbHelper.Param("@IdUsuario", idUsuario));
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // La migración de hash es best-effort: si falla, el login ya fue válido y no
+                // se rompe. Se registra para no dejar al usuario con contraseña sin migrar
+                // de forma silenciosa e indefinida.
+                LogSGV.Advertencia("No se pudo migrar la contraseña del usuario {IdUsuario} a PBKDF2: {Error}",
+                    idUsuario, ex.Message);
+            }
         }
 
         private void MostrarMensaje(string mensaje)
