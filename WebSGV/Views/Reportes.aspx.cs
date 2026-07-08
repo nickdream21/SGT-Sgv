@@ -706,24 +706,9 @@ namespace WebSGV.Views
                     lblTotalRegistros.Text = "No se encontraron registros";
                 }
 
-                // Establecer el indicador adicional según el tipo de reporte
-                string tipoReporte = ObtenerTipoReporteSeleccionado();
-                if (tipoReporte == "combustible")
-                {
-                    litIndicadorAdicionalTitulo.Text = "Total Combustible";
-                    litIndicadorAdicional.Text = FormatDecimal(CalcularTotalCombustible()) + " Gal.";
-                }
-                else if (tipoReporte == "producto")
-                {
-                    litIndicadorAdicionalTitulo.Text = "Total Producto";
-                    litIndicadorAdicional.Text = FormatDecimal(CalcularTotalProducto()) + " Kg.";
-                }
-                else
-                {
-                    litIndicadorAdicionalTitulo.Text = "Total Viajes";
-                    // Usar _totalRegistros en lugar de gvReporte.Rows.Count
-                    litIndicadorAdicional.Text = _totalRegistros.ToString();
-                }
+                // Los indicadores (litTotalIngresos/Egresos/Balance y el adicional) ya quedaron
+                // establecidos con valores reales por GenerarReporte() según el tipo de reporte.
+                // No se vuelven a fijar aquí para no pisar esos datos con valores calculados aparte.
 
                 // Actualizar el UpdatePanel para que refleje los cambios
                 upResultados.Update();
@@ -770,46 +755,17 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                // En caso de error, mostrar mensaje al usuario
+                // Registrar el detalle y mostrar un mensaje genérico: no exponer ex.Message
+                // al usuario (puede filtrar detalles internos de la BD).
+                LogSGV.Error(ex, "Error al generar el reporte en Reportes");
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorModal",
-                    "alert('Error al generar el reporte: " + System.Web.HttpUtility.JavaScriptStringEncode(ex.Message) + "');", true);
+                    "alert('No se pudo generar el reporte. Intente nuevamente; si el problema persiste, contacte al administrador.');", true);
             }
         }
 
-        // Método auxiliar para formatear valores decimales
-        private string FormatDecimal(decimal value)
-        {
-            return value.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("es-PE"));
-        }
-
-        // Métodos de cálculo para los indicadores (implementa estas funciones según tu lógica de negocio)
-        private decimal CalcularTotalIngresos()
-        {
-            // Implementa tu lógica para calcular ingresos aquí
-            // Por ahora retornamos un valor de ejemplo
-            return 12500.00m;
-        }
-
-        private decimal CalcularTotalEgresos()
-        {
-            // Implementa tu lógica para calcular egresos aquí
-            // Por ahora retornamos un valor de ejemplo
-            return 5250.00m;
-        }
-
-        private decimal CalcularTotalCombustible()
-        {
-            // Implementa tu lógica para calcular combustible aquí
-            // Por ahora retornamos un valor de ejemplo
-            return 320.00m;
-        }
-
-        private decimal CalcularTotalProducto()
-        {
-            // Implementa tu lógica para calcular producto aquí
-            // Por ahora retornamos un valor de ejemplo
-            return 15000.00m;
-        }
+        // Los indicadores de Reportes se calculan con datos reales en cada método
+        // GenerarReporte*(). Se eliminaron los métodos CalcularTotal* que devolvían
+        // valores de ejemplo fijos (y su auxiliar FormatDecimal, ya sin uso).
 
 
 
@@ -2190,7 +2146,7 @@ namespace WebSGV.Views
 
                 // Mostrar mensaje de error
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorAlert",
-                    $"alert('Error al generar reporte: {ex.Message.Replace("'", "\\'")}');", true);
+                    "alert('No se pudo generar el reporte. Intente nuevamente; si el problema persiste, contacte al administrador.');", true);
 
                 // Registrar el error
                 LogSGV.Error(ex, "Error al generar el reporte de viajes por vehículo en Reportes");
@@ -2437,7 +2393,7 @@ namespace WebSGV.Views
 
                 // Mostrar mensaje de error
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorAlert",
-                    $"alert('Error al generar reporte: {ex.Message.Replace("'", "\\'")}');", true);
+                    "alert('No se pudo generar el reporte. Intente nuevamente; si el problema persiste, contacte al administrador.');", true);
 
                 // Registrar el error
                 LogSGV.Error(ex, "Error al generar el reporte de consumo de combustible en Reportes");
@@ -2690,7 +2646,7 @@ namespace WebSGV.Views
 
                 LogSGV.Error(ex, "Error al generar el reporte de rendimiento por ruta en Reportes");
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorReporte",
-                    "alert('Error al generar el reporte: " + ex.Message.Replace("'", "\\'") + "');", true);
+                    "alert('No se pudo generar el reporte. Intente nuevamente; si el problema persiste, contacte al administrador.');", true);
             }
         }
 
@@ -2926,7 +2882,7 @@ namespace WebSGV.Views
 
                 LogSGV.Error(ex, "Error al generar el reporte de mantenimiento en Reportes");
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorReporte",
-                    "alert('Error al generar el reporte: " + ex.Message.Replace("'", "\\'") + "');", true);
+                    "alert('No se pudo generar el reporte. Intente nuevamente; si el problema persiste, contacte al administrador.');", true);
             }
         }
 
@@ -3264,7 +3220,7 @@ namespace WebSGV.Views
 
                 // Mostrar mensaje de error
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorAlert",
-                    $"alert('Error al generar reporte: {ex.Message.Replace("'", "\\'")}');", true);
+                    "alert('No se pudo generar el reporte. Intente nuevamente; si el problema persiste, contacte al administrador.');", true);
 
                 // Registrar el error
                 LogSGV.Error(ex, "Error al generar el reporte de productos por cliente en Reportes");
@@ -3376,7 +3332,7 @@ namespace WebSGV.Views
 
                 // Mostrar mensaje de error
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorAlert",
-                    $"alert('Error al generar reporte: {ex.Message.Replace("'", "\\'")}');", true);
+                    "alert('No se pudo generar el reporte. Intente nuevamente; si el problema persiste, contacte al administrador.');", true);
 
                 // Registrar el error
                 LogSGV.Error(ex, "Error al generar el reporte de productos por destino en Reportes");
@@ -3513,7 +3469,7 @@ namespace WebSGV.Views
 
                 // Mostrar mensaje de error
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorAlert",
-                    $"alert('Error al generar reporte: {ex.Message.Replace("'", "\\'")}');", true);
+                    "alert('No se pudo generar el reporte. Intente nuevamente; si el problema persiste, contacte al administrador.');", true);
 
                 // Registrar el error
                 LogSGV.Error(ex, "Error al generar el reporte de consumo general en Reportes");
