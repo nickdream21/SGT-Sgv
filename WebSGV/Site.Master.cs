@@ -263,8 +263,10 @@ namespace WebSGV
                     Response.Cookies.Add(cookie);
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                // La limpieza de la cookie no debe impedir el logout; se registra el fallo.
+                LogSGV.Advertencia("No se pudo limpiar la cookie de sesión en el logout: {Error}", ex.Message);
             }
 
             // Redirigir al login

@@ -97,7 +97,12 @@ namespace WebSGV.Views
                     DbHelper.Param("@ticketsJson", ticketsJson));
 
                 try { AuditoriaHelper.Registrar("IngresoEcuador", "Registro retorno Ecuador viaje " + litNumeroViaje.Text); }
-                catch { }
+                catch (Exception exAud)
+                {
+                    // La auditoría nunca debe romper el registro del retorno; se registra el fallo.
+                    LogSGV.Advertencia("No se pudo auditar el retorno de Ecuador del viaje {Viaje}: {Error}",
+                        litNumeroViaje.Text, exAud.Message);
+                }
 
                 Response.Redirect("DashboardGrifo.aspx?msg=retorno_ok", false);
                 Context.ApplicationInstance.CompleteRequest();

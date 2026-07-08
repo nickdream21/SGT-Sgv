@@ -132,7 +132,11 @@ namespace WebSGV.Views
                     AuditoriaHelper.Registrar("INSERT", "DespachoCombustibleObra",
                         descripcion: $"Despacho a obra ID {idDespacho} - Obra: {ddlObra.SelectedItem.Text}, Salida: {galSalida:N2} GL, Retorno: {galRetorno:N2} GL, Abastecido: {abastecido:N2} GL");
                 }
-                catch { }
+                catch (Exception exAud)
+                {
+                    // La auditoría nunca debe romper el registro del despacho; se registra el fallo.
+                    LogSGV.Advertencia("No se pudo auditar el despacho a obra {Id}: {Error}", idDespacho, exAud.Message);
+                }
 
                 Response.Redirect("DashboardGrifo.aspx?msg=despacho_ok");
             }

@@ -98,7 +98,12 @@ namespace WebSGV.Views
                         dto.IdAbastecimientoCombustible,
                         "Descarga PDF SGV-CDF-F-06 por usuario " + idUsuario);
                 }
-                catch { }
+                catch (Exception exAud)
+                {
+                    // La auditoría nunca debe romper la descarga; se registra el fallo.
+                    LogSGV.Advertencia("No se pudo auditar la descarga del PDF de Abastecimiento {Id}: {Error}",
+                        dto.IdAbastecimientoCombustible, exAud.Message);
+                }
 
                 string nombre = "ABT-" + (dto.NumeroAbastecimiento ?? dto.IdAbastecimientoCombustible.ToString()) + ".pdf";
                 string disposicion = (descargar ? "attachment" : "inline") +
@@ -138,7 +143,11 @@ namespace WebSGV.Views
                                new string('-', 80) + Environment.NewLine;
                 File.AppendAllText(Path.Combine(dir, "pdf-abastecimiento.log"), linea);
             }
-            catch { }
+            catch
+            {
+                // Logger de último recurso: si la escritura del propio log falla, se traga
+                // a propósito (no hay dónde registrarlo sin recursión).
+            }
         }
 
         private static void CargarDto(

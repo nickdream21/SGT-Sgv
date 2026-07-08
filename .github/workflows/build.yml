@@ -26,3 +26,6 @@ jobs:
 
       - name: Compilar
         run: msbuild WebSGV.sln /t:Build /p:Configuration=Release /nologo /verbosity:minimal
+
+      - name: Ejecutar tests
+        run: dotnet test WebSGV.Tests/WebSGV.Tests.csproj -c Release --logger "console;verbosity=minimal"

@@ -38,7 +38,11 @@ namespace WebSGV.Views
                         }
                     }
                 }
-                catch { }
+                catch
+                {
+                    // Recuperación best-effort del último error guardado: si falla, se traga
+                    // a propósito (esta ES la página de error; no debe lanzar ni encadenar logging).
+                }
             }
 
             if (lastError != null)

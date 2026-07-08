@@ -104,7 +104,12 @@ namespace WebSGV.Views
                     AuditoriaHelper.Registrar("DESCARGAR_PDF", "OrdenViaje", idOrdenViaje,
                         "Descarga PDF SGV-CDF-F-05 por usuario " + idUsuario);
                 }
-                catch { }
+                catch (Exception exAud)
+                {
+                    // La auditoría nunca debe romper la descarga; se registra el fallo.
+                    LogSGV.Advertencia("No se pudo auditar la descarga del PDF de OrdenViaje {Id}: {Error}",
+                        idOrdenViaje, exAud.Message);
+                }
 
                 // 8) Stream
                 string nombre = "OV-" + (detalle.NumeroOrdenViaje ?? idOrdenViaje.ToString()) + ".pdf";
