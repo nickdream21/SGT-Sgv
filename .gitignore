@@ -390,3 +390,6 @@ WebSGV/Uploads/
 # Datos maestros de migracion: contienen PII (DNIs/nombres de conductores) y
 # hashes de contrasenas. Se conserva local para ejecutar la migracion, NUNCA en git.
 docs/migracion_somee/generado/02_datos_maestros.sql
+
+# Credenciales en texto plano de usuarios administrativos recien creados. NUNCA en git.
+docs/migracion_somee/generado/CREDENCIALES_ADMIN.md
