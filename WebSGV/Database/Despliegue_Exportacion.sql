@@ -13,7 +13,7 @@
 --      se ve "vacío", la causa estará ahí.
 -- =============================================================================
 
-USE [SGV];   -- <-- ajusta el nombre si tu BD se llama distinto
+USE [sgvTransporte];   -- <-- ajusta el nombre si tu BD se llama distinto
 GO
 
 PRINT '======================================================';
