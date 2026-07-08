@@ -6,6 +6,7 @@ using System.IO;
 using System.Web;
 using System.Web.Hosting;
 using System.Web.UI;
+using WebSGV.Helpers;
 using WebSGV.Services;
 
 namespace WebSGV.Views
@@ -27,6 +28,18 @@ namespace WebSGV.Views
     {
         protected void Page_Load(object sender, EventArgs e)
         {
+            // Este endpoint sirve PDFs de órdenes de viaje (datos financieros) y con
+            // ?archivar=1 escribe en disco: exigir sesión con rol ADMIN/SUPERVISOR.
+            // Se redirige y retorna explícitamente para que un no autorizado nunca
+            // llegue a generar/transmitir el PDF (la página escribe fuera de !IsPostBack).
+            if (!SecurityHelper.EsAdminOSupervisor())
+            {
+                Response.Redirect("~/Views/Login.aspx?error=sesion", false);
+                Context.ApplicationInstance.CompleteRequest();
+                return;
+            }
+            SecurityHelper.AgregarHeadersSeguridad();
+
             Response.Clear();
             Response.ContentEncoding = System.Text.Encoding.UTF8;
 
