@@ -2,12 +2,6 @@ namespace WebSGV.Views.Exportacion
 {
     public partial class RegistroSeguimiento
     {
-        protected global::System.Web.UI.WebControls.Button btnAgregarFila;
-        protected global::System.Web.UI.WebControls.Button btnRefrescarGrid;
-        protected global::System.Web.UI.WebControls.CheckBox chkIncluirFinalizados;
-        protected global::System.Web.UI.WebControls.Button btnGuardarGrid;
-        protected global::System.Web.UI.WebControls.HiddenField hdnGridChanges;
-        protected global::System.Web.UI.WebControls.Literal litGridDataJson;
         protected global::System.Web.UI.WebControls.Literal litAutoComplete;
         protected global::System.Web.UI.WebControls.Panel pnlAlert;
         protected global::System.Web.UI.WebControls.Literal litAlert;
@@ -68,6 +62,7 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.Button btnGuardarBorrador;
         protected global::System.Web.UI.WebControls.Button btnGuardarFinal;
         protected global::System.Web.UI.WebControls.ValidationSummary vsGuardarSeguimiento;
+        protected global::System.Web.UI.WebControls.Button btnDescargarPlantilla;
         protected global::System.Web.UI.WebControls.FileUpload fileExcel;
         protected global::System.Web.UI.WebControls.Button btnImportar;
         protected global::System.Web.UI.WebControls.GridView gvRecientes;

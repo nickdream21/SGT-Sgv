@@ -89,7 +89,6 @@ namespace WebSGV.Views.Exportacion
             if (!IsPostBack)
             {
                 CargarAutoComplete();
-                CargarGrid();
                 CargarBandeja();
                 CargarRegistrosRecientes();
             }
@@ -637,6 +636,173 @@ namespace WebSGV.Views.Exportacion
                     try { File.Delete(tempPath); } catch { /* ignore */ }
                 }
             }
+        }
+
+        // ── Plantilla de importación: orden de columnas + header canónico.
+        // El header usado es un fragmento reconocido por ExcelHeaderMap, de modo que
+        // una plantilla llenada por el usuario se importa sin ajustes.
+        private static readonly (string Header, string Grupo)[] PlantillaColumnas =
+        {
+            ("CLIENTE",                             "IDENTIDAD"),
+            ("CONDUCTOR ORIGEN",                    "IDENTIDAD"),
+            ("TRACTO 1",                            "IDENTIDAD"),
+            ("CARRETA",                             "IDENTIDAD"),
+            ("CONDUCTOR DESTINO",                   "IDENTIDAD"),
+            ("TRACTO 2",                            "IDENTIDAD"),
+            ("F.H.S.BASE:",                         "PERU"),
+            ("F.H.LL. TRUJILLO",                    "PERU"),
+            ("F.H.REGISTRO",                        "PERU"),
+            ("F.H. PROGRAMACION",                   "PERU"),
+            ("F.H.I PLANTA",                        "PERU"),
+            ("F.H.INICIO DE CARGA",                 "PERU"),
+            ("F.H.TERMINO CARGA",                   "PERU"),
+            ("F.H.S PLANTA",                        "PERU"),
+            ("F.H.LL. BASE",                        "PERU"),
+            ("F.H.S BASE",                          "PERU"),
+            ("F.H.LL.BODEGA NACIONAL",              "BODEGA NACIONAL"),
+            ("F.H.I. BODEGA NACIONAL",              "BODEGA NACIONAL"),
+            ("F.H.S.BODEGA NACIONAL",               "BODEGA NACIONAL"),
+            ("BODEGA",                              "BODEGA NACIONAL"),
+            ("F.H.LL CEBAF",                        "FRONTERA"),
+            ("F.H CRUCE",                           "FRONTERA"),
+            ("AUTORIZACION DE LA NACIONALIZACION",  "FRONTERA"),
+            ("BODEGA ECUATORIANA",                  "ECUADOR"),
+            ("F.H.LL.TCI",                          "ECUADOR"),
+            ("F.H.S TCI",                           "ECUADOR"),
+            ("BODEGA DESCARGA",                     "ECUADOR"),
+            ("F.H.LL.PLANTA",                       "ECUADOR"),
+            ("F.H.LL.ALMACEN",                      "ECUADOR"),
+            ("F.H.INGRESO",                         "ECUADOR"),
+            ("F.H.I. DESCARGA",                     "ECUADOR"),
+            ("F.H.T. DESCARGA",                     "ECUADOR"),
+            ("F.H.SALIDA",                          "ECUADOR"),
+            ("MOTIVO DE RETRASO",                   "INCIDENCIAS")
+        };
+
+        protected void btnDescargarPlantilla_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (var wb = ConstruirPlantilla())
+                using (var ms = new MemoryStream())
+                {
+                    wb.SaveAs(ms);
+                    Response.Clear();
+                    Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                    Response.AddHeader("Content-Disposition",
+                        "attachment; filename=Plantilla_Seguimiento_Exportacion.xlsx");
+                    Response.BinaryWrite(ms.ToArray());
+                    Response.Flush();
+                    Response.End();
+                }
+            }
+            catch (System.Threading.ThreadAbortException)
+            {
+                // Response.End() lanza ThreadAbortException por diseño: se ignora.
+            }
+            catch (Exception ex)
+            {
+                MostrarAlerta("No se pudo generar la plantilla: " + ex.Message, "danger");
+            }
+        }
+
+        /// <summary>
+        /// Genera el libro de la plantilla de importación con encabezados reconocidos por
+        /// el importador, anchos razonables, fila de encabezado congelada y listas de
+        /// validación para las columnas de bodega.
+        /// </summary>
+        private static XLWorkbook ConstruirPlantilla()
+        {
+            var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add("SEGUIMIENTO");
+
+            for (int i = 0; i < PlantillaColumnas.Length; i++)
+            {
+                int c = i + 1;
+                var celda = ws.Cell(1, c);
+                celda.Value = PlantillaColumnas[i].Header;
+                celda.Style.Font.Bold = true;
+                celda.Style.Font.FontColor = XLColor.White;
+                celda.Style.Fill.BackgroundColor = ColorGrupo(PlantillaColumnas[i].Grupo);
+                celda.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                celda.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                celda.Style.Alignment.WrapText = true;
+                ws.Column(c).Width = AnchoColumna(PlantillaColumnas[i].Header);
+            }
+
+            ws.Row(1).Height = 34;
+            ws.SheetView.FreezeRows(1);
+
+            // Listas de validación para las bodegas (filas 2..1000)
+            AplicarValidacionLista(ws, "BODEGA",             "DEPSA,COMPLEX");
+            AplicarValidacionLista(ws, "BODEGA ECUATORIANA", "TCI,PUYANGO");
+            AplicarValidacionLista(ws, "BODEGA DESCARGA",    "INBALNOR,JAVE,OREMANS");
+
+            // Comentario guía en la primera columna de fecha
+            int colFecha = IndiceHeader("F.H.S.BASE:");
+            if (colFecha > 0)
+            {
+                var cab = ws.Cell(1, colFecha);
+                cab.CreateComment().AddText("Formato fecha y hora: dd/mm/aaaa hh:mm. Deja la celda vacía si el hito aún no ocurre.");
+            }
+
+            // Segunda hoja con instrucciones básicas
+            var wsInfo = wb.Worksheets.Add("Instrucciones");
+            wsInfo.Cell(1, 1).Value = "Cómo usar esta plantilla";
+            wsInfo.Cell(1, 1).Style.Font.Bold = true;
+            wsInfo.Cell(1, 1).Style.Font.FontSize = 14;
+            string[] pasos =
+            {
+                "1) Completa una fila por cada viaje en la hoja SEGUIMIENTO.",
+                "2) Campos minimos para registrar un viaje: CLIENTE, TRACTO 1 y F.H. PROGRAMACION.",
+                "3) Las fechas van con formato dd/mm/aaaa hh:mm. Deja vacias las que aun no ocurren.",
+                "4) Las columnas BODEGA, BODEGA ECUATORIANA y BODEGA DESCARGA tienen lista desplegable.",
+                "5) No cambies los nombres de los encabezados: el sistema los reconoce automaticamente.",
+                "6) Guarda el archivo y subelo en la pestana 'Importar Excel'."
+            };
+            for (int i = 0; i < pasos.Length; i++)
+                wsInfo.Cell(i + 3, 1).Value = pasos[i];
+            wsInfo.Column(1).Width = 90;
+
+            return wb;
+        }
+
+        private static XLColor ColorGrupo(string grupo)
+        {
+            switch (grupo)
+            {
+                case "PERU":            return XLColor.FromHtml("#1E3A8A");
+                case "BODEGA NACIONAL": return XLColor.FromHtml("#92400E");
+                case "FRONTERA":        return XLColor.FromHtml("#6B21A8");
+                case "ECUADOR":         return XLColor.FromHtml("#065F46");
+                case "INCIDENCIAS":     return XLColor.FromHtml("#991B1B");
+                default:                return XLColor.FromHtml("#0B1426");
+            }
+        }
+
+        private static double AnchoColumna(string header)
+        {
+            if (header.StartsWith("F.H", StringComparison.OrdinalIgnoreCase)) return 20;
+            if (header.Contains("MOTIVO")) return 30;
+            if (header.Contains("BODEGA") || header.Contains("CONDUCTOR")) return 22;
+            return 16;
+        }
+
+        private static int IndiceHeader(string header)
+        {
+            for (int i = 0; i < PlantillaColumnas.Length; i++)
+                if (PlantillaColumnas[i].Header == header) return i + 1;
+            return 0;
+        }
+
+        private static void AplicarValidacionLista(IXLWorksheet ws, string header, string listaCsv)
+        {
+            int col = IndiceHeader(header);
+            if (col == 0) return;
+            var rango = ws.Range(ws.Cell(2, col), ws.Cell(1000, col));
+            var val = rango.CreateDataValidation();
+            val.List("\"" + listaCsv + "\"", true);
+            val.IgnoreBlanks = true;
         }
 
         private int ProcesarExcel(string path)
@@ -1284,192 +1450,6 @@ namespace WebSGV.Views.Exportacion
             if (string.IsNullOrEmpty(value)) { ddl.SelectedIndex = 0; return; }
             var item = ddl.Items.FindByValue(value);
             ddl.SelectedIndex = item != null ? ddl.Items.IndexOf(item) : 0;
-        }
-
-        // ============================================================
-        //  GRID estilo Excel: carga (JSON) y guardado masivo (UPSERT)
-        // ============================================================
-        private void CargarGrid()
-        {
-            try
-            {
-                bool incluirFinalizados = chkIncluirFinalizados != null && chkIncluirFinalizados.Checked;
-                var rows = new List<Dictionary<string, object>>();
-
-                using (var conn = new SqlConnection(ConnStr))
-                using (var cmd = new SqlCommand("sp_SE_GridListar", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Add("@incluirFinalizados", SqlDbType.Bit).Value = incluirFinalizados ? 1 : 0;
-                    cmd.Parameters.Add("@top", SqlDbType.Int).Value = 500;
-                    conn.Open();
-                    using (var rd = cmd.ExecuteReader())
-                    {
-                        while (rd.Read())
-                        {
-                            var d = new Dictionary<string, object>();
-                            for (int i = 0; i < rd.FieldCount; i++)
-                            {
-                                string name = rd.GetName(i);
-                                object val = rd.IsDBNull(i) ? null : rd.GetValue(i);
-                                if (val is DateTime dt)
-                                    val = dt.ToString("yyyy-MM-ddTHH:mm");
-                                d[name] = val;
-                            }
-                            rows.Add(d);
-                        }
-                    }
-                }
-
-                litGridDataJson.Text = Newtonsoft.Json.JsonConvert.SerializeObject(rows);
-            }
-            catch (Exception ex)
-            {
-                litGridDataJson.Text = "[]";
-                MostrarAlerta("Error al cargar la grilla: " + ex.Message, "danger");
-            }
-        }
-
-        protected void btnRefrescarGrid_Click(object sender, EventArgs e)
-        {
-            CargarGrid();
-            ActivarTab("panel-grid");
-        }
-
-        protected void chkIncluirFinalizados_CheckedChanged(object sender, EventArgs e)
-        {
-            CargarGrid();
-            ActivarTab("panel-grid");
-        }
-
-        protected void btnGuardarGrid_Click(object sender, EventArgs e)
-        {
-            string json = hdnGridChanges.Value;
-            if (string.IsNullOrWhiteSpace(json) || json == "[]")
-            {
-                MostrarAlerta("No hay cambios para guardar.", "warning");
-                ActivarTab("panel-grid");
-                return;
-            }
-
-            int insertados = 0, actualizados = 0, ignorados = 0, errores = 0;
-            int? idUsuario = ObtenerIdUsuarioSesion();
-
-            try
-            {
-                var arr = Newtonsoft.Json.Linq.JArray.Parse(json);
-
-                foreach (var item in arr)
-                {
-                    try
-                    {
-                        string cliente        = (string)item["cliente"];
-                        string fhProg         = (string)item["fhProgramacion"];
-                        string tracto1        = (string)item["tracto1"];
-
-                        // Validación mínima: para crear necesitamos cliente + fhProgramacion + tracto1.
-                        // Si la fila no es nueva (id>0) y faltan claves, igual la mandamos pero el SP devolverá -1.
-                        if (string.IsNullOrWhiteSpace(cliente) ||
-                            string.IsNullOrWhiteSpace(fhProg)  ||
-                            string.IsNullOrWhiteSpace(tracto1))
-                        {
-                            ignorados++;
-                            continue;
-                        }
-
-                        using (var conn = new SqlConnection(ConnStr))
-                        using (var cmd = new SqlCommand("sp_SE_Insertar", conn))
-                        {
-                            cmd.CommandType = CommandType.StoredProcedure;
-
-                            AgregarTexto(cmd, "@cliente",          cliente,                              150);
-                            AgregarTexto(cmd, "@conductorOrigen",  (string)item["conductorOrigen"],      150);
-                            AgregarTexto(cmd, "@tracto1",          tracto1,                              20);
-                            AgregarTexto(cmd, "@carreta",          (string)item["carreta"],              20);
-                            AgregarTexto(cmd, "@conductorDestino", (string)item["conductorDestino"],     150);
-                            AgregarTexto(cmd, "@tracto2",          (string)item["tracto2"],              20);
-
-                            AgregarFecha(cmd, "@fhSalidaBase1",                  (string)item["fhSalidaBase1"]);
-                            AgregarFecha(cmd, "@fhLlegadaTrujillo",              (string)item["fhLlegadaTrujillo"]);
-                            AgregarFecha(cmd, "@fhRegistro",                     (string)item["fhRegistro"]);
-                            AgregarFecha(cmd, "@fhProgramacion",                 fhProg);
-                            AgregarFecha(cmd, "@fhIngresoPlanta",                (string)item["fhIngresoPlanta"]);
-                            AgregarFecha(cmd, "@fhInicioCarga",                  (string)item["fhInicioCarga"]);
-                            AgregarFecha(cmd, "@fhTerminoCarga",                 (string)item["fhTerminoCarga"]);
-                            AgregarFecha(cmd, "@fhSalidaPlanta",                 (string)item["fhSalidaPlanta"]);
-                            AgregarFecha(cmd, "@fhLlegadaBase2",                 (string)item["fhLlegadaBase2"]);
-                            AgregarFecha(cmd, "@fhSalidaBase2",                  (string)item["fhSalidaBase2"]);
-                            AgregarFecha(cmd, "@fhLlegadaBodegaNacional",        (string)item["fhLlegadaBodegaNacional"]);
-                            AgregarFecha(cmd, "@fhIngresoBodegaNacional",        (string)item["fhIngresoBodegaNacional"]);
-                            AgregarFecha(cmd, "@fhSalidaBodegaNacional",         (string)item["fhSalidaBodegaNacional"]);
-                            AgregarTexto(cmd, "@bodegaNacional",                 (string)item["bodegaNacional"], 150);
-                            AgregarFecha(cmd, "@fhLlegadaCEBAF",                 (string)item["fhLlegadaCEBAF"]);
-                            AgregarFecha(cmd, "@fhCruceEcuador",                 (string)item["fhCruceEcuador"]);
-                            AgregarFecha(cmd, "@fhAutorizacionNacionalizacion",  (string)item["fhAutorizacionNacionalizacion"]);
-                            AgregarTexto(cmd, "@bodegaEcuatoriana",              (string)item["bodegaEcuatoriana"], 150);
-                            AgregarFecha(cmd, "@fhLlegadaTCI",                   (string)item["fhLlegadaTCI"]);
-                            AgregarFecha(cmd, "@fhSalidaTCI",                    (string)item["fhSalidaTCI"]);
-                            AgregarTexto(cmd, "@bodegaDescarga",                 (string)item["bodegaDescarga"], 150);
-                            AgregarFecha(cmd, "@fhLlegadaPlantaEcuador",         (string)item["fhLlegadaPlantaEcuador"]);
-                            AgregarFecha(cmd, "@fhLlegadaAlmacen",               (string)item["fhLlegadaAlmacen"]);
-                            AgregarFecha(cmd, "@fhIngreso",                      (string)item["fhIngreso"]);
-                            AgregarFecha(cmd, "@fhInicioDescarga",               (string)item["fhInicioDescarga"]);
-                            AgregarFecha(cmd, "@fhTerminoDescarga",              (string)item["fhTerminoDescarga"]);
-                            AgregarFecha(cmd, "@fhSalida",                       (string)item["fhSalida"]);
-
-                            AgregarTexto(cmd, "@motivoRetraso", (string)item["motivoRetraso"], 1000);
-                            cmd.Parameters.Add("@sacosRobados", SqlDbType.Int).Value = ParseIntSafe((string)item["sacosRobados"]);
-                            cmd.Parameters.Add("@sacosRotos",   SqlDbType.Int).Value = ParseIntSafe((string)item["sacosRotos"]);
-                            cmd.Parameters.Add("@sacosMojados", SqlDbType.Int).Value = ParseIntSafe((string)item["sacosMojados"]);
-
-                            string estado = (string)item["estado"];
-                            cmd.Parameters.Add("@estado", SqlDbType.VarChar, 20).Value =
-                                string.IsNullOrWhiteSpace(estado) ? "EN_CURSO" : estado;
-                            cmd.Parameters.Add("@idUsuarioRegistro", SqlDbType.Int).Value = (object)idUsuario ?? DBNull.Value;
-
-                            var outP = new SqlParameter("@idSeguimiento", SqlDbType.Int) { Direction = ParameterDirection.Output };
-                            cmd.Parameters.Add(outP);
-
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                            int rv = Convert.ToInt32(outP.Value);
-                            if (rv == -1)      ignorados++;
-                            else if (rv == -2) actualizados++;
-                            else if (rv >  0)  insertados++;
-                        }
-                    }
-                    catch
-                    {
-                        errores++;
-                    }
-                }
-
-                try
-                {
-                    AuditoriaHelper.Registrar(
-                        accion: "UPSERT_GRID",
-                        tablaAfectada: "SeguimientoExportacion",
-                        idRegistroAfectado: "(grid)",
-                        descripcion: $"Grid Excel: {insertados} insertados, {actualizados} actualizados, {ignorados} ignorados, {errores} errores.");
-                }
-                catch { /* no bloquear */ }
-
-                string tipo = errores > 0 ? "warning" : "success";
-                MostrarAlerta(
-                    $"Cambios procesados: ✅ {insertados} nuevos · 🔄 {actualizados} actualizados · ⚠ {ignorados} sin clave · ❌ {errores} con error.",
-                    tipo);
-            }
-            catch (Exception ex)
-            {
-                MostrarAlerta("Error al guardar la grilla: " + ex.Message, "danger");
-            }
-
-            hdnGridChanges.Value = "";
-            ScriptManager.RegisterStartupScript(this, GetType(), "seGridClearDraftAfterServerSave", "try{localStorage.removeItem('SGV_SE_GRID_DRAFT_V1');}catch(e){}", true);
-            CargarGrid();
-            CargarBandeja();
-            CargarRegistrosRecientes();
-            ActivarTab("panel-grid");
         }
     }
 }
