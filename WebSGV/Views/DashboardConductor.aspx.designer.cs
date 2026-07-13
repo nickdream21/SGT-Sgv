@@ -42,6 +42,15 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.HiddenField hfIdsViajesActivos;
 
         /// <summary>
+        /// Control hfEsInternacional.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfEsInternacional;
+
+        /// <summary>
         /// Control hfGastosFinancieros.
         /// </summary>
         /// <remarks>

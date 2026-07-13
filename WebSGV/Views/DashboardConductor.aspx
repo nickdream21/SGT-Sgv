@@ -6,6 +6,7 @@
     <asp:HiddenField ID="hfIdConductor" runat="server" ClientIDMode="Static" />
     <asp:HiddenField ID="hfIdViajeActivo" runat="server" ClientIDMode="Static" />
     <asp:HiddenField ID="hfIdsViajesActivos" runat="server" ClientIDMode="Static" Value="" />
+    <asp:HiddenField ID="hfEsInternacional" runat="server" ClientIDMode="Static" Value="0" />
     <asp:HiddenField ID="hfGastosFinancieros" runat="server" ClientIDMode="Static" Value="[]" />
     <asp:HiddenField ID="hfIngresosAdicionales" runat="server" ClientIDMode="Static" Value="[]" />
     <asp:HiddenField ID="hfGastosAdicionales" runat="server" ClientIDMode="Static" Value="[]" />
@@ -421,7 +422,7 @@
                                                 </thead>
                                                 <tbody id="gastosBody">
                                                     <!-- Peajes Nacionales (Perú) - Solo Soles -->
-                                                    <tr>
+                                                    <tr id="filaPeajesNacionales">
                                                         <td class="text-center">1</td>
                                                         <td><strong>Peajes Nacionales</strong><br/><small class="text-muted">Perú (S/)</small></td>
                                                         <td>
@@ -439,7 +440,7 @@
                                                         <td class="text-center"><span class="badge badge-fixed">Manual</span></td>
                                                     </tr>
                                                     <!-- Peajes Extranjeros (Ecuador) - Solo Dólares -->
-                                                    <tr>
+                                                    <tr id="filaPeajesExtranjeros">
                                                         <td class="text-center">2</td>
                                                         <td><strong>Peajes Extranjeros</strong><br/><small class="text-muted">Ecuador ($)</small></td>
                                                         <td>
@@ -2213,8 +2214,23 @@
         $(document).ready(function () {
             console.log('✅ Dashboard Conductor iniciado');
             configurarFechasPorDefecto();
+            aplicarVisibilidadPeajes();
             calcularTotales();
         });
+
+        // Los peajes (nacionales y extranjeros) los paga directamente la empresa a la
+        // concesionaria. En viajes nacionales el conductor NO debe registrarlos, por lo
+        // que ocultamos ambas filas y limpiamos sus montos para que no entren en la liquidación.
+        function aplicarVisibilidadPeajes() {
+            const esInternacional = $('#hfEsInternacional').val() === '1';
+            if (!esInternacional) {
+                $('#filaPeajesNacionales, #filaPeajesExtranjeros').hide();
+                $('#peajesNacSoles, #peajesExtDolares').val('');
+                $('#descPeajesNacionales, #descPeajesExtranjeros').val('');
+            } else {
+                $('#filaPeajesNacionales, #filaPeajesExtranjeros').show();
+            }
+        }
 
         function configurarFechasPorDefecto() {
             const hoy = new Date();

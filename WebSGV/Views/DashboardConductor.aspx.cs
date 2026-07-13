@@ -746,6 +746,11 @@ namespace WebSGV.Views
                 hfIdViajeActivo.Value = viajePrimario.IdViajeProgreso.ToString();
                 hfIdsViajesActivos.Value = string.Join(",", ids);
 
+                // Solo los viajes internacionales registran peajes en la liquidación;
+                // en los nacionales la empresa los paga directo a la concesionaria.
+                bool algunoInternacional = viajes.Any(v => v.EsInternacional);
+                hfEsInternacional.Value = algunoInternacional ? "1" : "0";
+
                 pnlBadgeLiquidar.Visible = true;
                 pnlBadgeActivos.Visible = true;
                 lblCantidadActivos.Text = totalDespachos.ToString();
