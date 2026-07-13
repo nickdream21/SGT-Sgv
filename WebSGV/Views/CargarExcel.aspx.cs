@@ -17,6 +17,8 @@ namespace WebSGV.Views
     {
         protected void Page_Load(object sender, EventArgs e)
         {
+            SecurityHelper.ExigirRolAdminOSupervisor();
+            SecurityHelper.AgregarHeadersSeguridad();
             if (!IsPostBack)
             {
                 // Establecer valores predeterminados

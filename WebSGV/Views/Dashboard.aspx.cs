@@ -15,6 +15,8 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            SecurityHelper.ExigirRolAdminOSupervisor();
+            SecurityHelper.AgregarHeadersSeguridad();
             if (!IsPostBack)
             {
                 // Establecer el mes y año actual en los filtros

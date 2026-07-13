@@ -14,6 +14,8 @@ namespace WebSGV.Views
     {
         protected void Page_Load(object sender, EventArgs e)
         {
+            SecurityHelper.ExigirRolAdminOGrifo();
+            SecurityHelper.AgregarHeadersSeguridad();
             if (!IsPostBack)
             {
                 // Si viene con numero por QueryString, buscar automaticamente
