@@ -1,4 +1,4 @@
-<%@ Page Title="Página No Encontrada" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="Error404.aspx.cs" Inherits="WebSGV.Views.Error404" %>
+ï»¿<%@ Page Title="PÃ¡gina No Encontrada" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="Error404.aspx.cs" Inherits="WebSGV.Views.Error404" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <style>
@@ -53,11 +53,11 @@
         <div class="error-icon">
             <i class="fas fa-search"></i>
         </div>
-        <h1 class="error-title">Página no encontrada</h1>
+        <h1 class="error-title">PÃ¡gina no encontrada</h1>
         <p class="error-message">
-            La página que buscas no existe o fue movida.
+            La pÃ¡gina que buscas no existe o fue movida.
             <br />
-            Verifica la dirección o regresa al inicio.
+            Verifica la direcciÃ³n o regresa al inicio.
         </p>
         <div class="error-actions">
             <a href="javascript:history.back()" class="btn btn-secondary-custom">
@@ -69,7 +69,7 @@
         </div>
         <p class="error-code">
             <i class="fas fa-info-circle mr-1"></i>
-            Error 404 — La ruta solicitada no existe
+            Error 404 â€” La ruta solicitada no existe
         </p>
     </div>
 </asp:Content>

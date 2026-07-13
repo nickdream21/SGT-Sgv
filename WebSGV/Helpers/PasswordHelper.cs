@@ -1,10 +1,10 @@
-using System;
+锘縰sing System;
 using System.Security.Cryptography;
 
 namespace WebSGV.Helpers
 {
     /// <summary>
-    /// Utilidad para hash seguro de contrase馻s usando PBKDF2 (RFC 2898).
+    /// Utilidad para hash seguro de contrase帽as usando PBKDF2 (RFC 2898).
     /// Genera un salt aleatorio y lo almacena junto con el hash.
     /// </summary>
     public static class PasswordHelper
@@ -14,7 +14,7 @@ namespace WebSGV.Helpers
         private const int Iterations = 10000;  // Iteraciones PBKDF2
 
         /// <summary>
-        /// Genera el hash de una contrase馻 con salt aleatorio.
+        /// Genera el hash de una contrase帽a con salt aleatorio.
         /// Retorna una cadena en formato: {iterations}.{salt_base64}.{hash_base64}
         /// </summary>
         public static string HashPassword(string password)
@@ -42,8 +42,8 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
-        /// Verifica si una contrase馻 coincide con el hash almacenado.
-        /// Soporta el formato nuevo (PBKDF2) y el formato antiguo (texto plano) para migraci髇.
+        /// Verifica si una contrase帽a coincide con el hash almacenado.
+        /// Soporta el formato nuevo (PBKDF2) y el formato antiguo (texto plano) para migraci贸n.
         /// </summary>
         public static bool VerifyPassword(string password, string storedHash)
         {
@@ -78,12 +78,12 @@ namespace WebSGV.Helpers
                     computedHash = pbkdf2.GetBytes(storedHashBytes.Length);
                 }
 
-                // Comparaci髇 en tiempo constante para evitar timing attacks
+                // Comparaci贸n en tiempo constante para evitar timing attacks
                 return SlowEquals(storedHashBytes, computedHash);
             }
             else
             {
-                // Formato antiguo: texto plano (para migraci髇 gradual)
+                // Formato antiguo: texto plano (para migraci贸n gradual)
                 return string.Equals(password, storedHash, StringComparison.Ordinal);
             }
         }
@@ -101,7 +101,7 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
-        /// Comparaci髇 en tiempo constante para prevenir ataques de timing.
+        /// Comparaci贸n en tiempo constante para prevenir ataques de timing.
         /// </summary>
         private static bool SlowEquals(byte[] a, byte[] b)
         {
