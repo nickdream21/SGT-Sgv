@@ -1,6 +1,7 @@
 -- ============================================================
 -- Obtiene lotes virtuales (agrupaciones de despachos) con
--- filtros opcionales. Solo retorna grupos con mas de 1 despacho.
+-- filtros opcionales. Retorna todos los grupos, incluidos los
+-- lotes de un solo despacho.
 -- Filtro de estado se aplica sobre el estado derivado del lote.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_ObtenerLotesRegistrados
@@ -69,7 +70,7 @@ BEGIN
         GROUP BY
             d.idCliente, cl.nombre, d.numeroPedido, d.fechaDespacho,
             d.tipoOperacion, d.esInternacional, d.lugarOperacion
-        HAVING COUNT(*) > 1
+        HAVING COUNT(*) >= 1
     )
     SELECT *
     FROM LotesAgrupados
