@@ -59,6 +59,9 @@ namespace WebSGV
             // Sesión válida: cargar datos del usuario y mostrar navbar
             CargarInformacionUsuario();
             Navbar.Visible = true;
+
+            if (!IsPostBack && RequiereCambioContrasena())
+                AbrirModalContrasenaObligatoria();
         }
 
         /// <summary>
@@ -197,7 +200,8 @@ namespace WebSGV
                     }
 
                     string nuevoHash = PasswordHelper.HashPassword(nuevaContrasena);
-                    using (SqlCommand cmd = new SqlCommand("UPDATE Usuarios SET contrasena = @contrasena WHERE idUsuario = @idUsuario", conn))
+                    using (SqlCommand cmd = new SqlCommand(
+                        "UPDATE Usuarios SET contrasena = @contrasena, requiereCambioContrasena = 0 WHERE idUsuario = @idUsuario", conn))
                     {
                         cmd.Parameters.AddWithValue("@contrasena", nuevoHash);
                         cmd.Parameters.AddWithValue("@idUsuario", IdUsuarioActual);
@@ -209,6 +213,7 @@ namespace WebSGV
                 txtNuevaContrasena.Text = "";
                 txtConfirmarContrasena.Text = "";
                 pnlMensajeContrasena.Visible = false;
+                Session["RequiereCambioContrasena"] = false;
 
                 AuditoriaHelper.Registrar("UPDATE", "Usuarios", IdUsuarioActual, "Contrasena cambiada por el usuario");
 
@@ -231,7 +236,27 @@ namespace WebSGV
 
         private void AbrirModalContrasena()
         {
-            ScriptManager.RegisterStartupScript(this, GetType(), "AbrirModalContrasena", "$('#modalCambiarContrasena').modal('show');", true);
+            if (RequiereCambioContrasena())
+                AbrirModalContrasenaObligatoria();
+            else
+                ScriptManager.RegisterStartupScript(this, GetType(), "AbrirModalContrasena", "$('#modalCambiarContrasena').modal('show');", true);
+        }
+
+        private bool RequiereCambioContrasena()
+        {
+            return Session["RequiereCambioContrasena"] != null
+                && Convert.ToBoolean(Session["RequiereCambioContrasena"]);
+        }
+
+        private void AbrirModalContrasenaObligatoria()
+        {
+            const string script = @"
+                $(function () {
+                    var modal = $('#modalCambiarContrasena');
+                    modal.find('.js-cerrar-contrasena').hide();
+                    modal.modal({ backdrop: 'static', keyboard: false, show: true });
+                });";
+            ScriptManager.RegisterStartupScript(this, GetType(), "CambioContrasenaObligatorio", script, true);
         }
 
         protected void btnCerrarSesion_Click(object sender, EventArgs e)

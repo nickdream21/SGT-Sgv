@@ -204,6 +204,7 @@
     <Content Include="Database\Schema\02_FirmaDigital.sql" />
     <Content Include="Database\Schema\03_OrdenViajeAjuste.sql" />
     <Content Include="Database\Schema\04_OrdenViaje_AlterFirma.sql" />
+    <Content Include="Database\Schema\06_Usuarios_ConductorUnico.sql" />
     <Content Include="Database\Scripts\diagnostico_PdfAbastecimiento.sql" />
     <Content Include="Database\Scripts\fix_EstadoSeguimientoExportacion.sql" />
     <Content Include="Database\Scripts\reset_SeguimientoExportacion.sql" />

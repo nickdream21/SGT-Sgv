@@ -486,6 +486,46 @@
                         </div>
                     </div>
 
+                    <!-- Salida registrada por el conductor + corrección (solo administradora) -->
+                    <div class="detail-section salida-section" id="seccionCorregirSalida" style="display:none;">
+                        <div class="salida-head">
+                            <div class="salida-info">
+                                <span class="salida-label"><i class="fas fa-sign-out-alt mr-1"></i>Salida registrada por el conductor</span>
+                                <span class="salida-value">
+                                    <i class="far fa-clock salida-value-icon"></i>
+                                    <span id="detalleSalidaValor">—</span>
+                                </span>
+                            </div>
+                            <button type="button" class="btn-corregir-salida" onclick="toggleCorregirSalida()">
+                                <i class="fas fa-pen mr-1"></i>Corregir
+                            </button>
+                        </div>
+                        <div id="panelCorregirSalida" class="salida-edit-panel" style="display:none;">
+                            <div class="row">
+                                <div class="col-12 col-md-4 form-group">
+                                    <label class="form-label">Fecha de salida</label>
+                                    <input type="date" class="form-control" id="corregirSalidaFecha" />
+                                </div>
+                                <div class="col-12 col-md-4 form-group">
+                                    <label class="form-label">Hora de salida</label>
+                                    <input type="time" class="form-control" id="corregirSalidaHora" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Motivo de la corrección <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="corregirSalidaMotivo" rows="2" maxlength="500"
+                                    placeholder="Explique por qué corrige la salida (mín. 10 caracteres)"></textarea>
+                                <small class="text-danger" id="errorCorregirSalidaMotivo" style="display:none;"></small>
+                            </div>
+                            <div class="salida-edit-actions">
+                                <button type="button" class="btn btn-sm btn-light" onclick="toggleCorregirSalida()">Cancelar</button>
+                                <button type="button" class="btn btn-sm btn-primary" id="btnGuardarCorregirSalida" onclick="corregirSalidaDesdeModal()">
+                                    <i class="fas fa-save mr-1"></i>Guardar corrección
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="detail-section rf-section">
                         <h6 class="detail-section-title">
                             <i class="fas fa-calculator mr-2"></i>Resumen Financiero
@@ -1220,11 +1260,13 @@
         }
 
         .detail-section-title {
+            font-size: 0.9375rem;
             font-weight: 600;
+            letter-spacing: -0.01em;
             color: #1e293b;
             margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.6rem;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .detail-label {
@@ -1811,6 +1853,81 @@
             font-style: italic;
         }
 
+        /* === SALIDA REGISTRADA / CORRECCIÓN === */
+        .salida-section {
+            padding: 1rem 1.25rem;
+        }
+
+        .salida-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .salida-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 0;
+        }
+
+        .salida-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--neutral-color);
+        }
+
+        .salida-value {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.0625rem;
+            font-weight: 600;
+            color: #0f172a;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .salida-value-icon {
+            color: var(--neutral-color);
+            font-size: 0.9rem;
+        }
+
+        .btn-corregir-salida {
+            display: inline-flex;
+            align-items: center;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            color: #475569;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            padding: 0.4rem 0.85rem;
+            border-radius: 0.5rem;
+            transition: border-color .15s ease, color .15s ease, box-shadow .15s ease;
+            white-space: nowrap;
+        }
+
+        .btn-corregir-salida:hover {
+            border-color: #94a3b8;
+            color: #0f172a;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, .08);
+        }
+
+        .salida-edit-panel {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px dashed var(--border-color);
+        }
+
+        .salida-edit-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
         /* === RESUMEN FINANCIERO GRID === */
         .rf-section {
             padding: 1.25rem 1.25rem 0;
@@ -1950,6 +2067,7 @@
 
     <script>
         let idOrdenParaAprobar = 0;
+        let _idOrdenDetalleActual = 0;
         let modoAprobacion = false;
         let _balanceSoles = 0;
         let _balanceDolares = 0;
@@ -2071,6 +2189,21 @@
             $('#detalleTracto').text(datos.PlacaTracto);
             $('#detalleCarreta').text(datos.PlacaCarreta);
             $('#detallePeriodo').text(datos.FechaSalida + ' al ' + datos.FechaLlegada);
+
+            // Corrección de salida: solo disponible mientras la liquidación esté PENDIENTE.
+            _idOrdenDetalleActual = datos.IdOrdenViaje;
+            $('#panelCorregirSalida').hide();
+            $('#corregirSalidaMotivo').val('');
+            $('#errorCorregirSalidaMotivo').hide();
+            if (datos.EstadoAprobacion === 'PENDIENTE') {
+                var horaTxt = datos.HoraSalida ? datos.HoraSalida + ' h' : 'sin hora';
+                $('#detalleSalidaValor').text(datos.FechaSalida + '  ·  ' + horaTxt);
+                $('#corregirSalidaFecha').val(datos.FechaSalidaISO || '');
+                $('#corregirSalidaHora').val(datos.HoraSalida || '');
+                $('#seccionCorregirSalida').show();
+            } else {
+                $('#seccionCorregirSalida').hide();
+            }
 
             if (datos.Observaciones) {
                 $('#detalleObservaciones').text(datos.Observaciones);
@@ -2627,6 +2760,63 @@
             } else {
                 $('#balanceAjustadoPanel').hide();
             }
+        }
+
+        function toggleCorregirSalida() {
+            $('#errorCorregirSalidaMotivo').hide();
+            $('#panelCorregirSalida').slideToggle(150);
+        }
+
+        function corregirSalidaDesdeModal() {
+            if (!_idOrdenDetalleActual) return;
+
+            var fecha = $('#corregirSalidaFecha').val();
+            var hora = $('#corregirSalidaHora').val();
+            var motivo = $('#corregirSalidaMotivo').val().trim();
+
+            $('#errorCorregirSalidaMotivo').hide();
+
+            if (!fecha || !hora) {
+                mostrarErrorCampo('#corregirSalidaMotivo', '#errorCorregirSalidaMotivo', 'Debe indicar la fecha y la hora de salida.');
+                return;
+            }
+            if (motivo.length < 10) {
+                mostrarErrorCampo('#corregirSalidaMotivo', '#errorCorregirSalidaMotivo', 'El motivo debe tener al menos 10 caracteres.');
+                return;
+            }
+            if (motivo.length > 500) {
+                mostrarErrorCampo('#corregirSalidaMotivo', '#errorCorregirSalidaMotivo', 'El motivo no puede superar 500 caracteres.');
+                return;
+            }
+
+            if (!confirm('¿Confirma corregir la fecha/hora de salida de esta liquidación?\n\nEl cambio quedará auditado.')) return;
+
+            var $btn = $('#btnGuardarCorregirSalida');
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Guardando...');
+
+            $.ajax({
+                type: "POST",
+                url: "LiquidacionesPendientes.aspx/CorregirSalidaPendiente",
+                data: JSON.stringify({ idOrdenViaje: _idOrdenDetalleActual, fechaSalida: fecha, horaSalida: hora, motivo: motivo }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (response) {
+                    var result = response.d;
+                    if (result.success) {
+                        $('#modalDetalleLiquidacion').modal('hide');
+                        alert('✅ ' + result.message);
+                        location.reload();
+                    } else {
+                        alert('❌ ' + result.message);
+                        $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar corrección');
+                    }
+                },
+                error: function (xhr) {
+                    console.error('Error:', xhr.responseText);
+                    alert('Error al corregir la salida. Por favor intente de nuevo.');
+                    $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar corrección');
+                }
+            });
         }
 
         function aprobarDesdeModal() {

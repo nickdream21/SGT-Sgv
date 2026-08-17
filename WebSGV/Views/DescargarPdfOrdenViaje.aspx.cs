@@ -6,6 +6,7 @@ using System.Web.Hosting;
 using System.Web.UI;
 using WebSGV.Helpers;
 using WebSGV.Services;
+using WebSGV.Services.Liquidaciones;
 
 namespace WebSGV.Views
 {
@@ -136,20 +137,13 @@ namespace WebSGV.Views
 
         private static bool UsuarioPuedeVerOrden(int idUsuario, int idOrdenViaje)
         {
-            if (RolesHelper.EsAdmin() || RolesHelper.EsContabilidad())
+            if (SecurityHelper.PuedeConsultarLiquidacionesGlobales())
                 return true;
 
-            if (!RolesHelper.EsConductor())
+            if (!SecurityHelper.EsConductor())
                 return false;
 
-            object r = DbHelper.EjecutarEscalar(
-                @"SELECT TOP 1 c.idUsuario
-                  FROM OrdenViaje ov
-                  INNER JOIN Conductor c ON c.idConductor = ov.idConductor
-                  WHERE ov.idOrdenViaje = @id",
-                DbHelper.Param("@id", idOrdenViaje));
-            if (r == null || r == DBNull.Value) return false;
-            return Convert.ToInt32(r) == idUsuario;
+            return LiquidacionesPendientesService.OrdenPerteneceAUsuarioConductor(idOrdenViaje, idUsuario);
         }
 
         private static void CargarEstadoFirma(

@@ -345,6 +345,9 @@
                                 <asp:BoundField DataField="PlacaCarreta" HeaderText="CARRETA" />
                                 <asp:BoundField DataField="Cliente" HeaderText="CLIENTE" />
                                 <asp:BoundField DataField="Destino" HeaderText="DESTINO" />
+                                <asp:BoundField DataField="CantidadDespachos" HeaderText="N° DESP.">
+                                    <ItemStyle CssClass="text-center" />
+                                </asp:BoundField>
                                 <asp:TemplateField HeaderText="FECHA PROGRAMACIÓN">
                                     <ItemTemplate>
                                         <%# Eval("FechaProgramacion") != DBNull.Value ? Convert.ToDateTime(Eval("FechaProgramacion")).ToString("dd/MM/yyyy") : "N/A" %>
@@ -525,6 +528,7 @@
                             <label class="col-check"><input type="checkbox" class="col-pers" value="carreta" /> Placa Carreta</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="cliente" checked /> Cliente</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="destino" checked /> Destino</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="cantDespachos" /> N° Despachos</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="numero" checked /> N° Liquidación</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="estado" checked /> Estado</label>
                         </div>

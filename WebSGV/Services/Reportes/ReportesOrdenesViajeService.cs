@@ -66,9 +66,21 @@ namespace WebSGV.Services.Reportes
                         CONCAT(c.nombre, ' ', c.apPaterno, ' ', ISNULL(c.apMaterno, '')) AS Conductor,
                         ISNULL(MAX(t.placaTracto), 'N/A') AS PlacaTracto,
                         ISNULL(MAX(ca.placaCarreta), 'N/A') AS PlacaCarreta,
-                        ISNULL(MAX(cl.nombre), 'N/A') AS Cliente,
+                        -- Un viaje puede tener varios despachos con distinto cliente/destino:
+                        -- listamos TODOS los distintos (deduplicados) en vez de elegir uno arbitrario.
+                        ISNULL(STUFF((
+                            SELECT DISTINCT ', ' + cl2.nombre
+                            FROM Despachos d2
+                            INNER JOIN Cliente cl2 ON d2.idCliente = cl2.idCliente
+                            WHERE d2.idViajeProgreso = vp.idViajeProgreso AND d2.activo = 1
+                            FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, ''), 'N/A') AS Cliente,
                         MAX(d.fechaDespacho) AS FechaProgramacion,
-                        ISNULL(MAX(d.lugarOperacion), 'N/A') AS Destino,
+                        ISNULL(STUFF((
+                            SELECT DISTINCT ', ' + d2.lugarOperacion
+                            FROM Despachos d2
+                            WHERE d2.idViajeProgreso = vp.idViajeProgreso AND d2.activo = 1
+                            FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, ''), 'N/A') AS Destino,
+                        COUNT(DISTINCT d.idDespacho) AS CantidadDespachos,
                         vp.fechaInicio AS FechaInicio,
                         DATEDIFF(DAY, vp.fechaInicio, GETDATE()) AS DiasEnViaje,
                         vp.estadoViaje AS Estado,
@@ -248,13 +260,16 @@ namespace WebSGV.Services.Reportes
                     ov.horaLlegada AS HoraLlegada,
                     ISNULL(t.placaTracto, 'N/A') AS PlacaTracto,
                     ISNULL(ca.placaCarreta, 'N/A') AS PlacaCarreta,
-                    ISNULL((SELECT TOP 1 cl.nombre FROM Despachos d
+                    -- Todos los clientes/destinos distintos del viaje (un viaje puede tener varios despachos).
+                    ISNULL(STUFF((SELECT DISTINCT ', ' + cl.nombre FROM Despachos d
                                 INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
                             WHERE d.idViajeProgreso = ov.idViajeProgreso AND d.activo = 1
-                            ORDER BY d.idDespacho DESC), 'N/A') AS Cliente,
-                    ISNULL((SELECT TOP 1 d.lugarOperacion FROM Despachos d
+                            FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, ''), 'N/A') AS Cliente,
+                    ISNULL(STUFF((SELECT DISTINCT ', ' + d.lugarOperacion FROM Despachos d
                             WHERE d.idViajeProgreso = ov.idViajeProgreso AND d.activo = 1
-                            ORDER BY d.idDespacho DESC), 'N/A') AS Destino,
+                            FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, ''), 'N/A') AS Destino,
+                    ISNULL((SELECT COUNT(DISTINCT d.idDespacho) FROM Despachos d
+                            WHERE d.idViajeProgreso = ov.idViajeProgreso AND d.activo = 1), 0) AS CantidadDespachos,
                     ov.numeroOrdenViaje AS NumeroLiquidacion,
                     ov.estadoViaje AS Estado,
                     ISNULL(ov.observaciones, '') AS Observaciones,

@@ -106,6 +106,10 @@ namespace WebSGV.Services.OrdenViaje
             if (fechaLlegada == DateTime.MinValue)
                 mensajeError += "Por favor, seleccione una 'Fecha de Llegada'.\n";
 
+            // La hora de salida la registra el conductor (no existe hora programada): es obligatoria.
+            if (string.IsNullOrWhiteSpace(horaSalida))
+                mensajeError += "Por favor, ingrese la 'Hora de Salida'.\n";
+
             // Validar orden lógico de fechas
             if (fechaSalida != DateTime.MinValue && fechaLlegada != DateTime.MinValue)
             {

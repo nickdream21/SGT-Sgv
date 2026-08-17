@@ -611,13 +611,13 @@ namespace WebSGV.Views
                     ws.Cell(3, 1).Style.Font.FontColor = XLColor.FromHtml("#64748b");
                     ws.Cell(3, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                    string[] vHeaders = { "DNI", "CONDUCTOR", "TRACTO", "CARRETA", "CLIENTE", "DESTINO", "FECHA PROGRAMACIÓN", "DÍAS EN VIAJE", "ESTADO" };
+                    string[] vHeaders = { "DNI", "CONDUCTOR", "TRACTO", "CARRETA", "CLIENTE", "DESTINO", "N° DESP.", "FECHA PROGRAMACIÓN", "DÍAS EN VIAJE", "ESTADO" };
                     for (int i = 0; i < vHeaders.Length; i++)
                     {
                         ws.Cell(5, i + 1).Value = vHeaders[i];
                     }
 
-                    var headerRange = ws.Range(5, 1, 5, 9);
+                    var headerRange = ws.Range(5, 1, 5, 10);
                     headerRange.Style.Font.Bold = true;
                     headerRange.Style.Font.FontSize = 10;
                     headerRange.Style.Font.FontColor = XLColor.White;
@@ -638,36 +638,42 @@ namespace WebSGV.Views
                         ws.Cell(row, 4).Value = dr["PlacaCarreta"] != DBNull.Value ? dr["PlacaCarreta"].ToString() : "N/A";
                         ws.Cell(row, 5).Value = dr["Cliente"] != DBNull.Value ? dr["Cliente"].ToString() : "N/A";
                         ws.Cell(row, 6).Value = dr["Destino"] != DBNull.Value ? dr["Destino"].ToString() : "N/A";
-                        ws.Cell(row, 7).Value = dr["FechaProgramacion"] != DBNull.Value ? Convert.ToDateTime(dr["FechaProgramacion"]).ToString("dd/MM/yyyy") : "N/A";
+
+                        int cantDespachos = dr["CantidadDespachos"] != DBNull.Value ? Convert.ToInt32(dr["CantidadDespachos"]) : 0;
+                        ws.Cell(row, 7).Value = cantDespachos;
+                        ws.Cell(row, 7).Style.NumberFormat.Format = "0";
                         ws.Cell(row, 7).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                        int diasViaje = dr["DiasEnViaje"] != DBNull.Value ? Convert.ToInt32(dr["DiasEnViaje"]) : 0;
-                        ws.Cell(row, 8).Value = diasViaje;
-                        ws.Cell(row, 8).Style.NumberFormat.Format = "0";
+                        ws.Cell(row, 8).Value = dr["FechaProgramacion"] != DBNull.Value ? Convert.ToDateTime(dr["FechaProgramacion"]).ToString("dd/MM/yyyy") : "N/A";
                         ws.Cell(row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                        int diasViaje = dr["DiasEnViaje"] != DBNull.Value ? Convert.ToInt32(dr["DiasEnViaje"]) : 0;
+                        ws.Cell(row, 9).Value = diasViaje;
+                        ws.Cell(row, 9).Style.NumberFormat.Format = "0";
+                        ws.Cell(row, 9).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                         if (diasViaje > 7)
                         {
-                            ws.Cell(row, 8).Style.Font.FontColor = XLColor.FromHtml("#dc2626");
-                            ws.Cell(row, 8).Style.Font.Bold = true;
+                            ws.Cell(row, 9).Style.Font.FontColor = XLColor.FromHtml("#dc2626");
+                            ws.Cell(row, 9).Style.Font.Bold = true;
                         }
 
-                        ws.Cell(row, 9).Value = dr["Estado"] != DBNull.Value ? dr["Estado"].ToString() : "N/A";
-                        ws.Cell(row, 9).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                        ws.Cell(row, 10).Value = dr["Estado"] != DBNull.Value ? dr["Estado"].ToString() : "N/A";
+                        ws.Cell(row, 10).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
                         if (isAlternate)
                         {
-                            ws.Range(row, 1, row, 9).Style.Fill.BackgroundColor = XLColor.FromHtml("#f8fafc");
+                            ws.Range(row, 1, row, 10).Style.Fill.BackgroundColor = XLColor.FromHtml("#f8fafc");
                         }
                         isAlternate = !isAlternate;
 
-                        ws.Range(row, 1, row, 9).Style.Border.BottomBorder = XLBorderStyleValues.Hair;
-                        ws.Range(row, 1, row, 9).Style.Border.BottomBorderColor = XLColor.FromHtml("#e2e8f0");
+                        ws.Range(row, 1, row, 10).Style.Border.BottomBorder = XLBorderStyleValues.Hair;
+                        ws.Range(row, 1, row, 10).Style.Border.BottomBorderColor = XLColor.FromHtml("#e2e8f0");
 
                         row++;
                     }
 
                     // Total
-                    var totalRange = ws.Range(row, 1, row, 9);
+                    var totalRange = ws.Range(row, 1, row, 10);
                     totalRange.Style.Font.Bold = true;
                     totalRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#fef3c7");
                     totalRange.Style.Border.TopBorder = XLBorderStyleValues.Medium;
@@ -676,10 +682,10 @@ namespace WebSGV.Views
                     totalRange.Style.Border.BottomBorderColor = XLColor.FromHtml("#d97706");
 
                     ws.Cell(row, 1).Value = "TOTAL DE VIAJES SIN LIQUIDACIÓN:";
-                    ws.Range(row, 1, row, 7).Merge();
-                    ws.Cell(row, 8).Value = dt.Rows.Count;
-                    ws.Cell(row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                    ws.Range(row, 8, row, 9).Merge();
+                    ws.Range(row, 1, row, 8).Merge();
+                    ws.Cell(row, 9).Value = dt.Rows.Count;
+                    ws.Cell(row, 9).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    ws.Range(row, 9, row, 10).Merge();
 
                     ws.Columns().AdjustToContents();
                     ws.Column(2).Width = 30;
@@ -1263,6 +1269,7 @@ namespace WebSGV.Views
             Tuple.Create("carreta",          "Placa Carreta",       "text"),
             Tuple.Create("cliente",          "Cliente",             "text"),
             Tuple.Create("destino",          "Destino",             "text"),
+            Tuple.Create("cantDespachos",    "N° Despachos",        "text"),
             Tuple.Create("numero",           "N° Liquidación",      "text"),
             Tuple.Create("estado",           "Estado",              "text"),
             Tuple.Create("ingresosSoles",    "Ingresos S/",         "money-sol"),
@@ -1452,6 +1459,7 @@ namespace WebSGV.Views
                 case "carreta": return "PlacaCarreta";
                 case "cliente": return "Cliente";
                 case "destino": return "Destino";
+                case "cantDespachos": return "CantidadDespachos";
                 case "numero": return "NumeroLiquidacion";
                 case "estado": return "Estado";
                 case "ingresosSoles": return "IngresosSoles";

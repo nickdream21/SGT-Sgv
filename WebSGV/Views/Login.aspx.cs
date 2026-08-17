@@ -145,7 +145,7 @@ namespace WebSGV.Views
 
             // Verificar credenciales en la base de datos (fuera del lock para no retenerlo durante I/O)
             (bool EsValido, string Rol, string Nombre, string NombreUsuario,
-             int IdUsuario, int? IdConductor, int? IdOperador) resultado;
+             int IdUsuario, int? IdConductor, int? IdOperador, bool RequiereCambioContrasena) resultado;
             try
             {
                 resultado = ValidarUsuario(usuario, contrasena);
@@ -177,6 +177,7 @@ namespace WebSGV.Views
                 Session["Rol"] = resultado.Rol;
                 Session["Nombre"] = resultado.Nombre;
                 Session["NombreUsuario"] = resultado.NombreUsuario;
+                Session["RequiereCambioContrasena"] = resultado.RequiereCambioContrasena;
 
                 if (resultado.Rol.ToUpper() == "CONDUCTOR" && resultado.IdConductor.HasValue)
                 {
@@ -256,19 +257,21 @@ namespace WebSGV.Views
         }
 
         private (bool EsValido, string Rol, string Nombre, string NombreUsuario,
-                 int IdUsuario, int? IdConductor, int? IdOperador) ValidarUsuario(string usuario, string contrasena)
+                 int IdUsuario, int? IdConductor, int? IdOperador, bool RequiereCambioContrasena) ValidarUsuario(string usuario, string contrasena)
         {
             bool esValido = false;
             string rol = "", nombre = "", nombreUsuario = "";
             int idUsuario = 0;
             int? idConductor = null;
             int? idOperador = null;
+            bool requiereCambioContrasena = false;
 
             try
             {
                 DataTable dt = DbHelper.ConsultarTabla(@"
                     SELECT u.idUsuario, u.nombreUsuario, u.nombre, u.rol,
-                           u.idConductor, u.idOperador, u.contrasena
+                           u.idConductor, u.idOperador, u.contrasena,
+                           ISNULL(u.requiereCambioContrasena, 0) AS requiereCambioContrasena
                     FROM Usuarios u
                     WHERE u.nombreUsuario = @Usuario AND u.activo = 1",
                     DbHelper.Param("@Usuario", usuario));
@@ -291,9 +294,13 @@ namespace WebSGV.Views
                             idOperador = Convert.ToInt32(reader["idOperador"]);
 
                         esValido = true;
+                        requiereCambioContrasena = Convert.ToBoolean(reader["requiereCambioContrasena"]);
 
                         if (PasswordHelper.NeedsMigration(storedHash))
+                        {
+                            requiereCambioContrasena = true;
                             MigrarContrasena(idUsuario, contrasena);
+                        }
                     }
                 }
             }
@@ -305,7 +312,7 @@ namespace WebSGV.Views
                 throw;
             }
 
-            return (esValido, rol, nombre, nombreUsuario, idUsuario, idConductor, idOperador);
+            return (esValido, rol, nombre, nombreUsuario, idUsuario, idConductor, idOperador, requiereCambioContrasena);
         }
 
         /// <summary>
@@ -318,7 +325,7 @@ namespace WebSGV.Views
             {
                 string nuevoHash = PasswordHelper.HashPassword(contrasenaPlana);
                 DbHelper.EjecutarNonQuery(
-                    "UPDATE Usuarios SET contrasena = @NuevoHash WHERE idUsuario = @IdUsuario",
+                    "UPDATE Usuarios SET contrasena = @NuevoHash, requiereCambioContrasena = 1 WHERE idUsuario = @IdUsuario",
                     DbHelper.Param("@NuevoHash", nuevoHash),
                     DbHelper.Param("@IdUsuario", idUsuario));
             }

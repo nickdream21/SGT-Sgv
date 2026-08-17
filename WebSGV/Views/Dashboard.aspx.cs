@@ -863,17 +863,8 @@ WHERE MONTH(fechaHoraLlegadaPlantaDescarga) = @Mes
                                 Convert.ToDouble(reader["EsperaDepsa"]) : 0);
                         }
 
-                        // Si no hay datos, usamos datos de ejemplo
-                        if (dias.Count == 0)
-                        {
-                            datos["DiasEsperaDepsa"] = Enumerable.Range(7, 25).Select(d => d.ToString()).ToArray();
-                            datos["EsperaDepsa"] = new[] { 0.8, 0.1, 0.2, 1.2, 0.8, 2.5, 3.7, 0.2, 0.4, 0.5, 0.0, 0.3, 0.3, 1.2, 0.0, 0.1, 0.3, 1.0, 1.0, 1.1, 1.4, 2.0, 0.8, 0.2, 1.1 };
-                        }
-                        else
-                        {
-                            datos["DiasEsperaDepsa"] = dias;
-                            datos["EsperaDepsa"] = esperaDepsa;
-                        }
+                        datos["DiasEsperaDepsa"] = dias;
+                        datos["EsperaDepsa"] = esperaDepsa;
                     }
                 }
 
@@ -909,17 +900,8 @@ WHERE MONTH(fechaHoraLlegadaPlantaDescarga) = @Mes
                                 Convert.ToDouble(reader["EsperaHoras"]) : 0);
                         }
 
-                        // Si no hay datos, usamos datos de ejemplo
-                        if (dias.Count == 0)
-                        {
-                            datos["DiasEsperaComplex"] = Enumerable.Range(10, 20).Select(d => d.ToString()).ToArray();
-                            datos["EsperaComplex"] = new[] { 1.4, 1.6, 4.5, 0.0, 1.5, 0.5, 2.3, 0.4, 2.7, 0.2, 1.2, 0.6, 0.0, 6.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-                        }
-                        else
-                        {
-                            datos["DiasEsperaComplex"] = dias;
-                            datos["EsperaComplex"] = esperaComplex;
-                        }
+                        datos["DiasEsperaComplex"] = dias;
+                        datos["EsperaComplex"] = esperaComplex;
                     }
                 }
 
@@ -955,17 +937,8 @@ WHERE MONTH(fechaHoraLlegadaPlantaDescarga) = @Mes
                                 Convert.ToDouble(reader["TiempoDepsa"]) : 0);
                         }
 
-                        // Si no hay datos, usamos datos de ejemplo
-                        if (dias.Count == 0)
-                        {
-                            datos["DiasTiempoDepsa"] = Enumerable.Range(7, 25).Select(d => d.ToString()).ToArray();
-                            datos["TiempoDepsa"] = new[] { 1.3, 1.3, 0.8, 2.5, 1.4, 1.5, 1.5, 1.3, 2.2, 2.3, 2.3, 1.9, 1.4, 2.4, 2.3, 2.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-                        }
-                        else
-                        {
-                            datos["DiasTiempoDepsa"] = dias;
-                            datos["TiempoDepsa"] = tiempoDepsa;
-                        }
+                        datos["DiasTiempoDepsa"] = dias;
+                        datos["TiempoDepsa"] = tiempoDepsa;
                     }
                 }
 
@@ -1001,17 +974,8 @@ WHERE MONTH(fechaHoraLlegadaPlantaDescarga) = @Mes
                                 Convert.ToDouble(reader["TiempoCebaf"]) : 0);
                         }
 
-                        // Si no hay datos, usamos datos de ejemplo
-                        if (dias.Count == 0)
-                        {
-                            datos["DiasCebaf"] = Enumerable.Range(7, 25).Select(d => d.ToString()).ToArray();
-                            datos["TiempoCebaf"] = new[] { 54.9, 0.0, 126.7, 0.0, 0.0, 46.6, 63.5, 46.2, 58.9, 107.0, 32.9, 70.4, 56.4, 70.7, 56.0, 58.7, 79.6, 40.7, 46.4, 68.1, 43.2, 32.9, 60.0, 81.0, 0.0 };
-                        }
-                        else
-                        {
-                            datos["DiasCebaf"] = dias;
-                            datos["TiempoCebaf"] = tiempoCebaf;
-                        }
+                        datos["DiasCebaf"] = dias;
+                        datos["TiempoCebaf"] = tiempoCebaf;
                     }
                 }
 
@@ -1070,25 +1034,15 @@ WHERE MONTH(fechaHoraLlegadaPlantaDescarga) = @Mes
                                     Convert.ToDouble(reader["TiempoTCI"]) : 0);
                             }
 
-                            // Siempre agregar datos, incluso si no hay resultados
-                            if (dias.Count == 0)
-                            {
-                                datos["DiasTiempoTCI"] = new[] { "7", "8", "10", "20", "21", "22", "23", "25", "28", "29", "30", "31" };
-                                datos["TiempoTCI"] = new[] { 4.1, 0.8, 0.4, 0.1, 0.8, 1.0, 1.3, 22.4, 1.5, 0.6, 0.7, 1.8 };
-                            }
-                            else
-                            {
-                                datos["DiasTiempoTCI"] = dias;
-                                datos["TiempoTCI"] = tiemposTCI;
-                            }
+                            datos["DiasTiempoTCI"] = dias;
+                            datos["TiempoTCI"] = tiemposTCI;
                         }
                     }
                     catch (Exception ex)
                     {
-                        // En caso de error, usar datos de muestra y registrar el error
-                        System.Diagnostics.Debug.WriteLine("Error en consulta TCI: " + ex.Message);
-                        datos["DiasTiempoTCI"] = new[] { "7", "8", "10", "20", "21", "22", "23", "25", "28", "29", "30", "31" };
-                        datos["TiempoTCI"] = new[] { 4.1, 0.8, 0.4, 0.1, 0.8, 1.0, 1.3, 22.4, 1.5, 0.6, 0.7, 1.8 };
+                        LogSGV.Error(ex, "Error al consultar el tiempo promedio en TCI");
+                        datos["DiasTiempoTCI"] = Array.Empty<string>();
+                        datos["TiempoTCI"] = Array.Empty<double>();
                     }
                 }
 
@@ -1351,9 +1305,12 @@ ORDER BY DAY(fechaHoraSalidaTCI)";
                 }
 
 
-                // Datos para tiempos adicionales y otras visualizaciones
-                datos["DiasTiempoComplex"] = Enumerable.Range(7, 25).Select(d => d.ToString()).ToArray();
-                datos["TiempoComplex"] = new[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 17.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 20.9, 0.0 };
+                // Nunca inventar valores para producción: un conjunto vacío significa
+                // que no existen datos reales para el periodo seleccionado.
+                if (!datos.ContainsKey("DiasTiempoComplex"))
+                    datos["DiasTiempoComplex"] = Array.Empty<string>();
+                if (!datos.ContainsKey("TiempoComplex"))
+                    datos["TiempoComplex"] = Array.Empty<double>();
             }
 
             return datos;

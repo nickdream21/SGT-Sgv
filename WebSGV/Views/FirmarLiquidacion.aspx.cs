@@ -23,9 +23,7 @@ namespace WebSGV.Views
             if (session["IdUsuario"] != null)
                 int.TryParse(session["IdUsuario"].ToString(), out idUsuario);
 
-            string rol = (session["Rol"] as string ?? "").ToUpperInvariant();
-
-            if (idUsuario == 0 || rol != "CONDUCTOR")
+            if (idUsuario == 0 || !RolesHelper.EsConductor())
             {
                 Response.Redirect(ResolveUrl("~/Views/Login.aspx?returnUrl=" +
                     Server.UrlEncode(Request.RawUrl)), true);
@@ -68,7 +66,7 @@ namespace WebSGV.Views
                     FROM   OrdenViaje
                     WHERE  idOrdenViaje   = @idOrdenViaje
                       AND  idConductor    = @idConductor
-                      AND  estadoAprobacion IN ('PENDIENTE', 'REABIERTO')",
+                      AND  estadoAprobacion IN ('PENDIENTE', 'RECHAZADO')",
                     DbHelper.Param("@idOrdenViaje", idOrdenViaje),
                     DbHelper.Param("@idConductor",  idConductor)));
                 return count > 0;

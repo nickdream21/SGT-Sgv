@@ -48,6 +48,10 @@ namespace WebSGV.Models.Liquidaciones
         public string PlacaCarreta { get; set; }
         public string FechaSalida { get; set; }
         public string FechaLlegada { get; set; }
+        // Valores crudos de salida para el editor de corrección (administradora).
+        public string FechaSalidaISO { get; set; }   // yyyy-MM-dd
+        public string HoraSalida { get; set; }        // HH:mm
+        public string EstadoAprobacion { get; set; }   // PENDIENTE / COMPLETADO / RECHAZADO
         public string Observaciones { get; set; }
 
         // Ingresos

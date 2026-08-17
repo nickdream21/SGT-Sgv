@@ -583,7 +583,7 @@
                     exito.classList.add('show');
                     document.getElementById('okHash').textContent = r.hashPdf || '(sin hash)';
                     var verPdf = document.getElementById('okVerPdf');
-                    verPdf.href = 'TestGenerarPdfOrdenViaje.aspx?id=' + idOrden;
+                    verPdf.href = 'DescargarPdfOrdenViaje.aspx?id=' + idOrden;
                     verPdf.target = '_blank';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else {

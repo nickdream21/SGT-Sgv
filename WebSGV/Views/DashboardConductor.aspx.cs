@@ -842,9 +842,12 @@ namespace WebSGV.Views
                 lblDespachosResumen.Text = totalDespachos.ToString();
 
                 DateTime ahoraServidor = DateTime.Now;
+                // Fecha de salida: se sugiere la fecha de inicio del viaje como referencia,
+                // pero el conductor la ajusta a la hora/fecha real en que salió de base.
                 txtFechaSalida.Text = viajePrimario.FechaInicio.ToString("yyyy-MM-dd");
                 txtFechaLlegada.Text = ahoraServidor.ToString("yyyy-MM-dd");
-                txtHoraSalida.Text = "08:00";
+                // La hora de salida la registra el conductor (no hay hora programada); sin valor por defecto.
+                txtHoraSalida.Text = string.Empty;
                 txtHoraLlegada.Text = ahoraServidor.ToString("HH:mm");
 
                 Log("✅ Formulario de liquidación habilitado");
@@ -975,11 +978,8 @@ namespace WebSGV.Views
                 // Post-commit: mostrar resultado y programar redirect (fuera del using de la transacción)
                 if (transaccionExitosa)
                 {
-                    AuditoriaHelper.Registrar("LIQUIDAR", "OrdenViaje", numeroOrdenViaje,
-                        $"Conductor envió liquidación - Orden: {numeroOrdenViaje}, Viajes: {string.Join(", ", idsViajesActivos)}");
-
-                    string nombreConductorNotif = Session["Nombre"]?.ToString() ?? lblNombreConductor.Text;
-                    Services.NotificacionService.NotificarLiquidacionPendiente(numeroOrdenViaje, nombreConductorNotif);
+                    AuditoriaHelper.Registrar("GUARDAR_LIQUIDACION", "OrdenViaje", numeroOrdenViaje,
+                        $"Conductor guardó la liquidación pendiente de firma - Orden: {numeroOrdenViaje}, Viajes: {string.Join(", ", idsViajesActivos)}");
 
                     Log($"=== LIQUIDACIÓN ENVIADA EXITOSAMENTE (idOrdenViaje={idOrdenGuardada}) ===");
 
@@ -1439,6 +1439,18 @@ namespace WebSGV.Views
         }
 
         #region WebMethods
+
+        [WebMethod(EnableSession = true)]
+        public static object MantenerSesionActiva()
+        {
+            if (!SecurityHelper.TieneSesionActiva() || !RolesHelper.EsConductor())
+                return new { success = false, message = "La sesión ya no está activa." };
+
+            // Toda petición con sesión renueva el tiempo de inactividad de ASP.NET.
+            // La marca permite además diagnosticar la última actividad del formulario.
+            HttpContext.Current.Session["UltimaActividadLiquidacionUtc"] = DateTime.UtcNow;
+            return new { success = true };
+        }
 
         [WebMethod(EnableSession = true)]
         public static object RetirarLiquidacion(int idOrdenViaje)

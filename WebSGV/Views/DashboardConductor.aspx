@@ -251,8 +251,8 @@
                                             </div>
                                             <div class="col-12 col-md-3">
                                                 <div class="form-group">
-                                                    <label class="form-label">Hora Salida</label>
-                                                    <asp:TextBox ID="txtHoraSalida" runat="server" CssClass="form-control" TextMode="Time"></asp:TextBox>
+                                                    <label class="form-label">Hora Salida <span class="text-danger">*</span></label>
+                                                    <asp:TextBox ID="txtHoraSalida" runat="server" CssClass="form-control" TextMode="Time" required></asp:TextBox>
                                                 </div>
                                             </div>
                                             <div class="col-12 col-md-3">
@@ -2209,6 +2209,8 @@
         let contadorReparaciones = 0;
         let contadorHospedajes = 0;
         let contadorCombustibles = 0;
+        let liquidacionModificada = false;
+        let formularioEnviandose = false;
 
         // === INICIALIZACIÓN ===
         $(document).ready(function () {
@@ -2216,6 +2218,34 @@
             configurarFechasPorDefecto();
             aplicarVisibilidadPeajes();
             calcularTotales();
+
+            const formularioLiquidacion = $('#<%= pnlFormularioLiquidacion.ClientID %>');
+            formularioLiquidacion.on('input change', 'input:not([readonly]), textarea, select', function () {
+                liquidacionModificada = true;
+            });
+
+            $('form').on('submit', function () {
+                formularioEnviandose = true;
+            });
+
+            // Renueva la sesión mientras el conductor completa una liquidación extensa.
+            window.setInterval(function () {
+                if (!formularioLiquidacion.is(':visible')) return;
+
+                $.ajax({
+                    type: 'POST',
+                    url: 'DashboardConductor.aspx/MantenerSesionActiva',
+                    data: '{}',
+                    contentType: 'application/json; charset=utf-8',
+                    dataType: 'json'
+                });
+            }, 5 * 60 * 1000);
+        });
+
+        window.addEventListener('beforeunload', function (event) {
+            if (!liquidacionModificada || formularioEnviandose) return;
+            event.preventDefault();
+            event.returnValue = '';
         });
 
         // Los peajes (nacionales y extranjeros) los paga directamente la empresa a la
@@ -2681,6 +2711,7 @@
 
         function limpiarFormulario() {
             if (confirm('¿Está seguro de limpiar el formulario? Se perderán todos los datos ingresados.')) {
+                liquidacionModificada = false;
                 location.reload();
             }
         }

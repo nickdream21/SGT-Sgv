@@ -175,6 +175,15 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void ValidarDatosGeneralesLiquidacion_HoraSalidaVacia_Error()
+        {
+            DateTime hoy = DateTime.Today;
+            string r = OrdenViajeValidaciones.ValidarDatosGeneralesLiquidacion(
+                hoy, hoy, "", "18:00");
+            Assert.Contains("ingrese la 'Hora de Salida'", r);
+        }
+
+        [Fact]
         public void ValidarDatosGeneralesLiquidacion_SalidaPosteriorALlegada_Error()
         {
             DateTime salida = DateTime.Today;

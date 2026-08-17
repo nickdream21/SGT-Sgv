@@ -149,6 +149,17 @@
                             </div>
                         </asp:Panel>
                     </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Conductor asociado</label>
+                                <asp:DropDownList ID="ddlConductor" runat="server" CssClass="form-control" />
+                                <small class="text-muted">
+                                    Es obligatorio cuando el rol es Conductor. Esta asociación determina qué viajes puede consultar y firmar el usuario.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>

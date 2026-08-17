@@ -23,6 +23,25 @@ namespace WebSGV.Views
         private const int MaxLongitudMotivo = 500;
         private const int MaxLongitudNotaAprobacion = 500;
 
+        private static bool PuedeGestionarLiquidaciones() =>
+            SecurityHelper.TieneSesionActiva() && SecurityHelper.PuedeGestionarLiquidaciones();
+
+        private static bool PuedeConsultarOrden(int idOrdenViaje)
+        {
+            if (!SecurityHelper.TieneSesionActiva() || idOrdenViaje <= 0)
+                return false;
+
+            if (SecurityHelper.PuedeConsultarLiquidacionesGlobales())
+                return true;
+
+            if (!SecurityHelper.EsConductor())
+                return false;
+
+            int idUsuario = SecurityHelper.ObtenerIdUsuario();
+            return idUsuario > 0 &&
+                LiquidacionesPendientesService.OrdenPerteneceAUsuarioConductor(idOrdenViaje, idUsuario);
+        }
+
         // Los DTO DetalleLiquidacion, DetallePeajeItem, DetalleGenericoItem e ItemAdicional
         // se movieron a WebSGV.Models.Liquidaciones (consumidos también por los services
         // de PDF/Firma).
@@ -438,8 +457,7 @@ namespace WebSGV.Views
         {
             try
             {
-                var ctx = System.Web.HttpContext.Current;
-                if (ctx.Session["UsuarioID"] == null)
+                if (!PuedeGestionarLiquidaciones())
                     return "[]";
 
                 if (string.IsNullOrEmpty(term) || term.Trim().Length < 2)
@@ -476,8 +494,7 @@ namespace WebSGV.Views
         {
             try
             {
-                var ctx = System.Web.HttpContext.Current;
-                if (ctx.Session["UsuarioID"] == null)
+                if (!PuedeConsultarOrden(idOrdenViaje))
                     return null;
 
                 System.Diagnostics.Debug.WriteLine($"=== OBTENIENDO DETALLE LIQUIDACIÓN: {idOrdenViaje} ===");
@@ -499,7 +516,6 @@ namespace WebSGV.Views
             }
         }
 
-        [WebMethod(EnableSession = true)]
         public static object AprobarConAjustes(int idOrdenViaje, decimal descuentoSoles, decimal descuentoDolares, decimal reintegroSoles, decimal reintegroDolares, string notaAprobacion = null)
         {
             try
@@ -508,6 +524,9 @@ namespace WebSGV.Views
 
                 if (idOrdenViaje <= 0)
                     return new { success = false, message = "El ID de la orden de viaje es inválido." };
+
+                if (!PuedeGestionarLiquidaciones())
+                    return new { success = false, message = "No tiene permisos para aprobar liquidaciones." };
 
                 int idUsuario = 0;
                 if (System.Web.HttpContext.Current.Session["UsuarioID"] != null)
@@ -654,8 +673,7 @@ namespace WebSGV.Views
         {
             try
             {
-                var ctx = System.Web.HttpContext.Current;
-                if (ctx.Session["UsuarioID"] == null)
+                if (!SecurityHelper.TieneSesionActiva() || !SecurityHelper.PuedeConsultarLiquidacionesGlobales())
                     return new List<LiquidacionAprobadaItem>();
 
                 if (idConductor < 0)
@@ -727,6 +745,9 @@ namespace WebSGV.Views
                 if (idOrdenViaje <= 0)
                     return new { success = false, message = "El ID de la orden de viaje es inválido." };
 
+                if (!PuedeGestionarLiquidaciones())
+                    return new { success = false, message = "No tiene permisos para revertir aprobaciones." };
+
                 motivo = NormalizarTexto(motivo, MaxLongitudMotivo);
                 if (string.IsNullOrWhiteSpace(motivo) || motivo.Trim().Length < 10)
                     return new { success = false, message = "El motivo de reversión debe tener al menos 10 caracteres." };
@@ -765,6 +786,76 @@ namespace WebSGV.Views
             }
         }
 
+        /// <summary>
+        /// Corrige la fecha/hora de salida de una liquidación aún PENDIENTE (la registra el
+        /// conductor y no hay hora programada, por lo que solo la administradora puede corregirla
+        /// si detecta una anomalía). Queda auditado el valor anterior y el motivo.
+        /// </summary>
+        [WebMethod(EnableSession = true)]
+        public static object CorregirSalidaPendiente(int idOrdenViaje, string fechaSalida, string horaSalida, string motivo)
+        {
+            try
+            {
+                if (idOrdenViaje <= 0)
+                    return new { success = false, message = "El ID de la orden de viaje es inválido." };
+
+                if (!PuedeGestionarLiquidaciones())
+                    return new { success = false, message = "No tiene permisos para corregir liquidaciones." };
+
+                int idUsuario = 0;
+                if (System.Web.HttpContext.Current.Session["UsuarioID"] != null)
+                    idUsuario = Convert.ToInt32(System.Web.HttpContext.Current.Session["UsuarioID"]);
+                if (idUsuario == 0)
+                    return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
+
+                motivo = NormalizarTexto(motivo, MaxLongitudMotivo);
+                if (string.IsNullOrWhiteSpace(motivo) || motivo.Trim().Length < 10)
+                    return new { success = false, message = "El motivo de la corrección debe tener al menos 10 caracteres." };
+
+                if (!DateTime.TryParseExact(fechaSalida, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime nuevaFecha))
+                    return new { success = false, message = "La fecha de salida no tiene un formato válido." };
+                if (!TimeSpan.TryParse(horaSalida, out TimeSpan nuevaHora))
+                    return new { success = false, message = "La hora de salida no tiene un formato válido." };
+
+                // Obtener salida/llegada actuales y verificar que siga PENDIENTE
+                DataTable dt = LiquidacionesPendientesService.ObtenerSalidaLlegadaPendiente(idOrdenViaje);
+                if (dt.Rows.Count == 0)
+                    return new { success = false, message = "La orden no se encontró o ya no está pendiente de aprobación." };
+
+                DataRow row = dt.Rows[0];
+                string numeroOrden = row["numeroOrdenViaje"].ToString();
+                DateTime fechaLlegada = row["fechaLlegada"] != DBNull.Value ? Convert.ToDateTime(row["fechaLlegada"]) : DateTime.MaxValue.Date;
+                TimeSpan horaLlegada = row["horaLlegada"] != DBNull.Value ? (TimeSpan)row["horaLlegada"] : TimeSpan.Zero;
+
+                string salidaAnterior =
+                    (row["fechaSalida"] != DBNull.Value ? Convert.ToDateTime(row["fechaSalida"]).ToString("dd/MM/yyyy") : "—")
+                    + " " + (row["horaSalida"] != DBNull.Value ? ((TimeSpan)row["horaSalida"]).ToString(@"hh\:mm") : "");
+
+                // Coherencia: la salida no puede ser posterior a la llegada ni estar en el futuro.
+                DateTime salidaCompleta = nuevaFecha.Date + nuevaHora;
+                DateTime llegadaCompleta = fechaLlegada.Date + horaLlegada;
+                if (salidaCompleta > llegadaCompleta)
+                    return new { success = false, message = "La fecha/hora de salida no puede ser posterior a la de llegada." };
+                if (salidaCompleta > DateTime.Now)
+                    return new { success = false, message = "La fecha/hora de salida no puede estar en el futuro." };
+
+                int afectadas = LiquidacionesPendientesService.CorregirSalidaPendiente(idOrdenViaje, nuevaFecha, nuevaHora);
+                if (afectadas == 0)
+                    return new { success = false, message = "No se pudo corregir. Es posible que la liquidación ya haya sido aprobada." };
+
+                string salidaNueva = nuevaFecha.ToString("dd/MM/yyyy") + " " + nuevaHora.ToString(@"hh\:mm");
+                AuditoriaHelper.Registrar("CORREGIR_SALIDA", "OrdenViaje", idOrdenViaje,
+                    $"Corrección de salida - Orden: {numeroOrden}. Anterior: {salidaAnterior} → Nueva: {salidaNueva}. Motivo: {motivo}");
+
+                return new { success = true, message = $"Salida de la liquidación {numeroOrden} corregida a {salidaNueva}." };
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Error al corregir salida pendiente (orden {IdOrden})", idOrdenViaje);
+                return new { success = false, message = "Error interno al corregir la salida. Contacte al administrador." };
+            }
+        }
+
         [WebMethod(EnableSession = true)]
         public static object CorregirAjustesAprobada(int idOrdenViaje, decimal descuentoSoles, decimal descuentoDolares, decimal reintegroSoles, decimal reintegroDolares, string motivo)
         {
@@ -774,6 +865,9 @@ namespace WebSGV.Views
 
                 if (idOrdenViaje <= 0)
                     return new { success = false, message = "El ID de la orden de viaje es inválido." };
+
+                if (!PuedeGestionarLiquidaciones())
+                    return new { success = false, message = "No tiene permisos para corregir ajustes." };
 
                 int idUsuario = 0;
                 if (System.Web.HttpContext.Current.Session["UsuarioID"] != null)
@@ -827,12 +921,12 @@ namespace WebSGV.Views
                 var ctx = System.Web.HttpContext.Current;
                 int idUsuario = SesionHelper.ObtenerUsuarioId(ctx.Session);
                 string nombre = SesionHelper.ObtenerNombre(ctx.Session);
-                string rol    = SesionHelper.ObtenerRolNormalizado(ctx.Session);
-
                 if (idUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
-                if (rol != "CONDUCTOR")
+                if (!SecurityHelper.EsConductor())
                     return new { success = false, message = "Sólo un conductor autenticado puede firmar esta liquidación." };
+                if (!LiquidacionesPendientesService.OrdenPerteneceAUsuarioConductor(idOrdenViaje, idUsuario))
+                    return new { success = false, message = "La liquidación no pertenece al conductor autenticado." };
 
                 byte[] pngBytes = DecodificarPngBase64(firmaPngBase64);
                 if (pngBytes == null)
@@ -850,6 +944,17 @@ namespace WebSGV.Views
                     imagenTrazoPng: pngBytes,
                     ipOrigen: ip,
                     userAgent: ua);
+
+                if (r.Exito)
+                {
+                    object numeroObj = LiquidacionesPendientesService.ObtenerNumeroOrden(idOrdenViaje);
+                    string numeroOrden = numeroObj == null || numeroObj == DBNull.Value
+                        ? idOrdenViaje.ToString()
+                        : numeroObj.ToString();
+                    AuditoriaHelper.Registrar("FIRMAR", "OrdenViaje", idOrdenViaje,
+                        "Conductor firmó y envió la liquidación " + numeroOrden);
+                    NotificacionService.NotificarLiquidacionPendiente(numeroOrden, nombre);
+                }
 
                 return new
                 {
@@ -886,6 +991,9 @@ namespace WebSGV.Views
                 if (idOrdenViaje <= 0)
                     return new { success = false, message = "El ID de la orden de viaje es inválido." };
 
+                if (!PuedeGestionarLiquidaciones())
+                    return new { success = false, message = "No tiene permisos para aprobar liquidaciones." };
+
                 var ctx = System.Web.HttpContext.Current;
                 int idUsuario = SesionHelper.ObtenerUsuarioId(ctx.Session);
                 string nombre = SesionHelper.ObtenerNombre(ctx.Session);
@@ -920,12 +1028,19 @@ namespace WebSGV.Views
 
                 if (!r.Exito)
                 {
-                    // La aprobación ya se ejecutó; reportamos el error de la firma
-                    // pero NO revertimos. El admin puede re-firmar si es necesario.
+                    string motivoReversion = "Reversión automática: no se pudo registrar la firma administrativa. " + r.Mensaje;
+                    int filasRevertidas = LiquidacionesPendientesService.RevertirEstado(idOrdenViaje, motivoReversion);
+
+                    LogSGV.Advertencia(
+                        "Falló la firma administrativa de la orden {IdOrden}. Reversión aplicada: {Revertida}. Motivo: {Mensaje}",
+                        idOrdenViaje, filasRevertidas > 0, r.Mensaje);
+
                     return new
                     {
-                        success = true,
-                        message = (string)resAprobacion.message + " [Advertencia firma: " + r.Mensaje + "]",
+                        success = false,
+                        message = filasRevertidas > 0
+                            ? "No se completó la aprobación porque falló la firma administrativa. La liquidación volvió a pendiente; puede intentarlo nuevamente."
+                            : "La liquidación fue aprobada, pero falló la firma administrativa y no se pudo revertir automáticamente. Contacte al administrador.",
                         firmaAdmin = false
                     };
                 }
@@ -960,6 +1075,9 @@ namespace WebSGV.Views
             {
                 if (idOrdenViaje <= 0)
                     return new { success = false, message = "El ID de la orden de viaje es inválido." };
+
+                if (!PuedeGestionarLiquidaciones())
+                    return new { success = false, message = "No tiene permisos para rechazar liquidaciones." };
 
                 var ctx = System.Web.HttpContext.Current;
                 int idUsuario = SesionHelper.ObtenerUsuarioId(ctx.Session);
@@ -1175,6 +1293,9 @@ namespace WebSGV.Views
                 int idUsuario = SesionHelper.ObtenerUsuarioId(ctx.Session);
                 if (idUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Inicie sesión nuevamente." };
+
+                if (!PuedeConsultarOrden(idOrdenViaje))
+                    return new { success = false, message = "No tiene permisos para consultar este documento." };
 
                 GarantizarPdfArchivadoOV(idOrdenViaje, "DescargaBajoDemanda");
 

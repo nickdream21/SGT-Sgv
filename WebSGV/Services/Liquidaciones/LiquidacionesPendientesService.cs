@@ -29,6 +29,26 @@ namespace WebSGV.Services.Liquidaciones
                 "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @idOrdenViaje",
                 DbHelper.Param("@idOrdenViaje", idOrdenViaje));
 
+        /// <summary>
+        /// Verifica ownership para endpoints consumidos por el conductor. La autorización
+        /// se valida aquí y no sólo en la página que muestra el botón, evitando IDOR por
+        /// invocación directa del PageMethod.
+        /// </summary>
+        public static bool OrdenPerteneceAUsuarioConductor(int idOrdenViaje, int idUsuario)
+        {
+            object resultado = DbHelper.EjecutarEscalar(@"
+                SELECT COUNT(1)
+                FROM OrdenViaje ov
+                INNER JOIN Usuarios u ON u.idConductor = ov.idConductor
+                WHERE ov.idOrdenViaje = @idOrdenViaje
+                  AND u.idUsuario = @idUsuario
+                  AND u.activo = 1",
+                DbHelper.Param("@idOrdenViaje", idOrdenViaje),
+                DbHelper.Param("@idUsuario", idUsuario));
+
+            return resultado != null && resultado != DBNull.Value && Convert.ToInt32(resultado) > 0;
+        }
+
         /// <summary>Liquidaciones pendientes vía <c>sp_ObtenerLiquidacionesPendientes</c>.</summary>
         public static DataTable ObtenerPendientes(int? idConductor, DateTime? fechaDesde, DateTime? fechaHasta)
         {
@@ -164,6 +184,31 @@ namespace WebSGV.Services.Liquidaciones
                 DbHelper.Param("@id", idOrdenViaje),
                 DbHelper.Param("@motivo", motivo));
 
+        /// <summary>
+        /// Salida/llegada actuales de una orden aún PENDIENTE de aprobación (para que la
+        /// administradora corrija la salida). Devuelve fila vacía si ya fue aprobada/rechazada.
+        /// </summary>
+        public static DataTable ObtenerSalidaLlegadaPendiente(int idOrdenViaje) =>
+            DbHelper.ConsultarTabla(
+                @"SELECT numeroOrdenViaje, fechaSalida, horaSalida, fechaLlegada, horaLlegada
+                  FROM OrdenViaje
+                  WHERE idOrdenViaje = @id AND estadoAprobacion = 'PENDIENTE'",
+                DbHelper.Param("@id", idOrdenViaje));
+
+        /// <summary>
+        /// Corrige la fecha/hora de salida de una orden PENDIENTE (solo administradora, auditado
+        /// en el code-behind). Devuelve las filas afectadas (0 si ya no está pendiente).
+        /// </summary>
+        public static int CorregirSalidaPendiente(int idOrdenViaje, DateTime fechaSalida, TimeSpan horaSalida) =>
+            DbHelper.EjecutarNonQuery(@"
+                        UPDATE OrdenViaje
+                        SET fechaSalida = @fechaSalida,
+                            horaSalida  = @horaSalida
+                        WHERE idOrdenViaje = @id AND estadoAprobacion = 'PENDIENTE'",
+                DbHelper.Param("@id", idOrdenViaje),
+                DbHelper.Param("@fechaSalida", fechaSalida.Date),
+                DbHelper.Param("@horaSalida", horaSalida));
+
         /// <summary>Resultado de <see cref="AprobarConAjustes"/> (sin presentación).</summary>
         public class ResultadoAprobacionAjustes
         {
@@ -196,14 +241,18 @@ namespace WebSGV.Services.Liquidaciones
                 try
                 {
 
-                // 1. Obtener numeroOrdenViaje
+                // 1. Obtener numeroOrdenViaje sólo cuando está pendiente y firmada
                 using (SqlCommand cmd = new SqlCommand(
-                    "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id", conn, tran))
+                    @"SELECT numeroOrdenViaje
+                      FROM OrdenViaje
+                      WHERE idOrdenViaje = @id
+                        AND estadoAprobacion = 'PENDIENTE'
+                        AND idFirmaConductor IS NOT NULL", conn, tran))
                 {
                     cmd.Parameters.AddWithValue("@id", idOrdenViaje);
                     object result = cmd.ExecuteScalar();
                     if (result == null || result == DBNull.Value)
-                        return new ResultadoAprobacionAjustes { Exito = false, Mensaje = "No se encontró la orden de viaje." };
+                        return new ResultadoAprobacionAjustes { Exito = false, Mensaje = "La liquidación no está pendiente o aún no tiene firma del conductor." };
                     numeroOrdenViaje = result.ToString();
                 }
 
@@ -382,8 +431,10 @@ namespace WebSGV.Services.Liquidaciones
                     -- Orden
                     ov.numeroOrdenViaje,
                     ov.fechaSalida,
+                    ov.horaSalida,
                     ov.fechaLlegada,
                     ov.observaciones,
+                    ov.estadoAprobacion,
 
                     -- Conductor y Vehículos
                     c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS nombreConductor,
@@ -473,6 +524,11 @@ namespace WebSGV.Services.Liquidaciones
                                 PlacaCarreta = reader["placaCarreta"].ToString(),
                                 FechaSalida  = reader["fechaSalida"] != DBNull.Value
                                     ? Convert.ToDateTime(reader["fechaSalida"]).ToString("dd/MM/yyyy") : "—",
+                                FechaSalidaISO = reader["fechaSalida"] != DBNull.Value
+                                    ? Convert.ToDateTime(reader["fechaSalida"]).ToString("yyyy-MM-dd") : "",
+                                HoraSalida = reader["horaSalida"] != DBNull.Value
+                                    ? ((TimeSpan)reader["horaSalida"]).ToString(@"hh\:mm") : "",
+                                EstadoAprobacion = reader["estadoAprobacion"]?.ToString() ?? "",
                                 FechaLlegada = reader["fechaLlegada"] != DBNull.Value
                                     ? Convert.ToDateTime(reader["fechaLlegada"]).ToString("dd/MM/yyyy") : "—",
                                 Observaciones = reader["observaciones"]?.ToString() ?? "",

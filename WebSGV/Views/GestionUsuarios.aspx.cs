@@ -18,6 +18,7 @@ namespace WebSGV.Views
             if (!IsPostBack)
             {
                 CargarRoles();
+                CargarConductores();
                 CargarUsuarios();
             }
         }
@@ -35,6 +36,33 @@ namespace WebSGV.Views
             {
                 ddlFiltroRol.Items.Add(new ListItem(rol.Texto, rol.Valor));
                 ddlRol.Items.Add(new ListItem(rol.Texto, rol.Valor));
+            }
+        }
+
+        private void CargarConductores()
+        {
+            DataTable dt = DbHelper.ConsultarTabla(@"
+                SELECT c.idConductor,
+                       LTRIM(RTRIM(
+                           COALESCE(NULLIF(c.DNI, ''), NULLIF(c.carnetExtranjeria, ''), 'Sin documento')
+                           + ' - ' + ISNULL(c.nombre, '') + ' ' + ISNULL(c.apPaterno, '') + ' ' + ISNULL(c.apMaterno, '')
+                       )) AS descripcion,
+                       u.nombreUsuario
+                FROM Conductor c
+                LEFT JOIN Usuarios u ON u.idConductor = c.idConductor
+                WHERE c.activo = 1
+                ORDER BY c.apPaterno, c.apMaterno, c.nombre");
+
+            ddlConductor.Items.Clear();
+            ddlConductor.Items.Add(new ListItem("-- No aplica --", ""));
+
+            foreach (DataRow row in dt.Rows)
+            {
+                string descripcion = row["descripcion"].ToString();
+                if (row["nombreUsuario"] != DBNull.Value)
+                    descripcion += " (usuario: " + row["nombreUsuario"] + ")";
+
+                ddlConductor.Items.Add(new ListItem(descripcion, row["idConductor"].ToString()));
             }
         }
 
@@ -78,6 +106,7 @@ namespace WebSGV.Views
             txtNombre.Text          = "";
             if (ddlRol.Items.Count > 0)
                 ddlRol.SelectedIndex = 0;
+            ddlConductor.SelectedIndex = 0;
             txtContrasena.Text      = "";
             pnlContrasena.Visible   = true;
             pnlMensajeModal.Visible = false;
@@ -106,7 +135,7 @@ namespace WebSGV.Views
         private void CargarUsuarioEnModal(int idUsuario)
         {
             DataTable dt = DbHelper.ConsultarTabla(
-                "SELECT idUsuario, nombreUsuario, nombre, rol FROM Usuarios WHERE idUsuario = @id",
+                "SELECT idUsuario, nombreUsuario, nombre, rol, idConductor FROM Usuarios WHERE idUsuario = @id",
                 DbHelper.Param("@id", idUsuario));
 
             if (dt.Rows.Count == 0) return;
@@ -122,6 +151,13 @@ namespace WebSGV.Views
             if (itemRol == null)
                 ddlRol.Items.Add(new ListItem(rolUsuario, rolUsuario));
             ddlRol.SelectedValue     = rolUsuario;
+            ddlConductor.SelectedIndex = 0;
+            if (r["idConductor"] != DBNull.Value)
+            {
+                ListItem itemConductor = ddlConductor.Items.FindByValue(r["idConductor"].ToString());
+                if (itemConductor != null)
+                    ddlConductor.SelectedValue = itemConductor.Value;
+            }
             pnlContrasena.Visible    = false;
             pnlMensajeModal.Visible  = false;
 
@@ -168,6 +204,10 @@ namespace WebSGV.Views
             string nombre        = txtNombre.Text.Trim();
             string rol           = ddlRol.SelectedValue;
             string contrasena    = txtContrasena.Text;
+            int idConductor;
+            bool tieneConductor = int.TryParse(ddlConductor.SelectedValue, out idConductor) && idConductor > 0;
+            bool esRolConductor = string.Equals(rol?.Trim(), RolesHelper.ROL_CONDUCTOR, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(rol?.Trim(), "CHOFER", StringComparison.OrdinalIgnoreCase);
 
             if (string.IsNullOrEmpty(nombreUsuario) || string.IsNullOrEmpty(nombre) || string.IsNullOrEmpty(rol))
             {
@@ -175,6 +215,16 @@ namespace WebSGV.Views
                 AbrirModal("modalUsuario");
                 return;
             }
+
+            if (esRolConductor && !tieneConductor)
+            {
+                MostrarMensajeModal("Debe asociar un conductor al usuario con rol Conductor.", "danger");
+                AbrirModal("modalUsuario");
+                return;
+            }
+
+            if (!esRolConductor)
+                tieneConductor = false;
 
             if (idUsuario == 0)
             {
@@ -194,6 +244,24 @@ namespace WebSGV.Views
 
             try
             {
+                if (tieneConductor)
+                {
+                    int asociado = Convert.ToInt32(DbHelper.EjecutarEscalar(@"
+                        SELECT COUNT(*)
+                        FROM Usuarios
+                        WHERE idConductor = @idConductor
+                          AND idUsuario <> @idUsuario",
+                        DbHelper.Param("@idConductor", idConductor),
+                        DbHelper.Param("@idUsuario", idUsuario)));
+
+                    if (asociado > 0)
+                    {
+                        MostrarMensajeModal("El conductor seleccionado ya está asociado a otro usuario.", "danger");
+                        AbrirModal("modalUsuario");
+                        return;
+                    }
+                }
+
                 if (idUsuario == 0)
                 {
                     int existe = Convert.ToInt32(DbHelper.EjecutarEscalar(
@@ -209,11 +277,15 @@ namespace WebSGV.Views
 
                     string hash = PasswordHelper.HashPassword(contrasena);
                     DbHelper.EjecutarNonQuery(
-                        "INSERT INTO Usuarios (nombreUsuario, nombre, contrasena, rol, activo) VALUES (@user, @nombre, @pass, @rol, 1)",
+                        @"INSERT INTO Usuarios
+                            (nombreUsuario, nombre, contrasena, rol, activo, idConductor, requiereCambioContrasena)
+                          VALUES
+                            (@user, @nombre, @pass, @rol, 1, @idConductor, 1)",
                         DbHelper.Param("@user",   nombreUsuario),
                         DbHelper.Param("@nombre", nombre),
                         DbHelper.Param("@pass",   hash),
-                        DbHelper.Param("@rol",    rol));
+                        DbHelper.Param("@rol",    rol),
+                        DbHelper.Param("@idConductor", tieneConductor ? (object)idConductor : DBNull.Value));
 
                     AuditoriaHelper.Registrar("INSERT", "Usuarios", 0, $"Nuevo usuario creado: {nombreUsuario}, rol: {rol}");
                     MostrarMensaje($"Usuario '{nombreUsuario}' creado exitosamente.", "success");
@@ -221,9 +293,10 @@ namespace WebSGV.Views
                 else
                 {
                     DbHelper.EjecutarNonQuery(
-                        "UPDATE Usuarios SET nombre = @nombre, rol = @rol WHERE idUsuario = @id",
+                        "UPDATE Usuarios SET nombre = @nombre, rol = @rol, idConductor = @idConductor WHERE idUsuario = @id",
                         DbHelper.Param("@nombre", nombre),
                         DbHelper.Param("@rol",    rol),
+                        DbHelper.Param("@idConductor", tieneConductor ? (object)idConductor : DBNull.Value),
                         DbHelper.Param("@id",     idUsuario));
 
                     AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario, $"Usuario actualizado: nombre={nombre}, rol={rol}");
@@ -261,7 +334,7 @@ namespace WebSGV.Views
 
             string hash = PasswordHelper.HashPassword(nuevaPass);
             DbHelper.EjecutarNonQuery(
-                "UPDATE Usuarios SET contrasena = @hash WHERE idUsuario = @id",
+                "UPDATE Usuarios SET contrasena = @hash, requiereCambioContrasena = 1 WHERE idUsuario = @id",
                 DbHelper.Param("@hash", hash),
                 DbHelper.Param("@id",   idUsuario));
 

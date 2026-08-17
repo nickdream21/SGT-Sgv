@@ -20,6 +20,7 @@
         protected global::System.Web.UI.WebControls.DropDownList ddlRol;
         protected global::System.Web.UI.WebControls.Panel pnlContrasena;
         protected global::System.Web.UI.WebControls.TextBox txtContrasena;
+        protected global::System.Web.UI.WebControls.DropDownList ddlConductor;
         protected global::System.Web.UI.WebControls.Button btnGuardarUsuario;
         protected global::System.Web.UI.WebControls.HiddenField hfIdUsuarioReset;
         protected global::System.Web.UI.WebControls.Label lblUsuarioReset;

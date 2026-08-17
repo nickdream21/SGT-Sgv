@@ -22,6 +22,7 @@ namespace WebSGV.Helpers
         private const string ROL_ADMIN_MAQ      = "ADMINISTRADOR DE MAQUINARIA";
         private const string ROL_CONDUCTOR      = "CONDUCTOR";
         private const string ROL_OPERADOR       = "OPERADOR";
+        private const string ROL_CONTABILIDAD   = "CONTABILIDAD";
 
         // ── Acceso a sesión ────────────────────────────────────────────────
 
@@ -65,8 +66,20 @@ namespace WebSGV.Helpers
         public static bool EsAdminSistema()    => ObtenerRol() == ROL_ADMIN_SISTEMA;
         public static bool EsAdminGrifo()      => ObtenerRol() == ROL_ADMIN_GRIFO;
         public static bool EsAdminMaquinaria() => ObtenerRol() == ROL_ADMIN_MAQ;
-        public static bool EsConductor()       => ObtenerRol() == ROL_CONDUCTOR;
+        public static bool EsConductor()
+        {
+            string rol = ObtenerRol();
+            return rol == ROL_CONDUCTOR || rol == "CHOFER";
+        }
         public static bool EsOperador()        => ObtenerRol() == ROL_OPERADOR;
+        public static bool EsContabilidad()    => ObtenerRol() == ROL_CONTABILIDAD;
+
+        /// <summary>Roles autorizados para aprobar, rechazar o corregir liquidaciones.</summary>
+        public static bool PuedeGestionarLiquidaciones() => EsAdminOSupervisor();
+
+        /// <summary>Roles con consulta global de liquidaciones (sin limitar por conductor).</summary>
+        public static bool PuedeConsultarLiquidacionesGlobales() =>
+            EsAdminOSupervisor() || EsContabilidad();
 
         // ── Guardias de acceso (redirigen si no pasan) ─────────────────────
 

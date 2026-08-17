@@ -22,10 +22,16 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    IF NOT EXISTS (SELECT 1 FROM OrdenViaje WHERE idOrdenViaje = @idOrdenViaje)
+    IF NOT EXISTS (
+        SELECT 1
+        FROM OrdenViaje
+        WHERE idOrdenViaje = @idOrdenViaje
+          AND idFirmaConductor IS NOT NULL
+          AND estadoAprobacion IN ('PENDIENTE', 'APROBADO')
+    )
     BEGIN
         SET @resultado     = 0;
-        SET @mensaje       = 'La Orden de Viaje no existe.';
+        SET @mensaje       = 'La Orden de Viaje no existe, no tiene firma del conductor o no está en un estado válido.';
         SET @idFirmaSalida = 0;
         RETURN;
     END

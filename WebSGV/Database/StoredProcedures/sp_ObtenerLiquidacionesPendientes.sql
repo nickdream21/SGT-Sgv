@@ -113,6 +113,7 @@ BEGIN
 
     WHERE ov.registradoPor    = 'CONDUCTOR'
       AND ov.estadoAprobacion = 'PENDIENTE'
+      AND ov.idFirmaConductor IS NOT NULL
       AND (@idConductor IS NULL OR ov.idConductor  = @idConductor)
       AND (@fechaDesde   IS NULL OR ov.fechaRegistro >= @fechaDesde)
       AND (@fechaHasta   IS NULL OR ov.fechaRegistro <= @fechaHasta)

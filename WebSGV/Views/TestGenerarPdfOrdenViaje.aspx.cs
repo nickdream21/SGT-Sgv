@@ -122,9 +122,8 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                EscribirError(500, "Error generando PDF: " + ex.Message +
-                                   Environment.NewLine + Environment.NewLine +
-                                   "StackTrace: " + ex.StackTrace);
+                LogSGV.Error(ex, "Error al generar el PDF de prueba para la orden {IdOrden}", idOrdenViaje);
+                EscribirError(500, "No fue posible generar el PDF. Consulte el registro del sistema.");
             }
         }
 

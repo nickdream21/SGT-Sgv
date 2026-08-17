@@ -480,7 +480,7 @@
                         <h5 class="modal-title" id="modalCambiarContrasenaLabel">
                             <i class="fas fa-key mr-2"></i>Cambiar Contraseña
                         </h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar" style="color:white;">
+                        <button type="button" class="close js-cerrar-contrasena" data-dismiss="modal" aria-label="Cerrar" style="color:white;">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -505,7 +505,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-secondary js-cerrar-contrasena" data-dismiss="modal">Cancelar</button>
                         <asp:Button ID="btnCambiarContrasena" runat="server"
                             Text="Cambiar Contraseña"
                             CssClass="btn btn-primary"
@@ -551,6 +551,40 @@
                 .attr('autocomplete', 'off');
         }
 
+        // ============================================================
+        // Anti-autorrelleno de credenciales en campos de búsqueda.
+        //
+        // Chrome/Edge IGNORAN autocomplete="off" para su gestor de
+        // contraseñas: ofrecen los usuarios guardados en cualquier campo
+        // de texto del sitio. La única técnica fiable es mantener el campo
+        // en modo readonly hasta que el usuario lo enfoca (un campo readonly
+        // no es candidato al autorrelleno del navegador) y restaurar el
+        // readonly al salir. El value sigue asignándose por JS y se envía
+        // en el postback con normalidad; para el usuario es transparente.
+        //
+        // Se aplica automáticamente a todo input cuyo placeholder contenga
+        // "buscar" (los campos de filtro del sistema) y a cualquier input
+        // marcado con la clase .no-autofill.
+        // ============================================================
+        function protegerCamposDeBusqueda(contexto) {
+            var raiz = contexto || document;
+            var inputs = raiz.querySelectorAll('input[type="text"], input:not([type]), input[type="search"]');
+            Array.prototype.forEach.call(inputs, function (el) {
+                if (el.dataset.noAutofill === '1') return;
+
+                var placeholder = el.getAttribute('placeholder') || '';
+                var esBusqueda = /buscar/i.test(placeholder) || el.classList.contains('no-autofill');
+                if (!esBusqueda) return;
+
+                el.dataset.noAutofill = '1';
+                el.setAttribute('autocomplete', 'off');
+                el.setAttribute('readonly', 'readonly');
+
+                el.addEventListener('focus', function () { el.removeAttribute('readonly'); });
+                el.addEventListener('blur', function () { el.setAttribute('readonly', 'readonly'); });
+            });
+        }
+
         // Oculta los campos de contraseña del modal convirtiéndolos a type="text"
         // mientras el modal está cerrado. Chrome no ofrece credenciales guardadas
         // en páginas que no tienen campos type="password" visibles.
@@ -578,6 +612,7 @@
             console.log("Inicializando scripts maestros del SGV...");
 
             deshabilitarAutocomplete();
+            protegerCamposDeBusqueda();
             ocultarCamposPassword();
 
             $('#modalCambiarContrasena')
@@ -599,6 +634,7 @@
                     $('.dropdown-toggle').dropdown();
 
                     deshabilitarAutocomplete();
+                    protegerCamposDeBusqueda();
                 });
             }
 

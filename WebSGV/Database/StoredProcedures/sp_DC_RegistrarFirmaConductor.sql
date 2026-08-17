@@ -25,16 +25,21 @@ BEGIN
     DECLARE @numeroOrdenViaje VARCHAR(50);
     DECLARE @estadoAprobacion VARCHAR(20);
 
-    -- Validar que la orden existe y está PENDIENTE
-    SELECT @numeroOrdenViaje = numeroOrdenViaje,
-           @estadoAprobacion = estadoAprobacion
-    FROM OrdenViaje
-    WHERE idOrdenViaje = @idOrdenViaje;
+    -- Validar que la orden pertenece al conductor autenticado.
+    -- La validación se repite aquí para que no pueda omitirse llamando al SP directamente.
+    SELECT @numeroOrdenViaje = ov.numeroOrdenViaje,
+           @estadoAprobacion = ov.estadoAprobacion
+    FROM OrdenViaje ov
+    INNER JOIN Usuarios u ON u.idConductor = ov.idConductor
+    WHERE ov.idOrdenViaje = @idOrdenViaje
+      AND u.idUsuario = @idUsuarioFirmante
+      AND u.activo = 1
+      AND UPPER(LTRIM(RTRIM(u.rol))) IN ('CONDUCTOR', 'CHOFER');
 
     IF @numeroOrdenViaje IS NULL
     BEGIN
         SET @resultado = 0;
-        SET @mensaje   = 'La Orden de Viaje no existe.';
+        SET @mensaje   = 'La Orden de Viaje no existe o no pertenece al conductor autenticado.';
         SET @idFirmaSalida = 0;
         RETURN;
     END

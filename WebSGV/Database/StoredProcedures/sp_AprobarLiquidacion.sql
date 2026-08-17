@@ -26,11 +26,12 @@ BEGIN
             observacionesAprobacion = @observaciones,
             estadoViaje           = 'COMPLETADO'
         WHERE numeroOrdenViaje  = @numeroOrdenViaje
-          AND estadoAprobacion  = 'PENDIENTE';
+          AND estadoAprobacion  = 'PENDIENTE'
+          AND idFirmaConductor IS NOT NULL;
 
         IF @@ROWCOUNT = 0
         BEGIN
-            RAISERROR('No se encontró la liquidación o ya fue procesada', 16, 1);
+            RAISERROR('No se encontró la liquidación, ya fue procesada o aún no tiene firma del conductor', 16, 1);
             RETURN;
         END
 

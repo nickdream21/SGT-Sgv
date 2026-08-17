@@ -102,7 +102,7 @@ namespace WebSGV.Services
         /// <summary>
         /// Avisa a todos los admins/supervisores activos que hay una nueva liquidación
         /// pendiente de revisión.
-        /// Se llama desde DashboardConductor después de guardar la liquidación exitosamente.
+        /// Se llama después de que el conductor firma y envía la liquidación a revisión.
         /// </summary>
         public static void NotificarLiquidacionPendiente(string numeroOrden, string nombreConductor)
         {
