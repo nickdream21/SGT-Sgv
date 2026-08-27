@@ -117,6 +117,8 @@ namespace WebSGV.Models.Conductor
         public DateTime FechaLlegada { get; set; }
         public string HoraSalida { get; set; }
         public string HoraLlegada { get; set; }
+        /// <summary>Hora de llegada autoreportada por el conductor (editable), distinta de HoraLlegada (automática, inmutable).</summary>
+        public string HoraLlegadaDeclarada { get; set; }
         public string Observaciones { get; set; }
         public int IdConductor { get; set; }
         public int IdTracto { get; set; }

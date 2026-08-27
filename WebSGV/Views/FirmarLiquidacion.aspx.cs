@@ -66,7 +66,7 @@ namespace WebSGV.Views
                     FROM   OrdenViaje
                     WHERE  idOrdenViaje   = @idOrdenViaje
                       AND  idConductor    = @idConductor
-                      AND  estadoAprobacion IN ('PENDIENTE', 'RECHAZADO')",
+                      AND  estadoAprobacion IN ('PENDIENTE', 'REABIERTO')",
                     DbHelper.Param("@idOrdenViaje", idOrdenViaje),
                     DbHelper.Param("@idConductor",  idConductor)));
                 return count > 0;

@@ -7,6 +7,16 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.Literal litAlert;
 
         // Form fields
+        protected global::System.Web.UI.WebControls.TextBox txtBuscarDespachoNacional;
+        protected global::System.Web.UI.WebControls.Panel pnlResumenNacional;
+        protected global::System.Web.UI.WebControls.Literal litResumenNacional;
+        protected global::System.Web.UI.WebControls.TextBox txtBuscarDespachoInternacional;
+        protected global::System.Web.UI.WebControls.Panel pnlResumenInternacional;
+        protected global::System.Web.UI.WebControls.Literal litResumenInternacional;
+        protected global::System.Web.UI.WebControls.LinkButton lnkAplicarDespachoNacional;
+        protected global::System.Web.UI.WebControls.LinkButton lnkAplicarDespachoInternacional;
+        protected global::System.Web.UI.WebControls.HiddenField hdnIdDespachoOrigen;
+        protected global::System.Web.UI.WebControls.HiddenField hdnIdDespachoDestino;
         protected global::System.Web.UI.WebControls.TextBox txtCliente;
         protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvCliente;
         protected global::System.Web.UI.WebControls.TextBox txtConductorOrigen;
@@ -50,6 +60,16 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.TextBox txtFhTerminoDescarga;
         protected global::System.Web.UI.WebControls.TextBox txtFhSalida;
 
+        protected global::System.Web.UI.WebControls.TextBox txtFhLlegadaBaseFinal;
+
+        protected global::System.Web.UI.WebControls.Literal litTracto1Resumen;
+        protected global::System.Web.UI.WebControls.Literal litProgresoNacional;
+        protected global::System.Web.UI.WebControls.Literal litTracto2Resumen;
+        protected global::System.Web.UI.WebControls.Literal litProgresoBodegaNacional;
+        protected global::System.Web.UI.WebControls.Literal litProgresoFrontera;
+        protected global::System.Web.UI.WebControls.Literal litProgresoEcuador;
+        protected global::System.Web.UI.WebControls.Literal litProgresoRegreso;
+
         protected global::System.Web.UI.WebControls.TextBox txtSacosRobados;
         protected global::System.Web.UI.WebControls.RegularExpressionValidator revSacosRobados;
         protected global::System.Web.UI.WebControls.TextBox txtSacosRotos;
@@ -59,8 +79,11 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.TextBox txtMotivoRetraso;
 
         protected global::System.Web.UI.WebControls.Button btnLimpiar;
+        protected global::System.Web.UI.WebControls.Button btnVerificarGps;
         protected global::System.Web.UI.WebControls.Button btnGuardarBorrador;
         protected global::System.Web.UI.WebControls.Button btnGuardarFinal;
+        protected global::System.Web.UI.WebControls.Panel pnlResultadoGps;
+        protected global::System.Web.UI.WebControls.Literal litResultadoGps;
         protected global::System.Web.UI.WebControls.ValidationSummary vsGuardarSeguimiento;
         protected global::System.Web.UI.WebControls.Button btnDescargarPlantilla;
         protected global::System.Web.UI.WebControls.FileUpload fileExcel;

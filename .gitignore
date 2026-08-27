@@ -268,9 +268,16 @@ ServiceFabricBackup/
 **/connectionStrings.*.config
 **/appSettings.Secrets.config
 
+# Transcripts de sesiones de Claude Code sueltos en la raíz (pueden contener credenciales)
+/*-local-command-*.txt
+
 # Claude Code - settings locales con credenciales MCP
 .claude/settings.json
 .claude/settings.local.json
+
+# Credenciales del Customer API de Location World / Entel Onway (client_secret Auth0 en PDF)
+/docsApis/
+/swagger.json
 
 # Variables de entorno (Data API Builder) - NUNCA subir
 .env

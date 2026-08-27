@@ -50,12 +50,15 @@ CREATE PROCEDURE dbo.sp_SE_Insertar
     @fhInicioDescarga               DATETIME      = NULL,
     @fhTerminoDescarga              DATETIME      = NULL,
     @fhSalida                       DATETIME      = NULL,
+    @fhLlegadaBaseFinal              DATETIME      = NULL,
     @motivoRetraso                  VARCHAR(1000) = NULL,
     @sacosRobados                   INT           = 0,
     @sacosRotos                     INT           = 0,
     @sacosMojados                   INT           = 0,
     @estado                         VARCHAR(20)   = 'EN_CURSO',
     @idUsuarioRegistro              INT           = NULL,
+    @idDespachoOrigen               INT           = NULL,
+    @idDespachoDestino              INT           = NULL,
     @idSeguimiento                  INT           OUTPUT
 AS
 BEGIN
@@ -110,6 +113,9 @@ BEGIN
             fhInicioDescarga              = ISNULL(@fhInicioDescarga,              fhInicioDescarga),
             fhTerminoDescarga             = ISNULL(@fhTerminoDescarga,             fhTerminoDescarga),
             fhSalida                      = ISNULL(@fhSalida,                      fhSalida),
+            fhLlegadaBaseFinal            = ISNULL(@fhLlegadaBaseFinal,            fhLlegadaBaseFinal),
+            idDespachoOrigen              = ISNULL(@idDespachoOrigen,              idDespachoOrigen),
+            idDespachoDestino             = ISNULL(@idDespachoDestino,             idDespachoDestino),
             motivoRetraso                 = ISNULL(@motivoRetraso,                 motivoRetraso),
             sacosRobados                  = ISNULL(@sacosRobados,                  sacosRobados),
             sacosRotos                    = ISNULL(@sacosRotos,                    sacosRotos),
@@ -133,7 +139,8 @@ BEGIN
             fhLlegadaCEBAF, fhCruceEcuador, fhAutorizacionNacionalizacion,
             bodegaEcuatoriana, fhLlegadaTCI, fhSalidaTCI, bodegaDescarga,
             fhLlegadaPlantaEcuador, fhLlegadaAlmacen, fhIngreso,
-            fhInicioDescarga, fhTerminoDescarga, fhSalida,
+            fhInicioDescarga, fhTerminoDescarga, fhSalida, fhLlegadaBaseFinal,
+            idDespachoOrigen, idDespachoDestino,
             motivoRetraso, sacosRobados, sacosRotos, sacosMojados,
             estado, idUsuarioRegistro, fechaRegistro, activo
         )
@@ -146,7 +153,8 @@ BEGIN
             @fhLlegadaCEBAF, @fhCruceEcuador, @fhAutorizacionNacionalizacion,
             @bodegaEcuatoriana, @fhLlegadaTCI, @fhSalidaTCI, @bodegaDescarga,
             @fhLlegadaPlantaEcuador, @fhLlegadaAlmacen, @fhIngreso,
-            @fhInicioDescarga, @fhTerminoDescarga, @fhSalida,
+            @fhInicioDescarga, @fhTerminoDescarga, @fhSalida, @fhLlegadaBaseFinal,
+            @idDespachoOrigen, @idDespachoDestino,
             @motivoRetraso, ISNULL(@sacosRobados,0), ISNULL(@sacosRotos,0), ISNULL(@sacosMojados,0),
             ISNULL(@estado,'EN_CURSO'), @idUsuarioRegistro, GETDATE(), 1
         );

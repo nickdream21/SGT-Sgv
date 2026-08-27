@@ -87,6 +87,7 @@
     <Reference Include="System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Memory.4.5.5\lib\net461\System.Memory.dll</HintPath>
     </Reference>
+    <Reference Include="System.Net.Http" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Numerics.Vectors, Version=4.1.6.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Numerics.Vectors.4.6.1\lib\net462\System.Numerics.Vectors.dll</HintPath>
@@ -205,6 +206,12 @@
     <Content Include="Database\Schema\03_OrdenViajeAjuste.sql" />
     <Content Include="Database\Schema\04_OrdenViaje_AlterFirma.sql" />
     <Content Include="Database\Schema\06_Usuarios_ConductorUnico.sql" />
+    <Content Include="Database\Schema\07_Usuarios_RequiereCambioContrasena.sql" />
+    <Content Include="Database\Schema\08_OrdenViaje_HoraLlegadaDeclarada.sql" />
+    <Content Include="Database\Schema\09_Onway_HoraLlegadaGps.sql" />
+    <Content Include="Database\Schema\10_SeguimientoExportacion_Gps.sql" />
+    <Content Include="Database\Schema\11_SeguimientoExportacion_VinculoDespacho.sql" />
+    <Content Include="Database\Schema\12_DocumentosManifiesto.sql" />
     <Content Include="Database\Scripts\diagnostico_PdfAbastecimiento.sql" />
     <Content Include="Database\Scripts\fix_EstadoSeguimientoExportacion.sql" />
     <Content Include="Database\Scripts\reset_SeguimientoExportacion.sql" />
@@ -282,6 +289,8 @@
     <Content Include="Database\StoredProcedures\sp_ObtenerViajesActivosParaGrifo.sql" />
     <Content Include="Database\StoredProcedures\sp_SE_GridListar.sql" />
     <Content Include="Database\StoredProcedures\sp_SE_ListarEnCurso.sql" />
+    <Content Include="Database\StoredProcedures\sp_SE_BuscarDespachosDisponibles.sql" />
+    <Content Include="Database\StoredProcedures\sp_SE_ObtenerDespachoPorId.sql" />
     <Content Include="Database\StoredProcedures\sp_ValidarDocumentosDuplicados.sql" />
     <Content Include="Default.aspx" />
     <Content Include="favicon.ico" />
@@ -465,11 +474,19 @@
     <Compile Include="Services\Common\MontoHelper.cs" />
     <Compile Include="Services\Conductor\DashboardConductorService.cs" />
     <Compile Include="Services\Conductor\LiquidacionConductorService.cs" />
+    <Compile Include="Services\GpsIntegracion\OnwayApiClient.cs" />
+    <Compile Include="Services\GpsIntegracion\OnwayAuthCacheService.cs" />
+    <Compile Include="Services\GpsIntegracion\PuntoControlGpsService.cs" />
+    <Compile Include="Services\GpsIntegracion\CheckpointMatchingService.cs" />
+    <Compile Include="Services\GpsIntegracion\HoraLlegadaGpsService.cs" />
+    <Compile Include="Services\GpsIntegracion\SeguimientoExportacionGpsService.cs" />
     <Compile Include="Services\Reportes\ReportesOrdenesViajeService.cs" />
     <Compile Include="Services\Reportes\ReportesService.cs" />
     <Compile Include="Services\Despachos\DespachoValidaciones.cs" />
+    <Compile Include="Services\Despachos\DocumentoCpicService.cs" />
     <Compile Include="Services\Despachos\EditarDespachoService.cs" />
     <Compile Include="Services\Despachos\ListaDespachosService.cs" />
+    <Compile Include="Services\Despachos\ManifiestoService.cs" />
     <Compile Include="Services\Despachos\RegistroDespachoService.cs" />
     <Compile Include="Services\Facturas\FacturaConsultasService.cs" />
     <Compile Include="Services\Facturas\FacturaEscrituraService.cs" />
@@ -543,7 +560,9 @@
       <DependentUpon>AgregarOrdenViaje.aspx</DependentUpon>
     </Compile>
     <Compile Include="Models\Conductor\LiquidacionConductorModels.cs" />
+    <Compile Include="Models\GpsIntegracion\OnwayModels.cs" />
     <Compile Include="Models\Despachos\ListaDespachosModels.cs" />
+    <Compile Include="Models\Despachos\ManifiestoModels.cs" />
     <Compile Include="Models\Despachos\RegistroDespachoModels.cs" />
     <Compile Include="Models\Liquidaciones\DetalleLiquidacionModels.cs" />
     <Compile Include="Models\OrdenViaje\AgregarOrdenViajeModels.cs" />

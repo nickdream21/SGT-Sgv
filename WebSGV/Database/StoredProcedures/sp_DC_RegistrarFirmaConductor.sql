@@ -44,10 +44,10 @@ BEGIN
         RETURN;
     END
 
-    IF @estadoAprobacion NOT IN ('PENDIENTE', 'RECHAZADO')
+    IF @estadoAprobacion NOT IN ('PENDIENTE', 'REABIERTO')
     BEGIN
         SET @resultado = 0;
-        SET @mensaje   = 'La Orden de Viaje no está en un estado válido para firmar (debe ser PENDIENTE o RECHAZADO).';
+        SET @mensaje   = 'La Orden de Viaje no está en un estado válido para firmar (debe ser PENDIENTE o REABIERTO).';
         SET @idFirmaSalida = 0;
         RETURN;
     END

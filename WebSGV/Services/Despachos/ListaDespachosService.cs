@@ -147,7 +147,8 @@ namespace WebSGV.Services.Despachos
         /// <summary>Lotes registrados filtrados (<c>sp_LD_ObtenerLotesRegistrados</c>).</summary>
         public static List<LoteRegistrado> ObtenerLotesRegistrados(
             int? idCliente, string tipoOperacion, string planta, string numeroPedido,
-            DateTime? fechaDesde, DateTime? fechaHasta, string estadoFiltro)
+            DateTime? fechaDesde, DateTime? fechaHasta, string estadoFiltro,
+            string numeroFactura = null, string numeroCPIC = null, string nombreConductor = null)
         {
             List<LoteRegistrado> lotes = new List<LoteRegistrado>();
 
@@ -168,6 +169,12 @@ namespace WebSGV.Services.Despachos
                     cmd.Parameters.AddWithValue("@fechaHasta", (object)fechaHasta ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@estadoFiltro",
                         string.IsNullOrEmpty(estadoFiltro) ? (object)DBNull.Value : estadoFiltro);
+                    cmd.Parameters.AddWithValue("@numeroFactura",
+                        string.IsNullOrEmpty(numeroFactura) ? (object)DBNull.Value : numeroFactura);
+                    cmd.Parameters.AddWithValue("@numeroCPIC",
+                        string.IsNullOrEmpty(numeroCPIC) ? (object)DBNull.Value : numeroCPIC);
+                    cmd.Parameters.AddWithValue("@nombreConductor",
+                        string.IsNullOrEmpty(nombreConductor) ? (object)DBNull.Value : nombreConductor);
 
                     conn.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())

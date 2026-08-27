@@ -47,10 +47,21 @@ namespace WebSGV.Models.Despachos
         public DateTime? FechaEmisionFactura { get; set; }
         public decimal? ValorTotalFactura { get; set; }
 
+        // Archivo de factura (opcional): ruta física temporal donde quedó guardado al
+        // iniciar el lote. idFactura no existe todavía en ese momento (se crea recién al
+        // finalizar el lote), así que el archivo se mueve a su ubicación definitiva y se
+        // registra en BD después. Ver RegistroDespacho.aspx.cs.
+        public string FacturaArchivoRutaTemp { get; set; }
+        public string FacturaArchivoNombreOriginal { get; set; }
+
         // CPIC
         public string NumeroCPIC { get; set; }
         public DateTime? FechaEmisionCPIC { get; set; }
         public decimal? ValorFlete { get; set; }
+
+        // Archivo de CPIC (opcional): mismo tratamiento que el de factura.
+        public string CPICArchivoRutaTemp { get; set; }
+        public string CPICArchivoNombreOriginal { get; set; }
     }
 
     /// <summary>Conductor (con vehículos y guías) dentro de un lote de despachos.</summary>
@@ -67,6 +78,19 @@ namespace WebSGV.Models.Despachos
         // Guías específicas del conductor
         public string GuiaRemitente { get; set; }
         public string GuiaTransportista { get; set; }
+
+        // Manifiesto (solo viajes internacionales) — OPCIONAL en este punto: normalmente
+        // el conductor recién obtiene los ejemplares de cruce/retorno durante el viaje, así
+        // que lo usual es adjuntarlos después desde ListaDespachos.aspx (búsqueda de
+        // despacho/lote). Si ya se cuenta con el archivo al armar el lote, se puede subir
+        // aquí igual: la ruta física temporal se guarda hasta que exista el idDespacho.
+        public string ManifiestoCruceRutaTemp { get; set; }
+        public string ManifiestoCruceNombreOriginal { get; set; }
+        public string ManifiestoRegresoRutaTemp { get; set; }
+        public string ManifiestoRegresoNombreOriginal { get; set; }
+
+        public bool TieneManifiestos => !string.IsNullOrEmpty(ManifiestoCruceRutaTemp) && !string.IsNullOrEmpty(ManifiestoRegresoRutaTemp);
+        public bool TieneAlgunManifiesto => !string.IsNullOrEmpty(ManifiestoCruceRutaTemp) || !string.IsNullOrEmpty(ManifiestoRegresoRutaTemp);
 
         // Información de viaje
         public int? IdViajeProgreso { get; set; }

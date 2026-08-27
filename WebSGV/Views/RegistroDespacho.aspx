@@ -48,6 +48,9 @@
                         </h4>
                     </div>
                     <div class="card-body">
+                        <!-- btnIniciarLote y btnAgregarConductor están declarados como PostBackTrigger (no Async)
+                             en <Triggers> más abajo: ambos pasos incluyen un FileUpload (documento de Factura/CPIC
+                             o Manifiesto) y UpdatePanel no soporta subida de archivos por AJAX parcial. -->
                         <asp:UpdatePanel ID="UpdatePanelMain" runat="server" UpdateMode="Conditional">
                             <ContentTemplate>
                                 
@@ -344,6 +347,15 @@
                                                                         ValidationGroup="ConfiguracionBase">
                                                                     </asp:RangeValidator>
                                                                 </div>
+
+                                                                <div class="form-group mb-0">
+                                                                    <label for="fileFacturaBase" class="form-label">
+                                                                        <strong>Adjuntar Documento:</strong>
+                                                                        <span class="text-muted small">(Opcional)</span>
+                                                                    </label>
+                                                                    <asp:FileUpload ID="fileFacturaBase" runat="server" CssClass="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                                                                    <small class="form-text text-muted">PDF, DOC, DOCX, JPG o PNG. Máx. 50MB.</small>
+                                                                </div>
                                                             </asp:Panel>
                                                         </div>
 
@@ -442,6 +454,15 @@
                                                                         Display="Dynamic"
                                                                         ValidationGroup="ConfiguracionBase">
                                                                     </asp:RangeValidator>
+                                                                </div>
+
+                                                                <div class="form-group mb-0">
+                                                                    <label for="fileCPICBase" class="form-label">
+                                                                        <strong>Adjuntar Documento:</strong>
+                                                                        <span class="text-muted small">(Opcional)</span>
+                                                                    </label>
+                                                                    <asp:FileUpload ID="fileCPICBase" runat="server" CssClass="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                                                                    <small class="form-text text-muted">PDF, DOC, DOCX, JPG o PNG. Máx. 50MB.</small>
                                                                 </div>
                                                             </asp:Panel>
                                                         </div>
@@ -746,6 +767,35 @@
                                                         </div>
                                                     </asp:Panel>
 
+                                                    <!-- Manifiesto (solo viajes internacionales) — opcional aquí -->
+                                                    <asp:Panel ID="pnlManifiestoConductor" runat="server" Visible="false">
+                                                        <div class="rd-doc-box mb-3">
+                                                            <div class="rd-doc-title"><i class="fas fa-passport mr-1"></i> Manifiesto de Aduana</div>
+                                                            <p class="text-muted small mb-2">
+                                                                Cada conductor porta dos ejemplares: uno para cruzar la frontera y otro para el regreso.
+                                                                Si aún no los tiene, puede omitir esto y adjuntarlos más adelante desde
+                                                                <strong>Gestión de Despachos</strong> mientras avanza el viaje.
+                                                            </p>
+
+                                                            <div class="form-group mb-2">
+                                                                <label for="fileManifiestoCruce" class="form-label">
+                                                                    <strong>Manifiesto de Cruce:</strong>
+                                                                    <span class="text-muted small">(Opcional)</span>
+                                                                </label>
+                                                                <asp:FileUpload ID="fileManifiestoCruce" runat="server" CssClass="form-control" accept=".pdf,.jpg,.jpeg,.png" />
+                                                            </div>
+
+                                                            <div class="form-group mb-2">
+                                                                <label for="fileManifiestoRegreso" class="form-label">
+                                                                    <strong>Manifiesto de Retorno:</strong>
+                                                                    <span class="text-muted small">(Opcional)</span>
+                                                                </label>
+                                                                <asp:FileUpload ID="fileManifiestoRegreso" runat="server" CssClass="form-control" accept=".pdf,.jpg,.jpeg,.png" />
+                                                            </div>
+                                                            <small class="form-text text-muted">Formatos permitidos: PDF, JPG, PNG. Tamaño máximo: 20MB por archivo.</small>
+                                                        </div>
+                                                    </asp:Panel>
+
                                                     <!-- Información de documentos que se reutilizan -->
                                                     <div class="rd-notice">
                                                         <small>
@@ -798,6 +848,7 @@
                                                     <asp:BoundField DataField="PlacaCarreta" HeaderText="Carreta" />
                                                     <asp:BoundField DataField="GuiaRemitente" HeaderText="Guía Remitente" />
                                                     <asp:BoundField DataField="GuiaTransportista" HeaderText="Guía Transportista" />
+                                                    <asp:BoundField DataField="Manifiesto" HeaderText="Manifiesto" />
                                                     <asp:BoundField DataField="EstadoViaje" HeaderText="Estado Viaje" />
                                                     <asp:TemplateField HeaderText="Acciones">
                                                         <ItemTemplate>
@@ -818,10 +869,10 @@
 
                             </ContentTemplate>
                             <Triggers>
-                                <asp:AsyncPostBackTrigger ControlID="btnIniciarLote" EventName="Click" />
+                                <asp:PostBackTrigger ControlID="btnIniciarLote" />
                                 <asp:AsyncPostBackTrigger ControlID="btnCancelarLote" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnFinalizarLote" EventName="Click" />
-                                <asp:AsyncPostBackTrigger ControlID="btnAgregarConductor" EventName="Click" />
+                                <asp:PostBackTrigger ControlID="btnAgregarConductor" />
                                 <asp:AsyncPostBackTrigger ControlID="btnLimpiarConductor" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="ddlTipoOperacionBase" EventName="SelectedIndexChanged" />
                                 <asp:AsyncPostBackTrigger ControlID="rblAmbitoOperacionBase" EventName="SelectedIndexChanged" />

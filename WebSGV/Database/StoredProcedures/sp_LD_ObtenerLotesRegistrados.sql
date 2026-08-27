@@ -3,6 +3,17 @@
 -- filtros opcionales. Retorna todos los grupos, incluidos los
 -- lotes de un solo despacho.
 -- Filtro de estado se aplica sobre el estado derivado del lote.
+--
+-- @numeroFactura/@numeroCPIC filtran ANTES de agrupar: es seguro
+-- porque todos los despachos de un mismo lote comparten el mismo
+-- idFactura/idCPIC (se crean juntos en RegistroDespacho.aspx), así
+-- que el filtro nunca reduce el conteo de despachos del lote.
+--
+-- @nombreConductor filtra DESPUÉS de agrupar (EXISTS): un lote
+-- agrupa despachos de VARIOS conductores, así que filtrar antes de
+-- agrupar arruinaría CantidadDespachos (solo se verían los del
+-- conductor buscado). Con EXISTS se conserva el lote completo,
+-- con todos sus conductores, cuando al menos uno coincide.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_ObtenerLotesRegistrados
     @idCliente       INT          = NULL,
@@ -11,7 +22,10 @@ CREATE OR ALTER PROCEDURE sp_LD_ObtenerLotesRegistrados
     @numeroPedido    VARCHAR(10)  = NULL,
     @fechaDesde      DATE         = NULL,
     @fechaHasta      DATE         = NULL,
-    @estadoFiltro    VARCHAR(20)  = NULL
+    @estadoFiltro    VARCHAR(20)  = NULL,
+    @numeroFactura   VARCHAR(30)  = NULL,
+    @numeroCPIC      VARCHAR(20)  = NULL,
+    @nombreConductor VARCHAR(200) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -67,13 +81,29 @@ BEGIN
           AND (@numeroPedido   IS NULL OR d.numeroPedido LIKE '%' + @numeroPedido + '%')
           AND (@fechaDesde     IS NULL OR d.fechaDespacho  >= @fechaDesde)
           AND (@fechaHastaFin  IS NULL OR d.fechaDespacho  <= @fechaHastaFin)
+          AND (@numeroFactura  IS NULL OR f.numeroFactura LIKE '%' + @numeroFactura + '%')
+          AND (@numeroCPIC     IS NULL OR cp.numeroCPIC LIKE '%' + @numeroCPIC + '%')
         GROUP BY
             d.idCliente, cl.nombre, d.numeroPedido, d.fechaDespacho,
             d.tipoOperacion, d.esInternacional, d.lugarOperacion
         HAVING COUNT(*) >= 1
     )
-    SELECT *
-    FROM LotesAgrupados
-    WHERE @estadoFiltro IS NULL OR EstadoLote = @estadoFiltro
-    ORDER BY FechaCreacion DESC;
+    SELECT la.*
+    FROM LotesAgrupados la
+    WHERE (@estadoFiltro IS NULL OR la.EstadoLote = @estadoFiltro)
+      AND (@nombreConductor IS NULL OR EXISTS (
+            SELECT 1
+            FROM Despachos d2
+            INNER JOIN Conductor c2 ON d2.idConductor = c2.idConductor
+            WHERE d2.activo = 1
+              AND d2.idCliente = la.idCliente
+              AND ISNULL(d2.numeroPedido, 'NOPEDIDO') = ISNULL(la.numeroPedido, 'NOPEDIDO')
+              AND d2.fechaDespacho = la.FechaProgramacion
+              AND d2.tipoOperacion = la.tipoOperacion
+              AND d2.esInternacional = la.esInternacional
+              AND d2.lugarOperacion = la.PlantaOperacion
+              AND CONCAT(c2.nombre, ' ', ISNULL(c2.apPaterno, ''), ' ', ISNULL(c2.apMaterno, ''))
+                    LIKE '%' + @nombreConductor + '%'
+      ))
+    ORDER BY la.FechaCreacion DESC;
 END

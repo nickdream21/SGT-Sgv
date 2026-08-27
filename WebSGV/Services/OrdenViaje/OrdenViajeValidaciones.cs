@@ -95,7 +95,7 @@ namespace WebSGV.Services.OrdenViaje
         /// la llegada, que ninguna supere un año desde hoy y que las horas (si vienen)
         /// tengan formato HH:mm válido. Devuelve el mensaje acumulado o cadena vacía.
         /// </summary>
-        public static string ValidarDatosGeneralesLiquidacion(DateTime fechaSalida, DateTime fechaLlegada, string horaSalida, string horaLlegada)
+        public static string ValidarDatosGeneralesLiquidacion(DateTime fechaSalida, DateTime fechaLlegada, string horaSalida, string horaLlegada, string horaLlegadaDeclarada = null)
         {
             string mensajeError = "";
 
@@ -128,6 +128,10 @@ namespace WebSGV.Services.OrdenViaje
 
             if (!string.IsNullOrEmpty(horaLlegada) && !ValidarFormatoHora(horaLlegada))
                 mensajeError += "El formato de 'Hora de Llegada' es incorrecto. Use HH:MM (ej. 18:00).\n";
+
+            // La hora de llegada declarada es autoreportada y opcional: solo se valida el formato si viene.
+            if (!string.IsNullOrEmpty(horaLlegadaDeclarada) && !ValidarFormatoHora(horaLlegadaDeclarada))
+                mensajeError += "El formato de 'Hora Real de Llegada' es incorrecto. Use HH:MM (ej. 18:00).\n";
 
             return mensajeError;
         }

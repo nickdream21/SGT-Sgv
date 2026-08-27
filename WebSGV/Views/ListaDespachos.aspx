@@ -3,30 +3,149 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
 <style type="text/css">
-/* ---- Lista Despachos - Minimal Professional ---- */
-.ld-page-header { background: #1e293b; color: #f8fafc; border-radius: 5px 5px 0 0; padding: .85rem 1.25rem; }
-.ld-page-header h4 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: .01em; }
-.ld-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; padding: .65rem 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 1.25rem; }
-.ld-toolbar-nav { display: flex; gap: .3rem; flex-wrap: wrap; }
-.ld-toolbar-nav .btn, .ld-toolbar-back { font-size: .82rem; padding: .32rem .8rem; font-weight: 500; }
-.viajes-section { border-left: none !important; border-top: 3px solid #1e40af !important; }
-.lotes-section { border-left: none !important; border-top: 3px solid #16a34a !important; }
-.detalle-section { border-left: none !important; border-top: 3px solid #374151 !important; }
-.edit-section { border-left: none !important; border-top: 3px solid #374151 !important; }
-.section-title { font-size: .9rem !important; font-weight: 600 !important; }
-.tipo-internacional { background-color: #e0e7ff !important; color: #3730a3 !important; font-weight: 500; }
-.tipo-nacional { background-color: #f0fdf4 !important; color: #166534 !important; border: 1px solid #bbf7d0 !important; font-weight: 500; }
-.estado-abierto { background-color: #dcfce7 !important; color: #166534 !important; }
-.edit-warning { background: #fffbeb !important; border-color: #fde68a !important; color: #92400e !important; }
-.info-panel { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; }
-.info-title { color: #374151 !important; }
-.info-content { color: #374151 !important; }
-.conductores-edit-container { border: 1px solid #e2e8f0 !important; background: #f8fafc !important; }
+/* ==========================================================================
+   Lista Despachos — Professional / Intuitive redesign
+   Misma paleta que RegistroDespacho.aspx: slate #1e293b, azul #1e40af,
+   verde #16a34a, bordes #e2e8f0, fondos #f8fafc. Solo presentación: no se
+   tocó ningún ID, control de servidor ni handler.
+   ========================================================================== */
+
+.card:hover { transform: none !important; box-shadow: 0 2px 8px rgba(0,0,0,.08) !important; }
+
+/* ---- Encabezado de página ---- */
+.ld-page-header { background: #1e293b; color: #f8fafc; border-radius: 8px 8px 0 0; padding: 1rem 1.5rem; }
+.ld-page-header h4 { margin: 0; font-size: 1.05rem; font-weight: 600; letter-spacing: .01em; display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; }
+.ld-page-header .badge { font-size: .68rem; font-weight: 600; padding: .35em .7em; }
+
+/* ---- Resumen general (stat tiles) ---- */
+.ld-stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.75rem; }
+.ld-stat-tile {
+    display: flex; align-items: center; gap: .9rem; background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 10px; padding: 1rem 1.15rem; text-decoration: none !important; cursor: pointer;
+    transition: box-shadow .15s ease, transform .15s ease; width: 100%; text-align: left;
+}
+.ld-stat-tile:hover { box-shadow: 0 4px 14px rgba(15,23,42,.08); transform: translateY(-1px); }
+.ld-stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; flex-shrink: 0; }
+.ld-stat-icon-blue { background: #dbeafe; color: #1e40af; }
+.ld-stat-icon-green { background: #dcfce7; color: #16a34a; }
+.ld-stat-icon-amber { background: #fef3c7; color: #b45309; }
+.ld-stat-text { display: flex; flex-direction: column; }
+.ld-stat-value { font-size: 1.5rem; font-weight: 700; color: #1e293b; line-height: 1.15; }
+.ld-stat-label { font-size: .74rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #64748b; margin-top: .15rem; }
+.ld-stat-tile-alert { border-color: #fca5a5 !important; background: #fff5f5 !important; }
+.ld-stat-tile-alert .ld-stat-value { color: #b91c1c !important; }
+
+/* ---- Barra de navegación: tabs segmentados + CTA ---- */
+.ld-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; margin-bottom: 1.5rem; }
+.ld-toolbar-nav { display: inline-flex; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: .25rem; gap: .2rem; }
+.ld-toolbar-nav .btn.btn-nav {
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    color: #475569 !important;
+    font-weight: 600;
+    font-size: .82rem;
+    padding: .5rem 1.15rem;
+    border-radius: 6px;
+    box-shadow: none !important;
+    transition: background-color .15s ease, color .15s ease;
+}
+.ld-toolbar-nav .btn.btn-nav:hover { background: #e2e8f0 !important; color: #1e293b !important; }
+.ld-toolbar-nav .btn.btn-nav.active-nav { background: #1e40af !important; color: #fff !important; }
+.ld-toolbar-back {
+    font-weight: 600 !important;
+    font-size: .82rem !important;
+    padding: .55rem 1.15rem !important;
+    border-radius: 6px !important;
+    border-color: #1e40af !important;
+    color: #1e40af !important;
+    background: #fff !important;
+}
+.ld-toolbar-back:hover { background: #eff6ff !important; }
+
+/* ---- Tarjetas de sección ---- */
+.section-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(15,23,42,.04); overflow: hidden; }
+.viajes-section { border-top: 3px solid #1e40af !important; }
+.lotes-section { border-top: 3px solid #16a34a !important; }
+.detalle-section { border-top: 3px solid #334155 !important; }
+.edit-section { border-top: 3px solid #d97706 !important; }
+
+.section-header { background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 1rem 1.25rem; }
+.section-title { color: #1e293b !important; font-weight: 600 !important; font-size: .95rem !important; margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
+.section-title i { color: #64748b; }
+.section-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: .5rem; }
+.section-content { padding: 1.5rem; }
+
+/* ---- Filtros ---- */
+.filters-container { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.1rem 1.25rem .35rem; margin-bottom: 1.5rem; }
+.filters-container .form-group { margin-bottom: .9rem; }
+.filters-heading { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #64748b; margin-bottom: .9rem; display: flex; align-items: center; gap: .4rem; }
+.filters-heading i { color: #94a3b8; }
+.form-label { font-weight: 600; color: #475569; font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; margin-bottom: .4rem; display: flex; align-items: center; gap: .35rem; }
+.form-label i { color: #94a3b8; font-size: .75rem; }
+.form-control, .form-select { border: 1px solid #cbd5e1; border-radius: 6px; padding: .5rem .75rem; font-size: .85rem; background: #fff; }
+.form-control:focus, .form-select:focus { border-color: #1e40af; box-shadow: 0 0 0 3px rgba(30,64,175,.12); }
+.filter-buttons { display: flex; gap: .5rem; }
+.filter-buttons .btn { border-radius: 6px; font-weight: 600; font-size: .82rem; padding: .5rem 1rem; white-space: nowrap; margin-left: 0 !important; }
+.ld-filter-row-dates { margin-top: .35rem; padding-top: 1rem; border-top: 1px dashed #e2e8f0; }
+
+/* ---- Botones: recolorear Bootstrap para que combine con la paleta ---- */
+.btn-primary { background-color: #1e40af !important; border-color: #1e40af !important; }
+.btn-primary:hover { background-color: #1e3a8a !important; border-color: #1e3a8a !important; }
+.btn-outline-primary { color: #1e40af !important; border-color: #1e40af !important; }
+.btn-outline-primary:hover { background-color: #1e40af !important; color: #fff !important; }
+.btn-success { background-color: #16a34a !important; border-color: #16a34a !important; }
+.btn-success:hover { background-color: #15803d !important; border-color: #15803d !important; }
+.btn-outline-success { color: #16a34a !important; border-color: #16a34a !important; }
+.btn-outline-success:hover { background-color: #16a34a !important; color: #fff !important; }
+.btn-secondary { background-color: #475569 !important; border-color: #475569 !important; }
+.btn-outline-secondary { color: #475569 !important; border-color: #cbd5e1 !important; }
+.btn-outline-secondary:hover { background-color: #475569 !important; border-color: #475569 !important; color: #fff !important; }
+.btn { border-radius: 6px; font-size: .85rem; }
+.btn-sm { border-radius: 6px; font-size: .78rem; }
+.btn-action { font-weight: 600; }
+
+/* ---- Tabla de datos ---- */
+.data-grid-container { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow-x: auto; }
+.data-table thead th {
+    background: #f1f5f9 !important; color: #334155 !important; font-weight: 700 !important;
+    font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
+    padding: .8rem .9rem; border-bottom: 2px solid #e2e8f0 !important; white-space: nowrap;
+}
+.data-table tbody td { padding: .7rem .9rem; font-size: .85rem; color: #334155; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.data-table tbody tr:nth-child(even) { background: #f8fafc; }
+.data-table tbody tr:hover { background: #eff6ff; }
+.action-buttons { display: flex; gap: .4rem; flex-wrap: wrap; }
+
+/* ---- Badges ---- */
+.badge { font-size: .72rem; padding: .4em .75em; border-radius: 999px; font-weight: 600; }
+.tipo-internacional { background-color: #e0e7ff !important; color: #3730a3 !important; }
+.tipo-nacional { background-color: #dcfce7 !important; color: #166534 !important; }
+.estado-abierto, .estado-completado { background-color: #dcfce7 !important; color: #166534 !important; }
+.estado-programado { background-color: #dbeafe !important; color: #1e40af !important; }
+.estado-enprogreso { background-color: #fef3c7 !important; color: #92400e !important; }
+.estado-cancelado { background-color: #fee2e2 !important; color: #991b1b !important; }
+
+/* ---- Tarjetas de resumen (stat tiles) ---- */
+.summary-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.1rem .75rem; text-align: center; }
+.summary-value { font-size: 1.4rem !important; font-weight: 700 !important; color: #1e293b !important; }
+.summary-label { font-size: .72rem !important; text-transform: uppercase; letter-spacing: .04em; color: #64748b !important; font-weight: 600; }
+
+/* ---- Paneles de documento y detalle ---- */
+.doc-panel { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+.doc-panel-header { background: #f1f5f9; color: #1e293b; }
+.detail-info { font-size: .82rem; color: #64748b; }
+.detail-value, .detail-identifier { color: #1e293b !important; }
+.form-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+.form-section-title { color: #1e293b; }
+
+.conductores-edit-container { border: 1px solid #e2e8f0 !important; background: #f8fafc !important; border-radius: 8px; }
 .conductores-edit-container thead th { background: #f1f5f9 !important; color: #1e293b !important; }
-.data-table thead th { background: #f1f5f9 !important; color: #374151 !important; font-weight: 600 !important; border-bottom: 2px solid #e2e8f0 !important; }
-.card:hover { transform: none !important; box-shadow: 0 2px 8px rgba(0,0,0,.1) !important; }
+.info-panel { background: #eff6ff !important; border: 1px solid #bfdbfe !important; border-radius: 8px; }
+.info-title { color: #1e3a8a !important; }
+.info-content { color: #1e3a8a !important; }
+.edit-warning { background: #fffbeb !important; border-color: #fde68a !important; color: #92400e !important; border-radius: 8px; }
+
 .active-nav { font-weight: 600 !important; }
-.btn.active-nav { box-shadow: 0 0 0 2px rgba(0,0,0,.15) inset; }
 </style>
 
     <div class="container-fluid">
@@ -40,6 +159,9 @@
                         </h4>
                     </div>
                     <div class="card-body">
+                        <!-- gvManifiestosLote está declarado como PostBackTrigger (no Async) en <Triggers> más
+                             abajo: tiene FileUpload por fila y descarga de documentos vía Response.WriteFile,
+                             ninguno de los dos funciona en un postback parcial de UpdatePanel. -->
                         <asp:UpdatePanel ID="UpdatePanelMain" runat="server" UpdateMode="Conditional">
                             <ContentTemplate>
                                 
@@ -51,6 +173,33 @@
                                             onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"></button>
                                     </div>
                                 </asp:Panel>
+
+                                <!-- RESUMEN GENERAL -->
+                                <div class="ld-stats-row">
+                                    <asp:LinkButton ID="lnkStatViajes" runat="server" CssClass="ld-stat-tile" OnClick="lnkStatViajes_Click" CausesValidation="false">
+                                        <span class="ld-stat-icon ld-stat-icon-blue"><i class="fas fa-route"></i></span>
+                                        <span class="ld-stat-text">
+                                            <span class="ld-stat-value"><asp:Label ID="lblStatViajesActivos" runat="server">0</asp:Label></span>
+                                            <span class="ld-stat-label">Viajes Activos</span>
+                                        </span>
+                                    </asp:LinkButton>
+
+                                    <asp:LinkButton ID="lnkStatLotes" runat="server" CssClass="ld-stat-tile" OnClick="lnkStatLotes_Click" CausesValidation="false">
+                                        <span class="ld-stat-icon ld-stat-icon-green"><i class="fas fa-layer-group"></i></span>
+                                        <span class="ld-stat-text">
+                                            <span class="ld-stat-value"><asp:Label ID="lblStatLotesActivos" runat="server">0</asp:Label></span>
+                                            <span class="ld-stat-label">Lotes Activos</span>
+                                        </span>
+                                    </asp:LinkButton>
+
+                                    <asp:LinkButton ID="lnkStatManifiestosPendientes" runat="server" CssClass="ld-stat-tile" OnClick="lnkStatManifiestosPendientes_Click" CausesValidation="false">
+                                        <span class="ld-stat-icon ld-stat-icon-amber"><i class="fas fa-passport"></i></span>
+                                        <span class="ld-stat-text">
+                                            <span class="ld-stat-value"><asp:Label ID="lblStatManifiestosPendientes" runat="server">0</asp:Label></span>
+                                            <span class="ld-stat-label">Manifiestos Pendientes</span>
+                                        </span>
+                                    </asp:LinkButton>
+                                </div>
 
                                 <!-- NAVEGACIÓN PRINCIPAL -->
                                 <div class="ld-toolbar mb-4">
@@ -99,10 +248,11 @@
                                             
                                             <!-- Filtros para Viajes -->
                                             <div class="filters-container">
+                                                <div class="filters-heading"><i class="fas fa-filter"></i>Filtros de búsqueda</div>
                                                 <div class="row">
                                                     <div class="col-md-4">
                                                         <div class="form-group">
-                                                            <label class="form-label">Filtrar por Conductor:</label>
+                                                            <label class="form-label"><i class="fas fa-id-card"></i>Conductor</label>
                                                             <asp:DropDownList ID="ddlFiltroConductorViajes" runat="server" 
                                                                 CssClass="form-select"
                                                                 AutoPostBack="true"
@@ -113,7 +263,7 @@
                                                     </div>
                                                     <div class="col-md-4">
                                                         <div class="form-group">
-                                                            <label class="form-label">Filtrar por Tipo:</label>
+                                                            <label class="form-label"><i class="fas fa-globe-americas"></i>Ámbito</label>
                                                             <asp:DropDownList ID="ddlFiltroTipoViajes" runat="server" 
                                                                 CssClass="form-select"
                                                                 AutoPostBack="true"
@@ -126,7 +276,7 @@
                                                     </div>
                                                     <div class="col-md-4">
                                                         <div class="form-group">
-                                                            <label class="form-label">Buscar por N° Viaje:</label>
+                                                            <label class="form-label"><i class="fas fa-search"></i>N° de Viaje</label>
                                                             <div class="input-group">
                                                                 <asp:TextBox ID="txtBuscarViaje" runat="server" 
                                                                     CssClass="form-control" 
@@ -242,10 +392,11 @@
                                             
                                             <!-- Filtros para Lotes -->
                                             <div class="filters-container">
+                                                <div class="filters-heading"><i class="fas fa-filter"></i>Filtros de búsqueda</div>
                                                 <div class="row mb-3">
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label">Filtrar por Cliente:</label>
+                                                            <label class="form-label"><i class="fas fa-building"></i>Cliente</label>
                                                             <asp:DropDownList ID="ddlFiltroClienteLotes" runat="server" 
                                                                 CssClass="form-select"
                                                                 AutoPostBack="true"
@@ -256,7 +407,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label">Tipo Operación:</label>
+                                                            <label class="form-label"><i class="fas fa-exchange-alt"></i>Tipo Operación</label>
                                                             <asp:DropDownList ID="ddlFiltroOperacionLotes" runat="server" 
                                                                 CssClass="form-select"
                                                                 AutoPostBack="true"
@@ -269,7 +420,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label">Planta:</label>
+                                                            <label class="form-label"><i class="fas fa-industry"></i>Planta</label>
                                                             <asp:DropDownList ID="ddlFiltroPlantaLotes" runat="server" 
                                                                 CssClass="form-select"
                                                                 AutoPostBack="true"
@@ -286,7 +437,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label">Buscar por Pedido:</label>
+                                                            <label class="form-label"><i class="fas fa-hashtag"></i>N° de Pedido</label>
                                                             <div class="input-group">
                                                                 <asp:TextBox ID="txtBuscarLote" runat="server" 
                                                                     CssClass="form-control" 
@@ -303,29 +454,75 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- Filtro por Fechas -->
-                                                <div class="row">
+                                                <!-- Búsqueda de documentos: encuentra el/los lote(s) asociados a un
+                                                     número de Factura, CPIC o a un conductor, aunque no sepas la
+                                                     fecha ni el cliente. -->
+                                                <div class="row ld-filter-row-dates">
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label">Fecha Desde:</label>
-                                                            <asp:TextBox ID="txtFechaDesde" runat="server" 
-                                                                CssClass="form-control" 
+                                                            <label class="form-label"><i class="fas fa-receipt"></i>N° de Factura</label>
+                                                            <asp:TextBox ID="txtBuscarFacturaLotes" runat="server"
+                                                                CssClass="form-control"
+                                                                placeholder="Ej: F222-00004267"
+                                                                MaxLength="30">
+                                                            </asp:TextBox>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label class="form-label"><i class="fas fa-shipping-fast"></i>N° de CPIC</label>
+                                                            <asp:TextBox ID="txtBuscarCPICLotes" runat="server"
+                                                                CssClass="form-control"
+                                                                placeholder="Ej: 1234567"
+                                                                MaxLength="20">
+                                                            </asp:TextBox>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label class="form-label"><i class="fas fa-id-card"></i>Conductor</label>
+                                                            <asp:TextBox ID="txtBuscarConductorLotes" runat="server"
+                                                                CssClass="form-control"
+                                                                placeholder="Nombre o apellido">
+                                                            </asp:TextBox>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3 d-flex align-items-end">
+                                                        <div class="form-group w-100">
+                                                            <div class="filter-buttons">
+                                                                <asp:Button ID="btnBuscarDocumento" runat="server"
+                                                                    Text="Buscar Documento"
+                                                                    CssClass="btn btn-primary btn-action flex-fill"
+                                                                    OnClick="btnBuscarDocumento_Click"
+                                                                    CausesValidation="false" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Filtro por Fechas y Estado -->
+                                                <div class="row ld-filter-row-dates">
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label class="form-label"><i class="fas fa-calendar-alt"></i>Fecha Desde</label>
+                                                            <asp:TextBox ID="txtFechaDesde" runat="server"
+                                                                CssClass="form-control"
                                                                 TextMode="Date">
                                                             </asp:TextBox>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label">Fecha Hasta:</label>
-                                                            <asp:TextBox ID="txtFechaHasta" runat="server" 
-                                                                CssClass="form-control" 
+                                                            <label class="form-label"><i class="fas fa-calendar-alt"></i>Fecha Hasta</label>
+                                                            <asp:TextBox ID="txtFechaHasta" runat="server"
+                                                                CssClass="form-control"
                                                                 TextMode="Date">
                                                             </asp:TextBox>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label">Estado del Lote:</label>
+                                                            <label class="form-label"><i class="fas fa-flag"></i>Estado del Lote</label>
                                                             <asp:DropDownList ID="ddlFiltroEstadoLotes" runat="server"
                                                                 CssClass="form-select"
                                                                 AutoPostBack="true"
@@ -336,18 +533,17 @@
                                                             </asp:DropDownList>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="form-label">&nbsp;</label>
+                                                    <div class="col-md-3 d-flex align-items-end">
+                                                        <div class="form-group w-100">
                                                             <div class="filter-buttons">
-                                                                <asp:Button ID="btnFiltrarFecha" runat="server" 
-                                                                    Text="Filtrar por Fecha" 
-                                                                    CssClass="btn btn-primary btn-action"
+                                                                <asp:Button ID="btnFiltrarFecha" runat="server"
+                                                                    Text="Filtrar"
+                                                                    CssClass="btn btn-primary btn-action flex-fill"
                                                                     OnClick="btnFiltrarFecha_Click"
                                                                     CausesValidation="false" />
-                                                                <asp:Button ID="btnLimpiarFiltros" runat="server" 
-                                                                    Text="Limpiar" 
-                                                                    CssClass="btn btn-secondary btn-action"
+                                                                <asp:Button ID="btnLimpiarFiltros" runat="server"
+                                                                    Text="Limpiar"
+                                                                    CssClass="btn btn-outline-secondary btn-action"
                                                                     OnClick="btnLimpiarFiltros_Click"
                                                                     CausesValidation="false" />
                                                             </div>
@@ -383,11 +579,20 @@
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
                                                         
+                                                        <asp:TemplateField HeaderText="Manifiesto" ItemStyle-CssClass="text-center">
+                                                            <ItemTemplate>
+                                                                <asp:Label runat="server"
+                                                                    Text='<%# Eval("ManifiestoEstado") %>'
+                                                                    CssClass='<%# GetManifiestoBadgeClass(Eval("ManifiestoEstado").ToString()) %>'>
+                                                                </asp:Label>
+                                                            </ItemTemplate>
+                                                        </asp:TemplateField>
+
                                                         <asp:BoundField DataField="PlantaOperacion" HeaderText="Planta" />
-                                                        
-                                                        <asp:BoundField DataField="CantidadDespachos" HeaderText="Despachos" 
+
+                                                        <asp:BoundField DataField="CantidadDespachos" HeaderText="Despachos"
                                                             ItemStyle-CssClass="text-center despachos-count" />
-                                                        
+
                                                         <asp:BoundField DataField="NumeroFactura" HeaderText="N° Factura" />
                                                         
                                                         <asp:BoundField DataField="NumeroCPIC" HeaderText="N° CPIC" />
@@ -404,19 +609,25 @@
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
 
-                                                        <asp:TemplateField HeaderText="Acciones" ItemStyle-Width="160px">
+                                                        <asp:TemplateField HeaderText="Acciones" ItemStyle-Width="200px">
                                                             <ItemTemplate>
                                                                 <div class="action-buttons">
-                                                                    <asp:Button runat="server" 
-                                                                        Text="Editar" 
-                                                                        CssClass="btn btn-sm btn-outline-secondary"
-                                                                        CommandName="EditarLote"
-                                                                        CommandArgument='<%# Eval("IdLoteVirtual") %>' />
-
-                                                                    <asp:Button runat="server" 
-                                                                        Text="Ver" 
+                                                                    <asp:Button runat="server"
+                                                                        Text="Ver"
                                                                         CssClass="btn btn-sm btn-outline-primary"
                                                                         CommandName="VerDetallesLote"
+                                                                        CommandArgument='<%# Eval("IdLoteVirtual") %>' />
+
+                                                                    <asp:Button runat="server"
+                                                                        Text="Documentos"
+                                                                        CssClass="btn btn-sm btn-outline-warning"
+                                                                        CommandName="VerManifiestosLote"
+                                                                        CommandArgument='<%# Eval("IdLoteVirtual") %>' />
+
+                                                                    <asp:Button runat="server"
+                                                                        Text="Editar"
+                                                                        CssClass="btn btn-sm btn-outline-secondary"
+                                                                        CommandName="EditarLote"
                                                                         CommandArgument='<%# Eval("IdLoteVirtual") %>' />
                                                                 </div>
                                                             </ItemTemplate>
@@ -856,14 +1067,20 @@
                                                 </div>
                                                 <div class="col-md-4">
                                                     <div class="section-actions">
-                                                        <asp:Button ID="btnEditarDesdeDetal" runat="server" 
-                                                            Text="Editar Lote" 
+                                                        <asp:Button ID="btnGestionarManifiestos" runat="server"
+                                                            Text="Documentos"
+                                                            CssClass="btn btn-outline-primary btn-action"
+                                                            OnClick="btnGestionarManifiestos_Click"
+                                                            CausesValidation="false" />
+
+                                                        <asp:Button ID="btnEditarDesdeDetal" runat="server"
+                                                            Text="Editar Lote"
                                                             CssClass="btn btn-outline-secondary btn-action"
                                                             OnClick="btnEditarDesdeDetal_Click"
                                                             CausesValidation="false" />
-                                                        
-                                                        <asp:Button ID="btnVolverLotesDetalle" runat="server" 
-                                                            Text="Volver a Lotes" 
+
+                                                        <asp:Button ID="btnVolverLotesDetalle" runat="server"
+                                                            Text="Volver a Lotes"
                                                             CssClass="btn btn-secondary btn-action"
                                                             OnClick="btnVolverLotesDetalle_Click"
                                                             CausesValidation="false" />
@@ -963,8 +1180,124 @@
                                     </div>
                                 </asp:Panel>
 
+                                <!-- ====== MANIFIESTOS DEL LOTE (viajes internacionales) ====== -->
+                                <asp:Panel ID="pnlManifiestosLote" runat="server" Visible="false">
+                                    <div class="section-card detalle-section">
+                                        <div class="section-header">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-8">
+                                                    <h5 class="section-title">
+                                                        <i class="fas fa-file-alt"></i> Documentos del Lote
+                                                    </h5>
+                                                    <div class="detail-info">
+                                                        Cliente: <asp:Label ID="lblClienteManifiestos" runat="server" CssClass="detail-value"></asp:Label> |
+                                                        Pedido: <asp:Label ID="lblPedidoManifiestos" runat="server" CssClass="detail-value"></asp:Label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="section-actions">
+                                                        <asp:Button ID="btnVolverManifiestos" runat="server"
+                                                            Text="Volver a Detalles"
+                                                            CssClass="btn btn-secondary btn-action"
+                                                            OnClick="btnVolverManifiestos_Click"
+                                                            CausesValidation="false" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="section-content">
+
+                                            <asp:Panel ID="pnlMensajeManifiesto" runat="server" Visible="false" CssClass="mb-3">
+                                                <asp:Label ID="lblMensajeManifiesto" runat="server" CssClass="alert d-block"></asp:Label>
+                                            </asp:Panel>
+
+                                            <!-- Documentos base del lote (Factura/CPIC), si fueron adjuntados -->
+                                            <div class="data-section mb-3">
+                                                <h6 class="data-section-title"><i class="fas fa-file-invoice"></i> Documentos Base</h6>
+                                                <div class="rd-notice" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:5px;padding:.7rem 1rem;">
+                                                    <asp:Panel ID="pnlDocFacturaManifiesto" runat="server" Visible="false" CssClass="mb-1">
+                                                        <i class="fas fa-receipt mr-1"></i> Factura:
+                                                        <asp:LinkButton ID="lnkVerDocFactura" runat="server" OnClick="lnkVerDocFactura_Click" CausesValidation="false"></asp:LinkButton>
+                                                    </asp:Panel>
+                                                    <asp:Panel ID="pnlDocCpicManifiesto" runat="server" Visible="false">
+                                                        <i class="fas fa-shipping-fast mr-1"></i> CPIC:
+                                                        <asp:LinkButton ID="lnkVerDocCpic" runat="server" OnClick="lnkVerDocCpic_Click" CausesValidation="false"></asp:LinkButton>
+                                                    </asp:Panel>
+                                                    <asp:Label ID="lblSinDocsBase" runat="server" Text="Sin documentos base adjuntados." Visible="false" CssClass="text-muted"></asp:Label>
+                                                </div>
+                                            </div>
+
+                                            <!-- Manifiesto por conductor/despacho: solo aplica a viajes internacionales -->
+                                            <asp:Panel ID="pnlAvisoNacionalSinManifiesto" runat="server" Visible="false" CssClass="rd-notice" Style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:5px;padding:.7rem 1rem;">
+                                                <i class="fas fa-info-circle mr-1"></i> Este lote es nacional: el manifiesto de aduana no aplica.
+                                            </asp:Panel>
+
+                                            <asp:Panel ID="pnlSeccionManifiestoConductor" runat="server">
+                                            <div class="data-section">
+                                                <h6 class="data-section-title"><i class="fas fa-users"></i> Manifiesto por Conductor</h6>
+                                                <p class="text-muted small">Adjunte o reemplace el manifiesto de cruce/retorno de cada conductor a medida que avanza el viaje.</p>
+
+                                                <div class="data-grid-container">
+                                                    <asp:GridView ID="gvManifiestosLote" runat="server"
+                                                        CssClass="table data-table detail-table"
+                                                        AutoGenerateColumns="false"
+                                                        DataKeyNames="IdDespacho"
+                                                        OnRowCommand="gvManifiestosLote_RowCommand"
+                                                        EmptyDataText="No hay conductores en este lote">
+                                                        <Columns>
+                                                            <asp:BoundField DataField="NumeroDespacho" HeaderText="N° Despacho" />
+                                                            <asp:BoundField DataField="NombreConductor" HeaderText="Conductor" />
+
+                                                            <asp:TemplateField HeaderText="Manifiesto de Cruce">
+                                                                <ItemTemplate>
+                                                                    <asp:LinkButton runat="server" CommandName="VerManifiesto" CommandArgument='<%# Eval("CruceIdDocumento") %>'
+                                                                        Visible='<%# Eval("CruceIdDocumento") != null %>' CausesValidation="false">
+                                                                        <i class="fas fa-eye"></i> <%# Eval("CruceNombreOriginal") %>
+                                                                    </asp:LinkButton>
+                                                                    <span class="text-muted small" style='<%# Eval("CruceIdDocumento") != null ? "display:none" : "" %>'>Sin adjuntar</span>
+                                                                    <br />
+                                                                    <asp:FileUpload runat="server" ID="fileCruceFila" CssClass="form-control form-control-sm mt-1" accept=".pdf,.jpg,.jpeg,.png" />
+                                                                </ItemTemplate>
+                                                            </asp:TemplateField>
+
+                                                            <asp:TemplateField HeaderText="Manifiesto de Retorno">
+                                                                <ItemTemplate>
+                                                                    <asp:LinkButton runat="server" CommandName="VerManifiesto" CommandArgument='<%# Eval("RetornoIdDocumento") %>'
+                                                                        Visible='<%# Eval("RetornoIdDocumento") != null %>' CausesValidation="false">
+                                                                        <i class="fas fa-eye"></i> <%# Eval("RetornoNombreOriginal") %>
+                                                                    </asp:LinkButton>
+                                                                    <span class="text-muted small" style='<%# Eval("RetornoIdDocumento") != null ? "display:none" : "" %>'>Sin adjuntar</span>
+                                                                    <br />
+                                                                    <asp:FileUpload runat="server" ID="fileRetornoFila" CssClass="form-control form-control-sm mt-1" accept=".pdf,.jpg,.jpeg,.png" />
+                                                                </ItemTemplate>
+                                                            </asp:TemplateField>
+
+                                                            <asp:TemplateField HeaderText="Acción">
+                                                                <ItemTemplate>
+                                                                    <asp:Button runat="server" Text="Guardar" CssClass="btn btn-primary btn-sm"
+                                                                        CommandName="GuardarManifiesto" CommandArgument='<%# Eval("IdDespacho") %>' />
+                                                                </ItemTemplate>
+                                                            </asp:TemplateField>
+                                                        </Columns>
+                                                        <EmptyDataTemplate>
+                                                            <div class="empty-data">
+                                                                <i class="fas fa-exclamation-circle"></i>
+                                                                <p>Este lote no tiene despachos asociados</p>
+                                                            </div>
+                                                        </EmptyDataTemplate>
+                                                    </asp:GridView>
+                                                </div>
+                                            </div>
+                                            </asp:Panel>
+                                        </div>
+                                    </div>
+                                </asp:Panel>
+
                             </ContentTemplate>
                             <Triggers>
+                                <asp:AsyncPostBackTrigger ControlID="lnkStatViajes" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="lnkStatLotes" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="lnkStatManifiestosPendientes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnMostrarViajes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnRefrescarViajes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="ddlFiltroConductorViajes" EventName="SelectedIndexChanged" />
@@ -980,6 +1313,7 @@
                                 <asp:AsyncPostBackTrigger ControlID="ddlFiltroOperacionLotes" EventName="SelectedIndexChanged" />
                                 <asp:AsyncPostBackTrigger ControlID="ddlFiltroPlantaLotes" EventName="SelectedIndexChanged" />
                                 <asp:AsyncPostBackTrigger ControlID="btnBuscarLote" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnBuscarDocumento" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnFiltrarFecha" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnLimpiarFiltros" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="gvLotesRegistrados" EventName="RowCommand" />
@@ -995,7 +1329,13 @@
 
                                 <asp:AsyncPostBackTrigger ControlID="btnEditarDesdeDetal" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnVolverLotesDetalle" EventName="Click" />
-                                
+
+                                <asp:AsyncPostBackTrigger ControlID="btnGestionarManifiestos" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnVolverManifiestos" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="lnkVerDocFactura" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="lnkVerDocCpic" EventName="Click" />
+                                <asp:PostBackTrigger ControlID="gvManifiestosLote" />
+
                                 <asp:PostBackTrigger ControlID="btnVolver" />
                             </Triggers>
                         </asp:UpdatePanel>
@@ -1106,24 +1446,24 @@
         * {
             box-sizing: border-box;
         }
-        
+
         /* === LAYOUT PRINCIPAL === */
         .main-card {
             border: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(15,23,42,0.08);
             border-radius: 8px;
             margin-bottom: 2rem;
         }
-        
+
         .container-fluid {
             padding: 1rem;
         }
 
-        /* === NAVEGACIÓN === */
+        /* === NAVEGACIÓN (legado, ya no se usa: ver .ld-toolbar-nav arriba) === */
         .navigation-card {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
             padding: 1rem;
         }
 
@@ -1132,7 +1472,7 @@
         }
 
         .nav-title {
-            color: #6c757d;
+            color: #64748b;
             font-weight: 600;
             margin: 0;
         }
@@ -1142,53 +1482,34 @@
         }
 
         .btn-nav {
-            margin-left: 0.5rem;
-            padding: 0.375rem 0.75rem;
-            font-size: 0.875rem;
-            border-radius: 4px;
+            font-size: 0.85rem;
         }
 
         /* === SECCIONES === */
         .section-card {
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(15,23,42,.04);
             margin-bottom: 1.5rem;
-        }
-
-        .viajes-section {
-            border-left: 4px solid #007bff;
-        }
-
-        .lotes-section {
-            border-left: 4px solid #28a745;
-        }
-
-        .detalle-section {
-            border-left: 4px solid #17a2b8;
-        }
-
-        .edit-section {
-            border-left: 4px solid #ffc107;
+            overflow: hidden;
         }
 
         .section-header {
-            background: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
             padding: 1rem 1.25rem;
-            border-top-left-radius: 6px;
-            border-top-right-radius: 6px;
         }
 
         .section-title {
-            color: #495057;
+            color: #1e293b;
             font-weight: 600;
             margin: 0;
-            font-size: 1.1rem;
+            font-size: .95rem;
         }
 
         .section-content {
-            padding: 1.25rem;
+            padding: 1.5rem;
         }
 
         .section-actions {
@@ -1197,46 +1518,46 @@
 
         .btn-action {
             margin-left: 0.5rem;
-            padding: 0.375rem 0.75rem;
-            font-size: 0.875rem;
-            border-radius: 4px;
+            font-weight: 600;
         }
 
         /* === FILTROS === */
         .filters-container {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 4px;
-            padding: 1rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.1rem 1.25rem .35rem;
             margin-bottom: 1.5rem;
         }
 
         .form-group {
-            margin-bottom: 1rem;
+            margin-bottom: .9rem;
         }
 
         .form-label {
-            font-weight: 500;
-            color: #495057;
-            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: .4rem;
             display: block;
-            font-size: 0.875rem;
+            font-size: .74rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
         }
 
         .form-control, .form-select {
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            padding: 0.375rem 0.75rem;
-            font-size: 0.875rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
         }
 
         .form-control:focus, .form-select:focus {
-            border-color: #80bdff;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            border-color: #1e40af;
+            box-shadow: 0 0 0 3px rgba(30,64,175,.12);
         }
 
         .input-group .btn {
-            border-color: #ced4da;
+            border-color: #cbd5e1;
         }
 
         .filter-buttons {
@@ -1244,11 +1565,20 @@
             gap: 0.5rem;
         }
 
+        /* Fila de fecha/estado/acciones: alinea el pie de los inputs con los botones,
+           sin usar un <label>&nbsp;</label> como espaciador. */
+        .filters-actions-row {
+            display: flex;
+            align-items: flex-end;
+            height: 100%;
+            padding-bottom: .9rem;
+        }
+
         /* === TABLAS === */
         .data-grid-container {
             background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
             overflow-x: auto;
         }
 
@@ -1260,22 +1590,32 @@
         }
 
         .data-table thead th {
-            background: #f8f9fa;
-            color: #495057;
-            font-weight: 600;
-            font-size: 0.875rem;
-            padding: 0.75rem;
-            border-bottom: 2px solid #dee2e6;
+            background: #f1f5f9;
+            color: #334155;
+            font-weight: 700;
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            padding: .8rem .9rem;
+            border-bottom: 2px solid #e2e8f0;
             text-align: left;
-            position: sticky;
-            top: 0;
+            white-space: nowrap;
         }
 
         .data-table tbody td {
-            padding: 0.75rem;
-            border-bottom: 1px solid #dee2e6;
-            font-size: 0.875rem;
+            padding: .7rem .9rem;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: .85rem;
+            color: #334155;
             vertical-align: middle;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .data-table tbody tr:hover {
+            background: #eff6ff;
         }
 
         .data-table tbody tr:last-child td {
@@ -1283,110 +1623,87 @@
         }
 
         .detail-table thead th {
-            background: #e9ecef;
+            background: #f1f5f9;
         }
 
         /* === BADGES === */
         .badge {
-            font-size: 0.75rem;
-            padding: 0.35em 0.65em;
-            border-radius: 0.25rem;
-            font-weight: 500;
+            font-size: .72rem;
+            padding: .4em .75em;
+            border-radius: 999px;
+            font-weight: 600;
         }
 
         .tipo-internacional {
-            background-color: #ffc107;
-            color: #000;
+            background-color: #e0e7ff;
+            color: #3730a3;
         }
 
         .tipo-nacional {
-            background-color: #0dcaf0;
-            color: #000;
+            background-color: #dcfce7;
+            color: #166534;
         }
 
         .estado-abierto {
-            background-color: #28a745;
-            color: #fff;
+            background-color: #dcfce7;
+            color: #166534;
         }
 
         .estado-programado {
-            background-color: #17a2b8;
-            color: #fff;
+            background-color: #dbeafe;
+            color: #1e40af;
         }
 
         .estado-enprogreso {
-            background-color: #ffc107;
-            color: #000;
+            background-color: #fef3c7;
+            color: #92400e;
         }
 
         .estado-completado {
-            background-color: #28a745;
-            color: #fff;
+            background-color: #dcfce7;
+            color: #166534;
         }
 
         .estado-cancelado {
-            background-color: #dc3545;
-            color: #fff;
+            background-color: #fee2e2;
+            color: #991b1b;
         }
 
         /* === CAMPOS ESPECIALES === */
         .viaje-number, .pedido-number, .despacho-number {
-            font-weight: 600;
-            color: #0d6efd;
+            font-weight: 700;
+            color: #1e40af;
         }
 
         .despachos-count {
-            font-weight: 600;
-            color: #28a745;
+            font-weight: 700;
+            color: #16a34a;
         }
 
         .affected-count {
-            color: #dc3545;
-            font-weight: 600;
+            color: #dc2626;
+            font-weight: 700;
         }
 
         /* === BOTONES DE ACCIÓN === */
         .action-buttons {
             display: flex;
-            gap: 0.25rem;
+            gap: 0.4rem;
             flex-wrap: wrap;
-        }
-
-        .btn-info {
-            background-color: #0dcaf0;
-            border-color: #0dcaf0;
-            color: #000;
-        }
-
-        .btn-warning {
-            background-color: #ffc107;
-            border-color: #ffc107;
-            color: #000;
-        }
-
-        .btn-danger {
-            background-color: #dc3545;
-            border-color: #dc3545;
-            color: #fff;
-        }
-
-        .btn-secondary {
-            background-color: #6c757d;
-            border-color: #6c757d;
-            color: #fff;
         }
 
         /* === EMPTY DATA === */
         .empty-data {
             text-align: center;
-            padding: 2rem;
-            color: #6c757d;
+            padding: 2.5rem 1rem;
+            color: #94a3b8;
         }
 
         .empty-data i {
-            font-size: 2rem;
+            font-size: 1.75rem;
             margin-bottom: 0.5rem;
             display: block;
+            color: #cbd5e1;
         }
 
         /* === CARDS DE RESUMEN === */
@@ -1395,47 +1712,57 @@
         }
 
         .summary-card {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 4px;
-            padding: 1rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.1rem .75rem;
             text-align: center;
             margin-bottom: 1rem;
         }
 
         .summary-value {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #495057;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e293b;
             margin-bottom: 0.25rem;
         }
 
         .summary-label {
-            font-size: 0.875rem;
-            color: #6c757d;
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            color: #64748b;
+            font-weight: 600;
         }
 
         /* === DETALLES === */
         .detail-info {
-            font-size: 0.875rem;
-            color: #6c757d;
-            margin-top: 0.25rem;
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 0.35rem;
         }
 
         .detail-identifier, .detail-value {
             font-weight: 600;
-            color: #495057;
+            color: #1e293b;
         }
 
         .data-section {
-            margin-top: 1.5rem;
+            margin-top: 1.75rem;
         }
 
         .data-section-title {
-            color: #495057;
+            color: #1e293b;
             font-weight: 600;
             margin-bottom: 1rem;
-            font-size: 1rem;
+            font-size: .9rem;
+            display: flex;
+            align-items: center;
+            gap: .45rem;
+        }
+
+        .data-section-title i {
+            color: #64748b;
         }
 
         /* === FORMULARIOS DE EDICIÓN === */
@@ -1444,40 +1771,43 @@
         }
 
         .form-section {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 4px;
-            padding: 1rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.1rem 1.25rem;
             margin-bottom: 1rem;
         }
 
         .form-section-title {
-            color: #495057;
+            color: #1e293b;
             font-weight: 600;
             margin-bottom: 1rem;
-            font-size: 1rem;
-            border-bottom: 1px solid #dee2e6;
-            padding-bottom: 0.5rem;
+            font-size: .9rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: .45rem;
         }
 
         .required::after {
             content: " *";
-            color: #dc3545;
+            color: #dc2626;
         }
 
         .readonly-field {
-            background-color: #e9ecef !important;
+            background-color: #f1f5f9 !important;
             cursor: not-allowed;
         }
 
         .form-text {
             font-size: 0.75rem;
-            color: #6c757d;
+            color: #64748b;
             margin-top: 0.25rem;
         }
 
         .field-error {
-            color: #dc3545;
+            color: #dc2626;
             font-size: 0.75rem;
             margin-top: 0.25rem;
             display: block;
@@ -1487,7 +1817,7 @@
         .conductores-edit-container {
             margin: 1rem 0;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
+            border-radius: 8px;
             padding: 0;
             background: #f8fafc;
         }
@@ -1502,11 +1832,11 @@
         }
 
         .conductores-edit-container thead th {
-            background: #f1f5f9 !important;
-            color: #1e293b !important;
+            background: #f1f5f9;
+            color: #1e293b;
             font-weight: 600;
             padding: 0.75rem;
-            border-bottom: 2px solid #e2e8f0 !important;
+            border-bottom: 2px solid #e2e8f0;
         }
 
         .conductores-edit-container tbody td {
@@ -1522,12 +1852,12 @@
 
         .conductor-badge-actual {
             display: inline-block;
-            padding: 0.5rem 1rem;
-            background: #6c757d;
+            padding: 0.4rem 0.9rem;
+            background: #475569;
             color: white;
-            border-radius: 4px;
-            font-weight: 500;
-            font-size: 0.85rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.78rem;
         }
 
         .tabla-scroll-wrapper {
@@ -1537,27 +1867,28 @@
 
         .tabla-scroll-wrapper::-webkit-scrollbar {
             width: 8px;
+            height: 8px;
         }
 
         .tabla-scroll-wrapper::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: #f1f5f9;
             border-radius: 4px;
         }
 
         .tabla-scroll-wrapper::-webkit-scrollbar-thumb {
-            background: #888;
+            background: #cbd5e1;
             border-radius: 4px;
         }
 
         .tabla-scroll-wrapper::-webkit-scrollbar-thumb:hover {
-            background: #555;
+            background: #94a3b8;
         }
 
         /* === SELECT2 PERSONALIZADO === */
         .select2-container--default .select2-selection--single {
             min-height: 38px !important;
-            border: 1px solid #ced4da !important;
-            border-radius: 4px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
         }
 
         .select2-container--default .select2-selection--single .select2-selection__rendered {
@@ -1566,58 +1897,59 @@
         }
 
         .select2-container--default .select2-dropdown {
-            border: 1px solid #ced4da !important;
-            border-radius: 4px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
         }
 
         .select2-container--default .select2-results__option--highlighted[aria-selected] {
-            background-color: #0d6efd !important;
+            background-color: #1e40af !important;
             color: white !important;
         }
 
         .select2-search--dropdown .select2-search__field {
-            border: 1px solid #ced4da !important;
-            border-radius: 4px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
             padding: 0.5rem !important;
         }
 
         /* === PANELES DE DOCUMENTOS === */
         .doc-panel {
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
             margin-bottom: 1rem;
         }
 
         .doc-panel-header {
-            background: #f8f9fa;
-            padding: 0.5rem 0.75rem;
-            border-bottom: 1px solid #dee2e6;
+            background: #f1f5f9;
+            padding: 0.6rem 0.9rem;
+            border-bottom: 1px solid #e2e8f0;
             font-weight: 600;
-            font-size: 0.875rem;
-            color: #495057;
+            font-size: 0.85rem;
+            color: #1e293b;
         }
 
         .doc-panel-content {
-            padding: 0.75rem;
+            padding: 0.9rem;
         }
 
         .info-panel {
-            background: #d1ecf1;
-            border: 1px solid #b6d4da;
-            border-radius: 4px;
-            padding: 0.75rem;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 0.9rem;
         }
 
         .info-title {
             font-weight: 600;
-            font-size: 0.875rem;
-            color: #0c5460;
+            font-size: 0.85rem;
+            color: #1e3a8a;
             margin-bottom: 0.5rem;
         }
 
         .info-content {
-            font-size: 0.875rem;
-            color: #0c5460;
+            font-size: 0.85rem;
+            color: #1e3a8a;
         }
 
         .info-value {
@@ -1626,27 +1958,26 @@
 
         /* === ALERTAS === */
         .alert {
-            border-radius: 4px;
-            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            padding: 0.85rem 1.1rem;
             margin-bottom: 1rem;
         }
 
         .edit-warning {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
+            background-color: #fffbeb;
+            border: 1px solid #fde68a;
+            color: #92400e;
         }
 
         /* === ACCIONES DE FORMULARIO === */
         .form-actions {
-            text-align: center;
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid #dee2e6;
+            margin-top: 1.75rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid #e2e8f0;
         }
 
         .btn-large {
-            padding: 0.5rem 1.5rem;
+            padding: 0.6rem 1.5rem;
             font-size: 1rem;
         }
 
@@ -1657,7 +1988,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(15,23,42,0.5);
             z-index: 9999;
             display: flex;
             justify-content: center;
@@ -1667,42 +1998,56 @@
         .loading-content {
             background-color: white;
             padding: 1.5rem;
-            border-radius: 6px;
+            border-radius: 8px;
             text-align: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 8px 24px rgba(15,23,42,0.2);
         }
 
         /* === RESPONSIVE === */
         @media (max-width: 768px) {
-            .nav-buttons, .section-actions {
+            .ld-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .ld-toolbar-nav {
+                justify-content: center;
+            }
+
+            .section-actions {
                 text-align: left;
+                justify-content: flex-start;
                 margin-top: 0.5rem;
             }
-            
-            .btn-nav, .btn-action {
+
+            .btn-action {
                 margin-left: 0;
                 margin-right: 0.5rem;
                 margin-bottom: 0.5rem;
                 display: inline-block;
             }
-            
+
             .action-buttons {
                 flex-direction: column;
             }
-            
+
             .filter-buttons {
                 flex-direction: column;
             }
-            
+
+            .filters-actions-row {
+                padding-bottom: 0;
+            }
+
             .data-grid-container {
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
             }
-            
+
             .summary-card {
                 margin-bottom: 0.5rem;
             }
-            
+
             .form-section {
                 margin-bottom: 0.5rem;
             }
@@ -1711,23 +2056,23 @@
                 min-width: 200px;
             }
         }
-        
+
         @media (max-width: 576px) {
             .container-fluid {
                 padding: 0.5rem;
             }
-            
+
             .section-content {
-                padding: 0.75rem;
+                padding: 0.9rem;
             }
-            
+
             .filters-container {
-                padding: 0.75rem;
+                padding: 0.85rem;
             }
-            
+
             .data-table thead th,
             .data-table tbody td {
-                padding: 0.5rem;
+                padding: 0.55rem;
             }
         }
 

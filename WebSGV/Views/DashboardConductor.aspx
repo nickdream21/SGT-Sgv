@@ -257,14 +257,20 @@
                                             </div>
                                             <div class="col-12 col-md-3">
                                                 <div class="form-group">
-                                                    <label class="form-label">Hora Llegada</label>
+                                                    <label class="form-label">Hora de Envío (automática)</label>
                                                     <asp:TextBox ID="txtHoraLlegada" runat="server" CssClass="form-control" TextMode="Time" ReadOnly="true"></asp:TextBox>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-md-3">
+                                                <div class="form-group">
+                                                    <label class="form-label">Hora Real de Llegada a Base</label>
+                                                    <asp:TextBox ID="txtHoraLlegadaDeclarada" runat="server" CssClass="form-control" TextMode="Time"></asp:TextBox>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="row">
                                             <div class="col-12">
-                                                <small class="text-muted">La hora de llegada se registra automáticamente con la hora oficial del servidor al enviar la liquidación.</small>
+                                                <small class="text-muted">La "Hora de Envío" la registra el sistema automáticamente y no se puede editar. Si llegaste antes de registrar la liquidación, ajusta la "Hora Real de Llegada" a la hora en que realmente llegaste a base.</small>
                                             </div>
                                         </div>
                                         <div class="row">

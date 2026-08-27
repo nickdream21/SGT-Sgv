@@ -215,6 +215,15 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.TextBox txtValorTotalFacturaBase;
 
         /// <summary>
+        /// Control fileFacturaBase.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.FileUpload fileFacturaBase;
+
+        /// <summary>
         /// Control pnlCPICBase.
         /// </summary>
         /// <remarks>
@@ -249,6 +258,15 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtValorFleteBase;
+
+        /// <summary>
+        /// Control fileCPICBase.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.FileUpload fileCPICBase;
 
         /// <summary>
         /// Control btnIniciarLote.
@@ -582,6 +600,33 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvGuiaTransportista;
+
+        /// <summary>
+        /// Control pnlManifiestoConductor.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlManifiestoConductor;
+
+        /// <summary>
+        /// Control fileManifiestoCruce.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.FileUpload fileManifiestoCruce;
+
+        /// <summary>
+        /// Control fileManifiestoRegreso.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.FileUpload fileManifiestoRegreso;
 
         /// <summary>
         /// Control lblDocumentosReutilizados.

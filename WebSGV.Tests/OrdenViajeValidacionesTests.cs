@@ -192,5 +192,23 @@ namespace WebSGV.Tests
                 salida, llegada, "08:30", "18:00");
             Assert.Contains("no puede ser mayor a la 'Fecha de Llegada'", r);
         }
+
+        [Fact]
+        public void ValidarDatosGeneralesLiquidacion_HoraLlegadaDeclaradaVacia_NoEsError()
+        {
+            DateTime hoy = DateTime.Today;
+            string r = OrdenViajeValidaciones.ValidarDatosGeneralesLiquidacion(
+                hoy, hoy, "08:30", "18:00", horaLlegadaDeclarada: "");
+            Assert.Equal(string.Empty, r);
+        }
+
+        [Fact]
+        public void ValidarDatosGeneralesLiquidacion_HoraLlegadaDeclaradaConFormatoInvalido_Error()
+        {
+            DateTime hoy = DateTime.Today;
+            string r = OrdenViajeValidaciones.ValidarDatosGeneralesLiquidacion(
+                hoy, hoy, "08:30", "18:00", horaLlegadaDeclarada: "25:99");
+            Assert.Contains("'Hora Real de Llegada' es incorrecto", r);
+        }
     }
 }

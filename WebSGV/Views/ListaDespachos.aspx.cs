@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -13,11 +14,16 @@ using static WebSGV.Views.ListaDespachos;
 using WebSGV.Helpers;
 using WebSGV.Models.Despachos;
 using WebSGV.Services.Despachos;
+using WebSGV.Services.Facturas;
 
 namespace WebSGV.Views
 {
     public partial class ListaDespachos : PaginaBase
     {
+        // Manifiesto: mismo criterio de validación que RegistroDespacho.aspx.cs (20MB,
+        // PDF/JPG/PNG) — se puede adjuntar/reemplazar aquí durante el transcurso del viaje.
+        private const long MAX_TAMANO_MANIFIESTO = 20 * 1024 * 1024;
+        private static readonly string[] EXTENSIONES_MANIFIESTO_PERMITIDAS = { ".pdf", ".jpg", ".jpeg", ".png" };
 
         #region Clases Auxiliares
 
@@ -284,7 +290,26 @@ namespace WebSGV.Views
             try
             {
                 List<LoteRegistrado> lotes = ObtenerLotesRegistrados();
-                gvLotesRegistrados.DataSource = lotes;
+                var estadosManifiesto = CalcularEstadosManifiestoPorLote(lotes);
+
+                var filas = lotes.Select(l => new
+                {
+                    l.IdLoteVirtual,
+                    l.FechaProgramacion,
+                    l.NombreCliente,
+                    NumeroPedido = string.IsNullOrEmpty(l.NumeroPedido) ? "—" : l.NumeroPedido,
+                    l.TipoOperacion,
+                    l.EsInternacional,
+                    l.PlantaOperacion,
+                    l.CantidadDespachos,
+                    NumeroFactura = string.IsNullOrEmpty(l.NumeroFactura) ? "—" : l.NumeroFactura,
+                    NumeroCPIC = string.IsNullOrEmpty(l.NumeroCPIC) ? "—" : l.NumeroCPIC,
+                    l.FechaCreacion,
+                    l.EstadoLote,
+                    ManifiestoEstado = estadosManifiesto[l.IdLoteVirtual]
+                }).ToList();
+
+                gvLotesRegistrados.DataSource = filas;
                 gvLotesRegistrados.DataBind();
 
                 lblContadorLotes.Text = $"{lotes.Count}";
@@ -295,6 +320,53 @@ namespace WebSGV.Views
                 LogSGV.Error(ex, "Error al cargar lotes registrados en ListaDespachos");
                 MostrarMensaje("Error al cargar lotes registrados: " + ex.Message, "danger");
             }
+        }
+
+        /// <summary>
+        /// Estado del manifiesto por lote ("N/A" si es nacional, "Completo"/"Pendiente"/"Parcial N/M"
+        /// si es internacional). Resuelve los despachos de cada lote internacional (una consulta por
+        /// lote, vía <c>ObtenerIdsDespachosDeLote</c> — no hay una sola SP que traiga ids por lista de
+        /// lotes) y luego trae TODOS los documentos de manifiesto en una sola consulta combinada.
+        /// </summary>
+        private Dictionary<string, string> CalcularEstadosManifiestoPorLote(List<LoteRegistrado> lotes)
+        {
+            var resultado = new Dictionary<string, string>();
+            var idsPorLote = new Dictionary<string, List<int>>();
+            var idsTodos = new List<int>();
+
+            foreach (var lote in lotes.Where(l => l.EsInternacional))
+            {
+                var ids = ListaDespachosService.ObtenerIdsDespachosDeLote(lote.IdLoteVirtual);
+                idsPorLote[lote.IdLoteVirtual] = ids;
+                idsTodos.AddRange(ids);
+            }
+
+            Dictionary<int, HashSet<string>> tiposPorDespacho = new Dictionary<int, HashSet<string>>();
+            if (idsTodos.Count > 0)
+            {
+                var docs = ManifiestoService.ObtenerDocumentosPorDespachos(idsTodos.Distinct().ToList());
+                tiposPorDespacho = docs.GroupBy(d => d.IdDespacho)
+                    .ToDictionary(g => g.Key, g => new HashSet<string>(g.Select(x => x.TipoManifiesto)));
+            }
+
+            foreach (var lote in lotes)
+            {
+                if (!lote.EsInternacional || !idsPorLote.TryGetValue(lote.IdLoteVirtual, out var ids) || ids.Count == 0)
+                {
+                    resultado[lote.IdLoteVirtual] = "N/A";
+                    continue;
+                }
+
+                int completos = ids.Count(id =>
+                    tiposPorDespacho.TryGetValue(id, out var tipos) &&
+                    tipos.Contains(ManifiestoService.TIPO_CRUCE) && tipos.Contains(ManifiestoService.TIPO_RETORNO));
+
+                resultado[lote.IdLoteVirtual] = completos == ids.Count ? "Completo"
+                    : completos == 0 ? "Pendiente"
+                    : $"Parcial {completos}/{ids.Count}";
+            }
+
+            return resultado;
         }
 
         private List<LoteRegistrado> ObtenerLotesRegistrados()
@@ -311,9 +383,16 @@ namespace WebSGV.Views
             DateTime? fechaHasta = DateTime.TryParse(txtFechaHasta.Text, out DateTime fh) ? fh : (DateTime?)null;
             string estadoFiltro = string.IsNullOrEmpty(ddlFiltroEstadoLotes.SelectedValue)
                 ? null : ddlFiltroEstadoLotes.SelectedValue;
+            string numeroFactura = string.IsNullOrEmpty(txtBuscarFacturaLotes.Text.Trim())
+                ? null : txtBuscarFacturaLotes.Text.Trim();
+            string numeroCPIC = string.IsNullOrEmpty(txtBuscarCPICLotes.Text.Trim())
+                ? null : txtBuscarCPICLotes.Text.Trim();
+            string nombreConductor = string.IsNullOrEmpty(txtBuscarConductorLotes.Text.Trim())
+                ? null : txtBuscarConductorLotes.Text.Trim();
 
             return ListaDespachosService.ObtenerLotesRegistrados(
-                idCliente, tipoOperacion, planta, numeroPedido, fechaDesde, fechaHasta, estadoFiltro);
+                idCliente, tipoOperacion, planta, numeroPedido, fechaDesde, fechaHasta, estadoFiltro,
+                numeroFactura, numeroCPIC, nombreConductor);
         }
 
         private LoteRegistrado ObtenerLotePorId(string idLoteVirtual)
@@ -353,6 +432,8 @@ namespace WebSGV.Views
                 lblOperacionDetalleLote.Text = lote.TipoOperacion;
                 lblPlantaDetalleLote.Text = lote.PlantaOperacion;
                 lblFechaCreacionDetalle.Text = lote.FechaCreacion.ToString("dd/MM/yyyy");
+                // "Documentos" siempre visible: Factura/CPIC aplican también a lotes nacionales.
+                // El Manifiesto (solo internacional) se oculta dentro de esa vista si no aplica.
             }
         }
 
@@ -518,6 +599,11 @@ namespace WebSGV.Views
             CargarLotesRegistrados();
         }
 
+        protected void btnBuscarDocumento_Click(object sender, EventArgs e)
+        {
+            CargarLotesRegistrados();
+        }
+
         protected void btnFiltrarFecha_Click(object sender, EventArgs e)
         {
             CargarLotesRegistrados();
@@ -595,6 +681,10 @@ namespace WebSGV.Views
                 else if (e.CommandName == "VerDetallesLote")
                 {
                     MostrarDetallesLote(idLoteVirtual);
+                }
+                else if (e.CommandName == "VerManifiestosLote")
+                {
+                    MostrarManifiestosLote(idLoteVirtual);
                 }
             }
             catch (Exception ex)
@@ -699,6 +789,22 @@ namespace WebSGV.Views
             if (!string.IsNullOrEmpty(LoteSeleccionadoId))
             {
                 MostrarEdicionLote(LoteSeleccionadoId);
+            }
+        }
+
+        protected void btnGestionarManifiestos_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(LoteSeleccionadoId))
+            {
+                MostrarManifiestosLote(LoteSeleccionadoId);
+            }
+        }
+
+        protected void btnVolverManifiestos_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(LoteSeleccionadoId))
+            {
+                MostrarDetallesLote(LoteSeleccionadoId);
             }
         }
 
@@ -939,6 +1045,7 @@ namespace WebSGV.Views
             pnlDetallesViaje.Visible = false;
             pnlEdicionLote.Visible = false;
             pnlDetallesLote.Visible = false;
+            pnlManifiestosLote.Visible = false;
 
             btnMostrarViajes.CssClass = "btn btn-secondary btn-nav active-nav";
             btnMostrarLotes.CssClass = "btn btn-outline-secondary btn-nav";
@@ -954,6 +1061,7 @@ namespace WebSGV.Views
             pnlDetallesViaje.Visible = false;
             pnlEdicionLote.Visible = false;
             pnlDetallesLote.Visible = false;
+            pnlManifiestosLote.Visible = false;
 
             btnMostrarViajes.CssClass = "btn btn-outline-secondary btn-nav";
             btnMostrarLotes.CssClass = "btn btn-success btn-nav active-nav";
@@ -969,6 +1077,7 @@ namespace WebSGV.Views
             pnlDetallesViaje.Visible = true;
             pnlEdicionLote.Visible = false;
             pnlDetallesLote.Visible = false;
+            pnlManifiestosLote.Visible = false;
 
             CargarDespachosViaje(idViajeProgreso);
         }
@@ -983,6 +1092,7 @@ namespace WebSGV.Views
             pnlDetallesViaje.Visible = false;
             pnlEdicionLote.Visible = true;
             pnlDetallesLote.Visible = false;
+            pnlManifiestosLote.Visible = false;
 
             CargarDatosEdicionLote(idLoteVirtual);
         }
@@ -997,8 +1107,25 @@ namespace WebSGV.Views
             pnlDetallesViaje.Visible = false;
             pnlEdicionLote.Visible = false;
             pnlDetallesLote.Visible = true;
+            pnlManifiestosLote.Visible = false;
 
             CargarDespachosLote(idLoteVirtual);
+        }
+
+        private void MostrarManifiestosLote(string idLoteVirtual)
+        {
+            ViajeSeleccionadoId = null;
+            LoteSeleccionadoId = idLoteVirtual;
+
+            pnlListaViajes.Visible = false;
+            pnlListaLotes.Visible = false;
+            pnlDetallesViaje.Visible = false;
+            pnlEdicionLote.Visible = false;
+            pnlDetallesLote.Visible = false;
+            pnlManifiestosLote.Visible = true;
+            pnlMensajeManifiesto.Visible = false;
+
+            CargarManifiestosLote(idLoteVirtual);
         }
 
         private void CargarDatosEdicionLote(string idLoteVirtual)
@@ -1071,6 +1198,253 @@ namespace WebSGV.Views
                     pnlFacturaEdit.Visible = true;
                 }
             }
+        }
+
+        #endregion
+
+        #region Gestión de Manifiestos (viajes internacionales)
+
+        private void CargarManifiestosLote(string idLoteVirtual)
+        {
+            try
+            {
+                var lote = ObtenerLotePorId(idLoteVirtual);
+                if (lote == null) return;
+
+                lblClienteManifiestos.Text = lote.NombreCliente;
+                lblPedidoManifiestos.Text = string.IsNullOrEmpty(lote.NumeroPedido) ? "Sin especificar" : lote.NumeroPedido;
+
+                CargarDocumentosBase(lote);
+
+                // El manifiesto de aduana solo aplica a viajes internacionales.
+                pnlSeccionManifiestoConductor.Visible = lote.EsInternacional;
+                pnlAvisoNacionalSinManifiesto.Visible = !lote.EsInternacional;
+
+                var despachos = ObtenerDespachosDelLote(idLoteVirtual);
+                var docs = ManifiestoService.ObtenerDocumentosPorDespachos(despachos.Select(d => d.IdDespacho).ToList());
+                var docsPorDespacho = docs.GroupBy(d => d.IdDespacho).ToDictionary(g => g.Key, g => g.ToList());
+
+                var filas = despachos.Select(d =>
+                {
+                    docsPorDespacho.TryGetValue(d.IdDespacho, out var docsDelDespacho);
+                    docsDelDespacho = docsDelDespacho ?? new List<DocumentoManifiesto>();
+
+                    var cruce = docsDelDespacho.Where(x => x.TipoManifiesto == ManifiestoService.TIPO_CRUCE)
+                        .OrderByDescending(x => x.FechaSubida).FirstOrDefault();
+                    var retorno = docsDelDespacho.Where(x => x.TipoManifiesto == ManifiestoService.TIPO_RETORNO)
+                        .OrderByDescending(x => x.FechaSubida).FirstOrDefault();
+
+                    return new ManifiestoDespachoRow
+                    {
+                        IdDespacho = d.IdDespacho,
+                        NumeroDespacho = d.NumeroDespacho,
+                        NombreConductor = d.NombreConductor,
+                        CruceIdDocumento = cruce?.IdDocumentoManifiesto,
+                        CruceNombreOriginal = cruce?.NombreOriginal,
+                        RetornoIdDocumento = retorno?.IdDocumentoManifiesto,
+                        RetornoNombreOriginal = retorno?.NombreOriginal
+                    };
+                }).ToList();
+
+                gvManifiestosLote.DataSource = filas;
+                gvManifiestosLote.DataBind();
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Error al cargar manifiestos del lote en ListaDespachos");
+                MostrarMensajeManifiesto("Error al cargar los manifiestos del lote: " + ex.Message, "danger");
+            }
+        }
+
+        private void CargarDocumentosBase(LoteRegistrado lote)
+        {
+            pnlDocFacturaManifiesto.Visible = false;
+            pnlDocCpicManifiesto.Visible = false;
+            ViewState["RutaDocFacturaManifiesto"] = null;
+            ViewState["RutaDocCpicManifiesto"] = null;
+            bool tieneAlguno = false;
+
+            if (!string.IsNullOrEmpty(lote.NumeroFactura))
+            {
+                DataTable dtFactura = FacturaConsultasService.ObtenerPorNumero(lote.NumeroFactura);
+                if (dtFactura.Rows.Count > 0)
+                {
+                    int idFactura = Convert.ToInt32(dtFactura.Rows[0]["idFactura"]);
+                    DataTable docs = FacturaConsultasService.ObtenerDocumentos(idFactura);
+                    if (docs.Rows.Count > 0)
+                    {
+                        ViewState["RutaDocFacturaManifiesto"] = docs.Rows[0]["rutaArchivo"].ToString();
+                        lnkVerDocFactura.Text = docs.Rows[0]["nombreOriginal"].ToString();
+                        pnlDocFacturaManifiesto.Visible = true;
+                        tieneAlguno = true;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(lote.NumeroCPIC))
+            {
+                DataTable dtCpic = DocumentoCpicService.ObtenerPorNumero(lote.NumeroCPIC);
+                if (dtCpic.Rows.Count > 0)
+                {
+                    int idCpic = Convert.ToInt32(dtCpic.Rows[0]["idCPIC"]);
+                    DataTable docs = DocumentoCpicService.ObtenerDocumentos(idCpic);
+                    if (docs.Rows.Count > 0)
+                    {
+                        ViewState["RutaDocCpicManifiesto"] = docs.Rows[0]["rutaArchivo"].ToString();
+                        lnkVerDocCpic.Text = docs.Rows[0]["nombreOriginal"].ToString();
+                        pnlDocCpicManifiesto.Visible = true;
+                        tieneAlguno = true;
+                    }
+                }
+            }
+
+            lblSinDocsBase.Visible = !tieneAlguno;
+        }
+
+        protected void lnkVerDocFactura_Click(object sender, EventArgs e)
+        {
+            if (ViewState["RutaDocFacturaManifiesto"] is string ruta && !string.IsNullOrEmpty(ruta))
+                AbrirDocumentoEnNuevaPestana(ruta);
+        }
+
+        protected void lnkVerDocCpic_Click(object sender, EventArgs e)
+        {
+            if (ViewState["RutaDocCpicManifiesto"] is string ruta && !string.IsNullOrEmpty(ruta))
+                AbrirDocumentoEnNuevaPestana(ruta);
+        }
+
+        protected void gvManifiestosLote_RowCommand(object sender, GridViewCommandEventArgs e)
+        {
+            try
+            {
+                if (e.CommandName == "GuardarManifiesto")
+                {
+                    int idDespacho = Convert.ToInt32(e.CommandArgument);
+                    GridViewRow row = ((Control)e.CommandSource).NamingContainer as GridViewRow;
+                    FileUpload fileCruce = row?.FindControl("fileCruceFila") as FileUpload;
+                    FileUpload fileRetorno = row?.FindControl("fileRetornoFila") as FileUpload;
+
+                    GuardarManifiestoDesdeFila(idDespacho, fileCruce, fileRetorno);
+                }
+                else if (e.CommandName == "VerManifiesto")
+                {
+                    int idDocumento = Convert.ToInt32(e.CommandArgument);
+                    var doc = ManifiestoService.ObtenerDocumentoPorId(idDocumento);
+                    if (doc == null)
+                        MostrarMensajeManifiesto("Documento no encontrado.", "warning");
+                    else
+                        AbrirDocumentoEnNuevaPestana(doc.RutaArchivo);
+                }
+
+                if (!string.IsNullOrEmpty(LoteSeleccionadoId))
+                    CargarManifiestosLote(LoteSeleccionadoId);
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Error al procesar acción de manifiesto en ListaDespachos");
+                MostrarMensajeManifiesto("Error al procesar la acción: " + ex.Message, "danger");
+            }
+        }
+
+        private void GuardarManifiestoDesdeFila(int idDespacho, FileUpload fileCruce, FileUpload fileRetorno)
+        {
+            int guardados = 0;
+            List<string> errores = new List<string>();
+
+            if (fileCruce != null && fileCruce.HasFile)
+            {
+                string error = ValidarArchivoManifiesto(fileCruce);
+                if (!string.IsNullOrEmpty(error))
+                    errores.Add("Manifiesto de cruce: " + error);
+                else
+                {
+                    GuardarUnManifiesto(fileCruce, idDespacho, ManifiestoService.TIPO_CRUCE);
+                    guardados++;
+                }
+            }
+
+            if (fileRetorno != null && fileRetorno.HasFile)
+            {
+                string error = ValidarArchivoManifiesto(fileRetorno);
+                if (!string.IsNullOrEmpty(error))
+                    errores.Add("Manifiesto de retorno: " + error);
+                else
+                {
+                    GuardarUnManifiesto(fileRetorno, idDespacho, ManifiestoService.TIPO_RETORNO);
+                    guardados++;
+                }
+            }
+
+            if (errores.Count > 0)
+                MostrarMensajeManifiesto(string.Join(" ", errores), "danger");
+            else if (guardados > 0)
+                MostrarMensajeManifiesto("Manifiesto guardado correctamente.", "success");
+            else
+                MostrarMensajeManifiesto("No se seleccionó ningún archivo para este conductor.", "warning");
+        }
+
+        private string ValidarArchivoManifiesto(FileUpload control)
+        {
+            var archivo = control.PostedFile;
+
+            if (archivo.ContentLength == 0)
+                return "el archivo está vacío";
+
+            if (archivo.ContentLength > MAX_TAMANO_MANIFIESTO)
+                return "el archivo supera el tamaño máximo permitido (20MB)";
+
+            string extension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
+            if (!Array.Exists(EXTENSIONES_MANIFIESTO_PERMITIDAS, ext => ext == extension))
+                return "tipo de archivo no permitido. Use PDF, JPG o PNG";
+
+            return string.Empty;
+        }
+
+        private void GuardarUnManifiesto(FileUpload control, int idDespacho, string tipo)
+        {
+            string extension = Path.GetExtension(control.FileName).ToLowerInvariant();
+            string carpetaAno = DateTime.Now.Year.ToString();
+            string carpetaMes = DateTime.Now.ToString("MM");
+            string carpetaDestino = Server.MapPath($"~/Uploads/Manifiesto/{carpetaAno}/{carpetaMes}/");
+
+            if (!Directory.Exists(carpetaDestino))
+                Directory.CreateDirectory(carpetaDestino);
+
+            string nombreArchivo = $"MANIFIESTO_{tipo}_{idDespacho}_{DateTime.Now:yyyyMMdd_HHmmss}{extension}";
+            string rutaDestino = Path.Combine(carpetaDestino, nombreArchivo);
+
+            control.SaveAs(rutaDestino);
+
+            string nombreOriginal = Path.GetFileName(control.FileName);
+            string rutaRelativa = $"~/Uploads/Manifiesto/{carpetaAno}/{carpetaMes}/{nombreArchivo}";
+            long tamano = new FileInfo(rutaDestino).Length;
+
+            ManifiestoService.InsertarDocumentoManifiesto(idDespacho, tipo, nombreOriginal, nombreArchivo,
+                rutaRelativa, extension, tamano, ObtenerUsuarioActual());
+
+            AuditoriaHelper.Registrar("INSERT", "DocumentosManifiesto", idDespacho.ToString(),
+                $"Manifiesto {tipo} adjuntado - Despacho: {idDespacho}");
+        }
+
+        private void AbrirDocumentoEnNuevaPestana(string rutaArchivoRelativa)
+        {
+            string rutaCompleta = Server.MapPath(rutaArchivoRelativa);
+            if (!File.Exists(rutaCompleta))
+            {
+                MostrarMensajeManifiesto("El archivo no existe en el servidor.", "warning");
+                return;
+            }
+
+            string urlArchivo = ResolveUrl(rutaArchivoRelativa);
+            ScriptManager.RegisterStartupScript(this, GetType(), "VerDocumentoManifiesto",
+                $"window.open('{urlArchivo}', '_blank');", true);
+        }
+
+        private void MostrarMensajeManifiesto(string mensaje, string tipo)
+        {
+            lblMensajeManifiesto.Text = HttpUtility.HtmlEncode(mensaje ?? string.Empty);
+            lblMensajeManifiesto.CssClass = $"alert alert-{tipo}";
+            pnlMensajeManifiesto.Visible = true;
         }
 
         #endregion
@@ -1219,6 +1593,15 @@ namespace WebSGV.Views
             {
                 int totalViajes = ListaDespachosService.ContarViajesActivos();
                 lblContadorViajes.Text = $"{totalViajes}";
+                lblStatViajesActivos.Text = totalViajes.ToString();
+
+                var lotesActivos = ListaDespachosService.ObtenerLotesRegistrados(null, null, null, null, null, null, "ACTIVO");
+                lblStatLotesActivos.Text = lotesActivos.Count.ToString();
+
+                var estadosManifiesto = CalcularEstadosManifiestoPorLote(lotesActivos);
+                int pendientes = estadosManifiesto.Values.Count(v => v == "Pendiente" || v.StartsWith("Parcial"));
+                lblStatManifiestosPendientes.Text = pendientes.ToString();
+                lnkStatManifiestosPendientes.CssClass = pendientes > 0 ? "ld-stat-tile ld-stat-tile-alert" : "ld-stat-tile";
 
                 ActualizarContadorGeneral();
             }
@@ -1227,6 +1610,24 @@ namespace WebSGV.Views
                 LogSGV.Error(ex, "Error al establecer contadores en ListaDespachos");
                 MostrarMensaje("Error al establecer contadores: " + ex.Message, "warning");
             }
+        }
+
+        protected void lnkStatViajes_Click(object sender, EventArgs e)
+        {
+            MostrarListaViajes();
+            CargarViajesActivos();
+        }
+
+        protected void lnkStatLotes_Click(object sender, EventArgs e)
+        {
+            MostrarListaLotes();
+            CargarLotesRegistrados();
+        }
+
+        protected void lnkStatManifiestosPendientes_Click(object sender, EventArgs e)
+        {
+            MostrarListaLotes();
+            CargarLotesRegistrados();
         }
 
         private void ActualizarContadorGeneral()
@@ -1258,6 +1659,9 @@ namespace WebSGV.Views
             ddlFiltroOperacionLotes.SelectedIndex = 0;
             ddlFiltroPlantaLotes.SelectedIndex = 0;
             txtBuscarLote.Text = string.Empty;
+            txtBuscarFacturaLotes.Text = string.Empty;
+            txtBuscarCPICLotes.Text = string.Empty;
+            txtBuscarConductorLotes.Text = string.Empty;
             if (ddlFiltroEstadoLotes.Items.FindByValue("ACTIVO") != null)
                 ddlFiltroEstadoLotes.SelectedValue = "ACTIVO";
             ConfigurarFechasPorDefecto();
@@ -1307,6 +1711,15 @@ namespace WebSGV.Views
                 default:
                     return "badge bg-secondary";
             }
+        }
+
+        /// <summary>Clase del badge de estado de manifiesto (ver CalcularEstadosManifiestoPorLote).</summary>
+        public string GetManifiestoBadgeClass(string estado)
+        {
+            if (estado == "Completo") return "badge estado-completado";
+            if (estado == "Pendiente") return "badge estado-cancelado";
+            if (!string.IsNullOrEmpty(estado) && estado.StartsWith("Parcial")) return "badge estado-enprogreso";
+            return "badge bg-secondary";
         }
 
         #endregion

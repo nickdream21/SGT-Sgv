@@ -4,6 +4,7 @@ CREATE OR ALTER PROCEDURE sp_DC_ActualizarOrdenViajeConductor
     @horaSalida       TIME          = NULL,
     @fechaLlegada     DATE,
     @horaLlegada      TIME          = NULL,
+    @horaLlegadaDeclarada TIME      = NULL,
     @observaciones    VARCHAR(250)  = NULL,
     @idUsuarioRegistro INT          = NULL
 AS
@@ -15,6 +16,7 @@ BEGIN
         horaSalida        = @horaSalida,
         fechaLlegada      = @fechaLlegada,
         horaLlegada       = @horaLlegada,
+        horaLlegadaDeclarada = @horaLlegadaDeclarada,
         observaciones     = @observaciones,
         estadoAprobacion  = 'PENDIENTE',
         idUsuarioRegistro = @idUsuarioRegistro,

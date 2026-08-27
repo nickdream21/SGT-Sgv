@@ -433,6 +433,9 @@ namespace WebSGV.Services.Liquidaciones
                     ov.fechaSalida,
                     ov.horaSalida,
                     ov.fechaLlegada,
+                    ov.horaLlegada,
+                    ov.horaLlegadaDeclarada,
+                    ov.horaLlegadaGps,
                     ov.observaciones,
                     ov.estadoAprobacion,
 
@@ -528,6 +531,12 @@ namespace WebSGV.Services.Liquidaciones
                                     ? Convert.ToDateTime(reader["fechaSalida"]).ToString("yyyy-MM-dd") : "",
                                 HoraSalida = reader["horaSalida"] != DBNull.Value
                                     ? ((TimeSpan)reader["horaSalida"]).ToString(@"hh\:mm") : "",
+                                HoraLlegadaSistema = reader["horaLlegada"] != DBNull.Value
+                                    ? ((TimeSpan)reader["horaLlegada"]).ToString(@"hh\:mm") : "",
+                                HoraLlegadaDeclarada = reader["horaLlegadaDeclarada"] != DBNull.Value
+                                    ? ((TimeSpan)reader["horaLlegadaDeclarada"]).ToString(@"hh\:mm") : "",
+                                HoraLlegadaGps = reader["horaLlegadaGps"] != DBNull.Value
+                                    ? ((TimeSpan)reader["horaLlegadaGps"]).ToString(@"hh\:mm") : "",
                                 EstadoAprobacion = reader["estadoAprobacion"]?.ToString() ?? "",
                                 FechaLlegada = reader["fechaLlegada"] != DBNull.Value
                                     ? Convert.ToDateTime(reader["fechaLlegada"]).ToString("dd/MM/yyyy") : "—",

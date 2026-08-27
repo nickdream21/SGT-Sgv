@@ -244,7 +244,38 @@ namespace WebSGV.Views.Exportacion
             litFormBannerTitle.Text = "Nuevo viaje";
             litFormBannerSub.Text = "Llena al menos Cliente, F.H. Programación y Tracto 1 para abrir el viaje. El resto lo puedes ir registrando con el tiempo.";
             ActualizarIndicadorEstado("BORRADOR");
+            ActualizarProgresoTimeline();
             ActivarTab("panel-form");
+        }
+
+        /// <summary>
+        /// Recalcula, a partir de los valores actuales de los textboxes ya cargados en el
+        /// formulario, los badges de progreso de cada tramo de la línea de tiempo (cuántos de
+        /// los campos automatizables por GPS ya tienen dato) y el resumen de placa por tracto.
+        /// </summary>
+        private void ActualizarProgresoTimeline()
+        {
+            litTracto1Resumen.Text = string.IsNullOrWhiteSpace(txtTracto1.Text)
+                ? "sin asignar" : System.Web.HttpUtility.HtmlEncode(txtTracto1.Text);
+            litTracto2Resumen.Text = string.IsNullOrWhiteSpace(txtTracto2.Text)
+                ? "sin asignar" : System.Web.HttpUtility.HtmlEncode(txtTracto2.Text);
+
+            litProgresoNacional.Text = BadgeProgreso(
+                txtFhSalidaBase1, txtFhLlegadaTrujillo, txtFhIngresoPlanta, txtFhSalidaPlanta, txtFhLlegadaBase2);
+            litProgresoBodegaNacional.Text = BadgeProgreso(
+                txtFhSalidaBase2, txtFhLlegadaBodegaNacional, txtFhIngresoBodegaNacional, txtFhSalidaBodegaNacional);
+            litProgresoFrontera.Text = BadgeProgreso(txtFhLlegadaCEBAF, txtFhCruceEcuador);
+            litProgresoEcuador.Text = BadgeProgreso(
+                txtFhLlegadaTCI, txtFhSalidaTCI, txtFhLlegadaPlantaEcuador, txtFhLlegadaAlmacen, txtFhIngreso, txtFhSalida);
+            litProgresoRegreso.Text = BadgeProgreso(txtFhLlegadaBaseFinal);
+        }
+
+        private static string BadgeProgreso(params TextBox[] campos)
+        {
+            int total = campos.Length;
+            int llenos = campos.Count(c => !string.IsNullOrWhiteSpace(c.Text));
+            string clase = llenos == 0 ? "vacio" : (llenos == total ? "completo" : "parcial");
+            return $"<span class=\"se-badge-progreso {clase}\">{llenos}/{total} confirmados</span>";
         }
 
         protected void btnCancelarEdicion_Click(object sender, EventArgs e)
@@ -270,6 +301,114 @@ namespace WebSGV.Views.Exportacion
                 CargarBandeja();
                 CargarRegistrosRecientes();
             }
+        }
+
+        // ============================================================
+        //  Vínculo con Despacho (el viaje se crea en Despacho; acá solo se
+        //  busca/selecciona — cliente/conductor/placa vienen del despacho real).
+        // ============================================================
+
+        /// <summary>
+        /// Autocompletado en vivo (llamado por JS mientras la administradora escribe). Reusa
+        /// sp_SE_BuscarDespachosDisponibles — mismo filtro por ámbito y exclusión de despachos
+        /// ya vinculados a otro registro que usa la búsqueda "con botón" original.
+        /// </summary>
+        [System.Web.Services.WebMethod]
+        public static object BuscarDespachosAjax(bool esInternacional, string texto, int idSeguimientoActual)
+        {
+            var resultados = new List<object>();
+            using (var conn = new SqlConnection(ConnStr))
+            using (var cmd = new SqlCommand("sp_SE_BuscarDespachosDisponibles", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Add("@esInternacional", SqlDbType.Bit).Value = esInternacional;
+                cmd.Parameters.Add("@texto", SqlDbType.VarChar, 150).Value = string.IsNullOrWhiteSpace(texto) ? (object)DBNull.Value : texto.Trim();
+                cmd.Parameters.Add("@idSeguimientoActual", SqlDbType.Int).Value = idSeguimientoActual > 0 ? (object)idSeguimientoActual : DBNull.Value;
+                conn.Open();
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        string etiqueta = $"{reader["numeroDespacho"]} · {reader["cliente"]} · {reader["conductor"]} · {reader["placaTracto"]} ({Convert.ToDateTime(reader["fechaDespacho"]):dd/MM/yyyy})";
+                        resultados.Add(new { IdDespacho = Convert.ToInt32(reader["idDespacho"]), Etiqueta = etiqueta });
+                    }
+                }
+            }
+            return resultados;
+        }
+
+        /// <summary>Gancho de postback: el JS ya guardó el id elegido en hdnIdDespachoOrigen antes de disparar este LinkButton oculto.</summary>
+        protected void lnkAplicarDespachoNacional_Click(object sender, EventArgs e)
+        {
+            int idDespacho;
+            if (int.TryParse(hdnIdDespachoOrigen.Value, out idDespacho) && idDespacho > 0)
+                AplicarDespachoSeleccionado(idDespacho, esOrigen: true);
+        }
+
+        protected void lnkAplicarDespachoInternacional_Click(object sender, EventArgs e)
+        {
+            int idDespacho;
+            if (int.TryParse(hdnIdDespachoDestino.Value, out idDespacho) && idDespacho > 0)
+                AplicarDespachoSeleccionado(idDespacho, esOrigen: false);
+        }
+
+        private void AplicarDespachoSeleccionado(int idDespacho, bool esOrigen)
+        {
+            DataRow row = ObtenerDespachoPorId(idDespacho);
+            if (row == null) return;
+
+            if (esOrigen)
+            {
+                hdnIdDespachoOrigen.Value = idDespacho.ToString();
+                txtCliente.Text = ToStr(row, "cliente");
+                txtConductorOrigen.Text = ToStr(row, "conductor");
+                txtTracto1.Text = ToStr(row, "placaTracto");
+                txtCarreta.Text = ToStr(row, "placaCarreta");
+                MostrarResumenDespacho(litResumenNacional, pnlResumenNacional, row);
+            }
+            else
+            {
+                hdnIdDespachoDestino.Value = idDespacho.ToString();
+                txtConductorDestino.Text = ToStr(row, "conductor");
+                txtTracto2.Text = ToStr(row, "placaTracto");
+                MostrarResumenDespacho(litResumenInternacional, pnlResumenInternacional, row);
+            }
+
+            ActualizarProgresoTimeline();
+
+            // Un postback sin esto vuelve a la pestaña por defecto (Importar Excel), porque la
+            // pestaña activa es solo una clase CSS puesta por JS — no se conserva sola entre postbacks.
+            pnlFormBanner.Visible = true;
+            ActivarTab("panel-form");
+        }
+
+        private DataRow ObtenerDespachoPorId(int idDespacho)
+        {
+            using (var conn = new SqlConnection(ConnStr))
+            using (var cmd = new SqlCommand("sp_SE_ObtenerDespachoPorId", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Add("@idDespacho", SqlDbType.Int).Value = idDespacho;
+                conn.Open();
+                using (var da = new SqlDataAdapter(cmd))
+                {
+                    var dt = new DataTable();
+                    da.Fill(dt);
+                    return dt.Rows.Count > 0 ? dt.Rows[0] : null;
+                }
+            }
+        }
+
+        private static void MostrarResumenDespacho(Literal lit, Panel pnl, DataRow row)
+        {
+            lit.Text =
+                $"<strong>{System.Web.HttpUtility.HtmlEncode(ToStr(row, "numeroDespacho"))}</strong> · " +
+                $"{System.Web.HttpUtility.HtmlEncode(ToStr(row, "cliente"))} · " +
+                $"{System.Web.HttpUtility.HtmlEncode(ToStr(row, "conductor"))} · " +
+                $"Tracto {System.Web.HttpUtility.HtmlEncode(ToStr(row, "placaTracto"))} · " +
+                $"Carreta {System.Web.HttpUtility.HtmlEncode(ToStr(row, "placaCarreta"))} · " +
+                $"{Convert.ToDateTime(row["fechaDespacho"]):dd/MM/yyyy}";
+            pnl.Visible = true;
         }
 
         private void CargarRegistroEnFormulario(int id)
@@ -305,6 +444,25 @@ namespace WebSGV.Views.Exportacion
                 txtConductorDestino.Text = ToStr(row, "conductorDestino");
                 txtTracto2.Text          = ToStr(row, "tracto2");
 
+                pnlResumenNacional.Visible = false;
+                pnlResumenInternacional.Visible = false;
+                hdnIdDespachoOrigen.Value = "0";
+                hdnIdDespachoDestino.Value = "0";
+                if (row.Table.Columns.Contains("idDespachoOrigen") && !row.IsNull("idDespachoOrigen"))
+                {
+                    int idDespachoOrigen = Convert.ToInt32(row["idDespachoOrigen"]);
+                    hdnIdDespachoOrigen.Value = idDespachoOrigen.ToString();
+                    DataRow filaDespacho = ObtenerDespachoPorId(idDespachoOrigen);
+                    if (filaDespacho != null) MostrarResumenDespacho(litResumenNacional, pnlResumenNacional, filaDespacho);
+                }
+                if (row.Table.Columns.Contains("idDespachoDestino") && !row.IsNull("idDespachoDestino"))
+                {
+                    int idDespachoDestino = Convert.ToInt32(row["idDespachoDestino"]);
+                    hdnIdDespachoDestino.Value = idDespachoDestino.ToString();
+                    DataRow filaDespacho = ObtenerDespachoPorId(idDespachoDestino);
+                    if (filaDespacho != null) MostrarResumenDespacho(litResumenInternacional, pnlResumenInternacional, filaDespacho);
+                }
+
                 txtFhSalidaBase1.Text                 = ToDtLocal(row, "fhSalidaBase1");
                 txtFhLlegadaTrujillo.Text             = ToDtLocal(row, "fhLlegadaTrujillo");
                 txtFhRegistro.Text                    = ToDtLocal(row, "fhRegistro");
@@ -332,6 +490,7 @@ namespace WebSGV.Views.Exportacion
                 txtFhInicioDescarga.Text              = ToDtLocal(row, "fhInicioDescarga");
                 txtFhTerminoDescarga.Text             = ToDtLocal(row, "fhTerminoDescarga");
                 txtFhSalida.Text                      = ToDtLocal(row, "fhSalida");
+                txtFhLlegadaBaseFinal.Text             = ToDtLocal(row, "fhLlegadaBaseFinal");
                 txtMotivoRetraso.Text                 = ToStr(row, "motivoRetraso");
 
                 txtSacosRobados.Text = row.IsNull("sacosRobados") ? "0" : row["sacosRobados"].ToString();
@@ -350,6 +509,7 @@ namespace WebSGV.Views.Exportacion
                 litFormBannerTitle.Text = $"Editando viaje #{id} — {txtCliente.Text}";
                 litFormBannerSub.Text = "Agrega solo los hitos nuevos. Los campos vacíos NO sobrescriben los datos ya guardados.";
                 ActualizarIndicadorEstado(estado);
+                ActualizarProgresoTimeline();
                 ActivarTab("panel-form");
             }
             catch (Exception ex)
@@ -482,6 +642,7 @@ namespace WebSGV.Views.Exportacion
                     AgregarFecha(cmd, "@fhInicioDescarga",               txtFhInicioDescarga.Text);
                     AgregarFecha(cmd, "@fhTerminoDescarga",              txtFhTerminoDescarga.Text);
                     AgregarFecha(cmd, "@fhSalida",                       txtFhSalida.Text);
+                    AgregarFecha(cmd, "@fhLlegadaBaseFinal",             txtFhLlegadaBaseFinal.Text);
 
                     AgregarTexto(cmd, "@motivoRetraso", txtMotivoRetraso.Text, 1000);
                     cmd.Parameters.Add("@sacosRobados", SqlDbType.Int).Value = ParseIntSafe(txtSacosRobados.Text);
@@ -490,6 +651,12 @@ namespace WebSGV.Views.Exportacion
                     string estadoObjetivo = DeterminarEstadoObjetivo(esFinal);
                     cmd.Parameters.Add("@estado", SqlDbType.VarChar, 20).Value = estadoObjetivo;
                     cmd.Parameters.Add("@idUsuarioRegistro", SqlDbType.Int).Value = (object)idUsuario ?? DBNull.Value;
+
+                    int idDespachoOrigenPost, idDespachoDestinoPost;
+                    int.TryParse(hdnIdDespachoOrigen.Value, out idDespachoOrigenPost);
+                    int.TryParse(hdnIdDespachoDestino.Value, out idDespachoDestinoPost);
+                    cmd.Parameters.Add("@idDespachoOrigen", SqlDbType.Int).Value = idDespachoOrigenPost > 0 ? (object)idDespachoOrigenPost : DBNull.Value;
+                    cmd.Parameters.Add("@idDespachoDestino", SqlDbType.Int).Value = idDespachoDestinoPost > 0 ? (object)idDespachoDestinoPost : DBNull.Value;
 
                     var outParam = new SqlParameter("@idSeguimiento", SqlDbType.Int) { Direction = ParameterDirection.Output };
                     cmd.Parameters.Add(outParam);
@@ -568,6 +735,89 @@ namespace WebSGV.Views.Exportacion
             LimpiarFormulario();
         }
 
+        /// <summary>
+        /// Consulta el historial GPS de Tracto 1 (tramo Base-Trujillo-Base) y Tracto 2 (tramo
+        /// Base-Ecuador-Base) y llena automáticamente los campos de fecha/hora detectables.
+        /// Puede tardar uno o dos minutos (recorre día por día todo el viaje) — es una
+        /// operación síncrona simple, sin infraestructura de background jobs.
+        /// </summary>
+        protected void btnVerificarGps_Click(object sender, EventArgs e)
+        {
+            int id;
+            bool seGuardoAutomaticamente = false;
+            if (!int.TryParse(hdnIdSeguimiento.Value, out id) || id <= 0)
+            {
+                // Antes exigíamos que la administradora guardara el borrador a mano primero — se
+                // perdía de vista y parecía que "Verificar GPS" no hacía nada. Ahora se guarda un
+                // borrador automáticamente (mismo camino que "Guardar borrador", sin exigir F.H.
+                // Programación) y se continúa directo a la consulta GPS.
+                GuardarSeguimiento(esFinal: false);
+                if (!int.TryParse(hdnIdSeguimiento.Value, out id) || id <= 0)
+                {
+                    // GuardarSeguimiento ya mostró su propio mensaje (ej. falta seleccionar el despacho nacional).
+                    ActivarTab("panel-form");
+                    return;
+                }
+                seGuardoAutomaticamente = true;
+            }
+
+            string prefijo = seGuardoAutomaticamente ? "Viaje guardado como borrador. " : "";
+            var resultado = WebSGV.Services.GpsIntegracion.SeguimientoExportacionGpsService.ConsultarYActualizar(id);
+            if (resultado.Exito)
+            {
+                CargarRegistroEnFormulario(id);
+                MostrarAlerta("✅ " + prefijo + resultado.Mensaje, "success");
+                MostrarDetalleResultadoGps(resultado);
+            }
+            else
+            {
+                MostrarAlerta("❌ " + prefijo + resultado.Mensaje, "danger");
+                pnlResultadoGps.Visible = false;
+            }
+            ActivarTab("panel-form");
+        }
+
+        private static readonly Dictionary<string, string> EtiquetasCampoGps = new Dictionary<string, string>
+        {
+            { "fhSalidaBase1",           "F.H. Salida Base" },
+            { "fhLlegadaTrujillo",       "F.H. Llegada Trujillo" },
+            { "fhIngresoPlanta",         "F.H. Ingreso Planta" },
+            { "fhSalidaPlanta",          "F.H. Salida Planta" },
+            { "fhLlegadaBase2",          "F.H. Llegada Base" },
+            { "fhSalidaBase2",           "F.H. Salida Base (hacia Ecuador)" },
+            { "fhLlegadaBodegaNacional", "F.H. Llegada Bodega Nacional" },
+            { "fhIngresoBodegaNacional", "F.H. Ingreso Bodega Nacional" },
+            { "fhSalidaBodegaNacional",  "F.H. Salida Bodega Nacional" },
+            { "fhLlegadaCEBAF",          "F.H. Llegada CEBAF" },
+            { "fhCruceEcuador",          "F.H. Cruce Ecuador" },
+            { "fhLlegadaTCI",            "F.H. Llegada TCI" },
+            { "fhSalidaTCI",             "F.H. Salida TCI" },
+            { "fhLlegadaPlantaEcuador",  "F.H. Llegada Planta Ecuador" },
+            { "fhLlegadaAlmacen",        "F.H. Llegada Almacén" },
+            { "fhIngreso",               "F.H. Ingreso (Ecuador)" },
+            { "fhSalida",                "F.H. Salida (Ecuador)" },
+            { "fhLlegadaBaseFinal",      "F.H. Llegada Base (regreso final)" }
+        };
+
+        private void MostrarDetalleResultadoGps(WebSGV.Services.GpsIntegracion.ResultadoConsultaGpsExportacion resultado)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append("<strong>Detalle de la consulta GPS:</strong><ul style=\"margin:8px 0 0 18px;padding:0;\">");
+            foreach (var campo in resultado.Campos)
+            {
+                string etiqueta = EtiquetasCampoGps.ContainsKey(campo.Columna) ? EtiquetasCampoGps[campo.Columna] : campo.Columna;
+                string icono = campo.Encontrado ? "✅" : "—";
+                string nota = campo.Encontrado ? "actualizado por GPS" : "sin dato GPS, sigue siendo manual";
+                sb.Append("<li>").Append(icono).Append(' ')
+                  .Append(System.Web.HttpUtility.HtmlEncode(etiqueta))
+                  .Append(" <em>(").Append(nota).Append(")</em></li>");
+            }
+            sb.Append("</ul>");
+
+            litResultadoGps.Text = sb.ToString();
+            pnlResultadoGps.Visible = true;
+        }
+
         private void LimpiarFormulario()
         {
             foreach (var c in new[] {
@@ -591,6 +841,15 @@ namespace WebSGV.Views.Exportacion
             ddlBodegaNacional.SelectedIndex    = 0;
             ddlBodegaEcuatoriana.SelectedIndex = 0;
             ddlBodegaDescarga.SelectedIndex    = 0;
+
+            txtFhLlegadaBaseFinal.Text = "";
+            txtBuscarDespachoNacional.Text = "";
+            txtBuscarDespachoInternacional.Text = "";
+            pnlResumenNacional.Visible = false;
+            pnlResumenInternacional.Visible = false;
+            hdnIdDespachoOrigen.Value = "0";
+            hdnIdDespachoDestino.Value = "0";
+
             ActualizarIndicadorEstado("BORRADOR");
         }
 

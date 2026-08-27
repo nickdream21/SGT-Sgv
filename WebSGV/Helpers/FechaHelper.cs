@@ -28,5 +28,17 @@ namespace WebSGV.Helpers
         {
             return Ahora().Date;
         }
+
+        /// <summary>
+        /// Convierte un <see cref="DateTime"/> en UTC (p. ej. <c>messageTime</c> del API de
+        /// Onway/CarSync, que reporta en UTC) a la zona horaria de Perú. Fuerza
+        /// <see cref="DateTimeKind.Utc"/> antes de convertir, sin importar cómo haya quedado
+        /// el <c>Kind</c> tras la deserialización JSON.
+        /// </summary>
+        public static DateTime ConvertirDeUtc(DateTime utc)
+        {
+            DateTime utcSeguro = DateTime.SpecifyKind(utc, DateTimeKind.Utc);
+            return TimeZoneInfo.ConvertTimeFromUtc(utcSeguro, ZonaPeruana);
+        }
     }
 }

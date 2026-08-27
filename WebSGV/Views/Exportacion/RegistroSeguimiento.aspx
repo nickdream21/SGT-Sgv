@@ -122,6 +122,42 @@
         details.se-accordion[open] > summary::before { transform: rotate(90deg); }
         details.se-accordion > summary:hover { background: var(--se-bg); }
         details.se-accordion .se-acc-body { padding: 0 20px 20px 20px; }
+
+        /* ===== Autocompletado de despachos ===== */
+        .se-ac-list { display: none; position: absolute; z-index: 20; left: 0; right: 0; top: 100%; margin-top: 4px; background: #fff; border: 1px solid var(--se-border); border-radius: 10px; box-shadow: 0 8px 24px rgba(11,20,38,0.12); max-height: 260px; overflow-y: auto; }
+        .se-ac-list.show { display: block; }
+        .se-ac-item { padding: 10px 14px; font-size: 13px; color: var(--se-ink); cursor: pointer; border-bottom: 1px solid var(--se-border); }
+        .se-ac-item:last-child { border-bottom: none; }
+        .se-ac-item:hover { background: var(--se-bg); }
+        .se-ac-item.se-ac-empty { color: var(--se-muted); cursor: default; font-style: italic; }
+        .se-ac-item.se-ac-empty:hover { background: transparent; }
+
+        /* ===== Línea de tiempo del recorrido (integración GPS) ===== */
+        .se-timeline-tramo { position: relative; border: 1px solid var(--se-border); border-radius: 14px; margin-bottom: 14px; background: #fff; overflow: hidden; }
+        .se-timeline-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--se-border); background: #FAFBFE; }
+        .se-timeline-head-left { display: flex; align-items: center; gap: 10px; }
+        .se-timeline-head-icon { width: 30px; height: 30px; border-radius: 50%; background: var(--se-ink); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+        .se-timeline-head h4 { margin: 0; font-size: 14px; font-weight: 700; color: var(--se-ink); text-transform: uppercase; letter-spacing: 0.05em; }
+        .se-timeline-head small { display: block; color: var(--se-muted); font-size: 11.5px; font-weight: 500; margin-top: 1px; }
+        .se-badge-progreso { font-size: 11.5px; font-weight: 700; padding: 5px 12px; border-radius: 999px; white-space: nowrap; }
+        .se-badge-progreso.completo { background: #ECFDF5; color: #065F46; }
+        .se-badge-progreso.parcial  { background: #FFFBEB; color: #92400E; }
+        .se-badge-progreso.vacio    { background: #F3F4F6; color: #6B7280; }
+
+        .se-timeline-body { padding: 18px 20px 20px 20px; position: relative; }
+        .se-timeline-steps { display: flex; flex-direction: column; gap: 0; }
+        .se-timeline-step { display: grid; grid-template-columns: 28px 1fr; gap: 14px; position: relative; padding-bottom: 16px; }
+        .se-timeline-step:last-child { padding-bottom: 0; }
+        .se-timeline-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--se-border); margin-top: 4px; position: relative; z-index: 1; justify-self: center; }
+        .se-timeline-step.gps .se-timeline-dot { background: var(--se-accent); }
+        .se-timeline-step:not(:last-child)::before { content: ''; position: absolute; left: 13px; top: 16px; bottom: -4px; width: 2px; background: var(--se-border); }
+        .se-timeline-step-label { display: flex; align-items: baseline; gap: 6px; margin-bottom: 5px; }
+        .se-timeline-step-label label { font-size: 12px; font-weight: 600; color: var(--se-ink); text-transform: uppercase; letter-spacing: 0.03em; margin: 0; }
+        .se-timeline-tag { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.03em; }
+        .se-timeline-tag.gps { background: rgba(0,212,170,0.12); color: #067A5F; }
+        .se-timeline-tag.manual { background: rgba(107,114,128,0.12); color: #4B5563; }
+        .se-timeline-step input, .se-timeline-step select { width: 100%; max-width: 280px; padding: 8px 11px; border: 1px solid var(--se-border); border-radius: 8px; font-size: 13.5px; font-family: inherit; color: var(--se-ink); background: #fff; }
+        .se-timeline-step input:focus, .se-timeline-step select:focus { outline: none; border-color: var(--se-primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         .se-acc-badge { margin-left: auto; background: var(--se-bg); color: var(--se-muted); padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
         .se-acc-badge.ok { background: #D1FAE5; color: #065F46; }
 
@@ -149,8 +185,12 @@
 
         <!-- Tabs -->
         <div class="se-tabs" role="tablist">
+            <button type="button" class="se-tab" data-target="panel-bandeja">🚚 Viajes en curso</button>
             <button type="button" class="se-tab active" data-target="panel-import">📂 Importar Excel</button>
             <button type="button" class="se-tab"        data-target="panel-list">📋 Historial</button>
+            <%-- Botón oculto: no es navegable a mano, solo existe para que ActivarTab("panel-form") (code-behind)
+                 pueda "hacer clic" en él por JS y mostrar el formulario tras Nuevo Viaje / Editar / Verificar GPS. --%>
+            <button type="button" class="se-tab" data-target="panel-form" style="display:none;" aria-hidden="true"></button>
         </div>
 
         <asp:HiddenField ID="hdnIdSeguimiento" runat="server" Value="0" />
@@ -241,27 +281,53 @@
                 <asp:Button ID="btnCancelarEdicion" runat="server" Text="✕ Cancelar edición" CssClass="se-btn se-btn-ghost se-btn-cancel" CausesValidation="false" OnClick="btnCancelarEdicion_Click" />
             </asp:Panel>
 
-            <%-- Sección ①: Identidad del viaje (orden igual al Excel) --%>
+            <%-- Sección ①: Vincular despachos reales (el viaje se CREA en Despacho, acá solo se selecciona) --%>
             <details class="se-accordion" open>
-                <summary>① Datos del viaje (obligatorios para abrir)</summary>
+                <summary>① Despachos del viaje (obligatorio: al menos el nacional)</summary>
                 <div class="se-acc-body">
-                    <div class="se-grid">
-                        <div class="se-field"><label>Cliente *</label>
-                            <asp:TextBox ID="txtCliente" runat="server" placeholder="Escribe para buscar..." AutoCompleteType="Disabled" />
-                            <asp:RequiredFieldValidator ID="rfvCliente" runat="server" ControlToValidate="txtCliente" ValidationGroup="vgGuardarSeguimiento" Display="Dynamic" CssClass="text-danger" ErrorMessage="Cliente es obligatorio." />
+                    <div class="se-alert se-alert-info" style="margin-bottom:14px;">
+                        💡 Los viajes se crean en <strong>Despacho</strong>. Acá solo buscas y seleccionas los despachos reales que corresponden a este viaje de exportación — cliente, conductor y placa se traen automáticamente, no se re-escriben.
+                    </div>
+                    <div class="se-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div>
+                            <div class="se-field" style="position:relative;"><label>Buscar despacho Nacional (Trujillo) — Tracto 1 *</label>
+                                <asp:TextBox ID="txtBuscarDespachoNacional" runat="server" placeholder="Escribe cliente, conductor o placa..." autocomplete="off" onkeyup="seAutocompletarDespacho(this, false)" />
+                                <div id="acDespachoNacional" class="se-ac-list"></div>
+                            </div>
+                            <asp:Panel ID="pnlResumenNacional" runat="server" Visible="false" CssClass="se-alert se-alert-success" style="margin-top:10px;">
+                                <asp:Literal ID="litResumenNacional" runat="server" Mode="PassThrough" />
+                            </asp:Panel>
                         </div>
-                        <div class="se-field"><label>Conductor Origen</label>
-                            <asp:TextBox ID="txtConductorOrigen" runat="server" placeholder="Escribe el nombre..." /></div>
-                        <div class="se-field"><label>Tracto 1 *</label>
-                            <asp:TextBox ID="txtTracto1" runat="server" placeholder="Placa..." AutoCompleteType="Disabled" />
-                            <asp:RequiredFieldValidator ID="rfvTracto1" runat="server" ControlToValidate="txtTracto1" ValidationGroup="vgGuardarSeguimiento" Display="Dynamic" CssClass="text-danger" ErrorMessage="Tracto 1 es obligatorio." />
+                        <div>
+                            <div class="se-field" style="position:relative;"><label>Buscar despacho Internacional (Ecuador) — Tracto 2</label>
+                                <asp:TextBox ID="txtBuscarDespachoInternacional" runat="server" placeholder="Escribe cliente, conductor o placa..." autocomplete="off" onkeyup="seAutocompletarDespacho(this, true)" />
+                                <div id="acDespachoInternacional" class="se-ac-list"></div>
+                            </div>
+                            <asp:Panel ID="pnlResumenInternacional" runat="server" Visible="false" CssClass="se-alert se-alert-success" style="margin-top:10px;">
+                                <asp:Literal ID="litResumenInternacional" runat="server" Mode="PassThrough" />
+                            </asp:Panel>
                         </div>
-                        <div class="se-field"><label>Carreta</label>
-                            <asp:TextBox ID="txtCarreta" runat="server" placeholder="Placa..." /></div>
-                        <div class="se-field"><label>Conductor Destino</label>
-                            <asp:TextBox ID="txtConductorDestino" runat="server" placeholder="Escribe el nombre..." /></div>
-                        <div class="se-field"><label>Tracto 2</label>
-                            <asp:TextBox ID="txtTracto2" runat="server" placeholder="Placa..." /></div>
+                        <%-- Ganchos de postback: el clic en un ítem del autocompletado (JS) guarda el id en el
+                             hidden field correspondiente y dispara estos LinkButton ocultos vía __doPostBack. --%>
+                        <asp:LinkButton ID="lnkAplicarDespachoNacional" runat="server" OnClick="lnkAplicarDespachoNacional_Click" style="display:none;" CausesValidation="false" />
+                        <asp:LinkButton ID="lnkAplicarDespachoInternacional" runat="server" OnClick="lnkAplicarDespachoInternacional_Click" style="display:none;" CausesValidation="false" />
+                    </div>
+
+                    <%-- Portadores de datos para el guardado/carga existente — no se editan a mano, los llena la selección de arriba. --%>
+                    <div style="display:none;">
+                        <asp:TextBox ID="txtCliente" runat="server" />
+                        <asp:RequiredFieldValidator ID="rfvCliente" runat="server" ControlToValidate="txtCliente" ValidationGroup="vgGuardarSeguimiento" Display="Dynamic" CssClass="text-danger" ErrorMessage="Selecciona el despacho Nacional (Tracto 1)." />
+                        <asp:TextBox ID="txtConductorOrigen" runat="server" />
+                        <asp:TextBox ID="txtTracto1" runat="server" />
+                        <asp:RequiredFieldValidator ID="rfvTracto1" runat="server" ControlToValidate="txtTracto1" ValidationGroup="vgGuardarSeguimiento" Display="Dynamic" CssClass="text-danger" ErrorMessage="Selecciona el despacho Nacional (Tracto 1)." />
+                        <asp:TextBox ID="txtCarreta" runat="server" />
+                        <asp:TextBox ID="txtConductorDestino" runat="server" />
+                        <asp:TextBox ID="txtTracto2" runat="server" />
+                    </div>
+                    <asp:HiddenField ID="hdnIdDespachoOrigen" runat="server" Value="0" />
+                    <asp:HiddenField ID="hdnIdDespachoDestino" runat="server" Value="0" />
+
+                    <div class="se-grid" style="margin-top:16px;">
                         <div class="se-field"><label>F.H. Programación *</label>
                             <asp:TextBox ID="txtFhProgramacion" runat="server" TextMode="DateTimeLocal" />
                             <asp:RequiredFieldValidator ID="rfvFhProgramacion" runat="server" ControlToValidate="txtFhProgramacion" ValidationGroup="vgGuardarSeguimiento" Display="Dynamic" CssClass="text-danger" ErrorMessage="F.H. Programación es obligatoria." />
@@ -280,109 +346,240 @@
                 </div>
             </details>
 
-            <%-- Sección ②: Tiempos en Perú (orden: SalidaBase → Trujillo → Registro → IngresoPlanta → ...) --%>
-            <details class="se-accordion">
-                <summary>② Tiempos en Perú</summary>
-                <div class="se-acc-body">
-                    <div class="se-grid">
-                        <div class="se-field"><label>F.H. Salida Base</label>
-                            <asp:TextBox ID="txtFhSalidaBase1" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Llegada Trujillo</label>
-                            <asp:TextBox ID="txtFhLlegadaTrujillo" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Registro</label>
-                            <asp:TextBox ID="txtFhRegistro" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Ingreso Planta</label>
-                            <asp:TextBox ID="txtFhIngresoPlanta" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Inicio Carga</label>
-                            <asp:TextBox ID="txtFhInicioCarga" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Término Carga</label>
-                            <asp:TextBox ID="txtFhTerminoCarga" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Salida Planta</label>
-                            <asp:TextBox ID="txtFhSalidaPlanta" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Llegada Base 2</label>
-                            <asp:TextBox ID="txtFhLlegadaBase2" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Salida Base 2</label>
-                            <asp:TextBox ID="txtFhSalidaBase2" runat="server" TextMode="DateTimeLocal" /></div>
-                    </div>
-                </div>
-            </details>
+            <%-- Sección ②-⑤: Línea de tiempo del recorrido (Base → Trujillo → Base → Ecuador → Base) --%>
+            <div class="se-card" style="padding:20px 20px 6px 20px;">
+                <div class="se-section-title" style="margin-bottom:4px;">② Línea de tiempo del recorrido</div>
+                <p style="color:var(--se-muted);font-size:12.5px;margin:-6px 0 16px 0;">
+                    <span class="se-timeline-tag gps">GPS</span> se llena solo al presionar "Verificar GPS" abajo (puedes corregirlo si hace falta) ·
+                    <span class="se-timeline-tag manual">MANUAL</span> siempre se escribe a mano.
+                </p>
 
-            <%-- Sección ③: Bodega Nacional --%>
-            <details class="se-accordion">
-                <summary>③ Bodega Nacional</summary>
-                <div class="se-acc-body">
-                    <div class="se-grid">
-                        <div class="se-field"><label>F.H. Llegada Bodega Nacional</label>
-                            <asp:TextBox ID="txtFhLlegadaBodegaNacional" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Ingreso Bodega Nacional</label>
-                            <asp:TextBox ID="txtFhIngresoBodegaNacional" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Salida Bodega Nacional</label>
-                            <asp:TextBox ID="txtFhSalidaBodegaNacional" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>Bodega Nacional</label>
-                            <asp:DropDownList ID="ddlBodegaNacional" runat="server" CssClass="se-field-select">
-                                <asp:ListItem Text="-- Seleccionar --" Value="" />
-                                <asp:ListItem Text="DEPSA"    Value="DEPSA" />
-                                <asp:ListItem Text="COMPLEX"  Value="COMPLEX" />
-                            </asp:DropDownList>
+                <%-- Tramo Nacional (Tracto 1): Base → Trujillo → Base --%>
+                <div class="se-timeline-tramo">
+                    <div class="se-timeline-head">
+                        <div class="se-timeline-head-left">
+                            <div class="se-timeline-head-icon">1</div>
+                            <div><h4>Tramo Nacional — Base ⇄ Trujillo</h4><small>Tracto 1 · <asp:Literal ID="litTracto1Resumen" runat="server" /></small></div>
+                        </div>
+                        <asp:Literal ID="litProgresoNacional" runat="server" Mode="PassThrough" />
+                    </div>
+                    <div class="se-timeline-body">
+                        <div class="se-timeline-steps">
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Salida Base</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhSalidaBase1" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Llegada Trujillo</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhLlegadaTrujillo" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Ingreso Planta</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhIngresoPlanta" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Inicio Carga</label><span class="se-timeline-tag manual">Manual</span></div>
+                                    <asp:TextBox ID="txtFhInicioCarga" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Término Carga</label><span class="se-timeline-tag manual">Manual</span></div>
+                                    <asp:TextBox ID="txtFhTerminoCarga" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Salida Planta</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhSalidaPlanta" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Llegada Base</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhLlegadaBase2" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Registro (sistema)</label><span class="se-timeline-tag manual">Manual</span></div>
+                                    <asp:TextBox ID="txtFhRegistro" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </details>
 
-            <%-- Sección ④: Frontera (CEBAF / Nacionalización) --%>
-            <details class="se-accordion">
-                <summary>④ Frontera (CEBAF / Nacionalización)</summary>
-                <div class="se-acc-body">
-                    <div class="se-grid">
-                        <div class="se-field"><label>F.H. Llegada CEBAF</label>
-                            <asp:TextBox ID="txtFhLlegadaCEBAF" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Cruce Ecuador</label>
-                            <asp:TextBox ID="txtFhCruceEcuador" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Autorización Nacionalización</label>
-                            <asp:TextBox ID="txtFhAutorizacionNacionalizacion" runat="server" TextMode="DateTimeLocal" /></div>
+                <%-- Tramo Internacional (Tracto 2): Base → Bodega Nacional --%>
+                <div class="se-timeline-tramo">
+                    <div class="se-timeline-head">
+                        <div class="se-timeline-head-left">
+                            <div class="se-timeline-head-icon">2</div>
+                            <div><h4>Salida a Ecuador — Bodega Nacional</h4><small>Tracto 2 · <asp:Literal ID="litTracto2Resumen" runat="server" /></small></div>
+                        </div>
+                        <asp:Literal ID="litProgresoBodegaNacional" runat="server" Mode="PassThrough" />
+                    </div>
+                    <div class="se-timeline-body">
+                        <div class="se-timeline-steps">
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Salida Base (hacia Ecuador)</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhSalidaBase2" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Llegada Bodega Nacional</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhLlegadaBodegaNacional" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Ingreso Bodega Nacional</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhIngresoBodegaNacional" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Salida Bodega Nacional</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhSalidaBodegaNacional" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>Bodega Nacional</label><span class="se-timeline-tag manual">Manual</span></div>
+                                    <asp:DropDownList ID="ddlBodegaNacional" runat="server">
+                                        <asp:ListItem Text="-- Seleccionar --" Value="" />
+                                        <asp:ListItem Text="DEPSA"    Value="DEPSA" />
+                                        <asp:ListItem Text="COMPLEX"  Value="COMPLEX" />
+                                    </asp:DropDownList>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </details>
 
-            <%-- Sección ⑤: Tiempos en Ecuador --%>
-            <details class="se-accordion">
-                <summary>⑤ Tiempos en Ecuador</summary>
-                <div class="se-acc-body">
-                    <div class="se-grid">
-                        <div class="se-field"><label>Bodega Ecuatoriana</label>
-                            <asp:DropDownList ID="ddlBodegaEcuatoriana" runat="server">
-                                <asp:ListItem Text="-- Seleccionar --" Value="" />
-                                <asp:ListItem Text="TCI"     Value="TCI" />
-                                <asp:ListItem Text="PUYANGO" Value="PUYANGO" />
-                            </asp:DropDownList>
+                <%-- Frontera --%>
+                <div class="se-timeline-tramo">
+                    <div class="se-timeline-head">
+                        <div class="se-timeline-head-left">
+                            <div class="se-timeline-head-icon">3</div>
+                            <div><h4>Frontera — CEBAF / Nacionalización</h4><small>Tracto 2</small></div>
                         </div>
-                        <div class="se-field"><label>F.H. Llegada TCI</label>
-                            <asp:TextBox ID="txtFhLlegadaTCI" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Salida TCI</label>
-                            <asp:TextBox ID="txtFhSalidaTCI" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>Bodega Descarga</label>
-                            <asp:DropDownList ID="ddlBodegaDescarga" runat="server">
-                                <asp:ListItem Text="-- Seleccionar --" Value="" />
-                                <asp:ListItem Text="INBALNOR" Value="INBALNOR" />
-                                <asp:ListItem Text="JAVE"     Value="JAVE" />
-                                <asp:ListItem Text="OREMANS"  Value="OREMANS" />
-                            </asp:DropDownList>
+                        <asp:Literal ID="litProgresoFrontera" runat="server" Mode="PassThrough" />
+                    </div>
+                    <div class="se-timeline-body">
+                        <div class="se-timeline-steps">
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Llegada CEBAF</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhLlegadaCEBAF" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Cruce Ecuador</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhCruceEcuador" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Autorización Nacionalización</label><span class="se-timeline-tag manual">Manual</span></div>
+                                    <asp:TextBox ID="txtFhAutorizacionNacionalizacion" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
                         </div>
-                        <div class="se-field"><label>F.H. Llegada Planta Ecuador</label>
-                            <asp:TextBox ID="txtFhLlegadaPlantaEcuador" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Llegada Almacén</label>
-                            <asp:TextBox ID="txtFhLlegadaAlmacen" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Ingreso</label>
-                            <asp:TextBox ID="txtFhIngreso" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Inicio Descarga</label>
-                            <asp:TextBox ID="txtFhInicioDescarga" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Término Descarga</label>
-                            <asp:TextBox ID="txtFhTerminoDescarga" runat="server" TextMode="DateTimeLocal" /></div>
-                        <div class="se-field"><label>F.H. Salida</label>
-                            <asp:TextBox ID="txtFhSalida" runat="server" TextMode="DateTimeLocal" /></div>
                     </div>
                 </div>
-            </details>
+
+                <%-- Ecuador --%>
+                <div class="se-timeline-tramo">
+                    <div class="se-timeline-head">
+                        <div class="se-timeline-head-left">
+                            <div class="se-timeline-head-icon">4</div>
+                            <div><h4>Ecuador — TCI → Jave / Inbalnor</h4><small>Tracto 2 · la ruta (Jave/Inbalnor) se detecta sola por GPS</small></div>
+                        </div>
+                        <asp:Literal ID="litProgresoEcuador" runat="server" Mode="PassThrough" />
+                    </div>
+                    <div class="se-timeline-body">
+                        <div class="se-timeline-steps">
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Llegada TCI</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhLlegadaTCI" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Salida TCI</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhSalidaTCI" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>Bodega Ecuatoriana</label><span class="se-timeline-tag manual">Manual</span></div>
+                                    <asp:DropDownList ID="ddlBodegaEcuatoriana" runat="server">
+                                        <asp:ListItem Text="-- Seleccionar --" Value="" />
+                                        <asp:ListItem Text="TCI"     Value="TCI" />
+                                        <asp:ListItem Text="PUYANGO" Value="PUYANGO" />
+                                    </asp:DropDownList>
+                                </div>
+                            </div>
+                            <div class="se-timeline-step">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>Bodega Descarga</label><span class="se-timeline-tag manual">Manual (o auto por ruta GPS)</span></div>
+                                    <asp:DropDownList ID="ddlBodegaDescarga" runat="server">
+                                        <asp:ListItem Text="-- Seleccionar --" Value="" />
+                                        <asp:ListItem Text="INBALNOR" Value="INBALNOR" />
+                                        <asp:ListItem Text="JAVE"     Value="JAVE" />
+                                        <asp:ListItem Text="OREMANS"  Value="OREMANS" />
+                                    </asp:DropDownList>
+                                </div>
+                            </div>
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Llegada Planta Ecuador</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhLlegadaPlantaEcuador" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Llegada Almacén</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhLlegadaAlmacen" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Ingreso</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhIngreso" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Inicio Descarga</label><span class="se-timeline-tag manual">Manual</span></div>
+                                    <asp:TextBox ID="txtFhInicioDescarga" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Término Descarga</label><span class="se-timeline-tag manual">Manual</span></div>
+                                    <asp:TextBox ID="txtFhTerminoDescarga" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Salida</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhSalida" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <%-- Regreso final --%>
+                <div class="se-timeline-tramo">
+                    <div class="se-timeline-head">
+                        <div class="se-timeline-head-left">
+                            <div class="se-timeline-head-icon">5</div>
+                            <div><h4>Regreso Final a Base</h4><small>Tracto 2 · cierra el recorrido</small></div>
+                        </div>
+                        <asp:Literal ID="litProgresoRegreso" runat="server" Mode="PassThrough" />
+                    </div>
+                    <div class="se-timeline-body">
+                        <div class="se-timeline-steps">
+                            <div class="se-timeline-step gps">
+                                <div class="se-timeline-dot"></div>
+                                <div><div class="se-timeline-step-label"><label>F.H. Llegada Base</label><span class="se-timeline-tag gps">GPS</span></div>
+                                    <asp:TextBox ID="txtFhLlegadaBaseFinal" runat="server" TextMode="DateTimeLocal" /></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <%-- Sección ⑥: Incidencias --%>
             <details class="se-accordion">
@@ -411,9 +608,13 @@
             <div class="se-card">
                 <div class="se-actions">
                     <asp:Button ID="btnLimpiar" runat="server" Text="Limpiar" CssClass="se-btn se-btn-ghost" CausesValidation="false" OnClick="btnLimpiar_Click" />
+                    <asp:Button ID="btnVerificarGps" runat="server" Text="🛰️ Verificar GPS" CssClass="se-btn se-btn-ghost" CausesValidation="false" OnClick="btnVerificarGps_Click" ToolTip="Consulta el historial GPS del Tracto 1 y Tracto 2 y llena automáticamente los campos de fecha/hora detectables. Puede tardar 1-2 minutos." />
                     <asp:Button ID="btnGuardarBorrador" runat="server" Text="📝 Guardar borrador" CssClass="se-btn se-btn-ghost" OnClick="btnGuardarBorrador_Click" CausesValidation="false" />
                     <asp:Button ID="btnGuardarFinal" runat="server" Text="✅ Guardar final" CssClass="se-btn se-btn-primary" OnClick="btnGuardarFinal_Click" ValidationGroup="vgGuardarSeguimiento" />
                 </div>
+                <asp:Panel ID="pnlResultadoGps" runat="server" Visible="false" CssClass="se-alert se-alert-info" style="margin-top:10px;">
+                    <asp:Literal ID="litResultadoGps" runat="server" Mode="PassThrough" />
+                </asp:Panel>
                 <asp:ValidationSummary ID="vsGuardarSeguimiento" runat="server" ValidationGroup="vgGuardarSeguimiento" DisplayMode="BulletList" CssClass="se-alert se-alert-warning" HeaderText="Corrige los siguientes campos:" />
                 <div style="text-align:right;font-size:12px;color:var(--se-muted);margin-top:8px;">
                     Borrador permite avance parcial con validaciones de formato. Guardado final exige todos los campos obligatorios del seguimiento completos.
@@ -491,6 +692,66 @@
                 var panel = document.getElementById(target);
                 if (panel) panel.classList.add('active');
             });
+        });
+
+        // ============================================================
+        //  Autocompletado de despachos (Nacional / Internacional)
+        // ============================================================
+        var seAcTimer = null;
+        function seAutocompletarDespacho(input, esInternacional) {
+            clearTimeout(seAcTimer);
+            var texto = input.value;
+            var list = document.getElementById(esInternacional ? 'acDespachoInternacional' : 'acDespachoNacional');
+            if (texto.length < 2) { list.classList.remove('show'); list.innerHTML = ''; return; }
+
+            seAcTimer = setTimeout(function () {
+                var idSeguimientoActual = parseInt(document.getElementById('<%= hdnIdSeguimiento.ClientID %>').value, 10) || 0;
+                fetch('RegistroSeguimiento.aspx/BuscarDespachosAjax', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                    body: JSON.stringify({ esInternacional: esInternacional, texto: texto, idSeguimientoActual: idSeguimientoActual })
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var items = data.d;
+                    list.innerHTML = '';
+                    if (!items.length) {
+                        var vacio = document.createElement('div');
+                        vacio.className = 'se-ac-item se-ac-empty';
+                        vacio.textContent = 'Sin despachos disponibles con ese texto';
+                        list.appendChild(vacio);
+                    } else {
+                        items.forEach(function (it) {
+                            var div = document.createElement('div');
+                            div.className = 'se-ac-item';
+                            div.textContent = it.Etiqueta;
+                            div.addEventListener('click', function () { seSeleccionarDespacho(it.IdDespacho, esInternacional, it.Etiqueta); });
+                            list.appendChild(div);
+                        });
+                    }
+                    list.classList.add('show');
+                })
+                .catch(function (err) { console.error('Error buscando despachos:', err); });
+            }, 300);
+        }
+
+        function seSeleccionarDespacho(idDespacho, esInternacional, etiqueta) {
+            document.getElementById(esInternacional ? 'acDespachoInternacional' : 'acDespachoNacional').classList.remove('show');
+            if (esInternacional) {
+                document.getElementById('<%= txtBuscarDespachoInternacional.ClientID %>').value = etiqueta;
+                document.getElementById('<%= hdnIdDespachoDestino.ClientID %>').value = idDespacho;
+                __doPostBack('<%= lnkAplicarDespachoInternacional.UniqueID %>', '');
+            } else {
+                document.getElementById('<%= txtBuscarDespachoNacional.ClientID %>').value = etiqueta;
+                document.getElementById('<%= hdnIdDespachoOrigen.ClientID %>').value = idDespacho;
+                __doPostBack('<%= lnkAplicarDespachoNacional.UniqueID %>', '');
+            }
+        }
+
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.se-field')) {
+                document.querySelectorAll('.se-ac-list').forEach(function (l) { l.classList.remove('show'); });
+            }
         });
 
         // ============================================================

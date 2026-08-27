@@ -109,6 +109,7 @@ namespace WebSGV.Services.Conductor
                 cmd.Parameters.AddWithValue("@horaSalida", string.IsNullOrEmpty(input.HoraSalida) ? (object)DBNull.Value : input.HoraSalida);
                 cmd.Parameters.AddWithValue("@fechaLlegada", FechaSeguraSQL(input.FechaLlegada));
                 cmd.Parameters.AddWithValue("@horaLlegada", string.IsNullOrEmpty(input.HoraLlegada) ? (object)DBNull.Value : input.HoraLlegada);
+                cmd.Parameters.AddWithValue("@horaLlegadaDeclarada", string.IsNullOrEmpty(input.HoraLlegadaDeclarada) ? (object)DBNull.Value : input.HoraLlegadaDeclarada);
                 cmd.Parameters.AddWithValue("@observaciones", string.IsNullOrEmpty(input.Observaciones) ? (object)DBNull.Value : input.Observaciones);
                 cmd.Parameters.AddWithValue("@idUsuarioRegistro", input.IdUsuarioRegistro > 0 ? (object)input.IdUsuarioRegistro : DBNull.Value);
                 cmd.ExecuteNonQuery();
@@ -125,6 +126,7 @@ namespace WebSGV.Services.Conductor
                 cmd.Parameters.AddWithValue("@horaSalida", string.IsNullOrEmpty(input.HoraSalida) ? (object)DBNull.Value : input.HoraSalida);
                 cmd.Parameters.AddWithValue("@fechaLlegada", FechaSeguraSQL(input.FechaLlegada));
                 cmd.Parameters.AddWithValue("@horaLlegada", string.IsNullOrEmpty(input.HoraLlegada) ? (object)DBNull.Value : input.HoraLlegada);
+                cmd.Parameters.AddWithValue("@horaLlegadaDeclarada", string.IsNullOrEmpty(input.HoraLlegadaDeclarada) ? (object)DBNull.Value : input.HoraLlegadaDeclarada);
                 cmd.Parameters.AddWithValue("@idConductor", input.IdConductor);
                 cmd.Parameters.AddWithValue("@idTracto", input.IdTracto);
                 cmd.Parameters.AddWithValue("@idCarreta", input.IdCarreta);

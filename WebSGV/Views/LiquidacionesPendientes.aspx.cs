@@ -14,6 +14,7 @@ using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 using WebSGV.Models.Liquidaciones;
 using WebSGV.Services;
+using WebSGV.Services.GpsIntegracion;
 using WebSGV.Services.Liquidaciones;
 
 namespace WebSGV.Views
@@ -853,6 +854,33 @@ namespace WebSGV.Views
             {
                 LogSGV.Error(ex, "Error al corregir salida pendiente (orden {IdOrden})", idOrdenViaje);
                 return new { success = false, message = "Error interno al corregir la salida. Contacte al administrador." };
+            }
+        }
+
+        /// <summary>
+        /// Consulta el historial GPS (Onway) del Tracto de la orden y guarda la hora de
+        /// llegada verificada en OrdenViaje.horaLlegadaGps, para que la administradora la
+        /// compare contra la hora automática y la declarada por el conductor. No bloquea ni
+        /// reemplaza a esas dos — es un tercer dato de referencia.
+        /// </summary>
+        [WebMethod(EnableSession = true)]
+        public static object ConsultarHoraLlegadaGps(int idOrdenViaje)
+        {
+            try
+            {
+                if (idOrdenViaje <= 0)
+                    return new { success = false, message = "El ID de la orden de viaje es inválido." };
+
+                if (!PuedeGestionarLiquidaciones())
+                    return new { success = false, message = "No tiene permisos para consultar el GPS." };
+
+                var resultado = HoraLlegadaGpsService.ConsultarYGuardarHoraLlegada(idOrdenViaje);
+                return new { success = resultado.Exito, message = resultado.Mensaje, horaLlegadaGps = resultado.HoraLlegada };
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Error al consultar hora de llegada GPS (orden {IdOrden})", idOrdenViaje);
+                return new { success = false, message = "Error interno al consultar el GPS. Contacte al administrador." };
             }
         }
 

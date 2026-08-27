@@ -478,6 +478,14 @@
                                 <span class="vi-label"><i class="fas fa-calendar-alt mr-1"></i>Periodo</span>
                                 <span class="vi-value vi-value-periodo" id="detallePeriodo"></span>
                             </div>
+                            <div class="vi-sep"></div>
+                            <div class="vi-item">
+                                <span class="vi-label"><i class="fas fa-clock mr-1"></i>Hora Llegada</span>
+                                <span class="vi-value vi-value-periodo" id="detalleHoraLlegada"></span>
+                                <button type="button" id="btnConsultarHoraGps" class="btn btn-sm btn-outline-secondary ml-2" title="Consultar hora real de llegada por GPS (Onway)">
+                                    <i class="fas fa-satellite-dish"></i> Verificar GPS
+                                </button>
+                            </div>
                         </div>
                         <div id="detalleObservacionesRow" style="display:none;" class="vi-obs-row">
                             <i class="fas fa-comment-alt vi-obs-icon"></i>
@@ -2177,6 +2185,49 @@
             return mainRow + subRow;
         }
 
+        function actualizarTextoHoraLlegada(horaDeclarada, horaSistema, horaGps) {
+            var partes = [
+                horaDeclarada ? horaDeclarada + ' h (declarada por el conductor)' : 'sin declarar',
+                horaSistema ? horaSistema + ' h (envío al sistema)' : 'sin registrar'
+            ];
+            if (horaGps) {
+                partes.push(horaGps + ' h (verificada por GPS)');
+            }
+            $('#detalleHoraLlegada').text(partes.join(' · '));
+        }
+
+        function consultarHoraLlegadaGps() {
+            if (!_idOrdenDetalleActual) return;
+
+            var $btn = $('#btnConsultarHoraGps');
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Consultando...');
+
+            $.ajax({
+                type: "POST",
+                url: "LiquidacionesPendientes.aspx/ConsultarHoraLlegadaGps",
+                data: JSON.stringify({ idOrdenViaje: _idOrdenDetalleActual }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (response) {
+                    var result = response.d;
+                    $btn.prop('disabled', false).html('<i class="fas fa-satellite-dish"></i> Verificar GPS');
+                    if (result.success) {
+                        var textoActual = $('#detalleHoraLlegada').text();
+                        $('#detalleHoraLlegada').text(textoActual + ' · ' + result.horaLlegadaGps + ' h (verificada por GPS)');
+                    } else {
+                        alert('❌ ' + result.message);
+                    }
+                },
+                error: function (xhr) {
+                    console.error('Error:', xhr.responseText);
+                    $btn.prop('disabled', false).html('<i class="fas fa-satellite-dish"></i> Verificar GPS');
+                    alert('Error al consultar el GPS. Por favor intente de nuevo.');
+                }
+            });
+        }
+
+        $(document).on('click', '#btnConsultarHoraGps', consultarHoraLlegadaGps);
+
         function mostrarDetalle(datos) {
             if (!datos) {
                 $('#detalleLoading').hide();
@@ -2189,6 +2240,7 @@
             $('#detalleTracto').text(datos.PlacaTracto);
             $('#detalleCarreta').text(datos.PlacaCarreta);
             $('#detallePeriodo').text(datos.FechaSalida + ' al ' + datos.FechaLlegada);
+            actualizarTextoHoraLlegada(datos.HoraLlegadaDeclarada, datos.HoraLlegadaSistema, datos.HoraLlegadaGps);
 
             // Corrección de salida: solo disponible mientras la liquidación esté PENDIENTE.
             _idOrdenDetalleActual = datos.IdOrdenViaje;

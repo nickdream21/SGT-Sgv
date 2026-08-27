@@ -51,6 +51,9 @@ namespace WebSGV.Models.Liquidaciones
         // Valores crudos de salida para el editor de corrección (administradora).
         public string FechaSalidaISO { get; set; }   // yyyy-MM-dd
         public string HoraSalida { get; set; }        // HH:mm
+        public string HoraLlegadaSistema { get; set; }     // HH:mm - automática, inmutable (hora de envío)
+        public string HoraLlegadaDeclarada { get; set; }   // HH:mm - autoreportada por el conductor
+        public string HoraLlegadaGps { get; set; }         // HH:mm - verificada por GPS (Onway), null si no se consultó
         public string EstadoAprobacion { get; set; }   // PENDIENTE / COMPLETADO / RECHAZADO
         public string Observaciones { get; set; }
 

@@ -849,6 +849,8 @@ namespace WebSGV.Views
                 // La hora de salida la registra el conductor (no hay hora programada); sin valor por defecto.
                 txtHoraSalida.Text = string.Empty;
                 txtHoraLlegada.Text = ahoraServidor.ToString("HH:mm");
+                // Sugerencia editable: el conductor la ajusta si llegó antes de registrar la liquidación.
+                txtHoraLlegadaDeclarada.Text = ahoraServidor.ToString("HH:mm");
 
                 Log("✅ Formulario de liquidación habilitado");
             }
@@ -930,13 +932,14 @@ namespace WebSGV.Views
                 DateTime fechaLlegada = FechaHelper.Hoy();
                 string horaSalida = txtHoraSalida.Text;
                 string horaLlegada = FechaHelper.Ahora().ToString("HH:mm");
+                string horaLlegadaDeclarada = txtHoraLlegadaDeclarada.Text;
                 string observaciones = txtObservaciones.Text;
 
                 // Reflejar en UI la hora oficial usada para registrar la liquidación
                 txtFechaLlegada.Text = fechaLlegada.ToString("yyyy-MM-dd");
                 txtHoraLlegada.Text = horaLlegada;
 
-                string errores = ValidarDatosGenerales(fechaSalida, fechaLlegada, horaSalida, horaLlegada);
+                string errores = ValidarDatosGenerales(fechaSalida, fechaLlegada, horaSalida, horaLlegada, horaLlegadaDeclarada);
                 if (!string.IsNullOrEmpty(errores))
                 {
                     MostrarMensaje(errores.Replace("\n", "<br/>"), "danger");
@@ -956,7 +959,7 @@ namespace WebSGV.Views
                 // queda en el code-behind; el Service sólo ejecuta el SQL/SPs).
                 LiquidacionConductorInput input = ConstruirInputLiquidacion(
                     esReliquidacion, numeroOrdenViaje, fechaSalida, fechaLlegada,
-                    horaSalida, horaLlegada, observaciones, datosViaje,
+                    horaSalida, horaLlegada, horaLlegadaDeclarada, observaciones, datosViaje,
                     idViajeProgreso, idsViajesActivos);
 
                 Log("Iniciando transacción de base de datos...");
@@ -1022,7 +1025,7 @@ namespace WebSGV.Views
         private LiquidacionConductorInput ConstruirInputLiquidacion(
             bool esReliquidacion, string numeroOrdenViaje,
             DateTime fechaSalida, DateTime fechaLlegada,
-            string horaSalida, string horaLlegada, string observaciones,
+            string horaSalida, string horaLlegada, string horaLlegadaDeclarada, string observaciones,
             DatosViajeParaLiquidacion datosViaje,
             int idViajeProgreso, List<int> idsViajesActivos)
         {
@@ -1048,6 +1051,7 @@ namespace WebSGV.Views
                 FechaLlegada = fechaLlegada,
                 HoraSalida = horaSalida,
                 HoraLlegada = horaLlegada,
+                HoraLlegadaDeclarada = horaLlegadaDeclarada,
                 Observaciones = observaciones,
                 IdConductor = datosViaje.IdConductor,
                 IdTracto = datosViaje.IdTracto,
@@ -1319,8 +1323,8 @@ namespace WebSGV.Views
             }
         }
 
-        private string ValidarDatosGenerales(DateTime fechaSalida, DateTime fechaLlegada, string horaSalida, string horaLlegada) =>
-            OrdenViajeValidaciones.ValidarDatosGeneralesLiquidacion(fechaSalida, fechaLlegada, horaSalida, horaLlegada);
+        private string ValidarDatosGenerales(DateTime fechaSalida, DateTime fechaLlegada, string horaSalida, string horaLlegada, string horaLlegadaDeclarada) =>
+            OrdenViajeValidaciones.ValidarDatosGeneralesLiquidacion(fechaSalida, fechaLlegada, horaSalida, horaLlegada, horaLlegadaDeclarada);
 
         /// <summary>
         /// Logging condicional: solo activo en compilaciones DEBUG.

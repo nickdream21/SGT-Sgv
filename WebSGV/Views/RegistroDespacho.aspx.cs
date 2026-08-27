@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -12,11 +13,21 @@ using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 using WebSGV.Models.Despachos;
 using WebSGV.Services.Despachos;
+using WebSGV.Services.Facturas;
 
 namespace WebSGV.Views
 {
     public partial class RegistroDespacho : PaginaBase
     {
+        // Manifiesto: documento que cada conductor de un viaje internacional porta en dos
+        // ejemplares (cruce y retorno). Opcional en este formulario: lo habitual es
+        // adjuntarlo después, en el transcurso del viaje, desde ListaDespachos.aspx.
+        private const long MAX_TAMANO_MANIFIESTO = 20 * 1024 * 1024; // 20MB
+        private static readonly string[] EXTENSIONES_MANIFIESTO_PERMITIDAS = { ".pdf", ".jpg", ".jpeg", ".png" };
+
+        // Documento de Factura/CPIC adjunto directamente al armar el lote.
+        private const long MAX_TAMANO_DOCUMENTO_BASE = 50 * 1024 * 1024; // 50MB
+        private static readonly string[] EXTENSIONES_DOCUMENTO_BASE_PERMITIDAS = { ".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png" };
 
         // Los modelos LoteDespachos, DocumentacionBase, ConductorLote y ViajeEnProgreso
         // se movieron a WebSGV.Models.Despachos (los recibe/devuelve RegistroDespachoService).
@@ -280,6 +291,7 @@ namespace WebSGV.Views
                 return;
             }
 
+            bool esInternacional = LoteActual.EsInternacional;
             var conductores = LoteActual.Conductores.Select(c => new
             {
                 NombreConductor = c.NombreConductor,
@@ -287,7 +299,8 @@ namespace WebSGV.Views
                 PlacaCarreta = c.PlacaCarreta,
                 GuiaRemitente = c.GuiaRemitente ?? "N/A",
                 GuiaTransportista = c.GuiaTransportista ?? "N/A",
-                EstadoViaje = c.EstadoViaje ?? "Por asignar"
+                EstadoViaje = c.EstadoViaje ?? "Por asignar",
+                Manifiesto = !esInternacional ? "N/A" : (c.TieneManifiestos ? "✓ Completo" : (c.TieneAlgunManifiesto ? "Parcial" : "Pendiente"))
             }).ToList();
 
             gvConductoresLote.DataSource = conductores;
@@ -327,6 +340,9 @@ namespace WebSGV.Views
             // pero nunca bloquea el guardado.
             rfvGuiaRemitente.Enabled = false;
             rfvGuiaTransportista.Enabled = necesitaGuiaTransportista;
+
+            // Manifiesto: opcional aquí; lo habitual es adjuntarlo después desde ListaDespachos.aspx.
+            pnlManifiestoConductor.Visible = lote.EsInternacional;
 
             // Mostrar información de documentos reutilizados
             List<string> docsReutilizados = new List<string>();
@@ -478,6 +494,21 @@ namespace WebSGV.Views
                 }
             }
 
+            // Documento adjunto (opcional) de factura/CPIC
+            if (pnlFacturaBase.Visible && fileFacturaBase.HasFile)
+            {
+                string errorArchivoFactura = ValidarArchivoDocumentoBase(fileFacturaBase);
+                if (!string.IsNullOrEmpty(errorArchivoFactura))
+                    errores.Add("Documento de factura: " + errorArchivoFactura);
+            }
+
+            if (pnlCPICBase.Visible && fileCPICBase.HasFile)
+            {
+                string errorArchivoCpic = ValidarArchivoDocumentoBase(fileCPICBase);
+                if (!string.IsNullOrEmpty(errorArchivoCpic))
+                    errores.Add("Documento de CPIC: " + errorArchivoCpic);
+            }
+
             // NUEVA VALIDACIÓN: Verificar duplicados de Factura y CPIC
             string mensajeErrorDuplicados;
             if (!ValidarDocumentosDuplicados(out mensajeErrorDuplicados))
@@ -560,6 +591,12 @@ namespace WebSGV.Views
                 lote.Documentacion.NumeroFactura = txtNumeroFacturaBase.Text.Trim();
                 lote.Documentacion.FechaEmisionFactura = fechaFactura;
                 lote.Documentacion.ValorTotalFactura = valorFactura;
+
+                if (fileFacturaBase.HasFile)
+                {
+                    lote.Documentacion.FacturaArchivoRutaTemp = GuardarArchivoTemp(fileFacturaBase, "Factura");
+                    lote.Documentacion.FacturaArchivoNombreOriginal = Path.GetFileName(fileFacturaBase.FileName);
+                }
             }
 
             if (pnlCPICBase.Visible && !string.IsNullOrEmpty(txtNumeroCPICBase.Text))
@@ -585,10 +622,54 @@ namespace WebSGV.Views
                 lote.Documentacion.NumeroCPIC = txtNumeroCPICBase.Text.Trim();
                 lote.Documentacion.FechaEmisionCPIC = fechaCpic;
                 lote.Documentacion.ValorFlete = valorFlete;
+
+                if (fileCPICBase.HasFile)
+                {
+                    lote.Documentacion.CPICArchivoRutaTemp = GuardarArchivoTemp(fileCPICBase, "CPIC");
+                    lote.Documentacion.CPICArchivoNombreOriginal = Path.GetFileName(fileCPICBase.FileName);
+                }
             }
 
             LoteActual = lote;
             return true;
+        }
+
+        private string ValidarArchivoDocumentoBase(FileUpload control)
+        {
+            var archivo = control.PostedFile;
+
+            if (archivo.ContentLength == 0)
+                return "el archivo está vacío";
+
+            if (archivo.ContentLength > MAX_TAMANO_DOCUMENTO_BASE)
+                return "el archivo supera el tamaño máximo permitido (50MB)";
+
+            string extension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
+            if (!Array.Exists(EXTENSIONES_DOCUMENTO_BASE_PERMITIDAS, ext => ext == extension))
+                return "tipo de archivo no permitido. Use PDF, DOC, DOCX, JPG o PNG";
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Guarda el archivo subido en una carpeta temporal (fuera del árbol servido
+        /// públicamente) con nombre único, dentro de la subcarpeta del tipo de documento
+        /// (Factura/CPIC/Manifiesto). El id del documento definitivo (idFactura, idCPIC o
+        /// idDespacho, según el caso) todavía no existe en el momento de la subida, así que
+        /// no se puede archivar en su ubicación final todavía.
+        /// </summary>
+        private string GuardarArchivoTemp(FileUpload control, string subcarpeta)
+        {
+            string carpetaTemp = Server.MapPath($"~/Uploads/{subcarpeta}/_temp/");
+            if (!Directory.Exists(carpetaTemp))
+                Directory.CreateDirectory(carpetaTemp);
+
+            string extension = Path.GetExtension(control.FileName).ToLowerInvariant();
+            string nombreTemp = $"{Guid.NewGuid():N}{extension}";
+            string rutaTemp = Path.Combine(carpetaTemp, nombreTemp);
+
+            control.SaveAs(rutaTemp);
+            return rutaTemp;
         }
 
         #endregion
@@ -680,6 +761,26 @@ namespace WebSGV.Views
                 {
                     errores.Add("La placa de carreta seleccionada ya fue asignada a otro conductor en este lote");
                 }
+
+                // Manifiesto: opcional aquí (normalmente se adjunta después, en el
+                // transcurso del viaje, desde ListaDespachos.aspx). Si se sube ahora, igual
+                // se valida tamaño/extensión.
+                if (LoteActual.EsInternacional)
+                {
+                    if (fileManifiestoCruce.HasFile)
+                    {
+                        string errorCruce = ValidarArchivoManifiesto(fileManifiestoCruce);
+                        if (!string.IsNullOrEmpty(errorCruce))
+                            errores.Add("Manifiesto de cruce: " + errorCruce);
+                    }
+
+                    if (fileManifiestoRegreso.HasFile)
+                    {
+                        string errorRegreso = ValidarArchivoManifiesto(fileManifiestoRegreso);
+                        if (!string.IsNullOrEmpty(errorRegreso))
+                            errores.Add("Manifiesto de retorno: " + errorRegreso);
+                    }
+                }
             }
 
             if (errores.Count > 0)
@@ -689,6 +790,23 @@ namespace WebSGV.Views
             }
 
             return true;
+        }
+
+        private string ValidarArchivoManifiesto(FileUpload control)
+        {
+            var archivo = control.PostedFile;
+
+            if (archivo.ContentLength == 0)
+                return "el archivo está vacío";
+
+            if (archivo.ContentLength > MAX_TAMANO_MANIFIESTO)
+                return "el archivo supera el tamaño máximo permitido (20MB)";
+
+            string extension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
+            if (!Array.Exists(EXTENSIONES_MANIFIESTO_PERMITIDAS, ext => ext == extension))
+                return "tipo de archivo no permitido. Use PDF, JPG o PNG";
+
+            return string.Empty;
         }
 
         protected void cvFechaDespachoBase_ServerValidate(object source, ServerValidateEventArgs args)
@@ -754,13 +872,47 @@ namespace WebSGV.Views
                 EstadoViaje = estadoViaje
             };
 
+            if (LoteActual.EsInternacional)
+            {
+                // Opcional: el conductor puede no tener el manifiesto todavía (se agrega
+                // después, en el transcurso del viaje, desde ListaDespachos.aspx).
+                if (fileManifiestoCruce.HasFile)
+                {
+                    conductor.ManifiestoCruceRutaTemp = GuardarArchivoTemp(fileManifiestoCruce, "Manifiesto");
+                    conductor.ManifiestoCruceNombreOriginal = Path.GetFileName(fileManifiestoCruce.FileName);
+                }
+                if (fileManifiestoRegreso.HasFile)
+                {
+                    conductor.ManifiestoRegresoRutaTemp = GuardarArchivoTemp(fileManifiestoRegreso, "Manifiesto");
+                    conductor.ManifiestoRegresoNombreOriginal = Path.GetFileName(fileManifiestoRegreso.FileName);
+                }
+            }
+
             LoteActual.Conductores.Add(conductor);
+        }
+
+        /// <summary>Borra un archivo temporal (manifiesto, factura o CPIC) si existe (sin lanzar si falla).</summary>
+        private void EliminarArchivoTemporal(string rutaTemp)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(rutaTemp) && File.Exists(rutaTemp))
+                    File.Delete(rutaTemp);
+            }
+            catch (Exception ex)
+            {
+                RegistrarError("EliminarArchivoTemporal", ex);
+            }
         }
 
         private void QuitarConductorDelLote(int indice)
         {
             if (!TieneLoteActivo || indice < 0 || indice >= LoteActual.Conductores.Count)
                 return;
+
+            var conductor = LoteActual.Conductores[indice];
+            EliminarArchivoTemporal(conductor.ManifiestoCruceRutaTemp);
+            EliminarArchivoTemporal(conductor.ManifiestoRegresoRutaTemp);
 
             LoteActual.Conductores.RemoveAt(indice);
         }
@@ -784,6 +936,18 @@ namespace WebSGV.Views
         {
             try
             {
+                if (TieneLoteActivo)
+                {
+                    foreach (var conductor in LoteActual.Conductores)
+                    {
+                        EliminarArchivoTemporal(conductor.ManifiestoCruceRutaTemp);
+                        EliminarArchivoTemporal(conductor.ManifiestoRegresoRutaTemp);
+                    }
+
+                    EliminarArchivoTemporal(LoteActual.Documentacion.FacturaArchivoRutaTemp);
+                    EliminarArchivoTemporal(LoteActual.Documentacion.CPICArchivoRutaTemp);
+                }
+
                 LoteActual = null;
                 MostrarFaseConfiguracionBase();
                 LimpiarFormularioCompleto();
@@ -858,11 +1022,19 @@ namespace WebSGV.Views
                 if (!string.IsNullOrEmpty(lote.Documentacion.NumeroFactura))
                 {
                     idFactura = CrearDocumentoBaseSeparado("FACTURA", lote);
+                    if (idFactura.HasValue)
+                        MoverDocumentoBaseADefinitivo(lote.Documentacion.FacturaArchivoRutaTemp,
+                            lote.Documentacion.FacturaArchivoNombreOriginal, "Factura", idFactura.Value,
+                            lote.UsuarioCreacion, esFactura: true);
                 }
 
                 if (!string.IsNullOrEmpty(lote.Documentacion.NumeroCPIC))
                 {
                     idCPIC = CrearDocumentoBaseSeparado("CPIC", lote, idFactura);
+                    if (idCPIC.HasValue)
+                        MoverDocumentoBaseADefinitivo(lote.Documentacion.CPICArchivoRutaTemp,
+                            lote.Documentacion.CPICArchivoNombreOriginal, "CPIC", idCPIC.Value,
+                            lote.UsuarioCreacion, esFactura: false);
                 }
 
                 // PASO 2: Procesar cada conductor INDIVIDUALMENTE
@@ -873,6 +1045,9 @@ namespace WebSGV.Views
                         int idDespacho = CrearDespachoIndividual(lote, conductor, idFactura, idCPIC);
                         conductor.IdDespachoGenerado = idDespacho;
                         despachosCreados++;
+
+                        if (lote.EsInternacional)
+                            GuardarManifiestosDespacho(conductor, idDespacho, lote.UsuarioCreacion);
                     }
                     catch (Exception ex)
                     {
@@ -934,6 +1109,92 @@ namespace WebSGV.Views
 
         private int CrearDespachoIndividual(LoteDespachos lote, ConductorLote conductor, int? idFactura, int? idCPIC)
             => RegistroDespachoService.CrearDespachoIndividual(lote, conductor, idFactura, idCPIC);
+
+        /// <summary>
+        /// Mueve los archivos temporales de manifiesto del conductor a su ubicación
+        /// definitiva y registra ambos documentos en BD, ahora que el despacho ya existe.
+        /// No lanza: una falla aquí no debe revertir el despacho ya creado, sólo queda
+        /// registrada en el log para revisión manual.
+        /// </summary>
+        private void GuardarManifiestosDespacho(ConductorLote conductor, int idDespacho, string usuario)
+        {
+            MoverManifiestoADefinitivo(conductor.ManifiestoCruceRutaTemp, conductor.ManifiestoCruceNombreOriginal,
+                idDespacho, ManifiestoService.TIPO_CRUCE, usuario);
+            MoverManifiestoADefinitivo(conductor.ManifiestoRegresoRutaTemp, conductor.ManifiestoRegresoNombreOriginal,
+                idDespacho, ManifiestoService.TIPO_RETORNO, usuario);
+        }
+
+        private void MoverManifiestoADefinitivo(string rutaTemp, string nombreOriginal, int idDespacho, string tipo, string usuario)
+        {
+            if (string.IsNullOrEmpty(rutaTemp) || !File.Exists(rutaTemp))
+                return;
+
+            try
+            {
+                string extension = Path.GetExtension(rutaTemp);
+                string carpetaAno = DateTime.Now.Year.ToString();
+                string carpetaMes = DateTime.Now.ToString("MM");
+                string carpetaDestino = Server.MapPath($"~/Uploads/Manifiesto/{carpetaAno}/{carpetaMes}/");
+
+                if (!Directory.Exists(carpetaDestino))
+                    Directory.CreateDirectory(carpetaDestino);
+
+                string nombreArchivo = $"MANIFIESTO_{tipo}_{idDespacho}_{DateTime.Now:yyyyMMdd_HHmmss}{extension}";
+                string rutaDestino = Path.Combine(carpetaDestino, nombreArchivo);
+
+                File.Move(rutaTemp, rutaDestino);
+
+                ManifiestoService.InsertarDocumentoManifiesto(
+                    idDespacho, tipo, nombreOriginal, nombreArchivo,
+                    $"~/Uploads/Manifiesto/{carpetaAno}/{carpetaMes}/{nombreArchivo}",
+                    extension, new FileInfo(rutaDestino).Length, usuario);
+            }
+            catch (Exception ex)
+            {
+                RegistrarError($"MoverManifiestoADefinitivo.Despacho:{idDespacho}.Tipo:{tipo}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Mueve el archivo temporal de factura/CPIC (subido en Fase 1) a su ubicación
+        /// definitiva y registra el documento en BD, ahora que <c>idFactura</c>/<c>idCPIC</c>
+        /// ya existen. No lanza: una falla aquí no debe revertir el documento base ya creado.
+        /// </summary>
+        private void MoverDocumentoBaseADefinitivo(string rutaTemp, string nombreOriginal, string carpeta,
+            int idDocumentoBase, string usuario, bool esFactura)
+        {
+            if (string.IsNullOrEmpty(rutaTemp) || !File.Exists(rutaTemp))
+                return;
+
+            try
+            {
+                string extension = Path.GetExtension(rutaTemp);
+                string carpetaAno = DateTime.Now.Year.ToString();
+                string carpetaMes = DateTime.Now.ToString("MM");
+                string carpetaDestino = Server.MapPath($"~/Uploads/{carpeta}/{carpetaAno}/{carpetaMes}/");
+
+                if (!Directory.Exists(carpetaDestino))
+                    Directory.CreateDirectory(carpetaDestino);
+
+                string prefijo = esFactura ? "FACTURA" : "CPIC";
+                string nombreArchivo = $"{prefijo}_{idDocumentoBase}_{DateTime.Now:yyyyMMdd_HHmmss}{extension}";
+                string rutaDestino = Path.Combine(carpetaDestino, nombreArchivo);
+
+                File.Move(rutaTemp, rutaDestino);
+
+                string rutaRelativa = $"~/Uploads/{carpeta}/{carpetaAno}/{carpetaMes}/{nombreArchivo}";
+                long tamano = new FileInfo(rutaDestino).Length;
+
+                if (esFactura)
+                    FacturaEscrituraService.InsertarDocumentoStandalone(idDocumentoBase, nombreOriginal, nombreArchivo, rutaRelativa, extension, tamano, usuario);
+                else
+                    DocumentoCpicService.InsertarDocumento(idDocumentoBase, nombreOriginal, nombreArchivo, rutaRelativa, extension, tamano, usuario);
+            }
+            catch (Exception ex)
+            {
+                RegistrarError($"MoverDocumentoBaseADefinitivo.{carpeta}:{idDocumentoBase}", ex);
+            }
+        }
 
         #endregion
 
