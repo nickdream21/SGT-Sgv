@@ -11,6 +11,7 @@ namespace WebSGV.Services.GpsIntegracion
     {
         public string Columna { get; set; }
         public bool Encontrado { get; set; }
+        public string SenalConfianza { get; set; }
     }
 
     public class ResultadoConsultaGpsExportacion
@@ -37,17 +38,47 @@ namespace WebSGV.Services.GpsIntegracion
     {
         private const int VentanaMaximaDias = 12;
 
+        private enum TipoEventoGps { Llegada, Salida }
+
         private class Paso
         {
             public string Checkpoint;
             public int NumeroTracto;
             public string[] Columnas; // 1 columna normal; 2+ para el caso Planta/Almacén Ecuador
+            public TipoEventoGps TipoEvento = TipoEventoGps.Llegada;
         }
+
+        /// <summary>
+        /// Clasifica qué tan confiable fue la detección de un punto, para mostrarla en el
+        /// panel de resultados y que la administradora sepa qué campos revisar primero.
+        /// </summary>
+        private static string ClasificarSenal(OnwayHistoryPoint p)
+        {
+            if (p.AlertDescription?.En?.IndexOf("ignition off", StringComparison.OrdinalIgnoreCase) >= 0)
+                return "Ignition Off";
+            if (p.Speed < 5.0)
+                return "Parada/movimiento sostenido";
+            return "Primer punto detectado (revisar)";
+        }
+
+        /// <summary>Las 18 columnas de fecha/hora que puede llenar el GPS (ver <c>Paso</c> y la bifurcación Jave/Inbalnor).</summary>
+        private static readonly string[] ColumnasGps =
+        {
+            "fhSalidaBase1", "fhLlegadaTrujillo", "fhIngresoPlanta", "fhSalidaPlanta", "fhLlegadaBase2",
+            "fhSalidaBase2", "fhLlegadaBodegaNacional", "fhIngresoBodegaNacional", "fhSalidaBodegaNacional",
+            "fhLlegadaCEBAF", "fhCruceEcuador", "fhLlegadaTCI", "fhSalidaTCI",
+            "fhLlegadaPlantaEcuador", "fhLlegadaAlmacen", "fhIngreso", "fhSalida", "fhLlegadaBaseFinal",
+        };
 
         public static ResultadoConsultaGpsExportacion ConsultarYActualizar(int idSeguimiento)
         {
             DataTable dt = DbHelper.ConsultarTabla(@"
                 SELECT se.tracto1, se.tracto2, se.fhSalidaBase1, se.fhProgramacion, se.fechaRegistro,
+                       se.fhLlegadaTrujillo, se.fhIngresoPlanta, se.fhSalidaPlanta, se.fhLlegadaBase2,
+                       se.fhSalidaBase2, se.fhLlegadaBodegaNacional, se.fhIngresoBodegaNacional, se.fhSalidaBodegaNacional,
+                       se.fhLlegadaCEBAF, se.fhCruceEcuador, se.fhLlegadaTCI, se.fhSalidaTCI,
+                       se.fhLlegadaPlantaEcuador, se.fhLlegadaAlmacen, se.fhIngreso, se.fhSalida, se.fhLlegadaBaseFinal,
+                       se.bodegaEcuatoriana,
                        d.fechaDespacho AS fechaDespachoOrigen
                 FROM SeguimientoExportacion se
                 LEFT JOIN Despachos d ON d.idDespacho = se.idDespachoOrigen
@@ -64,11 +95,29 @@ namespace WebSGV.Services.GpsIntegracion
             if (string.IsNullOrEmpty(placaTracto1) && string.IsNullOrEmpty(placaTracto2))
                 return ResultadoConsultaGpsExportacion.Fallo("El registro no tiene Tracto 1 ni Tracto 2 asignados.");
 
-            // Ancla de búsqueda: prioriza la hora de salida ya confirmada por GPS; si no,
-            // la fecha REAL de despacho (Despachos.fechaDespacho, vinculada por idDespachoOrigen)
+            // Campos que ya se confirmaron en una consulta GPS anterior (o a mano): no se
+            // vuelven a buscar — "Verificar GPS" solo trabaja sobre lo que realmente falta, en
+            // vez de recorrer día por día todo el recorrido cada vez que se presiona el botón.
+            var valoresYaConfirmados = new Dictionary<string, DateTime>();
+            foreach (var columna in ColumnasGps)
+                if (row[columna] != DBNull.Value)
+                    valoresYaConfirmados[columna] = Convert.ToDateTime(row[columna]);
+            string ramaExistente = row["bodegaEcuatoriana"] == DBNull.Value ? null : row["bodegaEcuatoriana"].ToString();
+
+            // Ancla de búsqueda: prioriza la hora de salida ya confirmada por GPS; si no, la
+            // fecha REAL de despacho (Despachos.fechaDespacho, vinculada por idDespachoOrigen)
             // — no la fecha en que se registró el viaje en el sistema, que puede quedar varios
-            // días después de que el camión ya salió. Colchón de 2 días hacia atrás como
-            // resguardo ante un posible error de tipeo en esa fecha.
+            // días después de que el camión ya salió.
+            //
+            // A propósito NO se le da ningún colchón hacia atrás (antes se restaban 2 días "por
+            // si había un error de tipeo"). Confirmado con un caso real (2026-08-31): un tracto
+            // hace movimientos normales de rutina en los días previos al despacho (grifo, taller,
+            // pesaje, etc.), y DetectarSalida —que solo evalúa si el vehículo vuelve dentro de
+            // los próximos minutos, no si el movimiento tiene que ver con ESTE despacho— toma
+            // gustoso cualquiera de esos movimientos de rutina como si fuera la salida real,
+            // deteniendo la búsqueda ahí sin llegar nunca al día correcto. La fecha de Despacho
+            // es la fuente más confiable que hay (registro formal, no texto libre), así que se
+            // busca únicamente hacia ADELANTE desde ese día exacto.
             DateTime fechaInicio;
             if (row["fhSalidaBase1"] != DBNull.Value)
             {
@@ -76,21 +125,18 @@ namespace WebSGV.Services.GpsIntegracion
             }
             else
             {
-                DateTime fechaAncla =
+                fechaInicio =
                     row["fechaDespachoOrigen"] != DBNull.Value ? Convert.ToDateTime(row["fechaDespachoOrigen"]).Date :
                     row["fhProgramacion"] != DBNull.Value ? Convert.ToDateTime(row["fhProgramacion"]).Date :
                     Convert.ToDateTime(row["fechaRegistro"]).Date;
-                fechaInicio = fechaAncla.AddDays(-2);
             }
 
             try
             {
                 var cliente = new OnwayApiClient();
-                string token = cliente.ObtenerTokenValido();
-                string userId = cliente.ObtenerUserId(token);
 
-                var dispositivo1 = string.IsNullOrEmpty(placaTracto1) ? null : cliente.BuscarDispositivoPorPlaca(token, userId, placaTracto1);
-                var dispositivo2 = string.IsNullOrEmpty(placaTracto2) ? null : cliente.BuscarDispositivoPorPlaca(token, userId, placaTracto2);
+                var dispositivo1 = string.IsNullOrEmpty(placaTracto1) ? null : cliente.BuscarDispositivoPorPlaca(placaTracto1);
+                var dispositivo2 = string.IsNullOrEmpty(placaTracto2) ? null : cliente.BuscarDispositivoPorPlaca(placaTracto2);
 
                 var cacheHistorial = new Dictionary<string, List<OnwayHistoryPoint>>();
                 Func<int, DateTime, List<OnwayHistoryPoint>> obtenerHistorialDia = (numeroTracto, dia) =>
@@ -104,15 +150,19 @@ namespace WebSGV.Services.GpsIntegracion
 
                     DateTime desdeUtc = dia.AddHours(5);
                     DateTime hastaUtc = dia.AddDays(1).AddHours(5).AddSeconds(-1);
-                    var historial = cliente.ObtenerHistorial(token, userId, dispositivo.Id, desdeUtc, hastaUtc);
+                    var historial = cliente.ObtenerHistorial(dispositivo.Id, desdeUtc, hastaUtc);
                     cacheHistorial[clave] = historial;
                     return historial;
                 };
 
                 // Busca un checkpoint a partir de `desde`, avanzando día por día hasta
                 // VentanaMaximaDias. Devuelve el punto encontrado y el día donde se encontró
-                // (para que el siguiente paso no busque hacia atrás).
-                Func<string, int, DateTime, Tuple<OnwayHistoryPoint, DateTime>> buscar = (nombreCheckpoint, numeroTracto, desde) =>
+                // (para que el siguiente paso no busque hacia atrás). `cotaInferior` recorta el
+                // primer día de la ventana a los puntos posteriores al match anterior, para que
+                // el círculo de un checkpoint no se confunda con el punto de parada del anterior
+                // dentro del mismo día calendario.
+                Func<string, int, DateTime, TipoEventoGps, DateTime?, Tuple<OnwayHistoryPoint, DateTime>> buscar =
+                    (nombreCheckpoint, numeroTracto, desde, tipoEvento, cotaInferior) =>
                 {
                     var checkpoint = PuntoControlGpsService.ObtenerPorNombre(nombreCheckpoint);
                     if (checkpoint == null) return null;
@@ -121,8 +171,26 @@ namespace WebSGV.Services.GpsIntegracion
                     {
                         DateTime dia = desde.AddDays(i);
                         var historialDia = obtenerHistorialDia(numeroTracto, dia);
-                        var match = CheckpointMatchingService.DetectarLlegada(
-                            historialDia, checkpoint.Latitud, checkpoint.Longitud, checkpoint.RadioMetros);
+                        if (cotaInferior.HasValue && dia.Date == cotaInferior.Value.Date)
+                            historialDia = historialDia.Where(p => p.MessageTime > cotaInferior.Value).ToList();
+
+                        OnwayHistoryPoint match;
+                        if (tipoEvento == TipoEventoGps.Salida)
+                        {
+                            // Una salida necesita confirmar el alejamiento hasta el final de la
+                            // ventana: si ocurre cerca de medianoche, un solo día no alcanza.
+                            var historialVentana = historialDia
+                                .Concat(obtenerHistorialDia(numeroTracto, dia.AddDays(1)))
+                                .ToList();
+                            match = CheckpointMatchingService.DetectarSalida(
+                                historialVentana, checkpoint.Latitud, checkpoint.Longitud, checkpoint.RadioMetros);
+                        }
+                        else
+                        {
+                            match = CheckpointMatchingService.DetectarLlegada(
+                                historialDia, checkpoint.Latitud, checkpoint.Longitud, checkpoint.RadioMetros);
+                        }
+
                         if (match != null)
                             return Tuple.Create(match, dia);
                     }
@@ -131,108 +199,178 @@ namespace WebSGV.Services.GpsIntegracion
 
                 var pasos = new List<Paso>
                 {
-                    new Paso { Checkpoint = "BASE_SALIDA_1",           NumeroTracto = 1, Columnas = new[] { "fhSalidaBase1" } },
+                    new Paso { Checkpoint = "BASE_SALIDA_1",           NumeroTracto = 1, Columnas = new[] { "fhSalidaBase1" },          TipoEvento = TipoEventoGps.Salida },
                     new Paso { Checkpoint = "TRUJILLO_LLEGADA",        NumeroTracto = 1, Columnas = new[] { "fhLlegadaTrujillo" } },
                     new Paso { Checkpoint = "TRUJILLO_INGRESO",        NumeroTracto = 1, Columnas = new[] { "fhIngresoPlanta" } },
-                    new Paso { Checkpoint = "TRUJILLO_SALIDA",         NumeroTracto = 1, Columnas = new[] { "fhSalidaPlanta" } },
+                    new Paso { Checkpoint = "TRUJILLO_SALIDA",         NumeroTracto = 1, Columnas = new[] { "fhSalidaPlanta" },          TipoEvento = TipoEventoGps.Salida },
                     new Paso { Checkpoint = "BASE_LLEGADA_2",          NumeroTracto = 1, Columnas = new[] { "fhLlegadaBase2" } },
-                    new Paso { Checkpoint = "BASE_SALIDA_2",           NumeroTracto = 2, Columnas = new[] { "fhSalidaBase2" } },
+                    new Paso { Checkpoint = "BASE_SALIDA_2",           NumeroTracto = 2, Columnas = new[] { "fhSalidaBase2" },           TipoEvento = TipoEventoGps.Salida },
                     new Paso { Checkpoint = "BODEGA_NACIONAL_LLEGADA", NumeroTracto = 2, Columnas = new[] { "fhLlegadaBodegaNacional" } },
                     new Paso { Checkpoint = "BODEGA_NACIONAL_INGRESO", NumeroTracto = 2, Columnas = new[] { "fhIngresoBodegaNacional" } },
-                    new Paso { Checkpoint = "BODEGA_NACIONAL_SALIDA",  NumeroTracto = 2, Columnas = new[] { "fhSalidaBodegaNacional" } },
+                    new Paso { Checkpoint = "BODEGA_NACIONAL_SALIDA",  NumeroTracto = 2, Columnas = new[] { "fhSalidaBodegaNacional" },  TipoEvento = TipoEventoGps.Salida },
                     new Paso { Checkpoint = "CEBAF_LLEGADA",           NumeroTracto = 2, Columnas = new[] { "fhLlegadaCEBAF" } },
                     new Paso { Checkpoint = "CRUCE_ECUADOR",           NumeroTracto = 2, Columnas = new[] { "fhCruceEcuador" } },
                     new Paso { Checkpoint = "TCI_LLEGADA",             NumeroTracto = 2, Columnas = new[] { "fhLlegadaTCI" } },
-                    new Paso { Checkpoint = "TCI_SALIDA",              NumeroTracto = 2, Columnas = new[] { "fhSalidaTCI" } },
+                    new Paso { Checkpoint = "TCI_SALIDA",              NumeroTracto = 2, Columnas = new[] { "fhSalidaTCI" },             TipoEvento = TipoEventoGps.Salida },
                 };
 
                 var valoresEncontrados = new Dictionary<string, DateTime>();
+                var senalPorColumna = new Dictionary<string, string>();
                 DateTime cursor = fechaInicio;
+                DateTime? horaCotaInferior = null;
+
+                // Si `columna` ya está confirmada (de una consulta anterior), adelanta el cursor
+                // a partir de ese valor sin llamar al API — así el siguiente checkpoint tampoco
+                // busca hacia atrás, igual que si se acabara de encontrar recién.
+                bool UsarValorConfirmadoSiExiste(string columna)
+                {
+                    if (!valoresYaConfirmados.TryGetValue(columna, out var horaLocalConfirmada)) return false;
+                    cursor = horaLocalConfirmada.Date;
+                    horaCotaInferior = FechaHelper.ConvertirAUtc(horaLocalConfirmada);
+                    return true;
+                }
 
                 foreach (var paso in pasos)
                 {
-                    var resultado = buscar(paso.Checkpoint, paso.NumeroTracto, cursor);
+                    if (UsarValorConfirmadoSiExiste(paso.Columnas[0]))
+                        continue; // ya confirmado; no se vuelve a consultar el GPS
+
+                    var resultado = buscar(paso.Checkpoint, paso.NumeroTracto, cursor, paso.TipoEvento, horaCotaInferior);
                     if (resultado == null) continue;
 
                     DateTime horaLocal = FechaHelper.ConvertirDeUtc(resultado.Item1.MessageTime);
+                    string senal = ClasificarSenal(resultado.Item1);
                     foreach (var columna in paso.Columnas)
+                    {
                         valoresEncontrados[columna] = horaLocal;
+                        senalPorColumna[columna] = senal;
+                    }
                     cursor = resultado.Item2; // no retroceder en los pasos siguientes
+                    horaCotaInferior = resultado.Item1.MessageTime;
                 }
 
                 // Bifurcación Jave / Inbalnor: se prueba primero Jave, y si no matchea, Inbalnor.
-                string rama = null;
-                var resultadoJave = buscar("PLANTA_ECUADOR_JAVE", 2, cursor);
-                if (resultadoJave != null)
+                string rama = ramaExistente;
+                if (UsarValorConfirmadoSiExiste("fhLlegadaPlantaEcuador"))
                 {
-                    rama = "JAVE";
-                    DateTime horaLocal = FechaHelper.ConvertirDeUtc(resultadoJave.Item1.MessageTime);
-                    valoresEncontrados["fhLlegadaPlantaEcuador"] = horaLocal;
-                    valoresEncontrados["fhLlegadaAlmacen"] = horaLocal;
-                    cursor = resultadoJave.Item2;
+                    // ya confirmado (rama ya conocida por ramaExistente); no se vuelve a buscar.
                 }
                 else
                 {
-                    var resultadoInbalnor = buscar("PLANTA_ECUADOR_INBALNOR", 2, cursor);
-                    if (resultadoInbalnor != null)
+                    var resultadoJave = buscar("PLANTA_ECUADOR_JAVE", 2, cursor, TipoEventoGps.Llegada, horaCotaInferior);
+                    if (resultadoJave != null)
                     {
-                        rama = "INBALNOR";
-                        DateTime horaLocal = FechaHelper.ConvertirDeUtc(resultadoInbalnor.Item1.MessageTime);
+                        rama = "JAVE";
+                        DateTime horaLocal = FechaHelper.ConvertirDeUtc(resultadoJave.Item1.MessageTime);
+                        string senal = ClasificarSenal(resultadoJave.Item1);
                         valoresEncontrados["fhLlegadaPlantaEcuador"] = horaLocal;
                         valoresEncontrados["fhLlegadaAlmacen"] = horaLocal;
-                        cursor = resultadoInbalnor.Item2;
+                        senalPorColumna["fhLlegadaPlantaEcuador"] = senal;
+                        senalPorColumna["fhLlegadaAlmacen"] = senal;
+                        cursor = resultadoJave.Item2;
+                        horaCotaInferior = resultadoJave.Item1.MessageTime;
+                    }
+                    else
+                    {
+                        var resultadoInbalnor = buscar("PLANTA_ECUADOR_INBALNOR", 2, cursor, TipoEventoGps.Llegada, horaCotaInferior);
+                        if (resultadoInbalnor != null)
+                        {
+                            rama = "INBALNOR";
+                            DateTime horaLocal = FechaHelper.ConvertirDeUtc(resultadoInbalnor.Item1.MessageTime);
+                            string senal = ClasificarSenal(resultadoInbalnor.Item1);
+                            valoresEncontrados["fhLlegadaPlantaEcuador"] = horaLocal;
+                            valoresEncontrados["fhLlegadaAlmacen"] = horaLocal;
+                            senalPorColumna["fhLlegadaPlantaEcuador"] = senal;
+                            senalPorColumna["fhLlegadaAlmacen"] = senal;
+                            cursor = resultadoInbalnor.Item2;
+                            horaCotaInferior = resultadoInbalnor.Item1.MessageTime;
+                        }
                     }
                 }
 
                 if (rama != null)
                 {
-                    var resultadoIngreso = buscar("INGRESO_" + rama, 2, cursor);
-                    if (resultadoIngreso != null)
+                    if (!UsarValorConfirmadoSiExiste("fhIngreso"))
                     {
-                        valoresEncontrados["fhIngreso"] = FechaHelper.ConvertirDeUtc(resultadoIngreso.Item1.MessageTime);
-                        cursor = resultadoIngreso.Item2;
+                        var resultadoIngreso = buscar("INGRESO_" + rama, 2, cursor, TipoEventoGps.Llegada, horaCotaInferior);
+                        if (resultadoIngreso != null)
+                        {
+                            valoresEncontrados["fhIngreso"] = FechaHelper.ConvertirDeUtc(resultadoIngreso.Item1.MessageTime);
+                            senalPorColumna["fhIngreso"] = ClasificarSenal(resultadoIngreso.Item1);
+                            cursor = resultadoIngreso.Item2;
+                            horaCotaInferior = resultadoIngreso.Item1.MessageTime;
+                        }
                     }
 
-                    var resultadoSalida = buscar("SALIDA_" + rama, 2, cursor);
-                    if (resultadoSalida != null)
+                    if (!UsarValorConfirmadoSiExiste("fhSalida"))
                     {
-                        valoresEncontrados["fhSalida"] = FechaHelper.ConvertirDeUtc(resultadoSalida.Item1.MessageTime);
-                        cursor = resultadoSalida.Item2;
+                        var resultadoSalida = buscar("SALIDA_" + rama, 2, cursor, TipoEventoGps.Salida, horaCotaInferior);
+                        if (resultadoSalida != null)
+                        {
+                            valoresEncontrados["fhSalida"] = FechaHelper.ConvertirDeUtc(resultadoSalida.Item1.MessageTime);
+                            senalPorColumna["fhSalida"] = ClasificarSenal(resultadoSalida.Item1);
+                            cursor = resultadoSalida.Item2;
+                            horaCotaInferior = resultadoSalida.Item1.MessageTime;
+                        }
                     }
                 }
 
-                var resultadoBaseFinal = buscar("BASE_LLEGADA_FINAL", 2, cursor);
-                if (resultadoBaseFinal != null)
-                    valoresEncontrados["fhLlegadaBaseFinal"] = FechaHelper.ConvertirDeUtc(resultadoBaseFinal.Item1.MessageTime);
+                if (!UsarValorConfirmadoSiExiste("fhLlegadaBaseFinal"))
+                {
+                    var resultadoBaseFinal = buscar("BASE_LLEGADA_FINAL", 2, cursor, TipoEventoGps.Llegada, horaCotaInferior);
+                    if (resultadoBaseFinal != null)
+                    {
+                        valoresEncontrados["fhLlegadaBaseFinal"] = FechaHelper.ConvertirDeUtc(resultadoBaseFinal.Item1.MessageTime);
+                        senalPorColumna["fhLlegadaBaseFinal"] = ClasificarSenal(resultadoBaseFinal.Item1);
+                    }
+                }
 
-                if (valoresEncontrados.Count == 0)
+                int totalConfirmados = valoresEncontrados.Count + valoresYaConfirmados.Count;
+                if (totalConfirmados == 0)
                     return ResultadoConsultaGpsExportacion.Fallo("El GPS no reportó ningún punto de control coincidente para este viaje.");
 
-                GuardarValores(idSeguimiento, valoresEncontrados, rama);
+                if (valoresEncontrados.Count > 0)
+                {
+                    GuardarValores(idSeguimiento, valoresEncontrados, rama);
 
-                AuditoriaHelper.Registrar("CONSULTAR_HORA_GPS", "SeguimientoExportacion", idSeguimiento,
-                    $"GPS actualizó {valoresEncontrados.Count} campo(s) de fecha/hora" +
-                    (rama != null ? $" (ruta detectada: {rama})" : "") + ".");
+                    var camposSenalDebil = senalPorColumna
+                        .Where(kv => kv.Value == "Primer punto detectado (revisar)")
+                        .Select(kv => kv.Key)
+                        .ToList();
+
+                    AuditoriaHelper.Registrar("CONSULTAR_HORA_GPS", "SeguimientoExportacion", idSeguimiento,
+                        $"GPS actualizó {valoresEncontrados.Count} campo(s) de fecha/hora" +
+                        (rama != null && rama != ramaExistente ? $" (ruta detectada: {rama})" : "") +
+                        (camposSenalDebil.Count > 0 ? $". Revisar manualmente: {string.Join(", ", camposSenalDebil)}." : "."));
+                }
 
                 var todasLasColumnas = pasos.SelectMany(p => p.Columnas)
                     .Concat(new[] { "fhLlegadaPlantaEcuador", "fhLlegadaAlmacen", "fhIngreso", "fhSalida", "fhLlegadaBaseFinal" })
                     .Distinct();
 
+                string ramaTexto = rama != null ? $" (ruta: {rama})" : " (no se detectó si fue por Jave o Inbalnor)";
                 var resultadoFinal = new ResultadoConsultaGpsExportacion
                 {
                     Exito = true,
-                    Mensaje = $"GPS actualizó {valoresEncontrados.Count} de {todasLasColumnas.Count()} campos" +
-                              (rama != null ? $" (ruta: {rama})" : " (no se detectó si fue por Jave o Inbalnor)") + "."
+                    Mensaje = valoresEncontrados.Count > 0
+                        ? $"GPS actualizó {valoresEncontrados.Count} de {todasLasColumnas.Count()} campos ({totalConfirmados} confirmados en total){ramaTexto}."
+                        : $"No había campos nuevos por actualizar — ya hay {totalConfirmados} de {todasLasColumnas.Count()} campos confirmados{ramaTexto}."
                 };
                 foreach (var columna in todasLasColumnas)
-                    resultadoFinal.Campos.Add(new ResultadoCampoGps { Columna = columna, Encontrado = valoresEncontrados.ContainsKey(columna) });
+                    resultadoFinal.Campos.Add(new ResultadoCampoGps
+                    {
+                        Columna = columna,
+                        Encontrado = valoresEncontrados.ContainsKey(columna) || valoresYaConfirmados.ContainsKey(columna),
+                        SenalConfianza = senalPorColumna.ContainsKey(columna) ? senalPorColumna[columna]
+                            : valoresYaConfirmados.ContainsKey(columna) ? "Ya confirmado" : null
+                    });
 
                 return resultadoFinal;
             }
             catch (OnwayApiException ex)
             {
                 LogSGV.Error(ex, "Error consultando GPS Onway para seguimiento {IdSeguimiento}", idSeguimiento);
-                return ResultadoConsultaGpsExportacion.Fallo("No se pudo conectar con el sistema GPS. Intente más tarde.");
+                return ResultadoConsultaGpsExportacion.Fallo(ex.MensajeParaUsuario());
             }
         }
 

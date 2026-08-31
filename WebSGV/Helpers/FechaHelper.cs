@@ -40,5 +40,16 @@ namespace WebSGV.Helpers
             DateTime utcSeguro = DateTime.SpecifyKind(utc, DateTimeKind.Utc);
             return TimeZoneInfo.ConvertTimeFromUtc(utcSeguro, ZonaPeruana);
         }
+
+        /// <summary>
+        /// Conversión inversa de <see cref="ConvertirDeUtc"/>: de hora local de Perú (p. ej. un
+        /// valor ya guardado en BD por una consulta GPS anterior) a UTC, para poder retomar un
+        /// cursor de búsqueda expresado en UTC sin tener que volver a consultar el API.
+        /// </summary>
+        public static DateTime ConvertirAUtc(DateTime horaLocal)
+        {
+            DateTime localSinEspecificar = DateTime.SpecifyKind(horaLocal, DateTimeKind.Unspecified);
+            return TimeZoneInfo.ConvertTimeToUtc(localSinEspecificar, ZonaPeruana);
+        }
     }
 }

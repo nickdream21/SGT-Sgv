@@ -212,10 +212,12 @@
     <Content Include="Database\Schema\10_SeguimientoExportacion_Gps.sql" />
     <Content Include="Database\Schema\11_SeguimientoExportacion_VinculoDespacho.sql" />
     <Content Include="Database\Schema\12_DocumentosManifiesto.sql" />
+    <Content Include="Database\Scripts\diagnostico_OnwayAuthCache_TokenActivoUnico.sql" />
     <Content Include="Database\Scripts\diagnostico_PdfAbastecimiento.sql" />
     <Content Include="Database\Scripts\fix_EstadoSeguimientoExportacion.sql" />
     <Content Include="Database\Scripts\reset_SeguimientoExportacion.sql" />
     <Content Include="Database\Scripts\script_AgregarColumnaRutaDescripcion.sql" />
+    <Content Include="Database\Scripts\script_AjustarRadioTrujilloIngreso.sql" />
     <Content Include="Database\Scripts\script_AgregarColumnaTipoAbastecimiento.sql" />
     <Content Include="Database\Scripts\script_AgregarPdfAbastecimiento.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminGrifo.sql" />

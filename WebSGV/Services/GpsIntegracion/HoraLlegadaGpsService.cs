@@ -56,10 +56,8 @@ namespace WebSGV.Services.GpsIntegracion
             try
             {
                 var cliente = new OnwayApiClient();
-                string token = cliente.ObtenerTokenValido();
-                string userId = cliente.ObtenerUserId(token);
 
-                var dispositivo = cliente.BuscarDispositivoPorPlaca(token, userId, placa);
+                var dispositivo = cliente.BuscarDispositivoPorPlaca(placa);
                 if (dispositivo == null)
                     return ResultadoConsultaGps.Fallo($"No se encontró un dispositivo GPS con la placa '{placa}' en Onway.");
 
@@ -68,7 +66,7 @@ namespace WebSGV.Services.GpsIntegracion
                 DateTime desdeUtc = fechaLlegada.Date.AddHours(5);
                 DateTime hastaUtc = fechaLlegada.Date.AddDays(1).AddHours(5).AddSeconds(-1);
 
-                var historial = cliente.ObtenerHistorial(token, userId, dispositivo.Id, desdeUtc, hastaUtc);
+                var historial = cliente.ObtenerHistorial(dispositivo.Id, desdeUtc, hastaUtc);
                 if (historial.Count == 0)
                     return ResultadoConsultaGps.Fallo($"El GPS no reportó historial para '{placa}' el {fechaLlegada:dd/MM/yyyy}.");
 
@@ -93,7 +91,7 @@ namespace WebSGV.Services.GpsIntegracion
             catch (OnwayApiException ex)
             {
                 LogSGV.Error(ex, "Error consultando GPS Onway para orden {IdOrden}", idOrdenViaje);
-                return ResultadoConsultaGps.Fallo("No se pudo conectar con el sistema GPS. Intente más tarde.");
+                return ResultadoConsultaGps.Fallo(ex.MensajeParaUsuario());
             }
         }
     }
