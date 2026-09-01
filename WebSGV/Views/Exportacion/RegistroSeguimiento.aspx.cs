@@ -806,14 +806,12 @@ namespace WebSGV.Views.Exportacion
             foreach (var campo in resultado.Campos)
             {
                 string etiqueta = EtiquetasCampoGps.ContainsKey(campo.Columna) ? EtiquetasCampoGps[campo.Columna] : campo.Columna;
-                bool yaConfirmado = campo.SenalConfianza == "Ya confirmado";
-                bool senalDebil = campo.Encontrado && campo.SenalConfianza == "Primer punto detectado (revisar)";
-                string icono = !campo.Encontrado ? "—" : senalDebil ? "⚠️" : "✅";
+                string icono = !campo.Encontrado ? "—" : campo.RequiereRevision ? "⚠️" : "✅";
                 string nota = !campo.Encontrado
                     ? "sin dato GPS, sigue siendo manual"
-                    : yaConfirmado
+                    : campo.YaEstabaConfirmado
                         ? "ya estaba confirmado, no se volvió a consultar"
-                        : senalDebil
+                        : campo.RequiereRevision
                             ? "actualizado por GPS, revisar manualmente"
                             : "actualizado por GPS" + (campo.SenalConfianza != null ? $" ({campo.SenalConfianza})" : "");
                 sb.Append("<li>").Append(icono).Append(' ')

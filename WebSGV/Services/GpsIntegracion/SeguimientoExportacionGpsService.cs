@@ -9,9 +9,21 @@ namespace WebSGV.Services.GpsIntegracion
 {
     public class ResultadoCampoGps
     {
+        /// <summary>Señal de detección débil: el punto salió del último recurso (primer punto dentro del radio), conviene revisarlo a mano.</summary>
+        public const string SenalRevisar = "Primer punto detectado (revisar)";
+
+        /// <summary>El campo ya venía confirmado de antes, no se volvió a consultar el GPS.</summary>
+        public const string SenalYaConfirmado = "Ya confirmado";
+
         public string Columna { get; set; }
         public bool Encontrado { get; set; }
         public string SenalConfianza { get; set; }
+
+        /// <summary>True cuando el valor se obtuvo por el último recurso y merece revisión manual.</summary>
+        public bool RequiereRevision => Encontrado && SenalConfianza == SenalRevisar;
+
+        /// <summary>True cuando el campo ya estaba confirmado y esta consulta no lo tocó.</summary>
+        public bool YaEstabaConfirmado => SenalConfianza == SenalYaConfirmado;
     }
 
     public class ResultadoConsultaGpsExportacion
@@ -51,14 +63,24 @@ namespace WebSGV.Services.GpsIntegracion
         /// <summary>
         /// Clasifica qué tan confiable fue la detección de un punto, para mostrarla en el
         /// panel de resultados y que la administradora sepa qué campos revisar primero.
+        ///
+        /// El tipo de evento importa: <see cref="CheckpointMatchingService.DetectarSalida"/>
+        /// devuelve SIEMPRE un punto en movimiento (velocidad por encima del umbral), así que
+        /// clasificarlo por velocidad como se hace con una llegada marcaría toda salida como
+        /// dudosa — exactamente al revés de la realidad, porque una salida solo se devuelve
+        /// cuando ya se confirmó el alejamiento sostenido sin regreso (si no, devuelve null en
+        /// vez de arriesgar un valor).
         /// </summary>
-        private static string ClasificarSenal(OnwayHistoryPoint p)
+        private static string ClasificarSenal(OnwayHistoryPoint p, TipoEventoGps tipoEvento)
         {
+            if (tipoEvento == TipoEventoGps.Salida)
+                return "Alejamiento sostenido confirmado";
+
             if (p.AlertDescription?.En?.IndexOf("ignition off", StringComparison.OrdinalIgnoreCase) >= 0)
                 return "Ignition Off";
             if (p.Speed < 5.0)
-                return "Parada/movimiento sostenido";
-            return "Primer punto detectado (revisar)";
+                return "Parada sostenida";
+            return ResultadoCampoGps.SenalRevisar;
         }
 
         /// <summary>Las 18 columnas de fecha/hora que puede llenar el GPS (ver <c>Paso</c> y la bifurcación Jave/Inbalnor).</summary>
@@ -156,23 +178,35 @@ namespace WebSGV.Services.GpsIntegracion
                 };
 
                 // Busca un checkpoint a partir de `desde`, avanzando día por día hasta
-                // VentanaMaximaDias. Devuelve el punto encontrado y el día donde se encontró
-                // (para que el siguiente paso no busque hacia atrás). `cotaInferior` recorta el
-                // primer día de la ventana a los puntos posteriores al match anterior, para que
-                // el círculo de un checkpoint no se confunda con el punto de parada del anterior
-                // dentro del mismo día calendario.
+                // VentanaMaximaDias. Devuelve el punto encontrado y el día (local de Perú) al que
+                // pertenece, para que el siguiente paso no busque hacia atrás.
+                //
+                // `cotaInferior` (UTC) descarta todo punto anterior o igual al match previo. Se
+                // aplica a TODOS los días de la ventana, no solo al primero: `dia` es una fecha
+                // local de Perú y `cotaInferior` es UTC, así que compararlas por fecha ("¿es este
+                // el día del match anterior?") mezclaba zonas horarias y dejaba el filtro sin
+                // aplicar justo en el día correcto cuando el match previo caía entre las 19:00 y
+                // las 23:59 hora Perú (00:00-04:59 UTC del día siguiente). Filtrar por timestamp
+                // en todos los días es UTC contra UTC — siempre correcto, y en los días
+                // posteriores no descarta nada porque ya son todos más recientes.
                 Func<string, int, DateTime, TipoEventoGps, DateTime?, Tuple<OnwayHistoryPoint, DateTime>> buscar =
                     (nombreCheckpoint, numeroTracto, desde, tipoEvento, cotaInferior) =>
                 {
                     var checkpoint = PuntoControlGpsService.ObtenerPorNombre(nombreCheckpoint);
                     if (checkpoint == null) return null;
 
+                    Func<DateTime, List<OnwayHistoryPoint>> historialFiltrado = dia =>
+                    {
+                        var puntos = obtenerHistorialDia(numeroTracto, dia);
+                        return cotaInferior.HasValue
+                            ? puntos.Where(p => p.MessageTime > cotaInferior.Value).ToList()
+                            : puntos;
+                    };
+
                     for (int i = 0; i < VentanaMaximaDias; i++)
                     {
                         DateTime dia = desde.AddDays(i);
-                        var historialDia = obtenerHistorialDia(numeroTracto, dia);
-                        if (cotaInferior.HasValue && dia.Date == cotaInferior.Value.Date)
-                            historialDia = historialDia.Where(p => p.MessageTime > cotaInferior.Value).ToList();
+                        var historialDia = historialFiltrado(dia);
 
                         OnwayHistoryPoint match;
                         if (tipoEvento == TipoEventoGps.Salida)
@@ -180,7 +214,7 @@ namespace WebSGV.Services.GpsIntegracion
                             // Una salida necesita confirmar el alejamiento hasta el final de la
                             // ventana: si ocurre cerca de medianoche, un solo día no alcanza.
                             var historialVentana = historialDia
-                                .Concat(obtenerHistorialDia(numeroTracto, dia.AddDays(1)))
+                                .Concat(historialFiltrado(dia.AddDays(1)))
                                 .ToList();
                             match = CheckpointMatchingService.DetectarSalida(
                                 historialVentana, checkpoint.Latitud, checkpoint.Longitud, checkpoint.RadioMetros);
@@ -191,8 +225,11 @@ namespace WebSGV.Services.GpsIntegracion
                                 historialDia, checkpoint.Latitud, checkpoint.Longitud, checkpoint.RadioMetros);
                         }
 
+                        // El día se deriva del propio match, no del día que se estaba barriendo:
+                        // en una Salida el punto puede caer en el día de lookahead (dia + 1), y
+                        // devolver `dia` dejaría el cursor un día atrás del match real.
                         if (match != null)
-                            return Tuple.Create(match, dia);
+                            return Tuple.Create(match, FechaHelper.ConvertirDeUtc(match.MessageTime).Date);
                     }
                     return null;
                 };
@@ -239,7 +276,7 @@ namespace WebSGV.Services.GpsIntegracion
                     if (resultado == null) continue;
 
                     DateTime horaLocal = FechaHelper.ConvertirDeUtc(resultado.Item1.MessageTime);
-                    string senal = ClasificarSenal(resultado.Item1);
+                    string senal = ClasificarSenal(resultado.Item1, paso.TipoEvento);
                     foreach (var columna in paso.Columnas)
                     {
                         valoresEncontrados[columna] = horaLocal;
@@ -262,7 +299,7 @@ namespace WebSGV.Services.GpsIntegracion
                     {
                         rama = "JAVE";
                         DateTime horaLocal = FechaHelper.ConvertirDeUtc(resultadoJave.Item1.MessageTime);
-                        string senal = ClasificarSenal(resultadoJave.Item1);
+                        string senal = ClasificarSenal(resultadoJave.Item1, TipoEventoGps.Llegada);
                         valoresEncontrados["fhLlegadaPlantaEcuador"] = horaLocal;
                         valoresEncontrados["fhLlegadaAlmacen"] = horaLocal;
                         senalPorColumna["fhLlegadaPlantaEcuador"] = senal;
@@ -277,7 +314,7 @@ namespace WebSGV.Services.GpsIntegracion
                         {
                             rama = "INBALNOR";
                             DateTime horaLocal = FechaHelper.ConvertirDeUtc(resultadoInbalnor.Item1.MessageTime);
-                            string senal = ClasificarSenal(resultadoInbalnor.Item1);
+                            string senal = ClasificarSenal(resultadoInbalnor.Item1, TipoEventoGps.Llegada);
                             valoresEncontrados["fhLlegadaPlantaEcuador"] = horaLocal;
                             valoresEncontrados["fhLlegadaAlmacen"] = horaLocal;
                             senalPorColumna["fhLlegadaPlantaEcuador"] = senal;
@@ -296,7 +333,7 @@ namespace WebSGV.Services.GpsIntegracion
                         if (resultadoIngreso != null)
                         {
                             valoresEncontrados["fhIngreso"] = FechaHelper.ConvertirDeUtc(resultadoIngreso.Item1.MessageTime);
-                            senalPorColumna["fhIngreso"] = ClasificarSenal(resultadoIngreso.Item1);
+                            senalPorColumna["fhIngreso"] = ClasificarSenal(resultadoIngreso.Item1, TipoEventoGps.Llegada);
                             cursor = resultadoIngreso.Item2;
                             horaCotaInferior = resultadoIngreso.Item1.MessageTime;
                         }
@@ -308,7 +345,7 @@ namespace WebSGV.Services.GpsIntegracion
                         if (resultadoSalida != null)
                         {
                             valoresEncontrados["fhSalida"] = FechaHelper.ConvertirDeUtc(resultadoSalida.Item1.MessageTime);
-                            senalPorColumna["fhSalida"] = ClasificarSenal(resultadoSalida.Item1);
+                            senalPorColumna["fhSalida"] = ClasificarSenal(resultadoSalida.Item1, TipoEventoGps.Salida);
                             cursor = resultadoSalida.Item2;
                             horaCotaInferior = resultadoSalida.Item1.MessageTime;
                         }
@@ -321,7 +358,7 @@ namespace WebSGV.Services.GpsIntegracion
                     if (resultadoBaseFinal != null)
                     {
                         valoresEncontrados["fhLlegadaBaseFinal"] = FechaHelper.ConvertirDeUtc(resultadoBaseFinal.Item1.MessageTime);
-                        senalPorColumna["fhLlegadaBaseFinal"] = ClasificarSenal(resultadoBaseFinal.Item1);
+                        senalPorColumna["fhLlegadaBaseFinal"] = ClasificarSenal(resultadoBaseFinal.Item1, TipoEventoGps.Llegada);
                     }
                 }
 
@@ -334,7 +371,7 @@ namespace WebSGV.Services.GpsIntegracion
                     GuardarValores(idSeguimiento, valoresEncontrados, rama);
 
                     var camposSenalDebil = senalPorColumna
-                        .Where(kv => kv.Value == "Primer punto detectado (revisar)")
+                        .Where(kv => kv.Value == ResultadoCampoGps.SenalRevisar)
                         .Select(kv => kv.Key)
                         .ToList();
 
@@ -344,25 +381,24 @@ namespace WebSGV.Services.GpsIntegracion
                         (camposSenalDebil.Count > 0 ? $". Revisar manualmente: {string.Join(", ", camposSenalDebil)}." : "."));
                 }
 
-                var todasLasColumnas = pasos.SelectMany(p => p.Columnas)
-                    .Concat(new[] { "fhLlegadaPlantaEcuador", "fhLlegadaAlmacen", "fhIngreso", "fhSalida", "fhLlegadaBaseFinal" })
-                    .Distinct();
-
+                // ColumnasGps es la única fuente de verdad de qué campos llena el GPS: es la misma
+                // lista que alimenta el SELECT y `valoresYaConfirmados`, así que el conteo y el
+                // detalle no pueden desincronizarse si mañana se agrega un checkpoint.
                 string ramaTexto = rama != null ? $" (ruta: {rama})" : " (no se detectó si fue por Jave o Inbalnor)";
                 var resultadoFinal = new ResultadoConsultaGpsExportacion
                 {
                     Exito = true,
                     Mensaje = valoresEncontrados.Count > 0
-                        ? $"GPS actualizó {valoresEncontrados.Count} de {todasLasColumnas.Count()} campos ({totalConfirmados} confirmados en total){ramaTexto}."
-                        : $"No había campos nuevos por actualizar — ya hay {totalConfirmados} de {todasLasColumnas.Count()} campos confirmados{ramaTexto}."
+                        ? $"GPS actualizó {valoresEncontrados.Count} de {ColumnasGps.Length} campos ({totalConfirmados} confirmados en total){ramaTexto}."
+                        : $"No había campos nuevos por actualizar — ya hay {totalConfirmados} de {ColumnasGps.Length} campos confirmados{ramaTexto}."
                 };
-                foreach (var columna in todasLasColumnas)
+                foreach (var columna in ColumnasGps)
                     resultadoFinal.Campos.Add(new ResultadoCampoGps
                     {
                         Columna = columna,
                         Encontrado = valoresEncontrados.ContainsKey(columna) || valoresYaConfirmados.ContainsKey(columna),
                         SenalConfianza = senalPorColumna.ContainsKey(columna) ? senalPorColumna[columna]
-                            : valoresYaConfirmados.ContainsKey(columna) ? "Ya confirmado" : null
+                            : valoresYaConfirmados.ContainsKey(columna) ? ResultadoCampoGps.SenalYaConfirmado : null
                     });
 
                 return resultadoFinal;
