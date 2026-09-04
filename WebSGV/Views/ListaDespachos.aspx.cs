@@ -114,6 +114,7 @@ namespace WebSGV.Views
             {
                 CargarConductoresFiltro();
                 CargarClientesFiltro();
+                CargarPlantasFiltro();
                 EstablecerContadores();
             }
             catch (Exception ex)
@@ -156,6 +157,62 @@ namespace WebSGV.Views
                 LogSGV.Error(ex, "Error al cargar clientes en ListaDespachos");
                 MostrarMensaje("Error al cargar clientes: " + ex.Message, "warning");
             }
+        }
+
+        /// <summary>
+        /// Llena los dos desplegables de planta —el filtro de lotes y el de la edición
+        /// masiva— desde el catálogo <c>Planta</c>. Antes ambos tenían seis opciones
+        /// fijas en el markup: una planta nueva registrada en <c>RegistroPlantas</c> no
+        /// llegaba nunca a estas pantallas.
+        /// </summary>
+        private void CargarPlantasFiltro()
+        {
+            try
+            {
+                DataTable dt = ListaDespachosService.ObtenerPlantasActivas();
+
+                ddlFiltroPlantaLotes.Items.Clear();
+                ddlFiltroPlantaLotes.Items.Add(new ListItem("-- Todas las plantas --", ""));
+
+                ddlPlantaEdit.Items.Clear();
+                ddlPlantaEdit.Items.Add(new ListItem("-- Seleccione planta --", ""));
+
+                foreach (DataRow row in dt.Rows)
+                {
+                    // El valor es idPlanta: filtrar y guardar por FK en vez de por texto
+                    // (fase 0 / paso 3).
+                    string nombre = row["nombre"].ToString();
+                    string id = row["idPlanta"].ToString();
+                    ddlFiltroPlantaLotes.Items.Add(new ListItem(nombre, id));
+                    ddlPlantaEdit.Items.Add(new ListItem(nombre, id));
+                }
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Error al cargar plantas en ListaDespachos");
+                MostrarMensaje("Error al cargar plantas: " + ex.Message, "warning");
+            }
+        }
+
+        /// <summary>
+        /// Selecciona en <c>ddlPlantaEdit</c> la planta con la que el lote está
+        /// guardado. Si no está en el catálogo el combo queda sin selección y el
+        /// validador obliga a elegir, en vez de quedarse callado en el placeholder y
+        /// reasignar los despachos a otra planta al guardar, como ocurría antes.
+        /// </summary>
+        private void SeleccionarPlantaGuardada(int idPlanta)
+        {
+            ListItem item = idPlanta > 0
+                ? ddlPlantaEdit.Items.FindByValue(idPlanta.ToString())
+                : null;
+
+            ddlPlantaEdit.ClearSelection();
+
+            if (item != null)
+                item.Selected = true;
+            else
+                LogSGV.Advertencia(
+                    "ListaDespachos: el lote referencia la planta {IdPlanta}, que no está en el catálogo activo.", idPlanta);
         }
 
         private void CargarDropDownListSP(DropDownList ddl, string spName, SqlParameter[] parametros, string textField, string valueField, string defaultText)
@@ -375,8 +432,8 @@ namespace WebSGV.Views
                 ? (int?)null : Convert.ToInt32(ddlFiltroClienteLotes.SelectedValue);
             string tipoOperacion = string.IsNullOrEmpty(ddlFiltroOperacionLotes.SelectedValue)
                 ? null : ddlFiltroOperacionLotes.SelectedValue;
-            string planta = string.IsNullOrEmpty(ddlFiltroPlantaLotes.SelectedValue)
-                ? null : ddlFiltroPlantaLotes.SelectedValue;
+            int? idPlanta = string.IsNullOrEmpty(ddlFiltroPlantaLotes.SelectedValue)
+                ? (int?)null : Convert.ToInt32(ddlFiltroPlantaLotes.SelectedValue);
             string numeroPedido = string.IsNullOrEmpty(txtBuscarLote.Text.Trim())
                 ? null : txtBuscarLote.Text.Trim();
             DateTime? fechaDesde = DateTime.TryParse(txtFechaDesde.Text, out DateTime fd) ? fd : (DateTime?)null;
@@ -391,7 +448,7 @@ namespace WebSGV.Views
                 ? null : txtBuscarConductorLotes.Text.Trim();
 
             return ListaDespachosService.ObtenerLotesRegistrados(
-                idCliente, tipoOperacion, planta, numeroPedido, fechaDesde, fechaHasta, estadoFiltro,
+                idCliente, tipoOperacion, idPlanta, numeroPedido, fechaDesde, fechaHasta, estadoFiltro,
                 numeroFactura, numeroCPIC, nombreConductor);
         }
 
@@ -630,6 +687,7 @@ namespace WebSGV.Views
             {
                 LimpiarFiltrosLotes();
                 CargarClientesFiltro();
+                CargarPlantasFiltro();
                 CargarLotesRegistrados();
                 MostrarMensaje("Datos de lotes actualizados correctamente.", "success");
             }
@@ -897,7 +955,7 @@ namespace WebSGV.Views
                 IdsDespachos = lote.IdsDespachos,
                 FechaDespacho = DateTime.Parse(txtFechaProgramacionEdit.Text),
                 NumeroPedido = string.IsNullOrEmpty(txtNumeroPedidoEdit.Text) ? null : txtNumeroPedidoEdit.Text,
-                LugarOperacion = ddlPlantaEdit.SelectedValue,
+                IdPlanta = Convert.ToInt32(ddlPlantaEdit.SelectedValue),
                 TipoOperacion = ddlTipoOperacionEdit.SelectedValue,
                 EsInternacional = rblAmbitoEdit.SelectedValue == "1",
                 UsuarioModificacion = ObtenerUsuarioActual(),
@@ -1140,8 +1198,7 @@ namespace WebSGV.Views
             txtClienteEdit.Text = lote.NombreCliente;
             txtNumeroPedidoEdit.Text = lote.NumeroPedido;
 
-            if (ddlPlantaEdit.Items.FindByValue(lote.PlantaOperacion) != null)
-                ddlPlantaEdit.SelectedValue = lote.PlantaOperacion;
+            SeleccionarPlantaGuardada(lote.IdPlanta);
 
             if (ddlTipoOperacionEdit.Items.FindByValue(lote.TipoOperacion) != null)
                 ddlTipoOperacionEdit.SelectedValue = lote.TipoOperacion;

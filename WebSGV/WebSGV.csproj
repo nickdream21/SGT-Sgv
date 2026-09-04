@@ -222,6 +222,9 @@
     <Content Include="Database\Scripts\script_AgregarPdfAbastecimiento.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminGrifo.sql" />
     <Content Include="Database\Scripts\script_CrearUsuarioAdminSistema.sql" />
+    <Content Include="Database\Schema\13_Despachos_IdPlanta.sql" />
+    <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
+    <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminMaquinaria.sql" />
     <Content Include="Database\Scripts\script_CrearTablasDespachoObra.sql" />
     <Content Include="Database\Scripts\script_CrearTablasIngresoEcuador.sql" />

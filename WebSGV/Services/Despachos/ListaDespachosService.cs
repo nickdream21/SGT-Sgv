@@ -29,6 +29,16 @@ namespace WebSGV.Services.Despachos
             DbHelper.ConsultarTablaSp("sp_LD_ObtenerTodosConductores");
 
         /// <summary>
+        /// Plantas activas para los desplegables de planta de operación. Lee de
+        /// <c>Planta</c>, catálogo único desde la unificación de fase 0: antes esta
+        /// pantalla traía seis opciones escritas a mano en el <c>.aspx</c>, de modo que
+        /// una planta nueva no aparecía en el filtro y un despacho guardado con un
+        /// valor ausente de esa lista quedaba invisible.
+        /// </summary>
+        public static DataTable ObtenerPlantasActivas() =>
+            DbHelper.ConsultarTabla("SELECT idPlanta, nombre FROM Planta WHERE activo = 1 ORDER BY nombre");
+
+        /// <summary>
         /// Anula un lote completo (<c>sp_LD_AnularLote</c>, parámetro de salida). Devuelve
         /// la cantidad de viajes anulados. <paramref name="idsDespachosCsv"/> es la lista
         /// de ids separada por comas.
@@ -146,7 +156,7 @@ namespace WebSGV.Services.Despachos
 
         /// <summary>Lotes registrados filtrados (<c>sp_LD_ObtenerLotesRegistrados</c>).</summary>
         public static List<LoteRegistrado> ObtenerLotesRegistrados(
-            int? idCliente, string tipoOperacion, string planta, string numeroPedido,
+            int? idCliente, string tipoOperacion, int? idPlanta, string numeroPedido,
             DateTime? fechaDesde, DateTime? fechaHasta, string estadoFiltro,
             string numeroFactura = null, string numeroCPIC = null, string nombreConductor = null)
         {
@@ -161,8 +171,7 @@ namespace WebSGV.Services.Despachos
                     cmd.Parameters.AddWithValue("@idCliente", (object)idCliente ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@tipoOperacion",
                         string.IsNullOrEmpty(tipoOperacion) ? (object)DBNull.Value : tipoOperacion);
-                    cmd.Parameters.AddWithValue("@planta",
-                        string.IsNullOrEmpty(planta) ? (object)DBNull.Value : planta);
+                    cmd.Parameters.AddWithValue("@idPlanta", (object)idPlanta ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@numeroPedido",
                         string.IsNullOrEmpty(numeroPedido) ? (object)DBNull.Value : numeroPedido);
                     cmd.Parameters.AddWithValue("@fechaDesde", (object)fechaDesde ?? DBNull.Value);
@@ -207,7 +216,7 @@ namespace WebSGV.Services.Despachos
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@idCliente", criterios.IdCliente);
                     cmd.Parameters.AddWithValue("@tipoOperacion", criterios.TipoOperacion);
-                    cmd.Parameters.AddWithValue("@planta", criterios.Planta);
+                    cmd.Parameters.AddWithValue("@idPlanta", criterios.IdPlanta);
                     cmd.Parameters.AddWithValue("@numeroPedido",
                         string.IsNullOrEmpty(criterios.NumeroPedido) ? (object)DBNull.Value : criterios.NumeroPedido);
                     cmd.Parameters.AddWithValue("@fechaDesde", criterios.FechaDespacho.Date);
@@ -248,7 +257,7 @@ namespace WebSGV.Services.Despachos
                     cmd.Parameters.AddWithValue("@fechaDespacho", criterios.FechaDespacho);
                     cmd.Parameters.AddWithValue("@tipoOperacion", criterios.TipoOperacion);
                     cmd.Parameters.AddWithValue("@esInternacional", criterios.EsInternacional);
-                    cmd.Parameters.AddWithValue("@planta", criterios.Planta);
+                    cmd.Parameters.AddWithValue("@idPlanta", criterios.IdPlanta);
                     cmd.Parameters.AddWithValue("@numeroPedido",
                         string.IsNullOrEmpty(criterios.NumeroPedido) || criterios.NumeroPedido == "NOPEDIDO"
                             ? (object)DBNull.Value : criterios.NumeroPedido);
@@ -324,7 +333,7 @@ namespace WebSGV.Services.Despachos
                                 cmd.Parameters.AddWithValue("@fechaDespacho", input.FechaDespacho);
                                 cmd.Parameters.AddWithValue("@numeroPedido",
                                     string.IsNullOrEmpty(input.NumeroPedido) ? (object)DBNull.Value : input.NumeroPedido);
-                                cmd.Parameters.AddWithValue("@lugarOperacion", input.LugarOperacion);
+                                cmd.Parameters.AddWithValue("@idPlanta", input.IdPlanta);
                                 cmd.Parameters.AddWithValue("@tipoOperacion", input.TipoOperacion);
                                 cmd.Parameters.AddWithValue("@esInternacional", input.EsInternacional);
                                 cmd.Parameters.AddWithValue("@idConductor",
@@ -448,6 +457,7 @@ namespace WebSGV.Services.Despachos
                 NumeroPedido = GetSafeValue<string>(reader, "numeroPedido"),
                 TipoOperacion = GetSafeValue<string>(reader, "tipoOperacion"),
                 EsInternacional = GetSafeValue<bool>(reader, "esInternacional"),
+                IdPlanta = GetSafeValue<int>(reader, "idPlanta"),
                 PlantaOperacion = GetSafeValue<string>(reader, "PlantaOperacion"),
                 CantidadDespachos = GetSafeValue<int>(reader, "CantidadDespachos"),
                 NumeroFactura = GetSafeValue<string>(reader, "NumeroFactura"),
@@ -462,7 +472,13 @@ namespace WebSGV.Services.Despachos
             };
         }
 
-        private static (int IdCliente, DateTime FechaDespacho, string TipoOperacion, bool EsInternacional, string Planta, string NumeroPedido) ParsearIdLoteVirtual(string idLoteVirtual)
+        /// <summary>
+        /// Descompone el id de lote virtual que arma <c>sp_LD_ObtenerLotesRegistrados</c>.
+        /// Desde la fase 0 / paso 3 el último segmento es <c>idPlanta</c> (entero) en vez
+        /// del nombre del lugar: comparar enteros evita que una diferencia de
+        /// capitalización parta el lote en dos.
+        /// </summary>
+        private static (int IdCliente, DateTime FechaDespacho, string TipoOperacion, bool EsInternacional, int IdPlanta, string NumeroPedido) ParsearIdLoteVirtual(string idLoteVirtual)
         {
             try
             {
@@ -474,7 +490,7 @@ namespace WebSGV.Services.Despachos
                     FechaDespacho: DateTime.Parse(partes[2]),
                     TipoOperacion: partes[3],
                     EsInternacional: partes[4] == "1",
-                    Planta: partes[5],
+                    IdPlanta: int.Parse(partes[5]),
                     NumeroPedido: partes[1] == "NOPEDIDO" ? null : partes[1]
                 );
             }

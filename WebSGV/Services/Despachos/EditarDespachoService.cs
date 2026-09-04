@@ -36,9 +36,16 @@ namespace WebSGV.Services.Despachos
         public static DataTable ObtenerCarretas() =>
             DbHelper.ConsultarTabla("SELECT idCarreta, placaCarreta FROM Carreta ORDER BY placaCarreta");
 
-        /// <summary>Lugares activos para el desplegable.</summary>
-        public static DataTable ObtenerLugares() =>
-            DbHelper.ConsultarTabla("SELECT nombre FROM Lugares WHERE activo = 1 ORDER BY nombre");
+        /// <summary>
+        /// Plantas activas para el desplegable de lugar de operación. Lee de
+        /// <c>Planta</c>, que es el catálogo único desde la unificación de fase 0
+        /// (antes esta pantalla leía de <c>Lugares</c>, un catálogo paralelo que ya
+        /// había divergido y que dejaba despachos fuera de su lote). No se filtra
+        /// por ámbito: la edición debe poder mostrar el valor ya guardado aunque el
+        /// ámbito del despacho se haya corregido después.
+        /// </summary>
+        public static DataTable ObtenerPlantasActivas() =>
+            DbHelper.ConsultarTabla("SELECT idPlanta, nombre FROM Planta WHERE activo = 1 ORDER BY nombre");
 
         /// <summary>Datos completos del despacho a editar.</summary>
         public static DataTable ObtenerDespacho(int idDespacho) =>
@@ -56,9 +63,17 @@ namespace WebSGV.Services.Despachos
                   WHERE d.idDespacho = @idDespacho",
                 DbHelper.Param("@idDespacho", idDespacho));
 
-        /// <summary>Actualiza el despacho. Devuelve el número de filas afectadas.</summary>
+        /// <summary>
+        /// Actualiza el despacho. Devuelve el número de filas afectadas.
+        ///
+        /// El lugar de operación se recibe como <paramref name="idPlanta"/> (FK a
+        /// <c>Planta</c>). La columna denormalizada <c>lugarOperacion</c> se deriva del
+        /// catálogo dentro del propio UPDATE en vez de escribirse con un texto que
+        /// venga de la pantalla: así no puede quedar un valor fuera del catálogo ni una
+        /// variante de capitalización que separe el despacho de su lote.
+        /// </summary>
         public static int Actualizar(int idDespacho, DateTime fechaDespacho, int idConductor,
-            int idCliente, int idTracto, int idCarreta, string lugarOperacion,
+            int idCliente, int idTracto, int idCarreta, int idPlanta,
             string tipoOperacion, string usuario)
         {
             return DbHelper.EjecutarNonQuery(
@@ -68,18 +83,20 @@ namespace WebSGV.Services.Despachos
                     idCliente = @idCliente,
                     idTracto = @idTracto,
                     idCarreta = @idCarreta,
-                    lugarOperacion = @lugarOperacion,
+                    idPlanta = @idPlanta,
+                    lugarOperacion = (SELECT nombre FROM Planta WHERE idPlanta = @idPlanta),
                     tipoOperacion = @tipoOperacion,
                     fechaModificacion = @fechaActual,
                     usuarioModificacion = @usuario
-                  WHERE idDespacho = @idDespacho",
+                  WHERE idDespacho = @idDespacho
+                    AND EXISTS (SELECT 1 FROM Planta WHERE idPlanta = @idPlanta)",
                 DbHelper.Param("@fechaActual",    FechaHelper.Ahora()),
                 DbHelper.Param("@fechaDespacho",  fechaDespacho),
                 DbHelper.Param("@idConductor",    idConductor),
                 DbHelper.Param("@idCliente",      idCliente),
                 DbHelper.Param("@idTracto",       idTracto),
                 DbHelper.Param("@idCarreta",      idCarreta),
-                DbHelper.Param("@lugarOperacion", lugarOperacion),
+                DbHelper.Param("@idPlanta",       idPlanta),
                 DbHelper.Param("@tipoOperacion",  tipoOperacion),
                 DbHelper.Param("@usuario",        usuario),
                 DbHelper.Param("@idDespacho",     idDespacho));

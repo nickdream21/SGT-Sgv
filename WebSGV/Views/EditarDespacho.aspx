@@ -320,15 +320,8 @@
                             <div class="col-lg-4 col-md-6">
                                 <div class="form-field">
                                     <label class="field-label">Lugar de Operación <span class="required-field">*</span></label>
+                                    <%-- Opciones cargadas desde el catálogo Planta en CargarLugares(). --%>
                                     <asp:DropDownList ID="ddlLugar" runat="server" CssClass="form-select">
-                                        <asp:ListItem Value="">-- Seleccionar Lugar --</asp:ListItem>
-                                        <asp:ListItem Value="TRUJILLO">Trujillo</asp:ListItem>
-                                        <asp:ListItem Value="GUAYAQUIL">Guayaquil</asp:ListItem>
-                                        <asp:ListItem Value="LIMA">Lima</asp:ListItem>
-                                        <asp:ListItem Value="QUITO">Quito</asp:ListItem>
-                                        <asp:ListItem Value="PIURA">Piura</asp:ListItem>
-                                        <asp:ListItem Value="CHICLAYO">Chiclayo</asp:ListItem>
-                                        <asp:ListItem Value="MACHALA">Machala</asp:ListItem>
                                     </asp:DropDownList>
                                 </div>
                             </div>

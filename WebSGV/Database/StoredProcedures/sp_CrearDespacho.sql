@@ -1,3 +1,13 @@
+-- ============================================================
+-- Crea un despacho individual.
+--
+-- Fase 0 / paso 3: el lugar de operacion se recibe como @idPlanta (FK a Planta).
+-- @lugarOperacion queda como parametro legado y opcional para que el SP tolere
+-- una version anterior de la aplicacion durante el despliegue; cuando llega solo
+-- el texto, se resuelve contra el catalogo. La columna Despachos.lugarOperacion
+-- NUNCA se escribe con el texto recibido: siempre se deriva de Planta.nombre,
+-- de modo que no puede contener un valor fuera del catalogo.
+-- ============================================================
 CREATE OR ALTER PROCEDURE sp_CrearDespacho
     @idConductor        INT,
     @idTracto           INT,
@@ -6,7 +16,6 @@ CREATE OR ALTER PROCEDURE sp_CrearDespacho
     @fechaDespacho      DATE,
     @horaDespacho       TIME,
     @fechaCreacion      DATETIME,
-    @lugarOperacion     VARCHAR(100),
     @tipoOperacion      VARCHAR(50),
     @numeroPedido       VARCHAR(10)  = NULL,
     @idFactura          INT          = NULL,
@@ -17,10 +26,35 @@ CREATE OR ALTER PROCEDURE sp_CrearDespacho
     @usuarioCreacion    VARCHAR(50),
     @idViajeProgreso    INT          = NULL,
     @descripcionViaje   VARCHAR(300) = NULL,
+    @idPlanta           INT          = NULL,
+    @lugarOperacion     VARCHAR(100) = NULL,
     @idDespacho         INT OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    -- Resolver la planta: se prefiere el id; el texto es el camino de respaldo.
+    IF @idPlanta IS NULL AND @lugarOperacion IS NOT NULL
+        SELECT @idPlanta = idPlanta
+        FROM Planta
+        WHERE UPPER(LTRIM(RTRIM(nombre))) = UPPER(LTRIM(RTRIM(@lugarOperacion)))
+          AND activo = 1;
+
+    IF @idPlanta IS NULL
+    BEGIN
+        RAISERROR('No se pudo determinar la planta de operacion. Verifique que el lugar seleccionado exista en el catalogo Planta.', 16, 1);
+        RETURN;
+    END;
+
+    -- El texto guardado siempre es el del catalogo, nunca el que envio la app.
+    DECLARE @nombrePlanta VARCHAR(100);
+    SELECT @nombrePlanta = nombre FROM Planta WHERE idPlanta = @idPlanta;
+
+    IF @nombrePlanta IS NULL
+    BEGIN
+        RAISERROR('La planta indicada no existe en el catalogo.', 16, 1);
+        RETURN;
+    END;
 
     BEGIN TRY
         BEGIN TRANSACTION;
@@ -62,7 +96,7 @@ BEGIN
         INSERT INTO Despachos (
             numeroDespacho, fechaDespacho, horaDespacho,
             idConductor, idTracto, idCarreta, idCliente,
-            lugarOperacion, tipoOperacion, estadoDespacho,
+            idPlanta, lugarOperacion, tipoOperacion, estadoDespacho,
             fechaCreacion, usuarioCreacion, activo,
             numeroPedido, idFactura, idCPIC,
             guiaRemitente, guiaTransportista,
@@ -71,7 +105,7 @@ BEGIN
         VALUES (
             @numeroDespacho, @fechaDespacho, @horaDespacho,
             @idConductor, @idTracto, @idCarreta, @idCliente,
-            @lugarOperacion, @tipoOperacion, 'PROGRAMADO',
+            @idPlanta, @nombrePlanta, @tipoOperacion, 'PROGRAMADO',
             @fechaCreacion, @usuarioCreacion, 1,
             @numeroPedido, @idFactura, @idCPIC,
             @guiaRemitente, @guiaTransportista,

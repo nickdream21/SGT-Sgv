@@ -18,17 +18,27 @@
 CREATE OR ALTER PROCEDURE sp_LD_ObtenerLotesRegistrados
     @idCliente       INT          = NULL,
     @tipoOperacion   VARCHAR(50)  = NULL,
-    @planta          VARCHAR(100) = NULL,
     @numeroPedido    VARCHAR(10)  = NULL,
     @fechaDesde      DATE         = NULL,
     @fechaHasta      DATE         = NULL,
     @estadoFiltro    VARCHAR(20)  = NULL,
     @numeroFactura   VARCHAR(30)  = NULL,
     @numeroCPIC      VARCHAR(20)  = NULL,
-    @nombreConductor VARCHAR(200) = NULL
+    @nombreConductor VARCHAR(200) = NULL,
+    @idPlanta        INT          = NULL,
+    @planta          VARCHAR(100) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    -- Fase 0 / paso 3: el lote se agrupa e identifica por idPlanta (entero) en
+    -- vez del texto del lugar, que era donde una diferencia de capitalizacion
+    -- partia un lote en dos. @planta queda como parametro legado y opcional
+    -- para tolerar una version anterior de la aplicacion durante el despliegue.
+    IF @idPlanta IS NULL AND @planta IS NOT NULL
+        SELECT @idPlanta = idPlanta
+        FROM Planta
+        WHERE UPPER(LTRIM(RTRIM(nombre))) = UPPER(LTRIM(RTRIM(@planta)));
 
     -- Ajustar fechaHasta para incluir todo el dia
     DECLARE @fechaHastaFin DATETIME = NULL;
@@ -43,7 +53,7 @@ BEGIN
                 CONVERT(VARCHAR(10), d.fechaDespacho, 120), '_',
                 d.tipoOperacion, '_',
                 CAST(d.esInternacional AS VARCHAR(1)), '_',
-                d.lugarOperacion
+                CAST(d.idPlanta AS VARCHAR(10))
             ) AS IdLoteVirtual,
 
             d.fechaDespacho          AS FechaProgramacion,
@@ -52,7 +62,8 @@ BEGIN
             d.numeroPedido,
             d.tipoOperacion,
             d.esInternacional,
-            d.lugarOperacion         AS PlantaOperacion,
+            d.idPlanta,
+            pl.nombre                AS PlantaOperacion,
             COUNT(*)                 AS CantidadDespachos,
             MAX(ISNULL(f.numeroFactura, ''))   AS NumeroFactura,
             MAX(ISNULL(cp.numeroCPIC, ''))     AS NumeroCPIC,
@@ -72,12 +83,13 @@ BEGIN
 
         FROM Despachos d
         INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
+        LEFT  JOIN Planta  pl ON d.idPlanta  = pl.idPlanta
         LEFT  JOIN Factura f  ON d.idFactura = f.idFactura
         LEFT  JOIN CPIC    cp ON d.idCPIC    = cp.idCPIC
         WHERE d.activo = 1
           AND (@idCliente      IS NULL OR d.idCliente      = @idCliente)
           AND (@tipoOperacion  IS NULL OR d.tipoOperacion  = @tipoOperacion)
-          AND (@planta         IS NULL OR d.lugarOperacion  = @planta)
+          AND (@idPlanta       IS NULL OR d.idPlanta        = @idPlanta)
           AND (@numeroPedido   IS NULL OR d.numeroPedido LIKE '%' + @numeroPedido + '%')
           AND (@fechaDesde     IS NULL OR d.fechaDespacho  >= @fechaDesde)
           AND (@fechaHastaFin  IS NULL OR d.fechaDespacho  <= @fechaHastaFin)
@@ -85,7 +97,7 @@ BEGIN
           AND (@numeroCPIC     IS NULL OR cp.numeroCPIC LIKE '%' + @numeroCPIC + '%')
         GROUP BY
             d.idCliente, cl.nombre, d.numeroPedido, d.fechaDespacho,
-            d.tipoOperacion, d.esInternacional, d.lugarOperacion
+            d.tipoOperacion, d.esInternacional, d.idPlanta, pl.nombre
         HAVING COUNT(*) >= 1
     )
     SELECT la.*
@@ -101,7 +113,7 @@ BEGIN
               AND d2.fechaDespacho = la.FechaProgramacion
               AND d2.tipoOperacion = la.tipoOperacion
               AND d2.esInternacional = la.esInternacional
-              AND d2.lugarOperacion = la.PlantaOperacion
+              AND d2.idPlanta = la.idPlanta
               AND CONCAT(c2.nombre, ' ', ISNULL(c2.apPaterno, ''), ' ', ISNULL(c2.apMaterno, ''))
                     LIKE '%' + @nombreConductor + '%'
       ))

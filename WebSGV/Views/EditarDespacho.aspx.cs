@@ -149,10 +149,10 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = EditarDespachoService.ObtenerLugares();
+                DataTable dt = EditarDespachoService.ObtenerPlantasActivas();
                 ddlLugar.DataSource = dt;
                 ddlLugar.DataTextField = "nombre";
-                ddlLugar.DataValueField = "nombre";
+                ddlLugar.DataValueField = "idPlanta";
                 ddlLugar.DataBind();
                 ddlLugar.Items.Insert(0, new ListItem("-- Seleccionar Lugar --", ""));
             }
@@ -161,6 +161,34 @@ namespace WebSGV.Views
                 LogSGV.Error(ex, "Error al cargar lugares en EditarDespacho");
                 MostrarMensaje("Error al cargar lugares: " + ex.Message, "danger");
             }
+        }
+
+        /// <summary>
+        /// Selecciona en <c>ddlLugar</c> la planta con la que el despacho está guardado.
+        /// Asignar <c>SelectedValue</c> directamente lanza cuando el valor no está en la
+        /// lista, y eso dejaba la pantalla inservible para el despacho. Un despacho sin
+        /// <c>idPlanta</c> (histórico anterior a la normalización, o cuyo texto no se
+        /// pudo mapear) queda sin selección a propósito: el validador obliga entonces a
+        /// elegir una planta del catálogo, que es la decisión correcta y del usuario.
+        /// </summary>
+        private void SeleccionarLugarGuardado(object idPlantaGuardado, string lugarGuardado)
+        {
+            if (idPlantaGuardado != null && idPlantaGuardado != DBNull.Value)
+            {
+                ListItem item = ddlLugar.Items.FindByValue(idPlantaGuardado.ToString());
+                if (item != null)
+                {
+                    ddlLugar.ClearSelection();
+                    item.Selected = true;
+                    return;
+                }
+            }
+
+            LogSGV.Advertencia(
+                "EditarDespacho: despacho {IdDespacho} sin planta válida en el catálogo (texto guardado: '{Lugar}').",
+                idDespacho, lugarGuardado ?? "(vacío)");
+
+            ddlLugar.ClearSelection();
         }
 
         private void CargarDatosDespacho()
@@ -178,7 +206,7 @@ namespace WebSGV.Views
                     ddlCliente.SelectedValue        = reader["idCliente"].ToString();
                     ddlTracto.SelectedValue         = reader["idTracto"].ToString();
                     ddlCarreta.SelectedValue        = reader["idCarreta"].ToString();
-                    ddlLugar.SelectedValue          = reader["lugarOperacion"].ToString();
+                    SeleccionarLugarGuardado(reader["idPlanta"], reader["lugarOperacion"].ToString());
                     ddlTipoOperacion.SelectedValue  = reader["tipoOperacion"].ToString();
                 }
                 else
@@ -275,14 +303,14 @@ namespace WebSGV.Views
                     Convert.ToInt32(ddlCliente.SelectedValue),
                     Convert.ToInt32(ddlTracto.SelectedValue),
                     Convert.ToInt32(ddlCarreta.SelectedValue),
-                    ddlLugar.SelectedValue,
+                    Convert.ToInt32(ddlLugar.SelectedValue),
                     ddlTipoOperacion.SelectedValue,
                     Session["Usuario"]?.ToString() ?? "SISTEMA");
 
                 if (filas > 0)
                 {
                     AuditoriaHelper.Registrar("UPDATE", "Despachos", idDespacho,
-                        $"Despacho editado - Conductor: {ddlConductor.SelectedItem?.Text}, Cliente: {ddlCliente.SelectedItem?.Text}, Lugar: {ddlLugar.SelectedValue}, Operación: {ddlTipoOperacion.SelectedValue}");
+                        $"Despacho editado - Conductor: {ddlConductor.SelectedItem?.Text}, Cliente: {ddlCliente.SelectedItem?.Text}, Lugar: {ddlLugar.SelectedItem?.Text}, Operación: {ddlTipoOperacion.SelectedValue}");
                     return true;
                 }
                 else

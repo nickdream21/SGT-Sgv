@@ -73,7 +73,13 @@ namespace WebSGV.Models.Despachos
         public string NumeroPedido { get; set; }
         public string TipoOperacion { get; set; }
         public bool EsInternacional { get; set; }
+
+        /// <summary>FK a <c>Planta</c>: identifica el lote junto al resto de criterios.</summary>
+        public int IdPlanta { get; set; }
+
+        /// <summary>Nombre de la planta, para mostrar. Viene del catálogo, no del despacho.</summary>
         public string PlantaOperacion { get; set; }
+
         public int CantidadDespachos { get; set; }
         public string NumeroFactura { get; set; }
         public string NumeroCPIC { get; set; }
@@ -108,7 +114,10 @@ namespace WebSGV.Models.Despachos
         public List<int> IdsDespachos { get; set; } = new List<int>();
         public DateTime FechaDespacho { get; set; }
         public string NumeroPedido { get; set; }
-        public string LugarOperacion { get; set; }
+
+        /// <summary>Planta de operación del lote (FK a <c>Planta</c>). Es lo que se graba.</summary>
+        public int IdPlanta { get; set; }
+
         public string TipoOperacion { get; set; }
         public bool EsInternacional { get; set; }
         public string UsuarioModificacion { get; set; }

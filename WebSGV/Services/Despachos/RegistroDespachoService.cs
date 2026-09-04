@@ -181,7 +181,7 @@ namespace WebSGV.Services.Despachos
                     cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(lote.FechaProgramacion).Date);
                     cmd.Parameters.AddWithValue("@horaDespacho", fechaCreacion.TimeOfDay);
                     cmd.Parameters.AddWithValue("@fechaCreacion", fechaCreacion);
-                    cmd.Parameters.AddWithValue("@lugarOperacion", lote.PlantaOperacion);
+                    cmd.Parameters.AddWithValue("@idPlanta", lote.IdPlanta);
                     cmd.Parameters.AddWithValue("@tipoOperacion", lote.TipoOperacion);
                     cmd.Parameters.AddWithValue("@numeroPedido", (object)lote.NumeroPedido ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@idFactura", (object)idFactura ?? DBNull.Value);

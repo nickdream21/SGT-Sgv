@@ -1,4 +1,4 @@
-﻿<%@ Page Title="Registro de Despachos Unificado" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistroDespacho.aspx.cs" Inherits="WebSGV.Views.RegistroDespacho" %>
+﻿<%@ Page Title="Registro de Despachos Unificado" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" MaintainScrollPositionOnPostback="true" CodeBehind="RegistroDespacho.aspx.cs" Inherits="WebSGV.Views.RegistroDespacho" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
@@ -35,6 +35,32 @@
 .rd-stepper-item.active .rd-stepper-label { color: #1e40af; }
 .rd-stepper-item.done .rd-stepper-label { color: #16a34a; }
 .rd-stepper-connector { flex: 1; height: 2px; background: #e2e8f0; max-width: 120px; margin-bottom: 1.4rem; }
+
+/* ---- Barra compacta de resumen del lote (reemplaza la tarjeta grande) ---- */
+.rd-lote-bar { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 5px; padding: .7rem 1rem; }
+.rd-lote-bar .rd-lote-grid { display: flex; flex-wrap: wrap; gap: .35rem 1.75rem; }
+.rd-lote-item { display: flex; flex-direction: column; line-height: 1.25; }
+.rd-lote-item .rd-lote-k { font-size: .66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #15803d; }
+.rd-lote-item .rd-lote-v { font-size: .84rem; font-weight: 600; color: #14532d; }
+
+/* ---- Formulario de conductor: grilla estable ----
+   Los paneles de guías se muestran/ocultan según el tipo de operación. Reservando la
+   columna (min-height) el formulario deja de reacomodarse al cambiar de operación. */
+.rd-form-col { min-height: 232px; }
+.rd-conductor-card.rd-editando { border-left: 3px solid #b45309; }
+.rd-edit-flag { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 5px; padding: .5rem .85rem; font-size: .82rem; font-weight: 600; }
+
+/* ---- Tabla de conductores ---- */
+.rd-tabla-conductores { font-size: .86rem; }
+.rd-tabla-conductores thead th { background: #f8fafc; color: #475569; font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.rd-tabla-conductores td { vertical-align: middle; }
+.rd-tabla-conductores tr.rd-fila-editando > td { background: #fffbeb !important; }
+.rd-placa { font-family: Consolas, "Courier New", monospace; font-weight: 700; letter-spacing: .04em; }
+.rd-chip { display: inline-block; padding: .12rem .5rem; border-radius: 10px; font-size: .7rem; font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
+.rd-chip-ok { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+.rd-chip-wait { background: #f8fafc; border-color: #e2e8f0; color: #475569; }
+.rd-chip-warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.rd-sin-datos { color: #94a3b8; }
 </style>
 
     <div class="container-fluid">
@@ -48,9 +74,9 @@
                         </h4>
                     </div>
                     <div class="card-body">
-                        <!-- btnIniciarLote y btnAgregarConductor están declarados como PostBackTrigger (no Async)
-                             en <Triggers> más abajo: ambos pasos incluyen un FileUpload (documento de Factura/CPIC
-                             o Manifiesto) y UpdatePanel no soporta subida de archivos por AJAX parcial. -->
+                        <!-- Solo btnIniciarLote es PostBackTrigger (ver <Triggers> más abajo): ese paso incluye
+                             los FileUpload de Factura/CPIC y UpdatePanel no soporta subida de archivos por AJAX
+                             parcial. Agregar conductor sí es asíncrono — ya no hay FileUpload en ese paso. -->
                         <asp:UpdatePanel ID="UpdatePanelMain" runat="server" UpdateMode="Conditional">
                             <ContentTemplate>
                                 
@@ -529,14 +555,35 @@
 
                                 <!-- ====== FASE 2: ADICIÓN DE CONDUCTORES ====== -->
                                 <asp:Panel ID="pnlAdicionConductores" runat="server" Visible="false">
-                                    <div class="card mb-4" style="border-top: 3px solid #1e40af;">
+                                    <asp:Panel ID="pnlConductorCard" runat="server" CssClass="card mb-4 rd-conductor-card" style="border-top: 3px solid #1e40af;">
                                         <div class="rd-step-header">
-                                            <h5><span class="rd-step-num">2</span> Agregar Conductores al Lote</h5>
+                                            <h5><span class="rd-step-num">2</span> <asp:Literal ID="litTituloConductor" runat="server" Text="Agregar Conductores al Lote"></asp:Literal></h5>
                                             <div class="rd-subtitle">Complete los datos específicos para cada conductor</div>
                                         </div>
                                         <div class="card-body">
 
-                                            <!-- INFORMACIÓN DE VIAJES EN PROGRESO -->
+                                            <!-- Aviso de modo edición -->
+                                            <asp:Panel ID="pnlModoEdicion" runat="server" Visible="false" CssClass="rd-edit-flag mb-3">
+                                                <i class="fas fa-pen mr-1"></i>
+                                                Editando a <asp:Label ID="lblConductorEnEdicion" runat="server"></asp:Label>.
+                                                Los cambios reemplazan los datos de esa fila.
+                                            </asp:Panel>
+
+                                            <!-- Mensajes de esta sección: se muestran acá y no al tope de la página,
+                                                 para que el usuario no tenga que subir a enterarse del error. -->
+                                            <asp:Panel ID="pnlMensajeConductor" runat="server" Visible="false" CssClass="mb-3">
+                                                <div class="position-relative">
+                                                    <asp:Label ID="lblMensajeConductor" runat="server" CssClass="alert d-block mb-0 pe-5"></asp:Label>
+                                                    <button type="button" class="btn-close position-absolute" style="top:.65rem;right:.75rem;"
+                                                        onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"></button>
+                                                </div>
+                                            </asp:Panel>
+
+                                            <!-- INFORMACIÓN DE VIAJES EN PROGRESO
+                                                 UpdatePanel propio: elegir un conductor solo refresca este bloque, en vez de
+                                                 re-renderizar todo el formulario (lo que reiniciaba los Select2 y movía la página). -->
+                                            <asp:UpdatePanel ID="UpdatePanelViajes" runat="server" UpdateMode="Conditional">
+                                                <ContentTemplate>
                                             <asp:Panel ID="pnlViajesProgreso" runat="server" CssClass="card mb-4" style="border-top: 2px solid #6d28d9;" Visible="false">
                                                 <div class="rd-viaje-header">
                                                     <h6><i class="fas fa-route mr-1"></i> Viajes en Progreso — <span id="spanNombreConductor" runat="server"></span></h6>
@@ -615,11 +662,16 @@
                                                     </div>
                                                 </div>
                                             </asp:Panel>
+                                                </ContentTemplate>
+                                                <Triggers>
+                                                    <asp:AsyncPostBackTrigger ControlID="ddlConductor" EventName="SelectedIndexChanged" />
+                                                </Triggers>
+                                            </asp:UpdatePanel>
 
                                             <div class="row">
                                                 <!-- Columna Izquierda -->
-                                                <div class="col-md-6">
-                                                    
+                                                <div class="col-md-6 rd-form-col">
+
                                                     <!-- Conductor -->
                                                     <div class="form-group mb-3">
                                                         <label for="ddlConductor" class="form-label">
@@ -696,7 +748,7 @@
                                                 </div>
 
                                                 <!-- Columna Derecha - Guías Específicas -->
-                                                <div class="col-md-6">
+                                                <div class="col-md-6 rd-form-col">
                                                     <div class="rd-section-label mt-3"><i class="fas fa-file-alt mr-1"></i> Documentos del Conductor</div>
 
                                                     <!-- Guía Remitente -->
@@ -767,32 +819,20 @@
                                                         </div>
                                                     </asp:Panel>
 
-                                                    <!-- Manifiesto (solo viajes internacionales) — opcional aquí -->
+                                                    <!-- Manifiesto (solo viajes internacionales).
+                                                         La subida se hace desde Gestión de Despachos, no acá: el conductor
+                                                         normalmente recién obtiene los ejemplares durante el viaje, y mantener
+                                                         un FileUpload en este paso obligaba a un postback completo (recarga de
+                                                         página, salto de scroll y aviso de "¿desea salir del sitio?") cada vez
+                                                         que se agregaba un conductor. -->
                                                     <asp:Panel ID="pnlManifiestoConductor" runat="server" Visible="false">
-                                                        <div class="rd-doc-box mb-3">
-                                                            <div class="rd-doc-title"><i class="fas fa-passport mr-1"></i> Manifiesto de Aduana</div>
-                                                            <p class="text-muted small mb-2">
+                                                        <div class="rd-notice rd-notice-warn mb-3">
+                                                            <div class="rd-doc-title" style="color:inherit;"><i class="fas fa-passport mr-1"></i> Manifiesto de Aduana</div>
+                                                            <small>
                                                                 Cada conductor porta dos ejemplares: uno para cruzar la frontera y otro para el regreso.
-                                                                Si aún no los tiene, puede omitir esto y adjuntarlos más adelante desde
-                                                                <strong>Gestión de Despachos</strong> mientras avanza el viaje.
-                                                            </p>
-
-                                                            <div class="form-group mb-2">
-                                                                <label for="fileManifiestoCruce" class="form-label">
-                                                                    <strong>Manifiesto de Cruce:</strong>
-                                                                    <span class="text-muted small">(Opcional)</span>
-                                                                </label>
-                                                                <asp:FileUpload ID="fileManifiestoCruce" runat="server" CssClass="form-control" accept=".pdf,.jpg,.jpeg,.png" />
-                                                            </div>
-
-                                                            <div class="form-group mb-2">
-                                                                <label for="fileManifiestoRegreso" class="form-label">
-                                                                    <strong>Manifiesto de Retorno:</strong>
-                                                                    <span class="text-muted small">(Opcional)</span>
-                                                                </label>
-                                                                <asp:FileUpload ID="fileManifiestoRegreso" runat="server" CssClass="form-control" accept=".pdf,.jpg,.jpeg,.png" />
-                                                            </div>
-                                                            <small class="form-text text-muted">Formatos permitidos: PDF, JPG, PNG. Tamaño máximo: 20MB por archivo.</small>
+                                                                Se adjuntan desde <strong>Gestión de Despachos</strong>, buscando el despacho una vez
+                                                                creado el lote — que es cuando el conductor ya cuenta con ellos.
+                                                            </small>
                                                         </div>
                                                     </asp:Panel>
 
@@ -811,14 +851,21 @@
                                             <div class="row">
                                                 <div class="col-md-12">
                                                     <div class="d-flex justify-content-end gap-2">
-                                                        <asp:Button ID="btnLimpiarConductor" runat="server" 
-                                                            Text="Limpiar" 
+                                                        <asp:Button ID="btnCancelarEdicion" runat="server"
+                                                            Text="Cancelar edición"
+                                                            CssClass="btn btn-outline-secondary"
+                                                            CausesValidation="false"
+                                                            Visible="false"
+                                                            OnClick="btnCancelarEdicion_Click" />
+
+                                                        <asp:Button ID="btnLimpiarConductor" runat="server"
+                                                            Text="Limpiar"
                                                             CssClass="btn btn-outline-secondary"
                                                             CausesValidation="false"
                                                             OnClick="btnLimpiarConductor_Click" />
 
-                                                        <asp:Button ID="btnAgregarConductor" runat="server" 
-                                                            Text="Agregar Conductor" 
+                                                        <asp:Button ID="btnAgregarConductor" runat="server"
+                                                            Text="Agregar Conductor"
                                                             CssClass="btn btn-primary"
                                                             OnClick="btnAgregarConductor_Click"
                                                             ValidationGroup="AgregarConductor" />
@@ -826,7 +873,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </asp:Panel>
                                 </asp:Panel>
 
                                 <!-- ====== LISTA DE CONDUCTORES AGREGADOS AL LOTE ====== -->
@@ -838,24 +885,47 @@
                                         <div class="card-body">
                                             <div class="table-responsive">
                                             <asp:GridView ID="gvConductoresLote" runat="server"
-                                                CssClass="table table-striped table-hover"
+                                                CssClass="table table-hover rd-tabla-conductores align-middle"
                                                 AutoGenerateColumns="false"
-                                                EmptyDataText="No hay conductores agregados al lote"
-                                                OnRowCommand="gvConductoresLote_RowCommand">
+                                                EmptyDataText="Todavía no hay conductores en este lote."
+                                                OnRowCommand="gvConductoresLote_RowCommand"
+                                                OnRowDataBound="gvConductoresLote_RowDataBound">
                                                 <Columns>
+                                                    <asp:TemplateField HeaderText="#" ItemStyle-CssClass="text-muted" ItemStyle-Width="34px">
+                                                        <ItemTemplate><%# Container.DataItemIndex + 1 %></ItemTemplate>
+                                                    </asp:TemplateField>
                                                     <asp:BoundField DataField="NombreConductor" HeaderText="Conductor" />
-                                                    <asp:BoundField DataField="PlacaTracto" HeaderText="Tracto" />
-                                                    <asp:BoundField DataField="PlacaCarreta" HeaderText="Carreta" />
-                                                    <asp:BoundField DataField="GuiaRemitente" HeaderText="Guía Remitente" />
-                                                    <asp:BoundField DataField="GuiaTransportista" HeaderText="Guía Transportista" />
-                                                    <asp:BoundField DataField="Manifiesto" HeaderText="Manifiesto" />
-                                                    <asp:BoundField DataField="EstadoViaje" HeaderText="Estado Viaje" />
-                                                    <asp:TemplateField HeaderText="Acciones">
+                                                    <asp:TemplateField HeaderText="Tracto">
+                                                        <ItemTemplate><span class="rd-placa"><%# Eval("PlacaTracto") %></span></ItemTemplate>
+                                                    </asp:TemplateField>
+                                                    <asp:TemplateField HeaderText="Carreta">
+                                                        <ItemTemplate><span class="rd-placa"><%# Eval("PlacaCarreta") %></span></ItemTemplate>
+                                                    </asp:TemplateField>
+                                                    <asp:TemplateField HeaderText="Guía Remitente">
+                                                        <ItemTemplate><%# MostrarDato(Eval("GuiaRemitente")) %></ItemTemplate>
+                                                    </asp:TemplateField>
+                                                    <asp:TemplateField HeaderText="Guía Transportista">
+                                                        <ItemTemplate><%# MostrarDato(Eval("GuiaTransportista")) %></ItemTemplate>
+                                                    </asp:TemplateField>
+                                                    <asp:TemplateField HeaderText="Manifiesto">
+                                                        <ItemTemplate><%# ChipManifiesto(Eval("Manifiesto")) %></ItemTemplate>
+                                                    </asp:TemplateField>
+                                                    <asp:TemplateField HeaderText="Estado Viaje">
+                                                        <ItemTemplate><%# ChipEstadoViaje(Eval("EstadoViaje")) %></ItemTemplate>
+                                                    </asp:TemplateField>
+                                                    <asp:TemplateField HeaderText="Acciones" ItemStyle-CssClass="text-end" HeaderStyle-CssClass="text-end">
                                                         <ItemTemplate>
-                                                            <asp:Button runat="server" 
-                                                                Text="Quitar" 
-                                                                CssClass="btn btn-danger btn-sm"
+                                                            <asp:Button runat="server"
+                                                                Text="Editar"
+                                                                CssClass="btn btn-outline-primary btn-sm"
+                                                                CommandName="Editar"
+                                                                CausesValidation="false"
+                                                                CommandArgument='<%# Container.DataItemIndex %>' />
+                                                            <asp:Button runat="server"
+                                                                Text="Quitar"
+                                                                CssClass="btn btn-outline-danger btn-sm"
                                                                 CommandName="Quitar"
+                                                                CausesValidation="false"
                                                                 CommandArgument='<%# Container.DataItemIndex %>'
                                                                 OnClientClick="return confirm('¿Quitar este conductor del lote?');" />
                                                         </ItemTemplate>
@@ -872,11 +942,11 @@
                                 <asp:PostBackTrigger ControlID="btnIniciarLote" />
                                 <asp:AsyncPostBackTrigger ControlID="btnCancelarLote" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnFinalizarLote" EventName="Click" />
-                                <asp:PostBackTrigger ControlID="btnAgregarConductor" />
+                                <asp:AsyncPostBackTrigger ControlID="btnAgregarConductor" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnCancelarEdicion" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnLimpiarConductor" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="ddlTipoOperacionBase" EventName="SelectedIndexChanged" />
                                 <asp:AsyncPostBackTrigger ControlID="rblAmbitoOperacionBase" EventName="SelectedIndexChanged" />
-                                <asp:AsyncPostBackTrigger ControlID="ddlConductor" EventName="SelectedIndexChanged" />
                                 <asp:AsyncPostBackTrigger ControlID="btnCrearNuevoViaje" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnFinalizarViajeUnico" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnVerHistorialViajes" EventName="Click" />
@@ -971,13 +1041,21 @@
         });
 
         function initializeSelect2() {
-            $('.select2-searchable').select2({
-                theme: 'bootstrap-5',
-                placeholder: function () {
-                    return $(this).find('option:first-child').text();
-                },
-                allowClear: false,
-                width: '100%'
+            $('.select2-searchable').each(function () {
+                var $sel = $(this);
+                // Destruir la instancia previa antes de re-inicializar: tras un postback
+                // parcial quedaban contenedores huérfanos y el desplegable se comportaba
+                // como una lista larga sin buscador.
+                if ($sel.hasClass('select2-hidden-accessible')) {
+                    $sel.select2('destroy');
+                }
+                $sel.select2({
+                    theme: 'bootstrap-5',
+                    placeholder: $sel.find('option:first-child').text(),
+                    allowClear: false,
+                    width: '100%',
+                    minimumResultsForSearch: 0   // el buscador siempre visible
+                });
             });
         }
 
@@ -1036,8 +1114,23 @@
         }
 
         // ── Guardia de lote activo ──────────────────────────────────────────
-        // Función nombrada para poder registrarla y quitarla sin duplicar handlers.
+        // Avisa si el usuario abandona la página con un lote a medio armar.
+        //
+        // `_postbackEnCurso` evita el falso positivo: un postback del propio formulario
+        // también descarga la página y disparaba el "¿Desea salir del sitio?" aunque el
+        // usuario no se estuviera yendo a ningún lado (pasaba al agregar un conductor,
+        // que hacía postback completo).
+        var _postbackEnCurso = false;
+
+        document.addEventListener('submit', function () {
+            _postbackEnCurso = true;
+            // Si el postback no llega a navegar (validación de cliente que falla), se
+            // rearma el guard para no dejar la página desprotegida.
+            setTimeout(function () { _postbackEnCurso = false; }, 4000);
+        }, true);
+
         function _guardiaLote(e) {
+            if (_postbackEnCurso) return;
             e.preventDefault();
             e.returnValue = '';
             return '';

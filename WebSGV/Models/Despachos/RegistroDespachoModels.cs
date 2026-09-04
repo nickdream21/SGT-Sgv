@@ -17,6 +17,11 @@ namespace WebSGV.Models.Despachos
         public string NumeroPedido { get; set; }
         public string TipoOperacion { get; set; }
         public bool EsInternacional { get; set; }
+
+        /// <summary>Planta de operación del lote (FK a <c>Planta</c>). Es lo que se graba.</summary>
+        public int IdPlanta { get; set; }
+
+        /// <summary>Nombre de la planta, sólo para mostrar en el resumen y la auditoría.</summary>
         public string PlantaOperacion { get; set; }
 
         // Documentación base

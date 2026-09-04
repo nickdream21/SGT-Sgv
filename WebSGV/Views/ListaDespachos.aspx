@@ -421,17 +421,11 @@
                                                     <div class="col-md-3">
                                                         <div class="form-group">
                                                             <label class="form-label"><i class="fas fa-industry"></i>Planta</label>
-                                                            <asp:DropDownList ID="ddlFiltroPlantaLotes" runat="server" 
+                                                            <%-- Opciones cargadas desde el catálogo Planta en CargarPlantasFiltro(). --%>
+                                                            <asp:DropDownList ID="ddlFiltroPlantaLotes" runat="server"
                                                                 CssClass="form-select"
                                                                 AutoPostBack="true"
                                                                 OnSelectedIndexChanged="ddlFiltroPlantaLotes_SelectedIndexChanged">
-                                                                <asp:ListItem Value="" Text="-- Todas las plantas --"></asp:ListItem>
-                                                                <asp:ListItem Value="Lima" Text="Lima"></asp:ListItem>
-                                                                <asp:ListItem Value="Guayaquil" Text="Guayaquil"></asp:ListItem>
-                                                                <asp:ListItem Value="Trujillo" Text="Trujillo"></asp:ListItem>
-                                                                <asp:ListItem Value="Quito" Text="Quito"></asp:ListItem>
-                                                                <asp:ListItem Value="Chiclayo" Text="Chiclayo"></asp:ListItem>
-                                                                <asp:ListItem Value="Manta" Text="Manta"></asp:ListItem>
                                                             </asp:DropDownList>
                                                         </div>
                                                     </div>
@@ -856,14 +850,8 @@
                                                     <div class="col-md-3">
                                                         <div class="form-group">
                                                             <label class="form-label required">Planta de Operación:</label>
+                                                            <%-- Opciones cargadas desde el catálogo Planta en CargarPlantasFiltro(). --%>
                                                             <asp:DropDownList ID="ddlPlantaEdit" runat="server" CssClass="form-select">
-                                                                <asp:ListItem Value="" Text="-- Seleccione planta --"></asp:ListItem>
-                                                                <asp:ListItem Value="Lima" Text="Lima"></asp:ListItem>
-                                                                <asp:ListItem Value="Guayaquil" Text="Guayaquil"></asp:ListItem>
-                                                                <asp:ListItem Value="Trujillo" Text="Trujillo"></asp:ListItem>
-                                                                <asp:ListItem Value="Quito" Text="Quito"></asp:ListItem>
-                                                                <asp:ListItem Value="Chiclayo" Text="Chiclayo"></asp:ListItem>
-                                                                <asp:ListItem Value="Manta" Text="Manta"></asp:ListItem>
                                                             </asp:DropDownList>
                                                             <asp:RequiredFieldValidator ID="rfvPlantaEdit" runat="server"
                                                                 ControlToValidate="ddlPlantaEdit"

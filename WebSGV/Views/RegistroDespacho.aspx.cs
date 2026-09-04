@@ -22,8 +22,6 @@ namespace WebSGV.Views
         // Manifiesto: documento que cada conductor de un viaje internacional porta en dos
         // ejemplares (cruce y retorno). Opcional en este formulario: lo habitual es
         // adjuntarlo después, en el transcurso del viaje, desde ListaDespachos.aspx.
-        private const long MAX_TAMANO_MANIFIESTO = 20 * 1024 * 1024; // 20MB
-        private static readonly string[] EXTENSIONES_MANIFIESTO_PERMITIDAS = { ".pdf", ".jpg", ".jpeg", ".png" };
 
         // Documento de Factura/CPIC adjunto directamente al armar el lote.
         private const long MAX_TAMANO_DOCUMENTO_BASE = 50 * 1024 * 1024; // 50MB
@@ -47,6 +45,19 @@ namespace WebSGV.Views
         }
 
         private bool TieneLoteActivo => LoteActual != null;
+
+        /// <summary>
+        /// Índice del conductor que se está editando dentro de <c>LoteActual.Conductores</c>,
+        /// o -1 si el formulario está en modo "agregar". Vive en ViewState porque es estado de
+        /// esta pantalla, no del lote.
+        /// </summary>
+        private int IndiceEnEdicion
+        {
+            get { return ViewState["IndiceEnEdicion"] as int? ?? -1; }
+            set { ViewState["IndiceEnEdicion"] = value; }
+        }
+
+        private bool EstaEditando => IndiceEnEdicion >= 0 && TieneLoteActivo;
 
         private enum EstadoPagina
         {
@@ -146,36 +157,83 @@ namespace WebSGV.Views
         {
             DataTable dt = RegistroDespachoService.ObtenerConductoresActivos();
 
+            string seleccionPrevia = ddlConductor.SelectedValue;
             ddlConductor.Items.Clear();
             ddlConductor.Items.Add(new ListItem("-- Seleccione un conductor --", "0"));
             ddlConductor.DataSource = dt;
             ddlConductor.DataTextField = "NombreCompleto";
             ddlConductor.DataValueField = "idConductor";
             ddlConductor.DataBind();
+
+            QuitarOpcionesYaAsignadas(ddlConductor, c => c.IdConductor);
+            RestaurarSeleccion(ddlConductor, seleccionPrevia);
         }
 
         private void CargarTractos()
         {
             DataTable dt = RegistroDespachoService.ObtenerTractosActivos();
 
+            string seleccionPrevia = ddlPlacaTracto.SelectedValue;
             ddlPlacaTracto.Items.Clear();
             ddlPlacaTracto.Items.Add(new ListItem("-- Seleccione una placa --", "0"));
             ddlPlacaTracto.DataSource = dt;
             ddlPlacaTracto.DataTextField = "placaTracto";
             ddlPlacaTracto.DataValueField = "idTracto";
             ddlPlacaTracto.DataBind();
+
+            QuitarOpcionesYaAsignadas(ddlPlacaTracto, c => c.IdTracto);
+            RestaurarSeleccion(ddlPlacaTracto, seleccionPrevia);
         }
 
         private void CargarCarretas()
         {
             DataTable dt = RegistroDespachoService.ObtenerCarretasActivas();
 
+            string seleccionPrevia = ddlPlacaCarreta.SelectedValue;
             ddlPlacaCarreta.Items.Clear();
             ddlPlacaCarreta.Items.Add(new ListItem("-- Seleccione una placa --", "0"));
             ddlPlacaCarreta.DataSource = dt;
             ddlPlacaCarreta.DataTextField = "placaCarreta";
             ddlPlacaCarreta.DataValueField = "idCarreta";
             ddlPlacaCarreta.DataBind();
+
+            QuitarOpcionesYaAsignadas(ddlPlacaCarreta, c => c.IdCarreta);
+            RestaurarSeleccion(ddlPlacaCarreta, seleccionPrevia);
+        }
+
+        /// <summary>
+        /// Saca de la lista lo que ya está asignado a otro conductor del lote, para que sea
+        /// imposible elegir un duplicado en vez de avisarlo con un error después de intentarlo.
+        /// La fila que se está editando se excluye del filtro: sus propios valores tienen que
+        /// seguir disponibles.
+        /// </summary>
+        private void QuitarOpcionesYaAsignadas(DropDownList ddl, Func<ConductorLote, int> obtenerId)
+        {
+            if (!TieneLoteActivo) return;
+
+            var conductores = LoteActual.Conductores;
+            for (int i = 0; i < conductores.Count; i++)
+            {
+                if (i == IndiceEnEdicion) continue;
+
+                var item = ddl.Items.FindByValue(obtenerId(conductores[i]).ToString());
+                if (item != null) ddl.Items.Remove(item);
+            }
+        }
+
+        private static void RestaurarSeleccion(DropDownList ddl, string valor)
+        {
+            if (string.IsNullOrEmpty(valor)) return;
+            var item = ddl.Items.FindByValue(valor);
+            if (item != null) ddl.SelectedValue = valor;
+        }
+
+        /// <summary>Rearma los tres selectores tras cambiar la composición del lote o el modo de edición.</summary>
+        private void RecargarSelectoresConductor()
+        {
+            CargarConductores();
+            CargarTractos();
+            CargarCarretas();
         }
 
         private void CargarClientes()
@@ -203,27 +261,25 @@ namespace WebSGV.Views
                 DataTable dt = RegistroDespachoService.ObtenerPlantasPorAmbito(esInternacional);
                 foreach (DataRow row in dt.Rows)
                 {
-                    string nombre = row["nombre"].ToString();
-                    ddlLugarOperacionBase.Items.Add(new ListItem(nombre, nombre));
+                    // El valor es idPlanta: el despacho se graba contra la FK, no contra
+                    // el texto del nombre (fase 0 / paso 3).
+                    ddlLugarOperacionBase.Items.Add(
+                        new ListItem(row["nombre"].ToString(), row["idPlanta"].ToString()));
                 }
             }
             catch (Exception ex)
             {
                 // MAJ-005: Logging básico para diagnóstico en lugar de swallow silencioso
                 RegistrarError("ActualizarPlantasPorAmbito", ex);
-                // Fallback a valores por defecto si la tabla Planta no existe aún
-                if (esInternacional)
-                {
-                    ddlLugarOperacionBase.Items.Add(new ListItem("Manta", "Manta"));
-                    ddlLugarOperacionBase.Items.Add(new ListItem("Guayaquil", "Guayaquil"));
-                    ddlLugarOperacionBase.Items.Add(new ListItem("Quito", "Quito"));
-                }
-                else
-                {
-                    ddlLugarOperacionBase.Items.Add(new ListItem("Lima", "Lima"));
-                    ddlLugarOperacionBase.Items.Add(new ListItem("Trujillo", "Trujillo"));
-                    ddlLugarOperacionBase.Items.Add(new ListItem("Chiclayo", "Chiclayo"));
-                }
+                // Antes había aquí un juego de plantas escritas a mano como respaldo.
+                // Desde que Planta es el catálogo único, ese respaldo era peligroso:
+                // dejaba registrar despachos con plantas que podían no existir en el
+                // catálogo, y esos valores son parte de la clave con que se agrupan los
+                // lotes. Es preferible que el desplegable quede vacío y el usuario vea
+                // el problema, a guardar un dato que después nadie puede encontrar.
+                MostrarMensaje(
+                    "No se pudo cargar el catálogo de plantas. Avise al administrador antes de registrar el despacho.",
+                    "danger");
             }
 
             if (ddlLugarOperacionBase.Items.FindByValue(selectedValue) != null)
@@ -262,6 +318,8 @@ namespace WebSGV.Views
             // Actualizar estado en header
             lblEstadoLote.Visible = true;
             lblEstadoLote.Text = $"LOTE ACTIVO - {LoteActual.CantidadConductores} conductores";
+
+            ActualizarUiEdicion();
         }
 
         private void ActualizarResumenLote()
@@ -555,6 +613,14 @@ namespace WebSGV.Views
                 return false;
             }
 
+            // El RequiredFieldValidator ya cubre el caso normal; esta guarda evita una
+            // excepción de formato si el catálogo de plantas no llegó a cargar.
+            if (!int.TryParse(ddlLugarOperacionBase.SelectedValue, out int idPlanta) || idPlanta <= 0)
+            {
+                MostrarMensaje("Debe seleccionar una planta de operación válida.", "danger");
+                return false;
+            }
+
             var lote = new LoteDespachos
             {
                 FechaProgramacion = fechaProgramacion.ToString("yyyy-MM-dd"),
@@ -563,7 +629,8 @@ namespace WebSGV.Views
                 NumeroPedido = pnlNumeroPedido.Visible ? txtNumeroPedidoBase.Text.Trim() : string.Empty,
                 TipoOperacion = ddlTipoOperacionBase.SelectedValue,
                 EsInternacional = rblAmbitoOperacionBase.SelectedValue == "1",
-                PlantaOperacion = ddlLugarOperacionBase.SelectedValue,
+                IdPlanta = idPlanta,
+                PlantaOperacion = ddlLugarOperacionBase.SelectedItem.Text,
                 UsuarioCreacion = ObtenerUsuarioActual()
             };
 
@@ -702,10 +769,21 @@ namespace WebSGV.Views
             {
                 if (Page.IsValid && ValidarConductor())
                 {
-                    AgregarConductorAlLote();
-                    LimpiarCamposConductor();
-                    ActualizarResumenLote();
-                    MostrarMensaje("Conductor agregado exitosamente al lote.", "success");
+                    if (EstaEditando)
+                    {
+                        string nombre = ActualizarConductorEnLote(IndiceEnEdicion);
+                        SalirModoEdicion();
+                        ActualizarResumenLote();
+                        MostrarMensajeConductor($"Cambios guardados para {nombre}.", "success");
+                    }
+                    else
+                    {
+                        AgregarConductorAlLote();
+                        LimpiarCamposConductor();
+                        RecargarSelectoresConductor();
+                        ActualizarResumenLote();
+                        MostrarMensajeConductor("Conductor agregado al lote.", "success");
+                    }
                 }
             }
             catch (Exception ex)
@@ -719,6 +797,12 @@ namespace WebSGV.Views
             LimpiarCamposConductor();
         }
 
+        protected void btnCancelarEdicion_Click(object sender, EventArgs e)
+        {
+            SalirModoEdicion();
+            MostrarMensajeConductor("Edición cancelada. No se modificó ningún conductor.", "info");
+        }
+
         protected void gvConductoresLote_RowCommand(object sender, GridViewCommandEventArgs e)
         {
             try
@@ -726,15 +810,34 @@ namespace WebSGV.Views
                 if (e.CommandName == "Quitar")
                 {
                     int indice = Convert.ToInt32(e.CommandArgument);
+
+                    // Si se quita la fila que se estaba editando, o una anterior, el índice
+                    // guardado dejaría de apuntar al mismo conductor: se sale de edición.
+                    if (EstaEditando && indice <= IndiceEnEdicion)
+                        SalirModoEdicion();
+
                     QuitarConductorDelLote(indice);
+                    RecargarSelectoresConductor();
                     ActualizarResumenLote();
-                    MostrarMensaje("Conductor removido del lote.", "info");
+                    MostrarMensajeConductor("Conductor removido del lote.", "info");
+                }
+                else if (e.CommandName == "Editar")
+                {
+                    int indice = Convert.ToInt32(e.CommandArgument);
+                    CargarConductorParaEdicion(indice);
                 }
             }
             catch (Exception ex)
             {
-                MostrarErrorOperacion("Error al quitar conductor del lote.", "gvConductoresLote_RowCommand", ex);
+                MostrarErrorOperacion("Error al actualizar la lista de conductores.", "gvConductoresLote_RowCommand", ex);
             }
+        }
+
+        /// <summary>Resalta en la tabla la fila que se está editando.</summary>
+        protected void gvConductoresLote_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            if (e.Row.RowType == DataControlRowType.DataRow && e.Row.RowIndex == IndiceEnEdicion)
+                e.Row.CssClass = (e.Row.CssClass + " rd-fila-editando").Trim();
         }
 
         private bool ValidarConductor()
@@ -743,70 +846,40 @@ namespace WebSGV.Views
 
             // Validaciones básicas ya manejadas por RequiredFieldValidators
 
-            // Verificar que el conductor no esté duplicado en el lote
+            // Duplicados dentro del lote. Los selectores ya excluyen lo asignado, así que en
+            // condiciones normales esto no se dispara — queda como red de seguridad (por
+            // ejemplo si el lote cambió en otra pestaña). La fila en edición se excluye: si no,
+            // chocaría contra sí misma al guardar sin cambiar de placa.
             if (TieneLoteActivo)
             {
+                var otros = LoteActual.Conductores
+                    .Where((c, i) => i != IndiceEnEdicion)
+                    .ToList();
+
                 int idConductor = Convert.ToInt32(ddlConductor.SelectedValue);
-                if (LoteActual.Conductores.Any(c => c.IdConductor == idConductor))
+                if (otros.Any(c => c.IdConductor == idConductor))
                 {
                     errores.Add("Este conductor ya está agregado al lote");
                 }
 
-                if (LoteActual.Conductores.Any(c => c.IdTracto == Convert.ToInt32(ddlPlacaTracto.SelectedValue)))
+                if (otros.Any(c => c.IdTracto == Convert.ToInt32(ddlPlacaTracto.SelectedValue)))
                 {
                     errores.Add("La placa de tracto seleccionada ya fue asignada a otro conductor en este lote");
                 }
 
-                if (LoteActual.Conductores.Any(c => c.IdCarreta == Convert.ToInt32(ddlPlacaCarreta.SelectedValue)))
+                if (otros.Any(c => c.IdCarreta == Convert.ToInt32(ddlPlacaCarreta.SelectedValue)))
                 {
                     errores.Add("La placa de carreta seleccionada ya fue asignada a otro conductor en este lote");
-                }
-
-                // Manifiesto: opcional aquí (normalmente se adjunta después, en el
-                // transcurso del viaje, desde ListaDespachos.aspx). Si se sube ahora, igual
-                // se valida tamaño/extensión.
-                if (LoteActual.EsInternacional)
-                {
-                    if (fileManifiestoCruce.HasFile)
-                    {
-                        string errorCruce = ValidarArchivoManifiesto(fileManifiestoCruce);
-                        if (!string.IsNullOrEmpty(errorCruce))
-                            errores.Add("Manifiesto de cruce: " + errorCruce);
-                    }
-
-                    if (fileManifiestoRegreso.HasFile)
-                    {
-                        string errorRegreso = ValidarArchivoManifiesto(fileManifiestoRegreso);
-                        if (!string.IsNullOrEmpty(errorRegreso))
-                            errores.Add("Manifiesto de retorno: " + errorRegreso);
-                    }
                 }
             }
 
             if (errores.Count > 0)
             {
-                MostrarMensaje("Errores de validación: " + string.Join(", ", errores), "warning");
+                MostrarMensajeConductor("Revise estos datos: " + string.Join(", ", errores) + ".", "warning");
                 return false;
             }
 
             return true;
-        }
-
-        private string ValidarArchivoManifiesto(FileUpload control)
-        {
-            var archivo = control.PostedFile;
-
-            if (archivo.ContentLength == 0)
-                return "el archivo está vacío";
-
-            if (archivo.ContentLength > MAX_TAMANO_MANIFIESTO)
-                return "el archivo supera el tamaño máximo permitido (20MB)";
-
-            string extension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
-            if (!Array.Exists(EXTENSIONES_MANIFIESTO_PERMITIDAS, ext => ext == extension))
-                return "tipo de archivo no permitido. Use PDF, JPG o PNG";
-
-            return string.Empty;
         }
 
         protected void cvFechaDespachoBase_ServerValidate(object source, ServerValidateEventArgs args)
@@ -839,10 +912,13 @@ namespace WebSGV.Views
         private bool TryParseFechaIso(string valor, out DateTime fecha) =>
             DespachoValidaciones.TryParseFechaIso(valor, out fecha);
 
-        private void AgregarConductorAlLote()
+        /// <summary>
+        /// Vuelca los datos del formulario en un <see cref="ConductorLote"/>. Los manifiestos
+        /// no se leen acá: se adjuntan después desde Gestión de Despachos (las propiedades del
+        /// modelo se conservan porque la finalización del lote sigue moviéndolos si existen).
+        /// </summary>
+        private void LlenarDesdeFormulario(ConductorLote conductor)
         {
-            if (!TieneLoteActivo) return;
-
             int idConductor = Convert.ToInt32(ddlConductor.SelectedValue);
 
             // Determinar viaje en progreso
@@ -857,38 +933,92 @@ namespace WebSGV.Views
                 estadoViaje = viaje?.EstadoViaje ?? "ABIERTO";
             }
 
-            var conductor = new ConductorLote
-            {
-                IdConductor = idConductor,
-                NombreConductor = ddlConductor.SelectedItem.Text.Split('-')[0].Trim(),
-                IdTracto = Convert.ToInt32(ddlPlacaTracto.SelectedValue),
-                PlacaTracto = ddlPlacaTracto.SelectedItem.Text,
-                IdCarreta = Convert.ToInt32(ddlPlacaCarreta.SelectedValue),
-                PlacaCarreta = ddlPlacaCarreta.SelectedItem.Text,
-                GuiaRemitente = txtGuiaRemitente.Text.Trim(),
-                GuiaTransportista = txtGuiaTransportista.Text.Trim(),
-                IdViajeProgreso = idViajeProgreso,
-                NumeroViajeProgreso = numeroViaje,
-                EstadoViaje = estadoViaje
-            };
+            conductor.IdConductor = idConductor;
+            conductor.NombreConductor = ddlConductor.SelectedItem.Text.Split('-')[0].Trim();
+            conductor.IdTracto = Convert.ToInt32(ddlPlacaTracto.SelectedValue);
+            conductor.PlacaTracto = ddlPlacaTracto.SelectedItem.Text;
+            conductor.IdCarreta = Convert.ToInt32(ddlPlacaCarreta.SelectedValue);
+            conductor.PlacaCarreta = ddlPlacaCarreta.SelectedItem.Text;
+            conductor.GuiaRemitente = txtGuiaRemitente.Text.Trim();
+            conductor.GuiaTransportista = txtGuiaTransportista.Text.Trim();
+            conductor.IdViajeProgreso = idViajeProgreso;
+            conductor.NumeroViajeProgreso = numeroViaje;
+            conductor.EstadoViaje = estadoViaje;
+        }
 
-            if (LoteActual.EsInternacional)
-            {
-                // Opcional: el conductor puede no tener el manifiesto todavía (se agrega
-                // después, en el transcurso del viaje, desde ListaDespachos.aspx).
-                if (fileManifiestoCruce.HasFile)
-                {
-                    conductor.ManifiestoCruceRutaTemp = GuardarArchivoTemp(fileManifiestoCruce, "Manifiesto");
-                    conductor.ManifiestoCruceNombreOriginal = Path.GetFileName(fileManifiestoCruce.FileName);
-                }
-                if (fileManifiestoRegreso.HasFile)
-                {
-                    conductor.ManifiestoRegresoRutaTemp = GuardarArchivoTemp(fileManifiestoRegreso, "Manifiesto");
-                    conductor.ManifiestoRegresoNombreOriginal = Path.GetFileName(fileManifiestoRegreso.FileName);
-                }
-            }
+        private void AgregarConductorAlLote()
+        {
+            if (!TieneLoteActivo) return;
 
+            var conductor = new ConductorLote();
+            LlenarDesdeFormulario(conductor);
             LoteActual.Conductores.Add(conductor);
+        }
+
+        /// <summary>Reemplaza en sitio los datos del conductor en <paramref name="indice"/>. Devuelve su nombre.</summary>
+        private string ActualizarConductorEnLote(int indice)
+        {
+            if (!TieneLoteActivo || indice < 0 || indice >= LoteActual.Conductores.Count)
+                return string.Empty;
+
+            var conductor = LoteActual.Conductores[indice];
+            LlenarDesdeFormulario(conductor);
+            return conductor.NombreConductor;
+        }
+
+        /// <summary>Carga una fila de la tabla en el formulario y entra en modo edición.</summary>
+        private void CargarConductorParaEdicion(int indice)
+        {
+            if (!TieneLoteActivo || indice < 0 || indice >= LoteActual.Conductores.Count)
+                return;
+
+            IndiceEnEdicion = indice;
+
+            // Con el índice ya fijado, los selectores vuelven a ofrecer los valores de esta
+            // fila (que estaban excluidos por estar asignados).
+            RecargarSelectoresConductor();
+
+            var conductor = LoteActual.Conductores[indice];
+            RestaurarSeleccion(ddlConductor, conductor.IdConductor.ToString());
+            RestaurarSeleccion(ddlPlacaTracto, conductor.IdTracto.ToString());
+            RestaurarSeleccion(ddlPlacaCarreta, conductor.IdCarreta.ToString());
+            txtGuiaRemitente.Text = conductor.GuiaRemitente ?? string.Empty;
+            txtGuiaTransportista.Text = conductor.GuiaTransportista ?? string.Empty;
+
+            CargarViajesEnProgreso(conductor.IdConductor);
+            UpdatePanelViajes.Update();
+
+            ActualizarUiEdicion();
+            ActualizarGridConductores();
+            MostrarMensajeConductor($"Editando a {conductor.NombreConductor}. Modifique lo necesario y guarde los cambios.", "info");
+        }
+
+        /// <summary>Vuelve al modo "agregar": limpia el formulario y rearma los selectores.</summary>
+        private void SalirModoEdicion()
+        {
+            IndiceEnEdicion = -1;
+            LimpiarCamposConductor();
+            RecargarSelectoresConductor();
+            ActualizarUiEdicion();
+            ActualizarGridConductores();
+        }
+
+        /// <summary>Sincroniza títulos, botones y avisos con el modo actual del formulario.</summary>
+        private void ActualizarUiEdicion()
+        {
+            bool editando = EstaEditando;
+
+            litTituloConductor.Text = editando ? "Editar Conductor del Lote" : "Agregar Conductores al Lote";
+            btnAgregarConductor.Text = editando ? "Guardar cambios" : "Agregar Conductor";
+            btnCancelarEdicion.Visible = editando;
+            btnLimpiarConductor.Visible = !editando;
+            pnlModoEdicion.Visible = editando;
+            pnlConductorCard.CssClass = editando
+                ? "card mb-4 rd-conductor-card rd-editando"
+                : "card mb-4 rd-conductor-card";
+
+            if (editando && IndiceEnEdicion < LoteActual.Conductores.Count)
+                lblConductorEnEdicion.Text = HttpUtility.HtmlEncode(LoteActual.Conductores[IndiceEnEdicion].NombreConductor);
         }
 
         /// <summary>Borra un archivo temporal (manifiesto, factura o CPIC) si existe (sin lanzar si falla).</summary>
@@ -936,6 +1066,8 @@ namespace WebSGV.Views
         {
             try
             {
+                IndiceEnEdicion = -1;   // el lote deja de existir: no queda fila que editar
+
                 if (TieneLoteActivo)
                 {
                     foreach (var conductor in LoteActual.Conductores)
@@ -964,6 +1096,8 @@ namespace WebSGV.Views
         {
             try
             {
+                IndiceEnEdicion = -1;   // se cierra el lote: no queda fila en edición
+
                 if (!TieneLoteActivo)
                 {
                     MostrarMensaje("No hay un lote activo para finalizar.", "warning");
@@ -1307,6 +1441,13 @@ namespace WebSGV.Views
         private void OcultarPanelViajes()
         {
             pnlViajesProgreso.Visible = false;
+
+            // El bloque de viajes vive en su propio UpdatePanel condicional: si lo ocultamos
+            // durante un postback que no nació ahí (agregar conductor, por ejemplo), hay que
+            // pedirle que se refresque o seguiría mostrando los datos del conductor anterior.
+            var scriptManager = ScriptManager.GetCurrent(Page);
+            if (scriptManager != null && scriptManager.IsInAsyncPostBack)
+                UpdatePanelViajes.Update();
         }
 
         protected void btnCrearNuevoViaje_Click(object sender, EventArgs e)
@@ -1487,6 +1628,57 @@ namespace WebSGV.Views
 
             // Ocultar paneles
             pnlMensajes.Visible = false;
+        }
+
+        /// <summary>
+        /// Mensaje de la sección de conductores. Se muestra dentro de esa tarjeta y no al tope
+        /// de la página: los errores de esta parte del formulario (placa repetida, por ejemplo)
+        /// aparecían tan arriba que había que subir a leerlos.
+        /// </summary>
+        private void MostrarMensajeConductor(string mensaje, string tipo)
+        {
+            lblMensajeConductor.Text = HttpUtility.HtmlEncode(mensaje ?? string.Empty);
+            lblMensajeConductor.CssClass = $"alert alert-{tipo} alert-dismissible fade show d-block mb-0 pe-5";
+            pnlMensajeConductor.Visible = true;
+            pnlMensajes.Visible = false;   // evitar el mismo aviso duplicado arriba
+            UpdatePanelMain.Update();
+        }
+
+        // ── Ayudantes de presentación de la tabla de conductores ──────────────────
+        // Se usan desde el markup del GridView (deben ser accesibles para la página).
+
+        protected string MostrarDato(object valor)
+        {
+            string texto = Convert.ToString(valor);
+            if (string.IsNullOrWhiteSpace(texto) || texto == "N/A")
+                return "<span class=\"rd-sin-datos\">—</span>";
+
+            return HttpUtility.HtmlEncode(texto);
+        }
+
+        protected string ChipManifiesto(object valor)
+        {
+            string estado = Convert.ToString(valor);
+            switch (estado)
+            {
+                case "✓ Completo": return "<span class=\"rd-chip rd-chip-ok\">Completo</span>";
+                case "Parcial": return "<span class=\"rd-chip rd-chip-warn\">Parcial</span>";
+                case "Pendiente": return "<span class=\"rd-chip rd-chip-wait\">Pendiente</span>";
+                default: return "<span class=\"rd-sin-datos\">—</span>";
+            }
+        }
+
+        protected string ChipEstadoViaje(object valor)
+        {
+            string estado = Convert.ToString(valor);
+            if (string.IsNullOrWhiteSpace(estado))
+                return "<span class=\"rd-sin-datos\">—</span>";
+
+            string clase = estado.Equals("Por asignar", StringComparison.OrdinalIgnoreCase)
+                ? "rd-chip rd-chip-wait"
+                : "rd-chip rd-chip-ok";
+
+            return $"<span class=\"{clase}\">{HttpUtility.HtmlEncode(estado)}</span>";
         }
 
         private void MostrarMensaje(string mensaje, string tipo)
