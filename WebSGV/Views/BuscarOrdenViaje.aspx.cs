@@ -89,10 +89,11 @@ namespace WebSGV.Views
             ddlConductor.Items.Insert(0, new ListItem("Seleccione un conductor", ""));
         }
 
-        private void CargarRutas()
+        private void CargarRutas(int? idCliente = null)
         {
-            DataTable dt = BuscarOrdenViajeService.ObtenerRutas();
+            DataTable dt = BuscarOrdenViajeService.ObtenerRutas(idCliente);
 
+            ddlRuta.Items.Clear();
             if (dt.Rows.Count > 0)
             {
                 ddlRuta.DataSource = dt;
@@ -102,6 +103,30 @@ namespace WebSGV.Views
             }
 
             ddlRuta.Items.Insert(0, new ListItem("Seleccione una ruta", ""));
+        }
+
+        /// <summary>
+        /// Recarga las rutas y las plantas de descarga con las del cliente elegido. El
+        /// servicio ya sabía filtrar por cliente, pero nadie le pasaba el dato: los
+        /// desplegables mostraban siempre el catálogo completo, mezclando los destinos de
+        /// un cliente con los de otro.
+        /// </summary>
+        protected void ddlCliente_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int? idCliente = int.TryParse(ddlCliente.SelectedValue, out int id) ? id : (int?)null;
+
+            string rutaPrevia = ddlRuta.SelectedValue;
+            string plantaPrevia = ddlPlantaDescarga.SelectedValue;
+
+            CargarRutas(idCliente);
+            CargarPlantasDescarga(idCliente);
+
+            // Conservar la selección si sigue siendo válida para el cliente nuevo.
+            if (!string.IsNullOrEmpty(rutaPrevia) && ddlRuta.Items.FindByValue(rutaPrevia) != null)
+                ddlRuta.SelectedValue = rutaPrevia;
+
+            if (!string.IsNullOrEmpty(plantaPrevia) && ddlPlantaDescarga.Items.FindByValue(plantaPrevia) != null)
+                ddlPlantaDescarga.SelectedValue = plantaPrevia;
         }
 
         private void CargarPlantasDescarga(int? idCliente = null)
@@ -207,7 +232,19 @@ namespace WebSGV.Views
                     txtHoraLlegada.Text = reader["horaLlegada"].ToString();
 
                 if (reader["idCliente"] != DBNull.Value)
+                {
                     SetDropDownListValue(ddlCliente, reader["idCliente"].ToString());
+
+                    // Asignar por código no dispara SelectedIndexChanged, así que las
+                    // rutas y plantas del cliente se recargan a mano. Se hace antes de
+                    // asignar plantaDescarga y ruta más abajo, para que el valor guardado
+                    // encuentre su opción en la lista ya filtrada.
+                    if (int.TryParse(reader["idCliente"].ToString(), out int idClienteOrden))
+                    {
+                        CargarRutas(idClienteOrden);
+                        CargarPlantasDescarga(idClienteOrden);
+                    }
+                }
 
                 if (reader["idTracto"] != DBNull.Value)
                     SetDropDownListValue(ddlPlacaTracto, reader["idTracto"].ToString());

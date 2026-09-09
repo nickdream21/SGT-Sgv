@@ -82,7 +82,9 @@
                             <div class="row mb-3">
                                 <div class="col-md-4 form-group">
                                     <label for="ddlCliente">Cliente:</label>
-                                    <asp:DropDownList ID="ddlCliente" runat="server" CssClass="form-control select2" Enabled="false">
+                                    <%-- Al cambiar el cliente se recargan sus rutas y plantas de descarga. --%>
+                                    <asp:DropDownList ID="ddlCliente" runat="server" CssClass="form-control select2" Enabled="false"
+                                        AutoPostBack="true" OnSelectedIndexChanged="ddlCliente_SelectedIndexChanged">
                                     </asp:DropDownList>
                                 </div>
                                 <div class="col-md-4 form-group">

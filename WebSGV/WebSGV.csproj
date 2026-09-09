@@ -223,6 +223,8 @@
     <Content Include="Database\Scripts\script_AgregarRolAdminGrifo.sql" />
     <Content Include="Database\Scripts\script_CrearUsuarioAdminSistema.sql" />
     <Content Include="Database\Schema\13_Despachos_IdPlanta.sql" />
+    <Content Include="Database\Schema\14_Cliente_DatosComerciales.sql" />
+    <Content Include="Database\Schema\15_CatalogosPorCliente.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminMaquinaria.sql" />
@@ -410,6 +412,7 @@
     <Content Include="Views\RegistrarDespachoObra.aspx" />
     <Content Include="Views\RegistrarRetornoEcuador.aspx" />
     <Content Include="Views\RegistroChoferes.aspx" />
+    <Content Include="Views\CatalogoCliente.aspx" />
     <Content Include="Views\RegistroClientes.aspx" />
     <Content Include="Views\RegistroClientesObra.aspx" />
     <Content Include="Views\RegistroDespacho.aspx" />
@@ -783,6 +786,14 @@
     <Compile Include="Views\RegistroChoferes.aspx.designer.cs">
       <DependentUpon>RegistroChoferes.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Views\CatalogoCliente.aspx.cs">
+      <DependentUpon>CatalogoCliente.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\CatalogoCliente.aspx.designer.cs">
+      <DependentUpon>CatalogoCliente.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Services\Clientes\CatalogoClienteService.cs" />
     <Compile Include="Views\RegistroClientes.aspx.cs">
       <DependentUpon>RegistroClientes.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

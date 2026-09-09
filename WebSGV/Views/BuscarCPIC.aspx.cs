@@ -97,7 +97,7 @@ namespace WebSGV.Views
             {
                 DataTable dtCPIC = DbHelper.ConsultarTabla(@"
                     SELECT c.idCPIC, c.numeroCPIC, c.idFactura, c.valorTotalFlete, c.fechaEmision,
-                           c.pesoNeto, c.pesoBruto, f.numeroFactura
+                           c.pesoNeto, c.pesoBruto, f.numeroFactura, f.idCliente
                     FROM CPIC c
                     LEFT JOIN Factura f ON c.idFactura = f.idFactura
                     WHERE c.numeroCPIC = @numeroCPIC",
@@ -106,6 +106,11 @@ namespace WebSGV.Views
                 if (dtCPIC.Rows.Count == 0) return null;
 
                 DataRow row = dtCPIC.Rows[0];
+
+                // El cliente llega por la factura y se guarda para filtrar el desplegable
+                // de productos: cada cliente tiene los suyos.
+                IdClienteCpic = row["idCliente"] != DBNull.Value
+                    ? Convert.ToInt32(row["idCliente"]) : 0;
                 var cpic = new CPIC_Actualizado
                 {
                     IdCPIC         = Convert.ToInt32(row["idCPIC"]),
@@ -744,11 +749,36 @@ namespace WebSGV.Views
             }
         }
 
+        /// <summary>
+        /// Cliente al que pertenece el CPIC abierto, resuelto a través de su factura.
+        /// Vive en ViewState porque la grilla de productos entra en edición por postback.
+        /// </summary>
+        private int IdClienteCpic
+        {
+            get => ViewState["IdClienteCpic"] is int id ? id : 0;
+            set => ViewState["IdClienteCpic"] = value;
+        }
+
+        /// <summary>
+        /// Productos ofrecidos al editar la grilla del CPIC. Se limitan a los del cliente
+        /// de la factura: antes se listaba el catálogo entero, así que un CPIC de un
+        /// cliente ofrecía los productos de otro. Si el CPIC no tiene factura —y por lo
+        /// tanto no se puede saber el cliente— se muestran todos los activos, para no
+        /// dejar la grilla sin opciones.
+        /// </summary>
         private void CargarProductos(DropDownList ddl)
         {
             try
             {
-                ddl.DataSource     = DbHelper.ConsultarTabla("SELECT idProducto, nombre FROM Producto ORDER BY nombre");
+                int idCliente = IdClienteCpic;
+
+                ddl.DataSource = idCliente > 0
+                    ? DbHelper.ConsultarTabla(
+                        "SELECT idProducto, nombre FROM Producto WHERE idCliente = @idCliente AND activo = 1 ORDER BY nombre",
+                        DbHelper.Param("@idCliente", idCliente))
+                    : DbHelper.ConsultarTabla(
+                        "SELECT idProducto, nombre FROM Producto WHERE activo = 1 ORDER BY nombre");
+
                 ddl.DataTextField  = "nombre";
                 ddl.DataValueField = "idProducto";
                 ddl.DataBind();

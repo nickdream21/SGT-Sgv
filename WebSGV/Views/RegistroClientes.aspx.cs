@@ -27,7 +27,19 @@ namespace WebSGV.Views
             try
             {
                 DataTable dt = DbHelper.ConsultarTabla(
-                    "SELECT idCliente, ISNULL(ruc, '') AS ruc, nombre, activo FROM Cliente ORDER BY nombre");
+                    @"SELECT idCliente,
+                             ISNULL(ruc, '')               AS ruc,
+                             nombre,
+                             ISNULL(direccion, '')         AS direccion,
+                             ISNULL(contacto, '')          AS contacto,
+                             ISNULL(telefono, '')          AS telefono,
+                             ISNULL(correo, '')            AS correo,
+                             ISNULL(observaciones, '')     AS observaciones,
+                             monedaFacturacion,
+                             esExportador,
+                             activo
+                        FROM Cliente
+                    ORDER BY activo DESC, nombre");
                 gvClientes.DataSource = dt;
                 gvClientes.DataBind();
                 lblTotalClientes.Text = dt.Rows.Count + " registro(s)";
@@ -82,22 +94,31 @@ namespace WebSGV.Views
                     }
                 }
 
-                if (string.IsNullOrWhiteSpace(ruc))
-                {
-                    DbHelper.EjecutarNonQuery(
-                        "INSERT INTO Cliente (nombre, activo) VALUES (@nombre, 1)",
-                        DbHelper.Param("@nombre", txtNombre.Text.Trim()));
-                }
-                else
-                {
-                    DbHelper.EjecutarNonQuery(
-                        "INSERT INTO Cliente (ruc, nombre, activo) VALUES (@ruc, @nombre, 1)",
-                        DbHelper.Param("@ruc", ruc),
-                        DbHelper.Param("@nombre", txtNombre.Text.Trim()));
-                }
+                DbHelper.EjecutarNonQuery(
+                    @"INSERT INTO Cliente
+                          (ruc, nombre, direccion, contacto, telefono, correo,
+                           monedaFacturacion, esExportador, observaciones,
+                           usuarioRegistro, activo)
+                      VALUES
+                          (@ruc, @nombre, @direccion, @contacto, @telefono, @correo,
+                           @moneda, @esExportador, @observaciones,
+                           @usuarioRegistro, 1)",
+                    DbHelper.Param("@ruc",             TextoONull(ruc)),
+                    DbHelper.Param("@nombre",          txtNombre.Text.Trim()),
+                    DbHelper.Param("@direccion",       TextoONull(txtDireccion.Text)),
+                    DbHelper.Param("@contacto",        TextoONull(txtContacto.Text)),
+                    DbHelper.Param("@telefono",        TextoONull(txtTelefono.Text)),
+                    DbHelper.Param("@correo",          TextoONull(txtCorreo.Text)),
+                    DbHelper.Param("@moneda",          ddlMoneda.SelectedValue),
+                    DbHelper.Param("@esExportador",    chkEsExportador.Checked),
+                    DbHelper.Param("@observaciones",   TextoONull(txtObservaciones.Text)),
+                    DbHelper.Param("@usuarioRegistro", ObtenerUsuarioActual()));
 
                 AuditoriaHelper.Registrar("INSERT", "Cliente",
-                    descripcion: $"Cliente registrado - Nombre: {txtNombre.Text.Trim()}, RUC: {(string.IsNullOrWhiteSpace(ruc) ? "Sin RUC" : ruc)}");
+                    descripcion: $"Cliente registrado - Nombre: {txtNombre.Text.Trim()}, " +
+                                 $"RUC: {(string.IsNullOrWhiteSpace(ruc) ? "Sin RUC" : ruc)}, " +
+                                 $"Moneda: {ddlMoneda.SelectedValue}, " +
+                                 $"Exportador: {(chkEsExportador.Checked ? "Si" : "No")}");
 
                 LimpiarFormulario();
                 MostrarMensaje("Cliente registrado correctamente.", true);
@@ -185,13 +206,31 @@ namespace WebSGV.Views
                 }
 
                 DbHelper.EjecutarNonQuery(
-                    "UPDATE Cliente SET ruc=@ruc, nombre=@nombre WHERE idCliente=@id",
-                    DbHelper.Param("@ruc", string.IsNullOrWhiteSpace(ruc) ? null : ruc),
-                    DbHelper.Param("@nombre", nombre),
-                    DbHelper.Param("@id", idCliente));
+                    @"UPDATE Cliente SET
+                          ruc               = @ruc,
+                          nombre            = @nombre,
+                          direccion         = @direccion,
+                          contacto          = @contacto,
+                          telefono          = @telefono,
+                          correo            = @correo,
+                          monedaFacturacion = @moneda,
+                          esExportador      = @esExportador,
+                          observaciones     = @observaciones
+                      WHERE idCliente = @id",
+                    DbHelper.Param("@ruc",           TextoONull(ruc)),
+                    DbHelper.Param("@nombre",        nombre),
+                    DbHelper.Param("@direccion",     TextoONull(txtEditarDireccion.Text)),
+                    DbHelper.Param("@contacto",      TextoONull(txtEditarContacto.Text)),
+                    DbHelper.Param("@telefono",      TextoONull(txtEditarTelefono.Text)),
+                    DbHelper.Param("@correo",        TextoONull(txtEditarCorreo.Text)),
+                    DbHelper.Param("@moneda",        ddlEditarMoneda.SelectedValue),
+                    DbHelper.Param("@esExportador",  chkEditarEsExportador.Checked),
+                    DbHelper.Param("@observaciones", TextoONull(txtEditarObservaciones.Text)),
+                    DbHelper.Param("@id",            idCliente));
 
                 AuditoriaHelper.Registrar("UPDATE", "Cliente", idCliente,
-                    $"Cliente editado — Nombre:{nombre}, RUC:{(string.IsNullOrWhiteSpace(ruc) ? "Sin RUC" : ruc)}");
+                    $"Cliente editado — Nombre:{nombre}, RUC:{(string.IsNullOrWhiteSpace(ruc) ? "Sin RUC" : ruc)}, " +
+                    $"Moneda:{ddlEditarMoneda.SelectedValue}, Exportador:{(chkEditarEsExportador.Checked ? "Si" : "No")}");
 
                 hfIdCliente.Value = "";
                 MostrarMensaje("Cliente actualizado correctamente.", true);
@@ -216,7 +255,26 @@ namespace WebSGV.Views
         {
             txtRUC.Text = "";
             txtNombre.Text = "";
+            txtDireccion.Text = "";
+            txtContacto.Text = "";
+            txtTelefono.Text = "";
+            txtCorreo.Text = "";
+            txtObservaciones.Text = "";
+            ddlMoneda.SelectedValue = "PEN";
+            chkEsExportador.Checked = false;
         }
+
+        /// <summary>
+        /// Devuelve <c>DBNull</c> para un campo opcional vacío, en lugar de una cadena
+        /// vacía. Importa: el índice único del RUC es filtrado por <c>ruc IS NOT NULL</c>,
+        /// de modo que varias cadenas vacías chocarían entre sí mientras que varios NULL
+        /// conviven sin problema.
+        /// </summary>
+        private static object TextoONull(string valor) =>
+            string.IsNullOrWhiteSpace(valor) ? (object)DBNull.Value : valor.Trim();
+
+        private string ObtenerUsuarioActual() =>
+            Session["Nombre"]?.ToString() ?? "SISTEMA";
 
         private void MostrarMensaje(string mensaje, bool esExito = false)
         {

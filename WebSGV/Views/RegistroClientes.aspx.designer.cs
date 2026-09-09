@@ -87,6 +87,46 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.TextBox txtNombre;
 
         /// <summary>
+        /// Control txtDireccion.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.TextBox txtDireccion;
+
+        /// <summary>
+        /// Control txtContacto.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.TextBox txtContacto;
+
+        /// <summary>
+        /// Control txtTelefono.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.TextBox txtTelefono;
+
+        /// <summary>
+        /// Control ddlMoneda.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.DropDownList ddlMoneda;
+
+        /// <summary>
+        /// Control txtCorreo.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.TextBox txtCorreo;
+
+        /// <summary>
+        /// Control revCorreo.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.RegularExpressionValidator revCorreo;
+
+        /// <summary>
+        /// Control chkEsExportador.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.CheckBox chkEsExportador;
+
+        /// <summary>
+        /// Control txtObservaciones.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.TextBox txtObservaciones;
+
+        /// <summary>
         /// Control rfvNombre.
         /// </summary>
         /// <remarks>
@@ -106,6 +146,41 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.HiddenField hfIdCliente;
         protected global::System.Web.UI.WebControls.TextBox txtEditarRUC;
         protected global::System.Web.UI.WebControls.TextBox txtEditarNombre;
+
+        /// <summary>
+        /// Control txtEditarDireccion.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.TextBox txtEditarDireccion;
+
+        /// <summary>
+        /// Control txtEditarContacto.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.TextBox txtEditarContacto;
+
+        /// <summary>
+        /// Control txtEditarTelefono.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.TextBox txtEditarTelefono;
+
+        /// <summary>
+        /// Control txtEditarCorreo.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.TextBox txtEditarCorreo;
+
+        /// <summary>
+        /// Control ddlEditarMoneda.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.DropDownList ddlEditarMoneda;
+
+        /// <summary>
+        /// Control chkEditarEsExportador.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.CheckBox chkEditarEsExportador;
+
+        /// <summary>
+        /// Control txtEditarObservaciones.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.TextBox txtEditarObservaciones;
         protected global::System.Web.UI.WebControls.Button btnActualizarCliente;
     }
 }

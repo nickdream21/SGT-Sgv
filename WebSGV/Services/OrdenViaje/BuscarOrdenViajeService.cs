@@ -33,15 +33,32 @@ namespace WebSGV.Services.OrdenViaje
             DbHelper.ConsultarTabla(
                 "SELECT idConductor, CONCAT(nombre, ' ', apPaterno, ' ', apMaterno) AS nombreCompleto FROM Conductor");
 
-        public static DataTable ObtenerRutas() =>
-            DbHelper.ConsultarTabla("SELECT idRuta, nombre FROM Ruta");
+        /// <summary>
+        /// Rutas ofrecidas para la orden de viaje. Con cliente, devuelve las suyas más
+        /// las de uso general (las que tienen <c>idCliente</c> nulo); sin cliente, todas
+        /// las activas. Antes no filtraba por nada: al sumar un segundo cliente, sus
+        /// rutas aparecían mezcladas con las del primero.
+        /// </summary>
+        public static DataTable ObtenerRutas(int? idCliente = null) =>
+            idCliente.HasValue
+                ? DbHelper.ConsultarTabla(
+                    @"SELECT idRuta, nombre FROM Ruta
+                       WHERE activo = 1
+                         AND (idCliente = @idCliente OR idCliente IS NULL)
+                    ORDER BY nombre",
+                    DbHelper.Param("@idCliente", idCliente.Value))
+                : DbHelper.ConsultarTabla("SELECT idRuta, nombre FROM Ruta WHERE activo = 1 ORDER BY nombre");
 
+        /// <summary>
+        /// Plantas de descarga del cliente. Se excluyen las dadas de baja: una planta
+        /// desactivada en el catálogo no debe seguir ofreciéndose para operaciones nuevas.
+        /// </summary>
         public static DataTable ObtenerPlantasDescarga(int? idCliente) =>
             idCliente.HasValue
                 ? DbHelper.ConsultarTabla(
-                    "SELECT idPlanta, nombre FROM PlantaDescarga WHERE idCliente = @idCliente",
+                    "SELECT idPlanta, nombre FROM PlantaDescarga WHERE idCliente = @idCliente AND activa = 1 ORDER BY nombre",
                     DbHelper.Param("@idCliente", idCliente.Value))
-                : DbHelper.ConsultarTabla("SELECT idPlanta, nombre FROM PlantaDescarga");
+                : DbHelper.ConsultarTabla("SELECT idPlanta, nombre FROM PlantaDescarga WHERE activa = 1 ORDER BY nombre");
 
         // ----- Búsqueda / carga de una orden -----
 
