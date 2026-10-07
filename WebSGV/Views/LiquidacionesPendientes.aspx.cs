@@ -16,6 +16,7 @@ using WebSGV.Models.Liquidaciones;
 using WebSGV.Services;
 using WebSGV.Services.GpsIntegracion;
 using WebSGV.Services.Liquidaciones;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Views
 {
@@ -130,7 +131,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al inicializar la página en LiquidacionesPendientes");
-                MostrarMensaje($"Error al cargar la página: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
+                MostrarMensaje($"Error al cargar la página: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
             }
         }
 
@@ -203,7 +204,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar liquidaciones en LiquidacionesPendientes");
-                MostrarMensaje($"Error al cargar las liquidaciones: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
+                MostrarMensaje($"Error al cargar las liquidaciones: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
             }
         }
 
@@ -237,7 +238,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error en RowCommand en LiquidacionesPendientes");
-                MostrarMensaje($"Error: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
+                MostrarMensaje($"Error: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
             }
         }
 
@@ -275,7 +276,7 @@ namespace WebSGV.Views
                     }
                     else
                     {
-                        throw new Exception(mensaje);
+                        throw new ErrorNegocioException(mensaje);
                     }
                 }
 
@@ -306,7 +307,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al aprobar la liquidación (orden {IdOrden})", idOrdenViaje);
-                MostrarMensaje($"Error al aprobar la liquidación: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
+                MostrarMensaje($"Error al aprobar la liquidación: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
             }
         }
 
@@ -322,7 +323,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al redirigir a edición en LiquidacionesPendientes");
-                MostrarMensaje($"Error al redirigir: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
+                MostrarMensaje($"Error al redirigir: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
             }
         }
 
@@ -393,7 +394,7 @@ namespace WebSGV.Views
                     }
                     else
                     {
-                        throw new Exception(mensaje);
+                        throw new ErrorNegocioException(mensaje);
                     }
                 }
 
@@ -417,7 +418,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al rechazar la liquidación");
-                MostrarMensaje($"Error al rechazar la liquidación: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
+                MostrarMensaje($"Error al rechazar la liquidación: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
             }
         }
 
@@ -996,7 +997,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al registrar la firma del conductor (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "Error al registrar la firma: " + ex.Message };
+                return new { success = false, message = "Error al registrar la firma: " + MensajeErrorHelper.ParaUsuario(ex) };
             }
         }
 
@@ -1086,7 +1087,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al aprobar la liquidación con firma (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "Error al aprobar con firma: " + ex.Message };
+                return new { success = false, message = "Error al aprobar con firma: " + MensajeErrorHelper.ParaUsuario(ex) };
             }
         }
 
@@ -1164,7 +1165,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al rechazar la liquidación con firma (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "Error al rechazar: " + ex.Message };
+                return new { success = false, message = "Error al rechazar: " + MensajeErrorHelper.ParaUsuario(ex) };
             }
         }
 
@@ -1337,7 +1338,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ ObtenerUrlPdfOrdenViaje: {ex.Message}");
-                return new { success = false, message = "No se pudo preparar el PDF: " + ex.Message };
+                return new { success = false, message = "No se pudo preparar el PDF: " + MensajeErrorHelper.ParaUsuario(ex) };
             }
         }
 

@@ -1388,7 +1388,7 @@ namespace WebSGV.Views
                 // Registrar el error y mostrar mensaje
                 LogSGV.Error(ex, "Error al generar el balance financiero en Reportes");
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorReporte",
-                    "alert('Error al generar el balance financiero: " + System.Web.HttpUtility.JavaScriptStringEncode(ex.Message) + "');", true);
+                    "alert('Error al generar el balance financiero: " + System.Web.HttpUtility.JavaScriptStringEncode(MensajeErrorHelper.ParaUsuario(ex)) + "');", true);
             }
         }
 
@@ -3524,7 +3524,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 // Error handling with detailed message for debugging
-                string errorMessage = $"Error al generar balance financiero: {ex.Message}";
+                string errorMessage = $"Error al generar balance financiero: {MensajeErrorHelper.ParaUsuario(ex)}";
                 if (ex.InnerException != null)
                 {
                     errorMessage += $" | Inner exception: {ex.InnerException.Message}";
@@ -3826,7 +3826,7 @@ namespace WebSGV.Views
             {
                 // Manejar errores
                 litTituloResultados.Text = "Error al Generar Reporte";
-                lblTotalRegistros.Text = "Se produjo un error: " + ex.Message;
+                lblTotalRegistros.Text = "Se produjo un error: " + MensajeErrorHelper.ParaUsuario(ex);
 
                 // Configurar indicadores con mensaje de error
                 litTotalIngresos.Text = "Error";
@@ -3839,7 +3839,7 @@ namespace WebSGV.Views
                 pnlError.CssClass = "alert alert-danger mt-3";
                 pnlError.Controls.Add(new LiteralControl(
                     "<h6><i class='fas fa-exclamation-circle mr-2'></i>Detalles del error:</h6>" +
-                    "<p>" + ex.Message + "</p>"));
+                    "<p>" + HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex)) + "</p>"));
 
                 pnlResultados.Controls.Add(pnlError);
                 pnlResultados.Visible = true;
@@ -4033,7 +4033,7 @@ namespace WebSGV.Views
             {
                 // Manejar errores
                 litTituloResultados.Text = "Error al Generar Reporte";
-                lblTotalRegistros.Text = "Se produjo un error: " + ex.Message;
+                lblTotalRegistros.Text = "Se produjo un error: " + MensajeErrorHelper.ParaUsuario(ex);
 
                 // Configurar indicadores con mensaje de error
                 litTotalIngresos.Text = "Error";
@@ -4046,7 +4046,7 @@ namespace WebSGV.Views
                 pnlError.CssClass = "alert alert-danger mt-3";
                 pnlError.Controls.Add(new LiteralControl(
                     "<h6><i class='fas fa-exclamation-circle mr-2'></i>Detalles del error:</h6>" +
-                    "<p>" + ex.Message + "</p>"));
+                    "<p>" + HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex)) + "</p>"));
 
                 pnlResultados.Controls.Add(pnlError);
                 pnlResultados.Visible = true;

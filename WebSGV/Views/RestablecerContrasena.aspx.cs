@@ -65,6 +65,8 @@ namespace WebSGV.Views
 
             if (ActualizarContrasena(TokenActual, nuevaContrasena))
             {
+                AuditoriaHelper.Registrar("UPDATE", "Usuarios", descripcion:
+                    "Contraseña restablecida mediante enlace de recuperación");
                 MostrarMensaje("¡Contraseña restablecida exitosamente! Ahora puede iniciar sesión.", true);
                 pnlFormulario.Visible = false;
             }

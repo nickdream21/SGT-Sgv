@@ -109,7 +109,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarError("Error al guardar: " + ex.Message);
+                MostrarError("Error al guardar: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 

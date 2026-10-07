@@ -34,7 +34,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar los tractos: " + ex.Message);
+                MostrarMensaje("Error al cargar los tractos: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -88,7 +88,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al registrar el tracto: " + ex.Message);
+                MostrarMensaje("Error al registrar el tracto: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -112,7 +112,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    MostrarMensaje("Error al actualizar el estado: " + ex.Message);
+                    MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
                 }
             }
         }
@@ -175,7 +175,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al actualizar el tracto: " + ex.Message);
+                MostrarMensaje("Error al actualizar el tracto: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 

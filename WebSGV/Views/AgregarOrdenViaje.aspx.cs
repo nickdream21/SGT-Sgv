@@ -9,6 +9,7 @@ using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 using WebSGV.Models.OrdenViaje;
 using WebSGV.Services.OrdenViaje;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Views
 {
@@ -139,7 +140,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error en la carga normal de AgregarOrdenViaje");
-                MostrarMensaje("Error al cargar la página: " + ex.Message, "danger");
+                MostrarMensaje("Error al cargar la página: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -264,7 +265,7 @@ namespace WebSGV.Views
             {
                 LogSGV.Error(ex, "Error al cargar la orden para edición en AgregarOrdenViaje");
                 System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
-                MostrarMensaje($"Error al cargar la orden: {ex.Message}", "danger");
+                MostrarMensaje($"Error al cargar la orden: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
                 CargarDatosNormales();
             }
         }
@@ -567,7 +568,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar datos del viaje finalizado en AgregarOrdenViaje");
-                MostrarMensaje("Error al cargar datos del viaje: " + ex.Message, "danger");
+                MostrarMensaje("Error al cargar datos del viaje: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
                 CargarDatosNormales();
             }
         }
@@ -753,13 +754,13 @@ namespace WebSGV.Views
                 catch (Exception ex)
                 {
                     LogSGV.Error(ex, "Error al guardar orden de viaje {Numero} (edicion={EsEdicion})", numeroOrdenViaje, esEdicion);
-                    MostrarMensaje($"Error al guardar: {ex.Message}", "danger");
+                    MostrarMensaje($"Error al guardar: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
                 }
             }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error del sistema al guardar orden de viaje");
-                MostrarMensaje($"Error del sistema: {ex.Message}", "danger");
+                MostrarMensaje($"Error del sistema: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
             }
         }
 
@@ -877,7 +878,7 @@ namespace WebSGV.Views
                 // No devolver una lista vacía: al editar, el servicio borra los gastos existentes
                 // y reinserta esta lista, así que un JSON ilegible borraría todos los gastos.
                 LogSGV.Error(ex, "Error al obtener gastos financieros en AgregarOrdenViaje");
-                throw new InvalidOperationException(
+                throw new ErrorNegocioException(
                     "No se pudieron leer los gastos detallados del formulario. Recargue la página e intente nuevamente; no se guardó ningún cambio.", ex);
             }
         }
@@ -1094,7 +1095,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al inicializar el sistema en AgregarOrdenViaje");
-                MostrarMensaje("Error al inicializar el sistema: " + ex.Message, "danger");
+                MostrarMensaje("Error al inicializar el sistema: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 

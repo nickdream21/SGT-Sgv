@@ -79,12 +79,14 @@ namespace WebSGV.Tests
             Assert.False(PasswordHelper.VerifyPassword("admin123", hash)); // distinta capitalización
         }
 
-        // ── Formato legacy (texto plano) ────────────────────────────────────────
+        // ── Formato legacy (texto plano): ya no se acepta ───────────────────────
 
         [Fact]
-        public void VerifyPassword_FormatoLegacyTextoPlanoCoincide()
+        public void VerifyPassword_TextoPlanoGuardado_YaNoSeAcepta()
         {
-            Assert.True(PasswordHelper.VerifyPassword("admin123", "admin123"));
+            // Aunque coincida literalmente: las contraseñas en texto plano se migraron a PBKDF2
+            // (Database/Scripts/migrar-contrasenas-texto-plano.ps1) y el respaldo se eliminó.
+            Assert.False(PasswordHelper.VerifyPassword("admin123", "admin123"));
         }
 
         [Fact]

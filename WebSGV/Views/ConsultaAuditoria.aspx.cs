@@ -115,7 +115,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 ScriptManager.RegisterStartupScript(this, GetType(), "showalert",
-                    "alert('Error al exportar a Excel: " + System.Web.HttpUtility.JavaScriptStringEncode(ex.Message) + "');", true);
+                    "alert('Error al exportar a Excel: " + System.Web.HttpUtility.JavaScriptStringEncode(MensajeErrorHelper.ParaUsuario(ex)) + "');", true);
             }
         }
 
@@ -177,7 +177,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 ScriptManager.RegisterStartupScript(this, GetType(), "showalert",
-                    "alert('Error al cargar datos de auditoría: " + System.Web.HttpUtility.JavaScriptStringEncode(ex.Message) + "');", true);
+                    "alert('Error al cargar datos de auditoría: " + System.Web.HttpUtility.JavaScriptStringEncode(MensajeErrorHelper.ParaUsuario(ex)) + "');", true);
             }
         }
 

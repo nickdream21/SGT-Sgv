@@ -1088,7 +1088,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 RegistrarError("CancelarLote", ex);
-                MostrarMensaje("Error al cancelar lote: " + ex.Message, "danger");
+                MostrarMensaje("Error al cancelar lote: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -1134,7 +1134,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 RegistrarError("btnFinalizarLote_Click", ex);
-                MostrarMensaje("Error al finalizar lote: " + ex.Message, "danger");
+                MostrarMensaje("Error al finalizar lote: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -1583,7 +1583,7 @@ namespace WebSGV.Views
             {
                 // Validaciones de negocio de sp_ReabrirViajeProgreso (RAISERROR): mostrar el motivo.
                 RegistrarError("gvHistorialViajes_RowCommand", ex);
-                MostrarMensaje("No se pudo reabrir el viaje: " + ex.Message, "warning");
+                MostrarMensaje("No se pudo reabrir el viaje: " + MensajeErrorHelper.ParaUsuario(ex), "warning");
             }
             catch (Exception ex)
             {

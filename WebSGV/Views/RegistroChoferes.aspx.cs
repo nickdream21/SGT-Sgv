@@ -43,7 +43,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar los conductores: " + ex.Message);
+                MostrarMensaje("Error al cargar los conductores: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -122,7 +122,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine("Error en btnRegistrar_Click: " + ex.Message);
-                MostrarMensaje("Ocurrió un error al registrar el conductor: " + ex.Message);
+                MostrarMensaje("Ocurrió un error al registrar el conductor: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -144,7 +144,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    MostrarMensaje("Error al actualizar el estado: " + ex.Message);
+                    MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
                 }
             }
         }
@@ -242,7 +242,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al actualizar el conductor: " + ex.Message);
+                MostrarMensaje("Error al actualizar el conductor: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 

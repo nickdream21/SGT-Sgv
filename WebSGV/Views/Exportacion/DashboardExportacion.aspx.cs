@@ -89,7 +89,7 @@ namespace WebSGV.Views.Exportacion
             }
             catch (Exception ex)
             {
-                MostrarError("Error al cargar el dashboard: " + ex.Message);
+                MostrarError("Error al cargar el dashboard: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 

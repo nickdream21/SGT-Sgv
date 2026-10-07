@@ -12,6 +12,7 @@ using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 using WebSGV.Services.Despachos;
 using WebSGV.Services.Facturas;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Views
 {
@@ -51,7 +52,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar la lista de facturas en BuscarFactura");
-                MostrarMensaje("Error al cargar la lista de facturas: " + ex.Message, "danger");
+                MostrarMensaje("Error al cargar la lista de facturas: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -67,7 +68,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al obtener todas las facturas en BuscarFactura");
-                throw new Exception("Error al obtener las facturas: " + ex.Message);
+                throw new Exception("Error al obtener las facturas: " + ex.Message, ex);
             }
         }
 
@@ -91,7 +92,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al procesar la acción: " + ex.Message, "danger");
+                MostrarMensaje("Error al procesar la acción: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
                 LogSGV.Error(ex, "Error en gvFacturas_RowCommand en BuscarFactura");
             }
         }
@@ -119,7 +120,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al redirigir a crear CPIC en BuscarFactura");
-                MostrarMensaje("Error al acceder a la creación de CPIC: " + ex.Message, "danger");
+                MostrarMensaje("Error al acceder a la creación de CPIC: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -149,7 +150,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al obtener la factura por ID en BuscarFactura");
-                throw new Exception("Error al obtener la factura: " + ex.Message);
+                throw new Exception("Error al obtener la factura: " + ex.Message, ex);
             }
         }
 
@@ -166,7 +167,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar la factura para edición en BuscarFactura");
-                MostrarMensaje("Error al cargar la factura: " + ex.Message, "danger");
+                MostrarMensaje("Error al cargar la factura: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -183,7 +184,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cambiar de página en BuscarFactura");
-                MostrarMensaje("Error al cambiar de página: " + ex.Message, "danger");
+                MostrarMensaje("Error al cambiar de página: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -200,7 +201,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al refrescar la lista en BuscarFactura");
-                MostrarMensaje("Error al actualizar la lista: " + ex.Message, "danger");
+                MostrarMensaje("Error al actualizar la lista: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -259,7 +260,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al buscar la factura: " + ex.Message, "danger");
+                MostrarMensaje("Error al buscar la factura: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
                 LogSGV.Error(ex, "Error en BuscarFacturaClick en BuscarFactura");
             }
         }
@@ -287,7 +288,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al obtener la factura en BuscarFactura");
-                throw new Exception("Error al obtener la factura: " + ex.Message);
+                throw new Exception("Error al obtener la factura: " + ex.Message, ex);
             }
         }
 
@@ -302,7 +303,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar documentos en BuscarFactura");
-                MostrarMensaje("Error al cargar documentos: " + ex.Message, "warning");
+                MostrarMensaje("Error al cargar documentos: " + MensajeErrorHelper.ParaUsuario(ex), "warning");
             }
         }
 
@@ -461,6 +462,8 @@ namespace WebSGV.Views
                     // Actualizar la lista de facturas después de editar
                     CargarListaFacturas();
 
+                    AuditoriaHelper.Registrar("UPDATE", "Factura", factura?.IdFactura.ToString() ?? numeroFacturaNuevo,
+                        $"Factura actualizada - Número: {numeroFacturaNuevo}");
                     MostrarMensaje("Factura actualizada correctamente.", "success");
                 }
                 else
@@ -470,7 +473,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al guardar los cambios: " + ex.Message, "danger");
+                MostrarMensaje("Error al guardar los cambios: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
                 LogSGV.Error(ex, "Error al guardar los cambios de la factura");
             }
         }
@@ -514,7 +517,7 @@ namespace WebSGV.Views
                                 connection, transaction, numeroPedido, numeroFacturaOriginal);
                             if (count > 0)
                             {
-                                throw new Exception("El número de pedido ya está asociado a otra factura.");
+                                throw new ErrorNegocioException("El número de pedido ya está asociado a otra factura.");
                             }
                         }
 
@@ -524,7 +527,7 @@ namespace WebSGV.Views
                             numeroPedido, valorTotal, fechaEmision, idCliente);
                         if (rowsAffected == 0)
                         {
-                            throw new Exception("No se pudo actualizar la factura.");
+                            throw new ErrorNegocioException("No se pudo actualizar la factura.");
                         }
 
                         // 3. Procesar archivo si existe
@@ -547,7 +550,7 @@ namespace WebSGV.Views
                     {
                         transaction.Rollback();
                         LogSGV.Error(ex, "Error al actualizar la factura {NumeroOriginal} (nuevo {NumeroNuevo}) en BD", numeroFacturaOriginal, numeroFacturaNuevo);
-                        throw new Exception("Error al actualizar la factura: " + ex.Message);
+                        throw new Exception("Error al actualizar la factura: " + ex.Message, ex);
                     }
                 }
             }
@@ -565,7 +568,7 @@ namespace WebSGV.Views
                 return Convert.ToInt32(result);
             }
 
-            throw new Exception("No se encontró la factura especificada.");
+            throw new ErrorNegocioException("No se encontró la factura especificada.");
         }
 
         protected void Cancelar(object sender, EventArgs e)
@@ -659,7 +662,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al procesar documento: " + ex.Message, "danger");
+                MostrarMensaje("Error al procesar documento: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
                 LogSGV.Error(ex, "Error en gvDocumentos_RowCommand en BuscarFactura");
             }
         }
@@ -709,7 +712,8 @@ namespace WebSGV.Views
 
                     if (File.Exists(rutaCompleta))
                     {
-                        string urlArchivo = ResolveUrl(docInfo["rutaArchivo"].ToString());
+                        // Uploads no se sirve por URL directa: descarga controlada por sesión (DocumentoHelper)
+                        string urlArchivo = HttpUtility.JavaScriptStringEncode(DocumentoHelper.UrlDescarga(docInfo["rutaArchivo"].ToString()));
                         string script = $"window.open('{urlArchivo}', '_blank');";
                         ScriptManager.RegisterStartupScript(this, GetType(), "VerDocumento", script, true);
                     }
@@ -816,7 +820,7 @@ namespace WebSGV.Views
                 // Generar nombre único para el archivo
                 string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string numeroLimpio = numeroFactura.Replace(" - ", "_").Replace(" ", "_").Replace("-", "_");
-                string nombreArchivo = $"FACTURA_{numeroLimpio}_{timestamp}{extension}";
+                string nombreArchivo = $"FACTURA_{DocumentoHelper.NombreSeguro(numeroLimpio)}_{timestamp}{extension}";
 
                 // Crear ruta de destino
                 string carpetaAno = DateTime.Now.Year.ToString();
@@ -848,7 +852,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al procesar el archivo del documento en BuscarFactura");
-                throw new Exception("Error al guardar el archivo: " + ex.Message);
+                throw new Exception("Error al guardar el archivo: " + ex.Message, ex);
             }
         }
 

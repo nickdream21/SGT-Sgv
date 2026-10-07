@@ -362,7 +362,7 @@ namespace WebSGV.Services.Conductor
 
                 if (filasAfectadas == 0)
                 {
-                    throw new Exception($"No se pudo cerrar ninguno de los viajes: {string.Join(", ", idsViajes)}");
+                    throw new ErrorNegocioException($"No se pudo cerrar ninguno de los viajes: {string.Join(", ", idsViajes)}");
                 }
             }
         }

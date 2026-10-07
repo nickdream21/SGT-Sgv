@@ -10,6 +10,7 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 using WebSGV.Services;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Views
 {
@@ -421,7 +422,7 @@ namespace WebSGV.Views
                 RegistrarError("ERROR EN GUARDAR: " + ex.ToString());
 
                 // Mensaje para el usuario
-                string errorMsg = HttpUtility.JavaScriptStringEncode("Error al guardar: " + ex.Message);
+                string errorMsg = HttpUtility.JavaScriptStringEncode("Error al guardar: " + MensajeErrorHelper.ParaUsuario(ex));
                 ScriptManager.RegisterStartupScript(this, this.GetType(), "mensajeError",
                     $"mostrarMensaje('{errorMsg}', 'error');", true);
             }
@@ -573,7 +574,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 RegistrarError("Error en ValidarDatos: " + ex.Message);
-                MostrarMensaje("Error de validación: " + ex.Message, "error");
+                MostrarMensaje("Error de validación: " + MensajeErrorHelper.ParaUsuario(ex), "error");
                 return false;
             }
         }
@@ -716,14 +717,14 @@ namespace WebSGV.Views
                         if (!string.IsNullOrEmpty(txtFecha.Text))
                         {
                             if (!DateTime.TryParse(txtFecha.Text, out DateTime fechaIngresada))
-                                throw new InvalidOperationException("La fecha ingresada no es válida.");
+                                throw new ErrorNegocioException("La fecha ingresada no es válida.");
                             fecha = fechaIngresada.Date;
                         }
 
                         if (!string.IsNullOrEmpty(txtHora.Text))
                         {
                             if (!TimeSpan.TryParse(txtHora.Text, out TimeSpan horaIngresada))
-                                throw new InvalidOperationException("La hora ingresada no es válida.");
+                                throw new ErrorNegocioException("La hora ingresada no es válida.");
                             hora = horaIngresada;
                         }
 

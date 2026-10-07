@@ -34,7 +34,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar las plantas: " + ex.Message);
+                MostrarMensaje("Error al cargar las plantas: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -87,7 +87,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al registrar la planta: " + ex.Message);
+                MostrarMensaje("Error al registrar la planta: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -111,7 +111,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    MostrarMensaje("Error al actualizar el estado: " + ex.Message);
+                    MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
                 }
             }
         }
@@ -183,7 +183,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al actualizar la planta: " + ex.Message);
+                MostrarMensaje("Error al actualizar la planta: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 

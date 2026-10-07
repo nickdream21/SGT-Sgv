@@ -35,7 +35,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar los operadores: " + ex.Message);
+                MostrarMensaje("Error al cargar los operadores: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -70,7 +70,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al registrar el operador: " + ex.Message);
+                MostrarMensaje("Error al registrar el operador: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -92,7 +92,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    MostrarMensaje("Error al actualizar el estado: " + ex.Message);
+                    MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
                 }
             }
         }

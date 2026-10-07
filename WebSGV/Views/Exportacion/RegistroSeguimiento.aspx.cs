@@ -9,6 +9,7 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using ClosedXML.Excel;
 using WebSGV.Helpers;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Views.Exportacion
 {
@@ -217,7 +218,7 @@ namespace WebSGV.Views.Exportacion
             }
             catch (Exception ex)
             {
-                MostrarAlerta("Error al cargar viajes en curso: " + ex.Message, "danger");
+                MostrarAlerta("Error al cargar viajes en curso: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
                 rptBandeja.DataSource = null;
                 rptBandeja.DataBind();
                 litCountBandeja.Text = "0";
@@ -518,7 +519,7 @@ namespace WebSGV.Views.Exportacion
             }
             catch (Exception ex)
             {
-                MostrarAlerta("Error al cargar el viaje: " + ex.Message, "danger");
+                MostrarAlerta("Error al cargar el viaje: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -541,7 +542,7 @@ namespace WebSGV.Views.Exportacion
             }
             catch (Exception ex)
             {
-                MostrarAlerta("Error al finalizar: " + ex.Message, "danger");
+                MostrarAlerta("Error al finalizar: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -730,7 +731,7 @@ namespace WebSGV.Views.Exportacion
             }
             catch (Exception ex)
             {
-                MostrarAlerta("Error al guardar: " + ex.Message, "danger");
+                MostrarAlerta("Error al guardar: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -896,7 +897,7 @@ namespace WebSGV.Views.Exportacion
             }
             catch (Exception ex)
             {
-                MostrarAlerta("Error al procesar el archivo: " + ex.Message, "danger");
+                MostrarAlerta("Error al procesar el archivo: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
             finally
             {
@@ -971,7 +972,7 @@ namespace WebSGV.Views.Exportacion
             }
             catch (Exception ex)
             {
-                MostrarAlerta("No se pudo generar la plantilla: " + ex.Message, "danger");
+                MostrarAlerta("No se pudo generar la plantilla: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -1081,7 +1082,7 @@ namespace WebSGV.Views.Exportacion
             using (var workbook = new XLWorkbook(path))
             {
                 if (!workbook.Worksheets.Any())
-                    throw new Exception("El archivo Excel no contiene hojas.");
+                    throw new ErrorNegocioException("El archivo Excel no contiene hojas.");
 
                 IXLWorksheet ws = workbook.Worksheets
                                       .FirstOrDefault(w => (w.Name ?? "").ToUpper().Contains("SEGUIMIENTO"))
@@ -1089,7 +1090,7 @@ namespace WebSGV.Views.Exportacion
 
                 var ultimaCelda = ws.LastCellUsed();
                 if (ultimaCelda == null)
-                    throw new Exception("La hoja seleccionada está vacía.");
+                    throw new ErrorNegocioException("La hoja seleccionada está vacía.");
 
                 int rows = ultimaCelda.Address.RowNumber;
                 int cols = ultimaCelda.Address.ColumnNumber;
@@ -1097,7 +1098,7 @@ namespace WebSGV.Views.Exportacion
                 // Detectar fila de headers (puede estar en fila 1 o más abajo si hay título)
                 int headerRow = DetectarFilaHeaders(ws, rows, cols);
                 if (headerRow == -1)
-                    throw new Exception("No se pudo identificar la fila de encabezados (se busca CLIENTE / CONDUCTOR).");
+                    throw new ErrorNegocioException("No se pudo identificar la fila de encabezados (se busca CLIENTE / CONDUCTOR).");
 
                 // Mapear cada columna lógica → índice de columna en Excel.
                 // Para evitar colisiones (ej: "BODEGA" coincidiendo con "BODEGA ECUATORIANA"),
@@ -1159,7 +1160,7 @@ namespace WebSGV.Views.Exportacion
                 }
 
                 if (!colMap.ContainsKey("cliente") && !colMap.ContainsKey("conductorOrigen"))
-                    throw new Exception("El archivo no contiene columnas reconocibles (CLIENTE / CONDUCTOR ORIGEN).");
+                    throw new ErrorNegocioException("El archivo no contiene columnas reconocibles (CLIENTE / CONDUCTOR ORIGEN).");
 
                 int? idUsuario = ObtenerIdUsuarioSesion();
                 _importInsertados   = 0;

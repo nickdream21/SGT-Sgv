@@ -149,7 +149,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar las plantas de descarga en BuscarOrdenViaje");
-                MostrarMensaje("Error al cargar las plantas de descarga: " + ex.Message, true);
+                MostrarMensaje("Error al cargar las plantas de descarga: " + MensajeErrorHelper.ParaUsuario(ex), true);
             }
         }
         #endregion
@@ -185,7 +185,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al verificar la orden de viaje en BuscarOrdenViaje");
-                MostrarMensaje("Error al verificar la orden de viaje: " + ex.Message, true);
+                MostrarMensaje("Error al verificar la orden de viaje: " + MensajeErrorHelper.ParaUsuario(ex), true);
                 return false;
             }
         }
@@ -204,7 +204,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar los datos de la orden de viaje en BuscarOrdenViaje");
-                MostrarMensaje("Error al cargar los datos de la orden de viaje: " + ex.Message, true);
+                MostrarMensaje("Error al cargar los datos de la orden de viaje: " + MensajeErrorHelper.ParaUsuario(ex), true);
             }
         }
 
@@ -260,7 +260,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                throw new Exception("Error al cargar datos básicos: " + ex.Message);
+                throw new Exception("Error al cargar datos básicos: " + ex.Message, ex);
             }
         }
 
@@ -292,7 +292,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                throw new Exception("Error al cargar ingresos: " + ex.Message);
+                throw new Exception("Error al cargar ingresos: " + ex.Message, ex);
             }
 
             // Ingresos adicionales
@@ -304,7 +304,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                throw new Exception("Error al cargar ingresos adicionales: " + ex.Message);
+                throw new Exception("Error al cargar ingresos adicionales: " + ex.Message, ex);
             }
 
             // Gastos fijos
@@ -349,7 +349,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                throw new Exception("Error al cargar gastos: " + ex.Message);
+                throw new Exception("Error al cargar gastos: " + ex.Message, ex);
             }
 
             // Gastos adicionales
@@ -361,7 +361,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                throw new Exception("Error al cargar gastos adicionales: " + ex.Message);
+                throw new Exception("Error al cargar gastos adicionales: " + ex.Message, ex);
             }
         }
 
@@ -392,7 +392,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                throw new Exception("Error al cargar datos de guías: " + ex.Message);
+                throw new Exception("Error al cargar datos de guías: " + ex.Message, ex);
             }
         }
 
@@ -406,7 +406,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                throw new Exception("Error al cargar productos: " + ex.Message);
+                throw new Exception("Error al cargar productos: " + ex.Message, ex);
             }
         }
 
@@ -454,7 +454,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al guardar los cambios de la orden de viaje en BuscarOrdenViaje");
-                MostrarMensaje("Error al guardar los cambios: " + ex.Message, true);
+                MostrarMensaje("Error al guardar los cambios: " + MensajeErrorHelper.ParaUsuario(ex), true);
             }
         }
 

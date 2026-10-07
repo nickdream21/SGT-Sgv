@@ -70,7 +70,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar datos desde query string en AgregarCPIC");
-                MostrarMensaje("Error al cargar datos automáticamente: " + ex.Message, "warning");
+                MostrarMensaje("Error al cargar datos automáticamente: " + MensajeErrorHelper.ParaUsuario(ex), "warning");
             }
         }
         private void ValidarFacturaParaCPIC(string numeroFactura)
@@ -198,7 +198,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al registrar el CPIC en AgregarCPIC");
-                MostrarMensaje("Error: " + ex.Message, "error");
+                MostrarMensaje("Error: " + MensajeErrorHelper.ParaUsuario(ex), "error");
             }
         }
 
@@ -261,7 +261,7 @@ namespace WebSGV.Views
                     {
                         transaction.Rollback();
                         LogSGV.Error(ex, "Error al guardar el CPIC en BD (rollback)");
-                        throw new Exception("Error al guardar el CPIC: " + ex.Message);
+                        throw new Exception("Error al guardar el CPIC: " + ex.Message, ex);
                     }
                 }
             }
@@ -309,7 +309,7 @@ namespace WebSGV.Views
 
                 // Generar nombre único para el archivo
                 string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string nombreArchivo = $"CPIC_{numeroCPIC}_{timestamp}{extension}";
+                string nombreArchivo = $"CPIC_{DocumentoHelper.NombreSeguro(numeroCPIC)}_{timestamp}{extension}";
 
                 // Crear ruta de destino
                 string carpetaAno = DateTime.Now.Year.ToString();
@@ -341,7 +341,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al procesar el archivo del CPIC en AgregarCPIC");
-                throw new Exception("Error al guardar el archivo: " + ex.Message);
+                throw new Exception("Error al guardar el archivo: " + ex.Message, ex);
             }
         }
 
@@ -538,7 +538,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al obtener el total de flete de la factura en AgregarCPIC");
-                lblErrorFactura.Text = "Error: " + ex.Message;
+                lblErrorFactura.Text = "Error: " + MensajeErrorHelper.ParaUsuario(ex);
                 txtTotalFlete.Text = string.Empty;
             }
         }

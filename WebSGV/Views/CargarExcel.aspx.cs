@@ -10,6 +10,7 @@ using System.Web.UI.WebControls;
 using System.Configuration;
 using System.Linq;
 using WebSGV.Helpers;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Views
 {
@@ -70,6 +71,8 @@ namespace WebSGV.Views
                         File.Delete(tempFilePath);
                     }
 
+                    AuditoriaHelper.Registrar("INSERT", "Indicadores", descripcion:
+                        $"Carga de indicadores desde Excel - Archivo: {Path.GetFileName(fileUpload.FileName)}, Periodo: {selectedMonth:00}/{selectedYear}, Registros: {rowsProcessed}");
                     ShowAlert($"Proceso completado exitosamente. Se procesaron {rowsProcessed} registros.", "success");
 
                     // Refrescar la grilla
@@ -77,7 +80,8 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    ShowAlert("Error al procesar el archivo: " + ex.Message, "danger");
+                    LogSGV.Error(ex, "Error al procesar el Excel de indicadores");
+                    ShowAlert("Error al procesar el archivo. Verifique que tenga el formato de la plantilla e intente nuevamente.", "danger");
                 }
             }
             else
@@ -95,7 +99,7 @@ namespace WebSGV.Views
                 // Verificar que el archivo tenga hojas
                 if (!workbook.Worksheets.Any())
                 {
-                    throw new Exception("El archivo Excel no contiene hojas de trabajo.");
+                    throw new ErrorNegocioException("El archivo Excel no contiene hojas de trabajo.");
                 }
 
                 // Intentar obtener la hoja por nombre primero, luego la primera disponible
@@ -107,7 +111,7 @@ namespace WebSGV.Views
                 var ultimaCelda = worksheet.LastCellUsed();
                 if (ultimaCelda == null)
                 {
-                    throw new Exception("La hoja del archivo Excel está vacía.");
+                    throw new ErrorNegocioException("La hoja del archivo Excel está vacía.");
                 }
 
                 // Determinar el número de filas con datos
@@ -117,7 +121,7 @@ namespace WebSGV.Views
                 // Verificar que tenga al menos encabezados
                 if (rowCount < 1)
                 {
-                    throw new Exception("La hoja no contiene datos suficientes (al menos debe tener encabezados).");
+                    throw new ErrorNegocioException("La hoja no contiene datos suficientes (al menos debe tener encabezados).");
                 }
 
                 // Obtener los encabezados (primera fila)
@@ -139,20 +143,20 @@ namespace WebSGV.Views
                     }
                     catch (Exception ex)
                     {
-                        throw new Exception($"Error al leer encabezado en columna {col}: {ex.Message}");
+                        throw new Exception($"Error al leer encabezado en columna {col}: {ex.Message}", ex);
                     }
                 }
 
                 // Verificar que se encontraron encabezados
                 if (headers.Count == 0)
                 {
-                    throw new Exception("No se encontraron encabezados válidos en la primera fila.");
+                    throw new ErrorNegocioException("No se encontraron encabezados válidos en la primera fila.");
                 }
 
                 // Verificar que existe el campo obligatorio 'numeroPedido'
                 if (!headers.Contains("numeroPedido"))
                 {
-                    throw new Exception("El archivo debe contener la columna 'numeroPedido' en los encabezados.");
+                    throw new ErrorNegocioException("El archivo debe contener la columna 'numeroPedido' en los encabezados.");
                 }
 
                 // Conexión a la base de datos SQL
@@ -224,7 +228,7 @@ namespace WebSGV.Views
                         catch (Exception ex)
                         {
                             transaction.Rollback();
-                            throw new Exception("Error al procesar los datos: " + ex.Message);
+                            throw new Exception("Error al procesar los datos: " + ex.Message, ex);
                         }
                     }
                 }
@@ -539,11 +543,14 @@ namespace WebSGV.Views
                             "UPDATE UploadHistory SET Status = 'Eliminado' WHERE UploadID = @UploadID",
                             DbHelper.Param("@UploadID", uploadId));
                     });
+                    AuditoriaHelper.Registrar("DELETE", "Indicadores", uploadId,
+                        "Carga de indicadores eliminada junto con sus registros");
                     ShowAlert("La carga y sus registros asociados han sido eliminados exitosamente.", "success");
                 }
                 catch (Exception ex)
                 {
-                    ShowAlert("Error al eliminar la carga: " + ex.Message, "danger");
+                    LogSGV.Error(ex, "Error al eliminar la carga de indicadores {UploadId}", uploadId);
+                    ShowAlert("Error al eliminar la carga. Intente nuevamente.", "danger");
                 }
 
                 // Actualizar la grilla

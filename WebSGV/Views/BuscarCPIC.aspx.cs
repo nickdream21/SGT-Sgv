@@ -86,7 +86,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al buscar el CPIC: " + ex.Message, "danger");
+                MostrarMensaje("Error al buscar el CPIC: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
                 LogSGV.Error(ex, "Error en BuscarCPICClick en BuscarCPIC");
             }
         }
@@ -149,7 +149,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al obtener el CPIC en BuscarCPIC");
-                throw new Exception("Error al obtener el CPIC: " + ex.Message);
+                throw new Exception("Error al obtener el CPIC: " + ex.Message, ex);
             }
         }
 
@@ -164,7 +164,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar documentos en BuscarCPIC");
-                MostrarMensaje("Error al cargar documentos: " + ex.Message, "warning");
+                MostrarMensaje("Error al cargar documentos: " + MensajeErrorHelper.ParaUsuario(ex), "warning");
             }
         }
 
@@ -286,6 +286,8 @@ namespace WebSGV.Views
                 {
                     // Volver al modo de sólo lectura
                     DesactivarModoEdicion();
+                    AuditoriaHelper.Registrar("UPDATE", "CPIC", numeroCPIC,
+                        $"CPIC actualizado - Número: {numeroCPIC}, Factura: {numeroFactura}, Peso neto: {pesoNeto}, Peso bruto: {pesoBruto}");
                     MostrarMensaje("CPIC actualizado correctamente.", "success");
                 }
                 else
@@ -295,7 +297,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al guardar los cambios: " + ex.Message, "danger");
+                MostrarMensaje("Error al guardar los cambios: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
                 LogSGV.Error(ex, "Error al guardar los cambios del CPIC en BuscarCPIC");
             }
         }
@@ -357,7 +359,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al actualizar el CPIC en BD en BuscarCPIC");
-                throw new Exception("Error al actualizar el CPIC: " + ex.Message);
+                throw new Exception("Error al actualizar el CPIC: " + ex.Message, ex);
             }
         }
 
@@ -413,6 +415,8 @@ namespace WebSGV.Views
                 if (docInfo != null)
                 {
                     GuardarDocumentoEnBD(cpic.IdCPIC, docInfo);
+                    AuditoriaHelper.Registrar("INSERT", "DocumentosCPIC", cpic.IdCPIC,
+                        $"Documento subido al CPIC {cpic.NumeroCPIC}");
                     MostrarMensaje("Documento subido correctamente.", "success");
                     txtDescripcionDoc.Text = "";
                     CargarDocumentosCPIC(cpic.IdCPIC);
@@ -421,7 +425,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al subir documento: " + ex.Message, "danger");
+                MostrarMensaje("Error al subir documento: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
                 LogSGV.Error(ex, "Error al subir el documento en BuscarCPIC");
             }
         }
@@ -447,7 +451,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al procesar documento: " + ex.Message, "danger");
+                MostrarMensaje("Error al procesar documento: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
                 LogSGV.Error(ex, "Error en gvDocumentos_RowCommand en BuscarCPIC");
             }
         }
@@ -466,6 +470,8 @@ namespace WebSGV.Views
 
                 if (rows > 0)
                 {
+                    AuditoriaHelper.Registrar("DELETE", "DocumentosCPIC", idDocumento,
+                        $"Documento del CPIC {txtNumCPIC.Text} eliminado (baja lógica)");
                     MostrarMensaje("Documento eliminado correctamente.", "success");
                     CPIC_Actualizado cpic = ObtenerCPIC(txtNumCPIC.Text);
                     if (cpic != null) CargarDocumentosCPIC(cpic.IdCPIC);
@@ -478,7 +484,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al eliminar el documento en BuscarCPIC");
-                MostrarMensaje("Error al eliminar documento: " + ex.Message, "danger");
+                MostrarMensaje("Error al eliminar documento: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -527,7 +533,8 @@ namespace WebSGV.Views
 
                     if (File.Exists(rutaCompleta))
                     {
-                        string urlArchivo = ResolveUrl(docInfo["rutaArchivo"].ToString());
+                        // Uploads no se sirve por URL directa: descarga controlada por sesión (DocumentoHelper)
+                        string urlArchivo = HttpUtility.JavaScriptStringEncode(DocumentoHelper.UrlDescarga(docInfo["rutaArchivo"].ToString()));
                         string script = $"window.open('{urlArchivo}', '_blank');";
                         ScriptManager.RegisterStartupScript(this, GetType(), "VerDocumento", script, true);
                     }
@@ -606,7 +613,7 @@ namespace WebSGV.Views
 
                 // Generar nombre único para el archivo
                 string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string nombreArchivo = $"CPIC_{numeroCPIC}_{timestamp}{extension}";
+                string nombreArchivo = $"CPIC_{DocumentoHelper.NombreSeguro(numeroCPIC)}_{timestamp}{extension}";
 
                 // Crear ruta de destino
                 string carpetaAno = DateTime.Now.Year.ToString();
@@ -638,7 +645,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al procesar el archivo del documento en BuscarCPIC");
-                throw new Exception("Error al guardar el archivo: " + ex.Message);
+                throw new Exception("Error al guardar el archivo: " + ex.Message, ex);
             }
         }
 
@@ -786,7 +793,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar los productos en BuscarCPIC");
-                MostrarMensaje("Error al cargar los productos: " + ex.Message, "danger");
+                MostrarMensaje("Error al cargar los productos: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -839,7 +846,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al actualizar el producto: " + ex.Message, "danger");
+                MostrarMensaje("Error al actualizar el producto: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
                 LogSGV.Error(ex, "Error en gvProductos_RowUpdating en BuscarCPIC");
             }
         }
@@ -901,7 +908,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al actualizar el producto en BD en BuscarCPIC");
-                throw new Exception("Error al actualizar el producto: " + ex.Message);
+                throw new Exception("Error al actualizar el producto: " + ex.Message, ex);
             }
         }
 

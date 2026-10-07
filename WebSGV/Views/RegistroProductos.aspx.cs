@@ -39,7 +39,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar la lista de clientes: " + ex.Message);
+                MostrarMensaje("Error al cargar la lista de clientes: " + MensajeErrorHelper.ParaUsuario(ex));
                 System.Diagnostics.Debug.WriteLine("Error en CargarClientes: " + ex.ToString());
             }
         }
@@ -91,7 +91,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al registrar el producto: " + ex.Message);
+                MostrarMensaje("Error al registrar el producto: " + MensajeErrorHelper.ParaUsuario(ex));
                 // Registrar el error para debugging
                 System.Diagnostics.Debug.WriteLine("Error en RegistroProductos: " + ex.ToString());
             }

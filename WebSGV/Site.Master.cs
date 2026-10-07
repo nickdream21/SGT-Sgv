@@ -33,7 +33,29 @@ namespace WebSGV
             if (Page.Session != null && !EsPaginaPublica())
             {
                 Page.ViewStateUserKey = Session.SessionID;
+                BloquearAccionesSiDebeCambiarContrasena();
             }
+        }
+
+        /// <summary>
+        /// Cambio de contraseña obligatorio aplicado en el servidor: antes solo se abría un modal
+        /// y el usuario podía seguir operando. Se ejecuta en Page_Init (antes del Load de la página
+        /// y de los eventos): cualquier postback que no sea "Cambiar contraseña" o "Cerrar sesión"
+        /// se descarta recargando la página, que vuelve a mostrar el modal obligatorio.
+        /// </summary>
+        private void BloquearAccionesSiDebeCambiarContrasena()
+        {
+            if (!Page.IsPostBack || !TieneSesionActivaLocal() || !RequiereCambioContrasena())
+                return;
+
+            string origen = Request.Form["__EVENTTARGET"] ?? "";
+            bool esCambioContrasena = Request.Form[btnCambiarContrasena.UniqueID] != null
+                                      || origen == btnCambiarContrasena.UniqueID;
+            bool esCerrarSesion = origen == btnCerrarSesion.UniqueID
+                                  || Request.Form[btnCerrarSesion.UniqueID] != null;
+
+            if (!esCambioContrasena && !esCerrarSesion)
+                Response.Redirect(Request.RawUrl, true);
         }
 
         protected void Page_Load(object sender, EventArgs e)

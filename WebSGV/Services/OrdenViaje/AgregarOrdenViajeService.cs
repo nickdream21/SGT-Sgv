@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using WebSGV.Helpers;
 using WebSGV.Models.OrdenViaje;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Services.OrdenViaje
 {
@@ -824,7 +825,7 @@ namespace WebSGV.Services.OrdenViaje
 
                     if (filasAfectadas == 0)
                     {
-                        throw new Exception($"No se pudo cerrar el viaje {idViajeProgreso}. " +
+                        throw new ErrorNegocioException($"No se pudo cerrar el viaje {idViajeProgreso}. " +
                             "Puede que ya esté cerrado o no exista.");
                     }
                 }

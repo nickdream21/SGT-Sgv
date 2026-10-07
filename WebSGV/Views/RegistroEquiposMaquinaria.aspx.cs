@@ -37,7 +37,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar los equipos: " + ex.Message);
+                MostrarMensaje("Error al cargar los equipos: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -81,7 +81,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al registrar el equipo: " + ex.Message);
+                MostrarMensaje("Error al registrar el equipo: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -103,7 +103,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    MostrarMensaje("Error al actualizar el estado: " + ex.Message);
+                    MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
                 }
             }
         }

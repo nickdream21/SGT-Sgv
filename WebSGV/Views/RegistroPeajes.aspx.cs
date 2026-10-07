@@ -34,7 +34,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar los peajes: " + ex.Message);
+                MostrarMensaje("Error al cargar los peajes: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -83,7 +83,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al registrar la estación: " + ex.Message);
+                MostrarMensaje("Error al registrar la estación: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -107,7 +107,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    MostrarMensaje("Error al actualizar el estado: " + ex.Message);
+                    MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
                 }
             }
         }
@@ -164,7 +164,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al actualizar la estación: " + ex.Message);
+                MostrarMensaje("Error al actualizar la estación: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 

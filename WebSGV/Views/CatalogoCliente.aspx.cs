@@ -66,7 +66,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar clientes en CatalogoCliente");
-                MostrarMensaje("Error al cargar los clientes: " + ex.Message);
+                MostrarMensaje("Error al cargar los clientes: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -91,7 +91,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al refrescar el catálogo del cliente");
-                MostrarMensaje("Error al cargar el catálogo: " + ex.Message);
+                MostrarMensaje("Error al cargar el catálogo: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -180,7 +180,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al agregar al catálogo del cliente");
-                MostrarMensaje("Error al agregar: " + ex.Message);
+                MostrarMensaje("Error al agregar: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -221,7 +221,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al actualizar el catálogo del cliente");
-                MostrarMensaje("Error al guardar los cambios: " + ex.Message);
+                MostrarMensaje("Error al guardar los cambios: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -244,7 +244,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cambiar el estado en el catálogo del cliente");
-                MostrarMensaje("Error al actualizar el estado: " + ex.Message);
+                MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 

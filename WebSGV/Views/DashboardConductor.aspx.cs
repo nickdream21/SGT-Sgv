@@ -974,7 +974,7 @@ namespace WebSGV.Views
                 catch (Exception ex)
                 {
                     LogSGV.Error(ex, "Error en la transacción de liquidación del conductor (orden {Numero})", numeroOrdenViaje);
-                    MostrarMensaje($"Error al enviar la liquidación: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
+                    MostrarMensaje($"Error al enviar la liquidación: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
                 }
 
                 // Post-commit: mostrar resultado y programar redirect (fuera del using de la transacción)
@@ -1218,7 +1218,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar el historial en DashboardConductor");
-                MostrarMensaje($"Error al cargar el historial: {System.Web.HttpUtility.HtmlEncode(ex.Message)}", "danger");
+                MostrarMensaje($"Error al cargar el historial: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
             }
         }
 

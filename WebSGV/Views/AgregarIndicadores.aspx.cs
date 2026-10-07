@@ -68,7 +68,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarAlerta("Error al guardar: " + ex.Message, "danger");
+                MostrarAlerta("Error al guardar: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -83,7 +83,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                throw new Exception("Error al verificar si el pedido existe: " + ex.Message);
+                throw new Exception("Error al verificar si el pedido existe: " + ex.Message, ex);
             }
         }
 
@@ -167,7 +167,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarAlerta("Error al guardar indicador: " + ex.Message, "danger");
+                MostrarAlerta("Error al guardar indicador: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 

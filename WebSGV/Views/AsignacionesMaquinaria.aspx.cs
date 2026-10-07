@@ -58,7 +58,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar los datos: " + ex.Message);
+                MostrarMensaje("Error al cargar los datos: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -93,7 +93,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar las asignaciones: " + ex.Message);
+                MostrarMensaje("Error al cargar las asignaciones: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -133,7 +133,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al crear la asignación: " + ex.Message);
+                MostrarMensaje("Error al crear la asignación: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -157,7 +157,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    MostrarMensaje("Error al finalizar la asignación: " + ex.Message);
+                    MostrarMensaje("Error al finalizar la asignación: " + MensajeErrorHelper.ParaUsuario(ex));
                 }
             }
         }

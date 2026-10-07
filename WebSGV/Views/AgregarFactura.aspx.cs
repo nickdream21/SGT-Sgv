@@ -96,7 +96,7 @@ namespace WebSGV.Views
                 }
                 catch (FormatException ex)
                 {
-                    MostrarError(ex.Message);
+                    MostrarError(MensajeErrorHelper.ParaUsuario(ex));
                     return;
                 }
 
@@ -156,7 +156,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarError("Error al registrar la factura: " + ex.Message);
+                MostrarError("Error al registrar la factura: " + MensajeErrorHelper.ParaUsuario(ex));
                 LogSGV.Error(ex, "Error al registrar la factura {Numero}", txtNumFactura.Text);
             }
         }
@@ -219,13 +219,16 @@ namespace WebSGV.Views
                         }
 
                         transaction.Commit();
+
+                        AuditoriaHelper.Registrar("INSERT", "Factura", idFactura,
+                            $"Factura registrada - Número: {numeroFactura}, Valor: {valorTotal}, Documento adjunto: {(fileUploadFactura.HasFile ? "sí" : "no")}");
                         return true;
                     }
                     catch (Exception ex)
                     {
                         transaction.Rollback();
                         LogSGV.Error(ex, "Error al insertar la factura {Numero} en BD", numeroFactura);
-                        throw new Exception("Error al guardar la factura: " + ex.Message);
+                        throw new Exception("Error al guardar la factura: " + ex.Message, ex);
                     }
                 }
             }
@@ -274,7 +277,7 @@ namespace WebSGV.Views
                 // Generar nombre único para el archivo
                 string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string numeroLimpio = numeroFactura.Replace(" - ", "_").Replace(" ", "_");
-                string nombreArchivo = $"FACTURA_{numeroLimpio}_{timestamp}{extension}";
+                string nombreArchivo = $"FACTURA_{DocumentoHelper.NombreSeguro(numeroLimpio)}_{timestamp}{extension}";
 
                 // Crear ruta de destino
                 string carpetaAno = DateTime.Now.Year.ToString();
@@ -306,7 +309,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al procesar el archivo de la factura en AgregarFactura");
-                throw new Exception("Error al guardar el archivo: " + ex.Message);
+                throw new Exception("Error al guardar el archivo: " + ex.Message, ex);
             }
         }
 

@@ -155,7 +155,9 @@ protected void Page_Load(object sender, EventArgs e)
 - **Language**: all identifiers, UI text, and SQL are in Spanish (es-PE). Match existing naming: `Agregar`, `Buscar`, `Registrar`, `Despacho`, `Liquidacion`.
 - **Globalization**: `culture="es-PE"` configured in `Web.config`. Use `FechaHelper.cs` for dates and `NumeroALetrasHelper.cs` for number-to-words.
 - **Auditing**: use `AuditoriaHelper.Registrar(accion, tabla, id, descripcion)` for all INSERT/UPDATE/DELETE operations. Audit failures are swallowed and must never break the main operation.
-- **Passwords**: always use `PasswordHelper.HashPassword` / `PasswordHelper.VerifyPassword`. Do not implement alternative hashing.
+- **Passwords**: always use `PasswordHelper.HashPassword` / `PasswordHelper.VerifyPassword`. Do not implement alternative hashing. Plaintext passwords are no longer accepted (migrated with `Database/Scripts/migrar-contrasenas-texto-plano.ps1`).
+- **Errors shown to users**: never display `ex.Message` directly — use `MensajeErrorHelper.ParaUsuario(ex)` (shows only `ErrorNegocioException` / SQL `RAISERROR` messages, logs the rest and shows a generic text). Throw `ErrorNegocioException` (`Services/Common/ErrorNegocio.cs`) for messages meant for the user; when wrapping, pass the inner exception.
+- **Uploaded files** (`~/Uploads`) are hidden from direct URLs (Web.config `hiddenSegments`). To let a user open one, use `DocumentoHelper.UrlDescarga(rutaVirtual)` (per-session key → `Views/DescargarDocumento.aspx`). Use `DocumentoHelper.NombreSeguro(...)` for user text inside file names.
 - **SQL injection**: all queries use parameterized `SqlCommand.Parameters.AddWithValue(...)`. Never concatenate user input into SQL strings.
 
 ## Reference Docs

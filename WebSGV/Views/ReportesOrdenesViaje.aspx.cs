@@ -140,7 +140,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje($"Error al cargar liquidaciones: {ex.Message}", "danger");
+                MostrarMensaje($"Error al cargar liquidaciones: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
             }
         }
 
@@ -306,7 +306,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje($"Error al cargar viajes activos: {ex.Message}", "danger");
+                MostrarMensaje($"Error al cargar viajes activos: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
             }
         }
 

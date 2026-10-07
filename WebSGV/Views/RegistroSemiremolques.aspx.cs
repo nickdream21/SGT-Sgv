@@ -34,7 +34,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar los semiremolques: " + ex.Message);
+                MostrarMensaje("Error al cargar los semiremolques: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -88,7 +88,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al registrar el semiremolque: " + ex.Message);
+                MostrarMensaje("Error al registrar el semiremolque: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -112,7 +112,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    MostrarMensaje("Error al actualizar el estado: " + ex.Message);
+                    MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
                 }
             }
         }
@@ -173,7 +173,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al actualizar el semiremolque: " + ex.Message);
+                MostrarMensaje("Error al actualizar el semiremolque: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 

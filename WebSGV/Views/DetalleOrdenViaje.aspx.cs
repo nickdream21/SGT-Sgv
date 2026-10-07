@@ -4,6 +4,7 @@ using System.Data;
 using System.Web.UI;
 using WebSGV.Helpers;
 using WebSGV.Services.OrdenViaje;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Views
 {
@@ -106,7 +107,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar el detalle de la orden de viaje");
-                MostrarError($"Error al cargar la liquidación: {ex.Message}");
+                MostrarError($"Error al cargar la liquidación: {MensajeErrorHelper.ParaUsuario(ex)}");
             }
         }
 
@@ -129,13 +130,13 @@ namespace WebSGV.Views
             DataTable dt = DetalleOrdenViajeService.ObtenerCabecera(idOrdenViaje);
 
             if (dt.Rows.Count == 0)
-                throw new Exception("No se encontró la liquidación solicitada.");
+                throw new ErrorNegocioException("No se encontró la liquidación solicitada.");
 
             DataRow r = dt.Rows[0];
 
             int idConductorOrden = Convert.ToInt32(r["idConductor"]);
             if (idConductorOrden != IdConductorActual)
-                throw new Exception("No tienes permiso para ver esta liquidación.");
+                throw new ErrorNegocioException("No tienes permiso para ver esta liquidación.");
 
             _numeroOrden = r["numeroOrdenViaje"].ToString();
 

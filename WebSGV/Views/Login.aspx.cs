@@ -150,26 +150,18 @@ namespace WebSGV.Views
                 return;
             }
 
-            // Protección básica anti-fuerza-bruta por IP (Application state)
-            // Application.Lock() evita race conditions en entornos multi-hilo.
-            string ip = Request.UserHostAddress ?? "unknown";
-            string claveFallidos = "LoginFail_" + ip;
-            string claveBloqueo  = "LoginBlock_" + ip;
+            // Anti-fuerza-bruta en dos niveles (Application state):
+            //  - por IP: 5 fallos → 5 min (frena a un atacante que prueba muchas cuentas);
+            //  - por cuenta: 5 fallos → 15 min (frena a quien rota IPs contra la misma cuenta).
+            //    Cuenta aunque el usuario no exista, para no revelar qué cuentas existen.
+            string claveIp     = "IP_" + (Request.UserHostAddress ?? "unknown");
+            string claveCuenta = "USR_" + usuario.ToLowerInvariant();
 
-            Application.Lock();
-            try
+            if (EstaBloqueado(claveIp, out int segundosIp) || EstaBloqueado(claveCuenta, out segundosIp))
             {
-                if (Application[claveBloqueo] is DateTime bloqueadoHasta && bloqueadoHasta > DateTime.UtcNow)
-                {
-                    int segundos = (int)(bloqueadoHasta - DateTime.UtcNow).TotalSeconds;
-                    Application.UnLock();
-                    MostrarMensaje($"Demasiados intentos fallidos. Intente nuevamente en {segundos} segundos.");
-                    return;
-                }
-            }
-            finally
-            {
-                Application.UnLock();
+                int minutos = Math.Max(1, (int)Math.Ceiling(segundosIp / 60.0));
+                MostrarMensaje($"Demasiados intentos fallidos. Intente nuevamente en {minutos} minuto(s).");
+                return;
             }
 
             // Verificar credenciales en la base de datos (fuera del lock para no retenerlo durante I/O)
@@ -191,11 +183,9 @@ namespace WebSGV.Views
 
             if (resultado.EsValido)
             {
-                // Limpiar contador de intentos fallidos
-                Application.Lock();
-                Application.Remove(claveFallidos);
-                Application.Remove(claveBloqueo);
-                Application.UnLock();
+                // Login correcto: se limpia el contador de la cuenta (el de la IP se mantiene,
+                // para que una cuenta válida no sirva para "resetear" los intentos de esa IP).
+                LimpiarIntentos(claveCuenta);
 
                 // Si la opción "Recordarme" está marcada, guardar solo el usuario (no el rol ni ID)
                 if (chkRemember.Checked)
@@ -238,29 +228,73 @@ namespace WebSGV.Views
             }
             else
             {
-                // Incrementar contador de intentos fallidos con lock para evitar race condition
-                Application.Lock();
-                int intentos = (Application[claveFallidos] as int?) ?? 0;
-                intentos++;
-                Application[claveFallidos] = intentos;
+                bool bloqueadaIp     = RegistrarFallo(claveIp, TimeSpan.FromMinutes(5));
+                bool bloqueadaCuenta = RegistrarFallo(claveCuenta, TimeSpan.FromMinutes(15));
 
-                // Bloquear IP por 5 minutos tras 5 intentos fallidos
-                if (intentos >= 5)
-                {
-                    Application[claveBloqueo] = DateTime.UtcNow.AddMinutes(5);
-                    Application.Remove(claveFallidos);
-                }
-                Application.UnLock();
-
-                if (intentos >= 5)
-                {
-                    MostrarMensaje("Demasiados intentos fallidos. Su acceso ha sido bloqueado temporalmente por 5 minutos.");
-                }
+                if (bloqueadaIp || bloqueadaCuenta)
+                    MostrarMensaje("Demasiados intentos fallidos. El acceso quedó bloqueado temporalmente; intente más tarde.");
                 else
-                {
                     MostrarMensaje("Usuario o contraseña incorrectos. Por favor, intente nuevamente.");
-                }
             }
+        }
+
+        // ── Control de intentos fallidos (Application state, por IP y por cuenta) ──────────
+
+        private const int MaxIntentosFallidos = 5;
+        private static readonly TimeSpan VentanaIntentos = TimeSpan.FromMinutes(15);
+
+        private class IntentosLogin
+        {
+            public int Fallidos;
+            public DateTime PrimerFalloUtc;
+            public DateTime BloqueadoHastaUtc;
+        }
+
+        private bool EstaBloqueado(string clave, out int segundosRestantes)
+        {
+            segundosRestantes = 0;
+            Application.Lock();
+            try
+            {
+                if (Application["Login_" + clave] is IntentosLogin i && i.BloqueadoHastaUtc > DateTime.UtcNow)
+                {
+                    segundosRestantes = (int)(i.BloqueadoHastaUtc - DateTime.UtcNow).TotalSeconds;
+                    return true;
+                }
+                return false;
+            }
+            finally { Application.UnLock(); }
+        }
+
+        /// <summary>Suma un fallo; si llega al máximo dentro de la ventana, bloquea por <paramref name="duracionBloqueo"/>. Devuelve true si quedó bloqueado.</summary>
+        private bool RegistrarFallo(string clave, TimeSpan duracionBloqueo)
+        {
+            DateTime ahora = DateTime.UtcNow;
+            Application.Lock();
+            try
+            {
+                var i = Application["Login_" + clave] as IntentosLogin;
+                if (i == null || ahora - i.PrimerFalloUtc > VentanaIntentos)
+                    i = new IntentosLogin { PrimerFalloUtc = ahora };
+
+                i.Fallidos++;
+                if (i.Fallidos >= MaxIntentosFallidos)
+                {
+                    i.BloqueadoHastaUtc = ahora.Add(duracionBloqueo);
+                    i.Fallidos = 0;
+                    i.PrimerFalloUtc = ahora;
+                }
+                Application["Login_" + clave] = i;
+                return i.BloqueadoHastaUtc > ahora;
+            }
+            finally { Application.UnLock(); }
+        }
+
+        private void LimpiarIntentos(string clave)
+        {
+            Application.Lock();
+            try { Application.Remove("Login_" + clave); }
+            finally { Application.UnLock(); }
         }
 
         private (bool EsValido, string Rol, string Nombre, string NombreUsuario,
@@ -302,12 +336,6 @@ namespace WebSGV.Views
 
                         esValido = true;
                         requiereCambioContrasena = Convert.ToBoolean(reader["requiereCambioContrasena"]);
-
-                        if (PasswordHelper.NeedsMigration(storedHash))
-                        {
-                            requiereCambioContrasena = true;
-                            MigrarContrasena(idUsuario, contrasena);
-                        }
                     }
                 }
             }
@@ -320,30 +348,6 @@ namespace WebSGV.Views
             }
 
             return (esValido, rol, nombre, nombreUsuario, idUsuario, idConductor, idOperador, requiereCambioContrasena);
-        }
-
-        /// <summary>
-        /// Migra automáticamente una contraseña en texto plano al formato hash PBKDF2.
-        /// Se ejecuta una sola vez por usuario al hacer login exitoso con contraseña antigua.
-        /// </summary>
-        private void MigrarContrasena(int idUsuario, string contrasenaPlana)
-        {
-            try
-            {
-                string nuevoHash = PasswordHelper.HashPassword(contrasenaPlana);
-                DbHelper.EjecutarNonQuery(
-                    "UPDATE Usuarios SET contrasena = @NuevoHash, requiereCambioContrasena = 1 WHERE idUsuario = @IdUsuario",
-                    DbHelper.Param("@NuevoHash", nuevoHash),
-                    DbHelper.Param("@IdUsuario", idUsuario));
-            }
-            catch (Exception ex)
-            {
-                // La migración de hash es best-effort: si falla, el login ya fue válido y no
-                // se rompe. Se registra para no dejar al usuario con contraseña sin migrar
-                // de forma silenciosa e indefinida.
-                LogSGV.Advertencia("No se pudo migrar la contraseña del usuario {IdUsuario} a PBKDF2: {Error}",
-                    idUsuario, ex.Message);
-            }
         }
 
         /// <summary>

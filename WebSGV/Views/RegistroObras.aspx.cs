@@ -37,7 +37,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar los clientes: " + ex.Message);
+                MostrarMensaje("Error al cargar los clientes: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -57,7 +57,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar las obras: " + ex.Message);
+                MostrarMensaje("Error al cargar las obras: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -96,7 +96,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al registrar la obra: " + ex.Message);
+                MostrarMensaje("Error al registrar la obra: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -122,7 +122,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    MostrarMensaje("Error al actualizar el estado: " + ex.Message);
+                    MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
                 }
             }
         }

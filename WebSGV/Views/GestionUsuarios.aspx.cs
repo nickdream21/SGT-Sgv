@@ -307,7 +307,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensajeModal("Error al guardar: " + ex.Message, "danger");
+                MostrarMensajeModal("Error al guardar: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
                 AbrirModal("modalUsuario");
             }
         }

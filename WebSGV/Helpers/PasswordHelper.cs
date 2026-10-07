@@ -43,7 +43,7 @@ namespace WebSGV.Helpers
 
         /// <summary>
         /// Verifica si una contraseña coincide con el hash almacenado.
-        /// Soporta el formato nuevo (PBKDF2) y el formato antiguo (texto plano) para migración.
+        /// Solo acepta el formato PBKDF2 ({iteraciones}.{salt}.{hash}); el texto plano ya no se acepta.
         /// </summary>
         public static bool VerifyPassword(string password, string storedHash)
         {
@@ -83,8 +83,10 @@ namespace WebSGV.Helpers
             }
             else
             {
-                // Formato antiguo: texto plano (para migración gradual)
-                return string.Equals(password, storedHash, StringComparison.Ordinal);
+                // Ya no se acepta texto plano: las contraseñas antiguas se convirtieron a PBKDF2 con
+                // Database/Scripts/migrar-contrasenas-texto-plano.ps1 (ejecutarlo en cada BD
+                // antes de publicar esta versión).
+                return false;
             }
         }
 

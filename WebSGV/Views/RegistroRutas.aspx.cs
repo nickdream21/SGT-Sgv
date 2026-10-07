@@ -96,7 +96,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al registrar la ruta: " + ex.Message);
+                MostrarMensaje("Error al registrar la ruta: " + MensajeErrorHelper.ParaUsuario(ex));
                 // Registrar el error para debugging
                 System.Diagnostics.Debug.WriteLine("Error en RegistroRutas: " + ex.ToString());
             }

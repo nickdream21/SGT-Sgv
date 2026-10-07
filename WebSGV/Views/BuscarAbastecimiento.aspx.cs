@@ -78,7 +78,7 @@ namespace WebSGV.Views
                     catch (Exception ex)
                     {
                         // Capturar cualquier error en MostrarDatosAbastecimiento
-                        MostrarMensaje("Error al mostrar datos: " + ex.Message, "danger");
+                        MostrarMensaje("Error al mostrar datos: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
                         pnlResultados.Visible = false;
                         pnlNoResultados.Visible = true;
                     }
@@ -92,7 +92,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al buscar el abastecimiento: " + ex.Message, "danger");
+                MostrarMensaje("Error al buscar el abastecimiento: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -155,7 +155,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error en ObtenerAbastecimiento: {ex.Message}");
-                throw new Exception("Error al obtener los datos del abastecimiento: " + ex.Message);
+                throw new Exception("Error al obtener los datos del abastecimiento: " + ex.Message, ex);
             }
         }
 
@@ -510,7 +510,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al guardar los cambios: " + ex.Message, "danger");
+                MostrarMensaje("Error al guardar los cambios: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -702,7 +702,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                throw new Exception("Error al actualizar el abastecimiento: " + ex.Message);
+                throw new Exception("Error al actualizar el abastecimiento: " + ex.Message, ex);
             }
 
             return actualizado;
@@ -818,7 +818,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al anular el abastecimiento: " + ex.Message, "danger");
+                MostrarMensaje("Error al anular el abastecimiento: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -865,7 +865,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al eliminar el abastecimiento: " + ex.Message, "danger");
+                MostrarMensaje("Error al eliminar el abastecimiento: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
