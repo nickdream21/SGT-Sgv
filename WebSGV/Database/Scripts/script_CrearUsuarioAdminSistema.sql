@@ -1,7 +1,7 @@
 ﻿-- ============================================================
 -- Script: Crear usuario Administrador de Sistema
 -- Usuario: nickdream
--- Contraseña: nick.dre@m210902#  (hash PBKDF2 ya calculado)
+-- Contraseña: (no se versiona; hash PBKDF2 ya calculado abajo)
 -- Rol: ADMINISTRADOR DE SISTEMA
 -- ============================================================
 

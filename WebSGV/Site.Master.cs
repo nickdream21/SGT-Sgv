@@ -51,8 +51,8 @@ namespace WebSGV
             // Sin sesión válida → redirigir a login
             if (!TieneSesionActivaLocal())
             {
-                Response.Redirect("~/Views/Login.aspx", false);
-                Context.ApplicationInstance.CompleteRequest();
+                // EndResponse = true: detiene la página (incluidos los eventos de postback)
+                Response.Redirect("~/Views/Login.aspx", true);
                 return;
             }
 

@@ -8,8 +8,37 @@ namespace WebSGV.Views
 {
     public partial class WebForm1 : PaginaBase
     {
+        // ── Regeneración del ID de sesión al iniciar sesión (anti session fixation) ──
+        // Con sesión InProc no es fiable cambiar el SessionID dentro del mismo request, así
+        // que el login se completa en dos pasos:
+        //   1) btnLogin_Click valida credenciales, guarda los datos en caché bajo un token
+        //      aleatorio de un solo uso (60 s), abandona la sesión, borra su cookie y deja el
+        //      token en una cookie HttpOnly.
+        //   2) Login.aspx?completar=1 llega SIN cookie de sesión → ASP.NET crea un ID nuevo;
+        //      aquí se consume el token y se carga la sesión.
+        private const string CookieTicketLogin = "SGV_LoginTicket";
+        private const string PrefijoCacheTicket = "SGV_LoginTicket_";
+
+        [Serializable]
+        private class DatosLogin
+        {
+            public int IdUsuario;
+            public string Rol;
+            public string Nombre;
+            public string NombreUsuario;
+            public int? IdConductor;
+            public int? IdOperador;
+            public bool RequiereCambioContrasena;
+        }
+
         protected void Page_Load(object sender, EventArgs e)
         {
+            if (Request.QueryString["completar"] == "1")
+            {
+                CompletarLogin();
+                return;
+            }
+
             // ✅ ROMPE-LOOPS: si llegamos a Login.aspx con ?error=sesion y hay sesión,
             // significa que una página protegida nos rebotó. Limpiar sesión y mostrar el form
             // en lugar de reenviar al usuario al destino que ya falló.
@@ -168,30 +197,6 @@ namespace WebSGV.Views
                 Application.Remove(claveBloqueo);
                 Application.UnLock();
 
-                // Limpiar sesión anterior
-                Session.Clear();
-
-                // Guardar datos directamente en la sesión actual
-                Session["UsuarioID"] = resultado.IdUsuario.ToString();
-                Session["IdUsuario"] = resultado.IdUsuario;
-                Session["Rol"] = resultado.Rol;
-                Session["Nombre"] = resultado.Nombre;
-                Session["NombreUsuario"] = resultado.NombreUsuario;
-                Session["RequiereCambioContrasena"] = resultado.RequiereCambioContrasena;
-
-                if (resultado.Rol.ToUpper() == "CONDUCTOR" && resultado.IdConductor.HasValue)
-                {
-                    Session["IdConductor"] = resultado.IdConductor.Value;
-                }
-
-                if (resultado.Rol.ToUpper() == "OPERADOR" && resultado.IdOperador.HasValue)
-                {
-                    Session["IdOperador"] = resultado.IdOperador.Value;
-                }
-
-                // La sesión de servidor (Session[]) almacena todos los datos de autenticación.
-                // No se emite ninguna cookie adicional con datos sensibles (uid, rol, nombre).
-
                 // Si la opción "Recordarme" está marcada, guardar solo el usuario (no el rol ni ID)
                 if (chkRemember.Checked)
                 {
@@ -203,31 +208,33 @@ namespace WebSGV.Views
                     Response.Cookies.Add(cookie);
                 }
 
-                // Redirigir según el rol
-                if (resultado.Rol.ToUpper() == "CONDUCTOR")
+                // Paso 1 de la regeneración de sesión: ticket de un solo uso + sesión nueva.
+                var datos = new DatosLogin
                 {
-                    Response.Redirect("~/Views/DashboardConductor.aspx");
-                }
-                else if (resultado.Rol.ToUpper() == "OPERADOR")
+                    IdUsuario = resultado.IdUsuario,
+                    Rol = resultado.Rol,
+                    Nombre = resultado.Nombre,
+                    NombreUsuario = resultado.NombreUsuario,
+                    IdConductor = resultado.IdConductor,
+                    IdOperador = resultado.IdOperador,
+                    RequiereCambioContrasena = resultado.RequiereCambioContrasena
+                };
+                string token = GenerarTokenAleatorio();
+                HttpRuntime.Cache.Insert(PrefijoCacheTicket + token, datos, null,
+                    DateTime.UtcNow.AddSeconds(60), System.Web.Caching.Cache.NoSlidingExpiration);
+
+                Session.Clear();
+                Session.Abandon();
+                Response.Cookies.Add(new HttpCookie("SGV_SessionId", "") { Expires = DateTime.Now.AddDays(-1), HttpOnly = true });
+                Response.Cookies.Add(new HttpCookie(CookieTicketLogin, token)
                 {
-                    Response.Redirect("~/Views/DashboardOperador.aspx");
-                }
-                else if (resultado.Rol.ToUpper() == "ADMINISTRADOR DE GRIFO")
-                {
-                    Response.Redirect("~/Views/DashboardGrifo.aspx");
-                }
-                else if (resultado.Rol.ToUpper() == "ADMINISTRADOR DE SISTEMA")
-                {
-                    Response.Redirect("~/Views/DashboardAdminSistema.aspx");
-                }
-                else if (resultado.Rol.ToUpper() == "CONTABILIDAD")
-                {
-                    Response.Redirect("~/Views/LiquidacionesAprobadasContabilidad.aspx");
-                }
-                else
-                {
-                    Response.Redirect("~/Views/Inicio.aspx");
-                }
+                    HttpOnly = true,
+                    Secure = Request.IsSecureConnection,
+                    Expires = DateTime.Now.AddMinutes(1)
+                });
+
+                Response.Redirect("~/Views/Login.aspx?completar=1", false);
+                Context.ApplicationInstance.CompleteRequest();
             }
             else
             {
@@ -337,6 +344,68 @@ namespace WebSGV.Views
                 LogSGV.Advertencia("No se pudo migrar la contraseña del usuario {IdUsuario} a PBKDF2: {Error}",
                     idUsuario, ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Paso 2 del login: consume el ticket (un solo uso) y carga la sesión, que en este
+        /// request ya tiene un SessionID nuevo. Sin ticket válido vuelve al formulario.
+        /// </summary>
+        private void CompletarLogin()
+        {
+            string token = Request.Cookies[CookieTicketLogin]?.Value;
+            Response.Cookies.Add(new HttpCookie(CookieTicketLogin, "") { Expires = DateTime.Now.AddDays(-1), HttpOnly = true });
+
+            DatosLogin datos = string.IsNullOrEmpty(token)
+                ? null
+                : HttpRuntime.Cache.Remove(PrefijoCacheTicket + token) as DatosLogin;
+
+            if (datos == null)
+            {
+                Response.Redirect("~/Views/Login.aspx?error=sesion", true);
+                return;
+            }
+
+            Session["UsuarioID"] = datos.IdUsuario.ToString();
+            Session["IdUsuario"] = datos.IdUsuario;
+            Session["Rol"] = datos.Rol;
+            Session["Nombre"] = datos.Nombre;
+            Session["NombreUsuario"] = datos.NombreUsuario;
+            // Leído por varias páginas (AgregarCPIC, BuscarFactura, EditarDespacho...) para
+            // registrar quién sube o edita.
+            Session["Usuario"] = datos.NombreUsuario;
+            Session["RequiereCambioContrasena"] = datos.RequiereCambioContrasena;
+
+            string rol = (datos.Rol ?? "").ToUpper();
+            if (rol == "CONDUCTOR" && datos.IdConductor.HasValue)
+                Session["IdConductor"] = datos.IdConductor.Value;
+            if (rol == "OPERADOR" && datos.IdOperador.HasValue)
+                Session["IdOperador"] = datos.IdOperador.Value;
+
+            AuditoriaHelper.Registrar("LOGIN", "Usuarios", datos.IdUsuario.ToString(),
+                $"Inicio de sesión - Usuario: {datos.NombreUsuario}, Rol: {datos.Rol}");
+
+            Response.Redirect(UrlInicioSegunRol(rol), true);
+        }
+
+        private static string UrlInicioSegunRol(string rolMayus)
+        {
+            switch (rolMayus)
+            {
+                case "CONDUCTOR":                return "~/Views/DashboardConductor.aspx";
+                case "OPERADOR":                 return "~/Views/DashboardOperador.aspx";
+                case "ADMINISTRADOR DE GRIFO":   return "~/Views/DashboardGrifo.aspx";
+                case "ADMINISTRADOR DE SISTEMA": return "~/Views/DashboardAdminSistema.aspx";
+                case "CONTABILIDAD":             return "~/Views/LiquidacionesAprobadasContabilidad.aspx";
+                default:                         return "~/Views/Inicio.aspx";
+            }
+        }
+
+        private static string GenerarTokenAleatorio()
+        {
+            byte[] bytes = new byte[32];
+            using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+                rng.GetBytes(bytes);
+            return HttpServerUtility.UrlTokenEncode(bytes);
         }
 
         private void MostrarMensaje(string mensaje)

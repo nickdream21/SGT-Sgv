@@ -946,9 +946,16 @@ namespace WebSGV.Views
 
         #region DETALLE DE ORDEN (AJAX)
 
-        [WebMethod]
+        /// <summary>HTML-encode de un valor de BD para armar el HTML del detalle.</summary>
+        private static string Enc(object valor) => HttpUtility.HtmlEncode(Convert.ToString(valor));
+
+        [WebMethod(EnableSession = true)]
         public static string ObtenerDetalleOrden(int idOrden)
         {
+            // Los WebMethods no pasan por Page_Load: validar sesión y rol aquí.
+            if (!SecurityHelper.TieneSesionActiva() || !SecurityHelper.EsAdminOSupervisor())
+                throw new UnauthorizedAccessException("Acceso no autorizado.");
+
             try
             {
                 StringBuilder html = new StringBuilder();
@@ -968,16 +975,16 @@ namespace WebSGV.Views
                     html.Append("<div class='card-header bg-primary text-white'><h6 class='mb-0'>Información General</h6></div>");
                     html.Append("<div class='card-body'>");
                     html.Append("<div class='row'>");
-                    html.Append($"<div class='col-md-3'><strong>N° Orden:</strong> {reader["numeroOrdenViaje"]}</div>");
-                    html.Append($"<div class='col-md-3'><strong>Conductor:</strong> {reader["Conductor"]}</div>");
-                    html.Append($"<div class='col-md-3'><strong>Tracto:</strong> {reader["PlacaTracto"]}</div>");
-                    html.Append($"<div class='col-md-3'><strong>Carreta:</strong> {reader["PlacaCarreta"]}</div>");
+                    html.Append($"<div class='col-md-3'><strong>N° Orden:</strong> {Enc(reader["numeroOrdenViaje"])}</div>");
+                    html.Append($"<div class='col-md-3'><strong>Conductor:</strong> {Enc(reader["Conductor"])}</div>");
+                    html.Append($"<div class='col-md-3'><strong>Tracto:</strong> {Enc(reader["PlacaTracto"])}</div>");
+                    html.Append($"<div class='col-md-3'><strong>Carreta:</strong> {Enc(reader["PlacaCarreta"])}</div>");
                     html.Append("</div>");
                     html.Append("<div class='row mt-2'>");
                     html.Append($"<div class='col-md-3'><strong>Fecha Salida:</strong> {Convert.ToDateTime(reader["fechaSalida"]):dd/MM/yyyy}</div>");
                     html.Append($"<div class='col-md-3'><strong>Fecha Llegada:</strong> {Convert.ToDateTime(reader["fechaLlegada"]):dd/MM/yyyy}</div>");
-                    html.Append($"<div class='col-md-3'><strong>Hora Salida:</strong> {reader["horaSalida"]}</div>");
-                    html.Append($"<div class='col-md-3'><strong>Hora Llegada:</strong> {reader["horaLlegada"]}</div>");
+                    html.Append($"<div class='col-md-3'><strong>Hora Salida:</strong> {Enc(reader["horaSalida"])}</div>");
+                    html.Append($"<div class='col-md-3'><strong>Hora Llegada:</strong> {Enc(reader["horaLlegada"])}</div>");
                     html.Append("</div>");
                     html.Append("</div>");
                     html.Append("</div>");
@@ -1002,7 +1009,8 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                return $"<div class='alert alert-danger'>Error: {ex.Message}</div>";
+                LogSGV.Error(ex, "Error al obtener el detalle de la orden {IdOrden}", idOrden);
+                return "<div class='alert alert-danger'>Error al cargar el detalle de la orden.</div>";
             }
         }
 
@@ -1029,7 +1037,7 @@ namespace WebSGV.Views
                 decimal despachoD = Convert.ToDecimal(reader["despachoDolares"]);
                 if (despachoS > 0 || despachoD > 0)
                 {
-                    html.Append($"<tr><td>Despacho</td><td>{reader["descDespacho"]}</td><td>S/ {despachoS:N2}</td><td>$ {despachoD:N2}</td></tr>");
+                    html.Append($"<tr><td>Despacho</td><td>{Enc(reader["descDespacho"])}</td><td>S/ {despachoS:N2}</td><td>$ {despachoD:N2}</td></tr>");
                     totalIngresosSoles += despachoS;
                     totalIngresosDolares += despachoD;
                 }
@@ -1038,7 +1046,7 @@ namespace WebSGV.Views
                 decimal prestamoD = Convert.ToDecimal(reader["prestamosDolares"]);
                 if (prestamoS > 0 || prestamoD > 0)
                 {
-                    html.Append($"<tr><td>Préstamo</td><td>{reader["descPrestamo"]}</td><td>S/ {prestamoS:N2}</td><td>$ {prestamoD:N2}</td></tr>");
+                    html.Append($"<tr><td>Préstamo</td><td>{Enc(reader["descPrestamo"])}</td><td>S/ {prestamoS:N2}</td><td>$ {prestamoD:N2}</td></tr>");
                     totalIngresosSoles += prestamoS;
                     totalIngresosDolares += prestamoD;
                 }
@@ -1047,7 +1055,7 @@ namespace WebSGV.Views
                 decimal mensualidadD = Convert.ToDecimal(reader["mensualidadDolares"]);
                 if (mensualidadS > 0 || mensualidadD > 0)
                 {
-                    html.Append($"<tr><td>Mensualidad</td><td>{reader["descMensualidad"]}</td><td>S/ {mensualidadS:N2}</td><td>$ {mensualidadD:N2}</td></tr>");
+                    html.Append($"<tr><td>Mensualidad</td><td>{Enc(reader["descMensualidad"])}</td><td>S/ {mensualidadS:N2}</td><td>$ {mensualidadD:N2}</td></tr>");
                     totalIngresosSoles += mensualidadS;
                     totalIngresosDolares += mensualidadD;
                 }
@@ -1056,7 +1064,7 @@ namespace WebSGV.Views
                 decimal otrosD = Convert.ToDecimal(reader["otrosDolares"]);
                 if (otrosS > 0 || otrosD > 0)
                 {
-                    html.Append($"<tr><td>Otros Autorizados</td><td>{reader["descOtrosAutorizados"]}</td><td>S/ {otrosS:N2}</td><td>$ {otrosD:N2}</td></tr>");
+                    html.Append($"<tr><td>Otros Autorizados</td><td>{Enc(reader["descOtrosAutorizados"])}</td><td>S/ {otrosS:N2}</td><td>$ {otrosD:N2}</td></tr>");
                     totalIngresosSoles += otrosS;
                     totalIngresosDolares += otrosD;
                 }
@@ -1068,7 +1076,7 @@ namespace WebSGV.Views
             {
                 decimal soles = Convert.ToDecimal(reader["soles"]);
                 decimal dolares = Convert.ToDecimal(reader["dolares"]);
-                html.Append($"<tr><td>{reader["nombreCategoria"]}</td><td>{reader["descripcion"]}</td><td>S/ {soles:N2}</td><td>$ {dolares:N2}</td></tr>");
+                html.Append($"<tr><td>{Enc(reader["nombreCategoria"])}</td><td>{Enc(reader["descripcion"])}</td><td>S/ {soles:N2}</td><td>$ {dolares:N2}</td></tr>");
                 totalIngresosSoles += soles;
                 totalIngresosDolares += dolares;
             }
@@ -1109,7 +1117,7 @@ namespace WebSGV.Views
                 decimal peajesD = Convert.ToDecimal(reader["peajesDolares"]);
                 if (peajesS > 0 || peajesD > 0)
                 {
-                    html.Append($"<tr><td>Peajes</td><td>{reader["descPeajes"]}</td><td>S/ {peajesS:N2}</td><td>$ {peajesD:N2}</td></tr>");
+                    html.Append($"<tr><td>Peajes</td><td>{Enc(reader["descPeajes"])}</td><td>S/ {peajesS:N2}</td><td>$ {peajesD:N2}</td></tr>");
                     totalGastosSoles += peajesS;
                     totalGastosDolares += peajesD;
                 }
@@ -1119,7 +1127,7 @@ namespace WebSGV.Views
                 decimal alimentacionD = Convert.ToDecimal(reader["alimentacionDolares"]);
                 if (alimentacionS > 0 || alimentacionD > 0)
                 {
-                    html.Append($"<tr><td>Alimentación</td><td>{reader["descAlimentacion"]}</td><td>S/ {alimentacionS:N2}</td><td>$ {alimentacionD:N2}</td></tr>");
+                    html.Append($"<tr><td>Alimentación</td><td>{Enc(reader["descAlimentacion"])}</td><td>S/ {alimentacionS:N2}</td><td>$ {alimentacionD:N2}</td></tr>");
                     totalGastosSoles += alimentacionS;
                     totalGastosDolares += alimentacionD;
                 }
@@ -1129,7 +1137,7 @@ namespace WebSGV.Views
                 decimal apoyoD = Convert.ToDecimal(reader["apoyoseguridadDolares"]);
                 if (apoyoS > 0 || apoyoD > 0)
                 {
-                    html.Append($"<tr><td>Apoyo Seguridad</td><td>{reader["descApoyoSeguridad"]}</td><td>S/ {apoyoS:N2}</td><td>$ {apoyoD:N2}</td></tr>");
+                    html.Append($"<tr><td>Apoyo Seguridad</td><td>{Enc(reader["descApoyoSeguridad"])}</td><td>S/ {apoyoS:N2}</td><td>$ {apoyoD:N2}</td></tr>");
                     totalGastosSoles += apoyoS;
                     totalGastosDolares += apoyoD;
                 }
@@ -1139,7 +1147,7 @@ namespace WebSGV.Views
                 decimal reparacionesD = Convert.ToDecimal(reader["repacionesVariosDolares"]);
                 if (reparacionesS > 0 || reparacionesD > 0)
                 {
-                    html.Append($"<tr><td>Reparaciones</td><td>{reader["descReparacionesVarios"]}</td><td>S/ {reparacionesS:N2}</td><td>$ {reparacionesD:N2}</td></tr>");
+                    html.Append($"<tr><td>Reparaciones</td><td>{Enc(reader["descReparacionesVarios"])}</td><td>S/ {reparacionesS:N2}</td><td>$ {reparacionesD:N2}</td></tr>");
                     totalGastosSoles += reparacionesS;
                     totalGastosDolares += reparacionesD;
                 }
@@ -1149,7 +1157,7 @@ namespace WebSGV.Views
                 decimal movilidadD = Convert.ToDecimal(reader["movilidadDolares"]);
                 if (movilidadS > 0 || movilidadD > 0)
                 {
-                    html.Append($"<tr><td>Movilidad</td><td>{reader["descMovilidad"]}</td><td>S/ {movilidadS:N2}</td><td>$ {movilidadD:N2}</td></tr>");
+                    html.Append($"<tr><td>Movilidad</td><td>{Enc(reader["descMovilidad"])}</td><td>S/ {movilidadS:N2}</td><td>$ {movilidadD:N2}</td></tr>");
                     totalGastosSoles += movilidadS;
                     totalGastosDolares += movilidadD;
                 }
@@ -1159,7 +1167,7 @@ namespace WebSGV.Views
                 decimal hospedajeD = Convert.ToDecimal(reader["hospedajeDolares"]);
                 if (hospedajeS > 0 || hospedajeD > 0)
                 {
-                    html.Append($"<tr><td>Hospedaje</td><td>{reader["descHospedaje"]}</td><td>S/ {hospedajeS:N2}</td><td>$ {hospedajeD:N2}</td></tr>");
+                    html.Append($"<tr><td>Hospedaje</td><td>{Enc(reader["descHospedaje"])}</td><td>S/ {hospedajeS:N2}</td><td>$ {hospedajeD:N2}</td></tr>");
                     totalGastosSoles += hospedajeS;
                     totalGastosDolares += hospedajeD;
                 }
@@ -1169,7 +1177,7 @@ namespace WebSGV.Views
                 decimal combustibleD = Convert.ToDecimal(reader["combustibleDolares"]);
                 if (combustibleS > 0 || combustibleD > 0)
                 {
-                    html.Append($"<tr><td>Combustible</td><td>{reader["descCombustible"]}</td><td>S/ {combustibleS:N2}</td><td>$ {combustibleD:N2}</td></tr>");
+                    html.Append($"<tr><td>Combustible</td><td>{Enc(reader["descCombustible"])}</td><td>S/ {combustibleS:N2}</td><td>$ {combustibleD:N2}</td></tr>");
                     totalGastosSoles += combustibleS;
                     totalGastosDolares += combustibleD;
                 }
@@ -1179,7 +1187,7 @@ namespace WebSGV.Views
                 decimal encapadaD = Convert.ToDecimal(reader["encarpada_desencarpadaDolares"]);
                 if (encapadaS > 0 || encapadaD > 0)
                 {
-                    html.Append($"<tr><td>Encarpada/Desencarpada</td><td>{reader["descEncarpadaDesencarpada"]}</td><td>S/ {encapadaS:N2}</td><td>$ {encapadaD:N2}</td></tr>");
+                    html.Append($"<tr><td>Encarpada/Desencarpada</td><td>{Enc(reader["descEncarpadaDesencarpada"])}</td><td>S/ {encapadaS:N2}</td><td>$ {encapadaD:N2}</td></tr>");
                     totalGastosSoles += encapadaS;
                     totalGastosDolares += encapadaD;
                 }
@@ -1191,7 +1199,7 @@ namespace WebSGV.Views
             {
                 decimal soles = Convert.ToDecimal(reader["soles"]);
                 decimal dolares = Convert.ToDecimal(reader["dolares"]);
-                html.Append($"<tr><td>{reader["nombreCategoria"]}</td><td>{reader["descripcion"]}</td><td>S/ {soles:N2}</td><td>$ {dolares:N2}</td></tr>");
+                html.Append($"<tr><td>{Enc(reader["nombreCategoria"])}</td><td>{Enc(reader["descripcion"])}</td><td>S/ {soles:N2}</td><td>$ {dolares:N2}</td></tr>");
                 totalGastosSoles += soles;
                 totalGastosDolares += dolares;
             }

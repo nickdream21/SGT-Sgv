@@ -13,14 +13,16 @@ namespace WebSGV.Helpers
     public static class SecurityHelper
     {
         // ── Roles reconocidos ──────────────────────────────────────────────
-        private const string ROL_ADMIN              = "ADMIN";
-        private const string ROL_ADMIN_SISTEMA      = "ADMINISTRADOR DE SISTEMA";
-        private const string ROL_ADMIN_TRANSPORTE   = "ADMINISTRADOR DE TRANSPORTE";
-        private const string ROL_SUPERVISOR         = "SUPERVISOR";
-        private const string ROL_ADMIN_GRIFO        = "ADMINISTRADOR DE GRIFO";
-        private const string ROL_ADMIN_MAQ          = "ADMINISTRADOR DE MAQUINARIA";
-        private const string ROL_CONDUCTOR          = "CONDUCTOR";
-        private const string ROL_OPERADOR           = "OPERADOR";
+        private const string ROL_ADMIN          = "ADMIN";
+        private const string ROL_ADMIN_LEGADO   = "ADMINISTRADOR";
+        private const string ROL_ADMIN_SISTEMA  = "ADMINISTRADOR DE SISTEMA";
+        private const string ROL_ADMIN_TRANSPORTE = "ADMINISTRADOR DE TRANSPORTE";
+        private const string ROL_SUPERVISOR     = "SUPERVISOR";
+        private const string ROL_ADMIN_GRIFO    = "ADMINISTRADOR DE GRIFO";
+        private const string ROL_ADMIN_MAQ      = "ADMINISTRADOR DE MAQUINARIA";
+        private const string ROL_CONDUCTOR      = "CONDUCTOR";
+        private const string ROL_OPERADOR       = "OPERADOR";
+        private const string ROL_CONTABILIDAD   = "CONTABILIDAD";
 
         // ── Acceso a sesión ────────────────────────────────────────────────
 
@@ -52,24 +54,37 @@ namespace WebSGV.Helpers
         public static bool EsAdmin()
         {
             string rol = ObtenerRol();
-            return rol == ROL_ADMIN || rol == "ADMINISTRADOR" || rol == ROL_ADMIN_SISTEMA || rol == ROL_ADMIN_TRANSPORTE;
+            return rol == ROL_ADMIN || rol == ROL_ADMIN_LEGADO || rol == ROL_ADMIN_SISTEMA || rol == ROL_ADMIN_TRANSPORTE;
         }
 
         public static bool EsAdminOSupervisor()
         {
-            return EsAdmin() || ObtenerRol() == ROL_SUPERVISOR;
+            string rol = ObtenerRol();
+            return rol == ROL_ADMIN || rol == ROL_ADMIN_LEGADO || rol == ROL_ADMIN_SISTEMA || rol == ROL_ADMIN_TRANSPORTE || rol == ROL_SUPERVISOR;
         }
 
+        public static bool EsAdminSistema()    => ObtenerRol() == ROL_ADMIN_SISTEMA;
         public static bool EsAdminGrifo()      => ObtenerRol() == ROL_ADMIN_GRIFO;
         public static bool EsAdminMaquinaria() => ObtenerRol() == ROL_ADMIN_MAQ;
-        public static bool EsConductor()       => ObtenerRol() == ROL_CONDUCTOR;
+        public static bool EsConductor()
+        {
+            string rol = ObtenerRol();
+            return rol == ROL_CONDUCTOR || rol == "CHOFER";
+        }
         public static bool EsOperador()        => ObtenerRol() == ROL_OPERADOR;
+        public static bool EsContabilidad()    => ObtenerRol() == ROL_CONTABILIDAD;
+
+        /// <summary>Roles autorizados para aprobar, rechazar o corregir liquidaciones.</summary>
+        public static bool PuedeGestionarLiquidaciones() => EsAdminOSupervisor();
+
+        /// <summary>Roles con consulta global de liquidaciones (sin limitar por conductor).</summary>
+        public static bool PuedeConsultarLiquidacionesGlobales() =>
+            EsAdminOSupervisor() || EsContabilidad();
 
         // ── Guardias de acceso (redirigen si no pasan) ─────────────────────
 
         /// <summary>
-        /// Exige sesión activa. Si no hay sesión redirige a Login.
-        /// Detiene la ejecución del pipeline con EndResponse = false + CompleteRequest.
+        /// Exige sesión activa. Si no hay sesión redirige a Login y termina la respuesta.
         /// </summary>
         public static void ExigirSesion()
         {
@@ -101,6 +116,17 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
+        /// Exige exclusivamente ADMINISTRADOR DE SISTEMA.
+        /// Usado en páginas de administración de usuarios y roles.
+        /// </summary>
+        public static void ExigirRolAdminSistema()
+        {
+            ExigirSesion();
+            if (!EsAdminSistema())
+                Redirigir("~/Views/Login.aspx?error=sesion");
+        }
+
+        /// <summary>
         /// Exige ADMIN, ADMIN_SISTEMA, SUPERVISOR o ADMIN_GRIFO.
         /// (Usado en secciones de conductores y abastecimiento)
         /// </summary>
@@ -108,7 +134,8 @@ namespace WebSGV.Helpers
         {
             ExigirSesion();
             string rol = ObtenerRol();
-            bool permitido = EsAdmin() || rol == ROL_SUPERVISOR || rol == ROL_ADMIN_GRIFO;
+            bool permitido = rol == ROL_ADMIN || rol == ROL_ADMIN_LEGADO || rol == ROL_ADMIN_SISTEMA || rol == ROL_ADMIN_TRANSPORTE
+                          || rol == ROL_SUPERVISOR || rol == ROL_ADMIN_GRIFO;
             if (!permitido)
                 Redirigir("~/Views/Login.aspx?error=sesion");
         }
@@ -161,12 +188,17 @@ namespace WebSGV.Helpers
 
         // ── Utilidad interna ───────────────────────────────────────────────
 
+        /// <summary>
+        /// Redirige y TERMINA la ejecución de la página (EndResponse = true).
+        /// Con EndResponse = false + CompleteRequest la página seguía ejecutando
+        /// Page_Load, los eventos de postback y el render, filtrando datos y
+        /// permitiendo acciones a usuarios sin permiso.
+        /// </summary>
         private static void Redirigir(string url)
         {
             var context = HttpContext.Current;
             if (context == null) return;
-            context.Response.Redirect(url, false);
-            context.ApplicationInstance.CompleteRequest();
+            context.Response.Redirect(url, true);
         }
     }
 }

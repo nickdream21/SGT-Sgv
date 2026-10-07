@@ -17,6 +17,9 @@ namespace WebSGV.Views
     {
         protected void Page_Load(object sender, EventArgs e)
         {
+            RolesHelper.ValidarAccesoSeccion("ABASTECIMIENTO");
+            SecurityHelper.AgregarHeadersSeguridad();
+
             if (!IsPostBack)
             {
                 // Cargar datos iniciales
@@ -407,6 +410,11 @@ namespace WebSGV.Views
                     }
                 }
             }
+            catch (System.Threading.ThreadAbortException)
+            {
+                // Response.Redirect tras un guardado exitoso: no es un error.
+                throw;
+            }
             catch (Exception ex)
             {
                 // Registro detallado de errores
@@ -580,20 +588,25 @@ namespace WebSGV.Views
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
+                SqlTransaction tx = null;
                 try
                 {
                     conn.Open();
 
-                    // Generar número de abastecimiento automáticamente (siguiente correlativo)
+                    // Correlativo + INSERT en una sola transacción. UPDLOCK/HOLDLOCK bloquea la
+                    // lectura del MAX hasta el commit: dos registros simultáneos ya no pueden
+                    // obtener el mismo número.
+                    tx = conn.BeginTransaction();
+
                     string numAbast = "000001";
                     using (SqlCommand cmdNum = new SqlCommand(
-                        "SELECT ISNULL(MAX(CAST(RTRIM(numeroAbastecimientoCombustible) AS INT)), 0) + 1 FROM AbastecimientoCombustible", conn))
+                        "SELECT ISNULL(MAX(CAST(RTRIM(numeroAbastecimientoCombustible) AS INT)), 0) + 1 FROM AbastecimientoCombustible WITH (UPDLOCK, HOLDLOCK)", conn, tx))
                     {
                         int siguiente = Convert.ToInt32(cmdNum.ExecuteScalar());
                         numAbast = siguiente.ToString().PadLeft(6, '0');
                     }
 
-                    using (SqlCommand cmd = new SqlCommand("sp_InsertarAbastecimientoCombustible", conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_InsertarAbastecimientoCombustible", conn, tx))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
 
@@ -698,11 +711,21 @@ namespace WebSGV.Views
                         DateTime fecha = FechaHelper.Hoy();
                         TimeSpan hora = FechaHelper.Ahora().TimeOfDay;
 
-                        try { if (!string.IsNullOrEmpty(txtFecha.Text)) fecha = Convert.ToDateTime(txtFecha.Text).Date; }
-                        catch { RegistrarError("Error al convertir fecha, usando fecha actual"); }
+                        // Una fecha/hora ilegible aborta el guardado (antes se reemplazaba en
+                        // silencio por la actual y el registro quedaba con la fecha equivocada).
+                        if (!string.IsNullOrEmpty(txtFecha.Text))
+                        {
+                            if (!DateTime.TryParse(txtFecha.Text, out DateTime fechaIngresada))
+                                throw new InvalidOperationException("La fecha ingresada no es válida.");
+                            fecha = fechaIngresada.Date;
+                        }
 
-                        try { if (!string.IsNullOrEmpty(txtHora.Text)) hora = TimeSpan.Parse(txtHora.Text); }
-                        catch { RegistrarError("Error al convertir hora, usando hora actual"); }
+                        if (!string.IsNullOrEmpty(txtHora.Text))
+                        {
+                            if (!TimeSpan.TryParse(txtHora.Text, out TimeSpan horaIngresada))
+                                throw new InvalidOperationException("La hora ingresada no es válida.");
+                            hora = horaIngresada;
+                        }
 
                         DateTime fechaHora = fecha.Add(hora);
                         cmd.Parameters.Add("@fechaHora", SqlDbType.DateTime).Value = fechaHora;
@@ -803,6 +826,9 @@ namespace WebSGV.Views
                         RegistrarInfo($"Filas afectadas: {filasAfectadas}");
                     }
 
+                    tx.Commit();
+                    tx = null;
+
                     // ====================================================================
                     // GENERACIÓN DE PDF (SGV-CDF-F-06) - Reemplaza al talonario físico.
                     // El fallo al generar el PDF NO debe abortar el guardado del registro.
@@ -819,11 +845,13 @@ namespace WebSGV.Views
                 }
                 catch (SqlException sqlEx)
                 {
+                    try { tx?.Rollback(); } catch { /* la conexión pudo haberse roto */ }
                     RegistrarError($"ERROR SQL (Número: {sqlEx.Number}): {sqlEx.Message}");
                     throw new Exception($"Error de base de datos: {sqlEx.Message}", sqlEx);
                 }
                 catch (Exception ex)
                 {
+                    try { tx?.Rollback(); } catch { /* la conexión pudo haberse roto */ }
                     RegistrarError($"ERROR GUARDAR: {ex.Message}");
                     if (ex.InnerException != null)
                         RegistrarError($"INNER EXCEPTION: {ex.InnerException.Message}");

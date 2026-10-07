@@ -111,7 +111,7 @@
                                 <ItemTemplate>
                                     <asp:LinkButton ID="btnVerDetalles" runat="server" CssClass="btn btn-sm btn-info" 
                                         CommandName="VerDetalles" CommandArgument='<%# Eval("idAuditoria") %>'
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Ver detalles completos">
+                                        data-toggle="tooltip" data-placement="top" title="Ver detalles completos">
                                         <i class="fas fa-search-plus"></i>
                                     </asp:LinkButton>
                                 </ItemTemplate>
@@ -148,7 +148,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="detallesModalLabel">Detalles de Auditoría</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                     </div>
                     <div class="modal-body">
                         <asp:Panel ID="pnlDetalles" runat="server">
@@ -236,7 +236,7 @@
                         </asp:Panel>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
                     </div>
                 </div>
             </div>
@@ -246,7 +246,7 @@
     <script type="text/javascript">
         // Inicializar tooltips de Bootstrap
         document.addEventListener('DOMContentLoaded', function() {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-toggle="tooltip"]'));
             var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });

@@ -347,6 +347,7 @@
     <Content Include="Scripts\modernizr-2.8.3.js" />
     <Content Include="Scripts\OrdenViaje.js" />
     <Content Include="Scripts\responsive-mobile.js" />
+    <Content Include="Scripts\jquery-si-falta.js" />
     <Content Include="Scripts\SGVScripts.js" />
     <Content Include="Scripts\SQL\AgregarColumnaActivo.sql" />
     <Content Include="Scripts\WebForms\DetailsView.js" />
@@ -490,6 +491,8 @@
     <Compile Include="Services\GpsIntegracion\SeguimientoExportacionGpsService.cs" />
     <Compile Include="Services\Reportes\ReportesOrdenesViajeService.cs" />
     <Compile Include="Services\Reportes\ReportesService.cs" />
+    <Compile Include="Services\Reportes\ReporteExcelBuilder.cs" />
+    <Compile Include="Services\Reportes\ReporteFiltros.cs" />
     <Compile Include="Services\Despachos\DespachoValidaciones.cs" />
     <Compile Include="Services\Despachos\DocumentoCpicService.cs" />
     <Compile Include="Services\Despachos\EditarDespachoService.cs" />
@@ -915,9 +918,7 @@
       <DependentUpon>TestGenerarPdfOrdenViaje.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="WebSGV\Helpers\SecurityHelper.cs" />
-    <Compile Include="WebSGV\Views\Inicio.aspx.cs" />
-    <Compile Include="WebSGV\Views\ListaDespachos.aspx.cs" />
+    <Compile Include="Helpers\SecurityHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

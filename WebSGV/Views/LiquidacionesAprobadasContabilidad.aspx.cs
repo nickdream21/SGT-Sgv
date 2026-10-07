@@ -34,6 +34,11 @@ namespace WebSGV.Views
             if (contexto == null || contexto.Session == null || contexto.Session["UsuarioID"] == null)
                 return new List<LiquidacionAprobadaItem>();
 
+            // Misma regla que la página: sin esto cualquier rol logueado (p. ej. CONDUCTOR)
+            // podía listar las liquidaciones de todos los conductores.
+            if (!RolesHelper.TienePermiso("LIQUIDACIONES_CONTABILIDAD"))
+                return new List<LiquidacionAprobadaItem>();
+
             if (idConductor < 0)
                 return new List<LiquidacionAprobadaItem>();
 

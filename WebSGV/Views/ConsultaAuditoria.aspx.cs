@@ -16,7 +16,8 @@ namespace WebSGV.Views
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            SecurityHelper.ExigirSesion();
+            // El log de auditoría es solo para ADMINISTRADOR DE SISTEMA (igual que Auditoria.aspx)
+            SecurityHelper.ExigirRolAdminSistema();
             SecurityHelper.AgregarHeadersSeguridad();
 
             if (!IsPostBack)
@@ -114,7 +115,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 ScriptManager.RegisterStartupScript(this, GetType(), "showalert",
-                    "alert('Error al exportar a Excel: " + ex.Message.Replace("'", "\\'") + "');", true);
+                    "alert('Error al exportar a Excel: " + System.Web.HttpUtility.JavaScriptStringEncode(ex.Message) + "');", true);
             }
         }
 
@@ -176,7 +177,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 ScriptManager.RegisterStartupScript(this, GetType(), "showalert",
-                    "alert('Error al cargar datos de auditoría: " + ex.Message.Replace("'", "\\'") + "');", true);
+                    "alert('Error al cargar datos de auditoría: " + System.Web.HttpUtility.JavaScriptStringEncode(ex.Message) + "');", true);
             }
         }
 

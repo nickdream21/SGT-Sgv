@@ -70,8 +70,7 @@ namespace WebSGV.Views
         {
             if (Session["UsuarioID"] == null)
             {
-                Response.Redirect("~/Views/Login.aspx?error=sesion", false);
-                Context.ApplicationInstance.CompleteRequest();
+                Response.Redirect("~/Views/Login.aspx?error=sesion", true);
                 return;
             }
 
@@ -79,8 +78,7 @@ namespace WebSGV.Views
             bool esAdmin = rol == "ADMIN" || rol == "ADMINISTRADOR DE SISTEMA" || rol == "SUPERVISOR";
             if (!esAdmin && IdConductorActual == 0)
             {
-                Response.Redirect("~/Views/Login.aspx?error=sesion", false);
-                Context.ApplicationInstance.CompleteRequest();
+                Response.Redirect("~/Views/Login.aspx?error=sesion", true);
             }
         }
 

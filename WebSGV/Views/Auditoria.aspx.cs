@@ -16,8 +16,7 @@ namespace WebSGV.Views
         {
             if (!RolesHelper.EsAdminSistema())
             {
-                Response.Redirect("~/Views/Inicio.aspx", false);
-                Context.ApplicationInstance.CompleteRequest();
+                Response.Redirect("~/Views/Inicio.aspx", true);
                 return;
             }
 

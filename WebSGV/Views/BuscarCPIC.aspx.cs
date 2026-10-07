@@ -855,36 +855,48 @@ namespace WebSGV.Views
                 ProductoCPIC_Actualizado productoOriginal = cpic.Productos.FirstOrDefault(p => p.ID == id);
                 int idProductoOriginal = productoOriginal != null ? productoOriginal.IdProducto : idProducto;
 
-                int existeRegistro = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM CPIC_Productos WHERE idCPIC=@idCPIC AND idProducto=@idProductoOriginal",
-                    DbHelper.Param("@idCPIC",             idCPIC),
-                    DbHelper.Param("@idProductoOriginal", idProductoOriginal)));
-
-                if (existeRegistro > 0 && idProductoOriginal != idProducto)
+                // DELETE + INSERT/UPDATE en una sola transacción: si el segundo paso falla,
+                // el producto original no queda borrado.
+                bool actualizado = false;
+                DbHelper.EnTransaccion((conn, tx) =>
                 {
-                    DbHelper.EjecutarNonQuery(
-                        "DELETE FROM CPIC_Productos WHERE idCPIC=@idCPIC AND idProducto=@idProductoOriginal",
+                    int existeRegistro = Convert.ToInt32(DbHelper.EjecutarEscalar(conn, tx,
+                        "SELECT COUNT(*) FROM CPIC_Productos WITH (UPDLOCK) WHERE idCPIC=@idCPIC AND idProducto=@idProductoOriginal",
                         DbHelper.Param("@idCPIC",             idCPIC),
-                        DbHelper.Param("@idProductoOriginal", idProductoOriginal));
-                    existeRegistro = 0;
-                }
+                        DbHelper.Param("@idProductoOriginal", idProductoOriginal)));
 
-                if (existeRegistro > 0)
-                {
-                    return DbHelper.EjecutarNonQuery(
-                        "UPDATE CPIC_Productos SET cantidadBolsasProducto=@cantidad WHERE idCPIC=@idCPIC AND idProducto=@idProducto",
-                        DbHelper.Param("@idCPIC",    idCPIC),
-                        DbHelper.Param("@idProducto",idProducto),
-                        DbHelper.Param("@cantidad",  cantidad)) > 0;
-                }
-                else
-                {
-                    return DbHelper.EjecutarNonQuery(
-                        "INSERT INTO CPIC_Productos (idCPIC, idProducto, cantidadBolsasProducto, pesoKg) VALUES (@idCPIC, @idProducto, @cantidad, 0)",
-                        DbHelper.Param("@idCPIC",    idCPIC),
-                        DbHelper.Param("@idProducto",idProducto),
-                        DbHelper.Param("@cantidad",  cantidad)) > 0;
-                }
+                    if (existeRegistro > 0 && idProductoOriginal != idProducto)
+                    {
+                        DbHelper.EjecutarNonQuery(conn, tx,
+                            "DELETE FROM CPIC_Productos WHERE idCPIC=@idCPIC AND idProducto=@idProductoOriginal",
+                            DbHelper.Param("@idCPIC",             idCPIC),
+                            DbHelper.Param("@idProductoOriginal", idProductoOriginal));
+                        existeRegistro = 0;
+                    }
+
+                    if (existeRegistro > 0)
+                    {
+                        actualizado = DbHelper.EjecutarNonQuery(conn, tx,
+                            "UPDATE CPIC_Productos SET cantidadBolsasProducto=@cantidad WHERE idCPIC=@idCPIC AND idProducto=@idProducto",
+                            DbHelper.Param("@idCPIC",    idCPIC),
+                            DbHelper.Param("@idProducto",idProducto),
+                            DbHelper.Param("@cantidad",  cantidad)) > 0;
+                    }
+                    else
+                    {
+                        actualizado = DbHelper.EjecutarNonQuery(conn, tx,
+                            "INSERT INTO CPIC_Productos (idCPIC, idProducto, cantidadBolsasProducto, pesoKg) VALUES (@idCPIC, @idProducto, @cantidad, 0)",
+                            DbHelper.Param("@idCPIC",    idCPIC),
+                            DbHelper.Param("@idProducto",idProducto),
+                            DbHelper.Param("@cantidad",  cantidad)) > 0;
+                    }
+                });
+
+                if (actualizado)
+                    AuditoriaHelper.Registrar("UPDATE", "CPIC_Productos", idCPIC.ToString(),
+                        $"Producto de CPIC actualizado - CPIC: {txtNumCPIC.Text}, Producto: {nombreProducto}, Cantidad: {cantidad}");
+
+                return actualizado;
             }
             catch (Exception ex)
             {

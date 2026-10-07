@@ -187,52 +187,52 @@ namespace WebSGV.Views
                                     // INGRESOS
                                     $('input[name=""despachoSoles""]').val('{reader["despachoSoles"] ?? "0"}');
                                     $('input[name=""despachoDolares""]').val('{reader["despachoDolares"] ?? "0"}');
-                                    $('input[name=""descDespacho""]').val('{reader["descDespacho"]?.ToString().Replace("'", "\\'")}');
+                                    $('input[name=""descDespacho""]').val('{System.Web.HttpUtility.JavaScriptStringEncode(reader["descDespacho"]?.ToString())}');
                                     
                                     $('input[name=""prestamoSoles""]').val('{reader["prestamoSoles"] ?? "0"}');
                                     $('input[name=""prestamoDolares""]').val('{reader["prestamosDolares"] ?? "0"}');
-                                    $('input[name=""descPrestamo""]').val('{reader["descPrestamo"]?.ToString().Replace("'", "\\'")}');
+                                    $('input[name=""descPrestamo""]').val('{System.Web.HttpUtility.JavaScriptStringEncode(reader["descPrestamo"]?.ToString())}');
                                     
                                     $('input[name=""mensualidadSoles""]').val('{reader["mensualidadSoles"] ?? "0"}');
                                     $('input[name=""mensualidadDolares""]').val('{reader["mensualidadDolares"] ?? "0"}');
-                                    $('input[name=""descMensualidad""]').val('{reader["descMensualidad"]?.ToString().Replace("'", "\\'")}');
+                                    $('input[name=""descMensualidad""]').val('{System.Web.HttpUtility.JavaScriptStringEncode(reader["descMensualidad"]?.ToString())}');
                                     
                                     $('input[name=""otrosSoles""]').val('{reader["otrosSoles"] ?? "0"}');
                                     $('input[name=""otrosDolares""]').val('{reader["otrosDolares"] ?? "0"}');
-                                    $('input[name=""descOtros""]').val('{reader["descOtrosAutorizados"]?.ToString().Replace("'", "\\'")}');
+                                    $('input[name=""descOtros""]').val('{System.Web.HttpUtility.JavaScriptStringEncode(reader["descOtrosAutorizados"]?.ToString())}');
                                     
                                     // GASTOS
                                     $('#peajesSoles').val('{reader["peajesSoles"] ?? "0"}');
                                     $('#peajesDolares').val('{reader["peajesDolares"] ?? "0"}');
-                                    $('#descPeajes').val('{reader["descPeajes"]?.ToString().Replace("'", "\\'")}');
+                                    $('#descPeajes').val('{System.Web.HttpUtility.JavaScriptStringEncode(reader["descPeajes"]?.ToString())}');
                                     
                                     $('input[name=""alimentacionSoles""]').val('{reader["alimentacionSoles"] ?? "0"}');
                                     $('input[name=""alimentacionDolares""]').val('{reader["alimentacionDolares"] ?? "0"}');
-                                    $('input[name=""descAlimentacion""]').val('{reader["descAlimentacion"]?.ToString().Replace("'", "\\'")}');
+                                    $('input[name=""descAlimentacion""]').val('{System.Web.HttpUtility.JavaScriptStringEncode(reader["descAlimentacion"]?.ToString())}');
                                     
                                     $('input[name=""apoyoSeguridadSoles""]').val('{reader["apoyoseguridadSoles"] ?? "0"}');
                                     $('input[name=""apoyoSeguridadDolares""]').val('{reader["apoyoseguridadDolares"] ?? "0"}');
-                                    $('input[name=""descApoyoSeguridad""]').val('{reader["descApoyoSeguridad"]?.ToString().Replace("'", "\\'")}');
+                                    $('input[name=""descApoyoSeguridad""]').val('{System.Web.HttpUtility.JavaScriptStringEncode(reader["descApoyoSeguridad"]?.ToString())}');
                                     
                                     $('#reparacionesSoles').val('{reader["reparacionesVariosSoles"] ?? "0"}');
                                     $('#reparacionesDolares').val('{reader["repacionesVariosDolares"] ?? "0"}');
-                                    $('#descReparaciones').val('{reader["descReparacionesVarios"]?.ToString().Replace("'", "\\'")}');
+                                    $('#descReparaciones').val('{System.Web.HttpUtility.JavaScriptStringEncode(reader["descReparacionesVarios"]?.ToString())}');
                                     
                                     $('input[name=""movilidadSoles""]').val('{reader["movilidadSoles"] ?? "0"}');
                                     $('input[name=""movilidadDolares""]').val('{reader["movilidadDolares"] ?? "0"}');
-                                    $('input[name=""descMovilidad""]').val('{reader["descMovilidad"]?.ToString().Replace("'", "\\'")}');
+                                    $('input[name=""descMovilidad""]').val('{System.Web.HttpUtility.JavaScriptStringEncode(reader["descMovilidad"]?.ToString())}');
                                     
                                     $('input[name=""encapadaSoles""]').val('{reader["encarpada_desencarpadaSoles"] ?? "0"}');
                                     $('input[name=""encapadaDolares""]').val('{reader["encarpada_desencarpadaDolares"] ?? "0"}');
-                                    $('input[name=""descEncapada""]').val('{reader["descEncarpadaDesencarpada"]?.ToString().Replace("'", "\\'")}');
+                                    $('input[name=""descEncapada""]').val('{System.Web.HttpUtility.JavaScriptStringEncode(reader["descEncarpadaDesencarpada"]?.ToString())}');
                                     
                                     $('#hospedajeSoles').val('{reader["hospedajeSoles"] ?? "0"}');
                                     $('#hospedajeDolares').val('{reader["hospedajeDolares"] ?? "0"}');
-                                    $('#descHospedaje').val('{reader["descHospedaje"]?.ToString().Replace("'", "\\'")}');
+                                    $('#descHospedaje').val('{System.Web.HttpUtility.JavaScriptStringEncode(reader["descHospedaje"]?.ToString())}');
                                     
                                     $('#combustibleSoles').val('{reader["combustibleSoles"] ?? "0"}');
                                     $('#combustibleDolares').val('{reader["combustibleDolares"] ?? "0"}');
-                                    $('#descCombustible').val('{reader["descCombustible"]?.ToString().Replace("'", "\\'")}');
+                                    $('#descCombustible').val('{System.Web.HttpUtility.JavaScriptStringEncode(reader["descCombustible"]?.ToString())}');
                                     
                                     console.log('✅ Ingresos y gastos principales cargados');
                                     calcularTotales();
@@ -874,8 +874,11 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                // No devolver una lista vacía: al editar, el servicio borra los gastos existentes
+                // y reinserta esta lista, así que un JSON ilegible borraría todos los gastos.
                 LogSGV.Error(ex, "Error al obtener gastos financieros en AgregarOrdenViaje");
-                return new List<GastoFinanciero>();
+                throw new InvalidOperationException(
+                    "No se pudieron leer los gastos detallados del formulario. Recargue la página e intente nuevamente; no se guardó ningún cambio.", ex);
             }
         }
 

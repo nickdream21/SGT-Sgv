@@ -1566,6 +1566,9 @@ namespace WebSGV.Views
                         }
                     }
 
+                    AuditoriaHelper.Registrar("UPDATE", "ViajesEnProgreso", idViajeProgreso.ToString(),
+                        $"Viaje en progreso reabierto por {ObtenerUsuarioActual()}");
+
                     // Recargar historial del conductor activo
                     if (ddlConductor.SelectedValue != "0")
                     {
@@ -1575,6 +1578,12 @@ namespace WebSGV.Views
 
                     MostrarMensaje("Viaje reabierto exitosamente.", "success");
                 }
+            }
+            catch (SqlException ex) when (ex.Number == 50000)
+            {
+                // Validaciones de negocio de sp_ReabrirViajeProgreso (RAISERROR): mostrar el motivo.
+                RegistrarError("gvHistorialViajes_RowCommand", ex);
+                MostrarMensaje("No se pudo reabrir el viaje: " + ex.Message, "warning");
             }
             catch (Exception ex)
             {

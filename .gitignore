@@ -270,6 +270,16 @@ ServiceFabricBackup/
 
 # Transcripts de sesiones de Claude Code sueltos en la raíz (pueden contener credenciales)
 /*-local-command-*.txt
+/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.txt
+
+# Carpeta privada: credenciales de usuarios y scripts con hashes. NUNCA versionar.
+/privado/
+CREDENCIALES*
+
+# Datos operativos reales del cliente (Excel / Power BI): no versionar
+WebSGV/dashboard/*.xlsx
+WebSGV/dashboard/*.pbix
+WebSGV/dashboard/*.txt
 
 # Claude Code - settings locales con credenciales MCP
 .claude/settings.json

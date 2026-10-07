@@ -102,8 +102,8 @@
                                 <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-3">
                                     <div class="position-relative">
                                         <asp:Label ID="lblMensaje" runat="server" CssClass="alert d-block mb-0 pe-5"></asp:Label>
-                                        <button type="button" class="btn-close position-absolute" style="top:.65rem;right:.75rem;"
-                                            onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"></button>
+                                        <button type="button" class="close position-absolute" style="top:.65rem;right:.75rem;"
+                                            onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                                     </div>
                                 </asp:Panel>
 
@@ -574,8 +574,8 @@
                                             <asp:Panel ID="pnlMensajeConductor" runat="server" Visible="false" CssClass="mb-3">
                                                 <div class="position-relative">
                                                     <asp:Label ID="lblMensajeConductor" runat="server" CssClass="alert d-block mb-0 pe-5"></asp:Label>
-                                                    <button type="button" class="btn-close position-absolute" style="top:.65rem;right:.75rem;"
-                                                        onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"></button>
+                                                    <button type="button" class="close position-absolute" style="top:.65rem;right:.75rem;"
+                                                        onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                                                 </div>
                                             </asp:Panel>
 
@@ -967,7 +967,7 @@
                     <h5 class="modal-title" id="modalHistorialViajesLabel">
                         <i class="fas fa-history"></i> Historial de Viajes - <span id="spanConductorModal" runat="server"></span>
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <asp:UpdatePanel ID="UpdatePanelModal" runat="server" UpdateMode="Conditional">
@@ -1004,7 +1004,7 @@
                     </asp:UpdatePanel>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>

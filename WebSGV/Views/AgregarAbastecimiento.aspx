@@ -684,10 +684,7 @@
         <asp:HiddenField ID="hdnIdViaje" runat="server" Value="0" />
     </div>
 
-    <!-- Referencias a jQuery y jQuery UI -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <!-- jQuery y jQuery UI (JS y CSS) los carga Site.Master -->
 
     <!-- Referencias a Select2 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />

@@ -34,8 +34,7 @@ namespace WebSGV.Views
             {
                 if (Session["IdOperador"] == null || IdOperadorActual == 0)
                 {
-                    Response.Redirect("~/Views/Login.aspx?error=sesion", false);
-                    Context.ApplicationInstance.CompleteRequest();
+                    Response.Redirect("~/Views/Login.aspx?error=sesion", true);
                     return;
                 }
             }
@@ -50,8 +49,7 @@ namespace WebSGV.Views
             if (Session["IdOperador"] == null || IdOperadorActual == 0)
             {
                 System.Diagnostics.Debug.WriteLine("No hay sesion de operador");
-                Response.Redirect("~/Views/Login.aspx?error=sesion", false);
-                Context.ApplicationInstance.CompleteRequest();
+                Response.Redirect("~/Views/Login.aspx?error=sesion", true);
                 return;
             }
         }

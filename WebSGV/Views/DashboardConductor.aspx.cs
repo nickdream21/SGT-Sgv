@@ -116,8 +116,7 @@ namespace WebSGV.Views
                 // En PostBack, verificar que la sesión siga activa
                 if (Session["IdConductor"] == null || IdConductorActual == 0)
                 {
-                    Response.Redirect("~/Views/Login.aspx?error=sesion", false);
-                    Context.ApplicationInstance.CompleteRequest();
+                    Response.Redirect("~/Views/Login.aspx?error=sesion", true);
                     return;
                 }
             }

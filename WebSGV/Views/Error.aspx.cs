@@ -21,21 +21,19 @@ namespace WebSGV.Views
             if (lastError == null)
                 lastError = Server.GetLastError();
 
-            // 3) Application state (guardado por Global.asax cuando IIS hace sub-request)
+            // 3) Application state (guardado por Global.asax cuando IIS hace sub-request).
+            //    Solo el error de ESTA sesión, nunca el de otro usuario.
             if (lastError == null)
             {
                 try
                 {
-                    string key = Application["LastError_LastKey"] as string;
-                    if (!string.IsNullOrEmpty(key))
+                    string sessionId = Context.Session?.SessionID;
+                    if (!string.IsNullOrEmpty(sessionId))
                     {
+                        string key = "LastError_" + sessionId;
                         lastError = Application[key] as Exception;
                         if (lastError != null)
-                        {
-                            // limpiar para no mostrar el mismo error en navegaciones futuras
-                            Application.Remove(key);
-                            Application.Remove("LastError_LastKey");
-                        }
+                            Application.Remove(key); // no mostrar el mismo error en navegaciones futuras
                     }
                 }
                 catch
@@ -52,9 +50,18 @@ namespace WebSGV.Views
                 while ((real is System.Web.HttpUnhandledException) && real.InnerException != null)
                     real = real.InnerException;
 
-                ErrorTipo = System.Web.HttpUtility.HtmlEncode(real.GetType().FullName);
-                ErrorDetalle = System.Web.HttpUtility.HtmlEncode(real.Message ?? "");
-                ErrorStack = System.Web.HttpUtility.HtmlEncode(real.StackTrace ?? "");
+                // El detalle técnico (tipo, mensaje SQL, stack) solo se muestra con
+                // compilation debug="true" (desarrollo). En Release se registra en el log.
+                if (Context.IsDebuggingEnabled)
+                {
+                    ErrorTipo = System.Web.HttpUtility.HtmlEncode(real.GetType().FullName);
+                    ErrorDetalle = System.Web.HttpUtility.HtmlEncode(real.Message ?? "");
+                    ErrorStack = System.Web.HttpUtility.HtmlEncode(real.StackTrace ?? "");
+                }
+                else
+                {
+                    WebSGV.Helpers.LogSGV.Error(real, "Error no controlado mostrado en Error.aspx");
+                }
 
                 System.Diagnostics.Debug.WriteLine($"❌ ERROR 500 mostrado en Error.aspx: {real.Message}");
                 System.Diagnostics.Debug.WriteLine($"   Stack: {real.StackTrace}");

@@ -39,7 +39,8 @@ namespace WebSGV.Views
                 {
                     if (EnviarCorreoRecuperacion(datosUsuario.email, datosUsuario.nombre, token))
                     {
-                        MostrarMensaje("Se ha enviado un enlace de recuperación a su correo electrónico.", true);
+                        // Mismo mensaje que cuando el usuario no existe: no revelar qué cuentas existen.
+                        MostrarMensaje("Si el usuario existe, recibirá un correo con las instrucciones.", true);
                         txtUsuarioEmail.Text = "";
                     }
                     else
@@ -120,7 +121,13 @@ namespace WebSGV.Views
                 string smtpPass = ConfigurationManager.AppSettings["SmtpPass"];
                 bool smtpSSL    = bool.Parse(ConfigurationManager.AppSettings["SmtpSSL"]);
 
-                string enlaceRecuperacion = $"{Request.Url.Scheme}://{Request.Url.Authority}/Views/RestablecerContrasena.aspx?token={token}";
+                // La URL base sale de configuración, no del Host del request: un atacante podría
+                // enviar un Host falso y hacer que el enlace con el token apunte a su dominio.
+                // Si App.UrlPublica está vacía (desarrollo local) se usa el host del request.
+                string urlBase = (ConfigurationManager.AppSettings["App.UrlPublica"] ?? "").Trim().TrimEnd('/');
+                if (string.IsNullOrEmpty(urlBase))
+                    urlBase = $"{Request.Url.Scheme}://{Request.Url.Authority}";
+                string enlaceRecuperacion = $"{urlBase}/Views/RestablecerContrasena.aspx?token={Uri.EscapeDataString(token)}";
 
                 MailMessage mail = new MailMessage();
                 mail.From = new MailAddress(smtpUser, "SGV - Sistema de Gestión");

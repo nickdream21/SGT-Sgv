@@ -313,9 +313,13 @@ namespace WebSGV.Views.Exportacion
         /// sp_SE_BuscarDespachosDisponibles — mismo filtro por ámbito y exclusión de despachos
         /// ya vinculados a otro registro que usa la búsqueda "con botón" original.
         /// </summary>
-        [System.Web.Services.WebMethod]
+        [System.Web.Services.WebMethod(EnableSession = true)]
         public static object BuscarDespachosAjax(bool esInternacional, string texto, int idSeguimientoActual)
         {
+            // Los WebMethods no pasan por Page_Load: validar sesión y permiso aquí.
+            if (!SecurityHelper.TieneSesionActiva() || !RolesHelper.TienePermiso("SEGUIMIENTO_EXPORTACION"))
+                throw new UnauthorizedAccessException("Acceso no autorizado.");
+
             var resultados = new List<object>();
             using (var conn = new SqlConnection(ConnStr))
             using (var cmd = new SqlCommand("sp_SE_BuscarDespachosDisponibles", conn))

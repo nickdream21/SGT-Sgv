@@ -1,7 +1,4 @@
-﻿using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Math;
-using DocumentFormat.OpenXml.Spreadsheet;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Configuration;
@@ -14,7 +11,6 @@ using System.Threading;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using WebGrease.Activities;
 using WebSGV.Helpers;
 using WebSGV.Services.Reportes;
 
@@ -380,6 +376,8 @@ namespace WebSGV.Views
         {
             try
             {
+                if (!ValidarFechas()) return;
+
                 // Guardar el estado original de la paginación y otros estados
                 bool paginacionOriginal = gvReporte.AllowPaging;
                 int paginaOriginal = gvReporte.PageIndex;
@@ -437,211 +435,34 @@ namespace WebSGV.Views
                 gvReporte.DataSource = datosCompletos;
                 gvReporte.DataBind();
 
-                // 5. Continuar con la exportación a Excel
-                using (var workbook = new XLWorkbook())
+                // 5. Leer la grilla (sin paginación) y armar el Excel en el servicio
+                string numeroPedido = txtNumeroPedido.Text.Trim();
+                string tipoReporte = ObtenerTipoReporteSeleccionado();
+                bool filtraPedido = !string.IsNullOrEmpty(numeroPedido) && tipoReporte == "pedido";
+
+                var datosExcel = new ReporteExcelDatos
                 {
-                    var worksheet = workbook.Worksheets.Add("Reporte");
-
-                    string numeroPedido = txtNumeroPedido.Text.Trim();
-                    string tipoReporte = ObtenerTipoReporteSeleccionado();
-
-                    // Modificar el título si estamos filtrando por número de pedido
-                    string tituloReporte = litTituloResultados.Text;
-                    if (!string.IsNullOrEmpty(numeroPedido) && tipoReporte == "pedido")
+                    Titulo = filtraPedido ? $"Reporte de Pedido: {numeroPedido}" : litTituloResultados.Text,
+                    Periodo = "Período: " + txtFechaDesde.Text + " al " + txtFechaHasta.Text,
+                    NumeroPedidoFiltrado = filtraPedido ? numeroPedido : null,
+                    Resumen = new List<KeyValuePair<string, string>>
                     {
-                        tituloReporte = $"Reporte de Pedido: {numeroPedido}";
+                        new KeyValuePair<string, string>("Total Ingresos:", ReporteExcelBuilder.QuitarHtml(litTotalIngresos.Text)),
+                        new KeyValuePair<string, string>("Total Egresos:", ReporteExcelBuilder.QuitarHtml(litTotalEgresos.Text)),
+                        new KeyValuePair<string, string>("Balance:", ReporteExcelBuilder.QuitarHtml(litBalance.Text)),
+                        new KeyValuePair<string, string>(litIndicadorAdicionalTitulo.Text + ":", ReporteExcelBuilder.QuitarHtml(litIndicadorAdicional.Text))
                     }
+                };
+                LeerGrillaParaExcel(datosExcel);
 
-                    // Título del reporte
-                    worksheet.Cell(1, 1).Value = tituloReporte;
-                    worksheet.Cell(1, 1).Style.Font.Bold = true;
-                    worksheet.Cell(1, 1).Style.Font.FontSize = 14;
-                    worksheet.Range(1, 1, 1, 15).Merge();
-                    worksheet.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                byte[] archivo = ReporteExcelBuilder.Generar(datosExcel);
+                string fileName = ReporteExcelBuilder.NombreArchivo(tipoReporte, numeroPedido, FechaHelper.Ahora());
 
-                    // Añadir información del período
-                    worksheet.Cell(2, 1).Value = "Período: " + txtFechaDesde.Text + " al " + txtFechaHasta.Text;
-                    worksheet.Range(2, 1, 2, 15).Merge();
-                    worksheet.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-                    // Añadir información adicional si es necesario
-                    if (!string.IsNullOrEmpty(numeroPedido) && tipoReporte == "pedido")
-                    {
-                        worksheet.Cell(3, 1).Value = $"Número de Pedido: {numeroPedido}";
-                        worksheet.Cell(3, 1).Style.Font.Bold = true;
-                        worksheet.Range(3, 1, 3, 15).Merge();
-                        worksheet.Cell(3, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                    }
-
-                    // Calcular la fila donde empiezan los encabezados
-                    int headerRow = (!string.IsNullOrEmpty(numeroPedido) && tipoReporte == "pedido") ? 5 : 4;
-
-                    // Obtener columnas visibles (excluyendo botones)
-                    List<string> columnHeaders = new List<string>();
-                    List<int> columnIndexes = new List<int>();
-
-                    for (int i = 0; i < gvReporte.Columns.Count; i++)
-                    {
-                        if (!(gvReporte.Columns[i] is ButtonField))
-                        {
-                            columnHeaders.Add(gvReporte.Columns[i].HeaderText);
-                            columnIndexes.Add(i);
-                        }
-                    }
-
-                    // Encabezados
-                    for (int i = 0; i < columnHeaders.Count; i++)
-                    {
-                        worksheet.Cell(headerRow, i + 1).Value = columnHeaders[i];
-                        worksheet.Cell(headerRow, i + 1).Style.Font.Bold = true;
-                        worksheet.Cell(headerRow, i + 1).Style.Fill.BackgroundColor = XLColor.LightGray;
-                        worksheet.Cell(headerRow, i + 1).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-                    }
-
-                    // Datos - IMPORTANTE: ahora estamos usando el GridView sin paginación
-                    for (int rowIndex = 0; rowIndex < gvReporte.Rows.Count; rowIndex++)
-                    {
-                        GridViewRow row = gvReporte.Rows[rowIndex];
-
-                        for (int colIdx = 0; colIdx < columnIndexes.Count; colIdx++)
-                        {
-                            int originalColIndex = columnIndexes[colIdx];
-                            string cellValue = "";
-
-                            if (originalColIndex < row.Cells.Count)
-                            {
-                                if (row.Cells[originalColIndex].Controls.Count > 0)
-                                {
-                                    foreach (System.Web.UI.Control control in row.Cells[originalColIndex].Controls)
-                                    {
-                                        if (control is Label)
-                                            cellValue = ((Label)control).Text;
-                                        else if (control is LinkButton)
-                                            cellValue = ((LinkButton)control).Text;
-                                        else if (control is HyperLink)
-                                            cellValue = ((HyperLink)control).Text;
-                                    }
-                                }
-                                else
-                                {
-                                    cellValue = row.Cells[originalColIndex].Text;
-                                }
-
-                                // Solo decodificar HTML y eliminar &nbsp;, preservando espacios normales
-                                cellValue = HttpUtility.HtmlDecode(cellValue).Replace("&nbsp;", "").Trim();
-                            }
-
-                            worksheet.Cell(rowIndex + headerRow + 1, colIdx + 1).Value = cellValue;
-                            worksheet.Cell(rowIndex + headerRow + 1, colIdx + 1).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-
-                            // Destacar celdas según condiciones específicas
-                            if (columnHeaders[colIdx] == "Nº Pedido" && cellValue == numeroPedido)
-                            {
-                                worksheet.Cell(rowIndex + headerRow + 1, colIdx + 1).Style.Fill.BackgroundColor = XLColor.LightYellow;
-                                worksheet.Cell(rowIndex + headerRow + 1, colIdx + 1).Style.Font.Bold = true;
-                            }
-
-                            // Alternar colores de fila
-                            if (rowIndex % 2 == 1)
-                            {
-                                worksheet.Cell(rowIndex + headerRow + 1, colIdx + 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#F9F9F9");
-                            }
-                        }
-                    }
-
-                    // Resumen
-                    int summaryRow = (gvReporte.Rows.Count > 0 ? gvReporte.Rows.Count : 0) + headerRow + 3;
-                    worksheet.Cell(summaryRow, 1).Value = "Resumen";
-                    worksheet.Cell(summaryRow, 1).Style.Font.Bold = true;
-                    summaryRow++;
-
-                    worksheet.Cell(summaryRow, 1).Value = "Total Ingresos:";
-                    worksheet.Cell(summaryRow, 2).Value = litTotalIngresos.Text;
-                    worksheet.Cell(summaryRow, 1).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-                    worksheet.Cell(summaryRow, 2).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-                    summaryRow++;
-
-                    worksheet.Cell(summaryRow, 1).Value = "Total Egresos:";
-                    worksheet.Cell(summaryRow, 2).Value = litTotalEgresos.Text;
-                    worksheet.Cell(summaryRow, 1).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-                    worksheet.Cell(summaryRow, 2).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-                    summaryRow++;
-
-                    worksheet.Cell(summaryRow, 1).Value = "Balance:";
-                    // Necesitamos eliminar las etiquetas HTML del balance
-                    string balanceText = litBalance.Text;
-                    if (balanceText.Contains("<span"))
-                    {
-                        // Extraer el texto entre >texto</span>
-                        int startIndex = balanceText.IndexOf('>') + 1;
-                        int endIndex = balanceText.IndexOf("</span>");
-                        if (startIndex > 0 && endIndex > startIndex)
-                        {
-                            balanceText = balanceText.Substring(startIndex, endIndex - startIndex);
-                        }
-                    }
-                    worksheet.Cell(summaryRow, 2).Value = balanceText;
-                    worksheet.Cell(summaryRow, 1).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-                    worksheet.Cell(summaryRow, 2).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-                    summaryRow++;
-
-                    worksheet.Cell(summaryRow, 1).Value = litIndicadorAdicionalTitulo.Text + ":";
-                    worksheet.Cell(summaryRow, 2).Value = litIndicadorAdicional.Text;
-                    worksheet.Cell(summaryRow, 1).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-                    worksheet.Cell(summaryRow, 2).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-
-                    // Ajustar ancho de columnas
-                    worksheet.Columns().AdjustToContents();
-
-                    // Determinar el tipo de reporte para el nombre del archivo
-                    string prefijo = "Reporte_";
-
-                    // Seleccionar el prefijo según el tipo de reporte
-                    switch (tipoReporte)
-                    {
-                        case "conductor":
-                            prefijo += "Viajes_Conductor_";
-                            break;
-                        case "vehiculo":
-                            prefijo += "Viajes_Vehiculo_";
-                            break;
-                        case "pedido":
-                            if (!string.IsNullOrEmpty(numeroPedido))
-                                prefijo += "Pedido_" + numeroPedido + "_";
-                            else
-                                prefijo += "Pedidos_";
-                            break;
-                        case "financiero":
-                            prefijo += "Financiero_";
-                            break;
-                        case "combustible":
-                            prefijo += "Combustible_";
-                            break;
-                        case "producto":
-                            prefijo += "Producto_";
-                            break;
-                        case "personalizado":
-                            prefijo += "Personalizado_";
-                            break;
-                        default:
-                            prefijo += "General_";
-                            break;
-                    }
-
-                    // Enviar al navegador
-                    string fileName = prefijo + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx";
-                    Response.Clear();
-                    Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                    Response.AddHeader("content-disposition", "attachment;filename=" + fileName);
-
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        workbook.SaveAs(ms);
-                        ms.Position = 0;
-                        Response.BinaryWrite(ms.ToArray());
-                        Response.End();
-                    }
-                }
+                Response.Clear();
+                Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                Response.AddHeader("content-disposition", "attachment;filename=" + fileName);
+                Response.BinaryWrite(archivo);
+                Response.End();
 
                 // Restaurar la paginación original
                 gvReporte.AllowPaging = paginacionOriginal;
@@ -659,13 +480,57 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                // Registrar error y mostrar error amigable
+                // Registrar el detalle y mostrar un mensaje genérico (no exponer ex.Message).
                 LogSGV.Error(ex, "Error al exportar a Excel en Reportes");
 
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorExport",
                     "alert('Ocurrió un error al exportar a Excel. Por favor, intente nuevamente.\\n" +
-                    "Si el problema persiste, contacte al administrador del sistema.\\n\\n" +
-                    "Detalle: " + ex.Message.Replace("'", "\\'") + "');", true);
+                    "Si el problema persiste, contacte al administrador del sistema.');", true);
+            }
+        }
+
+        /// <summary>
+        /// Copia encabezados y textos visibles de gvReporte (ya enlazado sin paginación) al DTO
+        /// del Excel. Se omiten las columnas de botones.
+        /// </summary>
+        private void LeerGrillaParaExcel(ReporteExcelDatos datos)
+        {
+            var indices = new List<int>();
+            for (int i = 0; i < gvReporte.Columns.Count; i++)
+            {
+                if (gvReporte.Columns[i] is ButtonField) continue;
+                datos.Encabezados.Add(gvReporte.Columns[i].HeaderText);
+                indices.Add(i);
+            }
+
+            foreach (GridViewRow row in gvReporte.Rows)
+            {
+                var fila = new List<string>();
+                foreach (int idx in indices)
+                {
+                    string valor = "";
+                    if (idx < row.Cells.Count)
+                    {
+                        TableCell celda = row.Cells[idx];
+                        if (celda.Controls.Count > 0)
+                        {
+                            foreach (System.Web.UI.Control control in celda.Controls)
+                            {
+                                if (control is Label lbl) valor = lbl.Text;
+                                else if (control is LinkButton lnk) valor = lnk.Text;
+                                else if (control is HyperLink hl) valor = hl.Text;
+                            }
+                        }
+                        else
+                        {
+                            valor = celda.Text;
+                        }
+                        // Decodificar HTML; Trim() también quita el &nbsp; ( ) de las celdas vacías
+                        valor = HttpUtility.HtmlDecode(valor).Trim();
+                    }
+                    fila.Add(valor);
+                }
+                datos.Filas.Add(fila);
             }
         }
         protected void btnExportarPDF_Click(object sender, EventArgs e)
@@ -686,6 +551,8 @@ namespace WebSGV.Views
         {
             try
             {
+                if (!ValidarFechas()) return;
+
                 // Asegurarnos que el panel de resultados esté visible
                 pnlResultados.Visible = true;
 
@@ -799,8 +666,25 @@ namespace WebSGV.Views
 
         // Variable a nivel de clase para guardar el recuento total
         private int _totalRegistros = 0;
+
+        // Rango de fechas ya validado (ValidarFechas) que usan todos los GenerarReporte*().
+        private DateTime _fechaDesde;
+        private DateTime _fechaHasta;
+
+        /// <summary>Valida txtFechaDesde/txtFechaHasta; si no son válidas avisa al usuario y devuelve false.</summary>
+        private bool ValidarFechas()
+        {
+            string error = ReporteFiltros.ValidarRangoFechas(txtFechaDesde.Text, txtFechaHasta.Text,
+                                                             out _fechaDesde, out _fechaHasta);
+            if (error == null) return true;
+            MostrarMensaje(error);
+            return false;
+        }
+
         private void GenerarReporte()
         {
+            if (!ValidarFechas()) return;
+
             string tipoReporte = ObtenerTipoReporteSeleccionado();
             string tipoReporteDetalle = ddlTipoReporteDetalle.SelectedValue;
 
@@ -1001,8 +885,8 @@ namespace WebSGV.Views
         // Implementamos el método para generar reportes de pedido
         private void GenerarReportePedido()
         {
-            DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-            DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+            DateTime fechaDesde = _fechaDesde;
+            DateTime fechaHasta = _fechaHasta;
             string numeroPedido = txtNumeroPedido.Text.Trim();
             string idCliente = ddlClientePedido.SelectedValue;
             string numeroFactura = txtNumeroFactura.Text.Trim();
@@ -1129,8 +1013,8 @@ namespace WebSGV.Views
 
         private void GenerarReporteVehiculosAsignados()
         {
-            DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-            DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+            DateTime fechaDesde = _fechaDesde;
+            DateTime fechaHasta = _fechaHasta;
             string numeroPedido = txtNumeroPedido.Text.Trim();
             string idCliente = ddlClientePedido.SelectedValue;
             string placaVehiculo = txtPlacaVehiculo.Text.Trim();
@@ -1260,8 +1144,8 @@ namespace WebSGV.Views
 
         private void GenerarReporteConductoresAsignados()
         {
-            DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-            DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+            DateTime fechaDesde = _fechaDesde;
+            DateTime fechaHasta = _fechaHasta;
             string numeroPedido = txtNumeroPedido.Text.Trim();
             string idCliente = ddlClientePedido.SelectedValue;
             string nombreConductor = txtNombreConductor.Text.Trim();
@@ -1402,8 +1286,8 @@ namespace WebSGV.Views
 
         private void GenerarReporteBalanceFinanciero()
         {
-            DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-            DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+            DateTime fechaDesde = _fechaDesde;
+            DateTime fechaHasta = _fechaHasta;
             string numeroPedido = txtNumeroPedido.Text.Trim();
             string idCliente = ddlClientePedido.SelectedValue;
             string tipoTransaccion = ddlTipoTransaccion.SelectedValue;
@@ -1504,7 +1388,7 @@ namespace WebSGV.Views
                 // Registrar el error y mostrar mensaje
                 LogSGV.Error(ex, "Error al generar el balance financiero en Reportes");
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorReporte",
-                    "alert('Error al generar el balance financiero: " + ex.Message.Replace("'", "\\'") + "');", true);
+                    "alert('Error al generar el balance financiero: " + System.Web.HttpUtility.JavaScriptStringEncode(ex.Message) + "');", true);
             }
         }
 
@@ -1529,8 +1413,8 @@ namespace WebSGV.Views
         //REPORTE VIAJE POR CONDUCTOR
         private void GenerarReporteViajesConductor()
         {
-            DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-            DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+            DateTime fechaDesde = _fechaDesde;
+            DateTime fechaHasta = _fechaHasta;
             string idConductor = ddlConductor.SelectedValue;
             string dniConductor = txtDNIConductor.Text;
             string nombreConductor = txtNombreConductor.Text;
@@ -1636,8 +1520,8 @@ namespace WebSGV.Views
 
         private void GenerarReporteProductosConductor()
         {
-            DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-            DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+            DateTime fechaDesde = _fechaDesde;
+            DateTime fechaHasta = _fechaHasta;
             string idConductor = ddlConductor.SelectedValue;
             string dniConductor = txtDNIConductor.Text;
             string nombreConductor = txtNombreConductor.Text;
@@ -1748,8 +1632,8 @@ namespace WebSGV.Views
 
         private void GenerarReporteFinancieroConductor()
         {
-            DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-            DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+            DateTime fechaDesde = _fechaDesde;
+            DateTime fechaHasta = _fechaHasta;
             string idConductor = ddlConductor.SelectedValue;
             string dniConductor = txtDNIConductor.Text;
             string nombreConductor = txtNombreConductor.Text;
@@ -1889,8 +1773,8 @@ namespace WebSGV.Views
         //rendimiento de combustible - reporte por conductor
         private void GenerarReporteCombustibleConductor()
         {
-            DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-            DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+            DateTime fechaDesde = _fechaDesde;
+            DateTime fechaHasta = _fechaHasta;
             string idConductor = ddlConductor.SelectedValue;
 
             try
@@ -2031,8 +1915,8 @@ namespace WebSGV.Views
 
         private void GenerarReporteViajesVehiculo()
         {
-            DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-            DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+            DateTime fechaDesde = _fechaDesde;
+            DateTime fechaHasta = _fechaHasta;
             string idVehiculo = ddlVehiculo.SelectedValue;
 
             try
@@ -2257,8 +2141,8 @@ namespace WebSGV.Views
 
         private void GenerarReporteConsumoCombustibleVehiculo()
         {
-            DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-            DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+            DateTime fechaDesde = _fechaDesde;
+            DateTime fechaHasta = _fechaHasta;
             string idVehiculo = ddlVehiculo.SelectedValue;
 
             try
@@ -2524,8 +2408,8 @@ namespace WebSGV.Views
         {
             try
             {
-                DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-                DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+                DateTime fechaDesde = _fechaDesde;
+                DateTime fechaHasta = _fechaHasta;
                 string idVehiculo = ddlVehiculo.SelectedValue;
                 string placaVehiculo = txtPlacaVehiculo.Text;
 
@@ -2746,8 +2630,8 @@ namespace WebSGV.Views
         {
             try
             {
-                DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-                DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+                DateTime fechaDesde = _fechaDesde;
+                DateTime fechaHasta = _fechaHasta;
                 string idVehiculo = ddlVehiculo.SelectedValue;
                 string placaVehiculo = txtPlacaVehiculo.Text;
                 string marcaVehiculo = ddlMarcaVehiculo.SelectedValue;
@@ -3035,8 +2919,8 @@ namespace WebSGV.Views
 
         private void GenerarReporteProductosMasTransportados()
         {
-            DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-            DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+            DateTime fechaDesde = _fechaDesde;
+            DateTime fechaHasta = _fechaHasta;
             string idProducto = ddlProducto.SelectedValue;
 
             try
@@ -3134,8 +3018,8 @@ namespace WebSGV.Views
         ////reportes por producto - GenerarReporteProductosPorCliente
         private void GenerarReporteProductosPorCliente()
         {
-            DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-            DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+            DateTime fechaDesde = _fechaDesde;
+            DateTime fechaHasta = _fechaHasta;
             string idCliente = ddlClienteProducto.SelectedValue; // Corregido: usar ddlClienteProducto en lugar de ddlCliente
             string idProducto = ddlProducto.SelectedValue;
 
@@ -3246,8 +3130,8 @@ namespace WebSGV.Views
 
         private void GenerarReporteProductosPorDestino()
         {
-            DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-            DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+            DateTime fechaDesde = _fechaDesde;
+            DateTime fechaHasta = _fechaHasta;
             string idProducto = ddlProducto.SelectedValue;
             string idPlanta = ddlPlantaDescarga.SelectedValue;
 
@@ -3355,8 +3239,8 @@ namespace WebSGV.Views
 
         private void GenerarReporteConsumoGeneralCombustible()
         {
-            DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-            DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+            DateTime fechaDesde = _fechaDesde;
+            DateTime fechaHasta = _fechaHasta;
 
             try
             {
@@ -3560,8 +3444,8 @@ namespace WebSGV.Views
         {
             try
             {
-                DateTime fechaDesde = DateTime.Parse(txtFechaDesde.Text);
-                DateTime fechaHasta = DateTime.Parse(txtFechaHasta.Text);
+                DateTime fechaDesde = _fechaDesde;
+                DateTime fechaHasta = _fechaHasta;
                 string tipoTransaccion = ddlTipoTransaccion.SelectedValue;
 
                 {
@@ -3647,7 +3531,7 @@ namespace WebSGV.Views
                 }
                 System.Diagnostics.Debug.WriteLine(errorMessage);
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorAlert",
-                    $"alert('{errorMessage.Replace("'", "\\'")}');", true);
+                    $"alert('{System.Web.HttpUtility.JavaScriptStringEncode(errorMessage)}');", true);
             }
         }
 
@@ -3655,7 +3539,7 @@ namespace WebSGV.Views
         private void MostrarMensaje(string mensaje)
         {
             ScriptManager.RegisterStartupScript(this, GetType(), "errorAlert",
-                $"alert('{mensaje.Replace("'", "\\'")}');", true);
+                $"alert('{System.Web.HttpUtility.JavaScriptStringEncode(mensaje)}');", true);
         }
 
 
@@ -3835,8 +3719,8 @@ namespace WebSGV.Views
             try
             {
                 // Obtener los valores de los filtros desde la interfaz
-                DateTime fechaDesde = Convert.ToDateTime(txtFechaDesde.Text);
-                DateTime fechaHasta = Convert.ToDateTime(txtFechaHasta.Text);
+                DateTime fechaDesde = _fechaDesde;
+                DateTime fechaHasta = _fechaHasta;
 
                 // Valor del desplegable de lugar de abastecimiento
                 int? idLugarAbastecimiento = null;
@@ -4044,8 +3928,8 @@ namespace WebSGV.Views
             try
             {
                 // Obtener los valores de los filtros desde la interfaz
-                DateTime fechaDesde = Convert.ToDateTime(txtFechaDesde.Text);
-                DateTime fechaHasta = Convert.ToDateTime(txtFechaHasta.Text);
+                DateTime fechaDesde = _fechaDesde;
+                DateTime fechaHasta = _fechaHasta;
 
                 // Valor del desplegable de lugar de abastecimiento
                 int? idLugarAbastecimiento = null;

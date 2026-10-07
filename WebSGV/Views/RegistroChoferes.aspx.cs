@@ -246,19 +246,28 @@ namespace WebSGV.Views
             }
         }
 
-        [WebMethod]
+        [WebMethod(EnableSession = true)]
         public static DniResponse BuscarPorDNI(string numero)
         {
+            // Los WebMethods no pasan por Page_Load: sin esto era un proxy público de consultas DNI.
+            if (!SecurityHelper.TieneSesionActiva() || !RolesHelper.TienePermiso("REGISTRO_CONDUCTORES"))
+                return new DniResponse { error = true, message = "Acceso no autorizado." };
+
+            // El DNI peruano son 8 dígitos; evita inyectar parámetros en la URL de la API externa.
+            if (string.IsNullOrWhiteSpace(numero) || !System.Text.RegularExpressions.Regex.IsMatch(numero.Trim(), "^[0-9]{8}$"))
+                return new DniResponse { error = true, message = "El DNI debe tener 8 dígitos." };
+
             try
             {
-                return DniService.ConsultarPorDNI(numero);
+                return DniService.ConsultarPorDNI(numero.Trim());
             }
             catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al consultar el DNI");
                 return new DniResponse
                 {
                     error = true,
-                    message = "Error interno: " + ex.Message
+                    message = "No se pudo consultar el DNI. Intente nuevamente."
                 };
             }
         }

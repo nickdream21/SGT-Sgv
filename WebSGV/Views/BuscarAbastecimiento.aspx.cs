@@ -878,7 +878,7 @@ namespace WebSGV.Views
             // Asegurar que el mensaje sea visible en el cliente
             ScriptManager.RegisterStartupScript(this, this.GetType(),
                 "MostrarMensaje_" + DateTime.Now.Ticks,
-                $"console.log('Mensaje: {mensaje}');", true);
+                $"console.log('Mensaje: {System.Web.HttpUtility.JavaScriptStringEncode(mensaje)}');", true);
         }
     }
 

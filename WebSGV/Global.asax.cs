@@ -59,15 +59,16 @@ namespace WebSGV
                     return;
                 }
 
-                // Guardar la excepción REAL en Application (estado global) para que Error.aspx
-                // pueda recuperarla incluso cuando IIS ejecute Error.aspx en un sub-request donde
-                // Server.GetLastError() retornaría null.
+                // Guardar la excepción REAL en Application para que Error.aspx pueda recuperarla
+                // incluso cuando IIS ejecute Error.aspx en un sub-request donde
+                // Server.GetLastError() retornaría null. La clave es por sesión: antes existía
+                // una clave global "LastError_LastKey" y cualquier visitante veía el último
+                // error de otro usuario.
                 try
                 {
-                    string key = "LastError_" + (HttpContext.Current?.Session?.SessionID
-                                                 ?? Guid.NewGuid().ToString());
-                    Application["LastError_LastKey"] = key;
-                    Application[key] = real;
+                    string sessionId = HttpContext.Current?.Session?.SessionID;
+                    if (!string.IsNullOrEmpty(sessionId))
+                        Application["LastError_" + sessionId] = real;
                 }
                 catch { /* nunca dejar reventar Application_Error */ }
             }

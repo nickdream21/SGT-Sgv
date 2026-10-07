@@ -169,8 +169,8 @@
                                 <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-3">
                                     <div class="position-relative">
                                         <asp:Label ID="lblMensaje" runat="server" CssClass="alert d-block mb-0 pe-5"></asp:Label>
-                                        <button type="button" class="btn-close position-absolute" style="top:.65rem;right:.75rem;"
-                                            onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"></button>
+                                        <button type="button" class="close position-absolute" style="top:.65rem;right:.75rem;"
+                                            onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                                     </div>
                                 </asp:Panel>
 

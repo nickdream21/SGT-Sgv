@@ -170,7 +170,7 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine("Error al cargar reporte: " + ex.Message);
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorReporte",
-                    "alert('Error al cargar el reporte: " + ex.Message.Replace("'", "\\'").Replace("\r", "").Replace("\n", " ") + "');", true);
+                    "alert('Error al cargar el reporte: " + System.Web.HttpUtility.JavaScriptStringEncode(ex.Message) + "');", true);
                 pnlReporte.Visible      = false;
                 pnlResumen.Visible      = false;
                 pnlSinResultados.Visible = true;
@@ -354,7 +354,7 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine("Error al exportar Excel: " + ex.Message);
                 ScriptManager.RegisterStartupScript(this, GetType(), "errorExport",
-                    "alert('Error al exportar: " + ex.Message.Replace("'", "\\'").Replace("\r", "").Replace("\n", " ") + "');", true);
+                    "alert('Error al exportar: " + System.Web.HttpUtility.JavaScriptStringEncode(ex.Message) + "');", true);
             }
         }
 

@@ -188,7 +188,7 @@ namespace WebSGV.Views
 
                 // Mostrar mensaje de error
                 ScriptManager.RegisterStartupScript(this, GetType(), "ErrorAlert",
-                    $"alert('Error al cargar datos: {ex.Message.Replace("'", "\\'")}');", true);
+                    $"alert('Error al cargar datos: {System.Web.HttpUtility.JavaScriptStringEncode(ex.Message)}');", true);
             }
         }
         protected void btnDiagnostico_Click(object sender, EventArgs e)
@@ -267,7 +267,7 @@ namespace WebSGV.Views
             {
                 System.Diagnostics.Debug.WriteLine($"ERROR DIAGNÓSTICO: {ex.Message}");
                 ScriptManager.RegisterStartupScript(this, GetType(), "AlertError",
-                    $"alert('Error en diagnóstico: {ex.Message}');", true);
+                    $"alert('Error en diagnóstico: {System.Web.HttpUtility.JavaScriptStringEncode(ex.Message)}');", true);
             }
         }
 

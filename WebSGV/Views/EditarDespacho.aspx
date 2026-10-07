@@ -401,7 +401,7 @@
                 <div class="alert alert-dismissible fade show" role="alert" id="divMensaje" runat="server"
                     style="border-radius: 12px; box-shadow: 0 6px 25px rgba(0,0,0,0.1);">
                     <asp:Literal ID="litMensaje" runat="server"></asp:Literal>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                 </div>
             </asp:Panel>
 

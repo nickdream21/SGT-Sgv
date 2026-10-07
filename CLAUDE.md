@@ -59,7 +59,7 @@ Cookie: `SGV_SessionId`, 30-minute timeout, `HttpOnly`, `SameSite=Lax`.
 
 Two overlapping helpers exist — prefer `SecurityHelper` (newer) for new code:
 
-- `WebSGV/WebSGV/Helpers/SecurityHelper.cs` — `ExigirSesion()`, `ExigirRolAdmin()`, `ExigirRolAdminOSupervisor()`, `ExigirRolAdminOGrifo()`, plus `AgregarHeadersSeguridad()`.
+- `WebSGV/Helpers/SecurityHelper.cs` — `ExigirSesion()`, `ExigirRolAdmin()`, `ExigirRolAdminOSupervisor()`, `ExigirRolAdminOGrifo()`, plus `AgregarHeadersSeguridad()`. The guards end the response (`Response.Redirect(url, true)`); keep them at the top of `Page_Load`, outside any `try`. `[WebMethod]`s skip `Page_Load`, so each one must check session/role itself (`EnableSession = true`).
 - `WebSGV/Views/RolesHelper.cs` (namespace `WebSGV.Helpers`) — `ValidarAccesoSeccion(seccion)`, `TienePermiso(seccion)`.
 
 Role constants (always compare `.ToUpper().Trim()`):
@@ -113,11 +113,15 @@ PDFs use **QuestPDF 2026.5.0** (Community license, set in `Global.asax.cs` and i
 
 SQL Server hosted on somee.com. Schema and stored procedures are tracked as `.sql` files in `WebSGV/Database/` but **are not auto-applied**:
 
-- `Database/Schema/` — DDL migrations numbered `01_`, `02_`, ... apply in order.
-- `Database/StoredProcedures/` — one file per proc; naming convention: `sp_DC_*` (Dashboard Conductor), `sp_LD_*` (Liquidaciones), `sp_MQ_*` (Maquinaria), `sp_SE_*` (Seguimiento Exportación), etc.
+- `Database/Schema/` — DDL migrations numbered `01_`, `02_`, ... Apply them with `Database/aplicar-migraciones.ps1 -Entorno pruebas|produccion` (add `-SoloListar` for a dry run; production also needs `-ConfirmoProduccion`). It runs the pending ones in order and records each in `dbo.SchemaVersion` (created by `00_ControlMigraciones.sql`). Migrations must be idempotent (`IF COL_LENGTH/OBJECT_ID ...`); never edit an applied one — add a new number.
+- `Database/StoredProcedures/` — one file per proc (`CREATE OR ALTER`); naming convention: `sp_DC_*` (Dashboard Conductor), `sp_LD_*` (Liquidaciones), `sp_MQ_*` (Maquinaria), `sp_SE_*` (Seguimiento Exportación), etc. Every `sp_*` called from C# should have its file here.
 - `Database/Scripts/` — ad-hoc migration / diagnostic scripts.
 
-Any new SP must be executed manually against the DB (SSMS / sqlcmd) before calling code will work.
+Any new SP must be executed manually against the DB (SSMS / sqlcmd) before calling code will work. With sqlcmd against somee use `-C -I -f 65001` (trust cert, QUOTED_IDENTIFIER for filtered indexes, UTF-8 for ñ).
+
+### Front-end libraries
+
+`Site.Master` loads jQuery 3.6.4 → Popper → Bootstrap **4.6.2** → jQuery UI once, in `<head>`. Pages must NOT load jQuery/Bootstrap again (a second jQuery replaces `$` and drops `.modal()`, `.datepicker()`, `.dropdown()`), and must use Bootstrap 4 syntax (`data-toggle`, `data-dismiss`, `class="close"`), not Bootstrap 5 (`data-bs-*`, `btn-close`). The ScriptManager `"jquery"` resource (unobtrusive validation) maps to `Scripts/jquery-si-falta.js`, which only loads jQuery if missing.
 
 ## Adding a New Page
 

@@ -12,8 +12,7 @@ namespace WebSGV.Views
         {
             if (!RolesHelper.EsAdminMaquinaria() && !RolesHelper.EsAdmin())
             {
-                Response.Redirect("~/Views/Login.aspx", false);
-                Context.ApplicationInstance.CompleteRequest();
+                Response.Redirect("~/Views/Login.aspx", true);
                 return;
             }
 
