@@ -465,7 +465,7 @@ namespace WebSGV.Views
                     SET activo=0, fechaEliminacion=@fechaEliminacion, usuarioEliminacion=@usuarioEliminacion
                     WHERE idDocumento=@idDocumento",
                     DbHelper.Param("@idDocumento",         idDocumento),
-                    DbHelper.Param("@fechaEliminacion",    DateTime.Now),
+                    DbHelper.Param("@fechaEliminacion",    FechaHelper.Ahora()),
                     DbHelper.Param("@usuarioEliminacion",  ObtenerUsuarioActual()));
 
                 if (rows > 0)
@@ -612,12 +612,12 @@ namespace WebSGV.Views
                 string extension = Path.GetExtension(nombreOriginal).ToLower();
 
                 // Generar nombre único para el archivo
-                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string timestamp = FechaHelper.Ahora().ToString("yyyyMMdd_HHmmss");
                 string nombreArchivo = $"CPIC_{DocumentoHelper.NombreSeguro(numeroCPIC)}_{timestamp}{extension}";
 
                 // Crear ruta de destino
-                string carpetaAno = DateTime.Now.Year.ToString();
-                string carpetaMes = DateTime.Now.ToString("MM");
+                string carpetaAno = FechaHelper.Ahora().Year.ToString();
+                string carpetaMes = FechaHelper.Ahora().ToString("MM");
                 string rutaCarpeta = Server.MapPath($"~/Uploads/CPIC/{carpetaAno}/{carpetaMes}/");
 
                 // Crear directorios si no existen
@@ -662,7 +662,7 @@ namespace WebSGV.Views
                 DbHelper.Param("@rutaArchivo",     docInfo.RutaCompleta),
                 DbHelper.Param("@tipoArchivo",     docInfo.TipoArchivo),
                 DbHelper.Param("@tamanoBytes",     docInfo.TamanoBytes),
-                DbHelper.Param("@fechaSubida",     DateTime.Now),
+                DbHelper.Param("@fechaSubida",     FechaHelper.Ahora()),
                 DbHelper.Param("@usuarioSubida",   ObtenerUsuarioActual()),
                 DbHelper.Param("@descripcion",     (object)docInfo.Descripcion ?? DBNull.Value));
         }
@@ -678,13 +678,13 @@ namespace WebSGV.Views
                 }
 
                 // Crear carpetas del año y mes actual
-                string carpetaAno = Path.Combine(carpetaBase, DateTime.Now.Year.ToString());
+                string carpetaAno = Path.Combine(carpetaBase, FechaHelper.Ahora().Year.ToString());
                 if (!Directory.Exists(carpetaAno))
                 {
                     Directory.CreateDirectory(carpetaAno);
                 }
 
-                string carpetaMes = Path.Combine(carpetaAno, DateTime.Now.ToString("MM"));
+                string carpetaMes = Path.Combine(carpetaAno, FechaHelper.Ahora().ToString("MM"));
                 if (!Directory.Exists(carpetaMes))
                 {
                     Directory.CreateDirectory(carpetaMes);

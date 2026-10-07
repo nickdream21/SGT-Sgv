@@ -21,7 +21,7 @@ BEGIN
         UPDATE OrdenViaje
         SET
             estadoAprobacion      = 'APROBADO',
-            fechaAprobacion       = GETDATE(),
+            fechaAprobacion       = dbo.fn_AhoraPeru(),
             idUsuarioAprobacion   = @idUsuarioAprobacion,
             observacionesAprobacion = @observaciones,
             estadoViaje           = 'COMPLETADO'

@@ -30,8 +30,8 @@ namespace WebSGV.Views
 
             if (!IsPostBack)
             {
-                txtFechaDesde.Text = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).ToString("yyyy-MM-dd");
-                txtFechaHasta.Text = DateTime.Now.ToString("yyyy-MM-dd");
+                txtFechaDesde.Text = new DateTime(FechaHelper.Ahora().Year, FechaHelper.Ahora().Month, 1).ToString("yyyy-MM-dd");
+                txtFechaHasta.Text = FechaHelper.Ahora().ToString("yyyy-MM-dd");
                 CargarReporte();
             }
         }
@@ -188,8 +188,8 @@ namespace WebSGV.Views
 
         protected void btnLimpiar_Click(object sender, EventArgs e)
         {
-            txtFechaDesde.Text = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).ToString("yyyy-MM-dd");
-            txtFechaHasta.Text = DateTime.Now.ToString("yyyy-MM-dd");
+            txtFechaDesde.Text = new DateTime(FechaHelper.Ahora().Year, FechaHelper.Ahora().Month, 1).ToString("yyyy-MM-dd");
+            txtFechaHasta.Text = FechaHelper.Ahora().ToString("yyyy-MM-dd");
             txtBuscarConductor.Text      = "";
             ddlTipoAbastecimiento.SelectedIndex = 0;
             pnlReporte.Visible      = false;
@@ -220,7 +220,7 @@ namespace WebSGV.Views
                 Response.Buffer = true;
                 Response.ClearHeaders();
                 Response.ContentType = "application/vnd.ms-excel";
-                string fileName = $"Reporte_Abastecimiento_{DateTime.Now:yyyyMMdd_HHmm}.xls";
+                string fileName = $"Reporte_Abastecimiento_{FechaHelper.Ahora():yyyyMMdd_HHmm}.xls";
                 Response.AddHeader("content-disposition", "attachment;filename=" + fileName);
                 Response.Charset = "";
                 Response.ContentEncoding = Encoding.UTF8;
@@ -241,7 +241,7 @@ namespace WebSGV.Views
                         hw.Write("<td colspan='18' style='background-color:#f0f7ff;font-size:10px;text-align:center;padding:6px;'>");
                         string rangoFechas = (!string.IsNullOrEmpty(fechaDesde) && !string.IsNullOrEmpty(fechaHasta))
                             ? $"Periodo: {DateTime.Parse(fechaDesde):dd/MM/yyyy} al {DateTime.Parse(fechaHasta):dd/MM/yyyy}"
-                            : $"Generado el: {DateTime.Now:dd/MM/yyyy HH:mm}";
+                            : $"Generado el: {FechaHelper.Ahora():dd/MM/yyyy HH:mm}";
                         hw.Write(rangoFechas);
                         hw.Write("</td></tr>");
 

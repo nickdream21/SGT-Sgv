@@ -27,8 +27,8 @@ namespace WebSGV.Views
             if (!IsPostBack)
             {
                 // Establecer fechas predeterminadas (último mes)
-                txtFechaDesde.Text = DateTime.Now.AddMonths(-1).ToString("yyyy-MM-dd");
-                txtFechaHasta.Text = DateTime.Now.ToString("yyyy-MM-dd");
+                txtFechaDesde.Text = FechaHelper.Ahora().AddMonths(-1).ToString("yyyy-MM-dd");
+                txtFechaHasta.Text = FechaHelper.Ahora().ToString("yyyy-MM-dd");
 
                 // Cargar datos iniciales en los dropdown
                 CargarConductores();
@@ -298,8 +298,8 @@ namespace WebSGV.Views
         protected void btnLimpiarFiltros_Click(object sender, EventArgs e)
         {
             // Limpiar todos los filtros
-            txtFechaDesde.Text = DateTime.Now.AddMonths(-1).ToString("yyyy-MM-dd");
-            txtFechaHasta.Text = DateTime.Now.ToString("yyyy-MM-dd");
+            txtFechaDesde.Text = FechaHelper.Ahora().AddMonths(-1).ToString("yyyy-MM-dd");
+            txtFechaHasta.Text = FechaHelper.Ahora().ToString("yyyy-MM-dd");
 
             // Restablecer dropdowns a su valor inicial
             if (ddlConductor.Items.Count > 0) ddlConductor.SelectedIndex = 0;

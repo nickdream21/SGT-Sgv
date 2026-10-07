@@ -139,7 +139,7 @@ namespace WebSGV.Views
                 string dir = HostingEnvironment.MapPath("~/App_Data/logs");
                 if (string.IsNullOrEmpty(dir)) return;
                 if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-                string linea = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + ex + Environment.NewLine +
+                string linea = "[" + FechaHelper.Ahora().ToString("yyyy-MM-dd HH:mm:ss") + "] " + ex + Environment.NewLine +
                                new string('-', 80) + Environment.NewLine;
                 File.AppendAllText(Path.Combine(dir, "pdf-abastecimiento.log"), linea);
             }
@@ -305,7 +305,7 @@ namespace WebSGV.Views
                 {
                     if (tieneRuta)  cmd.Parameters.AddWithValue("@ruta",  (object)rutaRelativa ?? DBNull.Value);
                     if (tieneHash)  cmd.Parameters.AddWithValue("@hash",  (object)hash ?? DBNull.Value);
-                    if (tieneFecha) cmd.Parameters.AddWithValue("@fecha", DateTime.Now);
+                    if (tieneFecha) cmd.Parameters.AddWithValue("@fecha", FechaHelper.Ahora());
                     cmd.Parameters.AddWithValue("@id", idAbast);
                     cmd.ExecuteNonQuery();
                 }

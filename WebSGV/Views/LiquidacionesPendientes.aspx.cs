@@ -838,7 +838,7 @@ namespace WebSGV.Views
                 DateTime llegadaCompleta = fechaLlegada.Date + horaLlegada;
                 if (salidaCompleta > llegadaCompleta)
                     return new { success = false, message = "La fecha/hora de salida no puede ser posterior a la de llegada." };
-                if (salidaCompleta > DateTime.Now)
+                if (salidaCompleta > FechaHelper.Ahora())
                     return new { success = false, message = "La fecha/hora de salida no puede estar en el futuro." };
 
                 int afectadas = LiquidacionesPendientesService.CorregirSalidaPendiente(idOrdenViaje, nuevaFecha, nuevaHora);
@@ -1236,7 +1236,7 @@ namespace WebSGV.Views
         }
 
         private static bool TryParseFechaFiltro(string fechaTexto, out DateTime? fecha) =>
-            LiquidacionCalculos.TryParseFechaFiltro(fechaTexto, DateTime.Today, out fecha);
+            LiquidacionCalculos.TryParseFechaFiltro(fechaTexto, FechaHelper.Hoy(), out fecha);
 
         private static string NormalizarTexto(string texto, int maximo) =>
             LiquidacionCalculos.NormalizarTexto(texto, maximo);

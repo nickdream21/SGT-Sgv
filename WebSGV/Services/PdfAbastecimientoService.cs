@@ -333,7 +333,7 @@ namespace WebSGV.Services
         {
             var constancia = "Documento generado electrónicamente por el Sistema de Gestión de Viajes (SGV). " +
                              "Reemplaza al talonario físico bajo el formato controlado SGV-CDF-F-06. " +
-                             "Fecha de emisión: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm") + ".";
+                             "Fecha de emisión: " + FechaHelper.Ahora().ToString("dd/MM/yyyy HH:mm") + ".";
 
             cont.Column(col =>
             {
@@ -370,7 +370,7 @@ namespace WebSGV.Services
             cont.PaddingTop(6).AlignCenter().Text(t =>
             {
                 t.DefaultTextStyle(s => s.FontSize(7.5f).FontColor(GRIS_SECUND));
-                t.Span(codigo + " v" + ver + "   |   Generado el " + DateTime.Now.ToString("dd/MM/yyyy HH:mm") + "   |   Pág. ");
+                t.Span(codigo + " v" + ver + "   |   Generado el " + FechaHelper.Ahora().ToString("dd/MM/yyyy HH:mm") + "   |   Pág. ");
                 t.CurrentPageNumber();
             });
         }
@@ -386,7 +386,7 @@ namespace WebSGV.Services
             string raiz = HostingEnvironment.MapPath("~/App_Data/Abastecimientos")
                           ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "App_Data", "Abastecimientos");
 
-            var hoy = DateTime.Now;
+            var hoy = FechaHelper.Ahora();
             string carpeta = Path.Combine(raiz,
                 hoy.Year.ToString("0000"),
                 hoy.Month.ToString("00"));

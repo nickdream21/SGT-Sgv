@@ -22,8 +22,8 @@ namespace WebSGV.Views
 
             if (!IsPostBack)
             {
-                txtFechaDesde.Text = DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd");
-                txtFechaHasta.Text = DateTime.Now.ToString("yyyy-MM-dd");
+                txtFechaDesde.Text = FechaHelper.Ahora().AddDays(-30).ToString("yyyy-MM-dd");
+                txtFechaHasta.Text = FechaHelper.Ahora().ToString("yyyy-MM-dd");
 
                 CargarFiltroTablas();
                 CargarEstadisticas();
@@ -59,8 +59,8 @@ namespace WebSGV.Views
                 DataTable dt = DbHelper.ConsultarTabla(@"
                     SELECT
                         (SELECT COUNT(*) FROM AuditoriaLog) AS TotalRegistros,
-                        (SELECT COUNT(*) FROM AuditoriaLog WHERE CAST(FechaHora AS DATE) = CAST(GETDATE() AS DATE)) AS RegistrosHoy,
-                        (SELECT COUNT(DISTINCT NombreUsuario) FROM AuditoriaLog WHERE FechaHora >= DATEADD(DAY, -7, GETDATE())) AS UsuariosActivos,
+                        (SELECT COUNT(*) FROM AuditoriaLog WHERE CAST(FechaHora AS DATE) = CAST(dbo.fn_AhoraPeru() AS DATE)) AS RegistrosHoy,
+                        (SELECT COUNT(DISTINCT NombreUsuario) FROM AuditoriaLog WHERE FechaHora >= DATEADD(DAY, -7, dbo.fn_AhoraPeru())) AS UsuariosActivos,
                         (SELECT COUNT(DISTINCT TablaAfectada) FROM AuditoriaLog) AS TablasAfectadas");
 
                 if (dt.Rows.Count > 0)
@@ -159,7 +159,7 @@ namespace WebSGV.Views
 
                 Response.Clear();
                 Response.Buffer = true;
-                Response.AddHeader("content-disposition", $"attachment;filename=Auditoria_{DateTime.Now:yyyyMMdd_HHmmss}.xls");
+                Response.AddHeader("content-disposition", $"attachment;filename=Auditoria_{FechaHelper.Ahora():yyyyMMdd_HHmmss}.xls");
                 Response.Charset = "";
                 Response.ContentType = "application/vnd.ms-excel";
                 Response.ContentEncoding = Encoding.UTF8;

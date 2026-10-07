@@ -15,7 +15,7 @@ BEGIN
 
     UPDATE SeguimientoExportacion
     SET activo                = 0,
-        fechaModificacion     = GETDATE(),
+        fechaModificacion     = dbo.fn_AhoraPeru(),
         idUsuarioModificacion = @idUsuarioModificacion
     WHERE idSeguimiento = @idSeguimiento;
 END

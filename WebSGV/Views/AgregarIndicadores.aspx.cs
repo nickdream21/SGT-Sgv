@@ -20,7 +20,7 @@ namespace WebSGV.Views
 
         private void SetDefaultDates()
         {
-            string today = DateTime.Now.ToString("yyyy-MM-dd");
+            string today = FechaHelper.Ahora().ToString("yyyy-MM-dd");
 
             txtFHSBase_Date.Text = today;
             txtFHLLTrujillo_Date.Text = today;

@@ -25,7 +25,7 @@ BEGIN
         @numeroOrdenViaje, @fechaSalida, @horaSalida, @fechaLlegada, @horaLlegada, @horaLlegadaDeclarada,
         @idConductor, @idTracto, @idCarreta, @observaciones,
         'PENDIENTE', 'NACIONAL', @idViajeProgreso,
-        'CONDUCTOR', @idUsuarioRegistro, 'PENDIENTE', GETDATE()
+        'CONDUCTOR', @idUsuarioRegistro, 'PENDIENTE', dbo.fn_AhoraPeru()
     );
 
     SELECT SCOPE_IDENTITY() AS idOrdenViaje;

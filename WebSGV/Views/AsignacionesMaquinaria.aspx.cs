@@ -21,7 +21,7 @@ namespace WebSGV.Views
             if (!IsPostBack)
             {
                 CargarDropdowns();
-                txtFechaAsignacion.Text = DateTime.Now.ToString("yyyy-MM-dd");
+                txtFechaAsignacion.Text = FechaHelper.Ahora().ToString("yyyy-MM-dd");
                 CargarAsignaciones();
             }
         }
@@ -145,7 +145,7 @@ namespace WebSGV.Views
                 try
                 {
                     DbHelper.EjecutarNonQuery(
-                        @"UPDATE AsignacionesMaquinaria SET estado = 'FINALIZADA', fechaFinAsignacion = GETDATE()
+                        @"UPDATE AsignacionesMaquinaria SET estado = 'FINALIZADA', fechaFinAsignacion = dbo.fn_AhoraPeru()
                           WHERE idAsignacion = @id AND estado = 'ACTIVA'",
                         DbHelper.Param("@id", idAsignacion));
 
@@ -179,7 +179,7 @@ namespace WebSGV.Views
             ddlOperador.SelectedIndex = 0;
             ddlEquipo.SelectedIndex = 0;
             ddlObra.SelectedIndex = 0;
-            txtFechaAsignacion.Text = DateTime.Now.ToString("yyyy-MM-dd");
+            txtFechaAsignacion.Text = FechaHelper.Ahora().ToString("yyyy-MM-dd");
             txtObservaciones.Text = string.Empty;
         }
 

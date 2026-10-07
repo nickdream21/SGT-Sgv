@@ -56,9 +56,9 @@ BEGIN
         UPDATE ViajesEnProgreso
         SET estadoViaje          = 'ABIERTO',
             fechaCierre          = NULL,
-            fechaUltimaActividad = GETDATE(),
+            fechaUltimaActividad = dbo.fn_AhoraPeru(),
             observacionesCierre  = LEFT(CONCAT('Reabierto por ', ISNULL(@usuario, 'Sistema'), ' el ',
-                                   CONVERT(VARCHAR(16), GETDATE(), 120)), 500)
+                                   CONVERT(VARCHAR(16), dbo.fn_AhoraPeru(), 120)), 500)
         WHERE idViajeProgreso = @idViajeProgreso
           AND estadoViaje = 'CERRADO';
 
@@ -71,7 +71,7 @@ BEGIN
 
         UPDATE Despachos
         SET estadoDespacho    = 'PROGRAMADO',
-            fechaModificacion = GETDATE()
+            fechaModificacion = dbo.fn_AhoraPeru()
         WHERE idViajeProgreso = @idViajeProgreso
           AND activo = 1;
 

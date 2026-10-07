@@ -244,7 +244,7 @@ namespace WebSGV.Services
                     c.Item().AlignRight().Text("N.° DE ORDEN").Bold().FontSize(8).FontColor(GRIS_SECUND);
                     c.Item().Border(1.2f).BorderColor(ROJO_CORP).Background(Colors.White).Padding(5)
                         .AlignCenter().Text(numero).Bold().FontSize(15).FontColor(ROJO_CORP);
-                    c.Item().AlignRight().Text("Emitido: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm"))
+                    c.Item().AlignRight().Text("Emitido: " + FechaHelper.Ahora().ToString("dd/MM/yyyy HH:mm"))
                         .FontSize(8).FontColor(GRIS_SECUND);
                 });
             });
@@ -521,7 +521,7 @@ namespace WebSGV.Services
                                 rolTexto: "Administrador de Transporte",
                                 metaTexto: !string.IsNullOrWhiteSpace(fechaAprobacionAdmin)
                                     ? ("Aprobado el " + fechaAprobacionAdmin)
-                                    : ("Aprobado el " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"))));
+                                    : ("Aprobado el " + FechaHelper.Ahora().ToString("dd/MM/yyyy HH:mm:ss"))));
                         });
                     }
                     else
@@ -557,7 +557,7 @@ namespace WebSGV.Services
                     nombre: conductor,
                     rolTexto: "Conductor",
                     metaTexto: firmaPng != null
-                        ? ("Firmado electrónicamente el " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"))
+                        ? ("Firmado electrónicamente el " + FechaHelper.Ahora().ToString("dd/MM/yyyy HH:mm:ss"))
                         : "Firma pendiente de registro digital"));
             });
         }
@@ -619,7 +619,7 @@ namespace WebSGV.Services
         private string ArchivarEnDisco(string numeroOrden, byte[] bytes)
         {
             string baseDir = EmpresaConfigHelper.ObtenerRutaArchivoOrdenesViaje();
-            var ahora = DateTime.Now;
+            var ahora = FechaHelper.Ahora();
             string subDir = Path.Combine(baseDir, ahora.Year.ToString("0000"), ahora.Month.ToString("00"));
             if (!Directory.Exists(subDir)) Directory.CreateDirectory(subDir);
 

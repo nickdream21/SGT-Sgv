@@ -431,7 +431,7 @@ namespace WebSGV.Services.GpsIntegracion
                 parametros.Add(DbHelper.Param("@rama", rama));
             }
 
-            sets.Add("fechaModificacion = GETDATE()");
+            sets.Add("fechaModificacion = dbo.fn_AhoraPeru()");
 
             string sql = $"UPDATE SeguimientoExportacion SET {string.Join(", ", sets)} WHERE idSeguimiento = @id";
             parametros.Add(DbHelper.Param("@id", idSeguimiento));

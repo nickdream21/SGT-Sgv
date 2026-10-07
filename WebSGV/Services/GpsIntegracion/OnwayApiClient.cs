@@ -125,11 +125,31 @@ namespace WebSGV.Services.GpsIntegracion
         {
             if (!forzarRefresco)
             {
-                var cacheExistente = OnwayAuthCacheService.Obtener();
-                if (cacheExistente != null && cacheExistente.TokenExpiraEn > DateTime.UtcNow.AddMinutes(10))
-                    return cacheExistente.AccessToken;
+                string vigente = TokenVigenteEnCache();
+                if (vigente != null) return vigente;
             }
 
+            // Solo un request a la vez renueva (ver OnwayAuthCacheService.ConBloqueoDeRenovacion).
+            return OnwayAuthCacheService.ConBloqueoDeRenovacion(() =>
+            {
+                // Mientras esperábamos el bloqueo, otro request pudo haber renovado: reusar.
+                if (!forzarRefresco)
+                {
+                    string renovadoPorOtro = TokenVigenteEnCache();
+                    if (renovadoPorOtro != null) return renovadoPorOtro;
+                }
+                return SolicitarTokenNuevo();
+            });
+        }
+
+        private static string TokenVigenteEnCache()
+        {
+            var cache = OnwayAuthCacheService.Obtener();
+            return cache != null && cache.TokenExpiraEn > DateTime.UtcNow.AddMinutes(10) ? cache.AccessToken : null;
+        }
+
+        private static string SolicitarTokenNuevo()
+        {
             string clientId = ConfigurationManager.AppSettings["OnwayAuth0ClientId"];
             string clientSecret = ConfigurationManager.AppSettings["OnwayAuth0ClientSecret"];
             if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret))
@@ -246,45 +266,65 @@ namespace WebSGV.Services.GpsIntegracion
         // HTTP de bajo nivel
         // ------------------------------------------------------------------
 
-        private static T Get<T>(string url, string bearerToken)
-        {
-            RespetarRateLimit();
-            using (var request = new HttpRequestMessage(HttpMethod.Get, url))
+        private static T Get<T>(string url, string bearerToken) =>
+            Ejecutar<T>(url, permiteReintento: true, crearRequest: () =>
             {
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
                 if (!string.IsNullOrEmpty(bearerToken))
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
-
-                return Ejecutar<T>(request);
-            }
-        }
+                return request;
+            });
 
         private static T Post<T>(string url, object payload, string bearerToken)
         {
-            RespetarRateLimit();
-            using (var request = new HttpRequestMessage(HttpMethod.Post, url))
+            string json = JsonConvert.SerializeObject(payload);
+            // El POST de token a Auth0 NO se reintenta: si el primer intento llegó a crear el token
+            // (aunque respondiera 5xx), un segundo intento sería rechazado por "un token activo".
+            bool esToken = url.IndexOf("/oauth/token", StringComparison.OrdinalIgnoreCase) >= 0;
+            return Ejecutar<T>(url, permiteReintento: !esToken, crearRequest: () =>
             {
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
                 if (!string.IsNullOrEmpty(bearerToken))
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
-
-                string json = JsonConvert.SerializeObject(payload);
                 request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                return Ejecutar<T>(request);
-            }
+                return request;
+            });
         }
 
-        private static T Ejecutar<T>(HttpRequestMessage request)
+        private const int MaxIntentos = 3;
+
+        /// <summary>
+        /// Envía la petición respetando el rate limit. Ante 429 (demasiadas peticiones) o errores
+        /// transitorios del proveedor (502/503/504) reintenta hasta <see cref="MaxIntentos"/> veces
+        /// con espera creciente (o la indicada por Retry-After, máx. 5 s). Antes fallaba al primer error.
+        /// </summary>
+        private static T Ejecutar<T>(string url, bool permiteReintento, Func<HttpRequestMessage> crearRequest)
         {
-            string url = request.RequestUri.ToString();
-            using (var response = Http.SendAsync(request).GetAwaiter().GetResult())
+            for (int intento = 1; ; intento++)
             {
-                string body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                if (!response.IsSuccessStatusCode)
+                RespetarRateLimit();
+                using (var request = crearRequest())
+                using (var response = Http.SendAsync(request).GetAwaiter().GetResult())
                 {
-                    LogSGV.Error("Onway API error {StatusCode} en {Url}: {Body}", (int)response.StatusCode, url, body);
-                    throw new OnwayApiException((int)response.StatusCode, url, body);
+                    string body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    if (response.IsSuccessStatusCode)
+                        return JsonConvert.DeserializeObject<T>(body);
+
+                    int estado = (int)response.StatusCode;
+                    bool transitorio = estado == 429 || estado == 502 || estado == 503 || estado == 504;
+                    if (permiteReintento && transitorio && intento < MaxIntentos)
+                    {
+                        TimeSpan espera = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(intento);
+                        if (espera > TimeSpan.FromSeconds(5)) espera = TimeSpan.FromSeconds(5);
+                        LogSGV.Advertencia("Onway API respondió {StatusCode} en {Url}; reintento {Intento} en {Espera} s",
+                            estado, url, intento + 1, espera.TotalSeconds);
+                        Thread.Sleep(espera);
+                        continue;
+                    }
+
+                    LogSGV.Error("Onway API error {StatusCode} en {Url}: {Body}", estado, url, body);
+                    throw new OnwayApiException(estado, url, body);
                 }
-                return JsonConvert.DeserializeObject<T>(body);
             }
         }
 

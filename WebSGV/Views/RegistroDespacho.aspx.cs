@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
@@ -140,7 +139,7 @@ namespace WebSGV.Views
 
         private void EstablecerFechaPorDefecto()
         {
-            string fechaHoy = DateTime.Today.ToString("yyyy-MM-dd");
+            string fechaHoy = FechaHelper.Hoy().ToString("yyyy-MM-dd");
 
             // Para configuración base
             if (string.IsNullOrEmpty(txtFechaDespachoBase.Text))
@@ -534,7 +533,7 @@ namespace WebSGV.Views
                 {
                     errores.Add("La fecha de emisión de factura no tiene un formato válido");
                 }
-                else if (fechaFactura.Date > DateTime.Today)
+                else if (fechaFactura.Date > FechaHelper.Hoy())
                 {
                     errores.Add("La fecha de emisión de factura no puede ser futura");
                 }
@@ -546,7 +545,7 @@ namespace WebSGV.Views
                 {
                     errores.Add("La fecha de emisión de CPIC no tiene un formato válido");
                 }
-                else if (fechaCpic.Date > DateTime.Today)
+                else if (fechaCpic.Date > FechaHelper.Hoy())
                 {
                     errores.Add("La fecha de emisión de CPIC no puede ser futura");
                 }
@@ -884,7 +883,7 @@ namespace WebSGV.Views
 
         protected void cvFechaDespachoBase_ServerValidate(object source, ServerValidateEventArgs args)
         {
-            args.IsValid = DespachoValidaciones.FechaDespachoEsValida(args.Value, DateTime.Today);
+            args.IsValid = DespachoValidaciones.FechaDespachoEsValida(args.Value, FechaHelper.Hoy());
         }
 
         protected void cvFechaEmisionFacturaBase_ServerValidate(object source, ServerValidateEventArgs args)
@@ -895,7 +894,7 @@ namespace WebSGV.Views
                 return;
             }
 
-            args.IsValid = DespachoValidaciones.FechaEmisionEsValida(args.Value, DateTime.Today);
+            args.IsValid = DespachoValidaciones.FechaEmisionEsValida(args.Value, FechaHelper.Hoy());
         }
 
         protected void cvFechaEmisionCPICBase_ServerValidate(object source, ServerValidateEventArgs args)
@@ -906,7 +905,7 @@ namespace WebSGV.Views
                 return;
             }
 
-            args.IsValid = DespachoValidaciones.FechaEmisionEsValida(args.Value, DateTime.Today);
+            args.IsValid = DespachoValidaciones.FechaEmisionEsValida(args.Value, FechaHelper.Hoy());
         }
 
         private bool TryParseFechaIso(string valor, out DateTime fecha) =>
@@ -1266,14 +1265,14 @@ namespace WebSGV.Views
             try
             {
                 string extension = Path.GetExtension(rutaTemp);
-                string carpetaAno = DateTime.Now.Year.ToString();
-                string carpetaMes = DateTime.Now.ToString("MM");
+                string carpetaAno = FechaHelper.Ahora().Year.ToString();
+                string carpetaMes = FechaHelper.Ahora().ToString("MM");
                 string carpetaDestino = Server.MapPath($"~/Uploads/Manifiesto/{carpetaAno}/{carpetaMes}/");
 
                 if (!Directory.Exists(carpetaDestino))
                     Directory.CreateDirectory(carpetaDestino);
 
-                string nombreArchivo = $"MANIFIESTO_{tipo}_{idDespacho}_{DateTime.Now:yyyyMMdd_HHmmss}{extension}";
+                string nombreArchivo = $"MANIFIESTO_{tipo}_{idDespacho}_{FechaHelper.Ahora():yyyyMMdd_HHmmss}{extension}";
                 string rutaDestino = Path.Combine(carpetaDestino, nombreArchivo);
 
                 File.Move(rutaTemp, rutaDestino);
@@ -1303,15 +1302,15 @@ namespace WebSGV.Views
             try
             {
                 string extension = Path.GetExtension(rutaTemp);
-                string carpetaAno = DateTime.Now.Year.ToString();
-                string carpetaMes = DateTime.Now.ToString("MM");
+                string carpetaAno = FechaHelper.Ahora().Year.ToString();
+                string carpetaMes = FechaHelper.Ahora().ToString("MM");
                 string carpetaDestino = Server.MapPath($"~/Uploads/{carpeta}/{carpetaAno}/{carpetaMes}/");
 
                 if (!Directory.Exists(carpetaDestino))
                     Directory.CreateDirectory(carpetaDestino);
 
                 string prefijo = esFactura ? "FACTURA" : "CPIC";
-                string nombreArchivo = $"{prefijo}_{idDocumentoBase}_{DateTime.Now:yyyyMMdd_HHmmss}{extension}";
+                string nombreArchivo = $"{prefijo}_{idDocumentoBase}_{FechaHelper.Ahora():yyyyMMdd_HHmmss}{extension}";
                 string rutaDestino = Path.Combine(carpetaDestino, nombreArchivo);
 
                 File.Move(rutaTemp, rutaDestino);
@@ -1515,25 +1514,9 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    using (SqlCommand cmd = new SqlCommand("sp_ObtenerHistorialViajesConductor", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@idConductor", idConductor);
-                        conn.Open();
-
-                        DataTable dt = new DataTable();
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            dt.Load(reader);
-                        }
-
-                        gvHistorialViajes.DataSource = dt;
-                        gvHistorialViajes.DataBind();
-                        UpdatePanelModal.Update();
-                    }
-                }
+                gvHistorialViajes.DataSource = RegistroDespachoService.ObtenerHistorialViajesConductor(idConductor);
+                gvHistorialViajes.DataBind();
+                UpdatePanelModal.Update();
             }
             catch (Exception ex)
             {
@@ -1554,17 +1537,7 @@ namespace WebSGV.Views
                 {
                     int idViajeProgreso = Convert.ToInt32(e.CommandArgument);
 
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        using (SqlCommand cmd = new SqlCommand("sp_ReabrirViajeProgreso", conn))
-                        {
-                            cmd.CommandType = CommandType.StoredProcedure;
-                            cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
-                            cmd.Parameters.AddWithValue("@usuario", ObtenerUsuarioActual());
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
+                    RegistroDespachoService.ReabrirViajeProgreso(idViajeProgreso, ObtenerUsuarioActual());
 
                     AuditoriaHelper.Registrar("UPDATE", "ViajesEnProgreso", idViajeProgreso.ToString(),
                         $"Viaje en progreso reabierto por {ObtenerUsuarioActual()}");

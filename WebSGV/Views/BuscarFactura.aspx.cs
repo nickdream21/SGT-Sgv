@@ -411,7 +411,7 @@ namespace WebSGV.Views
                 }
 
                 // Validar que la fecha no sea futura
-                if (fechaEmision > DateTime.Now)
+                if (fechaEmision > FechaHelper.Ahora())
                 {
                     MostrarMensaje("La fecha de emisión no puede ser mayor que la fecha actual.", "danger");
                     return;
@@ -818,13 +818,13 @@ namespace WebSGV.Views
                 string extension = Path.GetExtension(nombreOriginal).ToLower();
 
                 // Generar nombre único para el archivo
-                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string timestamp = FechaHelper.Ahora().ToString("yyyyMMdd_HHmmss");
                 string numeroLimpio = numeroFactura.Replace(" - ", "_").Replace(" ", "_").Replace("-", "_");
                 string nombreArchivo = $"FACTURA_{DocumentoHelper.NombreSeguro(numeroLimpio)}_{timestamp}{extension}";
 
                 // Crear ruta de destino
-                string carpetaAno = DateTime.Now.Year.ToString();
-                string carpetaMes = DateTime.Now.ToString("MM");
+                string carpetaAno = FechaHelper.Ahora().Year.ToString();
+                string carpetaMes = FechaHelper.Ahora().ToString("MM");
                 string rutaCarpeta = Server.MapPath($"~/Uploads/Factura/{carpetaAno}/{carpetaMes}/");
 
                 // Crear directorios si no existen
@@ -863,7 +863,7 @@ namespace WebSGV.Views
         {
             FacturaEscrituraService.InsertarDocumento(connection, transaction, idFactura,
                 docInfo.NombreOriginal, docInfo.NombreArchivo, docInfo.RutaCompleta, docInfo.TipoArchivo,
-                docInfo.TamanoBytes, DateTime.Now, ObtenerUsuarioActual(), docInfo.Descripcion);
+                docInfo.TamanoBytes, FechaHelper.Ahora(), ObtenerUsuarioActual(), docInfo.Descripcion);
         }
 
         /// <summary>
@@ -880,13 +880,13 @@ namespace WebSGV.Views
                 }
 
                 // Crear carpetas del año y mes actual
-                string carpetaAno = Path.Combine(carpetaBase, DateTime.Now.Year.ToString());
+                string carpetaAno = Path.Combine(carpetaBase, FechaHelper.Ahora().Year.ToString());
                 if (!Directory.Exists(carpetaAno))
                 {
                     Directory.CreateDirectory(carpetaAno);
                 }
 
-                string carpetaMes = Path.Combine(carpetaAno, DateTime.Now.ToString("MM"));
+                string carpetaMes = Path.Combine(carpetaAno, FechaHelper.Ahora().ToString("MM"));
                 if (!Directory.Exists(carpetaMes))
                 {
                     Directory.CreateDirectory(carpetaMes);

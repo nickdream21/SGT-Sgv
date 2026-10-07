@@ -20,6 +20,6 @@ BEGIN
         observaciones     = @observaciones,
         estadoAprobacion  = 'PENDIENTE',
         idUsuarioRegistro = @idUsuarioRegistro,
-        fechaRegistro     = GETDATE()
+        fechaRegistro     = dbo.fn_AhoraPeru()
     WHERE numeroOrdenViaje = @numeroOrdenViaje;
 END

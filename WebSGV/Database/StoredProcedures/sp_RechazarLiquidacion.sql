@@ -34,11 +34,11 @@ BEGIN
         SET
             estadoAprobacion     = 'REABIERTO',
             observacionesRechazo = @observaciones,
-            fechaRechazo         = GETDATE(),
+            fechaRechazo         = dbo.fn_AhoraPeru(),
             idUsuarioAprobacion  = @idUsuarioAprobacion,
             observaciones        = ISNULL(observaciones, '') +
                 CHAR(13) + CHAR(10) +
-                '**RECHAZADO ' + CONVERT(VARCHAR, GETDATE(), 120) + '**: ' + @observaciones
+                '**RECHAZADO ' + CONVERT(VARCHAR, dbo.fn_AhoraPeru(), 120) + '**: ' + @observaciones
         WHERE numeroOrdenViaje = @numeroOrdenViaje;
 
         -- Reabrir el viaje en progreso (si existe)

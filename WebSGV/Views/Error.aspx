@@ -50,7 +50,7 @@
                 <a href="javascript:history.back()" class="btn-secondary-custom">&larr; Volver</a>
                 <a href="/Views/Login.aspx" class="btn-primary-custom">Ir al Inicio</a>
             </div>
-            <p class="error-code">Error 500 &mdash; <%= DateTime.Now.ToString("dd/MM/yyyy HH:mm") %></p>
+            <p class="error-code">Error 500 &mdash; <%= WebSGV.Helpers.FechaHelper.Ahora().ToString("dd/MM/yyyy HH:mm") %></p>
         </div>
     </form>
 </body>

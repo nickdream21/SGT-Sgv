@@ -13,6 +13,6 @@ BEGIN
     FROM Cliente c
     INNER JOIN Despachos d ON c.idCliente = d.idCliente
     WHERE d.activo = 1
-      AND d.fechaCreacion >= DATEADD(MONTH, -6, GETDATE())
+      AND d.fechaCreacion >= DATEADD(MONTH, -6, dbo.fn_AhoraPeru())
     ORDER BY c.nombre;
 END

@@ -1,5 +1,6 @@
 using System;
 using System.Data;
+using System.Data.SqlClient;
 using WebSGV.Helpers;
 
 namespace WebSGV.Services.GpsIntegracion
@@ -50,6 +51,49 @@ namespace WebSGV.Services.GpsIntegracion
                     VALUES (1, @accessToken, @expiraEn, SYSUTCDATETIME());",
                 DbHelper.Param("@accessToken", accessToken),
                 DbHelper.Param("@expiraEn", expiraEnUtc));
+        }
+
+        /// <summary>
+        /// Ejecuta <paramref name="trabajo"/> con un bloqueo exclusivo en la BD (sp_getapplock)
+        /// para que solo un request a la vez pueda renovar el token Auth0. Location World solo
+        /// permite un token activo por client_id: si dos requests renovaban a la vez, el segundo
+        /// recibía 401 y su pantalla fallaba. Con el bloqueo, el segundo espera y luego reusa el
+        /// token que dejó en caché el primero. Al ser un bloqueo de BD también cubre dos procesos
+        /// de la app a la vez (p. ej. durante el reciclaje del app pool).
+        /// </summary>
+        public static T ConBloqueoDeRenovacion<T>(Func<T> trabajo, int esperaMaximaMs = 45000)
+        {
+            using (var conn = new SqlConnection(DbHelper.ConnectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("sp_getapplock", conn) { CommandType = CommandType.StoredProcedure, CommandTimeout = esperaMaximaMs / 1000 + 15 })
+                {
+                    cmd.Parameters.AddWithValue("@Resource", "SGV_OnwayRenovacionToken");
+                    cmd.Parameters.AddWithValue("@LockMode", "Exclusive");
+                    cmd.Parameters.AddWithValue("@LockOwner", "Session");
+                    cmd.Parameters.AddWithValue("@LockTimeout", esperaMaximaMs);
+                    var resultado = cmd.Parameters.Add("@ret", SqlDbType.Int);
+                    resultado.Direction = ParameterDirection.ReturnValue;
+                    cmd.ExecuteNonQuery();
+                    if ((int)resultado.Value < 0)
+                        throw new TimeoutException("Otra renovación del acceso al GPS sigue en curso. Intente nuevamente en unos segundos.");
+                }
+
+                try
+                {
+                    return trabajo();
+                }
+                finally
+                {
+                    using (var liberar = new SqlCommand("sp_releaseapplock", conn) { CommandType = CommandType.StoredProcedure })
+                    {
+                        liberar.Parameters.AddWithValue("@Resource", "SGV_OnwayRenovacionToken");
+                        liberar.Parameters.AddWithValue("@LockOwner", "Session");
+                        try { liberar.ExecuteNonQuery(); }
+                        catch { /* al cerrar la conexión el bloqueo de sesión se libera igual */ }
+                    }
+                }
+            }
         }
 
         /// <summary>Actualiza clientId/userId de la sesión Onway sobre el token vigente.</summary>

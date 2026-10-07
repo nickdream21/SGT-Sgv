@@ -220,7 +220,7 @@ BEGIN
       AND (@cliente IS NULL OR cliente LIKE '%' + @cliente + '%');
 
     -- 9) Tendencia mensual (12 meses) del ano
-    DECLARE @anioRef INT = ISNULL(@anio, YEAR(GETDATE()));
+    DECLARE @anioRef INT = ISNULL(@anio, YEAR(dbo.fn_AhoraPeru()));
     ;WITH Meses AS (
         SELECT 1 AS m UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
         UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8
@@ -381,7 +381,7 @@ BEGIN
     FROM Eval;
 
     -- 18) Tendencia mensual por cliente (top 5 clientes x 12 meses) del anio
-    DECLARE @anioRefC INT = ISNULL(@anio, YEAR(GETDATE()));
+    DECLARE @anioRefC INT = ISNULL(@anio, YEAR(dbo.fn_AhoraPeru()));
     ;WITH TopCli AS (
         SELECT TOP 5
             ISNULL(cliente,'(Sin pedido)') AS cliente,

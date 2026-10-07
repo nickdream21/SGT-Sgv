@@ -22,8 +22,8 @@ namespace WebSGV.Views.Exportacion
             if (!IsPostBack)
             {
                 CargarAniosDisponibles();
-                ddlMes.SelectedValue  = DateTime.Now.Month.ToString();
-                ddlAnio.SelectedValue = DateTime.Now.Year.ToString();
+                ddlMes.SelectedValue  = FechaHelper.Ahora().Month.ToString();
+                ddlAnio.SelectedValue = FechaHelper.Ahora().Year.ToString();
                 CargarDashboard();
             }
         }
@@ -33,7 +33,7 @@ namespace WebSGV.Views.Exportacion
         protected void btnLimpiar_Click(object sender, EventArgs e)
         {
             ddlMes.SelectedValue  = "0";
-            ddlAnio.SelectedValue = DateTime.Now.Year.ToString();
+            ddlAnio.SelectedValue = FechaHelper.Ahora().Year.ToString();
             CargarDashboard();
         }
 
@@ -43,7 +43,7 @@ namespace WebSGV.Views.Exportacion
         private void CargarAniosDisponibles()
         {
             ddlAnio.Items.Clear();
-            int actual = DateTime.Now.Year;
+            int actual = FechaHelper.Ahora().Year;
             var anios = new HashSet<int> { actual };
             try
             {

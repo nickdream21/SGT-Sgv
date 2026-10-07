@@ -530,7 +530,7 @@ namespace WebSGV.Views.Exportacion
                 using (var conn = new SqlConnection(ConnStr))
                 using (var cmd = new SqlCommand(
                     "UPDATE SeguimientoExportacion " +
-                    "SET estado='FINALIZADO', fechaModificacion=GETDATE(), idUsuarioModificacion=@u " +
+                    "SET estado='FINALIZADO', fechaModificacion=dbo.fn_AhoraPeru(), idUsuarioModificacion=@u " +
                     "WHERE idSeguimiento=@id AND activo=1", conn))
                 {
                     cmd.Parameters.Add("@id", SqlDbType.Int).Value = id;

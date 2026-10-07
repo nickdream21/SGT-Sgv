@@ -101,7 +101,7 @@ BEGIN
         ) AS BalanceDolares,
 
         -- Horas desde que se registró la liquidación (indicador de urgencia)
-        DATEDIFF(HOUR, ov.fechaRegistro, GETDATE()) AS HorasPendientes
+        DATEDIFF(HOUR, ov.fechaRegistro, dbo.fn_AhoraPeru()) AS HorasPendientes
 
     FROM OrdenViaje ov
     INNER JOIN Conductor cond ON ov.idConductor = cond.idConductor

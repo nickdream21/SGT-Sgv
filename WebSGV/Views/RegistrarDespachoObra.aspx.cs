@@ -25,7 +25,7 @@ namespace WebSGV.Views
 
             if (!IsPostBack)
             {
-                txtFechaSalida.Text = DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
+                txtFechaSalida.Text = FechaHelper.Ahora().ToString("yyyy-MM-ddTHH:mm");
                 CargarCombos();
             }
         }
@@ -91,7 +91,7 @@ namespace WebSGV.Views
                 }
 
                 if (!DateTime.TryParse(txtFechaSalida.Text, out DateTime fSalida))
-                    fSalida = DateTime.Now;
+                    fSalida = FechaHelper.Ahora();
 
                 DateTime? fLlegada = null;
                 if (DateTime.TryParse(txtFechaLlegada.Text, out DateTime fl)) fLlegada = fl;

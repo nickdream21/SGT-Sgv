@@ -76,7 +76,7 @@ BEGIN
     SET NOCOUNT ON;
 
     DECLARE @ultimoNum INT;
-    DECLARE @anio VARCHAR(4) = FORMAT(GETDATE(), 'yyyy');
+    DECLARE @anio VARCHAR(4) = FORMAT(dbo.fn_AhoraPeru(), 'yyyy');
 
     SELECT @ultimoNum = ISNULL(MAX(CAST(RIGHT(numeroParte, 6) AS INT)), 0)
     FROM PartesDiariosTrabajo

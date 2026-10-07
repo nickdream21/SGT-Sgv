@@ -75,7 +75,7 @@ BEGIN
         -- 4a. Cerrar viajes en progreso
         UPDATE ViajesEnProgreso
         SET estadoViaje = 'CERRADO',
-            fechaCierre = GETDATE()
+            fechaCierre = dbo.fn_AhoraPeru()
         WHERE idViajeProgreso IN (SELECT idViajeProgreso FROM @ids)
           AND estadoViaje     = 'ABIERTO'
           AND idConductor     = @idConductor;   -- defensa adicional en el UPDATE
@@ -85,7 +85,7 @@ BEGIN
         -- 4b. Marcar despachos asociados como COMPLETADO
         UPDATE Despachos
         SET estadoDespacho    = 'COMPLETADO',
-            fechaModificacion = GETDATE()
+            fechaModificacion = dbo.fn_AhoraPeru()
         WHERE idViajeProgreso IN (SELECT idViajeProgreso FROM @ids)
           AND activo = 1;
 

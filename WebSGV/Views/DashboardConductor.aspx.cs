@@ -278,7 +278,7 @@ namespace WebSGV.Views
                                 string observaciones = reader["observacionesRechazo"].ToString();
                                 DateTime fechaRechazo = reader["fechaRechazo"] != DBNull.Value
                                     ? Convert.ToDateTime(reader["fechaRechazo"])
-                                    : DateTime.Now;
+                                    : FechaHelper.Ahora();
                                 string rechazadoPor = reader["rechazadoPor"]?.ToString() ?? "Administrador";
 
                                 Log($"⚠️ LIQUIDACIÓN RECHAZADA ENCONTRADA: {numeroOrden}");
@@ -736,7 +736,7 @@ namespace WebSGV.Views
                 lblFechaInicio.Text = viajePrimario.FechaInicio.ToString("dd/MM/yyyy HH:mm");
                 lblCantidadDespachos.Text = totalDespachos.ToString();
 
-                TimeSpan diasRuta = DateTime.Now - viajePrimario.FechaInicio;
+                TimeSpan diasRuta = FechaHelper.Ahora() - viajePrimario.FechaInicio;
                 lblDiasRuta.Text = $"{diasRuta.Days} días";
 
                 lblEstadoViaje.Text = $"Viaje Activo - {totalDespachos} despacho(s)";
@@ -840,7 +840,7 @@ namespace WebSGV.Views
                 lblFechaInicioResumen.Text = viajePrimario.FechaInicio.ToString("dd/MM/yyyy");
                 lblDespachosResumen.Text = totalDespachos.ToString();
 
-                DateTime ahoraServidor = DateTime.Now;
+                DateTime ahoraServidor = FechaHelper.Ahora();
                 // Fecha de salida: se sugiere la fecha de inicio del viaje como referencia,
                 // pero el conductor la ajusta a la hora/fecha real en que salió de base.
                 txtFechaSalida.Text = viajePrimario.FechaInicio.ToString("yyyy-MM-dd");
@@ -1273,8 +1273,8 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al generar el número de orden en DashboardConductor");
-                // Fallback: un solo snapshot de DateTime.Now garantiza consistencia del timestamp
-                var ahora = DateTime.Now;
+                // Fallback: un solo snapshot de FechaHelper.Ahora() garantiza consistencia del timestamp
+                var ahora = FechaHelper.Ahora();
                 string fallbackNumero = $"OV-{ahora:yyyyMMddHHmmss}-{IdConductorActual:D4}-{ahora.Ticks % 1000:D3}";
                 Log($"⚠️ Usando número de orden fallback (SP falló): {fallbackNumero}");
                 return fallbackNumero;

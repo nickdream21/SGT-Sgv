@@ -14,6 +14,6 @@ BEGIN
     )
     VALUES (
         @numeroOrdenViaje, @descuentoSoles, @descuentoDolares,
-        @reintegroSoles, @reintegroDolares, GETDATE(), 1
+        @reintegroSoles, @reintegroDolares, dbo.fn_AhoraPeru(), 1
     );
 END

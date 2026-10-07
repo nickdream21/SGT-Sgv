@@ -552,7 +552,7 @@
             <p class="gf-sub">Control de abastecimiento de combustible</p>
             <span class="gf-fecha-badge">
                 <i class="fas fa-calendar-alt mr-1"></i>
-                <%= DateTime.Now.ToString("dddd, dd/MM/yyyy HH:mm", new System.Globalization.CultureInfo("es-PE")) %>
+                <%= WebSGV.Helpers.FechaHelper.Ahora().ToString("dddd, dd/MM/yyyy HH:mm", new System.Globalization.CultureInfo("es-PE")) %>
             </span>
             <div style="margin-top:12px;">
                 <a href="RegistrarDespachoObra.aspx" class="btn btn-light"

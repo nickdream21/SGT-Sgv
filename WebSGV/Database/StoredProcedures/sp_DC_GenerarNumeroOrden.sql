@@ -4,7 +4,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @anioActual INT = YEAR(GETDATE());
+    DECLARE @anioActual INT = YEAR(dbo.fn_AhoraPeru());
     DECLARE @prefijo VARCHAR(20) = 'OV-' + CAST(@anioActual AS VARCHAR) + '-';
     DECLARE @ultimoNumero VARCHAR(50);
     DECLARE @siguienteSecuencial INT = 1;

@@ -15,6 +15,6 @@ BEGIN
     )
     VALUES (
         @numeroOrdenViaje, @fechaComprobante, @numeroComprobante,
-        @montoSoles, @montoDolares, @observaciones, GETDATE(), 1
+        @montoSoles, @montoDolares, @observaciones, dbo.fn_AhoraPeru(), 1
     );
 END

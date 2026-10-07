@@ -58,10 +58,10 @@ namespace WebSGV.Views
         {
             try
             {
-                lblFechaHoy.Text = DateTime.Now.ToString("dddd, dd 'de' MMMM 'de' yyyy",
+                lblFechaHoy.Text = FechaHelper.Ahora().ToString("dddd, dd 'de' MMMM 'de' yyyy",
                     new System.Globalization.CultureInfo("es-PE"));
 
-                txtFechaParte.Text = DateTime.Now.ToString("yyyy-MM-dd");
+                txtFechaParte.Text = FechaHelper.Ahora().ToString("yyyy-MM-dd");
 
                 CargarDatosOperador();
                 bool tieneAsignacion = CargarAsignacionActiva();
@@ -261,7 +261,7 @@ namespace WebSGV.Views
 
         private void LimpiarCamposFormulario()
         {
-            txtFechaParte.Text = DateTime.Now.ToString("yyyy-MM-dd");
+            txtFechaParte.Text = FechaHelper.Ahora().ToString("yyyy-MM-dd");
             txtOdometroComienzo.Text = "";
             txtOdometroTermino.Text = "";
             txtOdometroKmHoras.Text = "";

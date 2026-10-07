@@ -22,8 +22,8 @@ namespace WebSGV.Views
 
             if (!IsPostBack)
             {
-                txtFechaHasta.Text = DateTime.Now.ToString("yyyy-MM-dd");
-                txtFechaDesde.Text = DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd");
+                txtFechaHasta.Text = FechaHelper.Ahora().ToString("yyyy-MM-dd");
+                txtFechaDesde.Text = FechaHelper.Ahora().AddDays(-30).ToString("yyyy-MM-dd");
                 CargarDatosAuditoria();
             }
         }
@@ -37,8 +37,8 @@ namespace WebSGV.Views
         {
             ddlTabla.SelectedIndex = 0;
             ddlOperacion.SelectedIndex = 0;
-            txtFechaDesde.Text = DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd");
-            txtFechaHasta.Text = DateTime.Now.ToString("yyyy-MM-dd");
+            txtFechaDesde.Text = FechaHelper.Ahora().AddDays(-30).ToString("yyyy-MM-dd");
+            txtFechaHasta.Text = FechaHelper.Ahora().ToString("yyyy-MM-dd");
             txtUsuario.Text = string.Empty;
             txtIdRegistro.Text = string.Empty;
             txtCampo.Text = string.Empty;
@@ -101,7 +101,7 @@ namespace WebSGV.Views
 
                     Response.Clear();
                     Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                    Response.AddHeader("content-disposition", "attachment; filename=Auditoria_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx");
+                    Response.AddHeader("content-disposition", "attachment; filename=Auditoria_" + FechaHelper.Ahora().ToString("yyyyMMdd_HHmmss") + ".xlsx");
 
                     using (MemoryStream memoryStream = new MemoryStream())
                     {

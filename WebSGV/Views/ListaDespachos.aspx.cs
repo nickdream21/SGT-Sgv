@@ -1,9 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -51,7 +49,7 @@ namespace WebSGV.Views
 
         #region Métodos Helper para DBNull
 
-        private T GetSafeValue<T>(SqlDataReader reader, string columnName, T defaultValue = default(T))
+        private T GetSafeValue<T>(DataRow reader, string columnName, T defaultValue = default(T))
         {
             try
             {
@@ -127,7 +125,7 @@ namespace WebSGV.Views
 
         private void ConfigurarFechasPorDefecto()
         {
-            DateTime hoy = DateTime.Today;
+            DateTime hoy = FechaHelper.Hoy();
             DateTime primerDiaMes = new DateTime(hoy.Year, hoy.Month, 1);
 
             txtFechaDesde.Text = primerDiaMes.ToString("yyyy-MM-dd");
@@ -138,7 +136,7 @@ namespace WebSGV.Views
         {
             try
             {
-                CargarDropDownListSP(ddlFiltroConductorViajes, "sp_LD_ObtenerConductoresConViajes", null, "NombreCompleto", "idConductor", "-- Todos los conductores --");
+                CargarDropDownList(ddlFiltroConductorViajes, ListaDespachosService.ObtenerConductoresConViajes(), "NombreCompleto", "idConductor", "-- Todos los conductores --");
             }
             catch (Exception ex)
             {
@@ -151,7 +149,7 @@ namespace WebSGV.Views
         {
             try
             {
-                CargarDropDownListSP(ddlFiltroClienteLotes, "sp_LD_ObtenerClientesRecientes", null, "nombre", "idCliente", "-- Todos los clientes --");
+                CargarDropDownList(ddlFiltroClienteLotes, ListaDespachosService.ObtenerClientesRecientes(), "nombre", "idCliente", "-- Todos los clientes --");
             }
             catch (Exception ex)
             {
@@ -216,31 +214,15 @@ namespace WebSGV.Views
                     "ListaDespachos: el lote referencia la planta {IdPlanta}, que no está en el catálogo activo.", idPlanta);
         }
 
-        private void CargarDropDownListSP(DropDownList ddl, string spName, SqlParameter[] parametros, string textField, string valueField, string defaultText)
+        private void CargarDropDownList(DropDownList ddl, DataTable datos, string textField, string valueField, string defaultText)
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            ddl.Items.Clear();
+            ddl.Items.Add(new ListItem(defaultText, ""));
+            foreach (DataRow fila in datos.Rows)
             {
-                using (SqlCommand cmd = new SqlCommand(spName, conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    if (parametros != null)
-                        cmd.Parameters.AddRange(parametros);
-
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        ddl.Items.Clear();
-                        ddl.Items.Add(new ListItem(defaultText, ""));
-
-                        while (reader.Read())
-                        {
-                            ddl.Items.Add(new ListItem(
-                                GetSafeValue<string>(reader, textField),
-                                GetSafeValue<string>(reader, valueField)
-                            ));
-                        }
-                    }
-                }
+                ddl.Items.Add(new ListItem(
+                    GetSafeValue<string>(fila, textField),
+                    GetSafeValue<string>(fila, valueField)));
             }
         }
 
@@ -305,38 +287,26 @@ namespace WebSGV.Views
 
         private void ActualizarInformacionViajeDetalle(int idViajeProgreso)
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerInfoViajeDetalle", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idViajeProgreso", idViajeProgreso);
-                    conn.Open();
+            DataTable dt = ListaDespachosService.ObtenerInfoViajeDetalle(idViajeProgreso);
+            if (dt.Rows.Count == 0) return;
+            DataRow fila = dt.Rows[0];
 
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            lblNumeroViajeDetalle.Text = GetSafeValue<string>(reader, "numeroViajeProgreso");
-                            lblConductorDetalle.Text = GetSafeValue<string>(reader, "NombreConductor");
-                            lblFechaInicioDetalle.Text = GetSafeValue<DateTime>(reader, "fechaInicio").ToString("dd/MM/yyyy HH:mm");
-                            lblTotalDespachos.Text = GetSafeValue<int>(reader, "cantidadDespachos").ToString();
-                            lblEstadoViajeDetalle.Text = GetSafeValue<string>(reader, "estadoViaje");
-                            lblUltimaActividadDetalle.Text = GetSafeValue<DateTime>(reader, "fechaUltimaActividad").ToString("dd/MM/yyyy HH:mm");
+            lblNumeroViajeDetalle.Text = GetSafeValue<string>(fila, "numeroViajeProgreso");
+            lblConductorDetalle.Text = GetSafeValue<string>(fila, "NombreConductor");
+            lblFechaInicioDetalle.Text = GetSafeValue<DateTime>(fila, "fechaInicio").ToString("dd/MM/yyyy HH:mm");
+            lblTotalDespachos.Text = GetSafeValue<int>(fila, "cantidadDespachos").ToString();
+            lblEstadoViajeDetalle.Text = GetSafeValue<string>(fila, "estadoViaje");
+            lblUltimaActividadDetalle.Text = GetSafeValue<DateTime>(fila, "fechaUltimaActividad").ToString("dd/MM/yyyy HH:mm");
 
-                            int internacionales = GetSafeValue<int>(reader, "DespachosInternacionales");
-                            int nacionales = GetSafeValue<int>(reader, "DespachosNacionales");
+            int internacionales = GetSafeValue<int>(fila, "DespachosInternacionales");
+            int nacionales = GetSafeValue<int>(fila, "DespachosNacionales");
 
-                            if (internacionales > 0 && nacionales > 0)
-                                lblTipoViajeDetalle.Text = "Nacional e Internacional";
-                            else if (internacionales > 0)
-                                lblTipoViajeDetalle.Text = "Internacional";
-                            else
-                                lblTipoViajeDetalle.Text = "Nacional";
-                        }
-                    }
-                }
-            }
+            if (internacionales > 0 && nacionales > 0)
+                lblTipoViajeDetalle.Text = "Nacional e Internacional";
+            else if (internacionales > 0)
+                lblTipoViajeDetalle.Text = "Internacional";
+            else
+                lblTipoViajeDetalle.Text = "Nacional";
         }
 
         #endregion
@@ -504,49 +474,20 @@ namespace WebSGV.Views
 
             // Pre-cargar todos los conductores una sola vez para toda la grid
             _conductoresLoteCache = new List<ListItem>();
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerTodosConductores", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            _conductoresLoteCache.Add(new ListItem(
-                                reader["NombreCompleto"].ToString(),
-                                reader["idConductor"].ToString()
-                            ));
-                        }
-                    }
-                }
-            }
+            foreach (DataRow c in ListaDespachosService.ObtenerTodosConductores().Rows)
+                _conductoresLoteCache.Add(new ListItem(c["NombreCompleto"].ToString(), c["idConductor"].ToString()));
 
-            List<DespachoConConductor> despachos = new List<DespachoConConductor>();
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            var despachos = new List<DespachoConConductor>();
+            foreach (DataRow d in ListaDespachosService.ObtenerDespachosConductoresLote(IdsACsv(idsDespachos)).Rows)
             {
-                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerDespachosConductoresLote", conn))
+                despachos.Add(new DespachoConConductor
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@idsDespachos", IdsACsv(idsDespachos));
-                    conn.Open();
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            despachos.Add(new DespachoConConductor
-                            {
-                                IdDespacho = GetSafeValue<int>(reader, "idDespacho"),
-                                NumeroDespacho = GetSafeValue<string>(reader, "numeroDespacho"),
-                                FechaDespacho = GetSafeValue<DateTime>(reader, "fechaDespacho"),
-                                IdConductor = GetSafeValue<int>(reader, "idConductor"),
-                                NombreConductorActual = GetSafeValue<string>(reader, "NombreConductorActual")
-                            });
-                        }
-                    }
-                }
+                    IdDespacho = GetSafeValue<int>(d, "idDespacho"),
+                    NumeroDespacho = GetSafeValue<string>(d, "numeroDespacho"),
+                    FechaDespacho = GetSafeValue<DateTime>(d, "fechaDespacho"),
+                    IdConductor = GetSafeValue<int>(d, "idConductor"),
+                    NombreConductorActual = GetSafeValue<string>(d, "NombreConductorActual")
+                });
             }
 
             gvConductoresLote.DataSource = despachos;
@@ -918,7 +859,7 @@ namespace WebSGV.Views
 
             if (DateTime.TryParse(txtFechaProgramacionEdit.Text, out DateTime fechaProg))
             {
-                if (fechaProg > DateTime.Today.AddDays(30))
+                if (fechaProg > FechaHelper.Hoy().AddDays(30))
                 {
                     errores.Add("La fecha de programación no puede ser mayor a 30 días en el futuro");
                 }
@@ -941,12 +882,12 @@ namespace WebSGV.Views
             if (lote == null || lote.IdsDespachos.Count == 0) return;
 
             // Leer/parsear los controles del formulario de edición; la transacción va al Service.
-            DateTime fechaEmisionFactura = DateTime.Today;
+            DateTime fechaEmisionFactura = FechaHelper.Hoy();
             DateTime.TryParse(txtFechaEmisionFacturaEdit.Text, out fechaEmisionFactura);
             decimal valorTotalFactura = 0;
             decimal.TryParse(txtValorTotalFacturaEdit.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorTotalFactura);
 
-            DateTime fechaEmisionCPIC = DateTime.Today;
+            DateTime fechaEmisionCPIC = FechaHelper.Hoy();
             DateTime.TryParse(txtFechaEmisionCPICEdit.Text, out fechaEmisionCPIC);
             decimal valorFlete = 0;
             decimal.TryParse(txtValorFleteEdit.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorFlete);
@@ -1461,14 +1402,14 @@ namespace WebSGV.Views
         private void GuardarUnManifiesto(FileUpload control, int idDespacho, string tipo)
         {
             string extension = Path.GetExtension(control.FileName).ToLowerInvariant();
-            string carpetaAno = DateTime.Now.Year.ToString();
-            string carpetaMes = DateTime.Now.ToString("MM");
+            string carpetaAno = FechaHelper.Ahora().Year.ToString();
+            string carpetaMes = FechaHelper.Ahora().ToString("MM");
             string carpetaDestino = Server.MapPath($"~/Uploads/Manifiesto/{carpetaAno}/{carpetaMes}/");
 
             if (!Directory.Exists(carpetaDestino))
                 Directory.CreateDirectory(carpetaDestino);
 
-            string nombreArchivo = $"MANIFIESTO_{tipo}_{idDespacho}_{DateTime.Now:yyyyMMdd_HHmmss}{extension}";
+            string nombreArchivo = $"MANIFIESTO_{tipo}_{idDespacho}_{FechaHelper.Ahora():yyyyMMdd_HHmmss}{extension}";
             string rutaDestino = Path.Combine(carpetaDestino, nombreArchivo);
 
             control.SaveAs(rutaDestino);

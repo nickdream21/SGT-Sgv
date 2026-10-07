@@ -135,7 +135,7 @@ namespace WebSGV.Services
             try { trazoConductor = ObtenerTrazoConductor(idOrdenViaje); }
             catch { /* si falla la lectura, generamos sin firma conductor */ }
 
-            string fechaAprobacion = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
+            string fechaAprobacion = FechaHelper.Ahora().ToString("dd/MM/yyyy HH:mm:ss");
             var pdf = _pdfSvc.GenerarYArchivar(
                 detalle,
                 firmaConductorPng: trazoConductor,

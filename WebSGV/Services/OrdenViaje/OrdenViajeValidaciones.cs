@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Linq;
+using WebSGV.Helpers;
 
 namespace WebSGV.Services.OrdenViaje
 {
@@ -117,7 +118,7 @@ namespace WebSGV.Services.OrdenViaje
                     mensajeError += "La 'Fecha de Salida' no puede ser mayor a la 'Fecha de Llegada'.\n";
 
                 // M-3: Detectar fechas absurdamente futuras (más de 1 año desde hoy)
-                DateTime limiteMaximo = DateTime.Today.AddYears(1);
+                DateTime limiteMaximo = FechaHelper.Hoy().AddYears(1);
                 if (fechaSalida > limiteMaximo || fechaLlegada > limiteMaximo)
                     mensajeError += "Las fechas no pueden ser superiores a un año desde hoy.\n";
             }

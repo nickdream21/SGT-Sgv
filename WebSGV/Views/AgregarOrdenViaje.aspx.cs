@@ -129,7 +129,7 @@ namespace WebSGV.Views
                 OcultarPanelesViajeOrigen();
 
                 // Configurar fechas por defecto
-                DateTime hoy = DateTime.Today;
+                DateTime hoy = FechaHelper.Hoy();
                 txtFechaSalida.Text = hoy.ToString("yyyy-MM-dd");
                 txtFechaLlegada.Text = hoy.AddDays(1).ToString("yyyy-MM-dd");
                 txtHoraSalida.Text = "08:00";
@@ -617,7 +617,7 @@ namespace WebSGV.Views
                     System.Diagnostics.Debug.WriteLine($"✅ CPIC mostrado: {datos.NumeroCPIC}");
                 }
 
-                DateTime hoy = DateTime.Today;
+                DateTime hoy = FechaHelper.Hoy();
                 txtFechaSalida.Text = hoy.ToString("yyyy-MM-dd");
                 txtFechaLlegada.Text = hoy.AddDays(1).ToString("yyyy-MM-dd");
                 txtHoraSalida.Text = "08:00";

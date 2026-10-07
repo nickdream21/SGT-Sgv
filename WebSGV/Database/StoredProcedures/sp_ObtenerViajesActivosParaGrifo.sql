@@ -21,7 +21,7 @@ BEGIN
         ISNULL(MAX(cl.nombre), 'N/A') AS Cliente,
         ISNULL(MAX(d.lugarOperacion), 'N/A') AS Destino,
         vp.fechaInicio AS FechaInicio,
-        DATEDIFF(DAY, vp.fechaInicio, GETDATE()) AS DiasEnViaje,
+        DATEDIFF(DAY, vp.fechaInicio, dbo.fn_AhoraPeru()) AS DiasEnViaje,
         vp.estadoViaje AS Estado,
         vp.idViajeProgreso AS IdViaje
     FROM ViajesEnProgreso vp

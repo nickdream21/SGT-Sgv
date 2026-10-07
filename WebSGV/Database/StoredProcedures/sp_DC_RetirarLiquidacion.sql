@@ -99,7 +99,7 @@ BEGIN
         -- 5. Revertir despachos a PROGRAMADO
         UPDATE Despachos 
         SET estadoDespacho = 'PROGRAMADO',
-            fechaModificacion = GETDATE()
+            fechaModificacion = dbo.fn_AhoraPeru()
         WHERE idViajeProgreso = @idViajeProgreso 
             AND activo = 1;
 

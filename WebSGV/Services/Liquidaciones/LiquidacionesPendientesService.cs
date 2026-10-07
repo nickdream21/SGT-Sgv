@@ -162,7 +162,7 @@ namespace WebSGV.Services.Liquidaciones
                         SET estadoViaje = 'PENDIENTE',
                             estadoAprobacion = 'PENDIENTE',
                             observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) +
-                                '[REVERSION ' + CONVERT(varchar, GETDATE(), 120) + '] ' + @motivo
+                                '[REVERSION ' + CONVERT(varchar, dbo.fn_AhoraPeru(), 120) + '] ' + @motivo
                         WHERE idOrdenViaje = @id AND estadoViaje = 'COMPLETADO'",
                 DbHelper.Param("@id", idOrdenViaje),
                 DbHelper.Param("@motivo", motivo));
@@ -179,7 +179,7 @@ namespace WebSGV.Services.Liquidaciones
                         UPDATE OrdenViaje
                         SET estadoAprobacion = 'RECHAZADO',
                             observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) +
-                                '[RECHAZO ' + CONVERT(varchar, GETDATE(), 120) + '] ' + @motivo
+                                '[RECHAZO ' + CONVERT(varchar, dbo.fn_AhoraPeru(), 120) + '] ' + @motivo
                         WHERE idOrdenViaje = @id AND estadoAprobacion = 'PENDIENTE'",
                 DbHelper.Param("@id", idOrdenViaje),
                 DbHelper.Param("@motivo", motivo));
@@ -376,7 +376,7 @@ namespace WebSGV.Services.Liquidaciones
                 DbHelper.EjecutarNonQuery(conn, tran, @"
                         UPDATE OrdenViaje
                         SET observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) +
-                            '[CORRECCION AJUSTES ' + CONVERT(varchar, GETDATE(), 120) + '] ' + @motivo +
+                            '[CORRECCION AJUSTES ' + CONVERT(varchar, dbo.fn_AhoraPeru(), 120) + '] ' + @motivo +
                             ' | Desc S/' + CAST(@descS AS varchar) + ' $' + CAST(@descD AS varchar) +
                             ' | Reint S/' + CAST(@reintS AS varchar) + ' $' + CAST(@reintD AS varchar)
                         WHERE idOrdenViaje = @id",

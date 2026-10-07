@@ -85,6 +85,16 @@ namespace WebSGV.Tests
             }
         }
 
+        [Theory]
+        [InlineData(1, 15)]   // invierno de EE. UU.: el servidor de somee (hora central) estaría en UTC-6
+        [InlineData(7, 15)]   // verano de EE. UU.: el servidor estaría en UTC-5
+        [InlineData(11, 2)]   // justo después del cambio de horario de EE. UU.
+        public void ConvertirDeUtc_PeruSiempreEsUtcMenos5_TodoElAnio(int mes, int dia)
+        {
+            var utc = new DateTime(2026, mes, dia, 18, 0, 0, DateTimeKind.Utc);
+            Assert.Equal(new DateTime(2026, mes, dia, 13, 0, 0), FechaHelper.ConvertirDeUtc(utc));
+        }
+
         [Fact]
         public void ConvertirDeUtc_HoraNocturnaCambiaDeFecha()
         {

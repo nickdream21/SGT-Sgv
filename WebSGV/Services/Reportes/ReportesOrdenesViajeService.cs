@@ -82,7 +82,7 @@ namespace WebSGV.Services.Reportes
                             FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, ''), 'N/A') AS Destino,
                         COUNT(DISTINCT d.idDespacho) AS CantidadDespachos,
                         vp.fechaInicio AS FechaInicio,
-                        DATEDIFF(DAY, vp.fechaInicio, GETDATE()) AS DiasEnViaje,
+                        DATEDIFF(DAY, vp.fechaInicio, dbo.fn_AhoraPeru()) AS DiasEnViaje,
                         vp.estadoViaje AS Estado,
                         vp.idViajeProgreso AS IdViaje,
                         MAX(d.numeroDespacho) AS NumeroDespacho

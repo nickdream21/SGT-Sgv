@@ -33,8 +33,8 @@ namespace WebSGV.Views
                 CargarTiposCarro(); // Añadir esta línea
 
                 // Establecer fecha y hora actual por defecto
-                txtFecha.Text = DateTime.Now.ToString("yyyy-MM-dd");
-                txtHora.Text = DateTime.Now.ToString("HH:mm");
+                txtFecha.Text = FechaHelper.Ahora().ToString("yyyy-MM-dd");
+                txtHora.Text = FechaHelper.Ahora().ToString("HH:mm");
 
                 // Pre-poblar desde viaje programado si viene de DashboardGrifo
                 PrePoblarDesdeViaje();
@@ -937,13 +937,13 @@ namespace WebSGV.Views
         private void RegistrarInfo(string mensaje)
         {
             // Log para información
-            System.Diagnostics.Debug.WriteLine($"INFO [{DateTime.Now.ToString("HH:mm:ss")}]: {mensaje}");
+            System.Diagnostics.Debug.WriteLine($"INFO [{FechaHelper.Ahora().ToString("HH:mm:ss")}]: {mensaje}");
         }
 
         private void RegistrarError(string mensaje)
         {
             // Log para errores
-            System.Diagnostics.Debug.WriteLine($"ERROR [{DateTime.Now.ToString("HH:mm:ss")}]: {mensaje}");
+            System.Diagnostics.Debug.WriteLine($"ERROR [{FechaHelper.Ahora().ToString("HH:mm:ss")}]: {mensaje}");
         }
 
         #endregion
@@ -1072,7 +1072,7 @@ namespace WebSGV.Views
             {
                 if (tieneRuta)  cmdU.Parameters.AddWithValue("@ruta",  (object)resultado.RutaRelativa ?? DBNull.Value);
                 if (tieneHash)  cmdU.Parameters.AddWithValue("@hash",  (object)resultado.Hash ?? DBNull.Value);
-                if (tieneFecha) cmdU.Parameters.AddWithValue("@fecha", DateTime.Now);
+                if (tieneFecha) cmdU.Parameters.AddWithValue("@fecha", FechaHelper.Ahora());
                 cmdU.Parameters.AddWithValue("@id", dto.IdAbastecimientoCombustible);
                 cmdU.ExecuteNonQuery();
             }

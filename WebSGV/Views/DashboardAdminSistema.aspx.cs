@@ -14,7 +14,7 @@ namespace WebSGV.Views
 
             if (!IsPostBack)
             {
-                lblFechaHora.Text = DateTime.Now.ToString("dddd, dd 'de' MMMM 'de' yyyy · HH:mm",
+                lblFechaHora.Text = FechaHelper.Ahora().ToString("dddd, dd 'de' MMMM 'de' yyyy · HH:mm",
                     new CultureInfo("es-PE"));
                 CargarEstadisticas();
                 CargarRoles();
@@ -42,7 +42,7 @@ namespace WebSGV.Views
             try
             {
                 object result = DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM AuditoriaLog WHERE CAST(FechaHora AS DATE) = CAST(GETDATE() AS DATE)");
+                    "SELECT COUNT(*) FROM AuditoriaLog WHERE CAST(FechaHora AS DATE) = CAST(dbo.fn_AhoraPeru() AS DATE)");
                 lblEventosHoy.Text = result != DBNull.Value ? result.ToString() : "0";
             }
             catch

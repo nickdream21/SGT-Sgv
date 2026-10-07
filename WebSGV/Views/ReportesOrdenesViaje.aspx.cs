@@ -59,7 +59,7 @@ namespace WebSGV.Views
             if (!IsPostBack)
             {
                 // Establecer fechas por defecto
-                DateTime hoy = DateTime.Now;
+                DateTime hoy = FechaHelper.Ahora();
                 DateTime primerDia = new DateTime(hoy.Year, hoy.Month, 1);
 
                 txtFechaDesde.Text = primerDia.ToString("yyyy-MM-dd");
@@ -377,7 +377,7 @@ namespace WebSGV.Views
                     ws.Cell(2, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#e2e8f0");
                     ws.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                    ws.Cell(3, 1).Value = $"Período: {fechaDesde:dd/MM/yyyy} - {fechaHasta:dd/MM/yyyy}  |  Generado: {DateTime.Now:dd/MM/yyyy HH:mm}";
+                    ws.Cell(3, 1).Value = $"Período: {fechaDesde:dd/MM/yyyy} - {fechaHasta:dd/MM/yyyy}  |  Generado: {FechaHelper.Ahora():dd/MM/yyyy HH:mm}";
                     ws.Range(3, 1, 3, 6).Merge();
                     ws.Cell(3, 1).Style.Font.Italic = true;
                     ws.Cell(3, 1).Style.Font.FontSize = 10;
@@ -547,7 +547,7 @@ namespace WebSGV.Views
                 HttpContext.Current.Response.Buffer = true;
                 HttpContext.Current.Response.Charset = "";
                 HttpContext.Current.Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                HttpContext.Current.Response.AddHeader("Content-Disposition", $"attachment; filename=Liquidaciones_{DateTime.Now:yyyyMMddHHmmss}.xlsx");
+                HttpContext.Current.Response.AddHeader("Content-Disposition", $"attachment; filename=Liquidaciones_{FechaHelper.Ahora():yyyyMMddHHmmss}.xlsx");
                 HttpContext.Current.Response.AddHeader("Content-Length", excelBytes.Length.ToString());
                 HttpContext.Current.Response.Cache.SetCacheability(HttpCacheability.NoCache);
                 HttpContext.Current.Response.BinaryWrite(excelBytes);
@@ -604,7 +604,7 @@ namespace WebSGV.Views
                     ws.Cell(2, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#fef3c7");
                     ws.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                    ws.Cell(3, 1).Value = $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}";
+                    ws.Cell(3, 1).Value = $"Generado: {FechaHelper.Ahora():dd/MM/yyyy HH:mm}";
                     ws.Range(3, 1, 3, 9).Merge();
                     ws.Cell(3, 1).Style.Font.Italic = true;
                     ws.Cell(3, 1).Style.Font.FontSize = 10;
@@ -705,7 +705,7 @@ namespace WebSGV.Views
                 HttpContext.Current.Response.Buffer = true;
                 HttpContext.Current.Response.Charset = "";
                 HttpContext.Current.Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                HttpContext.Current.Response.AddHeader("Content-Disposition", $"attachment; filename=ViajesActivos_{DateTime.Now:yyyyMMddHHmmss}.xlsx");
+                HttpContext.Current.Response.AddHeader("Content-Disposition", $"attachment; filename=ViajesActivos_{FechaHelper.Ahora():yyyyMMddHHmmss}.xlsx");
                 HttpContext.Current.Response.AddHeader("Content-Length", excelBytes.Length.ToString());
                 HttpContext.Current.Response.Cache.SetCacheability(HttpCacheability.NoCache);
                 HttpContext.Current.Response.BinaryWrite(excelBytes);
@@ -790,7 +790,7 @@ namespace WebSGV.Views
                                 .Text("REPORTE DE LIQUIDACIONES (Descuentos y Reintegros)").Bold().FontSize(14);
 
                             col.Item().AlignCenter()
-                                .Text($"Período: {fechaDesde:dd/MM/yyyy} - {fechaHasta:dd/MM/yyyy}  |  Generado: {DateTime.Now:dd/MM/yyyy HH:mm}")
+                                .Text($"Período: {fechaDesde:dd/MM/yyyy} - {fechaHasta:dd/MM/yyyy}  |  Generado: {FechaHelper.Ahora():dd/MM/yyyy HH:mm}")
                                 .FontSize(10).FontColor(subtleText);
 
                             // Línea separadora
@@ -924,7 +924,7 @@ namespace WebSGV.Views
                 HttpContext.Current.Response.Buffer = true;
                 HttpContext.Current.Response.Charset = "";
                 HttpContext.Current.Response.ContentType = "application/pdf";
-                HttpContext.Current.Response.AddHeader("Content-Disposition", $"attachment; filename=Liquidaciones_{DateTime.Now:yyyyMMddHHmmss}.pdf");
+                HttpContext.Current.Response.AddHeader("Content-Disposition", $"attachment; filename=Liquidaciones_{FechaHelper.Ahora():yyyyMMddHHmmss}.pdf");
                 HttpContext.Current.Response.AddHeader("Content-Length", pdfBytes.Length.ToString());
                 HttpContext.Current.Response.Cache.SetCacheability(HttpCacheability.NoCache);
                 HttpContext.Current.Response.BinaryWrite(pdfBytes);
@@ -1578,7 +1578,7 @@ namespace WebSGV.Views
                 ws.Cell(2, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#e2e8f0");
                 ws.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                ws.Cell(3, 1).Value = $"Período: {f.FechaDesde:dd/MM/yyyy} - {f.FechaHasta:dd/MM/yyyy}  |  Estado: {f.Estado}  |  Generado: {DateTime.Now:dd/MM/yyyy HH:mm}";
+                ws.Cell(3, 1).Value = $"Período: {f.FechaDesde:dd/MM/yyyy} - {f.FechaHasta:dd/MM/yyyy}  |  Estado: {f.Estado}  |  Generado: {FechaHelper.Ahora():dd/MM/yyyy HH:mm}";
                 ws.Range(3, 1, 3, colCount).Merge();
                 ws.Cell(3, 1).Style.Font.Italic = true;
                 ws.Cell(3, 1).Style.Font.FontSize = 10;
@@ -1745,7 +1745,7 @@ namespace WebSGV.Views
             HttpContext.Current.Response.Clear();
             HttpContext.Current.Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
             HttpContext.Current.Response.AddHeader("Content-Disposition",
-                $"attachment; filename=ReportePersonalizado_{DateTime.Now:yyyyMMddHHmmss}.xlsx");
+                $"attachment; filename=ReportePersonalizado_{FechaHelper.Ahora():yyyyMMddHHmmss}.xlsx");
             HttpContext.Current.Response.BinaryWrite(excelBytes);
             HttpContext.Current.Response.Flush();
             HttpContext.Current.Response.End();
@@ -1813,7 +1813,7 @@ namespace WebSGV.Views
                         col.Item().PaddingTop(12).AlignCenter().Text(f.Titulo).Bold().FontSize(14);
 
                         col.Item().PaddingBottom(15).AlignCenter()
-                            .Text($"Período: {f.FechaDesde:dd/MM/yyyy} - {f.FechaHasta:dd/MM/yyyy}  |  Estado: {f.Estado}  |  Generado: {DateTime.Now:dd/MM/yyyy HH:mm}")
+                            .Text($"Período: {f.FechaDesde:dd/MM/yyyy} - {f.FechaHasta:dd/MM/yyyy}  |  Estado: {f.Estado}  |  Generado: {FechaHelper.Ahora():dd/MM/yyyy HH:mm}")
                             .FontSize(10).FontColor(subtleText);
 
                         // Tabla
@@ -1990,7 +1990,7 @@ namespace WebSGV.Views
             HttpContext.Current.Response.Clear();
             HttpContext.Current.Response.ContentType = "application/pdf";
             HttpContext.Current.Response.AddHeader("Content-Disposition",
-                $"attachment; filename=ReportePersonalizado_{DateTime.Now:yyyyMMddHHmmss}.pdf");
+                $"attachment; filename=ReportePersonalizado_{FechaHelper.Ahora():yyyyMMddHHmmss}.pdf");
             HttpContext.Current.Response.BinaryWrite(pdfBytes);
             HttpContext.Current.Response.Flush();
             HttpContext.Current.Response.End();
@@ -2027,7 +2027,7 @@ namespace WebSGV.Views
             }
 
             DateTime min = new DateTime(2010, 1, 1);
-            DateTime max = DateTime.Today.AddDays(1);
+            DateTime max = FechaHelper.Hoy().AddDays(1);
             if (fecha < min || fecha > max)
             {
                 error = $"{nombreCampo}: fuera de rango permitido ({min:dd/MM/yyyy} - {max:dd/MM/yyyy}).";

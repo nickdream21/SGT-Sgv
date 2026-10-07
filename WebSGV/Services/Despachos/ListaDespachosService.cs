@@ -28,6 +28,24 @@ namespace WebSGV.Services.Despachos
         public static DataTable ObtenerTodosConductores() =>
             DbHelper.ConsultarTablaSp("sp_LD_ObtenerTodosConductores");
 
+        /// <summary>Conductores que tienen viajes, para el filtro de viajes (<c>sp_LD_ObtenerConductoresConViajes</c>).</summary>
+        public static DataTable ObtenerConductoresConViajes() =>
+            DbHelper.ConsultarTablaSp("sp_LD_ObtenerConductoresConViajes");
+
+        /// <summary>Clientes con despachos recientes, para el filtro de lotes (<c>sp_LD_ObtenerClientesRecientes</c>).</summary>
+        public static DataTable ObtenerClientesRecientes() =>
+            DbHelper.ConsultarTablaSp("sp_LD_ObtenerClientesRecientes");
+
+        /// <summary>Cabecera del viaje para el panel de detalle (<c>sp_LD_ObtenerInfoViajeDetalle</c>); vacía si no existe.</summary>
+        public static DataTable ObtenerInfoViajeDetalle(int idViajeProgreso) =>
+            DbHelper.ConsultarTablaSp("sp_LD_ObtenerInfoViajeDetalle",
+                DbHelper.Param("@idViajeProgreso", idViajeProgreso));
+
+        /// <summary>Despachos de un lote con su conductor actual (<c>sp_LD_ObtenerDespachosConductoresLote</c>).</summary>
+        public static DataTable ObtenerDespachosConductoresLote(string idsDespachosCsv) =>
+            DbHelper.ConsultarTablaSp("sp_LD_ObtenerDespachosConductoresLote",
+                DbHelper.Param("@idsDespachos", idsDespachosCsv));
+
         /// <summary>
         /// Plantas activas para los desplegables de planta de operación. Lee de
         /// <c>Planta</c>, catálogo único desde la unificación de fase 0: antes esta

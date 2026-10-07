@@ -152,7 +152,7 @@ namespace WebSGV.Views
                     Destino,
                     EsInternacional,
                     fechaInicio AS FechaInicio,
-                    DATEDIFF(DAY, fechaInicio, GETDATE()) AS DiasEnViaje,
+                    DATEDIFF(DAY, fechaInicio, dbo.fn_AhoraPeru()) AS DiasEnViaje,
                     estadoViaje AS Estado,
                     idViajeProgreso AS IdViaje,
                     CargasRealizadas,

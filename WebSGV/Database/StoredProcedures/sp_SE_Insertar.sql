@@ -121,7 +121,7 @@ BEGIN
             sacosRotos                    = ISNULL(@sacosRotos,                    sacosRotos),
             sacosMojados                  = ISNULL(@sacosMojados,                  sacosMojados),
             estado                        = ISNULL(@estado,                        estado),
-            fechaModificacion             = GETDATE(),
+            fechaModificacion             = dbo.fn_AhoraPeru(),
             idUsuarioModificacion         = ISNULL(@idUsuarioRegistro,             idUsuarioModificacion)
         WHERE idSeguimiento = @idExistente;
 
@@ -156,7 +156,7 @@ BEGIN
             @fhInicioDescarga, @fhTerminoDescarga, @fhSalida, @fhLlegadaBaseFinal,
             @idDespachoOrigen, @idDespachoDestino,
             @motivoRetraso, ISNULL(@sacosRobados,0), ISNULL(@sacosRotos,0), ISNULL(@sacosMojados,0),
-            ISNULL(@estado,'EN_CURSO'), @idUsuarioRegistro, GETDATE(), 1
+            ISNULL(@estado,'EN_CURSO'), @idUsuarioRegistro, dbo.fn_AhoraPeru(), 1
         );
 
         SET @idSeguimiento = SCOPE_IDENTITY();

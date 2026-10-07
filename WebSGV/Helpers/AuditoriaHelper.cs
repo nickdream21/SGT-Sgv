@@ -65,7 +65,7 @@ namespace WebSGV.Helpers
                         (FechaHora, IdUsuario, NombreUsuario, RolUsuario, Accion, TablaAfectada, 
                          IdRegistroAfectado, Descripcion, ValoresAnteriores, ValoresNuevos, DireccionIP, Navegador)
                     VALUES 
-                        (GETDATE(), @IdUsuario, @NombreUsuario, @RolUsuario, @Accion, @TablaAfectada, 
+                        (dbo.fn_AhoraPeru(), @IdUsuario, @NombreUsuario, @RolUsuario, @Accion, @TablaAfectada, 
                          @IdRegistroAfectado, @Descripcion, @ValoresAnteriores, @ValoresNuevos, @DireccionIP, @Navegador)";
 
                 using (SqlConnection conn = new SqlConnection(ConnectionString))

@@ -27,7 +27,7 @@ namespace WebSGV.Views
                 hfIdConductor.Value = Request.QueryString["idConductor"] ?? "";
                 hfIdTracto.Value    = Request.QueryString["idTracto"] ?? "";
 
-                txtFecha.Text = DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
+                txtFecha.Text = FechaHelper.Ahora().ToString("yyyy-MM-ddTHH:mm");
 
                 CargarDatosViaje();
             }
@@ -81,7 +81,7 @@ namespace WebSGV.Views
 
             DateTime fecha;
             if (!DateTime.TryParse(txtFecha.Text, out fecha))
-                fecha = DateTime.Now;
+                fecha = FechaHelper.Ahora();
 
             try
             {

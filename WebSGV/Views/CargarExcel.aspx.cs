@@ -23,8 +23,8 @@ namespace WebSGV.Views
             if (!IsPostBack)
             {
                 // Establecer valores predeterminados
-                int currentMonth = DateTime.Now.Month;
-                int currentYear = DateTime.Now.Year;
+                int currentMonth = FechaHelper.Ahora().Month;
+                int currentYear = FechaHelper.Ahora().Year;
                 ddlMes.SelectedValue = currentMonth.ToString();
                 ddlAnio.SelectedValue = currentYear.ToString();
 
@@ -267,7 +267,7 @@ namespace WebSGV.Views
             using (SqlCommand cmd = new SqlCommand(sql, conn, transaction))
             {
                 cmd.Parameters.AddWithValue("@FileName", fileName);
-                cmd.Parameters.AddWithValue("@UploadDate", DateTime.Now);
+                cmd.Parameters.AddWithValue("@UploadDate", FechaHelper.Ahora());
                 cmd.Parameters.AddWithValue("@Month", month);
                 cmd.Parameters.AddWithValue("@Year", year);
                 cmd.Parameters.AddWithValue("@UploadedBy", currentUser);

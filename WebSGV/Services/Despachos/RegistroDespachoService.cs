@@ -22,6 +22,20 @@ namespace WebSGV.Services.Despachos
     public static class RegistroDespachoService
     {
         /// <summary>Conductores activos para el desplegable (<c>sp_ObtenerConductoresActivos</c>).</summary>
+        /// <summary>Últimos viajes (abiertos y cerrados) del conductor (<c>sp_ObtenerHistorialViajesConductor</c>).</summary>
+        public static DataTable ObtenerHistorialViajesConductor(int idConductor) =>
+            DbHelper.ConsultarTablaSp("sp_ObtenerHistorialViajesConductor",
+                DbHelper.Param("@idConductor", idConductor));
+
+        /// <summary>
+        /// Reabre un viaje CERRADO (<c>sp_ReabrirViajeProgreso</c>). Las reglas de negocio del SP
+        /// llegan como SqlException número 50000 (RAISERROR) con un mensaje para el usuario.
+        /// </summary>
+        public static void ReabrirViajeProgreso(int idViajeProgreso, string usuario) =>
+            DbHelper.EjecutarNonQuerySp("sp_ReabrirViajeProgreso",
+                DbHelper.Param("@idViajeProgreso", idViajeProgreso),
+                DbHelper.Param("@usuario", usuario));
+
         public static DataTable ObtenerConductoresActivos() =>
             DbHelper.ConsultarTablaSp("sp_ObtenerConductoresActivos");
 

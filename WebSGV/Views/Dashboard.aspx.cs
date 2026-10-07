@@ -20,8 +20,8 @@ namespace WebSGV.Views
             if (!IsPostBack)
             {
                 // Establecer el mes y año actual en los filtros
-                ddlMes.SelectedValue = DateTime.Now.Month.ToString();
-                ddlAnio.SelectedValue = DateTime.Now.Year.ToString();
+                ddlMes.SelectedValue = FechaHelper.Ahora().Month.ToString();
+                ddlAnio.SelectedValue = FechaHelper.Ahora().Year.ToString();
 
                 // Cargar datos iniciales
                 CargarDatos();
