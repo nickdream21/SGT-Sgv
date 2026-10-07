@@ -23,7 +23,7 @@ BEGIN
             ELSE 0 
         END AS ExistenRegistros;
     
-    -- Tabla principal de resultados con datos de rendimiento por vehÃ­culo
+    -- Tabla principal de resultados con datos de rendimiento por vehículo
     SELECT 
         t.idTracto,
         t.placaTracto,
@@ -49,7 +49,7 @@ BEGIN
     ORDER BY 
         rendimientoPromedio DESC;
     
-    -- Tabla secundaria con estadÃ­sticas generales para el encabezado del reporte
+    -- Tabla secundaria con estadísticas generales para el encabezado del reporte
     SELECT 
         COUNT(DISTINCT t.idTracto) AS totalVehiculos,
         SUM(a.galonesTotalAbastecidos) AS totalGalonesFlota,

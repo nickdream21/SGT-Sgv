@@ -33,7 +33,7 @@ BEGIN
             GROUP BY p2.nombre
             FOR XML PATH('')
         ), 1, 2, '') AS Productos,
-        -- Usando FOR XML PATH para los clientes tambiÃ©n
+        -- Usando FOR XML PATH para los clientes también
         STUFF((
             SELECT ', ' + ISNULL(cl2.nombre, 'Sin cliente')
             FROM OrdenViaje ov3

@@ -1,13 +1,10 @@
--- =============================================
--- Script: Actualizar SP para incluir rutaDescripcion y tipoAbastecimiento
--- Descripción: Agrega los parámetros @rutaDescripcion y @tipoAbastecimiento
---              al SP de inserción de abastecimiento de combustible.
--- Fecha: 2025
--- NOTA: Ejecutar DESPUÉS de script_AgregarColumnaRutaDescripcion.sql
---       y script_AgregarColumnaTipoAbastecimiento.sql
--- =============================================
-
-ALTER PROCEDURE [dbo].[sp_InsertarAbastecimientoCombustible]
+﻿-- ============================================================
+-- sp_InsertarAbastecimientoCombustible
+-- Uso: AgregarAbastecimiento.aspx.cs (GuardarAbastecimiento).
+-- Versión vigente extraída de la BD el 2026-10-07: incluye @idVolquete / @idCamioneta
+-- (trazabilidad de volquete y camioneta). Reemplaza al antiguo _ALTER.sql, que estaba desactualizado.
+-- ============================================================
+CREATE OR ALTER PROCEDURE sp_InsertarAbastecimientoCombustible
     @numeroAbastecimientoCombustible CHAR(6),
     @idTracto INT = NULL,
     @idCarreta INT = NULL,
@@ -31,19 +28,22 @@ ALTER PROCEDURE [dbo].[sp_InsertarAbastecimientoCombustible]
     @observaciones VARCHAR(300) = NULL,
     @horaRetorno TIME = NULL,
     @idTipoCarro INT = NULL,
-    @idOrdenViaje INT = NULL
+    @idOrdenViaje INT = NULL,
+    @idVolquete INT = NULL,
+    @idCamioneta INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
 
     INSERT INTO AbastecimientoCombustible (
-        numeroAbastecimientoCombustible, idTracto, idCarreta, idConductor, 
+        numeroAbastecimientoCombustible, idTracto, idCarreta, idConductor,
         idRuta, rutaDescripcion, tipoAbastecimiento, producto, idLugarAbastecimiento,
-        fechaHora, galonesRutaAsignada, galonesCompradosRuta, 
+        fechaHora, galonesRutaAsignada, galonesCompradosRuta,
         galonesTotalAbastecidos, galonesAlFinalizar, galonesTotalConsumidos,
-        precioDolar, montoTotalGalonesComprados, distanciaRutaKM, 
-        consumoComputador, rendimientoPromedio, observaciones, 
-        horaRetorno, idTipoCarro, idOrdenViaje
+        precioDolar, montoTotalGalonesComprados, distanciaRutaKM,
+        consumoComputador, rendimientoPromedio, observaciones,
+        horaRetorno, idTipoCarro, idOrdenViaje,
+        idVolquete, idCamioneta
     )
     VALUES (
         @numeroAbastecimientoCombustible, @idTracto, @idCarreta, @idConductor,
@@ -52,10 +52,8 @@ BEGIN
         @galonesTotalAbastecidos, @galonesAlFinalizar, @galonesTotalConsumidos,
         @precioDolar, @montoTotalGalonesComprados, @distanciaRutaKM,
         @consumoComputador, @rendimientoPromedio, @observaciones,
-        @horaRetorno, @idTipoCarro, @idOrdenViaje
+        @horaRetorno, @idTipoCarro, @idOrdenViaje,
+        @idVolquete, @idCamioneta
     );
 END;
-GO
-
-PRINT '✓ SP sp_InsertarAbastecimientoCombustible actualizado con tipoAbastecimiento.';
 GO

@@ -46,10 +46,10 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
         
-        -- Verificar si el nÃºmero de pedido ya existe
+        -- Verificar si el número de pedido ya existe
         IF EXISTS (SELECT 1 FROM Indicadores WHERE numeroPedido = @numeroPedido)
         BEGIN
-            THROW 50000, 'El nÃºmero de pedido ya existe.', 1;
+            THROW 50000, 'El número de pedido ya existe.', 1;
         END
         
         -- Insertar el nuevo indicador

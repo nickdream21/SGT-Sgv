@@ -51,7 +51,7 @@ BEGIN
       AND (@idProducto IS NULL OR p.idProducto = @idProducto)
     ORDER BY ov.fechaSalida DESC, ov.numeroOrdenViaje;
     
-    -- CÃ¡lculo de indicadores - Resultado 2
+    -- Cálculo de indicadores - Resultado 2
     WITH ProductosData AS (
         SELECT 
             ov.numeroOrdenViaje,

@@ -39,7 +39,7 @@ BEGIN
         cr.placaCarreta,
         CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) AS NombreConductor,
         cl.nombre AS Cliente,
-        -- Producto: Probamos mÃºltiples fuentes, priorizando el nombre del producto
+        -- Producto: Probamos múltiples fuentes, priorizando el nombre del producto
         ISNULL(p.nombre, 
             ISNULL((SELECT TOP 1 dp.nombre FROM DetalleOrdenViaje dov 
                     JOIN GuiasTransportista gt ON dov.idGuia = gt.idGuia 

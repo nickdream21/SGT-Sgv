@@ -11,7 +11,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    -- Consulta principal para ranking de productos mÃ¡s transportados
+    -- Consulta principal para ranking de productos más transportados
     SELECT 
         p.idProducto,
         p.nombre AS NombreProducto,

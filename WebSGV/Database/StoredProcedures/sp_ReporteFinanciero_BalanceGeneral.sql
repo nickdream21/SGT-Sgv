@@ -11,10 +11,10 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    -- Variables para verificaciÃ³n de datos
+    -- Variables para verificación de datos
     DECLARE @hayDatos BIT = 0;
     
-    -- Verificar si hay datos segÃºn el tipo de transacciÃ³n
+    -- Verificar si hay datos según el tipo de transacción
     IF @tipoTransaccion = 'Solo Ingresos'
     BEGIN
         IF EXISTS (
@@ -124,10 +124,10 @@ BEGIN
         END
     END
     
-    -- Si no hay datos, devolver estructura vacÃ­a
+    -- Si no hay datos, devolver estructura vacía
     IF @hayDatos = 0
     BEGIN
-        -- Resultado 1: Tabla vacÃ­a con estructura correcta
+        -- Resultado 1: Tabla vacía con estructura correcta
         SELECT 
             CAST(NULL AS VARCHAR(50)) AS NroOrdenViaje,
             CAST(NULL AS VARCHAR(50)) AS NumeroPedido,
@@ -158,7 +158,7 @@ BEGIN
     
     -- Si hay datos, procesamos los resultados normalmente:
     
-    -- Resultado 1: Datos principales del reporte segÃºn el filtro seleccionado
+    -- Resultado 1: Datos principales del reporte según el filtro seleccionado
     IF @tipoTransaccion IS NULL OR @tipoTransaccion = 'Todas' OR @tipoTransaccion = ''
     BEGIN
         -- Ingresos regulares
@@ -169,7 +169,7 @@ BEGIN
             'Ingreso' AS TipoTransaccion,
             CASE 
                 WHEN i.despachoSoles > 0 OR i.despachoDolares > 0 THEN 'Despacho'
-                WHEN i.prestamoSoles > 0 OR i.prestamosDolares > 0 THEN 'PrÃ©stamo'
+                WHEN i.prestamoSoles > 0 OR i.prestamosDolares > 0 THEN 'Préstamo'
                 WHEN i.mensualidadSoles > 0 OR i.mensualidadDolares > 0 THEN 'Mensualidad'
                 WHEN i.otrosSoles > 0 OR i.otrosDolares > 0 THEN 'Otros'
                 ELSE 'No especificado'
@@ -236,7 +236,7 @@ BEGIN
             'Egreso' AS TipoTransaccion,
             CASE 
                 WHEN e.peajesSoles > 0 OR e.peajesDolares > 0 THEN 'Peaje'
-                WHEN e.alimentacionSoles > 0 OR e.alimentacionDolares > 0 THEN 'AlimentaciÃ³n'
+                WHEN e.alimentacionSoles > 0 OR e.alimentacionDolares > 0 THEN 'Alimentación'
                 WHEN e.apoyoseguridadSoles > 0 OR e.apoyoseguridadDolares > 0 THEN 'Apoyo Seguridad'
                 WHEN e.reparacionesVariosSoles > 0 OR e.repacionesVariosDolares > 0 THEN 'Reparaciones'
                 WHEN e.movilidadSoles > 0 OR e.movilidadDolares > 0 THEN 'Movilidad'
@@ -286,7 +286,7 @@ BEGIN
         
         UNION ALL
         
-        -- CategorÃ­as Adicionales (Egresos)
+        -- Categorías Adicionales (Egresos)
         SELECT 
             ov.numeroOrdenViaje AS NroOrdenViaje, -- Nombre consistente de la columna
             f.numeroPedido AS NumeroPedido,
@@ -321,7 +321,7 @@ BEGIN
             'Ingreso' AS TipoTransaccion,
             CASE 
                 WHEN i.despachoSoles > 0 OR i.despachoDolares > 0 THEN 'Despacho'
-                WHEN i.prestamoSoles > 0 OR i.prestamosDolares > 0 THEN 'PrÃ©stamo'
+                WHEN i.prestamoSoles > 0 OR i.prestamosDolares > 0 THEN 'Préstamo'
                 WHEN i.mensualidadSoles > 0 OR i.mensualidadDolares > 0 THEN 'Mensualidad'
                 WHEN i.otrosSoles > 0 OR i.otrosDolares > 0 THEN 'Otros'
                 ELSE 'No especificado'
@@ -382,7 +382,7 @@ BEGIN
     END
     ELSE IF @tipoTransaccion = 'Solo Egresos'
     BEGIN
-        -- Solo Egresos (combinando egresos regulares y categorÃ­as adicionales)
+        -- Solo Egresos (combinando egresos regulares y categorías adicionales)
         SELECT 
             ov.numeroOrdenViaje AS NroOrdenViaje, -- Nombre consistente de la columna 
             f.numeroPedido AS NumeroPedido,
@@ -390,7 +390,7 @@ BEGIN
             'Egreso' AS TipoTransaccion,
             CASE 
                 WHEN e.peajesSoles > 0 OR e.peajesDolares > 0 THEN 'Peaje'
-                WHEN e.alimentacionSoles > 0 OR e.alimentacionDolares > 0 THEN 'AlimentaciÃ³n'
+                WHEN e.alimentacionSoles > 0 OR e.alimentacionDolares > 0 THEN 'Alimentación'
                 WHEN e.apoyoseguridadSoles > 0 OR e.apoyoseguridadDolares > 0 THEN 'Apoyo Seguridad'
                 WHEN e.reparacionesVariosSoles > 0 OR e.repacionesVariosDolares > 0 THEN 'Reparaciones'
                 WHEN e.movilidadSoles > 0 OR e.movilidadDolares > 0 THEN 'Movilidad'
@@ -440,7 +440,7 @@ BEGIN
         
         UNION ALL
         
-        -- CategorÃ­as Adicionales (usar la misma estructura exacta de columnas)
+        -- Categorías Adicionales (usar la misma estructura exacta de columnas)
         SELECT 
             ov.numeroOrdenViaje AS NroOrdenViaje, -- Nombre consistente de la columna
             f.numeroPedido AS NumeroPedido,
@@ -486,7 +486,7 @@ BEGIN
             AND (@tipoTransaccion IS NULL OR @tipoTransaccion = 'Todas' OR @tipoTransaccion = '' OR @tipoTransaccion = 'Solo Ingresos')
         ), 0) AS TotalIngresosSoles,
         
-        -- Total Ingresos (regulares) en dÃ³lares
+        -- Total Ingresos (regulares) en dólares
         ISNULL((
             SELECT SUM(ISNULL(i.despachoDolares, 0) + ISNULL(i.prestamosDolares, 0) + 
                          ISNULL(i.mensualidadDolares, 0) + ISNULL(i.otrosDolares, 0))
@@ -495,7 +495,7 @@ BEGIN
             WHERE ov.fechaSalida BETWEEN @fechaDesde AND @fechaHasta
             AND (@tipoTransaccion IS NULL OR @tipoTransaccion = 'Todas' OR @tipoTransaccion = '' OR @tipoTransaccion = 'Solo Ingresos')
         ), 0) +
-        -- Total Ingresos adicionales en dÃ³lares
+        -- Total Ingresos adicionales en dólares
         ISNULL((
             SELECT SUM(ISNULL(ia.dolares, 0))
             FROM OrdenViaje ov
@@ -524,7 +524,7 @@ BEGIN
             AND (@tipoTransaccion IS NULL OR @tipoTransaccion = 'Todas' OR @tipoTransaccion = '' OR @tipoTransaccion = 'Solo Egresos')
         ), 0) AS TotalEgresosSoles,
         
-        -- Total Egresos (regulares) en dÃ³lares
+        -- Total Egresos (regulares) en dólares
         ISNULL((
             SELECT SUM(ISNULL(e.peajesDolares, 0) + ISNULL(e.alimentacionDolares, 0) + 
                          ISNULL(e.apoyoseguridadDolares, 0) + ISNULL(e.repacionesVariosDolares, 0) + 
@@ -535,7 +535,7 @@ BEGIN
             WHERE ov.fechaSalida BETWEEN @fechaDesde AND @fechaHasta
             AND (@tipoTransaccion IS NULL OR @tipoTransaccion = 'Todas' OR @tipoTransaccion = '' OR @tipoTransaccion = 'Solo Egresos')
         ), 0) + 
-        -- Total Egresos adicionales en dÃ³lares
+        -- Total Egresos adicionales en dólares
         ISNULL((
             SELECT SUM(ISNULL(ca.dolares, 0))
             FROM OrdenViaje ov
@@ -586,9 +586,9 @@ BEGIN
             ), 0)
         ) AS BalanceSoles,
         
-        -- Balance DÃ³lares
+        -- Balance Dólares
         (
-            -- Total Ingresos en dÃ³lares
+            -- Total Ingresos en dólares
             ISNULL((
                 SELECT SUM(ISNULL(i.despachoDolares, 0) + ISNULL(i.prestamosDolares, 0) + 
                              ISNULL(i.mensualidadDolares, 0) + ISNULL(i.otrosDolares, 0))
@@ -597,7 +597,7 @@ BEGIN
                 WHERE ov.fechaSalida BETWEEN @fechaDesde AND @fechaHasta
                 AND (@tipoTransaccion IS NULL OR @tipoTransaccion = 'Todas' OR @tipoTransaccion = '' OR @tipoTransaccion = 'Solo Ingresos')
             ), 0) +
-            -- Ingresos adicionales en dÃ³lares
+            -- Ingresos adicionales en dólares
             ISNULL((
                 SELECT SUM(ISNULL(ia.dolares, 0))
                 FROM OrdenViaje ov
@@ -607,7 +607,7 @@ BEGIN
             ), 0)
         ) - 
         (
-            -- Total Egresos en dÃ³lares
+            -- Total Egresos en dólares
             ISNULL((
                 SELECT SUM(ISNULL(e.peajesDolares, 0) + ISNULL(e.alimentacionDolares, 0) + 
                              ISNULL(e.apoyoseguridadDolares, 0) + ISNULL(e.repacionesVariosDolares, 0) + 
@@ -618,7 +618,7 @@ BEGIN
                 WHERE ov.fechaSalida BETWEEN @fechaDesde AND @fechaHasta
                 AND (@tipoTransaccion IS NULL OR @tipoTransaccion = 'Todas' OR @tipoTransaccion = '' OR @tipoTransaccion = 'Solo Egresos')
             ), 0) + 
-            -- Egresos adicionales en dÃ³lares
+            -- Egresos adicionales en dólares
             ISNULL((
                 SELECT SUM(ISNULL(ca.dolares, 0))
                 FROM OrdenViaje ov

@@ -52,7 +52,7 @@ BEGIN
     ORDER BY 
         rendimientoPromedio DESC;
     
-    -- Tabla secundaria: EstadÃ­sticas generales para el encabezado
+    -- Tabla secundaria: Estadísticas generales para el encabezado
     SELECT 
         COUNT(DISTINCT r.idRuta) AS totalRutas,
         SUM(a.galonesTotalAbastecidos) AS totalGalonesFlota,

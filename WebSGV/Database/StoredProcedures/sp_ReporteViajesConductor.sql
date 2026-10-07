@@ -53,7 +53,7 @@ BEGIN
              OR c.apMaterno LIKE '%' + @nombreConductor + '%')
     ORDER BY ov.fechaSalida DESC, ov.horaSalida DESC;
 
-    -- CÃ¡lculo de indicadores financieros
+    -- Cálculo de indicadores financieros
     SELECT
         SUM(ISNULL(ing.despachoSoles, 0) + ISNULL(ing.prestamoSoles, 0) + ISNULL(ing.mensualidadSoles, 0) + ISNULL(ing.otrosSoles, 0) +
             ISNULL(ing.despachoDolares, 0) + ISNULL(ing.prestamosDolares, 0) + ISNULL(ing.mensualidadDolares, 0) + ISNULL(ing.otrosDolares, 0)) AS TotalIngresos,

@@ -35,7 +35,7 @@ Non-sensitive `appSettings` (company name, RUC, PDF archive path) live inline in
 
 ### Request flow
 
-1. User hits a `.aspx` URL directly (no MVC routing — `App_Start/RouteConfig.cs` is empty).
+1. User hits a `.aspx` URL directly. Pure WebForms: no MVC, Razor, bundling, FriendlyUrls or AjaxControlToolkit (removed 2026-10-07; don't re-add). `App_Start/BundleConfig.cs` only maps the ScriptManager `"jquery"` resource.
 2. `Site.Master` / `Site.Mobile.Master` renders the shell; all view pages extend it.
 3. Code-behind (`Page_Load`) verifies session, checks role, loads data on `!IsPostBack`.
 4. Data access goes directly to SQL Server via `SqlCommand` (no ORM, no repository abstraction) using the `ConexionSGV` connection string.
@@ -117,7 +117,9 @@ SQL Server hosted on somee.com. Schema and stored procedures are tracked as `.sq
 - `Database/StoredProcedures/` — one file per proc (`CREATE OR ALTER`); naming convention: `sp_DC_*` (Dashboard Conductor), `sp_LD_*` (Liquidaciones), `sp_MQ_*` (Maquinaria), `sp_SE_*` (Seguimiento Exportación), etc. Every `sp_*` called from C# should have its file here.
 - `Database/Scripts/` — ad-hoc migration / diagnostic scripts.
 
-Any new SP must be executed manually against the DB (SSMS / sqlcmd) before calling code will work. With sqlcmd against somee use `-C -I -f 65001` (trust cert, QUOTED_IDENTIFIER for filtered indexes, UTF-8 for ñ).
+Any new SP must be executed manually against the DB (SSMS / sqlcmd) before calling code will work. `Database/aplicar-procedimientos.ps1 -Entorno pruebas -SoloListar` compares every SP file with the DB (FALTA / DISTINTO); without `-SoloListar` it applies the differing files. The repo is the source of truth for SPs. `Database/Scripts/reparar-tildes-bd.ps1` fixes mojibake (UTF-8 read as Windows-1252) in DB objects outside the repo.
+
+Integration tests (`WebSGV.Tests/Integracion/`, `[FactBD]`) run read-only against the TEST DB using `WebSGV/connectionStrings.config` or `SGV_TEST_CONNSTR`; they refuse any DB other than `sgvActualizada` and are skipped in CI. They check e.g. that every `sp_*` called from C# exists, no `getdate()`, all migrations applied, no plaintext passwords. With sqlcmd against somee use `-C -I -f 65001` (trust cert, QUOTED_IDENTIFIER for filtered indexes, UTF-8 for ñ).
 
 ### Front-end libraries
 

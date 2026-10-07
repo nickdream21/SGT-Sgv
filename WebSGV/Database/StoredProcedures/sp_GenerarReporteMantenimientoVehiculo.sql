@@ -51,7 +51,7 @@ BEGIN
         ca.soles AS MontoSoles,
         ca.dolares AS MontoDolares,
         ca.descripcion AS Descripcion,
-        'CategorÃ­a adicional' AS TipoGasto
+        'Categoría adicional' AS TipoGasto
     FROM OrdenViaje ov
     JOIN Tracto t ON ov.idTracto = t.idTracto
     LEFT JOIN Conductor c ON ov.idConductor = c.idConductor

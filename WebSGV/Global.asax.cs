@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
-using System.Web.Mvc;
-using System.Web.Optimization;
-using System.Web.Routing;
 using System.Web.Security;
 using System.Web.SessionState;
 using WebSGV.Helpers;
@@ -21,10 +18,9 @@ namespace WebSGV
             LogSGV.Inicializar(System.Web.Hosting.HostingEnvironment.MapPath("~/App_Data/logs"));
             LogSGV.Info("Aplicación SGV iniciada");
 
-            // Código que se ejecuta al iniciar la aplicación
-            AreaRegistration.RegisterAllAreas();
-            RouteConfig.RegisterRoutes(RouteTable.Routes);
-            BundleConfig.RegisterBundles(BundleTable.Bundles);
+            // Recurso "jquery" del ScriptManager (validación unobtrusive). Sin MVC ni bundling:
+            // el sitio es WebForms puro con URLs .aspx directas.
+            BundleConfig.RegisterJQueryScriptManager();
 
             // QuestPDF: licencia Community (empresa con ingresos < 1M USD anuales)
             QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;

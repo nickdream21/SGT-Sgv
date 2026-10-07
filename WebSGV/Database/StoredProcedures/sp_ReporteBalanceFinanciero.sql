@@ -56,7 +56,7 @@ BEGIN
         
         UNION ALL
         
-        -- PrÃ©stamo
+        -- Préstamo
         SELECT 
             ov.numeroOrdenViaje,
             ov.idConductor,
@@ -64,7 +64,7 @@ BEGIN
             ov.idCPIC,
             ov.fechaSalida,
             'Ingreso' AS TipoTransaccion,
-            'PrÃ©stamo' AS Concepto,
+            'Préstamo' AS Concepto,
             ISNULL(i.prestamoSoles, 0) AS IngresoSoles,
             ISNULL(i.prestamosDolares, 0) AS IngresoDolares,
             0 AS EgresoSoles,
@@ -191,7 +191,7 @@ BEGIN
         
         UNION ALL
         
-        -- AlimentaciÃ³n
+        -- Alimentación
         SELECT 
             ov.numeroOrdenViaje,
             ov.idConductor,
@@ -199,7 +199,7 @@ BEGIN
             ov.idCPIC,
             ov.fechaSalida,
             'Egreso' AS TipoTransaccion,
-            'AlimentaciÃ³n' AS Concepto,
+            'Alimentación' AS Concepto,
             0 AS IngresoSoles,
             0 AS IngresoDolares,
             ISNULL(e.alimentacionSoles, 0) AS EgresoSoles,
@@ -380,7 +380,7 @@ BEGIN
         
         UNION ALL
         
-        -- CategorÃ­as Adicionales (gastos adicionales)
+        -- Categorías Adicionales (gastos adicionales)
         SELECT 
             ov.numeroOrdenViaje,
             ov.idConductor,
@@ -415,7 +415,7 @@ BEGIN
                OR (EgresoSoles <= @montoMaximo) OR (EgresoDolares <= @montoMaximo))
     ORDER BY FechaTransaccion, NroOrdenViaje, TipoTransaccion;
     
-    -- CÃ¡lculo de indicadores financieros 
+    -- Cálculo de indicadores financieros 
     SELECT 
         SUM(IngresoSoles) AS TotalIngresosSoles,
         SUM(IngresoDolares) AS TotalIngresosDolares,
@@ -443,7 +443,7 @@ BEGIN
         
         UNION ALL
         
-        -- PrÃ©stamo
+        -- Préstamo
         SELECT 
             ISNULL(i.prestamoSoles, 0) AS IngresoSoles,
             ISNULL(i.prestamosDolares, 0) AS IngresoDolares,
@@ -543,7 +543,7 @@ BEGIN
         
         UNION ALL
         
-        -- AlimentaciÃ³n
+        -- Alimentación
         SELECT 
             0 AS IngresoSoles,
             0 AS IngresoDolares,
@@ -683,7 +683,7 @@ BEGIN
         
         UNION ALL
         
-        -- CategorÃ­as Adicionales (gastos adicionales)
+        -- Categorías Adicionales (gastos adicionales)
         SELECT 
             0 AS IngresoSoles,
             0 AS IngresoDolares,

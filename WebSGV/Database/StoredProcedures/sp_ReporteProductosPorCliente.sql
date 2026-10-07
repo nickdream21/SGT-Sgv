@@ -34,7 +34,7 @@ BEGIN
             GROUP BY p2.nombre
             FOR XML PATH('')
         ), 1, 2, '') AS Productos,
-        -- Usando FOR XML PATH para los destinos tambiÃ©n
+        -- Usando FOR XML PATH para los destinos también
         STUFF((
             SELECT ', ' + ISNULL(pd.nombre, 'Sin destino')
             FROM OrdenViaje ov3

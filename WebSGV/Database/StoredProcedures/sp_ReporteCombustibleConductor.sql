@@ -40,7 +40,7 @@ BEGIN
       AND (@idConductor IS NULL OR @idConductor = '0' OR c.idConductor = @idConductor)
     ORDER BY ov.fechaSalida DESC, ov.numeroOrdenViaje;
     
-    -- CÃ¡lculo de indicadores - Resultados agregados
+    -- Cálculo de indicadores - Resultados agregados
     SELECT 
         COUNT(DISTINCT t.placaTracto) AS ContadorVehiculos,
         ISNULL(SUM(ac.distanciaRutaKM), 0) AS TotalKilometros,

@@ -76,7 +76,7 @@ BEGIN
         AND (@dniConductor IS NULL OR c.DNI LIKE '%' + @dniConductor + '%')
     ORDER BY c.apPaterno, c.apMaterno, c.nombre, ov.fechaSalida DESC;
     
-    -- CÃ¡lculo de indicadores
+    -- Cálculo de indicadores
     WITH ConductoresData AS (
         SELECT 
             ov.idOrdenViaje,

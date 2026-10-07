@@ -36,11 +36,19 @@ namespace WebSGV.Helpers
     /// </summary>
     public static class DbHelper
     {
+        private static string _conexionFijada;
+
         /// <summary>Cadena de conexión principal del sistema (<c>ConexionSGV</c>).</summary>
         public static string ConnectionString
         {
-            get { return ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString; }
+            get { return _conexionFijada ?? ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString; }
         }
+
+        /// <summary>
+        /// Solo para tests de integración (WebSGV.Tests), que no tienen Web.config: fija la
+        /// cadena de conexión a usar. La aplicación web nunca lo llama.
+        /// </summary>
+        public static void FijarConexionParaPruebas(string cadena) => _conexionFijada = cadena;
 
         /// <summary>
         /// Crea un <see cref="SqlParameter"/> convirtiendo <c>null</c> a

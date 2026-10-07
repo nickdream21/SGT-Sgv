@@ -47,7 +47,7 @@ BEGIN
             ov.numeroOrdenViaje AS NroOrdenViaje,
             ov.fechaSalida AS FechaTransaccion,
             'Ingreso' AS TipoTransaccion,
-            'PrÃ©stamo' AS Concepto,
+            'Préstamo' AS Concepto,
             CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) AS Conductor,
             cl.nombre AS Cliente,
             ISNULL(i.prestamoSoles, 0) AS MontoSoles,
@@ -166,12 +166,12 @@ BEGIN
         
         UNION ALL
         
-        -- AlimentaciÃ³n
+        -- Alimentación
         SELECT 
             ov.numeroOrdenViaje AS NroOrdenViaje,
             ov.fechaSalida AS FechaTransaccion,
             'Egreso' AS TipoTransaccion,
-            'AlimentaciÃ³n' AS Concepto,
+            'Alimentación' AS Concepto,
             CONCAT(c.nombre, ' ', c.apPaterno, ' ', c.apMaterno) AS Conductor,
             cl.nombre AS Cliente,
             ISNULL(e.alimentacionSoles, 0) AS MontoSoles,
@@ -341,7 +341,7 @@ BEGIN
         
         UNION ALL
         
-        -- Egresos adicionales (CategorÃ­as Adicionales)
+        -- Egresos adicionales (Categorías Adicionales)
         SELECT 
             ov.numeroOrdenViaje AS NroOrdenViaje,
             ov.fechaSalida AS FechaTransaccion,
@@ -371,7 +371,7 @@ BEGIN
       AND (@montoMaximo IS NULL OR (MontoSoles <= @montoMaximo OR MontoDolares <= @montoMaximo))
     ORDER BY FechaTransaccion DESC, TipoTransaccion, Concepto;
     
-    -- CÃ¡lculo de indicadores - Resultados agregados
+    -- Cálculo de indicadores - Resultados agregados
     WITH ResultadosCombinados AS (
         -- Ingresos regulares
         SELECT 
@@ -441,7 +441,7 @@ BEGIN
         
         UNION ALL
         
-        -- Egresos adicionales (CategorÃ­as Adicionales)
+        -- Egresos adicionales (Categorías Adicionales)
         SELECT 
             'Egreso' AS TipoTransaccion,
             ISNULL(ca.soles, 0) AS MontoSoles,
@@ -458,7 +458,7 @@ BEGIN
              OR c.apMaterno LIKE '%' + @nombreConductor + '%')
     )
     
-    -- CÃ¡lculo de totales por tipo de transacciÃ³n
+    -- Cálculo de totales por tipo de transacción
     SELECT
         SUM(CASE WHEN TipoTransaccion = 'Ingreso' THEN MontoSoles ELSE 0 END) AS TotalIngresosSoles,
         SUM(CASE WHEN TipoTransaccion = 'Ingreso' THEN MontoDolares ELSE 0 END) AS TotalIngresosDolares,

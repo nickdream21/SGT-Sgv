@@ -15,7 +15,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    -- Consulta principal para datos de vehÃ­culos asignados
+    -- Consulta principal para datos de vehículos asignados
     SELECT 
         ov.idOrdenViaje,
         ov.numeroOrdenViaje AS NroOrdenViaje,
@@ -71,7 +71,7 @@ BEGIN
             OR cr.modelo = @modeloVehiculo)
     ORDER BY ov.fechaSalida DESC, ov.horaSalida DESC;
     
-    -- CÃ¡lculo de indicadores
+    -- Cálculo de indicadores
     WITH VehiculosData AS (
         SELECT 
             ov.idOrdenViaje,

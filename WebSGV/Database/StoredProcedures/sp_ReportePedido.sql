@@ -67,7 +67,7 @@ BEGIN
         AND (@valorMaximo IS NULL OR cpic.valorTotalFlete <= @valorMaximo)
     ORDER BY ov.fechaSalida DESC, ov.horaSalida DESC;
     
-    -- Calcular indicadores financieros para las Ã³rdenes seleccionadas
+    -- Calcular indicadores financieros para las órdenes seleccionadas
     WITH OrdenesSeleccionadas AS (
         SELECT ov.numeroOrdenViaje
         FROM OrdenViaje ov
@@ -99,7 +99,7 @@ BEGIN
                 ISNULL(i.mensualidadSoles, 0) + ISNULL(i.otrosSoles, 0) +
                 ISNULL(i.despachoDolares, 0) + ISNULL(i.prestamosDolares, 0) + 
                 ISNULL(i.mensualidadDolares, 0) + ISNULL(i.otrosDolares, 0)) AS TotalIngresos
-        FROM dbo.Ingresos i  -- Uso explÃ­cito del nombre de la tabla con prefijo de esquema
+        FROM dbo.Ingresos i  -- Uso explícito del nombre de la tabla con prefijo de esquema
         JOIN OrdenesSeleccionadas os ON i.numeroOrdenViaje = os.numeroOrdenViaje
     ),
     EgresosCalculados AS (
@@ -112,13 +112,13 @@ BEGIN
                 ISNULL(e.apoyoseguridadDolares, 0) + ISNULL(e.repacionesVariosDolares, 0) + 
                 ISNULL(e.movilidadDolares, 0) + ISNULL(e.hospedajeDolares, 0) + 
                 ISNULL(e.combustibleDolares, 0) + ISNULL(e.encarpada_desencarpadaDolares, 0)) AS TotalEgresos
-        FROM dbo.Egresos e  -- Uso explÃ­cito del nombre de la tabla con prefijo de esquema
+        FROM dbo.Egresos e  -- Uso explícito del nombre de la tabla con prefijo de esquema
         JOIN OrdenesSeleccionadas os ON e.numeroOrdenViaje = os.numeroOrdenViaje
     ),
     EgresosAdicionalesCalculados AS (
         SELECT 
             SUM(ISNULL(ca.soles, 0) + ISNULL(ca.dolares, 0)) AS TotalEgresosAdicionales
-        FROM dbo.CategoriasAdicionales ca  -- Uso explÃ­cito del nombre de la tabla con prefijo de esquema
+        FROM dbo.CategoriasAdicionales ca  -- Uso explícito del nombre de la tabla con prefijo de esquema
         JOIN OrdenesSeleccionadas os ON ca.numeroOrdenViaje = os.numeroOrdenViaje
     )
     SELECT 
