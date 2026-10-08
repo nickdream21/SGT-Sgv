@@ -8,8 +8,9 @@
     <meta name="theme-color" content="#0B3D91" />
     <title>Firmar Liquidación · SGV</title>
 
-    <link rel="stylesheet" href="<%= ResolveUrl("~/Content/bootstrap.min.css") %>" />
-    <link rel="stylesheet" href="<%= ResolveUrl("~/Content/fontawesome/css/all.min.css") %>" />
+    <%-- Mismas librerías y versiones que Site.Master (Bootstrap 4.6.2, Font Awesome 5.15.4). --%>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
@@ -142,7 +143,7 @@
 
     </main>
 
-    <script src="<%= ResolveUrl("~/Scripts/jquery-3.7.0.min.js") %>"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/FirmarLiquidacion.js") %>"></script>
 </form>
 </body>

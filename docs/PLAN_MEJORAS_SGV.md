@@ -80,6 +80,10 @@ Ordenadas por valor. Marca `[x]` al terminar.
 - [ ] **Probar "Verificar GPS"** (`Views/Exportacion/RegistroSeguimiento.aspx`) contra el API real de
       Onway. El cambio del token (bloqueo + reintentos) no se probó en vivo. Onway permite **un solo token
       activo**: si producción tiene uno vigente, pruebas no podrá renovar hasta que expire.
+      **2026-10-08:** probado desde Liquidaciones → Auth0 responde `401 access_denied "Unauthorized"` al
+      pedir el token (`client_credentials`). El último token conseguido en pruebas es del 2026-09-01.
+      Falta saber si producción tiene un token vigente (ver `OnwayAuthCache` en `sgvTransporte`) o si las
+      credenciales de Auth0 cambiaron (consultar a Onway).
 - [x] ~~Partir `Views/Reportes.aspx.cs`~~ → **descartado: la página se eliminó** (2026-10-08). "Reportes
       Avanzados" ya no se usaba (sin enlace en el menú desde `144ee1e`). Se borraron `Reportes.aspx`,
       `ReporteResultado.aspx`, `ReportesService`, `ReporteExcelBuilder`, `ReporteFiltros` y sus tests, y
@@ -92,8 +96,12 @@ Ordenadas por valor. Marca `[x]` al terminar.
       objeto `SGV` declarado en la página; URLs con versión vía `RecursoHelper.Url`. Verificado: sintaxis
       de cada `.js` (node --check), precompilación de todas las páginas (aspnet_compiler) y tests.
       Bloques de menos de 10 líneas y `Error*.aspx` quedan en línea. Convención en `CLAUDE.md`.
-- [ ] **`FirmarLiquidacion.aspx`** (página sin master) usa Bootstrap 5 y jQuery 3.7 locales; el resto
-      del sitio usa Bootstrap 4.6.2. Decidir si se unifica (requiere revisión visual).
+- [x] **`FirmarLiquidacion.aspx` unificada a Bootstrap 4.6.2** (2026-10-08): usa las mismas librerías
+      y versiones que `Site.Master` (CDN). Además se corrigió Font Awesome, que apuntaba a
+      `Content/fontawesome/` (no existía: los iconos de la firma no se veían). Fuera los paquetes NuGet
+      `bootstrap 5.2.3` y `jQuery 3.7.0` (sus 51 archivos locales ya no los usaba nadie) y `Bundle.config`.
+      Todo el sitio queda en Bootstrap 4.6.2 + jQuery 3.6.4. Migrar a Bootstrap 5 sería un proyecto
+      aparte (41 páginas, revisión visual completa).
 - [ ] **`Empresa.Web`** en `Web.config` (y escrito a mano en `LiquidacionesPendientes.aspx`) apunta a
       `www.serviciosgviviana.somee.com`, que no responde. Decidir si debe ser `sgvtransporte.somee.com`
       o la web comercial de la empresa (sale impreso en los PDF).
