@@ -10,7 +10,7 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 | Puntuación general | 5.5 / 10 | **8 / 10** |
 | Tests | 215 | **273** (265 unitarios + 8 de integración) |
 | Paquetes NuGet | 40 | 23 |
-| Procedimientos del repo vs BD de pruebas | sin control, 2 inexistentes | **98/98 iguales** (100 en BD, 2 de legado por borrar) |
+| Procedimientos del repo vs BD de pruebas | sin control, 2 inexistentes | **98/98 iguales** (la BD tiene exactamente los del repo) |
 
 - Todo se trabaja contra la BD de **PRUEBAS** (`sgvActualizada`). El sistema todavía no lo usa nadie.
 - **Producción (`sgvTransporte`) NO está actualizada**: el código de `master` no se puede publicar
@@ -72,9 +72,11 @@ Ordenadas por valor. Marca `[x]` al terminar.
       sp_ObtenerViajeActivoConductor, sp_ObtenerViajesActivosParaGrifo, sp_PruebaDespacho,
       sp_RegistrarCPIC, sp_ReporteRendimientoPorRuta, sp_SE_Dashboard_Mensual, sp_SE_Eliminar,
       sp_SE_GridListar, ValidarPlantaCliente, ValidarSegmentosOrden, ValidarUnicidadGuias`.
-- [ ] **Borrar 2 procedimientos más sin uso**: `InsertarOperacionSubTramo` e
-      `InsertarSegmentoOrdenViajeConGuias`. Están en la BD pero no en el repo; nada los llama (ni código
-      ni otros objetos). Mismo método: respaldo + migración 18.
+- [x] **Borrar 2 procedimientos más sin uso**: `InsertarOperacionSubTramo` e
+      `InsertarSegmentoOrdenViajeConGuias` (estaban en la BD pero no en el repo). Hecho el 2026-10-08 con
+      la migración `Schema/18_BorrarProcedimientosLegado2.sql`; respaldo en
+      `Database/Scripts/respaldo_procedimientos_legado_2_2026-10-08.sql`. La BD de pruebas queda con
+      exactamente los 98 procedimientos del repo.
 - [ ] **Probar "Verificar GPS"** (`Views/Exportacion/RegistroSeguimiento.aspx`) contra el API real de
       Onway. El cambio del token (bloqueo + reintentos) no se probó en vivo. Onway permite **un solo token
       activo**: si producción tiene uno vigente, pruebas no podrá renovar hasta que expire.
