@@ -68,8 +68,23 @@ function Invoke-ScriptSql([string]$ruta) {
     if ($LASTEXITCODE -ne 0) { throw "Falló $([IO.Path]::GetFileName($ruta)) (sqlcmd exit $LASTEXITCODE)." }
 }
 
+# Git entrega los archivos con CRLF o LF según la máquina (core.autocrlf), así que el hash se
+# calcula con saltos LF. Se aceptan también registros antiguos hechos con el archivo en CRLF.
+function Get-Sha256([byte[]]$bytes) {
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { ([BitConverter]::ToString($sha.ComputeHash($bytes)) -replace '-', '').ToLowerInvariant() } finally { $sha.Dispose() }
+}
+# GetString conserva el BOM como U+FEFF, así que GetBytes lo vuelve a escribir igual.
+function Get-TextoLf([string]$ruta) {
+    [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($ruta)).Replace("`r`n", "`n")
+}
 function Get-HashArchivo([string]$ruta) {
-    (Get-FileHash -Algorithm SHA256 -Path $ruta).Hash.ToLowerInvariant()
+    Get-Sha256 ([Text.Encoding]::UTF8.GetBytes((Get-TextoLf $ruta)))
+}
+function Test-HashCoincide([string]$ruta, [string]$registrado) {
+    $lf = Get-TextoLf $ruta
+    return $registrado -eq (Get-Sha256 ([Text.Encoding]::UTF8.GetBytes($lf))) -or
+           $registrado -eq (Get-Sha256 ([Text.Encoding]::UTF8.GetBytes($lf.Replace("`n", "`r`n"))))
 }
 
 Write-Host "Entorno: $Entorno  ->  $($b.DataSource) / $($b.InitialCatalog)" -ForegroundColor Cyan
@@ -92,9 +107,8 @@ $control = $scripts | Where-Object { $_.Name -like '00_*' }
 $pendientes = @(); $modificados = @()
 foreach ($s in $scripts) {
     if ($s.Name -like '00_*') { continue }
-    $hash = Get-HashArchivo $s.FullName
     if (-not $registrados.ContainsKey($s.Name)) { $pendientes += $s }
-    elseif ($registrados[$s.Name] -ne $hash) { $modificados += $s.Name }
+    elseif (-not (Test-HashCoincide $s.FullName $registrados[$s.Name])) { $modificados += $s.Name }
 }
 
 if (-not $existeTabla) { Write-Host "La tabla dbo.SchemaVersion no existe todavía (se creará)." -ForegroundColor Yellow }

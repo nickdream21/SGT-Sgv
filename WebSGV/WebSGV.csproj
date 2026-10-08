@@ -153,7 +153,6 @@
     <Content Include="Content\favicon.png" />
     <Content Include="Content\responsive-mobile.css" />
     <Content Include="Content\Site.css" />
-    <Content Include="Database\Despliegue_Exportacion.sql" />
     <Content Include="Database\Schema\01_FormatoControlado.sql" />
     <Content Include="Database\Schema\02_FirmaDigital.sql" />
     <Content Include="Database\Schema\03_OrdenViajeAjuste.sql" />
@@ -246,8 +245,6 @@
     <Content Include="Database\StoredProcedures\sp_ObtenerPlantasPorAmbito.sql" />
     <Content Include="Database\StoredProcedures\sp_ObtenerTractosActivos.sql" />
     <Content Include="Database\StoredProcedures\sp_ObtenerViajesAbiertosConductor.sql" />
-    <Content Include="Database\StoredProcedures\sp_ObtenerViajesActivosParaGrifo.sql" />
-    <Content Include="Database\StoredProcedures\sp_SE_GridListar.sql" />
     <Content Include="Database\StoredProcedures\sp_SE_ListarEnCurso.sql" />
     <Content Include="Database\StoredProcedures\sp_SE_BuscarDespachosDisponibles.sql" />
     <Content Include="Database\StoredProcedures\sp_SE_ObtenerDespachoPorId.sql" />

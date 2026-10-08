@@ -1,6 +1,6 @@
 # Plan de mejoras SGV — estado y tareas pendientes
 
-Última actualización: **2026-10-08**. Este documento es el punto de partida para seguir trabajando
+Última actualización: **2026-10-08** (laptop). Este documento es el punto de partida para seguir trabajando
 desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 
 ## 1. Estado actual
@@ -10,7 +10,7 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 | Puntuación general | 5.5 / 10 | **8 / 10** |
 | Tests | 215 | **273** (265 unitarios + 8 de integración) |
 | Paquetes NuGet | 40 | 23 |
-| Procedimientos del repo vs BD de pruebas | sin control, 2 inexistentes | **101/101 iguales** |
+| Procedimientos del repo vs BD de pruebas | sin control, 2 inexistentes | **98/98 iguales** (100 en BD, 2 de legado por borrar) |
 
 - Todo se trabaja contra la BD de **PRUEBAS** (`sgvActualizada`). El sistema todavía no lo usa nadie.
 - **Producción (`sgvTransporte`) NO está actualizada**: el código de `master` no se puede publicar
@@ -55,10 +55,11 @@ Detalle de reglas y convenciones nuevas: ver `CLAUDE.md`.
 
 Ordenadas por valor. Marca `[x]` al terminar.
 
-- [ ] **Borrar procedimientos de legado sin uso (40).** Ninguno se llama desde C#, `.aspx` ni desde
-      otro procedimiento. Antes de borrar, guardar sus definiciones en `Database/Scripts/` como respaldo.
-      `sp_RegistrarCPIC` además está **roto** (no se puede recrear: `OUTPUT` sin `INTO` sobre una tabla
-      con trigger). Lista:
+- [x] **Borrar procedimientos de legado sin uso (40).** Hecho el 2026-10-08 con la migración
+      `Schema/17_BorrarProcedimientosLegado.sql` (aplicada en pruebas: 140 → 100 procedimientos).
+      Respaldo en `Database/Scripts/respaldo_procedimientos_legado_2026-10-08.sql`. También se borró
+      `Database/Despliegue_Exportacion.sql` (obsoleto: recreaba la versión vieja de `sp_SE_Listar` y
+      apuntaba a producción). Lista:
       `ActualizarTipoViaje, ActualizarTipoViajeAutomatico, CrearCPICTemporal, GenerarNumeroOrdenViaje,
       InsertarDetalleSegmento, InsertarEgresos, InsertarGastoAdicional, InsertarIngresoAdicional,
       InsertarIngresos, InsertarLiquidacionCompleta, InsertarSegmentoOrdenViaje,
@@ -71,6 +72,9 @@ Ordenadas por valor. Marca `[x]` al terminar.
       sp_ObtenerViajeActivoConductor, sp_ObtenerViajesActivosParaGrifo, sp_PruebaDespacho,
       sp_RegistrarCPIC, sp_ReporteRendimientoPorRuta, sp_SE_Dashboard_Mensual, sp_SE_Eliminar,
       sp_SE_GridListar, ValidarPlantaCliente, ValidarSegmentosOrden, ValidarUnicidadGuias`.
+- [ ] **Borrar 2 procedimientos más sin uso**: `InsertarOperacionSubTramo` e
+      `InsertarSegmentoOrdenViajeConGuias`. Están en la BD pero no en el repo; nada los llama (ni código
+      ni otros objetos). Mismo método: respaldo + migración 18.
 - [ ] **Probar "Verificar GPS"** (`Views/Exportacion/RegistroSeguimiento.aspx`) contra el API real de
       Onway. El cambio del token (bloqueo + reintentos) no se probó en vivo. Onway permite **un solo token
       activo**: si producción tiene uno vigente, pruebas no podrá renovar hasta que expire.
@@ -93,6 +97,7 @@ Ordenadas por valor. Marca `[x]` al terminar.
 
 | Script | Para qué |
 |---|---|
+| `WebSGV/Database/sql.ps1 "<consulta>" \| -Archivo x.sql [-Texto] [-Salida f] [-Entorno produccion -ConfirmoProduccion]` | Consulta o script contra la BD (pruebas por defecto) sin exponer la clave: la lee de `connectionStrings.config`. `-Texto` devuelve textos largos sin recortar (definiciones de objetos). Úsalo en lugar de escribir sqlcmd a mano. |
 | `WebSGV/Database/aplicar-migraciones.ps1 -Entorno pruebas\|produccion [-SoloListar] [-ConfirmoProduccion]` | Aplica en orden las migraciones de `Database/Schema/` pendientes y las registra en `dbo.SchemaVersion`. |
 | `WebSGV/Database/aplicar-procedimientos.ps1 -Entorno ... [-SoloListar] [-Todos]` | Compara cada SP del repo con la BD (FALTA / DISTINTO) y aplica los que difieren. El repo es la fuente de verdad. |
 | `WebSGV/Database/Scripts/migrar-contrasenas-texto-plano.ps1 -Entorno ...` | Convierte a PBKDF2 las contraseñas que sigan en texto plano (requiere compilar antes). |

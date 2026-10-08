@@ -119,6 +119,8 @@ SQL Server hosted on somee.com. Schema and stored procedures are tracked as `.sq
 
 Any new SP must be executed manually against the DB (SSMS / sqlcmd) before calling code will work. `Database/aplicar-procedimientos.ps1 -Entorno pruebas -SoloListar` compares every SP file with the DB (FALTA / DISTINTO); without `-SoloListar` it applies the differing files. The repo is the source of truth for SPs. `Database/Scripts/reparar-tildes-bd.ps1` fixes mojibake (UTF-8 read as Windows-1252) in DB objects outside the repo.
 
+To query or run a script against the DB, use `WebSGV/Database/sql.ps1 "<query>"` or `-Archivo file.sql` (test DB by default; reads the password from `connectionStrings.config` so it never appears on the command line; `-Texto` returns long text such as object definitions untruncated; production needs `-Entorno produccion -ConfirmoProduccion`). `aplicar-migraciones.ps1` hashes migrations with LF line endings (CRLF-era hashes are still accepted), so checkouts on different machines don't show false "changed" warnings.
+
 Integration tests (`WebSGV.Tests/Integracion/`, `[FactBD]`) run read-only against the TEST DB using `WebSGV/connectionStrings.config` or `SGV_TEST_CONNSTR`; they refuse any DB other than `sgvActualizada` and are skipped in CI. They check e.g. that every `sp_*` called from C# exists, no `getdate()`, all migrations applied, no plaintext passwords. With sqlcmd against somee use `-C -I -f 65001` (trust cert, QUOTED_IDENTIFIER for filtered indexes, UTF-8 for ñ).
 
 ### Front-end libraries
