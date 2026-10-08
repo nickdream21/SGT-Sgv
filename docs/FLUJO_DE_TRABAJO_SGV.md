@@ -176,7 +176,6 @@ Historial de partes accesible en Dashboard
 |--------|---------|---------|
 | `ReportesOrdenesViaje.aspx` | **Liquidaciones** | Liquidaciones aprobadas con filtros por fecha y factor de conversión (USD → S/). Incluye detalle de descuentos y reintegros. Exportable a Excel y PDF. |
 | `ReportesOrdenesViaje.aspx` | **Viajes Activos Sin Liquidación** | Conductores con viajes en progreso que aún no han enviado su liquidación. |
-| `Reportes.aspx` | **Reportes Avanzados** | Módulo independiente con filtros por conductor, vehículo, producto, tipo de transacción. Exportación avanzada. Vista de resultados en `ReporteResultado.aspx`. |
 
 ### 4. Módulo de Registros (Maestros)
 

@@ -8,9 +8,9 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 | | Al empezar (2026-10-07) | Ahora |
 |---|---|---|
 | Puntuación general | 5.5 / 10 | **8 / 10** |
-| Tests | 215 | **273** (265 unitarios + 8 de integración) |
+| Tests | 215 | **248** (240 unitarios + 8 de integración; se quitaron 25 de la página Reportes eliminada) |
 | Paquetes NuGet | 40 | 23 |
-| Procedimientos del repo vs BD de pruebas | sin control, 2 inexistentes | **98/98 iguales** (la BD tiene exactamente los del repo) |
+| Procedimientos del repo vs BD de pruebas | sin control, 2 inexistentes | **79/79 iguales** (la BD tiene exactamente los del repo) |
 
 - Todo se trabaja contra la BD de **PRUEBAS** (`sgvActualizada`). El sistema todavía no lo usa nadie.
 - **Producción (`sgvTransporte`) NO está actualizada**: el código de `master` no se puede publicar
@@ -36,7 +36,7 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 4. **Comprobar:**
    ```powershell
    msbuild WebSGV.sln /p:Configuration=Debug /nologo /verbosity:minimal
-   dotnet test WebSGV.Tests\WebSGV.Tests.csproj --no-build      # 273 en verde (8 de integración)
+   dotnet test WebSGV.Tests\WebSGV.Tests.csproj --no-build      # 248 en verde (8 de integración)
    ```
    Sin `connectionStrings.config` los 8 de integración salen como "omitidos" (no fallan).
 
@@ -80,8 +80,12 @@ Ordenadas por valor. Marca `[x]` al terminar.
 - [ ] **Probar "Verificar GPS"** (`Views/Exportacion/RegistroSeguimiento.aspx`) contra el API real de
       Onway. El cambio del token (bloqueo + reintentos) no se probó en vivo. Onway permite **un solo token
       activo**: si producción tiene uno vigente, pruebas no podrá renovar hasta que expire.
-- [ ] **Partir `Views/Reportes.aspx.cs`** (~4 000 líneas): cada `GenerarReporteXxx` + `ConfigurarGridViewXxx`
-      a una clase por reporte; el SQL ya está en `ReportesService`.
+- [x] ~~Partir `Views/Reportes.aspx.cs`~~ → **descartado: la página se eliminó** (2026-10-08). "Reportes
+      Avanzados" ya no se usaba (sin enlace en el menú desde `144ee1e`). Se borraron `Reportes.aspx`,
+      `ReporteResultado.aspx`, `ReportesService`, `ReporteExcelBuilder`, `ReporteFiltros` y sus tests, y
+      sus 19 procedimientos con la migración `Schema/19_BorrarProcedimientosReportes.sql` (los archivos
+      quedan en el historial de git, commit `5414eca`). Los reportes en uso son `ReportesOrdenesViaje.aspx`
+      y `ReporteAbastecimiento.aspx`.
 - [ ] **Sacar el JavaScript en línea a archivos `.js`** (~8 000 líneas de JS y ~10 000 de CSS dentro de
       las `.aspx`; los más grandes: `Dashboard`, `LiquidacionesPendientes`, `DashboardConductor`,
       `Exportacion/DashboardExportacion`).

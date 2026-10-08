@@ -375,8 +375,6 @@
     <Content Include="Views\RegistroSemiremolques.aspx" />
     <Content Include="Views\RegistroTractos.aspx" />
     <Content Include="Views\ReporteAbastecimiento.aspx" />
-    <Content Include="Views\ReporteResultado.aspx" />
-    <Content Include="Views\Reportes.aspx" />
     <Content Include="Views\ReportesOrdenesViaje.aspx" />
     <Content Include="Views\RestablecerContrasena.aspx" />
     <Content Include="Views\TestGenerarPdfOrdenViaje.aspx" />
@@ -417,9 +415,6 @@
     <Compile Include="Services\GpsIntegracion\HoraLlegadaGpsService.cs" />
     <Compile Include="Services\GpsIntegracion\SeguimientoExportacionGpsService.cs" />
     <Compile Include="Services\Reportes\ReportesOrdenesViajeService.cs" />
-    <Compile Include="Services\Reportes\ReportesService.cs" />
-    <Compile Include="Services\Reportes\ReporteExcelBuilder.cs" />
-    <Compile Include="Services\Reportes\ReporteFiltros.cs" />
     <Compile Include="Services\Despachos\DespachoValidaciones.cs" />
     <Compile Include="Services\Despachos\DocumentoCpicService.cs" />
     <Compile Include="Services\Despachos\EditarDespachoService.cs" />
@@ -807,20 +802,6 @@
     </Compile>
     <Compile Include="Views\ReporteAbastecimiento.aspx.designer.cs">
       <DependentUpon>ReporteAbastecimiento.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\ReporteResultado.aspx.cs">
-      <DependentUpon>ReporteResultado.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\ReporteResultado.aspx.designer.cs">
-      <DependentUpon>ReporteResultado.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\Reportes.aspx.cs">
-      <DependentUpon>Reportes.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\Reportes.aspx.designer.cs">
-      <DependentUpon>Reportes.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\ReportesOrdenesViaje.aspx.cs">
       <DependentUpon>ReportesOrdenesViaje.aspx</DependentUpon>

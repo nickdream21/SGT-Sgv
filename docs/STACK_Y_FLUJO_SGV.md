@@ -156,7 +156,6 @@
 | Página | Función |
 |---|---|
 | `ReportesOrdenesViaje.aspx` | Liquidaciones aprobadas con filtros por fecha y factor USD→S/. Descuentos y reintegros. Exportable a Excel y PDF. |
-| `Reportes.aspx` + `ReporteResultado.aspx` | Filtros avanzados por conductor, vehículo, producto, tipo de transacción |
 | `AgregarIndicadores.aspx` | Indicadores de tiempo operativo (horas salida, llegada, carga, descarga) |
 
 ### Módulo 4 — Maestros / Registros
