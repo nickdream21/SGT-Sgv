@@ -1,0 +1,252 @@
+﻿:root {
+    --primary-color: #0056b3;
+    --secondary-color: #0062cc;
+    --accent-color: #f0f7ff;
+    --border-color: #dee2e6;
+}
+
+.buscar-abastecimiento-container {
+    background-color: white;
+    border-radius: 6px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.header-container {
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+}
+
+.abastecimiento-header {
+    color: var(--primary-color);
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.search-section {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border: 1px solid var(--border-color);
+}
+
+.card {
+    border: none;
+    margin-bottom: 25px;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+    padding: 12px 20px;
+    border-radius: 4px 4px 0 0;
+}
+
+.card-body {
+    padding: 20px;
+    background-color: #fafafa;
+    border: 1px solid #e9ecef;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.form-control {
+    border: 1px solid #ced4da;
+    padding: 8px 12px;
+    height: auto;
+}
+
+    .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    padding: 8px 20px;
+}
+
+    .btn-primary:hover {
+        background-color: var(--secondary-color);
+        border-color: var(--secondary-color);
+    }
+
+.calculation-box {
+    background-color: var(--accent-color);
+    border: 1px solid #d1e7ff;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.calculation-result {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Estilos para campos calculados */
+.calculated-field {
+    background-color: #f0f7ff;
+    color: #495057;
+    font-weight: 500;
+}
+
+/* Indicador visual de tanque de combustible */
+.fuel-section {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.fuel-tank {
+    height: 30px;
+    background-color: #e9ecef;
+    border-radius: 15px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.fuel-level {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #67c977);
+    border-radius: 15px 0 0 15px;
+    width: 75%;
+}
+
+.fuel-markers {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.observaciones-section {
+    margin-top: 20px;
+}
+
+.alert {
+    border-radius: 4px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+    color: #856404;
+}
+
+/* Estilos para el modo de edición */
+.edit-mode .form-control:not([readonly]) {
+    background-color: #fffdf0;
+    border-color: #ffc107;
+}
+
+/* Tipo de registro */
+.tipo-info-banner {
+    background: linear-gradient(135deg, #f0f7ff 0%, #e3f0ff 100%);
+    border: 1px solid #b8d4f0;
+    border-left: 4px solid var(--primary-color);
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tipo-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.tipo-badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: white;
+}
+
+.tipo-viaje-programado { background-color: var(--primary-color); }
+.tipo-abastecimiento { background-color: #28a745; }
+.tipo-mantenimiento { background-color: #fd7e14; }
+.tipo-otro { background-color: #6c757d; }
+
+.motivo-hint-edit {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    color: #856404;
+    line-height: 1.4;
+    margin-bottom: 12px;
+}
+
+.tipo-anulado { background-color: #dc3545; }
+
+.estado-anulado-banner {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    border: 1px solid #f5c6cb;
+    border-left: 4px solid #dc3545;
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    color: #721c24;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.ddl-tipo-edit {
+    display: inline-block;
+    width: auto;
+    min-width: 200px;
+    padding: 4px 10px;
+    font-size: 0.85rem;
+    border: 1px solid #ffc107;
+    background-color: #fffdf0;
+    border-radius: 4px;
+}
+
+.btn-anular {
+    background-color: #fd7e14;
+    border-color: #fd7e14;
+    color: white;
+}
+.btn-anular:hover {
+    background-color: #e8690b;
+    border-color: #e8690b;
+    color: white;
+}
+
+.btn-eliminar {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+.btn-eliminar:hover {
+    background-color: #c82333;
+    border-color: #c82333;
+    color: white;
+}

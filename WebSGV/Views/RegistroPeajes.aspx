@@ -138,33 +138,13 @@
     </div>
 
     <script>
-        document.addEventListener('click', function (e) {
-            var btn = e.target.closest('.btn-editar');
-            if (!btn) return;
-            document.getElementById('<%= hfIdEstacion.ClientID %>').value = btn.dataset.id;
-            document.getElementById('<%= txtEditarNombre.ClientID %>').value = btn.dataset.nombre;
-            $('#modalEditar').modal('show');
+        // Valores del servidor que usa el script de la página (ids de controles ASP.NET).
+        var SGV = Object.assign(window.SGV || {}, {
+            hfIdEstacion: '<%= hfIdEstacion.ClientID %>',
+            txtEditarNombre: '<%= txtEditarNombre.ClientID %>',
+            pnlMensaje: '<%= pnlMensaje.ClientID %>'
         });
-
-        document.addEventListener('DOMContentLoaded', function () {
-            var hf = document.getElementById('<%= hfIdEstacion.ClientID %>');
-            var msgPanel = document.getElementById('<%= pnlMensaje.ClientID %>');
-            if (hf && hf.value > 0 && msgPanel && msgPanel.querySelector('.alert-danger'))
-                $('#modalEditar').modal('show');
-            if (msgPanel && msgPanel.querySelector('.alert-success')) {
-                var ok = msgPanel.querySelector('.alert-success');
-                setTimeout(function () {
-                    ok.style.transition = 'opacity .5s'; ok.style.opacity = '0';
-                    setTimeout(function () { msgPanel.style.display = 'none'; }, 500);
-                }, 4000);
-            }
-        });
-
-        function filtrarTabla(valor, id) {
-            var filas = document.querySelectorAll('#' + id + ' table tr');
-            valor = valor.toLowerCase();
-            filas.forEach(function (f, i) { if (i > 0) f.style.display = f.textContent.toLowerCase().includes(valor) ? '' : 'none'; });
-        }
     </script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/RegistroPeajes.js") %>"></script>
 
 </asp:Content>

@@ -1,0 +1,516 @@
+﻿/* Estilos existentes mejorados */
+.main-container {
+    padding: 20px;
+}
+
+.form-container {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.header {
+    margin-bottom: 30px;
+    color: #337ab7;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+.search-section {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border: 1px solid #dee2e6;
+}
+
+.valor-total-input {
+    border-left: 3px solid #28a745;
+    font-weight: bold;
+}
+
+/* NUEVO: Estilo especial para el dropdown del cliente */
+.cliente-dropdown {
+    border-left: 3px solid #337ab7;
+    font-weight: 500;
+    background-color: #f8f9fa;
+}
+
+.cliente-dropdown:disabled {
+    background-color: #e9ecef;
+    opacity: 1;
+}
+
+/* Indicador de campo requerido */
+.required {
+    color: #dc3545;
+    margin-left: 3px;
+}
+
+/* NUEVOS ESTILOS PARA LA TABLA DE FACTURAS */
+.facturas-panel .panel-heading {
+    background-color: #5bc0de;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.facturas-panel .panel-heading h2 {
+    color: white;
+    margin: 0;
+    flex-grow: 1;
+}
+
+.panel-actions .btn {
+    margin-left: 10px;
+}
+
+.facturas-table {
+    font-size: 0.9em;
+}
+
+.facturas-table th {
+    background-color: #f8f9fa;
+    border-top: 2px solid #5bc0de;
+    font-weight: bold;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.facturas-table td {
+    vertical-align: middle;
+    text-align: center;
+}
+
+.cliente-info {
+    text-align: left;
+    padding: 5px;
+}
+
+.cliente-info strong {
+    color: #2c3e50;
+}
+
+.importe-total {
+    font-weight: bold;
+    color: #27ae60;
+    font-size: 1.1em;
+}
+
+.cpic-actions {
+    text-align: center;
+}
+
+.cpic-numero {
+    font-weight: bold;
+    color: #27ae60;
+    background-color: #d4edda;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.9em;
+}
+
+.cpic-numero i {
+    margin-right: 4px;
+}
+
+/* Estilos para botones en la tabla */
+.facturas-table .btn-sm {
+    font-size: 0.8em;
+    padding: 3px 8px;
+    margin: 1px;
+}
+
+/* Paginación */
+.pagination-ys {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.pagination-ys .pagination {
+    display: inline-block;
+    padding-left: 0;
+    margin: 20px 0;
+    border-radius: 4px;
+}
+
+.pagination-ys .pagination > li {
+    display: inline;
+}
+
+.pagination-ys .pagination > li > a,
+.pagination-ys .pagination > li > span {
+    position: relative;
+    float: left;
+    padding: 6px 12px;
+    margin-left: -1px;
+    line-height: 1.42857143;
+    color: #337ab7;
+    text-decoration: none;
+    background-color: #fff;
+    border: 1px solid #ddd;
+}
+
+/* NUEVOS ESTILOS PARA UPLOAD */
+.upload-panel .panel-heading {
+    background-color: #5cb85c;
+    color: white;
+}
+
+.upload-panel .panel-heading h2 {
+    color: white;
+    margin: 0;
+}
+
+.file-input {
+    border: 2px dashed #ced4da;
+    border-radius: 6px;
+    padding: 12px;
+    transition: all 0.3s ease;
+    background-color: #fafafa;
+    min-height: 45px;
+}
+
+.file-input:hover:not(:disabled) {
+    border-color: #007bff;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.1);
+}
+
+.file-input:disabled {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    opacity: 0.6;
+}
+
+.file-preview {
+    margin-top: 10px;
+}
+
+.file-preview .alert {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 15px;
+    border-radius: 4px;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: #dc3545;
+    text-decoration: none;
+    padding: 2px 5px;
+    font-size: 0.9em;
+    cursor: pointer;
+}
+
+.btn-link:hover {
+    text-decoration: underline;
+}
+
+.upload-container {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+/* NUEVOS ESTILOS PARA DOCUMENTOS */
+.documentos-panel .panel-heading {
+    background-color: #dc3545;
+    color: white;
+}
+
+.documentos-panel .panel-heading h2 {
+    color: white;
+    margin: 0;
+}
+
+.documento-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.documento-info i {
+    font-size: 1.2em;
+    width: 20px;
+}
+
+.fa-file-pdf-o { color: #dc3545; }
+.fa-file-word-o { color: #0066cc; }
+.fa-file-image-o { color: #28a745; }
+.fa-file-o { color: #6c757d; }
+
+.nombre-archivo {
+    font-weight: bold;
+    flex-grow: 1;
+}
+
+.tamano-archivo {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.descripcion-doc {
+    font-style: italic;
+    color: #495057;
+    max-width: 200px;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.documentos-table .btn {
+    margin-right: 5px;
+    margin-bottom: 2px;
+}
+
+.panel-heading h2 {
+    margin: 0;
+    font-size: 1.3em;
+}
+
+.panel-heading i {
+    margin-right: 8px;
+}
+
+.alert i {
+    margin-right: 8px;
+}
+
+.panel {
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.panel-heading {
+    padding: 10px 15px;
+    border-bottom: 1px solid #ddd;
+    background-color: #f5f5f5;
+}
+
+.panel-body {
+    padding: 15px;
+}
+
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.alert-warning {
+    background-color: #fcf8e3;
+    border-color: #faebcc;
+    color: #8a6d3b;
+}
+
+.alert-info {
+    background-color: #d9edf7;
+    border-color: #bce8f1;
+    color: #31708f;
+}
+
+.btn {
+    padding: 6px 12px;
+    margin-bottom: 0;
+    font-size: 14px;
+    font-weight: normal;
+    line-height: 1.42857143;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #337ab7;
+    border-color: #2e6da4;
+}
+
+.btn-success {
+    color: #fff;
+    background-color: #5cb85c;
+    border-color: #4cae4c;
+}
+
+.btn-info {
+    color: #fff;
+    background-color: #5bc0de;
+    border-color: #46b8da;
+}
+
+.btn-danger {
+    color: #fff;
+    background-color: #d9534f;
+    border-color: #d43f3a;
+}
+
+.btn-warning {
+    color: #fff;
+    background-color: #f0ad4e;
+    border-color: #eea236;
+}
+
+.btn-light {
+    color: #333;
+    background-color: #f8f9fa;
+    border-color: #dae0e5;
+}
+
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    border-radius: 3px;
+}
+
+.table {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 20px;
+    border-collapse: collapse;
+}
+
+.table-bordered {
+    border: 1px solid #ddd;
+}
+
+.table-bordered th,
+.table-bordered td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    vertical-align: top;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+.table th {
+    background-color: #f9f9f9;
+    font-weight: bold;
+}
+
+.text-muted {
+    color: #777;
+}
+
+.text-danger {
+    color: #d9534f;
+}
+
+.text-success {
+    color: #5cb85c;
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    padding: 6px 12px;
+    font-size: 14px;
+    line-height: 1.42857143;
+    color: #555;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.row {
+    margin-right: -15px;
+    margin-left: -15px;
+}
+
+.col-md-6 {
+    position: relative;
+    min-height: 1px;
+    padding-right: 15px;
+    padding-left: 15px;
+    width: 50%;
+    float: left;
+}
+
+.col-md-8 {
+    position: relative;
+    min-height: 1px;
+    padding-right: 15px;
+    padding-left: 15px;
+    width: 66.66666667%;
+    float: left;
+}
+
+.col-md-4 {
+    position: relative;
+    min-height: 1px;
+    padding-right: 15px;
+    padding-left: 15px;
+    width: 33.33333333%;
+    float: left;
+}
+
+.col-md-12 {
+    position: relative;
+    min-height: 1px;
+    padding-right: 15px;
+    padding-left: 15px;
+    width: 100%;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    min-height: 0.01%;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .documento-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .documentos-table .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+    .col-md-6, .col-md-8, .col-md-4 {
+        width: 100%;
+        float: none;
+    }
+
+    .facturas-table {
+        font-size: 0.8em;
+    }
+
+    .panel-actions {
+        margin-top: 10px;
+    }
+
+    .facturas-panel .panel-heading {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

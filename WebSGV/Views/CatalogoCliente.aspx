@@ -202,21 +202,14 @@
     </div>
 
     <script>
-        document.addEventListener('click', function (e) {
-            var btn = e.target.closest('.btn-editar');
-            if (!btn) return;
-            document.getElementById('<%= hfIdItem.ClientID %>').value = btn.dataset.id;
-            document.getElementById('<%= txtEditarNombre.ClientID %>').value = btn.dataset.nombre || '';
-            document.getElementById('<%= txtEditarDetalle.ClientID %>').value = btn.dataset.detalle || '';
-            $('#modalEditar').modal('show');
-        });
-
-        document.addEventListener('DOMContentLoaded', function () {
-            var hf = document.getElementById('<%= hfIdItem.ClientID %>');
-            var msgPanel = document.getElementById('<%= pnlMensaje.ClientID %>');
-            if (hf && hf.value > 0 && msgPanel && msgPanel.querySelector('.alert-danger'))
-                $('#modalEditar').modal('show');
+        // Valores del servidor que usa el script de la página (ids de controles ASP.NET).
+        var SGV = Object.assign(window.SGV || {}, {
+            hfIdItem: '<%= hfIdItem.ClientID %>',
+            txtEditarNombre: '<%= txtEditarNombre.ClientID %>',
+            txtEditarDetalle: '<%= txtEditarDetalle.ClientID %>',
+            pnlMensaje: '<%= pnlMensaje.ClientID %>'
         });
     </script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/CatalogoCliente.js") %>"></script>
 
 </asp:Content>

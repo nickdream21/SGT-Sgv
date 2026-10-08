@@ -1,0 +1,114 @@
+﻿/* Estilos adicionales para mejorar la apariencia */
+.main-container {
+    padding: 20px;
+}
+
+.form-container {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.header {
+    margin-bottom: 30px;
+    color: #337ab7;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.alert-success {
+    color: #3c763d;
+    background-color: #dff0d8;
+    border-color: #d6e9c6;
+}
+
+.alert-danger {
+    color: #a94442;
+    background-color: #f2dede;
+    border-color: #ebccd1;
+}
+
+.text-danger {
+    color: #a94442;
+    font-size: 0.9em;
+    display: block;
+    margin-top: 5px;
+}
+
+/* Estilos para labels */
+.form-group label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+/* ESTILOS PARA UPLOAD */
+.document-upload-section {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    margin: 20px 0;
+    border: 1px solid #dee2e6;
+}
+
+.document-upload-section h3 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.document-upload-section h3 i {
+    color: #dc3545;
+    margin-right: 8px;
+}
+
+.upload-container {
+    display: flex;
+    align-items: end;
+    gap: 15px;
+}
+
+.file-input {
+    border: 2px dashed #ced4da;
+    border-radius: 5px;
+    padding: 10px;
+    transition: border-color 0.3s;
+}
+
+.file-input:hover {
+    border-color: #007bff;
+}
+
+.file-preview {
+    margin-top: 10px;
+}
+
+.file-preview .alert {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.file-preview .alert i {
+    margin-right: 8px;
+}
+
+.text-muted {
+    font-size: 0.875em;
+}
+
+/* Responsivo para upload */
+@media (max-width: 768px) {
+    .upload-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

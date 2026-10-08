@@ -1,36 +1,7 @@
 ﻿<%@ Page Title="Registro de Indicadores" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="AgregarIndicadores.aspx.cs" Inherits="WebSGV.Views.AgregarIndicadores" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
-    <style>
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-label {
-            font-weight: 500;
-            margin-bottom: 5px;
-        }
-        .form-control {
-            width: 100%;
-            padding: 6px 12px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-        }
-        .section-header {
-            background-color: #0056b3;
-            color: white;
-            padding: 10px 15px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-        .datetime-picker {
-            display: flex;
-            gap: 10px;
-        }
-        .date-input, .time-input {
-            flex: 1;
-        }
-    </style>
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/AgregarIndicadores.css") %>" rel="stylesheet" />
 
     <div class="container">
         <h2 class="mt-4 mb-4">Registro de Indicadores de Operación</h2>

@@ -125,6 +125,8 @@ Integration tests (`WebSGV.Tests/Integracion/`, `[FactBD]`) run read-only agains
 
 ### Front-end libraries
 
+Page-specific CSS/JS lives in files, not inline: `Content/paginas/<Pagina>.css` and `Scripts/paginas/<Pagina>.js` (subfolders mirror `Views/`, e.g. `Exportacion/`; `Site.Master` → `SiteMaster.*`). Reference them with `<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/X.js") %>` (adds `?v=` with the file date so browsers don't use a stale copy) and register them as `<Content>` in `WebSGV.csproj`. A `.js` file can't contain `<%= %>`: the page declares the server values right before it, inline — `var SGV = Object.assign(window.SGV || {}, { txtFecha: '<%= txtFecha.ClientID %>' });` — and the script uses `SGV.txtFecha` (e.g. `$('#' + SGV.txtFecha)`). Only `Error.aspx`/`Error404.aspx` keep inline CSS (they must render even if static files fail).
+
 `Site.Master` loads jQuery 3.6.4 → Popper → Bootstrap **4.6.2** → jQuery UI once, in `<head>`. Pages must NOT load jQuery/Bootstrap again (a second jQuery replaces `$` and drops `.modal()`, `.datepicker()`, `.dropdown()`), and must use Bootstrap 4 syntax (`data-toggle`, `data-dismiss`, `class="close"`), not Bootstrap 5 (`data-bs-*`, `btn-close`). The ScriptManager `"jquery"` resource (unobtrusive validation) maps to `Scripts/jquery-si-falta.js`, which only loads jQuery if missing.
 
 ## Adding a New Page

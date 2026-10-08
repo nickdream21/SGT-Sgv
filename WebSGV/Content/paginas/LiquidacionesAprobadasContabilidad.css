@@ -1,0 +1,34 @@
+﻿.pdf-liquidacion-contenedor {
+    position: relative;
+    height: calc(100vh - 230px);
+    min-height: 420px;
+    overflow: hidden;
+    background-color: #f8f9fa;
+}
+
+.pdf-liquidacion-loader {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    background-color: #f8f9fa;
+    z-index: 2;
+}
+
+.pdf-liquidacion-iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    visibility: hidden;
+}
+
+.pdf-liquidacion-contenedor.cargado .pdf-liquidacion-loader {
+    display: none;
+}
+
+.pdf-liquidacion-contenedor.cargado .pdf-liquidacion-iframe {
+    visibility: visible;
+}

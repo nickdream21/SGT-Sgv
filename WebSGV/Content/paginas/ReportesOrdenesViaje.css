@@ -1,0 +1,514 @@
+﻿:root {
+    --rpt-primary: #2563eb;
+    --rpt-success: #059669;
+    --rpt-danger: #dc2626;
+    --rpt-warning: #d97706;
+    --rpt-info: #0891b2;
+    --rpt-neutral: #64748b;
+    --rpt-light-gray: #f8fafc;
+    --rpt-medium-gray: #e2e8f0;
+    --rpt-border: #cbd5e1;
+}
+
+/* === PAGE HEADER === */
+.page-header {
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--rpt-border);
+}
+
+.page-title {
+    color: #1e293b;
+    font-weight: 600;
+    font-size: 1.75rem;
+}
+
+.header-stats {
+    display: flex;
+}
+
+.stat-card {
+    background: white;
+    border: 2px solid var(--rpt-border);
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    min-width: 150px;
+}
+
+.stat-card.stat-primary {
+    border-color: #93c5fd;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.stat-card.stat-warning {
+    border-color: #fbbf24;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.stat-icon {
+    font-size: 2rem;
+    margin-right: 1rem;
+    color: #1e40af;
+}
+
+.stat-card.stat-warning .stat-icon {
+    color: #78350f;
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--rpt-neutral);
+}
+
+.stat-value {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+/* === TABS === */
+.tabs-navigation {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 2px solid var(--rpt-border);
+    padding-bottom: 0;
+}
+
+.tab-btn {
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--rpt-border);
+    border-bottom: none;
+    border-radius: 0.5rem 0.5rem 0 0;
+    background: white;
+    color: var(--rpt-neutral);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    top: 2px;
+}
+
+.tab-btn:hover {
+    background: var(--rpt-light-gray);
+    color: #1e293b;
+}
+
+.tab-btn-active {
+    background: white;
+    color: var(--rpt-primary);
+    border-color: var(--rpt-border);
+    border-bottom: 2px solid white;
+}
+
+/* === SECTION CARDS === */
+.section-card {
+    background: white;
+    border: 1px solid var(--rpt-border);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.section-header {
+    background: var(--rpt-light-gray);
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--rpt-border);
+}
+
+.section-header-success {
+    background: #f0fdf4;
+    border-bottom-color: #86efac;
+}
+
+.section-header-info {
+    background: #ecfeff;
+    border-bottom-color: #67e8f9;
+}
+
+.section-header-warning {
+    background: #fef3c7;
+    border-bottom-color: #fbbf24;
+}
+
+.section-title {
+    color: #1e293b;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.section-body {
+    padding: 1.5rem;
+}
+
+/* === SUMMARY CARDS === */
+.summary-card {
+    background: white;
+    border: 2px solid var(--rpt-border);
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    transition: transform 0.2s;
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
+}
+
+.summary-card-blue {
+    border-color: #93c5fd;
+    background: #eff6ff;
+}
+
+.summary-card-green {
+    border-color: #86efac;
+    background: #f0fdf4;
+}
+
+.summary-card-cyan {
+    border-color: #67e8f9;
+    background: #ecfeff;
+}
+
+.summary-card-total {
+    border-color: #059669;
+    background: #ecfdf5;
+    border-width: 3px;
+}
+
+.summary-icon {
+    font-size: 1.75rem;
+    margin-right: 1rem;
+    color: var(--rpt-neutral);
+}
+
+.summary-card-blue .summary-icon { color: #2563eb; }
+.summary-card-green .summary-icon { color: #059669; }
+.summary-card-cyan .summary-icon { color: #0891b2; }
+.summary-card-total .summary-icon { color: #059669; }
+
+.summary-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.summary-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--rpt-neutral);
+    letter-spacing: 0.025em;
+}
+
+.summary-amount {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.summary-amount-total {
+    color: var(--rpt-success);
+}
+
+/* === TABLES === */
+.table-reportes {
+    font-size: 0.875rem;
+}
+
+.table-reportes thead th {
+    background: var(--rpt-light-gray);
+    color: #1e293b;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    padding: 0.875rem 0.75rem;
+    border-bottom: 2px solid var(--rpt-border);
+    white-space: nowrap;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.table-reportes tbody td {
+    vertical-align: middle;
+    padding: 0.875rem 0.75rem;
+    border-bottom: 1px solid var(--rpt-medium-gray);
+}
+
+.table-reportes tbody tr:hover {
+    background: var(--rpt-light-gray);
+}
+
+.table-reportes tfoot td {
+    background: #f1f5f9;
+    font-weight: 700;
+    padding: 1rem 0.75rem;
+    border-top: 2px solid var(--rpt-border);
+}
+
+.footer-total {
+    background: #f1f5f9 !important;
+    font-weight: 700 !important;
+}
+
+/* === MONTOS === */
+.monto-descuento {
+    color: var(--rpt-danger) !important;
+    font-weight: 700 !important;
+}
+
+.monto-reintegro {
+    color: var(--rpt-primary) !important;
+    font-weight: 700 !important;
+}
+
+.monto-normal {
+    color: #1e293b;
+    font-weight: 500;
+}
+
+/* === BADGES === */
+.badge-count {
+    background: white;
+    border: 1px solid var(--rpt-border);
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--rpt-neutral);
+}
+
+.badge-estado {
+    padding: 0.375rem 0.75rem;
+    border-radius: 1rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: inline-block;
+}
+
+.badge-estado-abierto {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fbbf24;
+}
+
+.badge-estado-cerrado {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.badge-dias-normal {
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    font-size: 0.8125rem;
+}
+
+.badge-dias-alerta {
+    background: #fecaca;
+    color: #991b1b;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    border: 1px solid #f87171;
+}
+
+/* === BUTTONS === */
+.btn-primary-custom {
+    background: var(--rpt-primary);
+    border: none;
+    color: white;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+}
+
+.btn-primary-custom:hover {
+    background: #1d4ed8;
+    color: white;
+}
+
+.btn-secondary-custom {
+    background: white;
+    border: 1px solid var(--rpt-border);
+    color: var(--rpt-neutral);
+    font-weight: 500;
+    border-radius: 0.375rem;
+}
+
+.btn-export {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    border: 1px solid;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-export-excel {
+    background: #f0fdf4;
+    color: #065f46;
+    border-color: #86efac;
+}
+
+.btn-export-excel:hover {
+    background: #dcfce7;
+    transform: translateY(-1px);
+}
+
+.btn-export-pdf {
+    background: #fef2f2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+
+.btn-export-pdf:hover {
+    background: #fee2e2;
+    transform: translateY(-1px);
+}
+
+.btn-info-action {
+    padding: 0.5rem 0.75rem;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: white;
+    background: var(--rpt-info);
+}
+
+.btn-info-action:hover {
+    background: #0e7490;
+    transform: translateY(-1px);
+}
+
+/* === ALERTS === */
+.alert-info-light {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 0.5rem;
+    padding: 0.875rem 1.25rem;
+    font-size: 0.875rem;
+    color: #0c4a6e;
+}
+
+/* === MODAL === */
+.modal-header-info {
+    background: #e0f2fe;
+    border-bottom: 2px solid #7dd3fc;
+}
+
+/* === FORMS === */
+.form-label {
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.form-control {
+    border: 1px solid var(--rpt-border);
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    transition: border-color 0.2s;
+}
+
+.form-control:focus {
+    border-color: var(--rpt-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.input-group-text {
+    background: var(--rpt-light-gray);
+    border: 1px solid var(--rpt-border);
+    font-weight: 600;
+    color: var(--rpt-neutral);
+}
+
+/* === COLUMNAS PERSONALIZADO === */
+.columnas-grupo {
+    font-weight: 700;
+    color: #334155;
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--rpt-medium-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.col-check {
+    display: block;
+    padding: 0.375rem 0.5rem;
+    margin-bottom: 0.25rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    color: #1e293b;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.col-check:hover {
+    background: var(--rpt-light-gray);
+}
+
+.col-check input[type="checkbox"] {
+    margin-right: 0.5rem;
+    cursor: pointer;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .page-header {
+        text-align: center;
+    }
+
+    .header-stats {
+        flex-direction: column;
+        margin-top: 1rem;
+    }
+
+    .stat-card {
+        margin-left: 0 !important;
+        margin-bottom: 0.5rem;
+    }
+
+    .tabs-navigation {
+        flex-direction: column;
+    }
+
+    .tab-btn {
+        border-radius: 0.5rem;
+        top: 0;
+        border-bottom: 1px solid var(--rpt-border);
+    }
+
+    .summary-card {
+        margin-bottom: 0.75rem;
+    }
+
+    .table-reportes {
+        font-size: 0.75rem;
+    }
+
+    .table-reportes thead th {
+        font-size: 0.6875rem;
+        padding: 0.75rem 0.5rem;
+    }
+}

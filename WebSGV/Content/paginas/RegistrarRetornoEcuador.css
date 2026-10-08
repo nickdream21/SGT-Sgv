@@ -1,0 +1,60 @@
+﻿.re-wrap {
+    max-width: 900px;
+    margin: 20px auto;
+    background: #fff;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+.re-wrap h3 { color: #4a148c; margin-bottom: 4px; }
+.re-wrap .sub { color:#666; font-size:.9rem; margin-bottom: 18px; }
+.re-info {
+    background: #f3e5f5;
+    border-left: 4px solid #6a1b9a;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: .9rem;
+    margin-bottom: 18px;
+}
+.re-banner {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+}
+.re-banner .label { font-size:.7rem; color:#888; text-transform: uppercase; }
+.re-banner .val { font-weight: 600; color: #333; }
+
+.tickets-head, .ticket-row {
+    display: grid;
+    grid-template-columns: 1.3fr 1.6fr 0.9fr 0.9fr 0.4fr;
+    gap: 8px;
+    align-items: center;
+}
+.tickets-head {
+    font-size:.75rem; text-transform: uppercase; color:#666;
+    padding: 6px 8px; background:#f5f5f5; border-radius:6px; margin-bottom:6px;
+}
+.ticket-row { padding: 4px 0; }
+.ticket-row input { width: 100%; }
+.btn-remove {
+    background:#e53935; color:#fff; border:none; border-radius:6px;
+    padding: 6px 10px; cursor:pointer; font-size:.8rem;
+}
+.btn-add {
+    background:#43a047; color:#fff; border:none; border-radius:6px;
+    padding: 8px 14px; cursor:pointer; font-weight:600; margin-top:8px;
+}
+.tot-box {
+    display:flex; justify-content:flex-end; gap:24px;
+    margin-top: 12px; font-size: 1rem;
+}
+.tot-box strong { color:#1565c0; }
+
+.re-actions { margin-top: 20px; display:flex; gap:10px; justify-content:flex-end; }
+.btn-save { background:#4a148c; color:#fff; border:none; border-radius:8px; padding:10px 20px; font-weight:600; }
+.btn-cancel { background:#eee; color:#333; border:none; border-radius:8px; padding:10px 20px; }

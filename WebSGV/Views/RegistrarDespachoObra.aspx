@@ -1,18 +1,7 @@
 <%@ Page Title="Registrar Despacho a Obra" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistrarDespachoObra.aspx.cs" Inherits="WebSGV.Views.RegistrarDespachoObra" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
-    <style>
-        .do-container { background:#fff; border-radius:8px; padding:20px; box-shadow:0 .5rem 1rem rgba(0,0,0,.08); }
-        .do-header { border-bottom:3px solid #e65100; padding-bottom:10px; margin-bottom:18px; color:#e65100; }
-        .do-section { background:#fff8f3; border:1px solid #ffd7b3; border-left:4px solid #e65100; border-radius:6px; padding:14px; margin-bottom:16px; }
-        .do-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:12px; }
-        .do-label { font-size:.78rem; font-weight:600; color:#555; text-transform:uppercase; }
-        .entrega-card { background:#fff; border:1px solid #e0e0e0; border-left:4px solid #e65100; border-radius:6px; padding:12px; margin-bottom:10px; position:relative; }
-        .entrega-num { position:absolute; top:-10px; left:10px; background:#e65100; color:#fff; padding:2px 10px; border-radius:10px; font-size:.75rem; font-weight:700; }
-        .btn-remove-ent { background:#d32f2f; color:#fff; border:0; border-radius:4px; padding:4px 10px; font-size:.8rem; cursor:pointer; float:right; }
-        .totales-box { background:#fff3e0; border:1px dashed #e65100; border-radius:6px; padding:12px; font-size:.95rem; }
-        .totales-box strong { color:#e65100; font-size:1.1rem; }
-    </style>
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/RegistrarDespachoObra.css") %>" rel="stylesheet" />
 
     <div class="do-container">
         <div class="do-header">
@@ -87,15 +76,12 @@
         </div>
     </div>
 
-    <script type="text/javascript">
-        function recalcularTotales() {
-            var s = parseFloat(document.getElementById('<%= txtGalonesSalida.ClientID %>').value);
-            var r = parseFloat(document.getElementById('<%= txtGalonesRetorno.ClientID %>').value);
-            if (isNaN(s)) s = 0;
-            if (isNaN(r)) r = 0;
-            var abast = s - r;
-            if (abast < 0) abast = 0;
-            document.getElementById('lblAbastecido').innerText = abast.toFixed(2);
-        }
+    <script>
+        // Valores del servidor que usa el script de la página (ids de controles ASP.NET).
+        var SGV = Object.assign(window.SGV || {}, {
+            txtGalonesSalida: '<%= txtGalonesSalida.ClientID %>',
+            txtGalonesRetorno: '<%= txtGalonesRetorno.ClientID %>'
+        });
     </script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/RegistrarDespachoObra.js") %>"></script>
 </asp:Content>

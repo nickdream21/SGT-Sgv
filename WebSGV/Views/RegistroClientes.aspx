@@ -262,56 +262,22 @@
     </div>
 
     <script>
-        document.addEventListener('click', function (e) {
-            var btn = e.target.closest('.btn-editar');
-            if (!btn) return;
-            document.getElementById('<%= hfIdCliente.ClientID %>').value = btn.dataset.id;
-            document.getElementById('<%= txtEditarRUC.ClientID %>').value = btn.dataset.ruc;
-            document.getElementById('<%= txtEditarNombre.ClientID %>').value = btn.dataset.nombre;
-            document.getElementById('<%= txtEditarDireccion.ClientID %>').value = btn.dataset.direccion || '';
-            document.getElementById('<%= txtEditarContacto.ClientID %>').value = btn.dataset.contacto || '';
-            document.getElementById('<%= txtEditarTelefono.ClientID %>').value = btn.dataset.telefono || '';
-            document.getElementById('<%= txtEditarCorreo.ClientID %>').value = btn.dataset.correo || '';
-            document.getElementById('<%= txtEditarObservaciones.ClientID %>').value = btn.dataset.observaciones || '';
-            document.getElementById('<%= ddlEditarMoneda.ClientID %>').value = btn.dataset.moneda || 'PEN';
-            document.getElementById('<%= chkEditarEsExportador.ClientID %>').checked = btn.dataset.exportador === '1';
-            $('#modalEditar').modal('show');
+        // Valores del servidor que usa el script de la página (ids de controles ASP.NET).
+        var SGV = Object.assign(window.SGV || {}, {
+            hfIdCliente: '<%= hfIdCliente.ClientID %>',
+            txtEditarRUC: '<%= txtEditarRUC.ClientID %>',
+            txtEditarNombre: '<%= txtEditarNombre.ClientID %>',
+            txtEditarDireccion: '<%= txtEditarDireccion.ClientID %>',
+            txtEditarContacto: '<%= txtEditarContacto.ClientID %>',
+            txtEditarTelefono: '<%= txtEditarTelefono.ClientID %>',
+            txtEditarCorreo: '<%= txtEditarCorreo.ClientID %>',
+            txtEditarObservaciones: '<%= txtEditarObservaciones.ClientID %>',
+            ddlEditarMoneda: '<%= ddlEditarMoneda.ClientID %>',
+            chkEditarEsExportador: '<%= chkEditarEsExportador.ClientID %>',
+            pnlMensaje: '<%= pnlMensaje.ClientID %>',
+            txtRUC: '<%= txtRUC.ClientID %>',
+            txtNombre: '<%= txtNombre.ClientID %>'
         });
-
-        document.addEventListener('DOMContentLoaded', function () {
-            var hf = document.getElementById('<%= hfIdCliente.ClientID %>');
-            var msgPanel = document.getElementById('<%= pnlMensaje.ClientID %>');
-            if (hf && hf.value > 0 && msgPanel && msgPanel.querySelector('.alert-danger'))
-                $('#modalEditar').modal('show');
-            if (msgPanel && msgPanel.querySelector('.alert-success')) {
-                var ok = msgPanel.querySelector('.alert-success');
-                setTimeout(function () {
-                    ok.style.transition = 'opacity .5s'; ok.style.opacity = '0';
-                    setTimeout(function () { msgPanel.style.display = 'none'; }, 500);
-                }, 4000);
-            }
-        });
-
-        function filtrarTabla(valor, id) {
-            var filas = document.querySelectorAll('#' + id + ' table tr');
-            valor = valor.toLowerCase();
-            filas.forEach(function (f, i) { if (i > 0) f.style.display = f.textContent.toLowerCase().includes(valor) ? '' : 'none'; });
-        }
-
-        async function verificarRUC() {
-            const ruc = document.getElementById('<%= txtRUC.ClientID %>').value.trim();
-            const token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6Im1vcmFucGFsYWNpb3NhbGVtYmVydEBnbWFpbC5jb20ifQ.-nOvFy3s-JXWGF6IoEeJU1NtSrGXhM6sL3msay8eKRI';
-            if (!ruc) { alert('Debe ingresar un RUC para verificar.'); return; }
-            if (ruc.length !== 11) { alert('El RUC debe tener 11 dígitos.'); return; }
-            try {
-                const resp = await fetch('https://dniruc.apisperu.com/api/v1/ruc/' + ruc + '?token=' + token);
-                if (!resp.ok) throw new Error();
-                const data = await resp.json();
-                if (data.razonSocial)
-                    document.getElementById('<%= txtNombre.ClientID %>').value = data.razonSocial;
-                else
-                    alert('No se encontró información para el RUC ingresado. Ingrese el nombre manualmente.');
-            } catch { alert('Error al consultar el RUC.'); }
-        }
     </script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/RegistroClientes.js") %>"></script>
 </asp:Content>

@@ -1,83 +1,7 @@
 ﻿<%@ Page Title="Carga de Indicadores vía Excel" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="CargarExcel.aspx.cs" Inherits="WebSGV.Views.CargarExcel" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
-    <style>
-        .upload-container {
-            border: 2px dashed #ccc;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 30px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .upload-container:hover {
-            border-color: #0056b3;
-        }
-        .upload-icon {
-            font-size: 48px;
-            color: #0056b3;
-            margin-bottom: 10px;
-        }
-        .file-info {
-            margin-top: 15px;
-            font-style: italic;
-            color: #666;
-        }
-        .action-buttons {
-            margin-top: 20px;
-        }
-        .records-table {
-            margin-top: 30px;
-        }
-        .month-filter {
-            margin-bottom: 20px;
-        }
-        .status-pill {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        .status-success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .status-error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        .status-warning {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        .status-info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-        }
-        .template-section {
-            margin-top: 40px;
-            background-color: #f9f9f9;
-            padding: 20px;
-            border-radius: 8px;
-        }
-        .section-header {
-            background-color: #0056b3;
-            color: white;
-            padding: 10px 15px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-        .instructions-box {
-            background-color: #e9f7fe;
-            border-left: 4px solid #0077cc;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 3px;
-        }
-    </style>
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/CargarExcel.css") %>" rel="stylesheet" />
 
     <div class="container">
         <h2 class="mt-4 mb-4">Carga de Indicadores vía Excel</h2>
@@ -259,44 +183,12 @@
         </div>
     </div>
 
-    <script type="text/javascript">
-        function updateFileName(input) {
-            const fileInfo = document.getElementById('fileInfo');
-            const btnProcesar = document.getElementById('<%= btnProcesar.ClientID %>');
-            
-            if (input.files && input.files[0]) {
-                const fileName = input.files[0].name;
-                fileInfo.innerHTML = 'Archivo seleccionado: <strong>' + fileName + '</strong>';
-                btnProcesar.disabled = false;
-            } else {
-                fileInfo.innerHTML = 'Ningún archivo seleccionado';
-                btnProcesar.disabled = true;
-            }
-        }
-
-        // Funcionalidad de drag & drop
-        const dropZone = document.getElementById('dropZone');
-        
-        dropZone.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            this.style.backgroundColor = '#f8f9fa';
-        });
-        
-        dropZone.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            this.style.backgroundColor = '';
-        });
-        
-        dropZone.addEventListener('drop', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            this.style.backgroundColor = '';
-            
-            const fileUpload = document.getElementById('<%= fileUpload.ClientID %>');
-            fileUpload.files = e.dataTransfer.files;
-            updateFileName(fileUpload);
+    <script>
+        // Valores del servidor que usa el script de la página (ids de controles ASP.NET).
+        var SGV = Object.assign(window.SGV || {}, {
+            btnProcesar: '<%= btnProcesar.ClientID %>',
+            fileUpload: '<%= fileUpload.ClientID %>'
         });
     </script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/CargarExcel.js") %>"></script>
 </asp:Content>

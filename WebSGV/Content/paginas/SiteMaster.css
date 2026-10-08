@@ -1,0 +1,179 @@
+﻿/* Encabezados de tabla */
+.table thead th {
+    background-color: #0275d8 !important;
+    color: white !important;
+    font-weight: bold !important;
+    border: 1px solid #0269c2 !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding: 10px !important;
+    opacity: 1 !important;
+}
+
+/* Filas de tabla */
+.table tbody tr {
+    opacity: 1 !important;
+}
+
+    .table tbody tr:nth-child(odd) {
+        background-color: #f8f9fa !important;
+    }
+
+    .table tbody tr:nth-child(even) {
+        background-color: #ffffff !important;
+    }
+
+.table tbody td {
+    border: 1px solid #dee2e6 !important;
+    padding: 8px !important;
+    vertical-align: middle !important;
+    opacity: 1 !important;
+}
+
+/* Tarjetas de indicadores */
+.card.shadow-sm {
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    margin-bottom: 15px !important;
+    opacity: 1 !important;
+}
+
+.card-body {
+    opacity: 1 !important;
+}
+
+/* Fondos gradientes */
+.bg-gradient-primary {
+    background: linear-gradient(to right, #0062cc, #0275d8) !important;
+    opacity: 1 !important;
+}
+
+.bg-gradient-danger {
+    background: linear-gradient(to right, #c82333, #dc3545) !important;
+    opacity: 1 !important;
+}
+
+.bg-gradient-success {
+    background: linear-gradient(to right, #218838, #28a745) !important;
+    opacity: 1 !important;
+}
+
+.bg-gradient-info {
+    background: linear-gradient(to right, #138496, #17a2b8) !important;
+    opacity: 1 !important;
+}
+
+/* Modales */
+.modal-content, .modal-header, .modal-body, .modal-footer {
+    opacity: 1 !important;
+}
+
+/* ✅ MEJORAS PARA EL NAVBAR */
+.navbar {
+    padding: 0.75rem 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+    font-size: 1.25rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+}
+
+    .navbar-brand i {
+        margin-right: 8px;
+        font-size: 1.3rem;
+    }
+
+/* Alineación perfecta de iconos en nav-link */
+.nav-link {
+    display: flex !important;
+    align-items: center !important;
+    padding: 0.5rem 1rem !important;
+    font-weight: 500 !important;
+}
+
+    .nav-link i {
+        width: 20px !important;
+        height: 20px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin-right: 6px !important;
+        font-size: 1rem !important;
+    }
+
+/* Alineación perfecta de iconos en dropdown-item */
+.dropdown-item {
+    display: flex !important;
+    align-items: center !important;
+    padding: 0.5rem 1.5rem !important;
+}
+
+    .dropdown-item i {
+        width: 20px !important;
+        height: 20px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin-right: 8px !important;
+        font-size: 0.9rem !important;
+    }
+
+.dropdown-menu {
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.1);
+    min-width: 220px;
+}
+
+.user-info {
+    color: #495057;
+    font-weight: 500;
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+}
+
+    .user-info i {
+        margin-right: 6px;
+        font-size: 1.1rem;
+    }
+
+.badge-rol {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    margin-left: 8px;
+    font-weight: 600;
+}
+
+.btn-outline-danger {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Efecto hover mejorado */
+.nav-link:hover {
+    background-color: rgba(0,0,0,0.05);
+    border-radius: 0.25rem;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* Active state */
+.nav-item.active > .nav-link {
+    color: #007bff !important;
+    font-weight: 600;
+}
+
+/* af-shield: campos protegidos contra autocompletado agresivo del navegador
+   (ver script antiAutofillGuard antes de </form>). Sin esto, Bootstrap pinta
+   [readonly] como si estuviera deshabilitado (fondo gris) todo el tiempo. */
+input.af-shield[readonly] {
+    background-color: #fff !important;
+    opacity: 1 !important;
+    cursor: text !important;
+}

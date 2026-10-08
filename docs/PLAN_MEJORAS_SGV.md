@@ -86,9 +86,12 @@ Ordenadas por valor. Marca `[x]` al terminar.
       sus 19 procedimientos con la migración `Schema/19_BorrarProcedimientosReportes.sql` (los archivos
       quedan en el historial de git, commit `5414eca`). Los reportes en uso son `ReportesOrdenesViaje.aspx`
       y `ReporteAbastecimiento.aspx`.
-- [ ] **Sacar el JavaScript en línea a archivos `.js`** (~8 000 líneas de JS y ~10 000 de CSS dentro de
-      las `.aspx`; los más grandes: `Dashboard`, `LiquidacionesPendientes`, `DashboardConductor`,
-      `Exportacion/DashboardExportacion`).
+- [x] **Sacar el JavaScript y CSS en línea a archivos** — hecho el 2026-10-08: ~8 000 líneas de JS y
+      ~10 000 de CSS de 41 páginas pasaron a 37 `.js` en `Scripts/paginas/` y 34 `.css` en
+      `Content/paginas/` (las `.aspx` bajaron ~18 000 líneas). Los `<%= control.ClientID %>` pasan al
+      objeto `SGV` declarado en la página; URLs con versión vía `RecursoHelper.Url`. Verificado: sintaxis
+      de cada `.js` (node --check), precompilación de todas las páginas (aspnet_compiler) y tests.
+      Bloques de menos de 10 líneas y `Error*.aspx` quedan en línea. Convención en `CLAUDE.md`.
 - [ ] **`FirmarLiquidacion.aspx`** (página sin master) usa Bootstrap 5 y jQuery 3.7 locales; el resto
       del sitio usa Bootstrap 4.6.2. Decidir si se unifica (requiere revisión visual).
 - [ ] **`Empresa.Web`** en `Web.config` (y escrito a mano en `LiquidacionesPendientes.aspx`) apunta a

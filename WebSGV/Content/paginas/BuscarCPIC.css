@@ -1,0 +1,161 @@
+﻿/* Estilos adicionales para la búsqueda mejorada */
+.search-section {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border: 1px solid #dee2e6;
+}
+
+.peso-section {
+    background-color: #f0f8ff;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 10px 0;
+    border: 1px solid #b0d4f1;
+}
+
+.peso-input {
+    border-left: 3px solid #5bc0de;
+    font-weight: bold;
+}
+
+.documentos-panel .panel-heading {
+    background-color: #d9534f;
+    color: white;
+}
+
+.documentos-panel .panel-heading h2 {
+    color: white;
+    margin: 0;
+}
+
+.documento-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.documento-info i {
+    font-size: 1.2em;
+    width: 20px;
+}
+
+.fa-file-pdf-o { color: #dc3545; }
+.fa-file-word-o { color: #0066cc; }
+.fa-file-image-o { color: #28a745; }
+.fa-file-o { color: #6c757d; }
+
+.nombre-archivo {
+    font-weight: bold;
+    flex-grow: 1;
+}
+
+.tamano-archivo {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.descripcion-doc {
+    font-style: italic;
+    color: #495057;
+    max-width: 200px;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.documentos-table .btn {
+    margin-right: 5px;
+    margin-bottom: 2px;
+}
+
+.panel-heading h2 {
+    margin: 0;
+    font-size: 1.3em;
+}
+
+.panel-heading i {
+    margin-right: 8px;
+}
+
+.alert i {
+    margin-right: 8px;
+}
+
+/* NUEVOS ESTILOS PARA UPLOAD EN EDICIÓN */
+.document-upload-section {
+    background-color: #e8f5e8;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border: 1px solid #28a745;
+}
+
+.document-upload-section h4 {
+    color: #155724;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.document-upload-section h4 i {
+    color: #28a745;
+    margin-right: 8px;
+}
+
+.upload-container {
+    display: flex;
+    align-items: end;
+    gap: 15px;
+}
+
+.file-input {
+    border: 2px dashed #ced4da;
+    border-radius: 5px;
+    padding: 10px;
+    transition: border-color 0.3s;
+}
+
+.file-input:hover {
+    border-color: #28a745;
+}
+
+.file-preview {
+    margin-top: 10px;
+}
+
+.file-preview .alert {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.file-preview .alert i {
+    margin-right: 8px;
+}
+
+.text-muted {
+    font-size: 0.875em;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .documento-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .documentos-table .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+    .upload-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

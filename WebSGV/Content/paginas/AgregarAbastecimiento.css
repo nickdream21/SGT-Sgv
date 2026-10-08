@@ -1,0 +1,385 @@
+﻿:root {
+    --primary-color: #0056b3;
+    --secondary-color: #0062cc;
+    --accent-color: #f0f7ff;
+    --border-color: #dee2e6;
+}
+
+.abastecimiento-container {
+    background-color: white;
+    border-radius: 6px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.header-container {
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+}
+
+.abastecimiento-header {
+    color: var(--primary-color);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* === BANNER COMPACTO DE VIAJE === */
+.trip-info-banner {
+    background: linear-gradient(135deg, #f0f7ff 0%, #e3f0ff 100%);
+    border: 1px solid #b8d4f0;
+    border-left: 4px solid var(--primary-color);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+}
+
+.trip-info-banner .trip-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.trip-info-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 24px;
+}
+
+.trip-info-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.88rem;
+}
+
+.trip-info-item .info-icon {
+    color: var(--primary-color);
+    font-size: 0.85rem;
+    width: 16px;
+    text-align: center;
+}
+
+.trip-info-item .info-label {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.trip-info-item .info-value {
+    color: #212529;
+    font-weight: 600;
+}
+
+.trip-ruta-badge {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.trip-gl-badge {
+    display: inline-block;
+    background-color: #28a745;
+    color: white;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* === CARD ESTILOS COMPACTOS === */
+.card {
+    border: none;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.card-header {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 10px 16px;
+    border-radius: 4px 4px 0 0;
+}
+
+.card-body {
+    padding: 16px;
+    background-color: #fafafa;
+    border: 1px solid #e9ecef;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+    font-size: 0.85rem;
+    margin-bottom: 3px;
+}
+
+.form-control {
+    border: 1px solid #ced4da;
+    padding: 6px 10px;
+    height: auto;
+    font-size: 0.9rem;
+}
+
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-group {
+    margin-bottom: 10px;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    padding: 8px 20px;
+}
+
+.btn-primary:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.calculation-box {
+    background-color: var(--accent-color);
+    border: 1px solid #d1e7ff;
+    border-radius: 4px;
+    padding: 12px;
+    margin-top: 10px;
+}
+
+.calculation-result {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.95rem;
+}
+
+.calculated-field {
+    background-color: #f0f7ff;
+    color: #495057;
+    font-weight: 500;
+}
+
+.synchronized-field {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+/* === FUEL VISUAL COMPACTO === */
+.fuel-section {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    padding: 12px;
+    margin-top: 10px;
+}
+
+.fuel-tank {
+    height: 22px;
+    background-color: #e9ecef;
+    border-radius: 11px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.fuel-level {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #67c977);
+    border-radius: 11px 0 0 11px;
+    width: 75%;
+}
+
+.fuel-markers {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+/* === TICKETS COMPACTOS === */
+.tickets-section {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 14px;
+}
+
+.tickets-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+.tickets-table th {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 8px 10px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.tickets-table td {
+    padding: 6px 8px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+    background-color: white;
+}
+
+.tickets-table input {
+    border: 1px solid #ced4da;
+    padding: 6px;
+    border-radius: 4px;
+    width: 100%;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.btn-add-ticket {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.btn-add-ticket:hover {
+    background-color: #218838;
+}
+
+.btn-remove-ticket {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+.btn-remove-ticket:hover {
+    background-color: #c82333;
+}
+
+.totales-tickets {
+    background-color: #e3f2fd;
+    border: 1px solid #2196f3;
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-top: 10px;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 3px;
+    font-size: 0.9rem;
+}
+
+/* === SELECT2 === */
+.select2-container {
+    width: 100% !important;
+}
+
+.select2-container--default .select2-selection--single {
+    height: 36px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #495057;
+    line-height: 34px;
+    padding-left: 10px;
+    font-size: 0.9rem;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 34px;
+}
+
+.select2-dropdown {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.select2-results__option {
+    padding: 6px 10px;
+    font-size: 0.9rem;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #0056b3;
+    color: white;
+}
+
+/* === ALERTAS === */
+.alert-message {
+    padding: 10px 15px;
+    margin-bottom: 12px;
+    border-radius: 4px;
+    display: none;
+    font-size: 0.9rem;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.sync-indicator {
+    font-size: 0.75em;
+    color: #ffc107;
+    margin-left: 3px;
+}
+
+/* === LINK VOLVER === */
+.btn-back-link {
+    color: var(--primary-color);
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+.btn-back-link:hover {
+    text-decoration: underline;
+}
+
+/* Motivo de salida */
+.motivo-hint {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    color: #6c757d;
+    line-height: 1.4;
+}
