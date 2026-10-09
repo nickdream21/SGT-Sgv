@@ -15,7 +15,9 @@ GO
 CREATE PROCEDURE dbo.sp_SE_ListarEnCurso
     @cliente   VARCHAR(150) = NULL,
     @conductor VARCHAR(150) = NULL,
-    @top       INT          = 200
+    @top       INT          = 200,
+    -- Búsqueda única de la bandeja: pedido, conductor origen/destino o tracto 1/2 (cualquiera).
+    @texto     VARCHAR(150) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -143,6 +145,15 @@ BEGIN
     WHERE (@cliente   IS NULL OR cliente LIKE '%' + @cliente + '%')
       AND (@conductor IS NULL OR conductorOrigen  LIKE '%' + @conductor + '%'
                               OR conductorDestino LIKE '%' + @conductor + '%')
-    ORDER BY ISNULL(fechaModificacion, fechaRegistro) DESC;
+      AND (@texto IS NULL
+           OR cliente          LIKE '%' + @texto + '%'
+           OR conductorOrigen  LIKE '%' + @texto + '%'
+           OR conductorDestino LIKE '%' + @texto + '%'
+           OR tracto1          LIKE '%' + @texto + '%'
+           OR tracto2          LIKE '%' + @texto + '%')
+    -- Viajes más recientes primero. Antes se ordenaba por fecha de modificación del registro:
+    -- tras importar el STATUS GENERAL (miles de filas a la vez) salían primero viajes de 2024.
+    -- Los borradores sin programación se ordenan por su fecha de registro.
+    ORDER BY ISNULL(fhProgramacion, fechaRegistro) DESC;
 END
 GO

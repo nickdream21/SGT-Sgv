@@ -77,13 +77,15 @@ Ordenadas por valor. Marca `[x]` al terminar.
       la migración `Schema/18_BorrarProcedimientosLegado2.sql`; respaldo en
       `Database/Scripts/respaldo_procedimientos_legado_2_2026-10-08.sql`. La BD de pruebas queda con
       exactamente los 98 procedimientos del repo.
-- [ ] **Probar "Verificar GPS"** (`Views/Exportacion/RegistroSeguimiento.aspx`) contra el API real de
-      Onway. El cambio del token (bloqueo + reintentos) no se probó en vivo. Onway permite **un solo token
-      activo**: si producción tiene uno vigente, pruebas no podrá renovar hasta que expire.
-      **2026-10-08:** probado desde Liquidaciones → Auth0 responde `401 access_denied "Unauthorized"` al
-      pedir el token (`client_credentials`). El último token conseguido en pruebas es del 2026-09-01.
-      Falta saber si producción tiene un token vigente (ver `OnwayAuthCache` en `sgvTransporte`) o si las
-      credenciales de Auth0 cambiaron (consultar a Onway).
+- [x] **"Verificar GPS" contra el API real de Onway — funciona en pruebas (2026-10-09).** El 401 de
+      Auth0 era el *Client Secret*: había cambiado (el Client ID es el mismo). Se actualizó en
+      `appSettings.Secrets.config` de pruebas (gitignored). **En producción también hay que poner el
+      secreto nuevo** antes de usar el GPS. Recordar: Location World permite **un solo token activo por
+      client_id**; pruebas y producción comparten ese cupo de 24 h.
+      Además: "Verificar GPS" ya no toma hitos de otro viaje del mismo tracto (cada hito se busca entre el
+      hito anterior y el siguiente ya registrado) y pasó de ~7 min a ~10 s (páginas de 1 000 puntos de
+      historial en vez de 50). La bandeja de viajes en curso ordena por F.H. Programación y busca por
+      placa en BD.
 - [x] ~~Partir `Views/Reportes.aspx.cs`~~ → **descartado: la página se eliminó** (2026-10-08). "Reportes
       Avanzados" ya no se usaba (sin enlace en el menú desde `144ee1e`). Se borraron `Reportes.aspx`,
       `ReporteResultado.aspx`, `ReportesService`, `ReporteExcelBuilder`, `ReporteFiltros` y sus tests, y

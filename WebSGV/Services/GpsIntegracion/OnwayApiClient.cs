@@ -42,7 +42,11 @@ namespace WebSGV.Services.GpsIntegracion
         private const string ApiBaseUrl = "https://customer-api.location-world.com";
         private const string Domain = "fleet";
         private const string Subdomain = "fleetpe";
-        private const int PageSize = 50;
+        // Tamaños de página (probados contra el API el 2026-10-09). Un día de historial de un
+        // tracto trae ~1 500 puntos: con 50 por página eran ~31 llamadas por día a 2 req/s y
+        // "Verificar GPS" tardaba ~7 min; con 1 000 son 2 llamadas por día.
+        private const int PageSizeDispositivos = 200;
+        private const int PageSizeHistorial = 1000;
 
         // Rate limit del API: 2 requests/segundo. Throttle simple compartido entre instancias.
         private static readonly object RateLock = new object();
@@ -212,7 +216,7 @@ namespace WebSGV.Services.GpsIntegracion
                 while (true)
                 {
                     string url = $"{ApiBaseUrl}/v1/{Domain}/{Subdomain}/users/{userId}/devices" +
-                                 $"?deviceExpandEnum=none&deviceFieldSortEnum=imei&directionSortEnum=asc&page={page}&pageSize={PageSize}";
+                                 $"?deviceExpandEnum=none&deviceFieldSortEnum=imei&directionSortEnum=asc&page={page}&pageSize={PageSizeDispositivos}";
                     var respuesta = Get<OnwayDeviceListResponse>(url, accessToken);
                     if (respuesta.Content == null || respuesta.Content.Count == 0) break;
 
@@ -224,11 +228,15 @@ namespace WebSGV.Services.GpsIntegracion
             });
         }
 
+        // Lista de dispositivos de esta instancia: una consulta busca Tracto 1 y Tracto 2 y no
+        // hace falta pedir la lista completa dos veces.
+        private List<OnwayDevice> _dispositivos;
+
         /// <summary>Busca un dispositivo por placa (campo <c>alias</c> del API) entre todos los de la cuenta. Null si no hay match.</summary>
         public OnwayDevice BuscarDispositivoPorPlaca(string placa)
         {
             if (string.IsNullOrWhiteSpace(placa)) return null;
-            var dispositivos = ListarDispositivos();
+            var dispositivos = _dispositivos ?? (_dispositivos = ListarDispositivos());
             return dispositivos.FirstOrDefault(d =>
                 string.Equals(d.Alias?.Trim(), placa.Trim(), StringComparison.OrdinalIgnoreCase));
         }
@@ -251,7 +259,7 @@ namespace WebSGV.Services.GpsIntegracion
             while (true)
             {
                 string url = $"{ApiBaseUrl}/v1/{Domain}/{Subdomain}/users/{userId}/devices/{deviceId}/history" +
-                             $"?from={Uri.EscapeDataString(desdeStr)}&to={Uri.EscapeDataString(hastaStr)}&page={page}&pageSize={PageSize}";
+                             $"?from={Uri.EscapeDataString(desdeStr)}&to={Uri.EscapeDataString(hastaStr)}&page={page}&pageSize={PageSizeHistorial}";
                 var respuesta = Get<OnwayHistoryResponse>(url, accessToken);
                 if (respuesta.Content == null || respuesta.Content.Count == 0) break;
 

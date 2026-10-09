@@ -177,9 +177,10 @@ namespace WebSGV.Views.Exportacion
                 using (var cmd = new SqlCommand("sp_SE_ListarEnCurso", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
+                    // Una sola búsqueda en BD sobre pedido, conductores y tractos (antes se filtraba
+                    // por tracto en memoria sobre los primeros 200 y los viajes recientes no aparecían).
                     string filtro = txtFiltroBandeja.Text?.Trim();
-                    cmd.Parameters.Add("@cliente",   SqlDbType.VarChar, 150).Value = string.IsNullOrEmpty(filtro) ? (object)DBNull.Value : filtro;
-                    cmd.Parameters.Add("@conductor", SqlDbType.VarChar, 150).Value = string.IsNullOrEmpty(filtro) ? (object)DBNull.Value : filtro;
+                    cmd.Parameters.Add("@texto", SqlDbType.VarChar, 150).Value = string.IsNullOrEmpty(filtro) ? (object)DBNull.Value : filtro;
                     cmd.Parameters.Add("@top", SqlDbType.Int).Value = 200;
 
                     conn.Open();
@@ -187,31 +188,6 @@ namespace WebSGV.Views.Exportacion
                     {
                         var dt = new DataTable();
                         da.Fill(dt);
-
-                        // También filtrar por tracto si el filtro coincide
-                        if (!string.IsNullOrEmpty(filtro))
-                        {
-                            var dt2 = new DataTable();
-                            using (var cmd2 = new SqlCommand("sp_SE_ListarEnCurso", conn))
-                            {
-                                cmd2.CommandType = CommandType.StoredProcedure;
-                                cmd2.Parameters.Add("@cliente",   SqlDbType.VarChar, 150).Value = DBNull.Value;
-                                cmd2.Parameters.Add("@conductor", SqlDbType.VarChar, 150).Value = DBNull.Value;
-                                cmd2.Parameters.Add("@top", SqlDbType.Int).Value = 200;
-                                using (var da2 = new SqlDataAdapter(cmd2))
-                                {
-                                    da2.Fill(dt2);
-                                }
-                            }
-                            var f = filtro.ToUpperInvariant();
-                            var filas = dt2.AsEnumerable().Where(r =>
-                                (r["cliente"]?.ToString() ?? "").ToUpperInvariant().Contains(f) ||
-                                (r["conductorOrigen"]?.ToString() ?? "").ToUpperInvariant().Contains(f) ||
-                                (r["conductorDestino"]?.ToString() ?? "").ToUpperInvariant().Contains(f) ||
-                                (r["tracto1"]?.ToString() ?? "").ToUpperInvariant().Contains(f) ||
-                                (r["tracto2"]?.ToString() ?? "").ToUpperInvariant().Contains(f));
-                            dt = filas.Any() ? filas.CopyToDataTable() : dt2.Clone();
-                        }
 
                         rptBandeja.DataSource = dt;
                         rptBandeja.DataBind();

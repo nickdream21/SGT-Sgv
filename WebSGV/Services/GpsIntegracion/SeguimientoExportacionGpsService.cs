@@ -189,8 +189,14 @@ namespace WebSGV.Services.GpsIntegracion
                 // las 23:59 hora Perú (00:00-04:59 UTC del día siguiente). Filtrar por timestamp
                 // en todos los días es UTC contra UTC — siempre correcto, y en los días
                 // posteriores no descarta nada porque ya son todos más recientes.
-                Func<string, int, DateTime, TipoEventoGps, DateTime?, Tuple<OnwayHistoryPoint, DateTime>> buscar =
-                    (nombreCheckpoint, numeroTracto, desde, tipoEvento, cotaInferior) =>
+                //
+                // `cotaSuperior` (UTC) es el siguiente hito YA REGISTRADO del viaje: un punto
+                // posterior a él pertenece a otro viaje del mismo tracto (caso real 2026-10-09:
+                // con la ida a Trujillo vacía y el ingreso a planta ya registrado, se tomaba la
+                // salida de base del viaje SIGUIENTE). Se descartan esos puntos y se deja de
+                // barrer días al pasarla.
+                Func<string, int, DateTime, TipoEventoGps, DateTime?, DateTime?, Tuple<OnwayHistoryPoint, DateTime>> buscar =
+                    (nombreCheckpoint, numeroTracto, desde, tipoEvento, cotaInferior, cotaSuperior) =>
                 {
                     var checkpoint = PuntoControlGpsService.ObtenerPorNombre(nombreCheckpoint);
                     if (checkpoint == null) return null;
@@ -198,14 +204,19 @@ namespace WebSGV.Services.GpsIntegracion
                     Func<DateTime, List<OnwayHistoryPoint>> historialFiltrado = dia =>
                     {
                         var puntos = obtenerHistorialDia(numeroTracto, dia);
-                        return cotaInferior.HasValue
-                            ? puntos.Where(p => p.MessageTime > cotaInferior.Value).ToList()
-                            : puntos;
+                        return puntos.Where(p =>
+                                (!cotaInferior.HasValue || p.MessageTime > cotaInferior.Value) &&
+                                (!cotaSuperior.HasValue || p.MessageTime < cotaSuperior.Value))
+                            .ToList();
                     };
+                    DateTime? ultimoDia = cotaSuperior.HasValue
+                        ? FechaHelper.ConvertirDeUtc(cotaSuperior.Value).Date
+                        : (DateTime?)null;
 
                     for (int i = 0; i < VentanaMaximaDias; i++)
                     {
                         DateTime dia = desde.AddDays(i);
+                        if (ultimoDia.HasValue && dia > ultimoDia.Value) break;
                         var historialDia = historialFiltrado(dia);
 
                         OnwayHistoryPoint match;
@@ -267,12 +278,35 @@ namespace WebSGV.Services.GpsIntegracion
                     return true;
                 }
 
+                // Tope superior de un hito: el primer hito POSTERIOR (en el orden de ColumnasGps)
+                // que ya esté registrado. Nada de lo que se busque puede quedar después de él.
+                DateTime? CotaSuperiorUtc(string columna)
+                {
+                    int k = Array.IndexOf(ColumnasGps, columna);
+                    DateTime? minimo = null;
+                    for (int j = k + 1; j < ColumnasGps.Length; j++)
+                        if (valoresYaConfirmados.TryGetValue(ColumnasGps[j], out var v) && (!minimo.HasValue || v < minimo.Value))
+                            minimo = v;
+                    return minimo.HasValue ? FechaHelper.ConvertirAUtc(minimo.Value) : (DateTime?)null;
+                }
+
+                // Día desde el que se busca. Si todavía no hay ningún hito anterior (p. ej. falta la
+                // ida a Trujillo) pero sí uno posterior, se empieza el día antes de ese posterior:
+                // la fecha de programación puede caer después de que el camión ya salió de base.
+                DateTime DesdePara(DateTime? cotaSuperior)
+                {
+                    if (horaCotaInferior.HasValue || !cotaSuperior.HasValue) return cursor;
+                    DateTime diaAntes = FechaHelper.ConvertirDeUtc(cotaSuperior.Value).Date.AddDays(-1);
+                    return diaAntes < cursor ? diaAntes : cursor;
+                }
+
                 foreach (var paso in pasos)
                 {
                     if (UsarValorConfirmadoSiExiste(paso.Columnas[0]))
                         continue; // ya confirmado; no se vuelve a consultar el GPS
 
-                    var resultado = buscar(paso.Checkpoint, paso.NumeroTracto, cursor, paso.TipoEvento, horaCotaInferior);
+                    DateTime? tope = CotaSuperiorUtc(paso.Columnas[0]);
+                    var resultado = buscar(paso.Checkpoint, paso.NumeroTracto, DesdePara(tope), paso.TipoEvento, horaCotaInferior, tope);
                     if (resultado == null) continue;
 
                     DateTime horaLocal = FechaHelper.ConvertirDeUtc(resultado.Item1.MessageTime);
@@ -294,7 +328,7 @@ namespace WebSGV.Services.GpsIntegracion
                 }
                 else
                 {
-                    var resultadoJave = buscar("PLANTA_ECUADOR_JAVE", 2, cursor, TipoEventoGps.Llegada, horaCotaInferior);
+                    var resultadoJave = buscar("PLANTA_ECUADOR_JAVE", 2, DesdePara(CotaSuperiorUtc("fhLlegadaAlmacen")), TipoEventoGps.Llegada, horaCotaInferior, CotaSuperiorUtc("fhLlegadaAlmacen"));
                     if (resultadoJave != null)
                     {
                         rama = "JAVE";
@@ -309,7 +343,7 @@ namespace WebSGV.Services.GpsIntegracion
                     }
                     else
                     {
-                        var resultadoInbalnor = buscar("PLANTA_ECUADOR_INBALNOR", 2, cursor, TipoEventoGps.Llegada, horaCotaInferior);
+                        var resultadoInbalnor = buscar("PLANTA_ECUADOR_INBALNOR", 2, DesdePara(CotaSuperiorUtc("fhLlegadaAlmacen")), TipoEventoGps.Llegada, horaCotaInferior, CotaSuperiorUtc("fhLlegadaAlmacen"));
                         if (resultadoInbalnor != null)
                         {
                             rama = "INBALNOR";
@@ -329,7 +363,7 @@ namespace WebSGV.Services.GpsIntegracion
                 {
                     if (!UsarValorConfirmadoSiExiste("fhIngreso"))
                     {
-                        var resultadoIngreso = buscar("INGRESO_" + rama, 2, cursor, TipoEventoGps.Llegada, horaCotaInferior);
+                        var resultadoIngreso = buscar("INGRESO_" + rama, 2, DesdePara(CotaSuperiorUtc("fhIngreso")), TipoEventoGps.Llegada, horaCotaInferior, CotaSuperiorUtc("fhIngreso"));
                         if (resultadoIngreso != null)
                         {
                             valoresEncontrados["fhIngreso"] = FechaHelper.ConvertirDeUtc(resultadoIngreso.Item1.MessageTime);
@@ -341,7 +375,7 @@ namespace WebSGV.Services.GpsIntegracion
 
                     if (!UsarValorConfirmadoSiExiste("fhSalida"))
                     {
-                        var resultadoSalida = buscar("SALIDA_" + rama, 2, cursor, TipoEventoGps.Salida, horaCotaInferior);
+                        var resultadoSalida = buscar("SALIDA_" + rama, 2, DesdePara(CotaSuperiorUtc("fhSalida")), TipoEventoGps.Salida, horaCotaInferior, CotaSuperiorUtc("fhSalida"));
                         if (resultadoSalida != null)
                         {
                             valoresEncontrados["fhSalida"] = FechaHelper.ConvertirDeUtc(resultadoSalida.Item1.MessageTime);
@@ -354,7 +388,7 @@ namespace WebSGV.Services.GpsIntegracion
 
                 if (!UsarValorConfirmadoSiExiste("fhLlegadaBaseFinal"))
                 {
-                    var resultadoBaseFinal = buscar("BASE_LLEGADA_FINAL", 2, cursor, TipoEventoGps.Llegada, horaCotaInferior);
+                    var resultadoBaseFinal = buscar("BASE_LLEGADA_FINAL", 2, cursor, TipoEventoGps.Llegada, horaCotaInferior, null);
                     if (resultadoBaseFinal != null)
                     {
                         valoresEncontrados["fhLlegadaBaseFinal"] = FechaHelper.ConvertirDeUtc(resultadoBaseFinal.Item1.MessageTime);
