@@ -209,5 +209,22 @@ namespace WebSGV.Tests
             Assert.True(ok);
             Assert.Equal(new DateTime(2027, 6, 10), fecha);
         }
+
+        // ---- ObservacionesDelConductor ----
+
+        [Theory]
+        [InlineData("Viaje sin novedad\r\n**RECHAZADO 2026-10-09 11:56:29**: Falta comprobante", "Viaje sin novedad")]
+        [InlineData("Llanta baja\r\n[REVERSION 2026-10-09 12:08:55] motivo\r\n[RECHAZO 2026-10-09 12:10:00] otro", "Llanta baja")]
+        [InlineData("Linea 1\r\nLinea 2\r\n[CORRECCION AJUSTES 2026-10-09] x", "Linea 1\r\nLinea 2")]
+        [InlineData("\r\n**RECHAZADO 2026-10-09**: sin texto del conductor", "")]
+        [InlineData("**RECHAZADO 2026-10-09**: al inicio", "")]
+        [InlineData("Solo texto del conductor", "Solo texto del conductor")]
+        [InlineData("Menciona [RECHAZO sin salto de linea", "Menciona [RECHAZO sin salto de linea")]
+        [InlineData("", "")]
+        [InlineData(null, "")]
+        public void ObservacionesDelConductor_QuitaNotasDelSistema(string entrada, string esperado)
+        {
+            Assert.Equal(esperado, LiquidacionCalculos.ObservacionesDelConductor(entrada));
+        }
     }
 }

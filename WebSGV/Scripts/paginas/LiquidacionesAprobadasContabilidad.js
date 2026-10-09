@@ -230,12 +230,12 @@ function verPdfLiquidacion(idOrdenViaje) {
                 return;
             }
 
-            alert(r && r.message
+            SGV.avisar(r && r.message
                 ? r.message
                 : 'No se encontró el PDF firmado para esta liquidación.');
         },
         error: function () {
-            alert('Error al abrir el PDF de la liquidación.');
+            SGV.avisar('Error al abrir el PDF de la liquidación.');
         }
     });
 }

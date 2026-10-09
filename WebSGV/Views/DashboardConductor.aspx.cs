@@ -14,6 +14,7 @@ using WebSGV.Helpers;
 using WebSGV.Models.Conductor;
 using WebSGV.Services.Common;
 using WebSGV.Services.Conductor;
+using WebSGV.Services.Liquidaciones;
 using WebSGV.Services.OrdenViaje;
 
 namespace WebSGV.Views
@@ -389,7 +390,7 @@ namespace WebSGV.Views
                             // TIME llega como TimeSpan ("06:00:00"); el input y la validación usan HH:mm.
                             horaSal = r["horaSalida"] is TimeSpan hs ? hs.ToString(@"hh\:mm") : "";
                             horaLleg = r["horaLlegada"] is TimeSpan hl ? hl.ToString(@"hh\:mm") : "";
-                            obs = r["observaciones"]?.ToString() ?? "";
+                            obs = LiquidacionCalculos.ObservacionesDelConductor(r["observaciones"]?.ToString());
                         }
                     }
 

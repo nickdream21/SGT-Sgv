@@ -177,3 +177,21 @@ input.af-shield[readonly] {
     opacity: 1 !important;
     cursor: text !important;
 }
+
+/* Avisos no bloqueantes (SGV.avisar en SiteMaster.js) */
+.sgv-avisos {
+    position: fixed;
+    top: 70px;
+    right: 16px;
+    z-index: 2000;
+    width: 360px;
+    max-width: calc(100vw - 32px);
+}
+.sgv-aviso {
+    margin-bottom: .5rem;
+    font-size: .9rem;
+}
+.sgv-aviso-texto {
+    white-space: pre-line;
+    word-break: break-word;
+}

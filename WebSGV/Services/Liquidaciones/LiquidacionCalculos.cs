@@ -67,6 +67,32 @@ namespace WebSGV.Services.Liquidaciones
         }
 
         /// <summary>
+        /// Marcadores con los que el sistema agrega notas al final de <c>OrdenViaje.observaciones</c>
+        /// (rechazo, reversión, corrección de ajustes), siempre en una línea nueva.
+        /// </summary>
+        private static readonly string[] MarcadoresNotaSistema =
+            { "**RECHAZADO ", "[RECHAZO ", "[REVERSION ", "[CORRECCION AJUSTES " };
+
+        /// <summary>
+        /// Devuelve solo lo que escribió el conductor en las observaciones de la orden, sin las
+        /// notas que el sistema agrega al final. Se usa al precargar una liquidación rechazada:
+        /// sin esto las notas volvían al formulario y se acumulaban en cada reenvío.
+        /// </summary>
+        public static string ObservacionesDelConductor(string observaciones)
+        {
+            if (string.IsNullOrEmpty(observaciones)) return string.Empty;
+
+            int corte = observaciones.Length;
+            foreach (string marcador in MarcadoresNotaSistema)
+            {
+                int i = observaciones.IndexOf("\n" + marcador, StringComparison.Ordinal);
+                if (i >= 0 && i < corte) corte = i;
+                if (observaciones.StartsWith(marcador, StringComparison.Ordinal)) corte = 0;
+            }
+            return observaciones.Substring(0, corte).TrimEnd();
+        }
+
+        /// <summary>
         /// Decodifica un PNG en base64 (admite prefijo data URI "data:image/png;base64,").
         /// Devuelve <c>null</c> si la cadena es vacía o no es base64 válido.
         /// </summary>

@@ -42,3 +42,84 @@
         Sys.WebForms.PageRequestManager.getInstance().add_endRequest(protegerFormulario);
     }
 })();
+
+// ── Avisos no bloqueantes ───────────────────────────────────────────
+// Reemplazo de alert(): un alert() detiene la página hasta que se cierra (y bloquea la
+// automatización de pruebas). SGV.avisar(mensaje) muestra el aviso arriba a la derecha y se
+// cierra solo; el tipo sale del emoji inicial (✅ éxito, ❌ error, ⚠️ advertencia; sin emoji:
+// "Error..." es error y lo demás advertencia) o de opciones.tipo. Con { trasRecargar: true } el aviso se guarda y aparece después de un
+// location.reload().
+(function () {
+    var SGV = window.SGV = window.SGV || {};
+    var CLAVE = 'sgvAvisoPendiente';
+
+    function tipoDe(mensaje) {
+        if (/^\s*✅/.test(mensaje)) return 'success';
+        if (/^\s*❌/.test(mensaje)) return 'danger';
+        if (/^\s*⚠/.test(mensaje)) return 'warning';
+        if (/^\s*Error/i.test(mensaje)) return 'danger';
+        return 'warning';   // sin emoji: validaciones de formulario
+    }
+
+    function contenedor() {
+        var c = document.getElementById('sgvAvisos');
+        if (!c) {
+            c = document.createElement('div');
+            c.id = 'sgvAvisos';
+            c.className = 'sgv-avisos';
+            c.setAttribute('aria-live', 'polite');
+            document.body.appendChild(c);
+        }
+        return c;
+    }
+
+    function mostrar(mensaje, tipo) {
+        var aviso = document.createElement('div');
+        aviso.className = 'alert alert-' + tipo + ' alert-dismissible fade show shadow-sm sgv-aviso';
+        aviso.setAttribute('role', tipo === 'danger' ? 'alert' : 'status');
+        var texto = document.createElement('div');
+        texto.className = 'sgv-aviso-texto';
+        texto.textContent = mensaje;   // texto plano: nunca interpretar HTML del mensaje
+        var cerrar = document.createElement('button');
+        cerrar.type = 'button';
+        cerrar.className = 'close';
+        cerrar.setAttribute('aria-label', 'Cerrar');
+        cerrar.innerHTML = '<span aria-hidden="true">&times;</span>';
+        cerrar.onclick = function () { aviso.remove(); };
+        aviso.appendChild(cerrar);
+        aviso.appendChild(texto);
+        contenedor().appendChild(aviso);
+        // Los errores se quedan más tiempo para que se alcancen a leer.
+        setTimeout(function () { aviso.remove(); }, tipo === 'danger' ? 12000 : 6000);
+    }
+
+    SGV.avisar = function (mensaje, opciones) {
+        mensaje = String(mensaje == null ? '' : mensaje);
+        opciones = opciones || {};
+        var tipo = opciones.tipo || tipoDe(mensaje);
+        if (opciones.trasRecargar) {
+            try {
+                sessionStorage.setItem(CLAVE, JSON.stringify({ m: mensaje, t: tipo }));
+                return;
+            } catch (e) { /* sin sessionStorage: mostrarlo ahora */ }
+        }
+        if (document.body) mostrar(mensaje, tipo);
+        else document.addEventListener('DOMContentLoaded', function () { mostrar(mensaje, tipo); });
+    };
+
+    function mostrarPendiente() {
+        var guardado = null;
+        try {
+            guardado = sessionStorage.getItem(CLAVE);
+            sessionStorage.removeItem(CLAVE);
+        } catch (e) { }
+        if (!guardado) return;
+        try {
+            var a = JSON.parse(guardado);
+            mostrar(a.m, a.t);
+        } catch (e) { }
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mostrarPendiente);
+    else mostrarPendiente();
+})();

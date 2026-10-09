@@ -227,9 +227,9 @@ function agregarReparacion() {
     const dolares = parseFloat($('#nuevaReparacionDolares').val()) || 0;
     const observaciones = $('#nuevaReparacionObservaciones').val().trim();
 
-    if (!tipo) { alert('Ingrese el tipo de reparación'); $('#nuevaReparacionTipo').focus(); return; }
-    if (!fecha) { alert('Seleccione una fecha'); $('#nuevaReparacionFecha').focus(); return; }
-    if (soles <= 0 && dolares <= 0) { alert('Ingrese al menos un monto'); $('#nuevaReparacionSoles').focus(); return; }
+    if (!tipo) { SGV.avisar('Ingrese el tipo de reparación'); $('#nuevaReparacionTipo').focus(); return; }
+    if (!fecha) { SGV.avisar('Seleccione una fecha'); $('#nuevaReparacionFecha').focus(); return; }
+    if (soles <= 0 && dolares <= 0) { SGV.avisar('Ingrese al menos un monto'); $('#nuevaReparacionSoles').focus(); return; }
 
     reparacionesData.push({
         id: ++contadorReparaciones,
@@ -306,9 +306,9 @@ function agregarHospedaje() {
     const dolares = parseFloat($('#nuevoHospedajeDolares').val()) || 0;
     const observaciones = $('#nuevoHospedajeObservaciones').val().trim();
 
-    if (!lugar) { alert('Ingrese el lugar'); $('#nuevoHospedajeLugar').focus(); return; }
-    if (!fecha) { alert('Seleccione una fecha'); $('#nuevoHospedajeFecha').focus(); return; }
-    if (soles <= 0 && dolares <= 0) { alert('Ingrese al menos un monto'); $('#nuevoHospedajeSoles').focus(); return; }
+    if (!lugar) { SGV.avisar('Ingrese el lugar'); $('#nuevoHospedajeLugar').focus(); return; }
+    if (!fecha) { SGV.avisar('Seleccione una fecha'); $('#nuevoHospedajeFecha').focus(); return; }
+    if (soles <= 0 && dolares <= 0) { SGV.avisar('Ingrese al menos un monto'); $('#nuevoHospedajeSoles').focus(); return; }
 
     hospedajesData.push({
         id: ++contadorHospedajes,
@@ -385,9 +385,9 @@ function agregarCombustible() {
     const dolares = parseFloat($('#nuevoCombustibleDolares').val()) || 0;
     const observaciones = $('#nuevoCombustibleObservaciones').val().trim();
 
-    if (!lugar) { alert('Ingrese el lugar'); $('#nuevoCombustibleLugar').focus(); return; }
-    if (!fecha) { alert('Seleccione una fecha'); $('#nuevoCombustibleFecha').focus(); return; }
-    if (soles <= 0 && dolares <= 0) { alert('Ingrese al menos un monto'); $('#nuevoCombustibleSoles').focus(); return; }
+    if (!lugar) { SGV.avisar('Ingrese el lugar'); $('#nuevoCombustibleLugar').focus(); return; }
+    if (!fecha) { SGV.avisar('Seleccione una fecha'); $('#nuevoCombustibleFecha').focus(); return; }
+    if (soles <= 0 && dolares <= 0) { SGV.avisar('Ingrese al menos un monto'); $('#nuevoCombustibleSoles').focus(); return; }
 
     combustiblesData.push({
         id: ++contadorCombustibles,
@@ -557,15 +557,15 @@ function confirmarRetirar() {
             $('#modalRetirarLiquidacion').modal('hide');
 
             if (data.success) {
-                alert('✅ ' + data.message);
+                SGV.avisar('✅ ' + data.message, { trasRecargar: true });
                 location.reload();
             } else {
-                alert('⚠️ ' + data.message);
+                SGV.avisar('⚠️ ' + data.message);
             }
         },
         error: function (xhr) {
             $('#modalRetirarLiquidacion').modal('hide');
-            alert('❌ Error de comunicación. Intente nuevamente.');
+            SGV.avisar('❌ Error de comunicación. Intente nuevamente.');
             console.error(xhr.responseText);
         },
         complete: function () {

@@ -4,15 +4,15 @@
     var confirmar = document.getElementById(SGV.txtConfirmarContrasena).value;
 
     if (!actual) {
-        alert('Por favor ingresa tu contraseña actual.');
+        SGV.avisar('Por favor ingresa tu contraseña actual.');
         return false;
     }
     if (!nueva || nueva.length < 6) {
-        alert('La nueva contraseña debe tener al menos 6 caracteres.');
+        SGV.avisar('La nueva contraseña debe tener al menos 6 caracteres.');
         return false;
     }
     if (nueva !== confirmar) {
-        alert('Las contraseñas nuevas no coinciden.');
+        SGV.avisar('Las contraseñas nuevas no coinciden.');
         return false;
     }
     return true;

@@ -11,7 +11,13 @@
                     <div class="rd-page-header">
                         <h4>
                             <i class="fas fa-truck mr-2"></i> Registro de Despachos
-                            <asp:Label ID="lblEstadoLote" runat="server" CssClass="badge ml-3" style="background:#16a34a;font-size:.68rem;font-weight:600;" Visible="false"></asp:Label>
+                            <%-- Panel propio (UpdateMode=Always): el encabezado queda fuera de UpdatePanelMain y
+                                 sin él la etiqueta no se refrescaba en los postbacks asíncronos. --%>
+                            <asp:UpdatePanel ID="UpdatePanelEstadoLote" runat="server" UpdateMode="Always" RenderMode="Inline">
+                                <ContentTemplate>
+                                    <asp:Label ID="lblEstadoLote" runat="server" CssClass="badge ml-3" style="background:#16a34a;font-size:.68rem;font-weight:600;" Visible="false"></asp:Label>
+                                </ContentTemplate>
+                            </asp:UpdatePanel>
                         </h4>
                     </div>
                     <div class="card-body">

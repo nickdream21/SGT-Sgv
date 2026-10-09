@@ -334,6 +334,7 @@ namespace WebSGV.Views
             lblResumenAmbito.Text = lote.EsInternacional ? "Internacional" : "Nacional";
             lblResumenPlanta.Text = lote.PlantaOperacion;
             lblResumenCantidad.Text = lote.CantidadConductores.ToString();
+            lblEstadoLote.Text = $"LOTE ACTIVO - {lote.CantidadConductores} conductores";
 
             // Actualizar grid de conductores
             ActualizarGridConductores();
@@ -1116,14 +1117,15 @@ namespace WebSGV.Views
                     AuditoriaHelper.Registrar("INSERT", "Despachos", null,
                         $"Lote de {resultado.despachosCreados} despacho(s) registrado - Cliente: {LoteActual?.NombreCliente}, Operación: {LoteActual?.TipoOperacion}, Planta: {LoteActual?.PlantaOperacion}");
 
-                    MostrarMensaje($"Lote finalizado exitosamente. Se crearon {resultado.despachosCreados} despachos.", "success");
-
-                    // Limpiar lote y resetear página
+                    // Limpiar lote y resetear página (antes del mensaje: LimpiarFormularioCompleto
+                    // oculta el panel de mensajes y el aviso de éxito no llegaba a verse).
                     LoteActual = null;
                     MostrarFaseConfiguracionBase();
                     LimpiarFormularioCompleto();
                     CargarDatos();
                     EstablecerFechaPorDefecto();
+
+                    MostrarMensaje($"Lote finalizado exitosamente. Se crearon {resultado.despachosCreados} despachos.", "success");
                 }
                 else
                 {
@@ -1610,6 +1612,7 @@ namespace WebSGV.Views
 
             // Ocultar paneles
             pnlMensajes.Visible = false;
+            pnlMensajeConductor.Visible = false;
         }
 
         /// <summary>

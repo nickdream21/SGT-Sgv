@@ -146,7 +146,7 @@
 | `BuscarOrdenViaje.aspx` | Búsqueda avanzada por múltiples criterios |
 
 **Acciones sobre liquidaciones:**
-- ✅ **Aprobar** — Registra firma admin + ajustes en `OrdenViajeAjuste` + genera PDF firmado archivado en `~/App_Data/OrdenesViaje`
+- ✅ **Aprobar** — Registra firma admin + ajustes en `DescuentosReintegros` + genera PDF firmado archivado en `~/App_Data/OrdenesViaje`
 - ❌ **Rechazar** — Devuelve al conductor con observaciones
 - ✏️ **Editar** — Modifica datos antes de aprobar
 - 👁️ **Ver** — Consulta sin modificar
@@ -307,7 +307,7 @@ DashboardGrifo.aspx — lista viajes activos
     │
     ├── ✅ APROBAR
     │     · Firma del admin registrada (solo metadata, Nivel C)
-    │     · Ajustes guardados en OrdenViajeAjuste
+    │     · Ajustes guardados en DescuentosReintegros
     │     · NO invalida firma original del conductor
     │     · PDF firmado generado → archivado en ~/App_Data/OrdenesViaje
     │     → Pasa a Historial / Reportes

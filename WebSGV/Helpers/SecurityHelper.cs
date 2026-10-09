@@ -102,7 +102,7 @@ namespace WebSGV.Helpers
         {
             ExigirSesion();
             if (!EsAdmin())
-                Redirigir("~/Views/Login.aspx?error=sesion");
+                RedirigirSinPermiso();
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace WebSGV.Helpers
         {
             ExigirSesion();
             if (!EsAdminOSupervisor())
-                Redirigir("~/Views/Login.aspx?error=sesion");
+                RedirigirSinPermiso();
         }
 
         /// <summary>
@@ -123,7 +123,7 @@ namespace WebSGV.Helpers
         {
             ExigirSesion();
             if (!EsAdminSistema())
-                Redirigir("~/Views/Login.aspx?error=sesion");
+                RedirigirSinPermiso();
         }
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace WebSGV.Helpers
             bool permitido = rol == ROL_ADMIN || rol == ROL_ADMIN_LEGADO || rol == ROL_ADMIN_SISTEMA || rol == ROL_ADMIN_TRANSPORTE
                           || rol == ROL_SUPERVISOR || rol == ROL_ADMIN_GRIFO;
             if (!permitido)
-                Redirigir("~/Views/Login.aspx?error=sesion");
+                RedirigirSinPermiso();
         }
 
         // ── Headers de seguridad HTTP ──────────────────────────────────────
@@ -194,6 +194,23 @@ namespace WebSGV.Helpers
         /// Page_Load, los eventos de postback y el render, filtrando datos y
         /// permitiendo acciones a usuarios sin permiso.
         /// </summary>
+        /// <summary>
+        /// Hay sesión pero el rol no tiene acceso: vuelve a la página de inicio de su rol en vez
+        /// de ir a Login.aspx?error=sesion (que cierra la sesión). Si el rol no se reconoce, o
+        /// su inicio es la misma página que lo rechaza (evita bucles), sí va al login.
+        /// </summary>
+        private static void RedirigirSinPermiso()
+        {
+            var context = HttpContext.Current;
+            if (context == null) return;
+
+            string inicio = RolesHelper.UrlInicioSegunRol(ObtenerRol());
+            bool mismaPagina = inicio != null && string.Equals(
+                VirtualPathUtility.ToAbsolute(inicio), context.Request.Path, StringComparison.OrdinalIgnoreCase);
+
+            Redirigir(inicio == null || mismaPagina ? "~/Views/Login.aspx?error=sesion" : inicio);
+        }
+
         private static void Redirigir(string url)
         {
             var context = HttpContext.Current;

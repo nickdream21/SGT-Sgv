@@ -75,7 +75,7 @@ Admin Revisa: Aprobar / Rechazar / Editar
         │
         ├── Si Aprueba →
         │     · Firma del Admin registrada (Nivel C — solo metadata)
-        │     · Ajustes (Descuentos / Reintegros) guardados en OrdenViajeAjuste
+        │     · Ajustes (Descuentos / Reintegros) guardados en DescuentosReintegros
         │     · No invalida la firma original del conductor
         │     · PDF firmado generado y archivado en ~/App_Data/OrdenesViaje
         │     → Pasa a Historial / Reportes
@@ -168,7 +168,7 @@ Historial de partes accesible en Dashboard
 | `FirmarLiquidacion.aspx` | **Firma Digital** — Canvas biométrico del conductor. Previo al envío de la liquidación. |
 
 **Acciones sobre liquidaciones pendientes:**
-- ✅ **Aprobar** — Acepta la liquidación. Se registra firma del admin y se guardan ajustes en `OrdenViajeAjuste`. Se genera PDF firmado.
+- ✅ **Aprobar** — Acepta la liquidación. Se registra firma del admin y se guardan los ajustes en `DescuentosReintegros`. Se genera PDF firmado.
 - ❌ **Rechazar** — Devuelve la liquidación al conductor con observaciones.
 - ✏️ **Editar** — Permite al admin modificar datos antes de aprobar.
 - 👁️ **Ver** — Consulta el detalle completo sin modificar.
@@ -409,7 +409,7 @@ FirmarLiquidacion.aspx — Canvas de firma biométrica
 Admin revisa en LiquidacionesPendientes.aspx
   · Al aprobar: firma del admin registrada (Nivel C — solo metadata)
   · idFirmaAdmin registrado en OrdenViaje
-  · Ajustes (descuentos/reintegros) guardados en OrdenViajeAjuste con FK a FirmaDigital
+  · Ajustes (descuentos/reintegros) guardados en DescuentosReintegros (una fila por orden)
   · La firma original del conductor NO se invalida
         │
         ▼
@@ -422,7 +422,7 @@ PDF firmado generado y archivado en ~/App_Data/OrdenesViaje
 | Tabla | Descripción |
 |-------|-------------|
 | `FirmaDigital` | Append-only. Imagen PNG del trazo + hash SHA-256 + metadatos |
-| `OrdenViajeAjuste` | Descuentos/reintegros formales con FK a `FirmaDigital` |
+| `DescuentosReintegros` | Descuentos/reintegros de la aprobación (una fila por orden). `OrdenViajeAjuste` existe (migración 03) pero hoy no se usa |
 | `FormatoControlado` | Catálogo ISO 9001/14001/45001/BASC para encabezados de documentos |
 
 **Columnas en `OrdenViaje`:**
@@ -441,7 +441,7 @@ Conductor registra liquidación:
             ▼
 Admin revisa liquidación pendiente:
     ├── Aprueba →
-    │     · Ajustes (Descuentos y Reintegros) guardados en OrdenViajeAjuste
+    │     · Ajustes (Descuentos y Reintegros) guardados en DescuentosReintegros
     │     · Descuento: Monto a descontar al conductor
     │     · Reintegro: Monto a devolver al conductor
     │     · PDF firmado archivado en App_Data/

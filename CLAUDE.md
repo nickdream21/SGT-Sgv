@@ -59,7 +59,7 @@ Cookie: `SGV_SessionId`, 30-minute timeout, `HttpOnly`, `SameSite=Lax`.
 
 Two overlapping helpers exist — prefer `SecurityHelper` (newer) for new code:
 
-- `WebSGV/Helpers/SecurityHelper.cs` — `ExigirSesion()`, `ExigirRolAdmin()`, `ExigirRolAdminOSupervisor()`, `ExigirRolAdminOGrifo()`, plus `AgregarHeadersSeguridad()`. The guards end the response (`Response.Redirect(url, true)`); keep them at the top of `Page_Load`, outside any `try`. `[WebMethod]`s skip `Page_Load`, so each one must check session/role itself (`EnableSession = true`).
+- `WebSGV/Helpers/SecurityHelper.cs` — `ExigirSesion()`, `ExigirRolAdmin()`, `ExigirRolAdminOSupervisor()`, `ExigirRolAdminOGrifo()`, plus `AgregarHeadersSeguridad()`. Without a session they go to Login; with a session but the wrong role they go to that role's home page (`RolesHelper.UrlInicioSegunRol`, the single source for per-role home pages), so the user is not logged out. The guards end the response (`Response.Redirect(url, true)`); keep them at the top of `Page_Load`, outside any `try`. `[WebMethod]`s skip `Page_Load`, so each one must check session/role itself (`EnableSession = true`).
 - `WebSGV/Views/RolesHelper.cs` (namespace `WebSGV.Helpers`) — `ValidarAccesoSeccion(seccion)`, `TienePermiso(seccion)`.
 
 Role constants (always compare `.ToUpper().Trim()`):
@@ -87,7 +87,7 @@ All pages live under `WebSGV/Views/`. Role-specific dashboards redirect on login
 
 Core business flow: **Despacho → ViajesProgreso → Liquidación del Conductor (firma digital) → Revisión Admin → PDF archivado**.
 
-The digital signature is a PNG biometric trace captured on canvas, stored in the `FirmaDigital` table (append-only, SHA-256 hash). Admin approval writes to `OrdenViajeAjuste` without invalidating the conductor's original signature. Signed PDFs land in `~/App_Data/OrdenesViaje/`.
+The digital signature is a PNG biometric trace captured on canvas, stored in the `FirmaDigital` table (append-only, SHA-256 hash). Admin approval stores discounts/reimbursements in `DescuentosReintegros` (one row per order; `OrdenViajeAjuste` exists from migration 03 but nothing writes to it) without invalidating the conductor's original signature. Signed PDFs land in `~/App_Data/OrdenesViaje/`.
 
 ### Services and PDF generation
 
@@ -125,7 +125,7 @@ Integration tests (`WebSGV.Tests/Integracion/`, `[FactBD]`) run read-only agains
 
 ### Front-end libraries
 
-Page-specific CSS/JS lives in files, not inline: `Content/paginas/<Pagina>.css` and `Scripts/paginas/<Pagina>.js` (subfolders mirror `Views/`, e.g. `Exportacion/`; `Site.Master` → `SiteMaster.*`). Reference them with `<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/X.js") %>` (adds `?v=` with the file date so browsers don't use a stale copy) and register them as `<Content>` in `WebSGV.csproj`. A `.js` file can't contain `<%= %>`: the page declares the server values right before it, inline — `var SGV = Object.assign(window.SGV || {}, { txtFecha: '<%= txtFecha.ClientID %>' });` — and the script uses `SGV.txtFecha` (e.g. `$('#' + SGV.txtFecha)`). Only `Error.aspx`/`Error404.aspx` keep inline CSS (they must render even if static files fail).
+Page-specific CSS/JS lives in files, not inline: `Content/paginas/<Pagina>.css` and `Scripts/paginas/<Pagina>.js` (subfolders mirror `Views/`, e.g. `Exportacion/`; `Site.Master` → `SiteMaster.*`). Reference them with `<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/X.js") %>` (adds `?v=` with the file date so browsers don't use a stale copy) and register them as `<Content>` in `WebSGV.csproj`. A `.js` file can't contain `<%= %>`: the page declares the server values right before it, inline — `var SGV = Object.assign(window.SGV || {}, { txtFecha: '<%= txtFecha.ClientID %>' });` — and the script uses `SGV.txtFecha` (e.g. `$('#' + SGV.txtFecha)`). Only `Error.aspx`/`Error404.aspx` keep inline CSS (they must render even if static files fail). Use `SGV.avisar(mensaje[, { tipo, trasRecargar }])` (`Scripts/paginas/SiteMaster.js`) instead of `alert()`: alerts block the page; pass `trasRecargar: true` when a `location.reload()` follows.
 
 `Site.Master` loads jQuery 3.6.4 → Popper → Bootstrap **4.6.2** → jQuery UI once, in `<head>`. Pages must NOT load jQuery/Bootstrap again (a second jQuery replaces `$` and drops `.modal()`, `.datepicker()`, `.dropdown()`), and must use Bootstrap 4 syntax (`data-toggle`, `data-dismiss`, `class="close"`), not Bootstrap 5 (`data-bs-*`, `btn-close`). The ScriptManager `"jquery"` resource (unobtrusive validation) maps to `Scripts/jquery-si-falta.js`, which only loads jQuery if missing.
 

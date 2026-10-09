@@ -139,13 +139,13 @@ function consultarHoraLlegadaGps() {
                 var textoActual = $('#detalleHoraLlegada').text();
                 $('#detalleHoraLlegada').text(textoActual + ' · ' + result.horaLlegadaGps + ' h (verificada por GPS)');
             } else {
-                alert('❌ ' + result.message);
+                SGV.avisar('❌ ' + result.message);
             }
         },
         error: function (xhr) {
             console.error('Error:', xhr.responseText);
             $btn.prop('disabled', false).html('<i class="fas fa-satellite-dish"></i> Verificar GPS');
-            alert('Error al consultar el GPS. Por favor intente de nuevo.');
+            SGV.avisar('Error al consultar el GPS. Por favor intente de nuevo.');
         }
     });
 }
@@ -709,7 +709,7 @@ function imprimirDetalle() {
             }, 400);
         };
     } else {
-        alert('El navegador bloque\u00f3 la ventana emergente. Por favor, permita las ventanas emergentes para este sitio.');
+        SGV.avisar('El navegador bloque\u00f3 la ventana emergente. Por favor, permita las ventanas emergentes para este sitio.');
     }
 }
 
@@ -780,16 +780,16 @@ function corregirSalidaDesdeModal() {
             var result = response.d;
             if (result.success) {
                 $('#modalDetalleLiquidacion').modal('hide');
-                alert('✅ ' + result.message);
+                SGV.avisar('✅ ' + result.message, { trasRecargar: true });
                 location.reload();
             } else {
-                alert('❌ ' + result.message);
+                SGV.avisar('❌ ' + result.message);
                 $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar corrección');
             }
         },
         error: function (xhr) {
             console.error('Error:', xhr.responseText);
-            alert('Error al corregir la salida. Por favor intente de nuevo.');
+            SGV.avisar('Error al corregir la salida. Por favor intente de nuevo.');
             $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar corrección');
         }
     });
@@ -806,12 +806,12 @@ function aprobarDesdeModal() {
     var nota = $('#notaAprobacion').val().trim();
 
     if (descS < 0 || descD < 0 || reintS < 0 || reintD < 0) {
-        alert('⚠️ Los montos de ajuste no pueden ser negativos.');
+        SGV.avisar('⚠️ Los montos de ajuste no pueden ser negativos.');
         return;
     }
 
     if (nota.length > 500) {
-        alert('La nota de aprobación no puede superar 500 caracteres.');
+        SGV.avisar('La nota de aprobación no puede superar 500 caracteres.');
         $('#notaAprobacion').focus();
         return;
     }
@@ -850,16 +850,16 @@ function aprobarDesdeModal() {
             var result = response.d;
             if (result.success) {
                 $('#modalDetalleLiquidacion').modal('hide');
-                alert('\u2705 ' + result.message);
+                SGV.avisar('\u2705 ' + result.message, { trasRecargar: true });
                 location.reload();
             } else {
-                alert('\u274c ' + result.message);
+                SGV.avisar('\u274c ' + result.message);
                 $btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar Liquidación');
             }
         },
         error: function (xhr) {
             console.error('Error:', xhr.responseText);
-            alert('Error al aprobar la liquidación. Por favor intente de nuevo.');
+            SGV.avisar('Error al aprobar la liquidación. Por favor intente de nuevo.');
             $btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar Liquidación');
         }
     });
@@ -886,6 +886,13 @@ $(document).ready(function () {
 
 var _aprobadasData = {};
 var _aprobadasCargadas = false;
+
+// Tras revertir una aprobación la página se recarga; volver a la pestaña de aprobadas.
+$(function () {
+    var tab = null;
+    try { tab = sessionStorage.getItem('sgvLiqTab'); sessionStorage.removeItem('sgvLiqTab'); } catch (e) { }
+    if (tab === 'aprobadas') cambiarTab('aprobadas');
+});
 
 function cambiarTab(tab) {
     if (tab === 'pendientes') {
@@ -1071,12 +1078,12 @@ function descargarPdfOrdenViaje(idOrden) {
                 // Abrir en pestaña nueva (vista previa). Para forzar descarga: &download=1
                 window.open(r.url, '_blank');
             } else {
-                alert('\u274c ' + (r && r.message ? r.message : 'No se pudo obtener el PDF.'));
+                SGV.avisar('\u274c ' + (r && r.message ? r.message : 'No se pudo obtener el PDF.'));
             }
         },
         error: function (xhr) {
             console.error('Error PDF:', xhr.responseText);
-            alert('Error al solicitar el PDF.');
+            SGV.avisar('Error al solicitar el PDF.');
         }
     });
 }
@@ -1084,7 +1091,7 @@ function descargarPdfOrdenViaje(idOrden) {
 // --- Modal Revertir ---
 function abrirModalRevertir(idOrden) {
     var item = _aprobadasData[idOrden];
-    if (!item) { alert('No se encontraron datos de la liquidaci\u00f3n.'); return; }
+    if (!item) { SGV.avisar('No se encontraron datos de la liquidaci\u00f3n.'); return; }
     $('#revertirIdOrden').val(idOrden);
     $('#revertirNumeroOrden').val(item.NumeroOrdenViaje);
     $('#revertirConductor').val(item.NombreConductor);
@@ -1128,16 +1135,19 @@ function confirmarReversion() {
             var result = response.d;
             if (result.success) {
                 $('#modalRevertir').modal('hide');
-                alert('\u2705 ' + result.message);
-                cargarLiquidacionesAprobadas();
+                SGV.avisar('\u2705 ' + result.message, { trasRecargar: true });
+                // La orden vuelve a pendientes: recargar para refrescar esa lista (se genera en el
+                // servidor) y los contadores, regresando a la pestaña de aprobadas.
+                try { sessionStorage.setItem('sgvLiqTab', 'aprobadas'); } catch (e) { }
+                location.reload();
             } else {
-                alert('\u274c ' + result.message);
+                SGV.avisar('\u274c ' + result.message);
             }
             $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Confirmar Reversi\u00f3n');
         },
         error: function (xhr) {
             console.error('Error:', xhr.responseText);
-            alert('Error al revertir la aprobaci\u00f3n.');
+            SGV.avisar('Error al revertir la aprobaci\u00f3n.');
             $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Confirmar Reversi\u00f3n');
         }
     });
@@ -1146,7 +1156,7 @@ function confirmarReversion() {
 // --- Modal Corregir Ajustes ---
 function abrirModalCorregir(idOrden) {
     var item = _aprobadasData[idOrden];
-    if (!item) { alert('No se encontraron datos de la liquidaci\u00f3n.'); return; }
+    if (!item) { SGV.avisar('No se encontraron datos de la liquidaci\u00f3n.'); return; }
 
     $('#corregirIdOrden').val(idOrden);
     $('#corregirNumeroOrden').val(item.NumeroOrdenViaje);
@@ -1197,7 +1207,7 @@ function confirmarCorreccion() {
     }
 
     if (descS < 0 || descD < 0 || reintS < 0 || reintD < 0) {
-        alert('Los montos de descuento/reintegro no pueden ser negativos.');
+        SGV.avisar('Los montos de descuento/reintegro no pueden ser negativos.');
         return;
     }
 
@@ -1230,17 +1240,17 @@ function confirmarCorreccion() {
             var result = response.d;
             if (result.success) {
                 $('#modalCorregirAjustes').modal('hide');
-                alert('\u2705 ' + result.message);
+                SGV.avisar('\u2705 ' + result.message);
                 _aprobadasCargadas = false;
                 cargarLiquidacionesAprobadas();
             } else {
-                alert('\u274c ' + result.message);
+                SGV.avisar('\u274c ' + result.message);
             }
             $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar Correcci\u00f3n');
         },
         error: function (xhr) {
             console.error('Error:', xhr.responseText);
-            alert('Error al guardar la correcci\u00f3n.');
+            SGV.avisar('Error al guardar la correcci\u00f3n.');
             $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar Correcci\u00f3n');
         }
     });
@@ -1389,11 +1399,11 @@ function validarFiltrosAprobadasCliente() {
     var numeroOrden = ($('#filtroOrdenAprobadas').val() || '').trim();
 
     if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
-        alert('En filtros de aprobadas, la fecha "Hasta" debe ser mayor o igual a "Desde".');
+        SGV.avisar('En filtros de aprobadas, la fecha "Hasta" debe ser mayor o igual a "Desde".');
         return false;
     }
     if (numeroOrden && !/^[A-Za-z0-9\-_/]{1,30}$/.test(numeroOrden)) {
-        alert('El filtro N° Orden solo permite letras, números, guion (-), guion bajo (_) y barra (/), máximo 30 caracteres.');
+        SGV.avisar('El filtro N° Orden solo permite letras, números, guion (-), guion bajo (_) y barra (/), máximo 30 caracteres.');
         $('#filtroOrdenAprobadas').focus();
         return false;
     }
