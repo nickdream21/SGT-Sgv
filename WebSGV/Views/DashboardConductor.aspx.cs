@@ -386,8 +386,9 @@ namespace WebSGV.Views
                             ordenNumero = r["numeroOrdenViaje"].ToString();
                             fechaSal = r["fechaSalida"] != DBNull.Value ? Convert.ToDateTime(r["fechaSalida"]) : DateTime.MinValue;
                             fechaLleg = r["fechaLlegada"] != DBNull.Value ? Convert.ToDateTime(r["fechaLlegada"]) : DateTime.MinValue;
-                            horaSal = r["horaSalida"]?.ToString() ?? "";
-                            horaLleg = r["horaLlegada"]?.ToString() ?? "";
+                            // TIME llega como TimeSpan ("06:00:00"); el input y la validación usan HH:mm.
+                            horaSal = r["horaSalida"] is TimeSpan hs ? hs.ToString(@"hh\:mm") : "";
+                            horaLleg = r["horaLlegada"] is TimeSpan hl ? hl.ToString(@"hh\:mm") : "";
                             obs = r["observaciones"]?.ToString() ?? "";
                         }
                     }
@@ -578,10 +579,17 @@ namespace WebSGV.Views
                     var sb = new System.Text.StringBuilder();
                     sb.AppendLine("$(function() {");
 
+                    // Peajes: el formulario ya no tiene modal de detalle, sino dos filas fijas
+                    // (nacionales en soles, extranjeros en dólares). Se restauran desde el detalle.
+                    sb.AppendLine($"  (function() {{ var p = {peajesJson};");
+                    sb.AppendLine("    var nac = p.filter(function(x) { return x.soles > 0; });");
+                    sb.AppendLine("    var ext = p.filter(function(x) { return x.dolares > 0; });");
+                    sb.AppendLine("    var suma = function(l, k) { return l.reduce(function(a, x) { return a + x[k]; }, 0); };");
+                    sb.AppendLine("    if (nac.length) { $('#peajesNacSoles').val(suma(nac, 'soles').toFixed(2)); $('#descPeajesNacionales').val(nac[0].observaciones || ''); }");
+                    sb.AppendLine("    if (ext.length) { $('#peajesExtDolares').val(suma(ext, 'dolares').toFixed(2)); $('#descPeajesExtranjeros').val(ext[0].observaciones || ''); }");
+                    sb.AppendLine("  })();");
+
                     // Restore modal detail arrays
-                    sb.AppendLine($"  peajesData = {peajesJson};");
-                    sb.AppendLine("  contadorPeajes = peajesData.length;");
-                    sb.AppendLine("  actualizarTablaPeajes(); actualizarTotalesPeajes();");
 
                     sb.AppendLine($"  reparacionesData = {repJson};");
                     sb.AppendLine("  contadorReparaciones = reparacionesData.length;");

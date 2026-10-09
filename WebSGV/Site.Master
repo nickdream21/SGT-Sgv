@@ -34,7 +34,7 @@
 
         <!-- Navbar -->
         <nav class="navbar navbar-expand-lg navbar-light bg-light" runat="server" id="Navbar">
-            <a class="navbar-brand" href="<%= EsAdminGrifo ? ResolveUrl("~/Views/DashboardGrifo.aspx") : (EsAdminSistema ? ResolveUrl("~/Views/DashboardAdminSistema.aspx") : (EsAdmin ? ResolveUrl("~/Views/Inicio.aspx") : ResolveUrl("~/Views/DashboardConductor.aspx"))) %>">
+            <a class="navbar-brand" href="<%= ResolveUrl(UrlInicio) %>">
                 <i class="fas fa-truck-moving"></i>Sistema SGV
             </a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
@@ -197,7 +197,7 @@
                         { %>
 
                     <li class="nav-item">
-                        <a class="nav-link" href='<%= ResolveUrl("~/Views/Inicio.aspx") %>'>
+                        <a class="nav-link" href='<%= ResolveUrl(UrlInicio) %>'>
                             <i class="fas fa-home"></i>Inicio
                         </a>
                     </li>
@@ -250,6 +250,18 @@
                     <li class="nav-item">
                         <a class="nav-link" href='<%= ResolveUrl("~/Views/DashboardConductor.aspx") %>'>
                             <i class="fas fa-home"></i>Inicio
+                        </a>
+                    </li>
+
+                    <% } %>
+
+                    <!-- ==================== MENÚ PARA CONTABILIDAD ==================== -->
+                    <% if (EsContabilidad)
+                        { %>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href='<%= ResolveUrl("~/Views/LiquidacionesAprobadasContabilidad.aspx") %>'>
+                            <i class="fas fa-file-invoice-dollar"></i>Liquidaciones Aprobadas
                         </a>
                     </li>
 

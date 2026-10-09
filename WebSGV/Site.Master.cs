@@ -19,6 +19,9 @@ namespace WebSGV
         public bool EsAdminGrifo { get; set; }
         public bool EsAdminMaquinaria { get; set; }
         public bool EsOperador { get; set; }
+        public bool EsContabilidad { get; set; }
+        /// <summary>Página de inicio del rol actual (logo y enlace "Inicio" del menú).</summary>
+        public string UrlInicio { get; set; }
 
         /// <summary>
         /// Page_Init: Vincula el ViewState a la sesión del usuario.
@@ -125,6 +128,8 @@ namespace WebSGV
             EsAdminGrifo = false;
             EsAdminMaquinaria = false;
             EsOperador = false;
+            EsContabilidad = false;
+            UrlInicio = "~/Views/Login.aspx";
         }
 
         private void CargarInformacionUsuario()
@@ -139,6 +144,8 @@ namespace WebSGV
                 EsAdminGrifo = RolesHelper.EsAdminGrifo();
                 EsAdminMaquinaria = RolesHelper.EsAdminMaquinaria();
                 EsOperador = RolesHelper.EsOperador();
+                EsContabilidad = RolesHelper.EsContabilidad();
+                UrlInicio = RolesHelper.UrlInicioSegunRol(RolUsuario) ?? "~/Views/Login.aspx";
             }
             catch
             {

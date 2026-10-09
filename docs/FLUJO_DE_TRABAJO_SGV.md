@@ -12,13 +12,16 @@ El sistema maneja **7 roles** definidos en `WebSGV/Views/RolesHelper.cs`:
 
 | Rol | Constante | Valor en BD | Redirección Login | Descripción |
 |-----|-----------|-------------|-------------------|-------------|
-| **Administrador de Transporte** | `ROL_ADMIN` | `ADMIN` (también acepta `ADMINISTRADOR`) | `Inicio.aspx` | Gestión operativa completa: despachos, viajes, liquidaciones, registros y reportes |
-| **Administrador de Sistema** | `ROL_ADMIN_SISTEMA` | `ADMINISTRADOR DE SISTEMA` | `Inicio.aspx` | Todo lo del Admin + módulo de auditoría exclusivo |
+| **Administrador de Transporte** | `ROL_ADMIN` | `ADMINISTRADOR DE TRANSPORTE` (también `ADMIN`, `ADMINISTRADOR`) | `Inicio.aspx` | Gestión operativa completa: despachos, viajes, liquidaciones, registros y reportes |
+| **Administrador de Sistema** | `ROL_ADMIN_SISTEMA` | `ADMINISTRADOR DE SISTEMA` | `DashboardAdminSistema.aspx` | Todo lo del Admin + módulo de auditoría exclusivo |
 | **Conductor** | `ROL_CONDUCTOR` | `CONDUCTOR` (también `CHOFER`) | `DashboardConductor.aspx` | Liquidación firmada de viajes asignados y consulta de historial |
 | **Administrador de Grifo** | `ROL_ADMIN_GRIFO` | `ADMINISTRADOR DE GRIFO` | `DashboardGrifo.aspx` | Gestión integral de abastecimiento de combustible |
-| **Administrador de Maquinaria** | `ROL_ADMIN_MAQUINARIA` | `ADMINISTRADOR DE MAQUINARIA` | `Inicio.aspx` | Gestión de equipos, obras, operadores y asignaciones |
+| **Administrador de Maquinaria** | `ROL_ADMIN_MAQUINARIA` | `ADMINISTRADOR DE MAQUINARIA` | `AsignacionesMaquinaria.aspx` | Gestión de equipos, obras, operadores y asignaciones |
 | **Operador** | `ROL_OPERADOR` | `OPERADOR` | `DashboardOperador.aspx` | Registro de parte diario de trabajo en maquinaria pesada |
+| **Contabilidad** | `ROL_CONTABILIDAD` | `CONTABILIDAD` | `LiquidacionesAprobadasContabilidad.aspx` | Consulta de liquidaciones aprobadas y sus PDF (menú propio: Liquidaciones Aprobadas) |
 | **Supervisor** | `ROL_SUPERVISOR` | `SUPERVISOR` | `Inicio.aspx` | Permisos similares a ADMIN en despachos, órdenes de viaje, registros y abastecimiento |
+
+> La página de inicio de cada rol sale de `RolesHelper.UrlInicioSegunRol` (login, redirecciones y logo del menú).
 
 > Los roles se almacenan como texto en la columna `rol` de la tabla `Usuarios`. No existe tabla de roles separada. Las comparaciones siempre se hacen en mayúsculas (`.ToUpper()`).
 

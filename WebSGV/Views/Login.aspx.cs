@@ -59,35 +59,11 @@ namespace WebSGV.Views
             // Si el usuario ya ha iniciado sesión, redireccionar según su rol
             else if (Session["UsuarioID"] != null)
             {
-                string rol = Session["Rol"]?.ToString() ?? "";
+                string urlInicio = RolesHelper.UrlInicioSegunRol(Session["Rol"]?.ToString());
 
-                if (rol.ToUpper() == "CONDUCTOR")
+                if (urlInicio != null)
                 {
-                    Response.Redirect("~/Views/DashboardConductor.aspx");
-                }
-                else if (rol.ToUpper() == "OPERADOR")
-                {
-                    Response.Redirect("~/Views/DashboardOperador.aspx");
-                }
-                else if (rol.ToUpper() == "ADMINISTRADOR DE GRIFO")
-                {
-                    Response.Redirect("~/Views/DashboardGrifo.aspx");
-                }
-                else if (rol.ToUpper() == "ADMINISTRADOR DE SISTEMA")
-                {
-                    Response.Redirect("~/Views/DashboardAdminSistema.aspx");
-                }
-                else if (rol.ToUpper() == "CONTABILIDAD")
-                {
-                    Response.Redirect("~/Views/LiquidacionesAprobadasContabilidad.aspx");
-                }
-                else if (rol.ToUpper() == "ADMIN" ||
-                         rol.ToUpper() == "ADMINISTRADOR" ||
-                         rol.ToUpper() == "SUPERVISOR" ||
-                         rol.ToUpper() == "ADMINISTRADOR DE MAQUINARIA" ||
-                         rol.ToUpper() == "ADMINISTRADOR DE TRANSPORTE")
-                {
-                    Response.Redirect("~/Views/Inicio.aspx");
+                    Response.Redirect(urlInicio);
                 }
                 else
                 {
@@ -329,7 +305,7 @@ namespace WebSGV.Views
                         nombre        = reader["nombre"].ToString().Trim();
                         rol           = reader["rol"].ToString().Trim();
 
-                        if (rol.ToUpper() == "CONDUCTOR" && reader["idConductor"] != DBNull.Value)
+                        if (RolesHelper.EsRolConductor(rol) && reader["idConductor"] != DBNull.Value)
                             idConductor = Convert.ToInt32(reader["idConductor"]);
                         else if (rol.ToUpper() == "OPERADOR" && reader["idOperador"] != DBNull.Value)
                             idOperador = Convert.ToInt32(reader["idOperador"]);
@@ -380,7 +356,7 @@ namespace WebSGV.Views
             Session["RequiereCambioContrasena"] = datos.RequiereCambioContrasena;
 
             string rol = (datos.Rol ?? "").ToUpper();
-            if (rol == "CONDUCTOR" && datos.IdConductor.HasValue)
+            if (RolesHelper.EsRolConductor(rol) && datos.IdConductor.HasValue)
                 Session["IdConductor"] = datos.IdConductor.Value;
             if (rol == "OPERADOR" && datos.IdOperador.HasValue)
                 Session["IdOperador"] = datos.IdOperador.Value;
@@ -388,20 +364,8 @@ namespace WebSGV.Views
             AuditoriaHelper.Registrar("LOGIN", "Usuarios", datos.IdUsuario.ToString(),
                 $"Inicio de sesión - Usuario: {datos.NombreUsuario}, Rol: {datos.Rol}");
 
-            Response.Redirect(UrlInicioSegunRol(rol), true);
-        }
-
-        private static string UrlInicioSegunRol(string rolMayus)
-        {
-            switch (rolMayus)
-            {
-                case "CONDUCTOR":                return "~/Views/DashboardConductor.aspx";
-                case "OPERADOR":                 return "~/Views/DashboardOperador.aspx";
-                case "ADMINISTRADOR DE GRIFO":   return "~/Views/DashboardGrifo.aspx";
-                case "ADMINISTRADOR DE SISTEMA": return "~/Views/DashboardAdminSistema.aspx";
-                case "CONTABILIDAD":             return "~/Views/LiquidacionesAprobadasContabilidad.aspx";
-                default:                         return "~/Views/Inicio.aspx";
-            }
+            // Rol no reconocido: Inicio.aspx lo rechaza y Login limpia la sesión (sin loops).
+            Response.Redirect(RolesHelper.UrlInicioSegunRol(rol) ?? "~/Views/Inicio.aspx", true);
         }
 
         private static string GenerarTokenAleatorio()

@@ -556,6 +556,10 @@ namespace WebSGV.Views
 
                 System.Diagnostics.Debug.WriteLine($"✅ Liquidación {numeroOrdenViaje} aprobada con éxito");
 
+                AuditoriaHelper.Registrar("APROBAR", "OrdenViaje", idOrdenViaje,
+                    $"Liquidación aprobada - Orden: {numeroOrdenViaje}. Descuento S/ {descuentoSoles:0.00} $ {descuentoDolares:0.00}; " +
+                    $"Reintegro S/ {reintegroSoles:0.00} $ {reintegroDolares:0.00}");
+
                 // Garantizar PDF archivado también en flujo con ajustes (modal).
                 try
                 {

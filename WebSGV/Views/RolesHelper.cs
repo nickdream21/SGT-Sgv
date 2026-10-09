@@ -85,8 +85,41 @@ namespace WebSGV.Helpers
         /// </summary>
         public static bool EsConductor()
         {
-            string rolActual = ObtenerRolActual();
-            return rolActual == ROL_CONDUCTOR || rolActual == "CHOFER";
+            return EsRolConductor(ObtenerRolActual());
+        }
+
+        /// <summary>
+        /// True si el rol indicado es de conductor ("CONDUCTOR" o "CHOFER"), sin importar
+        /// mayúsculas ni espacios. No lee la sesión: sirve antes de guardarla (login).
+        /// </summary>
+        public static bool EsRolConductor(string rol)
+        {
+            string r = (rol ?? "").Trim().ToUpper();
+            return r == ROL_CONDUCTOR || r == "CHOFER";
+        }
+
+        /// <summary>
+        /// Página de inicio de cada rol (ruta virtual "~/Views/..."), o null si el rol no se
+        /// reconoce. Única fuente para el login, RedirigirSegunRol y el menú del Site.Master.
+        /// </summary>
+        public static string UrlInicioSegunRol(string rol)
+        {
+            string r = (rol ?? "").Trim().ToUpper();
+            if (EsRolConductor(r)) return "~/Views/DashboardConductor.aspx";
+
+            switch (r)
+            {
+                case ROL_OPERADOR:         return "~/Views/DashboardOperador.aspx";
+                case ROL_ADMIN_GRIFO:      return "~/Views/DashboardGrifo.aspx";
+                case ROL_ADMIN_SISTEMA:    return "~/Views/DashboardAdminSistema.aspx";
+                case ROL_ADMIN_MAQUINARIA: return "~/Views/AsignacionesMaquinaria.aspx";
+                case ROL_CONTABILIDAD:     return "~/Views/LiquidacionesAprobadasContabilidad.aspx";
+                case ROL_ADMIN:
+                case "ADMINISTRADOR":
+                case ROL_ADMIN_TRANSPORTE:
+                case ROL_SUPERVISOR:       return "~/Views/Inicio.aspx";
+                default:                   return null;
+            }
         }
 
         /// <summary>
@@ -253,35 +286,9 @@ namespace WebSGV.Helpers
                 return;
             }
 
-            if (EsConductor())
-            {
-                HttpContext.Current.Response.Redirect("~/Views/DashboardConductor.aspx");
-            }
-            else if (EsOperador())
-            {
-                HttpContext.Current.Response.Redirect("~/Views/DashboardOperador.aspx");
-            }
-            else if (EsAdminGrifo())
-            {
-                HttpContext.Current.Response.Redirect("~/Views/DashboardGrifo.aspx");
-            }
-            else if (EsAdminMaquinaria())
-            {
-                HttpContext.Current.Response.Redirect("~/Views/Inicio.aspx");
-            }
-            else if (EsAdmin())
-            {
-                HttpContext.Current.Response.Redirect("~/Views/Inicio.aspx");
-            }
-            else if (EsContabilidad())
-            {
-                HttpContext.Current.Response.Redirect("~/Views/LiquidacionesAprobadasContabilidad.aspx");
-            }
-            else
-            {
-                // Si no tiene rol reconocido, redirigir a login
-                HttpContext.Current.Response.Redirect("~/Views/Login.aspx");
-            }
+            // Si no tiene rol reconocido, redirigir a login
+            HttpContext.Current.Response.Redirect(
+                UrlInicioSegunRol(ObtenerRolActual()) ?? "~/Views/Login.aspx");
         }
 
         /// <summary>
