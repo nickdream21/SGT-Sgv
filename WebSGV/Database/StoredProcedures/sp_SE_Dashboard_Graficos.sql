@@ -2,6 +2,8 @@
 -- sp_SE_Dashboard_Graficos
 -- Datasets para los graficos del Dashboard de Exportacion.
 -- Mes/Ano filtran por fhProgramacion (regla formulasDash).
+-- Tiempos: dbo.fn_SE_Horas (horas decimales; NULL si el tramo es negativo o > 20 dias,
+-- para que un dato mal digitado no distorsione el promedio). Migracion 22.
 --
 -- Result sets:
 --  1) Trujillo (Hrs): carga, espera ingreso, espera inicio carga, permanencia
@@ -53,7 +55,7 @@ BEGIN
         CASE WHEN fhProgramacion IS NOT NULL AND fhIngresoPlanta IS NOT NULL
              THEN CASE WHEN DATEDIFF(MINUTE, fhProgramacion, fhIngresoPlanta) < 0
                        THEN 0.0
-                       ELSE DATEDIFF(MINUTE, fhProgramacion, fhIngresoPlanta) / 60.0
+                       ELSE dbo.fn_SE_Horas(fhProgramacion, fhIngresoPlanta)
                   END
         END
       ) AS DECIMAL(10,2)) AS esperaIngresoTrujillo,
@@ -62,7 +64,7 @@ BEGIN
       CAST(AVG(
         CASE WHEN fhIngresoPlanta IS NOT NULL AND fhInicioCarga IS NOT NULL
                   AND DATEDIFF(MINUTE, fhIngresoPlanta, fhInicioCarga) >= 0
-             THEN DATEDIFF(MINUTE, fhIngresoPlanta, fhInicioCarga) / 60.0
+             THEN dbo.fn_SE_Horas(fhIngresoPlanta, fhInicioCarga)
         END
       ) AS DECIMAL(10,2)) AS esperaInicioCarga,
       SUM(CASE WHEN fhIngresoPlanta IS NOT NULL AND fhInicioCarga IS NOT NULL THEN 1 ELSE 0 END) AS nEsperaInicio,
@@ -70,7 +72,7 @@ BEGIN
       CAST(AVG(
         CASE WHEN fhInicioCarga IS NOT NULL AND fhTerminoCarga IS NOT NULL
                   AND DATEDIFF(MINUTE, fhInicioCarga, fhTerminoCarga) >= 0
-             THEN DATEDIFF(MINUTE, fhInicioCarga, fhTerminoCarga) / 60.0
+             THEN dbo.fn_SE_Horas(fhInicioCarga, fhTerminoCarga)
         END
       ) AS DECIMAL(10,2)) AS cargaHoras,
       SUM(CASE WHEN fhInicioCarga IS NOT NULL AND fhTerminoCarga IS NOT NULL THEN 1 ELSE 0 END) AS nCarga,
@@ -78,7 +80,7 @@ BEGIN
       CAST(AVG(
         CASE WHEN fhIngresoPlanta IS NOT NULL AND fhSalidaPlanta IS NOT NULL
                   AND DATEDIFF(MINUTE, fhIngresoPlanta, fhSalidaPlanta) >= 0
-             THEN DATEDIFF(MINUTE, fhIngresoPlanta, fhSalidaPlanta) / 60.0
+             THEN dbo.fn_SE_Horas(fhIngresoPlanta, fhSalidaPlanta)
         END
       ) AS DECIMAL(10,2)) AS permanenciaPlanta,
       SUM(CASE WHEN fhIngresoPlanta IS NOT NULL AND fhSalidaPlanta IS NOT NULL THEN 1 ELSE 0 END) AS nPermanencia
@@ -95,15 +97,15 @@ BEGIN
     SELECT
       CAST(AVG(CASE WHEN fhIngresoBodegaNacional IS NOT NULL AND fhSalidaBodegaNacional IS NOT NULL
                     THEN CASE WHEN DATEDIFF(MINUTE, fhIngresoBodegaNacional, fhSalidaBodegaNacional) >= 0
-                              THEN DATEDIFF(MINUTE, fhIngresoBodegaNacional, fhSalidaBodegaNacional)/60.0 END
+                              THEN dbo.fn_SE_Horas(fhIngresoBodegaNacional, fhSalidaBodegaNacional) END
                END) AS DECIMAL(10,2)) AS tiempoDepsa,
       CAST(AVG(CASE WHEN fhLlegadaBodegaNacional IS NOT NULL AND fhIngresoBodegaNacional IS NOT NULL
                     THEN CASE
                       WHEN DATENAME(WEEKDAY, fhLlegadaBodegaNacional) IN (N'domingo', N'Sunday')
-                        THEN (DATEDIFF(MINUTE, CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)/60.0) - 8
+                        THEN (dbo.fn_SE_Horas(CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)) - 8
                       WHEN DATEPART(HOUR, fhLlegadaBodegaNacional) BETWEEN 8 AND 21
-                        THEN DATEDIFF(MINUTE, fhLlegadaBodegaNacional, fhIngresoBodegaNacional)/60.0
-                      ELSE (DATEDIFF(MINUTE, CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)/60.0) - 8
+                        THEN dbo.fn_SE_Horas(fhLlegadaBodegaNacional, fhIngresoBodegaNacional)
+                      ELSE (dbo.fn_SE_Horas(CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)) - 8
                     END END) AS DECIMAL(10,2)) AS esperaIngresoDepsa
     FROM SeguimientoExportacion
     WHERE activo = 1
@@ -118,18 +120,18 @@ BEGIN
                     THEN CASE
                       WHEN fhAutorizacionNacionalizacion IS NOT NULL AND fhLlegadaTCI < fhAutorizacionNacionalizacion
                         THEN CASE WHEN DATEDIFF(MINUTE, fhAutorizacionNacionalizacion, fhSalidaTCI) >= 0
-                                  THEN DATEDIFF(MINUTE, fhAutorizacionNacionalizacion, fhSalidaTCI)/60.0 END
+                                  THEN dbo.fn_SE_Horas(fhAutorizacionNacionalizacion, fhSalidaTCI) END
                       ELSE CASE WHEN DATEDIFF(MINUTE, fhLlegadaTCI, fhSalidaTCI) >= 0
-                                THEN DATEDIFF(MINUTE, fhLlegadaTCI, fhSalidaTCI)/60.0 END
+                                THEN dbo.fn_SE_Horas(fhLlegadaTCI, fhSalidaTCI) END
                     END END) AS DECIMAL(10,2)) AS tiempoTCIHoras,
       CAST(AVG(CASE WHEN fhLlegadaTCI IS NOT NULL AND fhAutorizacionNacionalizacion IS NOT NULL
                     THEN CASE WHEN DATEDIFF(MINUTE, fhAutorizacionNacionalizacion, fhLlegadaTCI) > 0
                               THEN 0
-                              ELSE DATEDIFF(MINUTE, fhLlegadaTCI, fhAutorizacionNacionalizacion)/60.0 END
+                              ELSE dbo.fn_SE_Horas(fhLlegadaTCI, fhAutorizacionNacionalizacion) END
                END) AS DECIMAL(10,2)) AS esperaNacionalizacion,
       CAST(AVG(CASE WHEN fhLlegadaCEBAF IS NOT NULL AND fhCruceEcuador IS NOT NULL
                     THEN CASE WHEN DATEDIFF(MINUTE, fhLlegadaCEBAF, fhCruceEcuador) >= 0
-                              THEN DATEDIFF(MINUTE, fhLlegadaCEBAF, fhCruceEcuador) * 1.0 END
+                              THEN dbo.fn_SE_Horas(fhLlegadaCEBAF, fhCruceEcuador) * 60 END
                END) AS DECIMAL(10,2)) AS tiempoCEBAFMin
     FROM SeguimientoExportacion
     WHERE activo = 1
@@ -142,7 +144,7 @@ BEGIN
     SELECT
       CAST(AVG(CASE WHEN fhLlegadaBase2 IS NOT NULL AND fhSalidaBase2 IS NOT NULL
                     THEN CASE WHEN DATEDIFF(MINUTE, fhLlegadaBase2, fhSalidaBase2) >= 0
-                              THEN DATEDIFF(MINUTE, fhLlegadaBase2, fhSalidaBase2)/60.0 END
+                              THEN dbo.fn_SE_Horas(fhLlegadaBase2, fhSalidaBase2) END
                END) AS DECIMAL(10,2)) AS tiempoBaseHoras
     FROM SeguimientoExportacion
     WHERE activo = 1
@@ -155,7 +157,7 @@ BEGIN
     SELECT
       CAST(AVG(CASE WHEN fhSalidaPlanta IS NOT NULL AND fhLlegadaPlantaEcuador IS NOT NULL
                     THEN CASE WHEN DATEDIFF(MINUTE, fhSalidaPlanta, fhLlegadaPlantaEcuador) >= 0
-                              THEN DATEDIFF(MINUTE, fhSalidaPlanta, fhLlegadaPlantaEcuador)/(60.0*24) END
+                              THEN dbo.fn_SE_Horas(fhSalidaPlanta, fhLlegadaPlantaEcuador) / 24 END
                END) AS DECIMAL(10,2)) AS diasTrujilloPlantaEcu
     FROM SeguimientoExportacion
     WHERE activo = 1
@@ -169,12 +171,12 @@ BEGIN
       CAST(AVG(CASE WHEN fhInicioDescarga IS NOT NULL AND fhTerminoDescarga IS NOT NULL
                          AND ISNULL(bodegaDescarga,'') LIKE '%INBALNOR%'
                     THEN CASE WHEN DATEDIFF(MINUTE, fhInicioDescarga, fhTerminoDescarga) >= 0
-                              THEN DATEDIFF(MINUTE, fhInicioDescarga, fhTerminoDescarga)/60.0 END
+                              THEN dbo.fn_SE_Horas(fhInicioDescarga, fhTerminoDescarga) END
                END) AS DECIMAL(10,2)) AS inbalnorDescarga,
       CAST(AVG(CASE WHEN fhIngreso IS NOT NULL AND fhInicioDescarga IS NOT NULL
                          AND ISNULL(bodegaDescarga,'') LIKE '%INBALNOR%'
                     THEN CASE WHEN DATEDIFF(MINUTE, fhIngreso, fhInicioDescarga) >= 0
-                              THEN DATEDIFF(MINUTE, fhIngreso, fhInicioDescarga)/60.0 END
+                              THEN dbo.fn_SE_Horas(fhIngreso, fhInicioDescarga) END
                END) AS DECIMAL(10,2)) AS inbalnorEsperaDescarga
     FROM SeguimientoExportacion
     WHERE activo = 1
@@ -188,12 +190,12 @@ BEGIN
       CAST(AVG(CASE WHEN fhInicioDescarga IS NOT NULL AND fhTerminoDescarga IS NOT NULL
                          AND ISNULL(bodegaDescarga,'') LIKE '%JAVE%'
                     THEN CASE WHEN DATEDIFF(MINUTE, fhInicioDescarga, fhTerminoDescarga) >= 0
-                              THEN DATEDIFF(MINUTE, fhInicioDescarga, fhTerminoDescarga)/60.0 END
+                              THEN dbo.fn_SE_Horas(fhInicioDescarga, fhTerminoDescarga) END
                END) AS DECIMAL(10,2)) AS javeDescarga,
       CAST(AVG(CASE WHEN fhIngreso IS NOT NULL AND fhInicioDescarga IS NOT NULL
                          AND ISNULL(bodegaDescarga,'') LIKE '%JAVE%'
                     THEN CASE WHEN DATEDIFF(MINUTE, fhIngreso, fhInicioDescarga) >= 0
-                              THEN DATEDIFF(MINUTE, fhIngreso, fhInicioDescarga)/60.0 END
+                              THEN dbo.fn_SE_Horas(fhIngreso, fhInicioDescarga) END
                END) AS DECIMAL(10,2)) AS javeEsperaDescarga
     FROM SeguimientoExportacion
     WHERE activo = 1
@@ -206,11 +208,11 @@ BEGIN
     SELECT
       CAST(AVG(CASE WHEN fhSalidaBodegaNacional IS NOT NULL AND fhLlegadaAlmacen IS NOT NULL
                     THEN CASE WHEN DATEDIFF(MINUTE, fhSalidaBodegaNacional, fhLlegadaAlmacen) >= 0
-                              THEN DATEDIFF(MINUTE, fhSalidaBodegaNacional, fhLlegadaAlmacen)/60.0 END
+                              THEN dbo.fn_SE_Horas(fhSalidaBodegaNacional, fhLlegadaAlmacen) END
                END) AS DECIMAL(10,2)) AS depsaAAlmacen,
       CAST(AVG(CASE WHEN fhSalidaTCI IS NOT NULL AND fhLlegadaAlmacen IS NOT NULL
                     THEN CASE WHEN DATEDIFF(MINUTE, fhSalidaTCI, fhLlegadaAlmacen) >= 0
-                              THEN DATEDIFF(MINUTE, fhSalidaTCI, fhLlegadaAlmacen)/60.0 END
+                              THEN dbo.fn_SE_Horas(fhSalidaTCI, fhLlegadaAlmacen) END
                END) AS DECIMAL(10,2)) AS tciAAlmacen
     FROM SeguimientoExportacion
     WHERE activo = 1
@@ -277,16 +279,16 @@ BEGIN
     SELECT
       CAST(AVG(CASE WHEN fhIngresoBodegaNacional IS NOT NULL AND fhSalidaBodegaNacional IS NOT NULL
                          AND ISNULL(bodegaNacional,'') LIKE '%COMPLEX%'
-                    THEN DATEDIFF(MINUTE, fhIngresoBodegaNacional, fhSalidaBodegaNacional)/60.0
+                    THEN dbo.fn_SE_Horas(fhIngresoBodegaNacional, fhSalidaBodegaNacional)
                END) AS DECIMAL(10,2)) AS tiempoComplex,
       CAST(AVG(CASE WHEN fhLlegadaBodegaNacional IS NOT NULL AND fhIngresoBodegaNacional IS NOT NULL
                          AND ISNULL(bodegaNacional,'') LIKE '%COMPLEX%'
                     THEN CASE
                       WHEN DATENAME(WEEKDAY, fhLlegadaBodegaNacional) IN (N'domingo', N'Sunday')
-                        THEN (DATEDIFF(MINUTE, CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)/60.0) - 8
+                        THEN (dbo.fn_SE_Horas(CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)) - 8
                       WHEN DATEPART(HOUR, fhLlegadaBodegaNacional) BETWEEN 8 AND 21
-                        THEN DATEDIFF(MINUTE, fhLlegadaBodegaNacional, fhIngresoBodegaNacional)/60.0
-                      ELSE (DATEDIFF(MINUTE, CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)/60.0) - 8
+                        THEN dbo.fn_SE_Horas(fhLlegadaBodegaNacional, fhIngresoBodegaNacional)
+                      ELSE (dbo.fn_SE_Horas(CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)) - 8
                     END END) AS DECIMAL(10,2)) AS esperaIngresoComplex
     FROM SeguimientoExportacion
     WHERE activo = 1
@@ -299,16 +301,16 @@ BEGIN
     SELECT
       CAST(AVG(CASE WHEN fhIngresoBodegaNacional IS NOT NULL AND fhSalidaBodegaNacional IS NOT NULL
                          AND ISNULL(bodegaNacional,'') LIKE '%DEPSA%'
-                    THEN DATEDIFF(MINUTE, fhIngresoBodegaNacional, fhSalidaBodegaNacional)/60.0
+                    THEN dbo.fn_SE_Horas(fhIngresoBodegaNacional, fhSalidaBodegaNacional)
                END) AS DECIMAL(10,2)) AS tiempoDepsaPuro,
       CAST(AVG(CASE WHEN fhLlegadaBodegaNacional IS NOT NULL AND fhIngresoBodegaNacional IS NOT NULL
                          AND ISNULL(bodegaNacional,'') LIKE '%DEPSA%'
                     THEN CASE
                       WHEN DATENAME(WEEKDAY, fhLlegadaBodegaNacional) IN (N'domingo', N'Sunday')
-                        THEN (DATEDIFF(MINUTE, CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)/60.0) - 8
+                        THEN (dbo.fn_SE_Horas(CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)) - 8
                       WHEN DATEPART(HOUR, fhLlegadaBodegaNacional) BETWEEN 8 AND 21
-                        THEN DATEDIFF(MINUTE, fhLlegadaBodegaNacional, fhIngresoBodegaNacional)/60.0
-                      ELSE (DATEDIFF(MINUTE, CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)/60.0) - 8
+                        THEN dbo.fn_SE_Horas(fhLlegadaBodegaNacional, fhIngresoBodegaNacional)
+                      ELSE (dbo.fn_SE_Horas(CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)) - 8
                     END END) AS DECIMAL(10,2)) AS esperaIngresoDepsaPuro
     FROM SeguimientoExportacion
     WHERE activo = 1
@@ -321,11 +323,11 @@ BEGIN
     SELECT
       CAST(AVG(CASE WHEN fhSalidaBodegaNacional IS NOT NULL AND fhLlegadaAlmacen IS NOT NULL
                          AND ISNULL(bodegaDescarga,'') LIKE '%INBALNOR%'
-                    THEN DATEDIFF(MINUTE, fhSalidaBodegaNacional, fhLlegadaAlmacen)/60.0
+                    THEN dbo.fn_SE_Horas(fhSalidaBodegaNacional, fhLlegadaAlmacen)
                END) AS DECIMAL(10,2)) AS depsaAInbalnor,
       CAST(AVG(CASE WHEN fhSalidaBodegaNacional IS NOT NULL AND fhLlegadaAlmacen IS NOT NULL
                          AND ISNULL(bodegaDescarga,'') LIKE '%JAVE%'
-                    THEN DATEDIFF(MINUTE, fhSalidaBodegaNacional, fhLlegadaAlmacen)/60.0
+                    THEN dbo.fn_SE_Horas(fhSalidaBodegaNacional, fhLlegadaAlmacen)
                END) AS DECIMAL(10,2)) AS depsaAJave
     FROM SeguimientoExportacion
     WHERE activo = 1
@@ -339,12 +341,12 @@ BEGIN
       CAST(AVG(CASE WHEN fhSalidaTCI IS NOT NULL AND fhLlegadaAlmacen IS NOT NULL
                          AND ISNULL(bodegaDescarga,'') LIKE '%INBALNOR%'
                     THEN CASE WHEN DATEDIFF(MINUTE, fhSalidaTCI, fhLlegadaAlmacen) >= 0
-                              THEN DATEDIFF(MINUTE, fhSalidaTCI, fhLlegadaAlmacen)/60.0 END
+                              THEN dbo.fn_SE_Horas(fhSalidaTCI, fhLlegadaAlmacen) END
                END) AS DECIMAL(10,2)) AS tciAInbalnor,
       CAST(AVG(CASE WHEN fhSalidaTCI IS NOT NULL AND fhLlegadaAlmacen IS NOT NULL
                          AND ISNULL(bodegaDescarga,'') LIKE '%JAVE%'
                     THEN CASE WHEN DATEDIFF(MINUTE, fhSalidaTCI, fhLlegadaAlmacen) >= 0
-                              THEN DATEDIFF(MINUTE, fhSalidaTCI, fhLlegadaAlmacen)/60.0 END
+                              THEN dbo.fn_SE_Horas(fhSalidaTCI, fhLlegadaAlmacen) END
                END) AS DECIMAL(10,2)) AS tciAJave
     FROM SeguimientoExportacion
     WHERE activo = 1
@@ -373,11 +375,12 @@ BEGIN
           AND (@cliente IS NULL OR cliente LIKE '%' + @cliente + '%')
     )
     SELECT
-        SUM(CASE WHEN retrasoHrs IS NULL OR retrasoHrs <= 0 THEN 1 ELSE 0 END) AS aTiempo,
-        SUM(CASE WHEN retrasoHrs > 0  AND retrasoHrs <= 6  THEN 1 ELSE 0 END)       AS retraso6h,
-        SUM(CASE WHEN retrasoHrs > 6  AND retrasoHrs <= 24 THEN 1 ELSE 0 END)       AS retraso24h,
-        SUM(CASE WHEN retrasoHrs > 24 THEN 1 ELSE 0 END)                            AS retrasoMas24h,
-        SUM(CASE WHEN retrasoHrs IS NULL THEN 0 ELSE 0 END)                         AS sinDato
+        -- Sin llegada registrada NO cuenta como "a tiempo" (igual que el KPI de cumplimiento)
+        ISNULL(SUM(CASE WHEN retrasoHrs <= 0 THEN 1 ELSE 0 END), 0)                  AS aTiempo,
+        ISNULL(SUM(CASE WHEN retrasoHrs > 0  AND retrasoHrs <= 6  THEN 1 ELSE 0 END), 0) AS retraso6h,
+        ISNULL(SUM(CASE WHEN retrasoHrs > 6  AND retrasoHrs <= 24 THEN 1 ELSE 0 END), 0) AS retraso24h,
+        ISNULL(SUM(CASE WHEN retrasoHrs > 24 THEN 1 ELSE 0 END), 0)                  AS retrasoMas24h,
+        ISNULL(SUM(CASE WHEN retrasoHrs IS NULL THEN 1 ELSE 0 END), 0)               AS sinDato
     FROM Eval;
 
     -- 18) Tendencia mensual por cliente (top 5 clientes x 12 meses) del anio
@@ -430,37 +433,37 @@ BEGIN
                 -- Trujillo (planta)
                 CASE WHEN fhIngresoPlanta IS NOT NULL AND fhSalidaPlanta IS NOT NULL
                           AND DATEDIFF(MINUTE, fhIngresoPlanta, fhSalidaPlanta) >= 0
-                     THEN DATEDIFF(MINUTE, fhIngresoPlanta, fhSalidaPlanta) / 60.0
+                     THEN dbo.fn_SE_Horas(fhIngresoPlanta, fhSalidaPlanta)
                 END AS hTrujillo,
 
                 -- Viaje Trujillo -> destino (base)
                 CASE WHEN fhSalidaBase1 IS NOT NULL AND fhSalida IS NOT NULL
                           AND DATEDIFF(MINUTE, fhSalidaBase1, fhSalida) >= 0
-                     THEN DATEDIFF(MINUTE, fhSalidaBase1, fhSalida) / 60.0
+                     THEN dbo.fn_SE_Horas(fhSalidaBase1, fhSalida)
                 END AS hViaje,
 
                 -- Tránsito Bodega Nacional (DEPSA/COMPLEX) -> Inbalnor / Jave
                 CASE WHEN fhSalidaBodegaNacional IS NOT NULL AND fhLlegadaAlmacen IS NOT NULL
                           AND DATEDIFF(MINUTE, fhSalidaBodegaNacional, fhLlegadaAlmacen) >= 0
                           AND ISNULL(bodegaDescarga,'') LIKE '%INBALNOR%'
-                     THEN DATEDIFF(MINUTE, fhSalidaBodegaNacional, fhLlegadaAlmacen) / 60.0
+                     THEN dbo.fn_SE_Horas(fhSalidaBodegaNacional, fhLlegadaAlmacen)
                 END AS hBNaInbalnor,
                 CASE WHEN fhSalidaBodegaNacional IS NOT NULL AND fhLlegadaAlmacen IS NOT NULL
                           AND DATEDIFF(MINUTE, fhSalidaBodegaNacional, fhLlegadaAlmacen) >= 0
                           AND ISNULL(bodegaDescarga,'') LIKE '%JAVE%'
-                     THEN DATEDIFF(MINUTE, fhSalidaBodegaNacional, fhLlegadaAlmacen) / 60.0
+                     THEN dbo.fn_SE_Horas(fhSalidaBodegaNacional, fhLlegadaAlmacen)
                 END AS hBNaJave,
 
                 -- Tránsito TCI -> Inbalnor / Jave
                 CASE WHEN fhSalidaTCI IS NOT NULL AND fhLlegadaAlmacen IS NOT NULL
                           AND DATEDIFF(MINUTE, fhSalidaTCI, fhLlegadaAlmacen) >= 0
                           AND ISNULL(bodegaDescarga,'') LIKE '%INBALNOR%'
-                     THEN DATEDIFF(MINUTE, fhSalidaTCI, fhLlegadaAlmacen) / 60.0
+                     THEN dbo.fn_SE_Horas(fhSalidaTCI, fhLlegadaAlmacen)
                 END AS hTciInbalnor,
                 CASE WHEN fhSalidaTCI IS NOT NULL AND fhLlegadaAlmacen IS NOT NULL
                           AND DATEDIFF(MINUTE, fhSalidaTCI, fhLlegadaAlmacen) >= 0
                           AND ISNULL(bodegaDescarga,'') LIKE '%JAVE%'
-                     THEN DATEDIFF(MINUTE, fhSalidaTCI, fhLlegadaAlmacen) / 60.0
+                     THEN dbo.fn_SE_Horas(fhSalidaTCI, fhLlegadaAlmacen)
                 END AS hTciJave,
 
                 -- Trámite aduanero
@@ -473,17 +476,17 @@ BEGIN
                             AND fhLlegadaTCI IS NOT NULL
                             AND fhLlegadaTCI < fhAutorizacionNacionalizacion
                             AND DATEDIFF(MINUTE, fhAutorizacionNacionalizacion, fhSalidaTCI) >= 0
-                            THEN DATEDIFF(MINUTE, fhAutorizacionNacionalizacion, fhSalidaTCI) / 60.0
+                            THEN dbo.fn_SE_Horas(fhAutorizacionNacionalizacion, fhSalidaTCI)
                        WHEN fhLlegadaTCI IS NOT NULL
                             AND DATEDIFF(MINUTE, fhLlegadaTCI, fhSalidaTCI) >= 0
-                            THEN DATEDIFF(MINUTE, fhLlegadaTCI, fhSalidaTCI) / 60.0
+                            THEN dbo.fn_SE_Horas(fhLlegadaTCI, fhSalidaTCI)
                      END
                 END AS hTci,
                 -- Espera nacionalización: si LL.TCI > NAC -> 0, si no -> (NAC - LL.TCI).
                 CASE WHEN fhLlegadaTCI IS NOT NULL AND fhAutorizacionNacionalizacion IS NOT NULL
                      THEN CASE
                        WHEN DATEDIFF(MINUTE, fhAutorizacionNacionalizacion, fhLlegadaTCI) > 0 THEN 0
-                       ELSE DATEDIFF(MINUTE, fhLlegadaTCI, fhAutorizacionNacionalizacion) / 60.0
+                       ELSE dbo.fn_SE_Horas(fhLlegadaTCI, fhAutorizacionNacionalizacion)
                      END
                 END AS hEsperaNac,
 
@@ -491,32 +494,32 @@ BEGIN
                 CASE WHEN fhLlegadaBodegaNacional IS NOT NULL AND fhIngresoBodegaNacional IS NOT NULL
                           AND DATEDIFF(MINUTE, fhLlegadaBodegaNacional, fhIngresoBodegaNacional) >= 0
                           AND ISNULL(bodegaNacional,'') LIKE '%DEPSA%'
-                     THEN DATEDIFF(MINUTE, fhLlegadaBodegaNacional, fhIngresoBodegaNacional) / 60.0
+                     THEN dbo.fn_SE_Horas(fhLlegadaBodegaNacional, fhIngresoBodegaNacional)
                 END AS hEsperaDepsa,
                 -- Tiempo dentro de DEPSA
                 CASE WHEN fhIngresoBodegaNacional IS NOT NULL AND fhSalidaBodegaNacional IS NOT NULL
                           AND DATEDIFF(MINUTE, fhIngresoBodegaNacional, fhSalidaBodegaNacional) >= 0
                           AND ISNULL(bodegaNacional,'') LIKE '%DEPSA%'
-                     THEN DATEDIFF(MINUTE, fhIngresoBodegaNacional, fhSalidaBodegaNacional) / 60.0
+                     THEN dbo.fn_SE_Horas(fhIngresoBodegaNacional, fhSalidaBodegaNacional)
                 END AS hDepsa,
 
                 -- Espera ingreso COMPLEX
                 CASE WHEN fhLlegadaBodegaNacional IS NOT NULL AND fhIngresoBodegaNacional IS NOT NULL
                           AND DATEDIFF(MINUTE, fhLlegadaBodegaNacional, fhIngresoBodegaNacional) >= 0
                           AND ISNULL(bodegaNacional,'') LIKE '%COMPLEX%'
-                     THEN DATEDIFF(MINUTE, fhLlegadaBodegaNacional, fhIngresoBodegaNacional) / 60.0
+                     THEN dbo.fn_SE_Horas(fhLlegadaBodegaNacional, fhIngresoBodegaNacional)
                 END AS hEsperaComplex,
                 -- Tiempo dentro de COMPLEX
                 CASE WHEN fhIngresoBodegaNacional IS NOT NULL AND fhSalidaBodegaNacional IS NOT NULL
                           AND DATEDIFF(MINUTE, fhIngresoBodegaNacional, fhSalidaBodegaNacional) >= 0
                           AND ISNULL(bodegaNacional,'') LIKE '%COMPLEX%'
-                     THEN DATEDIFF(MINUTE, fhIngresoBodegaNacional, fhSalidaBodegaNacional) / 60.0
+                     THEN dbo.fn_SE_Horas(fhIngresoBodegaNacional, fhSalidaBodegaNacional)
                 END AS hComplex,
 
                 -- CEBAF (en minutos según fórmula original)
                 CASE WHEN fhLlegadaCEBAF IS NOT NULL AND fhCruceEcuador IS NOT NULL
                           AND DATEDIFF(MINUTE, fhLlegadaCEBAF, fhCruceEcuador) >= 0
-                     THEN DATEDIFF(MINUTE, fhLlegadaCEBAF, fhCruceEcuador) * 1.0
+                     THEN dbo.fn_SE_Horas(fhLlegadaCEBAF, fhCruceEcuador) * 60
                 END AS mCebaf
             FROM SeguimientoExportacion
             WHERE activo = 1

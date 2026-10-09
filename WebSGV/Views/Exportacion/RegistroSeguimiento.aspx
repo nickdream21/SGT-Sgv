@@ -487,6 +487,16 @@
                 <div class="se-actions">
                     <asp:Button ID="btnImportar" runat="server" Text="📂 Procesar Archivo" CssClass="se-btn se-btn-primary" OnClick="btnImportar_Click" />
                 </div>
+
+                <%-- Reporte de la última importación: celdas que no se pudieron leer (fila, columna, valor). --%>
+                <asp:Panel ID="pnlReporteImportacion" runat="server" Visible="false" CssClass="se-card" style="margin-top:16px;">
+                    <div class="se-section-title">Celdas que no se pudieron leer</div>
+                    <p style="color:var(--se-muted);margin-bottom:8px;">
+                        Se importó el resto de la fila; estos hitos quedaron vacíos. Corrígelos en el Excel y vuelve a subirlo
+                        (las filas que ya existen se actualizan, no se duplican).
+                    </p>
+                    <asp:Literal ID="litReporteImportacion" runat="server"></asp:Literal>
+                </asp:Panel>
             </div>
         </div>
 

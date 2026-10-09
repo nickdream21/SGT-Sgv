@@ -1,6 +1,7 @@
 -- =============================================================================
 -- sp_SE_Dashboard_KPIs (Dashboard Exportacion)
 -- Regla formulasDash: el mes se determina por fhProgramacion (F.H. PROGRAMACION).
+-- Tiempos: dbo.fn_SE_Horas (horas decimales; NULL si negativo o > 20 dias). Migracion 22.
 -- =============================================================================
 IF OBJECT_ID('dbo.sp_SE_Dashboard_KPIs', 'P') IS NOT NULL
     DROP PROCEDURE dbo.sp_SE_Dashboard_KPIs;
@@ -39,13 +40,13 @@ BEGIN
             -- horas de retraso (positivo = tarde), NULL si llego a tiempo o sin dato
             CASE WHEN fhLlegadaTrujillo IS NOT NULL
                       AND DATEDIFF(MINUTE, fhProgramacion, fhLlegadaTrujillo) > 0
-                 THEN DATEDIFF(MINUTE, fhProgramacion, fhLlegadaTrujillo) / 60.0
+                 THEN dbo.fn_SE_Horas(fhProgramacion, fhLlegadaTrujillo)
             END AS horasRetraso,
 
             -- duracion del viaje en horas
             CASE WHEN fhSalidaBase1 IS NOT NULL AND fhSalida IS NOT NULL
                       AND DATEDIFF(MINUTE, fhSalidaBase1, fhSalida) >= 0
-                 THEN DATEDIFF(MINUTE, fhSalidaBase1, fhSalida) / 60.0
+                 THEN dbo.fn_SE_Horas(fhSalidaBase1, fhSalida)
             END AS horasViaje
 
         FROM SeguimientoExportacion
@@ -80,7 +81,8 @@ BEGIN
         CAST(AVG(CASE WHEN conLlegada = 1 THEN horasRetraso END) AS DECIMAL(10,2))
                                                                     AS promedioHorasRetraso,
 
-        SUM(CASE WHEN estado = 'FINALIZADO' THEN 1 ELSE 0 END)      AS viajesFinalizados,
+        -- El formulario guarda FINALIZADO y la importacion COMPLETADO: ambos son viaje terminado
+        SUM(CASE WHEN estado IN ('FINALIZADO', 'COMPLETADO') THEN 1 ELSE 0 END) AS viajesFinalizados,
         SUM(CASE WHEN estado = 'EN_CURSO'   THEN 1 ELSE 0 END)      AS viajesEnCurso,
         SUM(CASE WHEN estado = 'RETRASADO'  THEN 1 ELSE 0 END)      AS viajesRetrasados,
         SUM(CASE WHEN estado = 'CANCELADO'  THEN 1 ELSE 0 END)      AS viajesCancelados,

@@ -10,6 +10,7 @@ using System.Web.UI.WebControls;
 using ClosedXML.Excel;
 using WebSGV.Helpers;
 using WebSGV.Services.Common;
+using WebSGV.Services.Exportacion;
 
 namespace WebSGV.Views.Exportacion
 {
@@ -64,6 +65,9 @@ namespace WebSGV.Views.Exportacion
                 { "fhInicioDescarga",               new[] { "F.H.I. DESCARGA", "F.H.I DESCARGA" } },
                 { "fhTerminoDescarga",              new[] { "F.H.T. DESCARGA", "F.H.T DESCARGA" } },
                 { "fhSalida",                       new[] { "F.H.SALIDA" } },
+                // Llegada final a base (STATUS GENERAL, columna BF "F.H.LL Base"): distinta de
+                // "F.H.LL. Base" (con punto), que es la llegada a base antes de salir a Ecuador.
+                { "fhLlegadaBaseFinal",             new[] { "F.H.LL BASE" } },
                 { "motivoRetraso",                  new[] { "MOTIVO DE RETRASO", "COMENTARIO" } }
             };
 
@@ -892,7 +896,20 @@ namespace WebSGV.Views.Exportacion
             {
                 fileExcel.SaveAs(tempPath);
                 int filas = ProcesarExcel(tempPath);
-                MostrarAlerta($"Importación finalizada: {_importInsertados} nuevo(s) · {_importActualizados} actualizado(s) · {filas} fila(s) procesada(s).", "success");
+
+                string resumen = $"Importación finalizada: {_importInsertados} nuevo(s) · {_importActualizados} actualizado(s) · {filas} fila(s) leída(s).";
+                if (_duplicadosEnArchivo > 0)
+                    resumen += $" {_duplicadosEnArchivo} fila(s) repetían pedido + tracto + programación: se tomó la última.";
+                if (_filasSinProgramacion > 0)
+                    resumen += $" {_filasSinProgramacion} fila(s) sin F.H. PROGRAMACION válida no se importaron.";
+                if (_fechasDeducidas > 0)
+                    resumen += $" {_fechasDeducidas} hito(s) tenían hora sin fecha: la fecha se dedujo por el orden del viaje.";
+                if (_rechazadas.Count > 0)
+                    resumen += $" {_rechazadas.Count} celda(s) de fecha/hora no se pudieron leer (detalle abajo).";
+                MostrarAlerta(resumen, _rechazadas.Count > 0 || _filasSinProgramacion > 0 ? "warning" : "success");
+
+                pnlReporteImportacion.Visible = _rechazadas.Count > 0;
+                litReporteImportacion.Text = _rechazadas.Count > 0 ? ReporteRechazadasHtml(40) : string.Empty;
                 CargarRegistrosRecientes();
             }
             catch (Exception ex)
@@ -1075,9 +1092,61 @@ namespace WebSGV.Views.Exportacion
             val.IgnoreBlanks = true;
         }
 
+        /// <summary>Hitos "F.H." en el orden de la plantilla (claves de ExcelHeaderMap).</summary>
+        private static readonly string[] ClavesFechaHora =
+        {
+            "fhSalidaBase1","fhLlegadaTrujillo","fhRegistro","fhProgramacion",
+            "fhIngresoPlanta","fhInicioCarga","fhTerminoCarga","fhSalidaPlanta",
+            "fhLlegadaBase2","fhSalidaBase2",
+            "fhLlegadaBodegaNacional","fhIngresoBodegaNacional","fhSalidaBodegaNacional",
+            "fhLlegadaCEBAF","fhCruceEcuador","fhAutorizacionNacionalizacion",
+            "fhLlegadaTCI","fhSalidaTCI",
+            "fhLlegadaPlantaEcuador","fhLlegadaAlmacen","fhIngreso",
+            "fhInicioDescarga","fhTerminoDescarga","fhSalida","fhLlegadaBaseFinal"
+        };
+
+        /// <summary>Celda que no se pudo leer en la importación (se informa al usuario).</summary>
+        private sealed class CeldaRechazada
+        {
+            public int Fila;
+            public string Columna;
+            public string Motivo;
+        }
+
+        /// <summary>
+        /// Hitos en el orden real del viaje (Trujillo → base → bodega nacional → frontera → Ecuador
+        /// → regreso). Se usa para deducir la fecha de un hito que solo tiene hora. No incluye
+        /// F.H. Registro, F.H. Programación ni la autorización de nacionalización, que no siguen
+        /// ese orden.
+        /// </summary>
+        private static readonly string[] SecuenciaViaje =
+        {
+            "fhSalidaBase1","fhLlegadaTrujillo","fhIngresoPlanta","fhInicioCarga","fhTerminoCarga","fhSalidaPlanta",
+            "fhLlegadaBase2","fhSalidaBase2",
+            "fhLlegadaBodegaNacional","fhIngresoBodegaNacional","fhSalidaBodegaNacional",
+            "fhLlegadaCEBAF","fhCruceEcuador","fhLlegadaTCI","fhSalidaTCI",
+            "fhLlegadaPlantaEcuador","fhLlegadaAlmacen","fhIngreso","fhInicioDescarga","fhTerminoDescarga",
+            "fhSalida","fhLlegadaBaseFinal"
+        };
+
+        private readonly List<CeldaRechazada> _rechazadas = new List<CeldaRechazada>();
+        private int _filasSinProgramacion;
+        private int _duplicadosEnArchivo;
+        private int _fechasDeducidas;
+
+        /// <summary>
+        /// Lee el Excel (STATUS GENERAL VIVIANA o la plantilla), valida fecha y hora de cada hito
+        /// con <see cref="FechaHoraExcel"/> y envía todas las filas en UNA llamada a
+        /// sp_SE_ImportarLote (tipo tabla). Devuelve las filas enviadas.
+        /// Una celda ilegible deja ese hito vacío y se informa; una fila sin F.H. PROGRAMACION
+        /// válida no se importa (es la base del mes en el dashboard y parte de la llave).
+        /// </summary>
         private int ProcesarExcel(string path)
         {
-            int procesados = 0;
+            _rechazadas.Clear();
+            _filasSinProgramacion = 0;
+            _duplicadosEnArchivo = 0;
+            _fechasDeducidas = 0;
 
             using (var workbook = new XLWorkbook(path))
             {
@@ -1144,103 +1213,125 @@ namespace WebSGV.Views.Exportacion
                     }
                 }
 
-                // Detectar columna de HORA adyacente (Excel abril2025 usa pares: [fecha][hora] con header vacío en la columna de hora)
-                // Sólo aplica a claves que empiezan con "fh"
+                if (!colMap.ContainsKey("cliente") && !colMap.ContainsKey("conductorOrigen"))
+                    throw new ErrorNegocioException("El archivo no contiene columnas reconocibles (CLIENTE / CONDUCTOR ORIGEN).");
+                if (!colMap.ContainsKey("fhProgramacion"))
+                    throw new ErrorNegocioException("El archivo no tiene la columna F.H. PROGRAMACION (es obligatoria).");
+
+                // Columna de HORA: el STATUS GENERAL guarda cada hito como par [fecha][hora], con la
+                // hora en la columna siguiente sin encabezado (o con "HORA"). La plantilla nueva usa
+                // una sola celda con fecha y hora: ahí la columna siguiente es otro hito y no se toma.
                 var horaColMap = new Dictionary<string, int>();
                 foreach (var kv in colMap)
                 {
                     if (!kv.Key.StartsWith("fh", StringComparison.OrdinalIgnoreCase)) continue;
                     int next = kv.Value + 1;
-                    if (next > cols) continue;
-                    string nextHeader = ws.Cell(headerRow, next).GetString().Trim();
-                    if (nextHeader.Length == 0)
-                    {
+                    if (next > cols || colMap.ContainsValue(next)) continue;
+                    string nextHeader = NormalizarHeader(ws.Cell(headerRow, next).GetString());
+                    if (nextHeader.Length == 0 || nextHeader.Contains("HORA"))
                         horaColMap[kv.Key] = next;
-                    }
                 }
 
-                if (!colMap.ContainsKey("cliente") && !colMap.ContainsKey("conductorOrigen"))
-                    throw new ErrorNegocioException("El archivo no contiene columnas reconocibles (CLIENTE / CONDUCTOR ORIGEN).");
+                // Nombre visible de cada columna para el reporte (letra + encabezado del Excel)
+                string NombreColumna(string key) =>
+                    colMap.TryGetValue(key, out int c)
+                        ? $"{ws.Cell(headerRow, c).Address.ColumnLetter} ({ws.Cell(headerRow, c).GetString().Trim()})"
+                        : key;
 
-                int? idUsuario = ObtenerIdUsuarioSesion();
-                _importInsertados   = 0;
-                _importActualizados = 0;
-                int insertados  = 0;
-                int actualizados = 0;
+                var tabla = CrearTablaImportacion();
 
-                using (var conn = new SqlConnection(ConnStr))
+                for (int r = headerRow + 1; r <= rows; r++)
                 {
-                    conn.Open();
-                    using (var tx = conn.BeginTransaction())
+                    // Si la fila está totalmente vacía en las columnas mapeadas, saltar
+                    if (FilaVacia(ws, r, colMap)) continue;
+
+                    var fechasFila = new Dictionary<string, DateTime?>();
+                    var horasSinFecha = new Dictionary<string, TimeSpan>();
+                    foreach (var key in ClavesFechaHora)
                     {
-                        try
+                        if (!colMap.ContainsKey(key)) { fechasFila[key] = null; continue; }
+                        object celdaHora = horaColMap.ContainsKey(key) ? ValorCelda(ws.Cell(r, horaColMap[key])) : null;
+                        var leido = FechaHoraExcel.Combinar(LeerCelda(ws, r, colMap, key), celdaHora);
+                        fechasFila[key] = leido.Valor;
+                        if (leido.HoraSinFecha.HasValue)
+                            horasSinFecha[key] = leido.HoraSinFecha.Value;   // se intenta deducir abajo
+                        else if (leido.Error != null)
+                            _rechazadas.Add(new CeldaRechazada { Fila = r, Columna = NombreColumna(key), Motivo = leido.Error });
+                    }
+
+                    // Hitos con hora pero sin fecha: deducir la fecha por el orden del viaje
+                    // (entre el hito anterior y el siguiente). Si no es única, se informa.
+                    for (int i = 0; i < SecuenciaViaje.Length; i++)
+                    {
+                        string key = SecuenciaViaje[i];
+                        if (!horasSinFecha.TryGetValue(key, out TimeSpan hora)) continue;
+
+                        DateTime? anterior = SecuenciaViaje.Take(i).Reverse()
+                            .Select(k => fechasFila.TryGetValue(k, out var v) ? v : null).FirstOrDefault(v => v.HasValue);
+                        DateTime? siguiente = SecuenciaViaje.Skip(i + 1)
+                            .Select(k => fechasFila.TryGetValue(k, out var v) ? v : null).FirstOrDefault(v => v.HasValue);
+
+                        DateTime? deducida = FechaHoraExcel.DeducirFecha(hora, anterior, siguiente);
+                        if (deducida.HasValue)
                         {
-                            for (int r = headerRow + 1; r <= rows; r++)
-                            {
-                                // Si la fila está totalmente vacía en las columnas mapeadas, saltar
-                                if (FilaVacia(ws, r, colMap)) continue;
-
-                                using (var cmd = new SqlCommand("sp_SE_Insertar", conn, tx))
-                                {
-                                    cmd.CommandType = CommandType.StoredProcedure;
-
-                                    AgregarTexto(cmd, "@cliente",          LeerTexto(ws, r, colMap, "cliente"),          150);
-                                    AgregarTexto(cmd, "@conductorOrigen",  LeerTexto(ws, r, colMap, "conductorOrigen"),  150);
-                                    AgregarTexto(cmd, "@tracto1",          LeerTexto(ws, r, colMap, "tracto1"),          20);
-                                    AgregarTexto(cmd, "@carreta",          LeerTexto(ws, r, colMap, "carreta"),          20);
-                                    AgregarTexto(cmd, "@conductorDestino", LeerTexto(ws, r, colMap, "conductorDestino"), 150);
-                                    AgregarTexto(cmd, "@tracto2",          LeerTexto(ws, r, colMap, "tracto2"),          20);
-
-                                    var fechasFila = new Dictionary<string, DateTime?>();
-                                    foreach (var key in new[] {
-                                        "fhSalidaBase1","fhLlegadaTrujillo","fhRegistro","fhProgramacion",
-                                        "fhIngresoPlanta","fhInicioCarga","fhTerminoCarga","fhSalidaPlanta",
-                                        "fhLlegadaBase2","fhSalidaBase2",
-                                        "fhLlegadaBodegaNacional","fhIngresoBodegaNacional","fhSalidaBodegaNacional",
-                                        "fhLlegadaCEBAF","fhCruceEcuador","fhAutorizacionNacionalizacion",
-                                        "fhLlegadaTCI","fhSalidaTCI",
-                                        "fhLlegadaPlantaEcuador","fhLlegadaAlmacen","fhIngreso",
-                                        "fhInicioDescarga","fhTerminoDescarga","fhSalida"
-                                    })
-                                    {
-                                        var celda = LeerCelda(ws, r, colMap, key);
-                                        object celdaHora = null;
-                                        if (horaColMap.ContainsKey(key))
-                                            celdaHora = ValorCelda(ws.Cell(r, horaColMap[key]));
-                                        var fecha = AgregarFechaCelda(cmd, "@" + key, celda, celdaHora);
-                                        fechasFila[key] = fecha;
-                                    }
-
-                                    AgregarTexto(cmd, "@bodegaNacional",    LeerTexto(ws, r, colMap, "bodegaNacional"),    150);
-                                    AgregarTexto(cmd, "@bodegaEcuatoriana", LeerTexto(ws, r, colMap, "bodegaEcuatoriana"), 150);
-                                    AgregarTexto(cmd, "@bodegaDescarga",    LeerTexto(ws, r, colMap, "bodegaDescarga"),    150);
-                                    AgregarTexto(cmd, "@motivoRetraso",     LeerTexto(ws, r, colMap, "motivoRetraso"),     1000);
-
-                                    cmd.Parameters.Add("@sacosRobados", SqlDbType.Int).Value = 0;
-                                    cmd.Parameters.Add("@sacosRotos",   SqlDbType.Int).Value = 0;
-                                    cmd.Parameters.Add("@sacosMojados", SqlDbType.Int).Value = 0;
-                                    cmd.Parameters.Add("@estado",       SqlDbType.VarChar, 20).Value = DerivarEstado(fechasFila);
-                                    cmd.Parameters.Add("@idUsuarioRegistro", SqlDbType.Int).Value = (object)idUsuario ?? DBNull.Value;
-
-                                    var outParam = new SqlParameter("@idSeguimiento", SqlDbType.Int) { Direction = ParameterDirection.Output };
-                                    cmd.Parameters.Add(outParam);
-
-                                    cmd.ExecuteNonQuery();
-                                    int idGen = Convert.ToInt32(outParam.Value);
-                                    if      (idGen == -1) { /* fila sin clave, ignorada */ }
-                                    else if (idGen == -2) { actualizados++; procesados++; }
-                                    else                  { insertados++;   procesados++; }
-                                }
-                            }
-
-                            tx.Commit();
-                            _importInsertados   = insertados;
-                            _importActualizados = actualizados;
+                            fechasFila[key] = deducida;
+                            _fechasDeducidas++;
                         }
-                        catch
+                        else
                         {
-                            tx.Rollback();
-                            throw;
+                            _rechazadas.Add(new CeldaRechazada { Fila = r, Columna = NombreColumna(key), Motivo = "hay hora pero falta la fecha" });
+                        }
+                    }
+                    // Los que no están en la secuencia (Registro, Programación, Autorización) no se deducen.
+                    foreach (var key in horasSinFecha.Keys.Where(k => !SecuenciaViaje.Contains(k)))
+                        _rechazadas.Add(new CeldaRechazada { Fila = r, Columna = NombreColumna(key), Motivo = "hay hora pero falta la fecha" });
+
+                    // Sin F.H. PROGRAMACION válida la fila no se puede ubicar en un mes ni identificar.
+                    if (!fechasFila["fhProgramacion"].HasValue)
+                    {
+                        _filasSinProgramacion++;
+                        continue;
+                    }
+
+                    var fila = tabla.NewRow();
+                    fila["fila"] = r;
+                    fila["cliente"]          = Texto(LeerTexto(ws, r, colMap, "cliente"), 150);
+                    fila["conductorOrigen"]  = Texto(LeerTexto(ws, r, colMap, "conductorOrigen"), 150);
+                    fila["tracto1"]          = Texto(LeerTexto(ws, r, colMap, "tracto1"), 20);
+                    fila["carreta"]          = Texto(LeerTexto(ws, r, colMap, "carreta"), 20);
+                    fila["conductorDestino"] = Texto(LeerTexto(ws, r, colMap, "conductorDestino"), 150);
+                    fila["tracto2"]          = Texto(LeerTexto(ws, r, colMap, "tracto2"), 20);
+                    foreach (var key in ClavesFechaHora)
+                        fila[key] = (object)fechasFila[key] ?? DBNull.Value;
+                    fila["bodegaNacional"]    = Texto(LeerTexto(ws, r, colMap, "bodegaNacional"), 150);
+                    fila["bodegaEcuatoriana"] = Texto(LeerTexto(ws, r, colMap, "bodegaEcuatoriana"), 150);
+                    fila["bodegaDescarga"]    = Texto(LeerTexto(ws, r, colMap, "bodegaDescarga"), 150);
+                    fila["motivoRetraso"]     = Texto(LeerTexto(ws, r, colMap, "motivoRetraso"), 1000);
+                    fila["estado"]            = DerivarEstado(fechasFila);
+                    tabla.Rows.Add(fila);
+                }
+
+                if (tabla.Rows.Count > 0)
+                {
+                    using (var conn = new SqlConnection(ConnStr))
+                    using (var cmd = new SqlCommand("sp_SE_ImportarLote", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.CommandTimeout = 300;
+                        var p = cmd.Parameters.Add("@filas", SqlDbType.Structured);
+                        p.TypeName = "dbo.TipoSeguimientoImportacion";
+                        p.Value = tabla;
+                        cmd.Parameters.Add("@idUsuario", SqlDbType.Int).Value = (object)ObtenerIdUsuarioSesion() ?? DBNull.Value;
+
+                        conn.Open();
+                        using (var rd = cmd.ExecuteReader())
+                        {
+                            if (rd.Read())
+                            {
+                                _importInsertados   = Convert.ToInt32(rd["insertados"]);
+                                _importActualizados = Convert.ToInt32(rd["actualizados"]);
+                                _duplicadosEnArchivo = Convert.ToInt32(rd["duplicadosEnArchivo"]);
+                            }
                         }
                     }
                 }
@@ -1251,12 +1342,92 @@ namespace WebSGV.Views.Exportacion
                         accion: "IMPORT",
                         tablaAfectada: "SeguimientoExportacion",
                         idRegistroAfectado: "BULK",
-                        descripcion: $"Importación masiva Excel: {insertados} nuevos, {actualizados} actualizados ({procesados} filas procesadas).");
+                        descripcion: $"Importación Excel: {_importInsertados} nuevos, {_importActualizados} actualizados, " +
+                                     $"{_filasSinProgramacion} sin F.H. PROGRAMACION, {_rechazadas.Count} celdas ilegibles.");
                 }
                 catch { /* No bloquear */ }
-            }
 
-            return procesados;
+                return tabla.Rows.Count;
+            }
+        }
+
+        /// <summary>Estructura idéntica a dbo.TipoSeguimientoImportacion (mismo orden de columnas).</summary>
+        private static DataTable CrearTablaImportacion()
+        {
+            var t = new DataTable();
+            t.Columns.Add("fila", typeof(int));
+            foreach (var c in new[] { "cliente", "conductorOrigen", "tracto1", "carreta", "conductorDestino", "tracto2" })
+                t.Columns.Add(c, typeof(string));
+            foreach (var c in new[] { "fhSalidaBase1", "fhLlegadaTrujillo", "fhRegistro", "fhProgramacion",
+                                      "fhIngresoPlanta", "fhInicioCarga", "fhTerminoCarga", "fhSalidaPlanta",
+                                      "fhLlegadaBase2", "fhSalidaBase2",
+                                      "fhLlegadaBodegaNacional", "fhIngresoBodegaNacional", "fhSalidaBodegaNacional" })
+                t.Columns.Add(c, typeof(DateTime));
+            t.Columns.Add("bodegaNacional", typeof(string));
+            foreach (var c in new[] { "fhLlegadaCEBAF", "fhCruceEcuador", "fhAutorizacionNacionalizacion" })
+                t.Columns.Add(c, typeof(DateTime));
+            t.Columns.Add("bodegaEcuatoriana", typeof(string));
+            foreach (var c in new[] { "fhLlegadaTCI", "fhSalidaTCI" })
+                t.Columns.Add(c, typeof(DateTime));
+            t.Columns.Add("bodegaDescarga", typeof(string));
+            foreach (var c in new[] { "fhLlegadaPlantaEcuador", "fhLlegadaAlmacen", "fhIngreso",
+                                      "fhInicioDescarga", "fhTerminoDescarga", "fhSalida", "fhLlegadaBaseFinal" })
+                t.Columns.Add(c, typeof(DateTime));
+            t.Columns.Add("motivoRetraso", typeof(string));
+            t.Columns.Add("estado", typeof(string));
+            return t;
+        }
+
+        /// <summary>Texto recortado al largo de la columna; vacío o "-" se guarda como NULL.</summary>
+        private static object Texto(string valor, int largo)
+        {
+            if (FechaHoraExcel.EsVacio(valor)) return DBNull.Value;
+            string t = valor.Trim();
+            return t.Length > largo ? t.Substring(0, largo) : t;
+        }
+
+        /// <summary>HTML (codificado) con las celdas rechazadas de la última importación.</summary>
+        /// <summary>
+        /// Agrupa por columna y motivo (con cantidad, filas del Excel y valores de ejemplo):
+        /// en un STATUS GENERAL completo puede haber cientos de celdas y una lista plana no se lee.
+        /// </summary>
+        private string ReporteRechazadasHtml(int maxFilasPorGrupo)
+        {
+            var rxValor = new System.Text.RegularExpressions.Regex(@"\s*\((.*)\)\s*$");
+            var grupos = _rechazadas
+                .Select(c =>
+                {
+                    var m = rxValor.Match(c.Motivo);
+                    return new
+                    {
+                        c.Fila,
+                        c.Columna,
+                        Motivo = m.Success ? c.Motivo.Substring(0, m.Index) : c.Motivo,
+                        Valor = m.Success ? m.Groups[1].Value : null
+                    };
+                })
+                .GroupBy(x => new { x.Columna, x.Motivo })
+                .OrderByDescending(g => g.Count());
+
+            var sb = new System.Text.StringBuilder();
+            sb.Append("<div class=\"se-table\"><table><thead><tr><th>Columna</th><th>Motivo</th><th>Celdas</th>")
+              .Append("<th>Filas del Excel</th><th>Ejemplos</th></tr></thead><tbody>");
+            foreach (var g in grupos)
+            {
+                var filas = g.Select(x => x.Fila).Distinct().OrderBy(f => f).ToList();
+                string listaFilas = string.Join(", ", filas.Take(maxFilasPorGrupo)) +
+                                    (filas.Count > maxFilasPorGrupo ? $" … (+{filas.Count - maxFilasPorGrupo})" : "");
+                string ejemplos = string.Join("  ·  ", g.Where(x => x.Valor != null).Select(x => x.Valor).Distinct().Take(5));
+
+                sb.Append("<tr><td>").Append(System.Web.HttpUtility.HtmlEncode(g.Key.Columna))
+                  .Append("</td><td>").Append(System.Web.HttpUtility.HtmlEncode(g.Key.Motivo))
+                  .Append("</td><td>").Append(g.Count())
+                  .Append("</td><td>").Append(System.Web.HttpUtility.HtmlEncode(listaFilas))
+                  .Append("</td><td>").Append(System.Web.HttpUtility.HtmlEncode(ejemplos))
+                  .Append("</td></tr>");
+            }
+            sb.Append("</tbody></table></div>");
+            return sb.ToString();
         }
 
         private static int DetectarFilaHeaders(IXLWorksheet ws, int rows, int cols)
@@ -1404,96 +1575,6 @@ namespace WebSGV.Views.Exportacion
                 cmd.Parameters.Add(name, SqlDbType.DateTime).Value = dt;
             else
                 cmd.Parameters.Add(name, SqlDbType.DateTime).Value = DBNull.Value;
-        }
-
-        private static DateTime? AgregarFechaCelda(SqlCommand cmd, string name, object cellValue, object timeValue = null)
-        {
-            DateTime? resultado = ParsearFechaHora(cellValue, timeValue);
-            cmd.Parameters.Add(name, SqlDbType.DateTime).Value =
-                resultado.HasValue ? (object)resultado.Value : DBNull.Value;
-            return resultado;
-        }
-
-        /// <summary>
-        /// Combina una celda de fecha y, opcionalmente, una celda con la fracción de hora (0..1)
-        /// tal como las guarda el Excel de seguimiento (par fecha+hora por hito).
-        /// </summary>
-        private static DateTime? ParsearFechaHora(object cellValue, object timeValue)
-        {
-            if (cellValue == null || string.IsNullOrWhiteSpace(cellValue.ToString()))
-                return null;
-
-            DateTime baseDate;
-            bool gotBase = false;
-
-            if (cellValue is DateTime dtVal)
-            {
-                baseDate = dtVal;
-                gotBase = true;
-            }
-            else if (cellValue is double dVal)
-            {
-                try { baseDate = DateTime.FromOADate(dVal); gotBase = true; }
-                catch { baseDate = DateTime.MinValue; }
-            }
-            else
-            {
-                double dParsed;
-                if (double.TryParse(cellValue.ToString(),
-                        System.Globalization.NumberStyles.Any,
-                        System.Globalization.CultureInfo.InvariantCulture, out dParsed))
-                {
-                    try { baseDate = DateTime.FromOADate(dParsed); gotBase = true; }
-                    catch { baseDate = DateTime.MinValue; }
-                }
-                else if (DateTime.TryParse(cellValue.ToString(), out baseDate))
-                {
-                    gotBase = true;
-                }
-            }
-
-            if (!gotBase) return null;
-
-            // Si la fecha trae componente horario distinto de 00:00 y no nos dieron hora aparte,
-            // dejarla tal cual.
-            DateTime soloFecha = baseDate.Date;
-            bool fechaTraeHora = baseDate.TimeOfDay.TotalSeconds > 0.5;
-
-            // Procesar columna de hora si vino
-            if (timeValue != null && !string.IsNullOrWhiteSpace(timeValue.ToString()))
-            {
-                double frac;
-                bool gotFrac = false;
-
-                if (timeValue is double dt) { frac = dt; gotFrac = true; }
-                else if (timeValue is DateTime tdt) { frac = tdt.TimeOfDay.TotalDays; gotFrac = true; }
-                else if (double.TryParse(timeValue.ToString(),
-                            System.Globalization.NumberStyles.Any,
-                            System.Globalization.CultureInfo.InvariantCulture, out frac))
-                {
-                    gotFrac = true;
-                }
-                else
-                {
-                    TimeSpan ts;
-                    if (TimeSpan.TryParse(timeValue.ToString(), out ts))
-                    {
-                        frac = ts.TotalDays;
-                        gotFrac = true;
-                    }
-                    else frac = 0;
-                }
-
-                if (gotFrac)
-                {
-                    // Solo tomar la parte fraccionaria (por si llegara un valor >= 1)
-                    double soloFrac = frac - Math.Floor(frac);
-                    return soloFecha.AddDays(soloFrac);
-                }
-            }
-
-            // Sin columna de hora: devolver fecha como está (con hora si la traía)
-            return fechaTraeHora ? baseDate : soloFecha;
         }
 
         /// <summary>

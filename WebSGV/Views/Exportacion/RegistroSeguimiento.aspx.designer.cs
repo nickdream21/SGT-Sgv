@@ -88,6 +88,8 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.Button btnDescargarPlantilla;
         protected global::System.Web.UI.WebControls.FileUpload fileExcel;
         protected global::System.Web.UI.WebControls.Button btnImportar;
+        protected global::System.Web.UI.WebControls.Panel pnlReporteImportacion;
+        protected global::System.Web.UI.WebControls.Literal litReporteImportacion;
         protected global::System.Web.UI.WebControls.GridView gvRecientes;
 
         protected global::System.Web.UI.WebControls.HiddenField hdnIdSeguimiento;
