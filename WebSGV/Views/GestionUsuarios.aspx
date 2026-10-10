@@ -7,7 +7,7 @@
     <!-- Encabezado -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h2 class="mb-0"><i class="fas fa-users-cog text-primary mr-2"></i>Gestión de Usuarios</h2>
+            <h2 class="mb-0"><i class="fas fa-users-cog text-primary mr-2"></i>Gestión de usuarios</h2>
             <small class="text-muted">Administrar cuentas, roles y accesos al sistema</small>
         </div>
         <asp:Button ID="btnNuevoUsuario" runat="server" Text="+ Nuevo Usuario"
@@ -58,7 +58,7 @@
                 <Columns>
                     <asp:BoundField DataField="idUsuario" HeaderText="#" ItemStyle-Width="50px" />
                     <asp:BoundField DataField="nombreUsuario" HeaderText="Usuario" />
-                    <asp:BoundField DataField="nombre" HeaderText="Nombre Completo" />
+                    <asp:BoundField DataField="nombre" HeaderText="Nombre completo" />
                     <asp:TemplateField HeaderText="Rol">
                         <ItemTemplate>
                             <span class="badge badge-info"><%# Eval("rol") %></span>
@@ -87,7 +87,6 @@
                 </Columns>
                 <EmptyDataTemplate>
                     <div class="text-center py-4 text-muted">
-                        <i class="fas fa-users fa-2x mb-2 d-block"></i>
                         No se encontraron usuarios con los filtros seleccionados.
                     </div>
                 </EmptyDataTemplate>
@@ -101,12 +100,12 @@
     <div class="modal fade" id="modalUsuario" tabindex="-1" role="dialog" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
+                <div class="modal-header">
                     <h5 class="modal-title" id="modalUsuarioLabel">
                         <i class="fas fa-user-edit mr-2"></i>
-                        <asp:Label ID="lblTituloModal" runat="server" Text="Nuevo Usuario" />
+                        <asp:Label ID="lblTituloModal" runat="server" Text="Nuevo usuario" />
                     </h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -120,7 +119,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>Nombre de Usuario <span class="text-danger">*</span></label>
+                                <label>Nombre de usuario <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtNombreUsuario" runat="server" CssClass="form-control"
                                     placeholder="Sin espacios, ej: jperez" MaxLength="100" />
                                 <small class="text-muted">Solo letras, números y guiones bajos.</small>
@@ -128,7 +127,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>Nombre Completo <span class="text-danger">*</span></label>
+                                <label>Nombre completo <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control"
                                     placeholder="Ej: Juan Pérez García" MaxLength="200" />
                             </div>
@@ -176,7 +175,7 @@
     <div class="modal fade" id="modalResetPass" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
-                <div class="modal-header bg-warning text-dark">
+                <div class="modal-header sgv-modal-alerta">
                     <h5 class="modal-title">
                         <i class="fas fa-key mr-2"></i>Restablecer Contraseña
                     </h5>
@@ -196,12 +195,12 @@
                     </asp:Panel>
 
                     <div class="form-group">
-                        <label>Nueva Contraseña <span class="text-danger">*</span></label>
+                        <label>Nueva contraseña <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtNuevaPass" runat="server" CssClass="form-control"
                             TextMode="Password" placeholder="Mínimo 6 caracteres" />
                     </div>
                     <div class="form-group mb-0">
-                        <label>Confirmar Contraseña <span class="text-danger">*</span></label>
+                        <label>Confirmar contraseña <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtConfirmarPass" runat="server" CssClass="form-control"
                             TextMode="Password" placeholder="Repite la nueva contraseña" />
                     </div>

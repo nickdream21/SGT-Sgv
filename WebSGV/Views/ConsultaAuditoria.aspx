@@ -2,18 +2,18 @@
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <div class="container-fluid">
-        <h2 class="mt-4 mb-4"><i class="fas fa-search-plus me-2"></i>Consulta de Registros de Auditoría</h2>
+        <h2 class="mt-4 mb-4"><i class="fas fa-search-plus me-2"></i>Consulta de registros de auditoría</h2>
         
         <!-- Panel de filtros -->
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros de Búsqueda</h5>
+                <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros de búsqueda</h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-3">
                         <div class="form-group mb-3">
-                            <label for="ddlTabla">Tabla Afectada:</label>
+                            <label for="ddlTabla">Tabla afectada:</label>
                             <asp:DropDownList ID="ddlTabla" runat="server" CssClass="form-control">
                                 <asp:ListItem Text="Todas" Value="" Selected="True"></asp:ListItem>
                                 <asp:ListItem Text="Conductor" Value="Conductor"></asp:ListItem>
@@ -29,7 +29,7 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group mb-3">
-                            <label for="ddlOperacion">Tipo de Operación:</label>
+                            <label for="ddlOperacion">Tipo de operación:</label>
                             <asp:DropDownList ID="ddlOperacion" runat="server" CssClass="form-control">
                                 <asp:ListItem Text="Todas" Value="" Selected="True"></asp:ListItem>
                                 <asp:ListItem Text="INSERT" Value="INSERT"></asp:ListItem>
@@ -40,13 +40,13 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group mb-3">
-                            <label for="txtFechaDesde">Fecha Desde:</label>
+                            <label for="txtFechaDesde">Fecha desde:</label>
                             <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group mb-3">
-                            <label for="txtFechaHasta">Fecha Hasta:</label>
+                            <label for="txtFechaHasta">Fecha hasta:</label>
                             <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                         </div>
                     </div>
@@ -60,7 +60,7 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group mb-3">
-                            <label for="txtIdRegistro">ID Registro:</label>
+                            <label for="txtIdRegistro">ID registro:</label>
                             <asp:TextBox ID="txtIdRegistro" runat="server" CssClass="form-control" placeholder="ID del registro"></asp:TextBox>
                         </div>
                     </div>
@@ -80,7 +80,7 @@
                 <div class="row mt-3">
                     <div class="col-md-12 text-center">
                         <asp:Button ID="btnBuscar" runat="server" CssClass="btn btn-primary" Text="Buscar" OnClick="btnBuscar_Click" />
-                        <asp:Button ID="btnLimpiar" runat="server" CssClass="btn btn-secondary ms-2" Text="Limpiar Filtros" OnClick="btnLimpiar_Click" />
+                        <asp:Button ID="btnLimpiar" runat="server" CssClass="btn btn-secondary ms-2" Text="Limpiar filtros" OnClick="btnLimpiar_Click" />
                         <asp:Button ID="btnExportar" runat="server" CssClass="btn btn-success ms-2" Text="Exportar a Excel" OnClick="btnExportar_Click" />
                     </div>
                 </div>
@@ -90,7 +90,7 @@
         <!-- Resultados -->
         <div class="card">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Resultados de Auditoría</h5>
+                <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Resultados de auditoría</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -101,12 +101,12 @@
                             <asp:BoundField DataField="idAuditoria" HeaderText="ID" />
                             <asp:BoundField DataField="TablaAfectada" HeaderText="Tabla" />
                             <asp:BoundField DataField="TipoOperacion" HeaderText="Operación" />
-                            <asp:BoundField DataField="IdRegistro" HeaderText="ID Registro" />
+                            <asp:BoundField DataField="IdRegistro" HeaderText="ID registro" />
                             <asp:BoundField DataField="Campo" HeaderText="Campo" />
-                            <asp:BoundField DataField="ValorAnterior" HeaderText="Valor Anterior" ItemStyle-CssClass="text-wrap" />
-                            <asp:BoundField DataField="ValorNuevo" HeaderText="Valor Nuevo" ItemStyle-CssClass="text-wrap" />
+                            <asp:BoundField DataField="ValorAnterior" HeaderText="Valor anterior" ItemStyle-CssClass="text-wrap" />
+                            <asp:BoundField DataField="ValorNuevo" HeaderText="Valor nuevo" ItemStyle-CssClass="text-wrap" />
                             <asp:BoundField DataField="Usuario" HeaderText="Usuario" />
-                            <asp:BoundField DataField="FechaHora" HeaderText="Fecha y Hora" DataFormatString="{0:dd/MM/yyyy HH:mm:ss}" />
+                            <asp:BoundField DataField="FechaHora" HeaderText="Fecha y hora" DataFormatString="{0:dd/MM/yyyy HH:mm:ss}" />
                             <asp:TemplateField HeaderText="Detalles">
                                 <ItemTemplate>
                                     <asp:LinkButton ID="btnVerDetalles" runat="server" CssClass="btn btn-sm btn-info" 
@@ -147,7 +147,7 @@
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="detallesModalLabel">Detalles de Auditoría</h5>
+                        <h5 class="modal-title" id="detallesModalLabel">Detalles de auditoría</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                     </div>
                     <div class="modal-body">
@@ -155,13 +155,13 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label class="form-label fw-bold">ID Auditoría:</label>
+                                        <label class="form-label fw-bold">ID auditoría:</label>
                                         <div><asp:Literal ID="litIdAuditoria" runat="server"></asp:Literal></div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label class="form-label fw-bold">Fecha y Hora:</label>
+                                        <label class="form-label fw-bold">Fecha y hora:</label>
                                         <div><asp:Literal ID="litFechaHora" runat="server"></asp:Literal></div>
                                     </div>
                                 </div>
@@ -169,13 +169,13 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label class="form-label fw-bold">Tabla Afectada:</label>
+                                        <label class="form-label fw-bold">Tabla afectada:</label>
                                         <div><asp:Literal ID="litTabla" runat="server"></asp:Literal></div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label class="form-label fw-bold">Tipo de Operación:</label>
+                                        <label class="form-label fw-bold">Tipo de operación:</label>
                                         <div><asp:Literal ID="litOperacion" runat="server"></asp:Literal></div>
                                     </div>
                                 </div>
@@ -183,7 +183,7 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label class="form-label fw-bold">ID del Registro:</label>
+                                        <label class="form-label fw-bold">ID del registro:</label>
                                         <div><asp:Literal ID="litIdRegistro" runat="server"></asp:Literal></div>
                                     </div>
                                 </div>
@@ -219,7 +219,7 @@
                             <hr />
                             <div class="row">
                                 <div class="col-md-12">
-                                    <label class="form-label fw-bold">Valor Anterior:</label>
+                                    <label class="form-label fw-bold">Valor anterior:</label>
                                     <div class="p-2 bg-light border rounded">
                                         <asp:Literal ID="litValorAnterior" runat="server"></asp:Literal>
                                     </div>
@@ -227,7 +227,7 @@
                             </div>
                             <div class="row mt-3">
                                 <div class="col-md-12">
-                                    <label class="form-label fw-bold">Valor Nuevo:</label>
+                                    <label class="form-label fw-bold">Valor nuevo:</label>
                                     <div class="p-2 bg-light border rounded">
                                         <asp:Literal ID="litValorNuevo" runat="server"></asp:Literal>
                                     </div>

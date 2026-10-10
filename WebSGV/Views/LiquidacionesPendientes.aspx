@@ -12,71 +12,30 @@
 
     <div class="container-fluid px-4">
 
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="page-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h2 class="page-title mb-1">
-                                <i class="fas fa-clipboard-check mr-2"></i>Gestión de Liquidaciones
-                            </h2>
-                            <p class="text-muted mb-0">
-                                Aprueba, revisa y controla las liquidaciones de los conductores
-                            </p>
-                        </div>
-                        <div class="header-stats">
-                            <div class="stat-card stat-warning">
-                                <div class="stat-icon">
-                                    <i class="fas fa-clock"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <span class="stat-label">Pendientes</span>
-                                    <span class="stat-value">
-                                        <asp:Label ID="lblTotalPendientes" runat="server" Text="0"></asp:Label>
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="stat-card stat-danger ml-3">
-                                <div class="stat-icon">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <span class="stat-label">Urgentes (>24h)</span>
-                                    <span class="stat-value">
-                                        <asp:Label ID="lblTotalUrgentes" runat="server" Text="0"></asp:Label>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div class="sgv-encabezado">
+            <div>
+                <h2>Gestión de liquidaciones</h2>
+                <p>Aprueba, revisa y controla las liquidaciones de los conductores</p>
             </div>
         </div>
 
         <!-- TABS DE NAVEGACIÓN -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="tabs-navigation">
-                    <button type="button" class="tab-btn tab-btn-active" id="tabPendientes" onclick="cambiarTab('pendientes')">
-                        <i class="fas fa-clock mr-2"></i>Pendientes de Aprobación
-                    </button>
-                    <button type="button" class="tab-btn" id="tabAprobadas" onclick="cambiarTab('aprobadas')">
-                        <i class="fas fa-shield-alt mr-2"></i>Control de Aprobadas
-                    </button>
-                </div>
-            </div>
+        <div class="sgv-tabs">
+            <button type="button" class="sgv-tab activo" id="tabPendientes" onclick="cambiarTab('pendientes')">
+                Pendientes de aprobación
+                <asp:Label ID="lblTotalPendientes" runat="server" CssClass="sgv-tab-contador" Text="0"></asp:Label>
+                <asp:Label ID="lblTotalUrgentes" runat="server" CssClass="sgv-tab-alerta" ToolTip="Liquidaciones esperando más de 24 horas"></asp:Label>
+            </button>
+            <button type="button" class="sgv-tab" id="tabAprobadas" onclick="cambiarTab('aprobadas')">
+                Control de aprobadas
+            </button>
         </div>
 
         <!-- SECCIÓN PENDIENTES -->
         <div id="seccionPendientes">
 
-        <div class="section-card mb-4">
-            <div class="section-header">
-                <h5 class="section-title">
-                    <i class="fas fa-filter mr-2"></i>Filtros de Búsqueda
-                </h5>
-            </div>
-            <div class="section-body">
+        <div class="sgv-panel mb-3">
+            <div class="sgv-panel-cuerpo pb-0">
                 <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
@@ -133,164 +92,114 @@
             </div>
         </div>
 
-        <div class="section-card">
-            <div class="section-header section-header-warning">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="section-title mb-0">
-                        <i class="fas fa-list mr-2"></i>Lista de Liquidaciones Pendientes
-                    </h5>
-                    <div>
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="location.reload()">
-                            <i class="fas fa-sync-alt mr-1"></i>Actualizar
-                        </button>
-                    </div>
-                </div>
+        <div class="sgv-panel sgv-panel-acento">
+            <div class="sgv-panel-cab">
+                <h5>Liquidaciones pendientes</h5>
+                <button type="button" class="btn btn-sm btn-light border" onclick="location.reload()">
+                    <i class="fas fa-sync-alt mr-1"></i>Actualizar
+                </button>
             </div>
-            <div class="section-body p-0">
+            <div>
                 <div class="table-responsive">
                     <asp:GridView ID="gvLiquidacionesPendientes" runat="server"
-                        CssClass="table table-liquidaciones mb-0"
+                        CssClass="table sgv-tabla mb-0"
                         AutoGenerateColumns="false"
                         EmptyDataText="No hay liquidaciones pendientes de aprobación"
                         OnRowCommand="gvLiquidacionesPendientes_RowCommand"
                         DataKeyNames="IdOrdenViaje">
                         <Columns>
                             
-                            <asp:TemplateField HeaderText="N° ORDEN">
+                            <asp:TemplateField HeaderText="N° orden">
                                 <ItemTemplate>
-                                    <div class="orden-info">
-                                        <span class="orden-numero"><%# Eval("NumeroOrdenViaje") %></span>
-                                        <span class="orden-fecha"><%# Eval("FechaRegistro", "{0:dd/MM/yyyy HH:mm}") %></span>
-                                    </div>
+                                    <div class="orden-numero"><%# Eval("NumeroOrdenViaje") %></div>
+                                    <div class="sgv-suave"><%# Eval("FechaRegistro", "{0:dd/MM/yyyy HH:mm}") %></div>
                                 </ItemTemplate>
-                                <ItemStyle CssClass="text-left" Width="120px" />
                             </asp:TemplateField>
 
-                            <asp:TemplateField HeaderText="CONDUCTOR">
+                            <asp:TemplateField HeaderText="Conductor">
                                 <ItemTemplate>
-                                    <div class="conductor-info">
-                                        <i class="fas fa-user-circle mr-2 text-primary"></i>
-                                        <div>
-                                            <strong><%# Eval("NombreConductor") %></strong>
-                                            <br />
-                                            <small class="text-muted"><%# Eval("PlacaTracto") %> / <%# Eval("PlacaCarreta") %></small>
-                                        </div>
-                                    </div>
+                                    <div><%# Eval("NombreConductor") %></div>
+                                    <div class="sgv-suave"><%# Eval("PlacaTracto") %> / <%# Eval("PlacaCarreta") %></div>
                                 </ItemTemplate>
-                                <ItemStyle CssClass="text-left" />
                             </asp:TemplateField>
 
-                            <asp:TemplateField HeaderText="PERIODO VIAJE">
+                            <asp:TemplateField HeaderText="Periodo">
                                 <ItemTemplate>
-                                    <div class="viaje-periodo">
-                                        <div class="fecha-item">
-                                            <i class="fas fa-calendar-check text-success"></i>
-                                            <span><%# Eval("FechaSalida", "{0:dd/MM/yyyy}") %></span>
-                                        </div>
-                                        <div class="fecha-item">
-                                            <i class="fas fa-calendar-times text-danger"></i>
-                                            <span><%# Eval("FechaLlegada", "{0:dd/MM/yyyy}") %></span>
-                                        </div>
-                                    </div>
+                                    <span class="text-nowrap"><%# Eval("FechaSalida", "{0:dd/MM/yyyy}") %> – <%# Eval("FechaLlegada", "{0:dd/MM/yyyy}") %></span>
                                 </ItemTemplate>
-                                <ItemStyle CssClass="text-center" Width="140px" />
                             </asp:TemplateField>
 
-                            <asp:TemplateField HeaderText="BALANCE">
+                            <asp:TemplateField HeaderText="Balance S/">
+                                <HeaderStyle CssClass="text-right" />
                                 <ItemTemplate>
-                                    <div class="balance-preview">
-                                        <div class="balance-row">
-                                            <span class="balance-moneda">S/</span>
-                                            <span class="balance-monto <%# ObtenerClaseBalance(Eval("BalanceSoles")) %>">
-                                                <%# Eval("BalanceSoles", "{0:N2}") %>
-                                            </span>
-                                        </div>
-                                        <div class="balance-row">
-                                            <span class="balance-moneda">$</span>
-                                            <span class="balance-monto <%# ObtenerClaseBalance(Eval("BalanceDolares")) %>">
-                                                <%# Eval("BalanceDolares", "{0:N2}") %>
-                                            </span>
-                                        </div>
-                                    </div>
+                                    <span class="<%# ClaseMonto(Eval("BalanceSoles")) %>"><%# Eval("BalanceSoles", "{0:N2}") %></span>
                                 </ItemTemplate>
-                                <ItemStyle CssClass="text-right" Width="120px" />
+                                <ItemStyle CssClass="sgv-num" />
                             </asp:TemplateField>
 
-                            <asp:TemplateField HeaderText="TIEMPO">
+                            <asp:TemplateField HeaderText="Balance $">
+                                <HeaderStyle CssClass="text-right" />
                                 <ItemTemplate>
-                                    <div class="tiempo-pendiente">
-                                        <span class="badge-prioridad badge-prioridad-<%# ObtenerPrioridad(Eval("HorasPendientes")) %>">
-                                            <i class="fas fa-clock mr-1"></i>
-                                            <%# FormatearTiempo(Eval("HorasPendientes")) %>
-                                        </span>
-                                    </div>
+                                    <span class="<%# ClaseMonto(Eval("BalanceDolares")) %>"><%# Eval("BalanceDolares", "{0:N2}") %></span>
                                 </ItemTemplate>
-                                <ItemStyle CssClass="text-center" Width="100px" />
+                                <ItemStyle CssClass="sgv-num" />
                             </asp:TemplateField>
 
-                            <asp:TemplateField HeaderText="ORIGEN">
+                            <asp:TemplateField HeaderText="Espera">
                                 <ItemTemplate>
-                                    <span class="badge badge-conductor">
-                                        <i class="fas fa-user-edit mr-1"></i>
-                                        <%# Eval("RegistradoPor") %>
+                                    <span class="sgv-estado <%# ClaseEstadoPrioridad(Eval("HorasPendientes")) %>"
+                                        title="Prioridad <%# ObtenerPrioridad(Eval("HorasPendientes")) %> (normal &lt; 12 h, alta 12–24 h, urgente &gt; 24 h)">
+                                        <%# FormatearTiempo(Eval("HorasPendientes")) %>
                                     </span>
                                 </ItemTemplate>
-                                <ItemStyle CssClass="text-center" Width="100px" />
                             </asp:TemplateField>
 
-                            <asp:TemplateField HeaderText="ACCIONES">
+                            <asp:TemplateField HeaderText="Registrado por">
                                 <ItemTemplate>
-                                    <div class="acciones-grupo">
-                                        <button type="button" class="btn btn-info-action" 
+                                    <span class="sgv-suave"><%# Eval("RegistradoPor") %></span>
+                                </ItemTemplate>
+                            </asp:TemplateField>
+
+                            <asp:TemplateField HeaderText="">
+                                <ItemTemplate>
+                                    <div class="sgv-acciones">
+                                        <button type="button" class="sgv-btn-icono info"
                                             onclick="verDetalleLiquidacion(<%# Eval("IdOrdenViaje") %>)"
-                                            title="Ver Detalle">
+                                            title="Ver detalle">
                                             <i class="fas fa-eye"></i>
                                         </button>
 
                                         <asp:LinkButton ID="btnEditar" runat="server"
-                                            CssClass="btn btn-warning-action"
+                                            CssClass="sgv-btn-icono alerta"
                                             CommandName="Editar"
                                             CommandArgument='<%# Eval("IdOrdenViaje") %>'
-                                            ToolTip="Editar Liquidación"
+                                            ToolTip="Editar liquidación"
                                             OnClientClick="return confirm('¿Desea editar esta liquidación?');">
-                                            <i class="fas fa-edit"></i>
+                                            <i class="fas fa-pen"></i>
                                         </asp:LinkButton>
 
-                                        <button type="button" class="btn btn-success-action"
+                                        <button type="button" class="sgv-btn-icono ok"
                                             onclick="abrirModalAprobar(<%# Eval("IdOrdenViaje") %>)"
-                                            title="Aprobar Liquidación">
+                                            title="Aprobar liquidación">
                                             <i class="fas fa-check"></i>
                                         </button>
 
-                                        <button type="button" class="btn btn-danger-action" 
+                                        <button type="button" class="sgv-btn-icono peligro"
                                             onclick="abrirModalRechazar(<%# Eval("IdOrdenViaje") %>, '<%# Eval("NumeroOrdenViaje") %>')"
-                                            title="Rechazar Liquidación">
+                                            title="Rechazar liquidación">
                                             <i class="fas fa-times"></i>
                                         </button>
                                     </div>
                                 </ItemTemplate>
-                                <ItemStyle CssClass="text-center" Width="200px" />
+                                <ItemStyle CssClass="text-right" Width="170px" />
                             </asp:TemplateField>
 
                         </Columns>
                         <EmptyDataTemplate>
-                            <div class="empty-state-table">
-                                <i class="fas fa-check-circle empty-icon"></i>
-                                <h4>¡Excelente trabajo!</h4>
-                                <p class="text-muted">No hay liquidaciones pendientes de aprobación en este momento.</p>
-                            </div>
+                            <div class="sgv-vacio">No hay liquidaciones pendientes de aprobación.</div>
                         </EmptyDataTemplate>
                     </asp:GridView>
                 </div>
-            </div>
-        </div>
-
-        <div class="alert alert-info-light mt-4">
-            <h6 class="mb-2"><i class="fas fa-info-circle mr-2"></i>Leyenda de Prioridades:</h6>
-            <div class="d-flex align-items-center">
-                <span class="badge-prioridad badge-prioridad-normal mr-3">Normal: < 12 horas</span>
-                <span class="badge-prioridad badge-prioridad-alta mr-3">Alta: 12-24 horas</span>
-                <span class="badge-prioridad badge-prioridad-urgente">Urgente: > 24 horas</span>
             </div>
         </div>
 
@@ -299,25 +208,8 @@
         <!-- SECCIÓN CONTROL DE APROBADAS -->
         <div id="seccionAprobadas" style="display:none;">
 
-            <div class="row mb-3">
-                <div class="col-12">
-                    <div class="d-flex align-items-center" style="gap:1rem;">
-                        <div class="stat-card stat-success-custom">
-                            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                            <div class="stat-info">
-                                <span class="stat-label">Encontradas</span>
-                                <span class="stat-value" id="lblTotalAprobadas">0</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section-card mb-4">
-                <div class="section-header">
-                    <h5 class="section-title"><i class="fas fa-filter mr-2"></i>Filtros</h5>
-                </div>
-                <div class="section-body">
+            <div class="sgv-panel mb-3">
+                <div class="sgv-panel-cuerpo pb-0">
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
@@ -361,53 +253,39 @@
                 </div>
             </div>
 
-            <div class="section-card">
-                <div class="section-header section-header-success">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="section-title mb-0">
-                            <i class="fas fa-clipboard-check mr-2"></i>Liquidaciones Aprobadas
-                        </h5>
-                        <button type="button" class="btn btn-sm btn-outline-success" onclick="cargarLiquidacionesAprobadas()">
-                            <i class="fas fa-sync-alt mr-1"></i>Actualizar
-                        </button>
-                    </div>
+            <div class="sgv-panel sgv-panel-acento">
+                <div class="sgv-panel-cab">
+                    <h5>Liquidaciones aprobadas <span class="sgv-panel-nota ml-2"><span id="lblTotalAprobadas">0</span> resultados</span></h5>
+                    <button type="button" class="btn btn-sm btn-light border" onclick="cargarLiquidacionesAprobadas()">
+                        <i class="fas fa-sync-alt mr-1"></i>Actualizar
+                    </button>
                 </div>
-                <div class="section-body p-0">
-                    <div id="loadingAprobadas" class="text-center py-4" style="display:none;">
-                        <div class="spinner-border text-success"><span class="sr-only">Cargando...</span></div>
-                        <p class="text-muted mt-2">Cargando liquidaciones aprobadas...</p>
+                <div>
+                    <div id="loadingAprobadas" class="sgv-vacio" style="display:none;">
+                        <span class="spinner-border spinner-border-sm mr-2" role="status"></span>Cargando liquidaciones aprobadas...
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-liquidaciones mb-0" id="tablaAprobadas">
+                        <table class="table sgv-tabla mb-0" id="tablaAprobadas">
                             <thead>
                                 <tr>
-                                    <th>N° ORDEN</th>
-                                    <th>CONDUCTOR</th>
-                                    <th>PERIODO VIAJE</th>
-                                    <th class="text-right">DESCUENTO</th>
-                                    <th class="text-right">REINTEGRO</th>
-                                    <th class="text-right">BALANCE FINAL</th>
-                                    <th class="text-center">ACCIONES</th>
+                                    <th>N° orden</th>
+                                    <th>Conductor</th>
+                                    <th>Periodo</th>
+                                    <th class="text-right">Descuento</th>
+                                    <th class="text-right">Reintegro</th>
+                                    <th class="text-right">Balance final</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody id="tbodyAprobadas">
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted py-4">
-                                        <i class="fas fa-search mr-2"></i>Haga clic en "Buscar" para cargar las liquidaciones aprobadas
+                                    <td colspan="7" class="sgv-vacio">
+                                        Use “Buscar” para cargar las liquidaciones aprobadas.
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
-
-            <div class="alert alert-info-light mt-4">
-                <h6 class="mb-2"><i class="fas fa-info-circle mr-2"></i>Acciones disponibles:</h6>
-                <div class="d-flex flex-wrap" style="gap:0.75rem;">
-                    <span><i class="fas fa-eye text-info mr-1"></i><strong>Ver:</strong> Revisar el detalle completo de la liquidación</span>
-                    <span><i class="fas fa-edit text-warning mr-1"></i><strong>Corregir:</strong> Modificar descuentos y reintegros aplicados</span>
-                    <span><i class="fas fa-undo text-danger mr-1"></i><strong>Revertir:</strong> Devolver la liquidación a estado pendiente</span>
                 </div>
             </div>
 
@@ -421,12 +299,11 @@
                 <div class="modal-header modal-header-info" id="modalDetalleLiquidacionHeader">
                     <div class="d-flex align-items-center" style="flex:1;min-width:0;">
                         <h5 class="modal-title mb-0">
-                            <i class="fas fa-file-invoice-dollar mr-2"></i>
-                            <span id="modalModeLabel">Detalle de Liquidación</span>
+                            <span id="modalModeLabel">Detalle de liquidación</span>
                             <span class="modal-orden-ref ml-2" id="modalNumeroOrden"></span>
                         </h5>
                         <span class="badge-modo-aprobacion ml-3" id="modalModeBadge" style="display:none;">
-                            <i class="fas fa-check-circle mr-1"></i>APROBANDO
+                            En aprobación
                         </span>
                     </div>
                     <button type="button" class="close ml-2" data-dismiss="modal">
@@ -443,16 +320,14 @@
                     </div>
 
                     <div id="detalleError" class="text-center py-4" style="display:none;">
-                        <i class="fas fa-exclamation-triangle text-danger fa-3x mb-3 d-block"></i>
                         <p class="text-muted">Error al cargar el detalle. Por favor, intente de nuevo.</p>
                     </div>
 
                     <div id="approvalBanner" class="approval-guidance-banner" style="display:none;">
                         <div class="agb-content">
-                            <i class="fas fa-clipboard-check agb-icon"></i>
                             <div class="agb-text">
-                                <strong>Revisión para Aprobación</strong>
-                                <span>Revise el balance financiero. Si aplica descuentos o reintegros, complételos en los <a href="#" onclick="scrollToAjustes(); return false;" class="agb-link">Ajustes Administrativos ↓</a>. Luego use el botón <strong>Aprobar Liquidación</strong>.</span>
+                                <strong>Revisión para aprobación</strong>
+                                <span>Revise el balance financiero. Si aplica descuentos o reintegros, complételos en los <a href="#" onclick="scrollToAjustes(); return false;" class="agb-link">ajustes administrativos</a>. Luego use el botón <strong>Aprobar liquidación</strong>.</span>
                             </div>
                         </div>
                     </div>
@@ -460,27 +335,27 @@
                     <div class="detail-section viaje-info-section">
                         <div class="viaje-info-strip">
                             <div class="vi-item vi-item-conductor">
-                                <span class="vi-label"><i class="fas fa-user-tie mr-1"></i>Conductor</span>
+                                <span class="vi-label">Conductor</span>
                                 <span class="vi-value" id="detalleConductor"></span>
                             </div>
                             <div class="vi-sep"></div>
                             <div class="vi-item">
-                                <span class="vi-label"><i class="fas fa-truck mr-1"></i>Tracto</span>
+                                <span class="vi-label">Tracto</span>
                                 <span class="vi-value" id="detalleTracto"></span>
                             </div>
                             <div class="vi-sep"></div>
                             <div class="vi-item">
-                                <span class="vi-label"><i class="fas fa-trailer mr-1"></i>Carreta</span>
+                                <span class="vi-label">Carreta</span>
                                 <span class="vi-value" id="detalleCarreta"></span>
                             </div>
                             <div class="vi-sep"></div>
                             <div class="vi-item">
-                                <span class="vi-label"><i class="fas fa-calendar-alt mr-1"></i>Periodo</span>
+                                <span class="vi-label">Periodo</span>
                                 <span class="vi-value vi-value-periodo" id="detallePeriodo"></span>
                             </div>
                             <div class="vi-sep"></div>
                             <div class="vi-item">
-                                <span class="vi-label"><i class="fas fa-clock mr-1"></i>Hora Llegada</span>
+                                <span class="vi-label">Hora de llegada</span>
                                 <span class="vi-value vi-value-periodo" id="detalleHoraLlegada"></span>
                                 <button type="button" id="btnConsultarHoraGps" class="btn btn-sm btn-outline-secondary ml-2" title="Consultar hora real de llegada por GPS (Onway)">
                                     <i class="fas fa-satellite-dish"></i> Verificar GPS
@@ -488,7 +363,6 @@
                             </div>
                         </div>
                         <div id="detalleObservacionesRow" style="display:none;" class="vi-obs-row">
-                            <i class="fas fa-comment-alt vi-obs-icon"></i>
                             <span class="vi-obs-label">Obs. Conductor:</span>
                             <span class="vi-obs-text" id="detalleObservaciones"></span>
                         </div>
@@ -498,9 +372,8 @@
                     <div class="detail-section salida-section" id="seccionCorregirSalida" style="display:none;">
                         <div class="salida-head">
                             <div class="salida-info">
-                                <span class="salida-label"><i class="fas fa-sign-out-alt mr-1"></i>Salida registrada por el conductor</span>
+                                <span class="salida-label">Salida registrada por el conductor</span>
                                 <span class="salida-value">
-                                    <i class="far fa-clock salida-value-icon"></i>
                                     <span id="detalleSalidaValor">—</span>
                                 </span>
                             </div>
@@ -536,12 +409,11 @@
 
                     <div class="detail-section rf-section">
                         <h6 class="detail-section-title">
-                            <i class="fas fa-calculator mr-2"></i>Resumen Financiero
+                            Resumen Financiero
                         </h6>
                         <div class="rf-grid">
                             <div class="rf-cell rf-ingresos">
                                 <div class="rf-cell-header">
-                                    <i class="fas fa-arrow-up rf-icon-up"></i>
                                     <span class="rf-cell-label">Ingresos</span>
                                 </div>
                                 <div class="rf-amounts">
@@ -557,7 +429,6 @@
                             </div>
                             <div class="rf-cell rf-gastos">
                                 <div class="rf-cell-header">
-                                    <i class="fas fa-arrow-down rf-icon-down"></i>
                                     <span class="rf-cell-label">Gastos</span>
                                 </div>
                                 <div class="rf-amounts">
@@ -574,7 +445,7 @@
                         </div>
                         <div class="rf-balance-bar" id="rfBalanceBar">
                             <div class="rf-balance-label">
-                                <i class="fas fa-balance-scale mr-2"></i>Balance Final
+                                Balance Final
                             </div>
                             <div class="rf-balance-amounts">
                                 <div class="rf-bal-item">
@@ -592,7 +463,7 @@
 
                     <div class="detail-section">
                         <h6 class="detail-section-title">
-                            <i class="fas fa-hand-holding-usd mr-2"></i>Desglose de Ingresos
+                            Desglose de ingresos
                         </h6>
                         <div class="table-responsive">
                             <table class="table table-sm table-detail">
@@ -611,7 +482,7 @@
 
                     <div class="detail-section">
                         <h6 class="detail-section-title">
-                            <i class="fas fa-receipt mr-2"></i>Desglose de Gastos
+                            Desglose de gastos
                         </h6>
                         <div class="table-responsive">
                             <table class="table table-sm table-detail">
@@ -630,18 +501,17 @@
 
                     <div class="detail-section" id="sectionAjustes">
                         <h6 class="detail-section-title">
-                            <i class="fas fa-sliders-h mr-2"></i>Ajustes Administrativos
-                            <span class="badge badge-warning ml-2" style="font-size:0.7rem;font-weight:600;">Solo Admin</span>
+                            Ajustes administrativos
+
                         </h6>
                         <div class="alert-warning-light mb-3" style="font-size:0.85rem;padding:0.75rem;border:1px solid #fde68a;border-radius:0.375rem;background:#fffbeb;">
-                            <i class="fas fa-info-circle mr-1"></i>
                             Registra descuentos o reintegros a aplicar al balance del conductor. Deja en cero si no aplica.
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <div class="ajuste-card ajuste-descuento">
                                     <div class="ajuste-header">
-                                        <i class="fas fa-arrow-down mr-2 text-danger"></i>Descuento al Conductor
+                                        Descuento al conductor
                                     </div>
                                     <div class="row mt-2">
                                         <div class="col-6">
@@ -662,7 +532,7 @@
                             <div class="col-md-6 mb-3">
                                 <div class="ajuste-card ajuste-reintegro">
                                     <div class="ajuste-header">
-                                        <i class="fas fa-arrow-up mr-2 text-success"></i>Reintegro al Conductor
+                                        Reintegro al conductor
                                     </div>
                                     <div class="row mt-2">
                                         <div class="col-6">
@@ -684,8 +554,7 @@
                         <div id="balanceAjustadoPanel" class="mt-2" style="display:none;">
                             <div class="financial-card financial-card-neutral">
                                 <div class="financial-header">
-                                    <i class="fas fa-balance-scale"></i>
-                                    <span>Balance Ajustado (con descuentos/reintegros)</span>
+                                    <span>Balance con descuentos y reintegros</span>
                                 </div>
                                 <div class="financial-amounts">
                                     <div class="amount-row">
@@ -701,12 +570,12 @@
                         </div>
                         <div class="form-group mt-3" id="notaAprobacionGroup">
                             <label class="form-label">
-                                <i class="fas fa-comment-alt mr-1 text-muted"></i>Nota de Aprobación
+                                Nota de aprobación
                                 <span class="text-muted font-weight-normal">(opcional)</span>
                             </label>
                             <textarea id="notaAprobacion" class="form-control" rows="2" maxlength="500"
                                 placeholder="Ej: Aprobado. Comprobantes revisados y conformes."></textarea>
-                            <small class="text-muted">Máximo 500 caracteres. Se adjuntará a la liquidación como observación administrativa.</small>
+                            <small class="text-muted">Máximo 500 caracteres. se adjuntará a la liquidación como observación administrativa.</small>
                         </div>
                     </div>
 
@@ -718,7 +587,7 @@
                     </button>
                     <button type="button" id="btnAprobarDesdeModal" class="btn btn-success-custom"
                         onclick="aprobarDesdeModal()" style="display:none;">
-                        <i class="fas fa-check mr-1"></i>Aprobar Liquidación
+                        <i class="fas fa-check mr-1"></i>Aprobar liquidación
                     </button>
                 </div>
             </div>
@@ -730,8 +599,7 @@
             <div class="modal-content">
                 <div class="modal-header modal-header-danger">
                     <h5 class="modal-title">
-                        <i class="fas fa-exclamation-triangle mr-2"></i>
-                        Rechazar Liquidación
+                        Rechazar liquidación
                     </h5>
                     <button type="button" class="close" data-dismiss="modal">
                         <span>&times;</span>
@@ -739,7 +607,6 @@
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-warning">
-                        <i class="fas fa-info-circle mr-2"></i>
                         <strong>Atención:</strong> Al rechazar esta liquidación, el viaje se reabrirá automáticamente 
                         para que el conductor pueda corregir los datos.
                     </div>
@@ -752,7 +619,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Motivo del Rechazo <span class="text-danger">*</span></label>
+                        <label class="form-label">Motivo del rechazo <span class="text-danger">*</span></label>
                         <textarea id="rechazarObservaciones" name="observacionesRechazo" class="form-control" rows="4" 
                             placeholder="Explique detalladamente qué debe corregir el conductor...&#13;&#10;Ejemplo: Los montos de peajes no coinciden con los comprobantes adjuntos. Por favor revisar."></textarea>
                         <small id="errorRechazoObservaciones" class="text-danger d-none"></small>
@@ -762,7 +629,7 @@
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cancelar</button>
                     <asp:Button ID="btnConfirmarRechazo" runat="server" 
                         CssClass="btn btn-danger-custom" 
-                        Text="Rechazar Liquidación"
+                        Text="Rechazar liquidación"
                         OnClick="btnConfirmarRechazo_Click"
                         OnClientClick="return validarRechazo();" />
                 </div>
@@ -770,21 +637,20 @@
         </div>
     </div>
 
-    <!-- Modal Revertir Aprobación -->
+    <!-- Modal Revertir aprobación -->
     <div class="modal fade" id="modalRevertir" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header modal-header-danger">
                     <h5 class="modal-title">
-                        <i class="fas fa-undo mr-2"></i>Revertir Aprobación
+                        Revertir aprobación
                     </h5>
                     <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle mr-2"></i>
                         <strong>Atención:</strong> Esta acción devolverá la liquidación al estado
-                        <strong>Pendiente de Aprobación</strong>. Deberá ser revisada y aprobada nuevamente.
+                        <strong>Pendiente de aprobación</strong>. Deberá ser revisada y aprobada nuevamente.
                     </div>
                     <input type="hidden" id="revertirIdOrden" />
                     <div class="form-group">
@@ -796,7 +662,7 @@
                         <input type="text" id="revertirConductor" class="form-control" readonly />
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Motivo de la Reversión <span class="text-danger">*</span></label>
+                        <label class="form-label">Motivo de la reversión <span class="text-danger">*</span></label>
                         <textarea id="revertirMotivo" class="form-control" rows="4"
                             placeholder="Explique por qué se revierte esta aprobación...&#13;&#10;Ej: Se detectó que el descuento aplicado es incorrecto y necesita re-evaluación."></textarea>
                         <small id="errorRevertirMotivo" class="text-danger d-none"></small>
@@ -805,7 +671,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-danger-custom" id="btnConfirmarReversion" onclick="confirmarReversion()">
-                        <i class="fas fa-undo mr-1"></i>Confirmar Reversión
+                        <i class="fas fa-undo mr-1"></i>Confirmar reversión
                     </button>
                 </div>
             </div>
@@ -818,13 +684,12 @@
             <div class="modal-content">
                 <div class="modal-header modal-header-corregir">
                     <h5 class="modal-title">
-                        <i class="fas fa-edit mr-2"></i>Corregir Ajustes de Liquidación Aprobada
+                        Corregir ajustes de una liquidación aprobada
                     </h5>
                     <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle mr-2"></i>
                         Está modificando los ajustes de una liquidación <strong>ya aprobada</strong>.
                         Los cambios se reflejarán inmediatamente en los reportes.
                     </div>
@@ -842,7 +707,7 @@
 
                     <div class="valores-actuales-panel mb-3">
                         <div class="vap-title">
-                            <i class="fas fa-history mr-1"></i>Valores Registrados Actualmente
+                            Valores registrados actualmente
                         </div>
                         <div class="vap-grid">
                             <div class="vap-item vap-descuento">
@@ -862,14 +727,14 @@
                                 <span class="vap-number" id="corregirReintDolaresActual">0.00</span>
                             </div>
                         </div>
-                        <div class="vap-hint"><i class="fas fa-arrow-down mr-1"></i>Ingrese los nuevos valores a continuación</div>
+                        <div class="vap-hint">Ingrese los nuevos valores a continuación</div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <div class="ajuste-card ajuste-descuento">
                                 <div class="ajuste-header">
-                                    <i class="fas fa-arrow-down mr-2 text-danger"></i>Nuevo Descuento
+                                    Nuevo descuento
                                 </div>
                                 <div class="row mt-2">
                                     <div class="col-6">
@@ -888,7 +753,7 @@
                         <div class="col-md-6 mb-3">
                             <div class="ajuste-card ajuste-reintegro">
                                 <div class="ajuste-header">
-                                    <i class="fas fa-arrow-up mr-2 text-success"></i>Nuevo Reintegro
+                                    Nuevo reintegro
                                 </div>
                                 <div class="row mt-2">
                                     <div class="col-6">
@@ -907,7 +772,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Motivo de la Corrección <span class="text-danger">*</span></label>
+                        <label class="form-label">Motivo de la corrección <span class="text-danger">*</span></label>
                         <textarea id="corregirMotivo" class="form-control" rows="3"
                             placeholder="Explique por qué se corrigen los ajustes..."></textarea>
                         <small id="errorCorregirMotivo" class="text-danger d-none"></small>
@@ -916,7 +781,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-primary-custom" id="btnConfirmarCorreccion" onclick="confirmarCorreccion()">
-                        <i class="fas fa-save mr-1"></i>Guardar Corrección
+                        <i class="fas fa-save mr-1"></i>Guardar corrección
                     </button>
                 </div>
             </div>

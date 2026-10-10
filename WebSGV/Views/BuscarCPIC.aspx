@@ -37,11 +37,11 @@
 
                         <div class="row">
                             <div class="col-md-6 form-group">
-                                <label for="txtFechaEmision">Fecha de Emisión:</label>
+                                <label for="txtFechaEmision">Fecha de emisión:</label>
                                 <asp:TextBox ID="txtFechaEmision" runat="server" CssClass="form-control" TextMode="Date" ReadOnly="true"></asp:TextBox>
                             </div>
                             <div class="col-md-6 form-group">
-                                <label for="txtTotalFlete">Valor Total del Flete:</label>
+                                <label for="txtTotalFlete">Valor total del flete:</label>
                                 <asp:TextBox ID="txtTotalFlete" runat="server" CssClass="form-control" ReadOnly="true"></asp:TextBox>
                             </div>
                         </div>
@@ -49,11 +49,11 @@
                         <!-- NUEVA FILA: Peso Neto y Peso Bruto -->
                         <div class="row peso-section">
                             <div class="col-md-6 form-group">
-                                <label for="txtPesoNeto">Peso Neto (Kg):</label>
+                                <label for="txtPesoNeto">Peso neto (Kg):</label>
                                 <asp:TextBox ID="txtPesoNeto" runat="server" CssClass="form-control peso-input" ReadOnly="true"></asp:TextBox>
                             </div>
                             <div class="col-md-6 form-group">
-                                <label for="txtPesoBruto">Peso Bruto (Kg):</label>
+                                <label for="txtPesoBruto">Peso bruto (Kg):</label>
                                 <asp:TextBox ID="txtPesoBruto" runat="server" CssClass="form-control peso-input" ReadOnly="true"></asp:TextBox>
                             </div>
                         </div>
@@ -63,15 +63,15 @@
                 <!-- SECCIÓN: Documentos Asociados -->
                 <div class="panel panel-default documentos-panel">
                     <div class="panel-heading">
-                        <h2><i class="fa fa-file-pdf-o"></i> Documentos Asociados</h2>
+                        <h2><i class="fa fa-file-pdf-o"></i> Documentos asociados</h2>
                     </div>
                     <div class="panel-body">
                         <!-- NUEVA SECCIÓN: Upload de Documentos (Solo visible en modo edición) -->
                         <asp:Panel ID="pnlUploadDocumentos" runat="server" Visible="false" CssClass="document-upload-section">
-                            <h4><i class="fa fa-cloud-upload"></i> Agregar Nuevo Documento</h4>
+                            <h4><i class="fa fa-cloud-upload"></i> Agregar nuevo documento</h4>
                             <div class="upload-container">
                                 <div class="col-md-8 form-group">
-                                    <label for="fileUploadCPIC">Adjuntar Documento (PDF recomendado):</label>
+                                    <label for="fileUploadCPIC">Adjuntar documento (PDF recomendado):</label>
                                     <asp:FileUpload ID="fileUploadCPIC" runat="server" CssClass="form-control file-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
                                     <small class="text-muted">
                                         <i class="fa fa-info-circle"></i> 
@@ -122,7 +122,7 @@
                                                 <span class="tamano-archivo"><%# FormatearTamano(Convert.ToInt64(Eval("tamanoBytes"))) %></span>
                                             </ItemTemplate>
                                         </asp:TemplateField>
-                                        <asp:TemplateField HeaderText="Fecha Subida">
+                                        <asp:TemplateField HeaderText="Fecha subida">
                                             <ItemTemplate>
                                                 <span><%# Convert.ToDateTime(Eval("fechaSubida")).ToString("dd/MM/yyyy HH:mm") %></span>
                                             </ItemTemplate>
@@ -190,7 +190,7 @@
                                             </asp:DropDownList>
                                         </EditItemTemplate>
                                     </asp:TemplateField>
-                                    <asp:TemplateField HeaderText="Cantidad de Bolsas">
+                                    <asp:TemplateField HeaderText="Cantidad de bolsas">
                                         <ItemTemplate>
                                             <asp:Label ID="lblCantidad" runat="server" Text='<%# Eval("Cantidad") %>'></asp:Label>
                                         </ItemTemplate>

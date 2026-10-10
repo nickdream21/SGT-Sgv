@@ -151,7 +151,7 @@ namespace WebSGV.Views
                     gvLiquidacionesPendientes.DataSource = null;
                     gvLiquidacionesPendientes.DataBind();
                     lblTotalPendientes.Text = "0";
-                    lblTotalUrgentes.Text = "0";
+                    lblTotalUrgentes.Text = "";
                     return;
                 }
 
@@ -191,7 +191,8 @@ namespace WebSGV.Views
                         }
 
                         lblTotalPendientes.Text = totalPendientes.ToString();
-                        lblTotalUrgentes.Text = totalUrgentes.ToString();
+                        // Vacío cuando no hay urgentes: la etiqueta se oculta (.sgv-tab-alerta:empty).
+                        lblTotalUrgentes.Text = totalUrgentes > 0 ? totalUrgentes + " con más de 24 h" : "";
 
                         // Vincular al GridView
                         gvLiquidacionesPendientes.DataSource = dt;
@@ -629,12 +630,14 @@ namespace WebSGV.Views
 
         #region Métodos de Formato para GridView
 
-        protected string ObtenerClaseBalance(object balance)
+        // Positivo en verde, negativo en rojo, cero sin color.
+        protected string ClaseMonto(object monto)
         {
-            if (balance == null || balance == DBNull.Value)
+            if (monto == null || monto == DBNull.Value)
                 return "";
 
-            return LiquidacionCalculos.ClaseBalance(Convert.ToDecimal(balance));
+            decimal valor = Convert.ToDecimal(monto);
+            return valor > 0 ? "sgv-positivo" : valor < 0 ? "sgv-negativo" : "";
         }
 
         protected string ObtenerPrioridad(object horasPendientes)
@@ -643,6 +646,16 @@ namespace WebSGV.Views
                 return "normal";
 
             return LiquidacionCalculos.Prioridad(Convert.ToInt32(horasPendientes));
+        }
+
+        protected string ClaseEstadoPrioridad(object horasPendientes)
+        {
+            switch (ObtenerPrioridad(horasPendientes))
+            {
+                case "urgente": return "sgv-estado-peligro";
+                case "alta": return "sgv-estado-alerta";
+                default: return "sgv-estado-ok";
+            }
         }
 
         protected string FormatearTiempo(object horasPendientes)

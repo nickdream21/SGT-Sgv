@@ -31,7 +31,7 @@
             <div class="col-12 col-md-5 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar Conductor</h5>
+                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar conductor</h5>
                     </div>
                     <div class="card-body">
                         <asp:Panel ID="pnlFormulario" runat="server">
@@ -40,7 +40,7 @@
                             <%-- Fila 1: Tipo documento + campo de documento (en la misma posición) --%>
                             <div class="row align-items-end">
                                 <div class="col-md-4 form-group">
-                                    <label class="font-weight-bold">Tipo Documento:</label>
+                                    <label class="font-weight-bold">Tipo documento:</label>
                                     <asp:DropDownList ID="ddlTipoDocumento" runat="server" CssClass="form-control" onchange="mostrarCampoDocumento()">
                                         <asp:ListItem>DNI</asp:ListItem>
                                         <asp:ListItem>Carnet de Extranjería</asp:ListItem>
@@ -79,7 +79,7 @@
                                     <asp:RegularExpressionValidator ID="revNombres" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtNombres" ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú\s]{2,100}$" ErrorMessage="Nombres: solo letras y espacios (2 a 100 caracteres)." CssClass="text-danger small" Display="Dynamic" />
                                 </div>
                                 <div class="col-md-6 form-group">
-                                    <label class="font-weight-bold">Apellido Paterno: <span class="text-danger">*</span></label>
+                                    <label class="font-weight-bold">Apellido paterno: <span class="text-danger">*</span></label>
                                     <asp:TextBox ID="txtApellidoPaterno" runat="server" CssClass="form-control"></asp:TextBox>
                                     <asp:RequiredFieldValidator ID="rfvApellidoPaterno" runat="server" ControlToValidate="txtApellidoPaterno" ValidationGroup="vgRegistroConductor"
                                         ErrorMessage="El apellido paterno es requerido" CssClass="text-danger small" Display="Dynamic"></asp:RequiredFieldValidator>
@@ -90,7 +90,7 @@
                             <%-- Fila 3: Apellido Materno + Teléfono --%>
                             <div class="row">
                                 <div class="col-md-6 form-group">
-                                    <label class="font-weight-bold">Apellido Materno:</label>
+                                    <label class="font-weight-bold">Apellido materno:</label>
                                     <asp:TextBox ID="txtApellidoMaterno" runat="server" CssClass="form-control"></asp:TextBox>
                                     <asp:RegularExpressionValidator ID="revApellidoMaterno" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtApellidoMaterno" ValidationExpression="^$|^[A-Za-zÁÉÍÓÚÑáéíóú\s]{2,100}$" ErrorMessage="Apellido materno: solo letras y espacios (2 a 100 caracteres)." CssClass="text-danger small" Display="Dynamic" />
                                 </div>
@@ -101,7 +101,7 @@
                                 </div>
                             </div>
 
-                            <asp:Button ID="btnRegistrar" runat="server" CssClass="btn btn-primary btn-block" Text="Registrar Conductor" ValidationGroup="vgRegistroConductor" OnClick="btnRegistrar_Click" />
+                            <asp:Button ID="btnRegistrar" runat="server" CssClass="btn btn-primary btn-block" Text="Registrar conductor" ValidationGroup="vgRegistroConductor" OnClick="btnRegistrar_Click" />
                         </asp:Panel>
                     </div>
                 </div>
@@ -115,7 +115,7 @@
             <div class="col-12 col-md-7 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Conductores Registrados</h5>
+                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Conductores registrados</h5>
                         <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
                             style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_conductores"
                             oninput="filtrarTabla(this.value,'contenedorConductores')">
@@ -176,7 +176,7 @@
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header" style="background:#0ea5e9;color:#fff;">
-                    <h5 class="modal-title"><i class="fas fa-user-edit mr-2"></i>Editar Conductor</h5>
+                    <h5 class="modal-title"><i class="fas fa-user-edit mr-2"></i>Editar conductor</h5>
                     <button type="button" class="close" style="color:#fff;" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
@@ -186,13 +186,13 @@
                             <asp:TextBox ID="txtEditarNombres" runat="server" CssClass="form-control"></asp:TextBox>
                         </div>
                         <div class="col-md-6 form-group">
-                            <label class="font-weight-bold">Apellido Paterno <span class="text-danger">*</span></label>
+                            <label class="font-weight-bold">Apellido paterno <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtEditarApellidoPaterno" runat="server" CssClass="form-control"></asp:TextBox>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 form-group">
-                            <label class="font-weight-bold">Apellido Materno</label>
+                            <label class="font-weight-bold">Apellido materno</label>
                             <asp:TextBox ID="txtEditarApellidoMaterno" runat="server" CssClass="form-control"></asp:TextBox>
                         </div>
                         <div class="col-md-6 form-group mb-0">
@@ -204,7 +204,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                     <asp:Button ID="btnActualizarConductor" runat="server" CssClass="btn btn-info"
-                        Text="Guardar Cambios" OnClick="btnActualizarConductor_Click" />
+                        Text="Guardar cambios" OnClick="btnActualizarConductor_Click" />
                 </div>
             </div>
         </div>

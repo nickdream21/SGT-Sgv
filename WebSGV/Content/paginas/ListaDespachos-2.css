@@ -96,8 +96,6 @@
     margin-bottom: .4rem;
     display: block;
     font-size: .74rem;
-    text-transform: uppercase;
-    letter-spacing: .04em;
 }
 
 .form-control, .form-select {
@@ -150,8 +148,6 @@
     color: #334155;
     font-weight: 700;
     font-size: .72rem;
-    text-transform: uppercase;
-    letter-spacing: .04em;
     padding: .8rem .9rem;
     border-bottom: 2px solid #e2e8f0;
     text-align: left;
@@ -285,8 +281,6 @@
 
 .summary-label {
     font-size: .72rem;
-    text-transform: uppercase;
-    letter-spacing: .04em;
     color: #64748b;
     font-weight: 600;
 }

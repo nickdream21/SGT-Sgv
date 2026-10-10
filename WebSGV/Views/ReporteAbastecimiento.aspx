@@ -7,7 +7,7 @@
 
         <!-- Encabezado Gradiente -->
         <div class="rpt-header">
-            <h3><i class="fas fa-gas-pump mr-2"></i>Reporte de Abastecimiento</h3>
+            <h3><i class="fas fa-gas-pump mr-2"></i>Reporte de abastecimiento</h3>
             <div class="rpt-meta">
                 <span class="meta-count">
                     <i class="fas fa-list-ol mr-1"></i>
@@ -18,14 +18,14 @@
 
         <!-- Filtros -->
         <div class="rpt-filter-card">
-            <div class="filter-title"><i class="fas fa-filter mr-1"></i>Filtros de Búsqueda</div>
+            <div class="filter-title"><i class="fas fa-filter mr-1"></i>Filtros de búsqueda</div>
             <div class="rpt-filter-row">
                 <div class="filter-group">
-                    <label>Fecha Desde</label>
+                    <label>Fecha desde</label>
                     <asp:TextBox ID="txtFechaDesde" runat="server" TextMode="Date" CssClass="form-control" style="min-width:140px;"></asp:TextBox>
                 </div>
                 <div class="filter-group">
-                    <label>Fecha Hasta</label>
+                    <label>Fecha hasta</label>
                     <asp:TextBox ID="txtFechaHasta" runat="server" TextMode="Date" CssClass="form-control" style="min-width:140px;"></asp:TextBox>
                 </div>
                 <div class="filter-group">
@@ -79,24 +79,24 @@
                                     <%# FormatTipoAbastecimiento(Eval("TipoAbastecimiento")) %>
                                 </ItemTemplate>
                             </asp:TemplateField>
-                            <asp:TemplateField HeaderText="Tipo Vehiculo">
+                            <asp:TemplateField HeaderText="Tipo vehiculo">
                                 <ItemTemplate>
                                     <%# FormatTipoVehiculo(Eval("TipoVehiculo")) %>
                                 </ItemTemplate>
                             </asp:TemplateField>
                             <asp:BoundField DataField="Conductor" HeaderText="Nombre" />
-                            <asp:BoundField DataField="PlacaTracto" HeaderText="Placa Tracto" />
+                            <asp:BoundField DataField="PlacaTracto" HeaderText="Placa tracto" />
                             <asp:BoundField DataField="Ruta" HeaderText="Ruta" />
                             <asp:BoundField DataField="Producto" HeaderText="Producto" />
-                            <asp:BoundField DataField="LugarAbastecimiento" HeaderText="Lugar Abastecimiento" />
+                            <asp:BoundField DataField="LugarAbastecimiento" HeaderText="Lugar abastecimiento" />
                             <asp:BoundField DataField="Hora" HeaderText="Hora" />
-                            <asp:BoundField DataField="GLRutaAsignada" HeaderText="GL Asignados" DataFormatString="{0:#,##0.##}" />
-                            <asp:BoundField DataField="GLCompradosRuta" HeaderText="GL Comprados" DataFormatString="{0:#,##0.##}" />
-                            <asp:BoundField DataField="GLTotalAbastecidos" HeaderText="GL Total Abast." DataFormatString="{0:#,##0.##}" />
-                            <asp:BoundField DataField="GLAlFinalizar" HeaderText="GL Finalizar" DataFormatString="{0:#,##0.##}" />
-                            <asp:BoundField DataField="GLTotalConsumidos" HeaderText="GL Consumidos" DataFormatString="{0:#,##0.##}" />
+                            <asp:BoundField DataField="GLRutaAsignada" HeaderText="GL asignados" DataFormatString="{0:#,##0.##}" />
+                            <asp:BoundField DataField="GLCompradosRuta" HeaderText="GL comprados" DataFormatString="{0:#,##0.##}" />
+                            <asp:BoundField DataField="GLTotalAbastecidos" HeaderText="GL total abast." DataFormatString="{0:#,##0.##}" />
+                            <asp:BoundField DataField="GLAlFinalizar" HeaderText="GL finalizar" DataFormatString="{0:#,##0.##}" />
+                            <asp:BoundField DataField="GLTotalConsumidos" HeaderText="GL consumidos" DataFormatString="{0:#,##0.##}" />
                             <asp:BoundField DataField="DistanciaKM" HeaderText="Distancia KM" DataFormatString="{0:#,##0.#}" />
-                            <asp:BoundField DataField="ConsumoComputador" HeaderText="Consumo Comp." DataFormatString="{0:#,##0.#}" />
+                            <asp:BoundField DataField="ConsumoComputador" HeaderText="Consumo comp." DataFormatString="{0:#,##0.#}" />
                             <asp:TemplateField HeaderText="Observaciones">
                                 <ItemTemplate>
                                     <%# FormatObservaciones(Eval("Observaciones")) %>

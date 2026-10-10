@@ -30,7 +30,7 @@
                 <div class="page-header d-flex justify-content-between align-items-center">
                     <div>
                         <h2 class="page-title mb-1">
-                            <i class="fas fa-route mr-2" id="pageTitleIcon"></i><span id="pageTitleText">Crear Orden de Viaje</span>
+                            <i class="fas fa-route mr-2" id="pageTitleIcon"></i><span id="pageTitleText">Crear orden de viaje</span>
                         </h2>
                         <p class="text-muted mb-0" id="pageTitleSub">Complete la información del viaje y gestión financiera</p>
                     </div>
@@ -47,7 +47,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <i class="fas fa-check-circle mr-2"></i>
-                        <strong>Viaje Finalizado:</strong>
+                        <strong>Viaje finalizado:</strong>
                         <asp:Label ID="lblCantidadDespachosOrigen" runat="server"></asp:Label>
                         despachos procesados |
                         <strong>Conductor:</strong>
@@ -128,13 +128,13 @@
                                         </div>
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label class="form-label">Fecha Salida</label>
+                                                <label class="form-label">Fecha salida</label>
                                                 <asp:TextBox ID="txtFechaSalida" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label class="form-label">Fecha Llegada</label>
+                                                <label class="form-label">Fecha llegada</label>
                                                 <asp:TextBox ID="txtFechaLlegada" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                             </div>
                                         </div>
@@ -143,19 +143,19 @@
                                     <div class="row">
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label class="form-label">Hora Salida</label>
+                                                <label class="form-label">Hora salida</label>
                                                 <asp:TextBox ID="txtHoraSalida" runat="server" CssClass="form-control" TextMode="Time"></asp:TextBox>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label class="form-label">Hora Llegada</label>
+                                                <label class="form-label">Hora llegada</label>
                                                 <asp:TextBox ID="txtHoraLlegada" runat="server" CssClass="form-control" TextMode="Time"></asp:TextBox>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label class="form-label">Observaciones Generales</label>
+                                                <label class="form-label">Observaciones generales</label>
                                                 <asp:TextBox ID="txtObservaciones" runat="server" CssClass="form-control" TextMode="MultiLine" Rows="2" placeholder="Ingrese observaciones"></asp:TextBox>
                                             </div>
                                         </div>
@@ -181,14 +181,14 @@
                                         </div>
                                         <div class="col-md-4">
                                             <div class="form-group">
-                                                <label class="form-label">Placa Tracto</label>
+                                                <label class="form-label">Placa tracto</label>
                                                 <asp:TextBox ID="txtPlacaTracto" runat="server" CssClass="form-control form-control-readonly" ReadOnly="true"></asp:TextBox>
                                                 <small class="form-text text-muted">Información del viaje finalizado</small>
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="form-group">
-                                                <label class="form-label">Placa Carreta</label>
+                                                <label class="form-label">Placa carreta</label>
                                                 <asp:TextBox ID="txtPlacaCarreta" runat="server" CssClass="form-control form-control-readonly" ReadOnly="true"></asp:TextBox>
                                                 <small class="form-text text-muted">Información del viaje finalizado</small>
                                             </div>
@@ -198,28 +198,28 @@
                                     <div class="row">
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label class="form-label">Cliente Principal</label>
+                                                <label class="form-label">Cliente principal</label>
                                                 <asp:TextBox ID="txtClientePrincipal" runat="server" CssClass="form-control form-control-readonly" ReadOnly="true"></asp:TextBox>
                                                 <small class="form-text text-muted">Del viaje finalizado</small>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label class="form-label">Tipo Operación</label>
+                                                <label class="form-label">Tipo operación</label>
                                                 <asp:TextBox ID="txtTipoOperacion" runat="server" CssClass="form-control form-control-readonly" ReadOnly="true"></asp:TextBox>
                                                 <small class="form-text text-muted">Del viaje finalizado</small>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label class="form-label">Planta Principal</label>
+                                                <label class="form-label">Planta principal</label>
                                                 <asp:TextBox ID="txtPlantaPrincipal" runat="server" CssClass="form-control form-control-readonly" ReadOnly="true"></asp:TextBox>
                                                 <small class="form-text text-muted">Del viaje finalizado</small>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label class="form-label">Tipo de Viaje</label>
+                                                <label class="form-label">Tipo de viaje</label>
                                                 <asp:TextBox ID="TextBox1" runat="server" CssClass="form-control form-control-readonly" ReadOnly="true"></asp:TextBox>
                                                 <small class="form-text text-muted">Detectado automáticamente</small>
                                             </div>
@@ -317,7 +317,7 @@
                                                 </tr>
                                                 <tr>
                                                     <td class="text-center">3</td>
-                                                    <td><strong>Otros Autorizados</strong></td>
+                                                    <td><strong>Otros autorizados</strong></td>
                                                     <td>
                                                         <input type="text" class="form-control form-control-sm" name="descOtros" placeholder="Descripción">
                                                     </td>
@@ -354,7 +354,7 @@
                                                     </td>
                                                 </tr>
                                                 <tr class="total-row">
-                                                    <td colspan="3" class="text-right"><strong>Total Ingresos:</strong></td>
+                                                    <td colspan="3" class="text-right"><strong>Total ingresos:</strong></td>
                                                     <td><strong>S/ <span id="totalIngresosSoles">0.00</span></strong></td>
                                                     <td><strong>$ <span id="totalIngresosDolares">0.00</span></strong></td>
                                                     <td></td>
@@ -443,7 +443,7 @@
                                                 <tr>
                                                     <td class="text-center">4</td>
                                                     <td>
-                                                        <strong>Reparaciones Varios</strong>
+                                                        <strong>Reparaciones varios</strong>
                                                         <button type="button" class="btn btn-detail-modal btn-sm ml-2" onclick="abrirModalReparaciones()">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
@@ -544,7 +544,7 @@
                                                     </td>
                                                 </tr>
                                                 <tr class="total-row">
-                                                    <td colspan="3" class="text-right"><strong>Total Gastos:</strong></td>
+                                                    <td colspan="3" class="text-right"><strong>Total gastos:</strong></td>
                                                     <td><strong>S/ <span id="totalGastosSoles">0.00</span></strong></td>
                                                     <td><strong>$ <span id="totalGastosDolares">0.00</span></strong></td>
                                                     <td></td>
@@ -614,7 +614,7 @@
                                     <div class="balance-final mt-4" id="balanceFinalBar">
                                         <div class="bf-header">
                                             <i class="fas fa-balance-scale bf-icon"></i>
-                                            <span class="bf-title">Balance Final</span>
+                                            <span class="bf-title">Balance final</span>
                                             <span class="bf-hint">Ingresos − Gastos − Descuentos + Reintegros</span>
                                         </div>
                                         <div class="bf-amounts">
@@ -644,7 +644,7 @@
         <!-- Botones de Acción -->
         <div class="row mt-4 mb-5">
             <div class="col-12 text-center">
-                <asp:Button ID="btnGuardarOrden" runat="server" Text="Guardar Orden de Viaje"
+                <asp:Button ID="btnGuardarOrden" runat="server" Text="Guardar orden de viaje"
                     CssClass="btn btn-primary-custom btn-lg px-5" OnClick="btnGuardarOrden_Click"
                     OnClientClick="prepararDatosFinancieros(); return true;" />
                 <a href="ListaDespachos.aspx" class="btn btn-secondary-custom btn-lg ml-3 px-4">
@@ -662,7 +662,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header modal-header-custom">
-                    <h5 class="modal-title"><i class="fas fa-road mr-2"></i>Gestión de Peajes</h5>
+                    <h5 class="modal-title"><i class="fas fa-road mr-2"></i>Gestión de peajes</h5>
                     <button type="button" class="close" data-dismiss="modal">
                         <span>&times;</span>
                     </button>
@@ -670,7 +670,7 @@
                 <div class="modal-body">
                     <!-- Formulario agregar peaje -->
                     <div class="card card-form mb-3">
-                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar Peaje</div>
+                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar peaje</div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-4">
@@ -722,7 +722,7 @@
                     <!-- Lista de peajes -->
                     <div class="card card-list">
                         <div class="card-header d-flex justify-content-between">
-                            <span><i class="fas fa-list mr-2"></i>Peajes Registrados</span>
+                            <span><i class="fas fa-list mr-2"></i>Peajes registrados</span>
                             <span class="badge badge-primary-custom" id="totalPeajes">0 peajes</span>
                         </div>
                         <div class="card-body p-0">
@@ -745,10 +745,10 @@
                         <div class="card-footer-totals">
                             <div class="row">
                                 <div class="col-6">
-                                    <strong>Total Soles: <span id="totalPeajesSoles">S/ 0.00</span></strong>
+                                    <strong>Total soles: <span id="totalPeajesSoles">S/ 0.00</span></strong>
                                 </div>
                                 <div class="col-6 text-right">
-                                    <strong>Total Dólares: <span id="totalPeajesDolares">$ 0.00</span></strong>
+                                    <strong>Total dólares: <span id="totalPeajesDolares">$ 0.00</span></strong>
                                 </div>
                             </div>
                         </div>
@@ -756,7 +756,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary-custom" onclick="aplicarPeajes()">Aplicar y Cerrar</button>
+                    <button type="button" class="btn btn-primary-custom" onclick="aplicarPeajes()">Aplicar y cerrar</button>
                 </div>
             </div>
         </div>
@@ -767,18 +767,18 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header modal-header-custom">
-                    <h5 class="modal-title"><i class="fas fa-wrench mr-2"></i>Gestión de Reparaciones</h5>
+                    <h5 class="modal-title"><i class="fas fa-wrench mr-2"></i>Gestión de reparaciones</h5>
                     <button type="button" class="close" data-dismiss="modal">
                         <span>&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
                     <div class="card card-form mb-3">
-                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar Reparación</div>
+                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar reparación</div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <label class="form-label">Tipo de Reparación</label>
+                                    <label class="form-label">Tipo de reparación</label>
                                     <input type="text" class="form-control form-control-sm" id="nuevaReparacionTipo" placeholder="Ej: Cambio de llanta">
                                 </div>
                                 <div class="col-md-6">
@@ -816,7 +816,7 @@
 
                     <div class="card card-list">
                         <div class="card-header d-flex justify-content-between">
-                            <span><i class="fas fa-list mr-2"></i>Reparaciones Registradas</span>
+                            <span><i class="fas fa-list mr-2"></i>Reparaciones registradas</span>
                             <span class="badge badge-primary-custom" id="totalReparaciones">0 reparaciones</span>
                         </div>
                         <div class="card-body p-0">
@@ -839,10 +839,10 @@
                         <div class="card-footer-totals">
                             <div class="row">
                                 <div class="col-6">
-                                    <strong>Total Soles: <span id="totalReparacionesSoles">S/ 0.00</span></strong>
+                                    <strong>Total soles: <span id="totalReparacionesSoles">S/ 0.00</span></strong>
                                 </div>
                                 <div class="col-6 text-right">
-                                    <strong>Total Dólares: <span id="totalReparacionesDolares">$ 0.00</span></strong>
+                                    <strong>Total dólares: <span id="totalReparacionesDolares">$ 0.00</span></strong>
                                 </div>
                             </div>
                         </div>
@@ -850,7 +850,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary-custom" onclick="aplicarReparaciones()">Aplicar y Cerrar</button>
+                    <button type="button" class="btn btn-primary-custom" onclick="aplicarReparaciones()">Aplicar y cerrar</button>
                 </div>
             </div>
         </div>
@@ -861,14 +861,14 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header modal-header-custom">
-                    <h5 class="modal-title"><i class="fas fa-bed mr-2"></i>Gestión de Hospedaje</h5>
+                    <h5 class="modal-title"><i class="fas fa-bed mr-2"></i>Gestión de hospedaje</h5>
                     <button type="button" class="close" data-dismiss="modal">
                         <span>&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
                     <div class="card card-form mb-3">
-                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar Hospedaje</div>
+                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar hospedaje</div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6">
@@ -910,7 +910,7 @@
 
                     <div class="card card-list">
                         <div class="card-header d-flex justify-content-between">
-                            <span><i class="fas fa-list mr-2"></i>Hospedajes Registrados</span>
+                            <span><i class="fas fa-list mr-2"></i>Hospedajes registrados</span>
                             <span class="badge badge-primary-custom" id="totalHospedajes">0 hospedajes</span>
                         </div>
                         <div class="card-body p-0">
@@ -933,10 +933,10 @@
                         <div class="card-footer-totals">
                             <div class="row">
                                 <div class="col-6">
-                                    <strong>Total Soles: <span id="totalHospedajesSoles">S/ 0.00</span></strong>
+                                    <strong>Total soles: <span id="totalHospedajesSoles">S/ 0.00</span></strong>
                                 </div>
                                 <div class="col-6 text-right">
-                                    <strong>Total Dólares: <span id="totalHospedajesDolares">$ 0.00</span></strong>
+                                    <strong>Total dólares: <span id="totalHospedajesDolares">$ 0.00</span></strong>
                                 </div>
                             </div>
                         </div>
@@ -944,7 +944,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary-custom" onclick="aplicarHospedajes()">Aplicar y Cerrar</button>
+                    <button type="button" class="btn btn-primary-custom" onclick="aplicarHospedajes()">Aplicar y cerrar</button>
                 </div>
             </div>
         </div>
@@ -955,14 +955,14 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header modal-header-custom">
-                    <h5 class="modal-title"><i class="fas fa-gas-pump mr-2"></i>Gestión de Combustible</h5>
+                    <h5 class="modal-title"><i class="fas fa-gas-pump mr-2"></i>Gestión de combustible</h5>
                     <button type="button" class="close" data-dismiss="modal">
                         <span>&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
                     <div class="card card-form mb-3">
-                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar Combustible</div>
+                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar combustible</div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6">
@@ -1004,7 +1004,7 @@
 
                     <div class="card card-list">
                         <div class="card-header d-flex justify-content-between">
-                            <span><i class="fas fa-list mr-2"></i>Combustibles Registrados</span>
+                            <span><i class="fas fa-list mr-2"></i>Combustibles registrados</span>
                             <span class="badge badge-primary-custom" id="totalCombustibles">0 combustibles</span>
                         </div>
                         <div class="card-body p-0">
@@ -1027,10 +1027,10 @@
                         <div class="card-footer-totals">
                             <div class="row">
                                 <div class="col-6">
-                                    <strong>Total Soles: <span id="totalCombustiblesSoles">S/ 0.00</span></strong>
+                                    <strong>Total soles: <span id="totalCombustiblesSoles">S/ 0.00</span></strong>
                                 </div>
                                 <div class="col-6 text-right">
-                                    <strong>Total Dólares: <span id="totalCombustiblesDolares">$ 0.00</span></strong>
+                                    <strong>Total dólares: <span id="totalCombustiblesDolares">$ 0.00</span></strong>
                                 </div>
                             </div>
                         </div>
@@ -1038,7 +1038,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary-custom" onclick="aplicarCombustibles()">Aplicar y Cerrar</button>
+                    <button type="button" class="btn btn-primary-custom" onclick="aplicarCombustibles()">Aplicar y cerrar</button>
                 </div>
             </div>
         </div>

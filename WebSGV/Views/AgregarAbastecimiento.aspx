@@ -12,7 +12,7 @@
                 <i class="fas fa-gas-pump mr-2"></i>Registro de Abastecimiento
             </h3>
             <asp:Panel ID="pnlBackLink" runat="server" Visible="false">
-                <a href="DashboardGrifo.aspx" class="btn-back-link"><i class="fas fa-arrow-left mr-1"></i>Volver al Dashboard</a>
+                <a href="DashboardGrifo.aspx" class="btn-back-link"><i class="fas fa-arrow-left mr-1"></i>Volver al dashboard</a>
             </asp:Panel>
         </div>
 
@@ -21,7 +21,7 @@
         <!-- ============================================= -->
         <asp:Panel ID="pnlTripBanner" runat="server" Visible="false">
             <div class="trip-info-banner">
-                <div class="trip-title"><i class="fas fa-truck mr-1"></i>Datos del Viaje</div>
+                <div class="trip-title"><i class="fas fa-truck mr-1"></i>Datos del viaje</div>
                 <div class="trip-info-grid">
                     <div class="trip-info-item">
                         <span class="info-icon"><i class="fas fa-user"></i></span>
@@ -45,7 +45,7 @@
                     </div>
                     <div class="trip-info-item">
                         <span class="info-icon"><i class="fas fa-tint"></i></span>
-                        <span class="info-label">GL Asignados:</span>
+                        <span class="info-label">GL asignados:</span>
                         <span class="trip-gl-badge"><asp:Literal ID="litGLAsignados" runat="server" /></span>
                     </div>
                 </div>
@@ -64,7 +64,7 @@
                 <div class="card-body" style="padding: 12px 18px;">
                     <div class="row align-items-end">
                         <div class="col-md-4 form-group mb-0">
-                            <label class="form-label">Tipo de Registro:</label>
+                            <label class="form-label">Tipo de registro:</label>
                             <asp:DropDownList ID="ddlMotivoSalida" runat="server" CssClass="form-control" onchange="onMotivoChange()">
                                 <asp:ListItem Value="ABASTECIMIENTO" Selected="True">Abastecimiento (viaje corto / rutina)</asp:ListItem>
                                 <asp:ListItem Value="MANTENIMIENTO">Mantenimiento (filtros, limpieza, servicio)</asp:ListItem>
@@ -98,15 +98,15 @@
                             </asp:DropDownList>
                         </div>
                         <div class="col-md-3 form-group" id="divPlacaTracto">
-                            <label class="form-label">Placa Tracto:</label>
+                            <label class="form-label">Placa tracto:</label>
                             <asp:DropDownList ID="ddlPlaca" runat="server" CssClass="form-control"></asp:DropDownList>
                         </div>
                         <div class="col-md-3 form-group" id="divPlacaVolquete" style="display:none;">
-                            <label class="form-label">Placa Volquete:</label>
+                            <label class="form-label">Placa volquete:</label>
                             <asp:DropDownList ID="ddlPlacaVolquete" runat="server" CssClass="form-control"></asp:DropDownList>
                         </div>
                         <div class="col-md-3 form-group" id="divPlacaCamioneta" style="display:none;">
-                            <label class="form-label">Placa Camioneta:</label>
+                            <label class="form-label">Placa camioneta:</label>
                             <asp:DropDownList ID="ddlPlacaCamioneta" runat="server" CssClass="form-control"></asp:DropDownList>
                         </div>
                         <div class="col-md-3 form-group" id="divPlacaOtro" style="display:none;">
@@ -159,7 +159,7 @@
                     <div class="col-md-6">
                         <div class="row">
                             <div class="col-md-6 form-group">
-                                <label class="form-label">Lugar de Abastecimiento:</label>
+                                <label class="form-label">Lugar de abastecimiento:</label>
                                 <asp:DropDownList ID="lugarAbastecimiento" runat="server" CssClass="form-control">
                                     <asp:ListItem Value="1" Selected="True">Grifo Cochera 03</asp:ListItem>
                                     <asp:ListItem Value="2">Otro</asp:ListItem>
@@ -176,37 +176,37 @@
                         </div>
                         <div class="row">
                             <div class="col-md-6 form-group">
-                                <label class="form-label">GL Ruta Asignada:</label>
+                                <label class="form-label">GL ruta asignada:</label>
                                 <asp:TextBox ID="txtGLRuta" runat="server" CssClass="form-control" TextMode="Number" step="any" placeholder="Ej: 50" onchange="calcularTotales()"></asp:TextBox>
                             </div>
                             <div class="col-md-6 form-group">
-                                <label class="form-label">GL Comprados <span class="sync-indicator">🔗</span></label>
+                                <label class="form-label">GL comprados <span class="sync-indicator">🔗</span></label>
                                 <asp:TextBox ID="txtGLComprados" runat="server" CssClass="form-control synchronized-field" TextMode="Number" step="any" placeholder="Auto"></asp:TextBox>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 form-group">
-                                <label class="form-label">GL Total Abastecidos:</label>
+                                <label class="form-label">GL total abastecidos:</label>
                                 <asp:TextBox ID="txtTotalGL" runat="server" CssClass="form-control calculated-field" TextMode="Number" step="any"></asp:TextBox>
                             </div>
                             <div class="col-md-6 form-group">
-                                <label class="form-label">GL Trae al Finalizar:</label>
+                                <label class="form-label">GL trae al finalizar:</label>
                                 <asp:TextBox ID="txtGLFinal" runat="server" CssClass="form-control" TextMode="Number" step="any" placeholder="Ej: 62" onchange="calcularTotales()"></asp:TextBox>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 form-group">
-                                <label class="form-label">GL Consumidos:</label>
+                                <label class="form-label">GL consumidos:</label>
                                 <asp:TextBox ID="txtGLConsumidos" runat="server" CssClass="form-control calculated-field" TextMode="Number" step="any"></asp:TextBox>
                             </div>
                             <div class="col-md-6 form-group">
-                                <label class="form-label">Precio Dólar:</label>
+                                <label class="form-label">Precio dólar:</label>
                                 <asp:TextBox ID="txtPrecioDolar" runat="server" CssClass="form-control" TextMode="Number" step="any" placeholder="Ej: 1.795"></asp:TextBox>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 form-group">
-                                <label class="form-label">Monto Total <span class="sync-indicator">🔗</span></label>
+                                <label class="form-label">Monto total <span class="sync-indicator">🔗</span></label>
                                 <asp:TextBox ID="txtMontoTotal" runat="server" CssClass="form-control synchronized-field" TextMode="Number" step="any"></asp:TextBox>
                             </div>
                             <div class="col-md-6 form-group">
@@ -216,11 +216,11 @@
                         </div>
                         <div class="row">
                             <div class="col-md-6 form-group">
-                                <label class="form-label">Consumo Computador:</label>
+                                <label class="form-label">Consumo computador:</label>
                                 <asp:TextBox ID="txtConsumoComputador" runat="server" CssClass="form-control" TextMode="Number" step="any" placeholder="Ej: 184.2"></asp:TextBox>
                             </div>
                             <div class="col-md-6 form-group">
-                                <label class="form-label">Hora Retorno:</label>
+                                <label class="form-label">Hora retorno:</label>
                                 <asp:TextBox ID="txtHoraRetorno" runat="server" CssClass="form-control" TextMode="Time"></asp:TextBox>
                             </div>
                         </div>
@@ -245,7 +245,7 @@
                     <div class="col-md-6">
                         <div class="tickets-section">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <strong style="font-size:0.9rem; color: var(--primary-color);"><i class="fas fa-receipt mr-1"></i>Tickets de Combustible</strong>
+                                <strong style="font-size:0.9rem; color: var(--primary-color);"><i class="fas fa-receipt mr-1"></i>Tickets de combustible</strong>
                                 <button type="button" class="btn-add-ticket" onclick="agregarTicket()">
                                     <i class="fas fa-plus"></i> Agregar
                                 </button>
@@ -267,7 +267,7 @@
                                     <span id="totalTickets">0</span>
                                 </div>
                                 <div class="total-row">
-                                    <span>Costo Total:</span>
+                                    <span>Costo total:</span>
                                     <span id="costoTotalTickets">$ 0.00</span>
                                 </div>
                                 <div class="total-row">
@@ -290,7 +290,7 @@
         <div class="text-end mt-3">
             <asp:Button ID="btnImprimir" runat="server" CssClass="btn btn-outline-secondary mr-2" Text="Imprimir" OnClientClick="window.print(); return false;" />
             <asp:Button ID="btnLimpiar" runat="server" CssClass="btn btn-secondary mr-2" Text="Limpiar" OnClientClick="limpiarFormulario(); return false;" />
-            <asp:Button ID="btnGuardar" runat="server" CssClass="btn btn-primary" Text="Guardar Abastecimiento" OnClick="btnGuardar_Click" UseSubmitBehavior="true" />
+            <asp:Button ID="btnGuardar" runat="server" CssClass="btn btn-primary" Text="Guardar abastecimiento" OnClick="btnGuardar_Click" UseSubmitBehavior="true" />
         </div>
 
         <asp:HiddenField ID="hdnTicketsData" runat="server" />

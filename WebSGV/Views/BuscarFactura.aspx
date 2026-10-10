@@ -2,7 +2,7 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <div class="main-container buscar-factura-container">
         <div class="form-container">
-            <h1 class="header">Búsqueda de Factura</h1>
+            <h1 class="header">Búsqueda de factura</h1>
 
             <!-- Sección de Búsqueda -->
             <div class="row search-section">
@@ -19,7 +19,7 @@
             <!-- NUEVA SECCIÓN: Tabla de Todas las Facturas -->
             <div class="panel panel-info facturas-panel">
                 <div class="panel-heading">
-                    <h2><i class="fa fa-list"></i> Lista de Facturas Registradas</h2>
+                    <h2><i class="fa fa-list"></i> Lista de facturas registradas</h2>
                     <div class="panel-actions">
                         <asp:Button ID="btnRefrescarLista" runat="server" CssClass="btn btn-sm btn-light" 
                             Text="🔄 Refrescar" OnClick="RefrescarListaFacturas" ToolTip="Actualizar lista de facturas" />
@@ -44,7 +44,7 @@
                                             </div>
                                         </ItemTemplate>
                                     </asp:TemplateField>
-                                    <asp:TemplateField HeaderText="Fecha Emisión">
+                                    <asp:TemplateField HeaderText="Fecha emisión">
                                         <ItemTemplate>
                                             <span><%# Convert.ToDateTime(Eval("fechaEmision")).ToString("dd/MM/yyyy") %></span>
                                         </ItemTemplate>
@@ -55,7 +55,7 @@
                                                 "<em class='text-muted'>Sin pedido</em>" : Eval("numeroPedido").ToString() %></span>
                                         </ItemTemplate>
                                     </asp:TemplateField>
-                                    <asp:TemplateField HeaderText="Importe Total">
+                                    <asp:TemplateField HeaderText="Importe total">
                                         <ItemTemplate>
                                             <span class="importe-total">S/ <%# Convert.ToDecimal(Eval("valorTotal")).ToString("N2") %></span>
                                         </ItemTemplate>
@@ -107,7 +107,7 @@
                 <!-- Información Principal de la Factura -->
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h2><i class="fa fa-file-text-o"></i> Información de la Factura</h2>
+                        <h2><i class="fa fa-file-text-o"></i> Información de la factura</h2>
                     </div>
                     <div class="panel-body">
                         <!-- NUEVA FILA: Cliente -->
@@ -142,11 +142,11 @@
                         <!-- SEGUNDA FILA: Fecha de Emisión y Valor Total -->
                         <div class="row">
                             <div class="col-md-6 form-group">
-                                <label for="txtFechaEmision">Fecha de Emisión:</label>
+                                <label for="txtFechaEmision">Fecha de emisión:</label>
                                 <asp:TextBox ID="txtFechaEmision" runat="server" CssClass="form-control" TextMode="Date" ReadOnly="true"></asp:TextBox>
                             </div>
                             <div class="col-md-6 form-group">
-                                <label for="txtValorTotal">Valor Total:</label>
+                                <label for="txtValorTotal">Valor total:</label>
                                 <asp:TextBox ID="txtValorTotal" runat="server" CssClass="form-control valor-total-input" ReadOnly="true"></asp:TextBox>
                             </div>
                         </div>
@@ -156,13 +156,13 @@
                 <!-- NUEVA SECCIÓN: Upload de Documento -->
                 <div class="panel panel-success upload-panel">
                     <div class="panel-heading">
-                        <h2><i class="fa fa-upload"></i> Agregar Nuevo Documento</h2>
+                        <h2><i class="fa fa-upload"></i> Agregar nuevo documento</h2>
                     </div>
                     <div class="panel-body">
                         <div class="upload-container">
                             <div class="row">
                                 <div class="col-md-8 form-group">
-                                    <label for="fileUploadFactura">Adjuntar Documento (PDF recomendado):</label>
+                                    <label for="fileUploadFactura">Adjuntar documento (PDF recomendado):</label>
                                     <asp:FileUpload ID="fileUploadFactura" runat="server" CssClass="form-control file-input" 
                                         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" Enabled="false" />
                                     <small class="text-muted">
@@ -197,7 +197,7 @@
                 <!-- SECCIÓN: Documentos Asociados -->
                 <div class="panel panel-default documentos-panel">
                     <div class="panel-heading">
-                        <h2><i class="fa fa-file-pdf-o"></i> Documentos Asociados</h2>
+                        <h2><i class="fa fa-file-pdf-o"></i> Documentos asociados</h2>
                     </div>
                     <div class="panel-body">
                         <asp:Panel ID="pnlDocumentos" runat="server">
@@ -219,7 +219,7 @@
                                                 <span class="tamano-archivo"><%# FormatearTamano(Convert.ToInt64(Eval("tamanoBytes"))) %></span>
                                             </ItemTemplate>
                                         </asp:TemplateField>
-                                        <asp:TemplateField HeaderText="Fecha Subida">
+                                        <asp:TemplateField HeaderText="Fecha subida">
                                             <ItemTemplate>
                                                 <span><%# Convert.ToDateTime(Eval("fechaSubida")).ToString("dd/MM/yyyy HH:mm") %></span>
                                             </ItemTemplate>

@@ -1,0 +1,263 @@
+/* Estilo base del SGV: formal, con color moderado.
+   Clases opcionales con prefijo sgv-: una página solo cambia si las usa.
+   Tintes suaves para estados y acciones; sin degradados, sombras grandes ni animaciones. */
+
+:root {
+    --sgv-texto: #1f2937;
+    --sgv-texto-suave: #6b7280;
+    --sgv-borde: #e5e7eb;
+    --sgv-borde-fuerte: #d1d5db;
+    --sgv-fondo: #f9fafb;
+    --sgv-primario: #1d4ed8;
+    --sgv-ok: #15803d;
+    --sgv-alerta: #b45309;
+    --sgv-peligro: #b91c1c;
+    --sgv-radio: 6px;
+}
+
+/* === Encabezado de página === */
+.sgv-encabezado {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-bottom: 0.875rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--sgv-borde);
+}
+
+.sgv-encabezado h2 {
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--sgv-texto);
+    margin: 0;
+}
+
+.sgv-encabezado p {
+    font-size: 0.875rem;
+    color: var(--sgv-texto-suave);
+    margin: 0.125rem 0 0;
+}
+
+/* === Paneles === */
+.sgv-panel {
+    background: #fff;
+    border: 1px solid var(--sgv-borde);
+    border-radius: var(--sgv-radio);
+}
+
+.sgv-panel-cab {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 1rem;
+    background: var(--sgv-fondo);
+    border-bottom: 1px solid var(--sgv-borde);
+    border-radius: var(--sgv-radio) var(--sgv-radio) 0 0;
+}
+
+.sgv-panel-cab h5,
+.sgv-panel-cab .sgv-panel-titulo {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--sgv-texto);
+    margin: 0;
+}
+
+.sgv-panel-cuerpo {
+    padding: 1rem;
+}
+
+.sgv-panel-nota {
+    font-size: 0.8125rem;
+    color: var(--sgv-texto-suave);
+    font-weight: 400;
+}
+
+/* === Pestañas con contador === */
+.sgv-tabs {
+    display: flex;
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--sgv-borde);
+    margin-bottom: 1rem;
+}
+
+.sgv-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    padding: 0.5rem 0.125rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--sgv-texto-suave);
+    cursor: pointer;
+}
+
+.sgv-tab:hover { color: var(--sgv-texto); }
+.sgv-tab:focus { outline: none; }
+.sgv-tab:focus-visible { outline: 2px solid var(--sgv-primario); outline-offset: 2px; }
+
+.sgv-tab.activo {
+    color: var(--sgv-primario);
+    border-bottom-color: var(--sgv-primario);
+}
+
+.sgv-tab-contador {
+    display: inline-block;
+    min-width: 1.5rem;
+    padding: 0 0.45rem;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: var(--sgv-texto-suave);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.25rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.sgv-tab.activo .sgv-tab-contador {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.sgv-tab-alerta {
+    display: inline-block;
+    padding: 0 0.5rem;
+    border-radius: 999px;
+    background: #fee2e2;
+    color: #991b1b;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.25rem;
+}
+
+.sgv-tab-alerta:empty { display: none; }
+
+/* === Estados: píldora con tinte suave, sin borde ni animación === */
+.sgv-estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: #374151;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.sgv-estado::before {
+    content: "";
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.8;
+    flex-shrink: 0;
+}
+
+.sgv-estado-ok { background: #dcfce7; color: #166534; }
+.sgv-estado-alerta { background: #fef3c7; color: #92400e; }
+.sgv-estado-peligro { background: #fee2e2; color: #991b1b; }
+.sgv-estado-info { background: #dbeafe; color: #1e40af; }
+
+/* === Tablas ===
+   App.css pinta todas las cabeceras de azul con !important; aquí se anula solo dentro de .sgv-tabla.
+   Se usa "th" sin thead porque el GridView pone la fila de cabecera dentro de tbody. */
+.sgv-tabla { font-size: 0.875rem; color: var(--sgv-texto); }
+
+.table.sgv-tabla th {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    font-size: 0.8125rem !important;
+    font-weight: 600 !important;
+    border: none !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+    padding: 0.625rem 0.75rem !important;
+    text-align: left !important;
+    white-space: nowrap;
+}
+
+.table.sgv-tabla th.text-right,
+.table.sgv-tabla th.sgv-num { text-align: right !important; }
+.table.sgv-tabla th.text-center { text-align: center !important; }
+
+.table.sgv-tabla tbody tr,
+.table.sgv-tabla tbody tr:nth-child(odd),
+.table.sgv-tabla tbody tr:nth-child(even) { background: #fff !important; }
+
+.table.sgv-tabla tbody tr:hover { background: #f8fafc !important; }
+
+.table.sgv-tabla tbody td {
+    border: none !important;
+    border-bottom: 1px solid var(--sgv-borde) !important;
+    padding: 0.5rem 0.75rem !important;
+    vertical-align: middle;
+}
+
+.sgv-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.sgv-positivo { color: var(--sgv-ok); }
+.sgv-negativo { color: var(--sgv-peligro); }
+.sgv-suave { color: var(--sgv-texto-suave); font-size: 0.8125rem; }
+
+.sgv-vacio {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--sgv-texto-suave);
+    font-size: 0.875rem;
+}
+
+/* === Botones de acción con ícono: el ícono lleva el color de la acción === */
+.sgv-btn-icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    background: #fff;
+    border: 1px solid var(--sgv-borde-fuerte);
+    border-radius: var(--sgv-radio);
+    color: #475569;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: color .15s, border-color .15s, background-color .15s;
+}
+
+.sgv-btn-icono:hover { border-color: #94a3b8; background: #f8fafc; text-decoration: none; color: #1f2937; }
+
+.sgv-btn-icono.info { color: var(--sgv-primario); }
+.sgv-btn-icono.info:hover { background: #eff6ff; border-color: #93c5fd; color: var(--sgv-primario); }
+.sgv-btn-icono.alerta { color: var(--sgv-alerta); }
+.sgv-btn-icono.alerta:hover { background: #fffbeb; border-color: #fcd34d; color: var(--sgv-alerta); }
+.sgv-btn-icono.ok { color: var(--sgv-ok); }
+.sgv-btn-icono.ok:hover { background: #f0fdf4; border-color: #86efac; color: var(--sgv-ok); }
+.sgv-btn-icono.peligro { color: var(--sgv-peligro); }
+.sgv-btn-icono.peligro:hover { background: #fef2f2; border-color: #fca5a5; color: var(--sgv-peligro); }
+
+.sgv-acciones {
+    display: inline-flex;
+    gap: 0.375rem;
+}
+
+/* Panel con línea de color arriba, para la tabla principal de una página. */
+.sgv-panel-acento { border-top: 3px solid var(--sgv-primario); }
+.sgv-panel-acento .sgv-panel-cab { border-radius: 0; }
+
+/* === Cabeceras de modal con intención (App.css pone la cabecera clara con línea azul) === */
+.modal-header.sgv-modal-peligro { background-color: #fef2f2 !important; border-top-color: var(--sgv-peligro) !important; }
+.modal-header.sgv-modal-alerta { background-color: #fffbeb !important; border-top-color: var(--sgv-alerta) !important; }
+.modal-header.sgv-modal-ok { background-color: #f0fdf4 !important; border-top-color: var(--sgv-ok) !important; }

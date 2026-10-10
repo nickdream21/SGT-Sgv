@@ -66,21 +66,21 @@
                             </p>
                         </div>
                         <div class="col-6 col-md-2">
-                            <label class="form-label-summary">Fecha Salida</label>
+                            <label class="form-label-summary">Fecha salida</label>
                             <p class="form-value-summary"><asp:Label ID="lblFechaSalidaDetalle" runat="server"></asp:Label></p>
                         </div>
                         <div class="col-6 col-md-2">
-                            <label class="form-label-summary">Fecha Llegada</label>
+                            <label class="form-label-summary">Fecha llegada</label>
                             <p class="form-value-summary"><asp:Label ID="lblFechaLlegadaDetalle" runat="server"></asp:Label></p>
                         </div>
                     </div>
                     <div class="row mt-3">
                         <div class="col-6 col-md-3">
-                            <label class="form-label-summary">Hora Salida</label>
+                            <label class="form-label-summary">Hora salida</label>
                             <p class="form-value-summary"><asp:Label ID="lblHoraSalidaDetalle" runat="server" Text="-"></asp:Label></p>
                         </div>
                         <div class="col-6 col-md-3">
-                            <label class="form-label-summary">Hora Llegada</label>
+                            <label class="form-label-summary">Hora llegada</label>
                             <p class="form-value-summary"><asp:Label ID="lblHoraLlegadaDetalle" runat="server" Text="-"></asp:Label></p>
                         </div>
                         <div class="col-6 col-md-3">
@@ -133,7 +133,7 @@
                             </tbody>
                             <tfoot>
                                 <tr class="total-row">
-                                    <td colspan="3" class="text-right"><strong>Total Ingresos:</strong></td>
+                                    <td colspan="3" class="text-right"><strong>Total ingresos:</strong></td>
                                     <td class="text-right"><strong>S/ <asp:Label ID="lblTotalIngresosSoles" runat="server" Text="0.00"></asp:Label></strong></td>
                                     <td class="text-right"><strong>$ <asp:Label ID="lblTotalIngresosDolares" runat="server" Text="0.00"></asp:Label></strong></td>
                                 </tr>
@@ -177,7 +177,7 @@
                             </tbody>
                             <tfoot>
                                 <tr class="total-row">
-                                    <td colspan="3" class="text-right"><strong>Total Gastos:</strong></td>
+                                    <td colspan="3" class="text-right"><strong>Total gastos:</strong></td>
                                     <td class="text-right"><strong>S/ <asp:Label ID="lblTotalGastosSoles" runat="server" Text="0.00"></asp:Label></strong></td>
                                     <td class="text-right"><strong>$ <asp:Label ID="lblTotalGastosDolares" runat="server" Text="0.00"></asp:Label></strong></td>
                                 </tr>
@@ -191,7 +191,7 @@
             <asp:Panel ID="pnlDetallePeajes" runat="server" Visible="false">
                 <div class="section-card mb-4">
                     <div class="section-header">
-                        <h5 class="section-title"><i class="fas fa-road mr-2"></i>Detalle de Peajes</h5>
+                        <h5 class="section-title"><i class="fas fa-road mr-2"></i>Detalle de peajes</h5>
                     </div>
                     <div class="section-body p-0">
                         <div class="table-responsive">
@@ -217,7 +217,7 @@
             <asp:Panel ID="pnlDetalleReparaciones" runat="server" Visible="false">
                 <div class="section-card mb-4">
                     <div class="section-header">
-                        <h5 class="section-title"><i class="fas fa-wrench mr-2"></i>Detalle de Reparaciones</h5>
+                        <h5 class="section-title"><i class="fas fa-wrench mr-2"></i>Detalle de reparaciones</h5>
                     </div>
                     <div class="section-body p-0">
                         <div class="table-responsive">
@@ -243,7 +243,7 @@
             <asp:Panel ID="pnlDetalleHospedaje" runat="server" Visible="false">
                 <div class="section-card mb-4">
                     <div class="section-header">
-                        <h5 class="section-title"><i class="fas fa-bed mr-2"></i>Detalle de Hospedaje</h5>
+                        <h5 class="section-title"><i class="fas fa-bed mr-2"></i>Detalle de hospedaje</h5>
                     </div>
                     <div class="section-body p-0">
                         <div class="table-responsive">
@@ -269,7 +269,7 @@
             <asp:Panel ID="pnlDetalleCombustible" runat="server" Visible="false">
                 <div class="section-card mb-4">
                     <div class="section-header">
-                        <h5 class="section-title"><i class="fas fa-gas-pump mr-2"></i>Detalle de Combustible</h5>
+                        <h5 class="section-title"><i class="fas fa-gas-pump mr-2"></i>Detalle de combustible</h5>
                     </div>
                     <div class="section-body p-0">
                         <div class="table-responsive">
@@ -303,7 +303,7 @@
                         <div class="row">
                             <div class="col-12 col-md-6 mb-3 mb-md-0">
                                 <div class="balance-item">
-                                    <span class="balance-label">Balance en Soles:</span>
+                                    <span class="balance-label">Balance en soles:</span>
                                     <span class="balance-amount" id="spanBalanceSoles">
                                         <asp:Label ID="lblBalanceSoles" runat="server"></asp:Label>
                                     </span>
@@ -311,7 +311,7 @@
                             </div>
                             <div class="col-12 col-md-6">
                                 <div class="balance-item">
-                                    <span class="balance-label">Balance en Dólares:</span>
+                                    <span class="balance-label">Balance en dólares:</span>
                                     <span class="balance-amount" id="spanBalanceDolares">
                                         <asp:Label ID="lblBalanceDolares" runat="server"></asp:Label>
                                     </span>

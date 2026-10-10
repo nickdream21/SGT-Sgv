@@ -4,7 +4,7 @@
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/AgregarIndicadores.css") %>" rel="stylesheet" />
 
     <div class="container">
-        <h2 class="mt-4 mb-4">Registro de Indicadores de Operación</h2>
+        <h2 class="mt-4 mb-4">Registro de indicadores de operación</h2>
         
         <!-- Mensaje de alerta -->
         <asp:Panel ID="alertPanel" runat="server" CssClass="alert alert-info" Visible="false">
@@ -19,13 +19,13 @@
         <div class="row">
             <div class="col-md-4">
                 <div class="form-group">
-                    <label for="txtNumeroPedido" class="form-label">Número de Pedido:</label>
+                    <label for="txtNumeroPedido" class="form-label">Número de pedido:</label>
                     <asp:TextBox ID="txtNumeroPedido" runat="server" CssClass="form-control" placeholder="Ej: 4400089246" required="required"></asp:TextBox>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="form-group">
-                    <label for="txtConductorOrigen" class="form-label">Conductor Origen:</label>
+                    <label for="txtConductorOrigen" class="form-label">Conductor origen:</label>
                     <asp:TextBox ID="txtConductorOrigen" runat="server" CssClass="form-control" placeholder="Ingrese el nombre del conductor"></asp:TextBox>
                 </div>
             </div>
@@ -46,7 +46,7 @@
             </div>
             <div class="col-md-4">
                 <div class="form-group">
-                    <label for="txtConductorDestino" class="form-label">Conductor Destino:</label>
+                    <label for="txtConductorDestino" class="form-label">Conductor destino:</label>
                     <asp:TextBox ID="txtConductorDestino" runat="server" CssClass="form-control" placeholder="Ingrese el nombre del conductor"></asp:TextBox>
                 </div>
             </div>
@@ -258,7 +258,7 @@
             </div>
             <div class="col-md-6">
                 <div class="form-group">
-                    <label for="txtBodegaEcuatoriana" class="form-label">Bodega Ecuatoriana:</label>
+                    <label for="txtBodegaEcuatoriana" class="form-label">Bodega ecuatoriana:</label>
                     <asp:TextBox ID="txtBodegaEcuatoriana" runat="server" CssClass="form-control" placeholder="Ingrese la bodega ecuatoriana"></asp:TextBox>
                 </div>
             </div>
@@ -293,7 +293,7 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="form-group">
-                    <label for="txtBodegaDescarga" class="form-label">Bodega Descarga:</label>
+                    <label for="txtBodegaDescarga" class="form-label">Bodega descarga:</label>
                     <asp:TextBox ID="txtBodegaDescarga" runat="server" CssClass="form-control" placeholder="Ingrese la bodega de descarga"></asp:TextBox>
                 </div>
             </div>
@@ -364,8 +364,8 @@
 
         <!-- Botones de acción -->
         <div class="form-group mt-4 text-center">
-            <asp:Button ID="btnLimpiar" runat="server" Text="Limpiar Formulario" CssClass="btn btn-secondary mr-2" OnClick="btnLimpiar_Click" />
-            <asp:Button ID="btnGuardar" runat="server" Text="Guardar Indicador" CssClass="btn btn-primary" OnClick="btnGuardar_Click" />
+            <asp:Button ID="btnLimpiar" runat="server" Text="Limpiar formulario" CssClass="btn btn-secondary mr-2" OnClick="btnLimpiar_Click" />
+            <asp:Button ID="btnGuardar" runat="server" Text="Guardar indicador" CssClass="btn btn-primary" OnClick="btnGuardar_Click" />
         </div>
     </div>
 </asp:Content>

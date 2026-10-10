@@ -26,7 +26,7 @@
     padding: 12px;
     margin-bottom: 16px;
 }
-.re-banner .label { font-size:.7rem; color:#888; text-transform: uppercase; }
+.re-banner .label { font-size:.7rem; color:#888; }
 .re-banner .val { font-weight: 600; color: #333; }
 
 .tickets-head, .ticket-row {
@@ -36,7 +36,7 @@
     align-items: center;
 }
 .tickets-head {
-    font-size:.75rem; text-transform: uppercase; color:#666;
+    font-size:.75rem; color:#666;
     padding: 6px 8px; background:#f5f5f5; border-radius:6px; margin-bottom:6px;
 }
 .ticket-row { padding: 4px 0; }

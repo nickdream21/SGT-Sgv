@@ -47,7 +47,7 @@
                                 <i class="fas fa-info-circle mr-1"></i>El nombre se guardar&#xE1; en may&#xFA;sculas.
                             </small>
                         </div>
-                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar Peaje" ValidationGroup="vgRegistroPeaje"
+                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar peaje" ValidationGroup="vgRegistroPeaje"
                             CssClass="btn btn-primary btn-block" OnClick="btnRegistrar_Click" />
                     </div>
                 </div>
@@ -61,7 +61,7 @@
             <div class="col-12 col-md-8 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Estaciones Registradas</h5>
+                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Estaciones registradas</h5>
                         <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
                             style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_peajes"
                             oninput="filtrarTabla(this.value,'contenedorPeajes')">
@@ -131,7 +131,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                     <asp:Button ID="btnActualizarPeaje" runat="server" CssClass="btn btn-info"
-                        Text="Guardar Cambios" OnClick="btnActualizarPeaje_Click" />
+                        Text="Guardar cambios" OnClick="btnActualizarPeaje_Click" />
                 </div>
             </div>
         </div>

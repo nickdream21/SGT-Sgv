@@ -10,8 +10,8 @@
                 <div class="card main-card">
                     <div class="ld-page-header">
                         <h4>
-                            <i class="fas fa-tasks mr-2"></i> Gestión de Viajes y Lotes
-                            <asp:Label ID="lblContadorGeneral" runat="server" CssClass="badge ml-3" style="background:#334155;font-size:.68rem;font-weight:600;"></asp:Label>
+                            Gestión de viajes y lotes
+                            <asp:Label ID="lblContadorGeneral" runat="server" CssClass="badge ml-2" style="background:#e2e8f0;color:#334155;font-size:.75rem;font-weight:600;"></asp:Label>
                         </h4>
                     </div>
                     <div class="card-body">
@@ -36,7 +36,7 @@
                                         <span class="ld-stat-icon ld-stat-icon-blue"><i class="fas fa-route"></i></span>
                                         <span class="ld-stat-text">
                                             <span class="ld-stat-value"><asp:Label ID="lblStatViajesActivos" runat="server">0</asp:Label></span>
-                                            <span class="ld-stat-label">Viajes Activos</span>
+                                            <span class="ld-stat-label">Viajes activos</span>
                                         </span>
                                     </asp:LinkButton>
 
@@ -44,7 +44,7 @@
                                         <span class="ld-stat-icon ld-stat-icon-green"><i class="fas fa-layer-group"></i></span>
                                         <span class="ld-stat-text">
                                             <span class="ld-stat-value"><asp:Label ID="lblStatLotesActivos" runat="server">0</asp:Label></span>
-                                            <span class="ld-stat-label">Lotes Activos</span>
+                                            <span class="ld-stat-label">Lotes activos</span>
                                         </span>
                                     </asp:LinkButton>
 
@@ -52,7 +52,7 @@
                                         <span class="ld-stat-icon ld-stat-icon-amber"><i class="fas fa-passport"></i></span>
                                         <span class="ld-stat-text">
                                             <span class="ld-stat-value"><asp:Label ID="lblStatManifiestosPendientes" runat="server">0</asp:Label></span>
-                                            <span class="ld-stat-label">Manifiestos Pendientes</span>
+                                            <span class="ld-stat-label">Manifiestos pendientes</span>
                                         </span>
                                     </asp:LinkButton>
                                 </div>
@@ -61,12 +61,12 @@
                                 <div class="ld-toolbar mb-4">
                                     <div class="ld-toolbar-nav">
                                         <asp:Button ID="btnMostrarViajes" runat="server" 
-                                            Text="Viajes Activos" 
+                                            Text="Viajes activos" 
                                             CssClass="btn btn-outline-secondary btn-nav"
                                             OnClick="btnMostrarViajes_Click"
                                             CausesValidation="false" />
                                         <asp:Button ID="btnMostrarLotes" runat="server" 
-                                            Text="Lotes Registrados" 
+                                            Text="Lotes registrados" 
                                             CssClass="btn btn-outline-secondary btn-nav"
                                             OnClick="btnMostrarLotes_Click"
                                             CausesValidation="false" />
@@ -164,7 +164,7 @@
                                                         
                                                         <asp:BoundField DataField="NombreConductor" HeaderText="Conductor" />
                                                         
-                                                        <asp:BoundField DataField="FechaInicio" HeaderText="Fecha Inicio" 
+                                                        <asp:BoundField DataField="FechaInicio" HeaderText="Fecha inicio" 
                                                             DataFormatString="{0:dd/MM/yyyy HH:mm}" />
                                                         
                                                         <asp:BoundField DataField="CantidadDespachos" HeaderText="Despachos" 
@@ -179,7 +179,7 @@
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
                                                         
-                                                        <asp:BoundField DataField="FechaUltimaActividad" HeaderText="Última Actividad" 
+                                                        <asp:BoundField DataField="FechaUltimaActividad" HeaderText="Última actividad" 
                                                             DataFormatString="{0:dd/MM/yyyy HH:mm}" />
                                                         
                                                         <asp:TemplateField HeaderText="Estado">
@@ -263,7 +263,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-exchange-alt"></i>Tipo Operación</label>
+                                                            <label class="form-label"><i class="fas fa-exchange-alt"></i>Tipo operación</label>
                                                             <asp:DropDownList ID="ddlFiltroOperacionLotes" runat="server" 
                                                                 CssClass="form-select"
                                                                 AutoPostBack="true"
@@ -341,7 +341,7 @@
                                                         <div class="form-group w-100">
                                                             <div class="filter-buttons">
                                                                 <asp:Button ID="btnBuscarDocumento" runat="server"
-                                                                    Text="Buscar Documento"
+                                                                    Text="Buscar documento"
                                                                     CssClass="btn btn-primary btn-action flex-fill"
                                                                     OnClick="btnBuscarDocumento_Click"
                                                                     CausesValidation="false" />
@@ -354,7 +354,7 @@
                                                 <div class="row ld-filter-row-dates">
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-calendar-alt"></i>Fecha Desde</label>
+                                                            <label class="form-label"><i class="fas fa-calendar-alt"></i>Fecha desde</label>
                                                             <asp:TextBox ID="txtFechaDesde" runat="server"
                                                                 CssClass="form-control"
                                                                 TextMode="Date">
@@ -363,7 +363,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-calendar-alt"></i>Fecha Hasta</label>
+                                                            <label class="form-label"><i class="fas fa-calendar-alt"></i>Fecha hasta</label>
                                                             <asp:TextBox ID="txtFechaHasta" runat="server"
                                                                 CssClass="form-control"
                                                                 TextMode="Date">
@@ -372,7 +372,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-flag"></i>Estado del Lote</label>
+                                                            <label class="form-label"><i class="fas fa-flag"></i>Estado del lote</label>
                                                             <asp:DropDownList ID="ddlFiltroEstadoLotes" runat="server"
                                                                 CssClass="form-select"
                                                                 AutoPostBack="true"
@@ -410,7 +410,7 @@
                                                     EmptyDataText="No se encontraron lotes registrados"
                                                     OnRowCommand="gvLotesRegistrados_RowCommand">
                                                     <Columns>
-                                                        <asp:BoundField DataField="FechaProgramacion" HeaderText="Fecha Prog." 
+                                                        <asp:BoundField DataField="FechaProgramacion" HeaderText="Fecha prog." 
                                                             DataFormatString="{0:dd/MM/yyyy}" />
                                                         
                                                         <asp:BoundField DataField="NombreCliente" HeaderText="Cliente" />
@@ -513,14 +513,14 @@
                                                 <div class="col-md-4">
                                                     <div class="section-actions">
                                                         <asp:Button ID="btnFinalizarViajeDetalle" runat="server" 
-                                                            Text="Finalizar Viaje" 
+                                                            Text="Finalizar viaje" 
                                                             CssClass="btn btn-outline-danger btn-action"
                                                             OnClick="btnFinalizarViajeDetalle_Click"
                                                             OnClientClick="return confirm('¿Finalizar este viaje?');"
                                                             CausesValidation="false" />
                                                         
                                                         <asp:Button ID="btnVolverViajes" runat="server" 
-                                                            Text="Volver a Viajes" 
+                                                            Text="Volver a viajes" 
                                                             CssClass="btn btn-secondary btn-action"
                                                             OnClick="btnVolverViajes_Click"
                                                             CausesValidation="false" />
@@ -538,7 +538,7 @@
                                                             <div class="summary-value">
                                                                 <asp:Label ID="lblTotalDespachos" runat="server" Text="0"></asp:Label>
                                                             </div>
-                                                            <div class="summary-label">Total Despachos</div>
+                                                            <div class="summary-label">Total despachos</div>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -546,7 +546,7 @@
                                                             <div class="summary-value">
                                                                 <asp:Label ID="lblTipoViajeDetalle" runat="server"></asp:Label>
                                                             </div>
-                                                            <div class="summary-label">Tipo de Viaje</div>
+                                                            <div class="summary-label">Tipo de viaje</div>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -562,7 +562,7 @@
                                                             <div class="summary-value">
                                                                 <asp:Label ID="lblUltimaActividadDetalle" runat="server"></asp:Label>
                                                             </div>
-                                                            <div class="summary-label">Última Actividad</div>
+                                                            <div class="summary-label">Última actividad</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -605,9 +605,9 @@
                                                                 </ItemTemplate>
                                                             </asp:TemplateField>
                                                             
-                                                            <asp:BoundField DataField="GuiaRemitente" HeaderText="Guía Remitente" />
+                                                            <asp:BoundField DataField="GuiaRemitente" HeaderText="Guía remitente" />
                                                             
-                                                            <asp:BoundField DataField="GuiaTransportista" HeaderText="Guía Transportista" />
+                                                            <asp:BoundField DataField="GuiaTransportista" HeaderText="Guía transportista" />
                                                         </Columns>
                                                         <EmptyDataTemplate>
                                                             <div class="empty-data">
@@ -645,7 +645,7 @@
                                                             CausesValidation="false" />
                                                         
                                                         <asp:Button ID="btnVolverLotes" runat="server" 
-                                                            Text="Volver a Lotes" 
+                                                            Text="Volver a lotes" 
                                                             CssClass="btn btn-outline-secondary btn-action"
                                                             OnClick="btnVolverLotes_Click"
                                                             CausesValidation="false" />
@@ -668,7 +668,7 @@
                                                 <div class="row mb-3">
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label required">Fecha de Programación:</label>
+                                                            <label class="form-label required">Fecha de programación:</label>
                                                             <asp:TextBox ID="txtFechaProgramacionEdit" runat="server" 
                                                                 CssClass="form-control" 
                                                                 TextMode="Date">
@@ -705,7 +705,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label required">Planta de Operación:</label>
+                                                            <label class="form-label required">Planta de operación:</label>
                                                             <%-- Opciones cargadas desde el catálogo Planta en CargarPlantasFiltro(). --%>
                                                             <asp:DropDownList ID="ddlPlantaEdit" runat="server" CssClass="form-select">
                                                             </asp:DropDownList>
@@ -725,7 +725,7 @@
                                                 <div class="row mb-3">
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label required">Tipo de Operación:</label>
+                                                            <label class="form-label required">Tipo de operación:</label>
                                                             <asp:DropDownList ID="ddlTipoOperacionEdit" runat="server" CssClass="form-select"
                                                                 AutoPostBack="true" OnSelectedIndexChanged="ddlTipoOperacionEdit_SelectedIndexChanged">
                                                                 <asp:ListItem Value="" Text="-- Seleccione --"></asp:ListItem>
@@ -761,14 +761,14 @@
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <label class="form-label">Fecha Emisión:</label>
+                                                                    <label class="form-label">Fecha emisión:</label>
                                                                     <asp:TextBox ID="txtFechaEmisionFacturaEdit" runat="server" 
                                                                         CssClass="form-control" 
                                                                         TextMode="Date">
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <label class="form-label">Valor Total:</label>
+                                                                    <label class="form-label">Valor total:</label>
                                                                     <asp:TextBox ID="txtValorTotalFacturaEdit" runat="server" 
                                                                         CssClass="form-control" 
                                                                         placeholder="0.00"
@@ -795,14 +795,14 @@
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <label class="form-label">Fecha Emisión CPIC:</label>
+                                                                    <label class="form-label">Fecha emisión CPIC:</label>
                                                                     <asp:TextBox ID="txtFechaEmisionCPICEdit" runat="server" 
                                                                         CssClass="form-control" 
                                                                         TextMode="Date">
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <label class="form-label">Valor Flete:</label>
+                                                                    <label class="form-label">Valor flete:</label>
                                                                     <asp:TextBox ID="txtValorFleteEdit" runat="server" 
                                                                         CssClass="form-control" 
                                                                         placeholder="0.00"
@@ -822,7 +822,7 @@
                                                             <h6 class="form-section-title">
                                                                 <i class="fas fa-users"></i> Conductores por Despacho
                                                             </h6>
-                                                            <p class="form-text mb-2">Puede cambiar el conductor de cada despacho individualmente. Los cambios se aplican al guardar.</p>
+                                                            <p class="form-text mb-2">Puede cambiar el conductor de cada despacho individualmente. los cambios se aplican al guardar.</p>
                                                             <div class="conductores-edit-container">
                                                                 <div class="tabla-scroll-wrapper">
                                                                     <asp:GridView ID="gvConductoresLote" runat="server" 
@@ -840,7 +840,7 @@
                                                                             <asp:BoundField DataField="FechaDespacho" HeaderText="Fecha" 
                                                                                 DataFormatString="{0:dd/MM/yyyy}" />
 
-                                                                            <asp:TemplateField HeaderText="Conductor Actual">
+                                                                            <asp:TemplateField HeaderText="Conductor actual">
                                                                                 <ItemTemplate>
                                                                                     <span class="conductor-badge-actual">
                                                                                         <%# Eval("NombreConductorActual") %>
@@ -848,7 +848,7 @@
                                                                                 </ItemTemplate>
                                                                             </asp:TemplateField>
 
-                                                                            <asp:TemplateField HeaderText="Cambiar Conductor">
+                                                                            <asp:TemplateField HeaderText="Cambiar conductor">
                                                                                 <ItemTemplate>
                                                                                     <asp:DropDownList ID="ddlConductorDespacho" runat="server" 
                                                                                         CssClass="form-select conductor-select">
@@ -868,13 +868,13 @@
                                                     <div class="row">
                                                         <div class="col-md-6 text-start">
                                                             <asp:Button ID="btnEliminarLote" runat="server" 
-                                                                Text="Eliminar Lote" 
+                                                                Text="Eliminar lote" 
                                                                 CssClass="btn btn-outline-danger"
                                                                 OnClick="btnEliminarLote_Click"
                                                                 CausesValidation="false"
                                                                 OnClientClick="return confirm('⚠️ ADVERTENCIA: Se eliminarán TODOS los despachos de este lote.\n\n¿Está COMPLETAMENTE seguro de eliminar este lote?');" />
                                                             <asp:Button ID="btnAnularLote" runat="server"
-                                                                Text="Anular Lote"
+                                                                Text="Anular lote"
                                                                 CssClass="btn btn-warning ml-2"
                                                                 OnClick="btnAnularLote_Click"
                                                                 CausesValidation="false"
@@ -882,7 +882,7 @@
                                                         </div>
                                                         <div class="col-md-6 text-end">
                                                             <asp:Button ID="btnGuardarCambios" runat="server" 
-                                                                Text="Guardar Cambios" 
+                                                                Text="Guardar cambios" 
                                                                 CssClass="btn btn-primary"
                                                                 OnClick="btnGuardarCambios_Click"
                                                                 ValidationGroup="EdicionLote"
@@ -918,13 +918,13 @@
                                                             CausesValidation="false" />
 
                                                         <asp:Button ID="btnEditarDesdeDetal" runat="server"
-                                                            Text="Editar Lote"
+                                                            Text="Editar lote"
                                                             CssClass="btn btn-outline-secondary btn-action"
                                                             OnClick="btnEditarDesdeDetal_Click"
                                                             CausesValidation="false" />
 
                                                         <asp:Button ID="btnVolverLotesDetalle" runat="server"
-                                                            Text="Volver a Lotes"
+                                                            Text="Volver a lotes"
                                                             CssClass="btn btn-secondary btn-action"
                                                             OnClick="btnVolverLotesDetalle_Click"
                                                             CausesValidation="false" />
@@ -942,7 +942,7 @@
                                                             <div class="summary-value">
                                                                 <asp:Label ID="lblTotalDespachosLote" runat="server" Text="0"></asp:Label>
                                                             </div>
-                                                            <div class="summary-label">Total Despachos</div>
+                                                            <div class="summary-label">Total despachos</div>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -966,7 +966,7 @@
                                                             <div class="summary-value">
                                                                 <asp:Label ID="lblFechaCreacionDetalle" runat="server"></asp:Label>
                                                             </div>
-                                                            <div class="summary-label">Fecha Creación</div>
+                                                            <div class="summary-label">Fecha creación</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1005,9 +1005,9 @@
                                                                 </ItemTemplate>
                                                             </asp:TemplateField>
                                                             
-                                                            <asp:BoundField DataField="GuiaRemitente" HeaderText="Guía Remitente" />
+                                                            <asp:BoundField DataField="GuiaRemitente" HeaderText="Guía remitente" />
                                                             
-                                                            <asp:BoundField DataField="GuiaTransportista" HeaderText="Guía Transportista" />
+                                                            <asp:BoundField DataField="GuiaTransportista" HeaderText="Guía transportista" />
 
                                                             <asp:BoundField DataField="NumeroViaje" HeaderText="N° Viaje" />
                                                         </Columns>
@@ -1041,7 +1041,7 @@
                                                 <div class="col-md-4">
                                                     <div class="section-actions">
                                                         <asp:Button ID="btnVolverManifiestos" runat="server"
-                                                            Text="Volver a Detalles"
+                                                            Text="Volver a detalles"
                                                             CssClass="btn btn-secondary btn-action"
                                                             OnClick="btnVolverManifiestos_Click"
                                                             CausesValidation="false" />
@@ -1057,7 +1057,7 @@
 
                                             <!-- Documentos base del lote (Factura/CPIC), si fueron adjuntados -->
                                             <div class="data-section mb-3">
-                                                <h6 class="data-section-title"><i class="fas fa-file-invoice"></i> Documentos Base</h6>
+                                                <h6 class="data-section-title"><i class="fas fa-file-invoice"></i> Documentos base</h6>
                                                 <div class="rd-notice" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:5px;padding:.7rem 1rem;">
                                                     <asp:Panel ID="pnlDocFacturaManifiesto" runat="server" Visible="false" CssClass="mb-1">
                                                         <i class="fas fa-receipt mr-1"></i> Factura:
@@ -1078,7 +1078,7 @@
 
                                             <asp:Panel ID="pnlSeccionManifiestoConductor" runat="server">
                                             <div class="data-section">
-                                                <h6 class="data-section-title"><i class="fas fa-users"></i> Manifiesto por Conductor</h6>
+                                                <h6 class="data-section-title"><i class="fas fa-users"></i> Manifiesto por conductor</h6>
                                                 <p class="text-muted small">Adjunte o reemplace el manifiesto de cruce/retorno de cada conductor a medida que avanza el viaje.</p>
 
                                                 <div class="data-grid-container">
@@ -1092,7 +1092,7 @@
                                                             <asp:BoundField DataField="NumeroDespacho" HeaderText="N° Despacho" />
                                                             <asp:BoundField DataField="NombreConductor" HeaderText="Conductor" />
 
-                                                            <asp:TemplateField HeaderText="Manifiesto de Cruce">
+                                                            <asp:TemplateField HeaderText="Manifiesto de cruce">
                                                                 <ItemTemplate>
                                                                     <asp:LinkButton runat="server" CommandName="VerManifiesto" CommandArgument='<%# Eval("CruceIdDocumento") %>'
                                                                         Visible='<%# Eval("CruceIdDocumento") != null %>' CausesValidation="false">
@@ -1104,7 +1104,7 @@
                                                                 </ItemTemplate>
                                                             </asp:TemplateField>
 
-                                                            <asp:TemplateField HeaderText="Manifiesto de Retorno">
+                                                            <asp:TemplateField HeaderText="Manifiesto de retorno">
                                                                 <ItemTemplate>
                                                                     <asp:LinkButton runat="server" CommandName="VerManifiesto" CommandArgument='<%# Eval("RetornoIdDocumento") %>'
                                                                         Visible='<%# Eval("RetornoIdDocumento") != null %>' CausesValidation="false">

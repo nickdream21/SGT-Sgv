@@ -11,7 +11,7 @@
 
         <!-- ========== HEADER ========== -->
         <div class="op-header">
-            <h2><i class="fas fa-hard-hat mr-2"></i>Parte Diario de Trabajo</h2>
+            <h2><i class="fas fa-hard-hat mr-2"></i>Parte diario de trabajo</h2>
             <p class="op-sub">
                 <strong><asp:Label ID="lblNombreOperador" runat="server"></asp:Label></strong>
                 &nbsp;|&nbsp; DNI: <asp:Label ID="lblDNIOperador" runat="server"></asp:Label>
@@ -31,7 +31,7 @@
                 </div>
                 <div class="asig-grid">
                     <div class="asig-item">
-                        <div class="asig-label">Placa Equipo</div>
+                        <div class="asig-label">Placa equipo</div>
                         <div class="asig-value"><asp:Label ID="lblPlacaEquipo" runat="server"></asp:Label></div>
                     </div>
                     <div class="asig-item">
@@ -87,7 +87,7 @@
                                 </div>
                                 <div class="hist-stat">
                                     <div class="stat-num"><asp:Label ID="lblTotalHorasSA" runat="server" Text="0"></asp:Label></div>
-                                    <div class="stat-label">Horas Trabajo</div>
+                                    <div class="stat-label">Horas trabajo</div>
                                 </div>
                             </div>
                             <asp:Repeater ID="rptHistorialSA" runat="server">
@@ -170,7 +170,7 @@
                         <div class="sec-card">
                             <div class="sec-body" style="padding:12px 14px;">
                                 <div class="campo" style="margin-bottom:0;">
-                                    <label><i class="fas fa-calendar-alt mr-1"></i>Fecha del Parte</label>
+                                    <label><i class="fas fa-calendar-alt mr-1"></i>Fecha del parte</label>
                                     <asp:TextBox ID="txtFechaParte" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                 </div>
                             </div>
@@ -201,7 +201,7 @@
                                         </div>
                                     </div>
                                     <div class="medicion-result">
-                                        <span>KM Recorridos</span>
+                                        <span>KM recorridos</span>
                                         <span class="result-val">
                                             <asp:TextBox ID="txtOdometroKmHoras" runat="server" CssClass="form-control"
                                                 ReadOnly="true" placeholder="--"
@@ -228,7 +228,7 @@
                                         </div>
                                     </div>
                                     <div class="medicion-result">
-                                        <span>Horas de Trabajo</span>
+                                        <span>Horas de trabajo</span>
                                         <span class="result-val">
                                             <asp:TextBox ID="txtHorometroHoras" runat="server" CssClass="form-control"
                                                 ReadOnly="true" placeholder="--"
@@ -372,7 +372,7 @@
                                 </div>
                                 <div class="hist-stat">
                                     <div class="stat-num"><asp:Label ID="lblTotalHoras" runat="server" Text="0"></asp:Label></div>
-                                    <div class="stat-label">Horas Trabajo</div>
+                                    <div class="stat-label">Horas trabajo</div>
                                 </div>
                             </div>
 
@@ -423,7 +423,7 @@
                             <div class="hist-empty">
                                 <i class="fas fa-inbox"></i>
                                 <p>A&#250;n no tienes partes diarios registrados.<br />
-                                   Registra tu primer parte en la pesta&#241;a <strong>Nuevo Parte</strong>.</p>
+                                   Registra tu primer parte en la pesta&#241;a <strong>Nuevo parte</strong>.</p>
                             </div>
                         </asp:Panel>
 

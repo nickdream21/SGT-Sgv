@@ -6,7 +6,7 @@
         <div class="form-container">
             <!-- Encabezado - ocupa toda la fila -->
             <div class="header-container">
-                <h1 class="header">Registro de Factura</h1>
+                <h1 class="header">Registro de factura</h1>
             </div>
             
             <!-- Primera fila: Cliente y N° Factura -->
@@ -36,7 +36,7 @@
             
             <!-- Segunda fila: Fecha de Emisión y N° Pedido -->
             <div class="form-group" style="margin-bottom: 25px;">
-                <label for="txtFechaEmision">Fecha de Emisión:<span class="required">*</span></label>
+                <label for="txtFechaEmision">Fecha de emisión:<span class="required">*</span></label>
                 <asp:TextBox ID="txtFechaEmision" runat="server" CssClass="form-control" TextMode="Date" />
                 <asp:RequiredFieldValidator ID="rfvFechaEmision" runat="server" 
                     ControlToValidate="txtFechaEmision" 
@@ -53,7 +53,7 @@
 
             <!-- Tercera fila: Importe Total -->
             <div class="form-group" style="margin-bottom: 35px;">
-                <label for="txtImporteTotal">Importe Total:<span class="required">*</span></label>
+                <label for="txtImporteTotal">Importe total:<span class="required">*</span></label>
                 <asp:TextBox ID="txtImporteTotal" runat="server" CssClass="form-control" Placeholder="Ingrese el Importe Total" />
                 <asp:RequiredFieldValidator ID="rfvImporteTotal" runat="server" 
                     ControlToValidate="txtImporteTotal" 
@@ -68,10 +68,10 @@
 
             <!-- Cuarta fila: Sección de Upload de Documento - ocupa toda la fila -->
             <div class="document-upload-section">
-                <h3><i class="fa fa-file-pdf-o"></i> Documento de Factura</h3>
+                <h3><i class="fa fa-file-pdf-o"></i> Documento de factura</h3>
                 <div class="upload-container">
                     <div class="form-group">
-                        <label for="fileUploadFactura">Adjuntar Documento (PDF recomendado):</label>
+                        <label for="fileUploadFactura">Adjuntar documento (PDF recomendado):</label>
                         <asp:FileUpload ID="fileUploadFactura" runat="server" CssClass="form-control file-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
                         <small class="text-muted">
                             <i class="fa fa-info-circle"></i> 

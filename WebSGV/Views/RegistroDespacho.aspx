@@ -35,12 +35,12 @@
                                     <div class="rd-stepper-inner">
                                         <div id="rdStep1" class="rd-stepper-item">
                                             <div class="rd-stepper-circle">1</div>
-                                            <div class="rd-stepper-label">Configurar Lote</div>
+                                            <div class="rd-stepper-label">Configurar lote</div>
                                         </div>
                                         <div class="rd-stepper-connector"></div>
                                         <div id="rdStep2" class="rd-stepper-item">
                                             <div class="rd-stepper-circle">2</div>
-                                            <div class="rd-stepper-label">Agregar Conductores</div>
+                                            <div class="rd-stepper-label">Agregar conductores</div>
                                         </div>
                                     </div>
                                 </div>
@@ -58,7 +58,7 @@
                                 <asp:Panel ID="pnlConfiguracionBase" runat="server">
                                     <div class="card mb-4" style="border-top: 3px solid #1e40af;">
                                         <div class="rd-step-header">
-                                            <h5><span class="rd-step-num">1</span> Configuración Base del Lote</h5>
+                                            <h5><span class="rd-step-num">1</span> Configuración base del lote</h5>
                                             <div class="rd-subtitle">Complete los datos comunes que aplicarán a todos los despachos de este lote</div>
                                         </div>
                                         <div class="card-body">
@@ -69,7 +69,7 @@
                                                     <!-- Fecha de Despacho -->
                                                     <div class="form-group mb-3">
                                                         <label for="txtFechaDespachoBase" class="form-label">
-                                                            <strong>Fecha de Programación:</strong>
+                                                            <strong>Fecha de programación:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
                                                         <asp:TextBox ID="txtFechaDespachoBase" runat="server" 
@@ -152,7 +152,7 @@
                                                     <!-- Tipo de Operación -->
                                                     <div class="form-group mb-3">
                                                         <label for="ddlTipoOperacionBase" class="form-label">
-                                                            <strong>Tipo de Operación:</strong>
+                                                            <strong>Tipo de operación:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
                                                         <asp:DropDownList ID="ddlTipoOperacionBase" runat="server" 
@@ -195,7 +195,7 @@
                                                     <!-- Lugar de Operación -->
                                                     <div class="form-group mb-3">
                                                         <label for="ddlLugarOperacionBase" class="form-label">
-                                                            <strong>Planta de Operación:</strong>
+                                                            <strong>Planta de operación:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
                                                         <asp:DropDownList ID="ddlLugarOperacionBase" runat="server" CssClass="form-select">
@@ -216,7 +216,7 @@
                                             <!-- DOCUMENTACIÓN BASE -->
                                             <div class="row mt-4">
                                                 <div class="col-12">
-                                                    <div class="rd-section-label"><i class="fas fa-file-alt mr-1"></i> Documentación Base del Lote</div>
+                                                    <div class="rd-section-label"><i class="fas fa-file-alt mr-1"></i> Documentación base del lote</div>
                                                     
                                                     <!-- Panel de Ayuda de Documentos -->
                                                     <asp:Panel ID="pnlAyudaDocumentosBase" runat="server" CssClass="rd-notice mb-3">
@@ -227,7 +227,7 @@
                                                         <!-- FACTURA BASE -->
                                                         <div class="col-md-6">
                                                             <asp:Panel ID="pnlFacturaBase" runat="server" CssClass="rd-doc-box mb-3" Visible="false">
-                                                                <div class="rd-doc-title"><i class="fas fa-receipt mr-1"></i> Datos de Factura</div>
+                                                                <div class="rd-doc-title"><i class="fas fa-receipt mr-1"></i> Datos de factura</div>
 
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtNumeroFacturaBase" class="form-label">
@@ -261,7 +261,7 @@
 
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtFechaEmisionFacturaBase" class="form-label">
-                                                                        <strong>Fecha Emisión:</strong>
+                                                                        <strong>Fecha emisión:</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
                                                                     <asp:TextBox ID="txtFechaEmisionFacturaBase" runat="server"
@@ -290,7 +290,7 @@
 
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtValorTotalFacturaBase" class="form-label">
-                                                                        <strong>Valor Total (S/):</strong>
+                                                                        <strong>Valor total (S/):</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
                                                                     <asp:TextBox ID="txtValorTotalFacturaBase" runat="server"
@@ -323,7 +323,7 @@
 
                                                                 <div class="form-group mb-0">
                                                                     <label for="fileFacturaBase" class="form-label">
-                                                                        <strong>Adjuntar Documento:</strong>
+                                                                        <strong>Adjuntar documento:</strong>
                                                                         <span class="text-muted small">(Opcional)</span>
                                                                     </label>
                                                                     <asp:FileUpload ID="fileFacturaBase" runat="server" CssClass="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
@@ -369,7 +369,7 @@
 
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtFechaEmisionCPICBase" class="form-label">
-                                                                        <strong>Fecha Emisión CPIC:</strong>
+                                                                        <strong>Fecha emisión CPIC:</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
                                                                     <asp:TextBox ID="txtFechaEmisionCPICBase" runat="server"
@@ -398,7 +398,7 @@
 
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtValorFleteBase" class="form-label">
-                                                                        <strong>Valor Flete (S/):</strong>
+                                                                        <strong>Valor flete (S/):</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
                                                                     <asp:TextBox ID="txtValorFleteBase" runat="server"
@@ -431,7 +431,7 @@
 
                                                                 <div class="form-group mb-0">
                                                                     <label for="fileCPICBase" class="form-label">
-                                                                        <strong>Adjuntar Documento:</strong>
+                                                                        <strong>Adjuntar documento:</strong>
                                                                         <span class="text-muted small">(Opcional)</span>
                                                                     </label>
                                                                     <asp:FileUpload ID="fileCPICBase" runat="server" CssClass="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
@@ -448,7 +448,7 @@
                                                 <div class="col-md-12">
                                                     <div class="d-flex justify-content-end gap-2">
                                                         <asp:Button ID="btnIniciarLote" runat="server" 
-                                                            Text="Iniciar Lote de Despachos" 
+                                                            Text="Iniciar lote de despachos" 
                                                             CssClass="btn btn-primary btn-lg"
                                                             OnClick="btnIniciarLote_Click"
                                                             ValidationGroup="ConfiguracionBase" />
@@ -463,7 +463,7 @@
                                 <asp:Panel ID="pnlResumenLote" runat="server" Visible="false">
                                     <div class="card mb-4" style="border-top: 3px solid #16a34a;">
                                         <div class="rd-summary-header">
-                                            <h5><i class="fas fa-clipboard-check mr-2"></i> Lote Activo</h5>
+                                            <h5><i class="fas fa-clipboard-check mr-2"></i> Lote activo</h5>
                                         </div>
                                         <div class="card-body">
                                             <div class="row">
@@ -478,17 +478,17 @@
                                                     <p class="mb-1"><strong>Planta:</strong> <asp:Label ID="lblResumenPlanta" runat="server"></asp:Label></p>
                                                 </div>
                                                 <div class="col-md-4">
-                                                    <p class="mb-1"><strong>Conductores Agregados:</strong> <asp:Label ID="lblResumenCantidad" runat="server" CssClass="badge bg-primary fs-6">0</asp:Label></p>
+                                                    <p class="mb-1"><strong>Conductores agregados:</strong> <asp:Label ID="lblResumenCantidad" runat="server" CssClass="badge bg-primary fs-6">0</asp:Label></p>
                                                     <div class="mt-2">
                                                         <asp:Button ID="btnCancelarLote" runat="server" 
-                                                            Text="Cancelar Lote" 
+                                                            Text="Cancelar lote" 
                                                             CssClass="btn btn-outline-danger btn-sm me-2"
                                                             OnClick="btnCancelarLote_Click"
                                                             CausesValidation="false"
                                                             OnClientClick="return confirm('¿Está seguro de cancelar este lote? Se perderán todos los datos.');" />
                                                         
                                                         <asp:Button ID="btnFinalizarLote" runat="server" 
-                                                            Text="Finalizar Lote" 
+                                                            Text="Finalizar lote" 
                                                             CssClass="btn btn-success btn-sm"
                                                             OnClick="btnFinalizarLote_Click"
                                                             CausesValidation="false"
@@ -504,7 +504,7 @@
                                 <asp:Panel ID="pnlAdicionConductores" runat="server" Visible="false">
                                     <asp:Panel ID="pnlConductorCard" runat="server" CssClass="card mb-4 rd-conductor-card" style="border-top: 3px solid #1e40af;">
                                         <div class="rd-step-header">
-                                            <h5><span class="rd-step-num">2</span> <asp:Literal ID="litTituloConductor" runat="server" Text="Agregar Conductores al Lote"></asp:Literal></h5>
+                                            <h5><span class="rd-step-num">2</span> <asp:Literal ID="litTituloConductor" runat="server" Text="Agregar conductores al lote"></asp:Literal></h5>
                                             <div class="rd-subtitle">Complete los datos específicos para cada conductor</div>
                                         </div>
                                         <div class="card-body">
@@ -564,7 +564,7 @@
                                                                 <!-- BLK-003: Botón para finalizar el viaje único activo -->
                                                                 <div class="mt-2">
                                                                     <asp:Button ID="btnFinalizarViajeUnico" runat="server"
-                                                                        Text="Finalizar Viaje"
+                                                                        Text="Finalizar viaje"
                                                                         CssClass="btn btn-outline-warning btn-sm"
                                                                         OnClick="btnFinalizarViajeUnico_Click"
                                                                         CausesValidation="false"
@@ -589,7 +589,7 @@
                                                                     </div>
                                                                     <div class="col-md-4">
                                                                         <asp:Button ID="btnCrearNuevoViaje" runat="server" 
-                                                                            Text="Crear Nuevo Viaje" 
+                                                                            Text="Crear nuevo viaje" 
                                                                             CssClass="btn btn-outline-success btn-sm w-100"
                                                                             OnClick="btnCrearNuevoViaje_Click"
                                                                             CausesValidation="false" />
@@ -600,7 +600,7 @@
                                                         <div class="col-md-4">
                                                             <div class="text-center">
                                                                 <asp:Button ID="btnVerHistorialViajes" runat="server" 
-                                                                    Text="Ver Historial" 
+                                                                    Text="Ver historial" 
                                                                     CssClass="btn btn-outline-info w-100"
                                                                     OnClick="btnVerHistorialViajes_Click"
                                                                     CausesValidation="false" />
@@ -648,7 +648,7 @@
                                                     <!-- Placa Tracto -->
                                                     <div class="form-group mb-3">
                                                         <label for="ddlPlacaTracto" class="form-label">
-                                                            <strong>Placa Tracto:</strong>
+                                                            <strong>Placa tracto:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
                                                         <asp:DropDownList ID="ddlPlacaTracto" runat="server" 
@@ -672,7 +672,7 @@
                                                     <!-- Placa Carreta -->
                                                     <div class="form-group mb-3">
                                                         <label for="ddlPlacaCarreta" class="form-label">
-                                                            <strong>Placa Carreta:</strong>
+                                                            <strong>Placa carreta:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
                                                         <asp:DropDownList ID="ddlPlacaCarreta" runat="server" 
@@ -696,13 +696,13 @@
 
                                                 <!-- Columna Derecha - Guías Específicas -->
                                                 <div class="col-md-6 rd-form-col">
-                                                    <div class="rd-section-label mt-3"><i class="fas fa-file-alt mr-1"></i> Documentos del Conductor</div>
+                                                    <div class="rd-section-label mt-3"><i class="fas fa-file-alt mr-1"></i> Documentos del conductor</div>
 
                                                     <!-- Guía Remitente -->
                                                     <asp:Panel ID="pnlGuiaRemitenteConductor" runat="server" Visible="false">
                                                         <div class="form-group mb-3">
                                                             <label for="txtGuiaRemitente" class="form-label">
-                                                                <strong>Guía Remitente:</strong>
+                                                                <strong>Guía remitente:</strong>
                                                                 <span class="text-muted small">(Opcional)</span>
                                                             </label>
                                                             <asp:TextBox ID="txtGuiaRemitente" runat="server"
@@ -737,7 +737,7 @@
                                                     <asp:Panel ID="pnlGuiaTransportistaConductor" runat="server" Visible="false">
                                                         <div class="form-group mb-3">
                                                             <label for="txtGuiaTransportista" class="form-label">
-                                                                <strong>Guía Transportista:</strong>
+                                                                <strong>Guía transportista:</strong>
                                                                 <span class="text-danger">*</span>
                                                             </label>
                                                             <asp:TextBox ID="txtGuiaTransportista" runat="server" 
@@ -774,10 +774,10 @@
                                                          que se agregaba un conductor. -->
                                                     <asp:Panel ID="pnlManifiestoConductor" runat="server" Visible="false">
                                                         <div class="rd-notice rd-notice-warn mb-3">
-                                                            <div class="rd-doc-title" style="color:inherit;"><i class="fas fa-passport mr-1"></i> Manifiesto de Aduana</div>
+                                                            <div class="rd-doc-title" style="color:inherit;"><i class="fas fa-passport mr-1"></i> Manifiesto de aduana</div>
                                                             <small>
                                                                 Cada conductor porta dos ejemplares: uno para cruzar la frontera y otro para el regreso.
-                                                                Se adjuntan desde <strong>Gestión de Despachos</strong>, buscando el despacho una vez
+                                                                Se adjuntan desde <strong>Gestión de despachos</strong>, buscando el despacho una vez
                                                                 creado el lote — que es cuando el conductor ya cuenta con ellos.
                                                             </small>
                                                         </div>
@@ -812,7 +812,7 @@
                                                             OnClick="btnLimpiarConductor_Click" />
 
                                                         <asp:Button ID="btnAgregarConductor" runat="server"
-                                                            Text="Agregar Conductor"
+                                                            Text="Agregar conductor"
                                                             CssClass="btn btn-primary"
                                                             OnClick="btnAgregarConductor_Click"
                                                             ValidationGroup="AgregarConductor" />
@@ -827,7 +827,7 @@
                                 <asp:Panel ID="pnlListaConductores" runat="server" Visible="false">
                                     <div class="card mb-4">
                                         <div class="rd-list-header">
-                                            <h5><i class="fas fa-list mr-2"></i> Conductores del Lote</h5>
+                                            <h5><i class="fas fa-list mr-2"></i> Conductores del lote</h5>
                                         </div>
                                         <div class="card-body">
                                             <div class="table-responsive">
@@ -848,16 +848,16 @@
                                                     <asp:TemplateField HeaderText="Carreta">
                                                         <ItemTemplate><span class="rd-placa"><%# Eval("PlacaCarreta") %></span></ItemTemplate>
                                                     </asp:TemplateField>
-                                                    <asp:TemplateField HeaderText="Guía Remitente">
+                                                    <asp:TemplateField HeaderText="Guía remitente">
                                                         <ItemTemplate><%# MostrarDato(Eval("GuiaRemitente")) %></ItemTemplate>
                                                     </asp:TemplateField>
-                                                    <asp:TemplateField HeaderText="Guía Transportista">
+                                                    <asp:TemplateField HeaderText="Guía transportista">
                                                         <ItemTemplate><%# MostrarDato(Eval("GuiaTransportista")) %></ItemTemplate>
                                                     </asp:TemplateField>
                                                     <asp:TemplateField HeaderText="Manifiesto">
                                                         <ItemTemplate><%# ChipManifiesto(Eval("Manifiesto")) %></ItemTemplate>
                                                     </asp:TemplateField>
-                                                    <asp:TemplateField HeaderText="Estado Viaje">
+                                                    <asp:TemplateField HeaderText="Estado viaje">
                                                         <ItemTemplate><%# ChipEstadoViaje(Eval("EstadoViaje")) %></ItemTemplate>
                                                     </asp:TemplateField>
                                                     <asp:TemplateField HeaderText="Acciones" ItemStyle-CssClass="text-end" HeaderStyle-CssClass="text-end">
@@ -912,7 +912,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalHistorialViajesLabel">
-                        <i class="fas fa-history"></i> Historial de Viajes - <span id="spanConductorModal" runat="server"></span>
+                        <i class="fas fa-history"></i> Historial de viajes - <span id="spanConductorModal" runat="server"></span>
                     </h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                 </div>
@@ -926,10 +926,10 @@
                                 OnRowCommand="gvHistorialViajes_RowCommand">
                                 <Columns>
                                     <asp:BoundField DataField="NumeroViajeProgreso" HeaderText="N° Viaje" />
-                                    <asp:BoundField DataField="FechaInicio" HeaderText="Fecha Inicio" DataFormatString="{0:dd/MM/yyyy HH:mm}" />
-                                    <asp:BoundField DataField="FechaCierre" HeaderText="Fecha Cierre" DataFormatString="{0:dd/MM/yyyy HH:mm}" />
+                                    <asp:BoundField DataField="FechaInicio" HeaderText="Fecha inicio" DataFormatString="{0:dd/MM/yyyy HH:mm}" />
+                                    <asp:BoundField DataField="FechaCierre" HeaderText="Fecha cierre" DataFormatString="{0:dd/MM/yyyy HH:mm}" />
                                     <asp:BoundField DataField="CantidadDespachos" HeaderText="Despachos" />
-                                                     <asp:BoundField DataField="TipoViaje" HeaderText="Tipo Viaje" />
+                                                     <asp:BoundField DataField="TipoViaje" HeaderText="Tipo viaje" />
                                     <asp:BoundField DataField="EstadoViaje" HeaderText="Estado" />
                                     <asp:TemplateField HeaderText="Acciones">
                                         <ItemTemplate>

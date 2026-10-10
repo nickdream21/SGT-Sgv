@@ -35,14 +35,14 @@
                         <div class="row">
                             <div class="col-lg-4 col-md-6">
                                 <div class="form-field">
-                                    <label class="field-label">Fecha de Despacho <span class="required-field">*</span></label>
+                                    <label class="field-label">Fecha de despacho <span class="required-field">*</span></label>
                                     <asp:TextBox ID="txtFechaDespacho" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                 </div>
                             </div>
 
                             <div class="col-lg-4 col-md-6">
                                 <div class="form-field">
-                                    <label class="field-label">Lugar de Operación <span class="required-field">*</span></label>
+                                    <label class="field-label">Lugar de operación <span class="required-field">*</span></label>
                                     <%-- Opciones cargadas desde el catálogo Planta en CargarLugares(). --%>
                                     <asp:DropDownList ID="ddlLugar" runat="server" CssClass="form-select">
                                     </asp:DropDownList>
@@ -51,7 +51,7 @@
 
                             <div class="col-lg-4 col-md-6">
                                 <div class="form-field">
-                                    <label class="field-label">Tipo de Operación <span class="required-field">*</span></label>
+                                    <label class="field-label">Tipo de operación <span class="required-field">*</span></label>
                                     <asp:DropDownList ID="ddlTipoOperacion" runat="server" CssClass="form-select">
                                         <asp:ListItem Value="">-- Seleccionar Operación --</asp:ListItem>
                                         <asp:ListItem Value="CARGA">Carga</asp:ListItem>
@@ -110,7 +110,7 @@
                     <!-- Botones de Acción -->
                     <div class="buttons-section">
                         <asp:Button ID="btnGuardar" runat="server" CssClass="btn-save"
-                            Text="Guardar Cambios" OnClick="btnGuardar_Click" />
+                            Text="Guardar cambios" OnClick="btnGuardar_Click" />
 
                         <asp:Button ID="btnCancelar" runat="server" CssClass="btn-cancel"
                             Text="Cancelar" OnClick="btnCancelar_Click" CausesValidation="false" />

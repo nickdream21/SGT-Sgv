@@ -14,7 +14,7 @@
 
         <!-- ========== HEADER ========== -->
         <div class="gf-header">
-            <h2><i class="fas fa-gas-pump mr-2"></i>Dashboard de Grifo</h2>
+            <h2><i class="fas fa-gas-pump mr-2"></i>Dashboard de grifo</h2>
             <p class="gf-sub">Control de abastecimiento de combustible</p>
             <span class="gf-fecha-badge">
                 <i class="fas fa-calendar-alt mr-1"></i>
@@ -212,11 +212,11 @@
                                             <div class="ab-value"><%# Eval("Lugar") %></div>
                                         </div>
                                         <div class="ab-item">
-                                            <div class="ab-label">GL Abastecidos</div>
+                                            <div class="ab-label">GL abastecidos</div>
                                             <div class="ab-value ab-highlight"><%# Eval("GLAbastecidos", "{0:N2}") %></div>
                                         </div>
                                         <div class="ab-item">
-                                            <div class="ab-label">GL Consumidos</div>
+                                            <div class="ab-label">GL consumidos</div>
                                             <div class="ab-value"><%# Eval("GLConsumidos", "{0:N2}") %></div>
                                         </div>
                                         <div class="ab-item">
@@ -324,7 +324,7 @@
                 <div class="gf-empty">
                     <i class="fas fa-globe-americas"></i>
                     <h5>Sin retornos registrados</h5>
-                    <p>Aún no se han registrado ingresos de combustible desde Ecuador.</p>
+                    <p>Aún no se han registrado ingresos de combustible desde ecuador.</p>
                 </div>
             </asp:Panel>
 

@@ -15,35 +15,11 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h2 class="page-title mb-1">
-                                <i class="fas fa-file-invoice-dollar mr-2"></i>Reportes de Órdenes de Viaje
+                                Reportes de órdenes de viaje
                             </h2>
                             <p class="text-muted mb-0">
                                 Consulte liquidaciones y viajes activos del sistema
                             </p>
-                        </div>
-                        <div class="header-stats">
-                            <div class="stat-card stat-primary">
-                                <div class="stat-icon">
-                                    <i class="fas fa-money-check-alt"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <span class="stat-label">Liquidaciones</span>
-                                    <span class="stat-value">
-                                        <asp:Label ID="lblTotalRegistros" runat="server" Text="0"></asp:Label>
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="stat-card stat-warning ml-3">
-                                <div class="stat-icon">
-                                    <i class="fas fa-truck-loading"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <span class="stat-label">Sin Liquidar</span>
-                                    <span class="stat-value">
-                                        <asp:Label ID="lblCountViajesActivos" runat="server" Text="0"></asp:Label>
-                                    </span>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -55,13 +31,15 @@
             <div class="col-12">
                 <div class="tabs-navigation">
                     <button type="button" class="tab-btn tab-btn-active" id="tabLiquidaciones" onclick="cambiarTab('liquidaciones')">
-                        <i class="fas fa-money-check-alt mr-2"></i>Liquidaciones
+                        Liquidaciones
+                        <asp:Label ID="lblTotalRegistros" runat="server" CssClass="sgv-tab-contador" Text="0"></asp:Label>
                     </button>
                     <button type="button" class="tab-btn" id="tabViajesActivos" onclick="cambiarTab('viajesActivos')">
-                        <i class="fas fa-truck-loading mr-2"></i>Viajes Activos Sin Liquidación
+                        Viajes activos sin liquidar
+                        <asp:Label ID="lblCountViajesActivos" runat="server" CssClass="sgv-tab-contador" Text="0"></asp:Label>
                     </button>
                     <button type="button" class="tab-btn" id="tabPersonalizado" onclick="cambiarTab('personalizado')">
-                        <i class="fas fa-sliders-h mr-2"></i>Reporte Personalizado
+                        Reporte personalizado
                     </button>
                 </div>
             </div>
@@ -81,14 +59,14 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label class="form-label">Fecha Desde</label>
+                                <label class="form-label">Fecha desde</label>
                                  <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                 <small id="errFechaDesde" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label class="form-label">Fecha Hasta</label>
+                                <label class="form-label">Fecha hasta</label>
                                  <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                 <small id="errFechaHasta" class="text-danger d-none"></small>
                             </div>
@@ -245,7 +223,7 @@
                                 </asp:TemplateField>
                                 <asp:TemplateField HeaderText="ACCIONES">
                                     <ItemTemplate>
-                                        <button type="button" class="btn btn-info-action" onclick='verDetalleOrden(<%# Eval("IdOrdenViaje") %>)' title="Ver Detalle">
+                                        <button type="button" class="btn btn-info-action" onclick='verDetalleOrden(<%# Eval("IdOrdenViaje") %>)' title="Ver detalle">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                     </ItemTemplate>
@@ -273,7 +251,7 @@
                     <div class="row">
                         <div class="col-md-5">
                             <div class="form-group">
-                                <label class="form-label">Buscar Conductor</label>
+                                <label class="form-label">Buscar conductor</label>
                                  <asp:TextBox ID="txtBuscarConductor" runat="server" CssClass="form-control"
                                      placeholder="Nombre, apellido o DNI" autocomplete="off" AutoCompleteType="Disabled"
                                      spellcheck="false" autocapitalize="off" autocorrect="off"></asp:TextBox>
@@ -282,7 +260,7 @@
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label class="form-label">Estado del Viaje</label>
+                                <label class="form-label">Estado del viaje</label>
                                  <asp:DropDownList ID="ddlEstadoViaje" runat="server" CssClass="form-control">
                                     <asp:ListItem Value="TODOS" Text="Todos los estados"></asp:ListItem>
                                     <asp:ListItem Value="ABIERTO" Text="Abierto" Selected="True"></asp:ListItem>
@@ -392,21 +370,21 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label class="form-label">Fecha Desde</label>
+                                <label class="form-label">Fecha desde</label>
                                  <asp:TextBox ID="txtPersFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                 <small id="errPersFechaDesde" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label class="form-label">Fecha Hasta</label>
+                                <label class="form-label">Fecha hasta</label>
                                  <asp:TextBox ID="txtPersFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                 <small id="errPersFechaHasta" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label class="form-label">Estado del Viaje</label>
+                                <label class="form-label">Estado del viaje</label>
                                  <asp:DropDownList ID="ddlPersEstado" runat="server" CssClass="form-control">
                                     <asp:ListItem Value="TODOS" Text="Todos" Selected="True"></asp:ListItem>
                                     <asp:ListItem Value="COMPLETADO" Text="Liquidados (Completado)"></asp:ListItem>
@@ -438,7 +416,7 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label class="form-label">Placa Tracto</label>
+                                <label class="form-label">Placa tracto</label>
                                  <asp:TextBox ID="txtPersPlacaTracto" runat="server" CssClass="form-control" placeholder="Ej. ABC-123"></asp:TextBox>
                                 <small id="errPersPlaca" class="text-danger d-none"></small>
                             </div>
@@ -481,9 +459,9 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="form-group">
-                                <label class="form-label">Título del Reporte</label>
+                                <label class="form-label">Título del reporte</label>
                                  <asp:TextBox ID="txtPersTitulo" runat="server" CssClass="form-control"
-                                     Text="Reporte Personalizado de Órdenes de Viaje"></asp:TextBox>
+                                     Text="Reporte personalizado de órdenes de viaje"></asp:TextBox>
                                 <small id="errPersTitulo" class="text-danger d-none"></small>
                             </div>
                         </div>
@@ -511,19 +489,19 @@
                 <div class="section-body">
                     <div class="row">
                         <div class="col-md-4">
-                            <h6 class="columnas-grupo"><i class="fas fa-user mr-1"></i>Datos del Conductor</h6>
+                            <h6 class="columnas-grupo"><i class="fas fa-user mr-1"></i>Datos del conductor</h6>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="dni" checked /> DNI</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="conductor" checked /> Conductor</label>
                         </div>
                         <div class="col-md-4">
-                            <h6 class="columnas-grupo"><i class="fas fa-calendar-alt mr-1"></i>Fechas y Horas</h6>
+                            <h6 class="columnas-grupo"><i class="fas fa-calendar-alt mr-1"></i>Fechas y horas</h6>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="fechaSalida" checked /> Fecha Salida</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="fechaLlegada" checked /> Fecha Llegada</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="horaSalida" /> Hora Salida</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="horaLlegada" /> Hora Llegada</label>
                         </div>
                         <div class="col-md-4">
-                            <h6 class="columnas-grupo"><i class="fas fa-truck mr-1"></i>Vehículo y Viaje</h6>
+                            <h6 class="columnas-grupo"><i class="fas fa-truck mr-1"></i>Vehículo y viaje</h6>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="tracto" checked /> Placa Tracto</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="carreta" /> Placa Carreta</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="cliente" checked /> Cliente</label>
@@ -558,7 +536,7 @@
                     <hr />
                     <div class="row">
                         <div class="col-md-6">
-                            <h6 class="columnas-grupo"><i class="fas fa-plus-square mr-1 text-success"></i>Detalle de Ingresos por Categoría</h6>
+                            <h6 class="columnas-grupo"><i class="fas fa-plus-square mr-1 text-success"></i>Detalle de ingresos por categoría</h6>
                             <div class="row">
                                 <div class="col-sm-6">
                                     <label class="col-check"><input type="checkbox" class="col-pers" value="iDespachoS" /> Despacho S/</label>
@@ -578,7 +556,7 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <h6 class="columnas-grupo"><i class="fas fa-minus-square mr-1 text-danger"></i>Detalle de Gastos por Categoría</h6>
+                            <h6 class="columnas-grupo"><i class="fas fa-minus-square mr-1 text-danger"></i>Detalle de gastos por categoría</h6>
                             <div class="row">
                                 <div class="col-sm-6">
                                     <label class="col-check"><input type="checkbox" class="col-pers" value="gPeajesS" /> Peajes S/</label>

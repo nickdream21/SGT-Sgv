@@ -27,11 +27,11 @@
 
             <div class="row">
                 <div class="col-md-6 form-group">
-                    <label for="txtFechaEmision">Fecha de Emisión:</label>
+                    <label for="txtFechaEmision">Fecha de emisión:</label>
                     <asp:TextBox ID="txtFechaEmision" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                 </div>
                 <div class="col-md-6 form-group">
-                    <label for="txtTotalFlete">Valor Total del Flete:</label>
+                    <label for="txtTotalFlete">Valor total del flete:</label>
                     <asp:TextBox ID="txtTotalFlete" runat="server" CssClass="form-control" placeholder="Ingrese el valor total"></asp:TextBox>
                 </div>
             </div>
@@ -42,7 +42,7 @@
                     <h3><i class="fa fa-file-pdf-o"></i> Documento CPIC</h3>
                     <div class="upload-container">
                         <div class="col-md-8 form-group">
-                            <label for="fileUploadCPIC">Adjuntar Documento (PDF recomendado):</label>
+                            <label for="fileUploadCPIC">Adjuntar documento (PDF recomendado):</label>
                             <asp:FileUpload ID="fileUploadCPIC" runat="server" CssClass="form-control file-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
                             <small class="text-muted">
                                 <i class="fa fa-info-circle"></i> 

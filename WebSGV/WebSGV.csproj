@@ -136,6 +136,7 @@
   <ItemGroup>
     <Content Include="Content\favicon.png" />
     <Content Include="Content\responsive-mobile.css" />
+    <Content Include="Content\sgv-base.css" />
     <Content Include="Content\Site.css" />
     <Content Include="Database\Schema\01_FormatoControlado.sql" />
     <Content Include="Database\Schema\02_FirmaDigital.sql" />

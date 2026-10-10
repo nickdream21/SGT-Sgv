@@ -4,7 +4,7 @@
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/RegistrarRetornoEcuador.css") %>" rel="stylesheet" />
 
     <div class="re-wrap">
-        <h3><i class="fas fa-globe-americas"></i> Registrar Retorno Ecuador</h3>
+        <h3><i class="fas fa-globe-americas"></i> Registrar retorno Ecuador</h3>
         <div class="sub">Ingreso informativo de combustible comprado en Ecuador y recibido en el grifo.</div>
 
         <div class="re-info">
@@ -19,11 +19,11 @@
             <div><div class="label">Viaje</div><div class="val"><asp:Literal ID="litNumeroViaje" runat="server" Text="-" /></div></div>
             <div><div class="label">Conductor</div><div class="val"><asp:Literal ID="litConductor" runat="server" Text="-" /></div></div>
             <div><div class="label">Tracto</div><div class="val"><asp:Literal ID="litTracto" runat="server" Text="-" /></div></div>
-            <div><div class="label">Fecha Recepción</div><div class="val"><asp:TextBox ID="txtFecha" runat="server" TextMode="DateTimeLocal" CssClass="form-control" /></div></div>
+            <div><div class="label">Fecha recepción</div><div class="val"><asp:TextBox ID="txtFecha" runat="server" TextMode="DateTimeLocal" CssClass="form-control" /></div></div>
         </div>
 
         <div class="tickets-head">
-            <div>Nº Ticket</div>
+            <div>Nº ticket</div>
             <div>Proveedor</div>
             <div>Galones</div>
             <div>Precio USD</div>
@@ -53,7 +53,7 @@
 
         <div class="re-actions">
             <a href="DashboardGrifo.aspx" class="btn-cancel" style="text-decoration:none; display:inline-block;">Cancelar</a>
-            <asp:Button ID="btnGuardar" runat="server" Text="Guardar Retorno" CssClass="btn-save"
+            <asp:Button ID="btnGuardar" runat="server" Text="Guardar retorno" CssClass="btn-save"
                 OnClientClick="return prepararEnvio();" OnClick="btnGuardar_Click" />
         </div>
     </div>

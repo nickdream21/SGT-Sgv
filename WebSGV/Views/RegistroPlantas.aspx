@@ -30,12 +30,12 @@
             <div class="col-12 col-md-4 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar Planta</h5>
+                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar planta</h5>
                     </div>
                     <div class="card-body">
                         <asp:ValidationSummary ID="vsRegistroPlanta" runat="server" ValidationGroup="vgRegistroPlanta" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                         <div class="form-group">
-                            <label class="font-weight-bold">Nombre de la Planta <span class="text-danger">*</span></label>
+                            <label class="font-weight-bold">Nombre de la planta <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control"
                                 placeholder="Ej: PLANTA TRUJILLO" MaxLength="200"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ValidationGroup="vgRegistroPlanta"
@@ -58,7 +58,7 @@
                                 Define si la planta se muestra en operaciones nacionales o internacionales.
                             </small>
                         </div>
-                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar Planta" ValidationGroup="vgRegistroPlanta"
+                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar planta" ValidationGroup="vgRegistroPlanta"
                             CssClass="btn btn-primary btn-block" OnClick="btnRegistrar_Click" />
                     </div>
                 </div>
@@ -72,7 +72,7 @@
             <div class="col-12 col-md-8 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Plantas Registradas</h5>
+                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Plantas registradas</h5>
                         <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
                             style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_plantas"
                             oninput="filtrarTabla(this.value,'contenedorPlantas')">
@@ -138,12 +138,12 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header" style="background:#0ea5e9;color:#fff;">
-                    <h5 class="modal-title"><i class="fas fa-industry mr-2"></i>Editar Planta</h5>
+                    <h5 class="modal-title"><i class="fas fa-industry mr-2"></i>Editar planta</h5>
                     <button type="button" class="close" style="color:#fff;" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label class="font-weight-bold">Nombre de la Planta <span class="text-danger">*</span></label>
+                        <label class="font-weight-bold">Nombre de la planta <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control text-uppercase" MaxLength="200"></asp:TextBox>
                     </div>
                     <div class="form-group mb-0">
@@ -157,7 +157,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                     <asp:Button ID="btnActualizarPlanta" runat="server" CssClass="btn btn-info"
-                        Text="Guardar Cambios" OnClick="btnActualizarPlanta_Click" />
+                        Text="Guardar cambios" OnClick="btnActualizarPlanta_Click" />
                 </div>
             </div>
         </div>

@@ -4,7 +4,7 @@
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/CargarExcel.css") %>" rel="stylesheet" />
 
     <div class="container">
-        <h2 class="mt-4 mb-4">Carga de Indicadores vía Excel</h2>
+        <h2 class="mt-4 mb-4">Carga de indicadores vía Excel</h2>
         
         <!-- Mensaje de alerta -->
         <asp:Panel ID="alertPanel" runat="server" CssClass="alert alert-info" Visible="false">
@@ -35,7 +35,7 @@
                         <i class="fas fa-file-excel"></i>
                     </div>
                     <h4>Arrastra tu archivo Excel de conversión aquí o haz clic para seleccionar</h4>
-                    <p>El sistema importará la Hoja 1 (formato simplificado con 33 columnas)</p>
+                    <p>El sistema importará la hoja 1 (formato simplificado con 33 columnas)</p>
                     <asp:FileUpload ID="fileUpload" runat="server" CssClass="d-none" onchange="updateFileName(this)" accept=".xlsx, .xls" />
                     <div id="fileInfo" class="file-info">Ningún archivo seleccionado</div>
                 </div>
@@ -88,7 +88,7 @@
         </div>
 
         <div class="action-buttons text-center">
-            <asp:Button ID="btnProcesar" runat="server" Text="Procesar Archivo" CssClass="btn btn-primary" OnClick="btnProcesar_Click" Enabled="false" />
+            <asp:Button ID="btnProcesar" runat="server" Text="Procesar archivo" CssClass="btn btn-primary" OnClick="btnProcesar_Click" Enabled="false" />
             <asp:Button ID="btnCancelar" runat="server" Text="Cancelar" CssClass="btn btn-secondary ml-2" OnClick="btnCancelar_Click" />
         </div>
 
@@ -136,11 +136,11 @@
                 EmptyDataText="No hay registros de cargas para mostrar">
                 <Columns>
                     <asp:BoundField DataField="UploadID" HeaderText="ID" />
-                    <asp:BoundField DataField="FileName" HeaderText="Nombre de Archivo" />
-                    <asp:BoundField DataField="UploadDate" HeaderText="Fecha de Carga" DataFormatString="{0:dd/MM/yyyy HH:mm}" />
+                    <asp:BoundField DataField="FileName" HeaderText="Nombre de archivo" />
+                    <asp:BoundField DataField="UploadDate" HeaderText="Fecha de carga" DataFormatString="{0:dd/MM/yyyy HH:mm}" />
                     <asp:BoundField DataField="Month" HeaderText="Mes" />
                     <asp:BoundField DataField="Year" HeaderText="Año" />
-                    <asp:BoundField DataField="RowsProcessed" HeaderText="Registros Procesados" />
+                    <asp:BoundField DataField="RowsProcessed" HeaderText="Registros procesados" />
                     <asp:TemplateField HeaderText="Estado">
                         <ItemTemplate>
                             <span class='status-pill <%# GetStatusClass(Eval("Status").ToString()) %>'>
@@ -174,10 +174,10 @@
                         <li><strong>Hoja 1 (Importación):</strong> Formato simplificado con 33 columnas que se importará a la base de datos.</li>
                         <li><strong>Hoja 2 (Oficina):</strong> Formato original con 57 columnas donde puede pegar los datos del Excel de oficina.</li>
                     </ul>
-                    <p>Las fórmulas automáticas convierten los datos de la Hoja 2 al formato de la Hoja 1.</p>
+                    <p>Las fórmulas automáticas convierten los datos de la hoja 2 al formato de la hoja 1.</p>
                 </div>
                 <div class="col-md-4 text-center mt-4">
-                    <asp:Button ID="btnDescargarPlantilla" runat="server" Text="Descargar Plantilla de Conversión" CssClass="btn btn-success" OnClick="btnDescargarPlantilla_Click" />
+                    <asp:Button ID="btnDescargarPlantilla" runat="server" Text="Descargar plantilla de conversión" CssClass="btn btn-success" OnClick="btnDescargarPlantilla_Click" />
                 </div>
             </div>
         </div>

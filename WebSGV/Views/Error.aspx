@@ -3,7 +3,7 @@
 <html>
 <head runat="server">
     <meta charset="utf-8" />
-    <title>Error del Sistema</title>
+    <title>Error del sistema</title>
     <style>
         body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; margin: 0; padding: 0; color: #1e293b; }
         .error-container { max-width: 900px; margin: 40px auto; padding: 24px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
@@ -48,7 +48,7 @@
 
             <div class="error-actions">
                 <a href="javascript:history.back()" class="btn-secondary-custom">&larr; Volver</a>
-                <a href="/Views/Login.aspx" class="btn-primary-custom">Ir al Inicio</a>
+                <a href="/Views/Login.aspx" class="btn-primary-custom">Ir al inicio</a>
             </div>
             <p class="error-code">Error 500 &mdash; <%= WebSGV.Helpers.FechaHelper.Ahora().ToString("dd/MM/yyyy HH:mm") %></p>
         </div>

@@ -84,8 +84,6 @@
         font-weight: 600;
         color: #495057;
         font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
     }
 
     .financial-card-body {
@@ -104,8 +102,6 @@
         font-size: 0.75rem;
         font-weight: 600;
         color: #6c757d;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
     }
 
     .card-field-input input,
@@ -257,7 +253,6 @@
         font-size: 0.75rem;
         font-weight: 600;
         color: #6c757d;
-        text-transform: uppercase;
     }
 
     .dato-general-input {

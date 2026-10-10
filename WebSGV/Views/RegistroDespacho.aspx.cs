@@ -1009,7 +1009,7 @@ namespace WebSGV.Views
             bool editando = EstaEditando;
 
             litTituloConductor.Text = editando ? "Editar Conductor del Lote" : "Agregar Conductores al Lote";
-            btnAgregarConductor.Text = editando ? "Guardar cambios" : "Agregar Conductor";
+            btnAgregarConductor.Text = editando ? "Guardar cambios" : "Agregar conductor";
             btnCancelarEdicion.Visible = editando;
             btnLimpiarConductor.Visible = !editando;
             pnlModoEdicion.Visible = editando;

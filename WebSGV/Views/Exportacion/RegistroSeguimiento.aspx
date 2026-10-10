@@ -16,7 +16,7 @@
     <div class="se-wrap">
         <div class="se-header">
             <div>
-                <h1 class="se-title">Seguimiento de Exportación</h1>
+                <h1 class="se-title">Seguimiento de exportación</h1>
                 <div class="se-subtitle">Registro de viajes Perú → Ecuador | Reemplazo digital del Excel STATUS GENERAL VIVIANA</div>
             </div>
             <a href="DashboardExportacion.aspx" class="se-btn-dashboard">
@@ -283,7 +283,7 @@
                             </div>
                             <div class="se-timeline-step">
                                 <div class="se-timeline-dot"></div>
-                                <div><div class="se-timeline-step-label"><label>Bodega Nacional</label><span class="se-timeline-tag manual">Manual</span></div>
+                                <div><div class="se-timeline-step-label"><label>Bodega nacional</label><span class="se-timeline-tag manual">Manual</span></div>
                                     <asp:DropDownList ID="ddlBodegaNacional" runat="server">
                                         <asp:ListItem Text="-- Seleccionar --" Value="" />
                                         <asp:ListItem Text="DEPSA"    Value="DEPSA" />
@@ -348,7 +348,7 @@
                             </div>
                             <div class="se-timeline-step">
                                 <div class="se-timeline-dot"></div>
-                                <div><div class="se-timeline-step-label"><label>Bodega Ecuatoriana</label><span class="se-timeline-tag manual">Manual</span></div>
+                                <div><div class="se-timeline-step-label"><label>Bodega ecuatoriana</label><span class="se-timeline-tag manual">Manual</span></div>
                                     <asp:DropDownList ID="ddlBodegaEcuatoriana" runat="server">
                                         <asp:ListItem Text="-- Seleccionar --" Value="" />
                                         <asp:ListItem Text="TCI"     Value="TCI" />
@@ -358,7 +358,7 @@
                             </div>
                             <div class="se-timeline-step">
                                 <div class="se-timeline-dot"></div>
-                                <div><div class="se-timeline-step-label"><label>Bodega Descarga</label><span class="se-timeline-tag manual">Manual (o auto por ruta GPS)</span></div>
+                                <div><div class="se-timeline-step-label"><label>Bodega descarga</label><span class="se-timeline-tag manual">Manual (o auto por ruta GPS)</span></div>
                                     <asp:DropDownList ID="ddlBodegaDescarga" runat="server">
                                         <asp:ListItem Text="-- Seleccionar --" Value="" />
                                         <asp:ListItem Text="INBALNOR" Value="INBALNOR" />
@@ -406,7 +406,7 @@
                     <div class="se-timeline-head">
                         <div class="se-timeline-head-left">
                             <div class="se-timeline-head-icon">5</div>
-                            <div><h4>Regreso Final a Base</h4><small>Tracto 2 · cierra el recorrido</small></div>
+                            <div><h4>Regreso final a base</h4><small>Tracto 2 · cierra el recorrido</small></div>
                         </div>
                         <asp:Literal ID="litProgresoRegreso" runat="server" Mode="PassThrough" />
                     </div>
@@ -427,20 +427,20 @@
                 <summary>⑥ Incidencias y Observaciones</summary>
                 <div class="se-acc-body">
                     <div class="se-grid">
-                        <div class="se-field"><label>Sacos Robados</label>
+                        <div class="se-field"><label>Sacos robados</label>
                             <asp:TextBox ID="txtSacosRobados" runat="server" TextMode="Number" Text="0" min="0" step="1" />
                             <asp:RegularExpressionValidator ID="revSacosRobados" runat="server" ControlToValidate="txtSacosRobados" ValidationGroup="vgGuardarSeguimiento" Display="Dynamic" CssClass="text-danger" ValidationExpression="^\d+$" ErrorMessage="Sacos Robados debe ser un número entero mayor o igual a 0." />
                         </div>
-                        <div class="se-field"><label>Sacos Rotos</label>
+                        <div class="se-field"><label>Sacos rotos</label>
                             <asp:TextBox ID="txtSacosRotos" runat="server" TextMode="Number" Text="0" min="0" step="1" />
                             <asp:RegularExpressionValidator ID="revSacosRotos" runat="server" ControlToValidate="txtSacosRotos" ValidationGroup="vgGuardarSeguimiento" Display="Dynamic" CssClass="text-danger" ValidationExpression="^\d+$" ErrorMessage="Sacos Rotos debe ser un número entero mayor o igual a 0." />
                         </div>
-                        <div class="se-field"><label>Sacos Mojados</label>
+                        <div class="se-field"><label>Sacos mojados</label>
                             <asp:TextBox ID="txtSacosMojados" runat="server" TextMode="Number" Text="0" min="0" step="1" />
                             <asp:RegularExpressionValidator ID="revSacosMojados" runat="server" ControlToValidate="txtSacosMojados" ValidationGroup="vgGuardarSeguimiento" Display="Dynamic" CssClass="text-danger" ValidationExpression="^\d+$" ErrorMessage="Sacos Mojados debe ser un número entero mayor o igual a 0." />
                         </div>
                     </div>
-                    <div class="se-field" style="margin-top:14px;"><label>Motivo de retraso / Comentario</label>
+                    <div class="se-field" style="margin-top:14px;"><label>Motivo de retraso / comentario</label>
                         <asp:TextBox ID="txtMotivoRetraso" runat="server" TextMode="MultiLine" Rows="3" />
                     </div>
                 </div>
@@ -449,7 +449,7 @@
             <div class="se-card">
                 <div class="se-actions">
                     <asp:Button ID="btnLimpiar" runat="server" Text="Limpiar" CssClass="se-btn se-btn-ghost" CausesValidation="false" OnClick="btnLimpiar_Click" />
-                    <asp:Button ID="btnVerificarGps" runat="server" Text="🛰️ Verificar GPS" CssClass="se-btn se-btn-ghost" CausesValidation="false" OnClick="btnVerificarGps_Click" ToolTip="Consulta el historial GPS del Tracto 1 y Tracto 2 y llena automáticamente los campos de fecha/hora detectables. Puede tardar 1-2 minutos." />
+                    <asp:Button ID="btnVerificarGps" runat="server" Text="🛰️ Verificar GPS" CssClass="se-btn se-btn-ghost" CausesValidation="false" OnClick="btnVerificarGps_Click" ToolTip="Consulta el historial GPS del tracto 1 y tracto 2 y llena automáticamente los campos de fecha/hora detectables. puede tardar 1-2 minutos." />
                     <asp:Button ID="btnGuardarBorrador" runat="server" Text="📝 Guardar borrador" CssClass="se-btn se-btn-ghost" OnClick="btnGuardarBorrador_Click" CausesValidation="false" />
                     <asp:Button ID="btnGuardarFinal" runat="server" Text="✅ Guardar final" CssClass="se-btn se-btn-primary" OnClick="btnGuardarFinal_Click" ValidationGroup="vgGuardarSeguimiento" />
                 </div>
@@ -507,14 +507,14 @@
                 <div class="se-table">
                     <asp:GridView ID="gvRecientes" runat="server" AutoGenerateColumns="false" AllowPaging="true" PageSize="10"
                         GridLines="None" CssClass=""
-                        EmptyDataText="No hay registros aún. Comienza usando el formulario o importando un Excel."
+                        EmptyDataText="No hay registros aún. comienza usando el formulario o importando un excel."
                         OnPageIndexChanging="gvRecientes_PageIndexChanging">
                         <Columns>
                             <asp:BoundField DataField="idSeguimiento"   HeaderText="ID" ItemStyle-Width="60px" />
                             <asp:BoundField DataField="cliente"          HeaderText="Cliente" />
-                            <asp:BoundField DataField="conductorOrigen"  HeaderText="Conductor Origen" />
+                            <asp:BoundField DataField="conductorOrigen"  HeaderText="Conductor origen" />
                             <asp:BoundField DataField="tracto1"          HeaderText="Tracto 1" />
-                            <asp:BoundField DataField="bodegaDescarga"   HeaderText="Bodega Destino" />
+                            <asp:BoundField DataField="bodegaDescarga"   HeaderText="Bodega destino" />
                             <asp:TemplateField HeaderText="Estado">
                                 <ItemTemplate>
                                     <span class='se-badge se-badge-<%# (Eval("estado") ?? "").ToString().ToLower().Replace("_","") %>'>

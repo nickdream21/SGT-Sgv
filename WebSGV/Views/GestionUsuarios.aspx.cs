@@ -100,7 +100,7 @@ namespace WebSGV.Views
         protected void btnNuevoUsuario_Click(object sender, EventArgs e)
         {
             hfIdUsuario.Value       = "0";
-            lblTituloModal.Text     = "Nuevo Usuario";
+            lblTituloModal.Text     = "Nuevo usuario";
             txtNombreUsuario.Text   = "";
             txtNombreUsuario.Enabled = true;
             txtNombre.Text          = "";

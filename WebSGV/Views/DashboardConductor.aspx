@@ -21,7 +21,7 @@
 
         <!-- Header mobile-first con gradiente -->
         <div class="cd-header">
-            <h2><i class="fas fa-tachometer-alt mr-2"></i>Mi Dashboard</h2>
+            <h2><i class="fas fa-tachometer-alt mr-2"></i>Mi dashboard</h2>
             <p class="cd-sub">
                 <strong><asp:Label ID="lblNombreConductor" runat="server"></asp:Label></strong>
                 &nbsp;|&nbsp; DNI: <asp:Label ID="lblDNIConductor" runat="server"></asp:Label>
@@ -83,12 +83,12 @@
                                                         <asp:Label ID="lblNumeroViaje" runat="server"></asp:Label></span>
                                                 </div>
                                                 <div class="info-item">
-                                                    <span class="info-label">Fecha Inicio:</span>
+                                                    <span class="info-label">Fecha inicio:</span>
                                                     <span class="info-value">
                                                         <asp:Label ID="lblFechaInicio" runat="server"></asp:Label></span>
                                                 </div>
                                                 <div class="info-item">
-                                                    <span class="info-label">Días en Ruta:</span>
+                                                    <span class="info-label">Días en ruta:</span>
                                                     <span class="info-value">
                                                         <asp:Label ID="lblDiasRuta" runat="server"></asp:Label></span>
                                                 </div>
@@ -101,7 +101,7 @@
                                         </div>
                                         <div class="col-12 col-md-4 text-center text-md-right mt-3 mt-md-0">
                                             <asp:Button ID="btnIrLiquidar" runat="server"
-                                                Text="Liquidar Ahora"
+                                                Text="Liquidar ahora"
                                                 CssClass="btn btn-success-custom btn-lg btn-block btn-md-auto"
                                                 OnClientClick="$('#liquidarViaje-tab').tab('show'); return false;" />
                                         </div>
@@ -114,7 +114,7 @@
                                 <div class="empty-state">
                                     <i class="fas fa-inbox empty-icon"></i>
                                     <h4>No tienes viajes activos</h4>
-                                    <p class="text-muted">Actualmente no tienes despachos programados. Contacta con la administración.</p>
+                                    <p class="text-muted">Actualmente no tienes despachos programados. contacta con la administración.</p>
                                 </div>
                             </asp:Panel>
 
@@ -209,7 +209,7 @@
                                                 </p>
                                             </div>
                                             <div class="col-6 col-md-3">
-                                                <label class="form-label-summary">Fecha Inicio</label>
+                                                <label class="form-label-summary">Fecha inicio</label>
                                                 <p class="form-value-summary">
                                                     <asp:Label ID="lblFechaInicioResumen" runat="server"></asp:Label>
                                                 </p>
@@ -222,7 +222,7 @@
                                             </div>
                                             <div class="col-6 col-md-3">
                                                 <label class="form-label-summary">Estado</label>
-                                                <p class="form-value-summary"><span class="badge badge-info">En Progreso</span></p>
+                                                <p class="form-value-summary"><span class="badge badge-info">En progreso</span></p>
                                             </div>
                                         </div>
                                     </div>
@@ -239,31 +239,31 @@
                                         <div class="row">
                                             <div class="col-12 col-md-3">
                                                 <div class="form-group">
-                                                    <label class="form-label">Fecha Salida <span class="text-danger">*</span></label>
+                                                    <label class="form-label">Fecha salida <span class="text-danger">*</span></label>
                                                     <asp:TextBox ID="txtFechaSalida" runat="server" CssClass="form-control" TextMode="Date" required></asp:TextBox>
                                                 </div>
                                             </div>
                                             <div class="col-12 col-md-3">
                                                 <div class="form-group">
-                                                    <label class="form-label">Fecha Llegada <span class="text-danger">*</span></label>
+                                                    <label class="form-label">Fecha llegada <span class="text-danger">*</span></label>
                                                     <asp:TextBox ID="txtFechaLlegada" runat="server" CssClass="form-control" TextMode="Date" required ReadOnly="true"></asp:TextBox>
                                                 </div>
                                             </div>
                                             <div class="col-12 col-md-3">
                                                 <div class="form-group">
-                                                    <label class="form-label">Hora Salida <span class="text-danger">*</span></label>
+                                                    <label class="form-label">Hora salida <span class="text-danger">*</span></label>
                                                     <asp:TextBox ID="txtHoraSalida" runat="server" CssClass="form-control" TextMode="Time" required></asp:TextBox>
                                                 </div>
                                             </div>
                                             <div class="col-12 col-md-3">
                                                 <div class="form-group">
-                                                    <label class="form-label">Hora de Envío (automática)</label>
+                                                    <label class="form-label">Hora de envío (automática)</label>
                                                     <asp:TextBox ID="txtHoraLlegada" runat="server" CssClass="form-control" TextMode="Time" ReadOnly="true"></asp:TextBox>
                                                 </div>
                                             </div>
                                             <div class="col-12 col-md-3">
                                                 <div class="form-group">
-                                                    <label class="form-label">Hora Real de Llegada a Base</label>
+                                                    <label class="form-label">Hora real de llegada a base</label>
                                                     <asp:TextBox ID="txtHoraLlegadaDeclarada" runat="server" CssClass="form-control" TextMode="Time"></asp:TextBox>
                                                 </div>
                                             </div>
@@ -276,7 +276,7 @@
                                         <div class="row">
                                             <div class="col-12">
                                                 <div class="form-group">
-                                                    <label class="form-label">Observaciones del Viaje</label>
+                                                    <label class="form-label">Observaciones del viaje</label>
                                                     <asp:TextBox ID="txtObservaciones" runat="server" CssClass="form-control"
                                                         TextMode="MultiLine" Rows="2" placeholder="Describe cualquier eventualidad o comentario importante del viaje"></asp:TextBox>
                                                 </div>
@@ -348,7 +348,7 @@
                                                     </tr>
                                                     <tr style="display:none">
                                                         <td class="text-center">3</td>
-                                                        <td><strong>Otros Autorizados</strong></td>
+                                                        <td><strong>Otros autorizados</strong></td>
                                                         <td>
                                                             <input type="text" class="form-control form-control-sm" name="descOtros"
                                                                 placeholder="Otros ingresos autorizados">
@@ -391,7 +391,7 @@
                                                         </td>
                                                     </tr>
                                                     <tr class="total-row">
-                                                        <td colspan="3" class="text-right"><strong>Total Ingresos:</strong></td>
+                                                        <td colspan="3" class="text-right"><strong>Total ingresos:</strong></td>
                                                         <td><strong>S/ <span id="totalIngresosSoles">0.00</span></strong></td>
                                                         <td><strong>$ <span id="totalIngresosDolares">0.00</span></strong></td>
                                                         <td></td>
@@ -430,7 +430,7 @@
                                                     <!-- Peajes Nacionales (Perú) - Solo Soles -->
                                                     <tr id="filaPeajesNacionales">
                                                         <td class="text-center">1</td>
-                                                        <td><strong>Peajes Nacionales</strong><br/><small class="text-muted">Perú (S/)</small></td>
+                                                        <td><strong>Peajes nacionales</strong><br/><small class="text-muted">Perú (S/)</small></td>
                                                         <td>
                                                             <input type="text" class="form-control form-control-sm"
                                                                 name="descPeajesNacionales" id="descPeajesNacionales" placeholder="Observaciones peajes nacionales">
@@ -448,7 +448,7 @@
                                                     <!-- Peajes Extranjeros (Ecuador) - Solo Dólares -->
                                                     <tr id="filaPeajesExtranjeros">
                                                         <td class="text-center">2</td>
-                                                        <td><strong>Peajes Extranjeros</strong><br/><small class="text-muted">Ecuador ($)</small></td>
+                                                        <td><strong>Peajes extranjeros</strong><br/><small class="text-muted">Ecuador ($)</small></td>
                                                         <td>
                                                             <input type="text" class="form-control form-control-sm"
                                                                 name="descPeajesExtranjeros" id="descPeajesExtranjeros" placeholder="Observaciones peajes extranjeros">
@@ -506,7 +506,7 @@
                                                     <tr>
                                                         <td class="text-center">5</td>
                                                         <td>
-                                                            <strong>Reparaciones Varios</strong>
+                                                            <strong>Reparaciones varios</strong>
                                                             <button type="button" class="btn btn-detail-modal btn-sm ml-2" onclick="abrirModalReparaciones()">
                                                                 <i class="fas fa-edit"></i>Detalle
                                                             </button>
@@ -622,7 +622,7 @@
                                                         </td>
                                                     </tr>
                                                     <tr class="total-row">
-                                                        <td colspan="3" class="text-right"><strong>Total Gastos:</strong></td>
+                                                        <td colspan="3" class="text-right"><strong>Total gastos:</strong></td>
                                                         <td><strong>S/ <span id="totalGastosSoles">0.00</span></strong></td>
                                                         <td><strong>$ <span id="totalGastosDolares">0.00</span></strong></td>
                                                         <td></td>
@@ -645,13 +645,13 @@
                                             <div class="row">
                                                 <div class="col-12 col-md-6 mb-3 mb-md-0">
                                                     <div class="balance-item">
-                                                        <span class="balance-label">Balance en Soles:</span>
+                                                        <span class="balance-label">Balance en soles:</span>
                                                         <span class="balance-amount" id="diferenciaSoles">S/ 0.00</span>
                                                     </div>
                                                 </div>
                                                 <div class="col-12 col-md-6">
                                                     <div class="balance-item">
-                                                        <span class="balance-label">Balance en Dólares:</span>
+                                                        <span class="balance-label">Balance en dólares:</span>
                                                         <span class="balance-amount" id="diferenciaDolares">$ 0.00</span>
                                                     </div>
                                                 </div>
@@ -820,16 +820,16 @@
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header modal-header-custom">
-                    <h5 class="modal-title"><i class="fas fa-wrench mr-2"></i>Registrar Reparaciones</h5>
+                    <h5 class="modal-title"><i class="fas fa-wrench mr-2"></i>Registrar reparaciones</h5>
                     <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <div class="card card-form mb-3">
-                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar Reparación</div>
+                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar reparación</div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-12 col-md-6">
-                                    <label class="form-label">Tipo de Reparación <span class="text-danger">*</span></label>
+                                    <label class="form-label">Tipo de reparación <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control form-control-sm" id="nuevaReparacionTipo" placeholder="Ej: Cambio de llanta">
                                 </div>
                                 <div class="col-12 col-md-6">
@@ -866,7 +866,7 @@
                     </div>
                     <div class="card card-list">
                         <div class="card-header d-flex justify-content-between">
-                            <span><i class="fas fa-list mr-2"></i>Reparaciones Registradas</span>
+                            <span><i class="fas fa-list mr-2"></i>Reparaciones registradas</span>
                             <span class="badge badge-primary-custom" id="totalReparaciones">0 reparaciones</span>
                         </div>
                         <div class="card-body p-0">
@@ -888,15 +888,15 @@
                         </div>
                         <div class="card-footer-totals">
                             <div class="row">
-                                <div class="col-6"><strong>Total Soles: <span id="totalReparacionesSoles">S/ 0.00</span></strong></div>
-                                <div class="col-6 text-right"><strong>Total Dólares: <span id="totalReparacionesDolares">$ 0.00</span></strong></div>
+                                <div class="col-6"><strong>Total soles: <span id="totalReparacionesSoles">S/ 0.00</span></strong></div>
+                                <div class="col-6 text-right"><strong>Total dólares: <span id="totalReparacionesDolares">$ 0.00</span></strong></div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary-custom" onclick="aplicarReparaciones()">Aplicar y Cerrar</button>
+                    <button type="button" class="btn btn-primary-custom" onclick="aplicarReparaciones()">Aplicar y cerrar</button>
                 </div>
             </div>
         </div>
@@ -907,12 +907,12 @@
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header modal-header-custom">
-                    <h5 class="modal-title"><i class="fas fa-bed mr-2"></i>Registrar Hospedajes</h5>
+                    <h5 class="modal-title"><i class="fas fa-bed mr-2"></i>Registrar hospedajes</h5>
                     <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <div class="card card-form mb-3">
-                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar Hospedaje</div>
+                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar hospedaje</div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-12 col-md-6">
@@ -953,7 +953,7 @@
                     </div>
                     <div class="card card-list">
                         <div class="card-header d-flex justify-content-between">
-                            <span><i class="fas fa-list mr-2"></i>Hospedajes Registrados</span>
+                            <span><i class="fas fa-list mr-2"></i>Hospedajes registrados</span>
                             <span class="badge badge-primary-custom" id="totalHospedajes">0 hospedajes</span>
                         </div>
                         <div class="card-body p-0">
@@ -975,15 +975,15 @@
                         </div>
                         <div class="card-footer-totals">
                             <div class="row">
-                                <div class="col-6"><strong>Total Soles: <span id="totalHospedajesSoles">S/ 0.00</span></strong></div>
-                                <div class="col-6 text-right"><strong>Total Dólares: <span id="totalHospedajesDolares">$ 0.00</span></strong></div>
+                                <div class="col-6"><strong>Total soles: <span id="totalHospedajesSoles">S/ 0.00</span></strong></div>
+                                <div class="col-6 text-right"><strong>Total dólares: <span id="totalHospedajesDolares">$ 0.00</span></strong></div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary-custom" onclick="aplicarHospedajes()">Aplicar y Cerrar</button>
+                    <button type="button" class="btn btn-primary-custom" onclick="aplicarHospedajes()">Aplicar y cerrar</button>
                 </div>
             </div>
         </div>
@@ -994,12 +994,12 @@
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header modal-header-custom">
-                    <h5 class="modal-title"><i class="fas fa-gas-pump mr-2"></i>Registrar Combustible</h5>
+                    <h5 class="modal-title"><i class="fas fa-gas-pump mr-2"></i>Registrar combustible</h5>
                     <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <div class="card card-form mb-3">
-                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar Combustible</div>
+                        <div class="card-header"><i class="fas fa-plus mr-2"></i>Agregar combustible</div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-12 col-md-6">
@@ -1040,7 +1040,7 @@
                     </div>
                     <div class="card card-list">
                         <div class="card-header d-flex justify-content-between">
-                            <span><i class="fas fa-list mr-2"></i>Combustibles Registrados</span>
+                            <span><i class="fas fa-list mr-2"></i>Combustibles registrados</span>
                             <span class="badge badge-primary-custom" id="totalCombustibles">0 combustibles</span>
                         </div>
                         <div class="card-body p-0">
@@ -1062,15 +1062,15 @@
                         </div>
                         <div class="card-footer-totals">
                             <div class="row">
-                                <div class="col-6"><strong>Total Soles: <span id="totalCombustiblesSoles">S/ 0.00</span></strong></div>
-                                <div class="col-6 text-right"><strong>Total Dólares: <span id="totalCombustiblesDolares">$ 0.00</span></strong></div>
+                                <div class="col-6"><strong>Total soles: <span id="totalCombustiblesSoles">S/ 0.00</span></strong></div>
+                                <div class="col-6 text-right"><strong>Total dólares: <span id="totalCombustiblesDolares">$ 0.00</span></strong></div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary-custom" onclick="aplicarCombustibles()">Aplicar y Cerrar</button>
+                    <button type="button" class="btn btn-primary-custom" onclick="aplicarCombustibles()">Aplicar y cerrar</button>
                 </div>
             </div>
         </div>

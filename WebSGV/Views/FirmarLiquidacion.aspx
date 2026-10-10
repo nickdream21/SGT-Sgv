@@ -24,8 +24,8 @@
     <header class="fl-header">
         <div class="logo">SGV</div>
         <div>
-            <h1>Orden de Viaje</h1>
-            <div class="sub">Firma del Conductor - Declaración Jurada</div>
+            <h1>Orden de viaje</h1>
+            <div class="sub">Firma del conductor - declaración jurada</div>
         </div>
         <div class="fl-format-chip">SGV-CDF-F-05 v01</div>
     </header>
@@ -39,7 +39,7 @@
 
             <!-- Resumen de la liquidación -->
             <section class="fl-card">
-                <h2><i class="fas fa-file-invoice mr-2"></i>Resumen de la Liquidación</h2>
+                <h2><i class="fas fa-file-invoice mr-2"></i>Resumen de la liquidación</h2>
                 <div class="fl-grid">
                     <div>
                         <div class="lbl">N° Orden</div>
@@ -71,7 +71,7 @@
             <!-- Declaración jurada -->
             <div class="fl-declaracion">
                 <i class="fas fa-gavel mr-1"></i>
-                <strong>Declaración Jurada:</strong>
+                <strong>Declaración jurada:</strong>
                 Declaro bajo juramento que los datos y montos de esta liquidación son verdaderos,
                 que los comprobantes entregados son auténticos y que autorizo su uso para los
                 fines administrativos, contables y legales correspondientes. Esta firma tiene pleno

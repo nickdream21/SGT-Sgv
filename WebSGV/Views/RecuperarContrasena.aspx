@@ -3,7 +3,7 @@
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/RecuperarContrasena.css") %>" rel="stylesheet" />
 
     <div class="recovery-container">
-        <h2 class="recovery-title">Recuperar Contraseña</h2>
+        <h2 class="recovery-title">Recuperar contraseña</h2>
         <p class="recovery-subtitle">Ingrese su usuario o correo electrónico y le enviaremos un enlace para restablecer su contraseña.</p>
 
         <asp:Panel ID="pnlMensaje" runat="server" CssClass="alert" Visible="false">
@@ -11,11 +11,11 @@
         </asp:Panel>
 
         <div class="form-group">
-            <label for="txtUsuarioEmail">Usuario o Correo Electrónico:</label>
+            <label for="txtUsuarioEmail">Usuario o correo electrónico:</label>
             <asp:TextBox ID="txtUsuarioEmail" runat="server" CssClass="form-control" placeholder="usuario o email@ejemplo.com"></asp:TextBox>
         </div>
 
-        <asp:Button ID="btnEnviar" runat="server" CssClass="btn btn-primary" Text="Enviar Enlace de Recuperación" OnClick="btnEnviar_Click" />
-        <asp:Button ID="btnVolver" runat="server" CssClass="btn btn-secondary" Text="Volver al Login" OnClick="btnVolver_Click" CausesValidation="false" />
+        <asp:Button ID="btnEnviar" runat="server" CssClass="btn btn-primary" Text="Enviar enlace de recuperación" OnClick="btnEnviar_Click" />
+        <asp:Button ID="btnVolver" runat="server" CssClass="btn btn-secondary" Text="Volver al login" OnClick="btnVolver_Click" CausesValidation="false" />
     </div>
 </asp:Content>

@@ -9,7 +9,7 @@
 
             <div class="dashboard-container">
                 <div class="dashboard-header">
-                    <h1 class="dashboard-title">INDICADORES - SERVICIOS GENERALES VIVIANA E.I.R.L</h1>
+                    <h1 class="dashboard-title">Indicadores de servicios generales</h1>
                     <!-- Botón server-side -->
                     <asp:Button ID="btnRefresh" runat="server" Text="Actualizar" OnClick="btnRefresh_Click" CssClass="refresh-btn" />
                 </div>
@@ -33,21 +33,19 @@
 
                     <label for="ddlAnio">Año:</label>
                     <asp:DropDownList ID="ddlAnio" runat="server" CssClass="filter-dropdown">
-                        <asp:ListItem Value="2024">2024</asp:ListItem>
-                        <asp:ListItem Value="2025">2025</asp:ListItem>
                     </asp:DropDownList>
 
                     <asp:Button ID="btnFiltrar" runat="server" Text="Aplicar filtro" OnClick="btnFiltrar_Click" CssClass="refresh-btn" />
                     <!-- Agregar justo debajo del botón de filtro -->
-                    <asp:Button ID="btnDiagnostico" runat="server" Text="Diagnóstico" OnClick="btnDiagnostico_Click" CssClass="refresh-btn" />
+                    <asp:Button ID="btnDiagnostico" runat="server" Text="Diagnóstico" OnClick="btnDiagnostico_Click" CssClass="refresh-btn refresh-btn-secundario" />
                 </div>
 
                 <!-- Tabs de navegación usando LinkButtons para postbacks limpios -->
                 <div class="tabs-container">
                     <asp:LinkButton ID="lnkGeneral" runat="server" CssClass="tab active" OnClick="lnkGeneral_Click">General</asp:LinkButton>
-                    <asp:LinkButton ID="lnkTramiteAduanero" runat="server" CssClass="tab" OnClick="lnkTramiteAduanero_Click">Trámite Aduanero</asp:LinkButton>
-                    <asp:LinkButton ID="lnkTiemposAdicionales" runat="server" CssClass="tab" OnClick="lnkTiemposAdicionales_Click">Tiempos Adicionales</asp:LinkButton>
-                    <asp:LinkButton ID="lnkBodegasDistancias" runat="server" CssClass="tab" OnClick="lnkBodegasDistancias_Click">Bodegas y Distancias</asp:LinkButton>
+                    <asp:LinkButton ID="lnkTramiteAduanero" runat="server" CssClass="tab" OnClick="lnkTramiteAduanero_Click">Trámite aduanero</asp:LinkButton>
+                    <asp:LinkButton ID="lnkTiemposAdicionales" runat="server" CssClass="tab" OnClick="lnkTiemposAdicionales_Click">Tiempos adicionales</asp:LinkButton>
+                    <asp:LinkButton ID="lnkBodegasDistancias" runat="server" CssClass="tab" OnClick="lnkBodegasDistancias_Click">Bodegas y distancias</asp:LinkButton>
                 </div>
 
                 <div id="loader" class="loader" runat="server" visible="false"></div>
@@ -56,7 +54,7 @@
                 <asp:Panel ID="pnlGeneral" runat="server" CssClass="tab-content active">
                     <div class="dashboard-row">
                         <div class="kpi-card">
-                            <div class="kpi-title">% Cump hora prog.</div>
+                            <div class="kpi-title">Cumplimiento de hora programada</div>
                             <div class="kpi-value">
                                 <asp:Literal ID="litCumplimiento" runat="server">0</asp:Literal>
                             </div>
@@ -68,13 +66,13 @@
                             </div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-title">Total Pedidos</div>
+                            <div class="kpi-title">Total pedidos</div>
                             <div class="kpi-value">
                                 <asp:Literal ID="litPedidos" runat="server">0</asp:Literal>
                             </div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-title">Camiones x Pedido</div>
+                            <div class="kpi-title">Camiones por pedido</div>
                             <div class="kpi-value">
                                 <asp:Literal ID="litCamionesPedido" runat="server">0</asp:Literal>
                             </div>
@@ -83,29 +81,29 @@
 
                     <div class="chart-row">
                         <div class="chart-container full">
-                            <div class="chart-title">Tiempos promedio en Trujillo (Hrs)</div>
+                            <div class="chart-title">Tiempos promedio en Trujillo (h)</div>
                             <canvas id="chartTrujillo"></canvas>
                         </div>
                     </div>
 
                     <div class="chart-row">
                         <div class="chart-container half">
-                            <div class="chart-title">Tiempo prom. deTrujillo-Planta Ecuador (días)</div>
+                            <div class="chart-title">Tiempo promedio de Trujillo a planta Ecuador (días)</div>
                             <canvas id="chartTrujilloEcuador"></canvas>
                         </div>
                         <div class="chart-container half">
-                            <div class="chart-title">Tiempo promedio en Base (Hrs)</div>
+                            <div class="chart-title">Tiempo promedio en base (h)</div>
                             <canvas id="chartBase"></canvas>
                         </div>
                     </div>
 
                     <div class="chart-row">
                         <div class="chart-container half">
-                            <div class="chart-title">Tiempos promedio en Inbalnor (Hrs)</div>
+                            <div class="chart-title">Tiempos promedio en Inbalnor (h)</div>
                             <canvas id="chartInbalnor"></canvas>
                         </div>
                         <div class="chart-container half">
-                            <div class="chart-title">Tiempos promedio en Jave (Hrs)</div>
+                            <div class="chart-title">Tiempos promedio en Jave (h)</div>
                             <canvas id="chartJave"></canvas>
                         </div>
                     </div>
@@ -116,13 +114,13 @@
                 <asp:Panel ID="pnlTramiteAduanero" runat="server" CssClass="tab-content" Visible="false">
                     <div class="dashboard-row">
                         <div class="kpi-card">
-                            <div class="kpi-title">TOTAL PROM.</div>
+                            <div class="kpi-title">Promedio Depsa</div>
                             <div class="kpi-value">
                                 <asp:Literal ID="litTotalPromDepsa" runat="server">0</asp:Literal>
                             </div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-title">TOTAL PROM.</div>
+                            <div class="kpi-title">Promedio Complex</div>
                             <div class="kpi-value">
                                 <asp:Literal ID="litTotalPromComplex" runat="server">0</asp:Literal>
                             </div>
@@ -132,7 +130,7 @@
                     <!-- Cambiar esta parte - Grafico 1 -->
                     <div class="chart-row">
                         <div class="chart-container full">
-                            <div class="chart-title">ESPERA PARA INGRESAR A DEPSA (HRS)</div>
+                            <div class="chart-title">Espera para ingresar a Depsa (h)</div>
                             <canvas id="chartEsperaDepsa"></canvas>
                         </div>
                     </div>
@@ -140,7 +138,7 @@
                     <!-- Grafico 2 -->
                     <div class="chart-row">
                         <div class="chart-container full">
-                            <div class="chart-title">ESPERA PARA INGRESAR A COMPLEX (HRS)</div>
+                            <div class="chart-title">Espera para ingresar a Complex (h)</div>
                             <canvas id="chartEsperaComplex"></canvas>
                         </div>
                     </div>
@@ -148,7 +146,7 @@
                     <!-- Grafico 3 -->
                     <div class="chart-row">
                         <div class="chart-container full">
-                            <div class="chart-title">TIEMPO PROMEDIO EN DEPSA</div>
+                            <div class="chart-title">Tiempo promedio en Depsa</div>
                             <canvas id="chartTiempoDepsa"></canvas>
                         </div>
                     </div>
@@ -156,14 +154,14 @@
                     <!-- Grafico 4 -->
                     <div class="chart-row">
                         <div class="chart-container full">
-                            <div class="chart-title">TIEMPO PROMEDIO EN COMPLEX</div>
+                            <div class="chart-title">Tiempo promedio en Complex</div>
                             <canvas id="chartTiempoComplex"></canvas>
                         </div>
                     </div>
 
                     <!-- Añadir antes del gráfico CEBAF -->
                     <div class="total-prom-container">
-                        <div class="total-prom-label">TOTAL PROM.</div>
+                        <div class="total-prom-label">Promedio Cebaf (min)</div>
                         <div class="total-prom-value">
                             <asp:Literal ID="litTotalPromCebaf" runat="server">0</asp:Literal>
                         </div>
@@ -172,7 +170,7 @@
                     <!-- Luego el gráfico -->
                     <div class="chart-row">
                         <div class="chart-container full">
-                            <div class="chart-title">TIEMPO PROMEDIO EN CEBAF (MIN)</div>
+                            <div class="chart-title">Tiempo promedio en Cebaf (min)</div>
                             <canvas id="chartTiempoCebaf"></canvas>
                         </div>
                     </div>
@@ -184,13 +182,13 @@
                 <asp:Panel ID="pnlTiemposAdicionales" runat="server" CssClass="tab-content" Visible="false">
                     <div class="dashboard-row">
                         <div class="kpi-card">
-                            <div class="kpi-title">TOTAL PROM.</div>
+                            <div class="kpi-title">Promedio TCI</div>
                             <div class="kpi-value">
                                 <asp:Literal ID="litTotalPromTCI" runat="server">0</asp:Literal>
                             </div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-title">TOTAL PROM.</div>
+                            <div class="kpi-title">Promedio Puyango</div>
                             <div class="kpi-value">
                                 <asp:Literal ID="litTotalPromPuyango" runat="server">0</asp:Literal>
                             </div>
@@ -200,7 +198,7 @@
                     <!-- Grafico 1 -->
                     <div class="chart-row">
                         <div class="chart-container full">
-                            <div class="chart-title">TIEMPO PROMEDIO EN TCI (HRS)</div>
+                            <div class="chart-title">Tiempo promedio en TCI (h)</div>
                             <canvas id="chartTiempoTCI"></canvas>
                         </div>
                     </div>
@@ -208,7 +206,7 @@
                     <!-- Grafico 3 -->
                     <div class="chart-row">
                         <div class="chart-container full">
-                            <div class="chart-title">ESPERA DE NACIONALIZACIÓN (HRS)</div>
+                            <div class="chart-title">Espera de nacionalización (h)</div>
                             <canvas id="chartEsperaNacionalizacion"></canvas>
                         </div>
                     </div>
@@ -219,28 +217,28 @@
                 <asp:Panel ID="pnlBodegasDistancias" runat="server" CssClass="tab-content" Visible="false">
                     <div class="chart-row">
                         <div class="chart-container full">
-                            <div class="chart-title">TIEMPO PROMEDIO DE BODEGA NACIONAL A INBALNOR (HRS)</div>
+                            <div class="chart-title">Tiempo promedio de bodega nacional a Inbalnor (h)</div>
                             <canvas id="chartBodegaInbalnor"></canvas>
                         </div>
                     </div>
 
                     <div class="chart-row">
                         <div class="chart-container full">
-                            <div class="chart-title">TIEMPO PROMEDIO DE BODEGA NACIONAL A JAVE (HRS)</div>
+                            <div class="chart-title">Tiempo promedio de bodega nacional a Jave (h)</div>
                             <canvas id="chartBodegaJave"></canvas>
                         </div>
                     </div>
 
                     <div class="chart-row">
                         <div class="chart-container full">
-                            <div class="chart-title">TIEMPO PROMEDIO DE BODEGA ECUATORIANA A BODEGA INBALNOR (HRS)</div>
+                            <div class="chart-title">Tiempo promedio de bodega ecuatoriana a Inbalnor (h)</div>
                             <canvas id="chartEcuatorianaInbalnor"></canvas>
                         </div>
                     </div>
 
                     <div class="chart-row">
                         <div class="chart-container full">
-                            <div class="chart-title">TIEMPO PROMEDIO DE BODEGA ECUATORIANA A BODEGA JAVE (HRS)</div>
+                            <div class="chart-title">Tiempo promedio de bodega ecuatoriana a Jave (h)</div>
                             <canvas id="chartEcuatorianaJave"></canvas>
                         </div>
                     </div>

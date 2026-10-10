@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css" />
 
     <div class="container">
-        <h2 class="mt-4 mb-4">Búsqueda de Orden de Viaje</h2>
+        <h2 class="mt-4 mb-4">Búsqueda de orden de viaje</h2>
 
         <!-- Sección de búsqueda -->
         <div class="row mb-4">
@@ -21,13 +21,13 @@
 
         <!-- Panel de resultados (inicialmente oculto) -->
         <asp:Panel ID="pnlResultados" runat="server" Visible="false">
-            <h3>Información de la Orden de Viaje</h3>
+            <h3>Información de la orden de viaje</h3>
 
             <div class="tabs-container mt-4">
                 <!-- Pestañas -->
                 <ul class="nav nav-tabs" id="ordenViajeTabs" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active" id="datos-tab" data-toggle="tab" href="#datos" role="tab" aria-controls="datos" aria-selected="true">Datos del Viaje</a>
+                        <a class="nav-link active" id="datos-tab" data-toggle="tab" href="#datos" role="tab" aria-controls="datos" aria-selected="true">Datos del viaje</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" id="liquidacion-tab" data-toggle="tab" href="#liquidacion" role="tab" aria-controls="liquidacion" aria-selected="false">Liquidación</a>
@@ -42,7 +42,7 @@
                 <div class="tab-content" id="ordenViajeContent">
                     <!-- Pestaña 1: Datos del Viaje -->
                     <div class="tab-pane fade show active" id="datos" role="tabpanel" aria-labelledby="datos-tab">
-                        <h4 class="tab-header text-center mb-4">Datos del Viaje</h4>
+                        <h4 class="tab-header text-center mb-4">Datos del viaje</h4>
                         <div id="formDatosViaje">
                             <!-- Primera fila: N° CPI y N° Orden Viaje -->
                             <div class="row mb-3">
@@ -59,19 +59,19 @@
                             <!-- Segunda fila: Fechas y horas -->
                             <div class="row mb-3">
                                 <div class="col-md-3 form-group">
-                                    <label for="txtFechaSalida">Fecha de Salida:</label>
+                                    <label for="txtFechaSalida">Fecha de salida:</label>
                                     <asp:TextBox ID="txtFechaSalida" runat="server" CssClass="form-control" TextMode="Date" Enabled="false"></asp:TextBox>
                                 </div>
                                 <div class="col-md-3 form-group">
-                                    <label for="txtHoraSalida">Hora de Salida:</label>
+                                    <label for="txtHoraSalida">Hora de salida:</label>
                                     <asp:TextBox ID="txtHoraSalida" runat="server" CssClass="form-control" TextMode="Time" Enabled="false"></asp:TextBox>
                                 </div>
                                 <div class="col-md-3 form-group">
-                                    <label for="txtFechaLlegada">Fecha de Llegada:</label>
+                                    <label for="txtFechaLlegada">Fecha de llegada:</label>
                                     <asp:TextBox ID="txtFechaLlegada" runat="server" CssClass="form-control" TextMode="Date" Enabled="false"></asp:TextBox>
                                 </div>
                                 <div class="col-md-3 form-group">
-                                    <label for="txtHoraLlegada">Hora de Llegada:</label>
+                                    <label for="txtHoraLlegada">Hora de llegada:</label>
                                     <asp:TextBox ID="txtHoraLlegada" runat="server" CssClass="form-control" TextMode="Time" Enabled="false"></asp:TextBox>
                                 </div>
                             </div>
@@ -86,12 +86,12 @@
                                     </asp:DropDownList>
                                 </div>
                                 <div class="col-md-4 form-group">
-                                    <label for="ddlPlacaTracto">Placa Tracto:</label>
+                                    <label for="ddlPlacaTracto">Placa tracto:</label>
                                     <asp:DropDownList ID="ddlPlacaTracto" runat="server" CssClass="form-control select2" Enabled="false">
                                     </asp:DropDownList>
                                 </div>
                                 <div class="col-md-4 form-group">
-                                    <label for="ddlPlacaCarreta">Placa Carreta:</label>
+                                    <label for="ddlPlacaCarreta">Placa carreta:</label>
                                     <asp:DropDownList ID="ddlPlacaCarreta" runat="server" CssClass="form-control select2" Enabled="false">
                                     </asp:DropDownList>
                                 </div>
@@ -157,7 +157,7 @@
                                     </tr>
                                     <tr>
                                         <td>3</td>
-                                        <td>Otros Autorizados</td>
+                                        <td>Otros autorizados</td>
                                         <td>
                                             <asp:TextBox runat="server" ID="txtDescOtros" CssClass="form-control" Enabled="false"></asp:TextBox>
                                         </td>
@@ -259,7 +259,7 @@
                                     </tr>
                                     <tr>
                                         <td>4</td>
-                                        <td>Reparaciones Varios</td>
+                                        <td>Reparaciones varios</td>
                                         <td>
                                             <asp:TextBox runat="server" ID="txtDescReparaciones" CssClass="form-control" Enabled="false"></asp:TextBox>
                                         </td>
@@ -348,7 +348,7 @@
 
                             <!-- Observaciones de Liquidación -->
                             <div class="form-group mt-3">
-                                <label for="txtObservacionesLiquidacion">Observaciones de Liquidación:</label>
+                                <label for="txtObservacionesLiquidacion">Observaciones de liquidación:</label>
                                 <asp:TextBox ID="txtObservacionesLiquidacion" runat="server" CssClass="form-control" TextMode="MultiLine" Rows="3" Enabled="false"></asp:TextBox>
                             </div>
                         </div>
@@ -356,7 +356,7 @@
 
                     <!-- Pestaña 3: Guías -->
                     <div class="tab-pane fade" id="guias" role="tabpanel" aria-labelledby="guias-tab">
-                        <h4 class="tab-header">Guías de Transporte</h4>
+                        <h4 class="tab-header">Guías de transporte</h4>
                         <div id="formGuias">
                             <!-- Número de Guías -->
                             <div class="row">
@@ -383,7 +383,7 @@
                             <div id="rutaDetails" style="display:none;">
                                 <div class="row">
                                     <div class="col-md-6 form-group">
-                                        <label for="ddlPlantaDescarga">Planta de Descarga:</label>
+                                        <label for="ddlPlantaDescarga">Planta de descarga:</label>
                                         <asp:DropDownList ID="ddlPlantaDescarga" runat="server" CssClass="form-control" Enabled="false">
                                         </asp:DropDownList>
                                     </div>
@@ -400,7 +400,7 @@
                                 <Columns>
                                     <asp:BoundField DataField="idProducto" HeaderText="ID" Visible="false" />
                                     <asp:BoundField DataField="NombreProducto" HeaderText="Producto" />
-                                    <asp:BoundField DataField="CantidadBolsas" HeaderText="Cantidad de Bolsas" />
+                                    <asp:BoundField DataField="CantidadBolsas" HeaderText="Cantidad de bolsas" />
                                 </Columns>
                             </asp:GridView>
                         </div>
@@ -411,8 +411,8 @@
             <!-- Botones de acción -->
             <div class="row mt-3 mb-4">
                 <div class="col-md-12 text-right">
-                    <asp:Button ID="btnHabilitarEdicion" runat="server" Text="Habilitar Edición" CssClass="btn btn-primary" OnClick="btnHabilitarEdicion_Click" />
-                    <asp:Button ID="btnGuardarCambios" runat="server" Text="Guardar Cambios" CssClass="btn btn-success" Visible="false" OnClick="btnGuardarCambios_Click" />
+                    <asp:Button ID="btnHabilitarEdicion" runat="server" Text="Habilitar edición" CssClass="btn btn-primary" OnClick="btnHabilitarEdicion_Click" />
+                    <asp:Button ID="btnGuardarCambios" runat="server" Text="Guardar cambios" CssClass="btn btn-success" Visible="false" OnClick="btnGuardarCambios_Click" />
                     <asp:Button ID="btnCancelar" runat="server" Text="Cancelar" CssClass="btn btn-danger" OnClick="btnCancelar_Click" />
                 </div>
             </div>

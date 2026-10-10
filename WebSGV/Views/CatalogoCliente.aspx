@@ -158,7 +158,6 @@
                                     </Columns>
                                     <EmptyDataTemplate>
                                         <div class="text-center text-muted py-4">
-                                            <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                                             Este cliente todav&#xED;a no tiene nada cargado en esta secci&#xF3;n.
                                         </div>
                                     </EmptyDataTemplate>
@@ -195,7 +194,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                     <asp:Button ID="btnActualizar" runat="server" CssClass="btn btn-info"
-                        Text="Guardar Cambios" OnClick="btnActualizar_Click" />
+                        Text="Guardar cambios" OnClick="btnActualizar_Click" />
                 </div>
             </div>
         </div>

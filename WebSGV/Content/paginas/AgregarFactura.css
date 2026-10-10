@@ -99,8 +99,6 @@ select.form-control {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
     min-width: 140px;
     box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
 }
@@ -108,7 +106,6 @@ select.form-control {
 .btn:hover {
     background-color: #1976D2;
     box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
-    transform: translateY(-1px);
 }
 
 .btn:active {

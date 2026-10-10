@@ -5,13 +5,13 @@
 
     <div class="do-container">
         <div class="do-header">
-            <h3 style="margin:0;"><i class="fas fa-truck-moving mr-2"></i>Registrar Despacho de Combustible a Obra</h3>
+            <h3 style="margin:0;"><i class="fas fa-truck-moving mr-2"></i>Registrar despacho de combustible a obra</h3>
             <small class="text-muted">Cisterna con combustible para maquinaria en obra</small>
         </div>
 
         <!-- Datos del despacho -->
         <div class="do-section">
-            <h5 style="color:#e65100; margin-bottom:12px;"><i class="fas fa-info-circle mr-1"></i>Datos del Despacho</h5>
+            <h5 style="color:#e65100; margin-bottom:12px;"><i class="fas fa-info-circle mr-1"></i>Datos del despacho</h5>
             <div class="do-grid">
                 <div>
                     <div class="do-label">Cisterna (Tracto)</div>
@@ -26,15 +26,15 @@
                     <asp:DropDownList ID="ddlObra" runat="server" CssClass="form-control"></asp:DropDownList>
                 </div>
                 <div>
-                    <div class="do-label">Fecha / Hora Salida Grifo</div>
+                    <div class="do-label">Fecha / hora salida grifo</div>
                     <asp:TextBox ID="txtFechaSalida" runat="server" CssClass="form-control" TextMode="DateTimeLocal"></asp:TextBox>
                 </div>
                 <div>
-                    <div class="do-label">Fecha / Hora Llegada Obra (opcional)</div>
+                    <div class="do-label">Fecha / hora llegada obra (opcional)</div>
                     <asp:TextBox ID="txtFechaLlegada" runat="server" CssClass="form-control" TextMode="DateTimeLocal"></asp:TextBox>
                 </div>
                 <div>
-                    <div class="do-label">Fecha / Hora Retorno al Grifo (opcional)</div>
+                    <div class="do-label">Fecha / hora retorno al grifo (opcional)</div>
                     <asp:TextBox ID="txtFechaRetorno" runat="server" CssClass="form-control" TextMode="DateTimeLocal"></asp:TextBox>
                 </div>
             </div>
@@ -42,15 +42,15 @@
 
         <!-- Medicion de combustible -->
         <div class="do-section">
-            <h5 style="color:#e65100; margin-bottom:12px;"><i class="fas fa-gas-pump mr-1"></i>Medición de Combustible</h5>
+            <h5 style="color:#e65100; margin-bottom:12px;"><i class="fas fa-gas-pump mr-1"></i>Medición de combustible</h5>
             <div class="do-grid">
                 <div>
-                    <div class="do-label">Galones de Salida (llenado cisterna)</div>
+                    <div class="do-label">Galones de salida (llenado cisterna)</div>
                     <asp:TextBox ID="txtGalonesSalida" runat="server" CssClass="form-control"
                         TextMode="Number" step="0.01" onchange="recalcularTotales()" oninput="recalcularTotales()"></asp:TextBox>
                 </div>
                 <div>
-                    <div class="do-label">Galones de Retorno (al volver)</div>
+                    <div class="do-label">Galones de retorno (al volver)</div>
                     <asp:TextBox ID="txtGalonesRetorno" runat="server" CssClass="form-control"
                         TextMode="Number" step="0.01" onchange="recalcularTotales()" oninput="recalcularTotales()"></asp:TextBox>
                 </div>
@@ -71,7 +71,7 @@
         <div style="text-align:right; margin-top:18px;">
             <asp:Button ID="btnCancelar" runat="server" Text="Cancelar" CssClass="btn btn-outline-secondary mr-2"
                 OnClick="btnCancelar_Click" CausesValidation="false" />
-            <asp:Button ID="btnGuardar" runat="server" Text="Registrar Despacho" CssClass="btn btn-warning"
+            <asp:Button ID="btnGuardar" runat="server" Text="Registrar despacho" CssClass="btn btn-warning"
                 OnClick="btnGuardar_Click" />
         </div>
     </div>

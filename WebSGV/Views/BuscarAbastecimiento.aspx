@@ -6,7 +6,7 @@
     <div class="container-fluid buscar-abastecimiento-container">
         <!-- Encabezado -->
         <div class="d-flex justify-content-between align-items-center header-container">
-            <h3 class="abastecimiento-header text-uppercase">Buscar Abastecimiento de Combustible</h3>
+            <h3 class="abastecimiento-header text-uppercase">Buscar abastecimiento de combustible</h3>
         </div>
 
         <!-- Sección de Búsqueda -->
@@ -34,7 +34,7 @@
 
             <!-- Tipo de Registro -->
             <div class="tipo-info-banner">
-                <span class="tipo-label"><i class="fas fa-tag mr-1"></i>Tipo de Registro:</span>
+                <span class="tipo-label"><i class="fas fa-tag mr-1"></i>Tipo de registro:</span>
                 <asp:Label ID="lblTipoAbastecimiento" runat="server" CssClass="tipo-badge tipo-abastecimiento" Text="ABASTECIMIENTO" />
                 <asp:DropDownList ID="ddlTipoAbastecimientoEdit" runat="server" CssClass="ddl-tipo-edit" Visible="false">
                     <asp:ListItem Value="ABASTECIMIENTO">Abastecimiento</asp:ListItem>
@@ -99,7 +99,7 @@
                             <asp:TextBox ID="txtProducto" runat="server" CssClass="form-control" ReadOnly="true"></asp:TextBox>
                         </div>
                         <div class="col-md-6">
-                            <label for="txtLugarAbastecimiento" class="form-label">Lugar de Abastecimiento:</label>
+                            <label for="txtLugarAbastecimiento" class="form-label">Lugar de abastecimiento:</label>
                             <asp:TextBox ID="txtLugarAbastecimiento" runat="server" CssClass="form-control" ReadOnly="true"></asp:TextBox>
                         </div>
                     </div>
@@ -126,31 +126,31 @@
                         <div class="col-md-6">
                             <div class="row">
                                 <div class="col-md-6 form-group">
-                                    <label for="txtGLRuta" class="form-label">GL Ruta Asignada:</label>
+                                    <label for="txtGLRuta" class="form-label">GL ruta asignada:</label>
                                     <asp:TextBox ID="txtGLRuta" runat="server" CssClass="form-control" ReadOnly="true"></asp:TextBox>
                                 </div>
                                 <div class="col-md-6 form-group">
-                                    <label for="txtGLComprados" class="form-label">GL Comprados en Ruta:</label>
+                                    <label for="txtGLComprados" class="form-label">GL comprados en ruta:</label>
                                     <asp:TextBox ID="txtGLComprados" runat="server" CssClass="form-control" ReadOnly="true"></asp:TextBox>
                                 </div>
                             </div>
                             <div class="row mt-3">
                                 <div class="col-md-6 form-group">
-                                    <label for="txtTotalGL" class="form-label">GL Total Abastecidos:</label>
+                                    <label for="txtTotalGL" class="form-label">GL total abastecidos:</label>
                                     <asp:TextBox ID="txtTotalGL" runat="server" CssClass="form-control calculated-field" ReadOnly="true"></asp:TextBox>
                                 </div>
                                 <div class="col-md-6 form-group">
-                                    <label for="txtGLFinal" class="form-label">GL Trae al Finalizar:</label>
+                                    <label for="txtGLFinal" class="form-label">GL trae al finalizar:</label>
                                     <asp:TextBox ID="txtGLFinal" runat="server" CssClass="form-control" ReadOnly="true"></asp:TextBox>
                                 </div>
                             </div>
                             <div class="row mt-3">
                                 <div class="col-md-6 form-group">
-                                    <label for="txtGLConsumidos" class="form-label">GL Total Consumidos:</label>
+                                    <label for="txtGLConsumidos" class="form-label">GL total consumidos:</label>
                                     <asp:TextBox ID="txtGLConsumidos" runat="server" CssClass="form-control calculated-field" ReadOnly="true"></asp:TextBox>
                                 </div>
                                 <div class="col-md-6 form-group">
-                                    <label for="txtPrecioDolar" class="form-label">Precio del Dólar:</label>
+                                    <label for="txtPrecioDolar" class="form-label">Precio del dólar:</label>
                                     <asp:TextBox ID="txtPrecioDolar" runat="server" CssClass="form-control" ReadOnly="true"></asp:TextBox>
                                 </div>
                             </div>
@@ -158,7 +158,7 @@
                         <div class="col-md-6">
                             <div class="row">
                                 <div class="col-md-6 form-group">
-                                    <label for="txtMontoTotal" class="form-label">Monto Total GL:</label>
+                                    <label for="txtMontoTotal" class="form-label">Monto total GL:</label>
                                     <asp:TextBox ID="txtMontoTotal" runat="server" CssClass="form-control" ReadOnly="true"></asp:TextBox>
                                 </div>
                                 <div class="col-md-6 form-group">
@@ -168,11 +168,11 @@
                             </div>
                             <div class="row mt-3">
                                 <div class="col-md-6 form-group">
-                                    <label for="txtConsumoComputador" class="form-label">Consumo Computador:</label>
+                                    <label for="txtConsumoComputador" class="form-label">Consumo computador:</label>
                                     <asp:TextBox ID="txtConsumoComputador" runat="server" CssClass="form-control" ReadOnly="true"></asp:TextBox>
                                 </div>
                                 <div class="col-md-6 form-group">
-                                    <label for="txtHoraRetorno" class="form-label">Hora Retorno:</label>
+                                    <label for="txtHoraRetorno" class="form-label">Hora retorno:</label>
                                     <asp:TextBox ID="txtHoraRetorno" runat="server" CssClass="form-control" ReadOnly="true"></asp:TextBox>
                                 </div>
                             </div>
@@ -218,8 +218,8 @@
 
             <!-- Botones de Acción -->
             <div class="text-end mt-4">
-                <asp:Button ID="btnHabilitarEdicion" runat="server" CssClass="btn btn-primary" Text="Habilitar Edición" OnClick="HabilitarEdicion" />
-                <asp:Button ID="btnGuardarCambios" runat="server" CssClass="btn btn-success" Text="Guardar Cambios" OnClick="GuardarCambios" Visible="false" />
+                <asp:Button ID="btnHabilitarEdicion" runat="server" CssClass="btn btn-primary" Text="Habilitar edición" OnClick="HabilitarEdicion" />
+                <asp:Button ID="btnGuardarCambios" runat="server" CssClass="btn btn-success" Text="Guardar cambios" OnClick="GuardarCambios" Visible="false" />
                 <asp:Button ID="btnCancelar" runat="server" CssClass="btn btn-secondary" Text="Cancelar" OnClick="Cancelar" />
                 <button type="button" id="btnDescargarPdfAbast" class="btn btn-success" onclick="descargarPdfAbastecimiento();">
                     <i class="fas fa-file-pdf"></i> Descargar PDF

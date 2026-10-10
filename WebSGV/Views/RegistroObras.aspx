@@ -31,12 +31,12 @@
             <div class="col-12 col-md-5 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header text-white" style="background-color:#2d6a4f;">
-                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar Obra</h5>
+                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar obra</h5>
                     </div>
                     <div class="card-body">
                         <asp:Panel ID="pnlFormulario" runat="server">
                             <div class="form-group">
-                                <label class="font-weight-bold">Nombre de la Obra <span class="text-danger">*</span></label>
+                                <label class="font-weight-bold">Nombre de la obra <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control" MaxLength="300" placeholder="Nombre del proyecto u obra"></asp:TextBox>
                                 <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ControlToValidate="txtNombre"
                                     ErrorMessage="El nombre es requerido" CssClass="text-danger" Display="Dynamic"></asp:RequiredFieldValidator>
@@ -55,19 +55,19 @@
                             <div class="row">
                                 <div class="col-6">
                                     <div class="form-group">
-                                        <label class="font-weight-bold">Fecha Inicio</label>
+                                        <label class="font-weight-bold">Fecha inicio</label>
                                         <asp:TextBox ID="txtFechaInicio" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="form-group">
-                                        <label class="font-weight-bold">Fecha Fin</label>
+                                        <label class="font-weight-bold">Fecha fin</label>
                                         <asp:TextBox ID="txtFechaFin" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                     </div>
                                 </div>
                             </div>
                             <asp:Button ID="btnRegistrar" runat="server" CssClass="btn btn-block text-white"
-                                style="background-color:#2d6a4f;" Text="Registrar Obra" OnClick="btnRegistrar_Click" />
+                                style="background-color:#2d6a4f;" Text="Registrar obra" OnClick="btnRegistrar_Click" />
                         </asp:Panel>
                     </div>
                 </div>
@@ -77,7 +77,7 @@
             <div class="col-12 col-md-7 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Obras Registradas</h5>
+                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Obras registradas</h5>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">

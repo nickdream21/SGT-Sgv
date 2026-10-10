@@ -7,7 +7,7 @@ let _balanceDolares = 0;
 function verDetalleLiquidacion(idOrdenViaje) {
     console.log('Ver detalle:', idOrdenViaje);
 
-    $('#btnAprobarDesdeModal').hide().prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar Liquidación');
+    $('#btnAprobarDesdeModal').hide().prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar liquidación');
     $('#detalleLoading').show();
     $('#detalleError').hide();
     $('#approvalBanner').hide();
@@ -86,7 +86,7 @@ function makeRow(icon, iconClass, label, soles, dolares, desc, subTable) {
         : '';
 
     var mainRow = '<tr>' +
-        '<td><i class="fas ' + icon + ' ' + iconClass + ' mr-2"></i>' + label + expandBtn + '</td>' +
+        '<td>' + label + expandBtn + '</td>' +
         '<td class="text-right">S/ ' + parseFloat(soles || 0).toFixed(2) + '</td>' +
         '<td class="text-right">$ ' + parseFloat(dolares || 0).toFixed(2) + '</td>' +
         '</tr>';
@@ -199,18 +199,12 @@ function mostrarDetalle(datos) {
     _balanceSoles = balanceSoles;
     _balanceDolares = balanceDolares;
 
-    var balPositivo = balanceSoles >= 0 && balanceDolares >= 0;
-    var balNegativo = balanceSoles < 0 || balanceDolares < 0;
-    var balColor = balNegativo ? '#7f1d1d' : '#064e3b';
-    var balBg = balNegativo
-        ? 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)'
-        : 'linear-gradient(135deg, #064e3b 0%, #065f46 100%)';
-
+    // Barra de balance con tinte suave: verde si cuadra o es a favor, rojo si hay saldo negativo.
     $('#detalleBalanceSoles').text(balanceSoles.toFixed(2))
-        .css('color', balanceSoles >= 0 ? '#6ee7b7' : '#fca5a5');
+        .toggleClass('sgv-negativo', balanceSoles < 0);
     $('#detalleBalanceDolares').text(balanceDolares.toFixed(2))
-        .css('color', balanceDolares >= 0 ? '#6ee7b7' : '#fca5a5');
-    $('#rfBalanceBar').css('background', balBg);
+        .toggleClass('sgv-negativo', balanceDolares < 0);
+    $('#rfBalanceBar').toggleClass('es-negativo', balanceSoles < 0 || balanceDolares < 0);
 
     // --- Desglose de Ingresos ---
     var ingresosItems = [
@@ -729,9 +723,9 @@ function actualizarBalanceAjustado() {
         var balS = _balanceSoles - descS + reintS;
         var balD = _balanceDolares - descD + reintD;
         $('#balanceAjustadoSoles').text(balS.toFixed(2))
-            .css('color', balS >= 0 ? '#059669' : '#dc2626');
+            .toggleClass('sgv-negativo', balS < 0).toggleClass('sgv-positivo', balS > 0);
         $('#balanceAjustadoDolares').text(balD.toFixed(2))
-            .css('color', balD >= 0 ? '#059669' : '#dc2626');
+            .toggleClass('sgv-negativo', balD < 0).toggleClass('sgv-positivo', balD > 0);
         $('#balanceAjustadoPanel').show();
     } else {
         $('#balanceAjustadoPanel').hide();
@@ -854,13 +848,13 @@ function aprobarDesdeModal() {
                 location.reload();
             } else {
                 SGV.avisar('\u274c ' + result.message);
-                $btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar Liquidación');
+                $btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar liquidación');
             }
         },
         error: function (xhr) {
             console.error('Error:', xhr.responseText);
             SGV.avisar('Error al aprobar la liquidación. Por favor intente de nuevo.');
-            $btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar Liquidación');
+            $btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar liquidación');
         }
     });
 }
@@ -898,13 +892,13 @@ function cambiarTab(tab) {
     if (tab === 'pendientes') {
         $('#seccionPendientes').show();
         $('#seccionAprobadas').hide();
-        $('#tabPendientes').addClass('tab-btn-active');
-        $('#tabAprobadas').removeClass('tab-btn-active');
+        $('#tabPendientes').addClass('activo');
+        $('#tabAprobadas').removeClass('activo');
     } else {
         $('#seccionPendientes').hide();
         $('#seccionAprobadas').show();
-        $('#tabPendientes').removeClass('tab-btn-active');
-        $('#tabAprobadas').addClass('tab-btn-active');
+        $('#tabPendientes').removeClass('activo');
+        $('#tabAprobadas').addClass('activo');
         if (!_aprobadasCargadas) {
             inicializarFiltrosAprobadas();
             cargarLiquidacionesAprobadas();
@@ -958,11 +952,8 @@ function cargarLiquidacionesAprobadas() {
             var datos = response.d;
             if (!datos || datos.length === 0) {
                 $('#tbodyAprobadas').html(
-                    '<tr><td colspan="7" class="text-center py-4">' +
-                    '<div class="empty-state-table" style="padding:2rem;">' +
-                    '<i class="fas fa-check-circle" style="font-size:2.5rem;color:#059669;display:block;margin-bottom:0.5rem;"></i>' +
-                    '<p class="text-muted mb-0">No se encontraron liquidaciones aprobadas en el rango seleccionado.</p>' +
-                    '</div></td></tr>'
+                    '<tr><td colspan="7" class="sgv-vacio">' +
+                    'No se encontraron liquidaciones aprobadas en el rango seleccionado.</td></tr>'
                 );
                 $('#lblTotalAprobadas').text('0');
                 return;
@@ -978,66 +969,27 @@ function cargarLiquidacionesAprobadas() {
                 html += '<tr>';
 
                 // N° Orden
-                html += '<td><div class="orden-info">';
-                html += '<span class="orden-numero">' + htmlEncode(item.NumeroOrdenViaje) + '</span>';
-                html += '<span class="orden-fecha">' + htmlEncode(item.FechaSalida) + '</span>';
-                html += '</div></td>';
+                html += '<td><div class="orden-numero">' + htmlEncode(item.NumeroOrdenViaje) + '</div>';
+                html += '<div class="sgv-suave">' + htmlEncode(item.FechaSalida) + '</div></td>';
 
                 // Conductor
-                html += '<td><div class="conductor-info">';
-                html += '<i class="fas fa-user-circle mr-2 text-success"></i><div>';
-                html += '<strong>' + htmlEncode(item.NombreConductor) + '</strong><br/>';
-                html += '<small class="text-muted">' + htmlEncode(item.PlacaTracto) + ' / ' + htmlEncode(item.PlacaCarreta) + '</small>';
-                html += '</div></div></td>';
+                html += '<td><div>' + htmlEncode(item.NombreConductor) + '</div>';
+                html += '<div class="sgv-suave">' + htmlEncode(item.PlacaTracto) + ' / ' + htmlEncode(item.PlacaCarreta) + '</div></td>';
 
                 // Periodo
-                html += '<td class="text-center"><div class="viaje-periodo">';
-                html += '<div class="fecha-item"><i class="fas fa-calendar-check text-success"></i><span>' + htmlEncode(item.FechaSalida) + '</span></div>';
-                html += '<div class="fecha-item"><i class="fas fa-calendar-times text-danger"></i><span>' + htmlEncode(item.FechaLlegada) + '</span></div>';
-                html += '</div></td>';
+                html += '<td class="text-nowrap">' + htmlEncode(item.FechaSalida) + ' – ' + htmlEncode(item.FechaLlegada) + '</td>';
 
-                // Descuento
-                var descS = parseFloat(item.DescuentoSoles || 0);
-                var descD = parseFloat(item.DescuentoDolares || 0);
-                html += '<td class="text-right">';
-                if (descS > 0 || descD > 0) {
-                    html += '<div class="balance-preview">';
-                    html += '<div class="balance-row"><span class="balance-moneda">S/</span><span class="balance-monto balance-negativo">' + descS.toFixed(2) + '</span></div>';
-                    html += '<div class="balance-row"><span class="balance-moneda">$</span><span class="balance-monto balance-negativo">' + descD.toFixed(2) + '</span></div>';
-                    html += '</div>';
-                } else {
-                    html += '<span class="text-muted">-</span>';
-                }
-                html += '</td>';
-
-                // Reintegro
-                var reintS = parseFloat(item.ReintegroSoles || 0);
-                var reintD = parseFloat(item.ReintegroDolares || 0);
-                html += '<td class="text-right">';
-                if (reintS > 0 || reintD > 0) {
-                    html += '<div class="balance-preview">';
-                    html += '<div class="balance-row"><span class="balance-moneda">S/</span><span class="balance-monto balance-positivo">' + reintS.toFixed(2) + '</span></div>';
-                    html += '<div class="balance-row"><span class="balance-moneda">$</span><span class="balance-monto balance-positivo">' + reintD.toFixed(2) + '</span></div>';
-                    html += '</div>';
-                } else {
-                    html += '<span class="text-muted">-</span>';
-                }
-                html += '</td>';
-
-                // Balance Final
-                var bfS = parseFloat(item.BalanceSoles || 0);
-                var bfD = parseFloat(item.BalanceDolares || 0);
-                html += '<td class="text-right"><div class="balance-preview">';
-                html += '<div class="balance-row"><span class="balance-moneda">S/</span><span class="balance-monto ' + (bfS >= 0 ? 'balance-positivo' : 'balance-negativo') + '">' + bfS.toFixed(2) + '</span></div>';
-                html += '<div class="balance-row"><span class="balance-moneda">$</span><span class="balance-monto ' + (bfD >= 0 ? 'balance-positivo' : 'balance-negativo') + '">' + bfD.toFixed(2) + '</span></div>';
-                html += '</div></td>';
+                // Descuento en rojo, reintegro en verde, balance según su signo (S/ arriba, $ abajo)
+                html += celdaMontos(parseFloat(item.DescuentoSoles || 0), parseFloat(item.DescuentoDolares || 0), 'sgv-negativo');
+                html += celdaMontos(parseFloat(item.ReintegroSoles || 0), parseFloat(item.ReintegroDolares || 0), 'sgv-positivo');
+                html += celdaMontos(parseFloat(item.BalanceSoles || 0), parseFloat(item.BalanceDolares || 0));
 
                 // Acciones
-                html += '<td class="text-center"><div class="acciones-grupo">';
-                html += '<button type="button" class="btn btn-info-action" onclick="verDetalleLiquidacion(' + item.IdOrdenViaje + ')" title="Ver Detalle"><i class="fas fa-eye"></i></button>';
-                html += '<button type="button" class="btn btn-success-action" onclick="descargarPdfOrdenViaje(' + item.IdOrdenViaje + ')" title="Descargar PDF SGV-CDF-F-05"><i class="fas fa-file-pdf"></i></button>';
-                html += '<button type="button" class="btn btn-warning-action" onclick="abrirModalCorregir(' + item.IdOrdenViaje + ')" title="Corregir Ajustes"><i class="fas fa-edit"></i></button>';
-                html += '<button type="button" class="btn btn-danger-action" onclick="abrirModalRevertir(' + item.IdOrdenViaje + ')" title="Revertir Aprobaci\u00f3n"><i class="fas fa-undo"></i></button>';
+                html += '<td class="text-right"><div class="sgv-acciones">';
+                html += '<button type="button" class="sgv-btn-icono info" onclick="verDetalleLiquidacion(' + item.IdOrdenViaje + ')" title="Ver detalle"><i class="fas fa-eye"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono" onclick="descargarPdfOrdenViaje(' + item.IdOrdenViaje + ')" title="Descargar PDF SGV-CDF-F-05"><i class="fas fa-file-pdf"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono alerta" onclick="abrirModalCorregir(' + item.IdOrdenViaje + ')" title="Corregir ajustes"><i class="fas fa-pen"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono peligro" onclick="abrirModalRevertir(' + item.IdOrdenViaje + ')" title="Revertir aprobación"><i class="fas fa-undo"></i></button>';
                 html += '</div></td>';
 
                 html += '</tr>';
@@ -1049,11 +1001,24 @@ function cargarLiquidacionesAprobadas() {
             $('#loadingAprobadas').hide();
             console.error('Error cargando aprobadas:', xhr.responseText);
             $('#tbodyAprobadas').html(
-                '<tr><td colspan="7" class="text-center text-danger py-4">' +
-                '<i class="fas fa-exclamation-triangle mr-2"></i>Error al cargar las liquidaciones aprobadas</td></tr>'
+                '<tr><td colspan="7" class="sgv-vacio text-danger">' +
+                'Error al cargar las liquidaciones aprobadas</td></tr>'
             );
         }
     });
+}
+
+// Celda con S/ y $ alineados a la derecha. claseFija: color fijo de un ajuste ("—" si ambos son 0);
+// sin claseFija, cada monto se colorea según su signo.
+function celdaMontos(soles, dolares, claseFija) {
+    if (claseFija && soles === 0 && dolares === 0) {
+        return '<td class="sgv-num sgv-suave">—</td>';
+    }
+    function monto(simbolo, valor) {
+        var clase = claseFija || (valor > 0 ? 'sgv-positivo' : valor < 0 ? 'sgv-negativo' : '');
+        return '<div' + (clase ? ' class="' + clase + '"' : '') + '>' + simbolo + ' ' + valor.toFixed(2) + '</div>';
+    }
+    return '<td class="sgv-num">' + monto('S/', soles) + monto('$', dolares) + '</td>';
 }
 
 function htmlEncode(text) {

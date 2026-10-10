@@ -3,10 +3,10 @@
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/Login.css") %>" rel="stylesheet" />
     <div class="main-container">
         <img src="<%= ResolveUrl("~/Content/favicon.png") %>" alt="Logo SGV" class="logo" />
-        <h1 class="header">Sistema de Gestión de Transporte</h1>
-        <p class="subheader">Bienvenido al sistema <strong>Servicios Generales Viviana (SGV)</strong>. Inicia sesión para continuar.</p>
+        <h1 class="header">Sistema de gestión de transporte</h1>
+        <p class="subheader">Bienvenido al sistema <strong>Servicios generales Viviana (SGV)</strong>. Inicia sesión para continuar.</p>
         <div class="login-container">
-            <h2 class="title">Iniciar Sesión</h2>
+            <h2 class="title">Iniciar sesión</h2>
 
             <asp:Panel ID="pnlError" runat="server" Visible="false" CssClass="login-error">
                 <i class="fas fa-exclamation-circle"></i>

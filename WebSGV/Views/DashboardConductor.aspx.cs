@@ -307,7 +307,7 @@ namespace WebSGV.Views
                 <div class='alert alert-warning alert-rechazo' role='alert'>
                     <div class='d-flex align-items-start'>
                         <div class='alert-icon'>
-                            <i class='fas fa-exclamation-triangle fa-2x'></i>
+                            <i class='fas fa-exclamation-triangle fa-lg'></i>
                         </div>
                         <div class='alert-content ml-3' style='flex: 1;'>
                             <h5 class='alert-heading mb-2'>

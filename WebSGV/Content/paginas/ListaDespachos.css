@@ -8,25 +8,25 @@
 .card:hover { transform: none !important; box-shadow: 0 2px 8px rgba(0,0,0,.08) !important; }
 
 /* ---- Encabezado de página ---- */
-.ld-page-header { background: #1e293b; color: #f8fafc; border-radius: 8px 8px 0 0; padding: 1rem 1.5rem; }
-.ld-page-header h4 { margin: 0; font-size: 1.05rem; font-weight: 600; letter-spacing: .01em; display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; }
+.ld-page-header { background: #f8fafc; color: #1f2937; border-bottom: 1px solid #e5e7eb; border-top: 3px solid #1d4ed8; border-radius: 6px 6px 0 0; padding: 1rem 1.5rem; }
+.ld-page-header h4 { margin: 0; font-size: 1.05rem; font-weight: 600; display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; }
 .ld-page-header .badge { font-size: .68rem; font-weight: 600; padding: .35em .7em; }
 
 /* ---- Resumen general (stat tiles) ---- */
 .ld-stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.75rem; }
 .ld-stat-tile {
     display: flex; align-items: center; gap: .9rem; background: #fff; border: 1px solid #e2e8f0;
-    border-radius: 10px; padding: 1rem 1.15rem; text-decoration: none !important; cursor: pointer;
+    border-radius: 6px; padding: 1rem 1.15rem; text-decoration: none !important; cursor: pointer;
     transition: box-shadow .15s ease, transform .15s ease; width: 100%; text-align: left;
 }
-.ld-stat-tile:hover { box-shadow: 0 4px 14px rgba(15,23,42,.08); transform: translateY(-1px); }
+.ld-stat-tile:hover { box-shadow: 0 4px 14px rgba(15,23,42,.08); }
 .ld-stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; flex-shrink: 0; }
 .ld-stat-icon-blue { background: #dbeafe; color: #1e40af; }
 .ld-stat-icon-green { background: #dcfce7; color: #16a34a; }
 .ld-stat-icon-amber { background: #fef3c7; color: #b45309; }
 .ld-stat-text { display: flex; flex-direction: column; }
 .ld-stat-value { font-size: 1.5rem; font-weight: 700; color: #1e293b; line-height: 1.15; }
-.ld-stat-label { font-size: .74rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #64748b; margin-top: .15rem; }
+.ld-stat-label { font-size: .8125rem; font-weight: 600; color: #64748b; margin-top: .15rem; }
 .ld-stat-tile-alert { border-color: #fca5a5 !important; background: #fff5f5 !important; }
 .ld-stat-tile-alert .ld-stat-value { color: #b91c1c !important; }
 
@@ -73,9 +73,9 @@
 /* ---- Filtros ---- */
 .filters-container { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.1rem 1.25rem .35rem; margin-bottom: 1.5rem; }
 .filters-container .form-group { margin-bottom: .9rem; }
-.filters-heading { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #64748b; margin-bottom: .9rem; display: flex; align-items: center; gap: .4rem; }
+.filters-heading { font-size: .72rem; font-weight: 700; color: #64748b; margin-bottom: .9rem; display: flex; align-items: center; gap: .4rem; }
 .filters-heading i { color: #94a3b8; }
-.form-label { font-weight: 600; color: #475569; font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; margin-bottom: .4rem; display: flex; align-items: center; gap: .35rem; }
+.form-label { font-weight: 600; color: #475569; font-size: .74rem; margin-bottom: .4rem; display: flex; align-items: center; gap: .35rem; }
 .form-label i { color: #94a3b8; font-size: .75rem; }
 .form-control, .form-select { border: 1px solid #cbd5e1; border-radius: 6px; padding: .5rem .75rem; font-size: .85rem; background: #fff; }
 .form-control:focus, .form-select:focus { border-color: #1e40af; box-shadow: 0 0 0 3px rgba(30,64,175,.12); }
@@ -103,7 +103,7 @@
 .data-grid-container { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow-x: auto; }
 .data-table thead th {
     background: #f1f5f9 !important; color: #334155 !important; font-weight: 700 !important;
-    font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
+    font-size: .72rem; letter-spacing: .04em;
     padding: .8rem .9rem; border-bottom: 2px solid #e2e8f0 !important; white-space: nowrap;
 }
 .data-table tbody td { padding: .7rem .9rem; font-size: .85rem; color: #334155; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
@@ -123,7 +123,7 @@
 /* ---- Tarjetas de resumen (stat tiles) ---- */
 .summary-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.1rem .75rem; text-align: center; }
 .summary-value { font-size: 1.4rem !important; font-weight: 700 !important; color: #1e293b !important; }
-.summary-label { font-size: .72rem !important; text-transform: uppercase; letter-spacing: .04em; color: #64748b !important; font-weight: 600; }
+.summary-label { font-size: .72rem !important; color: #64748b !important; font-weight: 600; }
 
 /* ---- Paneles de documento y detalle ---- */
 .doc-panel { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }

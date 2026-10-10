@@ -19,6 +19,11 @@ namespace WebSGV.Views
             SecurityHelper.AgregarHeadersSeguridad();
             if (!IsPostBack)
             {
+                // Años desde 2024 hasta el actual (la lista fija terminaba en 2025 y fallaba al seleccionar 2026)
+                ddlAnio.Items.Clear();
+                for (int a = 2024; a <= FechaHelper.Ahora().Year; a++)
+                    ddlAnio.Items.Add(a.ToString());
+
                 // Establecer el mes y año actual en los filtros
                 ddlMes.SelectedValue = FechaHelper.Ahora().Month.ToString();
                 ddlAnio.SelectedValue = FechaHelper.Ahora().Year.ToString();

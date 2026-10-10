@@ -305,7 +305,6 @@ function deRenderCharts() {
         var wrap = canvasTruj.parentElement;
         wrap.innerHTML =
             '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:220px;color:#888;text-align:center;padding:20px;">' +
-                '<i class="fas fa-database" style="font-size:42px;color:#ddd;margin-bottom:12px;"></i>' +
                 '<div style="font-weight:600;color:#555;margin-bottom:4px;">Sin datos de planta cargados</div>' +
                 '<div style="font-size:12px;">Hay <b>' + trujMeses.reduce(function(a,x){return a+(x.totalRegistros||0);},0) + '</b> registros en el per&iacute;odo,<br/>' +
                 'pero ninguno tiene <b>F.H.I PLANTA</b>, <b>INICIO/TERMINO DE CARGA</b> ni <b>F.H.S PLANTA</b>.</div>' +

@@ -31,7 +31,7 @@
             <div class="col-12 col-md-5 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header text-white" style="background-color:#2d6a4f;">
-                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar Operador</h5>
+                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar operador</h5>
                     </div>
                     <div class="card-body">
                         <asp:Panel ID="pnlFormulario" runat="server">
@@ -42,7 +42,7 @@
                                     ErrorMessage="El DNI es requerido" CssClass="text-danger" Display="Dynamic"></asp:RequiredFieldValidator>
                             </div>
                             <div class="form-group">
-                                <label class="font-weight-bold">Nombre Completo <span class="text-danger">*</span></label>
+                                <label class="font-weight-bold">Nombre completo <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control" MaxLength="200" placeholder="Nombre completo del operador"></asp:TextBox>
                                 <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ControlToValidate="txtNombre"
                                     ErrorMessage="El nombre es requerido" CssClass="text-danger" Display="Dynamic"></asp:RequiredFieldValidator>
@@ -52,7 +52,7 @@
                                 <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control" MaxLength="20" placeholder="Ej: 987654321"></asp:TextBox>
                             </div>
                             <asp:Button ID="btnRegistrar" runat="server" CssClass="btn btn-block text-white" 
-                                style="background-color:#2d6a4f;" Text="Registrar Operador" OnClick="btnRegistrar_Click" />
+                                style="background-color:#2d6a4f;" Text="Registrar operador" OnClick="btnRegistrar_Click" />
                         </asp:Panel>
                     </div>
                 </div>
@@ -67,7 +67,7 @@
             <div class="col-12 col-md-7 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Operadores Registrados</h5>
+                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Operadores registrados</h5>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">

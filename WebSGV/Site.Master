@@ -13,6 +13,7 @@
     <link href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" rel="stylesheet" />
     <link href="~/Content/App.css" rel="stylesheet" />
     <link href="~/Content/responsive-mobile.css" rel="stylesheet" />
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/sgv-base.css") %>" rel="stylesheet" />
 
     <!-- Librerías base, UNA sola vez y en el head: jQuery → Popper → Bootstrap 4.6.2 → jQuery UI.
          Deben cargarse antes de MainContent porque las páginas usan $.datepicker / .modal() en
@@ -338,17 +339,17 @@
                             <asp:Label ID="lblMensajeContrasena" runat="server"></asp:Label>
                         </asp:Panel>
                         <div class="form-group">
-                            <label class="form-label">Contraseña Actual <span class="text-danger">*</span></label>
+                            <label class="form-label">Contraseña actual <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtContrasenaActual" runat="server" CssClass="form-control"
                                 TextMode="Password" placeholder="Ingresa tu contraseña actual" autocomplete="current-password"></asp:TextBox>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Nueva Contraseña <span class="text-danger">*</span></label>
+                            <label class="form-label">Nueva contraseña <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtNuevaContrasena" runat="server" CssClass="form-control"
                                 TextMode="Password" placeholder="Mínimo 6 caracteres" autocomplete="new-password"></asp:TextBox>
                         </div>
                         <div class="form-group mb-0">
-                            <label class="form-label">Confirmar Nueva Contraseña <span class="text-danger">*</span></label>
+                            <label class="form-label">Confirmar nueva contraseña <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtConfirmarContrasena" runat="server" CssClass="form-control"
                                 TextMode="Password" placeholder="Repite la nueva contraseña" autocomplete="new-password"></asp:TextBox>
                         </div>
@@ -356,7 +357,7 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary js-cerrar-contrasena" data-dismiss="modal">Cancelar</button>
                         <asp:Button ID="btnCambiarContrasena" runat="server"
-                            Text="Cambiar Contraseña"
+                            Text="Cambiar contraseña"
                             CssClass="btn btn-primary"
                             OnClick="btnCambiarContrasena_Click"
                             OnClientClick="return validarFormContrasena();" />

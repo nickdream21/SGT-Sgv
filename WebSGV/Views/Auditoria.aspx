@@ -36,7 +36,7 @@
                         <div class="aud-stat-number">
                             <asp:Label ID="lblTotalRegistros" runat="server" Text="0"></asp:Label>
                         </div>
-                        <div class="aud-stat-label">Total Registros</div>
+                        <div class="aud-stat-label">Total de registros</div>
                     </div>
                 </div>
             </div>
@@ -58,7 +58,7 @@
                         <div class="aud-stat-number">
                             <asp:Label ID="lblUsuariosActivos" runat="server" Text="0"></asp:Label>
                         </div>
-                        <div class="aud-stat-label">Usuarios Activos</div>
+                        <div class="aud-stat-label">Usuarios activos</div>
                     </div>
                 </div>
             </div>
@@ -69,7 +69,7 @@
                         <div class="aud-stat-number">
                             <asp:Label ID="lblTablasAfectadas" runat="server" Text="0"></asp:Label>
                         </div>
-                        <div class="aud-stat-label">Tablas Afectadas</div>
+                        <div class="aud-stat-label">Tablas afectadas</div>
                     </div>
                 </div>
             </div>

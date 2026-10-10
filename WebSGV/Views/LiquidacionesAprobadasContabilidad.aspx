@@ -10,7 +10,7 @@
     <div class="container-fluid px-4">
         <div class="row mb-4">
             <div class="col-12">
-                <h2 class="mb-1"><i class="fas fa-file-invoice-dollar mr-2"></i>Liquidaciones Aprobadas</h2>
+                <h2 class="mb-1"><i class="fas fa-file-invoice-dollar mr-2"></i>Liquidaciones aprobadas</h2>
                 <p class="text-muted mb-0">Consulta de liquidaciones aprobadas (solo lectura)</p>
             </div>
         </div>
@@ -56,7 +56,7 @@
                             </tr>
                         </thead>
                         <tbody id="tbodyLiquidaciones">
-                            <tr><td colspan="6" class="text-center text-muted py-4">Use los filtros y pulse Buscar.</td></tr>
+                            <tr><td colspan="6" class="text-center text-muted py-4">Use los filtros y pulse buscar.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -68,7 +68,7 @@
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Detalle de Liquidación</h5>
+                    <h5 class="modal-title">Detalle de liquidación</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -83,15 +83,15 @@
                         <div class="col-md-6"><strong>Carreta:</strong> <span id="detalleCarreta"></span></div>
                     </div>
                     <div class="row mt-2">
-                        <div class="col-md-6"><strong>Fecha Salida:</strong> <span id="detalleFechaSalida"></span></div>
-                        <div class="col-md-6"><strong>Fecha Llegada:</strong> <span id="detalleFechaLlegada"></span></div>
+                        <div class="col-md-6"><strong>Fecha salida:</strong> <span id="detalleFechaSalida"></span></div>
+                        <div class="col-md-6"><strong>Fecha llegada:</strong> <span id="detalleFechaLlegada"></span></div>
                     </div>
                     <div class="row mt-2">
-                        <div class="col-md-6"><strong>Total Ingresos S/:</strong> <span id="detalleIngresosSoles"></span></div>
+                        <div class="col-md-6"><strong>Total ingresos S/:</strong> <span id="detalleIngresosSoles"></span></div>
                         <div class="col-md-6"><strong>Total Ingresos $:</strong> <span id="detalleIngresosDolares"></span></div>
                     </div>
                     <div class="row mt-2">
-                        <div class="col-md-6"><strong>Total Gastos S/:</strong> <span id="detalleGastosSoles"></span></div>
+                        <div class="col-md-6"><strong>Total gastos S/:</strong> <span id="detalleGastosSoles"></span></div>
                         <div class="col-md-6"><strong>Total Gastos $:</strong> <span id="detalleGastosDolares"></span></div>
                     </div>
 

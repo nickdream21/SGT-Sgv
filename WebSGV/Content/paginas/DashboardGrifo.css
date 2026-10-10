@@ -18,7 +18,7 @@
 
 /* --- HEADER --- */
 .gf-header {
-    background: linear-gradient(135deg, var(--gf-primary) 0%, var(--gf-secondary) 100%);
+    background: var(--gf-primary);
     color: white;
     padding: 16px;
 }
@@ -86,7 +86,7 @@
     color: #666;
     border-radius: 10px;
     padding: 1px 8px;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     margin-left: 4px;
 }
 
@@ -231,7 +231,7 @@
 }
 
 .vj-estado {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 600;
     border-radius: 10px;
     padding: 2px 8px;
@@ -242,7 +242,7 @@
 
 /* Fase de carga (IDA / VUELTA / COMPLETO) */
 .fase-badge {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 600;
     border-radius: 10px;
     padding: 3px 9px;
@@ -263,10 +263,8 @@
 }
 
 .vj-label {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: #999;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
 }
 
 .vj-value {
@@ -345,7 +343,7 @@
     display: inline-block;
     padding: 2px 8px;
     border-radius: 8px;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 600;
 }
 
@@ -405,9 +403,8 @@
 }
 
 .ab-label {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: #999;
-    text-transform: uppercase;
 }
 
 .ab-value {
@@ -460,7 +457,7 @@
 }
 
 .gf-empty i {
-    font-size: 2.5rem;
+    font-size: 1.75rem;
     color: #ddd;
     display: block;
     margin-bottom: 12px;

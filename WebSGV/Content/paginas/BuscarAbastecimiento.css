@@ -126,7 +126,7 @@
 
 .fuel-level {
     height: 100%;
-    background: linear-gradient(90deg, #28a745, #67c977);
+    background: #28a745;
     border-radius: 15px 0 0 15px;
     width: 75%;
 }
@@ -162,7 +162,7 @@
 
 /* Tipo de registro */
 .tipo-info-banner {
-    background: linear-gradient(135deg, #f0f7ff 0%, #e3f0ff 100%);
+    background: #f0f7ff;
     border: 1px solid #b8d4f0;
     border-left: 4px solid var(--primary-color);
     border-radius: 6px;
@@ -207,7 +207,7 @@
 .tipo-anulado { background-color: #dc3545; }
 
 .estado-anulado-banner {
-    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    background: #f8d7da;
     border: 1px solid #f5c6cb;
     border-left: 4px solid #dc3545;
     border-radius: 6px;

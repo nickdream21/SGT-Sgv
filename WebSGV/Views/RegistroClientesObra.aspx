@@ -31,7 +31,7 @@
             <div class="col-12 col-md-5 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header text-white" style="background-color:#2d6a4f;">
-                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar Cliente</h5>
+                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar cliente</h5>
                     </div>
                     <div class="card-body">
                         <asp:Panel ID="pnlFormulario" runat="server">
@@ -54,7 +54,7 @@
                                 <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control" MaxLength="20" placeholder="Ej: 987654321"></asp:TextBox>
                             </div>
                             <asp:Button ID="btnRegistrar" runat="server" CssClass="btn btn-block text-white"
-                                style="background-color:#2d6a4f;" Text="Registrar Cliente" OnClick="btnRegistrar_Click" />
+                                style="background-color:#2d6a4f;" Text="Registrar cliente" OnClick="btnRegistrar_Click" />
                         </asp:Panel>
                     </div>
                 </div>
@@ -64,7 +64,7 @@
             <div class="col-12 col-md-7 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Clientes Registrados</h5>
+                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Clientes registrados</h5>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">

@@ -17,7 +17,7 @@
 
 /* --- HEADER --- */
 .op-header {
-    background: linear-gradient(135deg, var(--mq-primary) 0%, var(--mq-secondary) 100%);
+    background: var(--mq-primary);
     color: white;
     padding: 16px;
 }
@@ -64,14 +64,12 @@
     font-weight: 700;
     color: var(--mq-primary);
     font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .asig-badge {
     background: #28a745;
     color: white;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     padding: 3px 10px;
     border-radius: 12px;
     font-weight: 600;
@@ -84,11 +82,9 @@
 }
 
 .asig-item .asig-label {
-    font-size: 0.68rem;
-    text-transform: uppercase;
+    font-size: 0.75rem;
     color: #999;
     font-weight: 600;
-    letter-spacing: 0.3px;
 }
 
 .asig-item .asig-value {
@@ -120,7 +116,7 @@
     margin: 0 auto 16px auto;
 }
 
-.sin-asig .sa-icon i { font-size: 2.2rem; color: #f0ad4e; }
+.sin-asig .sa-icon i { font-size: 1.5rem; color: #f0ad4e; }
 .sin-asig h4 { color: #555; font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
 .sin-asig p { font-size: 0.88rem; color: #888; margin-bottom: 4px; line-height: 1.5; }
 
@@ -180,7 +176,7 @@
 }
 
 .op-tabs .badge {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     padding: 2px 7px;
     border-radius: 10px;
 }
@@ -224,8 +220,6 @@
     font-weight: 600;
     color: #555;
     margin-bottom: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
 }
 
 .campo .form-control {
@@ -255,7 +249,6 @@
     font-weight: 700;
     font-size: 0.82rem;
     color: var(--mq-primary);
-    text-transform: uppercase;
     margin-bottom: 10px;
     display: flex;
     align-items: center;
@@ -324,10 +317,9 @@
 }
 
 .consumo-card .c-label {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #777;
-    text-transform: uppercase;
     margin-bottom: 6px;
 }
 
@@ -377,7 +369,6 @@
 .btn-registrar:hover {
     background: var(--mq-secondary);
     color: white;
-    transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(45,106,79,0.35);
 }
 
@@ -417,10 +408,9 @@
 }
 
 .hist-stat .stat-label {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     color: #999;
     font-weight: 600;
-    text-transform: uppercase;
     margin-top: 2px;
 }
 
@@ -452,7 +442,7 @@
 }
 
 .hist-card-badge {
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     padding: 3px 10px;
     border-radius: 12px;
     font-weight: 700;
@@ -470,9 +460,8 @@
 }
 
 .hc-item .hc-label {
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     color: #aaa;
-    text-transform: uppercase;
     font-weight: 600;
 }
 
@@ -505,7 +494,7 @@
     color: #bbb;
 }
 
-.hist-empty i { font-size: 3rem; display: block; margin-bottom: 12px; }
+.hist-empty i { font-size: 1.75rem; display: block; margin-bottom: 12px; }
 .hist-empty p { font-size: 0.88rem; color: #999; }
 
 /* --- MENSAJE --- */

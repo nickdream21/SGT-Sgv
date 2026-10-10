@@ -82,19 +82,19 @@ function inicializarGraficos(datos) {
         plugins: {
             legend: {
                 position: 'right',
-                labels: { color: '#fff', font: { size: 12 } }
+                labels: { color: '#334155', font: { size: 12 } }
             },
             tooltip: { mode: 'index', intersect: false }
         },
         scales: {
             y: {
                 beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' }
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' }
             },
             x: {
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' }
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' }
             }
         }
     };
@@ -106,7 +106,7 @@ function inicializarGraficos(datos) {
     const barOptions = JSON.parse(JSON.stringify(baseOptions));
     barOptions.plugins.datalabels = {
         display: true,
-        color: '#fff',
+        color: '#334155',
         font: { weight: 'bold', size: 10 },
         formatter: function (value) {
             return value.toFixed(3);
@@ -244,29 +244,29 @@ function inicializarGraficoTrujillo(datos, commonOptions) {
                 {
                     label: 'Espera a ingreso Trujillo',
                     data: esperaIngresoFiltrado,
-                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(42, 120, 214, 0.7)',
+                    borderColor: 'rgba(42, 120, 214, 1)',
                     borderWidth: 1
                 },
                 {
                     label: 'Espera inicio',
                     data: esperaInicioFiltrado,
-                    backgroundColor: 'rgba(255, 159, 64, 0.7)',
-                    borderColor: 'rgba(255, 159, 64, 1)',
+                    backgroundColor: 'rgba(235, 104, 52, 0.7)',
+                    borderColor: 'rgba(235, 104, 52, 1)',
                     borderWidth: 1
                 },
                 {
                     label: 'Carga',
                     data: cargaFiltrado,
-                    backgroundColor: 'rgba(255, 205, 86, 0.7)',
-                    borderColor: 'rgba(255, 205, 86, 1)',
+                    backgroundColor: 'rgba(27, 175, 122, 0.7)',
+                    borderColor: 'rgba(27, 175, 122, 1)',
                     borderWidth: 1
                 },
                 {
                     label: 'Permanencia en planta Trujillo',
                     data: permanenciaFiltrado,
-                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(74, 58, 167, 0.7)',
+                    borderColor: 'rgba(74, 58, 167, 1)',
                     borderWidth: 1
                 }
             ]
@@ -348,8 +348,8 @@ function inicializarGraficoTrujilloEcuador(datos, commonOptions) {
                 {
                     label: 'Días',
                     data: tiempoFiltrado,
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(42, 120, 214, 0.7)',
+                    borderColor: 'rgba(42, 120, 214, 1)',
                     borderWidth: 1
                 }
             ]
@@ -378,8 +378,8 @@ function inicializarGraficoBase(datos, commonOptions) {
                 {
                     label: 'Horas',
                     data: datos.TiempoBase || [],
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(42, 120, 214, 0.7)',
+                    borderColor: 'rgba(42, 120, 214, 1)',
                     borderWidth: 1
                 }
             ]
@@ -408,15 +408,15 @@ function inicializarGraficoInbalnor(datos, commonOptions) {
                 {
                     label: 'Espera descarga',
                     data: datos.EsperaDescargaInbalnor || [],
-                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(42, 120, 214, 0.7)',
+                    borderColor: 'rgba(42, 120, 214, 1)',
                     borderWidth: 1
                 },
                 {
                     label: 'Descarga',
                     data: datos.DescargaInbalnor || [],
-                    backgroundColor: 'rgba(255, 159, 64, 0.7)',
-                    borderColor: 'rgba(255, 159, 64, 1)',
+                    backgroundColor: 'rgba(235, 104, 52, 0.7)',
+                    borderColor: 'rgba(235, 104, 52, 1)',
                     borderWidth: 1
                 }
             ]
@@ -445,15 +445,15 @@ function inicializarGraficoJave(datos, commonOptions) {
                 {
                     label: 'Espera descarga',
                     data: datos.EsperaDescargaJave || [],
-                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(42, 120, 214, 0.7)',
+                    borderColor: 'rgba(42, 120, 214, 1)',
                     borderWidth: 1
                 },
                 {
                     label: 'Descarga',
                     data: datos.DescargaJave || [],
-                    backgroundColor: 'rgba(255, 159, 64, 0.7)',
-                    borderColor: 'rgba(255, 159, 64, 1)',
+                    backgroundColor: 'rgba(235, 104, 52, 0.7)',
+                    borderColor: 'rgba(235, 104, 52, 1)',
                     borderWidth: 1
                 }
             ]
@@ -547,13 +547,13 @@ function inicializarGraficoEsperaDepsa(datos, commonOptions) {
                 {
                     label: 'Horas',
                     data: valoresPromedio,
-                    backgroundColor: 'rgba(54, 162, 235, 0.3)', // Color azul semitransparente para el área
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(42, 120, 214, 0.3)', // Color azul semitransparente para el área
+                    borderColor: 'rgba(42, 120, 214, 1)',
                     borderWidth: 2,
                     fill: true, // Activar relleno
                     tension: 0.4, // Suavizar la línea
                     pointRadius: 4, // Puntos más visibles
-                    pointBackgroundColor: 'rgba(54, 162, 235, 1)'
+                    pointBackgroundColor: 'rgba(42, 120, 214, 1)'
                 }
             ]
         },
@@ -646,13 +646,13 @@ function inicializarGraficoEsperaComplex(datos, commonOptions) {
                 {
                     label: 'Horas',
                     data: valoresPromedio,
-                    backgroundColor: 'rgba(54, 162, 235, 0.3)', // Color azul semitransparente para el área
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(42, 120, 214, 0.3)', // Color azul semitransparente para el área
+                    borderColor: 'rgba(42, 120, 214, 1)',
                     borderWidth: 2,
                     fill: true, // Activar relleno
                     tension: 0.4, // Suavizar la línea
                     pointRadius: 4, // Puntos más visibles
-                    pointBackgroundColor: 'rgba(54, 162, 235, 1)'
+                    pointBackgroundColor: 'rgba(42, 120, 214, 1)'
                 }
             ]
         },
@@ -730,7 +730,7 @@ function inicializarGraficoTiempoDepsa(datos, commonOptions) {
         plugins: {
             legend: {
                 position: 'right',
-                labels: { color: '#fff', font: { size: 12 } }
+                labels: { color: '#334155', font: { size: 12 } }
             },
             tooltip: {
                 callbacks: {
@@ -746,12 +746,12 @@ function inicializarGraficoTiempoDepsa(datos, commonOptions) {
         scales: {
             y: {
                 beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' }
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' }
             },
             x: {
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' }
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' }
             }
         }
     };
@@ -765,14 +765,14 @@ function inicializarGraficoTiempoDepsa(datos, commonOptions) {
                 {
                     label: 'Horas',
                     data: valoresPromedio,
-                    backgroundColor: 'rgba(255, 99, 132, 0.3)', // Color rosa/rojo semitransparente para el área
-                    borderColor: 'rgba(255, 99, 132, 1)', // Color rosa/rojo para la línea
+                    backgroundColor: 'rgba(42, 120, 214, 0.3)', // Color rosa/rojo semitransparente para el área
+                    borderColor: 'rgba(42, 120, 214, 1)', // Color rosa/rojo para la línea
                     borderWidth: 2,
                     fill: true, // Activar relleno
                     tension: 0.4, // Suavizar la línea
                     pointRadius: 4, // Puntos más visibles
-                    pointBackgroundColor: 'rgba(255, 99, 132, 1)', // Color rosa/rojo para los puntos
-                    pointBorderColor: 'rgba(255, 99, 132, 1)'
+                    pointBackgroundColor: 'rgba(42, 120, 214, 1)', // Color rosa/rojo para los puntos
+                    pointBorderColor: 'rgba(42, 120, 214, 1)'
                 }
             ]
         },
@@ -804,8 +804,8 @@ function inicializarGraficoTiempoComplex(datos, commonOptions) {
                 {
                     label: 'Horas',
                     data: datos.TiempoComplex || [],
-                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(42, 120, 214, 0.2)',
+                    borderColor: 'rgba(42, 120, 214, 1)',
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4
@@ -893,13 +893,13 @@ function inicializarGraficoTiempoCebaf(datos, commonOptions) {
                 {
                     label: 'Minutos',
                     data: valoresPromedio,
-                    backgroundColor: 'rgba(153, 102, 255, 0.5)', // Más opaco para el relleno
-                    borderColor: 'rgba(153, 102, 255, 1)',
+                    backgroundColor: 'rgba(74, 58, 167, 0.5)', // Más opaco para el relleno
+                    borderColor: 'rgba(74, 58, 167, 1)',
                     borderWidth: 2,
                     fill: true, // Esto hace que se rellene debajo de la línea
                     tension: 0.4, // Para curvas suaves
                     pointRadius: 4, // Puntos más grandes
-                    pointBackgroundColor: 'rgba(153, 102, 255, 1)'
+                    pointBackgroundColor: 'rgba(74, 58, 167, 1)'
                 }
             ]
         },
@@ -1015,7 +1015,7 @@ function inicializarGraficoTiempoTCI(datos, commonOptions) {
         plugins: {
             legend: {
                 position: 'right',
-                labels: { color: '#fff', font: { size: 12 } }
+                labels: { color: '#334155', font: { size: 12 } }
             },
             tooltip: {
                 callbacks: {
@@ -1026,7 +1026,7 @@ function inicializarGraficoTiempoTCI(datos, commonOptions) {
             },
             datalabels: {
                 display: true,
-                color: '#fff',
+                color: '#334155',
                 font: { weight: 'bold', size: 10 },
                 formatter: function (value) {
                     return parseFloat(value).toFixed(1);
@@ -1039,14 +1039,14 @@ function inicializarGraficoTiempoTCI(datos, commonOptions) {
         scales: {
             y: {
                 beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' },
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' },
                 // Ajustar escala para que coincida con el estilo Power BI
                 suggestedMax: Math.max(...valoresPromedio.map(v => parseFloat(v))) * 1.2 || 1.0
             },
             x: {
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' }
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' }
             }
         }
     };
@@ -1061,14 +1061,14 @@ function inicializarGraficoTiempoTCI(datos, commonOptions) {
                     {
                         label: 'Horas',
                         data: valoresPromedio,
-                        backgroundColor: 'rgba(75, 192, 192, 0.3)', // Color turquesa/cian semitransparente para el área
-                        borderColor: 'rgba(75, 192, 192, 1)', // Color turquesa/cian para la línea
+                        backgroundColor: 'rgba(74, 58, 167, 0.3)', // Color turquesa/cian semitransparente para el área
+                        borderColor: 'rgba(74, 58, 167, 1)', // Color turquesa/cian para la línea
                         borderWidth: 2,
                         fill: true, // Activar relleno
                         tension: 0.4, // Suavizar la línea
                         pointRadius: 5, // Puntos más visibles
-                        pointBackgroundColor: 'rgba(75, 192, 192, 1)', // Color turquesa/cian para los puntos
-                        pointBorderColor: 'rgba(75, 192, 192, 1)'
+                        pointBackgroundColor: 'rgba(74, 58, 167, 1)', // Color turquesa/cian para los puntos
+                        pointBorderColor: 'rgba(74, 58, 167, 1)'
                     }
                 ]
             },
@@ -1101,8 +1101,8 @@ function inicializarGraficoTiempoPuyango(datos, commonOptions) {
                 {
                     label: 'Horas',
                     data: datos.TiempoPuyango || [],
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(74, 58, 167, 0.2)',
+                    borderColor: 'rgba(74, 58, 167, 1)',
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4
@@ -1205,7 +1205,7 @@ function inicializarGraficoEsperaNacionalizacion(datos, commonOptions) {
         plugins: {
             legend: {
                 position: 'right',
-                labels: { color: '#fff', font: { size: 12 } }
+                labels: { color: '#334155', font: { size: 12 } }
             },
             tooltip: {
                 callbacks: {
@@ -1216,7 +1216,7 @@ function inicializarGraficoEsperaNacionalizacion(datos, commonOptions) {
             },
             datalabels: {
                 display: true,
-                color: '#fff',
+                color: '#334155',
                 font: { weight: 'bold', size: 10 },
                 formatter: function (value) {
                     return parseFloat(value).toFixed(1);
@@ -1229,14 +1229,14 @@ function inicializarGraficoEsperaNacionalizacion(datos, commonOptions) {
         scales: {
             y: {
                 beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' },
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' },
                 // Ajustar escala para que coincida con el estilo Power BI
                 suggestedMax: Math.max(...valoresPromedio.map(v => parseFloat(v))) * 1.2 || 1.0
             },
             x: {
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' }
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' }
             }
         }
     };
@@ -1251,14 +1251,14 @@ function inicializarGraficoEsperaNacionalizacion(datos, commonOptions) {
                     {
                         label: 'Horas',
                         data: valoresPromedio,
-                        backgroundColor: 'rgba(255, 159, 64, 0.3)', // Color naranja semitransparente para el área
-                        borderColor: 'rgba(255, 159, 64, 1)', // Color naranja para la línea
+                        backgroundColor: 'rgba(235, 104, 52, 0.3)', // Color naranja semitransparente para el área
+                        borderColor: 'rgba(235, 104, 52, 1)', // Color naranja para la línea
                         borderWidth: 2,
                         fill: true, // Activar relleno
                         tension: 0.4, // Suavizar la línea
                         pointRadius: 5, // Puntos más visibles
-                        pointBackgroundColor: 'rgba(255, 159, 64, 1)', // Color naranja para los puntos
-                        pointBorderColor: 'rgba(255, 159, 64, 1)'
+                        pointBackgroundColor: 'rgba(235, 104, 52, 1)', // Color naranja para los puntos
+                        pointBorderColor: 'rgba(235, 104, 52, 1)'
                     }
                 ]
             },
@@ -1351,7 +1351,7 @@ function inicializarGraficoBodegaInbalnor(datos, commonOptions) {
         plugins: {
             legend: {
                 position: 'right',
-                labels: { color: '#fff', font: { size: 12 } }
+                labels: { color: '#334155', font: { size: 12 } }
             },
             tooltip: {
                 callbacks: {
@@ -1362,7 +1362,7 @@ function inicializarGraficoBodegaInbalnor(datos, commonOptions) {
             },
             datalabels: {
                 display: true,
-                color: '#fff',
+                color: '#334155',
                 font: { weight: 'bold', size: 10 },
                 formatter: function (value) {
                     return parseFloat(value).toFixed(1);
@@ -1375,12 +1375,12 @@ function inicializarGraficoBodegaInbalnor(datos, commonOptions) {
         scales: {
             y: {
                 beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' }
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' }
             },
             x: {
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' }
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' }
             }
         }
     };
@@ -1395,14 +1395,14 @@ function inicializarGraficoBodegaInbalnor(datos, commonOptions) {
                     {
                         label: 'Horas',
                         data: valoresPromedio,
-                        backgroundColor: 'rgba(54, 162, 235, 0.3)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(42, 120, 214, 0.3)',
+                        borderColor: 'rgba(42, 120, 214, 1)',
                         borderWidth: 2,
                         fill: true,
                         tension: 0.4,
                         pointRadius: 5,
-                        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
-                        pointBorderColor: 'rgba(54, 162, 235, 1)'
+                        pointBackgroundColor: 'rgba(42, 120, 214, 1)',
+                        pointBorderColor: 'rgba(42, 120, 214, 1)'
                     }
                 ]
             },
@@ -1493,7 +1493,7 @@ function inicializarGraficoBodegaJave(datos, commonOptions) {
         plugins: {
             legend: {
                 position: 'right',
-                labels: { color: '#fff', font: { size: 12 } }
+                labels: { color: '#334155', font: { size: 12 } }
             },
             tooltip: {
                 callbacks: {
@@ -1504,7 +1504,7 @@ function inicializarGraficoBodegaJave(datos, commonOptions) {
             },
             datalabels: {
                 display: true,
-                color: '#fff',
+                color: '#334155',
                 font: { weight: 'bold', size: 10 },
                 formatter: function (value) {
                     return parseFloat(value).toFixed(1);
@@ -1517,12 +1517,12 @@ function inicializarGraficoBodegaJave(datos, commonOptions) {
         scales: {
             y: {
                 beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' }
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' }
             },
             x: {
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' }
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' }
             }
         }
     };
@@ -1537,14 +1537,14 @@ function inicializarGraficoBodegaJave(datos, commonOptions) {
                     {
                         label: 'Horas',
                         data: valoresPromedio,
-                        backgroundColor: 'rgba(54, 162, 235, 0.3)', // Mismo color azul que el anterior
-                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(42, 120, 214, 0.3)', // Mismo color azul que el anterior
+                        borderColor: 'rgba(42, 120, 214, 1)',
                         borderWidth: 2,
                         fill: true,
                         tension: 0.4,
                         pointRadius: 5,
-                        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
-                        pointBorderColor: 'rgba(54, 162, 235, 1)'
+                        pointBackgroundColor: 'rgba(42, 120, 214, 1)',
+                        pointBorderColor: 'rgba(42, 120, 214, 1)'
                     }
                 ]
             },
@@ -1635,7 +1635,7 @@ function inicializarGraficoEcuatorianaInbalnor(datos, commonOptions) {
         plugins: {
             legend: {
                 position: 'right',
-                labels: { color: '#fff', font: { size: 12 } }
+                labels: { color: '#334155', font: { size: 12 } }
             },
             tooltip: {
                 callbacks: {
@@ -1646,7 +1646,7 @@ function inicializarGraficoEcuatorianaInbalnor(datos, commonOptions) {
             },
             datalabels: {
                 display: true,
-                color: '#fff',
+                color: '#334155',
                 font: { weight: 'bold', size: 10 },
                 formatter: function (value) {
                     return parseFloat(value).toFixed(1);
@@ -1659,12 +1659,12 @@ function inicializarGraficoEcuatorianaInbalnor(datos, commonOptions) {
         scales: {
             y: {
                 beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' }
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' }
             },
             x: {
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' }
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' }
             }
         }
     };
@@ -1679,14 +1679,14 @@ function inicializarGraficoEcuatorianaInbalnor(datos, commonOptions) {
                     {
                         label: 'Horas',
                         data: valoresPromedio,
-                        backgroundColor: 'rgba(255, 159, 64, 0.3)', // Color naranja para diferenciar
-                        borderColor: 'rgba(255, 159, 64, 1)',
+                        backgroundColor: 'rgba(235, 104, 52, 0.3)', // Color naranja para diferenciar
+                        borderColor: 'rgba(235, 104, 52, 1)',
                         borderWidth: 2,
                         fill: true,
                         tension: 0.4,
                         pointRadius: 5,
-                        pointBackgroundColor: 'rgba(255, 159, 64, 1)',
-                        pointBorderColor: 'rgba(255, 159, 64, 1)'
+                        pointBackgroundColor: 'rgba(235, 104, 52, 1)',
+                        pointBorderColor: 'rgba(235, 104, 52, 1)'
                     }
                 ]
             },
@@ -1777,7 +1777,7 @@ function inicializarGraficoEcuatorianaJave(datos, commonOptions) {
         plugins: {
             legend: {
                 position: 'right',
-                labels: { color: '#fff', font: { size: 12 } }
+                labels: { color: '#334155', font: { size: 12 } }
             },
             tooltip: {
                 callbacks: {
@@ -1788,7 +1788,7 @@ function inicializarGraficoEcuatorianaJave(datos, commonOptions) {
             },
             datalabels: {
                 display: true,
-                color: '#fff',
+                color: '#334155',
                 font: { weight: 'bold', size: 10 },
                 formatter: function (value) {
                     return parseFloat(value).toFixed(1);
@@ -1801,12 +1801,12 @@ function inicializarGraficoEcuatorianaJave(datos, commonOptions) {
         scales: {
             y: {
                 beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' }
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' }
             },
             x: {
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#fff' }
+                grid: { color: 'rgba(15, 23, 42, 0.08)' },
+                ticks: { color: '#334155' }
             }
         }
     };
@@ -1821,14 +1821,14 @@ function inicializarGraficoEcuatorianaJave(datos, commonOptions) {
                     {
                         label: 'Horas',
                         data: valoresPromedio,
-                        backgroundColor: 'rgba(255, 159, 64, 0.3)', // Color naranja igual que el anterior
-                        borderColor: 'rgba(255, 159, 64, 1)',
+                        backgroundColor: 'rgba(235, 104, 52, 0.3)', // Color naranja igual que el anterior
+                        borderColor: 'rgba(235, 104, 52, 1)',
                         borderWidth: 2,
                         fill: true,
                         tension: 0.4,
                         pointRadius: 5,
-                        pointBackgroundColor: 'rgba(255, 159, 64, 1)',
-                        pointBorderColor: 'rgba(255, 159, 64, 1)'
+                        pointBackgroundColor: 'rgba(235, 104, 52, 1)',
+                        pointBorderColor: 'rgba(235, 104, 52, 1)'
                     }
                 ]
             },

@@ -31,7 +31,7 @@
             <div class="col-12 col-md-4 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar Cliente</h5>
+                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar cliente</h5>
                     </div>
                     <div class="card-body">
                         <asp:Panel ID="pnlFormulario" runat="server">
@@ -104,7 +104,7 @@
                             </div>
 
                             <asp:Button ID="btnRegistrar" runat="server" CssClass="btn btn-primary btn-block"
-                                Text="Registrar Cliente" ValidationGroup="vgRegistroCliente" OnClick="btnRegistrar_Click" />
+                                Text="Registrar cliente" ValidationGroup="vgRegistroCliente" OnClick="btnRegistrar_Click" />
                         </asp:Panel>
                     </div>
                 </div>
@@ -118,7 +118,7 @@
             <div class="col-12 col-md-8 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Clientes Registrados</h5>
+                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Clientes registrados</h5>
                         <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
                             style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_clientes"
                             oninput="filtrarTabla(this.value,'contenedorClientes')">
@@ -200,7 +200,7 @@
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header" style="background:#0ea5e9;color:#fff;">
-                    <h5 class="modal-title"><i class="fas fa-building mr-2"></i>Editar Cliente</h5>
+                    <h5 class="modal-title"><i class="fas fa-building mr-2"></i>Editar cliente</h5>
                     <button type="button" class="close" style="color:#fff;" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
@@ -255,7 +255,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                     <asp:Button ID="btnActualizarCliente" runat="server" CssClass="btn btn-info"
-                        Text="Guardar Cambios" OnClick="btnActualizarCliente_Click" />
+                        Text="Guardar cambios" OnClick="btnActualizarCliente_Click" />
                 </div>
             </div>
         </div>

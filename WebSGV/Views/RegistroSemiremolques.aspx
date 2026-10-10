@@ -30,7 +30,7 @@
             <div class="col-12 col-md-4 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar Semiremolque</h5>
+                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar semiremolque</h5>
                     </div>
                     <div class="card-body">
                         <asp:ValidationSummary ID="vsRegistroSemi" runat="server" ValidationGroup="vgRegistroSemi" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
@@ -61,7 +61,7 @@
                             <asp:RegularExpressionValidator ID="revModelo" runat="server" ControlToValidate="txtModelo" ValidationGroup="vgRegistroSemi"
                                 ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.]{2,100}$" ErrorMessage="Modelo: use entre 2 y 100 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
                         </div>
-                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar Semiremolque" ValidationGroup="vgRegistroSemi"
+                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar semiremolque" ValidationGroup="vgRegistroSemi"
                             CssClass="btn btn-primary btn-block" OnClick="btnRegistrar_Click" />
                     </div>
                 </div>
@@ -75,7 +75,7 @@
             <div class="col-12 col-md-8 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Semiremolques Registrados</h5>
+                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Semiremolques registrados</h5>
                         <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
                             style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_semiremolques"
                             oninput="filtrarTabla(this.value,'contenedorSemi')">
@@ -137,7 +137,7 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header" style="background:#0ea5e9;color:#fff;">
-                    <h5 class="modal-title"><i class="fas fa-trailer mr-2"></i>Editar Semiremolque</h5>
+                    <h5 class="modal-title"><i class="fas fa-trailer mr-2"></i>Editar semiremolque</h5>
                     <button type="button" class="close" style="color:#fff;" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
@@ -157,7 +157,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                     <asp:Button ID="btnActualizarSemiremolque" runat="server" CssClass="btn btn-info"
-                        Text="Guardar Cambios" OnClick="btnActualizarSemiremolque_Click" />
+                        Text="Guardar cambios" OnClick="btnActualizarSemiremolque_Click" />
                 </div>
             </div>
         </div>
