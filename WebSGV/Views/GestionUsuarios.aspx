@@ -79,7 +79,7 @@
                                 Text='<%# (bool)Eval("activo") ? "Desactivar" : "Activar" %>'
                                 CssClass='<%# (bool)Eval("activo") ? "btn btn-sm btn-warning mr-1" : "btn btn-sm btn-success mr-1" %>'
                                 CommandName="ToggleActivo" CommandArgument='<%# Eval("idUsuario") %>'
-                                OnClientClick="return confirm('¿Confirmar cambio de estado del usuario?');" />
+                                OnClientClick='<%# ConfirmarCambioEstado(Eval("activo"), Eval("nombreUsuario")) %>' />
                             <asp:Button runat="server" Text="Contraseña" CssClass="btn btn-sm btn-secondary"
                                 CommandName="ResetPassword" CommandArgument='<%# Eval("idUsuario") %>' />
                         </ItemTemplate>
@@ -122,7 +122,7 @@
                                 <label>Nombre de usuario <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtNombreUsuario" runat="server" CssClass="form-control"
                                     placeholder="Sin espacios, ej: jperez" MaxLength="100" />
-                                <small class="text-muted">Solo letras, números y guiones bajos.</small>
+                                <small class="text-muted">3 a 50 caracteres: letras, números, punto y guion bajo.</small>
                             </div>
                         </div>
                         <div class="col-md-6">

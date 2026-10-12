@@ -146,7 +146,9 @@ namespace WebSGV.Views
             txtNombreUsuario.Text    = r["nombreUsuario"].ToString();
             txtNombreUsuario.Enabled = false;
             txtNombre.Text           = r["nombre"].ToString();
-            string rolUsuario = r["rol"].ToString();
+            // Los roles son un valor cerrado en MAYUSCULAS; se normaliza para que un valor antiguo
+            // en minuscula no deje de coincidir con la lista ni se vuelva a guardar asi.
+            string rolUsuario = r["rol"].ToString().Trim().ToUpperInvariant();
             ListItem itemRol = ddlRol.Items.FindByValue(rolUsuario);
             if (itemRol == null)
                 ddlRol.Items.Add(new ListItem(rolUsuario, rolUsuario));
@@ -202,7 +204,7 @@ namespace WebSGV.Views
             int    idUsuario     = Convert.ToInt32(hfIdUsuario.Value);
             string nombreUsuario = txtNombreUsuario.Text.Trim();
             string nombre        = txtNombre.Text.Trim();
-            string rol           = ddlRol.SelectedValue;
+            string rol           = (ddlRol.SelectedValue ?? "").Trim().ToUpperInvariant();
             string contrasena    = txtContrasena.Text;
             int idConductor;
             bool tieneConductor = int.TryParse(ddlConductor.SelectedValue, out idConductor) && idConductor > 0;
@@ -228,6 +230,12 @@ namespace WebSGV.Views
 
             if (idUsuario == 0)
             {
+                if (!System.Text.RegularExpressions.Regex.IsMatch(nombreUsuario, @"^[A-Za-z0-9_.]{3,50}$"))
+                {
+                    MostrarMensajeModal("El nombre de usuario debe tener entre 3 y 50 caracteres: solo letras, números, punto y guion bajo, sin espacios.", "danger");
+                    AbrirModal("modalUsuario");
+                    return;
+                }
                 if (string.IsNullOrEmpty(contrasena))
                 {
                     MostrarMensajeModal("Debe ingresar una contraseña para el nuevo usuario.", "danger");
@@ -276,18 +284,19 @@ namespace WebSGV.Views
                     }
 
                     string hash = PasswordHelper.HashPassword(contrasena);
-                    DbHelper.EjecutarNonQuery(
+                    int idNuevo = Convert.ToInt32(DbHelper.EjecutarEscalar(
                         @"INSERT INTO Usuarios
                             (nombreUsuario, nombre, contrasena, rol, activo, idConductor, requiereCambioContrasena)
+                          OUTPUT INSERTED.idUsuario
                           VALUES
                             (@user, @nombre, @pass, @rol, 1, @idConductor, 1)",
                         DbHelper.Param("@user",   nombreUsuario),
                         DbHelper.Param("@nombre", nombre),
                         DbHelper.Param("@pass",   hash),
                         DbHelper.Param("@rol",    rol),
-                        DbHelper.Param("@idConductor", tieneConductor ? (object)idConductor : DBNull.Value));
+                        DbHelper.Param("@idConductor", tieneConductor ? (object)idConductor : DBNull.Value)));
 
-                    AuditoriaHelper.Registrar("INSERT", "Usuarios", 0, $"Nuevo usuario creado: {nombreUsuario}, rol: {rol}");
+                    AuditoriaHelper.Registrar("INSERT", "Usuarios", idNuevo, $"Nuevo usuario creado: {nombreUsuario}, rol: {rol}");
                     MostrarMensaje($"Usuario '{nombreUsuario}' creado exitosamente.", "success");
                 }
                 else
@@ -359,6 +368,20 @@ namespace WebSGV.Views
             lblMensaje.Text     = mensaje;
             lblMensaje.CssClass = $"alert alert-{tipo} d-block mb-0";
             pnlMensaje.Visible  = true;
+        }
+
+        /// <summary>
+        /// OnClientClick del botón Activar/Desactivar: "return confirm('...');" con el nombre del usuario y el
+        /// efecto del cambio. SGV.confirmar (SiteMaster.js) lo muestra como modal; el texto va codificado
+        /// como literal de JavaScript porque el nombre de usuario viene de la base de datos.
+        /// </summary>
+        protected string ConfirmarCambioEstado(object activo, object nombreUsuario)
+        {
+            string usuario = Convert.ToString(nombreUsuario);
+            string mensaje = Convert.ToBoolean(activo)
+                ? $"¿Desactivar al usuario {usuario}?\n\nNo podrá iniciar sesión hasta que lo vuelva a activar."
+                : $"¿Activar al usuario {usuario}?\n\nPodrá volver a iniciar sesión.";
+            return "return confirm('" + System.Web.HttpUtility.JavaScriptStringEncode(mensaje) + "');";
         }
 
         private void MostrarMensajeModal(string mensaje, string tipo)

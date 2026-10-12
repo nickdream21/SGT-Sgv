@@ -124,6 +124,17 @@ Ordenadas por valor. Marca `[x]` al terminar.
       queda en NULL hasta su primer despacho) y la migración `23_ViajesEnProgresoEsInternacional.sql`
       rellena los existentes. Aplicado en pruebas (SP + migración); en producción entra con los pasos 1 y 2
       de la sección 6.
+- [x] **Revisión en navegador por rol (2026-10-12): Conductor, Administrador de Transporte, Contabilidad y
+      Administrador de Sistema.** Corregido: CSS globales con `?v=` (se veían estilos viejos tras desplegar);
+      `DashboardOperador` ya no cierra la sesión de otros roles (`SecurityHelper.ExigirRolOperador`); numeración
+      de filas de la liquidación sin saltos; `form-select` y otras clases de Bootstrap 5 con compatibilidad en
+      `sgv-base.css`; `confirm()` nativo reemplazado por el modal `SGV.confirmar` (y un interceptor para los
+      `OnClientClick="return confirm('...')"` simples); GestionUsuarios normaliza el rol, valida el formato del
+      usuario, registra el id del usuario nuevo en la auditoría y pide confirmación con el nombre y el efecto.
+      Migraciones **24** (rol en MAYÚSCULAS: 12 conductores estaban en minúscula) y **25** ("Ð" por "Ñ" en 5
+      conductores y 5 usuarios), aplicadas en pruebas; en producción entran con el paso 1 de la sección 6.
+      **Pendiente de decisión de la empresa:** el conductor DERLIS RICARDO CEDEÑO CHOURIO está duplicado (DNI
+      `00271627` y `02716271`). Quedan sin revisar Operador, Grifo y Maquinaria (fuera de alcance).
 - [x] **PDF de la Orden de Viaje (SGV-CDF-F-05) rediseñado** (2026-10-11, `Services/PdfOrdenViajeService.cs`):
       cabe en una página en el caso habitual (antes la firma saltaba sola a la página 2 y el encabezado decía
       "1 de 1"); muestra descuentos, reintegros y saldo final (antes el PDF aprobado no los tenía), las horas

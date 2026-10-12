@@ -192,7 +192,9 @@
     function textoDe(literal) {
         // Solo se decodifican los escapes de cadena; no se evalúa nada.
         var mapa = { n: '\n', r: '', t: ' ' };
-        return literal.replace(/\\(.)/g, function (_, c) { return mapa.hasOwnProperty(c) ? mapa[c] : c; });
+        return literal
+            .replace(/\\u([0-9a-fA-F]{4})/g, function (_, hex) { return String.fromCharCode(parseInt(hex, 16)); })
+            .replace(/\\(.)/g, function (_, c) { return mapa.hasOwnProperty(c) ? mapa[c] : c; });
     }
 
     document.addEventListener('click', function (e) {
