@@ -420,7 +420,7 @@ function imprimirDetalle() {
     var EMPRESA_RUBRO = 'Transporte y Construcci\u00f3n';
     var EMPRESA_RUC = '20483851171';
     var EMPRESA_DIRECCION = 'Jr. Ca\u00f1ete Nro. 416 Dpto. 100 - Cercado de Lima, Lima';
-    var EMPRESA_WEB = 'www.serviciosgviviana.somee.com';
+    var EMPRESA_WEB = SGV.empresaWeb;
     var FORMATO_CODIGO = 'SGV-CDF-F-05';
     var FORMATO_VERSION = '01';
     var FORMATO_VIGENCIA = '01/01/2025';

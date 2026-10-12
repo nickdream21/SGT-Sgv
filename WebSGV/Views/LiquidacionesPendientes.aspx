@@ -798,7 +798,8 @@
             btnFiltrar: '<%= btnFiltrar.ClientID %>',
             txtFechaDesde: '<%= txtFechaDesde.ClientID %>',
             txtFechaHasta: '<%= txtFechaHasta.ClientID %>',
-            ddlPrioridad: '<%= ddlPrioridad.ClientID %>'
+            ddlPrioridad: '<%= ddlPrioridad.ClientID %>',
+            empresaWeb: '<%= HttpUtility.JavaScriptStringEncode(WebSGV.Helpers.EmpresaConfigHelper.ObtenerEmpresa().Web) %>'
         });
     </script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/LiquidacionesPendientes.js") %>"></script>
