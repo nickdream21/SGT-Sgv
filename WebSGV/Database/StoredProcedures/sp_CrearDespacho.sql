@@ -7,6 +7,11 @@
 -- el texto, se resuelve contra el catalogo. La columna Despachos.lugarOperacion
 -- NUNCA se escribe con el texto recibido: siempre se deriva de Planta.nombre,
 -- de modo que no puede contener un valor fuera del catalogo.
+--
+-- El viaje toma el ambito de sus despachos (ViajesEnProgreso.esInternacional): basta
+-- uno internacional para que el viaje lo sea (DashboardConductor muestra entonces los
+-- peajes extranjeros en la liquidacion). Un viaje creado a mano (sp_CrearViajeProgreso)
+-- queda en NULL hasta su primer despacho.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_CrearDespacho
     @idConductor        INT,
@@ -114,10 +119,12 @@ BEGIN
 
         SET @idDespacho = SCOPE_IDENTITY();
 
-        -- Incrementar el contador de despachos del viaje
+        -- Incrementar el contador de despachos del viaje y fijar su ambito
         UPDATE ViajesEnProgreso
         SET cantidadDespachos    = cantidadDespachos + 1,
-            fechaUltimaActividad = @fechaCreacion
+            fechaUltimaActividad = @fechaCreacion,
+            esInternacional      = CASE WHEN @esInternacional = 1 THEN 1
+                                        ELSE ISNULL(esInternacional, 0) END
         WHERE idViajeProgreso = @idViajeProgreso;
 
         COMMIT TRANSACTION;

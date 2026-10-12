@@ -92,6 +92,7 @@ namespace WebSGV.Tests.Integracion
                 Assert.NotNull(viaje);
                 Assert.Equal("ABIERTO", viaje.EstadoViaje);
                 Assert.Equal(1, viaje.CantidadDespachos);
+                Assert.Equal(false, viaje.EsInternacional);
 
                 DataRow d = Fila("SELECT estadoDespacho, idFactura, idCPIC, idPlanta FROM Despachos WHERE idDespacho = @id", idDespacho);
                 Assert.Equal("PROGRAMADO", d["estadoDespacho"]);
@@ -103,6 +104,31 @@ namespace WebSGV.Tests.Integracion
                 lote.Conductores[0].IdViajeProgreso = idViaje;
                 RegistroDespachoService.CrearDespachoIndividual(lote, lote.Conductores[0], null, null);
                 Assert.Equal(2, RegistroDespachoService.ObtenerInfoViaje(idViaje).CantidadDespachos);
+            }
+        }
+
+        [FactBD]
+        public void ViajeCreadoAMano_TomaElAmbitoDeSusDespachos()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var datos = DatosBase.Cargar();
+                int idViaje = RegistroDespachoService.CrearNuevoViajeProgreso(datos.IdConductor, "Viaje manual (test)", "test");
+                Assert.Null(RegistroDespachoService.ObtenerInfoViaje(idViaje).EsInternacional);
+
+                var lote = NuevoLote(datos);
+                lote.Conductores[0].IdViajeProgreso = idViaje;
+                RegistroDespachoService.CrearDespachoIndividual(lote, lote.Conductores[0], null, null);
+                Assert.Equal(false, RegistroDespachoService.ObtenerInfoViaje(idViaje).EsInternacional);
+
+                // Basta un despacho internacional para que el viaje lo sea (y la liquidación pida peajes extranjeros).
+                lote.EsInternacional = true;
+                RegistroDespachoService.CrearDespachoIndividual(lote, lote.Conductores[0], null, null);
+                Assert.Equal(true, RegistroDespachoService.ObtenerInfoViaje(idViaje).EsInternacional);
+
+                lote.EsInternacional = false;
+                RegistroDespachoService.CrearDespachoIndividual(lote, lote.Conductores[0], null, null);
+                Assert.Equal(true, RegistroDespachoService.ObtenerInfoViaje(idViaje).EsInternacional);
             }
         }
 
