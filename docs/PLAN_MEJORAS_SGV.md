@@ -8,7 +8,7 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 | | Al empezar (2026-10-07) | Ahora |
 |---|---|---|
 | Puntuación general | 5.5 / 10 | **8 / 10** |
-| Tests | 215 | **329** (312 unitarios + 17 de integración, 9 de ellos escriben con rollback) |
+| Tests | 215 | **338** (321 unitarios + 17 de integración, 9 de ellos escriben con rollback) |
 | Paquetes NuGet | 40 | 23 |
 | Procedimientos del repo vs BD de pruebas | sin control, 2 inexistentes | **79/79 iguales** (la BD tiene exactamente los del repo) |
 
@@ -36,7 +36,7 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 4. **Comprobar:**
    ```powershell
    msbuild WebSGV.sln /p:Configuration=Debug /nologo /verbosity:minimal
-   dotnet test WebSGV.Tests\WebSGV.Tests.csproj --no-build      # 329 en verde (17 de integración)
+   dotnet test WebSGV.Tests\WebSGV.Tests.csproj --no-build      # 338 en verde (17 de integración)
    ```
    Sin `connectionStrings.config` los 17 de integración salen como "omitidos" (no fallan).
 
@@ -124,6 +124,22 @@ Ordenadas por valor. Marca `[x]` al terminar.
       queda en NULL hasta su primer despacho) y la migración `23_ViajesEnProgresoEsInternacional.sql`
       rellena los existentes. Aplicado en pruebas (SP + migración); en producción entra con los pasos 1 y 2
       de la sección 6.
+- [x] **PDF de la Orden de Viaje (SGV-CDF-F-05) rediseñado** (2026-10-11, `Services/PdfOrdenViajeService.cs`):
+      cabe en una página en el caso habitual (antes la firma saltaba sola a la página 2 y el encabezado decía
+      "1 de 1"); muestra descuentos, reintegros y saldo final (antes el PDF aprobado no los tenía), las horas
+      de llegada (declarada y GPS), los comprobantes y las descripciones del conductor; omite las notas
+      internas de rechazo/corrección; conserva la fecha real de firma del conductor al aprobar; y al
+      regenerar un PDF faltante incluye la firma. Recibe `DetalleLiquidacion` (sin reflexión) y
+      `CrearDocumento` permite probarlo sin BD (`WebSGV.Tests/PdfOrdenViajeTests.cs`). Pendiente: alinear
+      `PdfAbastecimientoService` al mismo estilo.
+- [x] **Reportes del administrador de transporte rediseñados** (2026-10-11). Las 5 exportaciones de
+      `ReportesOrdenesViaje` (liquidaciones Excel/PDF, viajes activos Excel y ahora PDF, personalizado
+      Excel/PDF) usan `Services/Reportes/ReporteTabular.cs`: encabezado con empresa, RUC, título, filtros y
+      usuario; Excel con fechas y montos como valores, totales `SUBTOTAL` (respetan el filtro), autofiltro,
+      fila de títulos fija e impresión horizontal ajustada al ancho; PDF con cabecera de tabla repetida,
+      "Página X de Y" y tamaño de letra según la cantidad de columnas. El reporte de liquidaciones muestra
+      descuento, reintegro y neto. El botón Imprimir de Liquidaciones Pendientes abre el PDF oficial en vez
+      de la copia HTML (350 líneas de JS menos). Tests en `WebSGV.Tests/ReporteTabularTests.cs`.
 
 ## 5. Herramientas del repo
 

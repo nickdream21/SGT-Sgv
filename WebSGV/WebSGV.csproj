@@ -438,6 +438,7 @@
     <Compile Include="Services\GpsIntegracion\HoraLlegadaGpsService.cs" />
     <Compile Include="Services\GpsIntegracion\SeguimientoExportacionGpsService.cs" />
     <Compile Include="Services\Reportes\ReportesOrdenesViajeService.cs" />
+    <Compile Include="Services\Reportes\ReporteTabular.cs" />
     <Compile Include="Services\Despachos\DespachoValidaciones.cs" />
     <Compile Include="Services\Despachos\DocumentoCpicService.cs" />
     <Compile Include="Services\Despachos\EditarDespachoService.cs" />

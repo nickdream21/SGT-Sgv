@@ -113,6 +113,24 @@ namespace WebSGV.Services
         }
 
         // ---------------------------------------------------------------------
+        // Fecha/hora (de Perú) de la firma vigente del conductor, para que el
+        // PDF regenerado en la aprobación conserve la fecha original.
+        // ---------------------------------------------------------------------
+        public DateTime? ObtenerFechaFirmaConductor(int idOrdenViaje)
+        {
+            object obj = DbHelper.EjecutarEscalar(@"
+                SELECT TOP 1 fd.fechaHoraFirma
+                FROM OrdenViaje ov
+                INNER JOIN FirmaDigital fd ON ov.idFirmaConductor = fd.idFirma
+                WHERE ov.idOrdenViaje = @id
+                  AND fd.estadoFirma = 'V'",
+                DbHelper.Param("@id", idOrdenViaje));
+
+            // fechaHoraFirma se guarda con SYSUTCDATETIME().
+            return obj == null || obj == DBNull.Value ? (DateTime?)null : FechaHelper.ConvertirDeUtc((DateTime)obj);
+        }
+
+        // ---------------------------------------------------------------------
         // Firma del ADMINISTRADOR (Nivel C - constancia, sin trazo canvas)
         // ---------------------------------------------------------------------
         public ResultadoFirma RegistrarFirmaAdmin(
@@ -132,16 +150,22 @@ namespace WebSGV.Services
             //    en el PDF final aprobado. El sello admin se agrega como segundo
             //    bloque de firma al lado derecho.
             byte[] trazoConductor = null;
-            try { trazoConductor = ObtenerTrazoConductor(idOrdenViaje); }
+            string fechaFirmaConductor = null;
+            try
+            {
+                trazoConductor = ObtenerTrazoConductor(idOrdenViaje);
+                fechaFirmaConductor = ObtenerFechaFirmaConductor(idOrdenViaje)?.ToString("dd/MM/yyyy HH:mm");
+            }
             catch { /* si falla la lectura, generamos sin firma conductor */ }
 
-            string fechaAprobacion = FechaHelper.Ahora().ToString("dd/MM/yyyy HH:mm:ss");
+            string fechaAprobacion = FechaHelper.Ahora().ToString("dd/MM/yyyy HH:mm");
             var pdf = _pdfSvc.GenerarYArchivar(
                 detalle,
                 firmaConductorPng: trazoConductor,
                 archivar: true,
                 nombreAdminAprobador: nombreFirmante,
-                fechaAprobacionAdmin: fechaAprobacion);
+                fechaAprobacionAdmin: fechaAprobacion,
+                fechaFirmaConductor: fechaFirmaConductor);
 
             string consentimiento =
                 "Aprobación administrativa de la Orden de Viaje N° " +

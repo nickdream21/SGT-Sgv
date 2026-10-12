@@ -36,8 +36,7 @@ namespace WebSGV.Models.Liquidaciones
     /// DTO completo del detalle de una liquidación para la revisión del administrador y
     /// la generación del PDF/firma. Movido desde <c>LiquidacionesPendientes.aspx.cs</c>
     /// para que <c>LiquidacionesPendientesService.ObtenerDetalleLiquidacion</c> pueda
-    /// devolverlo sin depender de la página. <c>PdfOrdenViajeService</c> lo lee por
-    /// reflexión, de modo que el cambio de namespace no lo afecta.
+    /// devolverlo sin depender de la página. <c>PdfOrdenViajeService</c> lo recibe tal cual.
     /// </summary>
     public class DetalleLiquidacion
     {

@@ -94,6 +94,7 @@ The digital signature is a PNG biometric trace captured on canvas, stored in the
 - `Services/PdfOrdenViajeService.cs` — travel order PDFs.
 - `Services/PdfAbastecimientoService.cs` — fuel supply vouchers.
 - `Services/FirmaService.cs` — digital signature embedding.
+- `Services/Reportes/ReporteTabular.cs` — shared Excel + PDF layout for tabular reports (company header, filters, totals, summary). New report exports should build a `ReporteTabular` instead of styling ClosedXML/QuestPDF by hand.
 
 PDFs use **QuestPDF 2026.5.0** (Community license, set in `Global.asax.cs` and in the services' static constructors — do NOT reintroduce iTextSharp/iText). QuestPDF ships native Skia binaries that MSBuild copies to `bin\runtimes\win-x86|x64\native\` via the package's `build\net4\QuestPDF.targets` import in the csproj — they must be deployed along with the app. Excel import/export uses **ClosedXML 0.105** only (EPPlus was removed for licensing reasons).
 

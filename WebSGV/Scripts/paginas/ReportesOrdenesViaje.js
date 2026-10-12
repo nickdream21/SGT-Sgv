@@ -64,7 +64,7 @@ function exportarLiquidaciones() {
     window.location.href = 'ReportesOrdenesViaje.aspx?action=exportarLiquidaciones&fechaDesde=' + fechaDesde + '&fechaHasta=' + fechaHasta + '&factor=' + factorConversion;
 }
 
-function exportarViajesActivos() {
+function exportarViajesActivos(formato) {
     limpiarErroresValidacion();
     var buscarConductor = $('#' + SGV.txtBuscarConductor).val();
     var estadoViaje = $('#' + SGV.ddlEstadoViaje).val();
@@ -73,7 +73,7 @@ function exportarViajesActivos() {
         return;
     }
 
-    window.location.href = 'ReportesOrdenesViaje.aspx?action=exportarViajesActivos&buscarConductor=' + encodeURIComponent(buscarConductor) + '&estadoViaje=' + estadoViaje;
+    window.location.href = 'ReportesOrdenesViaje.aspx?action=exportarViajesActivos&buscarConductor=' + encodeURIComponent(buscarConductor) + '&estadoViaje=' + estadoViaje + (formato === 'pdf' ? '&formato=pdf' : '');
 }
 
 function generarPDFLiquidaciones() {

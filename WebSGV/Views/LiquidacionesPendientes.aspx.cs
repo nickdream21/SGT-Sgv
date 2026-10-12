@@ -1292,8 +1292,13 @@ namespace WebSGV.Views
             if (detalle == null)
                 throw new InvalidOperationException("No se pudo cargar el detalle para generar el PDF.");
 
+            // Con la firma vigente del conductor (si la hay), para no regenerar un PDF sin firma.
+            var firmaSvc = new FirmaService();
             var svc = new PdfOrdenViajeService();
-            var pdf = svc.GenerarYArchivar(detalle, firmaConductorPng: null, archivar: true);
+            var pdf = svc.GenerarYArchivar(detalle,
+                firmaConductorPng: firmaSvc.ObtenerTrazoConductor(idOrdenViaje),
+                archivar: true,
+                fechaFirmaConductor: firmaSvc.ObtenerFechaFirmaConductor(idOrdenViaje)?.ToString("dd/MM/yyyy HH:mm"));
 
             // Persistir ruta y hash si la columna acepta (idempotente: sobrescribe
             // si ya había una ruta huérfana apuntando a un archivo inexistente).

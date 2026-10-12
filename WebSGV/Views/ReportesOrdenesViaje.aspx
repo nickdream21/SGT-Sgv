@@ -281,9 +281,14 @@
                     </div>
                     <div class="row mt-2">
                         <div class="col-md-12">
-                            <button type="button" class="btn btn-export btn-export-excel" onclick="exportarViajesActivos()">
-                                <i class="fas fa-file-excel mr-1"></i>Exportar Excel
-                            </button>
+                            <div class="d-flex" style="gap:0.5rem;">
+                                <button type="button" class="btn btn-export btn-export-excel" onclick="exportarViajesActivos('excel')">
+                                    <i class="fas fa-file-excel mr-1"></i>Exportar Excel
+                                </button>
+                                <button type="button" class="btn btn-export btn-export-pdf" onclick="exportarViajesActivos('pdf')">
+                                    <i class="fas fa-file-pdf mr-1"></i>Exportar PDF
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -7,18 +7,11 @@ using System.Web.Services;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using System.Text;
-using System.IO;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using ClosedXML.Excel;
 using QuestPDF.Fluent;
-using QuestPDF.Helpers;
 using WebSGV.Helpers;
 using WebSGV.Services.Reportes;
-
-// Alias para evitar ambigüedades con System.Web.UI.WebControls (Unit, etc.)
-using QuestPdfColor = QuestPDF.Infrastructure.Color;
-using QuestPdfContainer = QuestPDF.Infrastructure.IContainer;
 
 namespace WebSGV.Views
 {
@@ -144,7 +137,7 @@ namespace WebSGV.Views
             }
         }
 
-        private DataTable ObtenerLiquidaciones(DateTime fechaDesde, DateTime fechaHasta)
+        private static DataTable ObtenerLiquidaciones(DateTime fechaDesde, DateTime fechaHasta)
         {
             DataTable dt = ReportesOrdenesViajeService.ObtenerLiquidaciones(fechaDesde, fechaHasta);
 
@@ -310,7 +303,7 @@ namespace WebSGV.Views
             }
         }
 
-        private DataTable ObtenerViajesActivos(string buscarConductor, string estadoViaje) =>
+        private static DataTable ObtenerViajesActivos(string buscarConductor, string estadoViaje) =>
             ReportesOrdenesViajeService.ObtenerViajesActivos(buscarConductor, estadoViaje);
 
         protected void gvViajesActivos_RowDataBound(object sender, GridViewRowEventArgs e)
@@ -335,16 +328,20 @@ namespace WebSGV.Views
 
         #endregion
 
-        #region EXPORTACIÓN EXCEL
+        #region EXPORTACIÓN (Excel y PDF con el formato común de ReporteTabular)
 
-        private void ExportarLiquidacionesExcel()
+        private void ExportarLiquidacionesExcel() => ExportarLiquidaciones(pdf: false);
+
+        private void GenerarPDFLiquidaciones() => ExportarLiquidaciones(pdf: true);
+
+        private void ExportarLiquidaciones(bool pdf)
         {
             try
             {
-                string mensajeValidacion;
                 DateTime fechaDesde;
                 DateTime fechaHasta;
                 decimal factorConversion;
+                string mensajeValidacion;
                 if (!ValidarFiltrosLiquidaciones(Request.QueryString["fechaDesde"], Request.QueryString["fechaHasta"],
                     Request.QueryString["factor"], out fechaDesde, out fechaHasta, out factorConversion, out mensajeValidacion))
                 {
@@ -352,218 +349,52 @@ namespace WebSGV.Views
                     return;
                 }
 
-                DataTable dt = ObtenerLiquidaciones(fechaDesde, fechaHasta);
-
-                byte[] excelBytes;
-                using (XLWorkbook wb = new XLWorkbook())
-                {
-                    var ws = wb.Worksheets.Add("Liquidaciones");
-
-                    ws.Cell(1, 1).Value = "SISTEMA SGV";
-                    ws.Range(1, 1, 1, 6).Merge();
-                    ws.Cell(1, 1).Style.Font.Bold = true;
-                    ws.Cell(1, 1).Style.Font.FontSize = 14;
-                    ws.Cell(1, 1).Style.Font.FontColor = XLColor.White;
-                    ws.Cell(1, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#1e40af");
-                    ws.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                    ws.Cell(1, 1).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-                    ws.Row(1).Height = 30;
-
-                    ws.Cell(2, 1).Value = "REPORTE DE LIQUIDACIONES (Descuentos y Reintegros)";
-                    ws.Range(2, 1, 2, 6).Merge();
-                    ws.Cell(2, 1).Style.Font.Bold = true;
-                    ws.Cell(2, 1).Style.Font.FontSize = 12;
-                    ws.Cell(2, 1).Style.Font.FontColor = XLColor.FromHtml("#1e293b");
-                    ws.Cell(2, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#e2e8f0");
-                    ws.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-                    ws.Cell(3, 1).Value = $"Período: {fechaDesde:dd/MM/yyyy} - {fechaHasta:dd/MM/yyyy}  |  Generado: {FechaHelper.Ahora():dd/MM/yyyy HH:mm}";
-                    ws.Range(3, 1, 3, 6).Merge();
-                    ws.Cell(3, 1).Style.Font.Italic = true;
-                    ws.Cell(3, 1).Style.Font.FontSize = 10;
-                    ws.Cell(3, 1).Style.Font.FontColor = XLColor.FromHtml("#64748b");
-                    ws.Cell(3, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-                    // Encabezados
-                    string[] headers = { "DNI", "CONDUCTOR", "FECHA", "N° DE LIQ", "MONTO S/ (Reintegro-Descuento)", "MONTO $ (Reintegro-Descuento)" };
-                    for (int i = 0; i < headers.Length; i++)
-                    {
-                        ws.Cell(5, i + 1).Value = headers[i];
-                    }
-
-                    var headerRange = ws.Range(5, 1, 5, 6);
-                    headerRange.Style.Font.Bold = true;
-                    headerRange.Style.Font.FontSize = 10;
-                    headerRange.Style.Font.FontColor = XLColor.White;
-                    headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#334155");
-                    headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                    headerRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-                    headerRange.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
-                    headerRange.Style.Border.BottomBorderColor = XLColor.FromHtml("#1e293b");
-                    ws.Row(5).Height = 25;
-
-                    int row = 6;
-                    decimal totalSoles = 0;
-                    decimal totalDolares = 0;
-                    bool isAlternate = false;
-
-                    foreach (DataRow dr in dt.Rows)
-                    {
-                        ws.Cell(row, 1).Value = dr["DNI"].ToString();
-                        ws.Cell(row, 2).Value = dr["Conductor"].ToString();
-                        ws.Cell(row, 3).Value = Convert.ToDateTime(dr["FechaSalida"]).ToString("dd/MM/yyyy");
-                        ws.Cell(row, 4).Value = dr["NumeroLiquidacion"].ToString();
-
-                        decimal montoSoles = Convert.ToDecimal(dr["MontoSoles"]);
-                        decimal montoDolares = Convert.ToDecimal(dr["MontoDolares"]);
-
-                        ws.Cell(row, 5).Value = montoSoles;
-                        ws.Cell(row, 6).Value = montoDolares;
-                        ws.Cell(row, 5).Style.NumberFormat.Format = "#,##0.00";
-                        ws.Cell(row, 6).Style.NumberFormat.Format = "#,##0.00";
-                        ws.Cell(row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-                        ws.Cell(row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-
-                        if (montoSoles < 0)
-                            ws.Cell(row, 5).Style.Font.FontColor = XLColor.FromHtml("#dc2626");
-                        else if (montoSoles > 0)
-                            ws.Cell(row, 5).Style.Font.FontColor = XLColor.FromHtml("#2563eb");
-
-                        if (montoDolares < 0)
-                            ws.Cell(row, 6).Style.Font.FontColor = XLColor.FromHtml("#dc2626");
-                        else if (montoDolares > 0)
-                            ws.Cell(row, 6).Style.Font.FontColor = XLColor.FromHtml("#2563eb");
-
-                        // Filas alternadas
-                        if (isAlternate)
-                        {
-                            ws.Range(row, 1, row, 6).Style.Fill.BackgroundColor = XLColor.FromHtml("#f8fafc");
-                        }
-                        isAlternate = !isAlternate;
-
-                        // Bordes
-                        ws.Range(row, 1, row, 6).Style.Border.BottomBorder = XLBorderStyleValues.Hair;
-                        ws.Range(row, 1, row, 6).Style.Border.BottomBorderColor = XLColor.FromHtml("#e2e8f0");
-
-                        totalSoles += montoSoles;
-                        totalDolares += montoDolares;
-                        row++;
-                    }
-
-                    // Fila de totales
-                    var totalRange = ws.Range(row, 1, row, 6);
-                    totalRange.Style.Font.Bold = true;
-                    totalRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#f1f5f9");
-                    totalRange.Style.Border.TopBorder = XLBorderStyleValues.Medium;
-                    totalRange.Style.Border.TopBorderColor = XLColor.FromHtml("#334155");
-                    totalRange.Style.Border.BottomBorder = XLBorderStyleValues.Medium;
-                    totalRange.Style.Border.BottomBorderColor = XLColor.FromHtml("#334155");
-
-                    ws.Cell(row, 4).Value = "TOTAL:";
-                    ws.Cell(row, 4).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-                    ws.Cell(row, 5).Value = totalSoles;
-                    ws.Cell(row, 5).Style.NumberFormat.Format = "#,##0.00";
-                    ws.Cell(row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-                    ws.Cell(row, 6).Value = totalDolares;
-                    ws.Cell(row, 6).Style.NumberFormat.Format = "#,##0.00";
-                    ws.Cell(row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-
-                    // Resumen
-                    row += 2;
-                    ws.Cell(row, 1).Value = "RESUMEN TOTAL EN SOLES";
-                    ws.Range(row, 1, row, 6).Merge();
-                    ws.Cell(row, 1).Style.Font.Bold = true;
-                    ws.Cell(row, 1).Style.Font.FontSize = 12;
-                    ws.Cell(row, 1).Style.Font.FontColor = XLColor.White;
-                    ws.Cell(row, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#059669");
-                    ws.Cell(row, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                    ws.Row(row).Height = 25;
-                    row++;
-
-                    // Resumen filas
-                    string[][] resumenData = new string[][]
-                    {
-                        new[] { "Factor de Conversión ($ a S/):", factorConversion.ToString("0.00"), "#fef3c7" },
-                        new[] { "Total en Soles (S/):", $"S/ {totalSoles:N2}", "#f0fdf4" },
-                        new[] { "Total en Dólares ($):", $"$ {totalDolares:N2}", "#f0fdf4" },
-                        new[] { "Conversión a Soles ($ × Factor):", $"S/ {(totalDolares * factorConversion):N2}", "#ecfeff" }
-                    };
-
-                    foreach (var item in resumenData)
-                    {
-                        ws.Cell(row, 1).Value = item[0];
-                        ws.Cell(row, 1).Style.Font.Bold = true;
-                        ws.Range(row, 1, row, 4).Merge();
-                        ws.Cell(row, 5).Value = item[1];
-                        ws.Cell(row, 5).Style.Font.Bold = true;
-                        ws.Cell(row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-                        ws.Range(row, 5, row, 6).Merge();
-                        ws.Range(row, 1, row, 6).Style.Fill.BackgroundColor = XLColor.FromHtml(item[2]);
-                        ws.Range(row, 1, row, 6).Style.Border.BottomBorder = XLBorderStyleValues.Hair;
-                        ws.Range(row, 1, row, 6).Style.Border.BottomBorderColor = XLColor.FromHtml("#cbd5e1");
-                        row++;
-                    }
-
-                    decimal totalDolaresConvertido = totalDolares * factorConversion;
-                    decimal totalGeneral = totalSoles + totalDolaresConvertido;
-                    ws.Cell(row, 1).Value = "TOTAL GENERAL EN SOLES:";
-                    ws.Cell(row, 1).Style.Font.Bold = true;
-                    ws.Cell(row, 1).Style.Font.FontSize = 12;
-                    ws.Range(row, 1, row, 4).Merge();
-                    ws.Cell(row, 5).Value = $"S/ {totalGeneral:N2}";
-                    ws.Cell(row, 5).Style.Font.Bold = true;
-                    ws.Cell(row, 5).Style.Font.FontSize = 12;
-                    ws.Cell(row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-                    ws.Range(row, 5, row, 6).Merge();
-                    ws.Range(row, 1, row, 6).Style.Fill.BackgroundColor = XLColor.FromHtml("#d1fae5");
-                    ws.Range(row, 1, row, 6).Style.Border.TopBorder = XLBorderStyleValues.Medium;
-                    ws.Range(row, 1, row, 6).Style.Border.TopBorderColor = XLColor.FromHtml("#059669");
-                    ws.Range(row, 1, row, 6).Style.Border.BottomBorder = XLBorderStyleValues.Medium;
-                    ws.Range(row, 1, row, 6).Style.Border.BottomBorderColor = XLColor.FromHtml("#059669");
-
-                    // Leyenda de colores
-                    row += 2;
-                    ws.Cell(row, 1).Value = "Leyenda: Rojo = Descuento Neto  |  Azul = Reintegro Neto  |  Negro = Cero";
-                    ws.Range(row, 1, row, 6).Merge();
-                    ws.Cell(row, 1).Style.Font.Italic = true;
-                    ws.Cell(row, 1).Style.Font.FontSize = 9;
-                    ws.Cell(row, 1).Style.Font.FontColor = XLColor.FromHtml("#64748b");
-
-                    ws.Columns().AdjustToContents();
-                    ws.Column(2).Width = 30;
-                    ws.Column(5).Width = 22;
-                    ws.Column(6).Width = 22;
-
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        wb.SaveAs(ms);
-                        excelBytes = ms.ToArray();
-                    }
-                }
-
-                HttpContext.Current.Response.Clear();
-                HttpContext.Current.Response.ClearContent();
-                HttpContext.Current.Response.ClearHeaders();
-                HttpContext.Current.Response.Buffer = true;
-                HttpContext.Current.Response.Charset = "";
-                HttpContext.Current.Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                HttpContext.Current.Response.AddHeader("Content-Disposition", $"attachment; filename=Liquidaciones_{FechaHelper.Ahora():yyyyMMddHHmmss}.xlsx");
-                HttpContext.Current.Response.AddHeader("Content-Length", excelBytes.Length.ToString());
-                HttpContext.Current.Response.Cache.SetCacheability(HttpCacheability.NoCache);
-                HttpContext.Current.Response.BinaryWrite(excelBytes);
-                HttpContext.Current.Response.Flush();
-                HttpContext.Current.Response.End();
+                var reporte = ReporteLiquidaciones(fechaDesde, fechaHasta, factorConversion, UsuarioActual());
+                if (pdf) EnviarPdf(reporte, "Liquidaciones");
+                else EnviarExcel(reporte, "Liquidaciones");
             }
-            catch (System.Threading.ThreadAbortException)
-            {
-                // Normal - Response.End() causa esto
-            }
+            catch (System.Threading.ThreadAbortException) { /* normal: Response.End() */ }
             catch (Exception ex)
             {
-                // NO tocar Response aquí - solo logear el error
-                LogSGV.Error(ex, "Error al exportar a Excel en ReportesOrdenesViaje");
-                throw; // Re-lanzar para que lo maneje ASP.NET
+                LogSGV.Error(ex, "Error al exportar el reporte de liquidaciones en ReportesOrdenesViaje");
+                throw;
             }
+        }
+
+        private static ReporteTabular ReporteLiquidaciones(DateTime fechaDesde, DateTime fechaHasta, decimal factor, string usuario)
+        {
+            DataTable dt = ObtenerLiquidaciones(fechaDesde, fechaHasta);
+            var r = new ReporteTabular
+            {
+                Titulo = "Reporte de liquidaciones: descuentos y reintegros",
+                NombreHoja = "Liquidaciones",
+                Filas = dt.Rows.Cast<DataRow>().ToList(),
+                GeneradoPor = usuario,
+                Nota = "Neto = reintegro − descuento: en verde cuando predomina el reintegro y en rojo cuando predomina el descuento. " +
+                       "El total general convierte los dólares a soles con el factor indicado."
+            };
+            r.Filtros.Add($"Período: {fechaDesde:dd/MM/yyyy} al {fechaHasta:dd/MM/yyyy}");
+
+            r.Columnas.Add(Columna("DNI", TipoColumnaReporte.Codigo, 0.9f, d => d["DNI"]));
+            r.Columnas.Add(Columna("Conductor", TipoColumnaReporte.Texto, 2.4f, d => d["Conductor"]));
+            r.Columnas.Add(Columna("Fecha de salida", TipoColumnaReporte.Fecha, 1f, d => d["FechaSalida"]));
+            r.Columnas.Add(Columna("N.° de liquidación", TipoColumnaReporte.Codigo, 1.2f, d => d["NumeroLiquidacion"]));
+            r.Columnas.Add(Columna("Descuento S/", TipoColumnaReporte.Soles, 1f, d => d["DescuentoSoles"]));
+            r.Columnas.Add(Columna("Reintegro S/", TipoColumnaReporte.Soles, 1f, d => d["ReintegroSoles"]));
+            r.Columnas.Add(Columna("Neto S/", TipoColumnaReporte.Soles, 1f, d => d["MontoSoles"], verdeSiPositivo: true));
+            r.Columnas.Add(Columna("Descuento US$", TipoColumnaReporte.Dolares, 1f, d => d["DescuentoDolares"]));
+            r.Columnas.Add(Columna("Reintegro US$", TipoColumnaReporte.Dolares, 1f, d => d["ReintegroDolares"]));
+            r.Columnas.Add(Columna("Neto US$", TipoColumnaReporte.Dolares, 1f, d => d["MontoDolares"], verdeSiPositivo: true));
+
+            decimal netoS = SumaColumna(dt, "MontoSoles");
+            decimal netoD = SumaColumna(dt, "MontoDolares");
+            r.Resumen.Add(Linea("Liquidaciones", dt.Rows.Count, TipoColumnaReporte.Entero));
+            r.Resumen.Add(Linea("Neto en soles", netoS, TipoColumnaReporte.Soles));
+            r.Resumen.Add(Linea("Neto en dólares", netoD, TipoColumnaReporte.Dolares));
+            r.Resumen.Add(Linea("Factor de conversión (US$ a S/)", factor, TipoColumnaReporte.Texto));
+            r.Resumen.Add(Linea("Neto en dólares convertido a soles", netoD * factor, TipoColumnaReporte.Soles));
+            r.Resumen.Add(Linea("Total general en soles", netoS + netoD * factor, TipoColumnaReporte.Soles, destacada: true));
+            return r;
         }
 
         private void ExportarViajesActivosExcel()
@@ -580,366 +411,97 @@ namespace WebSGV.Views
                     return;
                 }
 
-                DataTable dt = ObtenerViajesActivos(buscarConductor, estadoViaje);
-
-                byte[] excelBytes;
-                using (XLWorkbook wb = new XLWorkbook())
-                {
-                    var ws = wb.Worksheets.Add("Viajes Activos");
-
-                    ws.Cell(1, 1).Value = "SISTEMA SGV";
-                    ws.Range(1, 1, 1, 9).Merge();
-                    ws.Cell(1, 1).Style.Font.Bold = true;
-                    ws.Cell(1, 1).Style.Font.FontSize = 14;
-                    ws.Cell(1, 1).Style.Font.FontColor = XLColor.White;
-                    ws.Cell(1, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#92400e");
-                    ws.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                    ws.Row(1).Height = 30;
-
-                    ws.Cell(2, 1).Value = "REPORTE DE VIAJES ACTIVOS SIN LIQUIDACIÓN";
-                    ws.Range(2, 1, 2, 9).Merge();
-                    ws.Cell(2, 1).Style.Font.Bold = true;
-                    ws.Cell(2, 1).Style.Font.FontSize = 12;
-                    ws.Cell(2, 1).Style.Font.FontColor = XLColor.FromHtml("#1e293b");
-                    ws.Cell(2, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#fef3c7");
-                    ws.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-                    ws.Cell(3, 1).Value = $"Generado: {FechaHelper.Ahora():dd/MM/yyyy HH:mm}";
-                    ws.Range(3, 1, 3, 9).Merge();
-                    ws.Cell(3, 1).Style.Font.Italic = true;
-                    ws.Cell(3, 1).Style.Font.FontSize = 10;
-                    ws.Cell(3, 1).Style.Font.FontColor = XLColor.FromHtml("#64748b");
-                    ws.Cell(3, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-                    string[] vHeaders = { "DNI", "CONDUCTOR", "TRACTO", "CARRETA", "CLIENTE", "DESTINO", "N° DESP.", "FECHA PROGRAMACIÓN", "DÍAS EN VIAJE", "ESTADO" };
-                    for (int i = 0; i < vHeaders.Length; i++)
-                    {
-                        ws.Cell(5, i + 1).Value = vHeaders[i];
-                    }
-
-                    var headerRange = ws.Range(5, 1, 5, 10);
-                    headerRange.Style.Font.Bold = true;
-                    headerRange.Style.Font.FontSize = 10;
-                    headerRange.Style.Font.FontColor = XLColor.White;
-                    headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#334155");
-                    headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                    headerRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-                    headerRange.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
-                    headerRange.Style.Border.BottomBorderColor = XLColor.FromHtml("#1e293b");
-                    ws.Row(5).Height = 25;
-
-                    int row = 6;
-                    bool isAlternate = false;
-                    foreach (DataRow dr in dt.Rows)
-                    {
-                        ws.Cell(row, 1).Value = dr["DNI"] != DBNull.Value ? dr["DNI"].ToString() : "";
-                        ws.Cell(row, 2).Value = dr["Conductor"] != DBNull.Value ? dr["Conductor"].ToString() : "";
-                        ws.Cell(row, 3).Value = dr["PlacaTracto"] != DBNull.Value ? dr["PlacaTracto"].ToString() : "N/A";
-                        ws.Cell(row, 4).Value = dr["PlacaCarreta"] != DBNull.Value ? dr["PlacaCarreta"].ToString() : "N/A";
-                        ws.Cell(row, 5).Value = dr["Cliente"] != DBNull.Value ? dr["Cliente"].ToString() : "N/A";
-                        ws.Cell(row, 6).Value = dr["Destino"] != DBNull.Value ? dr["Destino"].ToString() : "N/A";
-
-                        int cantDespachos = dr["CantidadDespachos"] != DBNull.Value ? Convert.ToInt32(dr["CantidadDespachos"]) : 0;
-                        ws.Cell(row, 7).Value = cantDespachos;
-                        ws.Cell(row, 7).Style.NumberFormat.Format = "0";
-                        ws.Cell(row, 7).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-                        ws.Cell(row, 8).Value = dr["FechaProgramacion"] != DBNull.Value ? Convert.ToDateTime(dr["FechaProgramacion"]).ToString("dd/MM/yyyy") : "N/A";
-                        ws.Cell(row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-                        int diasViaje = dr["DiasEnViaje"] != DBNull.Value ? Convert.ToInt32(dr["DiasEnViaje"]) : 0;
-                        ws.Cell(row, 9).Value = diasViaje;
-                        ws.Cell(row, 9).Style.NumberFormat.Format = "0";
-                        ws.Cell(row, 9).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                        if (diasViaje > 7)
-                        {
-                            ws.Cell(row, 9).Style.Font.FontColor = XLColor.FromHtml("#dc2626");
-                            ws.Cell(row, 9).Style.Font.Bold = true;
-                        }
-
-                        ws.Cell(row, 10).Value = dr["Estado"] != DBNull.Value ? dr["Estado"].ToString() : "N/A";
-                        ws.Cell(row, 10).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-                        if (isAlternate)
-                        {
-                            ws.Range(row, 1, row, 10).Style.Fill.BackgroundColor = XLColor.FromHtml("#f8fafc");
-                        }
-                        isAlternate = !isAlternate;
-
-                        ws.Range(row, 1, row, 10).Style.Border.BottomBorder = XLBorderStyleValues.Hair;
-                        ws.Range(row, 1, row, 10).Style.Border.BottomBorderColor = XLColor.FromHtml("#e2e8f0");
-
-                        row++;
-                    }
-
-                    // Total
-                    var totalRange = ws.Range(row, 1, row, 10);
-                    totalRange.Style.Font.Bold = true;
-                    totalRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#fef3c7");
-                    totalRange.Style.Border.TopBorder = XLBorderStyleValues.Medium;
-                    totalRange.Style.Border.TopBorderColor = XLColor.FromHtml("#d97706");
-                    totalRange.Style.Border.BottomBorder = XLBorderStyleValues.Medium;
-                    totalRange.Style.Border.BottomBorderColor = XLColor.FromHtml("#d97706");
-
-                    ws.Cell(row, 1).Value = "TOTAL DE VIAJES SIN LIQUIDACIÓN:";
-                    ws.Range(row, 1, row, 8).Merge();
-                    ws.Cell(row, 9).Value = dt.Rows.Count;
-                    ws.Cell(row, 9).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                    ws.Range(row, 9, row, 10).Merge();
-
-                    ws.Columns().AdjustToContents();
-                    ws.Column(2).Width = 30;
-                    ws.Column(5).Width = 20;
-                    ws.Column(6).Width = 20;
-
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        wb.SaveAs(ms);
-                        excelBytes = ms.ToArray();
-                    }
-                }
-
-                HttpContext.Current.Response.Clear();
-                HttpContext.Current.Response.ClearContent();
-                HttpContext.Current.Response.ClearHeaders();
-                HttpContext.Current.Response.Buffer = true;
-                HttpContext.Current.Response.Charset = "";
-                HttpContext.Current.Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                HttpContext.Current.Response.AddHeader("Content-Disposition", $"attachment; filename=ViajesActivos_{FechaHelper.Ahora():yyyyMMddHHmmss}.xlsx");
-                HttpContext.Current.Response.AddHeader("Content-Length", excelBytes.Length.ToString());
-                HttpContext.Current.Response.Cache.SetCacheability(HttpCacheability.NoCache);
-                HttpContext.Current.Response.BinaryWrite(excelBytes);
-                HttpContext.Current.Response.Flush();
-                HttpContext.Current.Response.End();
+                var reporte = ReporteViajesActivos(buscarConductor, estadoViaje, UsuarioActual());
+                if (Request.QueryString["formato"] == "pdf") EnviarPdf(reporte, "ViajesActivos");
+                else EnviarExcel(reporte, "ViajesActivos");
             }
-            catch (System.Threading.ThreadAbortException)
-            {
-                // Normal
-            }
+            catch (System.Threading.ThreadAbortException) { /* normal: Response.End() */ }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al exportar el reporte de órdenes de viaje");
+                LogSGV.Error(ex, "Error al exportar el reporte de viajes activos en ReportesOrdenesViaje");
                 throw;
             }
         }
 
-        #endregion
+        private const int DiasViajeAlerta = 7;
 
-        #region EXPORTACIÓN PDF
-
-        private void GenerarPDFLiquidaciones()
+        private static ReporteTabular ReporteViajesActivos(string buscarConductor, string estadoViaje, string usuario)
         {
-            try
+            DataTable dt = ObtenerViajesActivos(buscarConductor, estadoViaje);
+            Func<DataRow, int> dias = d => d["DiasEnViaje"] == DBNull.Value ? 0 : Convert.ToInt32(d["DiasEnViaje"]);
+
+            var r = new ReporteTabular
             {
-                string mensajeValidacion;
-                DateTime fechaDesde;
-                DateTime fechaHasta;
-                decimal factorConversion;
-                if (!ValidarFiltrosLiquidaciones(Request.QueryString["fechaDesde"], Request.QueryString["fechaHasta"],
-                    Request.QueryString["factor"], out fechaDesde, out fechaHasta, out factorConversion, out mensajeValidacion))
-                {
-                    ResponderSolicitudInvalida(mensajeValidacion);
-                    return;
-                }
+                Titulo = "Reporte de viajes activos sin liquidación",
+                NombreHoja = "Viajes activos",
+                IncluirTotales = false,
+                Filas = dt.Rows.Cast<DataRow>().ToList(),
+                GeneradoPor = usuario,
+                Nota = $"Días en viaje en rojo: más de {DiasViajeAlerta} días desde el inicio del viaje."
+            };
+            r.Filtros.Add("Estado: " + Legible(estadoViaje) +
+                (string.IsNullOrWhiteSpace(buscarConductor) ? "" : "  ·  Conductor: " + buscarConductor.Trim()));
 
-                DataTable dt = ObtenerLiquidaciones(fechaDesde, fechaHasta);
+            r.Columnas.Add(Columna("DNI", TipoColumnaReporte.Codigo, 0.9f, d => d["DNI"]));
+            r.Columnas.Add(Columna("Conductor", TipoColumnaReporte.Texto, 2.2f, d => d["Conductor"]));
+            r.Columnas.Add(Columna("Tracto", TipoColumnaReporte.Codigo, 0.9f, d => d["PlacaTracto"]));
+            r.Columnas.Add(Columna("Carreta", TipoColumnaReporte.Codigo, 0.9f, d => d["PlacaCarreta"]));
+            r.Columnas.Add(Columna("Cliente", TipoColumnaReporte.Texto, 2f, d => d["Cliente"]));
+            r.Columnas.Add(Columna("Destino", TipoColumnaReporte.Texto, 2f, d => d["Destino"]));
+            r.Columnas.Add(Columna("Despachos", TipoColumnaReporte.Entero, 0.8f, d => d["CantidadDespachos"]));
+            r.Columnas.Add(Columna("Fecha de programación", TipoColumnaReporte.Fecha, 1.1f, d => d["FechaProgramacion"]));
+            var colDias = Columna("Días en viaje", TipoColumnaReporte.Entero, 0.8f, d => d["DiasEnViaje"]);
+            colDias.Alerta = d => dias(d) > DiasViajeAlerta;
+            r.Columnas.Add(colDias);
+            r.Columnas.Add(Columna("Estado", TipoColumnaReporte.Codigo, 0.9f, d => Legible(Convert.ToString(d["Estado"]))));
 
-                // Colores del tema
-                QuestPdfColor textDark = QuestPdfColor.FromHex("#1E293B");     // slate-800
-                QuestPdfColor headerBg = textDark;
-                QuestPdfColor altRow = QuestPdfColor.FromHex("#F8FAFC");       // slate-50
-                QuestPdfColor borderColor = QuestPdfColor.FromHex("#E2E8F0");  // slate-200
-                QuestPdfColor accentGreen = QuestPdfColor.FromHex("#059669");  // emerald-600
-                QuestPdfColor accentBlue = QuestPdfColor.FromHex("#1E40AF");   // blue-800
-                QuestPdfColor redColor = QuestPdfColor.FromHex("#DC2626");     // red-600
-                QuestPdfColor blueColor = QuestPdfColor.FromHex("#2563EB");    // blue-600
-                QuestPdfColor subtleText = QuestPdfColor.FromHex("#64748B");   // slate-500
-                QuestPdfColor totalBg = QuestPdfColor.FromHex("#F1F5F9");      // slate-100
-                QuestPdfColor rowLight1 = QuestPdfColor.FromHex("#FEF3C7");    // amber-100
-                QuestPdfColor rowLight2 = QuestPdfColor.FromHex("#F0FDF4");    // green-50
-                QuestPdfColor rowLight3 = QuestPdfColor.FromHex("#ECFEFF");    // cyan-50
-                QuestPdfColor rowTotal = QuestPdfColor.FromHex("#D1FAE5");     // emerald-100
+            r.Resumen.Add(Linea("Viajes sin liquidación", dt.Rows.Count, TipoColumnaReporte.Entero));
+            r.Resumen.Add(Linea("Despachos en esos viajes", SumaColumna(dt, "CantidadDespachos"), TipoColumnaReporte.Entero));
+            r.Resumen.Add(Linea($"Viajes con más de {DiasViajeAlerta} días", r.Filas.Count(d => dias(d) > DiasViajeAlerta), TipoColumnaReporte.Entero));
+            return r;
+        }
 
-                // Totales (precalculados para el resumen)
-                decimal totalSoles = 0;
-                decimal totalDolares = 0;
-                foreach (DataRow dr in dt.Rows)
-                {
-                    totalSoles += Convert.ToDecimal(dr["MontoSoles"]);
-                    totalDolares += Convert.ToDecimal(dr["MontoDolares"]);
-                }
-                decimal totalDolaresConvertido = totalDolares * factorConversion;
-                decimal totalGeneral = totalSoles + totalDolaresConvertido;
+        // ------------------------------------------------------------------
+        // Piezas comunes de las exportaciones
+        // ------------------------------------------------------------------
 
-                byte[] pdfBytes = Document.Create(qdoc =>
-                {
-                    qdoc.Page(page =>
-                    {
-                        page.Size(PageSizes.A4.Landscape());
-                        page.MarginHorizontal(25);
-                        page.MarginVertical(30);
-                        page.DefaultTextStyle(t => t.FontFamily("Arial").FontSize(9).FontColor(textDark));
+        private static ColumnaReporte Columna(string titulo, TipoColumnaReporte tipo, float ancho,
+            Func<DataRow, object> valor, bool verdeSiPositivo = false) =>
+            new ColumnaReporte { Titulo = titulo, Tipo = tipo, Ancho = ancho, Valor = valor, VerdeSiPositivo = verdeSiPositivo };
 
-                        page.Content().Column(col =>
-                        {
-                            // Header del documento
-                            col.Item().Background(accentBlue).Padding(12).AlignCenter()
-                                .Text("SISTEMA SGV").Bold().FontSize(16).FontColor(Colors.White);
+        private static LineaResumen Linea(string etiqueta, decimal valor, TipoColumnaReporte tipo, bool destacada = false) =>
+            new LineaResumen { Etiqueta = etiqueta, Valor = valor, Tipo = tipo, Destacada = destacada };
 
-                            col.Item().PaddingTop(12).AlignCenter()
-                                .Text("REPORTE DE LIQUIDACIONES (Descuentos y Reintegros)").Bold().FontSize(14);
+        /// <summary>"COMPLETADO" → "Completado" (los estados se guardan en mayúsculas).</summary>
+        private static string Legible(string valor) =>
+            string.IsNullOrWhiteSpace(valor) ? "" : char.ToUpperInvariant(valor.Trim()[0]) + valor.Trim().Substring(1).ToLowerInvariant();
 
-                            col.Item().AlignCenter()
-                                .Text($"Período: {fechaDesde:dd/MM/yyyy} - {fechaHasta:dd/MM/yyyy}  |  Generado: {FechaHelper.Ahora():dd/MM/yyyy HH:mm}")
-                                .FontSize(10).FontColor(subtleText);
+        private string UsuarioActual() => Convert.ToString(Session["Nombre"]);
 
-                            // Línea separadora
-                            col.Item().PaddingTop(15).PaddingBottom(15)
-                                .Height(5).BorderBottom(2).BorderColor(borderColor);
+        private void EnviarExcel(ReporteTabular reporte, string prefijo) =>
+            EnviarArchivo(ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa()),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"{prefijo}_{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
 
-                            // Tabla principal
-                            col.Item().Table(table =>
-                            {
-                                table.ColumnsDefinition(c =>
-                                {
-                                    c.RelativeColumn(12f);
-                                    c.RelativeColumn(28f);
-                                    c.RelativeColumn(12f);
-                                    c.RelativeColumn(13f);
-                                    c.RelativeColumn(17.5f);
-                                    c.RelativeColumn(17.5f);
-                                });
+        private void EnviarPdf(ReporteTabular reporte, string prefijo) =>
+            EnviarArchivo(ReporteTabularExportador.CrearPdf(reporte, EmpresaConfigHelper.ObtenerEmpresa(),
+                    Server.MapPath("~/Content/favicon.png")).GeneratePdf(),
+                "application/pdf", $"{prefijo}_{FechaHelper.Ahora():yyyyMMdd_HHmm}.pdf");
 
-                                string[] headers = { "DNI", "CONDUCTOR", "FECHA", "N° DE LIQ", "MONTO S/ (Reint.-Desc.)", "MONTO $ (Reint.-Desc.)" };
-                                foreach (string header in headers)
-                                {
-                                    table.Cell().Background(headerBg).Border(0.5f).BorderColor(headerBg)
-                                        .Padding(8).AlignCenter().AlignMiddle()
-                                        .Text(header).Bold().FontSize(9).FontColor(Colors.White);
-                                }
-
-                                bool isAlt = false;
-                                foreach (DataRow dr in dt.Rows)
-                                {
-                                    QuestPdfColor rowBg = isAlt ? altRow : Colors.White;
-
-                                    table.Cell().Background(rowBg).Border(0.5f).BorderColor(borderColor)
-                                        .Padding(6).AlignCenter().Text(dr["DNI"].ToString()).FontSize(9);
-                                    table.Cell().Background(rowBg).Border(0.5f).BorderColor(borderColor)
-                                        .Padding(6).Text(dr["Conductor"].ToString()).FontSize(9);
-                                    table.Cell().Background(rowBg).Border(0.5f).BorderColor(borderColor)
-                                        .Padding(6).AlignCenter()
-                                        .Text(Convert.ToDateTime(dr["FechaSalida"]).ToString("dd/MM/yyyy")).FontSize(9);
-                                    table.Cell().Background(rowBg).Border(0.5f).BorderColor(borderColor)
-                                        .Padding(6).AlignCenter().Text(dr["NumeroLiquidacion"].ToString()).FontSize(9);
-
-                                    decimal montoSoles = Convert.ToDecimal(dr["MontoSoles"]);
-                                    decimal montoDolares = Convert.ToDecimal(dr["MontoDolares"]);
-
-                                    // Codificación por color: rojo = descuento, azul = reintegro
-                                    QuestPdfColor solesColor = montoSoles < 0 ? redColor : (montoSoles > 0 ? blueColor : textDark);
-                                    QuestPdfColor dolaresColor = montoDolares < 0 ? redColor : (montoDolares > 0 ? blueColor : textDark);
-
-                                    string solesText = montoSoles < 0 ? $"-S/ {Math.Abs(montoSoles):N2}" : $"S/ {montoSoles:N2}";
-                                    string dolaresText = montoDolares < 0 ? $"-$ {Math.Abs(montoDolares):N2}" : $"$ {montoDolares:N2}";
-
-                                    table.Cell().Background(rowBg).Border(0.5f).BorderColor(borderColor)
-                                        .Padding(6).AlignRight().Text(solesText).Bold().FontSize(9).FontColor(solesColor);
-                                    table.Cell().Background(rowBg).Border(0.5f).BorderColor(borderColor)
-                                        .Padding(6).AlignRight().Text(dolaresText).Bold().FontSize(9).FontColor(dolaresColor);
-
-                                    isAlt = !isAlt;
-                                }
-
-                                // Fila de totales
-                                table.Cell().ColumnSpan(4).Background(totalBg)
-                                    .BorderTop(2).BorderBottom(2).BorderColor(headerBg)
-                                    .Padding(8).AlignRight().Text("TOTAL:").Bold().FontSize(10);
-                                table.Cell().Background(totalBg)
-                                    .BorderTop(2).BorderBottom(2).BorderColor(headerBg)
-                                    .Padding(8).AlignRight().Text($"S/ {totalSoles:N2}").Bold().FontSize(10);
-                                table.Cell().Background(totalBg)
-                                    .BorderTop(2).BorderBottom(2).BorderColor(headerBg)
-                                    .Padding(8).AlignRight().Text($"$ {totalDolares:N2}").Bold().FontSize(10);
-                            });
-
-                            // Resumen (centrado al 60% del ancho)
-                            col.Item().PaddingTop(15).Row(r =>
-                            {
-                                r.RelativeItem(0.2f);
-                                r.RelativeItem(0.6f).Column(rc =>
-                                {
-                                    rc.Item().Background(accentGreen).Padding(10).AlignCenter()
-                                        .Text("RESUMEN TOTAL EN SOLES").Bold().FontSize(12).FontColor(Colors.White);
-
-                                    rc.Item().PaddingTop(5).Table(rt =>
-                                    {
-                                        rt.ColumnsDefinition(c =>
-                                        {
-                                            c.RelativeColumn(60f);
-                                            c.RelativeColumn(40f);
-                                        });
-
-                                        Action<string, string, QuestPdfColor, bool> filaResumen = (lbl, val, bg, esTotal) =>
-                                        {
-                                            QuestPdfContainer lc = rt.Cell().Background(bg);
-                                            QuestPdfContainer vc = rt.Cell().Background(bg);
-                                            if (esTotal)
-                                            {
-                                                lc = lc.BorderTop(2).BorderColor(accentGreen).Padding(10);
-                                                vc = vc.BorderTop(2).BorderColor(accentGreen).Padding(10);
-                                                lc.Text(lbl).Bold().FontSize(11);
-                                                vc.AlignRight().Text(val).Bold().FontSize(12).FontColor(accentGreen);
-                                            }
-                                            else
-                                            {
-                                                lc = lc.Border(0.5f).BorderColor(borderColor).Padding(8);
-                                                vc = vc.Border(0.5f).BorderColor(borderColor).Padding(8);
-                                                lc.Text(lbl).Bold().FontSize(10);
-                                                vc.AlignRight().Text(val).FontSize(10);
-                                            }
-                                        };
-
-                                        filaResumen("Factor de Conversión ($ a S/):", factorConversion.ToString("0.00"), rowLight1, false);
-                                        filaResumen("Total en Soles (S/):", $"S/ {totalSoles:N2}", rowLight2, false);
-                                        filaResumen("Total en Dólares ($):", $"$ {totalDolares:N2}", rowLight2, false);
-                                        filaResumen("Conversión a Soles ($ × Factor):", $"S/ {totalDolaresConvertido:N2}", rowLight3, false);
-                                        filaResumen("TOTAL GENERAL EN SOLES:", $"S/ {totalGeneral:N2}", rowTotal, true);
-                                    });
-                                });
-                                r.RelativeItem(0.2f);
-                            });
-
-                            // Leyenda
-                            col.Item().PaddingTop(15).AlignCenter()
-                                .Text("Leyenda: Rojo = Descuento Neto  |  Azul = Reintegro Neto  |  Negro = Cero")
-                                .Italic().FontSize(8).FontColor(subtleText);
-                        });
-                    });
-                }).GeneratePdf();
-
-                HttpContext.Current.Response.Clear();
-                HttpContext.Current.Response.ClearContent();
-                HttpContext.Current.Response.ClearHeaders();
-                HttpContext.Current.Response.Buffer = true;
-                HttpContext.Current.Response.Charset = "";
-                HttpContext.Current.Response.ContentType = "application/pdf";
-                HttpContext.Current.Response.AddHeader("Content-Disposition", $"attachment; filename=Liquidaciones_{FechaHelper.Ahora():yyyyMMddHHmmss}.pdf");
-                HttpContext.Current.Response.AddHeader("Content-Length", pdfBytes.Length.ToString());
-                HttpContext.Current.Response.Cache.SetCacheability(HttpCacheability.NoCache);
-                HttpContext.Current.Response.BinaryWrite(pdfBytes);
-                HttpContext.Current.Response.Flush();
-                HttpContext.Current.Response.End();
-            }
-            catch (System.Threading.ThreadAbortException)
-            {
-                // Normal
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "Error al exportar el reporte de órdenes de viaje");
-                throw;
-            }
+        private static void EnviarArchivo(byte[] contenido, string tipo, string nombreArchivo)
+        {
+            var resp = HttpContext.Current.Response;
+            resp.Clear();
+            resp.ClearContent();
+            resp.ClearHeaders();
+            resp.Buffer = true;
+            resp.Charset = "";
+            resp.ContentType = tipo;
+            resp.AddHeader("Content-Disposition", "attachment; filename=" + nombreArchivo);
+            resp.AddHeader("Content-Length", contenido.Length.ToString());
+            resp.Cache.SetCacheability(HttpCacheability.NoCache);
+            resp.BinaryWrite(contenido);
+            resp.Flush();
+            resp.End();
         }
 
         #endregion
@@ -1269,59 +831,59 @@ namespace WebSGV.Views
         {
             Tuple.Create("dni",              "DNI",                 "text"),
             Tuple.Create("conductor",        "Conductor",           "text"),
-            Tuple.Create("fechaSalida",      "Fecha Salida",        "date"),
-            Tuple.Create("fechaLlegada",     "Fecha Llegada",       "date"),
-            Tuple.Create("horaSalida",       "Hora Salida",         "time"),
-            Tuple.Create("horaLlegada",      "Hora Llegada",        "time"),
-            Tuple.Create("tracto",           "Placa Tracto",        "text"),
-            Tuple.Create("carreta",          "Placa Carreta",       "text"),
+            Tuple.Create("fechaSalida",      "Fecha de salida",     "date"),
+            Tuple.Create("fechaLlegada",     "Fecha de llegada",    "date"),
+            Tuple.Create("horaSalida",       "Hora de salida",      "time"),
+            Tuple.Create("horaLlegada",      "Hora de llegada",     "time"),
+            Tuple.Create("tracto",           "Tracto",              "text"),
+            Tuple.Create("carreta",          "Carreta",             "text"),
             Tuple.Create("cliente",          "Cliente",             "text"),
             Tuple.Create("destino",          "Destino",             "text"),
-            Tuple.Create("cantDespachos",    "N° Despachos",        "text"),
-            Tuple.Create("numero",           "N° Liquidación",      "text"),
+            Tuple.Create("cantDespachos",    "Despachos",           "text"),
+            Tuple.Create("numero",           "N.° de liquidación",  "text"),
             Tuple.Create("estado",           "Estado",              "text"),
             Tuple.Create("ingresosSoles",    "Ingresos S/",         "money-sol"),
-            Tuple.Create("ingresosDolares",  "Ingresos $",          "money-dol"),
+            Tuple.Create("ingresosDolares",  "Ingresos US$",          "money-dol"),
             Tuple.Create("gastosSoles",      "Gastos S/",           "money-sol"),
-            Tuple.Create("gastosDolares",    "Gastos $",            "money-dol"),
+            Tuple.Create("gastosDolares",    "Gastos US$",            "money-dol"),
             Tuple.Create("descuentoSoles",   "Descuento S/",        "money-sol"),
-            Tuple.Create("descuentoDolares", "Descuento $",         "money-dol"),
+            Tuple.Create("descuentoDolares", "Descuento US$",         "money-dol"),
             Tuple.Create("reintegroSoles",   "Reintegro S/",        "money-sol"),
-            Tuple.Create("reintegroDolares", "Reintegro $",         "money-dol"),
-            Tuple.Create("balanceSoles",     "Balance Neto S/",     "money-sol"),
-            Tuple.Create("balanceDolares",   "Balance Neto $",      "money-dol"),
+            Tuple.Create("reintegroDolares", "Reintegro US$",         "money-dol"),
+            Tuple.Create("balanceSoles",     "Balance neto S/",     "money-sol"),
+            Tuple.Create("balanceDolares",   "Balance neto US$",    "money-dol"),
             // === INGRESOS DETALLADOS ===
-            Tuple.Create("iDespachoS",       "Ing. Despacho S/",    "money-sol"),
-            Tuple.Create("iDespachoD",       "Ing. Despacho $",     "money-dol"),
-            Tuple.Create("iPrestamoS",       "Ing. Préstamo S/",    "money-sol"),
-            Tuple.Create("iPrestamoD",       "Ing. Préstamo $",     "money-dol"),
-            Tuple.Create("iMensualidadS",    "Ing. Mensualidad S/", "money-sol"),
-            Tuple.Create("iMensualidadD",    "Ing. Mensualidad $",  "money-dol"),
-            Tuple.Create("iOtrosS",          "Ing. Otros S/",       "money-sol"),
-            Tuple.Create("iOtrosD",          "Ing. Otros $",        "money-dol"),
-            Tuple.Create("iAdicionalesS",    "Ing. Adicionales S/", "money-sol"),
-            Tuple.Create("iAdicionalesD",    "Ing. Adicionales $",  "money-dol"),
-            Tuple.Create("iAdicionalesDet",  "Detalle Ing. Adicionales", "text"),
+            Tuple.Create("iDespachoS",       "Ing. despacho S/",    "money-sol"),
+            Tuple.Create("iDespachoD",       "Ing. despacho US$",     "money-dol"),
+            Tuple.Create("iPrestamoS",       "Ing. préstamo S/",    "money-sol"),
+            Tuple.Create("iPrestamoD",       "Ing. préstamo US$",     "money-dol"),
+            Tuple.Create("iMensualidadS",    "Ing. mensualidad S/", "money-sol"),
+            Tuple.Create("iMensualidadD",    "Ing. mensualidad US$",  "money-dol"),
+            Tuple.Create("iOtrosS",          "Ing. otros S/",       "money-sol"),
+            Tuple.Create("iOtrosD",          "Ing. otros US$",        "money-dol"),
+            Tuple.Create("iAdicionalesS",    "Ing. adicionales S/", "money-sol"),
+            Tuple.Create("iAdicionalesD",    "Ing. adicionales US$",  "money-dol"),
+            Tuple.Create("iAdicionalesDet",  "Detalle de ingresos adicionales", "text"),
             // === GASTOS DETALLADOS ===
             Tuple.Create("gPeajesS",         "Peajes S/",           "money-sol"),
-            Tuple.Create("gPeajesD",         "Peajes $",            "money-dol"),
+            Tuple.Create("gPeajesD",         "Peajes US$",            "money-dol"),
             Tuple.Create("gAlimentacionS",   "Alimentación S/",     "money-sol"),
-            Tuple.Create("gAlimentacionD",   "Alimentación $",      "money-dol"),
-            Tuple.Create("gApoyoSeguridadS", "Apoyo Seguridad S/",  "money-sol"),
-            Tuple.Create("gApoyoSeguridadD", "Apoyo Seguridad $",   "money-dol"),
+            Tuple.Create("gAlimentacionD",   "Alimentación US$",      "money-dol"),
+            Tuple.Create("gApoyoSeguridadS", "Apoyo y seguridad S/",  "money-sol"),
+            Tuple.Create("gApoyoSeguridadD", "Apoyo y seguridad US$",   "money-dol"),
             Tuple.Create("gReparacionesS",   "Reparaciones S/",     "money-sol"),
-            Tuple.Create("gReparacionesD",   "Reparaciones $",      "money-dol"),
+            Tuple.Create("gReparacionesD",   "Reparaciones US$",      "money-dol"),
             Tuple.Create("gMovilidadS",      "Movilidad S/",        "money-sol"),
-            Tuple.Create("gMovilidadD",      "Movilidad $",         "money-dol"),
+            Tuple.Create("gMovilidadD",      "Movilidad US$",         "money-dol"),
             Tuple.Create("gHospedajeS",      "Hospedaje S/",        "money-sol"),
-            Tuple.Create("gHospedajeD",      "Hospedaje $",         "money-dol"),
+            Tuple.Create("gHospedajeD",      "Hospedaje US$",         "money-dol"),
             Tuple.Create("gCombustibleS",    "Combustible S/",      "money-sol"),
-            Tuple.Create("gCombustibleD",    "Combustible $",       "money-dol"),
-            Tuple.Create("gEncarpadaS",      "Encarpada/Desenc. S/","money-sol"),
-            Tuple.Create("gEncarpadaD",      "Encarpada/Desenc. $", "money-dol"),
-            Tuple.Create("gAdicionalesS",    "Otros Gastos S/",     "money-sol"),
-            Tuple.Create("gAdicionalesD",    "Otros Gastos $",      "money-dol"),
-            Tuple.Create("gAdicionalesDet",  "Detalle Otros Gastos (Propina, etc.)", "text"),
+            Tuple.Create("gCombustibleD",    "Combustible US$",       "money-dol"),
+            Tuple.Create("gEncarpadaS",      "Encarpada S/","money-sol"),
+            Tuple.Create("gEncarpadaD",      "Encarpada US$", "money-dol"),
+            Tuple.Create("gAdicionalesS",    "Otros gastos S/",     "money-sol"),
+            Tuple.Create("gAdicionalesD",    "Otros gastos US$",      "money-dol"),
+            Tuple.Create("gAdicionalesDet",  "Detalle de otros gastos", "text"),
             Tuple.Create("observaciones",    "Observaciones",       "text"),
         };
 
@@ -1426,7 +988,7 @@ namespace WebSGV.Views
             };
         }
 
-        private DataTable ObtenerReportePersonalizado(FiltrosPersonalizado f)
+        private static DataTable ObtenerReportePersonalizado(FiltrosPersonalizado f)
         {
             // SQL (incl. construcción dinámica de filtros/orden) movido al servicio.
             DataTable dt = ReportesOrdenesViajeService.ObtenerReportePersonalizado(
@@ -1552,448 +1114,93 @@ namespace WebSGV.Views
         }
 
         private void ExportarPersonalizadoExcel(DataTable dt,
-            List<Tuple<string, string, string>> cols, FiltrosPersonalizado f)
-        {
-            byte[] excelBytes;
-            int colCount = cols.Count;
-
-            using (XLWorkbook wb = new XLWorkbook())
-            {
-                var ws = wb.Worksheets.Add("Reporte Personalizado");
-
-                // Encabezados del reporte
-                ws.Cell(1, 1).Value = "SISTEMA SGV";
-                ws.Range(1, 1, 1, colCount).Merge();
-                ws.Cell(1, 1).Style.Font.Bold = true;
-                ws.Cell(1, 1).Style.Font.FontSize = 14;
-                ws.Cell(1, 1).Style.Font.FontColor = XLColor.White;
-                ws.Cell(1, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#1e40af");
-                ws.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                ws.Row(1).Height = 30;
-
-                ws.Cell(2, 1).Value = f.Titulo;
-                ws.Range(2, 1, 2, colCount).Merge();
-                ws.Cell(2, 1).Style.Font.Bold = true;
-                ws.Cell(2, 1).Style.Font.FontSize = 12;
-                ws.Cell(2, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#e2e8f0");
-                ws.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-                ws.Cell(3, 1).Value = $"Período: {f.FechaDesde:dd/MM/yyyy} - {f.FechaHasta:dd/MM/yyyy}  |  Estado: {f.Estado}  |  Generado: {FechaHelper.Ahora():dd/MM/yyyy HH:mm}";
-                ws.Range(3, 1, 3, colCount).Merge();
-                ws.Cell(3, 1).Style.Font.Italic = true;
-                ws.Cell(3, 1).Style.Font.FontSize = 10;
-                ws.Cell(3, 1).Style.Font.FontColor = XLColor.FromHtml("#64748b");
-                ws.Cell(3, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-                // Encabezados de columnas
-                int headerRow = 5;
-                for (int i = 0; i < colCount; i++)
-                    ws.Cell(headerRow, i + 1).Value = cols[i].Item2;
-
-                var headerRange = ws.Range(headerRow, 1, headerRow, colCount);
-                headerRange.Style.Font.Bold = true;
-                headerRange.Style.Font.FontColor = XLColor.White;
-                headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#334155");
-                headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                headerRange.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
-                ws.Row(headerRow).Height = 25;
-
-                // Totales por columna
-                var totales = new decimal[colCount];
-                bool[] esMoneda = new bool[colCount];
-                for (int i = 0; i < colCount; i++)
-                    esMoneda[i] = cols[i].Item3 == "money-sol" || cols[i].Item3 == "money-dol";
-
-                int row = headerRow + 1;
-                bool alt = false;
-                foreach (DataRow dr in dt.Rows)
-                {
-                    for (int i = 0; i < colCount; i++)
-                    {
-                        var col = cols[i];
-                        string dkey = ColumnaDataKey(col.Item1);
-                        object v = dkey != null && dt.Columns.Contains(dkey) ? dr[dkey] : null;
-                        var cell = ws.Cell(row, i + 1);
-
-                        if (v == null || v == DBNull.Value) { cell.Value = ""; }
-                        else
-                        {
-                            switch (col.Item3)
-                            {
-                                case "date":
-                                    cell.Value = Convert.ToDateTime(v).ToString("dd/MM/yyyy");
-                                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                                    break;
-                                case "time":
-                                    cell.Value = v.ToString();
-                                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                                    break;
-                                case "money-sol":
-                                case "money-dol":
-                                    decimal mv = Convert.ToDecimal(v);
-                                    cell.Value = mv;
-                                    cell.Style.NumberFormat.Format = "#,##0.00";
-                                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-                                    if (mv < 0) cell.Style.Font.FontColor = XLColor.FromHtml("#dc2626");
-                                    else if (mv > 0 && (col.Item1.StartsWith("reintegro") || col.Item1.StartsWith("balance")))
-                                        cell.Style.Font.FontColor = XLColor.FromHtml("#2563eb");
-                                    totales[i] += mv;
-                                    break;
-                                default:
-                                    cell.Value = v.ToString();
-                                    break;
-                            }
-                        }
-                    }
-
-                    if (alt) ws.Range(row, 1, row, colCount).Style.Fill.BackgroundColor = XLColor.FromHtml("#f8fafc");
-                    alt = !alt;
-                    ws.Range(row, 1, row, colCount).Style.Border.BottomBorder = XLBorderStyleValues.Hair;
-                    ws.Range(row, 1, row, colCount).Style.Border.BottomBorderColor = XLColor.FromHtml("#e2e8f0");
-                    row++;
-                }
-
-                // Fila de totales
-                if (f.IncluirTotales && dt.Rows.Count > 0)
-                {
-                    var totalRange = ws.Range(row, 1, row, colCount);
-                    totalRange.Style.Font.Bold = true;
-                    totalRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#f1f5f9");
-                    totalRange.Style.Border.TopBorder = XLBorderStyleValues.Medium;
-                    totalRange.Style.Border.TopBorderColor = XLColor.FromHtml("#334155");
-
-                    // Colocar etiqueta en primera columna no monetaria, o en la primera
-                    int labelIdx = 0;
-                    for (int i = 0; i < colCount; i++) { if (!esMoneda[i]) { labelIdx = i; break; } }
-                    ws.Cell(row, labelIdx + 1).Value = "TOTAL:";
-                    ws.Cell(row, labelIdx + 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-
-                    for (int i = 0; i < colCount; i++)
-                    {
-                        if (esMoneda[i])
-                        {
-                            ws.Cell(row, i + 1).Value = totales[i];
-                            ws.Cell(row, i + 1).Style.NumberFormat.Format = "#,##0.00";
-                            ws.Cell(row, i + 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-                        }
-                    }
-                    row++;
-                }
-
-                // Resumen ejecutivo
-                if (f.IncluirResumen)
-                {
-                    row += 1;
-                    ws.Cell(row, 1).Value = "RESUMEN EJECUTIVO";
-                    ws.Range(row, 1, row, colCount).Merge();
-                    ws.Cell(row, 1).Style.Font.Bold = true;
-                    ws.Cell(row, 1).Style.Font.FontColor = XLColor.White;
-                    ws.Cell(row, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#059669");
-                    ws.Cell(row, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                    row++;
-
-                    decimal totIngS = SumaColumna(dt, "IngresosSoles");
-                    decimal totGasS = SumaColumna(dt, "GastosSoles");
-                    decimal totDesS = SumaColumna(dt, "DescuentoSoles");
-                    decimal totReiS = SumaColumna(dt, "ReintegroSoles");
-                    decimal totBalS = SumaColumna(dt, "BalanceSoles");
-                    decimal totIngD = SumaColumna(dt, "IngresosDolares");
-                    decimal totGasD = SumaColumna(dt, "GastosDolares");
-                    decimal totBalD = SumaColumna(dt, "BalanceDolares");
-
-                    string[,] resumen = {
-                        { "Total de liquidaciones:",        dt.Rows.Count.ToString() },
-                        { "Total Ingresos (S/):",           $"S/ {totIngS:N2}" },
-                        { "Total Gastos (S/):",             $"S/ {totGasS:N2}" },
-                        { "Total Descuentos (S/):",         $"S/ {totDesS:N2}" },
-                        { "Total Reintegros (S/):",         $"S/ {totReiS:N2}" },
-                        { "Total Balance Neto (S/):",       $"S/ {totBalS:N2}" },
-                        { "Total Ingresos ($):",            $"$ {totIngD:N2}" },
-                        { "Total Gastos ($):",              $"$ {totGasD:N2}" },
-                        { "Total Balance Neto ($):",        $"$ {totBalD:N2}" },
-                        { "Factor de conversión:",          f.Factor.ToString("0.00") },
-                        { "Balance General en Soles:",      $"S/ {(totBalS + totBalD * f.Factor):N2}" },
-                    };
-
-                    int halfA = Math.Max(1, colCount / 2);
-                    for (int i = 0; i < resumen.GetLength(0); i++)
-                    {
-                        ws.Cell(row, 1).Value = resumen[i, 0];
-                        ws.Cell(row, 1).Style.Font.Bold = true;
-                        if (halfA > 1) ws.Range(row, 1, row, halfA).Merge();
-                        ws.Cell(row, halfA + 1).Value = resumen[i, 1];
-                        ws.Cell(row, halfA + 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-                        if (halfA + 1 < colCount) ws.Range(row, halfA + 1, row, colCount).Merge();
-                        ws.Range(row, 1, row, colCount).Style.Fill.BackgroundColor =
-                            XLColor.FromHtml(i % 2 == 0 ? "#f0fdf4" : "#ecfdf5");
-                        ws.Range(row, 1, row, colCount).Style.Border.BottomBorder = XLBorderStyleValues.Hair;
-                        row++;
-                    }
-                }
-
-                ws.Columns().AdjustToContents();
-                foreach (var idx in Enumerable.Range(1, colCount))
-                    if (ws.Column(idx).Width < 14) ws.Column(idx).Width = 14;
-
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    wb.SaveAs(ms);
-                    excelBytes = ms.ToArray();
-                }
-            }
-
-            HttpContext.Current.Response.Clear();
-            HttpContext.Current.Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            HttpContext.Current.Response.AddHeader("Content-Disposition",
-                $"attachment; filename=ReportePersonalizado_{FechaHelper.Ahora():yyyyMMddHHmmss}.xlsx");
-            HttpContext.Current.Response.BinaryWrite(excelBytes);
-            HttpContext.Current.Response.Flush();
-            HttpContext.Current.Response.End();
-        }
+            List<Tuple<string, string, string>> cols, FiltrosPersonalizado f) =>
+            EnviarExcel(ReportePersonalizado(dt, UsuarioActual(), cols, f), "ReportePersonalizado");
 
         private void ExportarPersonalizadoPDF(DataTable dt,
+            List<Tuple<string, string, string>> cols, FiltrosPersonalizado f) =>
+            EnviarPdf(ReportePersonalizado(dt, UsuarioActual(), cols, f), "ReportePersonalizado");
+
+        private static readonly HashSet<string> ColumnasCodigo =
+            new HashSet<string> { "dni", "numero", "estado", "tracto", "carreta" };
+        private static readonly HashSet<string> ColumnasTextoLargo =
+            new HashSet<string> { "observaciones", "iAdicionalesDet", "gAdicionalesDet" };
+
+        private static ReporteTabular ReportePersonalizado(DataTable dt, string usuario,
             List<Tuple<string, string, string>> cols, FiltrosPersonalizado f)
         {
-            int colCount = cols.Count;
-
-            QuestPdfColor textDark = QuestPdfColor.FromHex("#1E293B");
-            QuestPdfColor headerBg = textDark;
-            QuestPdfColor accentBlue = QuestPdfColor.FromHex("#1E40AF");
-            QuestPdfColor accentGreen = QuestPdfColor.FromHex("#059669");
-            QuestPdfColor altRow = QuestPdfColor.FromHex("#F8FAFC");
-            QuestPdfColor borderColor = QuestPdfColor.FromHex("#E2E8F0");
-            QuestPdfColor redColor = QuestPdfColor.FromHex("#DC2626");
-            QuestPdfColor blueColor = QuestPdfColor.FromHex("#2563EB");
-            QuestPdfColor subtleText = QuestPdfColor.FromHex("#64748B");
-            QuestPdfColor totalBg = QuestPdfColor.FromHex("#F1F5F9");
-
-            // Anchos relativos por tipo de columna
-            float[] widths = new float[colCount];
-            for (int i = 0; i < colCount; i++)
+            var r = new ReporteTabular
             {
-                string t = cols[i].Item3;
-                widths[i] = (t == "money-sol" || t == "money-dol") ? 14f :
-                            t == "date" || t == "time" ? 12f :
-                            cols[i].Item1 == "conductor" || cols[i].Item1 == "cliente" ||
-                            cols[i].Item1 == "destino" || cols[i].Item1 == "observaciones" ? 22f : 12f;
-            }
+                Titulo = f.Titulo,
+                NombreHoja = "Reporte personalizado",
+                IncluirTotales = f.IncluirTotales,
+                Filas = dt.Rows.Cast<DataRow>().ToList(),
+                GeneradoPor = usuario
+            };
+            r.Filtros.Add($"Período: {f.FechaDesde:dd/MM/yyyy} al {f.FechaHasta:dd/MM/yyyy}  ·  Estado: {Legible(f.Estado)}");
 
-            var totales = new decimal[colCount];
-            bool[] esMoneda = new bool[colCount];
-            for (int i = 0; i < colCount; i++)
-                esMoneda[i] = cols[i].Item3 == "money-sol" || cols[i].Item3 == "money-dol";
+            var otros = new List<string>();
+            if (f.IdConductor > 0) otros.Add("Conductor: " + NombreDeCatalogo(ReportesOrdenesViajeService.ObtenerConductoresActivos(), "idConductor", "NombreCompleto", f.IdConductor));
+            if (f.IdCliente > 0) otros.Add("Cliente: " + NombreDeCatalogo(ReportesOrdenesViajeService.ObtenerClientes(), "idCliente", "nombre", f.IdCliente));
+            if (!string.IsNullOrEmpty(f.PlacaTracto)) otros.Add("Tracto: " + f.PlacaTracto.ToUpperInvariant());
+            if (!string.IsNullOrEmpty(f.Categoria)) otros.Add("Categoría de gasto: " + f.Categoria);
+            if (otros.Count > 0) r.Filtros.Add(string.Join("  ·  ", otros));
 
-            // Precalcular totales por columna de moneda
-            foreach (DataRow dr in dt.Rows)
+            foreach (var c in cols)
             {
-                for (int i = 0; i < colCount; i++)
+                string clave = ColumnaDataKey(c.Item1);
+                TipoColumnaReporte tipo =
+                    c.Item3 == "date" ? TipoColumnaReporte.Fecha :
+                    c.Item3 == "time" ? TipoColumnaReporte.Hora :
+                    c.Item3 == "money-sol" ? TipoColumnaReporte.Soles :
+                    c.Item3 == "money-dol" ? TipoColumnaReporte.Dolares :
+                    c.Item1 == "cantDespachos" ? TipoColumnaReporte.Entero :
+                    ColumnasCodigo.Contains(c.Item1) ? TipoColumnaReporte.Codigo : TipoColumnaReporte.Texto;
+
+                r.Columnas.Add(new ColumnaReporte
                 {
-                    if (!esMoneda[i]) continue;
-                    string dkey = ColumnaDataKey(cols[i].Item1);
-                    object v = dkey != null && dt.Columns.Contains(dkey) ? dr[dkey] : null;
-                    if (v != null && v != DBNull.Value) totales[i] += Convert.ToDecimal(v);
-                }
-            }
-
-            byte[] pdfBytes = Document.Create(qdoc =>
-            {
-                qdoc.Page(page =>
-                {
-                    page.Size(PageSizes.A4.Landscape());
-                    page.MarginHorizontal(25);
-                    page.MarginVertical(30);
-                    page.DefaultTextStyle(t => t.FontFamily("Arial").FontSize(8).FontColor(textDark));
-
-                    page.Content().Column(col =>
+                    Titulo = c.Item2,
+                    Tipo = tipo,
+                    Ancho = c.Item1 == "numero" ? 1.4f
+                          : tipo != TipoColumnaReporte.Texto ? 1f
+                          : ColumnasTextoLargo.Contains(c.Item1) ? 2.6f : 1.8f,
+                    Valor = d =>
                     {
-                        // Banner
-                        col.Item().Background(accentBlue).Padding(12).AlignCenter()
-                            .Text("SISTEMA SGV").Bold().FontSize(16).FontColor(Colors.White);
-
-                        col.Item().PaddingTop(12).AlignCenter().Text(f.Titulo).Bold().FontSize(14);
-
-                        col.Item().PaddingBottom(15).AlignCenter()
-                            .Text($"Período: {f.FechaDesde:dd/MM/yyyy} - {f.FechaHasta:dd/MM/yyyy}  |  Estado: {f.Estado}  |  Generado: {FechaHelper.Ahora():dd/MM/yyyy HH:mm}")
-                            .FontSize(10).FontColor(subtleText);
-
-                        // Tabla
-                        col.Item().Table(table =>
-                        {
-                            table.ColumnsDefinition(c =>
-                            {
-                                for (int i = 0; i < colCount; i++)
-                                    c.RelativeColumn(widths[i]);
-                            });
-
-                            foreach (var cdef in cols)
-                            {
-                                table.Cell().Background(headerBg).Border(0.5f).BorderColor(headerBg)
-                                    .Padding(6).AlignCenter().AlignMiddle()
-                                    .Text(cdef.Item2).Bold().FontSize(8).FontColor(Colors.White);
-                            }
-
-                            bool alt = false;
-                            foreach (DataRow dr in dt.Rows)
-                            {
-                                QuestPdfColor rowBg = alt ? altRow : Colors.White;
-                                for (int i = 0; i < colCount; i++)
-                                {
-                                    var cdef = cols[i];
-                                    string dkey = ColumnaDataKey(cdef.Item1);
-                                    object v = dkey != null && dt.Columns.Contains(dkey) ? dr[dkey] : null;
-                                    string texto = "";
-                                    string align = "left";
-                                    QuestPdfColor fontColor = textDark;
-                                    bool bold = false;
-
-                                    if (v != null && v != DBNull.Value)
-                                    {
-                                        switch (cdef.Item3)
-                                        {
-                                            case "date":
-                                                texto = Convert.ToDateTime(v).ToString("dd/MM/yyyy");
-                                                align = "center"; break;
-                                            case "time":
-                                                texto = v.ToString(); align = "center"; break;
-                                            case "money-sol":
-                                            case "money-dol":
-                                                decimal mv = Convert.ToDecimal(v);
-                                                string sym = cdef.Item3 == "money-sol" ? "S/" : "$";
-                                                texto = mv < 0 ? $"-{sym} {Math.Abs(mv):N2}" : $"{sym} {mv:N2}";
-                                                align = "right";
-                                                bold = true;
-                                                if (mv < 0) fontColor = redColor;
-                                                else if (mv > 0 && (cdef.Item1.StartsWith("reintegro") || cdef.Item1.StartsWith("balance")))
-                                                    fontColor = blueColor;
-                                                break;
-                                            default:
-                                                texto = v.ToString();
-                                                align = cdef.Item1 == "numero" || cdef.Item1 == "estado" ||
-                                                        cdef.Item1 == "dni" ? "center" : "left";
-                                                break;
-                                        }
-                                    }
-
-                                    QuestPdfContainer cell = table.Cell().Background(rowBg)
-                                        .Border(0.5f).BorderColor(borderColor).Padding(5).AlignMiddle();
-                                    if (align == "center") cell = cell.AlignCenter();
-                                    else if (align == "right") cell = cell.AlignRight();
-
-                                    var txt = cell.Text(texto).FontSize(8).FontColor(fontColor);
-                                    if (bold) txt.Bold();
-                                }
-                                alt = !alt;
-                            }
-
-                            // Totales
-                            if (f.IncluirTotales && dt.Rows.Count > 0)
-                            {
-                                int labelIdx = 0;
-                                for (int i = 0; i < colCount; i++) { if (!esMoneda[i]) { labelIdx = i; break; } }
-
-                                for (int i = 0; i < colCount; i++)
-                                {
-                                    string texto = "";
-                                    bool derecha = false;
-                                    if (i == labelIdx) { texto = "TOTAL:"; derecha = true; }
-                                    else if (esMoneda[i])
-                                    {
-                                        string sym = cols[i].Item3 == "money-sol" ? "S/" : "$";
-                                        decimal mv = totales[i];
-                                        texto = mv < 0 ? $"-{sym} {Math.Abs(mv):N2}" : $"{sym} {mv:N2}";
-                                        derecha = true;
-                                    }
-
-                                    QuestPdfContainer tc = table.Cell().Background(totalBg)
-                                        .BorderTop(2).BorderBottom(2).BorderColor(headerBg).Padding(7);
-                                    if (derecha) tc = tc.AlignRight();
-                                    tc.Text(texto).Bold().FontSize(9);
-                                }
-                            }
-                        });
-
-                        // Resumen
-                        if (f.IncluirResumen)
-                        {
-                            decimal totIngS = SumaColumna(dt, "IngresosSoles");
-                            decimal totGasS = SumaColumna(dt, "GastosSoles");
-                            decimal totDesS = SumaColumna(dt, "DescuentoSoles");
-                            decimal totReiS = SumaColumna(dt, "ReintegroSoles");
-                            decimal totBalS = SumaColumna(dt, "BalanceSoles");
-                            decimal totIngD = SumaColumna(dt, "IngresosDolares");
-                            decimal totGasD = SumaColumna(dt, "GastosDolares");
-                            decimal totBalD = SumaColumna(dt, "BalanceDolares");
-                            decimal balanceGeneral = totBalS + totBalD * f.Factor;
-
-                            string[,] resumen = {
-                                { "Total de liquidaciones:",        dt.Rows.Count.ToString() },
-                                { "Total Ingresos (S/):",           $"S/ {totIngS:N2}" },
-                                { "Total Gastos (S/):",             $"S/ {totGasS:N2}" },
-                                { "Total Descuentos (S/):",         $"S/ {totDesS:N2}" },
-                                { "Total Reintegros (S/):",         $"S/ {totReiS:N2}" },
-                                { "Total Balance Neto (S/):",       $"S/ {totBalS:N2}" },
-                                { "Total Ingresos ($):",            $"$ {totIngD:N2}" },
-                                { "Total Gastos ($):",              $"$ {totGasD:N2}" },
-                                { "Total Balance Neto ($):",        $"$ {totBalD:N2}" },
-                                { "Factor de conversión:",          f.Factor.ToString("0.00") },
-                                { "BALANCE GENERAL EN SOLES:",      $"S/ {balanceGeneral:N2}" },
-                            };
-
-                            // Centrado al 70% del ancho
-                            col.Item().PaddingTop(10).Row(r =>
-                            {
-                                r.RelativeItem(0.15f);
-                                r.RelativeItem(0.7f).Column(rc =>
-                                {
-                                    rc.Item().Background(accentGreen).Padding(10).AlignCenter()
-                                        .Text("RESUMEN EJECUTIVO").Bold().FontSize(12).FontColor(Colors.White);
-
-                                    rc.Item().PaddingTop(5).Table(rt =>
-                                    {
-                                        rt.ColumnsDefinition(c =>
-                                        {
-                                            c.RelativeColumn(60f);
-                                            c.RelativeColumn(40f);
-                                        });
-
-                                        for (int i = 0; i < resumen.GetLength(0); i++)
-                                        {
-                                            bool ultima = i == resumen.GetLength(0) - 1;
-                                            QuestPdfColor bg = ultima ? QuestPdfColor.FromHex("#D1FAE5") :
-                                                (i % 2 == 0 ? QuestPdfColor.FromHex("#F0FDF4") : QuestPdfColor.FromHex("#ECFDF5"));
-                                            QuestPdfColor bordeFila = ultima ? accentGreen : borderColor;
-
-                                            QuestPdfContainer lc = rt.Cell().Background(bg)
-                                                .Border(0.5f).BorderColor(bordeFila);
-                                            QuestPdfContainer vc = rt.Cell().Background(bg)
-                                                .Border(0.5f).BorderColor(bordeFila);
-                                            if (ultima)
-                                            {
-                                                lc = lc.BorderTop(2);
-                                                vc = vc.BorderTop(2);
-                                            }
-
-                                            lc.Padding(7).Text(resumen[i, 0]).Bold().FontSize(9);
-                                            var vtxt = vc.Padding(7).AlignRight().Text(resumen[i, 1]);
-                                            if (ultima) vtxt.Bold().FontSize(11).FontColor(accentGreen);
-                                            else vtxt.FontSize(9);
-                                        }
-                                    });
-                                });
-                                r.RelativeItem(0.15f);
-                            });
-                        }
-                    });
+                        object v = clave != null && d.Table.Columns.Contains(clave) ? d[clave] : null;
+                        return c.Item1 == "estado" && v != null && v != DBNull.Value ? Legible(v.ToString()) : v;
+                    },
+                    VerdeSiPositivo = c.Item1.StartsWith("balance") || c.Item1.StartsWith("reintegro")
                 });
-            }).GeneratePdf();
+            }
 
-            HttpContext.Current.Response.Clear();
-            HttpContext.Current.Response.ContentType = "application/pdf";
-            HttpContext.Current.Response.AddHeader("Content-Disposition",
-                $"attachment; filename=ReportePersonalizado_{FechaHelper.Ahora():yyyyMMddHHmmss}.pdf");
-            HttpContext.Current.Response.BinaryWrite(pdfBytes);
-            HttpContext.Current.Response.Flush();
-            HttpContext.Current.Response.End();
+            if (f.IncluirResumen)
+            {
+                decimal balS = SumaColumna(dt, "BalanceSoles");
+                decimal balD = SumaColumna(dt, "BalanceDolares");
+                r.TituloResumen = "Resumen ejecutivo";
+                r.Resumen.Add(Linea("Liquidaciones", dt.Rows.Count, TipoColumnaReporte.Entero));
+                r.Resumen.Add(Linea("Ingresos", SumaColumna(dt, "IngresosSoles"), TipoColumnaReporte.Soles));
+                r.Resumen.Add(Linea("Gastos", SumaColumna(dt, "GastosSoles"), TipoColumnaReporte.Soles));
+                r.Resumen.Add(Linea("Descuentos", SumaColumna(dt, "DescuentoSoles"), TipoColumnaReporte.Soles));
+                r.Resumen.Add(Linea("Reintegros", SumaColumna(dt, "ReintegroSoles"), TipoColumnaReporte.Soles));
+                r.Resumen.Add(Linea("Balance neto en soles", balS, TipoColumnaReporte.Soles));
+                r.Resumen.Add(Linea("Ingresos", SumaColumna(dt, "IngresosDolares"), TipoColumnaReporte.Dolares));
+                r.Resumen.Add(Linea("Gastos", SumaColumna(dt, "GastosDolares"), TipoColumnaReporte.Dolares));
+                r.Resumen.Add(Linea("Descuentos", SumaColumna(dt, "DescuentoDolares"), TipoColumnaReporte.Dolares));
+                r.Resumen.Add(Linea("Reintegros", SumaColumna(dt, "ReintegroDolares"), TipoColumnaReporte.Dolares));
+                r.Resumen.Add(Linea("Balance neto en dólares", balD, TipoColumnaReporte.Dolares));
+                r.Resumen.Add(Linea("Factor de conversión (US$ a S/)", f.Factor, TipoColumnaReporte.Texto));
+                r.Resumen.Add(Linea("Balance general en soles", balS + balD * f.Factor, TipoColumnaReporte.Soles, destacada: true));
+                r.Nota = "Balance neto = ingresos − gastos − descuentos + reintegros. El balance general convierte los dólares con el factor indicado.";
+            }
+
+            return r;
+        }
+
+        private static string NombreDeCatalogo(DataTable dt, string colId, string colNombre, int id)
+        {
+            var fila = dt.Rows.Cast<DataRow>().FirstOrDefault(d => Convert.ToInt32(d[colId]) == id);
+            return fila == null ? "#" + id : Regex.Replace(fila[colNombre].ToString().Trim(), @"\s+", " ");
         }
 
         private static decimal SumaColumna(DataTable dt, string col)
