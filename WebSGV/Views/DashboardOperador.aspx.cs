@@ -25,6 +25,8 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            SecurityHelper.ExigirRolOperador();
+
             if (!IsPostBack)
             {
                 VerificarSesion();

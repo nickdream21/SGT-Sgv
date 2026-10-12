@@ -127,6 +127,16 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
+        /// Exige exclusivamente rol OPERADOR. Con otro rol va al inicio de ese rol (no cierra la sesiÃ³n).
+        /// </summary>
+        public static void ExigirRolOperador()
+        {
+            ExigirSesion();
+            if (!EsOperador())
+                RedirigirSinPermiso();
+        }
+
+        /// <summary>
         /// Exige ADMIN, ADMIN_SISTEMA, SUPERVISOR o ADMIN_GRIFO.
         /// (Usado en secciones de conductores y abastecimiento)
         /// </summary>

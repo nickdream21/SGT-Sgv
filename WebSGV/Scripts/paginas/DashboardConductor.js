@@ -72,6 +72,19 @@ function aplicarVisibilidadPeajes() {
     } else {
         $('#filaPeajesNacionales, #filaPeajesExtranjeros').show();
     }
+    renumerarFilas();
+}
+
+// La numeración del markup es fija; al ocultar filas (peajes en viajes nacionales) o agregar/quitar
+// adicionales quedarían saltos. Se numera solo lo visible, de corrido, en cada tabla.
+function renumerarFilas() {
+    ['#ingresosBody, #ingresosAdicionalesBody', '#gastosBody, #gastosAdicionalesBody'].forEach(function (selector) {
+        let n = 0;
+        // Se mira el display de la propia fila: :visible daría falso para todas si la pestaña está oculta.
+        $(selector).children('tr').filter(function () { return this.style.display !== 'none'; }).each(function () {
+            $(this).children('td').first().text(++n);
+        });
+    });
 }
 
 function configurarFechasPorDefecto() {
@@ -122,6 +135,7 @@ function agregarIngreso() {
         </td>
     </tr>
 `);
+    renumerarFilas();
 }
 
 function eliminarIngreso(id) {
@@ -163,6 +177,7 @@ function agregarGasto() {
         </td>
     </tr>
 `);
+    renumerarFilas();
 }
 
 function eliminarGasto(id) {
@@ -173,6 +188,7 @@ function eliminarGasto(id) {
 }
 
 function calcularTotales() {
+    renumerarFilas();
     let totalIngresosSoles = 0;
     let totalIngresosDolares = 0;
     let totalGastosSoles = 0;

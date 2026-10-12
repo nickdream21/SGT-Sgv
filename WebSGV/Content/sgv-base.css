@@ -261,3 +261,28 @@
 .modal-header.sgv-modal-peligro { background-color: #fef2f2 !important; border-top-color: var(--sgv-peligro) !important; }
 .modal-header.sgv-modal-alerta { background-color: #fffbeb !important; border-top-color: var(--sgv-alerta) !important; }
 .modal-header.sgv-modal-ok { background-color: #f0fdf4 !important; border-top-color: var(--sgv-ok) !important; }
+
+/* === Compatibilidad: clases de Bootstrap 5 que quedaron en el markup (el sitio usa Bootstrap 4.6) === */
+.form-select {
+    display: block;
+    width: 100%;
+    height: calc(1.5em + 0.75rem + 2px);
+    padding: 0.375rem 1.75rem 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #495057;
+    background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='4' height='5' viewBox='0 0 4 5'%3e%3cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e") no-repeat right 0.75rem center / 8px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+.form-select:focus { border-color: #80bdff; outline: 0; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); }
+.form-select:disabled { background-color: #e9ecef; }
+.fw-bold { font-weight: 700 !important; }
+.me-2 { margin-right: 0.5rem !important; }
+.ms-2 { margin-left: 0.5rem !important; }
+.text-end { text-align: right !important; }
+.text-start { text-align: left !important; }
+.gap-2 { gap: 0.5rem !important; }

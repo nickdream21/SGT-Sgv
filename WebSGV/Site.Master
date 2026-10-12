@@ -11,8 +11,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
     <link href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" rel="stylesheet" />
-    <link href="~/Content/App.css" rel="stylesheet" />
-    <link href="~/Content/responsive-mobile.css" rel="stylesheet" />
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/App.css") %>" rel="stylesheet" />
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/responsive-mobile.css") %>" rel="stylesheet" />
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/sgv-base.css") %>" rel="stylesheet" />
 
     <!-- Librerías base, UNA sola vez y en el head: jQuery → Popper → Bootstrap 4.6.2 → jQuery UI.
@@ -371,7 +371,7 @@
     </form>
 
     <!-- jQuery, Popper, Bootstrap y jQuery UI ya se cargaron en el head -->
-    <script src="<%= ResolveUrl("~/Scripts/responsive-mobile.js") %>"></script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/responsive-mobile.js") %>"></script>
 
     <script>
         // Valores del servidor que usa el script de la página (ids de controles ASP.NET).
