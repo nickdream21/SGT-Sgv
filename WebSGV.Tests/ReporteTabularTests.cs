@@ -54,6 +54,23 @@ namespace WebSGV.Tests
             ws.RowsUsed().First(f => f.Cell(1).GetString() == "Conductor").RowNumber();
 
         [Fact]
+        public void Excel_ConLogo_LoIncrustaYCorreElTextoDeLaEmpresa()
+        {
+            string logo = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo-prueba.png");
+            File.WriteAllBytes(logo, Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="));
+            try
+            {
+                var wb = new XLWorkbook(new MemoryStream(ReporteTabularExportador.GenerarExcel(Reporte(3), Empresa, logo)));
+                var ws = wb.Worksheet(1);
+
+                Assert.Single(ws.Pictures);
+                Assert.Equal(Empresa.RazonSocial, ws.Cell(1, 2).GetString());
+            }
+            finally { File.Delete(logo); }
+        }
+
+        [Fact]
         public void Excel_EncabezadoConEmpresaTituloYFiltros()
         {
             var ws = Hoja(Reporte(3));

@@ -479,7 +479,8 @@ namespace WebSGV.Views
         private string UsuarioActual() => Convert.ToString(Session["Nombre"]);
 
         private void EnviarExcel(ReporteTabular reporte, string prefijo) =>
-            EnviarArchivo(ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa()),
+            EnviarArchivo(ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(),
+                    Server.MapPath("~/Content/favicon.png")),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"{prefijo}_{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
 
         private void EnviarPdf(ReporteTabular reporte, string prefijo) =>

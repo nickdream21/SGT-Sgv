@@ -116,7 +116,7 @@ namespace WebSGV.Services.Reportes
         // EXCEL
         // ============================================================================
 
-        public static byte[] GenerarExcel(ReporteTabular r, EmpresaInfo emp)
+        public static byte[] GenerarExcel(ReporteTabular r, EmpresaInfo emp, string rutaLogo = null)
         {
             emp = emp ?? new EmpresaInfo();
             int n = Math.Max(r.Columnas.Count, 4);
@@ -133,9 +133,19 @@ namespace WebSGV.Services.Reportes
                 ws.ShowGridLines = false;
 
                 // --- Encabezado: empresa, título, filtros ---
+                // El logo ocupa la esquina superior izquierda (columna A, filas 1-2) y el texto
+                // de la empresa se corre una columna a la derecha.
+                bool conLogo = !string.IsNullOrWhiteSpace(rutaLogo) && File.Exists(rutaLogo);
+                int colTexto = conLogo ? 2 : 1;
                 int fila = 1;
-                Titular(ws, fila++, n, emp.RazonSocial ?? "", 13, true, AzulHex);
-                Titular(ws, fila++, n, LineaEmpresa(emp), 9, false, TextoSuaveHex);
+                Titular(ws, fila++, n, emp.RazonSocial ?? "", 13, true, AzulHex, colTexto);
+                Titular(ws, fila++, n, LineaEmpresa(emp), 9, false, TextoSuaveHex, colTexto);
+                if (conLogo)
+                {
+                    ws.Row(1).Height = 26;
+                    ws.Row(2).Height = 22;
+                    ws.AddPicture(rutaLogo).MoveTo(ws.Cell(1, 1), 4, 3).WithSize(56, 58);
+                }
                 fila++;
                 Titular(ws, fila++, n, r.Titulo, 12, true, "#1F2937");
                 foreach (string filtro in r.Filtros)
@@ -283,14 +293,14 @@ namespace WebSGV.Services.Reportes
             }
         }
 
-        private static void Titular(IXLWorksheet ws, int fila, int columnas, string texto, double tamano, bool negrita, string color)
+        private static void Titular(IXLWorksheet ws, int fila, int columnas, string texto, double tamano, bool negrita, string color, int colInicio = 1)
         {
-            var celda = ws.Cell(fila, 1);
+            var celda = ws.Cell(fila, colInicio);
             celda.Value = texto ?? "";
             celda.Style.Font.FontSize = tamano;
             celda.Style.Font.Bold = negrita;
             celda.Style.Font.FontColor = XLColor.FromHtml(color);
-            ws.Range(fila, 1, fila, columnas).Merge();
+            ws.Range(fila, colInicio, fila, columnas).Merge();
         }
 
         private static void EscribirCelda(IXLCell celda, ColumnaReporte c, DataRow fila)
