@@ -8,7 +8,7 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 | | Al empezar (2026-10-07) | Ahora |
 |---|---|---|
 | Puntuación general | 5.5 / 10 | **8 / 10** |
-| Tests | 215 | **248** (240 unitarios + 8 de integración; se quitaron 25 de la página Reportes eliminada) |
+| Tests | 215 | **328** (312 unitarios + 16 de integración, 8 de ellos escriben con rollback) |
 | Paquetes NuGet | 40 | 23 |
 | Procedimientos del repo vs BD de pruebas | sin control, 2 inexistentes | **79/79 iguales** (la BD tiene exactamente los del repo) |
 
@@ -36,9 +36,9 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 4. **Comprobar:**
    ```powershell
    msbuild WebSGV.sln /p:Configuration=Debug /nologo /verbosity:minimal
-   dotnet test WebSGV.Tests\WebSGV.Tests.csproj --no-build      # 248 en verde (8 de integración)
+   dotnet test WebSGV.Tests\WebSGV.Tests.csproj --no-build      # 328 en verde (16 de integración)
    ```
-   Sin `connectionStrings.config` los 8 de integración salen como "omitidos" (no fallan).
+   Sin `connectionStrings.config` los 16 de integración salen como "omitidos" (no fallan).
 
 ## 3. Lo que ya está hecho
 
@@ -104,13 +104,24 @@ Ordenadas por valor. Marca `[x]` al terminar.
       `bootstrap 5.2.3` y `jQuery 3.7.0` (sus 51 archivos locales ya no los usaba nadie) y `Bundle.config`.
       Todo el sitio queda en Bootstrap 4.6.2 + jQuery 3.6.4. Migrar a Bootstrap 5 sería un proyecto
       aparte (41 páginas, revisión visual completa).
-- [ ] **`Empresa.Web`** en `Web.config` (y escrito a mano en `LiquidacionesPendientes.aspx`) apunta a
-      `www.serviciosgviviana.somee.com`, que no responde. Decidir si debe ser `sgvtransporte.somee.com`
-      o la web comercial de la empresa (sale impreso en los PDF).
+- [x] **`Empresa.Web`** (sale impreso en los PDF) pasó de `www.serviciosgviviana.somee.com`, que no
+      respondía, a `sgvtransporte.somee.com` (2026-10-11). `LiquidacionesPendientes.js` ya no la tiene
+      escrita a mano: la toma de `Web.config` vía `SGV.empresaWeb`.
 - [ ] **Serilog 2.12 → 4.x** (opcional; requiere nuevas dependencias y binding redirects).
-- [ ] **Confirmar el CI en verde** en GitHub → Actions para `f96f145` y los siguientes commits.
-- [ ] Opcional: tests de integración que escriban (en transacción con rollback) para los flujos de
-      despacho y liquidación.
+- [x] **Confirmar el CI en verde** en GitHub → Actions: verificado el 2026-10-11, todos los commits
+      hasta `2e4c017` pasan.
+- [x] **Tests de integración que escriben** (2026-10-11): `Integracion/FlujoDespachoLiquidacionTests.cs`,
+      8 tests que recorren despacho → liquidación → firma → aprobación con ajustes / rechazo y
+      reliquidación con los mismos servicios de las páginas, dentro de `TransaccionDePrueba`
+      (`TransactionScope` sin `Complete()`: no dejan datos; verificado en la BD). La firma se registra con
+      su SP (`FirmaService` escribe el PDF en disco). Los casos de error van al final de cada test: los SP
+      que hacen `ROLLBACK` en su `CATCH` anulan también la transacción del test.
+- [ ] **Bug encontrado por los tests:** `ViajesEnProgreso.esInternacional` nunca se llena
+      (`sp_CrearDespacho` y `sp_CrearViajeProgreso` no lo guardan; los 12 viajes de pruebas están en NULL).
+      Efectos: en `DashboardConductor` ningún viaje cuenta como internacional, así que **se ocultan los
+      peajes extranjeros en la liquidación**; el historial dice siempre NACIONAL; y `RegistroDespacho`
+      puede mezclar despachos nacionales e internacionales en el mismo viaje. Arreglo propuesto: guardarlo
+      al crear el viaje + migración que lo rellene desde `Despachos`.
 
 ## 5. Herramientas del repo
 

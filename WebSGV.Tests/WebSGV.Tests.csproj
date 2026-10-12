@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="System.Transactions" />
     <Reference Include="WebSGV">
       <HintPath>..\WebSGV\bin\WebSGV.dll</HintPath>
     </Reference>
