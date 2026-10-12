@@ -385,7 +385,7 @@
                                                 <tfoot>
                                                     <tr>
                                                         <td colspan="6" class="text-left pt-3">
-                                                            <button type="button" class="btn btn-success-custom btn-sm" onclick="agregarIngreso()">
+                                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="agregarIngreso()">
                                                                 <i class="fas fa-plus mr-1"></i>Agregar Otro Ingreso
                                                             </button>
                                                         </td>
@@ -616,7 +616,7 @@
                                                 <tfoot>
                                                     <tr>
                                                         <td colspan="6" class="text-left pt-3">
-                                                            <button type="button" class="btn btn-danger-custom btn-sm" onclick="agregarGasto()">
+                                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="agregarGasto()">
                                                                 <i class="fas fa-plus mr-1"></i>Agregar Otro Gasto
                                                             </button>
                                                         </td>
@@ -858,7 +858,7 @@
                                 </div>
                             </div>
                             <div class="text-right mt-3">
-                                <button type="button" class="btn btn-success-custom btn-sm" onclick="agregarReparacion()">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="agregarReparacion()">
                                     <i class="fas fa-plus mr-1"></i>Agregar Reparación
                                 </button>
                             </div>
@@ -945,7 +945,7 @@
                                 </div>
                             </div>
                             <div class="text-right mt-3">
-                                <button type="button" class="btn btn-success-custom btn-sm" onclick="agregarHospedaje()">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="agregarHospedaje()">
                                     <i class="fas fa-plus mr-1"></i>Agregar Hospedaje
                                 </button>
                             </div>
@@ -1032,7 +1032,7 @@
                                 </div>
                             </div>
                             <div class="text-right mt-3">
-                                <button type="button" class="btn btn-success-custom btn-sm" onclick="agregarCombustible()">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="agregarCombustible()">
                                     <i class="fas fa-plus mr-1"></i>Agregar Combustible
                                 </button>
                             </div>

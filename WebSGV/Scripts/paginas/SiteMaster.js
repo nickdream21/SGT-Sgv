@@ -123,3 +123,92 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mostrarPendiente);
     else mostrarPendiente();
 })();
+
+// ── Confirmaciones no bloqueantes ───────────────────────────────────
+// Reemplazo de confirm(): el cuadro nativo detiene la página y no se puede estilar.
+//   SGV.confirmar(mensaje, alAceptar[, { titulo, textoAceptar, peligro }])
+// "peligro" pinta el botón en rojo (eliminar, rechazar, revertir). El mensaje respeta los saltos de línea.
+// Además, todo elemento con onclick="return confirm('texto');" (los OnClientClick simples de los
+// botones de servidor) usa este modal sin tocar su marcado: se intercepta el clic, se pregunta y,
+// al aceptar, se repite el clic con el onclick retirado un instante.
+(function () {
+    var SGV = window.SGV = window.SGV || {};
+    var $modal = null;
+    var alAceptarActual = null;
+
+    function construir() {
+        if ($modal) return $modal;
+        $modal = $(
+            '<div class="modal fade" id="sgvConfirmarModal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="sgvConfirmarTitulo">' +
+              '<div class="modal-dialog modal-dialog-centered" role="document">' +
+                '<div class="modal-content">' +
+                  '<div class="modal-header">' +
+                    '<h5 class="modal-title" id="sgvConfirmarTitulo">Confirmar</h5>' +
+                    '<button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>' +
+                  '</div>' +
+                  '<div class="modal-body"><p class="mb-0" id="sgvConfirmarMensaje" style="white-space:pre-line"></p></div>' +
+                  '<div class="modal-footer">' +
+                    '<button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancelar</button>' +
+                    '<button type="button" class="btn btn-primary" id="sgvConfirmarAceptar">Aceptar</button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>').appendTo(document.body);
+
+        $modal.on('click', '#sgvConfirmarAceptar', function () {
+            var fn = alAceptarActual;
+            alAceptarActual = null;
+            $modal.modal('hide');
+            if (typeof fn === 'function') fn();
+        });
+        // Suele abrirse encima de otro modal (detalle de liquidación): Bootstrap 4 deja el segundo fondo
+        // detrás del primero y, al cerrarse, quita el bloqueo de scroll del que sigue abierto.
+        $modal.on('show.bs.modal', function () { $modal.css('z-index', 1060); });
+        $modal.on('shown.bs.modal', function () { $('.modal-backdrop').last().css('z-index', 1055); });
+        $modal.on('hidden.bs.modal', function () {
+            alAceptarActual = null;
+            if ($('.modal.show').not($modal).length) $(document.body).addClass('modal-open');
+        });
+        $modal.on('shown.bs.modal', function () { $modal.find('#sgvConfirmarAceptar').trigger('focus'); });
+        return $modal;
+    }
+
+    SGV.confirmar = function (mensaje, alAceptar, opciones) {
+        opciones = opciones || {};
+        var $m = construir();
+        $m.find('#sgvConfirmarTitulo').text(opciones.titulo || 'Confirmar');
+        $m.find('#sgvConfirmarMensaje').text(String(mensaje == null ? '' : mensaje));
+        $m.find('#sgvConfirmarAceptar')
+            .text(opciones.textoAceptar || 'Aceptar')
+            .toggleClass('btn-danger', !!opciones.peligro)
+            .toggleClass('btn-primary', !opciones.peligro);
+        alAceptarActual = alAceptar;
+        $m.modal('show');
+    };
+
+    // onclick="return confirm('...');" exacto, con el texto como literal de cadena simple.
+    var PATRON = /^\s*return\s+confirm\(\s*(['"])((?:\\.|(?!\1)[^\\])*)\1\s*\)\s*;?\s*$/;
+
+    function textoDe(literal) {
+        // Solo se decodifican los escapes de cadena; no se evalúa nada.
+        var mapa = { n: '\n', r: '', t: ' ' };
+        return literal.replace(/\\(.)/g, function (_, c) { return mapa.hasOwnProperty(c) ? mapa[c] : c; });
+    }
+
+    document.addEventListener('click', function (e) {
+        var el = e.target && e.target.closest ? e.target.closest('[onclick]') : null;
+        if (!el) return;
+        var m = PATRON.exec(el.getAttribute('onclick') || '');
+        if (!m) return;
+
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        var onclick = el.getAttribute('onclick');
+        var esPeligro = /elimin|rechaz|revert|borrar|anular|desactiv/i.test(m[2]);
+        SGV.confirmar(textoDe(m[2]), function () {
+            el.removeAttribute('onclick');
+            try { el.click(); }
+            finally { setTimeout(function () { el.setAttribute('onclick', onclick); }, 0); }
+        }, { peligro: esPeligro, textoAceptar: esPeligro ? 'Continuar' : 'Aceptar' });
+    }, true);
+})();

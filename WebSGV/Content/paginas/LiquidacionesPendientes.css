@@ -677,3 +677,11 @@
 .rf-bal-number.sgv-negativo,
 .amount-row .amount.sgv-negativo { color: var(--danger-color); }
 .amount-row .amount.sgv-positivo { color: var(--success-color); }
+
+/* La hora de llegada lista varios orígenes (declarada, envío, GPS): debe verse completa, en varias líneas. */
+#detalleHoraLlegada {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.35;
+}

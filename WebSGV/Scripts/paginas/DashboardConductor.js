@@ -139,10 +139,10 @@ function agregarIngreso() {
 }
 
 function eliminarIngreso(id) {
-    if (confirm('¿Está seguro de eliminar este ingreso?')) {
+    SGV.confirmar('¿Está seguro de eliminar este ingreso?', function () {
         $(`#ingresoAdicional_${id}`).remove();
         calcularTotales();
-    }
+    }, { peligro: true, textoAceptar: 'Eliminar' });
 }
 
 function agregarGasto() {
@@ -181,10 +181,10 @@ function agregarGasto() {
 }
 
 function eliminarGasto(id) {
-    if (confirm('¿Está seguro de eliminar este gasto?')) {
+    SGV.confirmar('¿Está seguro de eliminar este gasto?', function () {
         $(`#gastoAdicional_${id}`).remove();
         calcularTotales();
-    }
+    }, { peligro: true, textoAceptar: 'Eliminar' });
 }
 
 function calcularTotales() {
@@ -260,11 +260,11 @@ function agregarReparacion() {
 }
 
 function eliminarReparacion(id) {
-    if (confirm('¿Eliminar esta reparación?')) {
+    SGV.confirmar('¿Eliminar esta reparación?', function () {
         reparacionesData = reparacionesData.filter(r => r.id !== id);
         actualizarTablaReparaciones();
         actualizarTotalesReparaciones();
-    }
+    }, { peligro: true, textoAceptar: 'Eliminar' });
 }
 
 function actualizarTablaReparaciones() {
@@ -339,11 +339,11 @@ function agregarHospedaje() {
 }
 
 function eliminarHospedaje(id) {
-    if (confirm('¿Eliminar este hospedaje?')) {
+    SGV.confirmar('¿Eliminar este hospedaje?', function () {
         hospedajesData = hospedajesData.filter(h => h.id !== id);
         actualizarTablaHospedajes();
         actualizarTotalesHospedajes();
-    }
+    }, { peligro: true, textoAceptar: 'Eliminar' });
 }
 
 function actualizarTablaHospedajes() {
@@ -418,11 +418,11 @@ function agregarCombustible() {
 }
 
 function eliminarCombustible(id) {
-    if (confirm('¿Eliminar este combustible?')) {
+    SGV.confirmar('¿Eliminar este combustible?', function () {
         combustiblesData = combustiblesData.filter(c => c.id !== id);
         actualizarTablaCombustibles();
         actualizarTotalesCombustibles();
-    }
+    }, { peligro: true, textoAceptar: 'Eliminar' });
 }
 
 function actualizarTablaCombustibles() {
@@ -529,19 +529,33 @@ function prepararDatosFinancieros() {
 
 // === FUNCIONES AUXILIARES ===
 
+// Se usa en OnClientClick="...; return confirmarEnvioLiquidacion();": devuelve false para frenar el envío
+// mientras se muestra el modal y, al aceptar, repite el clic dejándolo pasar una vez.
+var envioConfirmado = false;
+
 function confirmarEnvioLiquidacion() {
-    return confirm(
+    if (envioConfirmado) {
+        envioConfirmado = false;
+        return true;
+    }
+
+    SGV.confirmar(
         '¿Está seguro de enviar esta liquidación?\n\n' +
         'Una vez enviada, no podrá modificarla y quedará pendiente de revisión por la administración.\n\n' +
-        'Asegúrese de que todos los datos son correctos.'
-    );
+        'Asegúrese de que todos los datos son correctos.',
+        function () {
+            envioConfirmado = true;
+            document.querySelector('[id$="btnEnviarLiquidacion"]').click();
+        },
+        { titulo: 'Enviar liquidación', textoAceptar: 'Enviar' });
+    return false;
 }
 
 function limpiarFormulario() {
-    if (confirm('¿Está seguro de limpiar el formulario? Se perderán todos los datos ingresados.')) {
+    SGV.confirmar('¿Está seguro de limpiar el formulario? Se perderán todos los datos ingresados.', function () {
         liquidacionModificada = false;
         location.reload();
-    }
+    }, { peligro: true, textoAceptar: 'Limpiar' });
 }
 
 function verDetalleLiquidacion(idOrdenViaje) {

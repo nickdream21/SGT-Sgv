@@ -351,8 +351,22 @@ function validarRechazo() {
         value: observaciones
     }).appendTo('form');
 
-    return confirm('¿Está seguro de RECHAZAR esta liquidación?\n\nEl viaje se reabrirá para correcciones.');
+    // OnClientClick="return validarRechazo();": se frena el envío mientras se muestra el modal y, al
+    // aceptar, se repite el clic dejándolo pasar una vez.
+    if (rechazoConfirmado) {
+        rechazoConfirmado = false;
+        return true;
+    }
+    SGV.confirmar('¿Está seguro de RECHAZAR esta liquidación?\n\nEl viaje se reabrirá para correcciones.',
+        function () {
+            rechazoConfirmado = true;
+            document.querySelector('[id$="btnConfirmarRechazo"]').click();
+        },
+        { titulo: 'Rechazar liquidación', textoAceptar: 'Rechazar', peligro: true });
+    return false;
 }
+
+var rechazoConfirmado = false;
 
 // Imprime el documento oficial (PDF SGV-CDF-F-05, el mismo que se archiva al firmar y aprobar) en
 // lugar de una copia HTML: así lleva la firma del conductor, los ajustes y la paginación reales.
@@ -412,8 +426,12 @@ function corregirSalidaDesdeModal() {
         return;
     }
 
-    if (!confirm('¿Confirma corregir la fecha/hora de salida de esta liquidación?\n\nEl cambio quedará auditado.')) return;
+    SGV.confirmar('¿Confirma corregir la fecha/hora de salida de esta liquidación?\n\nEl cambio quedará auditado.',
+        function () { enviarCorreccionSalida(fecha, hora, motivo); },
+        { titulo: 'Corregir salida', textoAceptar: 'Corregir' });
+}
 
+function enviarCorreccionSalida(fecha, hora, motivo) {
     var $btn = $('#btnGuardarCorregirSalida');
     $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Guardando...');
 
@@ -475,8 +493,12 @@ function aprobarDesdeModal() {
     if (nota) confirmMsg += 'Nota: ' + nota + '\n\n';
     confirmMsg += 'Esta acción completará el viaje y no se podrá deshacer.';
 
-    if (!confirm(confirmMsg)) return;
+    SGV.confirmar(confirmMsg,
+        function () { enviarAprobacion(descS, descD, reintS, reintD, nota); },
+        { titulo: 'Aprobar liquidación', textoAceptar: 'Aprobar' });
+}
 
+function enviarAprobacion(descS, descD, reintS, reintD, nota) {
     var $btn = $('#btnAprobarDesdeModal');
     $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Aprobando...');
 
@@ -738,8 +760,12 @@ function confirmarReversion() {
         return;
     }
 
-    if (!confirm('\u26a0\ufe0f \u00bfEst\u00e1 seguro de REVERTIR esta aprobaci\u00f3n?\n\nLa liquidaci\u00f3n volver\u00e1 al estado PENDIENTE y deber\u00e1 ser revisada nuevamente.')) return;
+    SGV.confirmar('\u00bfEst\u00e1 seguro de REVERTIR esta aprobaci\u00f3n?\n\nLa liquidaci\u00f3n volver\u00e1 al estado PENDIENTE y deber\u00e1 ser revisada nuevamente.',
+        function () { enviarReversion(idOrden, motivo); },
+        { titulo: 'Revertir aprobaci\u00f3n', textoAceptar: 'Revertir', peligro: true });
+}
 
+function enviarReversion(idOrden, motivo) {
     var $btn = $('#btnConfirmarReversion');
     $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Procesando...');
 
@@ -836,8 +862,12 @@ function confirmarCorreccion() {
     msg += '  \u2022 Reintegro S/: ' + reintS.toFixed(2) + '\n';
     msg += '  \u2022 Reintegro $: ' + reintD.toFixed(2) + '\n';
 
-    if (!confirm(msg)) return;
+    SGV.confirmar(msg,
+        function () { enviarCorreccionAjustes(idOrden, motivo, descS, descD, reintS, reintD); },
+        { titulo: 'Corregir ajustes', textoAceptar: 'Corregir' });
+}
 
+function enviarCorreccionAjustes(idOrden, motivo, descS, descD, reintS, reintD) {
     var $btn = $('#btnConfirmarCorreccion');
     $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Guardando...');
 
