@@ -17,6 +17,14 @@ namespace WebSGV.Tests.Integracion
     /// </summary>
     public sealed class TransaccionDePrueba : IDisposable
     {
+        /// <summary>
+        /// Colección xUnit de las clases de tests que escriben: xUnit corre las clases en
+        /// paralelo y dos transacciones abiertas que insertan en las mismas tablas
+        /// (Despachos, ViajesEnProgreso) terminan en deadlock. Toda clase que use esta
+        /// transacción debe llevar <c>[Collection(TransaccionDePrueba.ColeccionEscritura)]</c>.
+        /// </summary>
+        public const string ColeccionEscritura = "BD de pruebas - escritura";
+
         private readonly TransactionScope _scope;
 
         public TransaccionDePrueba()

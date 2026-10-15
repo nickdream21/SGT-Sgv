@@ -1,0 +1,399 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using WebSGV.Helpers;
+using WebSGV.Models.Despachos;
+
+namespace WebSGV.Services.Despachos.Importacion
+{
+    /// <summary>
+    /// Importación de los documentos de un pedido (factura, packing list, guías) para
+    /// armar un lote de despachos sin tipearlo. Lee los PDF (sueltos o dentro de un ZIP),
+    /// los asocia con lo que ya está en la BD (cliente por RUC, tracto por placa,
+    /// conductor por DNI de la licencia, producto por código del cliente) y registra
+    /// los productos y conductores nuevos que el usuario aprobó.
+    /// </summary>
+    public static class ImportacionPedidoService
+    {
+        public const long TamanoMaximoArchivo = 20 * 1024 * 1024;   // por PDF
+        public const int MaximoDocumentos = 60;                      // un pedido trae ~12
+
+        /// <summary>Archivo tal como llegó del formulario.</summary>
+        public class ArchivoSubido
+        {
+            public string Nombre { get; set; }
+            public byte[] Contenido { get; set; }
+        }
+
+        // ── Lectura ───────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Lee los archivos subidos (PDF o ZIP con PDF) y devuelve el pedido sin asociar.
+        /// Los ZIP se recorren en memoria: nunca se extraen a disco.
+        /// <paramref name="facturaPdf"/> devuelve el PDF de la factura para adjuntarlo al lote.
+        /// </summary>
+        public static ImportacionPedido Leer(IEnumerable<ArchivoSubido> archivos, out ArchivoSubido facturaPdf)
+        {
+            facturaPdf = null;
+            var ignorados = new List<string>();
+            var pdfs = new List<ArchivoSubido>();
+
+            foreach (var archivo in archivos)
+            {
+                string extension = Path.GetExtension(archivo.Nombre ?? string.Empty).ToLowerInvariant();
+                if (extension == ".zip")
+                    pdfs.AddRange(PdfsDelZip(archivo, ignorados));
+                else if (extension == ".pdf")
+                    pdfs.Add(archivo);
+                else
+                    ignorados.Add($"{archivo.Nombre}: solo se aceptan PDF o ZIP");
+            }
+
+            var documentos = new List<LectorDocumentosPedido.DocumentoLeido>();
+            var porNombre = new Dictionary<LectorDocumentosPedido.DocumentoLeido, ArchivoSubido>();
+
+            foreach (var pdf in pdfs.Take(MaximoDocumentos))
+            {
+                if (pdf.Contenido.Length > TamanoMaximoArchivo)
+                {
+                    ignorados.Add($"{pdf.Nombre}: supera los {TamanoMaximoArchivo / 1024 / 1024} MB");
+                    continue;
+                }
+
+                try
+                {
+                    var doc = new LectorDocumentosPedido.DocumentoLeido
+                    {
+                        NombreArchivo = pdf.Nombre,
+                        Paginas = ExtractorTextoPdf.ExtraerLineas(pdf.Contenido)
+                    };
+                    documentos.Add(doc);
+                    porNombre[doc] = pdf;
+                }
+                catch (Exception ex)
+                {
+                    LogSGV.Error(ex, "No se pudo leer el PDF {Archivo} de la importación", pdf.Nombre);
+                    ignorados.Add($"{pdf.Nombre}: no se pudo leer el PDF (¿está escaneado o protegido?)");
+                }
+            }
+
+            if (pdfs.Count > MaximoDocumentos)
+                ignorados.Add($"Se leyeron solo los primeros {MaximoDocumentos} PDF.");
+
+            var pedido = LectorDocumentosPedido.Leer(documentos);
+            pedido.ArchivosIgnorados.InsertRange(0, ignorados);
+
+            var docFactura = documentos.FirstOrDefault(d =>
+                LectorDocumentosPedido.Clasificar(d.Paginas) == TipoDocumentoPedido.Factura);
+            if (docFactura != null)
+                facturaPdf = porNombre[docFactura];
+
+            return pedido;
+        }
+
+        private static IEnumerable<ArchivoSubido> PdfsDelZip(ArchivoSubido zip, List<string> ignorados)
+        {
+            var pdfs = new List<ArchivoSubido>();
+            try
+            {
+                using (var stream = new MemoryStream(zip.Contenido))
+                using (var archivoZip = new ZipArchive(stream, ZipArchiveMode.Read))
+                {
+                    foreach (var entrada in archivoZip.Entries)
+                    {
+                        if (string.IsNullOrEmpty(entrada.Name)) continue;   // carpeta
+                        if (!entrada.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)) continue;
+
+                        // Se mira el tamaño declarado y además se corta la lectura: un ZIP
+                        // puede mentir sobre el tamaño descomprimido.
+                        if (entrada.Length > TamanoMaximoArchivo || pdfs.Count >= MaximoDocumentos)
+                        {
+                            ignorados.Add($"{entrada.Name}: omitido (tamaño o cantidad de archivos)");
+                            continue;
+                        }
+
+                        using (var origen = entrada.Open())
+                        using (var destino = new MemoryStream())
+                        {
+                            var buffer = new byte[81920];
+                            int leidos;
+                            while ((leidos = origen.Read(buffer, 0, buffer.Length)) > 0)
+                            {
+                                if (destino.Length + leidos > TamanoMaximoArchivo)
+                                    throw new InvalidDataException($"{entrada.Name} supera el tamaño permitido.");
+                                destino.Write(buffer, 0, leidos);
+                            }
+                            pdfs.Add(new ArchivoSubido { Nombre = entrada.Name, Contenido = destino.ToArray() });
+                        }
+                    }
+                }
+            }
+            catch (InvalidDataException ex)
+            {
+                LogSGV.Error(ex, "ZIP inválido en la importación: {Archivo}", zip.Nombre);
+                ignorados.Add($"{zip.Nombre}: el ZIP está dañado o tiene un archivo demasiado grande");
+            }
+            return pdfs;
+        }
+
+        // ── Asociación con la BD ──────────────────────────────────────────────
+
+        /// <summary>
+        /// Busca en la BD el cliente, la planta sugerida, los tractos, carretas,
+        /// conductores y productos del pedido, y marca los tractos cuyo N° de transporte
+        /// ya tiene un despacho. Lo que no encuentra queda en null para la vista previa.
+        /// </summary>
+        public static void Asociar(ImportacionPedido pedido)
+        {
+            AsociarCliente(pedido);
+            AsociarPlanta(pedido);
+            AsociarVehiculos(pedido);
+            AsociarConductores(pedido);
+            AsociarProductos(pedido);
+            MarcarYaRegistrados(pedido);
+        }
+
+        private static void AsociarCliente(ImportacionPedido pedido)
+        {
+            if (string.IsNullOrEmpty(pedido.RucRemitente)) return;
+
+            var dt = DbHelper.ConsultarTabla(
+                "SELECT TOP 1 idCliente, nombre FROM Cliente WHERE ruc = @ruc AND activo = 1",
+                DbHelper.Param("@ruc", pedido.RucRemitente));
+            if (dt.Rows.Count == 0) return;
+
+            pedido.IdCliente = Convert.ToInt32(dt.Rows[0]["idCliente"]);
+            pedido.NombreCliente = dt.Rows[0]["nombre"].ToString();
+        }
+
+        /// <summary>
+        /// Sugiere la planta donde se CARGA: la cuyo nombre aparece en el origen de la guía
+        /// ("...--Trujillo-Moche") o en el puerto de carga de la factura. El destino de la
+        /// carga no es la planta del despacho. Solo si hay exactamente una coincidencia.
+        /// </summary>
+        private static void AsociarPlanta(ImportacionPedido pedido)
+        {
+            string origen = LectorDocumentosPedido.Normalizar($"{pedido.Origen} {pedido.Factura?.PuertoCarga}");
+            if (origen.Length == 0) return;
+
+            var plantas = RegistroDespachoService.ObtenerPlantasPorAmbito(false);
+            var coincidencias = plantas.Rows.Cast<DataRow>()
+                .Where(r => origen.Contains(LectorDocumentosPedido.Normalizar(r["nombre"].ToString())))
+                .Select(r => Convert.ToInt32(r["idPlanta"]))
+                .Distinct()
+                .ToList();
+
+            if (coincidencias.Count == 1)
+                pedido.IdPlantaSugerida = coincidencias[0];
+        }
+
+        private static void AsociarVehiculos(ImportacionPedido pedido)
+        {
+            var tractos = DbHelper.ConsultarTabla("SELECT idTracto, placaTracto FROM Tracto WHERE activo = 1")
+                .Rows.Cast<DataRow>()
+                .GroupBy(r => LectorDocumentosPedido.NormalizarPlaca(r["placaTracto"].ToString()))
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var carretas = DbHelper.ConsultarTabla("SELECT idCarreta, placaCarreta FROM Carreta WHERE activo = 1")
+                .Rows.Cast<DataRow>()
+                .GroupBy(r => LectorDocumentosPedido.NormalizarPlaca(r["placaCarreta"].ToString()))
+                .ToDictionary(g => g.Key, g => g.First());
+
+            foreach (var t in pedido.Tractos)
+            {
+                if (t.Placa != null && tractos.TryGetValue(t.Placa, out DataRow tracto))
+                {
+                    t.IdTracto = Convert.ToInt32(tracto["idTracto"]);
+                    t.PlacaSistema = tracto["placaTracto"].ToString();
+                }
+
+                if (t.PlacaCarreta != null && carretas.TryGetValue(t.PlacaCarreta, out DataRow carreta))
+                {
+                    t.IdCarreta = Convert.ToInt32(carreta["idCarreta"]);
+                    t.PlacaCarretaSistema = carreta["placaCarreta"].ToString();
+                }
+            }
+
+            SugerirCarretas(pedido);
+        }
+
+        /// <summary>
+        /// Para los tractos sin carreta en el documento, propone la última carreta (activa)
+        /// con la que salió ese tracto. No propone una carreta que ya tenga otro tracto del
+        /// mismo pedido: una carreta va en un solo tracto del lote.
+        /// </summary>
+        private static void SugerirCarretas(ImportacionPedido pedido)
+        {
+            var sinCarreta = pedido.Tractos.Where(t => t.IdTracto.HasValue && !t.IdCarreta.HasValue).ToList();
+            if (sinCarreta.Count == 0) return;
+
+            var parametros = sinCarreta.Select((t, i) => DbHelper.Param("@tr" + i, t.IdTracto.Value)).ToArray();
+            string lista = string.Join(", ", parametros.Select(p => p.ParameterName));
+
+            var ultimas = DbHelper.ConsultarTabla($@"
+                SELECT idTracto, idCarreta, placaCarreta
+                FROM (
+                    SELECT d.idTracto, d.idCarreta, c.placaCarreta,
+                           ROW_NUMBER() OVER (PARTITION BY d.idTracto ORDER BY d.fechaCreacion DESC, d.idDespacho DESC) AS n
+                    FROM Despachos d
+                    INNER JOIN Carreta c ON c.idCarreta = d.idCarreta AND c.activo = 1
+                    WHERE d.activo = 1 AND d.idTracto IN ({lista})
+                ) x
+                WHERE n = 1", parametros)
+                .Rows.Cast<DataRow>()
+                .ToDictionary(r => Convert.ToInt32(r["idTracto"]), r => r);
+
+            var usadas = new HashSet<int>(pedido.Tractos.Where(t => t.IdCarreta.HasValue).Select(t => t.IdCarreta.Value));
+            foreach (var t in sinCarreta)
+            {
+                if (!ultimas.TryGetValue(t.IdTracto.Value, out DataRow r)) continue;
+                int idCarreta = Convert.ToInt32(r["idCarreta"]);
+                if (!usadas.Add(idCarreta)) continue;
+
+                t.IdCarreta = idCarreta;
+                t.PlacaCarretaSistema = r["placaCarreta"].ToString();
+                t.CarretaSugerida = true;
+            }
+        }
+
+        /// <summary>
+        /// Conductor por DNI (la licencia peruana es una letra + el DNI), luego por la
+        /// licencia guardada y por último por apellidos + primer nombre, que es lo único
+        /// que traen los packing list sin guía.
+        /// </summary>
+        private static void AsociarConductores(ImportacionPedido pedido)
+        {
+            var conductores = DbHelper.ConsultarTabla(
+                @"SELECT idConductor, DNI, numeroLicencia, nombre, apPaterno, apMaterno
+                  FROM Conductor WHERE activo = 1").Rows.Cast<DataRow>().ToList();
+
+            foreach (var t in pedido.Tractos)
+            {
+                DataRow encontrado = null;
+                string dni = t.DniSegunLicencia;
+
+                if (dni != null)
+                    encontrado = conductores.FirstOrDefault(r => Convert.ToString(r["DNI"]).Trim() == dni);
+
+                if (encontrado == null && !string.IsNullOrEmpty(t.Licencia))
+                    encontrado = conductores.FirstOrDefault(r =>
+                        string.Equals(Convert.ToString(r["numeroLicencia"]).Trim(), t.Licencia, StringComparison.OrdinalIgnoreCase));
+
+                if (encontrado == null && !string.IsNullOrEmpty(t.NombreChofer))
+                {
+                    LectorDocumentosPedido.DividirNombre(t.NombreChofer, out string paterno, out string materno, out string nombres);
+                    var candidatos = conductores.Where(r =>
+                            LectorDocumentosPedido.Normalizar(Convert.ToString(r["apPaterno"])) == LectorDocumentosPedido.Normalizar(paterno)
+                            && LectorDocumentosPedido.Normalizar(Convert.ToString(r["apMaterno"])) == LectorDocumentosPedido.Normalizar(materno)
+                            && LectorDocumentosPedido.Normalizar(Convert.ToString(r["nombre"])).StartsWith(LectorDocumentosPedido.Normalizar(nombres)))
+                        .ToList();
+                    if (candidatos.Count == 1) encontrado = candidatos[0];
+                }
+
+                if (encontrado == null) continue;
+
+                t.IdConductor = Convert.ToInt32(encontrado["idConductor"]);
+                t.NombreConductorSistema = $"{encontrado["nombre"]} {encontrado["apPaterno"]} {encontrado["apMaterno"]}".Trim();
+            }
+        }
+
+        private static void AsociarProductos(ImportacionPedido pedido)
+        {
+            if (!pedido.IdCliente.HasValue) return;
+
+            var productos = DbHelper.ConsultarTabla(
+                    "SELECT idProducto, nombre, codigoCliente FROM Producto WHERE idCliente = @idCliente AND activo = 1",
+                    DbHelper.Param("@idCliente", pedido.IdCliente.Value))
+                .Rows.Cast<DataRow>().ToList();
+
+            foreach (var linea in pedido.Tractos.SelectMany(t => t.Lineas))
+            {
+                var porCodigo = productos.FirstOrDefault(r =>
+                    !string.IsNullOrEmpty(linea.CodigoProducto) && Convert.ToString(r["codigoCliente"]) == linea.CodigoProducto);
+                var porNombre = productos.FirstOrDefault(r =>
+                    LectorDocumentosPedido.Normalizar(Convert.ToString(r["nombre"])) == LectorDocumentosPedido.Normalizar(linea.Descripcion));
+
+                var producto = porCodigo ?? porNombre;
+                linea.IdProducto = producto == null ? (int?)null : Convert.ToInt32(producto["idProducto"]);
+            }
+        }
+
+        private static void MarcarYaRegistrados(ImportacionPedido pedido)
+        {
+            var numeros = pedido.Tractos.Where(t => t.NumeroTransporte != null).Select(t => t.NumeroTransporte).ToList();
+            if (numeros.Count == 0) return;
+
+            // Un parámetro por número: nunca se concatena texto del documento en el SQL.
+            var parametros = numeros.Select((n, i) => DbHelper.Param("@t" + i, n)).ToArray();
+            string lista = string.Join(", ", parametros.Select(p => p.ParameterName));
+
+            var existentes = new HashSet<string>(DbHelper.ConsultarTabla(
+                    $"SELECT DISTINCT numeroTransporte FROM Despachos WHERE activo = 1 AND numeroTransporte IN ({lista})",
+                    parametros)
+                .Rows.Cast<DataRow>().Select(r => r["numeroTransporte"].ToString()));
+
+            foreach (var t in pedido.Tractos)
+                t.YaRegistrado = t.NumeroTransporte != null && existentes.Contains(t.NumeroTransporte);
+        }
+
+        // ── Altas aprobadas ───────────────────────────────────────────────────
+
+        /// <summary>Producto nuevo propuesto: una entrada por código (o descripción si no hay código).</summary>
+        public class ProductoNuevo
+        {
+            public string Codigo { get; set; }
+            public string Descripcion { get; set; }
+        }
+
+        public static List<ProductoNuevo> ProductosNuevos(ImportacionPedido pedido) =>
+            pedido.Tractos.Where(t => !t.YaRegistrado)
+                .SelectMany(t => t.Lineas)
+                .Where(l => !l.IdProducto.HasValue)
+                .GroupBy(l => l.CodigoProducto ?? LectorDocumentosPedido.Normalizar(l.Descripcion))
+                .Select(g => new ProductoNuevo { Codigo = g.First().CodigoProducto, Descripcion = g.First().Descripcion })
+                .ToList();
+
+        /// <summary>Tractos cuyo conductor no está en el sistema pero se puede registrar (hay DNI).</summary>
+        public static List<TractoImportado> ConductoresNuevos(ImportacionPedido pedido) =>
+            pedido.Tractos.Where(t => !t.YaRegistrado && !t.IdConductor.HasValue && t.DniSegunLicencia != null).ToList();
+
+        /// <summary>Registra (o reutiliza) un producto aprobado y asigna su id a las líneas que lo usan.</summary>
+        public static int RegistrarProducto(ImportacionPedido pedido, ProductoNuevo producto, string nombreAprobado)
+        {
+            int id = Convert.ToInt32(DbHelper.EjecutarEscalarSp("sp_RegistrarProductoImportado",
+                DbHelper.Param("@idCliente", pedido.IdCliente),
+                DbHelper.Param("@nombre", nombreAprobado),
+                DbHelper.Param("@codigoCliente", producto.Codigo)));
+
+            foreach (var linea in pedido.Tractos.SelectMany(t => t.Lineas).Where(l => !l.IdProducto.HasValue))
+            {
+                bool mismo = producto.Codigo != null
+                    ? linea.CodigoProducto == producto.Codigo
+                    : LectorDocumentosPedido.Normalizar(linea.Descripcion) == LectorDocumentosPedido.Normalizar(producto.Descripcion);
+                if (mismo) linea.IdProducto = id;
+            }
+            return id;
+        }
+
+        /// <summary>Registra (o reutiliza por DNI) un conductor aprobado.</summary>
+        public static int RegistrarConductor(string dni, string nombres, string apPaterno, string apMaterno, string licencia) =>
+            Convert.ToInt32(DbHelper.EjecutarEscalarSp("sp_RegistrarConductorImportado",
+                DbHelper.Param("@DNI", dni),
+                DbHelper.Param("@nombre", nombres),
+                DbHelper.Param("@apPaterno", apPaterno),
+                DbHelper.Param("@apMaterno", string.IsNullOrWhiteSpace(apMaterno) ? null : apMaterno),
+                DbHelper.Param("@numeroLicencia", licencia)));
+
+        /// <summary>Guarda la licencia de la guía en un conductor existente que no la tenía.</summary>
+        public static void CompletarLicencia(int idConductor, string licencia)
+        {
+            if (string.IsNullOrWhiteSpace(licencia)) return;
+            DbHelper.EjecutarNonQuerySp("sp_ActualizarLicenciaConductor",
+                DbHelper.Param("@idConductor", idConductor),
+                DbHelper.Param("@numeroLicencia", licencia));
+        }
+    }
+}

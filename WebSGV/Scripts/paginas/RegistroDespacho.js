@@ -7,6 +7,16 @@
     inicializarValidacionNumeroPedido();
 });
 
+// Select2 4.0 con jQuery 3.6 no pone el foco en el buscador al abrir: el usuario tenía
+// que hacer clic en la cajita antes de escribir. Se enfoca a mano (delegado: vale
+// también para los desplegables que aparecen tras un postback parcial).
+$(document).on('select2:open', function () {
+    setTimeout(function () {
+        var buscador = document.querySelector('.select2-container--open .select2-search__field');
+        if (buscador) buscador.focus();
+    }, 0);
+});
+
 function initializeSelect2() {
     $('.select2-searchable').each(function () {
         var $sel = $(this);

@@ -12,6 +12,17 @@
 -- uno internacional para que el viaje lo sea (DashboardConductor muestra entonces los
 -- peajes extranjeros en la liquidacion). Un viaje creado a mano (sp_CrearViajeProgreso)
 -- queda en NULL hasta su primer despacho.
+--
+-- @cargaJson trae lo que lleva el tracto (una fila por producto y lote, ver
+-- DespachoCarga). Se inserta en la misma transaccion que el despacho: no puede
+-- quedar un despacho con su carga a medias. Formato:
+--   [{"idProducto":5,"codigo":"7530906","descripcion":"...","lote":"PE261001E0",
+--     "cantidad":668,"pesoBrutoKg":16766.8,"pesoNetoKg":16700,
+--     "fechaProduccion":"2026-10-01","fechaVencimiento":"2027-09-26"}]
+--
+-- @destinoCarga / @esExportacion: a donde va lo que se carga (ej. CD en Ecuador). No
+-- cambia el ambito del despacho: una carga en Trujillo para exportacion es un despacho
+-- nacional; el tramo a destino puede ser otro despacho (cambio de tracto en la base).
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_CrearDespacho
     @idConductor        INT,
@@ -33,6 +44,11 @@ CREATE OR ALTER PROCEDURE sp_CrearDespacho
     @descripcionViaje   VARCHAR(300) = NULL,
     @idPlanta           INT          = NULL,
     @lugarOperacion     VARCHAR(100) = NULL,
+    @numeroEntrega      VARCHAR(20)  = NULL,
+    @numeroTransporte   VARCHAR(20)  = NULL,
+    @cargaJson          NVARCHAR(MAX) = NULL,
+    @destinoCarga       VARCHAR(200) = NULL,
+    @esExportacion      BIT          = 0,
     @idDespacho         INT OUTPUT
 AS
 BEGIN
@@ -105,7 +121,9 @@ BEGIN
             fechaCreacion, usuarioCreacion, activo,
             numeroPedido, idFactura, idCPIC,
             guiaRemitente, guiaTransportista,
-            esInternacional, idViajeProgreso
+            esInternacional, idViajeProgreso,
+            numeroEntrega, numeroTransporte,
+            destinoCarga, esExportacion
         )
         VALUES (
             @numeroDespacho, @fechaDespacho, @horaDespacho,
@@ -114,10 +132,32 @@ BEGIN
             @fechaCreacion, @usuarioCreacion, 1,
             @numeroPedido, @idFactura, @idCPIC,
             @guiaRemitente, @guiaTransportista,
-            @esInternacional, @idViajeProgreso
+            @esInternacional, @idViajeProgreso,
+            @numeroEntrega, @numeroTransporte,
+            @destinoCarga, ISNULL(@esExportacion, 0)
         );
 
         SET @idDespacho = SCOPE_IDENTITY();
+
+        -- Carga del tracto (opcional: el registro manual todavia no la pide)
+        IF @cargaJson IS NOT NULL AND ISJSON(@cargaJson) = 1
+            INSERT INTO DespachoCarga (
+                idDespacho, idProducto, codigoProducto, descripcion, lote,
+                cantidad, pesoBrutoKg, pesoNetoKg, fechaProduccion, fechaVencimiento
+            )
+            SELECT @idDespacho, c.idProducto, c.codigo, c.descripcion, c.lote,
+                   c.cantidad, c.pesoBrutoKg, c.pesoNetoKg, c.fechaProduccion, c.fechaVencimiento
+            FROM OPENJSON(@cargaJson) WITH (
+                idProducto       INT            '$.idProducto',
+                codigo           VARCHAR(30)    '$.codigo',
+                descripcion      VARCHAR(150)   '$.descripcion',
+                lote             VARCHAR(30)    '$.lote',
+                cantidad         DECIMAL(12,3)  '$.cantidad',
+                pesoBrutoKg      DECIMAL(12,3)  '$.pesoBrutoKg',
+                pesoNetoKg       DECIMAL(12,3)  '$.pesoNetoKg',
+                fechaProduccion  DATE           '$.fechaProduccion',
+                fechaVencimiento DATE           '$.fechaVencimiento'
+            ) c;
 
         -- Incrementar el contador de despachos del viaje y fijar su ambito
         UPDATE ViajesEnProgreso

@@ -23,6 +23,7 @@ namespace WebSGV.Tests.Integracion
     /// La firma se registra llamando a su SP: <c>FirmaService</c> genera y archiva el PDF en disco
     /// (HostingEnvironment), algo que no corresponde a estos tests.
     /// </summary>
+    [Collection(TransaccionDePrueba.ColeccionEscritura)]
     public class FlujoDespachoLiquidacionTests
     {
         public FlujoDespachoLiquidacionTests() => BaseDePruebas.Preparar();

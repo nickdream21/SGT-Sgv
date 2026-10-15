@@ -18,6 +18,14 @@ namespace WebSGV.Models.Despachos
         public string TipoOperacion { get; set; }
         public bool EsInternacional { get; set; }
 
+        /// <summary>
+        /// A dónde va la carga (ej. "CD VITAPRO MILAGRO ... Ecuador"). Dato de la carga, no
+        /// del despacho: una carga en Trujillo para exportación es un despacho nacional.
+        /// Hoy lo llena la importación de documentos del pedido.
+        /// </summary>
+        public string DestinoCarga { get; set; }
+        public bool EsExportacion { get; set; }
+
         /// <summary>Planta de operación del lote (FK a <c>Planta</c>). Es lo que se graba.</summary>
         public int IdPlanta { get; set; }
 
@@ -51,6 +59,9 @@ namespace WebSGV.Models.Despachos
         public string NumeroFactura { get; set; }
         public DateTime? FechaEmisionFactura { get; set; }
         public decimal? ValorTotalFactura { get; set; }
+
+        /// <summary>PEN o USD. Las facturas de exportación del cliente vienen en dólares.</summary>
+        public string MonedaFactura { get; set; } = "PEN";
 
         // Archivo de factura (opcional): ruta física temporal donde quedó guardado al
         // iniciar el lote. idFactura no existe todavía en ese momento (se crea recién al
@@ -96,6 +107,12 @@ namespace WebSGV.Models.Despachos
 
         public bool TieneManifiestos => !string.IsNullOrEmpty(ManifiestoCruceRutaTemp) && !string.IsNullOrEmpty(ManifiestoRegresoRutaTemp);
         public bool TieneAlgunManifiesto => !string.IsNullOrEmpty(ManifiestoCruceRutaTemp) || !string.IsNullOrEmpty(ManifiestoRegresoRutaTemp);
+
+        // Carga del tracto (producto, lote, cantidad, pesos). Hoy solo la llena la
+        // importación de documentos del pedido; el registro manual la deja vacía.
+        public List<LineaCarga> Carga { get; set; } = new List<LineaCarga>();
+        public string NumeroEntrega { get; set; }
+        public string NumeroTransporte { get; set; }
 
         // Información de viaje
         public int? IdViajeProgreso { get; set; }

@@ -281,6 +281,9 @@ WebSGV/dashboard/*.xlsx
 WebSGV/dashboard/*.pbix
 WebSGV/dashboard/*.txt
 
+# Documentos reales de pedidos (facturas, guías, packing lists, CPIC): no versionar
+/docs/DOCUMENTACION/
+
 # Claude Code - settings locales con credenciales MCP
 .claude/settings.json
 .claude/settings.local.json

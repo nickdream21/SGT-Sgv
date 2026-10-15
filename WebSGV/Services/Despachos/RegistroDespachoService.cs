@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
+using Newtonsoft.Json;
 using WebSGV.Helpers;
 using WebSGV.Models.Despachos;
 
@@ -146,6 +148,7 @@ namespace WebSGV.Services.Despachos
                         cmd.Parameters.AddWithValue("@fechaEmision", (lote.Documentacion.FechaEmisionFactura ?? FechaHelper.Ahora()).Date);
                         cmd.Parameters.AddWithValue("@numeroPedido", (object)lote.NumeroPedido ?? DBNull.Value);
                         cmd.Parameters.AddWithValue("@idCliente", lote.IdCliente);
+                        cmd.Parameters.AddWithValue("@moneda", lote.Documentacion.MonedaFactura ?? "PEN");
                         pId = cmd.Parameters.Add("@idFactura", SqlDbType.Int);
                     }
                     else if (tipo == "CPIC")
@@ -206,6 +209,13 @@ namespace WebSGV.Services.Despachos
                     cmd.Parameters.AddWithValue("@usuarioCreacion", lote.UsuarioCreacion);
                     cmd.Parameters.AddWithValue("@idViajeProgreso", (object)conductor.IdViajeProgreso ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@descripcionViaje", (object)descripcionViaje ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@numeroEntrega", string.IsNullOrWhiteSpace(conductor.NumeroEntrega) ? (object)DBNull.Value : conductor.NumeroEntrega);
+                    cmd.Parameters.AddWithValue("@numeroTransporte", string.IsNullOrWhiteSpace(conductor.NumeroTransporte) ? (object)DBNull.Value : conductor.NumeroTransporte);
+                    cmd.Parameters.Add("@cargaJson", SqlDbType.NVarChar, -1).Value = (object)CargaComoJson(conductor.Carga) ?? DBNull.Value;
+                    cmd.Parameters.AddWithValue("@destinoCarga", string.IsNullOrWhiteSpace(lote.DestinoCarga)
+                        ? (object)DBNull.Value
+                        : (lote.DestinoCarga.Length > 200 ? lote.DestinoCarga.Substring(0, 200) : lote.DestinoCarga));
+                    cmd.Parameters.AddWithValue("@esExportacion", lote.EsExportacion);
 
                     SqlParameter pIdDespacho = cmd.Parameters.Add("@idDespacho", SqlDbType.Int);
                     pIdDespacho.Direction = ParameterDirection.Output;
@@ -216,6 +226,28 @@ namespace WebSGV.Services.Despachos
                     return Convert.ToInt32(pIdDespacho.Value);
                 }
             }
+        }
+
+        /// <summary>
+        /// Carga del tracto en el formato que espera <c>sp_CrearDespacho</c> (@cargaJson);
+        /// null si no hay carga. Fechas en ISO y números con punto decimal.
+        /// </summary>
+        public static string CargaComoJson(IList<LineaCarga> carga)
+        {
+            if (carga == null || carga.Count == 0) return null;
+
+            return JsonConvert.SerializeObject(carga.Select(l => new
+            {
+                idProducto = l.IdProducto,
+                codigo = l.CodigoProducto,
+                descripcion = l.Descripcion,
+                lote = l.Lote,
+                cantidad = l.Cantidad,
+                pesoBrutoKg = l.PesoBrutoKg,
+                pesoNetoKg = l.PesoNetoKg,
+                fechaProduccion = l.FechaProduccion?.ToString("yyyy-MM-dd"),
+                fechaVencimiento = l.FechaVencimiento?.ToString("yyyy-MM-dd")
+            }));
         }
 
         /// <summary>Viajes en progreso abiertos del conductor (<c>sp_ObtenerViajesAbiertosConductor</c>).</summary>

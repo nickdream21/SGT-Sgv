@@ -4,7 +4,7 @@
 
 <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/RegistroDespacho.css") %>" rel="stylesheet" />
 
-    <div class="container-fluid">
+    <div class="container-fluid rd-pagina">
         <div class="row">
             <div class="col-md-12">
                 <div class="card">
@@ -51,6 +51,212 @@
                                         <asp:Label ID="lblMensaje" runat="server" CssClass="alert d-block mb-0 pe-5"></asp:Label>
                                         <button type="button" class="close position-absolute" style="top:.65rem;right:.75rem;"
                                             onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+                                    </div>
+                                </asp:Panel>
+
+                                <!-- ====== IMPORTAR DOCUMENTOS DEL PEDIDO (opcional) ======
+                                     Lee la factura, el packing list y las guías de remisión que el cliente
+                                     envía por correo y rellena el lote. btnLeerDocumentos es PostBackTrigger:
+                                     el FileUpload no viaja en un postback parcial. -->
+                                <asp:Panel ID="pnlImportarDocumentos" runat="server" CssClass="card mb-4 rd-import-card">
+                                    <div class="rd-step-header">
+                                        <h5><i class="fas fa-file-import mr-1"></i> Importar desde los documentos del pedido <span class="rd-chip rd-chip-wait ml-2">Opcional</span></h5>
+                                        <div class="rd-subtitle">Suba el ZIP del correo o los PDF (factura, packing list y guías de remisión). El sistema arma el lote y usted lo revisa antes de guardar.</div>
+                                    </div>
+                                    <div class="card-body">
+                                        <asp:Panel ID="pnlSubirDocumentos" runat="server">
+                                            <div class="row align-items-end">
+                                                <div class="col-md-8 mb-2 mb-md-0">
+                                                    <asp:FileUpload ID="fileDocumentosPedido" runat="server" CssClass="form-control" AllowMultiple="true" accept=".pdf,.zip" />
+                                                    <small class="form-text text-muted">PDF generados por el sistema del cliente (no escaneos). Puede seleccionar varios archivos o un ZIP.</small>
+                                                </div>
+                                                <div class="col-md-4 text-md-right">
+                                                    <asp:Button ID="btnLeerDocumentos" runat="server"
+                                                        Text="Leer documentos"
+                                                        CssClass="btn btn-outline-primary"
+                                                        CausesValidation="false"
+                                                        OnClick="btnLeerDocumentos_Click" />
+                                                </div>
+                                            </div>
+                                        </asp:Panel>
+
+                                        <!-- Mensajes de la importación -->
+                                        <asp:Panel ID="pnlMensajeImportacion" runat="server" Visible="false" CssClass="mt-3">
+                                            <asp:Label ID="lblMensajeImportacion" runat="server" CssClass="alert d-block mb-0"></asp:Label>
+                                        </asp:Panel>
+
+                                        <!-- Vista previa -->
+                                        <asp:Panel ID="pnlVistaPreviaImportacion" runat="server" Visible="false" CssClass="mt-3">
+                                            <div class="rd-lote-bar mb-3">
+                                                <div class="rd-lote-grid">
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Pedido</span><span class="rd-lote-v"><asp:Literal ID="litImpPedido" runat="server" /></span></div>
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Cliente</span><span class="rd-lote-v"><asp:Literal ID="litImpCliente" runat="server" /></span></div>
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Factura</span><span class="rd-lote-v"><asp:Literal ID="litImpFactura" runat="server" /></span></div>
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Packing list</span><span class="rd-lote-v"><asp:Literal ID="litImpPackingList" runat="server" /></span></div>
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Operación</span><span class="rd-lote-v"><asp:Literal ID="litImpOperacion" runat="server" /></span></div>
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Destino de la carga</span><span class="rd-lote-v"><asp:Literal ID="litImpDestino" runat="server" /></span></div>
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Tractos</span><span class="rd-lote-v"><asp:Literal ID="litImpTractos" runat="server" /></span></div>
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Carga total</span><span class="rd-lote-v"><asp:Literal ID="litImpCarga" runat="server" /></span></div>
+                                                </div>
+                                            </div>
+
+                                            <asp:Panel ID="pnlAdvertenciasImportacion" runat="server" CssClass="rd-notice rd-notice-warn mb-3" Visible="false">
+                                                <strong><i class="fas fa-exclamation-triangle mr-1"></i> Revise antes de continuar:</strong>
+                                                <asp:Literal ID="litAdvertenciasImportacion" runat="server" />
+                                            </asp:Panel>
+
+                                            <!-- Lo único del lote que no viene en los documentos (o que conviene confirmar) -->
+                                            <div class="rd-section-label"><i class="fas fa-clipboard-list mr-1"></i> Datos del lote</div>
+                                            <div class="row mb-2">
+                                                <div class="col-md-4 form-group mb-2">
+                                                    <label for="<%= ddlClienteImp.ClientID %>" class="form-label small font-weight-bold mb-1">Cliente <span class="text-danger">*</span></label>
+                                                    <asp:DropDownList ID="ddlClienteImp" runat="server" CssClass="form-select form-select-sm" />
+                                                    <small class="form-text text-muted">Reconocido por el RUC del remitente.</small>
+                                                </div>
+                                                <div class="col-md-4 form-group mb-2">
+                                                    <label for="<%= txtFechaProgramacionImp.ClientID %>" class="form-label small font-weight-bold mb-1">Fecha de programación <span class="text-danger">*</span></label>
+                                                    <asp:TextBox ID="txtFechaProgramacionImp" runat="server" CssClass="form-control form-control-sm" TextMode="Date" />
+                                                    <small class="form-text text-muted">Se propone la fecha de traslado de las guías.</small>
+                                                </div>
+                                                <div class="col-md-4 form-group mb-2">
+                                                    <label for="<%= ddlPlantaImp.ClientID %>" class="form-label small font-weight-bold mb-1">Planta de carga <span class="text-danger">*</span></label>
+                                                    <asp:DropDownList ID="ddlPlantaImp" runat="server" CssClass="form-select form-select-sm" />
+                                                    <small class="form-text text-muted">Carga nacional; el destino queda como dato de la carga.</small>
+                                                </div>
+                                            </div>
+
+                                            <div class="rd-section-label"><i class="fas fa-truck mr-1"></i> Tractos del pedido</div>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm rd-tabla-conductores rd-tabla-import align-middle mb-3">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Incluir</th>
+                                                            <th>Transporte / Guía</th>
+                                                            <th>Conductor</th>
+                                                            <th>Tracto</th>
+                                                            <th>Carreta <span class="text-danger">*</span></th>
+                                                            <th>Carga</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <asp:Repeater ID="rptTractosImportados" runat="server" OnItemDataBound="rptTractosImportados_ItemDataBound">
+                                                            <ItemTemplate>
+                                                                <tr class="<%# (bool)Eval("YaRegistrado") ? "rd-fila-registrada" : "" %>">
+                                                                    <td><asp:CheckBox ID="chkIncluir" runat="server" /></td>
+                                                                    <td>
+                                                                        <div class="rd-placa"><%# HttpUtility.HtmlEncode(Eval("NumeroTransporte")) %></div>
+                                                                        <small class="text-muted"><%# HttpUtility.HtmlEncode(Eval("NumeroGuia") ?? "sin guía") %></small>
+                                                                        <asp:Literal ID="litYaRegistrado" runat="server" />
+                                                                    </td>
+                                                                    <td class="rd-col-conductor">
+                                                                        <small class="rd-doc-dato">Documento: <%# HttpUtility.HtmlEncode(Eval("NombreChofer")) %><%# Eval("Licencia") == null ? "" : " · Lic. " + HttpUtility.HtmlEncode(Eval("Licencia")) %></small>
+                                                                        <asp:DropDownList ID="ddlConductorImp" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                    </td>
+                                                                    <td class="rd-col-placa">
+                                                                        <small class="rd-doc-dato">Documento: <%# HttpUtility.HtmlEncode(Eval("Placa")) %></small>
+                                                                        <asp:DropDownList ID="ddlTractoImp" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                    </td>
+                                                                    <td class="rd-col-placa">
+                                                                        <small class="rd-doc-dato"><asp:Literal ID="litCarretaHint" runat="server" /></small>
+                                                                        <asp:DropDownList ID="ddlCarretaImp" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                    </td>
+                                                                    <td class="rd-carga-celda"><asp:Literal ID="litCargaImp" runat="server" /></td>
+                                                                </tr>
+                                                            </ItemTemplate>
+                                                        </asp:Repeater>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <!-- Altas que requieren aprobación -->
+                                            <asp:Panel ID="pnlAltasImportacion" runat="server" Visible="false" CssClass="rd-doc-box mb-3">
+                                                <div class="rd-doc-title"><i class="fas fa-user-check mr-1"></i> Registros nuevos que requieren su aprobación</div>
+
+                                                <asp:Panel ID="pnlProductosNuevos" runat="server" Visible="false" CssClass="mb-3">
+                                                    <div class="small font-weight-bold mb-1">Productos que no están en el catálogo del cliente</div>
+                                                    <asp:Repeater ID="rptProductosNuevos" runat="server">
+                                                        <ItemTemplate>
+                                                            <div class="form-row align-items-center mb-1">
+                                                                <div class="col-auto"><span class="rd-placa small"><%# HttpUtility.HtmlEncode(Eval("Codigo") ?? "—") %></span></div>
+                                                                <div class="col">
+                                                                    <asp:TextBox ID="txtNombreProducto" runat="server" CssClass="form-control form-control-sm" MaxLength="50"
+                                                                        Text='<%# Eval("Descripcion").ToString().ToUpperInvariant() %>' />
+                                                                    <asp:HiddenField ID="hfCodigoProducto" runat="server" Value='<%# Eval("Codigo") %>' />
+                                                                    <asp:HiddenField ID="hfDescripcionProducto" runat="server" Value='<%# Eval("Descripcion") %>' />
+                                                                </div>
+                                                            </div>
+                                                        </ItemTemplate>
+                                                    </asp:Repeater>
+                                                </asp:Panel>
+
+                                                <asp:Panel ID="pnlConductoresNuevos" runat="server" Visible="false" CssClass="mb-3">
+                                                    <div class="small font-weight-bold mb-1">Conductores que no están registrados <span class="font-weight-normal text-muted">(se registran solo los que deje como "Registrar nuevo" en la tabla)</span></div>
+                                                    <asp:Repeater ID="rptConductoresNuevos" runat="server" OnItemDataBound="rptConductoresNuevos_ItemDataBound">
+                                                        <ItemTemplate>
+                                                            <div class="form-row align-items-center mb-2">
+                                                                <div class="col-md-2 col-6">
+                                                                    <small class="text-muted d-block">DNI / Licencia</small>
+                                                                    <span class="rd-placa small"><%# HttpUtility.HtmlEncode(Eval("DniSegunLicencia")) %></span>
+                                                                    <small class="text-muted"><%# HttpUtility.HtmlEncode(Eval("Licencia")) %></small>
+                                                                    <asp:HiddenField ID="hfTransporteConductor" runat="server" Value='<%# Eval("NumeroTransporte") %>' />
+                                                                </div>
+                                                                <div class="col-md-3 col-6">
+                                                                    <small class="text-muted d-block">Apellido paterno</small>
+                                                                    <asp:TextBox ID="txtApPaterno" runat="server" CssClass="form-control form-control-sm" MaxLength="20" />
+                                                                </div>
+                                                                <div class="col-md-3 col-6">
+                                                                    <small class="text-muted d-block">Apellido materno</small>
+                                                                    <asp:TextBox ID="txtApMaterno" runat="server" CssClass="form-control form-control-sm" MaxLength="20" />
+                                                                </div>
+                                                                <div class="col-md-4 col-6">
+                                                                    <small class="text-muted d-block">Nombres</small>
+                                                                    <asp:TextBox ID="txtNombres" runat="server" CssClass="form-control form-control-sm" MaxLength="50" />
+                                                                </div>
+                                                                <asp:Literal ID="litNombreTruncado" runat="server" />
+                                                            </div>
+                                                        </ItemTemplate>
+                                                    </asp:Repeater>
+                                                </asp:Panel>
+
+                                                <asp:CheckBox ID="chkAprobarAltas" runat="server" CssClass="rd-check-aprobar"
+                                                    Text="Apruebo registrar en el sistema los productos y conductores nuevos de esta lista." />
+                                            </asp:Panel>
+
+                                            <asp:Panel ID="pnlArchivosIgnorados" runat="server" Visible="false" CssClass="small text-muted mb-3">
+                                                <i class="fas fa-info-circle mr-1"></i> Archivos no usados: <asp:Literal ID="litArchivosIgnorados" runat="server" />
+                                            </asp:Panel>
+
+                                            <div class="d-flex justify-content-end gap-2">
+                                                <asp:Button ID="btnDescartarImportacion" runat="server"
+                                                    Text="Descartar"
+                                                    CssClass="btn btn-outline-secondary"
+                                                    CausesValidation="false"
+                                                    OnClick="btnDescartarImportacion_Click" />
+                                                <asp:Button ID="btnCorregirImportacion" runat="server"
+                                                    Text="Corregir datos a mano"
+                                                    CssClass="btn btn-outline-primary"
+                                                    CausesValidation="false"
+                                                    ToolTip="Pasa los datos leídos al formulario de configuración para modificarlos antes de iniciar el lote"
+                                                    OnClick="btnCorregirImportacion_Click" />
+                                                <asp:Button ID="btnAplicarImportacion" runat="server"
+                                                    Text="Crear lote con estos datos"
+                                                    CssClass="btn btn-primary"
+                                                    CausesValidation="false"
+                                                    OnClick="btnAplicarImportacion_Click" />
+                                            </div>
+                                        </asp:Panel>
+
+                                        <!-- Importación ya aplicada: los conductores entran al iniciar el lote -->
+                                        <asp:Panel ID="pnlImportacionAplicada" runat="server" Visible="false" CssClass="rd-notice rd-notice-ok mt-3">
+                                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                                <span><i class="fas fa-check-circle mr-1"></i> <asp:Literal ID="litImportacionAplicada" runat="server" /></span>
+                                                <asp:Button ID="btnQuitarImportacion" runat="server"
+                                                    Text="Quitar importación"
+                                                    CssClass="btn btn-outline-secondary btn-sm"
+                                                    CausesValidation="false"
+                                                    OnClick="btnDescartarImportacion_Click" />
+                                            </div>
+                                        </asp:Panel>
                                     </div>
                                 </asp:Panel>
 
@@ -290,16 +496,24 @@
 
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtValorTotalFacturaBase" class="form-label">
-                                                                        <strong>Valor total (S/):</strong>
+                                                                        <strong>Valor total:</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
-                                                                    <asp:TextBox ID="txtValorTotalFacturaBase" runat="server"
-                                                                        CssClass="form-control"
-                                                                        placeholder="0.00"
-                                                                        TextMode="Number"
-                                                                        step="0.01"
-                                                                        min="0">
-                                                                    </asp:TextBox>
+                                                                    <div class="input-group">
+                                                                        <div class="input-group-prepend">
+                                                                            <asp:DropDownList ID="ddlMonedaFacturaBase" runat="server" CssClass="custom-select rd-moneda" ToolTip="Moneda de la factura">
+                                                                                <asp:ListItem Value="PEN" Text="S/" Selected="True"></asp:ListItem>
+                                                                                <asp:ListItem Value="USD" Text="US$"></asp:ListItem>
+                                                                            </asp:DropDownList>
+                                                                        </div>
+                                                                        <asp:TextBox ID="txtValorTotalFacturaBase" runat="server"
+                                                                            CssClass="form-control"
+                                                                            placeholder="0.00"
+                                                                            TextMode="Number"
+                                                                            step="0.01"
+                                                                            min="0">
+                                                                        </asp:TextBox>
+                                                                    </div>
                                                                     <asp:RequiredFieldValidator ID="rfvValorTotalFacturaBase" runat="server"
                                                                         ControlToValidate="txtValorTotalFacturaBase"
                                                                         ErrorMessage="El valor total de la factura es obligatorio"
@@ -476,6 +690,9 @@
                                                     <p class="mb-1"><strong>Operación:</strong> <asp:Label ID="lblResumenOperacion" runat="server"></asp:Label></p>
                                                     <p class="mb-1"><strong>Ámbito:</strong> <asp:Label ID="lblResumenAmbito" runat="server"></asp:Label></p>
                                                     <p class="mb-1"><strong>Planta:</strong> <asp:Label ID="lblResumenPlanta" runat="server"></asp:Label></p>
+                                                    <asp:PlaceHolder ID="pnlResumenDestino" runat="server" Visible="false">
+                                                        <p class="mb-1"><strong>Destino de la carga:</strong> <asp:Label ID="lblResumenDestino" runat="server"></asp:Label></p>
+                                                    </asp:PlaceHolder>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <p class="mb-1"><strong>Conductores agregados:</strong> <asp:Label ID="lblResumenCantidad" runat="server" CssClass="badge bg-primary fs-6">0</asp:Label></p>
@@ -851,6 +1068,9 @@
                                                     <asp:TemplateField HeaderText="Guía remitente">
                                                         <ItemTemplate><%# MostrarDato(Eval("GuiaRemitente")) %></ItemTemplate>
                                                     </asp:TemplateField>
+                                                    <asp:TemplateField HeaderText="Carga">
+                                                        <ItemTemplate><%# Eval("Carga") %></ItemTemplate>
+                                                    </asp:TemplateField>
                                                     <asp:TemplateField HeaderText="Guía transportista">
                                                         <ItemTemplate><%# MostrarDato(Eval("GuiaTransportista")) %></ItemTemplate>
                                                     </asp:TemplateField>
@@ -887,6 +1107,11 @@
                             </ContentTemplate>
                             <Triggers>
                                 <asp:PostBackTrigger ControlID="btnIniciarLote" />
+                                <asp:PostBackTrigger ControlID="btnLeerDocumentos" />
+                                <asp:AsyncPostBackTrigger ControlID="btnAplicarImportacion" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnCorregirImportacion" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnDescartarImportacion" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnQuitarImportacion" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnCancelarLote" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnFinalizarLote" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnAgregarConductor" EventName="Click" />
