@@ -186,6 +186,62 @@ namespace WebSGV.Tests.Integracion
             }
         }
 
+        [FactBD]
+        public void DescargaPorPedido_ListaLasCargasPendientesYLasQuitaAlDescargar()
+        {
+            using (new TransaccionDePrueba())
+            {
+                string pedido = "9" + new Random().Next(100000000, 999999999);
+                var lote = NuevoLote();
+                lote.NumeroPedido = pedido;
+                var carga = lote.Conductores[0];
+                carga.NumeroTransporte = "T" + Sufijo();
+                carga.Carga = new List<LineaCarga>
+                {
+                    new LineaCarga { CodigoProducto = "7000001", Descripcion = "Producto Uno", Lote = "LOTE0001", Cantidad = 1188m, PesoBrutoKg = 29818.8m }
+                };
+                int idCarga = RegistroDespachoService.CrearDespachoIndividual(lote, carga, null, null);
+
+                // La carga aparece pendiente, con su detalle
+                var pendientes = DescargaPedidoService.ObtenerCargasPendientes(pedido);
+                var p = Assert.Single(pendientes);
+                Assert.Equal(idCarga, p.IdDespacho);
+                Assert.Equal(carga.NumeroTransporte, p.NumeroTransporte);
+                Assert.Equal(carga.IdConductor, p.IdConductor);
+                Assert.True(p.EsExportacion);
+                Assert.Equal(1188m, Assert.Single(p.Carga).Cantidad);
+                Assert.Contains(DescargaPedidoService.ObtenerPedidosPendientes().Rows.Cast<DataRow>(),
+                    r => r["numeroPedido"].ToString() == pedido);
+
+                // El mismo conductor descarga: hereda la carga y se suma a su viaje abierto
+                int idViajeCarga = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT idViajeProgreso FROM Despachos WHERE idDespacho = @id", DbHelper.Param("@id", idCarga)));
+                var loteDescarga = NuevoLote();
+                loteDescarga.TipoOperacion = "DESCARGA";
+                loteDescarga.EsInternacional = true;
+                loteDescarga.NumeroPedido = pedido;
+                var descarga = loteDescarga.Conductores[0];
+                descarga.IdDespachoCarga = idCarga;
+                descarga.Carga = p.Carga;
+                descarga.IdViajeProgreso = idViajeCarga;
+                int idDescarga = RegistroDespachoService.CrearDespachoIndividual(loteDescarga, descarga, null, null);
+
+                DataRow d = DbHelper.ConsultarTabla("SELECT idDespachoCarga, idViajeProgreso FROM Despachos WHERE idDespacho = @id",
+                    DbHelper.Param("@id", idDescarga)).Rows[0];
+                Assert.Equal(idCarga, d["idDespachoCarga"]);
+                Assert.Equal(idViajeCarga, d["idViajeProgreso"]);   // una sola liquidación con carga y descarga
+                Assert.Equal(1, Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM DespachoCarga WHERE idDespacho = @id", DbHelper.Param("@id", idDescarga))));
+
+                // Ya descargada: deja de estar pendiente
+                Assert.Empty(DescargaPedidoService.ObtenerCargasPendientes(pedido));
+
+                // Y no se puede descargar dos veces (error al final: el SP no abrió transacción)
+                var ex = Assert.Throws<SqlException>(() => RegistroDespachoService.CrearDespachoIndividual(loteDescarga, descarga, null, null));
+                Assert.Contains("ya tiene registrada su descarga", ex.Message);
+            }
+        }
+
         // Caso de error al final: el RAISERROR del SP no debe afectar a los demás tests.
         [FactBD]
         public void RegistrarConductor_DniInvalido_SeRechaza()

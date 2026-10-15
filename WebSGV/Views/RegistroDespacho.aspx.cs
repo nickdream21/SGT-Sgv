@@ -5,6 +5,7 @@ using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.UI;
@@ -89,6 +90,7 @@ namespace WebSGV.Views
                 ConfigurarEstadoPagina();
                 ActualizarVisibilidadNumeroPedido();
                 RestaurarEstadoImportacion();
+                LimpiarDescarga();   // la descarga preparada no sobrevive a recargar la página (el formulario se reinicia)
 
                 if (TieneLoteActivo)
                     MostrarMensajeRecuperacion();
@@ -132,6 +134,7 @@ namespace WebSGV.Views
                 CargarCarretas();
                 CargarClientes();
                 ActualizarPlantasPorAmbito();
+                CargarPedidosPendientesDescarga();
             }
             catch (Exception ex)
             {
@@ -296,6 +299,16 @@ namespace WebSGV.Views
             // Mostrar fase 1
             pnlConfiguracionBase.Visible = true;
             pnlImportarDocumentos.Visible = true;
+            pnlDescargaPedido.Visible = true;
+
+            // Sin descarga en preparación (lote finalizado o cancelado), la tarjeta vuelve a
+            // la elección del pedido; si no, quedaba el aviso "se agregarán al iniciar el lote".
+            if (CargasPendientesActuales == null)
+            {
+                pnlVistaDescarga.Visible = false;
+                pnlDescargaAplicada.Visible = false;
+                pnlElegirPedidoDescarga.Visible = true;
+            }
 
             // Ocultar fase 2 y resumen
             pnlResumenLote.Visible = false;
@@ -312,6 +325,7 @@ namespace WebSGV.Views
             // Ocultar fase 1
             pnlConfiguracionBase.Visible = false;
             pnlImportarDocumentos.Visible = false;
+            pnlDescargaPedido.Visible = false;
 
             // Mostrar fase 2 y resumen
             pnlResumenLote.Visible = true;
@@ -713,6 +727,7 @@ namespace WebSGV.Views
             }
 
             IncorporarImportacionAlLote(lote);
+            IncorporarDescargaAlLote(lote);
 
             LoteActual = lote;
             return true;
@@ -1099,6 +1114,7 @@ namespace WebSGV.Views
 
                 LoteActual = null;
                 DescartarImportacion();
+                LimpiarDescarga();
                 MostrarFaseConfiguracionBase();
                 LimpiarFormularioCompleto();
                 MostrarMensaje("Lote cancelado. Puede iniciar una nueva configuración.", "info");
@@ -2125,6 +2141,433 @@ namespace WebSGV.Views
 
         #endregion
 
+        #region Descarga por pedido
+
+        // Flujo: elegir pedido → vista previa de sus cargas sin descarga (Session) → el
+        // usuario confirma conductor/tracto/carreta (por defecto los de la carga) →
+        // "Usar en el lote" rellena la configuración base (DESCARGA) y deja los
+        // conductores en Session["DescargaConductores"], que entran al "Iniciar lote".
+        // Se pasa por la configuración base porque la descarga internacional pide el
+        // CPIC, que se hace después de la carga.
+
+        private List<DescargaPedidoService.CargaPendiente> CargasPendientesActuales
+        {
+            get { return Session["DescargaCargas"] as List<DescargaPedidoService.CargaPendiente>; }
+            set { Session["DescargaCargas"] = value; }
+        }
+
+        private List<ConductorLote> ConductoresDescarga
+        {
+            get { return Session["DescargaConductores"] as List<ConductorLote>; }
+            set { Session["DescargaConductores"] = value; }
+        }
+
+        /// <summary>Lo que propuso la programación en Word para cada carga (por IdDespacho de la carga).</summary>
+        private Dictionary<int, PropuestaDescarga> PropuestasDescarga
+        {
+            get { return Session["DescargaPropuestas"] as Dictionary<int, PropuestaDescarga>; }
+            set { Session["DescargaPropuestas"] = value; }
+        }
+
+        private void CargarPedidosPendientesDescarga()
+        {
+            ddlPedidosPendientes.Items.Clear();
+            DataTable dt;
+            try
+            {
+                dt = DescargaPedidoService.ObtenerPedidosPendientes();
+            }
+            catch (Exception ex)
+            {
+                RegistrarError("CargarPedidosPendientesDescarga", ex);
+                ddlPedidosPendientes.Items.Add(new ListItem("-- No se pudo cargar la lista de pedidos --", ""));
+                return;
+            }
+
+            ddlPedidosPendientes.Items.Add(new ListItem(dt.Rows.Count == 0
+                ? "-- No hay pedidos cargados pendientes de descarga --"
+                : "-- Seleccione el pedido a descargar --", ""));
+            foreach (DataRow r in dt.Rows)
+            {
+                string texto = $"{r["numeroPedido"]} · {r["cliente"]} · {r["tractos"]} tracto(s) por descargar · cargado {Convert.ToDateTime(r["fechaCarga"]):dd/MM/yyyy}";
+                ddlPedidosPendientes.Items.Add(new ListItem(texto, r["numeroPedido"].ToString()));
+            }
+        }
+
+        protected void btnVerCargasPendientes_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string pedido = ddlPedidosPendientes.SelectedValue;
+                if (string.IsNullOrEmpty(pedido))
+                {
+                    MostrarMensajeDescarga("Elija un pedido de la lista.", "warning");
+                    return;
+                }
+
+                var cargas = DescargaPedidoService.ObtenerCargasPendientes(pedido);
+                if (cargas.Count == 0)
+                {
+                    MostrarMensajeDescarga($"El pedido {pedido} ya no tiene tractos pendientes de descarga.", "info");
+                    CargarPedidosPendientesDescarga();
+                    return;
+                }
+
+                LimpiarDescarga();
+                CargasPendientesActuales = cargas;
+                MostrarVistaDescarga(cargas);
+            }
+            catch (Exception ex)
+            {
+                RegistrarError("btnVerCargasPendientes_Click", ex);
+                MostrarMensajeDescarga("No se pudieron obtener las cargas del pedido. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+            }
+        }
+
+        private void MostrarVistaDescarga(List<DescargaPedidoService.CargaPendiente> cargas)
+        {
+            var primera = cargas[0];
+            bool internacional = cargas.Any(c => c.EsExportacion);
+
+            pnlMensajeDescarga.Visible = false;
+            pnlDescargaAplicada.Visible = false;
+            pnlVistaDescarga.Visible = true;
+            pnlConfiguracionBase.Visible = false;
+
+            litDescPedido.Text = Html(primera.NumeroPedido);
+            litDescCliente.Text = Html(primera.NombreCliente);
+            litDescOrigen.Text = Html(string.Join(", ", cargas.Select(c => c.PlantaCarga).Where(p => p != null).Distinct()));
+            litDescDestino.Text = Html((primera.DestinoCarga ?? "—") + (internacional ? " (exportación)" : ""));
+            litDescTractos.Text = cargas.Count.ToString();
+            litDescCarga.Text = Html($"{cargas.Sum(c => c.Carga.Sum(l => l.Cantidad)):N0} bolsas · {cargas.Sum(c => c.Carga.Sum(l => l.PesoBrutoKg ?? 0)):N1} kg");
+
+            txtFechaDescarga.Text = FechaHelper.Hoy().ToString("yyyy-MM-dd");
+
+            // Planta de descarga: del ámbito del destino; se sugiere la que aparezca en el texto del destino
+            ddlPlantaDescarga.Items.Clear();
+            ddlPlantaDescarga.Items.Add(new ListItem("-- Seleccione planta --", "0"));
+            string destino = LectorDocumentosPedido.Normalizar(primera.DestinoCarga);
+            var coincidencias = new List<string>();
+            foreach (DataRow r in RegistroDespachoService.ObtenerPlantasPorAmbito(internacional).Rows)
+            {
+                ddlPlantaDescarga.Items.Add(new ListItem(r["nombre"].ToString(), r["idPlanta"].ToString()));
+                if (destino.Length > 0 && destino.Contains(LectorDocumentosPedido.Normalizar(r["nombre"].ToString())))
+                    coincidencias.Add(r["idPlanta"].ToString());
+            }
+            if (coincidencias.Count == 1) RestaurarSeleccion(ddlPlantaDescarga, coincidencias[0]);
+            litAmbitoDescarga.Text = internacional
+                ? "Descarga internacional: al iniciar el lote se pide el CPIC."
+                : "Descarga nacional.";
+
+            pnlProgramacionLeida.Visible = false;
+            EnlazarDescargas(cargas);
+        }
+
+        private void EnlazarDescargas(List<DescargaPedidoService.CargaPendiente> cargas)
+        {
+            _conductoresImp = RegistroDespachoService.ObtenerConductoresActivos();
+            _tractosImp = RegistroDespachoService.ObtenerTractosActivos();
+            _carretasImp = RegistroDespachoService.ObtenerCarretasActivas();
+
+            rptDescargas.DataSource = cargas;
+            rptDescargas.DataBind();
+        }
+
+        protected void rptDescargas_ItemDataBound(object sender, RepeaterItemEventArgs e)
+        {
+            if (e.Item.ItemType != ListItemType.Item && e.Item.ItemType != ListItemType.AlternatingItem) return;
+
+            var c = (DescargaPedidoService.CargaPendiente)e.Item.DataItem;
+            PropuestaDescarga p = null;
+            PropuestasDescarga?.TryGetValue(c.IdDespacho, out p);
+
+            // Por defecto, el mismo conductor, tracto y carreta que cargaron; con la
+            // programación leída, el chofer y el tracto que ella indica (si se encontraron).
+            LlenarSelector((DropDownList)e.Item.FindControl("ddlConductorDesc"), _conductoresImp, "NombreCompleto", "idConductor",
+                p == null ? c.IdConductor : p.IdConductor ?? 0);
+            LlenarSelector((DropDownList)e.Item.FindControl("ddlTractoDesc"), _tractosImp, "placaTracto", "idTracto",
+                p == null ? c.IdTracto : p.IdTracto ?? 0);
+            LlenarSelector((DropDownList)e.Item.FindControl("ddlCarretaDesc"), _carretasImp, "placaCarreta", "idCarreta", c.IdCarreta);
+
+            // Sin programación se incluyen todas; con ella, solo las carretas que figuran
+            ((CheckBox)e.Item.FindControl("chkIncluirDesc")).Checked = p == null || p.EnProgramacion;
+
+            ((Literal)e.Item.FindControl("litCargaDesc")).Text = DetalleCargaHtml(c.Carga);
+            ((Literal)e.Item.FindControl("litProgramacionDesc")).Text = p == null ? "" : ProgramacionFilaHtml(p);
+        }
+
+        /// <summary>Fila extra bajo cada tracto: lo que dice la programación y sus avisos.</summary>
+        private static string ProgramacionFilaHtml(PropuestaDescarga p)
+        {
+            var sb = new StringBuilder();
+            sb.Append("<tr class=\"rd-fila-programacion\"><td></td><td colspan=\"5\">");
+            if (p.EnProgramacion)
+            {
+                sb.Append("<span class=\"rd-chip rd-chip-ok mr-1\"><i class=\"fas fa-file-word mr-1\"></i>Programación</span>");
+                sb.Append($"Descarga <strong>{Html(p.ChoferProgramado ?? "—")}</strong> con el tracto <strong>{Html(p.TractoProgramado ?? "—")}</strong>");
+                sb.Append(string.IsNullOrEmpty(p.Cambio)
+                    ? " · sin cambio de chofer"
+                    : $" · sale <strong>{Html(p.Cambio)}</strong>");
+            }
+            foreach (var aviso in p.Avisos)
+                sb.Append($"<div class=\"rd-notice rd-notice-warn py-1 px-2 mt-1\"><i class=\"fas fa-exclamation-triangle mr-1\"></i>{Html(aviso)}</div>");
+            sb.Append("</td></tr>");
+            return sb.ToString();
+        }
+
+        protected void btnLeerProgramacionDescarga_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var cargas = CargasPendientesActuales;
+                if (cargas == null)
+                {
+                    MostrarMensajeDescarga("La selección expiró. Vuelva a elegir el pedido.", "warning");
+                    pnlVistaDescarga.Visible = false;
+                    pnlConfiguracionBase.Visible = true;
+                    return;
+                }
+                if (!fileProgramacionDescarga.HasFile)
+                {
+                    MostrarAvisoProgramacion("Elija el Word de la programación (.docx).", "rd-notice-warn");
+                    return;
+                }
+                if (!string.Equals(Path.GetExtension(fileProgramacionDescarga.FileName), ".docx", StringComparison.OrdinalIgnoreCase))
+                {
+                    MostrarAvisoProgramacion("La programación debe ser un Word .docx. Si es un .doc antiguo, guárdelo como .docx.", "rd-notice-warn");
+                    return;
+                }
+                if (fileProgramacionDescarga.PostedFile.ContentLength > 5 * 1024 * 1024)
+                {
+                    MostrarAvisoProgramacion("El Word pesa más de 5 MB: no parece una programación.", "rd-notice-warn");
+                    return;
+                }
+
+                var programacion = LectorProgramacionWord.Leer(fileProgramacionDescarga.FileBytes);
+                string pedido = cargas[0].NumeroPedido;
+                var seccion = ProgramacionDescarga.SeccionDelPedido(programacion, pedido, cargas.Select(c => c.PlacaCarreta));
+                if (seccion == null)
+                {
+                    MostrarAvisoProgramacion($"El Word no tiene la sección del pedido {pedido} ni ninguna de sus carretas. Revise que sea la programación de la descarga.", "rd-notice-warn");
+                    return;
+                }
+
+                var conductores = RegistroDespachoService.ObtenerConductoresActivos().Rows.Cast<DataRow>()
+                    .Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r["idConductor"]), r["NombreCompleto"].ToString())).ToList();
+                var tractos = RegistroDespachoService.ObtenerTractosActivos().Rows.Cast<DataRow>()
+                    .Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r["idTracto"]), r["placaTracto"].ToString())).ToList();
+
+                var propuestas = ProgramacionDescarga.Proponer(cargas, seccion, conductores, tractos, out var avisosGenerales);
+                PropuestasDescarga = propuestas;
+                EnlazarDescargas(cargas);
+
+                // Planta de descarga: la guía trae el destino del cliente ("Milagro") y la
+                // programación el nombre con que la conoce la empresa ("GUAYAQUIL-VITAPRO").
+                // Si el destino no la propuso, se toma la que aparezca en el título.
+                string plantaDelWord = null;
+                if (ddlPlantaDescarga.SelectedValue == "0")
+                {
+                    string titulo = LectorDocumentosPedido.Normalizar(seccion.Titulo);
+                    var enTitulo = ddlPlantaDescarga.Items.Cast<ListItem>()
+                        .Where(i => i.Value != "0" && titulo.Length > 0 && titulo.Contains(LectorDocumentosPedido.Normalizar(i.Text)))
+                        .ToList();
+                    if (enTitulo.Count == 1)
+                    {
+                        RestaurarSeleccion(ddlPlantaDescarga, enTitulo[0].Value);
+                        plantaDelWord = enTitulo[0].Text;
+                    }
+                }
+
+                int encontradas = propuestas.Values.Count(p => p.EnProgramacion);
+                int conAvisos = propuestas.Values.Count(p => p.Avisos.Count > 0);
+                var sb = new StringBuilder();
+                sb.Append("<i class=\"fas fa-file-word mr-1\"></i>");
+                sb.Append(Html($"Programación{(programacion.Fecha.HasValue ? " del " + programacion.Fecha.Value.ToString("dd/MM/yyyy") : "")}" +
+                               $" · {seccion.Titulo ?? "sin título"}" +
+                               (string.IsNullOrEmpty(seccion.NumeroPedido) ? " (sin N° de pedido: se reconoció por las carretas)" : $" · pedido {seccion.NumeroPedido}") +
+                               $": {encontradas} de {cargas.Count} tracto(s) encontrados por su carreta."));
+                sb.Append(conAvisos > 0
+                    ? Html($" {conAvisos} con avisos: revíselos en ámbar antes de continuar.")
+                    : Html(" Sin diferencias con la carga."));
+                if (plantaDelWord != null)
+                    sb.Append(Html($" Planta de descarga: {plantaDelWord} (según el título de la programación)."));
+                if (avisosGenerales.Count > 0)
+                    sb.Append("<ul class=\"mb-0 mt-1\">" + string.Concat(avisosGenerales.Select(a => $"<li>{Html(a)}</li>")) + "</ul>");
+                MostrarAvisoProgramacion(sb.ToString(), conAvisos > 0 || avisosGenerales.Count > 0 ? "rd-notice-warn" : "rd-notice-ok", esHtml: true);
+            }
+            catch (Exception ex)
+            {
+                RegistrarError("btnLeerProgramacionDescarga_Click", ex);
+                MostrarAvisoProgramacion("No se pudo leer la programación. " + MensajeErrorHelper.ParaUsuario(ex), "rd-notice-warn");
+            }
+        }
+
+        private void MostrarAvisoProgramacion(string mensaje, string clase, bool esHtml = false)
+        {
+            litProgramacionLeida.Text = esHtml ? mensaje : Html(mensaje);
+            pnlProgramacionLeida.CssClass = "rd-notice mb-3 " + clase;
+            pnlProgramacionLeida.Visible = true;
+            ScriptManager.RegisterStartupScript(this, GetType(), "verProgramacion",
+                $"setTimeout(function(){{var m=document.getElementById('{pnlProgramacionLeida.ClientID}');if(m)m.scrollIntoView({{behavior:'smooth',block:'center'}});}},50);", true);
+        }
+
+        private static void LlenarSelector(DropDownList ddl, DataTable fuente, string texto, string valor, int seleccionado)
+        {
+            ddl.Items.Add(new ListItem("-- Seleccione --", "0"));
+            foreach (DataRow r in fuente.Rows)
+                ddl.Items.Add(new ListItem(r[texto].ToString(), r[valor].ToString()));
+            RestaurarSeleccion(ddl, seleccionado.ToString());
+        }
+
+        protected void btnAplicarDescarga_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var cargas = CargasPendientesActuales;
+                if (cargas == null)
+                {
+                    MostrarMensajeDescarga("La selección expiró. Vuelva a elegir el pedido.", "warning");
+                    pnlVistaDescarga.Visible = false;
+                    pnlConfiguracionBase.Visible = true;
+                    return;
+                }
+
+                var errores = new List<string>();
+                if (!DespachoValidaciones.FechaDespachoEsValida(txtFechaDescarga.Text, FechaHelper.Hoy()))
+                    errores.Add("La fecha de programación no es válida.");
+                if (ddlPlantaDescarga.SelectedValue == "0")
+                    errores.Add("Elija la planta de descarga.");
+
+                var filas = new List<(DescargaPedidoService.CargaPendiente carga, DropDownList cond, DropDownList tracto, DropDownList carreta)>();
+                foreach (RepeaterItem item in rptDescargas.Items)
+                {
+                    if (item.ItemIndex >= cargas.Count) break;
+                    if (!((CheckBox)item.FindControl("chkIncluirDesc")).Checked) continue;
+
+                    var fila = (cargas[item.ItemIndex],
+                        (DropDownList)item.FindControl("ddlConductorDesc"),
+                        (DropDownList)item.FindControl("ddlTractoDesc"),
+                        (DropDownList)item.FindControl("ddlCarretaDesc"));
+                    string etiqueta = $"Transporte {fila.Item1.NumeroTransporte ?? fila.Item1.IdDespacho.ToString()}";
+                    if (fila.Item2.SelectedValue == "0") errores.Add($"{etiqueta}: elija el conductor.");
+                    if (fila.Item3.SelectedValue == "0") errores.Add($"{etiqueta}: elija el tracto.");
+                    if (fila.Item4.SelectedValue == "0") errores.Add($"{etiqueta}: elija la carreta.");
+                    filas.Add(fila);
+                }
+
+                if (filas.Count == 0) errores.Add("Marque al menos un tracto.");
+                if (HayRepetidos(filas.Select(f => f.cond.SelectedValue))) errores.Add("Hay un conductor repetido en más de un tracto.");
+                if (HayRepetidos(filas.Select(f => f.tracto.SelectedValue))) errores.Add("Hay un tracto repetido en más de una fila.");
+                if (HayRepetidos(filas.Select(f => f.carreta.SelectedValue))) errores.Add("Hay una carreta repetida en más de un tracto.");
+
+                if (errores.Count > 0)
+                {
+                    MostrarMensajeDescarga("Revise estos datos: " + string.Join(" ", errores), "warning");
+                    return;
+                }
+
+                var primera = cargas[0];
+                bool internacional = cargas.Any(c => c.EsExportacion);
+
+                var conductores = filas.Select(f =>
+                {
+                    int idConductor = int.Parse(f.cond.SelectedValue);
+
+                    // Si el conductor tiene un viaje abierto (por ejemplo, el mismo que cargó y
+                    // aún no liquida), la descarga se suma a ese viaje: una sola liquidación.
+                    var viaje = ObtenerViajesAbiertosConductor(idConductor).FirstOrDefault();
+
+                    return new ConductorLote
+                    {
+                        IdConductor = idConductor,
+                        NombreConductor = f.cond.SelectedItem.Text.Split('-')[0].Trim(),
+                        IdTracto = int.Parse(f.tracto.SelectedValue),
+                        PlacaTracto = f.tracto.SelectedItem.Text,
+                        IdCarreta = int.Parse(f.carreta.SelectedValue),
+                        PlacaCarreta = f.carreta.SelectedItem.Text,
+                        GuiaRemitente = f.carga.GuiaRemitente,
+                        NumeroEntrega = f.carga.NumeroEntrega,
+                        NumeroTransporte = f.carga.NumeroTransporte,
+                        IdDespachoCarga = f.carga.IdDespacho,
+                        Carga = f.carga.Carga,
+                        IdViajeProgreso = viaje?.IdViajeProgreso,
+                        NumeroViajeProgreso = viaje?.NumeroViajeProgreso,
+                        EstadoViaje = viaje?.EstadoViaje ?? "Por asignar"
+                    };
+                }).ToList();
+                ConductoresDescarga = conductores;
+
+                // Configuración base: DESCARGA del cliente del pedido, en la planta elegida
+                RestaurarSeleccion(ddlClienteBase, primera.IdCliente.ToString());
+                ddlTipoOperacionBase.SelectedValue = "DESCARGA";
+                rblAmbitoOperacionBase.SelectedValue = internacional ? "1" : "0";
+                MostrarOcultarPanelesBase();
+                ActualizarVisibilidadNumeroPedido();
+                ActualizarPlantasPorAmbito();
+                RestaurarSeleccion(ddlLugarOperacionBase, ddlPlantaDescarga.SelectedValue);
+                txtFechaDespachoBase.Text = txtFechaDescarga.Text;
+
+                pnlVistaDescarga.Visible = false;
+                pnlElegirPedidoDescarga.Visible = false;
+                pnlMensajeDescarga.Visible = false;
+                pnlConfiguracionBase.Visible = true;
+                pnlDescargaAplicada.Visible = true;
+                litDescargaAplicada.Text = Html(
+                    $"Pedido {primera.NumeroPedido}: {conductores.Count} descarga(s) con su carga se agregarán al pulsar \"Iniciar lote\"." +
+                    (internacional ? " Complete el CPIC en la configuración base." : ""));
+            }
+            catch (Exception ex)
+            {
+                RegistrarError("btnAplicarDescarga_Click", ex);
+                MostrarMensajeDescarga("No se pudo preparar la descarga. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+            }
+        }
+
+        /// <summary>Al iniciar el lote: agrega las descargas preparadas, con el pedido y el destino de su carga.</summary>
+        private void IncorporarDescargaAlLote(LoteDespachos lote)
+        {
+            var conductores = ConductoresDescarga;
+            var cargas = CargasPendientesActuales;
+            if (conductores == null || cargas == null) return;
+
+            lote.Conductores.AddRange(conductores);
+            if (string.IsNullOrEmpty(lote.NumeroPedido))
+                lote.NumeroPedido = cargas[0].NumeroPedido;
+            lote.DestinoCarga = cargas[0].DestinoCarga;
+            lote.EsExportacion = cargas.Any(c => c.EsExportacion);
+
+            LimpiarDescarga();
+        }
+
+        protected void btnDescartarDescarga_Click(object sender, EventArgs e)
+        {
+            LimpiarDescarga();
+            pnlVistaDescarga.Visible = false;
+            pnlDescargaAplicada.Visible = false;
+            pnlElegirPedidoDescarga.Visible = true;
+            pnlConfiguracionBase.Visible = !TieneLoteActivo;
+            MostrarMensajeDescarga("Descarga descartada.", "info");
+        }
+
+        private void LimpiarDescarga()
+        {
+            CargasPendientesActuales = null;
+            ConductoresDescarga = null;
+            PropuestasDescarga = null;
+        }
+
+        private void MostrarMensajeDescarga(string mensaje, string tipo)
+        {
+            lblMensajeDescarga.Text = Html(mensaje);
+            lblMensajeDescarga.CssClass = $"alert alert-{tipo} d-block mb-0";
+            pnlMensajeDescarga.Visible = true;
+            UpdatePanelMain.Update();
+            ScriptManager.RegisterStartupScript(this, GetType(), "verMensajeDescarga",
+                $"setTimeout(function(){{var m=document.getElementById('{lblMensajeDescarga.ClientID}');if(m)m.scrollIntoView({{behavior:'smooth',block:'center'}});}},50);", true);
+        }
+
+        #endregion
+
         #region Métodos para Gestión de Viajes
 
         private List<ViajeEnProgreso> ObtenerViajesAbiertosConductor(int idConductor)
@@ -2465,6 +2908,14 @@ namespace WebSGV.Views
             lblMensaje.CssClass = $"alert alert-{tipo} alert-dismissible fade show";
             pnlMensajes.Visible = true;
             UpdatePanelMain.Update();
+
+            // Errores y advertencias: llevar la vista al aviso (está arriba de la página). En un
+            // postback completo, MaintainScrollPositionOnPostback restaura la posición en el
+            // "load": hay que desplazarse después de eso.
+            if (tipo == "danger" || tipo == "warning")
+                ScriptManager.RegisterStartupScript(this, GetType(), "verMensaje",
+                    $"(function(){{function ir(){{setTimeout(function(){{var m=document.getElementById('{lblMensaje.ClientID}');if(m)m.scrollIntoView({{behavior:'smooth',block:'center'}});}},100);}}" +
+                    "if(document.readyState==='complete')ir();else window.addEventListener('load',ir);})();", true);
         }
 
         private void MostrarMensajeRecuperacion()

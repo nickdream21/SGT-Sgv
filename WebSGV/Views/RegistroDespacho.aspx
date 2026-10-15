@@ -260,6 +260,150 @@
                                     </div>
                                 </asp:Panel>
 
+                                <!-- ====== DESCARGA POR PEDIDO (opcional) ======
+                                     Lista los tractos cargados de un pedido que aún no se descargaron y arma
+                                     el lote de DESCARGA con su carga, proponiendo el mismo conductor/tracto. -->
+                                <asp:Panel ID="pnlDescargaPedido" runat="server" CssClass="card mb-4 rd-import-card">
+                                    <div class="rd-step-header">
+                                        <h5><i class="fas fa-dolly mr-1"></i> Registrar la descarga de un pedido ya cargado <span class="rd-chip rd-chip-wait ml-2">Opcional</span></h5>
+                                        <div class="rd-subtitle">Elija el pedido: aparecen sus tractos cargados que faltan descargar, con su carga. Cambie solo los que hicieron relevo en la base.</div>
+                                    </div>
+                                    <div class="card-body">
+                                        <asp:Panel ID="pnlElegirPedidoDescarga" runat="server">
+                                            <div class="row align-items-end">
+                                                <div class="col-md-8 mb-2 mb-md-0">
+                                                    <asp:DropDownList ID="ddlPedidosPendientes" runat="server" CssClass="form-select select2-searchable" />
+                                                </div>
+                                                <div class="col-md-4 text-md-right">
+                                                    <asp:Button ID="btnVerCargasPendientes" runat="server"
+                                                        Text="Ver tractos por descargar"
+                                                        CssClass="btn btn-outline-primary"
+                                                        CausesValidation="false"
+                                                        OnClick="btnVerCargasPendientes_Click" />
+                                                </div>
+                                            </div>
+                                        </asp:Panel>
+
+                                        <asp:Panel ID="pnlMensajeDescarga" runat="server" Visible="false" CssClass="mt-3">
+                                            <asp:Label ID="lblMensajeDescarga" runat="server" CssClass="alert d-block mb-0"></asp:Label>
+                                        </asp:Panel>
+
+                                        <asp:Panel ID="pnlVistaDescarga" runat="server" Visible="false" CssClass="mt-3">
+                                            <div class="rd-lote-bar mb-3">
+                                                <div class="rd-lote-grid">
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Pedido</span><span class="rd-lote-v"><asp:Literal ID="litDescPedido" runat="server" /></span></div>
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Cliente</span><span class="rd-lote-v"><asp:Literal ID="litDescCliente" runat="server" /></span></div>
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Cargado en</span><span class="rd-lote-v"><asp:Literal ID="litDescOrigen" runat="server" /></span></div>
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Destino de la carga</span><span class="rd-lote-v"><asp:Literal ID="litDescDestino" runat="server" /></span></div>
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Tractos por descargar</span><span class="rd-lote-v"><asp:Literal ID="litDescTractos" runat="server" /></span></div>
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Carga</span><span class="rd-lote-v"><asp:Literal ID="litDescCarga" runat="server" /></span></div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Programación en Word: por la placa de la carreta completa el chofer y el tracto
+                                                 que descargan. btnLeerProgramacionDescarga es PostBackTrigger (FileUpload). -->
+                                            <div class="rd-section-label"><i class="fas fa-file-word mr-1"></i> Programación del día <span class="rd-chip rd-chip-wait ml-1">Opcional</span></div>
+                                            <div class="row align-items-end mb-2">
+                                                <div class="col-md-8 mb-2 mb-md-0">
+                                                    <asp:FileUpload ID="fileProgramacionDescarga" runat="server" CssClass="form-control" accept=".docx" />
+                                                    <small class="form-text text-muted">El Word que reparte transporte (.docx). Se busca la sección del pedido y, por la placa de la carreta, se completan el chofer y el tracto que descargan.</small>
+                                                </div>
+                                                <div class="col-md-4 text-md-right">
+                                                    <asp:Button ID="btnLeerProgramacionDescarga" runat="server"
+                                                        Text="Leer programación"
+                                                        CssClass="btn btn-outline-primary"
+                                                        CausesValidation="false"
+                                                        OnClick="btnLeerProgramacionDescarga_Click" />
+                                                </div>
+                                            </div>
+                                            <asp:Panel ID="pnlProgramacionLeida" runat="server" Visible="false" CssClass="rd-notice mb-3">
+                                                <asp:Literal ID="litProgramacionLeida" runat="server" />
+                                            </asp:Panel>
+
+                                            <div class="rd-section-label"><i class="fas fa-clipboard-list mr-1"></i> Datos del lote de descarga</div>
+                                            <div class="row mb-2">
+                                                <div class="col-md-4 form-group mb-2">
+                                                    <label for="<%= txtFechaDescarga.ClientID %>" class="form-label small font-weight-bold mb-1">Fecha de programación <span class="text-danger">*</span></label>
+                                                    <asp:TextBox ID="txtFechaDescarga" runat="server" CssClass="form-control form-control-sm" TextMode="Date" />
+                                                </div>
+                                                <div class="col-md-4 form-group mb-2">
+                                                    <label for="<%= ddlPlantaDescarga.ClientID %>" class="form-label small font-weight-bold mb-1">Planta de descarga <span class="text-danger">*</span></label>
+                                                    <asp:DropDownList ID="ddlPlantaDescarga" runat="server" CssClass="form-select form-select-sm" />
+                                                    <small class="form-text text-muted"><asp:Literal ID="litAmbitoDescarga" runat="server" /></small>
+                                                </div>
+                                            </div>
+
+                                            <div class="rd-section-label"><i class="fas fa-truck mr-1"></i> Tractos que descargan</div>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm rd-tabla-conductores rd-tabla-import align-middle mb-3">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Incluir</th>
+                                                            <th>Transporte / Guía</th>
+                                                            <th>Conductor que descarga</th>
+                                                            <th>Tracto</th>
+                                                            <th>Carreta</th>
+                                                            <th>Carga</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <asp:Repeater ID="rptDescargas" runat="server" OnItemDataBound="rptDescargas_ItemDataBound">
+                                                            <ItemTemplate>
+                                                                <tr>
+                                                                    <td><asp:CheckBox ID="chkIncluirDesc" runat="server" /></td>
+                                                                    <td>
+                                                                        <div class="rd-placa"><%# HttpUtility.HtmlEncode(Eval("NumeroTransporte") ?? "—") %></div>
+                                                                        <small class="text-muted"><%# HttpUtility.HtmlEncode(Eval("GuiaRemitente") ?? "") %></small>
+                                                                        <small class="d-block text-muted">Cargó el <%# Eval("FechaDespacho", "{0:dd/MM/yyyy}") %></small>
+                                                                    </td>
+                                                                    <td class="rd-col-conductor">
+                                                                        <small class="rd-doc-dato">Cargó: <%# HttpUtility.HtmlEncode(Eval("NombreConductor")) %></small>
+                                                                        <asp:DropDownList ID="ddlConductorDesc" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                    </td>
+                                                                    <td class="rd-col-placa">
+                                                                        <small class="rd-doc-dato">Cargó: <%# HttpUtility.HtmlEncode(Eval("PlacaTracto")) %></small>
+                                                                        <asp:DropDownList ID="ddlTractoDesc" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                    </td>
+                                                                    <td class="rd-col-placa">
+                                                                        <small class="rd-doc-dato">Cargó: <%# HttpUtility.HtmlEncode(Eval("PlacaCarreta")) %></small>
+                                                                        <asp:DropDownList ID="ddlCarretaDesc" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                    </td>
+                                                                    <td class="rd-carga-celda"><asp:Literal ID="litCargaDesc" runat="server" /></td>
+                                                                </tr>
+                                                                <asp:Literal ID="litProgramacionDesc" runat="server" />
+                                                            </ItemTemplate>
+                                                        </asp:Repeater>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <div class="d-flex justify-content-end gap-2">
+                                                <asp:Button ID="btnDescartarDescarga" runat="server"
+                                                    Text="Descartar"
+                                                    CssClass="btn btn-outline-secondary"
+                                                    CausesValidation="false"
+                                                    OnClick="btnDescartarDescarga_Click" />
+                                                <asp:Button ID="btnAplicarDescarga" runat="server"
+                                                    Text="Usar en el lote de descarga"
+                                                    CssClass="btn btn-primary"
+                                                    CausesValidation="false"
+                                                    OnClick="btnAplicarDescarga_Click" />
+                                            </div>
+                                        </asp:Panel>
+
+                                        <asp:Panel ID="pnlDescargaAplicada" runat="server" Visible="false" CssClass="rd-notice rd-notice-ok mt-3">
+                                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                                <span><i class="fas fa-check-circle mr-1"></i> <asp:Literal ID="litDescargaAplicada" runat="server" /></span>
+                                                <asp:Button ID="btnQuitarDescarga" runat="server"
+                                                    Text="Quitar"
+                                                    CssClass="btn btn-outline-secondary btn-sm"
+                                                    CausesValidation="false"
+                                                    OnClick="btnDescartarDescarga_Click" />
+                                            </div>
+                                        </asp:Panel>
+                                    </div>
+                                </asp:Panel>
+
                                 <!-- ====== FASE 1: CONFIGURACIÓN BASE DEL LOTE ====== -->
                                 <asp:Panel ID="pnlConfiguracionBase" runat="server">
                                     <div class="card mb-4" style="border-top: 3px solid #1e40af;">
@@ -1108,8 +1252,13 @@
                             <Triggers>
                                 <asp:PostBackTrigger ControlID="btnIniciarLote" />
                                 <asp:PostBackTrigger ControlID="btnLeerDocumentos" />
+                                <asp:PostBackTrigger ControlID="btnLeerProgramacionDescarga" />
                                 <asp:AsyncPostBackTrigger ControlID="btnAplicarImportacion" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnCorregirImportacion" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnVerCargasPendientes" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnAplicarDescarga" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnDescartarDescarga" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnQuitarDescarga" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnDescartarImportacion" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnQuitarImportacion" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnCancelarLote" EventName="Click" />

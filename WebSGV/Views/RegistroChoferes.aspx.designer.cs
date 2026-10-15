@@ -14,6 +14,20 @@ namespace WebSGV.Views
     public partial class RegistroChoferes
     {
 
+        protected global::System.Web.UI.WebControls.FileUpload fuListaChoferes;
+
+        protected global::System.Web.UI.WebControls.TextBox txtListaChoferes;
+
+        protected global::System.Web.UI.WebControls.Button btnCompararLista;
+
+        protected global::System.Web.UI.WebControls.Panel pnlComparacionLista;
+
+        protected global::System.Web.UI.WebControls.Literal litComparacionLista;
+
+        protected global::System.Web.UI.WebControls.Button btnCancelarLista;
+
+        protected global::System.Web.UI.WebControls.Button btnAplicarLista;
+
         /// <summary>
         /// Control pnlFormulario.
         /// </summary>

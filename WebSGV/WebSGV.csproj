@@ -456,6 +456,7 @@
     <Compile Include="Services\Common\ErrorNegocio.cs" />
     <Compile Include="Services\Conductor\DashboardConductorService.cs" />
     <Compile Include="Services\Conductor\LiquidacionConductorService.cs" />
+    <Compile Include="Services\Conductor\ListaChoferesService.cs" />
     <Compile Include="Services\GpsIntegracion\OnwayApiClient.cs" />
     <Compile Include="Services\GpsIntegracion\OnwayAuthCacheService.cs" />
     <Compile Include="Services\GpsIntegracion\PuntoControlGpsService.cs" />
@@ -470,9 +471,12 @@
     <Compile Include="Services\Despachos\ListaDespachosService.cs" />
     <Compile Include="Services\Despachos\ManifiestoService.cs" />
     <Compile Include="Services\Despachos\RegistroDespachoService.cs" />
+    <Compile Include="Services\Despachos\DescargaPedidoService.cs" />
+    <Compile Include="Services\Despachos\ProgramacionDescarga.cs" />
     <Compile Include="Services\Despachos\Importacion\ExtractorTextoPdf.cs" />
     <Compile Include="Services\Despachos\Importacion\ImportacionPedidoService.cs" />
     <Compile Include="Services\Despachos\Importacion\LectorDocumentosPedido.cs" />
+    <Compile Include="Services\Despachos\Importacion\LectorProgramacionWord.cs" />
     <Compile Include="Services\Facturas\FacturaConsultasService.cs" />
     <Compile Include="Services\Facturas\FacturaEscrituraService.cs" />
     <Compile Include="Services\Facturas\FacturaValidaciones.cs" />
@@ -536,6 +540,7 @@
     <Compile Include="Models\Despachos\ListaDespachosModels.cs" />
     <Compile Include="Models\Despachos\ManifiestoModels.cs" />
     <Compile Include="Models\Despachos\ImportacionPedidoModels.cs" />
+    <Compile Include="Models\Despachos\ProgramacionTransporteModels.cs" />
     <Compile Include="Models\Despachos\RegistroDespachoModels.cs" />
     <Compile Include="Models\Liquidaciones\DetalleLiquidacionModels.cs" />
     <Compile Include="Models\OrdenViaje\AgregarOrdenViajeModels.cs" />

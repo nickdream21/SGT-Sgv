@@ -26,6 +26,43 @@
             </div>
         </div>
 
+        <%-- Lista de choferes actuales: compara y propone; no guarda hasta "Aplicar" --%>
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-clipboard-list mr-2"></i>Actualizar con la lista de choferes actuales</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Suba el Excel de la lista (columnas CHOFER, NACIONALIDAD, LICENCIA y DNI) o pegue las filas copiadas desde Excel.
+                    El sistema la compara con los conductores registrados y muestra qu&#xE9; cambiar&#xED;a: registrar a los que faltan,
+                    completar licencias y nombres, y desactivar a los que no est&#xE1;n en la lista. Nada se guarda hasta pulsar <strong>Aplicar</strong>.
+                </p>
+                <div class="row align-items-end">
+                    <div class="col-md-4 form-group">
+                        <label class="font-weight-bold">Excel (.xlsx)</label>
+                        <asp:FileUpload ID="fuListaChoferes" runat="server" CssClass="form-control-file" accept=".xlsx" />
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label class="font-weight-bold">o filas pegadas</label>
+                        <asp:TextBox ID="txtListaChoferes" runat="server" TextMode="MultiLine" Rows="3" CssClass="form-control form-control-sm"
+                            placeholder="1&#9;ALFREDO ... &#9;PERUANA&#9;B-00000000&#9;00000000"></asp:TextBox>
+                    </div>
+                    <div class="col-md-2 form-group">
+                        <asp:Button ID="btnCompararLista" runat="server" CssClass="btn btn-primary btn-block" Text="Comparar" OnClick="btnCompararLista_Click" />
+                    </div>
+                </div>
+
+                <asp:Panel ID="pnlComparacionLista" runat="server" Visible="false">
+                    <asp:Literal ID="litComparacionLista" runat="server" />
+                    <div class="d-flex justify-content-end mt-3">
+                        <asp:Button ID="btnCancelarLista" runat="server" CssClass="btn btn-secondary mr-2" Text="Cancelar" OnClick="btnCancelarLista_Click" />
+                        <asp:Button ID="btnAplicarLista" runat="server" CssClass="btn btn-success" Text="Aplicar los cambios marcados"
+                            OnClick="btnAplicarLista_Click" OnClientClick="return confirm('¿Aplicar los cambios marcados a los conductores?');" />
+                    </div>
+                </asp:Panel>
+            </div>
+        </div>
+
         <div class="row">
 
             <div class="col-12 col-md-5 mb-4">

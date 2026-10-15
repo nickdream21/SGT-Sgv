@@ -73,10 +73,11 @@ prm.add_endRequest(function () {
     actualizarStepper();
 });
 
-// Función para auto-ocultar mensajes después de 5 segundos
+// Auto-oculta los avisos de éxito o información a los 5 segundos. Los errores y
+// advertencias se quedan hasta que el usuario los cierra (si no, se perdían sin leerlos).
 function autoHideMessages() {
     setTimeout(function () {
-        $('.alert-dismissible').fadeOut('slow');
+        $('.alert-dismissible.alert-success, .alert-dismissible.alert-info').closest('.mb-3').fadeOut('slow');
     }, 5000);
 }
 

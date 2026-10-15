@@ -21,6 +21,8 @@
 
   <ItemGroup>
     <Reference Include="System.Transactions" />
+    <!-- Para armar un .docx de prueba en memoria (LectorProgramacionWord) -->
+    <Reference Include="System.IO.Compression" />
     <Reference Include="WebSGV">
       <HintPath>..\WebSGV\bin\WebSGV.dll</HintPath>
     </Reference>

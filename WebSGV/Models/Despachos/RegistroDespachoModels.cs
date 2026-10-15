@@ -114,6 +114,9 @@ namespace WebSGV.Models.Despachos
         public string NumeroEntrega { get; set; }
         public string NumeroTransporte { get; set; }
 
+        /// <summary>En una DESCARGA: el despacho de CARGA del que viene lo que se entrega.</summary>
+        public int? IdDespachoCarga { get; set; }
+
         // Información de viaje
         public int? IdViajeProgreso { get; set; }
         public string NumeroViajeProgreso { get; set; }

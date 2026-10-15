@@ -216,6 +216,7 @@ namespace WebSGV.Services.Despachos
                         ? (object)DBNull.Value
                         : (lote.DestinoCarga.Length > 200 ? lote.DestinoCarga.Substring(0, 200) : lote.DestinoCarga));
                     cmd.Parameters.AddWithValue("@esExportacion", lote.EsExportacion);
+                    cmd.Parameters.AddWithValue("@idDespachoCarga", (object)conductor.IdDespachoCarga ?? DBNull.Value);
 
                     SqlParameter pIdDespacho = cmd.Parameters.Add("@idDespacho", SqlDbType.Int);
                     pIdDespacho.Direction = ParameterDirection.Output;

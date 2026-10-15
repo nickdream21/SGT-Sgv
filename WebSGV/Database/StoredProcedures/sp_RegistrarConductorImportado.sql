@@ -1,23 +1,34 @@
 -- ============================================================
--- Registra un conductor que llegó en una guía de remisión y no estaba en el sistema.
--- Lo llama la importación de RegistroDespacho solo después de que el usuario revisó
--- los nombres (la guía los trae truncados a 20 caracteres) y aprobó la creación.
+-- Registra un conductor que llegó en una guía de remisión (o en la lista de choferes
+-- actuales) y no estaba en el sistema. Lo llaman la importación de RegistroDespacho y
+-- la actualización por lista de RegistroChoferes, solo después de que el usuario revisó
+-- los nombres y aprobó la creación.
 --
--- El DNI es la clave: si ya existe un conductor con ese DNI no se crea otro; se le
+-- El documento es la clave: DNI (8 dígitos) o, para un extranjero, carnet de
+-- extranjería. Si ya existe un conductor con ese documento no se crea otro; se le
 -- completa la licencia si no la tenía y se devuelve el existente.
 -- Devuelve el idConductor en un SELECT.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_RegistrarConductorImportado
-    @DNI             CHAR(8),
-    @nombre          VARCHAR(50),
-    @apPaterno       VARCHAR(20),
-    @apMaterno       VARCHAR(20)  = NULL,
-    @numeroLicencia  VARCHAR(15)  = NULL
+    @DNI               CHAR(8)      = NULL,
+    @nombre            VARCHAR(50),
+    @apPaterno         VARCHAR(20),
+    @apMaterno         VARCHAR(20)  = NULL,
+    @numeroLicencia    VARCHAR(15)  = NULL,
+    @carnetExtranjeria VARCHAR(11)  = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    IF @DNI IS NULL OR @DNI NOT LIKE '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
+    SET @carnetExtranjeria = NULLIF(UPPER(LTRIM(RTRIM(@carnetExtranjeria))), '');
+
+    IF @DNI IS NULL AND @carnetExtranjeria IS NULL
+    BEGIN
+        RAISERROR('El conductor necesita DNI o carnet de extranjería.', 16, 1);
+        RETURN;
+    END;
+
+    IF @DNI IS NOT NULL AND @DNI NOT LIKE '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
     BEGIN
         RAISERROR('El DNI del conductor debe tener 8 dígitos.', 16, 1);
         RETURN;
@@ -30,7 +41,10 @@ BEGIN
     END;
 
     DECLARE @idConductor INT;
-    SELECT @idConductor = idConductor FROM Conductor WHERE DNI = @DNI;
+    IF @DNI IS NOT NULL
+        SELECT @idConductor = idConductor FROM Conductor WHERE DNI = @DNI;
+    ELSE
+        SELECT @idConductor = idConductor FROM Conductor WHERE RTRIM(carnetExtranjeria) = @carnetExtranjeria;
 
     IF @idConductor IS NOT NULL
     BEGIN
@@ -42,8 +56,9 @@ BEGIN
     END
     ELSE
     BEGIN
-        INSERT INTO Conductor (DNI, nombre, apPaterno, apMaterno, numeroLicencia, activo)
+        INSERT INTO Conductor (DNI, carnetExtranjeria, nombre, apPaterno, apMaterno, numeroLicencia, activo)
         VALUES (@DNI,
+                CASE WHEN @DNI IS NULL THEN @carnetExtranjeria END,
                 UPPER(LTRIM(RTRIM(@nombre))),
                 UPPER(LTRIM(RTRIM(@apPaterno))),
                 UPPER(NULLIF(LTRIM(RTRIM(@apMaterno)), '')),

@@ -23,6 +23,13 @@
 -- @destinoCarga / @esExportacion: a donde va lo que se carga (ej. CD en Ecuador). No
 -- cambia el ambito del despacho: una carga en Trujillo para exportacion es un despacho
 -- nacional; el tramo a destino puede ser otro despacho (cambio de tracto en la base).
+--
+-- @idDespachoCarga: en una DESCARGA, el despacho de CARGA del que viene lo que se
+-- entrega (migracion 29). Una carga se descarga una sola vez.
+--
+-- Viaje: si el conductor ya tiene un viaje ABIERTO (por ejemplo, el mismo que cargo
+-- en Trujillo y aun no liquida), la app lo envia en @idViajeProgreso y la descarga se
+-- suma a ese viaje: una sola liquidacion con carga y descarga.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_CrearDespacho
     @idConductor        INT,
@@ -49,6 +56,7 @@ CREATE OR ALTER PROCEDURE sp_CrearDespacho
     @cargaJson          NVARCHAR(MAX) = NULL,
     @destinoCarga       VARCHAR(200) = NULL,
     @esExportacion      BIT          = 0,
+    @idDespachoCarga    INT          = NULL,
     @idDespacho         INT OUTPUT
 AS
 BEGIN
@@ -74,6 +82,13 @@ BEGIN
     IF @nombrePlanta IS NULL
     BEGIN
         RAISERROR('La planta indicada no existe en el catalogo.', 16, 1);
+        RETURN;
+    END;
+
+    IF @idDespachoCarga IS NOT NULL AND EXISTS (
+        SELECT 1 FROM Despachos WHERE idDespachoCarga = @idDespachoCarga AND activo = 1)
+    BEGIN
+        RAISERROR('Esa carga ya tiene registrada su descarga.', 16, 1);
         RETURN;
     END;
 
@@ -123,7 +138,7 @@ BEGIN
             guiaRemitente, guiaTransportista,
             esInternacional, idViajeProgreso,
             numeroEntrega, numeroTransporte,
-            destinoCarga, esExportacion
+            destinoCarga, esExportacion, idDespachoCarga
         )
         VALUES (
             @numeroDespacho, @fechaDespacho, @horaDespacho,
@@ -134,7 +149,7 @@ BEGIN
             @guiaRemitente, @guiaTransportista,
             @esInternacional, @idViajeProgreso,
             @numeroEntrega, @numeroTransporte,
-            @destinoCarga, ISNULL(@esExportacion, 0)
+            @destinoCarga, ISNULL(@esExportacion, 0), @idDespachoCarga
         );
 
         SET @idDespacho = SCOPE_IDENTITY();
