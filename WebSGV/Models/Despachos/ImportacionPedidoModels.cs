@@ -37,6 +37,9 @@ namespace WebSGV.Models.Despachos
         /// <summary>Un tracto por elemento. La clave es el N° de transporte SAP.</summary>
         public List<TractoImportado> Tractos { get; set; } = new List<TractoImportado>();
 
+        /// <summary>Programación en Word aplicada (null si no se subió).</summary>
+        public ProgramacionAplicada Programacion { get; set; }
+
         /// <summary>Archivos que no se reconocieron o no se pudieron leer.</summary>
         public List<string> ArchivosIgnorados { get; set; } = new List<string>();
 
@@ -116,6 +119,18 @@ namespace WebSGV.Models.Despachos
 
         /// <summary>Ya existe un despacho activo con este N° de transporte: no se vuelve a cargar.</summary>
         public bool YaRegistrado { get; set; }
+
+        /// <summary>Conductor que identifica la guía (por DNI, licencia o nombre), antes de la programación.</summary>
+        public int? IdConductorGuia { get; set; }
+
+        /// <summary>Lo que dice la programación en Word para este tracto (null si no se subió).</summary>
+        public PropuestaCarga Programacion { get; set; }
+
+        /// <summary>
+        /// Se puede registrar como nuevo al chofer de la guía: trae DNI y la programación
+        /// no lo cambió por otro (registrar al que no maneja sería un error).
+        /// </summary>
+        public bool PuedeRegistrarChoferDeGuia => DniSegunLicencia != null && !(Programacion?.ChoferCambiado ?? false);
 
         public decimal CantidadTotal => Lineas.Sum(l => l.Cantidad);
         public decimal PesoBrutoTotalKg => Lineas.Sum(l => l.PesoBrutoKg ?? 0);

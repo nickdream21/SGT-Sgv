@@ -1404,9 +1404,13 @@ namespace WebSGV.Views
                     })
                     .ToList();
 
+                // El Word de la programación va en el mismo selector que los documentos del correo
+                var words = archivos.Where(a => string.Equals(Path.GetExtension(a.Nombre), ".docx", StringComparison.OrdinalIgnoreCase)).ToList();
+                archivos = archivos.Except(words).ToList();
+
                 if (archivos.Count == 0)
                 {
-                    MostrarMensajeImportacion("Seleccione el ZIP del correo o los PDF del pedido.", "warning");
+                    MostrarMensajeImportacion("Seleccione el ZIP del correo o los PDF del pedido (y, si la tiene, la programación en Word).", "warning");
                     return;
                 }
 
@@ -1423,6 +1427,24 @@ namespace WebSGV.Views
                 }
 
                 ImportacionPedidoService.Asociar(importacion);
+
+                if (words.Count > 1)
+                    importacion.ArchivosIgnorados.AddRange(words.Skip(1).Select(w => $"{w.Nombre}: se usa una sola programación ({words[0].Nombre})"));
+                if (words.Count > 0)
+                {
+                    if (words[0].Contenido.Length > ImportacionPedidoService.TamanoMaximoProgramacion)
+                        importacion.Advertencias.Add($"El Word {words[0].Nombre} pesa más de 5 MB: no parece una programación y no se usó.");
+                    else
+                    {
+                        try { ImportacionPedidoService.LeerProgramacion(importacion, words[0]); }
+                        catch (Exception ex)
+                        {
+                            RegistrarError("LeerProgramacion", ex);
+                            importacion.Advertencias.Add($"No se pudo leer la programación {words[0].Nombre}: se usaron los datos de las guías. " +
+                                                         MensajeErrorHelper.ParaUsuario(ex));
+                        }
+                    }
+                }
 
                 if (facturaPdf != null)
                 {
@@ -1479,6 +1501,8 @@ namespace WebSGV.Views
             pnlArchivosIgnorados.Visible = imp.ArchivosIgnorados.Count > 0;
             litArchivosIgnorados.Text = Html(string.Join(" · ", imp.ArchivosIgnorados));
 
+            MostrarResumenProgramacionCarga(imp);
+
             // Fuentes de los desplegables de cada fila (se piden una vez para toda la tabla)
             _conductoresImp = RegistroDespachoService.ObtenerConductoresActivos();
             _tractosImp = RegistroDespachoService.ObtenerTractosActivos();
@@ -1504,6 +1528,69 @@ namespace WebSGV.Views
             chkAprobarAltas.Checked = false;
         }
 
+        /// <summary>
+        /// Qué se tomó de la programación en Word (o el recordatorio de subirla): el Word es
+        /// lo que realmente sale, las guías quedan con la lista que se mandó al cliente.
+        /// </summary>
+        private void MostrarResumenProgramacionCarga(ImportacionPedido imp)
+        {
+            var prog = imp.Programacion;
+            if (prog == null)
+            {
+                pnlProgramacionCarga.CssClass = "rd-notice mb-3";
+                litProgramacionCarga.Text = "<i class=\"fas fa-file-word mr-1\"></i>" + Html(
+                    "Sin la programación del día: el chofer, el tracto y la carreta salen de las guías (la carreta, de la última con que salió el tracto). " +
+                    "Si hubo ajustes de chofer, vuelva a leer los documentos junto con el Word de la programación.");
+                return;
+            }
+
+            var pendientes = imp.Tractos.Where(t => !t.YaRegistrado).ToList();
+            if (pendientes.Count == 0)
+            {
+                pnlProgramacionCarga.CssClass = "rd-notice mb-3";
+                litProgramacionCarga.Text = "<i class=\"fas fa-file-word mr-1\"></i>" + Html(
+                    $"Programación · {prog.Titulo}: los {imp.Tractos.Count} tracto(s) de este pedido ya están registrados; no hay nada que tomar de ella.");
+                return;
+            }
+            int cambios = pendientes.Count(t => t.Programacion?.Cambio != null);
+            int conAvisos = pendientes.Count(t => t.Programacion != null && t.Programacion.Avisos.Count > 0);
+
+            var sb = new StringBuilder();
+            sb.Append("<i class=\"fas fa-file-word mr-1\"></i>");
+            sb.Append(Html($"Programación{(prog.Fecha.HasValue ? " del " + prog.Fecha.Value.ToString("dd/MM/yyyy") : "")} · {prog.Titulo}: " +
+                           $"{prog.Encontrados} de {pendientes.Count} tracto(s) unidos con su guía. Chofer, tracto y carreta salen de la programación."));
+            if (cambios > 0)
+                sb.Append(Html($" {cambios} con cambio respecto de la guía (normal: la guía no se reemite)."));
+            sb.Append(conAvisos > 0
+                ? Html($" {conAvisos} con avisos en ámbar: revíselos antes de continuar.")
+                : Html(" Sin nada que revisar."));
+            if (prog.AvisosGenerales.Count > 0)
+                sb.Append("<ul class=\"mb-0 mt-1\">" + string.Concat(prog.AvisosGenerales.Select(a => $"<li>{Html(a)}</li>")) + "</ul>");
+
+            pnlProgramacionCarga.CssClass = "rd-notice mb-3 " + (conAvisos > 0 || prog.AvisosGenerales.Count > 0 ? "rd-notice-warn" : "rd-notice-ok");
+            litProgramacionCarga.Text = sb.ToString();
+        }
+
+        /// <summary>Fila extra bajo cada tracto importado: lo que dice la programación, el cambio y los avisos.</summary>
+        private static string ProgramacionCargaFilaHtml(PropuestaCarga p)
+        {
+            var sb = new StringBuilder();
+            sb.Append("<tr class=\"rd-fila-programacion\"><td></td><td colspan=\"5\">");
+            if (p.EnProgramacion)
+            {
+                sb.Append("<span class=\"rd-chip rd-chip-ok mr-1\"><i class=\"fas fa-file-word mr-1\"></i>Programación</span>");
+                sb.Append($"Sale <strong>{Html(p.ChoferProgramado ?? "—")}</strong> con el tracto <strong>{Html(p.TractoProgramado ?? "—")}</strong>" +
+                          $" y la carreta <strong>{Html(p.CarretaProgramada ?? "—")}</strong>");
+                if (!string.IsNullOrEmpty(p.Horario)) sb.Append(Html($" · {p.Horario}"));
+            }
+            if (p.Cambio != null)
+                sb.Append($"<div class=\"rd-notice py-1 px-2 mt-1\"><i class=\"fas fa-exchange-alt mr-1\"></i>{Html(p.Cambio)}</div>");
+            foreach (var aviso in p.Avisos)
+                sb.Append($"<div class=\"rd-notice rd-notice-warn py-1 px-2 mt-1\"><i class=\"fas fa-exclamation-triangle mr-1\"></i>{Html(aviso)}</div>");
+            sb.Append("</td></tr>");
+            return sb.ToString();
+        }
+
         private DataTable _conductoresImp, _tractosImp, _carretasImp;
 
         /// <summary>Cliente, fecha de programación y planta de carga propuestos en la vista previa.</summary>
@@ -1515,7 +1602,9 @@ namespace WebSGV.Views
                 ddlClienteImp.Items.Add(new ListItem(r["nombre"].ToString(), r["idCliente"].ToString()));
             RestaurarSeleccion(ddlClienteImp, imp.IdCliente?.ToString());
 
-            var fechaTraslado = imp.Tractos.Select(t => t.FechaTraslado).Where(d => d.HasValue).Min();
+            // El día de carga del Word ("CARGAN 10 DE OCTUBRE"); si no, la fecha de traslado de las guías
+            var fechaTraslado = imp.Programacion?.FechaCarga
+                ?? imp.Tractos.Select(t => t.FechaTraslado).Where(d => d.HasValue).Min();
             txtFechaProgramacionImp.Text = (fechaTraslado ?? FechaHelper.Hoy()).ToString("yyyy-MM-dd");
 
             ddlPlantaImp.Items.Clear();
@@ -1534,12 +1623,12 @@ namespace WebSGV.Views
 
             var ddlConductor = (DropDownList)e.Item.FindControl("ddlConductorImp");
             ddlConductor.Items.Add(new ListItem("-- Seleccione --", "0"));
-            if (!t.IdConductor.HasValue && t.DniSegunLicencia != null)
+            if (!t.IdConductor.HasValue && t.PuedeRegistrarChoferDeGuia)
                 ddlConductor.Items.Add(new ListItem($"+ Registrar nuevo: {t.NombreChofer} (DNI {t.DniSegunLicencia})", VALOR_CONDUCTOR_NUEVO));
             foreach (DataRow r in _conductoresImp.Rows)
                 ddlConductor.Items.Add(new ListItem(r["NombreCompleto"].ToString(), r["idConductor"].ToString()));
             RestaurarSeleccion(ddlConductor, t.IdConductor.HasValue ? t.IdConductor.ToString()
-                : t.DniSegunLicencia != null ? VALOR_CONDUCTOR_NUEVO : "0");
+                : t.PuedeRegistrarChoferDeGuia ? VALOR_CONDUCTOR_NUEVO : "0");
 
             var ddlTracto = (DropDownList)e.Item.FindControl("ddlTractoImp");
             ddlTracto.Items.Add(new ListItem("-- Seleccione --", "0"));
@@ -1562,15 +1651,20 @@ namespace WebSGV.Views
                 ? "<div><span class=\"rd-chip rd-chip-warn\">Ya registrado</span></div>" : string.Empty;
 
             // "Registrar nuevo" es una opción válida (requiere aprobación); en rojo solo lo que hay que elegir a mano
-            if (!t.IdConductor.HasValue) ddlConductor.CssClass += t.DniSegunLicencia != null ? " rd-select-nuevo" : " is-invalid";
+            if (!t.IdConductor.HasValue) ddlConductor.CssClass += t.PuedeRegistrarChoferDeGuia ? " rd-select-nuevo" : " is-invalid";
             if (!t.IdTracto.HasValue) ddlTracto.CssClass += " is-invalid";
             if (t.CarretaSugerida) ddlCarreta.CssClass += " rd-select-sugerido";
 
-            ((Literal)e.Item.FindControl("litCarretaHint")).Text = t.CarretaSugerida
+            bool enProgramacion = !t.YaRegistrado && t.Programacion != null && t.Programacion.EnProgramacion;
+            ((Literal)e.Item.FindControl("litCarretaHint")).Text = enProgramacion && t.IdCarreta.HasValue
+                ? "Programación: " + Html(t.Programacion.CarretaProgramada)
+                : t.CarretaSugerida
                 ? "<span title=\"Última carreta con la que salió este tracto. Confírmela o cámbiela.\"><i class=\"fas fa-history mr-1\"></i>Última usada con este tracto</span>"
                 : t.IdCarreta.HasValue ? "Documento: " + Html(t.PlacaCarreta) : "Elija la carreta";
 
             ((Literal)e.Item.FindControl("litCargaImp")).Text = DetalleCargaHtml(t.Lineas);
+            ((Literal)e.Item.FindControl("litProgramacionImp")).Text = t.YaRegistrado || t.Programacion == null
+                ? string.Empty : ProgramacionCargaFilaHtml(t.Programacion);
         }
 
         protected void rptConductoresNuevos_ItemDataBound(object sender, RepeaterItemEventArgs e)
@@ -1779,8 +1873,14 @@ namespace WebSGV.Views
             conductores = filas.Select(f => CrearConductorImportado(imp, f)).ToList();
             ConductoresImportados = conductores;
 
+            // Constancia de por qué una guía no coincide con lo registrado (la guía no se reemite)
+            var cambios = filas.Where(f => f.Tracto.Programacion?.Cambio != null)
+                .Select(f => $"{f.Tracto.NumeroGuia ?? f.Tracto.NumeroTransporte}: {f.Tracto.NombreChofer}/{f.Tracto.Placa} → {f.NombreConductor}/{f.PlacaTracto}")
+                .ToList();
             AuditoriaHelper.Registrar("IMPORT", "Despachos", null,
-                $"Documentos del pedido {imp.NumeroPedido} importados: {conductores.Count} tracto(s), factura {imp.Factura?.NumeroFactura}");
+                $"Documentos del pedido {imp.NumeroPedido} importados: {conductores.Count} tracto(s), factura {imp.Factura?.NumeroFactura}" +
+                (imp.Programacion == null ? ", sin programación" : $", programación {imp.Programacion.NombreArchivo}") +
+                (cambios.Count == 0 ? string.Empty : $". Cambios según la programación: {string.Join("; ", cambios)}"));
             return true;
         }
 
@@ -1938,8 +2038,10 @@ namespace WebSGV.Views
                 fila.NombreConductor = $"{c.Nombres} {c.ApPaterno} {c.ApMaterno}".Trim().ToUpperInvariant();
             }
 
-            // Licencia de la guía en conductores existentes que no la tenían
-            foreach (var f in filas.Where(f => !string.IsNullOrEmpty(f.Tracto.Licencia) && int.TryParse(f.ValorConductor, out _)))
+            // Licencia de la guía en conductores existentes que no la tenían: solo si es el mismo
+            // chofer de la guía (con un cambio de la programación, la licencia es de otro)
+            foreach (var f in filas.Where(f => !string.IsNullOrEmpty(f.Tracto.Licencia)
+                                               && f.Tracto.IdConductorGuia.HasValue && f.ValorConductor == f.Tracto.IdConductorGuia.Value.ToString()))
             {
                 try { ImportacionPedidoService.CompletarLicencia(int.Parse(f.ValorConductor), f.Tracto.Licencia); }
                 catch (Exception ex) { RegistrarError("CompletarLicencia", ex); }   // dato accesorio: no frena la importación
@@ -2357,7 +2459,13 @@ namespace WebSGV.Views
                 var tractos = RegistroDespachoService.ObtenerTractosActivos().Rows.Cast<DataRow>()
                     .Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r["idTracto"]), r["placaTracto"].ToString())).ToList();
 
-                var propuestas = ProgramacionDescarga.Proponer(cargas, seccion, conductores, tractos, out var avisosGenerales);
+                var placasDelWord = new HashSet<string>(seccion.Filas
+                    .Select(f => LectorDocumentosPedido.NormalizarPlaca(f.Tracto)).Where(p => p != null));
+                var habituales = ImportacionPedidoService.ChoferHabitualPorTracto(tractos
+                    .Where(t => placasDelWord.Contains(LectorDocumentosPedido.NormalizarPlaca(t.Value) ?? ""))
+                    .Select(t => t.Key).ToList());
+
+                var propuestas = ProgramacionDescarga.Proponer(cargas, seccion, conductores, tractos, out var avisosGenerales, habituales);
                 PropuestasDescarga = propuestas;
                 EnlazarDescargas(cargas);
 

@@ -899,6 +899,24 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Panel pnlAdvertenciasImportacion;
 
         /// <summary>
+        /// Control pnlProgramacionCarga.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlProgramacionCarga;
+
+        /// <summary>
+        /// Control litProgramacionCarga.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litProgramacionCarga;
+
+        /// <summary>
         /// Control litAdvertenciasImportacion.
         /// </summary>
         /// <remarks>

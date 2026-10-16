@@ -472,6 +472,7 @@
     <Compile Include="Services\Despachos\ManifiestoService.cs" />
     <Compile Include="Services\Despachos\RegistroDespachoService.cs" />
     <Compile Include="Services\Despachos\DescargaPedidoService.cs" />
+    <Compile Include="Services\Despachos\ProgramacionCarga.cs" />
     <Compile Include="Services\Despachos\ProgramacionDescarga.cs" />
     <Compile Include="Services\Despachos\Importacion\ExtractorTextoPdf.cs" />
     <Compile Include="Services\Despachos\Importacion\ImportacionPedidoService.cs" />

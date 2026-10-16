@@ -42,11 +42,13 @@ namespace WebSGV.Services.Despachos
         /// <summary>
         /// Propuesta para cada carga (por IdDespacho de la carga). <paramref name="avisosGenerales"/>
         /// recibe las filas de la programación que no corresponden a ninguna carga pendiente.
+        /// <paramref name="choferHabitualPorTracto"/> (idTracto → idConductor que lo manejó por
+        /// última vez) desempata cuando un nombre corto coincide con varios conductores.
         /// </summary>
         public static Dictionary<int, PropuestaDescarga> Proponer(
             IList<DescargaPedidoService.CargaPendiente> cargas, SeccionProgramacion seccion,
             IList<KeyValuePair<int, string>> conductores, IList<KeyValuePair<int, string>> tractos,
-            out List<string> avisosGenerales)
+            out List<string> avisosGenerales, IDictionary<int, int> choferHabitualPorTracto = null)
         {
             avisosGenerales = new List<string>();
             var propuestas = new Dictionary<int, PropuestaDescarga>();
@@ -90,17 +92,11 @@ namespace WebSGV.Services.Despachos
                 // Conductor de la descarga, por nombre (el Word trae nombre y apellido cortos)
                 if (!string.IsNullOrEmpty(fila.Chofer))
                 {
-                    // Primero palabra por palabra exacta; la tolerancia solo si nadie coincide
-                    // exacto ("JULIO MENA" no debe traer a "TULIO MERA").
-                    var candidatos = conductores.Where(c => NombreCoincide(fila.Chofer, c.Value, tolerante: false)).ToList();
-                    if (candidatos.Count == 0)
-                        candidatos = conductores.Where(c => NombreCoincide(fila.Chofer, c.Value)).ToList();
-                    if (candidatos.Count > 1 && candidatos.Any(c => c.Key == carga.IdConductor))
-                        candidatos = candidatos.Where(c => c.Key == carga.IdConductor).ToList();
-
-                    if (candidatos.Count == 1) p.IdConductor = candidatos[0].Key;
-                    else if (candidatos.Count == 0) p.Avisos.Add($"{fila.Chofer} no está registrado como conductor: elíjalo o regístrelo.");
-                    else p.Avisos.Add($"Hay {candidatos.Count} conductores que coinciden con {fila.Chofer}: elija el correcto.");
+                    var r = ResolverConductor(fila.Chofer, conductores, carga.IdConductor,
+                        ChoferHabitual(choferHabitualPorTracto, p.IdTracto));
+                    p.IdConductor = r.Id;
+                    string aviso = AvisoConductor(fila.Chofer, fila.Tracto, r);
+                    if (aviso != null) p.Avisos.Add(aviso);
                 }
                 else p.Avisos.Add("La programación no trae el chofer de esta carreta.");
 
@@ -130,6 +126,69 @@ namespace WebSGV.Services.Despachos
 
             return propuestas;
         }
+
+        /// <summary>Resultado de buscar en el catálogo al chofer que nombra el Word.</summary>
+        public class ResolucionConductor
+        {
+            public int? Id { get; set; }
+            public string Nombre { get; set; }
+            public int Candidatos { get; set; }
+
+            /// <summary>Nadie coincide exacto: se tomó un nombre parecido (letra de más o de menos).</summary>
+            public bool PorParecido { get; set; }
+
+            /// <summary>Había varios y se eligió al último que manejó el tracto.</summary>
+            public bool PorChoferHabitual { get; set; }
+        }
+
+        /// <summary>
+        /// Conductor del nombre corto del Word. Primero palabra por palabra exacta; la
+        /// tolerancia solo si nadie coincide exacto ("JULIO MENA" no debe traer a "TULIO
+        /// MERA"). Si quedan varios, se queda con <paramref name="preferido"/> (quien figura
+        /// en la guía o cargó) y, si no está entre ellos, con <paramref name="habitual"/>.
+        /// </summary>
+        public static ResolucionConductor ResolverConductor(string nombreCorto,
+            IList<KeyValuePair<int, string>> conductores, int? preferido, int? habitual)
+        {
+            var candidatos = conductores.Where(c => NombreCoincide(nombreCorto, c.Value, tolerante: false)).ToList();
+            bool parecido = candidatos.Count == 0;
+            if (parecido)
+                candidatos = conductores.Where(c => NombreCoincide(nombreCorto, c.Value)).ToList();
+
+            var r = new ResolucionConductor { Candidatos = candidatos.Count, PorParecido = parecido && candidatos.Count > 0 };
+            if (candidatos.Count == 1)
+                r.Id = candidatos[0].Key;
+            else if (preferido.HasValue && candidatos.Any(c => c.Key == preferido.Value))
+                r.Id = preferido;
+            else if (habitual.HasValue && candidatos.Any(c => c.Key == habitual.Value))
+            {
+                r.Id = habitual;
+                r.PorChoferHabitual = true;
+            }
+
+            if (r.Id.HasValue)
+                r.Nombre = Regex.Replace(candidatos.First(c => c.Key == r.Id.Value).Value
+                    .Split(new[] { " - " }, StringSplitOptions.None)[0], @"\s+", " ").Trim();
+            return r;
+        }
+
+        /// <summary>Aviso para el usuario sobre cómo se resolvió el chofer, o null si no hay nada que revisar.</summary>
+        public static string AvisoConductor(string chofer, string tracto, ResolucionConductor r)
+        {
+            if (r.Candidatos == 0)
+                return $"{chofer} no está registrado como conductor: elíjalo o regístrelo.";
+            if (!r.Id.HasValue)
+                return $"Hay {r.Candidatos} conductores que coinciden con {chofer}: elija el correcto.";
+            if (r.PorChoferHabitual)
+                return $"Hay {r.Candidatos} conductores que coinciden con {chofer}: se eligió a {r.Nombre}, el último que manejó el tracto {tracto}. Confírmelo.";
+            if (r.PorParecido)
+                return $"{chofer} se tomó como {r.Nombre} por parecido (el Word lo escribe distinto). Confírmelo.";
+            return null;
+        }
+
+        internal static int? ChoferHabitual(IDictionary<int, int> choferHabitualPorTracto, int? idTracto) =>
+            idTracto.HasValue && choferHabitualPorTracto != null && choferHabitualPorTracto.TryGetValue(idTracto.Value, out int id)
+                ? id : (int?)null;
 
         /// <summary>
         /// El nombre corto del Word ("ROGER PAZ", "MARK TORRES") corresponde al nombre

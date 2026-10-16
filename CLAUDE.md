@@ -19,6 +19,18 @@ msbuild WebSGV.sln /p:Configuration=Debug /nologo /verbosity:minimal
 
 Run via IIS Express or Visual Studio (no Kestrel). Default startup page is `Views/Login.aspx` (set via `<defaultDocument>` in `WebSGV/Web.config`).
 
+### Running and testing in the browser
+
+You can launch and test the app yourself — don't tell the user it isn't possible (see `herramientas/sitio-local/README.md`):
+
+1. Build, then run `herramientas/sitio-local/iniciar-sitio.ps1` **in the background** (it no-ops if the site already answers). Site: `https://localhost:44390` (or `http://localhost:50291` on a machine without `.vs\`), against the TEST DB.
+2. Browser: use the Claude in Chrome tools (`mcp__claude-in-chrome__*`; the extension works in Chrome or Edge — the office PC uses Edge). If `list_connected_browsers` is empty, the extension is not connected on this machine: give the user the steps in that README (install from claude.ai/chrome, same claude.ai account, restart Chrome, `/chrome` in Claude Code) and meanwhile test over HTTP.
+3. Without a browser: `herramientas/sitio-local/probar-importacion.ps1 -Archivos <zip/pdf>, <docx>` logs in and runs RegistroDespacho's "Leer documentos", printing the preview (read-only). Follow its curl + hidden-field pattern for other pages.
+4. Test users per role are in `privado/CREDENCIALES_USUARIOS.txt` (gitignored, copied by hand to each machine). Read them from the file in scripts; never paste the passwords into chat. Only on the local site / TEST DB.
+5. Real sample documents (Vitapro ZIP, Word programaciones, driver list) are in `docs/DOCUMENTACION/` (gitignored).
+
+`.ps1` files with accents must be saved as UTF-8 **with BOM**: Windows PowerShell 5.1 reads BOM-less files as ANSI and fails to parse.
+
 NuGet uses the **legacy `packages.config` model** — packages restore to the top-level `packages/` directory. Do not convert to PackageReference.
 
 ## Config and Secrets
@@ -172,6 +184,15 @@ protected void Page_Load(object sender, EventArgs e)
 Functional/process documentation (Spanish) in `docs/`:
 
 - `docs/PLAN_MEJORAS_SGV.md` — **current improvement plan**: status, pending tasks, home-machine setup and the ordered production checklist. Read it first when resuming work.
+
+## Keeping the plan up to date (mandatory)
+
+The plan is the only shared context between machines and sessions — never let it fall behind:
+
+- **In the same commit as any feature, fix, migration or new SP**, update `docs/PLAN_MEJORAS_SGV.md`: the "Última actualización" line (date + last commit), a row in section 3, the item in section 4 (`[x]` when done), and section 6 if it affects production (migrations, SPs, DLLs, secrets, manual post-publish steps).
+- **Every loose end becomes its own `[ ]` under "Abiertas"** in section 4 (business decisions, follow-ups, "pendiente: …"). Never leave a pending item buried inside the text of a finished task or only in a chat reply.
+- Also update the Claude memory `pendientes_paso_a_produccion.md` when something is applied only to the test DB.
+- Before finishing a task, check `git status` for untracked files: commit them, gitignore them, or say why they stay.
 - `docs/FLUJO_DE_TRABAJO_SGV.md` — end-to-end business flow and role permission matrix.
 - `docs/GUIA_CREACION_ROLES.md` — step-by-step guide for adding a new role.
 - `docs/MEJORAS_UI_ABASTECIMIENTO.md` — UI conventions for the fuel supply module.

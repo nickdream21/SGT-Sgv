@@ -61,14 +61,14 @@
                                 <asp:Panel ID="pnlImportarDocumentos" runat="server" CssClass="card mb-4 rd-import-card">
                                     <div class="rd-step-header">
                                         <h5><i class="fas fa-file-import mr-1"></i> Importar desde los documentos del pedido <span class="rd-chip rd-chip-wait ml-2">Opcional</span></h5>
-                                        <div class="rd-subtitle">Suba el ZIP del correo o los PDF (factura, packing list y guías de remisión). El sistema arma el lote y usted lo revisa antes de guardar.</div>
+                                        <div class="rd-subtitle">Suba el ZIP del correo o los PDF (factura, packing list y guías de remisión) junto con el Word de la programación del día. El chofer, el tracto y la carreta salen de la programación; la carga, de los documentos. Usted lo revisa antes de guardar.</div>
                                     </div>
                                     <div class="card-body">
                                         <asp:Panel ID="pnlSubirDocumentos" runat="server">
                                             <div class="row align-items-end">
                                                 <div class="col-md-8 mb-2 mb-md-0">
-                                                    <asp:FileUpload ID="fileDocumentosPedido" runat="server" CssClass="form-control" AllowMultiple="true" accept=".pdf,.zip" />
-                                                    <small class="form-text text-muted">PDF generados por el sistema del cliente (no escaneos). Puede seleccionar varios archivos o un ZIP.</small>
+                                                    <asp:FileUpload ID="fileDocumentosPedido" runat="server" CssClass="form-control" AllowMultiple="true" accept=".pdf,.zip,.docx" />
+                                                    <small class="form-text text-muted">PDF generados por el sistema del cliente (no escaneos), sueltos o en un ZIP, y la programación en Word (.docx) que manda la jefa de flota. Seleccione todos a la vez.</small>
                                                 </div>
                                                 <div class="col-md-4 text-md-right">
                                                     <asp:Button ID="btnLeerDocumentos" runat="server"
@@ -105,6 +105,11 @@
                                                 <asp:Literal ID="litAdvertenciasImportacion" runat="server" />
                                             </asp:Panel>
 
+                                            <!-- Qué se tomó de la programación en Word (o el recordatorio de subirla) -->
+                                            <asp:Panel ID="pnlProgramacionCarga" runat="server" CssClass="rd-notice mb-3">
+                                                <asp:Literal ID="litProgramacionCarga" runat="server" />
+                                            </asp:Panel>
+
                                             <!-- Lo único del lote que no viene en los documentos (o que conviene confirmar) -->
                                             <div class="rd-section-label"><i class="fas fa-clipboard-list mr-1"></i> Datos del lote</div>
                                             <div class="row mb-2">
@@ -116,7 +121,7 @@
                                                 <div class="col-md-4 form-group mb-2">
                                                     <label for="<%= txtFechaProgramacionImp.ClientID %>" class="form-label small font-weight-bold mb-1">Fecha de programación <span class="text-danger">*</span></label>
                                                     <asp:TextBox ID="txtFechaProgramacionImp" runat="server" CssClass="form-control form-control-sm" TextMode="Date" />
-                                                    <small class="form-text text-muted">Se propone la fecha de traslado de las guías.</small>
+                                                    <small class="form-text text-muted">Se propone el día de carga de la programación (o, sin ella, la fecha de traslado de las guías).</small>
                                                 </div>
                                                 <div class="col-md-4 form-group mb-2">
                                                     <label for="<%= ddlPlantaImp.ClientID %>" class="form-label small font-weight-bold mb-1">Planta de carga <span class="text-danger">*</span></label>
@@ -162,6 +167,7 @@
                                                                     </td>
                                                                     <td class="rd-carga-celda"><asp:Literal ID="litCargaImp" runat="server" /></td>
                                                                 </tr>
+                                                                <asp:Literal ID="litProgramacionImp" runat="server" />
                                                             </ItemTemplate>
                                                         </asp:Repeater>
                                                     </tbody>

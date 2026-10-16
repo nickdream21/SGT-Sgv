@@ -154,6 +154,7 @@ namespace WebSGV.Services.Despachos.Importacion
             AsociarConductores(pedido);
             AsociarProductos(pedido);
             MarcarYaRegistrados(pedido);
+            AplicarProgramacion(pedido);
         }
 
         private static void AsociarCliente(ImportacionPedido pedido)
@@ -204,6 +205,11 @@ namespace WebSGV.Services.Despachos.Importacion
 
             foreach (var t in pedido.Tractos)
             {
+                // Se vuelve a asociar al cambiar de cliente: se parte de lo que dice la guía
+                t.IdTracto = t.IdCarreta = null;
+                t.PlacaSistema = t.PlacaCarretaSistema = null;
+                t.CarretaSugerida = false;
+
                 if (t.Placa != null && tractos.TryGetValue(t.Placa, out DataRow tracto))
                 {
                     t.IdTracto = Convert.ToInt32(tracto["idTracto"]);
@@ -272,6 +278,9 @@ namespace WebSGV.Services.Despachos.Importacion
 
             foreach (var t in pedido.Tractos)
             {
+                t.IdConductor = t.IdConductorGuia = null;
+                t.NombreConductorSistema = null;
+
                 DataRow encontrado = null;
                 string dni = t.DniSegunLicencia;
 
@@ -295,7 +304,7 @@ namespace WebSGV.Services.Despachos.Importacion
 
                 if (encontrado == null) continue;
 
-                t.IdConductor = Convert.ToInt32(encontrado["idConductor"]);
+                t.IdConductor = t.IdConductorGuia = Convert.ToInt32(encontrado["idConductor"]);
                 t.NombreConductorSistema = $"{encontrado["nombre"]} {encontrado["apPaterno"]} {encontrado["apMaterno"]}".Trim();
             }
         }
@@ -339,6 +348,107 @@ namespace WebSGV.Services.Despachos.Importacion
                 t.YaRegistrado = t.NumeroTransporte != null && existentes.Contains(t.NumeroTransporte);
         }
 
+        // ── Programación en Word ──────────────────────────────────────────────
+
+        public const int TamanoMaximoProgramacion = 5 * 1024 * 1024;
+
+        /// <summary>
+        /// Lee el Word de la programación del día y lo cruza con las guías: el chofer, el
+        /// tracto y la carreta de cada tracto pasan a ser los del Word (ver
+        /// <see cref="ProgramacionCarga"/>). Llamar después de <see cref="Asociar"/>. Si el
+        /// Word no tiene la sección de carga del pedido, lo deja como advertencia y no cambia nada.
+        /// </summary>
+        public static void LeerProgramacion(ImportacionPedido pedido, ArchivoSubido word)
+        {
+            var programacion = LectorProgramacionWord.Leer(word.Contenido);
+            var seccion = ProgramacionCarga.SeccionDelPedido(programacion, pedido.NombreCliente, pedido.Tractos);
+            if (seccion == null)
+            {
+                pedido.Advertencias.Add($"La programación {word.Nombre} no tiene una sección de carga con los tractos de este pedido: " +
+                                        "se usaron los datos de las guías. Revise que sea el Word del día de la carga.");
+                return;
+            }
+
+            var conductores = RegistroDespachoService.ObtenerConductoresActivos().Rows.Cast<DataRow>()
+                .Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r["idConductor"]), r["NombreCompleto"].ToString())).ToList();
+            var tractos = RegistroDespachoService.ObtenerTractosActivos().Rows.Cast<DataRow>()
+                .Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r["idTracto"]), r["placaTracto"].ToString())).ToList();
+            var carretas = RegistroDespachoService.ObtenerCarretasActivas().Rows.Cast<DataRow>()
+                .Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r["idCarreta"]), r["placaCarreta"].ToString())).ToList();
+
+            var placasDelWord = new HashSet<string>(seccion.Filas
+                .Select(f => LectorDocumentosPedido.NormalizarPlaca(f.Tracto)).Where(p => p != null));
+            var habituales = ChoferHabitualPorTracto(tractos
+                .Where(t => placasDelWord.Contains(LectorDocumentosPedido.NormalizarPlaca(t.Value) ?? ""))
+                .Select(t => t.Key).ToList());
+
+            var propuestas = ProgramacionCarga.Proponer(pedido.Tractos, seccion, conductores, tractos, carretas, habituales,
+                out List<string> avisosGenerales);
+            foreach (var par in propuestas)
+                pedido.Tractos[par.Key].Programacion = par.Value;
+
+            pedido.Programacion = new ProgramacionAplicada
+            {
+                NombreArchivo = word.Nombre,
+                Fecha = programacion.Fecha,
+                Titulo = seccion.Titulo,
+                FechaCarga = ProgramacionCarga.FechaDeCarga(seccion, programacion.Fecha),
+                Encontrados = propuestas.Values.Count(p => p.EnProgramacion),
+                AvisosGenerales = avisosGenerales
+            };
+
+            // Planta de carga: si las guías no la dieron, la del título ("TRUJILLO-VITAPRO-...")
+            if (!pedido.IdPlantaSugerida.HasValue)
+            {
+                string titulo = LectorDocumentosPedido.Normalizar(seccion.Titulo);
+                var enTitulo = RegistroDespachoService.ObtenerPlantasPorAmbito(false).Rows.Cast<DataRow>()
+                    .Where(r => titulo.Contains(LectorDocumentosPedido.Normalizar(r["nombre"].ToString())))
+                    .Select(r => Convert.ToInt32(r["idPlanta"])).Distinct().ToList();
+                if (enTitulo.Count == 1) pedido.IdPlantaSugerida = enTitulo[0];
+            }
+
+            AplicarProgramacion(pedido);
+        }
+
+        /// <summary>
+        /// Pone en cada tracto el chofer, tracto y carreta de la programación. Lo que no se
+        /// encontró queda vacío para elegirlo: el Word manda, no se vuelve a lo de la guía.
+        /// Idempotente: <see cref="Asociar"/> lo vuelve a aplicar al cambiar de cliente.
+        /// </summary>
+        public static void AplicarProgramacion(ImportacionPedido pedido)
+        {
+            foreach (var t in pedido.Tractos.Where(t => !t.YaRegistrado && t.Programacion != null && t.Programacion.EnProgramacion))
+            {
+                var p = t.Programacion;
+                t.IdConductor = p.IdConductor;
+                t.IdTracto = p.IdTracto;
+                t.IdCarreta = p.IdCarreta;
+                t.NombreConductorSistema = t.PlacaSistema = t.PlacaCarretaSistema = null;
+                t.CarretaSugerida = false;
+            }
+        }
+
+        /// <summary>Último conductor que manejó cada tracto (idTracto → idConductor).</summary>
+        public static Dictionary<int, int> ChoferHabitualPorTracto(IList<int> idTractos)
+        {
+            if (idTractos.Count == 0) return new Dictionary<int, int>();
+
+            var parametros = idTractos.Select((id, i) => DbHelper.Param("@tr" + i, id)).ToArray();
+            string lista = string.Join(", ", parametros.Select(p => p.ParameterName));
+
+            return DbHelper.ConsultarTabla($@"
+                SELECT idTracto, idConductor
+                FROM (
+                    SELECT d.idTracto, d.idConductor,
+                           ROW_NUMBER() OVER (PARTITION BY d.idTracto ORDER BY d.fechaCreacion DESC, d.idDespacho DESC) AS n
+                    FROM Despachos d
+                    WHERE d.activo = 1 AND d.idTracto IN ({lista})
+                ) x
+                WHERE n = 1", parametros)
+                .Rows.Cast<DataRow>()
+                .ToDictionary(r => Convert.ToInt32(r["idTracto"]), r => Convert.ToInt32(r["idConductor"]));
+        }
+
         // ── Altas aprobadas ───────────────────────────────────────────────────
 
         /// <summary>Producto nuevo propuesto: una entrada por código (o descripción si no hay código).</summary>
@@ -358,7 +468,7 @@ namespace WebSGV.Services.Despachos.Importacion
 
         /// <summary>Tractos cuyo conductor no está en el sistema pero se puede registrar (hay DNI).</summary>
         public static List<TractoImportado> ConductoresNuevos(ImportacionPedido pedido) =>
-            pedido.Tractos.Where(t => !t.YaRegistrado && !t.IdConductor.HasValue && t.DniSegunLicencia != null).ToList();
+            pedido.Tractos.Where(t => !t.YaRegistrado && !t.IdConductor.HasValue && t.PuedeRegistrarChoferDeGuia).ToList();
 
         /// <summary>Registra (o reutiliza) un producto aprobado y asigna su id a las líneas que lo usan.</summary>
         public static int RegistrarProducto(ImportacionPedido pedido, ProductoNuevo producto, string nombreAprobado)
