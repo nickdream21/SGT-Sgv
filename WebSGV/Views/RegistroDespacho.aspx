@@ -333,9 +333,9 @@
                                                     <asp:TextBox ID="txtFechaDescarga" runat="server" CssClass="form-control form-control-sm" TextMode="Date" />
                                                 </div>
                                                 <div class="col-md-4 form-group mb-2">
-                                                    <label for="<%= ddlPlantaDescarga.ClientID %>" class="form-label small font-weight-bold mb-1">Planta de descarga <span class="text-danger">*</span></label>
+                                                    <label for="<%= ddlPlantaDescarga.ClientID %>" class="form-label small font-weight-bold mb-1">Planta de descarga por defecto <span class="text-danger">*</span></label>
                                                     <asp:DropDownList ID="ddlPlantaDescarga" runat="server" CssClass="form-select form-select-sm" />
-                                                    <small class="form-text text-muted"><asp:Literal ID="litAmbitoDescarga" runat="server" /></small>
+                                                    <small class="form-text text-muted"><asp:Literal ID="litAmbitoDescarga" runat="server" /> Cada tracto usa la planta de la lista de destinos (Despacho &rsaquo; Destino de descarga) si la tiene; si no, esta.</small>
                                                 </div>
                                             </div>
 
@@ -349,6 +349,7 @@
                                                             <th>Conductor que descarga</th>
                                                             <th>Tracto</th>
                                                             <th>Carreta</th>
+                                                            <th>Planta de descarga</th>
                                                             <th>Carga</th>
                                                         </tr>
                                                     </thead>
@@ -373,6 +374,10 @@
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato">Cargó: <%# HttpUtility.HtmlEncode(Eval("PlacaCarreta")) %></small>
                                                                         <asp:DropDownList ID="ddlCarretaDesc" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                    </td>
+                                                                    <td class="rd-col-placa">
+                                                                        <small class="rd-doc-dato"><asp:Literal ID="litDestinoDesc" runat="server" /></small>
+                                                                        <asp:DropDownList ID="ddlPlantaDesc" runat="server" CssClass="form-select form-select-sm" />
                                                                     </td>
                                                                     <td class="rd-carga-celda"><asp:Literal ID="litCargaDesc" runat="server" /></td>
                                                                 </tr>

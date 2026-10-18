@@ -195,6 +195,8 @@
     <Content Include="Database\StoredProcedures\sp_CrearCPIC.sql" />
     <Content Include="Database\StoredProcedures\sp_ActualizarLicenciaConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearDespacho.sql" />
+    <Content Include="Database\StoredProcedures\sp_DD_QuitarDestino.sql" />
+    <Content Include="Database\StoredProcedures\sp_DD_RegistrarDestino.sql" />
     <Content Include="Database\StoredProcedures\sp_RegistrarConductorImportado.sql" />
     <Content Include="Database\StoredProcedures\sp_RegistrarProductoImportado.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearFactura.sql" />
@@ -403,6 +405,7 @@
       <SubType>Designer</SubType>
     </Content>
     <Content Include="Views\LiquidacionesPendientes.aspx" />
+    <Content Include="Views\DestinoDescarga.aspx" />
     <Content Include="Views\ListaDespachos.aspx" />
     <Content Include="Views\Login.aspx" />
     <Content Include="Views\RecuperarContrasena.aspx" />
@@ -472,11 +475,13 @@
     <Compile Include="Services\Despachos\ManifiestoService.cs" />
     <Compile Include="Services\Despachos\RegistroDespachoService.cs" />
     <Compile Include="Services\Despachos\DescargaPedidoService.cs" />
+    <Compile Include="Services\Despachos\DestinoDescargaService.cs" />
     <Compile Include="Services\Despachos\ProgramacionCarga.cs" />
     <Compile Include="Services\Despachos\ProgramacionDescarga.cs" />
     <Compile Include="Services\Despachos\Importacion\ExtractorTextoPdf.cs" />
     <Compile Include="Services\Despachos\Importacion\ImportacionPedidoService.cs" />
     <Compile Include="Services\Despachos\Importacion\LectorDocumentosPedido.cs" />
+    <Compile Include="Services\Despachos\Importacion\LectorDestinosDescarga.cs" />
     <Compile Include="Services\Despachos\Importacion\LectorProgramacionWord.cs" />
     <Compile Include="Services\Facturas\FacturaConsultasService.cs" />
     <Compile Include="Services\Facturas\FacturaEscrituraService.cs" />
@@ -756,6 +761,13 @@
     </Compile>
     <Compile Include="Views\RegistrarRetornoEcuador.aspx.designer.cs">
       <DependentUpon>RegistrarRetornoEcuador.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\DestinoDescarga.aspx.cs">
+      <DependentUpon>DestinoDescarga.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\DestinoDescarga.aspx.designer.cs">
+      <DependentUpon>DestinoDescarga.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\RegistroChoferes.aspx.cs">
       <DependentUpon>RegistroChoferes.aspx</DependentUpon>

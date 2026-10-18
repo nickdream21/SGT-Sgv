@@ -117,6 +117,13 @@ namespace WebSGV.Models.Despachos
         /// <summary>En una DESCARGA: el despacho de CARGA del que viene lo que se entrega.</summary>
         public int? IdDespachoCarga { get; set; }
 
+        /// <summary>
+        /// Planta propia de esta unidad cuando no es la del lote: un pedido puede repartirse
+        /// entre varias plantas del cliente (Milagro y Jave). Null = la planta del lote.
+        /// </summary>
+        public int? IdPlanta { get; set; }
+        public string PlantaOperacion { get; set; }
+
         // Información de viaje
         public int? IdViajeProgreso { get; set; }
         public string NumeroViajeProgreso { get; set; }

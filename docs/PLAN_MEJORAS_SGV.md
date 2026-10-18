@@ -1,6 +1,6 @@
 # Plan de mejoras SGV — estado y tareas pendientes
 
-Última actualización: **2026-10-16** (PC de la oficina), al día con el commit del Word de programación en la carga y `herramientas/sitio-local` (sección 4). Este documento es el punto de partida para seguir trabajando
+Última actualización: **2026-10-18** (PC de la oficina), al día con el commit del Word de programación en la carga (`cc71bde`) más el destino de descarga por unidad (migración 30; sección 4). Este documento es el punto de partida para seguir trabajando
 desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 
 ## 1. Estado actual
@@ -8,7 +8,7 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 | | Al empezar (2026-10-07) | Ahora |
 |---|---|---|
 | Puntuación general | 5.5 / 10 | **8 / 10** |
-| Tests | 215 | **418** en verde (2026-10-16; incluye los de integración, varios escriben con rollback) |
+| Tests | 215 | **457** en verde (2026-10-18; incluye los de integración, varios escriben con rollback) |
 | Paquetes NuGet | 40 | 23 |
 | Procedimientos del repo vs BD de pruebas | sin control, 2 inexistentes | **79/79 iguales** (la BD tiene exactamente los del repo) |
 
@@ -36,7 +36,7 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 4. **Comprobar:**
    ```powershell
    msbuild WebSGV.sln /p:Configuration=Debug /nologo /verbosity:minimal
-   dotnet test WebSGV.Tests\WebSGV.Tests.csproj --no-build      # 418 en verde
+   dotnet test WebSGV.Tests\WebSGV.Tests.csproj --no-build      # 457 en verde
    ```
    Sin `connectionStrings.config` los de integración salen como "omitidos" (no fallan).
 5. **Para que Claude pruebe en el navegador** (una vez por máquina): extensión Claude in Chrome
@@ -55,6 +55,8 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 | `8a2fd62`…`dfb2194` | (2026-10-12) Logo en los Excel de reportes; revisión en navegador por rol (ver sección 4); migraciones 24–25. |
 | `4cf583d` | (2026-10-15) RegistroDespacho importa los documentos del pedido (factura, packing list y guías en PDF/ZIP, con PdfPig 0.1.9) y arma el lote con su carga; carga por despacho (`DespachoCarga`), destino de la carga y moneda de factura; migraciones 26–28; SPs de alta aprobada de productos y conductores. |
 | `6616667` | (2026-10-15) Descarga por pedido enlazada a su carga (migración 29); lectura del Word de programación (chofer, tracto y planta por la carreta); avisos de error visibles. RegistroChoferes: "Actualizar con la lista" de choferes actuales (alta, licencia, nombre, carnet de extranjería y bajas) con vista previa. |
+| `cc71bde` | (2026-10-16) Word de programación en la importación de carga (chofer, tracto y carreta del Word); `herramientas/sitio-local`. |
+| _(destino de descarga)_ | (2026-10-18) Destino de descarga por unidad (pedido + carreta): pantalla `DestinoDescarga.aspx` (Excel o filas pegadas con vista previa, corrección manual, historial); la descarga por pedido propone la planta de cada tracto desde esa lista; plantas Milagro y Jave; migración 30 y `sp_DD_*`. |
 
 Detalle de reglas y convenciones nuevas: ver `CLAUDE.md`.
 
@@ -65,6 +67,20 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 
 ### Abiertas
 
+- [ ] **Destino de descarga: probar con el Excel real** que manda el cliente a la administradora de transporte
+      (se espera el 2026-10-19). Hoy el lector se armó con una captura (columnas Fecha, Pedido, Unidad,
+      Placa Camión "tracto - carreta", Empresa, Lugar de recepción); ajustarlo si el Excel real difiere.
+- [ ] **Destino de descarga: pedir a quien envía la lista que la mande en Excel**, no en imagen por WhatsApp
+      (decisión del usuario: se le hablará a la administradora/remitente).
+- [ ] **Destino de descarga: probar en el navegador la descarga por pedido con un pedido real** repartido
+      entre Milagro y Jave (no había cargas pendientes en pruebas; solo se probó por HTTP la pantalla nueva
+      y la carga de RegistroDespacho). Verificar que el lote se registre con una planta por tracto y que
+      `ListaDespachos` lo muestre como dos lotes (agrupa por planta).
+- [ ] **Destino de descarga: ¿el destino cambia después de enviada la lista (desvío en ruta)?** No se sabe.
+      El modelo ya lo soporta (cada cambio deja el historial en `DestinoDescarga`); confirmar con transporte
+      si hace falta avisar o bloquear cambios cuando la unidad ya se descargó.
+- [ ] **Destino de descarga: la lista también podría decir la fecha de recepción en bodega** (se guarda en
+      `fechaRecepcion`, hoy no se usa en ninguna pantalla).
 - [ ] **Conectar la extensión Claude in Chrome en la PC de casa** (en la oficina ya está, en Edge). Pasos
       en `herramientas/sitio-local/README.md`.
 - [ ] **Alias de choferes** (recordar la corrección del usuario cuando elige a mano un nombre del Word que no
@@ -217,6 +233,21 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       417-426 con la fecha del Word (10/10) y el transporte 1288129 con DANTE CHINCHAY / BSD-900 / T4Q-995;
       descargas 427-436 con el Word del 11/10 (10/10 por carreta, ahora coherente: "sin cambio de chofer"),
       enlazadas a su carga y con el CPIC 0003923. La auditoría guarda el cambio respecto de la guía.
+- [x] **Destino de descarga por unidad** (2026-10-18). Un pedido de Vitapro no descarga todo en una planta: la
+      administradora recibe del cliente la lista pedido / placa del camión ("tracto - carreta") / lugar de
+      recepción (MILAGRO = Inbalnor, o JAVE). Migración **30** (`Schema/30_DestinoDescargaPorUnidad.sql`):
+      plantas `Milagro` y `Jave` (internacionales) en `Planta` y tabla `DestinoDescarga` (pedido + carreta; un
+      cambio de planta da de baja la fila vigente y crea otra: historial de desvíos). SPs `sp_DD_RegistrarDestino`
+      y `sp_DD_QuitarDestino`. Pantalla `Views/DestinoDescarga.aspx` (menú Despacho › Destino de descarga;
+      Admin/Supervisor): Excel (.xlsx) o filas pegadas con vista previa (nuevo / cambia / igual / error, avisos de
+      placas fuera de flota) y corrección manual por unidad. Lectura en
+      `Services/Despachos/Importacion/LectorDestinosDescarga.cs` (columnas por título o por contenido; las dos
+      placas se separan por caracteres, 6 + 6) y reglas en `Services/Despachos/DestinoDescargaService.cs`
+      (alias INBALNOR → Milagro). En RegistroDespacho, la descarga por pedido ahora tiene **una planta por
+      tracto** (`ConductorLote.IdPlanta`, desplegable "Planta de descarga" en cada fila, propuesta desde la
+      lista); la planta de arriba pasa a ser la de por defecto. El Word sigue mandando chofer y tracto; la
+      lista del cliente manda la planta. Tests: `DestinoDescargaTests` (35) y `Integracion/DestinoDescargaBdTests`
+      (4, con rollback). Aplicado en pruebas (migración + SPs).
 
 ## 5. Herramientas del repo
 
@@ -234,9 +265,10 @@ Con sqlcmd contra somee usar siempre `-C -I -f 65001` (certificado, QUOTED_IDENT
 ## 6. Paso a producción (al final, en este orden)
 
 1. `aplicar-migraciones.ps1 -Entorno produccion -SoloListar`, revisar, y luego con `-ConfirmoProduccion`
-   (hoy 01–29; incluye la 16, hora de Perú: el código nuevo usa `dbo.fn_AhoraPeru()`; la 20 amplía
+   (hoy 01–30; incluye la 16, hora de Perú: el código nuevo usa `dbo.fn_AhoraPeru()`; la 20 amplía
    `OrdenViaje.observaciones`; la 21–22 van antes de los SP de exportación; la **26 borra
-   `Despachos.idProducto`** y la 26–29 van antes de `sp_CrearDespacho`). Antes de reimportar el STATUS
+   `Despachos.idProducto`** y la 26–29 van antes de `sp_CrearDespacho`; la **30 agrega las plantas Milagro y
+   Jave** y la tabla `DestinoDescarga`: revisar que producción no tenga ya plantas con esos nombres). Antes de reimportar el STATUS
    GENERAL, revisar si producción tiene los registros de seguimiento mal importados (en pruebas se limpió
    con `Database/Scripts/limpiar_seguimiento_importacion_2026-09-14.sql`).
 2. `aplicar-procedimientos.ps1 -Entorno produccion -SoloListar` y revisar cada DISTINTO (si la BD tuviera

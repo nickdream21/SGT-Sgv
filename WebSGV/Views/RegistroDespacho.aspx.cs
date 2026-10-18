@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -339,6 +339,14 @@ namespace WebSGV.Views
             ActualizarUiEdicion();
         }
 
+        /// <summary>Planta del lote; si sus unidades van a varias (descarga repartida entre plantas), todas.</summary>
+        private static string PlantasDelLote(LoteDespachos lote)
+        {
+            var propias = (lote.Conductores ?? new List<ConductorLote>())
+                .Where(c => c.IdPlanta.HasValue && !string.IsNullOrEmpty(c.PlantaOperacion))
+                .Select(c => c.PlantaOperacion).Distinct().ToList();
+            return propias.Count > 1 ? string.Join(" / ", propias) : lote.PlantaOperacion;
+        }
         private void ActualizarResumenLote()
         {
             if (!TieneLoteActivo) return;
@@ -350,7 +358,7 @@ namespace WebSGV.Views
             lblResumenPedido.Text = string.IsNullOrEmpty(lote.NumeroPedido) ? "Sin especificar" : lote.NumeroPedido;
             lblResumenOperacion.Text = lote.TipoOperacion;
             lblResumenAmbito.Text = lote.EsInternacional ? "Internacional" : "Nacional";
-            lblResumenPlanta.Text = lote.PlantaOperacion;
+            lblResumenPlanta.Text = PlantasDelLote(lote);
             pnlResumenDestino.Visible = !string.IsNullOrEmpty(lote.DestinoCarga);
             lblResumenDestino.Text = (lote.DestinoCarga ?? string.Empty) + (lote.EsExportacion ? " (exportación)" : "");
             lblResumenCantidad.Text = lote.CantidadConductores.ToString();
@@ -1149,7 +1157,7 @@ namespace WebSGV.Views
                 if (resultado.exitoso)
                 {
                     AuditoriaHelper.Registrar("INSERT", "Despachos", null,
-                        $"Lote de {resultado.despachosCreados} despacho(s) registrado - Cliente: {LoteActual?.NombreCliente}, Operación: {LoteActual?.TipoOperacion}, Planta: {LoteActual?.PlantaOperacion}");
+                        $"Lote de {resultado.despachosCreados} despacho(s) registrado - Cliente: {LoteActual?.NombreCliente}, Operación: {LoteActual?.TipoOperacion}, Planta: {(LoteActual == null ? null : PlantasDelLote(LoteActual))}");
 
                     // Limpiar lote y resetear página (antes del mensaje: LimpiarFormularioCompleto
                     // oculta el panel de mensajes y el aviso de éxito no llegaba a verse).
@@ -2357,6 +2365,18 @@ namespace WebSGV.Views
                     coincidencias.Add(r["idPlanta"].ToString());
             }
             if (coincidencias.Count == 1) RestaurarSeleccion(ddlPlantaDescarga, coincidencias[0]);
+
+            // Sin planta clara por el destino, la de por defecto es la que comparten todos los
+            // tractos según la lista del cliente (si van a una sola).
+            if (ddlPlantaDescarga.SelectedValue == "0")
+            {
+                var destinos = DestinosDelPedido(primera.NumeroPedido);
+                var plantas = cargas
+                    .Select(c => destinos.TryGetValue(LectorDocumentosPedido.NormalizarPlaca(c.PlacaCarreta) ?? "", out var d) ? d.IdPlanta : (int?)null)
+                    .Distinct().ToList();
+                if (plantas.Count == 1 && plantas[0].HasValue)
+                    RestaurarSeleccion(ddlPlantaDescarga, plantas[0].Value.ToString());
+            }
             litAmbitoDescarga.Text = internacional
                 ? "Descarga internacional: al iniciar el lote se pide el CPIC."
                 : "Descarga nacional.";
@@ -2365,11 +2385,29 @@ namespace WebSGV.Views
             EnlazarDescargas(cargas);
         }
 
+        // Planta de cada tracto según la lista de destinos del cliente (DestinoDescarga).
+        private DataTable _plantasDesc;
+        private Dictionary<string, DestinoDescargaService.DestinoVigente> _destinosDesc =
+            new Dictionary<string, DestinoDescargaService.DestinoVigente>();
+
+        /// <summary>Destinos vigentes del pedido por carreta (sin guion). Sin lista o con error, vacío.</summary>
+        private Dictionary<string, DestinoDescargaService.DestinoVigente> DestinosDelPedido(string pedido)
+        {
+            try { return DestinoDescargaService.ObtenerVigentesDelPedido(pedido); }
+            catch (Exception ex)
+            {
+                RegistrarError("DestinosDelPedido", ex);
+                return new Dictionary<string, DestinoDescargaService.DestinoVigente>();
+            }
+        }
+
         private void EnlazarDescargas(List<DescargaPedidoService.CargaPendiente> cargas)
         {
             _conductoresImp = RegistroDespachoService.ObtenerConductoresActivos();
             _tractosImp = RegistroDespachoService.ObtenerTractosActivos();
             _carretasImp = RegistroDespachoService.ObtenerCarretasActivas();
+            _plantasDesc = RegistroDespachoService.ObtenerPlantasPorAmbito(cargas.Any(c => c.EsExportacion));
+            _destinosDesc = DestinosDelPedido(cargas[0].NumeroPedido);
 
             rptDescargas.DataSource = cargas;
             rptDescargas.DataBind();
@@ -2393,6 +2431,26 @@ namespace WebSGV.Views
 
             // Sin programación se incluyen todas; con ella, solo las carretas que figuran
             ((CheckBox)e.Item.FindControl("chkIncluirDesc")).Checked = p == null || p.EnProgramacion;
+
+            // Planta de esta unidad: la de la lista de destinos del cliente; sin ella, la de por defecto ("0").
+            var ddlPlanta = (DropDownList)e.Item.FindControl("ddlPlantaDesc");
+            ddlPlanta.Items.Add(new ListItem("-- Por defecto --", "0"));
+            foreach (DataRow r in _plantasDesc.Rows)
+                ddlPlanta.Items.Add(new ListItem(r["nombre"].ToString(), r["idPlanta"].ToString()));
+
+            var litDestino = (Literal)e.Item.FindControl("litDestinoDesc");
+            if (_destinosDesc.TryGetValue(LectorDocumentosPedido.NormalizarPlaca(c.PlacaCarreta) ?? "", out var destino))
+            {
+                if (ddlPlanta.Items.FindByValue(destino.IdPlanta.ToString()) != null)
+                {
+                    RestaurarSeleccion(ddlPlanta, destino.IdPlanta.ToString());
+                    litDestino.Text = Html("Lista del cliente: " + destino.Planta);
+                }
+                else
+                    litDestino.Text = Html($"Lista del cliente: {destino.Planta} (no es una planta de este ámbito)");
+            }
+            else
+                litDestino.Text = Html("Sin destino en la lista del cliente");
 
             ((Literal)e.Item.FindControl("litCargaDesc")).Text = DetalleCargaHtml(c.Carga);
             ((Literal)e.Item.FindControl("litProgramacionDesc")).Text = p == null ? "" : ProgramacionFilaHtml(p);
@@ -2543,10 +2601,8 @@ namespace WebSGV.Views
                 var errores = new List<string>();
                 if (!DespachoValidaciones.FechaDespachoEsValida(txtFechaDescarga.Text, FechaHelper.Hoy()))
                     errores.Add("La fecha de programación no es válida.");
-                if (ddlPlantaDescarga.SelectedValue == "0")
-                    errores.Add("Elija la planta de descarga.");
 
-                var filas = new List<(DescargaPedidoService.CargaPendiente carga, DropDownList cond, DropDownList tracto, DropDownList carreta)>();
+                var filas = new List<(DescargaPedidoService.CargaPendiente carga, DropDownList cond, DropDownList tracto, DropDownList carreta, DropDownList planta)>();
                 foreach (RepeaterItem item in rptDescargas.Items)
                 {
                     if (item.ItemIndex >= cargas.Count) break;
@@ -2555,11 +2611,14 @@ namespace WebSGV.Views
                     var fila = (cargas[item.ItemIndex],
                         (DropDownList)item.FindControl("ddlConductorDesc"),
                         (DropDownList)item.FindControl("ddlTractoDesc"),
-                        (DropDownList)item.FindControl("ddlCarretaDesc"));
+                        (DropDownList)item.FindControl("ddlCarretaDesc"),
+                        (DropDownList)item.FindControl("ddlPlantaDesc"));
                     string etiqueta = $"Transporte {fila.Item1.NumeroTransporte ?? fila.Item1.IdDespacho.ToString()}";
                     if (fila.Item2.SelectedValue == "0") errores.Add($"{etiqueta}: elija el conductor.");
                     if (fila.Item3.SelectedValue == "0") errores.Add($"{etiqueta}: elija el tracto.");
                     if (fila.Item4.SelectedValue == "0") errores.Add($"{etiqueta}: elija la carreta.");
+                    if (fila.Item5.SelectedValue == "0" && ddlPlantaDescarga.SelectedValue == "0")
+                        errores.Add($"{etiqueta}: elija la planta de descarga (o la de por defecto).");
                     filas.Add(fila);
                 }
 
@@ -2585,8 +2644,13 @@ namespace WebSGV.Views
                     // aún no liquida), la descarga se suma a ese viaje: una sola liquidación.
                     var viaje = ObtenerViajesAbiertosConductor(idConductor).FirstOrDefault();
 
+                    // Planta de la unidad: la suya (lista del cliente o elegida) o la de por defecto.
+                    var ddlPlantaFila = f.planta.SelectedValue != "0" ? f.planta : ddlPlantaDescarga;
+
                     return new ConductorLote
                     {
+                        IdPlanta = int.Parse(ddlPlantaFila.SelectedValue),
+                        PlantaOperacion = ddlPlantaFila.SelectedItem.Text,
                         IdConductor = idConductor,
                         NombreConductor = f.cond.SelectedItem.Text.Split('-')[0].Trim(),
                         IdTracto = int.Parse(f.tracto.SelectedValue),
@@ -2612,7 +2676,11 @@ namespace WebSGV.Views
                 MostrarOcultarPanelesBase();
                 ActualizarVisibilidadNumeroPedido();
                 ActualizarPlantasPorAmbito();
-                RestaurarSeleccion(ddlLugarOperacionBase, ddlPlantaDescarga.SelectedValue);
+                // La planta del lote es la de por defecto; sin ella, la de la primera unidad (cada
+                // unidad conserva la suya en ConductorLote.IdPlanta).
+                RestaurarSeleccion(ddlLugarOperacionBase, ddlPlantaDescarga.SelectedValue != "0"
+                    ? ddlPlantaDescarga.SelectedValue
+                    : conductores[0].IdPlanta.ToString());
                 txtFechaDespachoBase.Text = txtFechaDescarga.Text;
 
                 pnlVistaDescarga.Visible = false;
