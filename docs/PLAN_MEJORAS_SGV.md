@@ -92,8 +92,10 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       liquidación y firma → aprobación → PDF → contabilidad), en pruebas.
 - [ ] **Dashboards / indicadores**: el usuario tiene temas que comentar antes (al final).
 
-- [ ] **Decisión de la empresa: conductor duplicado** DERLIS RICARDO CEDEÑO CHOURIO (DNI `00271627` y
-      `02716271`). Cuando decidan, dejar uno y reasignar sus viajes/usuario.
+- [x] ~~Decisión de la empresa: conductor duplicado DERLIS RICARDO CEDEÑO CHOURIO~~ (2026-10-18): **ya no
+      trabaja en la empresa desde ~agosto 2026**; sus dos registros (DNI `00271627` y `02716271`) están
+      inactivos en pruebas, que es lo correcto. Nada que reasignar; solo falta que en producción también
+      queden inactivos (la lista de choferes actuales del paso 7 de la sección 6 lo hace).
 - [ ] **Alinear `PdfAbastecimientoService`** al estilo del nuevo PDF de la Orden de Viaje (fuera de alcance
       mientras Grifo siga fuera; ver memoria de alcance).
 - [ ] **Serilog 2.12 → 4.x** (opcional; requiere nuevas dependencias y binding redirects).
