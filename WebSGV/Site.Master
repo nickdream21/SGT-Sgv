@@ -64,6 +64,9 @@
                             <a class="dropdown-item" href='<%= ResolveUrl("~/Views/DestinoDescarga.aspx") %>'>
                                 <i class="fas fa-map-marked-alt"></i>Destino de descarga
                             </a>
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ReporteGps.aspx") %>'>
+                                <i class="fas fa-satellite-dish"></i>Reporte GPS por placas
+                            </a>
                         </div>
                     </li>
 

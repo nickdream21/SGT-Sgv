@@ -369,6 +369,7 @@
     <Content Include="Scripts\paginas\RegistroSemiremolques.js" />
     <Content Include="Scripts\paginas\RegistroTractos.js" />
     <Content Include="Scripts\paginas\ReportesOrdenesViaje.js" />
+    <Content Include="Scripts\paginas\ReporteGps.js" />
     <Content Include="Scripts\paginas\SiteMaster-2.js" />
     <Content Include="Scripts\paginas\SiteMaster.js" />
     <Content Include="Views\AgregarAbastecimiento.aspx" />
@@ -406,6 +407,7 @@
     </Content>
     <Content Include="Views\LiquidacionesPendientes.aspx" />
     <Content Include="Views\DestinoDescarga.aspx" />
+    <Content Include="Views\ReporteGps.aspx" />
     <Content Include="Views\ListaDespachos.aspx" />
     <Content Include="Views\Login.aspx" />
     <Content Include="Views\RecuperarContrasena.aspx" />
@@ -461,6 +463,7 @@
     <Compile Include="Services\Conductor\LiquidacionConductorService.cs" />
     <Compile Include="Services\Conductor\ListaChoferesService.cs" />
     <Compile Include="Services\GpsIntegracion\OnwayApiClient.cs" />
+    <Compile Include="Services\GpsIntegracion\ReporteHistorialGpsService.cs" />
     <Compile Include="Services\GpsIntegracion\OnwayAuthCacheService.cs" />
     <Compile Include="Services\GpsIntegracion\PuntoControlGpsService.cs" />
     <Compile Include="Services\GpsIntegracion\CheckpointMatchingService.cs" />
@@ -768,6 +771,13 @@
     </Compile>
     <Compile Include="Views\DestinoDescarga.aspx.designer.cs">
       <DependentUpon>DestinoDescarga.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ReporteGps.aspx.cs">
+      <DependentUpon>ReporteGps.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\ReporteGps.aspx.designer.cs">
+      <DependentUpon>ReporteGps.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\RegistroChoferes.aspx.cs">
       <DependentUpon>RegistroChoferes.aspx</DependentUpon>

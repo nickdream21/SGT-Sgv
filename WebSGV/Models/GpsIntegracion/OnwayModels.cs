@@ -88,6 +88,13 @@ namespace WebSGV.Models.GpsIntegracion
         [JsonProperty("messageTime")]
         public DateTime MessageTime { get; set; }
 
+        /// <summary>
+        /// Hora en que la plataforma recibió el mensaje (1-2 s después de <see cref="MessageTime"/>).
+        /// Es la que muestra el portal en Fecha/Hora de su reporte de historial.
+        /// </summary>
+        [JsonProperty("generateTime")]
+        public DateTime? GenerateTime { get; set; }
+
         [JsonProperty("lat")]
         public double Lat { get; set; }
 
@@ -102,6 +109,28 @@ namespace WebSGV.Models.GpsIntegracion
 
         [JsonProperty("alertDescription")]
         public OnwayTextoMultiIdioma AlertDescription { get; set; }
+
+        /// <summary>
+        /// Odómetro en km. No está en el swagger pero sí viene en la respuesta real y coincide
+        /// con la columna "Odómetro (Km)" del portal (ver herramientas/reporte-gps/README.md).
+        /// </summary>
+        [JsonProperty("mileage")]
+        public double? Mileage { get; set; }
+
+        /// <summary>
+        /// Corrección del odómetro (km) que el portal suma a <see cref="Mileage"/> en su columna
+        /// "Odómetro (Km)" (verificado contra el Excel del portal el 2026-10-19). No documentado.
+        /// </summary>
+        [JsonProperty("odometerDeltaPatch")]
+        public double? OdometerDeltaPatch { get; set; }
+
+        /// <summary>
+        /// % de batería interna del equipo GPS (columna "% Batería" del portal). Tampoco está en
+        /// el swagger. Los puntos de alerta (encendido, bache, exceso...) no traen ni este dato ni
+        /// el odómetro.
+        /// </summary>
+        [JsonProperty("internalBatteryLevel")]
+        public int? InternalBatteryLevel { get; set; }
     }
 
     public class OnwayHistoryResponse
@@ -111,5 +140,28 @@ namespace WebSGV.Models.GpsIntegracion
 
         [JsonProperty("content")]
         public List<OnwayHistoryPoint> Content { get; set; }
+    }
+
+    /// <summary>
+    /// Punto de GET .../history/canbus: datos del computador del motor. Solo lo reportan las
+    /// unidades con CANBUS conectado; las demás devuelven la lista vacía.
+    /// </summary>
+    public class OnwayCanbusPoint
+    {
+        [JsonProperty("messageTime")]
+        public DateTime MessageTime { get; set; }
+
+        /// <summary>Horómetro: horas totales de motor (columna "Horómetro (Hrs)" del portal).</summary>
+        [JsonProperty("totalEngineHours")]
+        public double? TotalEngineHours { get; set; }
+    }
+
+    public class OnwayCanbusResponse
+    {
+        [JsonProperty("records")]
+        public long Records { get; set; }
+
+        [JsonProperty("content")]
+        public List<OnwayCanbusPoint> Content { get; set; }
     }
 }

@@ -82,6 +82,10 @@ function Get-ExpiracionJwt([string]$token) {
 <#  Siembra en OnwayAuthCache un token generado a mano (Postman), sin pedirle uno nuevo
     a Auth0. Equivale al UPDATE de Database/Scripts/diagnostico_OnwayAuthCache_TokenActivoUnico.sql #>
 function Set-TokenManual([string]$accessToken, [int]$expiresIn = 0) {
+    # Si Auth0 rechazó el pedido no hay token: no pisar el cache con un valor vacío.
+    if ([string]::IsNullOrWhiteSpace($accessToken)) {
+        throw "Auth0 no entrego token (Client Secret desactualizado, o hay otro token activo)."
+    }
     $expira = if ($expiresIn -gt 0) { [DateTime]::UtcNow.AddSeconds($expiresIn) } else { Get-ExpiracionJwt $accessToken }
     # La expiración real la manda el JWT; si difiere de expires_in, gana la del JWT.
     $expiraJwt = Get-ExpiracionJwt $accessToken

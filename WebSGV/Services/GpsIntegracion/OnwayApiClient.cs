@@ -270,6 +270,32 @@ namespace WebSGV.Services.GpsIntegracion
             return todos;
         }
 
+        /// <summary>
+        /// Historial CANBUS (horómetro) de un dispositivo, con el mismo límite de 1 día por
+        /// llamada que <see cref="ObtenerHistorial"/>. Las unidades sin CANBUS devuelven vacío.
+        /// </summary>
+        public List<OnwayCanbusPoint> ObtenerHistorialCanbus(string deviceId, DateTime desdeUtc, DateTime hastaUtc) =>
+            EjecutarConReintento((accessToken, userId) =>
+            {
+                var todos = new List<OnwayCanbusPoint>();
+                int page = 0;
+                string desdeStr = desdeUtc.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                string hastaStr = hastaUtc.ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+                while (true)
+                {
+                    string url = $"{ApiBaseUrl}/v1/{Domain}/{Subdomain}/users/{userId}/devices/{deviceId}/history/canbus" +
+                                 $"?from={Uri.EscapeDataString(desdeStr)}&to={Uri.EscapeDataString(hastaStr)}&page={page}&pageSize={PageSizeHistorial}";
+                    var respuesta = Get<OnwayCanbusResponse>(url, accessToken);
+                    if (respuesta.Content == null || respuesta.Content.Count == 0) break;
+
+                    todos.AddRange(respuesta.Content);
+                    if (todos.Count >= respuesta.Records) break;
+                    page++;
+                }
+                return todos;
+            });
+
         // ------------------------------------------------------------------
         // HTTP de bajo nivel
         // ------------------------------------------------------------------
@@ -375,7 +401,7 @@ namespace WebSGV.Services.GpsIntegracion
         /// <summary>Mensaje apto para mostrar a la administradora, sin detalles técnicos.</summary>
         public string MensajeParaUsuario() =>
             EsRechazoDeTokenActivoEnOtroLado
-                ? "No se pudo renovar el acceso al GPS: Auth0 lo rechazó, probablemente porque ya hay un token activo en otro entorno (ej. producción). No es un problema de credenciales — espera unos minutos y vuelve a intentar."
+                ? "No se pudo renovar el acceso al GPS: Auth0 lo rechazó. O ya hay un token activo en otro equipo (se libera solo al vencer), o cambió el Client Secret del GPS en appSettings.Secrets.config. Avise a sistemas."
                 : "No se pudo conectar con el sistema GPS. Intente más tarde.";
     }
 }

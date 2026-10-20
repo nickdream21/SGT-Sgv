@@ -1,6 +1,6 @@
 # Plan de mejoras SGV — estado y tareas pendientes
 
-Última actualización: **2026-10-18** (PC de la oficina), al día con el commit del Word de programación en la carga (`cc71bde`) más el destino de descarga por unidad (migración 30; sección 4). Este documento es el punto de partida para seguir trabajando
+Última actualización: **2026-10-19**, al día con el destino de descarga por unidad (`400682f`, migración 30) más el reporte GPS por placas (`ReporteGps.aspx`, sin migración; sección 4). Este documento es el punto de partida para seguir trabajando
 desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 
 ## 1. Estado actual
@@ -57,6 +57,7 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 | `6616667` | (2026-10-15) Descarga por pedido enlazada a su carga (migración 29); lectura del Word de programación (chofer, tracto y planta por la carreta); avisos de error visibles. RegistroChoferes: "Actualizar con la lista" de choferes actuales (alta, licencia, nombre, carnet de extranjería y bajas) con vista previa. |
 | `cc71bde` | (2026-10-16) Word de programación en la importación de carga (chofer, tracto y carreta del Word); `herramientas/sitio-local`. |
 | _(destino de descarga)_ | (2026-10-18) Destino de descarga por unidad (pedido + carreta): pantalla `DestinoDescarga.aspx` (Excel o filas pegadas con vista previa, corrección manual, historial); la descarga por pedido propone la planta de cada tracto desde esa lista; plantas Milagro y Jave; migración 30 y `sp_DD_*`. |
+| _(reporte GPS)_ | (2026-10-19) Reporte GPS por placas (`ReporteGps.aspx`, menú Despacho): historial de varias unidades a la vez desde el API de Onway (el portal solo deja 3), un Excel por placa con las columnas del portal o todos en ZIP; trae los tractos de carga y descarga de los pedidos; muestra la última posición de cada unidad y arma asunto y mensaje del correo. Comparado con el Excel del portal (BNG-862, 19/10, 983 filas en el mismo orden): idénticos fecha/hora (es la de recepción, `generateTime`), dirección, velocidad, batería (`internalBatteryLevel`) y alertas; coordenadas 978–961/983 (6.º decimal); odómetro (`mileage + odometerDeltaPatch`) 888/983 — en las filas de alerta el API no da odómetro y se repite el último. El horómetro solo sale en unidades con CANBUS (el portal lo calcula aparte) y *Tipo de carrocería* no está en el API. 11 placas en ~40 s. Sin migración ni SP. |
 
 Detalle de reglas y convenciones nuevas: ver `CLAUDE.md`.
 
@@ -67,6 +68,13 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 
 ### Abiertas
 
+- [ ] **GPS: revisar el `OnwayAuth0ClientSecret` en cada máquina** contra el correo oficial de Location World
+      (credenciales del Customer API). En una máquina le faltaba un carácter (63 de 64) y Auth0 respondía 401;
+      se corrigió el 2026-10-19. Recordar: **un solo token cada 24 h**; vive en `OnwayAuthCache` de la BD de
+      pruebas y lo reusan la web y `herramientas/reporte-gps`.
+- [ ] **Reporte GPS, fase 2: status sugerido por unidad** (dónde está y si va cargada o vacía, para la
+      columna STATUS del Google Sheets "PROGRAMACION Y STATUS VITAPRO"), desde la última posición y los
+      puntos de control. Primero afinar las reglas con casos reales de la administradora de transporte.
 - [ ] **Destino de descarga: probar con el Excel real** que manda el cliente a la administradora de transporte
       (se espera el 2026-10-19). Hoy el lector se armó con una captura (columnas Fecha, Pedido, Unidad,
       Placa Camión "tracto - carreta", Empresa, Lugar de recepción); ajustarlo si el Excel real difiere.
