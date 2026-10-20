@@ -118,3 +118,74 @@
 .sx-zona-archivo h4 { font-size: 1rem; font-weight: 600; margin: 0.5rem 0 0.25rem; color: var(--sgv-texto); }
 
 .sx-campo input[readonly] { background: #f3f4f6; color: #4b5563; }
+
+/* Ruta del viaje (mapa del detalle) */
+.sx-ruta { margin-bottom: 1rem; }
+.sx-ruta .sgv-panel-cab { flex-wrap: wrap; gap: 0.5rem; }
+.sx-ruta-capas { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.sx-capa {
+    display: inline-flex; align-items: center; gap: 0.375rem; margin: 0;
+    padding: 0.25rem 0.625rem; border: 1px solid var(--sgv-borde-fuerte); border-radius: 999px;
+    font-size: 0.8125rem; color: var(--sgv-texto); background: #fff; cursor: pointer;
+}
+.sx-capa::before { content: ""; width: 0.75rem; height: 3px; border-radius: 2px; background: #94a3b8; }
+.sx-capa-carga::before { background: #1d4ed8; }
+.sx-capa-descarga::before { background: #c2410c; }
+.sx-capa input { margin: 0; }
+.sx-ruta-caja { position: relative; }
+.sx-ruta-mapa { height: 480px; background: #e5e7eb; }
+.sx-ruta-estado {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.85); color: var(--sgv-texto); font-size: 0.875rem; z-index: 800; padding: 1rem; text-align: center;
+}
+.sx-ruta-estado[hidden] { display: none; }
+.sx-ruta-estado-error { color: #92400e; }
+.sx-ruta-girando {
+    width: 1rem; height: 1rem; border-radius: 50%; border: 2px solid #bfdbfe; border-top-color: var(--sgv-primario);
+    animation: sx-girar 0.8s linear infinite;
+}
+@keyframes sx-girar { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .sx-ruta-girando { animation: none; } }
+.sx-ruta-reloj {
+    position: absolute; right: 0.75rem; top: 0.75rem; z-index: 700; max-width: calc(100% - 4.5rem);
+    background: rgba(17, 24, 39, 0.82); color: #fff; border-radius: var(--sgv-radio);
+    padding: 0.375rem 0.75rem; font-size: 0.8125rem; display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; align-items: baseline;
+}
+.sx-ruta-reloj[hidden] { display: none; }
+.sx-ruta-reloj .sx-mono { font-size: 1rem; font-weight: 600; }
+.sx-ruta-control {
+    display: flex; flex-wrap: wrap; gap: 0.625rem; align-items: center;
+    padding: 0.75rem 1rem; border-top: 1px solid var(--sgv-borde);
+}
+.sx-ruta-control[hidden] { display: none; }
+.sx-ruta-control input[type=range] { flex: 1 1 14rem; min-width: 10rem; accent-color: var(--sgv-primario); }
+.sx-ruta-select { height: 2rem; border: 1px solid var(--sgv-borde-fuerte); border-radius: var(--sgv-radio); font-size: 0.8125rem; padding: 0 0.5rem; background: #fff; }
+.sx-ruta-avisos { margin: 0; padding: 0 1rem 0.75rem 2rem; color: #92400e; font-size: 0.8125rem; }
+.sx-ruta-avisos:empty { display: none; }
+.sx-ruta-tip { font-size: 0.75rem; }
+
+.sx-camion-icono, .sx-hito-icono { background: none; border: 0; }
+.sx-camion {
+    display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%;
+    color: #fff; font-size: 0.875rem; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.sx-camion-carga { background: #1d4ed8; }
+.sx-camion-descarga { background: #c2410c; }
+.sx-camion-placa {
+    position: absolute; left: 50%; top: 36px; transform: translateX(-50%); white-space: nowrap;
+    background: #fff; color: #111827; border-radius: 4px; padding: 0 0.3rem; font-size: 0.6875rem; font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.sx-mk {
+    display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; font-size: 0.6875rem; font-weight: 700; border: 2px solid; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.sx-mk-carga { color: #1d4ed8; border-color: #1d4ed8; }
+.sx-mk-descarga { color: #c2410c; border-color: #c2410c; }
+.sx-mk-pasado.sx-hito-icono .sx-mk-carga, .sx-mk-pasado .sx-mk-carga { background: #1d4ed8; color: #fff; }
+.sx-mk-pasado.sx-hito-icono .sx-mk-descarga, .sx-mk-pasado .sx-mk-descarga { background: #c2410c; color: #fff; }
+
+@media (max-width: 767.98px) {
+    .sx-ruta-mapa { height: 340px; }
+    .sx-ruta-reloj { left: 3.25rem; max-width: none; }
+}

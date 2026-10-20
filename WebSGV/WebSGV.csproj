@@ -354,6 +354,7 @@
     <Content Include="Scripts\paginas\Exportacion\DashboardExportacion.js" />
     <Content Include="Scripts\paginas\Exportacion\ImportarSeguimiento.js" />
     <Content Include="Scripts\paginas\Exportacion\SeguimientoViaje.js" />
+    <Content Include="Scripts\paginas\Exportacion\SeguimientoViajeMapa.js" />
     <Content Include="Scripts\paginas\FirmarLiquidacion.js" />
     <Content Include="Scripts\paginas\LiquidacionesAprobadasContabilidad.js" />
     <Content Include="Scripts\paginas\LiquidacionesPendientes.js" />
@@ -472,6 +473,7 @@
     <Compile Include="Services\GpsIntegracion\PuntoControlGpsService.cs" />
     <Compile Include="Services\GpsIntegracion\CheckpointMatchingService.cs" />
     <Compile Include="Services\GpsIntegracion\HoraLlegadaGpsService.cs" />
+    <Compile Include="Services\GpsIntegracion\RutaViajeService.cs" />
     <Compile Include="Services\GpsIntegracion\SeguimientoExportacionGpsService.cs" />
     <Compile Include="Services\GpsIntegracion\TrazabilidadCargaService.cs" />
     <Compile Include="Services\GpsIntegracion\TrazabilidadDescargaService.cs" />

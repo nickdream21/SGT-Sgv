@@ -51,6 +51,42 @@
         </div>
 
         <asp:Panel ID="pnlViaje" runat="server">
+            <%-- Ruta del viaje: el recorrido GPS de cada tramo, con sus hitos y una reproducción en el tiempo. --%>
+            <section class="sgv-panel sx-ruta" aria-labelledby="rutaTitulo">
+                <div class="sgv-panel-cab">
+                    <div>
+                        <span class="sgv-panel-titulo" id="rutaTitulo">Ruta del viaje</span>
+                        <span class="sx-sub" id="rutaSub">Recorrido del GPS de cada tracto</span>
+                    </div>
+                    <div class="sx-ruta-capas" role="group" aria-label="Capas del mapa">
+                        <label class="sx-capa sx-capa-carga"><input type="checkbox" data-capa="carga" checked /> Carga <span class="sx-mono" id="rutaKmcarga"></span></label>
+                        <label class="sx-capa sx-capa-descarga"><input type="checkbox" data-capa="descarga" checked /> Descarga <span class="sx-mono" id="rutaKmdescarga"></span></label>
+                        <label class="sx-capa"><input type="checkbox" data-capa="zonas" checked /> Zonas</label>
+                    </div>
+                </div>
+                <div class="sx-ruta-caja">
+                    <div id="rutaMapa" class="sx-ruta-mapa" role="region" aria-label="Mapa del recorrido"></div>
+                    <div class="sx-ruta-estado" id="rutaEstado" role="status"><span class="sx-ruta-girando" aria-hidden="true"></span> Cargando el recorrido del GPS…</div>
+                    <div class="sx-ruta-reloj" id="rutaReloj" hidden>
+                        <span class="sx-mono" id="rutaHora"></span>
+                        <span id="rutaDetalle"></span>
+                    </div>
+                </div>
+                <div class="sx-ruta-control" id="rutaControl" hidden>
+                    <button type="button" class="sx-btn sx-btn-primario sx-btn-chico" id="rutaPlay"><i class="fas fa-play" aria-hidden="true"></i> <span>Reproducir</span></button>
+                    <input type="range" id="rutaTiempo" min="0" max="1000" value="0" step="1" aria-label="Momento del viaje" />
+                    <label class="sx-nota" for="rutaVelocidad">Velocidad</label>
+                    <select id="rutaVelocidad" class="sx-ruta-select">
+                        <option value="600">10 min por segundo</option>
+                        <option value="1800">30 min por segundo</option>
+                        <option value="3600" selected>1 h por segundo</option>
+                        <option value="10800">3 h por segundo</option>
+                    </select>
+                    <button type="button" class="sx-btn sx-btn-chico" id="rutaAjustar">Ver todo</button>
+                </div>
+                <ul class="sx-ruta-avisos" id="rutaAvisos"></ul>
+            </section>
+
             <div class="sx-leyenda">
                 <span>Origen de cada hora:</span>
                 <span class="sx-fuente sx-fuente-gps">GPS</span>
@@ -173,8 +209,12 @@
             txtNuevaHora: '<%= txtNuevaHora.ClientID %>',
             txtMotivo: '<%= txtMotivo.ClientID %>',
             hdnColumna: '<%= hdnColumna.ClientID %>',
-            columnaInicial: '<%= ColumnaInicial %>'
+            columnaInicial: '<%= ColumnaInicial %>',
+            idSeguimiento: <%= ModoNuevo ? 0 : IdSeguimientoPublico %>
         });
     </script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/Exportacion/SeguimientoViaje.js") %>"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/Exportacion/SeguimientoViajeMapa.js") %>"></script>
 </asp:Content>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web;
+using System.Web.Services;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 using WebSGV.Services.Exportacion;
@@ -28,6 +29,9 @@ namespace WebSGV.Views.Exportacion
         {
             get { return int.TryParse(Request.QueryString["id"], out int id) ? id : 0; }
         }
+
+        /// <summary>Para el mapa (SGV.idSeguimiento): es un entero, se puede escribir en el script tal cual.</summary>
+        protected int IdSeguimientoPublico => IdSeguimiento;
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -334,6 +338,25 @@ namespace WebSGV.Views.Exportacion
 
         private static string Capital(string s) =>
             string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1).ToLowerInvariant();
+
+        /// <summary>
+        /// Recorrido GPS del viaje para el mapa (tramo de carga y de descarga con sus hitos). Puede
+        /// tardar unos segundos la primera vez: consulta el historial de Onway día por día.
+        /// </summary>
+        [WebMethod(EnableSession = true)]
+        public static object ObtenerRuta(int idSeguimiento)
+        {
+            if (!SecurityHelper.TieneSesionActiva() || !RolesHelper.TienePermiso("SEGUIMIENTO_EXPORTACION"))
+                return new { ok = false, mensaje = "La sesión ya no está activa. Vuelve a ingresar." };
+            try
+            {
+                return new { ok = true, ruta = RutaViajeService.Obtener(idSeguimiento) };
+            }
+            catch (Exception ex)
+            {
+                return new { ok = false, mensaje = MensajeErrorHelper.ParaUsuario(ex) };
+            }
+        }
 
         private void MostrarMensaje(string texto, string tipo)
         {

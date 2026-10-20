@@ -1,6 +1,6 @@
 # Plan de mejoras SGV — estado y tareas pendientes
 
-Última actualización: **2026-10-20**, al día con la trazabilidad GPS de carga y descarga (`0b4c311`) más la pantalla nueva de seguimiento de exportación, con los viajes creados desde los despachos (migraciones 31–32 y 6 `sp_SE_*` nuevos, ya aplicados en pruebas; sección 4). Este documento es el punto de partida para seguir trabajando
+Última actualización: **2026-10-20**, al día con el seguimiento de exportación (`a22748b`) más el cuadro STATUS GENERAL de octubre armado desde los Word y el GPS (119 viajes de octubre ya en `sgvActualizada`) y el mapa de la ruta en el detalle del viaje (sin migración ni SP; sección 4). Este documento es el punto de partida para seguir trabajando
 desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 
 ## 1. Estado actual
@@ -60,6 +60,8 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 | _(reporte GPS)_ | (2026-10-19) Reporte GPS por placas (`ReporteGps.aspx`, menú Despacho): historial de varias unidades a la vez desde el API de Onway (el portal solo deja 3), un Excel por placa con las columnas del portal o todos en ZIP; trae los tractos de carga y descarga de los pedidos; muestra la última posición de cada unidad y arma asunto y mensaje del correo. Comparado con el Excel del portal (BNG-862, 19/10, 983 filas en el mismo orden): idénticos fecha/hora (es la de recepción, `generateTime`), dirección, velocidad, batería (`internalBatteryLevel`) y alertas; coordenadas 978–961/983 (6.º decimal); odómetro (`mileage + odometerDeltaPatch`) 888/983 — en las filas de alerta el API no da odómetro y se repite el último. El horómetro solo sale en unidades con CANBUS (el portal lo calcula aparte) y *Tipo de carrocería* no está en el API. 11 placas en ~40 s. Sin migración ni SP. |
 | _(trazabilidad, tramo carga)_ | (2026-10-19) "Verificar GPS" de RegistroSeguimiento detecta el tramo de carga del Tracto 1 (salida de base, llegada a Trujillo, ingreso y salida de planta, llegada a base) con geocercas en polígono y visitas en orden (`TrazabilidadCargaService`, `GeocercaGps`), en vez de círculos por columna: el círculo del ingreso tomaba la espera en la cola como ingreso (ANU-794 19/10: 07:05 en vez de 15:12). Usa las alertas de geocerca de Onway ("salió de Base Viviana Sullana") cuando existen. Banco de casos reales en `WebSGV.Tests/Datos/Trazabilidad` (historial guardado con `herramientas/reporte-gps/Guardar-HistorialCaso.ps1` + horas de la administradora): 5 casos en verde; contra el Excel STATUS GENERAL, 24/24 viajes de fines de septiembre con ingreso y salida de planta a ±2 min. Además el **tramo de descarga** del Tracto 2 (`TrazabilidadDescargaService`): salida de base, Complex (cola, patio), CEBAF, cruce a la E50, TCI (Transcomerinter) y Jave o Inbalnor, con la llegada final a base; geocercas dibujadas con OpenStreetMap. Con BFI-922 (pedido 4400133136, Jave) los 12 hitos salen a ±66 s y con BSD-716 (Inbalnor, 29-30/09) a ±33 s. Si la unidad pasa directo por TCI sin entrar (coordinado con TCI), llegada y salida de TCI se toman en el control de la Aduana del Ecuador ~400 m al noreste (`GeocercasTrazabilidad.TciControlAduana`). Probado de punta a punta sobre el seguimiento 7063 dentro de una transacción revertida: llena 16 de 18 columnas y detecta JAVE. Sin migración ni SP. |
 | _(pantalla de seguimiento)_ | (2026-10-20) RegistroSeguimiento rehecho como **tablero**: un viaje por pedido y carreta, fase calculada por sus horas (en carga, en base, rumbo a / en Ecuador, retorno, cerrado), avance de cada tramo, último hito y avisos (falta inicio/término, descarga sin tracto, paso directo por TCI, espera larga en Trujillo/Complex/TCI); filtros por fecha de programación, texto (busca en todas las fechas) y planta; "Actualizar GPS de viajes abiertos" (6 por clic, primero los que llevan más tiempo sin consultar) y "Exportar STATUS GENERAL" (fecha + HORA por hito, se puede volver a importar). **Detalle** nuevo `SeguimientoViaje.aspx`: línea de tiempo de carga y descarga con el origen de cada hora (GPS, alerta Onway, registro anterior, corregido a mano), evidencia (regla, coordenadas, enlace al mapa, hora del GPS aunque la columna venga del Excel), corrección manual con motivo (el GPS ya no la pisa), datos que el GPS no sabe, datos del viaje, cerrar/reabrir y nuevo viaje a mano. La importación del Excel pasó a `ImportarSeguimiento.aspx` sin cambios de lógica. Migración 31 (`SeguimientoHito`, `fhUltimaConsultaGps`) y `sp_SE_RegistrarHitoGps`, `sp_SE_CorregirHito`, `sp_SE_GuardarDatosViaje`, `sp_SE_GuardarDatosManuales`, `sp_SE_CambiarEstado`. Probado por HTTP (tablero, pestañas, búsqueda, exportación, detalle, nuevo, importar) y con una prueba de integración con rollback de las escrituras. |
+| _(cuadro de octubre)_ | (2026-10-20) `herramientas/cuadro-status-general`: arma el cuadro STATUS GENERAL de un mes desde los Word de programación (carga y descarga unidas por la carreta; CAMBIO decide si la carreta sale en dos cargas seguidas) y las horas del GPS con la lógica de "Actualizar GPS" (si el tracto cargó el día anterior, se salta esa carga). Octubre: 127 cargas de Vitapro del 01 al 20/10, 113 con descarga, 111 con la carga completa; los 10 viajes del 10/10 coinciden al minuto con el sistema y la carga de ANU-794 del 19/10 con las horas marcadas a mano. Excel en `docs/DOCUMENTACION/2026/2026/OCTUBRE/STATUS GENERAL OCTUBRE 2026.xlsx` (gitignored). Con `-Bd aplicar` se crearon en sgvActualizada **103 viajes MANUAL con 1 560 horas** (origen, coordenadas y regla en `SeguimientoHito`); quedan 119 viajes de octubre. |
+| _(mapa de la ruta)_ | (2026-10-20) Detalle del viaje (`SeguimientoViaje.aspx`): panel **Ruta del viaje** con Leaflet (cdnjs) y teselas de OpenStreetMap: recorrido GPS del tracto de carga (azul) y del de descarga (naranja), hitos numerados, las 13 geocercas, km por tramo y reproducción animada (camión por tramo, línea que se va pintando, reloj con hora de Perú, velocidad y último hito; deslizador y velocidad de 10 min a 3 h por segundo). "Evidencia" de un hito lleva el mapa a ese punto y momento. `RutaViajeService` trae el historial de Onway (1 día por llamada), lo simplifica (≤ 2 500 puntos, la unidad parada queda en un punto) y guarda el tramo cerrado en `~/App_Data/RutasGps` (en curso: 10 min en memoria). `[WebMethod] ObtenerRuta` con sesión y rol; `Web.config` sube `maxJsonLength` a 4 MB. Probado en el navegador con un viaje cerrado, uno en curso y uno creado desde el cuadro; 3 tests de `Simplificar`. |
 
 Detalle de reglas y convenciones nuevas: ver `CLAUDE.md`.
 
@@ -70,8 +72,19 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 
 ### Abiertas
 
-- [ ] **GPS de BFR-730**: Onway no tiene ningún dato suyo en septiembre (dos viajes sin trazabilidad). Revisar
-      con Location World si el equipo funciona o si está registrado con otra placa.
+- [ ] **GPS de BFR-730**: Onway no tiene ningún dato suyo en septiembre ni en octubre (descargas del 02, 07, 09
+      y 17/10 sin trazabilidad). Revisar con Location World si el equipo funciona o si está registrado con otra placa.
+- [ ] **F60-779 no está en Onway** (carga del 03/10, pedido 4400133288): confirmar si tiene GPS o con qué placa.
+- [ ] **Cuadro de octubre, revisar con la administradora**: carreta T0Q-991 en dos cargas seguidas (AVO-818 el
+      09/10 y ANU-794 el 10/10; el GPS ve a los dos en Vitapro, uno de los Word tiene mal la carreta; AVO-818 quedó
+      sin viaje); BPT-919 con T4G-972 del 02/10 (el GPS no lo ve en Vitapro: ¿no fue?); BFK-729 con TDX-994 del
+      15/10 (descarga completa, el GPS no ve la carga); BPS-816 → C4Z-745 del 15/10 (la descarga se corta después
+      del CEBAF del 16/10).
+- [ ] **Cuadro de octubre: 8 cargas sin pedido no se crearon** (6 del 20/10 sin descarga en los Word, AVO-818 del
+      09/10 y BPT-919 del 02/10). Las del 20/10 nacen solas al registrar su despacho; si no, volver a correr
+      `Generar-Cuadro.ps1 -Bd aplicar` cuando llegue el Word con su descarga (salta los que ya están).
+- [ ] **Mapa de la ruta: teselas de OpenStreetMap** (`tile.openstreetmap.org`) sirven para poco tráfico; si el
+      sistema crece, pasar a un proveedor con clave (CARTO, MapTiler). CARTO ya pide clave.
 - [ ] **Trazabilidad: revisar las 10 diferencias de más de 1 h de la prueba de septiembre** (8 en el Complex:
       el GPS ve la unidad en la cola u horas antes o después que el Excel) y las 2 plantas cruzadas (TBM-898 →
       CBU-945 y BSD-716 → T7J-861 del 07/09: el GPS las ve en la planta contraria a la del Excel; probable fila
@@ -156,6 +169,11 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 - [ ] **Serilog 2.12 → 4.x** (opcional; requiere nuevas dependencias y binding redirects).
 
 ### Hechas
+
+- [x] **Cuadro STATUS GENERAL de octubre desde los Word y el GPS, cargado en el seguimiento** (2026-10-20): ver
+      la fila de la sección 3. 103 viajes MANUAL nuevos en sgvActualizada (la BD del sitio publicado).
+- [x] **Mapa de la ruta del viaje** (carga y descarga con su línea, hitos, geocercas y reproducción) en el
+      detalle del seguimiento (2026-10-20): ver la fila de la sección 3.
 
 - [x] **Prueba histórica de la trazabilidad con septiembre** (2026-10-20): 78 viajes de Vitapro del 7 al 18/09
       armados solo con las programaciones en Word (`docs/DOCUMENTACION/Despachos Ene-Set 2026`; carga en
@@ -379,7 +397,9 @@ Con sqlcmd contra somee usar siempre `-C -I -f 65001` (certificado, QUOTED_IDENT
    `https://sgvtransporte.somee.com`). Release fija `App.UrlPublica`, quita `debug`, activa
    `customErrors` y HTTPS. Verificar que se suba `bin\runtimes\win-x86\` (app pool de 32 bits; QuestPDF)
    y los DLL de **PdfPig 0.1.9** (importación de documentos del pedido). En el `appSettings.Secrets.config`
-   de producción poner el `OnwayAuth0ClientSecret` nuevo (cambió el 2026-10-09).
+   de producción poner el `OnwayAuth0ClientSecret` nuevo (cambió el 2026-10-09). El mapa de la ruta del
+   seguimiento escribe en `~/App_Data/RutasGps` (como `App_Data/OrdenesViaje`: la carpeta debe tener permiso
+   de escritura) y necesita el `maxJsonLength` nuevo de `Web.config`.
 7. Tras publicar: en `RegistroChoferes` → "Actualizar con la lista" con
    `LISTA DE CHOFERES ACTUALES (corregida).xlsx` (no hay migración; Victor Marzal con DNI 00243179, Yépez y
    Rivas con carnet de extranjería). Requiere el `sp_RegistrarConductorImportado` del paso 2.
