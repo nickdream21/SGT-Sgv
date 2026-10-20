@@ -274,6 +274,12 @@ Con sqlcmd contra somee usar siempre `-C -I -f 65001` (certificado, QUOTED_IDENT
 
 ## 6. Paso a producción (al final, en este orden)
 
+> **Decisión del 2026-10-19:** el sitio `sgvtransporte.somee.com` se publica (FTP desde Visual Studio,
+> Release) **contra la BD de pruebas `sgvActualizada`**: se sube el `connectionStrings.config` local. La BD
+> `sgvTransporte` no se usa por ahora, así que los pasos 1–5 de abajo quedan solo para si algún día se
+> vuelve a ella. Desde la publicación, sgvActualizada tiene datos reales: no borrar ni limpiar sin confirmar.
+> Pendiente: cambiar o desactivar los usuarios de prueba con contraseña conocida (`privado/CREDENCIALES_USUARIOS.txt`).
+
 1. `aplicar-migraciones.ps1 -Entorno produccion -SoloListar`, revisar, y luego con `-ConfirmoProduccion`
    (hoy 01–30; incluye la 16, hora de Perú: el código nuevo usa `dbo.fn_AhoraPeru()`; la 20 amplía
    `OrdenViaje.observaciones`; la 21–22 van antes de los SP de exportación; la **26 borra
