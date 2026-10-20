@@ -48,17 +48,31 @@ namespace WebSGV.Services.GpsIntegracion
         /// <summary>Estadía mínima en TCI (el trámite dura pocos minutos).</summary>
         private const int MinutosMinimosEnTci = 3;
 
+        /// <summary>Días máximos de la salida de la carga al Complex y del Complex a la planta: más lejos es otro viaje.</summary>
+        private const int DiasMaximosEntreAnclas = 4;
+
         public static ResultadoTramoDescarga DetectarTramoDescarga(IEnumerable<OnwayHistoryPoint> historial, DateTime desdeUtc)
         {
             var puntos = Ordenar(historial);
             var r = new ResultadoTramoDescarga();
             int cursor = puntos.FindIndex(p => Hora(p) >= desdeUtc);
             if (cursor < 0) return r;
+
+            // El tramo empieza cuando el tracto sale de la base con la carreta, después de la carga.
+            // Sin esa salida no hay descarga todavía: lo que vea antes (p. ej. pasar por el CEBAF
+            // volviendo de Ecuador de su viaje anterior) no es de este viaje (caso del 19/10/2026).
+            var salidaBase = Visitas(puntos, GeocercasTrazabilidad.BaseSullana)
+                .FirstOrDefault(v => v.Cerrada && v.Ultimo + 1 >= cursor);
+            if (salidaBase == null || Hora(puntos[salidaBase.Ultimo + 1]) > Hora(puntos[cursor]).AddDays(DiasMaximosEntreAnclas))
+                return r;
+            cursor = salidaBase.Ultimo + 1;
             int primerHito = -1;
             void Marcar(int i) { if (primerHito < 0) primerHito = i; }
 
             // 1. Bodega nacional (Complex): llegada a la cola, ingreso y salida del patio.
             var complex = PrimeraVisita(puntos, GeocercasTrazabilidad.ComplexAcceso, cursor, MinutosMinimosEnBodega);
+            if (complex != null && Hora(puntos[complex.Primero]) > Hora(puntos[cursor]).AddDays(DiasMaximosEntreAnclas))
+                complex = null; // demasiado lejos: es de otro viaje del mismo tracto
             if (complex != null)
             {
                 r.LlegadaComplex = Hito(puntos[complex.Primero], "Primer punto en la cola del Complex (Av. Juan Velasco Alvarado)");
@@ -73,26 +87,40 @@ namespace WebSGV.Services.GpsIntegracion
                 cursor = complex.Cerrada ? complex.Ultimo + 1 : complex.Ultimo;
             }
 
-            // 2. CEBAF y 3. cruce: primer punto dentro, en ese orden.
-            int idx = PrimerPuntoDentro(puntos, GeocercasTrazabilidad.Cebaf, cursor);
-            if (idx >= 0)
+            // 2. Planta de descarga (el ancla, como la planta de Trujillo en la carga): la primera de
+            // Jave o Inbalnor donde la unidad se queda y entra. CEBAF, cruce y TCI se buscan solo
+            // entre el Complex y la planta: si uno no aparece queda vacío, en vez de tomarlo del
+            // viaje siguiente (caso T7J-861 del 18/09: sin punto en el CEBAF, se tomaba el del 22/09).
+            var jave = BuscarDescarga(puntos, GeocercasTrazabilidad.JaveAcceso, GeocercasTrazabilidad.JavePlanta, cursor);
+            var inbalnor = BuscarDescarga(puntos, GeocercasTrazabilidad.InbalnorAcceso, GeocercasTrazabilidad.InbalnorPlanta, cursor);
+            var descarga = jave != null && (inbalnor == null || jave.Item1.Primero <= inbalnor.Item1.Primero) ? jave : inbalnor;
+            if (descarga != null && Hora(puntos[descarga.Item1.Primero]) > Hora(puntos[cursor]).AddDays(DiasMaximosEntreAnclas))
+                descarga = null;
+            int limite = descarga != null ? descarga.Item1.Primero : FinDeVentana(puntos, cursor, DiasMaximosEntreAnclas);
+
+            // 3. CEBAF y cruce: zonas de paso; si el GPS no marcó un punto adentro, se estima el
+            // momento en que la unidad la atravesó entre dos puntos seguidos.
+            var cebaf = PrimerPaso(puntos, GeocercasTrazabilidad.Cebaf, cursor, limite, "dentro del CEBAF", "por el CEBAF");
+            if (cebaf != null)
             {
-                r.LlegadaCebaf = Hito(puntos[idx], "Primer punto dentro del CEBAF");
-                Marcar(idx);
-                cursor = idx;
+                r.LlegadaCebaf = cebaf.Item2;
+                Marcar(cebaf.Item1);
+                cursor = cebaf.Item1;
             }
-            idx = PrimerPuntoDentro(puntos, GeocercasTrazabilidad.Cruce, cursor);
-            if (idx >= 0)
+            var cruce = PrimerPaso(puntos, GeocercasTrazabilidad.Cruce, cursor, limite, "en la E50 después de la aduana de Ecuador", "a la E50 después de la aduana de Ecuador");
+            if (cruce != null)
             {
-                r.Cruce = Hito(puntos[idx], "Primer punto en la E50 después de la aduana de Ecuador");
-                Marcar(idx);
-                cursor = idx;
+                r.Cruce = cruce.Item2;
+                Marcar(cruce.Item1);
+                cursor = cruce.Item1;
             }
 
             // 4. TCI. Si se coordinó para que pase directo, no entra y se toma el control aduanero
             // cercano; si entró, ese control viene después y no cuenta.
             var tci = PrimeraVisita(puntos, GeocercasTrazabilidad.Tci, cursor, MinutosMinimosEnTci);
             var control = PrimeraVisita(puntos, GeocercasTrazabilidad.TciControlAduana, cursor, 1);
+            if (tci != null && tci.Primero >= limite) tci = null;
+            if (control != null && control.Primero >= limite) control = null;
             r.PasoDirectoTci = tci == null || (control != null && control.Primero < tci.Primero);
             var visitaTci = r.PasoDirectoTci ? control : tci;
             if (visitaTci != null)
@@ -106,10 +134,7 @@ namespace WebSGV.Services.GpsIntegracion
             }
             else r.PasoDirectoTci = false;
 
-            // 5. Planta de descarga: la primera de Jave o Inbalnor donde la unidad se queda y entra.
-            var jave = BuscarDescarga(puntos, GeocercasTrazabilidad.JaveAcceso, GeocercasTrazabilidad.JavePlanta, cursor);
-            var inbalnor = BuscarDescarga(puntos, GeocercasTrazabilidad.InbalnorAcceso, GeocercasTrazabilidad.InbalnorPlanta, cursor);
-            var descarga = jave != null && (inbalnor == null || jave.Item1.Primero <= inbalnor.Item1.Primero) ? jave : inbalnor;
+            // 5. Hitos de la planta de descarga.
             if (descarga != null)
             {
                 string nombre = descarga == jave ? "Jave" : "Inbalnor";
@@ -140,11 +165,53 @@ namespace WebSGV.Services.GpsIntegracion
             Visitas(puntos, zona).FirstOrDefault(v => v.Primero >= desde &&
                 (Hora(puntos[v.Ultimo]) - Hora(puntos[v.Primero])).TotalMinutes >= minutosMinimos);
 
-        private static int PrimerPuntoDentro(List<OnwayHistoryPoint> puntos, GeocercaGps zona, int desde)
+        /// <summary>Índice del primer punto posterior a <paramref name="dias"/> días desde <paramref name="desde"/> (o el final).</summary>
+        private static int FinDeVentana(List<OnwayHistoryPoint> puntos, int desde, int dias)
         {
-            for (int i = desde; i < puntos.Count; i++)
-                if (zona.Contiene(puntos[i].Lat, puntos[i].Lng)) return i;
-            return -1;
+            DateTime tope = Hora(puntos[desde]).AddDays(dias);
+            int i = puntos.FindIndex(desde, p => Hora(p) > tope);
+            return i < 0 ? puntos.Count : i;
+        }
+
+        /// <summary>
+        /// Primer paso por una zona entre los índices [desde, hasta): el primer punto adentro o, si
+        /// la unidad la atravesó entre dos puntos seguidos sin marcar ninguno adentro (de noche el
+        /// GPS reporta cada 1-2 km), el momento estimado repartiendo el tiempo entre esos dos puntos.
+        /// Devuelve el índice del punto que sigue al paso, para seguir buscando desde ahí.
+        /// </summary>
+        private static Tuple<int, HitoGps> PrimerPaso(List<OnwayHistoryPoint> puntos, GeocercaGps zona, int desde, int hasta,
+            string textoDentro, string textoPaso)
+        {
+            const double MetrosEntreMuestras = 30;
+            const double MinutosMaximosEntrePuntos = 15; // con un hueco mayor no se sabe por dónde fue
+            for (int i = desde; i < hasta && i < puntos.Count; i++)
+            {
+                var p = puntos[i];
+                if (zona.Contiene(p.Lat, p.Lng))
+                    return Tuple.Create(i, Hito(p, "Primer punto " + textoDentro));
+                if (i == desde) continue;
+
+                var a = puntos[i - 1];
+                double minutos = (Hora(p) - Hora(a)).TotalMinutes;
+                double metros = CheckpointMatchingService.CalcularDistanciaMetros(a.Lat, a.Lng, p.Lat, p.Lng);
+                if (minutos <= 0 || minutos > MinutosMaximosEntrePuntos || metros < MetrosEntreMuestras * 2) continue;
+
+                int n = (int)(metros / MetrosEntreMuestras);
+                for (int k = 1; k < n; k++)
+                {
+                    double f = (double)k / n;
+                    double lat = a.Lat + f * (p.Lat - a.Lat), lng = a.Lng + f * (p.Lng - a.Lng);
+                    if (!zona.Contiene(lat, lng)) continue;
+                    DateTime t = Hora(a).AddTicks((long)((Hora(p) - Hora(a)).Ticks * f));
+                    var estimado = new OnwayHistoryPoint { Lat = lat, Lng = lng, MessageTime = t, GenerateTime = t, Speed = p.Speed };
+                    return Tuple.Create(i, new HitoGps
+                    {
+                        HoraUtc = t, Punto = estimado,
+                        Fuente = $"Paso {textoPaso} estimado entre dos puntos del GPS ({Hora(a).AddHours(-5):HH:mm:ss} y {Hora(p).AddHours(-5):HH:mm:ss})",
+                    });
+                }
+            }
+            return null;
         }
 
         /// <summary>Visita al acceso de la planta (10+ min) con una estadía dentro de la bodega en la que se movió.</summary>

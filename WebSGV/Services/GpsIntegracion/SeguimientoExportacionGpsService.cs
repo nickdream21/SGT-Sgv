@@ -153,17 +153,26 @@ namespace WebSGV.Services.GpsIntegracion
                     return puntos;
                 };
 
-                var valoresEncontrados = new Dictionary<string, DateTime>();
-                var senalPorColumna = new Dictionary<string, string>();
-
-                // Llena la columna con el hito si estaba vacía; los valores ya registrados no se tocan.
+                // Lo que detecta el GPS se guarda siempre en SeguimientoHito (hora, punto, regla),
+                // aunque la columna ya tenga valor: así el detalle muestra "Excel 06:01 / GPS 06:01:28".
+                // sp_SE_RegistrarHitoGps solo llena las columnas vacías; una hora del Excel o
+                // corregida a mano no se toca.
+                var detectados = new List<Tuple<string, HitoGps>>();
                 void Registrar(string columna, HitoGps hito)
                 {
-                    if (hito == null || valoresYaConfirmados.ContainsKey(columna)) return;
-                    DateTime horaUtc = hito.HoraUtc.AddTicks(-(hito.HoraUtc.Ticks % TimeSpan.TicksPerSecond)); // el portal muestra segundos enteros
-                    valoresEncontrados[columna] = FechaHelper.ConvertirDeUtc(horaUtc);
-                    senalPorColumna[columna] = hito.Fuente;
+                    if (hito != null) detectados.Add(Tuple.Create(columna, hito));
                 }
+
+                // Un tramo con todas sus horas registradas y ya revisadas por el GPS (o corregidas a
+                // mano) no se vuelve a consultar: ahorra días de historial en cada actualización.
+                var revisadas = new HashSet<string>(DbHelper.ConsultarTabla(
+                        "SELECT columna FROM SeguimientoHito WHERE idSeguimiento = @id AND (horaGps IS NOT NULL OR fuente = 'MANUAL')",
+                        DbHelper.Param("@id", idSeguimiento))
+                    .Rows.Cast<DataRow>().Select(r => Convert.ToString(r["columna"])), StringComparer.OrdinalIgnoreCase);
+                bool TramoCompleto(IEnumerable<string> columnas) =>
+                    columnas.All(c => valoresYaConfirmados.ContainsKey(c) && revisadas.Contains(c));
+                var columnasCarga = new[] { "fhSalidaBase1", "fhLlegadaTrujillo", "fhIngresoPlanta", "fhSalidaPlanta", "fhLlegadaBase2" };
+                var columnasDescarga = ColumnasGps.Except(columnasCarga).ToArray();
 
                 // Tramo de carga (Tracto 1) y de descarga (Tracto 2) con geocercas en polígono y
                 // visitas en orden (TrazabilidadCargaService / TrazabilidadDescargaService), no con
@@ -172,7 +181,7 @@ namespace WebSGV.Services.GpsIntegracion
                 string avisoPasoDirecto = null;
                 DateTime? salidaPlantaUtc = valoresYaConfirmados.TryGetValue("fhSalidaPlanta", out var salidaPlantaConfirmada)
                     ? FechaHelper.ConvertirAUtc(salidaPlantaConfirmada) : (DateTime?)null;
-                if (dispositivo1 != null)
+                if (dispositivo1 != null && !TramoCompleto(columnasCarga))
                 {
                     var carga = TrazabilidadCargaService.DetectarTramoCarga(
                         historialEntre(1, fechaInicio.AddDays(-2), fechaInicio.AddDays(4)), FechaHelper.ConvertirAUtc(fechaInicio));
@@ -189,7 +198,7 @@ namespace WebSGV.Services.GpsIntegracion
                 // La descarga se busca desde que la carga salió de la planta (o desde la fecha del
                 // viaje si no se sabe): la carreta la lleva otro tracto, o el mismo después de pasar por base.
                 string rama = ramaExistente;
-                if (dispositivo2 != null)
+                if (dispositivo2 != null && !TramoCompleto(columnasDescarga))
                 {
                     DateTime desdeDescargaUtc = salidaPlantaUtc ?? FechaHelper.ConvertirAUtc(fechaInicio);
                     DateTime diaDescarga = FechaHelper.ConvertirDeUtc(desdeDescargaUtc).Date;
@@ -213,24 +222,43 @@ namespace WebSGV.Services.GpsIntegracion
                         avisoPasoDirecto += " Pasó directo por TCI: se tomó el control aduanero cercano.";
                 }
 
+                var valoresEncontrados = new Dictionary<string, DateTime>();
+                var senalPorColumna = new Dictionary<string, string>();
+                foreach (var d in detectados)
+                {
+                    var hito = d.Item2;
+                    DateTime horaUtc = hito.HoraUtc.AddTicks(-(hito.HoraUtc.Ticks % TimeSpan.TicksPerSecond)); // el portal muestra segundos enteros
+                    DateTime horaLocal = FechaHelper.ConvertirDeUtc(horaUtc);
+                    bool esAlertaOnway = hito.Fuente != null && hito.Fuente.StartsWith("Alerta de geocerca de Onway", StringComparison.OrdinalIgnoreCase);
+                    object aplicado = DbHelper.EjecutarEscalarSp("sp_SE_RegistrarHitoGps",
+                        DbHelper.Param("@idSeguimiento", idSeguimiento),
+                        DbHelper.Param("@columna", d.Item1),
+                        DbHelper.Param("@horaGps", horaLocal),
+                        DbHelper.Param("@fuenteGps", esAlertaOnway ? "ONWAY" : "GPS"),
+                        DbHelper.Param("@latitud", hito.Punto != null ? (object)Math.Round((decimal)hito.Punto.Lat, 6) : null),
+                        DbHelper.Param("@longitud", hito.Punto != null ? (object)Math.Round((decimal)hito.Punto.Lng, 6) : null),
+                        DbHelper.Param("@regla", hito.Fuente != null && hito.Fuente.Length > 200 ? hito.Fuente.Substring(0, 200) : hito.Fuente));
+                    if (Convert.ToInt32(aplicado) == 1)
+                    {
+                        valoresEncontrados[d.Item1] = horaLocal;
+                        senalPorColumna[d.Item1] = hito.Fuente;
+                    }
+                }
+
+                DbHelper.EjecutarNonQuery(
+                    "UPDATE SeguimientoExportacion SET fhUltimaConsultaGps = dbo.fn_AhoraPeru()" +
+                    (rama != null && ramaExistente == null ? ", bodegaEcuatoriana = @rama, bodegaDescarga = @rama" : "") +
+                    " WHERE idSeguimiento = @id",
+                    DbHelper.Param("@id", idSeguimiento), DbHelper.Param("@rama", rama));
+
                 int totalConfirmados = valoresEncontrados.Count + valoresYaConfirmados.Count;
                 if (totalConfirmados == 0)
                     return ResultadoConsultaGpsExportacion.Fallo("El GPS no reportó ningún punto de control coincidente para este viaje.");
 
                 if (valoresEncontrados.Count > 0)
-                {
-                    GuardarValores(idSeguimiento, valoresEncontrados, rama);
-
-                    var camposSenalDebil = senalPorColumna
-                        .Where(kv => kv.Value == ResultadoCampoGps.SenalRevisar)
-                        .Select(kv => kv.Key)
-                        .ToList();
-
                     AuditoriaHelper.Registrar("CONSULTAR_HORA_GPS", "SeguimientoExportacion", idSeguimiento,
                         $"GPS actualizó {valoresEncontrados.Count} campo(s) de fecha/hora" +
-                        (rama != null && rama != ramaExistente ? $" (ruta detectada: {rama})" : "") +
-                        (camposSenalDebil.Count > 0 ? $". Revisar manualmente: {string.Join(", ", camposSenalDebil)}." : "."));
-                }
+                        (rama != null && rama != ramaExistente ? $" (ruta detectada: {rama})." : "."));
 
                 // ColumnasGps es la única fuente de verdad de qué campos llena el GPS: es la misma
                 // lista que alimenta el SELECT y `valoresYaConfirmados`, así que el conteo y el
@@ -259,35 +287,6 @@ namespace WebSGV.Services.GpsIntegracion
                 LogSGV.Error(ex, "Error consultando GPS Onway para seguimiento {IdSeguimiento}", idSeguimiento);
                 return ResultadoConsultaGpsExportacion.Fallo(ex.MensajeParaUsuario());
             }
-        }
-
-        private static void GuardarValores(int idSeguimiento, Dictionary<string, DateTime> valores, string rama)
-        {
-            if (valores.Count == 0) return;
-
-            var sets = new List<string>();
-            var parametros = new List<System.Data.SqlClient.SqlParameter>();
-            int i = 0;
-            foreach (var kv in valores)
-            {
-                string paramName = "@v" + i++;
-                sets.Add($"{kv.Key} = {paramName}");
-                parametros.Add(DbHelper.Param(paramName, kv.Value));
-            }
-
-            if (rama != null)
-            {
-                sets.Add("bodegaEcuatoriana = @rama");
-                sets.Add("bodegaDescarga = @rama");
-                parametros.Add(DbHelper.Param("@rama", rama));
-            }
-
-            sets.Add("fechaModificacion = dbo.fn_AhoraPeru()");
-
-            string sql = $"UPDATE SeguimientoExportacion SET {string.Join(", ", sets)} WHERE idSeguimiento = @id";
-            parametros.Add(DbHelper.Param("@id", idSeguimiento));
-
-            DbHelper.EjecutarNonQuery(sql, parametros.ToArray());
         }
     }
 }

@@ -1,6 +1,6 @@
 # Plan de mejoras SGV — estado y tareas pendientes
 
-Última actualización: **2026-10-20**, al día con el reporte GPS por placas (`8a586f7`) más la trazabilidad GPS de los tramos de carga y descarga (geocercas en polígono para "Verificar GPS", sin migración; sección 4). Este documento es el punto de partida para seguir trabajando
+Última actualización: **2026-10-20**, al día con la trazabilidad GPS de carga y descarga (`0b4c311`) más la pantalla nueva de seguimiento de exportación, con los viajes creados desde los despachos (migraciones 31–32 y 6 `sp_SE_*` nuevos, ya aplicados en pruebas; sección 4). Este documento es el punto de partida para seguir trabajando
 desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 
 ## 1. Estado actual
@@ -8,7 +8,7 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 | | Al empezar (2026-10-07) | Ahora |
 |---|---|---|
 | Puntuación general | 5.5 / 10 | **8 / 10** |
-| Tests | 215 | **483** en verde (2026-10-19; incluye los de integración, varios escriben con rollback) |
+| Tests | 215 | **508** en verde (2026-10-20; incluye los de integración, varios escriben con rollback) |
 | Paquetes NuGet | 40 | 23 |
 | Procedimientos del repo vs BD de pruebas | sin control, 2 inexistentes | **79/79 iguales** (la BD tiene exactamente los del repo) |
 
@@ -59,6 +59,7 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 | _(destino de descarga)_ | (2026-10-18) Destino de descarga por unidad (pedido + carreta): pantalla `DestinoDescarga.aspx` (Excel o filas pegadas con vista previa, corrección manual, historial); la descarga por pedido propone la planta de cada tracto desde esa lista; plantas Milagro y Jave; migración 30 y `sp_DD_*`. |
 | _(reporte GPS)_ | (2026-10-19) Reporte GPS por placas (`ReporteGps.aspx`, menú Despacho): historial de varias unidades a la vez desde el API de Onway (el portal solo deja 3), un Excel por placa con las columnas del portal o todos en ZIP; trae los tractos de carga y descarga de los pedidos; muestra la última posición de cada unidad y arma asunto y mensaje del correo. Comparado con el Excel del portal (BNG-862, 19/10, 983 filas en el mismo orden): idénticos fecha/hora (es la de recepción, `generateTime`), dirección, velocidad, batería (`internalBatteryLevel`) y alertas; coordenadas 978–961/983 (6.º decimal); odómetro (`mileage + odometerDeltaPatch`) 888/983 — en las filas de alerta el API no da odómetro y se repite el último. El horómetro solo sale en unidades con CANBUS (el portal lo calcula aparte) y *Tipo de carrocería* no está en el API. 11 placas en ~40 s. Sin migración ni SP. |
 | _(trazabilidad, tramo carga)_ | (2026-10-19) "Verificar GPS" de RegistroSeguimiento detecta el tramo de carga del Tracto 1 (salida de base, llegada a Trujillo, ingreso y salida de planta, llegada a base) con geocercas en polígono y visitas en orden (`TrazabilidadCargaService`, `GeocercaGps`), en vez de círculos por columna: el círculo del ingreso tomaba la espera en la cola como ingreso (ANU-794 19/10: 07:05 en vez de 15:12). Usa las alertas de geocerca de Onway ("salió de Base Viviana Sullana") cuando existen. Banco de casos reales en `WebSGV.Tests/Datos/Trazabilidad` (historial guardado con `herramientas/reporte-gps/Guardar-HistorialCaso.ps1` + horas de la administradora): 5 casos en verde; contra el Excel STATUS GENERAL, 24/24 viajes de fines de septiembre con ingreso y salida de planta a ±2 min. Además el **tramo de descarga** del Tracto 2 (`TrazabilidadDescargaService`): salida de base, Complex (cola, patio), CEBAF, cruce a la E50, TCI (Transcomerinter) y Jave o Inbalnor, con la llegada final a base; geocercas dibujadas con OpenStreetMap. Con BFI-922 (pedido 4400133136, Jave) los 12 hitos salen a ±66 s y con BSD-716 (Inbalnor, 29-30/09) a ±33 s. Si la unidad pasa directo por TCI sin entrar (coordinado con TCI), llegada y salida de TCI se toman en el control de la Aduana del Ecuador ~400 m al noreste (`GeocercasTrazabilidad.TciControlAduana`). Probado de punta a punta sobre el seguimiento 7063 dentro de una transacción revertida: llena 16 de 18 columnas y detecta JAVE. Sin migración ni SP. |
+| _(pantalla de seguimiento)_ | (2026-10-20) RegistroSeguimiento rehecho como **tablero**: un viaje por pedido y carreta, fase calculada por sus horas (en carga, en base, rumbo a / en Ecuador, retorno, cerrado), avance de cada tramo, último hito y avisos (falta inicio/término, descarga sin tracto, paso directo por TCI, espera larga en Trujillo/Complex/TCI); filtros por fecha de programación, texto (busca en todas las fechas) y planta; "Actualizar GPS de viajes abiertos" (6 por clic, primero los que llevan más tiempo sin consultar) y "Exportar STATUS GENERAL" (fecha + HORA por hito, se puede volver a importar). **Detalle** nuevo `SeguimientoViaje.aspx`: línea de tiempo de carga y descarga con el origen de cada hora (GPS, alerta Onway, registro anterior, corregido a mano), evidencia (regla, coordenadas, enlace al mapa, hora del GPS aunque la columna venga del Excel), corrección manual con motivo (el GPS ya no la pisa), datos que el GPS no sabe, datos del viaje, cerrar/reabrir y nuevo viaje a mano. La importación del Excel pasó a `ImportarSeguimiento.aspx` sin cambios de lógica. Migración 31 (`SeguimientoHito`, `fhUltimaConsultaGps`) y `sp_SE_RegistrarHitoGps`, `sp_SE_CorregirHito`, `sp_SE_GuardarDatosViaje`, `sp_SE_GuardarDatosManuales`, `sp_SE_CambiarEstado`. Probado por HTTP (tablero, pestañas, búsqueda, exportación, detalle, nuevo, importar) y con una prueba de integración con rollback de las escrituras. |
 
 Detalle de reglas y convenciones nuevas: ver `CLAUDE.md`.
 
@@ -68,6 +69,36 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 (no escondido dentro del texto de una tarea hecha).
 
 ### Abiertas
+
+- [ ] **GPS de BFR-730**: Onway no tiene ningún dato suyo en septiembre (dos viajes sin trazabilidad). Revisar
+      con Location World si el equipo funciona o si está registrado con otra placa.
+- [ ] **Trazabilidad: revisar las 10 diferencias de más de 1 h de la prueba de septiembre** (8 en el Complex:
+      el GPS ve la unidad en la cola u horas antes o después que el Excel) y las 2 plantas cruzadas (TBM-898 →
+      CBU-945 y BSD-716 → T7J-861 del 07/09: el GPS las ve en la planta contraria a la del Excel; probable fila
+      invertida en el Excel). Hay que mirarlas con la administradora.
+
+- [ ] **Seguimiento: probar en el navegador lo que escribe** (corregir una hora, guardar los datos que el GPS
+      no sabe, editar datos del viaje, nuevo viaje, cerrar/reabrir, "Actualizar GPS") y los paneles de
+      evidencia/corrección (JS). Por HTTP solo se probó lo que lee; las escrituras, con la prueba de
+      integración `SeguimientoViajesBdTests` (rollback). No había navegador conectado el 2026-10-20.
+- [ ] **Seguimiento: guardar la hora de la programación del Word** (columna HORARIO, p. ej. "05:50 AM") en el
+      despacho y pasarla a F.H. Programación. Hoy se lee y se muestra en RegistroDespacho pero no se guarda:
+      el viaje toma solo la fecha del despacho (para el GPS alcanza, busca desde ese día).
+- [ ] **Seguimiento: crear también el viaje al registrar el despacho** (hoy se crea al abrir el tablero, con
+      `sp_SE_SincronizarDespachos` sobre los despachos de carga de exportación de los últimos 60 días).
+- [ ] **Seguimiento: confirmar que cada despacho de descarga en Ecuador se enlaza a su carga** (`idDespachoCarga`).
+      Si no, la sincronización lo une por pedido y carreta; un despacho de descarga sin carreta o con otra
+      carreta no completa el viaje.
+- [ ] **Seguimiento, etapa 4: actualización automática del GPS** (tarea programada en la PC de la oficina o
+      similar; somee no corre tareas en segundo plano) y guardar en BD el historial GPS ya descargado por
+      tracto y día, para no volver a pedirlo al API. Hoy "Actualizar GPS de viajes abiertos" hace ~3 viajes por
+      clic (~30 s por viaje: ~20 días de historial cada uno; medido el 2026-10-20 con los 10 viajes del pedido
+      4400133436). Además, cortar la ventana de la descarga cuando el viaje ya volvió a base.
+- [ ] **Borrar los `sp_SE_*` que dejó de usar la pantalla vieja**: `sp_SE_ListarEnCurso`, `sp_SE_Insertar`,
+      `sp_SE_Listar`, `sp_SE_ObtenerPorId`, `sp_SE_BuscarDespachosDisponibles`, `sp_SE_ObtenerDespachoPorId`
+      (ya no se llaman desde C#; revisar antes que no los use otra cosa, con respaldo y migración).
+- [ ] **Seguimiento: vincular el despacho** (`idDespachoOrigen`/`idDespachoDestino`): la pantalla vieja tenía
+      el buscador de despachos; la nueva todavía no lo muestra (las columnas siguen y el GPS las usa).
 
 - [ ] **Trazabilidad: qué escribir en F.H.LL. Base cuando la unidad pasa directo** sin entrar a la base. El
       motor ya lo detecta (`PasoDirectoBase`) y "Verificar GPS" lo avisa, pero no llena la columna.
@@ -125,6 +156,33 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 - [ ] **Serilog 2.12 → 4.x** (opcional; requiere nuevas dependencias y binding redirects).
 
 ### Hechas
+
+- [x] **Prueba histórica de la trazabilidad con septiembre** (2026-10-20): 78 viajes de Vitapro del 7 al 18/09
+      armados solo con las programaciones en Word (`docs/DOCUMENTACION/Despachos Ene-Set 2026`; carga en
+      Trujillo + descarga en Guayaquil unidas por la carreta y la columna CAMBIO: en los 72 con descarga el
+      tracto coincide con el Excel) y comparados con el Excel STATUS GENERAL: de 908 horas, 80 % a ±2 min,
+      97 % a ±10 min, 1 % a más de 1 h. Se corrigió la descarga: el CEBAF y el cruce se pasan de noche entre
+      dos puntos del GPS sin ninguno adentro (ahora se estima el paso entre los dos puntos) y, sin ancla, el
+      resto del viaje se tomaba del viaje siguiente (ahora CEBAF, cruce y TCI se buscan solo entre el Complex
+      y la planta de descarga; caso T7J-861 en el banco de pruebas). Decisión: la llegada a la planta en
+      Ecuador es la del GPS (orilla de la carretera); en septiembre el Excel de Jave la anotaba ~4 min después,
+      en el camino de servicio. Prueba con octubre: los 10 viajes del despacho del 10/10 (pedido 4400133436)
+      salen completos (17 de 17 hitos, 5 a Jave y 5 a Inbalnor) y la carga de ANU-794 del 19/10 coincide con las
+      horas marcadas a mano. Se corrigió que el tracto de descarga, volviendo de Ecuador de su viaje anterior,
+      pasara por el CEBAF y se tomara como hito de este viaje: la descarga empieza recién cuando el tracto sale
+      de la base después de la carga.
+
+- [x] **Los viajes del seguimiento nacen de los despachos** (2026-10-20, decisión del usuario: lo importado del
+      Excel ya pasó y no sirve para seguir los viajes de ahora). `sp_SE_SincronizarDespachos` crea un viaje por
+      cada despacho de carga de exportación y lo completa con su despacho de descarga en Ecuador (tracto, chofer y
+      planta Jave/Inbalnor desde el despacho o la lista de destinos); el despacho manda en pedido, carreta,
+      tractos y choferes (en el detalle quedan de solo lectura) y uno anulado deja el viaje anulado. El tablero
+      muestra solo los de despacho y los creados a mano; los importados del Excel (origen NULL), con la casilla
+      "Incluir los importados del Excel". Migración 32 (`origen`). Al abrir el tablero en pruebas se crearon
+      los 10 viajes del pedido 4400133436 (10/10) con sus tractos de carga y descarga emparejados.
+- [x] **Pantalla nueva de seguimiento de exportación** (2026-10-20): tablero, detalle del viaje e importación
+      aparte; ver la fila de la sección 3. Para publicarla: la migración 31 y los 5 `sp_SE_*` nuevos ya están
+      en `sgvActualizada` (la BD que usa el sitio publicado); solo falta publicar el sitio.
 
 - [x] **Trazabilidad GPS, tramos de carga (Base → Trujillo → Base) y descarga (Base → Complex → CEBAF → TCI → Jave/Inbalnor → Base)** en "Verificar GPS" (2026-10-19): ver la
       fila de la sección 3. Para sumar un caso: `herramientas/reporte-gps/Guardar-HistorialCaso.ps1 -Placa X
@@ -303,7 +361,7 @@ Con sqlcmd contra somee usar siempre `-C -I -f 65001` (certificado, QUOTED_IDENT
 > Pendiente: cambiar o desactivar los usuarios de prueba con contraseña conocida (`privado/CREDENCIALES_USUARIOS.txt`).
 
 1. `aplicar-migraciones.ps1 -Entorno produccion -SoloListar`, revisar, y luego con `-ConfirmoProduccion`
-   (hoy 01–30; incluye la 16, hora de Perú: el código nuevo usa `dbo.fn_AhoraPeru()`; la 20 amplía
+   (hoy 01–32; incluye la 16, hora de Perú: el código nuevo usa `dbo.fn_AhoraPeru()`; la 20 amplía
    `OrdenViaje.observaciones`; la 21–22 van antes de los SP de exportación; la **26 borra
    `Despachos.idProducto`** y la 26–29 van antes de `sp_CrearDespacho`; la **30 agrega las plantas Milagro y
    Jave** y la tabla `DestinoDescarga`: revisar que producción no tenga ya plantas con esos nombres). Antes de reimportar el STATUS

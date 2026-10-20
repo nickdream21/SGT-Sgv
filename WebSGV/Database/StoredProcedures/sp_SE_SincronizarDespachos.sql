@@ -1,0 +1,133 @@
+-- ============================================================
+-- Crea y actualiza los viajes del seguimiento de exportación a partir de los despachos
+-- (la programación), desde @desde:
+--   1. Cada despacho de CARGA de exportación (nacional, con pedido) es un viaje: pedido,
+--      carreta, tracto y chofer de carga, fecha de programación. El despacho manda: si se
+--      corrige en Despachos, el viaje se corrige aquí.
+--   2. Su despacho de DESCARGA en Ecuador (enlazado por idDespachoCarga, o por pedido y
+--      carreta) completa el tracto y el chofer de descarga.
+--   3. La planta de descarga sale del despacho de descarga (Jave / Milagro = Inbalnor) o de
+--      la lista de destinos por carreta (DestinoDescarga), si el viaje todavía no la tiene.
+--   4. Un despacho de carga anulado (activo = 0) deja su viaje como CANCELADO.
+-- Devuelve cuántos viajes creó y cuántos actualizó.
+-- ============================================================
+CREATE OR ALTER PROCEDURE sp_SE_SincronizarDespachos
+    @desde DATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @creados INT = 0, @actualizados INT = 0;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- Despachos de carga de exportación desde @desde (activos y anulados).
+        SELECT d.idDespacho, d.activo,
+               LTRIM(RTRIM(d.numeroPedido)) AS pedido,
+               LTRIM(RTRIM(ca.placaCarreta)) AS carreta,
+               LTRIM(RTRIM(t.placaTracto)) AS tracto,
+               LTRIM(RTRIM(ISNULL(LTRIM(RTRIM(co.nombre)), '') + ISNULL(' ' + NULLIF(LTRIM(RTRIM(co.apPaterno)), ''), '')
+                           + ISNULL(' ' + NULLIF(LTRIM(RTRIM(co.apMaterno)), ''), ''))) AS chofer,
+               CAST(d.fechaDespacho AS DATETIME) AS fhProgramacion
+        INTO #carga
+        FROM dbo.Despachos d
+        LEFT JOIN dbo.Tracto t     ON t.idTracto = d.idTracto
+        LEFT JOIN dbo.Carreta ca   ON ca.idCarreta = d.idCarreta
+        LEFT JOIN dbo.Conductor co ON co.idConductor = d.idConductor
+        WHERE d.esExportacion = 1 AND d.tipoOperacion = 'CARGA' AND ISNULL(d.esInternacional, 0) = 0
+          AND NULLIF(LTRIM(RTRIM(d.numeroPedido)), '') IS NOT NULL
+          AND d.fechaDespacho >= @desde;
+
+        -- 1. Viajes nuevos.
+        INSERT INTO dbo.SeguimientoExportacion
+            (cliente, carreta, tracto1, conductorOrigen, fhProgramacion, idDespachoOrigen, origen, estado, fechaRegistro, activo)
+        SELECT c.pedido, c.carreta, c.tracto, NULLIF(c.chofer, ''), c.fhProgramacion, c.idDespacho, 'DESPACHO', 'EN_CURSO', dbo.fn_AhoraPeru(), 1
+        FROM #carga c
+        WHERE c.activo = 1
+          AND NOT EXISTS (SELECT 1 FROM dbo.SeguimientoExportacion se WHERE se.idDespachoOrigen = c.idDespacho AND se.activo = 1);
+        SET @creados = @@ROWCOUNT;
+
+        -- Lo que dice el despacho de carga manda sobre el viaje (solo si cambió).
+        UPDATE se SET
+            cliente = c.pedido, carreta = c.carreta, tracto1 = c.tracto, conductorOrigen = NULLIF(c.chofer, ''),
+            fhProgramacion = CASE WHEN se.fhProgramacion IS NULL OR CAST(se.fhProgramacion AS DATE) <> CAST(c.fhProgramacion AS DATE)
+                                  THEN c.fhProgramacion ELSE se.fhProgramacion END,
+            fechaModificacion = dbo.fn_AhoraPeru()
+        FROM dbo.SeguimientoExportacion se
+        JOIN #carga c ON c.idDespacho = se.idDespachoOrigen
+        WHERE se.activo = 1 AND c.activo = 1
+          AND (ISNULL(se.cliente, '') <> ISNULL(c.pedido, '') OR ISNULL(se.carreta, '') <> ISNULL(c.carreta, '')
+               OR ISNULL(se.tracto1, '') <> ISNULL(c.tracto, '') OR ISNULL(se.conductorOrigen, '') <> ISNULL(NULLIF(c.chofer, ''), '')
+               OR se.fhProgramacion IS NULL OR CAST(se.fhProgramacion AS DATE) <> CAST(c.fhProgramacion AS DATE));
+        SET @actualizados = @actualizados + @@ROWCOUNT;
+
+        -- 4. Despacho de carga anulado: el viaje queda anulado.
+        UPDATE se SET estado = 'CANCELADO', fechaModificacion = dbo.fn_AhoraPeru()
+        FROM dbo.SeguimientoExportacion se
+        JOIN #carga c ON c.idDespacho = se.idDespachoOrigen
+        WHERE se.activo = 1 AND c.activo = 0 AND se.estado <> 'CANCELADO';
+        SET @actualizados = @actualizados + @@ROWCOUNT;
+
+        -- 2. Despacho de descarga: por idDespachoCarga, o por pedido y carreta si no está enlazado.
+        SELECT x.idSeguimiento, x.idDespacho, x.tracto, x.chofer, x.planta
+        INTO #descarga
+        FROM (
+            SELECT se.idSeguimiento, d.idDespacho,
+                   LTRIM(RTRIM(t.placaTracto)) AS tracto,
+                   LTRIM(RTRIM(ISNULL(LTRIM(RTRIM(co.nombre)), '') + ISNULL(' ' + NULLIF(LTRIM(RTRIM(co.apPaterno)), ''), '')
+                               + ISNULL(' ' + NULLIF(LTRIM(RTRIM(co.apMaterno)), ''), ''))) AS chofer,
+                   UPPER(LTRIM(RTRIM(p.nombre))) AS planta,
+                   ROW_NUMBER() OVER (PARTITION BY se.idSeguimiento ORDER BY CASE WHEN d.idDespachoCarga = se.idDespachoOrigen THEN 0 ELSE 1 END, d.idDespacho DESC) AS n
+            FROM dbo.SeguimientoExportacion se
+            JOIN dbo.Despachos d ON d.activo = 1 AND d.tipoOperacion = 'DESCARGA' AND d.esInternacional = 1
+                 AND (d.idDespachoCarga = se.idDespachoOrigen
+                      OR (d.idDespachoCarga IS NULL AND LTRIM(RTRIM(d.numeroPedido)) = se.cliente
+                          AND EXISTS (SELECT 1 FROM dbo.Carreta ca WHERE ca.idCarreta = d.idCarreta
+                                      AND REPLACE(ca.placaCarreta, '-', '') = REPLACE(se.carreta, '-', ''))))
+            LEFT JOIN dbo.Tracto t     ON t.idTracto = d.idTracto
+            LEFT JOIN dbo.Conductor co ON co.idConductor = d.idConductor
+            LEFT JOIN dbo.Planta p     ON p.idPlanta = d.idPlanta
+            WHERE se.activo = 1 AND se.origen = 'DESPACHO' AND se.idDespachoOrigen IN (SELECT idDespacho FROM #carga)
+        ) x
+        WHERE x.n = 1;
+
+        UPDATE se SET
+            tracto2 = dd.tracto, conductorDestino = NULLIF(dd.chofer, ''), idDespachoDestino = dd.idDespacho,
+            fechaModificacion = dbo.fn_AhoraPeru()
+        FROM dbo.SeguimientoExportacion se
+        JOIN #descarga dd ON dd.idSeguimiento = se.idSeguimiento
+        WHERE ISNULL(se.tracto2, '') <> ISNULL(dd.tracto, '') OR ISNULL(se.conductorDestino, '') <> ISNULL(NULLIF(dd.chofer, ''), '')
+              OR ISNULL(se.idDespachoDestino, 0) <> dd.idDespacho;
+        SET @actualizados = @actualizados + @@ROWCOUNT;
+
+        -- 3. Planta de descarga, si el viaje todavía no la tiene.
+        UPDATE se SET
+            bodegaDescarga = pl.planta, bodegaEcuatoriana = pl.planta, fechaModificacion = dbo.fn_AhoraPeru()
+        FROM dbo.SeguimientoExportacion se
+        CROSS APPLY (
+            SELECT TOP 1 CASE x.nombre WHEN 'MILAGRO' THEN 'INBALNOR' WHEN 'INBALNOR' THEN 'INBALNOR' WHEN 'JAVE' THEN 'JAVE' END AS planta
+            FROM (
+                SELECT 1 AS prioridad, dd.planta AS nombre FROM #descarga dd WHERE dd.idSeguimiento = se.idSeguimiento
+                UNION ALL
+                SELECT 2, UPPER(LTRIM(RTRIM(p.nombre)))
+                FROM dbo.DestinoDescarga dest
+                JOIN dbo.Planta p ON p.idPlanta = dest.idPlanta
+                WHERE dest.activo = 1 AND dest.numeroPedido = se.cliente
+                  AND dest.placaCarreta = REPLACE(REPLACE(UPPER(se.carreta), '-', ''), ' ', '')
+            ) x
+            WHERE x.nombre IN ('MILAGRO', 'INBALNOR', 'JAVE')
+            ORDER BY x.prioridad
+        ) pl
+        WHERE se.activo = 1 AND se.origen = 'DESPACHO' AND se.bodegaDescarga IS NULL AND pl.planta IS NOT NULL
+          AND se.idDespachoOrigen IN (SELECT idDespacho FROM #carga);
+        SET @actualizados = @actualizados + @@ROWCOUNT;
+
+        COMMIT TRANSACTION;
+        SELECT @creados AS creados, @actualizados AS actualizados;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END

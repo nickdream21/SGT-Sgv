@@ -317,7 +317,7 @@
     <Content Include="Content\paginas\DetalleOrdenViaje.css" />
     <Content Include="Content\paginas\EditarDespacho.css" />
     <Content Include="Content\paginas\Exportacion\DashboardExportacion.css" />
-    <Content Include="Content\paginas\Exportacion\RegistroSeguimiento.css" />
+    <Content Include="Content\paginas\Exportacion\SeguimientoExportacion.css" />
     <Content Include="Content\paginas\FirmarLiquidacion.css" />
     <Content Include="Content\paginas\Inicio.css" />
     <Content Include="Content\paginas\LiquidacionesAprobadasContabilidad.css" />
@@ -352,7 +352,8 @@
     <Content Include="Scripts\paginas\DashboardOperador.js" />
     <Content Include="Scripts\paginas\EditarDespacho.js" />
     <Content Include="Scripts\paginas\Exportacion\DashboardExportacion.js" />
-    <Content Include="Scripts\paginas\Exportacion\RegistroSeguimiento.js" />
+    <Content Include="Scripts\paginas\Exportacion\ImportarSeguimiento.js" />
+    <Content Include="Scripts\paginas\Exportacion\SeguimientoViaje.js" />
     <Content Include="Scripts\paginas\FirmarLiquidacion.js" />
     <Content Include="Scripts\paginas\LiquidacionesAprobadasContabilidad.js" />
     <Content Include="Scripts\paginas\LiquidacionesPendientes.js" />
@@ -399,7 +400,9 @@
     <Content Include="Views\Error.aspx" />
     <Content Include="Views\Error404.aspx" />
     <Content Include="Views\Exportacion\DashboardExportacion.aspx" />
+    <Content Include="Views\Exportacion\ImportarSeguimiento.aspx" />
     <Content Include="Views\Exportacion\RegistroSeguimiento.aspx" />
+    <Content Include="Views\Exportacion\SeguimientoViaje.aspx" />
     <Content Include="Views\FirmarLiquidacion.aspx" />
     <Content Include="Views\Inicio.aspx" />
     <Content Include="Views\LiquidacionesAprobadasContabilidad.aspx">
@@ -493,7 +496,10 @@
     <Compile Include="Services\Facturas\FacturaEscrituraService.cs" />
     <Compile Include="Services\Facturas\FacturaValidaciones.cs" />
     <Compile Include="Services\FirmaService.cs" />
+    <Compile Include="Services\Exportacion\ExportacionStatusGeneral.cs" />
     <Compile Include="Services\Exportacion\FechaHoraExcel.cs" />
+    <Compile Include="Services\Exportacion\HitosSeguimiento.cs" />
+    <Compile Include="Services\Exportacion\SeguimientoViajesService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionCalculos.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionesContabilidadService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionesPendientesService.cs" />
@@ -628,6 +634,20 @@
     </Compile>
     <Compile Include="Views\Exportacion\RegistroSeguimiento.aspx.designer.cs">
       <DependentUpon>RegistroSeguimiento.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Exportacion\ImportarSeguimiento.aspx.cs">
+      <DependentUpon>ImportarSeguimiento.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Exportacion\ImportarSeguimiento.aspx.designer.cs">
+      <DependentUpon>ImportarSeguimiento.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Exportacion\SeguimientoViaje.aspx.cs">
+      <DependentUpon>SeguimientoViaje.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Exportacion\SeguimientoViaje.aspx.designer.cs">
+      <DependentUpon>SeguimientoViaje.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\DashboardAdminSistema.aspx.cs">
       <DependentUpon>DashboardAdminSistema.aspx</DependentUpon>
