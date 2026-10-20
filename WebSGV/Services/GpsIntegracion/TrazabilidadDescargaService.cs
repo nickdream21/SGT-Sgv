@@ -65,6 +65,7 @@ namespace WebSGV.Services.GpsIntegracion
                 .FirstOrDefault(v => v.Cerrada && v.Ultimo + 1 >= cursor);
             if (salidaBase == null || Hora(puntos[salidaBase.Ultimo + 1]) > Hora(puntos[cursor]).AddDays(DiasMaximosEntreAnclas))
                 return r;
+            DateTime desdeSalidaUtc = Hora(puntos[salidaBase.Ultimo + 1]);
             cursor = salidaBase.Ultimo + 1;
             int primerHito = -1;
             void Marcar(int i) { if (primerHito < 0) primerHito = i; }
@@ -153,6 +154,9 @@ namespace WebSGV.Services.GpsIntegracion
             // 6. Salida de base antes de la primera parada y regreso a la base al final.
             if (primerHito >= 0)
                 r.SalidaBase = BuscarSalidaBaseAntesDe(puntos, primerHito);
+            else
+                // Salió y va hacia Tumbes, pero todavía no llega al Complex: "rumbo a Ecuador".
+                r.SalidaBase = SalidaEnCamino(puntos, desdeSalidaUtc, RumboAEcuador);
             if (r.SalidaPlanta != null && cursor >= 0)
             {
                 BuscarRegresoBase(puntos, cursor, out var llegada, out _, out _);

@@ -60,6 +60,10 @@ namespace WebSGV.Services.GpsIntegracion
             "fhLlegadaPlantaEcuador", "fhLlegadaAlmacen", "fhIngreso", "fhSalida", "fhLlegadaBaseFinal",
         };
 
+        /// <summary>Salidas de base de cada tramo: se registran mientras la unidad va en camino y se pueden afinar después.</summary>
+        private static readonly HashSet<string> ColumnasSalidaBase =
+            new HashSet<string>(new[] { "fhSalidaBase1", "fhSalidaBase2" }, StringComparer.OrdinalIgnoreCase);
+
         public static ResultadoConsultaGpsExportacion ConsultarYActualizar(int idSeguimiento)
         {
             DataTable dt = DbHelper.ConsultarTabla(@"
@@ -198,6 +202,7 @@ namespace WebSGV.Services.GpsIntegracion
                 // La descarga se busca desde que la carga salió de la planta (o desde la fecha del
                 // viaje si no se sabe): la carreta la lleva otro tracto, o el mismo después de pasar por base.
                 string rama = ramaExistente;
+                bool enEcuador = false;
                 if (dispositivo2 != null && !TramoCompleto(columnasDescarga))
                 {
                     DateTime desdeDescargaUtc = salidaPlantaUtc ?? FechaHelper.ConvertirAUtc(fechaInicio);
@@ -218,6 +223,7 @@ namespace WebSGV.Services.GpsIntegracion
                     Registrar("fhSalida", descarga.SalidaPlanta);
                     Registrar("fhLlegadaBaseFinal", descarga.LlegadaBase);
                     if (rama == null) rama = descarga.PlantaDescarga;
+                    enEcuador = descarga.Cruce != null || descarga.LlegadaTci != null || valoresYaConfirmados.ContainsKey("fhCruceEcuador");
                     if (descarga.PasoDirectoTci && descarga.LlegadaTci != null)
                         avisoPasoDirecto += " Pasó directo por TCI: se tomó el control aduanero cercano.";
                 }
@@ -237,7 +243,9 @@ namespace WebSGV.Services.GpsIntegracion
                         DbHelper.Param("@fuenteGps", esAlertaOnway ? "ONWAY" : "GPS"),
                         DbHelper.Param("@latitud", hito.Punto != null ? (object)Math.Round((decimal)hito.Punto.Lat, 6) : null),
                         DbHelper.Param("@longitud", hito.Punto != null ? (object)Math.Round((decimal)hito.Punto.Lng, 6) : null),
-                        DbHelper.Param("@regla", hito.Fuente != null && hito.Fuente.Length > 200 ? hito.Fuente.Substring(0, 200) : hito.Fuente));
+                        DbHelper.Param("@regla", hito.Fuente != null && hito.Fuente.Length > 200 ? hito.Fuente.Substring(0, 200) : hito.Fuente),
+                        // La salida de base puede haberse registrado "en camino" (provisional): el GPS la puede afinar.
+                        DbHelper.Param("@reemplazarGps", ColumnasSalidaBase.Contains(d.Item1)));
                     if (Convert.ToInt32(aplicado) == 1)
                     {
                         valoresEncontrados[d.Item1] = horaLocal;
@@ -263,7 +271,8 @@ namespace WebSGV.Services.GpsIntegracion
                 // ColumnasGps es la única fuente de verdad de qué campos llena el GPS: es la misma
                 // lista que alimenta el SELECT y `valoresYaConfirmados`, así que el conteo y el
                 // detalle no pueden desincronizarse si mañana se agrega un checkpoint.
-                string ramaTexto = (rama != null ? $" (ruta: {rama})" : " (no se detectó si fue por Jave o Inbalnor)") + avisoPasoDirecto;
+                // "No se detectó la planta" solo tiene sentido si la unidad ya está en Ecuador.
+                string ramaTexto = (rama != null ? $" (ruta: {rama})" : enEcuador ? " (no se detectó si fue por Jave o Inbalnor)" : "") + avisoPasoDirecto;
                 var resultadoFinal = new ResultadoConsultaGpsExportacion
                 {
                     Exito = true,

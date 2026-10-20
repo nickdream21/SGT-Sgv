@@ -18,11 +18,42 @@ namespace WebSGV.Tests.Integracion
 
         private const string Pedido = "9900000123";
 
-        private static int RegistrarGps(int id, string columna, DateTime hora, string fuente = "GPS") =>
+        private static int RegistrarGps(int id, string columna, DateTime hora, string fuente = "GPS", bool reemplazarGps = false) =>
             Convert.ToInt32(DbHelper.EjecutarEscalarSp("sp_SE_RegistrarHitoGps",
                 DbHelper.Param("@idSeguimiento", id), DbHelper.Param("@columna", columna), DbHelper.Param("@horaGps", hora),
                 DbHelper.Param("@fuenteGps", fuente), DbHelper.Param("@latitud", -8.135571m), DbHelper.Param("@longitud", -79.0132m),
-                DbHelper.Param("@regla", "Primer punto dentro de la planta")));
+                DbHelper.Param("@regla", "Primer punto dentro de la planta"), DbHelper.Param("@reemplazarGps", reemplazarGps)));
+
+        [FactBD]
+        public void SalidaDeBaseEnCamino_ElGpsLaAfina_PeroNoPisaLaCorregidaAMano()
+        {
+            using (new TransaccionDePrueba())
+            {
+                int id = SeguimientoViajesService.GuardarDatosViaje(0, Pedido, "zzc-902", "zzt-102", "Chofer Prueba", "zzt-103", null,
+                    null, new DateTime(2026, 10, 19, 6, 5, 0), null);
+
+                // Salida provisional (en camino) y luego otra del GPS: con @reemplazarGps se actualiza.
+                Assert.Equal(1, RegistrarGps(id, "fhSalidaBase2", new DateTime(2026, 10, 20, 9, 0, 0), reemplazarGps: true));
+                Assert.Equal(1, RegistrarGps(id, "fhSalidaBase2", new DateTime(2026, 10, 20, 12, 3, 0), reemplazarGps: true));
+                var salida = SeguimientoViajesService.ObtenerDetalle(id).Hitos.Single(h => h.Definicion.Columna == "fhSalidaBase2");
+                Assert.Equal(new DateTime(2026, 10, 20, 12, 3, 0), salida.Hora);
+                Assert.Equal("Rumbo a Ecuador", SeguimientoViajesService.ObtenerDetalle(id).Resumen.Fase.Nombre);
+
+                // Misma hora: no cuenta como cambio. Sin @reemplazarGps (otras columnas): no se pisa.
+                Assert.Equal(0, RegistrarGps(id, "fhSalidaBase2", new DateTime(2026, 10, 20, 12, 3, 0), reemplazarGps: true));
+                Assert.Equal(0, RegistrarGps(id, "fhSalidaBase2", new DateTime(2026, 10, 20, 12, 10, 0)));
+
+                // Corregida a mano: el GPS ya no la cambia, aunque pida reemplazar.
+                SeguimientoViajesService.CorregirHito(id, "fhSalidaBase2", new DateTime(2026, 10, 20, 12, 0, 0), "prueba", null);
+                Assert.Equal(0, RegistrarGps(id, "fhSalidaBase2", new DateTime(2026, 10, 20, 12, 3, 0), reemplazarGps: true));
+                Assert.Equal(new DateTime(2026, 10, 20, 12, 0, 0),
+                    SeguimientoViajesService.ObtenerDetalle(id).Hitos.Single(h => h.Definicion.Columna == "fhSalidaBase2").Hora);
+
+                // Una hora del Excel (sin fuente GPS) tampoco.
+                DbHelper.EjecutarNonQuery("UPDATE SeguimientoExportacion SET fhSalidaBase1 = '2026-10-18T16:00:00' WHERE idSeguimiento = @id", DbHelper.Param("@id", id));
+                Assert.Equal(0, RegistrarGps(id, "fhSalidaBase1", new DateTime(2026, 10, 18, 16, 35, 0), reemplazarGps: true));
+            }
+        }
 
         private static int Despacho(string tipo, bool internacional, int idTracto, int idConductor, int idCarreta, int idCliente,
             int? idPlanta, int? idDespachoCarga, string pedido) =>

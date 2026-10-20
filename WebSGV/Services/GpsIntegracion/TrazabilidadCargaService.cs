@@ -77,7 +77,13 @@ namespace WebSGV.Services.GpsIntegracion
                 .FirstOrDefault(v => Hora(puntos[v.Primero]) >= desdeUtc &&
                                      (Hora(puntos[v.Ultimo]) - Hora(puntos[v.Primero])).TotalMinutes >= MinutosMinimosEnPlanta &&
                                      SeMovioAdentro(puntos, v));
-            if (visitaPlanta == null) return resultado;
+            if (visitaPlanta == null)
+            {
+                // Todavía no llega a la planta: si ya salió de base y va por la Panamericana hacia el
+                // sur (pasado Piura), el viaje está "rumbo a Trujillo" (caso CBU-945 del 20/10/2026).
+                resultado.SalidaBase = SalidaEnCamino(puntos, desdeUtc.AddDays(-1), RumboATrujillo);
+                return resultado;
+            }
 
             resultado.IngresoPlanta = Hito(puntos[visitaPlanta.Primero], "Primer punto dentro de la planta");
             if (visitaPlanta.Cerrada)
@@ -186,6 +192,38 @@ namespace WebSGV.Services.GpsIntegracion
                     return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Rumbo a Trujillo: al sur de Piura por la Panamericana (lat. -5.40, ~50 km al sur de la base).
+        /// Más cerca puede ser una vuelta de rutina a Piura (taller, grifo).
+        /// </summary>
+        internal static bool RumboATrujillo(OnwayHistoryPoint p) => p.Lat < -5.40;
+
+        /// <summary>
+        /// Rumbo a Ecuador: la Panamericana hacia Talara, ~10 km al norte de la base (pasando
+        /// Marcavelica/Mallares; la base está en lat. -4.956).
+        /// </summary>
+        internal static bool RumboAEcuador(OnwayHistoryPoint p) => p.Lat > -4.87 && p.Lng < -80.0;
+
+        /// <summary>
+        /// Salida de base de un tramo que todavía no llega a su primera parada (planta de Trujillo o
+        /// Complex): la última salida de la base después de <paramref name="desdeUtc"/>, siempre que
+        /// la unidad no haya vuelto a entrar y ya esté en la ruta del tramo (<paramref name="enRuta"/>).
+        /// Sin esto el viaje seguía "en base" hasta llegar a la primera parada, horas después (casos
+        /// BFH-852 y otras 6 descargas del 20/10/2026). Es provisional: cuando aparece la primera
+        /// parada se toma la salida de antes de esa parada, que en un viaje normal es la misma.
+        /// </summary>
+        internal static HitoGps SalidaEnCamino(List<OnwayHistoryPoint> puntos, DateTime desdeUtc, Func<OnwayHistoryPoint, bool> enRuta)
+        {
+            var baseSullana = GeocercasTrazabilidad.BaseSullana;
+            var ultima = Visitas(puntos, baseSullana).LastOrDefault();
+            if (ultima == null || !ultima.Cerrada) return null; // sigue en la base (o no pasó por ella)
+            int idxSalida = ultima.Ultimo + 1;
+            if (Hora(puntos[idxSalida]) < desdeUtc) return null;
+            if (!puntos.Skip(idxSalida).Any(enRuta)) return null; // salió, pero todavía no está en la ruta
+            var porPoligono = Hito(puntos[idxSalida], "Primer punto fuera de la base (en camino, sin otra parada todavía)");
+            return PreferirAlertaOnway(puntos, porPoligono, baseSullana, "salió de", ultima.Primero, puntos.Count) ?? porPoligono;
         }
 
         internal static HitoGps BuscarSalidaBaseAntesDe(List<OnwayHistoryPoint> puntos, int idxLlegada)

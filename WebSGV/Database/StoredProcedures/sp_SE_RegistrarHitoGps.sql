@@ -2,7 +2,10 @@
 -- Guarda lo que detectó el GPS para un hito del seguimiento (hora, punto, regla) y,
 -- si la columna del viaje está vacía, la llena con esa hora. Una columna con valor
 -- (Excel, formulario anterior o corrección manual) no se toca.
--- Devuelve aplicado = 1 si llenó la columna.
+-- @reemplazarGps = 1: también actualiza la columna si su valor lo puso el GPS (fuente GPS u
+-- ONWAY); se usa para la salida de base, que se registra provisional mientras la unidad va
+-- en camino y se confirma al llegar a la primera parada.
+-- Devuelve aplicado = 1 si llenó o actualizó la columna.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_SE_RegistrarHitoGps
     @idSeguimiento INT,
@@ -11,7 +14,8 @@ CREATE OR ALTER PROCEDURE sp_SE_RegistrarHitoGps
     @fuenteGps     VARCHAR(10),      -- GPS | ONWAY
     @latitud       DECIMAL(9, 6) = NULL,
     @longitud      DECIMAL(9, 6) = NULL,
-    @regla         VARCHAR(200) = NULL
+    @regla         VARCHAR(200) = NULL,
+    @reemplazarGps BIT = 0
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -29,10 +33,16 @@ BEGIN
         BEGIN TRANSACTION;
 
         DECLARE @aplicado INT = 0;
-        DECLARE @sql NVARCHAR(400) =
+        -- La hora actual de la columna vino del GPS (y no se corrigió a mano después).
+        DECLARE @deGps BIT = CASE WHEN @reemplazarGps = 1 AND EXISTS (
+            SELECT 1 FROM dbo.SeguimientoHito
+            WHERE idSeguimiento = @idSeguimiento AND columna = @columna AND fuente IN ('GPS', 'ONWAY')) THEN 1 ELSE 0 END;
+        DECLARE @sql NVARCHAR(500) =
             N'UPDATE dbo.SeguimientoExportacion SET ' + QUOTENAME(@columna) + N' = @hora, fechaModificacion = dbo.fn_AhoraPeru() ' +
-            N'WHERE idSeguimiento = @id AND activo = 1 AND ' + QUOTENAME(@columna) + N' IS NULL; SET @n = @@ROWCOUNT;';
-        EXEC sp_executesql @sql, N'@hora DATETIME, @id INT, @n INT OUTPUT', @hora = @horaGps, @id = @idSeguimiento, @n = @aplicado OUTPUT;
+            N'WHERE idSeguimiento = @id AND activo = 1 AND (' + QUOTENAME(@columna) + N' IS NULL OR (@deGps = 1 AND ' +
+            QUOTENAME(@columna) + N' <> @hora)); SET @n = @@ROWCOUNT;';
+        EXEC sp_executesql @sql, N'@hora DATETIME, @id INT, @deGps BIT, @n INT OUTPUT',
+            @hora = @horaGps, @id = @idSeguimiento, @deGps = @deGps, @n = @aplicado OUTPUT;
 
         MERGE dbo.SeguimientoHito AS d
         USING (SELECT @idSeguimiento AS idSeguimiento, @columna AS columna) AS o

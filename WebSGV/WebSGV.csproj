@@ -228,7 +228,7 @@
     <Content Include="Database\StoredProcedures\sp_DC_RetirarLiquidacion.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_RevocarFirma.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_VerificarObservacionesRechazo.sql" />
-    <Content Include="Database\StoredProcedures\sp_InsertarAbastecimientoCombustible_ALTER.sql" />
+    <Content Include="Database\StoredProcedures\sp_InsertarAbastecimientoCombustible.sql" />
     <Content Include="Database\StoredProcedures\sp_InsertarDespachoObra.sql" />
     <Content Include="Database\StoredProcedures\sp_InsertarIngresoEcuador.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ActualizarConductorDominanteViajes.sql" />
