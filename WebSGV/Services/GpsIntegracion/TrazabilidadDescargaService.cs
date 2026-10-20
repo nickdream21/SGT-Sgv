@@ -51,6 +51,9 @@ namespace WebSGV.Services.GpsIntegracion
         /// <summary>Días máximos de la salida de la carga al Complex y del Complex a la planta: más lejos es otro viaje.</summary>
         private const int DiasMaximosEntreAnclas = 4;
 
+        /// <summary>Días máximos de la salida de la planta de descarga a la llegada a la base.</summary>
+        private const int DiasMaximosRegreso = 7;
+
         public static ResultadoTramoDescarga DetectarTramoDescarga(IEnumerable<OnwayHistoryPoint> historial, DateTime desdeUtc)
         {
             var puntos = Ordenar(historial);
@@ -159,10 +162,42 @@ namespace WebSGV.Services.GpsIntegracion
                 r.SalidaBase = SalidaEnCamino(puntos, desdeSalidaUtc, RumboAEcuador);
             if (r.SalidaPlanta != null && cursor >= 0)
             {
-                BuscarRegresoBase(puntos, cursor, out var llegada, out _, out _);
-                r.LlegadaBase = llegada;
+                // Hasta 7 días: a veces el tracto hace otro servicio en Ecuador antes de volver (BFK-879
+                // fue a Quito después de descargar en Inbalnor el 10/10/2026 y llegó a la base el 13/10).
+                BuscarRegresoBase(puntos, cursor, out var llegada, out _, out _, DiasMaximosRegreso);
+                r.LlegadaBase = llegada ?? SiguioATrujilloSinEntrar(puntos, cursor);
             }
             return r;
+        }
+
+        /// <summary>
+        /// Vuelta corrida: después de descargar, el tracto sigue de frente a Trujillo a su próxima
+        /// carga sin entrar a la base (casos ASU-862, que pasó por Marcavelica, y TBM-815, que fue
+        /// por Sechura, el 20/10/2026: el viaje se quedaba "Retorno de Ecuador" para siempre). Si
+        /// llega al sur de Piura sin haber entrado a la base, el regreso termina en el punto donde
+        /// pasó más cerca de ella.
+        /// </summary>
+        internal static HitoGps SiguioATrujilloSinEntrar(List<OnwayHistoryPoint> puntos, int desde)
+        {
+            var baseSullana = GeocercasTrazabilidad.BaseSullana;
+            int idxCerca = -1;
+            double metrosMinimos = double.MaxValue;
+            for (int i = desde; i < puntos.Count; i++)
+            {
+                var p = puntos[i];
+                if (baseSullana.Contiene(p.Lat, p.Lng)) return null; // entró: es una llegada normal
+                if (RumboATrujillo(p))
+                    return idxCerca < 0 ? null : Hito(puntos[idxCerca],
+                        $"No entró a la base: siguió hacia Trujillo (punto más cercano a la base, a {metrosMinimos / 1000:0.0} km)");
+                double metros = CheckpointMatchingService.CalcularDistanciaMetros(
+                    p.Lat, p.Lng, baseSullana.LatitudCentro, baseSullana.LongitudCentro);
+                if (metros < metrosMinimos)
+                {
+                    metrosMinimos = metros;
+                    idxCerca = i;
+                }
+            }
+            return null;
         }
 
         private static Visita PrimeraVisita(List<OnwayHistoryPoint> puntos, GeocercaGps zona, int desde, int minutosMinimos) =>

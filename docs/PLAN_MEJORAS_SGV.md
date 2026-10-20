@@ -1,6 +1,6 @@
 # Plan de mejoras SGV — estado y tareas pendientes
 
-Última actualización: **2026-10-20**, al día con el seguimiento de exportación (`a22748b`) más el cuadro STATUS GENERAL de octubre armado desde los Word y el GPS (119 viajes de octubre ya en `sgvActualizada`) y el mapa de la ruta en el detalle del viaje (sin migración ni SP; sección 4). Este documento es el punto de partida para seguir trabajando
+Última actualización: **2026-10-20**, al día con el seguimiento de exportación (`a22748b`) más el cuadro STATUS GENERAL de octubre armado desde los Word y el GPS (119 viajes de octubre ya en `sgvActualizada`) y el mapa de la ruta en el detalle del viaje, la salida en camino y la vuelta corrida (sin migración; SP `sp_SE_RegistrarHitoGps` y `sp_SE_SincronizarDespachos`; sección 4). Este documento es el punto de partida para seguir trabajando
 desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 
 ## 1. Estado actual
@@ -62,6 +62,7 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 | _(pantalla de seguimiento)_ | (2026-10-20) RegistroSeguimiento rehecho como **tablero**: un viaje por pedido y carreta, fase calculada por sus horas (en carga, en base, rumbo a / en Ecuador, retorno, cerrado), avance de cada tramo, último hito y avisos (falta inicio/término, descarga sin tracto, paso directo por TCI, espera larga en Trujillo/Complex/TCI); filtros por fecha de programación, texto (busca en todas las fechas) y planta; "Actualizar GPS de viajes abiertos" (6 por clic, primero los que llevan más tiempo sin consultar) y "Exportar STATUS GENERAL" (fecha + HORA por hito, se puede volver a importar). **Detalle** nuevo `SeguimientoViaje.aspx`: línea de tiempo de carga y descarga con el origen de cada hora (GPS, alerta Onway, registro anterior, corregido a mano), evidencia (regla, coordenadas, enlace al mapa, hora del GPS aunque la columna venga del Excel), corrección manual con motivo (el GPS ya no la pisa), datos que el GPS no sabe, datos del viaje, cerrar/reabrir y nuevo viaje a mano. La importación del Excel pasó a `ImportarSeguimiento.aspx` sin cambios de lógica. Migración 31 (`SeguimientoHito`, `fhUltimaConsultaGps`) y `sp_SE_RegistrarHitoGps`, `sp_SE_CorregirHito`, `sp_SE_GuardarDatosViaje`, `sp_SE_GuardarDatosManuales`, `sp_SE_CambiarEstado`. Probado por HTTP (tablero, pestañas, búsqueda, exportación, detalle, nuevo, importar) y con una prueba de integración con rollback de las escrituras. |
 | _(cuadro de octubre)_ | (2026-10-20) `herramientas/cuadro-status-general`: arma el cuadro STATUS GENERAL de un mes desde los Word de programación (carga y descarga unidas por la carreta; CAMBIO decide si la carreta sale en dos cargas seguidas) y las horas del GPS con la lógica de "Actualizar GPS" (si el tracto cargó el día anterior, se salta esa carga). Octubre: 127 cargas de Vitapro del 01 al 20/10, 113 con descarga, 111 con la carga completa; los 10 viajes del 10/10 coinciden al minuto con el sistema y la carga de ANU-794 del 19/10 con las horas marcadas a mano. Excel en `docs/DOCUMENTACION/2026/2026/OCTUBRE/STATUS GENERAL OCTUBRE 2026.xlsx` (gitignored). Con `-Bd aplicar` se crearon en sgvActualizada **103 viajes MANUAL con 1 560 horas** (origen, coordenadas y regla en `SeguimientoHito`); quedan 119 viajes de octubre. |
 | _(salida en camino)_ | (2026-10-20) "Actualizar GPS" no veía a las unidades que ya salieron de base y van en camino: la salida de base solo se registraba al encontrar la primera parada (planta de Trujillo o Complex), así que 7 descargas del 19/10 (BFH-852 por Mallares, CBX-832 ya en Zorritos…) y la carga de CBU-945 seguían "en base". Ahora, sin parada todavía, la salida es la última salida de la base tras la que la unidad no volvió y ya va por la ruta del tramo (descarga: ~10 km al norte, rumbo a Talara; carga: pasado Piura hacia el sur, para no confundirla con una vuelta al taller o al grifo). `sp_SE_RegistrarHitoGps @reemplazarGps`: la salida de base que puso el GPS se puede afinar en la siguiente consulta (nunca la corregida a mano ni la del Excel). El mensaje "no se detectó si fue por Jave o Inbalnor" sale solo si la unidad ya está en Ecuador. SP aplicado en pruebas; 6 tests nuevos de trazabilidad y 1 de integración. |
+| _(vuelta corrida)_ | (2026-10-20) Revisión de las 30 unidades en movimiento contra el monitoreo de la administradora. (1) **6 cargas del 20/10 no tenían viaje** (BNG-758, ASU-862, TBM-815, CBU-928, BPT-788, BPS-816): solo se registró el pedido 4400133879 con los otros 6 despachos; al buscar la placa salía su viaje anterior. Se crearon a mano (7341–7346, pedido `PENDIENTE`), y `sp_SE_SincronizarDespachos` ahora **adopta** el viaje creado a mano (mismo tracto y carreta, ±1 día) cuando llega su despacho, en vez de duplicarlo. (2) **Vuelta corrida**: ASU-862 y TBM-815 volvieron de Jave y siguieron de frente a Trujillo sin entrar a la base; la descarga quedaba "Retorno de Ecuador" y la carga nueva sin salida. Ahora el regreso de la descarga y la salida de la carga siguiente son el paso frente a la base (≤ 2 km) antes de seguir al sur de Piura; una salida de base seguida de un paso por Ecuador ya no se toma como salida de la carga. (3) El regreso de la descarga se busca hasta 7 días (antes 3): 6 viajes de inicios de octubre (BFK-879 fue a Quito tras Inbalnor) seguían abiertos. (4) Una unidad estacionada junto a la cerca al final del historial ya no cuenta como salida (ASU-862 en la puerta de la planta). 8 descargas cerradas y 6 cargas creadas en sgvActualizada; 4 casos reales nuevos en `Datos/Trazabilidad` y 1 test de integración. |
 | _(mapa de la ruta)_ | (2026-10-20) Detalle del viaje (`SeguimientoViaje.aspx`): panel **Ruta del viaje** con Leaflet (cdnjs) y teselas de OpenStreetMap: recorrido GPS del tracto de carga (azul) y del de descarga (naranja), hitos numerados, las 13 geocercas, km por tramo y reproducción animada (camión por tramo, línea que se va pintando, reloj con hora de Perú, velocidad y último hito; deslizador y velocidad de 10 min a 3 h por segundo). "Evidencia" de un hito lleva el mapa a ese punto y momento. `RutaViajeService` trae el historial de Onway (1 día por llamada), lo simplifica (≤ 2 500 puntos, la unidad parada queda en un punto) y guarda el tramo cerrado en `~/App_Data/RutasGps` (en curso: 10 min en memoria). `[WebMethod] ObtenerRuta` con sesión y rol; `Web.config` sube `maxJsonLength` a 4 MB. Probado en el navegador con un viaje cerrado, uno en curso y uno creado desde el cuadro; 3 tests de `Simplificar`. |
 
 Detalle de reglas y convenciones nuevas: ver `CLAUDE.md`.
@@ -81,9 +82,10 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       sin viaje); BPT-919 con T4G-972 del 02/10 (el GPS no lo ve en Vitapro: ¿no fue?); BFK-729 con TDX-994 del
       15/10 (descarga completa, el GPS no ve la carga); BPS-816 → C4Z-745 del 15/10 (la descarga se corta después
       del CEBAF del 16/10).
-- [ ] **Cuadro de octubre: 8 cargas sin pedido no se crearon** (6 del 20/10 sin descarga en los Word, AVO-818 del
-      09/10 y BPT-919 del 02/10). Las del 20/10 nacen solas al registrar su despacho; si no, volver a correr
-      `Generar-Cuadro.ps1 -Bd aplicar` cuando llegue el Word con su descarga (salta los que ya están).
+- [ ] **Cuadro de octubre: 2 cargas sin pedido no se crearon** (AVO-818 del 09/10 y BPT-919 del 02/10). Las 6 del
+      20/10 ya se crearon a mano (7341–7346, pedido `PENDIENTE`): al registrar su despacho, la sincronización las adopta.
+- [ ] **Decidir si el tablero crea los viajes desde el Word de programación** (antes de que llegue el pedido de
+      Vitapro), para no depender de crearlos a mano como los 6 del 20/10.
 - [ ] **Mapa de la ruta: teselas de OpenStreetMap** (`tile.openstreetmap.org`) sirven para poco tráfico; si el
       sistema crece, pasar a un proveedor con clave (CARTO, MapTiler). CARTO ya pide clave.
 - [ ] **Trazabilidad: revisar las 10 diferencias de más de 1 h de la prueba de septiembre** (8 en el Complex:
@@ -171,6 +173,10 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 
 ### Hechas
 
+- [x] **Seguimiento: unidades que no se veían o salían en otro lado** (2026-10-20, vuelta corrida de ASU-862 y
+      TBM-815, 6 cargas del 20/10 sin viaje): ver la fila de la sección 3. Las 30 unidades del monitoreo coinciden.
+      En el viaje 7342 (ASU-862) se borró la salida de planta 15:01:34 que el GPS grabó antes del arreglo del borde
+      de la cerca (seguía parado en la puerta); queda "En planta".
 - [x] **Seguimiento: unidades en camino seguían "en base"** (2026-10-20, caso BFH-852): ver la fila de la sección 3.
       Los 8 viajes del 19/10 y el CBU-945 del 20/10 quedaron actualizados en sgvActualizada.
 - [x] **`WebSGV.csproj` registraba `sp_InsertarAbastecimientoCombustible_ALTER.sql`, borrado en `f96f145`**: la
@@ -406,6 +412,7 @@ Con sqlcmd contra somee usar siempre `-C -I -f 65001` (certificado, QUOTED_IDENT
    seguimiento escribe en `~/App_Data/RutasGps` (como `App_Data/OrdenesViaje`: la carpeta debe tener permiso
    de escritura) y necesita el `maxJsonLength` nuevo de `Web.config`. `sp_SE_RegistrarHitoGps` cambió
    (2026-10-20, `@reemplazarGps`): ya está en sgvActualizada; en otra BD, `aplicar-procedimientos` antes de publicar.
+   `sp_SE_SincronizarDespachos` cambió (2026-10-20, adopta el viaje creado a mano): igual, ya en sgvActualizada.
 7. Tras publicar: en `RegistroChoferes` → "Actualizar con la lista" con
    `LISTA DE CHOFERES ACTUALES (corregida).xlsx` (no hay migración; Victor Marzal con DNI 00243179, Yépez y
    Rivas con carnet de extranjería). Requiere el `sp_RegistrarConductorImportado` del paso 2.

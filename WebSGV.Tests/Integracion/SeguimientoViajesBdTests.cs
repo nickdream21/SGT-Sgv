@@ -117,6 +117,34 @@ namespace WebSGV.Tests.Integracion
         }
 
         [FactBD]
+        public void Sincronizar_AdoptaElViajeCreadoAManoDesdeLaProgramacion_SinDuplicarlo()
+        {
+            using (new TransaccionDePrueba())
+            {
+                const string pedido = "9900000789";
+                int tracto = Primero("SELECT MIN(idTracto) FROM Tracto"), chofer = Primero("SELECT MIN(idConductor) FROM Conductor");
+                int carreta = Primero("SELECT MIN(idCarreta) FROM Carreta"), cliente = Primero("SELECT MIN(idCliente) FROM Cliente");
+                string placaTracto = Convert.ToString(DbHelper.EjecutarEscalar("SELECT placaTracto FROM Tracto WHERE idTracto = @id", DbHelper.Param("@id", tracto))).Trim();
+                string placaCarreta = Convert.ToString(DbHelper.EjecutarEscalar("SELECT placaCarreta FROM Carreta WHERE idCarreta = @id", DbHelper.Param("@id", carreta))).Trim();
+                DateTime hoy = Convert.ToDateTime(DbHelper.EjecutarEscalar("SELECT CAST(dbo.fn_AhoraPeru() AS DATE)"));
+
+                // El viaje se creó desde el Word de programación, antes de que llegue el pedido, y el GPS ya le puso horas.
+                int id = SeguimientoViajesService.GuardarDatosViaje(0, "PENDIENTE", placaCarreta, placaTracto, "Chofer Prueba", null, null,
+                    null, hoy.AddHours(6), null);
+                RegistrarGps(id, "fhIngresoPlanta", hoy.AddHours(14));
+
+                int idCarga = Despacho("CARGA", false, tracto, chofer, carreta, cliente, null, null, pedido);
+                SeguimientoViajesService.SincronizarDespachos(hoy.AddDays(-1));
+
+                Assert.Equal(0, Primero($"SELECT COUNT(*) FROM SeguimientoExportacion WHERE idDespachoOrigen = {idCarga} AND idSeguimiento <> {id}"));
+                var v = SeguimientoViajesService.ObtenerDetalle(id).Resumen;
+                Assert.Equal("DESPACHO", v.Origen);
+                Assert.Equal(pedido, v.Pedido);
+                Assert.Equal(hoy.AddHours(14), v.Horas["fhIngresoPlanta"]);
+            }
+        }
+
+        [FactBD]
         public void ViajeNuevo_GpsLlenaVacios_ExcelYManualNoSePisan_YElTableroLoMuestra()
         {
             using (new TransaccionDePrueba())

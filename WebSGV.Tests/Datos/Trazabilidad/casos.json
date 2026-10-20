@@ -145,5 +145,56 @@
       "llegadaBase": "2026-10-04 17:00:00",
       "salidaBaseRetorno": "2026-10-04 21:03:27"
     }
+  },
+  {
+    "caso": "ASU-862 JOEL ESPINOZA, carreta T4C-976, descarga en Jave 19/10/2026: vuelve de Ecuador y sigue de frente a Trujillo sin entrar a la base (vuelta corrida)",
+    "tramo": "descarga",
+    "historial": "ASU-862_2026-10-16.json",
+    "desde": "2026-10-16 11:28:00",
+    "notas": "Horas que detecto el GPS (viaje 7286 de sgvActualizada). El 20/10 05:58 pasa a 70 km/h frente a la base y sigue a Trujillo a cargar: el viaje quedaba 'Retorno de Ecuador' para siempre.",
+    "esperado": {
+      "salidaBase": "2026-10-17 07:31:13",
+      "llegadaComplex": "2026-10-17 17:30:39",
+      "llegadaTci": "2026-10-17 21:32:27",
+      "plantaDescarga": "JAVE",
+      "salidaPlanta": "2026-10-19 12:55:16",
+      "llegadaBase": "2026-10-20 05:58:49"
+    }
+  },
+  {
+    "caso": "ASU-862 JOEL ESPINOZA, carreta T4C-976, carga 20/10/2026 llegando directo de su descarga en Ecuador",
+    "historial": "ASU-862_2026-10-16.json",
+    "desde": "2026-10-20 00:00:00",
+    "notas": "La ultima salida de la base (17/10 07:31) es la de la descarga anterior: entre esa salida y Trujillo estuvo en Ecuador. La salida es el paso frente a la base, la misma hora que cierra la descarga.",
+    "esperado": {
+      "salidaBase": "2026-10-20 05:58:49",
+      "llegadaTrujillo": "2026-10-20 14:42:56",
+      "ingresoPlanta": "2026-10-20 14:49:38",
+      "salidaPlanta": null
+    }
+  },
+  {
+    "caso": "TBM-815 JHONATAN HUAMAN, carreta T4L-975, carga 20/10/2026 llegando directo de su descarga en Ecuador, todavia sin llegar a la planta",
+    "historial": "TBM-815_2026-10-16.json",
+    "desde": "2026-10-20 00:00:00",
+    "notas": "Se detiene 2 min frente a la base a las 02:28 y sigue a Trujillo: el viaje se quedaba 'Programado'.",
+    "esperado": {
+      "salidaBase": "2026-10-20 02:29:31",
+      "llegadaTrujillo": null,
+      "ingresoPlanta": null
+    }
+  },
+  {
+    "caso": "TBM-815 JHONATAN HUAMAN, carreta T4L-975, descarga en Jave 19/10/2026: se detiene 2 min frente a la base y sigue a Trujillo sin entrar",
+    "tramo": "descarga",
+    "historial": "TBM-815_2026-10-16.json",
+    "desde": "2026-10-16 11:19:00",
+    "notas": "Horas que detecto el GPS (viaje 7287 de sgvActualizada).",
+    "esperado": {
+      "salidaBase": "2026-10-17 09:35:12",
+      "plantaDescarga": "JAVE",
+      "salidaPlanta": "2026-10-19 14:45:25",
+      "llegadaBase": "2026-10-20 02:29:31"
+    }
   }
 ]

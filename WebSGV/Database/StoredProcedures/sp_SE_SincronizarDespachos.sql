@@ -39,7 +39,28 @@ BEGIN
           AND NULLIF(LTRIM(RTRIM(d.numeroPedido)), '') IS NOT NULL
           AND d.fechaDespacho >= @desde;
 
-        -- 1. Viajes nuevos.
+        -- 1a. Un viaje creado a mano (desde la programación, antes de tener el pedido) se adopta en
+        --     vez de duplicarlo: mismo tracto y carreta, programado con 1 día de diferencia como
+        --     máximo. Desde ahí lo manda el despacho (caso de los 6 tractos sin pedido del 20/10/2026).
+        ;WITH par AS (
+            SELECT se.idSeguimiento, c.idDespacho,
+                   ROW_NUMBER() OVER (PARTITION BY c.idDespacho ORDER BY ABS(DATEDIFF(MINUTE, se.fhProgramacion, c.fhProgramacion)), se.idSeguimiento) AS porDespacho,
+                   ROW_NUMBER() OVER (PARTITION BY se.idSeguimiento ORDER BY ABS(DATEDIFF(MINUTE, se.fhProgramacion, c.fhProgramacion)), c.idDespacho) AS porViaje
+            FROM #carga c
+            JOIN dbo.SeguimientoExportacion se
+                 ON se.activo = 1 AND se.origen = 'MANUAL' AND se.idDespachoOrigen IS NULL
+                AND REPLACE(se.tracto1, '-', '') = REPLACE(c.tracto, '-', '')
+                AND REPLACE(se.carreta, '-', '') = REPLACE(c.carreta, '-', '')
+                AND ABS(DATEDIFF(DAY, se.fhProgramacion, c.fhProgramacion)) <= 1
+            WHERE c.activo = 1
+              AND NOT EXISTS (SELECT 1 FROM dbo.SeguimientoExportacion x WHERE x.idDespachoOrigen = c.idDespacho AND x.activo = 1)
+        )
+        UPDATE se SET idDespachoOrigen = par.idDespacho, origen = 'DESPACHO', fechaModificacion = dbo.fn_AhoraPeru()
+        FROM dbo.SeguimientoExportacion se
+        JOIN par ON par.idSeguimiento = se.idSeguimiento AND par.porDespacho = 1 AND par.porViaje = 1;
+        SET @actualizados = @actualizados + @@ROWCOUNT;
+
+        -- 1b. Viajes nuevos.
         INSERT INTO dbo.SeguimientoExportacion
             (cliente, carreta, tracto1, conductorOrigen, fhProgramacion, idDespachoOrigen, origen, estado, fechaRegistro, activo)
         SELECT c.pedido, c.carreta, c.tracto, NULLIF(c.chofer, ''), c.fhProgramacion, c.idDespacho, 'DESPACHO', 'EN_CURSO', dbo.fn_AhoraPeru(), 1

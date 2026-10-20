@@ -81,7 +81,8 @@ namespace WebSGV.Services.GpsIntegracion
             {
                 // Todavía no llega a la planta: si ya salió de base y va por la Panamericana hacia el
                 // sur (pasado Piura), el viaje está "rumbo a Trujillo" (caso CBU-945 del 20/10/2026).
-                resultado.SalidaBase = SalidaEnCamino(puntos, desdeUtc.AddDays(-1), RumboATrujillo);
+                resultado.SalidaBase = SalidaEnCamino(puntos, desdeUtc.AddDays(-1), RumboATrujillo)
+                                       ?? PasoFrenteALaBase(puntos, desdeUtc.AddDays(-1), puntos.Count);
                 return resultado;
             }
 
@@ -95,8 +96,15 @@ namespace WebSGV.Services.GpsIntegracion
             int idxLlegada = visitaAcceso?.Primero ?? visitaPlanta.Primero;
             resultado.LlegadaTrujillo = Hito(puntos[idxLlegada], "Primer punto en la Av. Gonzales Prada (acceso a planta)");
 
-            // 3. Salida de base: última salida antes de llegar a Trujillo.
+            // 3. Salida de base: última salida antes de llegar a Trujillo. Si entre esa salida y
+            // Trujillo el tracto estuvo en Ecuador, vino directo de su descarga sin pasar por la base
+            // (vuelta corrida) y esa salida es del viaje anterior: se toma el paso frente a la base.
             resultado.SalidaBase = BuscarSalidaBaseAntesDe(puntos, idxLlegada);
+            if (resultado.SalidaBase != null &&
+                puntos.Take(idxLlegada).Any(p => Hora(p) >= resultado.SalidaBase.HoraUtc && EnEcuador(p)))
+                resultado.SalidaBase = null;
+            if (resultado.SalidaBase == null)
+                resultado.SalidaBase = PasoFrenteALaBase(puntos, desdeUtc.AddDays(-1), idxLlegada);
 
             // 4. Regreso: primera entrada a la base o paso directo.
             if (visitaPlanta.Cerrada)
@@ -168,8 +176,11 @@ namespace WebSGV.Services.GpsIntegracion
 
             if (actual != null)
             {
-                // Puntos afuera al final, aunque sin cumplir la tolerancia, ya muestran la salida.
-                actual.Cerrada = actual.Ultimo < puntos.Count - 1;
+                // Puntos afuera al final, aunque sin cumplir la tolerancia de tiempo, ya muestran la
+                // salida si la unidad se alejó del borde. Estacionada junto a la cerca sigue adentro
+                // (ASU-862 del 20/10/2026, parado en la puerta de la planta: se marcaba la salida).
+                actual.Cerrada = puntos.Skip(actual.Ultimo + 1)
+                    .Any(p => zona.DistanciaAlBordeMetros(p.Lat, p.Lng) > MetrosAlejamiento);
                 visitas.Add(actual);
             }
             return visitas;
@@ -206,6 +217,9 @@ namespace WebSGV.Services.GpsIntegracion
         /// </summary>
         internal static bool RumboAEcuador(OnwayHistoryPoint p) => p.Lat > -4.87 && p.Lng < -80.0;
 
+        /// <summary>Al norte de Tumbes (lat. -3.6): pasando la frontera, en Ecuador.</summary>
+        internal static bool EnEcuador(OnwayHistoryPoint p) => p.Lat > -3.45;
+
         /// <summary>
         /// Salida de base de un tramo que todavía no llega a su primera parada (planta de Trujillo o
         /// Complex): la última salida de la base después de <paramref name="desdeUtc"/>, siempre que
@@ -226,6 +240,47 @@ namespace WebSGV.Services.GpsIntegracion
             return PreferirAlertaOnway(puntos, porPoligono, baseSullana, "salió de", ultima.Primero, puntos.Count) ?? porPoligono;
         }
 
+        /// <summary>
+        /// Vuelta corrida: el tracto viene de descargar en Ecuador y sigue de frente a Trujillo sin
+        /// entrar a la base (TBM-815 y ASU-862 el 20/10/2026). Su salida de base es el momento en
+        /// que pasó frente a ella, a 2 km o menos, antes de seguir al sur de Piura; es la misma hora
+        /// que cierra su descarga anterior (<see cref="TrazabilidadDescargaService.SiguioATrujilloSinEntrar"/>).
+        /// Si entra a la base no aplica: esa salida la encuentra la regla normal.
+        /// </summary>
+        internal static HitoGps PasoFrenteALaBase(List<OnwayHistoryPoint> puntos, DateTime desdeUtc, int hasta)
+        {
+            const double MetrosCerca = 2000;
+            var baseSullana = GeocercasTrazabilidad.BaseSullana;
+            int idxCerca = -1;
+            double metrosMinimos = double.MaxValue;
+            bool alSur = false;
+            for (int i = 0; i < hasta && i < puntos.Count; i++)
+            {
+                var p = puntos[i];
+                if (Hora(p) < desdeUtc) continue;
+                if (baseSullana.Contiene(p.Lat, p.Lng))
+                {
+                    idxCerca = -1; // entró: no es una vuelta corrida
+                    metrosMinimos = double.MaxValue;
+                    continue;
+                }
+                if (RumboATrujillo(p))
+                {
+                    alSur = true;
+                    break;
+                }
+                double metros = CheckpointMatchingService.CalcularDistanciaMetros(
+                    p.Lat, p.Lng, baseSullana.LatitudCentro, baseSullana.LongitudCentro);
+                if (metros < metrosMinimos)
+                {
+                    metrosMinimos = metros;
+                    idxCerca = i;
+                }
+            }
+            if (!alSur || idxCerca < 0 || metrosMinimos > MetrosCerca) return null;
+            return Hito(puntos[idxCerca], $"No entró a la base: pasó frente a ella rumbo a Trujillo (a {metrosMinimos / 1000:0.0} km)");
+        }
+
         internal static HitoGps BuscarSalidaBaseAntesDe(List<OnwayHistoryPoint> puntos, int idxLlegada)
         {
             var baseSullana = GeocercasTrazabilidad.BaseSullana;
@@ -244,11 +299,11 @@ namespace WebSGV.Services.GpsIntegracion
         /// cerca sin entrar y se aleja) y, si vuelve a salir, esa salida.
         /// </summary>
         internal static void BuscarRegresoBase(List<OnwayHistoryPoint> puntos, int idxSalidaPlanta,
-            out HitoGps llegada, out HitoGps salidaRetorno, out HitoGps pasoDirecto)
+            out HitoGps llegada, out HitoGps salidaRetorno, out HitoGps pasoDirecto, int diasMaximos = DiasMaximosEntreHitos)
         {
             llegada = salidaRetorno = pasoDirecto = null;
             var baseSullana = GeocercasTrazabilidad.BaseSullana;
-            DateTime limite = Hora(puntos[idxSalidaPlanta]).AddDays(DiasMaximosEntreHitos);
+            DateTime limite = Hora(puntos[idxSalidaPlanta]).AddDays(diasMaximos);
             const double MetrosCerca = 2000, MetrosPasoDeLargo = 5000;
 
             int idxMasCerca = -1;
