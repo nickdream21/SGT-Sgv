@@ -111,6 +111,13 @@ namespace WebSGV.Models.GpsIntegracion
         public OnwayTextoMultiIdioma AlertDescription { get; set; }
 
         /// <summary>
+        /// Texto completo de la alerta. En las de geocerca trae el nombre de la zona: "El dispositivo
+        /// ANU-794 salió de Base Viviana Sullana" (alertDescription solo dice "Salió de zona").
+        /// </summary>
+        [JsonProperty("body")]
+        public OnwayTextoMultiIdioma Body { get; set; }
+
+        /// <summary>
         /// Odómetro en km. No está en el swagger pero sí viene en la respuesta real y coincide
         /// con la columna "Odómetro (Km)" del portal (ver herramientas/reporte-gps/README.md).
         /// </summary>

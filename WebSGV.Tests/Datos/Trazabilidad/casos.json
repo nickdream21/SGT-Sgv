@@ -1,0 +1,129 @@
+[
+  {
+    "caso": "ANU-794 JUSTO CESPEDES, carreta T9U-996, carga Vitapro Trujillo 19/10/2026 (despacho 18/10)",
+    "historial": "ANU-794_2026-10-18.json",
+    "desde": "2026-10-18 00:00:00",
+    "notas": "Horas marcadas por la administradora en el portal de Onway (docs/TRAZABILIDAD.docx). Todavia no volvia a base al guardar el historial.",
+    "esperado": {
+      "salidaBase": "2026-10-18 18:37:48",
+      "llegadaTrujillo": "2026-10-19 06:58:40",
+      "ingresoPlanta": "2026-10-19 15:12:26",
+      "salidaPlanta": "2026-10-19 17:11:21"
+    }
+  },
+  {
+    "caso": "ANU-794 NOLBERTO SUNCION, carreta AUK-976, pedido 4400133136, carga 30/09/2026: la carreta la lleva a Ecuador BFI-922",
+    "historial": "ANU-794_2026-09-29.json",
+    "desde": "2026-09-30 00:00:00",
+    "notas": "Horas marcadas por la administradora en el portal de Onway (2026-10-19). El tramo de descarga esta en BFI-922_2026-10-02.json.",
+    "esperado": {
+      "salidaBase": "2026-09-29 13:15:03",
+      "llegadaTrujillo": "2026-09-30 00:17:12",
+      "ingresoPlanta": "2026-09-30 06:01:28",
+      "salidaPlanta": "2026-09-30 11:55:53",
+      "llegadaBase": "2026-10-01 01:01:21"
+    }
+  },
+  {
+    "caso": "BFI-922 ADRIAN HIDALGO, carreta AUK-976, pedido 4400133136: descarga en Jave 03/10/2026 (cargo ANU-794)",
+    "tramo": "descarga",
+    "historial": "BFI-922_2026-10-02.json",
+    "desde": "2026-09-30 12:00:00",
+    "notas": "Horas marcadas por la administradora en el portal de Onway (2026-10-19). Salida de base: ella anota 07:34:55 (ultimo punto en la puerta); la alerta de Onway dice 07:36:00.",
+    "esperado": {
+      "salidaBase": "2026-10-02 07:34:55",
+      "llegadaComplex": "2026-10-02 16:57:18",
+      "ingresoComplex": "2026-10-02 17:41:53",
+      "salidaComplex": "2026-10-02 18:08:16",
+      "llegadaCebaf": "2026-10-02 18:25:13",
+      "cruce": "2026-10-02 19:24:36",
+      "llegadaTci": "2026-10-02 19:38:13",
+      "salidaTci": "2026-10-02 19:49:09",
+      "plantaDescarga": "JAVE",
+      "llegadaPlanta": "2026-10-03 09:58:24",
+      "ingresoPlanta": "2026-10-03 10:04:21",
+      "salidaPlanta": "2026-10-03 14:05:07"
+    }
+  },
+  {
+    "caso": "AMO-905 FRANKLIN FLORES, carreta TMB-986, carga 28/09/2026: la carreta la lleva a Ecuador BSD-716",
+    "historial": "AMO-905_2026-09-27.json",
+    "desde": "2026-09-28 00:00:00",
+    "notas": "Horas marcadas por la administradora en el portal de Onway (2026-10-20).",
+    "esperado": {
+      "salidaBase": "2026-09-27 18:56:03",
+      "llegadaTrujillo": "2026-09-28 04:20:53",
+      "ingresoPlanta": "2026-09-28 11:12:24",
+      "salidaPlanta": "2026-09-28 15:46:46",
+      "llegadaBase": "2026-09-29 03:45:18"
+    }
+  },
+  {
+    "caso": "BSD-716 PRIER SILVA, carreta TMB-986: descarga en Inbalnor 30/09/2026, pasa directo por TCI (cargo AMO-905)",
+    "tramo": "descarga",
+    "historial": "BSD-716_2026-09-29.json",
+    "desde": "2026-09-28 15:46:46",
+    "notas": "Horas marcadas por la administradora en el portal de Onway (2026-10-20). En TCI se coordino con los ingenieros y la unidad paso directo: se toma el punto cercano (la vía al noreste de TCI).",
+    "esperado": {
+      "salidaBase": "2026-09-29 07:13:48",
+      "llegadaComplex": "2026-09-29 17:48:41",
+      "ingresoComplex": "2026-09-29 20:11:25",
+      "salidaComplex": "2026-09-29 21:26:05",
+      "llegadaCebaf": "2026-09-29 21:44:06",
+      "cruce": "2026-09-29 22:17:27",
+      "llegadaTci": "2026-09-29 22:23:50",
+      "salidaTci": "2026-09-29 22:26:47",
+      "plantaDescarga": "INBALNOR",
+      "llegadaPlanta": "2026-09-30 11:32:00",
+      "ingresoPlanta": "2026-09-30 11:39:43",
+      "salidaPlanta": "2026-09-30 17:31:10"
+    }
+  },
+  {
+    "caso": "BNG-862 PEDRO REYES, carreta T4C-979, carga 30/09/2026 (seguimiento 3422): espera dentro del patio noreste de la planta",
+    "historial": "BNG-862_2026-09-30.json",
+    "desde": "2026-09-30 00:00:00",
+    "notas": "Horas del Excel STATUS GENERAL (minutos), revisadas punto por punto en el GPS: entra por la tranquera 07:39-07:40, espera 07:56-10:02 en el patio noreste y sale 12:49-12:50.",
+    "esperado": {
+      "ingresoPlanta": "2026-09-30 07:39:00",
+      "salidaPlanta": "2026-09-30 12:50:00"
+    }
+  },
+  {
+    "caso": "BFI-890 FRANKLIN NAVARRO, carreta TMB-988, carga 28/09/2026 (seguimiento 3419): salto del GPS en la cola",
+    "historial": "BFI-890_2026-09-28.json",
+    "desde": "2026-09-28 00:00:00",
+    "notas": "Horas del Excel STATUS GENERAL (minutos), revisadas en el GPS. De 09:03 a 09:34 el GPS lo marca clavado en una coordenada dentro de la planta sin moverse (salto mientras esperaba en la cola); el ingreso real es 16:48.",
+    "esperado": {
+      "ingresoPlanta": "2026-09-28 16:47:00",
+      "salidaPlanta": "2026-09-28 19:30:00"
+    }
+  },
+  {
+    "caso": "BPT-788 TELMO ROJAS, pedido 4400133372, carga 07/10/2026: caso normal, vuelve a base",
+    "historial": "BPT-788_2026-10-06.json",
+    "desde": "2026-10-06 00:00:00",
+    "notas": "Horas marcadas por la administradora en el portal de Onway (2026-10-19).",
+    "esperado": {
+      "salidaBase": "2026-10-06 04:49:24",
+      "llegadaTrujillo": "2026-10-07 12:01:31",
+      "ingresoPlanta": "2026-10-07 12:08:57",
+      "salidaPlanta": "2026-10-07 13:32:01",
+      "llegadaBase": "2026-10-07 23:51:10"
+    }
+  },
+  {
+    "caso": "AMQ-859 LUCIO CORDOVA, carreta T0L-975, pedido 4400133288, carga 03/10/2026: el mismo chofer descarga en Ecuador",
+    "historial": "AMQ-859_2026-10-02.json",
+    "desde": "2026-10-02 00:00:00",
+    "notas": "Horas marcadas por la administradora en el portal de Onway (2026-10-19). Vuelve a base y sale de nuevo con destino a Ecuador. Salida de planta: sale por la puerta 17:51:02, espera 5 min en la avenida y se va 17:56:40 (la hora que ella anoto); se decidio tomar la puerta, como el Excel STATUS GENERAL (decision del 2026-10-19).",
+    "esperado": {
+      "salidaBase": "2026-10-02 15:43:39",
+      "llegadaTrujillo": "2026-10-03 02:23:55",
+      "ingresoPlanta": "2026-10-03 12:56:45",
+      "salidaPlanta": "2026-10-03 17:51:02",
+      "llegadaBase": "2026-10-04 17:00:00",
+      "salidaBaseRetorno": "2026-10-04 21:03:27"
+    }
+  }
+]

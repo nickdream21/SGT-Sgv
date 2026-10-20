@@ -12,6 +12,8 @@
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <!-- Misma versión que WebSGV/packages.config: para generar el PDF de la Orden de Viaje en los tests -->
     <PackageReference Include="QuestPDF" Version="2026.5.0" />
+    <!-- Misma versión que WebSGV/packages.config: para leer los historiales GPS guardados (Datos/Trazabilidad) -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="xunit" Version="2.9.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -26,6 +28,11 @@
     <Reference Include="WebSGV">
       <HintPath>..\WebSGV\bin\WebSGV.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Historiales GPS reales y horas que marcó la administradora (TrazabilidadCargaTests) -->
+    <None Include="Datos\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

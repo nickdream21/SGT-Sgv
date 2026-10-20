@@ -465,10 +465,13 @@
     <Compile Include="Services\GpsIntegracion\OnwayApiClient.cs" />
     <Compile Include="Services\GpsIntegracion\ReporteHistorialGpsService.cs" />
     <Compile Include="Services\GpsIntegracion\OnwayAuthCacheService.cs" />
+    <Compile Include="Services\GpsIntegracion\GeocercaGps.cs" />
     <Compile Include="Services\GpsIntegracion\PuntoControlGpsService.cs" />
     <Compile Include="Services\GpsIntegracion\CheckpointMatchingService.cs" />
     <Compile Include="Services\GpsIntegracion\HoraLlegadaGpsService.cs" />
     <Compile Include="Services\GpsIntegracion\SeguimientoExportacionGpsService.cs" />
+    <Compile Include="Services\GpsIntegracion\TrazabilidadCargaService.cs" />
+    <Compile Include="Services\GpsIntegracion\TrazabilidadDescargaService.cs" />
     <Compile Include="Services\Reportes\ReportesOrdenesViajeService.cs" />
     <Compile Include="Services\Reportes\ReporteTabular.cs" />
     <Compile Include="Services\Despachos\DespachoValidaciones.cs" />
