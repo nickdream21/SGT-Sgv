@@ -227,10 +227,16 @@ namespace WebSGV.Services.GpsIntegracion
 
                 // Un tramo con todas sus horas registradas y ya revisadas por el GPS (o corregidas a
                 // mano) no se vuelve a consultar: ahorra días de historial en cada actualización.
-                var revisadas = new HashSet<string>(DbHelper.ConsultarTabla(
-                        "SELECT columna FROM SeguimientoHito WHERE idSeguimiento = @id AND (horaGps IS NOT NULL OR fuente = 'MANUAL')",
+                var hitosGuardados = DbHelper.ConsultarTabla(
+                        "SELECT columna, horaGps, regla FROM SeguimientoHito WHERE idSeguimiento = @id AND (horaGps IS NOT NULL OR fuente = 'MANUAL')",
                         DbHelper.Param("@id", idSeguimiento))
-                    .Rows.Cast<DataRow>().Select(r => Convert.ToString(r["columna"])), StringComparer.OrdinalIgnoreCase);
+                    .Rows.Cast<DataRow>().ToList();
+                var revisadas = new HashSet<string>(hitosGuardados.Select(r => Convert.ToString(r["columna"])), StringComparer.OrdinalIgnoreCase);
+                // Lo que el GPS ya había detectado igual en una consulta anterior (misma hora y regla) no se vuelve a escribir.
+                var yaGuardado = new HashSet<string>(hitosGuardados
+                    .Where(r => r["horaGps"] != DBNull.Value)
+                    .Select(r => Convert.ToString(r["columna"]) + "|" + Convert.ToDateTime(r["horaGps"]).ToString("s") + "|" + Convert.ToString(r["regla"])),
+                    StringComparer.OrdinalIgnoreCase);
                 bool TramoCompleto(IEnumerable<string> columnas) =>
                     columnas.All(c => valoresYaConfirmados.ContainsKey(c) && revisadas.Contains(c));
                 var columnasCarga = new[] { "fhSalidaBase1", "fhLlegadaTrujillo", "fhIngresoPlanta", "fhSalidaPlanta", "fhLlegadaBase2" };
@@ -294,6 +300,9 @@ namespace WebSGV.Services.GpsIntegracion
                     DateTime horaUtc = hito.HoraUtc.AddTicks(-(hito.HoraUtc.Ticks % TimeSpan.TicksPerSecond)); // el portal muestra segundos enteros
                     DateTime horaLocal = FechaHelper.ConvertirDeUtc(horaUtc);
                     bool esAlertaOnway = hito.Fuente != null && hito.Fuente.StartsWith("Alerta de geocerca de Onway", StringComparison.OrdinalIgnoreCase);
+                    string regla = hito.Fuente != null && hito.Fuente.Length > 200 ? hito.Fuente.Substring(0, 200) : hito.Fuente;
+                    if (valoresYaConfirmados.ContainsKey(d.Item1) && yaGuardado.Contains(d.Item1 + "|" + horaLocal.ToString("s") + "|" + regla))
+                        continue;
                     object aplicado = DbHelper.EjecutarEscalarSp("sp_SE_RegistrarHitoGps",
                         DbHelper.Param("@idSeguimiento", idSeguimiento),
                         DbHelper.Param("@columna", d.Item1),
@@ -301,7 +310,7 @@ namespace WebSGV.Services.GpsIntegracion
                         DbHelper.Param("@fuenteGps", esAlertaOnway ? "ONWAY" : "GPS"),
                         DbHelper.Param("@latitud", hito.Punto != null ? (object)Math.Round((decimal)hito.Punto.Lat, 6) : null),
                         DbHelper.Param("@longitud", hito.Punto != null ? (object)Math.Round((decimal)hito.Punto.Lng, 6) : null),
-                        DbHelper.Param("@regla", hito.Fuente != null && hito.Fuente.Length > 200 ? hito.Fuente.Substring(0, 200) : hito.Fuente),
+                        DbHelper.Param("@regla", regla),
                         // La salida de base puede haberse registrado "en camino" (provisional): el GPS la puede afinar.
                         DbHelper.Param("@reemplazarGps", ColumnasSalidaBase.Contains(d.Item1)));
                     if (Convert.ToInt32(aplicado) == 1)

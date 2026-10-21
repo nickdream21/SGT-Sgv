@@ -229,5 +229,22 @@
       "llegadaTrujillo": "2026-10-21 10:45:20",
       "ingresoPlanta": null
     }
+  },
+  {
+    "caso": "BSD-900 (descarga de la carreta AUK-997, viaje 7296) en Jave 21/10/2026: pasa la puerta, cruza 1 min la esquina de las bodegas y se estaciona en el patio de al lado",
+    "tramo": "descarga",
+    "historial": "BSD-900_2026-10-19.json",
+    "desde": "2026-10-19 12:00:00",
+    "notas": "Historial guardado a las 11:45: sigue en el patio de Jave desde las 10:18. Antes se marcaba la salida de la planta a las 10:14:48.",
+    "esperado": {
+      "salidaBase": "2026-10-19 13:17:14",
+      "llegadaComplex": "2026-10-20 07:02:11",
+      "cruce": "2026-10-20 21:02:26",
+      "plantaDescarga": "JAVE",
+      "llegadaPlanta": "2026-10-21 10:00:35",
+      "ingresoPlanta": "2026-10-21 10:13:35",
+      "salidaPlanta": null,
+      "llegadaBase": null
+    }
   }
 ]

@@ -22,7 +22,7 @@ namespace WebSGV.Views.Exportacion
         /// Tope de viajes por clic. Los días ya terminados salen de HistorialGpsCache, así que un
         /// viaje ya consultado antes solo pide hoy y ayer; el límite real es PresupuestoGps.
         /// </summary>
-        private const int ViajesGpsPorClic = 40;
+        private const int ViajesGpsPorClic = 60;
         private static readonly TimeSpan PresupuestoGps = TimeSpan.FromSeconds(80);
         private const int DiasPorDefecto = 30;
 

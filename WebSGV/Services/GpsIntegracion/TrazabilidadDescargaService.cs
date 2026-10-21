@@ -260,8 +260,15 @@ namespace WebSGV.Services.GpsIntegracion
             foreach (var va in Visitas(puntos, acceso).Where(v => v.Primero >= desde &&
                          (Hora(puntos[v.Ultimo]) - Hora(puntos[v.Primero])).TotalMinutes >= MinutosMinimosEnBodega))
             {
-                var vp = visitasPlanta.FirstOrDefault(v => v.Primero >= va.Primero && v.Primero <= va.Ultimo && SeMovioAdentro(puntos, v));
-                if (vp != null) return Tuple.Create(va, vp);
+                var dentro = visitasPlanta.Where(v => v.Primero >= va.Primero && v.Primero <= va.Ultimo).ToList();
+                var primera = dentro.FirstOrDefault(v => SeMovioAdentro(puntos, v));
+                if (primera == null) continue;
+                // Al pasar la puerta la unidad cruza la esquina de las bodegas y se estaciona en el patio
+                // de al lado: eso no es la salida (BSD-900 y otras 7 en Jave el 21/10/2026: "salían" al
+                // minuto de entrar y seguían adentro). La salida es la última de la bodega, y solo
+                // cuando la unidad ya dejó el recinto.
+                var ultima = dentro.Last();
+                return Tuple.Create(va, new Visita { Primero = primera.Primero, Ultimo = ultima.Ultimo, Cerrada = va.Cerrada && ultima.Cerrada });
             }
             return null;
         }
