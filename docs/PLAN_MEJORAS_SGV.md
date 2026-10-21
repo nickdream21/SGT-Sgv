@@ -86,7 +86,6 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       ASU-748 (en la noche del 20/10) van a Ecuador sin despacho de descarga; las cargas del 20/10 con pedido
       `PENDIENTE` (BNG-758, ASU-862, TBM-815, CBU-928, BPT-788, BPS-816) siguen "Descarga sin tracto asignado".
       Con el Word de la descarga, como el pedido 4400133879 (los Word del 20 y 21/10 no estaban en la PC de la oficina).
-- [ ] **ANU-794, carga del 21/10 (viaje 7401, carreta T3Y-995, creado a mano con pedido `PENDIENTE`)**: el chofer JUSTO      CESPEDES VASQUEZ ya está registrado (conductor 143, DNI 03673697, licencia B03673697); falta programar su despacho:      RegistroDespacho → subir `DESPACHO 20-10-26.docx` → marcar su fila → "Programar despachos". La sincronización adopta el viaje 7401.
 - [ ] **Medir "Actualizar GPS" en el sitio publicado** después de subir el código (local: 46 viajes en un clic, 25 s
       con caché y ~80 s recién iniciado). Si no alcanza: pedir de hoy solo lo nuevo (desde el último punto).
 - [ ] **GPS de BFR-730**: Onway no tiene ningún dato suyo en septiembre ni en octubre (descargas del 02, 07, 09
@@ -220,6 +219,7 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 
 ### Hechas
 
+- [x] **ANU-794, carga del 21/10** (2026-10-21): conductor JUSTO CESPEDES VASQUEZ registrado (id 143, DNI 03673697,      licencia B03673697), despacho 867 programado con el Word `DESPACHO 20-10-26.docx` y adoptado por el viaje 7401.      Sigue con pedido `PENDIENTE` hasta que llegue el ZIP del correo.
 - [x] **Seguimiento: unidades en la cola de Trujillo seguían "Rumbo a Trujillo", viaje 7381 con las horas del anterior,
       salida falsa de la bodega en Ecuador y "Actualizar GPS" por partes** (2026-10-21): ver la fila de la sección 3.
       Revisadas las 42 placas del monitoreo de la administradora. Con `corregir_salidas_bodega_ecuador_2026-10-21.sql`
