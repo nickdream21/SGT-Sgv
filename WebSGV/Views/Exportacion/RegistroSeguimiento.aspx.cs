@@ -97,7 +97,8 @@ namespace WebSGV.Views.Exportacion
                 return;
             }
 
-            var reporte = ExportacionStatusGeneral.Construir(viajes.Select(v => v.Fila).ToList(), DescribirFiltros(), Convert.ToString(Session["Nombre"]));
+            var reporte = ExportacionStatusGeneral.Construir(viajes.Select(v => v.Fila).ToList(), DescribirFiltros(), Convert.ToString(Session["Nombre"]),
+                viajes.ToDictionary(v => v.Id, v => v.Status));
             byte[] archivo = ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(), Server.MapPath("~/Content/favicon.png"));
             var resp = HttpContext.Current.Response;
             resp.Clear();
@@ -176,6 +177,7 @@ namespace WebSGV.Views.Exportacion
             Tracto2 = v.Tracto2 ?? "Sin asignar",
             Chofer2 = v.Chofer2 ?? (v.Tracto2 != null && v.Tracto2 == v.Tracto1 ? "Mismo tracto" : ""),
             Fase = v.Fase.Nombre,
+            v.Status,
             v.Fase.Grupo,
             Planta = v.Planta != null ? "Descarga en " + Capital(v.Planta) : "",
             UltimoHito = v.UltimoHito ?? "Sin hitos todavía",

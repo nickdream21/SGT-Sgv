@@ -40,6 +40,11 @@ namespace WebSGV.Services.Exportacion
         public string Origen { get; set; }
         public DateTime? FhProgramacion { get; set; }
         public DateTime? UltimaConsultaGps { get; set; }
+
+        /// <summary>Texto de STATUS de la unidad (fase + lugar general), para copiar al Excel y enviar.</summary>
+        public string Status { get; set; }
+        public DateTime? UltimaPosicion { get; set; }
+        public string Lugar { get; set; }
         public Dictionary<string, DateTime?> Horas { get; set; }
         public FaseCalculada Fase { get; set; }
         public List<AvisoViaje> Avisos { get; set; }
@@ -263,7 +268,7 @@ namespace WebSGV.Services.Exportacion
                 v.Horas.TryGetValue("fhSalidaPlanta", out var salidaPlanta);
                 DateTime inicio = (salidaBase ?? v.FhProgramacion ?? FechaHelper.Hoy()).Date;
                 return SeguimientoExportacionGpsService.DiasDeHistorial(v.Tracto1, v.Tracto2, inicio, salidaPlanta,
-                    v.AvanceCarga == HitosSeguimiento.Carga.Count);
+                    v.AvanceCarga == HitosSeguimiento.Carga.Count, StatusUnidad.TractoActivo(v.Horas, v.Tracto1, v.Tracto2));
             }).ToList();
             SeguimientoExportacionGpsService.PrecargarHistorial(tramos, TimeSpan.FromTicks(presupuesto.Ticks * 2 / 3));
 
@@ -319,8 +324,12 @@ namespace WebSGV.Services.Exportacion
                 Origen = Texto(r, "origen"),
                 FhProgramacion = Fecha(r, "fhProgramacion"),
                 UltimaConsultaGps = Fecha(r, "fhUltimaConsultaGps"),
+                UltimaPosicion = Fecha(r, "fhUltimaPosicion"),
+                Lugar = StatusUnidad.LugarDeDireccion(Texto(r, "ultimaDireccion")),
                 Horas = horas,
                 Fase = FaseViaje.Calcular(horas, estado),
+                Status = StatusUnidad.Texto(horas, estado, Texto(r, "bodegaDescarga") ?? Texto(r, "bodegaEcuatoriana"),
+                    StatusUnidad.LugarDeDireccion(Texto(r, "ultimaDireccion")), Fecha(r, "fhUltimaPosicion"), FechaHelper.Ahora()),
                 Avisos = FaseViaje.Avisos(horas, tracto1, tracto2, r.Table.Columns.Contains("pasoDirectoTci") && !r.IsNull("pasoDirectoTci") && Convert.ToBoolean(r["pasoDirectoTci"]), FechaHelper.Ahora()),
                 AvanceCarga = FaseViaje.Avance(horas, TramoViaje.Carga),
                 AvanceDescarga = FaseViaje.Avance(horas, TramoViaje.Descarga),

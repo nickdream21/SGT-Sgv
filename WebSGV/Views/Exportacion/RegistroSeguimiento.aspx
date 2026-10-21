@@ -15,6 +15,7 @@
                 <a href="ImportarSeguimiento.aspx" class="sx-btn"><i class="fas fa-file-import" aria-hidden="true"></i>Importar Excel</a>
                 <asp:Button ID="btnExportar" runat="server" Text="Exportar STATUS GENERAL" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportar_Click" />
                 <a href="SeguimientoViaje.aspx?nuevo=1" class="sx-btn">Nuevo viaje</a>
+                <button type="button" class="sx-btn" id="btnCopiarStatus" title="Copia el STATUS de cada fila de la tabla, en orden, para pegar en la columna STATUS del Excel"><i class="fas fa-copy" aria-hidden="true"></i>Copiar STATUS</button>
                 <asp:Button ID="btnActualizarGps" runat="server" Text="Actualizar GPS de viajes abiertos" CssClass="sx-btn sx-btn-primario" CausesValidation="false"
                     OnClick="btnActualizarGps_Click" OnClientClick="this.value='Consultando el GPS…';" UseSubmitBehavior="false" />
             </div>
@@ -64,7 +65,7 @@
         <div class="sgv-panel sx-tabla-caja">
             <table class="table sgv-tabla">
                 <thead>
-                    <tr><th>Pedido / carreta</th><th>Carga</th><th>Descarga</th><th>Fase</th><th>Último hito</th><th>Avance</th><th>Pendiente</th></tr>
+                    <tr><th>Pedido / carreta</th><th>Carga</th><th>Descarga</th><th>Fase</th><th>STATUS</th><th>Último hito</th><th>Avance</th><th>Pendiente</th></tr>
                 </thead>
                 <tbody>
                     <asp:Repeater ID="rptViajes" runat="server">
@@ -78,6 +79,10 @@
                                 <td><span class="sx-mono"><%#: Eval("Tracto1") %></span><span class="sx-sub"><%#: Eval("Chofer1") %></span></td>
                                 <td><span class="sx-mono"><%#: Eval("Tracto2") %></span><span class="sx-sub"><%#: Eval("Chofer2") %></span></td>
                                 <td><span class='<%# "sx-fase sx-fase-" + Eval("Grupo") %>'><%#: Eval("Fase") %></span><span class="sx-sub"><%#: Eval("Planta") %></span></td>
+                                <td class="sx-status">
+                                    <span class="sx-status-texto"><%#: Eval("Status") %></span>
+                                    <button type="button" class="sx-copiar" data-copiar title="Copiar este STATUS" aria-label="Copiar este STATUS"><i class="fas fa-copy" aria-hidden="true"></i></button>
+                                </td>
                                 <td><%#: Eval("UltimoHito") %><span class="sx-sub sx-mono"><%#: Eval("UltimoHora") %></span></td>
                                 <td>
                                     <div class="sx-avance">
@@ -106,4 +111,5 @@
 
         <p class="sx-nota" style="margin-top: 0.75rem;"><asp:Literal ID="litResumen" runat="server" /></p>
     </div>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/Exportacion/RegistroSeguimiento.js") %>"></script>
 </asp:Content>

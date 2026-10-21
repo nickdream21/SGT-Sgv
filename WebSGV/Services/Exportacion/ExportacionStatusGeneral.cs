@@ -41,7 +41,8 @@ namespace WebSGV.Services.Exportacion
             ("fhLlegadaBaseFinal", "F.H.LL BASE"),
         };
 
-        public static ReporteTabular Construir(IList<DataRow> filas, IEnumerable<string> filtros, string generadoPor)
+        /// <param name="status">Texto de STATUS por idSeguimiento (última columna); sin él no se agrega la columna.</param>
+        public static ReporteTabular Construir(IList<DataRow> filas, IEnumerable<string> filtros, string generadoPor, IDictionary<int, string> status = null)
         {
             var r = new ReporteTabular
             {
@@ -76,6 +77,12 @@ namespace WebSGV.Services.Exportacion
             Texto("BODEGA ECUATORIANA", "bodegaEcuatoriana");
             Texto("BODEGA DESCARGA", "bodegaDescarga");
             Texto("MOTIVO DE RETRASO", "motivoRetraso", 2.5f);
+            if (status != null)
+                r.Columnas.Add(new ColumnaReporte
+                {
+                    Titulo = "STATUS", Tipo = TipoColumnaReporte.Texto, Ancho = 4f,
+                    Valor = f => status.TryGetValue(Convert.ToInt32(f["idSeguimiento"]), out var s) ? s : null
+                });
             return r;
         }
 

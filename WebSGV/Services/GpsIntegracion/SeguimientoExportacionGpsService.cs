@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using WebSGV.Helpers;
 using WebSGV.Models.GpsIntegracion;
+using WebSGV.Services.Exportacion;
 
 namespace WebSGV.Services.GpsIntegracion
 {
@@ -98,14 +99,58 @@ namespace WebSGV.Services.GpsIntegracion
         /// que ya muestra el tablero (aproximado: lo que falte se pide al consultar el viaje).
         /// </summary>
         public static IEnumerable<Tuple<string, DateTime, DateTime>> DiasDeHistorial(string tracto1, string tracto2,
-            DateTime inicio, DateTime? salidaPlanta, bool cargaCompleta)
+            DateTime inicio, DateTime? salidaPlanta, bool cargaCompleta, string tractoActivo = null)
         {
+            // La posición actual del tracto que lleva la carga sale del historial de hoy.
+            if (!string.IsNullOrWhiteSpace(tractoActivo))
+                yield return Tuple.Create(tractoActivo, FechaHelper.Hoy(), FechaHelper.Hoy());
             if (!string.IsNullOrWhiteSpace(tracto1) && !cargaCompleta)
                 yield return Tuple.Create(tracto1, inicio.Date.AddDays(-2), inicio.Date.AddDays(4));
             if (!string.IsNullOrWhiteSpace(tracto2))
             {
                 DateTime dia = (salidaPlanta ?? inicio).Date;
                 yield return Tuple.Create(tracto2, dia.AddDays(-1), dia.AddDays(VentanaMaximaDias));
+            }
+        }
+
+        /// <summary>
+        /// Guarda en el viaje el último punto del tracto activo (hoy; ayer si hoy todavía no reportó).
+        /// Si el GPS falla no se pierde la consulta de las horas: la posición queda como estaba.
+        /// </summary>
+        private static void GuardarUltimaPosicion(int idSeguimiento, OnwayApiClient cliente, IDictionary<string, DateTime?> horas,
+            string placaTracto1, string placaTracto2, OnwayDevice dispositivo1, OnwayDevice dispositivo2)
+        {
+            string placa = StatusUnidad.TractoActivo(horas, placaTracto1, placaTracto2);
+            var dispositivo = placa == null ? null
+                : string.Equals(placa, placaTracto1, StringComparison.OrdinalIgnoreCase) ? dispositivo1 : dispositivo2;
+            if (dispositivo == null) return;
+
+            try
+            {
+                OnwayHistoryPoint ultimo = null;
+                for (int atras = 0; atras <= 1 && ultimo == null; atras++)
+                    ultimo = HistorialGpsCache.Dia(cliente, dispositivo, FechaHelper.Hoy().AddDays(-atras))
+                        .Where(p => p != null && !(p.Lat == 0 && p.Lng == 0))
+                        .OrderBy(TrazabilidadCargaService.Hora)
+                        .LastOrDefault();
+                if (ultimo == null) return;
+
+                string direccion = ultimo.Address;
+                DbHelper.EjecutarNonQuery(
+                    @"UPDATE SeguimientoExportacion SET fhUltimaPosicion = @hora, ultimaLatitud = @lat, ultimaLongitud = @lng,
+                             ultimaVelocidad = @vel, ultimaDireccion = @dir, ultimaPlacaGps = @placa
+                      WHERE idSeguimiento = @id",
+                    DbHelper.Param("@id", idSeguimiento),
+                    DbHelper.Param("@hora", FechaHelper.ConvertirDeUtc(TrazabilidadCargaService.Hora(ultimo))),
+                    DbHelper.Param("@lat", Math.Round((decimal)ultimo.Lat, 6)),
+                    DbHelper.Param("@lng", Math.Round((decimal)ultimo.Lng, 6)),
+                    DbHelper.Param("@vel", Math.Round((decimal)ultimo.Speed, 1)),
+                    DbHelper.Param("@dir", direccion != null && direccion.Length > 300 ? direccion.Substring(0, 300) : direccion),
+                    DbHelper.Param("@placa", placa));
+            }
+            catch (OnwayApiException ex)
+            {
+                LogSGV.Error(ex, "No se pudo leer la posición actual de {Placa} para el seguimiento {IdSeguimiento}", placa, idSeguimiento);
             }
         }
 
@@ -319,6 +364,12 @@ namespace WebSGV.Services.GpsIntegracion
                         senalPorColumna[d.Item1] = hito.Fuente;
                     }
                 }
+
+                // Dónde está ahora la unidad (para el STATUS del tablero): el tracto que lleva la carga.
+                var horasHoy = new Dictionary<string, DateTime?>(StringComparer.OrdinalIgnoreCase);
+                foreach (var c in valoresYaConfirmados) horasHoy[c.Key] = c.Value;
+                foreach (var c in valoresEncontrados) horasHoy[c.Key] = c.Value;
+                GuardarUltimaPosicion(idSeguimiento, cliente, horasHoy, placaTracto1, placaTracto2, dispositivo1, dispositivo2);
 
                 DbHelper.EjecutarNonQuery(
                     "UPDATE SeguimientoExportacion SET fhUltimaConsultaGps = dbo.fn_AhoraPeru()" +

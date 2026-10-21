@@ -354,6 +354,7 @@
     <Content Include="Scripts\paginas\EditarDespacho.js" />
     <Content Include="Scripts\paginas\Exportacion\DashboardExportacion.js" />
     <Content Include="Scripts\paginas\Exportacion\ImportarSeguimiento.js" />
+    <Content Include="Scripts\paginas\Exportacion\RegistroSeguimiento.js" />
     <Content Include="Scripts\paginas\Exportacion\SeguimientoViaje.js" />
     <Content Include="Scripts\paginas\Exportacion\SeguimientoViajeMapa.js" />
     <Content Include="Scripts\paginas\FirmarLiquidacion.js" />
@@ -504,6 +505,7 @@
     <Compile Include="Services\Exportacion\ExportacionStatusGeneral.cs" />
     <Compile Include="Services\Exportacion\FechaHoraExcel.cs" />
     <Compile Include="Services\Exportacion\HitosSeguimiento.cs" />
+    <Compile Include="Services\Exportacion\StatusUnidad.cs" />
     <Compile Include="Services\Exportacion\SeguimientoViajesService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionCalculos.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionesContabilidadService.cs" />
