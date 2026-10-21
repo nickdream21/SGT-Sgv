@@ -13,6 +13,8 @@
                 <span class="sx-nota"><asp:Literal ID="litUltimaConsulta" runat="server" /></span>
                 <a href="DashboardExportacion.aspx" class="sx-btn"><i class="fas fa-chart-line" aria-hidden="true"></i>Dashboard</a>
                 <a href="ImportarSeguimiento.aspx" class="sx-btn"><i class="fas fa-file-import" aria-hidden="true"></i>Importar Excel</a>
+                <asp:Button ID="btnExportarStatus" runat="server" Text="Excel de STATUS" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatus_Click"
+                    ToolTip="Baja un Excel liviano con el STATUS de las unidades que muestra la tabla (con el pedido en Buscar, solo ese pedido)" />
                 <asp:Button ID="btnExportar" runat="server" Text="Exportar STATUS GENERAL" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportar_Click" />
                 <a href="SeguimientoViaje.aspx?nuevo=1" class="sx-btn">Nuevo viaje</a>
                 <button type="button" class="sx-btn" id="btnCopiarStatus" title="Copia el STATUS de cada fila de la tabla, en orden, para pegar en la columna STATUS del Excel"><i class="fas fa-copy" aria-hidden="true"></i>Copiar STATUS</button>
@@ -81,6 +83,7 @@
                                 <td><span class='<%# "sx-fase sx-fase-" + Eval("Grupo") %>'><%#: Eval("Fase") %></span><span class="sx-sub"><%#: Eval("Planta") %></span></td>
                                 <td class="sx-status">
                                     <span class="sx-status-texto"><%#: Eval("Status") %></span>
+                                    <span class="sx-sub sx-mono sx-ubicacion"><%#: Eval("Ubicacion") %></span>
                                     <button type="button" class="sx-copiar" data-copiar title="Copiar este STATUS" aria-label="Copiar este STATUS"><i class="fas fa-copy" aria-hidden="true"></i></button>
                                 </td>
                                 <td><%#: Eval("UltimoHito") %><span class="sx-sub sx-mono"><%#: Eval("UltimoHora") %></span></td>

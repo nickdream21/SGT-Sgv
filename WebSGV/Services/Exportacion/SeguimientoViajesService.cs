@@ -45,6 +45,9 @@ namespace WebSGV.Services.Exportacion
         public string Status { get; set; }
         public DateTime? UltimaPosicion { get; set; }
         public string Lugar { get; set; }
+
+        /// <summary>"dd/MM HH:mm" de la última posición del GPS mientras el viaje sigue abierto; null si ya cerró o no hay.</summary>
+        public string UbicacionHora => UltimaPosicion.HasValue && Fase != null && Fase.Grupo != "cerrado" ? UltimaPosicion.Value.ToString("dd/MM HH:mm") : null;
         public Dictionary<string, DateTime?> Horas { get; set; }
         public FaseCalculada Fase { get; set; }
         public List<AvisoViaje> Avisos { get; set; }

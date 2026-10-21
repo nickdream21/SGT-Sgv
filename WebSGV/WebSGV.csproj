@@ -506,6 +506,7 @@
     <Compile Include="Services\Exportacion\FechaHoraExcel.cs" />
     <Compile Include="Services\Exportacion\HitosSeguimiento.cs" />
     <Compile Include="Services\Exportacion\StatusUnidad.cs" />
+    <Compile Include="Services\Exportacion\ExportacionStatusUnidades.cs" />
     <Compile Include="Services\Exportacion\SeguimientoViajesService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionCalculos.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionesContabilidadService.cs" />

@@ -78,6 +78,7 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 
 ### Abiertas
 
+- [ ] **Excel de STATUS: agregar el N° de factura** del cuadro de la administradora (hoy el seguimiento no lo guarda;      está en la factura del despacho de carga, se puede traer con el `idDespachoOrigen`).
 - [ ] **Publicar** (la BD del sitio ya tiene la migración 33) el código del STATUS de la unidad, la cola de Trujillo, la salida de bodega en Ecuador y el GPS en paralelo: hasta
       entonces el sitio sigue mostrando "Rumbo a Trujillo" a las unidades en la cola. (El viaje 7381 ya se corrigió
       con `corregir_seguimiento_7381_2026-10-21.sql` el 21/10 y el GPS nuevo, corrido desde el sitio local, ya llenó

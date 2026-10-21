@@ -77,7 +77,12 @@ namespace WebSGV.Views.Exportacion
             Cargar();
         }
 
-        protected void btnExportar_Click(object sender, EventArgs e)
+        protected void btnExportar_Click(object sender, EventArgs e) => Exportar(false);
+
+        protected void btnExportarStatus_Click(object sender, EventArgs e) => Exportar(true);
+
+        /// <summary>Excel de los viajes que muestra el tablero (con el pedido en Buscar, solo ese pedido): STATUS GENERAL completo o el liviano de STATUS.</summary>
+        private void Exportar(bool soloStatus)
         {
             List<ViajeResumen> viajes;
             try
@@ -97,13 +102,15 @@ namespace WebSGV.Views.Exportacion
                 return;
             }
 
-            var reporte = ExportacionStatusGeneral.Construir(viajes.Select(v => v.Fila).ToList(), DescribirFiltros(), Convert.ToString(Session["Nombre"]),
+            var reporte = soloStatus
+                ? ExportacionStatusUnidades.Construir(viajes, DescribirFiltros(), Convert.ToString(Session["Nombre"]))
+                : ExportacionStatusGeneral.Construir(viajes.Select(v => v.Fila).ToList(), DescribirFiltros(), Convert.ToString(Session["Nombre"]),
                 viajes.ToDictionary(v => v.Id, v => v.Status));
             byte[] archivo = ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(), Server.MapPath("~/Content/favicon.png"));
             var resp = HttpContext.Current.Response;
             resp.Clear();
             resp.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            resp.AddHeader("Content-Disposition", $"attachment; filename=STATUS_GENERAL_{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
+            resp.AddHeader("Content-Disposition", $"attachment; filename={(soloStatus ? "STATUS_UNIDADES_" : "STATUS_GENERAL_")}{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
             resp.AddHeader("Content-Length", archivo.Length.ToString());
             resp.BinaryWrite(archivo);
             resp.Flush();
@@ -178,6 +185,7 @@ namespace WebSGV.Views.Exportacion
             Chofer2 = v.Chofer2 ?? (v.Tracto2 != null && v.Tracto2 == v.Tracto1 ? "Mismo tracto" : ""),
             Fase = v.Fase.Nombre,
             v.Status,
+            Ubicacion = v.UbicacionHora != null ? "Ubicación al " + v.UbicacionHora : "",
             v.Fase.Grupo,
             Planta = v.Planta != null ? "Descarga en " + Capital(v.Planta) : "",
             UltimoHito = v.UltimoHito ?? "Sin hitos todavía",

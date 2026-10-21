@@ -12,6 +12,7 @@ namespace WebSGV.Views.Exportacion
     public partial class RegistroSeguimiento
     {
         protected global::System.Web.UI.WebControls.Literal litUltimaConsulta;
+        protected global::System.Web.UI.WebControls.Button btnExportarStatus;
         protected global::System.Web.UI.WebControls.Button btnExportar;
         protected global::System.Web.UI.WebControls.Button btnActualizarGps;
         protected global::System.Web.UI.WebControls.Panel pnlMensaje;
