@@ -196,5 +196,38 @@
       "salidaPlanta": "2026-10-19 14:45:25",
       "llegadaBase": "2026-10-20 02:29:31"
     }
+  },
+  {
+    "caso": "CBV-788 JOSE IPANAQUE, carreta TDN-987, carga 21/10/2026: en la cola de la Av. Gonzales Prada desde las 08:39, todavia sin entrar a la planta",
+    "historial": "CBV-788_2026-10-20.json",
+    "desde": "2026-10-21 00:00:00",
+    "notas": "Historial guardado a las 11:15. El tablero lo seguia mostrando 'Rumbo a Trujillo': la llegada esperaba al ingreso a la planta.",
+    "esperado": {
+      "salidaBase": "2026-10-20 16:17:02",
+      "llegadaTrujillo": "2026-10-21 08:39:25",
+      "ingresoPlanta": null
+    }
+  },
+  {
+    "caso": "CBV-761 TEODORO MUNOZ, carreta T4Q-995, carga 21/10/2026: llega a la cola a las 00:51 y entra a la planta a las 11:08",
+    "historial": "CBV-761_2026-10-20.json",
+    "desde": "2026-10-21 00:00:00",
+    "notas": "Historial guardado a las 11:15: lleva 3 min en la planta (menos de 10 min no es ingreso todavia).",
+    "esperado": {
+      "salidaBase": "2026-10-20 13:29:39",
+      "llegadaTrujillo": "2026-10-21 00:51:57",
+      "ingresoPlanta": null
+    }
+  },
+  {
+    "caso": "TBM-898 JAIME ROMERO, carreta TDX-994, carga 21/10/2026: vuelve a salir a Trujillo a las 21:44 del 20/10, 43 min despues de llegar con su carga anterior (T0L-981), y a las 10:45 ya esta en la cola de Trujillo",
+    "historial": "TBM-898_2026-10-18.json",
+    "desde": "2026-10-20 09:37:43",
+    "notas": "desde = salida de planta de su carga anterior (viaje 7095). Sin ese limite el viaje 7381 tomaba las horas del 7095.",
+    "esperado": {
+      "salidaBase": "2026-10-20 21:44:46",
+      "llegadaTrujillo": "2026-10-21 10:45:20",
+      "ingresoPlanta": null
+    }
   }
 ]

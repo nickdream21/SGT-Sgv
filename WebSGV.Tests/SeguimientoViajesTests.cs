@@ -72,6 +72,44 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void Avisos_SigueEnLaColaDeTrujillo_SeMarcaConLaHoraActual()
+        {
+            // CBV-761 del 21/10/2026: en la cola desde las 00:51, todavía sin entrar a las 11:05.
+            var h = Horas(("fhSalidaBase1", "2026-10-20 13:29:39"), ("fhLlegadaTrujillo", "2026-10-21 00:51:57"));
+            var avisos = FaseViaje.Avisos(h, "CBV-761", null, false, ahora: DateTime.Parse("2026-10-21 11:05"));
+            Assert.Contains(avisos, a => a.Tipo == TipoAviso.Alerta && a.Texto == "10 h 13 min en cola de Trujillo (sigue esperando)");
+            Assert.Equal("En Trujillo", FaseViaje.Calcular(h, "EN_CURSO").Nombre);
+
+            // Sin la hora actual (o con un hito posterior) no se avisa la espera en curso.
+            Assert.DoesNotContain(FaseViaje.Avisos(h, "CBV-761", null, false), a => a.Texto.Contains("cola"));
+            h["fhSalidaPlanta"] = DateTime.Parse("2026-10-21 14:00");
+            Assert.DoesNotContain(FaseViaje.Avisos(h, "CBV-761", null, false, ahora: DateTime.Parse("2026-10-21 15:00")), a => a.Texto.Contains("cola"));
+        }
+
+        [Fact]
+        public void ActualizarGps_PrimeroLasCargasDeHoyLuegoLasDescargasYAlFinalLosAtrasados()
+        {
+            ViajeResumen V(int id, string fase, string prog, string consulta) => new ViajeResumen
+            {
+                Id = id,
+                Fase = new FaseCalculada { Grupo = fase },
+                FhProgramacion = DateTime.Parse(prog),
+                UltimaConsultaGps = consulta == null ? (DateTime?)null : DateTime.Parse(consulta),
+            };
+            var viajes = new[]
+            {
+                V(1, "retorno", "2026-10-19", null),
+                V(2, "carga", "2026-10-03", null),          // atrasado: al final aunque nunca se consultó
+                V(3, "ecuador", "2026-10-17", "2026-10-21 08:00"),
+                V(4, "carga", "2026-10-20", "2026-10-21 07:00"),
+                V(5, "carga", "2026-10-21", "2026-10-21 11:00"),
+                V(6, "base", "2026-10-20", "2026-10-21 07:30"),
+            };
+            var orden = SeguimientoViajesService.OrdenarParaGps(viajes, DateTime.Parse("2026-10-21")).Select(v => v.Id);
+            Assert.Equal(new[] { 5, 4, 6, 3, 1, 2 }, orden);
+        }
+
+        [Fact]
         public void Avisos_EsperasNormales_NoSeMarcan()
         {
             // BFI-922 en el Complex: 45 min de cola, 11 min en TCI.

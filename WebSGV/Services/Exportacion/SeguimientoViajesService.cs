@@ -240,29 +240,63 @@ namespace WebSGV.Services.Exportacion
                 "Estado del viaje: " + estado);
         }
 
+        /// <summary>Un viaje programado hace más de esto y todavía abierto se consulta al final.</summary>
+        private const int DiasViajeAtrasado = 10;
+
         /// <summary>
-        /// Consulta el GPS de los viajes abiertos del tablero, primero los que llevan más tiempo
-        /// sin consultar, hasta <paramref name="maximo"/> viajes o <paramref name="presupuesto"/>
-        /// de tiempo (cada viaje lee varios días de historial del API de Onway).
+        /// Consulta el GPS de los viajes abiertos del tablero, hasta <paramref name="maximo"/> viajes
+        /// o <paramref name="presupuesto"/> de tiempo. Primero las cargas en curso (las programadas
+        /// más recientes antes), luego las descargas y los retornos; los viajes atrasados al final.
+        /// El historial de hoy de todos los tractos se trae antes en paralelo.
         /// </summary>
         public static ResultadoActualizacionGps ActualizarGpsAbiertos(IEnumerable<ViajeResumen> viajes, int maximo, TimeSpan presupuesto)
         {
-            var abiertos = viajes
-                .Where(v => v.Fase.Grupo != "cerrado" && (!string.IsNullOrWhiteSpace(v.Tracto1) || !string.IsNullOrWhiteSpace(v.Tracto2)))
-                .OrderBy(v => v.UltimaConsultaGps ?? DateTime.MinValue)
-                .ToList();
+            var abiertos = OrdenarParaGps(viajes
+                .Where(v => v.Fase.Grupo != "cerrado" && (!string.IsNullOrWhiteSpace(v.Tracto1) || !string.IsNullOrWhiteSpace(v.Tracto2))),
+                FechaHelper.Hoy()).ToList();
             var r = new ResultadoActualizacionGps();
             var reloj = Stopwatch.StartNew();
+
+            var tramos = abiertos.Take(maximo).SelectMany(v =>
+            {
+                v.Horas.TryGetValue("fhSalidaBase1", out var salidaBase);
+                v.Horas.TryGetValue("fhSalidaPlanta", out var salidaPlanta);
+                DateTime inicio = (salidaBase ?? v.FhProgramacion ?? FechaHelper.Hoy()).Date;
+                return SeguimientoExportacionGpsService.DiasDeHistorial(v.Tracto1, v.Tracto2, inicio, salidaPlanta,
+                    v.AvanceCarga == HitosSeguimiento.Carga.Count);
+            }).ToList();
+            SeguimientoExportacionGpsService.PrecargarHistorial(tramos, TimeSpan.FromTicks(presupuesto.Ticks * 2 / 3));
+
             foreach (var v in abiertos)
             {
                 if (r.Consultados >= maximo || reloj.Elapsed > presupuesto) break;
                 var res = SeguimientoExportacionGpsService.ConsultarYActualizar(v.Id);
                 r.Consultados++;
                 if (res.Exito) r.CamposNuevos += res.Campos.Count(c => c.Encontrado && !c.YaEstabaConfirmado);
-                else r.Errores.Add($"{v.Pedido}: {res.Mensaje}");
+                else r.Errores.Add($"{v.Pedido} ({v.Tracto1 ?? v.Tracto2}, carreta {v.Carreta}): {res.Mensaje}");
             }
             r.Pendientes = abiertos.Count - r.Consultados;
             return r;
+        }
+
+        /// <summary>Orden de "Actualizar GPS": cargas, descargas, retornos y al final los atrasados.</summary>
+        public static IEnumerable<ViajeResumen> OrdenarParaGps(IEnumerable<ViajeResumen> viajes, DateTime hoy)
+        {
+            int Prioridad(ViajeResumen v)
+            {
+                if (v.FhProgramacion.HasValue && v.FhProgramacion.Value.Date < hoy.AddDays(-DiasViajeAtrasado)) return 3;
+                switch (v.Fase.Grupo)
+                {
+                    case "carga": return 0;
+                    case "base":
+                    case "ecuador": return 1;
+                    default: return 2;
+                }
+            }
+            return viajes
+                .OrderBy(Prioridad)
+                .ThenByDescending(v => Prioridad(v) == 0 ? v.FhProgramacion ?? DateTime.MinValue : DateTime.MinValue)
+                .ThenBy(v => v.UltimaConsultaGps ?? DateTime.MinValue);
         }
 
         private static ViajeResumen Resumir(DataRow r)
@@ -287,7 +321,7 @@ namespace WebSGV.Services.Exportacion
                 UltimaConsultaGps = Fecha(r, "fhUltimaConsultaGps"),
                 Horas = horas,
                 Fase = FaseViaje.Calcular(horas, estado),
-                Avisos = FaseViaje.Avisos(horas, tracto1, tracto2, r.Table.Columns.Contains("pasoDirectoTci") && !r.IsNull("pasoDirectoTci") && Convert.ToBoolean(r["pasoDirectoTci"])),
+                Avisos = FaseViaje.Avisos(horas, tracto1, tracto2, r.Table.Columns.Contains("pasoDirectoTci") && !r.IsNull("pasoDirectoTci") && Convert.ToBoolean(r["pasoDirectoTci"]), FechaHelper.Ahora()),
                 AvanceCarga = FaseViaje.Avance(horas, TramoViaje.Carga),
                 AvanceDescarga = FaseViaje.Avance(horas, TramoViaje.Descarga),
                 UltimoHito = ultimo?.Item1.Nombre,

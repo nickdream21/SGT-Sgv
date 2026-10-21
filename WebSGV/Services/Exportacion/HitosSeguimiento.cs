@@ -128,7 +128,9 @@ namespace WebSGV.Services.Exportacion
                 .OrderByDescending(t => t.Item2)
                 .FirstOrDefault();
 
-        public static List<AvisoViaje> Avisos(IDictionary<string, DateTime?> h, string tracto1, string tracto2, bool pasoDirectoTci)
+        /// <param name="ahora">Hora actual (Perú): con ella también se avisa la espera que sigue en curso.</param>
+        public static List<AvisoViaje> Avisos(IDictionary<string, DateTime?> h, string tracto1, string tracto2, bool pasoDirectoTci,
+            DateTime? ahora = null)
         {
             DateTime? V(string c) => h.TryGetValue(c, out var v) ? v : null;
             var avisos = new List<AvisoViaje>();
@@ -146,6 +148,10 @@ namespace WebSGV.Services.Exportacion
                 var a = V(desde); var b = V(hasta);
                 if (a.HasValue && b.HasValue && b.Value - a.Value >= limite)
                     Agregar(TipoAviso.Alerta, Duracion(b.Value - a.Value) + " " + donde);
+                // Todavía esperando (sin la hora de salida de la espera ni nada posterior).
+                else if (a.HasValue && !b.HasValue && ahora.HasValue && ahora.Value - a.Value >= limite &&
+                         !HitosSeguimiento.Todos.Any(d => V(d.Columna) > a.Value))
+                    Agregar(TipoAviso.Alerta, Duracion(ahora.Value - a.Value) + " " + donde + " (sigue esperando)");
             }
             Espera("fhLlegadaTrujillo", "fhIngresoPlanta", EsperaLargaTrujillo, "en cola de Trujillo");
             Espera("fhLlegadaBodegaNacional", "fhIngresoBodegaNacional", EsperaLargaComplex, "en cola del Complex");

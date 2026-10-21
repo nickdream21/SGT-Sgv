@@ -46,7 +46,7 @@ namespace WebSGV.Services.GpsIntegracion
         // tracto trae ~1 500 puntos: con 50 por página eran ~31 llamadas por día a 2 req/s y
         // "Verificar GPS" tardaba ~7 min; con 1 000 son 2 llamadas por día.
         private const int PageSizeDispositivos = 200;
-        private const int PageSizeHistorial = 1000;
+        private const int PageSizeHistorial = 5000; // un día completo (~1 500-2 000 puntos) en una sola llamada
 
         // Rate limit del API: 2 requests/segundo. Throttle simple compartido entre instancias.
         private static readonly object RateLock = new object();

@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Caching;
 using System.Web.Hosting;
@@ -28,6 +30,8 @@ namespace WebSGV.Services.GpsIntegracion
         /// </summary>
         private static readonly TimeSpan MargenCierre = TimeSpan.FromHours(24);
         private static readonly TimeSpan VigenciaEnMemoria = TimeSpan.FromMinutes(3);
+        private static readonly TimeSpan VigenciaAyer = TimeSpan.FromMinutes(30);
+        private const int LlamadasEnParalelo = 4;
         private const int DiasEnDisco = 30; // ~3-45 KB por tracto y día
 
         private static readonly JsonSerializerSettings Json = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
@@ -58,9 +62,40 @@ namespace WebSGV.Services.GpsIntegracion
             }
 
             var historial = cliente.ObtenerHistorial(dispositivo.Id, diaLocal.AddHours(5), diaLocal.AddDays(1).AddHours(5).AddSeconds(-1));
-            HttpRuntime.Cache.Insert(claveMemoria, historial, null, DateTime.UtcNow.Add(VigenciaEnMemoria), Cache.NoSlidingExpiration);
+            // Ayer casi no cambia (solo puntos atrasados de una unidad sin señal): no se vuelve a pedir en cada clic.
+            TimeSpan vigencia = diaLocal < FechaHelper.Hoy() ? VigenciaAyer : VigenciaEnMemoria;
+            HttpRuntime.Cache.Insert(claveMemoria, historial, null, DateTime.UtcNow.Add(vigencia), Cache.NoSlidingExpiration);
             if (cerrado) Guardar(archivo, historial);
             return historial;
+        }
+
+        /// <summary>
+        /// Trae a la caché, en paralelo, los días pedidos (hoy primero). Cada llamada al API tarda
+        /// ~2 s en responder y se hacían una tras otra: con varias en curso se aprovecha el límite
+        /// de 2 por segundo (que sigue respetando <see cref="OnwayApiClient"/>). Lo que no alcanza
+        /// en <paramref name="presupuesto"/> se pide después, al consultar cada viaje.
+        /// </summary>
+        public static void Precargar(OnwayApiClient cliente, IEnumerable<KeyValuePair<OnwayDevice, DateTime>> dias, TimeSpan presupuesto)
+        {
+            var reloj = System.Diagnostics.Stopwatch.StartNew();
+            var pendientes = dias
+                .GroupBy(d => d.Key.Id + "|" + d.Value.Date.ToString("yyyyMMdd"))
+                .Select(g => g.First())
+                .OrderByDescending(d => d.Value)
+                .ToList();
+            Parallel.ForEach(pendientes, new ParallelOptions { MaxDegreeOfParallelism = LlamadasEnParalelo }, (d, estado) =>
+            {
+                if (reloj.Elapsed > presupuesto) { estado.Stop(); return; }
+                try
+                {
+                    Dia(cliente, d.Key, d.Value);
+                }
+                catch (Exception ex) when (ex is OnwayApiException || ex is System.Net.Http.HttpRequestException || ex is TaskCanceledException)
+                {
+                    // Se reintenta (y se informa) al consultar el viaje.
+                    LogSGV.Advertencia("No se pudo precargar el historial GPS de {Placa} del {Dia}: {Error}", d.Key.Alias, d.Value.ToString("dd/MM"), ex.Message);
+                }
+            });
         }
 
         private static string Placa(OnwayDevice d)

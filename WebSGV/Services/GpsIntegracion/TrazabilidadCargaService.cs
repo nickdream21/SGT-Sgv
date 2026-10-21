@@ -83,6 +83,16 @@ namespace WebSGV.Services.GpsIntegracion
                 // sur (pasado Piura), el viaje está "rumbo a Trujillo" (caso CBU-945 del 20/10/2026).
                 resultado.SalidaBase = SalidaEnCamino(puntos, desdeUtc.AddDays(-1), RumboATrujillo)
                                        ?? PasoFrenteALaBase(puntos, desdeUtc.AddDays(-1), puntos.Count);
+
+                // Ya está en la cola de la Av. Gonzales Prada esperando entrar: llegó a Trujillo. Antes
+                // la llegada esperaba al ingreso a la planta y la unidad seguía "rumbo a Trujillo" horas
+                // después de llegar (CBV-788, CBV-761, BNI-736, BNH-735 y BSC-900 el 21/10/2026).
+                var enCola = VisitaEnCola(puntos, resultado.SalidaBase?.HoraUtc ?? desdeUtc);
+                if (enCola != null)
+                {
+                    resultado.LlegadaTrujillo = Hito(puntos[enCola.Primero], "Primer punto en la Av. Gonzales Prada (en cola, todavía sin entrar a la planta)");
+                    resultado.SalidaBase = SalidaBaseAntesDeTrujillo(puntos, enCola.Primero, desdeUtc) ?? resultado.SalidaBase;
+                }
                 return resultado;
             }
 
@@ -96,15 +106,8 @@ namespace WebSGV.Services.GpsIntegracion
             int idxLlegada = visitaAcceso?.Primero ?? visitaPlanta.Primero;
             resultado.LlegadaTrujillo = Hito(puntos[idxLlegada], "Primer punto en la Av. Gonzales Prada (acceso a planta)");
 
-            // 3. Salida de base: última salida antes de llegar a Trujillo. Si entre esa salida y
-            // Trujillo el tracto estuvo en Ecuador, vino directo de su descarga sin pasar por la base
-            // (vuelta corrida) y esa salida es del viaje anterior: se toma el paso frente a la base.
-            resultado.SalidaBase = BuscarSalidaBaseAntesDe(puntos, idxLlegada);
-            if (resultado.SalidaBase != null &&
-                puntos.Take(idxLlegada).Any(p => Hora(p) >= resultado.SalidaBase.HoraUtc && EnEcuador(p)))
-                resultado.SalidaBase = null;
-            if (resultado.SalidaBase == null)
-                resultado.SalidaBase = PasoFrenteALaBase(puntos, desdeUtc.AddDays(-1), idxLlegada);
+            // 3. Salida de base: última salida antes de llegar a Trujillo.
+            resultado.SalidaBase = SalidaBaseAntesDeTrujillo(puntos, idxLlegada, desdeUtc);
 
             // 4. Regreso: primera entrada a la base o paso directo.
             if (visitaPlanta.Cerrada)
@@ -117,6 +120,30 @@ namespace WebSGV.Services.GpsIntegracion
 
             return resultado;
         }
+
+        /// <summary>
+        /// Salida de base del viaje que llegó a Trujillo en <paramref name="idxLlegada"/>: la última
+        /// salida antes de esa llegada. Si entre esa salida y Trujillo el tracto estuvo en Ecuador,
+        /// vino directo de su descarga sin pasar por la base (vuelta corrida) y esa salida es del
+        /// viaje anterior: se toma el paso frente a la base.
+        /// </summary>
+        private static HitoGps SalidaBaseAntesDeTrujillo(List<OnwayHistoryPoint> puntos, int idxLlegada, DateTime desdeUtc)
+        {
+            var salida = BuscarSalidaBaseAntesDe(puntos, idxLlegada);
+            if (salida != null && puntos.Take(idxLlegada).Any(p => Hora(p) >= salida.HoraUtc && EnEcuador(p)))
+                salida = null;
+            return salida ?? PasoFrenteALaBase(puntos, desdeUtc.AddDays(-1), idxLlegada);
+        }
+
+        /// <summary>
+        /// Estadía en el acceso a la planta (avenida y cola) desde <paramref name="desdeUtc"/>, sin
+        /// haber entrado todavía: de <see cref="MinutosMinimosEnPlanta"/> o más, o en curso (el
+        /// historial termina con la unidad ahí). Un paso corto por la avenida no cuenta.
+        /// </summary>
+        internal static Visita VisitaEnCola(List<OnwayHistoryPoint> puntos, DateTime desdeUtc) =>
+            Visitas(puntos, GeocercasTrazabilidad.TrujilloAcceso)
+                .FirstOrDefault(v => Hora(puntos[v.Primero]) >= desdeUtc &&
+                                     (!v.Cerrada || (Hora(puntos[v.Ultimo]) - Hora(puntos[v.Primero])).TotalMinutes >= MinutosMinimosEnPlanta));
 
         /// <summary>Puntos con coordenadas, ordenados por la hora del portal.</summary>
         internal static List<OnwayHistoryPoint> Ordenar(IEnumerable<OnwayHistoryPoint> historial) =>
@@ -254,6 +281,8 @@ namespace WebSGV.Services.GpsIntegracion
             int idxCerca = -1;
             double metrosMinimos = double.MaxValue;
             bool alSur = false;
+            bool recienSalido = false;
+            HitoGps paso = null;
             for (int i = 0; i < hasta && i < puntos.Count; i++)
             {
                 var p = puntos[i];
@@ -262,23 +291,35 @@ namespace WebSGV.Services.GpsIntegracion
                 {
                     idxCerca = -1; // entró: no es una vuelta corrida
                     metrosMinimos = double.MaxValue;
+                    recienSalido = true;
+                    alSur = false;
                     continue;
                 }
                 if (RumboATrujillo(p))
                 {
+                    if (!alSur && idxCerca >= 0 && metrosMinimos <= MetrosCerca)
+                        paso = Hito(puntos[idxCerca], $"No entró a la base: pasó frente a ella rumbo a Trujillo (a {metrosMinimos / 1000:0.0} km)");
                     alSur = true;
-                    break;
+                    idxCerca = -1;
+                    metrosMinimos = double.MaxValue;
+                    continue;
                 }
+                alSur = false;
                 double metros = CheckpointMatchingService.CalcularDistanciaMetros(
                     p.Lat, p.Lng, baseSullana.LatitudCentro, baseSullana.LongitudCentro);
+                // Al salir de la base la unidad también pasa cerca de ella: eso es una salida, no un paso.
+                if (recienSalido)
+                {
+                    if (metros > MetrosCerca) recienSalido = false;
+                    continue;
+                }
                 if (metros < metrosMinimos)
                 {
                     metrosMinimos = metros;
                     idxCerca = i;
                 }
             }
-            if (!alSur || idxCerca < 0 || metrosMinimos > MetrosCerca) return null;
-            return Hito(puntos[idxCerca], $"No entró a la base: pasó frente a ella rumbo a Trujillo (a {metrosMinimos / 1000:0.0} km)");
+            return paso; // el último paso rumbo al sur antes de hasta
         }
 
         internal static HitoGps BuscarSalidaBaseAntesDe(List<OnwayHistoryPoint> puntos, int idxLlegada)

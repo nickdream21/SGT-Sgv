@@ -64,6 +64,51 @@ namespace WebSGV.Services.GpsIntegracion
         private static readonly HashSet<string> ColumnasSalidaBase =
             new HashSet<string>(new[] { "fhSalidaBase1", "fhSalidaBase2" }, StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// Trae en paralelo a <see cref="HistorialGpsCache"/> el historial que van a leer varios
+        /// viajes: cada tramo es (placa, primer día, último día). Después cada
+        /// <see cref="ConsultarYActualizar"/> lo encuentra en memoria o en disco.
+        /// </summary>
+        public static void PrecargarHistorial(IEnumerable<Tuple<string, DateTime, DateTime>> tramos, TimeSpan presupuesto)
+        {
+            try
+            {
+                var cliente = new OnwayApiClient();
+                var hoy = FechaHelper.Hoy();
+                var dias = new List<KeyValuePair<OnwayDevice, DateTime>>();
+                foreach (var placa in tramos.GroupBy(t => t.Item1.Trim().ToUpperInvariant()))
+                {
+                    var dispositivo = cliente.BuscarDispositivoPorPlaca(placa.Key);
+                    if (dispositivo == null) continue;
+                    foreach (var t in placa)
+                        for (DateTime dia = t.Item2.Date; dia <= t.Item3.Date && dia <= hoy; dia = dia.AddDays(1))
+                            dias.Add(new KeyValuePair<OnwayDevice, DateTime>(dispositivo, dia));
+                }
+                HistorialGpsCache.Precargar(cliente, dias, presupuesto);
+            }
+            catch (OnwayApiException ex)
+            {
+                // Cada viaje vuelve a intentarlo y muestra el error.
+                LogSGV.Error(ex, "No se pudo precargar el historial GPS de los viajes abiertos");
+            }
+        }
+
+        /// <summary>
+        /// Días de historial que lee <see cref="ConsultarYActualizar"/> en cada tramo, a partir de lo
+        /// que ya muestra el tablero (aproximado: lo que falte se pide al consultar el viaje).
+        /// </summary>
+        public static IEnumerable<Tuple<string, DateTime, DateTime>> DiasDeHistorial(string tracto1, string tracto2,
+            DateTime inicio, DateTime? salidaPlanta, bool cargaCompleta)
+        {
+            if (!string.IsNullOrWhiteSpace(tracto1) && !cargaCompleta)
+                yield return Tuple.Create(tracto1, inicio.Date.AddDays(-2), inicio.Date.AddDays(4));
+            if (!string.IsNullOrWhiteSpace(tracto2))
+            {
+                DateTime dia = (salidaPlanta ?? inicio).Date;
+                yield return Tuple.Create(tracto2, dia.AddDays(-1), dia.AddDays(VentanaMaximaDias));
+            }
+        }
+
         public static ResultadoConsultaGpsExportacion ConsultarYActualizar(int idSeguimiento)
         {
             DataTable dt = DbHelper.ConsultarTabla(@"
@@ -125,12 +170,35 @@ namespace WebSGV.Services.GpsIntegracion
                     Convert.ToDateTime(row["fechaRegistro"]).Date;
             }
 
+            // La carga de este viaje es posterior a la del viaje anterior del mismo tracto: sin este
+            // límite, el viaje programado al día siguiente tomaba la visita a la planta del anterior
+            // (TBM-898 del 21/10/2026, carreta TDX-994, quedó con las horas de su carga del 20/10).
+            DateTime desdeCargaUtc = FechaHelper.ConvertirAUtc(fechaInicio);
+            if (!string.IsNullOrEmpty(placaTracto1))
+            {
+                object salidaAnterior = DbHelper.EjecutarEscalar(@"
+                    SELECT MAX(fhSalidaPlanta) FROM SeguimientoExportacion
+                    WHERE activo = 1 AND idSeguimiento <> @id AND ISNULL(estado, '') <> 'CANCELADO'
+                      AND REPLACE(tracto1, '-', '') = REPLACE(@tracto, '-', '')
+                      AND CAST(fhProgramacion AS DATE) < CAST(@prog AS DATE)",
+                    DbHelper.Param("@id", idSeguimiento), DbHelper.Param("@tracto", placaTracto1),
+                    DbHelper.Param("@prog", row["fhProgramacion"] == DBNull.Value ? (object)fechaInicio : row["fhProgramacion"]));
+                if (salidaAnterior != null && salidaAnterior != DBNull.Value)
+                {
+                    DateTime salidaAnteriorUtc = FechaHelper.ConvertirAUtc(Convert.ToDateTime(salidaAnterior));
+                    if (salidaAnteriorUtc > desdeCargaUtc) desdeCargaUtc = salidaAnteriorUtc;
+                }
+            }
+
             try
             {
                 var cliente = new OnwayApiClient();
 
                 var dispositivo1 = string.IsNullOrEmpty(placaTracto1) ? null : cliente.BuscarDispositivoPorPlaca(placaTracto1);
                 var dispositivo2 = string.IsNullOrEmpty(placaTracto2) ? null : cliente.BuscarDispositivoPorPlaca(placaTracto2);
+                if (dispositivo1 == null && dispositivo2 == null)
+                    return ResultadoConsultaGpsExportacion.Fallo(
+                        $"{string.Join(" ni ", new[] { placaTracto1, placaTracto2 }.Where(p => !string.IsNullOrEmpty(p)).Distinct())} no tiene equipo GPS en Onway.");
 
                 // Los días ya terminados salen de HistorialGpsCache (disco), no del API.
                 Func<int, DateTime, List<OnwayHistoryPoint>> obtenerHistorialDia = (numeroTracto, dia) =>
@@ -178,7 +246,7 @@ namespace WebSGV.Services.GpsIntegracion
                 if (dispositivo1 != null && !TramoCompleto(columnasCarga))
                 {
                     var carga = TrazabilidadCargaService.DetectarTramoCarga(
-                        historialEntre(1, fechaInicio.AddDays(-2), fechaInicio.AddDays(4)), FechaHelper.ConvertirAUtc(fechaInicio));
+                        historialEntre(1, fechaInicio.AddDays(-2), fechaInicio.AddDays(4)), desdeCargaUtc);
                     Registrar("fhSalidaBase1", carga.SalidaBase);
                     Registrar("fhLlegadaTrujillo", carga.LlegadaTrujillo);
                     Registrar("fhIngresoPlanta", carga.IngresoPlanta);
