@@ -114,5 +114,6 @@
 
         <p class="sx-nota" style="margin-top: 0.75rem;"><asp:Literal ID="litResumen" runat="server" /></p>
     </div>
+    <script>var SGV = Object.assign(window.SGV || {}, { autoActualizarGps: <%= AutoActualizarGps ? "true" : "false" %>, btnActualizarGps: '<%= btnActualizarGps.ClientID %>' });</script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/Exportacion/RegistroSeguimiento.js") %>"></script>
 </asp:Content>

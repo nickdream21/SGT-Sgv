@@ -29,6 +29,12 @@ namespace WebSGV.Views.Exportacion
         /// <summary>Despachos de carga que se revisan para crear o completar viajes.</summary>
         private const int DiasSincronizacion = 60;
 
+        /// <summary>Al abrir la pantalla, si la última consulta al GPS es más vieja que esto, se consulta sola.</summary>
+        private static readonly TimeSpan EdadMaximaGps = TimeSpan.FromMinutes(15);
+
+        /// <summary>Verdadero cuando la página debe lanzar sola "Actualizar GPS" al abrir (lo lee el aspx).</summary>
+        protected bool AutoActualizarGps { get; private set; }
+
         private static readonly (string Grupo, string Nombre)[] Pestanas =
         {
             ("todos", "Todos"), ("carga", "En carga"), ("base", "En base"),
@@ -160,6 +166,11 @@ namespace WebSGV.Views.Exportacion
             pnlVacio.Visible = visibles.Count == 0;
 
             var consultas = todos.Where(v => v.UltimaConsultaGps.HasValue).Select(v => v.UltimaConsultaGps.Value).ToList();
+            if (!IsPostBack && Request.QueryString["auto"] != "0")
+            {
+                bool hayAbiertos = todos.Any(v => v.Fase.Grupo != "cerrado" && (!string.IsNullOrWhiteSpace(v.Tracto1) || !string.IsNullOrWhiteSpace(v.Tracto2)));
+                AutoActualizarGps = hayAbiertos && (consultas.Count == 0 || FechaHelper.Ahora() - consultas.Max() > EdadMaximaGps);
+            }
             litUltimaConsulta.Text = consultas.Count > 0 ? "GPS consultado por última vez " + consultas.Max().ToString("dd/MM HH:mm") : "";
             litResumen.Text = HttpUtility.HtmlEncode((string.IsNullOrWhiteSpace(txtBuscar.Text)
                 ? $"{todos.Count} viaje(s) con programación entre {FechaTexto(txtDesde.Text)} y {FechaTexto(txtHasta.Text)}. Con texto en Buscar se busca en todas las fechas."

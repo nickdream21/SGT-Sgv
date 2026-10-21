@@ -25,6 +25,16 @@
         }
     }
 
+    // La última consulta al GPS tiene más de 15 minutos: se consulta sola al abrir (el servidor decide;
+    // tras el postback ya no se repite). Con ?auto=0 en la dirección no se lanza.
+    if (SGV.autoActualizarGps) {
+        var boton = document.getElementById(SGV.btnActualizarGps);
+        if (boton) {
+            SGV.avisar('La última consulta al GPS tiene más de 15 minutos: se actualiza sola ahora.');
+            setTimeout(function () { boton.click(); }, 600);
+        }
+    }
+
     document.addEventListener('click', function (e) {
         var uno = e.target.closest('[data-copiar]');
         if (uno) {
