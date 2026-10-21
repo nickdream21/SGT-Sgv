@@ -221,6 +221,13 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 ### Hechas
 
 - [x] **Documentos del correo del 21/10 importados** (2026-10-21): ZIP 4400133950 (6 guías, F222-00008539) y 4400133952      (6 guías, F222-00008541) como dos lotes, cada guía completó su despacho programado y los 12 viajes del seguimiento      tomaron su pedido. La guía de JULIO FLORES PARDO / P1Y-906 se asignó al despacho de VICTOR MARZAL / BNH-735 (cambio de      chofer). Se aprobó el producto nuevo NICOVITA KATAL CAMARON 35% 1.2 EX (código 7530977, id 62). Avisos de la guía      T660-00016548 (C6K-799): dice 330 bolsas y 8 283 kg y el packing list 1 188 bolsas y 29 818,8 kg (lotes distintos): es el      documento, revisar con quien lo emitió. Guía T660-00016547 repite el N° de transporte 1296281.
+- [x] **Pedido 4400133881 (carga del 20/10) importado** (2026-10-21): la factura F222-00008535 y las 6 guías del correo no estaban
+      asociadas a nada (el Word del 19/10 solo había programado las 6 primeras placas). Se programaron ASU-862, TBM-815, CBU-928,
+      BPT-788 y BPS-816 con `DESPACHO 19-10-26.docx` y se importó el ZIP: despachos 868–872 completados y adoptados por los viajes
+      7342–7346. Quedó el despacho 873 (guía T660-00016530, chofer PIEDRA VEGA DANILO, tracto T7J-861) sin viaje.
+- [ ] **Guía T660-00016530 del pedido 4400133881**: dice chofer PIEDRA VEGA DANILO y tracto T7J-861, pero la administradora tiene
+      HUGO FLORES / BNG-758 (viaje manual 7341, pedido `PENDIENTE`). Confirmar con quien emitió la guía y enlazar el despacho 873
+      con el viaje 7341 (o corregir el chofer/tracto).
 - [x] **ANU-794, carga del 21/10** (2026-10-21): conductor JUSTO CESPEDES VASQUEZ registrado (id 143, DNI 03673697,      licencia B03673697), despacho 867 programado con el Word `DESPACHO 20-10-26.docx` y adoptado por el viaje 7401.      Sigue con pedido `PENDIENTE` hasta que llegue el ZIP del correo.
 - [x] **Seguimiento: unidades en la cola de Trujillo seguían "Rumbo a Trujillo", viaje 7381 con las horas del anterior,
       salida falsa de la bodega en Ecuador y "Actualizar GPS" por partes** (2026-10-21): ver la fila de la sección 3.
