@@ -81,10 +81,8 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       entonces el sitio sigue mostrando "Rumbo a Trujillo" a las unidades en la cola. (El viaje 7381 ya se corrigió
       con `corregir_seguimiento_7381_2026-10-21.sql` el 21/10 y el GPS nuevo, corrido desde el sitio local, ya llenó
       las llegadas a Trujillo en sgvActualizada.)
-- [ ] **Correr `Database/Scripts/corregir_salidas_bodega_ecuador_2026-10-21.sql` en sgvActualizada** y luego
-      "Actualizar GPS" (en los viajes cerrados, el botón del detalle): ~32 viajes con la salida de Jave/Inbalnor falsa.
-      Después, volver a generar el cuadro STATUS GENERAL de octubre (`herramientas/cuadro-status-general`), que
-      tiene las mismas salidas.
+- [ ] **Volver a generar el cuadro STATUS GENERAL de octubre** (`herramientas/cuadro-status-general`): el Excel
+      tiene las salidas de Jave falsas que se corrigieron en la BD el 21/10.
 - [ ] **Registrar las descargas del 21/10 que no tienen viaje**: AMQ-859 (salió de base 10:55), ARN-917 (07:45) y
       ASU-748 (en la noche del 20/10) van a Ecuador sin despacho de descarga; las cargas del 20/10 con pedido
       `PENDIENTE` (BNG-758, ASU-862, TBM-815, CBU-928, BPT-788, BPS-816) siguen "Descarga sin tracto asignado".
@@ -226,7 +224,9 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 
 - [x] **Seguimiento: unidades en la cola de Trujillo seguían "Rumbo a Trujillo", viaje 7381 con las horas del anterior,
       salida falsa de la bodega en Ecuador y "Actualizar GPS" por partes** (2026-10-21): ver la fila de la sección 3.
-      Revisadas las 42 placas del monitoreo de la administradora.
+      Revisadas las 42 placas del monitoreo de la administradora. Con `corregir_salidas_bodega_ecuador_2026-10-21.sql`
+      se borraron 32 salidas falsas en sgvActualizada y se volvieron a detectar: los 21 viajes ya cerrados quedaron
+      con 4–17 h en Jave (antes 0–29 min) y los 11 del 21/10 sin salida (siguen en el patio).
 - [x] **Despacho en dos momentos** (2026-10-21): el Word programa los despachos de carga y el correo los completa;
       la liquidación no espera a los documentos. Resuelve "decidir si el tablero crea los viajes desde el Word"
       (el viaje sale del despacho programado, con pedido `PENDIENTE`). Ver la fila de la sección 3.
