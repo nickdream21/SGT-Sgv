@@ -87,8 +87,9 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       (despachos 874–879; viajes 7341–7346 con tracto 2 y salida de base). Conductores nuevos: HUGO JEFERSON FLORES VARGAS (id 144, DNI 44520592,
       lic. B44520592) y SEGUNDO IGNACIO SAAVEDRA BRAVO (id 145, DNI 45541126, lic. C45541126). El despacho 873 (guía T660-00016530, a nombre de
       PIEDRA VEGA) pasó a HUGO FLORES / BNG-758 / T0L-975 como manda el Word y el viaje 7341 lo adoptó; se borró el viaje 7402.
-- [ ] **Pedido 4400133879 y fichas de conductores**: el pedido 4400133879 no aparece como "pendiente de descarga" en RegistroDespacho (sus despachos
-      609–614 siguen `PROGRAMADO`); a SEGUNDO SAAVEDRA le falta guardar fecha de nacimiento (04/05/1986) y dirección (Calle Santa Rosa, Sexi, Santa Cruz, Cajamarca).
+- [x] **Pedido 4400133879 y ficha de SEGUNDO SAAVEDRA** (2026-10-21): no había nada que corregir en el pedido: sus 6 cargas del 20/10 (despachos 609–614)
+      ya tenían su descarga (820–825) y los viajes 7095–7100 su tracto 2, por eso no figura como "pendiente de descarga". A SEGUNDO se le guardó la fecha
+      de nacimiento (04/05/1986) y la dirección (Calle Santa Rosa, Sexi, Santa Cruz, Cajamarca).
 - [ ] **Registrar las descargas del 21/10 que no tienen viaje**: AMQ-859 (salió de base 10:55), ARN-917 (07:45) y
       ASU-748 (en la noche del 20/10) van a Ecuador sin despacho de descarga; las cargas del 20/10 con pedido
       `PENDIENTE` (BNG-758, ASU-862, TBM-815, CBU-928, BPT-788, BPS-816) siguen "Descarga sin tracto asignado".
