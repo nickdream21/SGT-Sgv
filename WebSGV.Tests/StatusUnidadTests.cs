@@ -37,9 +37,9 @@ namespace WebSGV.Tests
         [Fact]
         public void CargadaCaminoAFrontera_ConElLugarDeLaUnidad()
         {
-            Assert.Equal("UNIDAD CARGADA CAMINO A FRONTERA (ANTES DE LLEGAR A COMPLEX) - TALARA",
+            Assert.Equal("UNIDAD CARGADA CAMINO A FRONTERA - TALARA",
                 Texto(Concat(Carga, "fhSalidaBase2"), "JAVE", "TALARA"));
-            Assert.Equal("UNIDAD CARGADA CAMINO A FRONTERA (LUEGO DE COMPLEX) - TUMBES",
+            Assert.Equal("UNIDAD CARGADA CAMINO A ECUADOR - TUMBES",
                 Texto(Concat(Carga, "fhSalidaBase2", "fhLlegadaBodegaNacional", "fhIngresoBodegaNacional", "fhSalidaBodegaNacional"), "JAVE", "TUMBES"));
         }
 

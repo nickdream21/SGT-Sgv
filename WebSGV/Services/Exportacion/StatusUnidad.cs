@@ -41,10 +41,10 @@ namespace WebSGV.Services.Exportacion
             if (Hay("fhLlegadaTCI")) return "UNIDAD CARGADA EN TCI - ECUADOR";
             if (Hay("fhCruceEcuador")) return EnCamino("UNIDAD CARGADA EN ECUADOR CAMINO A " + pl);
             if (Hay("fhLlegadaCEBAF")) return "UNIDAD CARGADA EN FRONTERA - CEBAF";
-            if (Hay("fhSalidaBodegaNacional")) return EnCamino("UNIDAD CARGADA CAMINO A FRONTERA (LUEGO DE COMPLEX)");
+            if (Hay("fhSalidaBodegaNacional")) return EnCamino("UNIDAD CARGADA CAMINO A ECUADOR");
             if (Hay("fhIngresoBodegaNacional")) return "UNIDAD EN PROCESO DE NACIONALIZACIÓN - COMPLEX";
             if (Hay("fhLlegadaBodegaNacional")) return "UNIDAD EN COLA EN BODEGA NACIONAL - COMPLEX";
-            if (Hay("fhSalidaBase2")) return EnCamino("UNIDAD CARGADA CAMINO A FRONTERA (ANTES DE LLEGAR A COMPLEX)");
+            if (Hay("fhSalidaBase2")) return EnCamino("UNIDAD CARGADA CAMINO A FRONTERA");
             if (Hay("fhLlegadaBase2")) return "UNIDAD CARGADA EN BASE SULLANA";
             if (Hay("fhSalidaPlanta")) return EnCamino("UNIDAD CARGADA CAMINO A BASE SULLANA");
             if (Hay("fhIngresoPlanta")) return "UNIDAD EN PROCESO DE CARGA - TRUJILLO";
