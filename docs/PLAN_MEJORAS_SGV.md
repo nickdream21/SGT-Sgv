@@ -86,9 +86,7 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       ASU-748 (en la noche del 20/10) van a Ecuador sin despacho de descarga; las cargas del 20/10 con pedido
       `PENDIENTE` (BNG-758, ASU-862, TBM-815, CBU-928, BPT-788, BPS-816) siguen "Descarga sin tracto asignado".
       Con el Word de la descarga, como el pedido 4400133879 (los Word del 20 y 21/10 no estaban en la PC de la oficina).
-- [ ] **ANU-794, carga del 21/10 (viaje 7401, carreta T3Y-995, creado a mano con pedido `PENDIENTE`)**: falta registrar
-      al chofer JUSTO CESPEDES (no existe como conductor; pedir su DNI) y programar su despacho; cuando llegue, la
-      sincronización adopta el viaje. Ya salió de planta (11:16).
+- [ ] **ANU-794, carga del 21/10 (viaje 7401, carreta T3Y-995, creado a mano con pedido `PENDIENTE`)**: el chofer JUSTO      CESPEDES VASQUEZ ya está registrado (conductor 143, DNI 03673697, licencia B03673697); falta programar su despacho:      RegistroDespacho → subir `DESPACHO 20-10-26.docx` → marcar su fila → "Programar despachos". La sincronización adopta el viaje 7401.
 - [ ] **Medir "Actualizar GPS" en el sitio publicado** después de subir el código (local: 46 viajes en un clic, 25 s
       con caché y ~80 s recién iniciado). Si no alcanza: pedir de hoy solo lo nuevo (desde el último punto).
 - [ ] **GPS de BFR-730**: Onway no tiene ningún dato suyo en septiembre ni en octubre (descargas del 02, 07, 09
