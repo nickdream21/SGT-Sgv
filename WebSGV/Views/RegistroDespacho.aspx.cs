@@ -494,7 +494,7 @@ namespace WebSGV.Views
                     else if (tipoOperacion == "DESCARGA")
                     {
                         pnlCPICBase.Visible = true;
-                        ayuda = "Internacional DESCARGA: Requiere CPIC (se reutilizará para todos los conductores)";
+                        ayuda = "Internacional DESCARGA: CPIC opcional (se reutilizará para todos los conductores). Si aún no lo tiene, agréguelo después al lote en Lista de despachos.";
                     }
                 }
                 else
@@ -514,6 +514,12 @@ namespace WebSGV.Views
             {
                 ayuda = "Seleccione el tipo de operación y ámbito para ver los documentos requeridos.";
             }
+
+            // En la descarga el CPIC puede llegar después que la programación: no se exige
+            // (se agrega al lote desde ListaDespachos). Si se escribe el número, se piden fecha y flete.
+            bool cpicOpcional = esInternacional && tipoOperacion == "DESCARGA";
+            rfvNumeroCPICBase.Enabled = rfvFechaEmisionCPICBase.Enabled = rfvValorFleteBase.Enabled = !cpicOpcional;
+            pnlCPICBase.CssClass = "rd-doc-box mb-3" + (cpicOpcional ? " rd-cpic-opcional" : "");
 
             lblAyudaDocumentosBase.Text = ayuda;
         }
@@ -623,8 +629,14 @@ namespace WebSGV.Views
             }
             else if (esInternacional && tipoOperacion == "DESCARGA")
             {
-                if (string.IsNullOrEmpty(txtNumeroCPICBase.Text))
-                    errores.Add("Número de CPIC requerido para descarga internacional");
+                // CPIC opcional (puede llegar después): si se escribe, con su fecha y su flete
+                if (!string.IsNullOrWhiteSpace(txtNumeroCPICBase.Text))
+                {
+                    if (string.IsNullOrWhiteSpace(txtFechaEmisionCPICBase.Text))
+                        errores.Add("Con N° de CPIC, indique su fecha de emisión");
+                    if (string.IsNullOrWhiteSpace(txtValorFleteBase.Text))
+                        errores.Add("Con N° de CPIC, indique el valor del flete");
+                }
             }
             else if (!esInternacional && tipoOperacion == "CARGA")
             {
@@ -1156,8 +1168,11 @@ namespace WebSGV.Views
 
                 if (resultado.exitoso)
                 {
+                    var completados = LoteActual.Conductores.Where(c => c.IdDespachoProgramado.HasValue && c.IdDespachoGenerado > 0)
+                        .Select(c => c.IdDespachoGenerado).ToList();
                     AuditoriaHelper.Registrar("INSERT", "Despachos", null,
-                        $"Lote de {resultado.despachosCreados} despacho(s) registrado - Cliente: {LoteActual?.NombreCliente}, Operación: {LoteActual?.TipoOperacion}, Planta: {(LoteActual == null ? null : PlantasDelLote(LoteActual))}");
+                        $"Lote de {resultado.despachosCreados} despacho(s) registrado - Cliente: {LoteActual?.NombreCliente}, Operación: {LoteActual?.TipoOperacion}, Planta: {(LoteActual == null ? null : PlantasDelLote(LoteActual))}" +
+                        (completados.Count == 0 ? "" : $". Completó con sus documentos los despachos programados {string.Join(", ", completados)}"));
 
                     // Limpiar lote y resetear página (antes del mensaje: LimpiarFormularioCompleto
                     // oculta el panel de mensajes y el aviso de éxito no llegaba a verse).
@@ -1167,7 +1182,10 @@ namespace WebSGV.Views
                     CargarDatos();
                     EstablecerFechaPorDefecto();
 
-                    MostrarMensaje($"Lote finalizado exitosamente. Se crearon {resultado.despachosCreados} despachos.", "success");
+                    MostrarMensaje(completados.Count == 0
+                        ? $"Lote finalizado exitosamente. Se crearon {resultado.despachosCreados} despachos."
+                        : $"Lote finalizado exitosamente. Se completaron {completados.Count} despacho(s) programado(s) con sus documentos" +
+                          (resultado.despachosCreados > completados.Count ? $" y se crearon {resultado.despachosCreados - completados.Count} nuevo(s)." : "."), "success");
                 }
                 else
                 {
@@ -1219,7 +1237,9 @@ namespace WebSGV.Views
                 {
                     try
                     {
-                        int idDespacho = CrearDespachoIndividual(lote, conductor, idFactura, idCPIC);
+                        int idDespacho = conductor.IdDespachoProgramado.HasValue
+                            ? RegistroDespachoService.CompletarDespachoProgramado(lote, conductor, idFactura, idCPIC)
+                            : CrearDespachoIndividual(lote, conductor, idFactura, idCPIC);
                         conductor.IdDespachoGenerado = idDespacho;
                         despachosCreados++;
 
@@ -1418,7 +1438,16 @@ namespace WebSGV.Views
 
                 if (archivos.Count == 0)
                 {
-                    MostrarMensajeImportacion("Seleccione el ZIP del correo o los PDF del pedido (y, si la tiene, la programación en Word).", "warning");
+                    // Solo el Word: se programan los despachos y el correo los completa después
+                    if (words.Count == 1)
+                    {
+                        DescartarImportacion();
+                        LeerProgramacionNueva(words[0]);
+                        return;
+                    }
+                    MostrarMensajeImportacion(words.Count > 1
+                        ? "Para programar con el Word suba una sola programación."
+                        : "Seleccione el ZIP del correo o los PDF del pedido (y, si la tiene, la programación en Word), o solo el Word para programar los despachos.", "warning");
                     return;
                 }
 
@@ -1453,6 +1482,8 @@ namespace WebSGV.Views
                         }
                     }
                 }
+
+                UsarProgramados(importacion);
 
                 if (facturaPdf != null)
                 {
@@ -1515,6 +1546,7 @@ namespace WebSGV.Views
             _conductoresImp = RegistroDespachoService.ObtenerConductoresActivos();
             _tractosImp = RegistroDespachoService.ObtenerTractosActivos();
             _carretasImp = RegistroDespachoService.ObtenerCarretasActivas();
+            _programadosImp = imp.Programados ?? new List<DespachoProgramado>();
 
             rptTractosImportados.DataSource = imp.Tractos;
             rptTractosImportados.DataBind();
@@ -1547,7 +1579,7 @@ namespace WebSGV.Views
             {
                 pnlProgramacionCarga.CssClass = "rd-notice mb-3";
                 litProgramacionCarga.Text = "<i class=\"fas fa-file-word mr-1\"></i>" + Html(
-                    "Sin la programación del día: el chofer, el tracto y la carreta salen de las guías (la carreta, de la última con que salió el tracto). " +
+                    "Sin la programación del día ni despachos programados: el chofer, el tracto y la carreta salen de las guías (la carreta, de la última con que salió el tracto). " +
                     "Si hubo ajustes de chofer, vuelva a leer los documentos junto con el Word de la programación.");
                 return;
             }
@@ -1563,10 +1595,22 @@ namespace WebSGV.Views
             int cambios = pendientes.Count(t => t.Programacion?.Cambio != null);
             int conAvisos = pendientes.Count(t => t.Programacion != null && t.Programacion.Avisos.Count > 0);
 
+            int completan = pendientes.Count(t => t.Programacion?.IdDespachoProgramado != null);
             var sb = new StringBuilder();
-            sb.Append("<i class=\"fas fa-file-word mr-1\"></i>");
-            sb.Append(Html($"Programación{(prog.Fecha.HasValue ? " del " + prog.Fecha.Value.ToString("dd/MM/yyyy") : "")} · {prog.Titulo}: " +
-                           $"{prog.Encontrados} de {pendientes.Count} tracto(s) unidos con su guía. Chofer, tracto y carreta salen de la programación."));
+            if (prog.DesdeDespachos)
+            {
+                sb.Append("<i class=\"fas fa-calendar-check mr-1\"></i>");
+                sb.Append(Html($"Despachos programados con el Word: {completan} de {pendientes.Count} guía(s) completan su despacho programado " +
+                               "(no se crea otro). Chofer, tracto y carreta quedan los del despacho; la guía aporta pedido, factura y carga."));
+            }
+            else
+            {
+                sb.Append("<i class=\"fas fa-file-word mr-1\"></i>");
+                sb.Append(Html($"Programación{(prog.Fecha.HasValue ? " del " + prog.Fecha.Value.ToString("dd/MM/yyyy") : "")} · {prog.Titulo}: " +
+                               $"{prog.Encontrados} de {pendientes.Count} tracto(s) unidos con su guía. Chofer, tracto y carreta salen de la programación."));
+                if (completan > 0)
+                    sb.Append(Html($" {completan} completan un despacho ya programado (no se crea otro)."));
+            }
             if (cambios > 0)
                 sb.Append(Html($" {cambios} con cambio respecto de la guía (normal: la guía no se reemite)."));
             sb.Append(conAvisos > 0
@@ -1584,7 +1628,14 @@ namespace WebSGV.Views
         {
             var sb = new StringBuilder();
             sb.Append("<tr class=\"rd-fila-programacion\"><td></td><td colspan=\"5\">");
-            if (p.EnProgramacion)
+            if (p.IdDespachoProgramado.HasValue)
+            {
+                sb.Append("<span class=\"rd-chip rd-chip-ok mr-1\"><i class=\"fas fa-calendar-check mr-1\"></i>Completa el despacho programado</span>");
+                sb.Append($"Salió <strong>{Html(p.ChoferProgramado ?? "—")}</strong> con el tracto <strong>{Html(p.TractoProgramado ?? "—")}</strong>" +
+                          $" y la carreta <strong>{Html(p.CarretaProgramada ?? "—")}</strong>");
+                if (!string.IsNullOrEmpty(p.Horario)) sb.Append(Html($" · {p.Horario}"));
+            }
+            else if (p.EnProgramacion)
             {
                 sb.Append("<span class=\"rd-chip rd-chip-ok mr-1\"><i class=\"fas fa-file-word mr-1\"></i>Programación</span>");
                 sb.Append($"Sale <strong>{Html(p.ChoferProgramado ?? "—")}</strong> con el tracto <strong>{Html(p.TractoProgramado ?? "—")}</strong>" +
@@ -1600,6 +1651,23 @@ namespace WebSGV.Views
         }
 
         private DataTable _conductoresImp, _tractosImp, _carretasImp;
+        private List<DespachoProgramado> _programadosImp = new List<DespachoProgramado>();
+
+        /// <summary>
+        /// Despachos programados con el Word (sin documentos) de los días del pedido y, tras
+        /// leerlos, cuál completa cada guía. Un error aquí no frena la importación: sin ellos
+        /// las guías crean despachos nuevos, como antes.
+        /// </summary>
+        private void UsarProgramados(ImportacionPedido imp)
+        {
+            try { ImportacionPedidoService.UsarProgramados(imp); }
+            catch (Exception ex)
+            {
+                RegistrarError("UsarProgramados", ex);
+                imp.Programados = new List<DespachoProgramado>();
+                imp.Advertencias.Add("No se pudieron buscar los despachos programados con el Word: las guías se registrarán como despachos nuevos.");
+            }
+        }
 
         /// <summary>Cliente, fecha de programación y planta de carga propuestos en la vista previa.</summary>
         private void CargarDatosLoteImportado(ImportacionPedido imp)
@@ -1649,6 +1717,19 @@ namespace WebSGV.Views
             foreach (DataRow r in _carretasImp.Rows)
                 ddlCarreta.Items.Add(new ListItem(r["placaCarreta"].ToString(), r["idCarreta"].ToString()));
             RestaurarSeleccion(ddlCarreta, t.IdCarreta?.ToString());
+
+            // Despacho programado que completa esta guía: lo propuesto o el que elija el usuario
+            // (cambio de chofer que no se pudo unir solo). Sin programados, el selector no se ve.
+            var pnlProgramado = (Panel)e.Item.FindControl("pnlProgramadoImp");
+            var ddlProgramado = (DropDownList)e.Item.FindControl("ddlProgramadoImp");
+            pnlProgramado.Visible = !t.YaRegistrado && _programadosImp.Count > 0;
+            if (pnlProgramado.Visible)
+            {
+                ddlProgramado.Items.Add(new ListItem("Despacho nuevo", "0"));
+                foreach (var p in _programadosImp)
+                    ddlProgramado.Items.Add(new ListItem("Programado: " + p.Texto, p.IdDespacho.ToString()));
+                RestaurarSeleccion(ddlProgramado, t.Programacion?.IdDespachoProgramado?.ToString() ?? "0");
+            }
 
             var chk = (CheckBox)e.Item.FindControl("chkIncluir");
             chk.Checked = !t.YaRegistrado;
@@ -1814,6 +1895,7 @@ namespace WebSGV.Views
             imp.IdCliente = idCliente;
             imp.NombreCliente = ddlClienteImp.SelectedItem.Text;
             ImportacionPedidoService.Asociar(imp);
+            UsarProgramados(imp);
             MostrarVistaPreviaImportacion(imp);
             txtFechaProgramacionImp.Text = fecha;
             RestaurarSeleccion(ddlPlantaImp, planta);
@@ -1902,6 +1984,7 @@ namespace WebSGV.Views
             public string PlacaTracto;
             public int IdCarreta;
             public string PlacaCarreta;
+            public int? IdDespachoProgramado;
         }
 
         private List<FilaImportacion> LeerFilasImportacion(ImportacionPedido imp, out List<string> errores)
@@ -1919,6 +2002,27 @@ namespace WebSGV.Views
                 var ddlTracto = (DropDownList)item.FindControl("ddlTractoImp");
                 var ddlCarreta = (DropDownList)item.FindControl("ddlCarretaImp");
                 string etiqueta = $"Transporte {t.NumeroTransporte}";
+
+                // Completa un despacho programado: chofer, tracto y carreta son los del despacho
+                var ddlProgramado = (DropDownList)item.FindControl("ddlProgramadoImp");
+                var programado = ((Panel)item.FindControl("pnlProgramadoImp")).Visible && int.TryParse(ddlProgramado.SelectedValue, out int idProg) && idProg > 0
+                    ? imp.Programados?.FirstOrDefault(p => p.IdDespacho == idProg) : null;
+                if (programado != null)
+                {
+                    if (t.Lineas.Count == 0) errores.Add($"{etiqueta}: no tiene carga leída.");
+                    filas.Add(new FilaImportacion
+                    {
+                        Tracto = t,
+                        ValorConductor = programado.IdConductor.ToString(),
+                        NombreConductor = programado.NombreConductor,
+                        IdTracto = programado.IdTracto,
+                        PlacaTracto = programado.PlacaTracto,
+                        IdCarreta = programado.IdCarreta,
+                        PlacaCarreta = programado.PlacaCarreta,
+                        IdDespachoProgramado = programado.IdDespacho
+                    });
+                    continue;
+                }
 
                 if (ddlConductor.SelectedValue == "0") errores.Add($"{etiqueta}: elija el conductor.");
                 if (ddlTracto.SelectedValue == "0") errores.Add($"{etiqueta}: elija el tracto.");
@@ -1941,6 +2045,8 @@ namespace WebSGV.Views
             if (HayRepetidos(filas.Select(f => f.ValorConductor))) errores.Add("Hay un conductor repetido en más de un tracto.");
             if (HayRepetidos(filas.Select(f => f.IdTracto.ToString()))) errores.Add("Hay un tracto repetido en más de una fila.");
             if (HayRepetidos(filas.Select(f => f.IdCarreta.ToString()))) errores.Add("Hay una carreta repetida en más de un tracto.");
+            if (HayRepetidos(filas.Where(f => f.IdDespachoProgramado.HasValue).Select(f => f.IdDespachoProgramado.ToString())))
+                errores.Add("Hay un despacho programado elegido en más de una guía.");
 
             return filas;
         }
@@ -2062,10 +2168,9 @@ namespace WebSGV.Views
 
             // Misma regla que DeterminarViajeProgreso sin elección manual: se filtra por
             // ámbito solo si el filtro deja algún viaje, y se usa el más reciente. La carga
-            // del packing list es siempre nacional (planta de origen).
-            var viajes = ObtenerViajesAbiertosConductor(idConductor);
-            var delAmbito = viajes.Where(v => !v.EsInternacional.HasValue || !v.EsInternacional.Value).ToList();
-            var viaje = (delAmbito.Count > 0 ? delAmbito : viajes).FirstOrDefault();
+            // del packing list es siempre nacional (planta de origen). Un despacho programado
+            // ya tiene su viaje: no se toca.
+            var viaje = f.IdDespachoProgramado.HasValue ? null : RegistroDespachoService.ViajeAbiertoParaCarga(idConductor);
 
             return new ConductorLote
             {
@@ -2079,9 +2184,10 @@ namespace WebSGV.Views
                 NumeroEntrega = f.Tracto.NumeroEntrega,
                 NumeroTransporte = f.Tracto.NumeroTransporte,
                 Carga = f.Tracto.Lineas,
+                IdDespachoProgramado = f.IdDespachoProgramado,
                 IdViajeProgreso = viaje?.IdViajeProgreso,
                 NumeroViajeProgreso = viaje?.NumeroViajeProgreso,
-                EstadoViaje = viaje?.EstadoViaje ?? "Por asignar"
+                EstadoViaje = f.IdDespachoProgramado.HasValue ? "Despacho programado" : viaje?.EstadoViaje ?? "Por asignar"
             };
         }
 
@@ -2161,8 +2267,215 @@ namespace WebSGV.Views
                 : "Importación descartada.", "info");
         }
 
+        #region Programar con el Word (antes de los documentos)
+
+        // Flujo: Leer documentos con solo el Word → vista previa (Session["ProgramacionNueva"])
+        // → "Programar despachos" crea las cargas sin documentos y el viaje del seguimiento.
+        // Cuando llega el correo, "Leer documentos" une cada guía con su despacho programado.
+
+        private ProgramacionNueva ProgramacionNuevaActual
+        {
+            get { return Session["ProgramacionNueva"] as ProgramacionNueva; }
+            set { Session["ProgramacionNueva"] = value; }
+        }
+
+        private void LeerProgramacionNueva(ImportacionPedidoService.ArchivoSubido word)
+        {
+            if (word.Contenido.Length > ImportacionPedidoService.TamanoMaximoProgramacion)
+            {
+                MostrarMensajeImportacion($"El Word {word.Nombre} pesa más de 5 MB: no parece una programación.", "warning");
+                return;
+            }
+
+            ProgramacionNueva p;
+            try { p = ProgramacionDespachoService.LeerWord(word.Contenido, word.Nombre); }
+            catch (Exception ex)
+            {
+                RegistrarError("LeerProgramacionNueva", ex);
+                MostrarMensajeImportacion("No se pudo leer la programación. " + MensajeErrorHelper.ParaUsuario(ex), "warning");
+                return;
+            }
+
+            ProgramacionNuevaActual = p;
+            MostrarVistaPreviaProgramacion(p);
+        }
+
+        private void MostrarVistaPreviaProgramacion(ProgramacionNueva p)
+        {
+            pnlMensajeImportacion.Visible = false;
+            pnlVistaPreviaImportacion.Visible = false;
+            pnlConfiguracionBase.Visible = false;
+            pnlProgramacionNueva.Visible = true;
+
+            litProgTitulo.Text = Html(p.Titulo);
+            litProgArchivo.Text = Html(p.NombreArchivo);
+            litProgUnidades.Text = $"{p.Filas.Count(f => !f.IdDespachoExistente.HasValue)} por programar" +
+                (p.Filas.Any(f => f.IdDespachoExistente.HasValue) ? $" · {p.Filas.Count(f => f.IdDespachoExistente.HasValue)} ya programada(s)" : "");
+
+            ddlClienteProg.Items.Clear();
+            ddlClienteProg.Items.Add(new ListItem("-- Seleccione un cliente --", "0"));
+            foreach (DataRow r in RegistroDespachoService.ObtenerClientesActivos().Rows)
+                ddlClienteProg.Items.Add(new ListItem(r["nombre"].ToString(), r["idCliente"].ToString()));
+            RestaurarSeleccion(ddlClienteProg, p.IdCliente?.ToString());
+
+            ddlPlantaProg.Items.Clear();
+            ddlPlantaProg.Items.Add(new ListItem("-- Seleccione planta --", "0"));
+            foreach (DataRow r in RegistroDespachoService.ObtenerPlantasPorAmbito(false).Rows)
+                ddlPlantaProg.Items.Add(new ListItem(r["nombre"].ToString(), r["idPlanta"].ToString()));
+            RestaurarSeleccion(ddlPlantaProg, p.IdPlanta?.ToString());
+
+            txtFechaProg.Text = p.FechaCarga?.ToString("yyyy-MM-dd") ?? string.Empty;
+            chkExportacionProg.Checked = p.EsExportacion;
+
+            pnlAvisosProg.Visible = p.AvisosGenerales.Count > 0;
+            litAvisosProg.Text = "<ul class=\"mb-0 mt-1\">" + string.Concat(p.AvisosGenerales.Select(a => $"<li>{Html(a)}</li>")) + "</ul>";
+
+            _conductoresImp = RegistroDespachoService.ObtenerConductoresActivos();
+            _tractosImp = RegistroDespachoService.ObtenerTractosActivos();
+            _carretasImp = RegistroDespachoService.ObtenerCarretasActivas();
+            rptProgramacionNueva.DataSource = p.Filas;
+            rptProgramacionNueva.DataBind();
+            UpdatePanelMain.Update();
+        }
+
+        protected void rptProgramacionNueva_ItemDataBound(object sender, RepeaterItemEventArgs e)
+        {
+            if (e.Item.ItemType != ListItemType.Item && e.Item.ItemType != ListItemType.AlternatingItem) return;
+            var f = (FilaProgramacionNueva)e.Item.DataItem;
+
+            var ddlConductor = (DropDownList)e.Item.FindControl("ddlConductorProg");
+            ddlConductor.Items.Add(new ListItem("-- Seleccione --", "0"));
+            foreach (DataRow r in _conductoresImp.Rows)
+                ddlConductor.Items.Add(new ListItem(r["NombreCompleto"].ToString(), r["idConductor"].ToString()));
+            RestaurarSeleccion(ddlConductor, f.IdConductor?.ToString());
+
+            var ddlTracto = (DropDownList)e.Item.FindControl("ddlTractoProg");
+            ddlTracto.Items.Add(new ListItem("-- Seleccione --", "0"));
+            foreach (DataRow r in _tractosImp.Rows)
+                ddlTracto.Items.Add(new ListItem(r["placaTracto"].ToString(), r["idTracto"].ToString()));
+            RestaurarSeleccion(ddlTracto, f.IdTracto?.ToString());
+
+            var ddlCarreta = (DropDownList)e.Item.FindControl("ddlCarretaProg");
+            ddlCarreta.Items.Add(new ListItem("-- Seleccione --", "0"));
+            foreach (DataRow r in _carretasImp.Rows)
+                ddlCarreta.Items.Add(new ListItem(r["placaCarreta"].ToString(), r["idCarreta"].ToString()));
+            RestaurarSeleccion(ddlCarreta, f.IdCarreta?.ToString());
+
+            if (!f.IdConductor.HasValue) ddlConductor.CssClass += " is-invalid";
+            if (!f.IdTracto.HasValue) ddlTracto.CssClass += " is-invalid";
+            if (!f.IdCarreta.HasValue) ddlCarreta.CssClass += " is-invalid";
+
+            ((TextBox)e.Item.FindControl("txtHoraProg")).Text = f.Hora?.ToString(@"hh\:mm") ?? string.Empty;
+
+            bool existe = f.IdDespachoExistente.HasValue;
+            var chk = (CheckBox)e.Item.FindControl("chkIncluirProg");
+            chk.Checked = chk.Enabled = !existe;
+            ddlConductor.Enabled = ddlTracto.Enabled = ddlCarreta.Enabled = !existe;
+
+            var sb = new StringBuilder();
+            if (existe)
+                sb.Append("<div><span class=\"rd-chip rd-chip-warn\">Ya programado</span></div>" +
+                          $"<small class=\"text-muted\">El tracto o la carreta ya tiene despacho ese día (N° {f.IdDespachoExistente}).</small>");
+            foreach (var aviso in f.Avisos)
+                sb.Append($"<div class=\"rd-notice rd-notice-warn py-1 px-2 mt-1\"><i class=\"fas fa-exclamation-triangle mr-1\"></i>{Html(aviso)}</div>");
+            if (sb.Length == 0) sb.Append("<span class=\"rd-chip rd-chip-ok\">Listo</span>");
+            ((Literal)e.Item.FindControl("litEstadoProg")).Text = sb.ToString();
+        }
+
+        protected void btnProgramarDespachos_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var p = ProgramacionNuevaActual;
+                if (p == null)
+                {
+                    MostrarMensajeImportacion("La programación expiró. Vuelva a subir el Word.", "warning");
+                    pnlProgramacionNueva.Visible = false;
+                    pnlConfiguracionBase.Visible = !TieneLoteActivo;
+                    return;
+                }
+
+                var errores = new List<string>();
+                if (!int.TryParse(ddlClienteProg.SelectedValue, out int idCliente) || idCliente <= 0) errores.Add("Elija el cliente.");
+                if (!int.TryParse(ddlPlantaProg.SelectedValue, out int idPlanta) || idPlanta <= 0) errores.Add("Elija la planta de carga.");
+                if (!DespachoValidaciones.TryParseFechaIso(txtFechaProg.Text, out DateTime fecha)
+                    || fecha < FechaHelper.Hoy().AddDays(-7) || fecha > FechaHelper.Hoy().AddDays(7))
+                    errores.Add("La fecha de carga no es válida (hasta 7 días antes o después de hoy).");
+
+                var filas = new List<ProgramacionDespachoService.FilaElegida>();
+                foreach (RepeaterItem item in rptProgramacionNueva.Items)
+                {
+                    if (item.ItemIndex >= p.Filas.Count) break;
+                    var f = p.Filas[item.ItemIndex];
+                    if (f.IdDespachoExistente.HasValue || !((CheckBox)item.FindControl("chkIncluirProg")).Checked) continue;
+
+                    string etiqueta = $"{f.Chofer ?? "(sin chofer)"} / {f.Tracto ?? "(sin tracto)"}";
+                    int.TryParse(((DropDownList)item.FindControl("ddlConductorProg")).SelectedValue, out int idConductor);
+                    int.TryParse(((DropDownList)item.FindControl("ddlTractoProg")).SelectedValue, out int idTracto);
+                    int.TryParse(((DropDownList)item.FindControl("ddlCarretaProg")).SelectedValue, out int idCarreta);
+                    string hora = ((TextBox)item.FindControl("txtHoraProg")).Text.Trim();
+
+                    if (idConductor <= 0) errores.Add($"{etiqueta}: elija el conductor.");
+                    if (idTracto <= 0) errores.Add($"{etiqueta}: elija el tracto.");
+                    if (idCarreta <= 0) errores.Add($"{etiqueta}: elija la carreta.");
+                    TimeSpan? horaProgramada = ProgramacionCarga.HoraDelHorario(hora);
+                    if (hora.Length > 0 && !horaProgramada.HasValue) errores.Add($"{etiqueta}: la hora {hora} no es válida.");
+
+                    filas.Add(new ProgramacionDespachoService.FilaElegida
+                    {
+                        IdConductor = idConductor, IdTracto = idTracto, IdCarreta = idCarreta,
+                        Hora = horaProgramada, Etiqueta = etiqueta
+                    });
+                }
+
+                if (filas.Count == 0 && errores.Count == 0) errores.Add("No hay unidades marcadas para programar.");
+                if (HayRepetidos(filas.Select(f => f.IdConductor.ToString()))) errores.Add("Hay un conductor repetido en más de una unidad.");
+                if (HayRepetidos(filas.Select(f => f.IdTracto.ToString()))) errores.Add("Hay un tracto repetido en más de una fila.");
+                if (HayRepetidos(filas.Select(f => f.IdCarreta.ToString()))) errores.Add("Hay una carreta repetida en más de una fila.");
+
+                if (errores.Count > 0)
+                {
+                    MostrarMensajeImportacion("Revise estos datos: " + string.Join(" ", errores), "warning");
+                    return;
+                }
+
+                var r = ProgramacionDespachoService.Programar(filas, idCliente, idPlanta, fecha, chkExportacionProg.Checked, ObtenerUsuarioActual());
+
+                if (r.Creados.Count == 0)
+                {
+                    MostrarMensajeImportacion("No se programó ningún despacho. " + string.Join(" ", r.Errores), "danger");
+                    return;
+                }
+
+                ProgramacionNuevaActual = null;
+                pnlProgramacionNueva.Visible = false;
+                pnlConfiguracionBase.Visible = !TieneLoteActivo;
+                CargarDatos();
+                MostrarMensajeImportacion($"Se programaron {r.Creados.Count} despacho(s) de carga del {fecha:dd/MM/yyyy}" +
+                    (chkExportacionProg.Checked ? " y su seguimiento de exportación ya está en el tablero (pedido PENDIENTE)" : "") +
+                    ". Cuando llegue el correo, suba el ZIP aquí: cada guía completará su despacho." +
+                    (r.Errores.Count > 0 ? " No se pudieron programar: " + string.Join(" ", r.Errores) : ""),
+                    r.Errores.Count > 0 ? "warning" : "success");
+            }
+            catch (Exception ex)
+            {
+                RegistrarError("btnProgramarDespachos_Click", ex);
+                MostrarMensajeImportacion("No se pudieron programar los despachos. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+            }
+        }
+
+        protected void btnDescartarProgramacion_Click(object sender, EventArgs e)
+        {
+            DescartarImportacion();
+            MostrarMensajeImportacion("Programación descartada.", "info");
+        }
+
+        #endregion
+
         private void DescartarImportacion()
         {
+            ProgramacionNuevaActual = null;
+            pnlProgramacionNueva.Visible = false;
             LimpiarImportacion(borrarArchivos: true);
             pnlVistaPreviaImportacion.Visible = false;
             pnlImportacionAplicada.Visible = false;
@@ -2181,6 +2494,11 @@ namespace WebSGV.Views
         /// <summary>Al volver a la página con una importación en curso, la muestra donde quedó.</summary>
         private void RestaurarEstadoImportacion()
         {
+            if (!TieneLoteActivo && ImportacionActual == null && ProgramacionNuevaActual != null)
+            {
+                MostrarVistaPreviaProgramacion(ProgramacionNuevaActual);
+                return;
+            }
             if (TieneLoteActivo || ImportacionActual == null) return;
 
             if (ConductoresImportados != null)
@@ -2378,7 +2696,7 @@ namespace WebSGV.Views
                     RestaurarSeleccion(ddlPlantaDescarga, plantas[0].Value.ToString());
             }
             litAmbitoDescarga.Text = internacional
-                ? "Descarga internacional: al iniciar el lote se pide el CPIC."
+                ? "Descarga internacional: el CPIC es opcional al iniciar el lote; si llega después, se agrega en Lista de despachos."
                 : "Descarga nacional.";
 
             pnlProgramacionLeida.Visible = false;
@@ -2690,7 +3008,7 @@ namespace WebSGV.Views
                 pnlDescargaAplicada.Visible = true;
                 litDescargaAplicada.Text = Html(
                     $"Pedido {primera.NumeroPedido}: {conductores.Count} descarga(s) con su carga se agregarán al pulsar \"Iniciar lote\"." +
-                    (internacional ? " Complete el CPIC en la configuración base." : ""));
+                    (internacional ? " El CPIC es opcional: complételo en la configuración base o agréguelo después en Lista de despachos." : ""));
             }
             catch (Exception ex)
             {

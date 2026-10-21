@@ -65,6 +65,13 @@
 .rd-tabla-import td { vertical-align: top; padding-top: .65rem; padding-bottom: .65rem; }
 .rd-tabla-import .rd-col-conductor { min-width: 300px; width: 30%; }
 .rd-tabla-import .rd-col-placa { min-width: 150px; width: 13%; }
+.rd-tabla-import .rd-col-hora { min-width: 7rem; }
+.rd-tabla-import .rd-programado-sel { min-width: 12rem; }
+
+/* CPIC de la descarga: opcional (puede llegar después de la programación) */
+.rd-opcional { display: none; }
+.rd-cpic-opcional .rd-opcional { display: inline; }
+.rd-cpic-opcional .rd-req { display: none; }
 .rd-carga-celda { min-width: 260px; }
 .rd-doc-dato { display: block; font-size: .72rem; color: #64748b; min-height: 1.1rem; margin-bottom: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rd-fila-registrada > td { opacity: .55; }

@@ -1,6 +1,6 @@
 # Plan de mejoras SGV — estado y tareas pendientes
 
-Última actualización: **2026-10-20**, al día con el seguimiento de exportación (`a22748b`) más el cuadro STATUS GENERAL de octubre armado desde los Word y el GPS (119 viajes de octubre ya en `sgvActualizada`) y el mapa de la ruta en el detalle del viaje, la salida en camino y la vuelta corrida (sin migración; SP `sp_SE_RegistrarHitoGps` y `sp_SE_SincronizarDespachos`; sección 4). Este documento es el punto de partida para seguir trabajando
+Última actualización: **2026-10-21**, despacho en dos momentos (programar con el Word, completar con el correo) y caché del historial GPS para "Actualizar GPS" (sobre `5c94014`; SP `sp_CompletarDespachoProgramado` y `sp_SE_SincronizarDespachos`; sección 3); antes, al día con el seguimiento de exportación (`a22748b`) más el cuadro STATUS GENERAL de octubre armado desde los Word y el GPS (119 viajes de octubre ya en `sgvActualizada`) y el mapa de la ruta en el detalle del viaje, la salida en camino y la vuelta corrida (sin migración; SP `sp_SE_RegistrarHitoGps` y `sp_SE_SincronizarDespachos`; sección 4). Este documento es el punto de partida para seguir trabajando
 desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 
 ## 1. Estado actual
@@ -64,6 +64,8 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 | _(salida en camino)_ | (2026-10-20) "Actualizar GPS" no veía a las unidades que ya salieron de base y van en camino: la salida de base solo se registraba al encontrar la primera parada (planta de Trujillo o Complex), así que 7 descargas del 19/10 (BFH-852 por Mallares, CBX-832 ya en Zorritos…) y la carga de CBU-945 seguían "en base". Ahora, sin parada todavía, la salida es la última salida de la base tras la que la unidad no volvió y ya va por la ruta del tramo (descarga: ~10 km al norte, rumbo a Talara; carga: pasado Piura hacia el sur, para no confundirla con una vuelta al taller o al grifo). `sp_SE_RegistrarHitoGps @reemplazarGps`: la salida de base que puso el GPS se puede afinar en la siguiente consulta (nunca la corregida a mano ni la del Excel). El mensaje "no se detectó si fue por Jave o Inbalnor" sale solo si la unidad ya está en Ecuador. SP aplicado en pruebas; 6 tests nuevos de trazabilidad y 1 de integración. |
 | _(vuelta corrida)_ | (2026-10-20) Revisión de las 30 unidades en movimiento contra el monitoreo de la administradora. (1) **6 cargas del 20/10 no tenían viaje** (BNG-758, ASU-862, TBM-815, CBU-928, BPT-788, BPS-816): solo se registró el pedido 4400133879 con los otros 6 despachos; al buscar la placa salía su viaje anterior. Se crearon a mano (7341–7346, pedido `PENDIENTE`), y `sp_SE_SincronizarDespachos` ahora **adopta** el viaje creado a mano (mismo tracto y carreta, ±1 día) cuando llega su despacho, en vez de duplicarlo. (2) **Vuelta corrida**: ASU-862 y TBM-815 volvieron de Jave y siguieron de frente a Trujillo sin entrar a la base; la descarga quedaba "Retorno de Ecuador" y la carga nueva sin salida. Ahora el regreso de la descarga y la salida de la carga siguiente son el paso frente a la base (≤ 2 km) antes de seguir al sur de Piura; una salida de base seguida de un paso por Ecuador ya no se toma como salida de la carga. (3) El regreso de la descarga se busca hasta 7 días (antes 3): 6 viajes de inicios de octubre (BFK-879 fue a Quito tras Inbalnor) seguían abiertos. (4) Una unidad estacionada junto a la cerca al final del historial ya no cuenta como salida (ASU-862 en la puerta de la planta). 8 descargas cerradas y 6 cargas creadas en sgvActualizada; 4 casos reales nuevos en `Datos/Trazabilidad` y 1 test de integración. |
 | _(mapa de la ruta)_ | (2026-10-20) Detalle del viaje (`SeguimientoViaje.aspx`): panel **Ruta del viaje** con Leaflet (cdnjs) y teselas de OpenStreetMap: recorrido GPS del tracto de carga (azul) y del de descarga (naranja), hitos numerados, las 13 geocercas, km por tramo y reproducción animada (camión por tramo, línea que se va pintando, reloj con hora de Perú, velocidad y último hito; deslizador y velocidad de 10 min a 3 h por segundo). "Evidencia" de un hito lleva el mapa a ese punto y momento. `RutaViajeService` trae el historial de Onway (1 día por llamada), lo simplifica (≤ 2 500 puntos, la unidad parada queda en un punto) y guarda el tramo cerrado en `~/App_Data/RutasGps` (en curso: 10 min en memoria). `[WebMethod] ObtenerRuta` con sesión y rol; `Web.config` sube `maxJsonLength` a 4 MB. Probado en el navegador con un viaje cerrado, uno en curso y uno creado desde el cuadro; 3 tests de `Simplificar`. |
+| _(caché del historial GPS)_ | (2026-10-21) "Actualizar GPS de viajes abiertos" volvía a pedir al API de Onway (1 día por llamada, 2 req/s) todos los días de cada viaje en cada clic y la lista completa de dispositivos una vez por viaje. Ahora `HistorialGpsCache` guarda comprimido en `~/App_Data/HistorialGps` cada día de un tracto que terminó hace más de 24 h (el equipo sin señal manda puntos atrasados) y lo comparte entre viajes; hoy y ayer quedan 3 min en memoria. La lista de dispositivos se comparte 30 min (si una placa no aparece se vuelve a pedir). La detección recibe los mismos puntos. Tope por clic de 6 a 40 viajes (el límite real sigue siendo el presupuesto de 80 s). Medido con T7J-860, 8 días: 16 s la primera vez, 5,2 s la siguiente, mismos 4 210 puntos. Sin migración ni SP. |
+| _(despacho en dos momentos)_ | (2026-10-21) El correo con factura y guías puede llegar cuando la unidad ya salió. En RegistroDespacho, **subir solo el Word** muestra "Programar con el Word": la sección de carga ("TRUJILLO-VITAPRO-CARGAN 21 DE OCTUBRE") con cliente, planta y exportación del título, y por fila chofer, tracto, carreta (del catálogo, con los mismos avisos de la importación) y la hora del HORARIO; las unidades que ya tienen carga ese día salen "Ya programado". "Programar despachos" crea las cargas sin documentos (`sp_CrearDespacho`, `horaDespacho` = HORARIO, en el viaje abierto del chofer: la liquidación no espera al correo) y sincroniza el seguimiento, que crea el viaje con pedido `PENDIENTE` para que el GPS lo siga. Al subir después el ZIP, `ImportacionPedidoService.UsarProgramados` busca los programados del cliente en los días de las guías y cada guía **completa su despacho** (carreta → tracto → chofer → descarte, como con el Word; un programado sin guía es un cambio de chofer: queda lo programado y la guía no se reemite); cada guía tiene "Completa el despacho" para elegirlo a mano. Al finalizar el lote, `sp_CompletarDespachoProgramado` agrega pedido, factura, guía, N° de transporte, destino y carga sin tocar chofer, tracto, carreta ni viaje; el viaje del seguimiento toma el pedido. ListaDespachos muestra "Faltan documentos" en el pedido del lote. Con el Word del 20/10: 12 unidades, cliente Vitapro, planta Trujillo, exportación, 21/10, horas 05:30–06:25; 11/12 choferes reconocidos. **Programadas en sgvActualizada las 11 cargas del 21/10** (despachos 809–819, viajes del seguimiento 7371–7381); falta JUSTO CESPEDES (sin DNI). Además el **CPIC de la descarga internacional pasó a opcional** (puede llegar después; se agrega al lote en ListaDespachos; si se escribe el número se piden fecha y flete) y se registró con el Word del 20/10 la **descarga del pedido 4400133879** (despachos 820–825, unidos a las cargas 609–614, sin CPIC; los 6 viajes del seguimiento tomaron tracto 2 y chofer). LUIS ALBERTO PONCE MENA (DNI 75025996) estaba inactivo y descarga ANW-896: se reactivó (con auditoría). 4 tests de la unión y la hora, 1 de integración con rollback (programar → leer guías con un cambio de chofer → completar → seguimiento con el pedido). Sin migración. |
 
 Detalle de reglas y convenciones nuevas: ver `CLAUDE.md`.
 
@@ -84,8 +86,34 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       del CEBAF del 16/10).
 - [ ] **Cuadro de octubre: 2 cargas sin pedido no se crearon** (AVO-818 del 09/10 y BPT-919 del 02/10). Las 6 del
       20/10 ya se crearon a mano (7341–7346, pedido `PENDIENTE`): al registrar su despacho, la sincronización las adopta.
-- [ ] **Decidir si el tablero crea los viajes desde el Word de programación** (antes de que llegue el pedido de
-      Vitapro), para no depender de crearlos a mano como los 6 del 20/10.
+- [ ] **CPIC del pedido 4400133879**: su descarga (despachos 820–825 del 21/10) se registró sin CPIC; cuando
+      llegue, agregarlo al lote en ListaDespachos (editar lote → CPIC).
+- [ ] **Planta de la descarga 4400133879 = Milagro** (del destino de la factura, "CD VITAPRO MILAGRO"), así que el
+      seguimiento puso INBALNOR a los 6 viajes (7095–7100) y el GPS ya no la cambia. Si alguna unidad fue a Jave,
+      corregirla con la lista de destinos del cliente (DestinoDescarga) o en el detalle del viaje. Revisar si
+      conviene que la planta del despacho no fije la bodega cuando no hay lista de destinos.
+- [ ] **Despacho en dos momentos: probar en el navegador** la vista previa (select2, avisos) y "Completa el
+      despacho" al leer el ZIP. "Programar despachos" ya se usó por HTTP el 2026-10-21 con el Word del 20/10
+      (11 cargas del 21/10 en sgvActualizada).
+- [ ] **JUSTO CESPEDES (ANU-794 / T3Y-995, 05:40 del 21/10) sin programar**: no está en el catálogo de
+      conductores y su DNI no figura en ningún documento (solo el nombre corto en los Word del 18–20/10; maneja
+      ANU-794 desde el 18/10). Con su DNI y nombre completo: registrarlo en RegistroChoferes y volver a subir el
+      Word del 20/10 en RegistroDespacho (las otras 11 salen "Ya programado"; se programa solo la suya).
+- [ ] **Completar las 11 cargas del 21/10 con el correo** cuando llegue (despachos 809–819, viajes del
+      seguimiento 7371–7381 con pedido PENDIENTE): primera prueba real de "completar con el correo".
+      5 de ellas se sumaron al viaje abierto de su chofer (VP 342, 343, 345, 347, 349), con la misma regla de la
+      importación: revisar al liquidar que sea lo esperado.
+- [ ] **Descarga de una carga que todavía no tiene documentos**: `DescargaPedidoService` exige pedido y detalle
+      de carga, así que la descarga a Ecuador se registra después de completar la carga. Si el correo se
+      retrasa más que la descarga, el tracto 2 del seguimiento se pone a mano en el detalle del viaje.
+- [ ] **Cambio de chofer con varias guías sin unir**: el descarte solo une si queda una guía y un programado;
+      con más, se eligen a mano. Se podría proponer con el GPS (qué tracto programado estuvo en la planta a la
+      hora de la guía).
+- [ ] **Programado editado a mano**: si en ListaDespachos se le pone pedido o guía a un despacho programado,
+      ya no aparece como "esperando documentos" y el correo crearía otro despacho. Revisar si hace falta avisarlo.
+- [ ] **Hora de la programación en el seguimiento**: el despacho programado guarda la hora del Word
+      (`horaDespacho`), pero `sp_SE_SincronizarDespachos` sigue pasando solo la fecha a F.H. Programación
+      (los despachos del lote guardan en `horaDespacho` la hora del registro, no la programada).
 - [ ] **Mapa de la ruta: teselas de OpenStreetMap** (`tile.openstreetmap.org`) sirven para poco tráfico; si el
       sistema crece, pasar a un proveedor con clave (CARTO, MapTiler). CARTO ya pide clave.
 - [ ] **Trazabilidad: revisar las 10 diferencias de más de 1 h de la prueba de septiembre** (8 en el Complex:
@@ -97,19 +125,25 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       no sabe, editar datos del viaje, nuevo viaje, cerrar/reabrir, "Actualizar GPS") y los paneles de
       evidencia/corrección (JS). Por HTTP solo se probó lo que lee; las escrituras, con la prueba de
       integración `SeguimientoViajesBdTests` (rollback). No había navegador conectado el 2026-10-20.
-- [ ] **Seguimiento: guardar la hora de la programación del Word** (columna HORARIO, p. ej. "05:50 AM") en el
-      despacho y pasarla a F.H. Programación. Hoy se lee y se muestra en RegistroDespacho pero no se guarda:
-      el viaje toma solo la fecha del despacho (para el GPS alcanza, busca desde ese día).
-- [ ] **Seguimiento: crear también el viaje al registrar el despacho** (hoy se crea al abrir el tablero, con
-      `sp_SE_SincronizarDespachos` sobre los despachos de carga de exportación de los últimos 60 días).
+- [ ] **Seguimiento: guardar la hora de la programación del Word en el lote con documentos** (columna HORARIO):
+      al programar con el Word ya se guarda (ver "Hora de la programación en el seguimiento"); en el lote que se
+      arma con ZIP + Word todavía se guarda la hora del registro.
+- [ ] **Seguimiento: crear también el viaje al finalizar el lote** (al programar con el Word ya se crea; el
+      lote con documentos sigue esperando a que se abra el tablero, con `sp_SE_SincronizarDespachos`).
 - [ ] **Seguimiento: confirmar que cada despacho de descarga en Ecuador se enlaza a su carga** (`idDespachoCarga`).
       Si no, la sincronización lo une por pedido y carreta; un despacho de descarga sin carreta o con otra
       carreta no completa el viaje.
-- [ ] **Seguimiento, etapa 4: actualización automática del GPS** (tarea programada en la PC de la oficina o
-      similar; somee no corre tareas en segundo plano) y guardar en BD el historial GPS ya descargado por
-      tracto y día, para no volver a pedirlo al API. Hoy "Actualizar GPS de viajes abiertos" hace ~3 viajes por
-      clic (~30 s por viaje: ~20 días de historial cada uno; medido el 2026-10-20 con los 10 viajes del pedido
-      4400133436). Además, cortar la ventana de la descarga cuando el viaje ya volvió a base.
+- [ ] **Seguimiento, etapa 4: actualización automática del GPS** sin clic: una URL protegida con clave que
+      llama algo externo cada 15–30 min (cron-job.org o el Programador de tareas de la PC de la oficina; somee
+      apaga la aplicación sin uso, así que un temporizador interno no sirve) y en el tablero "GPS actualizado
+      hace X min", con una consulta liviana a la BD para recargar solo si hubo cambios. El historial por tracto
+      y día ya no se vuelve a pedir (`HistorialGpsCache`, 2026-10-21).
+- [ ] **Seguimiento: cortar la ventana de la descarga cuando el viaje ya volvió a base** (hoy se leen hasta 12
+      días desde la salida de planta; con la caché cuesta poco, pero sigue leyendo días de más).
+- [ ] **Seguimiento: medir "Actualizar GPS" en el sitio con los viajes abiertos** (cuántos viajes alcanza por
+      clic con la caché). Solo se midió la caché sola con T7J-860 (8 días: 16 s la primera vez, 5,2 s después).
+- [ ] **Seguimiento: espacio de `~/App_Data/HistorialGps` en somee** (3–45 KB por tracto y día, se borra a los
+      30 días): revisar la cuota tras unas semanas de uso.
 - [ ] **Borrar los `sp_SE_*` que dejó de usar la pantalla vieja**: `sp_SE_ListarEnCurso`, `sp_SE_Insertar`,
       `sp_SE_Listar`, `sp_SE_ObtenerPorId`, `sp_SE_BuscarDespachosDisponibles`, `sp_SE_ObtenerDespachoPorId`
       (ya no se llaman desde C#; revisar antes que no los use otra cosa, con respaldo y migración).
@@ -172,6 +206,11 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 - [ ] **Serilog 2.12 → 4.x** (opcional; requiere nuevas dependencias y binding redirects).
 
 ### Hechas
+
+- [x] **Despacho en dos momentos** (2026-10-21): el Word programa los despachos de carga y el correo los completa;
+      la liquidación no espera a los documentos. Resuelve "decidir si el tablero crea los viajes desde el Word"
+      (el viaje sale del despacho programado, con pedido `PENDIENTE`). Ver la fila de la sección 3.
+- [x] **"Actualizar GPS" más rápido sin cambiar la detección** (2026-10-21): ver la fila de la sección 3.
 
 - [x] **Seguimiento: unidades que no se veían o salían en otro lado** (2026-10-20, vuelta corrida de ASU-862 y
       TBM-815, 6 cargas del 20/10 sin viaje): ver la fila de la sección 3. Las 30 unidades del monitoreo coinciden.
@@ -413,6 +452,9 @@ Con sqlcmd contra somee usar siempre `-C -I -f 65001` (certificado, QUOTED_IDENT
    de escritura) y necesita el `maxJsonLength` nuevo de `Web.config`. `sp_SE_RegistrarHitoGps` cambió
    (2026-10-20, `@reemplazarGps`): ya está en sgvActualizada; en otra BD, `aplicar-procedimientos` antes de publicar.
    `sp_SE_SincronizarDespachos` cambió (2026-10-20, adopta el viaje creado a mano): igual, ya en sgvActualizada.
+   2026-10-21: `sp_CompletarDespachoProgramado` (nuevo) y `sp_SE_SincronizarDespachos` (viaje con pedido
+   PENDIENTE para la carga programada con el Word) ya están en sgvActualizada; el sitio publicado no los usa
+   hasta subir el código nuevo. La caché del historial GPS escribe en `~/App_Data/HistorialGps` (permiso de escritura).
 7. Tras publicar: en `RegistroChoferes` → "Actualizar con la lista" con
    `LISTA DE CHOFERES ACTUALES (corregida).xlsx` (no hay migración; Victor Marzal con DNI 00243179, Yépez y
    Rivas con carnet de extranjería). Requiere el `sp_RegistrarConductorImportado` del paso 2.

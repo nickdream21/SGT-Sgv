@@ -69,10 +69,32 @@ $m = [regex]::Match($html, 'id="[^"]*pnlProgramacionCarga"[^>]*>(.*?)</div>\s*<!
 if ($m) { "PROGRAMACIÓN: $(Texto $m)" }
 $m = [regex]::Match($html, 'id="[^"]*pnlAdvertenciasImportacion"[^>]*>(.*?)</div>', 'Singleline').Groups[1].Value
 if ($m) { "ADVERTENCIAS: $(Texto $m)" }
-$m = [regex]::Match($html, 'id="[^"]*txtFechaProgramacionImp"[^>]*value="([^"]*)"').Groups[1].Value
+$m = [regex]::Match([regex]::Match($html, '<input[^>]*txtFechaProgramacionImp"[^>]*>').Value, 'value="([^"]*)"').Groups[1].Value
 if ($m) { "Fecha de programación: $m" }
 $m = [regex]::Match($html, 'id="[^"]*ddlPlantaImp".*?<option selected="selected"[^>]*>([^<]*)<', 'Singleline').Groups[1].Value
 if ($m) { "Planta de carga: $m" }
+
+# Solo el Word: vista previa de "Programar con el Word" (no se pulsa "Programar despachos")
+if ($html -match 'id="[^"]*pnlProgramacionNueva"') {
+    $bar = [regex]::Match($html, 'id="[^"]*pnlProgramacionNueva"[^>]*>(.*?)<div class="rd-notice mb-3">', 'Singleline').Groups[1].Value
+    "PROGRAMAR CON EL WORD: $(Texto $bar)"
+    $m = [regex]::Match($html, 'id="[^"]*pnlAvisosProg"[^>]*>(.*?)</div>', 'Singleline').Groups[1].Value
+    if ($m) { "AVISOS: $(Texto $m)" }
+    $m = [regex]::Match($html, '<input[^>]*txtFechaProg"[^>]*>').Value
+    "Fecha de carga: $([regex]::Match($m, 'value="([^"]*)"').Groups[1].Value)"
+    foreach ($id in 'ddlClienteProg', 'ddlPlantaProg') {
+        $m = [regex]::Match($html, ('id="[^"]*' + $id + '".*?</select>'), 'Singleline').Value
+        "${id}: $(Texto ([regex]::Match($m, '<option selected="selected"[^>]*>([^<]*)<').Groups[1].Value))"
+    }
+    "Exportación: $([regex]::IsMatch($html, 'id="[^"]*chkExportacionProg"[^>]*checked'))"
+    foreach ($fila in [regex]::Matches($html, '<tr>\s*<td><input[^>]*chkIncluirProg.*?</tr>', 'Singleline')) {
+        $hora = [regex]::Match($fila.Value, 'txtHoraProg"[^>]*value="([^"]*)"').Groups[1].Value
+        $elegido = [regex]::Matches($fila.Value, '<select[^>]*>.*?</select>', 'Singleline') | ForEach-Object {
+            Texto ([regex]::Match($_.Value, '<option selected="selected"[^>]*>([^<]*)<').Groups[1].Value) }
+        $estado = Texto ([regex]::Match($fila.Value, '<td>((?:(?!<td).)*)</td>\s*</tr>', 'Singleline').Groups[1].Value)
+        "--- $hora | $($elegido -join ' | ') | $estado"
+    }
+}
 
 foreach ($fila in [regex]::Matches($html, '<tr class="[^"]*">\s*<td><input[^>]*chkIncluir.*?</tr>\s*(<tr class="rd-fila-programacion">.*?</tr>)?', 'Singleline')) {
     $transporte = Texto ([regex]::Match($fila.Value, '<div class="rd-placa">([^<]*)</div>').Groups[1].Value)

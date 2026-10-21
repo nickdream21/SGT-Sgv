@@ -369,6 +369,110 @@ namespace WebSGV.Services.Despachos.Importacion
                 return;
             }
 
+            AplicarSeccion(pedido, seccion, word.Nombre, programacion.Fecha,
+                ProgramacionCarga.FechaDeCarga(seccion, programacion.Fecha), desdeDespachos: false);
+
+            // Planta de carga: si las guías no la dieron, la del título ("TRUJILLO-VITAPRO-...")
+            if (!pedido.IdPlantaSugerida.HasValue)
+            {
+                string titulo = LectorDocumentosPedido.Normalizar(seccion.Titulo);
+                var enTitulo = RegistroDespachoService.ObtenerPlantasPorAmbito(false).Rows.Cast<DataRow>()
+                    .Where(r => titulo.Contains(LectorDocumentosPedido.Normalizar(r["nombre"].ToString())))
+                    .Select(r => Convert.ToInt32(r["idPlanta"])).Distinct().ToList();
+                if (enTitulo.Count == 1) pedido.IdPlantaSugerida = enTitulo[0];
+            }
+
+            AplicarProgramacion(pedido);
+        }
+
+        /// <summary>
+        /// Busca los despachos programados con el Word que esperan documentos (del cliente y
+        /// de los días de las guías) para que cada guía complete el suyo. Sin Word subido, esos
+        /// despachos hacen de programación (se unen con las guías por carreta, tracto, chofer
+        /// y descarte); con Word, cada tracto se enlaza con el programado de sus mismas placas.
+        /// Llamar después de <see cref="Asociar"/> y de <see cref="LeerProgramacion"/>.
+        /// </summary>
+        public static void UsarProgramados(ImportacionPedido pedido)
+        {
+            // Lo que salió de los programados de antes (otro cliente) se vuelve a armar desde la guía
+            if (pedido.Programacion != null && pedido.Programacion.DesdeDespachos)
+            {
+                pedido.Programacion = null;
+                foreach (var t in pedido.Tractos) t.Programacion = null;
+                AsociarVehiculos(pedido);
+                AsociarConductores(pedido);
+            }
+
+            pedido.Programados = new List<DespachoProgramado>();
+            if (!pedido.IdCliente.HasValue) return;
+
+            var fechas = pedido.Tractos.Where(t => !t.YaRegistrado).Select(t => t.FechaTraslado)
+                .Concat(new[] { pedido.Programacion?.FechaCarga })
+                .Where(f => f.HasValue).Select(f => f.Value.Date).ToList();
+            DateTime desde = fechas.Count > 0 ? fechas.Min().AddDays(-2) : FechaHelper.Hoy().AddDays(-5);
+            DateTime hasta = fechas.Count > 0 ? fechas.Max().AddDays(1) : FechaHelper.Hoy().AddDays(1);
+            pedido.Programados = ProgramacionDespachoService.PendientesDeDocumentos(pedido.IdCliente.Value, desde, hasta);
+            if (pedido.Programados.Count == 0) return;
+
+            if (pedido.Programacion == null)
+            {
+                AplicarSeccion(pedido, ProgramacionDespachoService.ComoSeccion(pedido.Programados), "Despachos programados", null,
+                    pedido.Programados.Min(p => p.FechaDespacho), desdeDespachos: true);
+
+                var plantas = pedido.Programados.Where(p => pedido.Tractos.Any(t => t.Programacion?.IdDespachoProgramado == p.IdDespacho))
+                    .Select(p => p.IdPlanta).Where(id => id > 0).Distinct().ToList();
+                if (!pedido.IdPlantaSugerida.HasValue && plantas.Count == 1) pedido.IdPlantaSugerida = plantas[0];
+            }
+            else
+                VincularConProgramados(pedido);
+
+            AplicarProgramacion(pedido);
+        }
+
+        /// <summary>
+        /// Con el Word subido: cada tracto de la programación completa el despacho programado
+        /// de sus mismas placas (tracto y carreta; si no, la carreta o el tracto sin repetir).
+        /// El despacho manda: si el Word ahora dice otro chofer, se avisa y queda el despacho.
+        /// </summary>
+        private static void VincularConProgramados(ImportacionPedido pedido)
+        {
+            var libres = pedido.Programados.ToList();
+            var propuestas = pedido.Tractos.Where(t => !t.YaRegistrado && t.Programacion != null && t.Programacion.EnProgramacion)
+                .Select(t => t.Programacion).ToList();
+            foreach (var p in propuestas) p.IdDespachoProgramado = null;
+
+            DespachoProgramado Unico(Func<DespachoProgramado, bool> criterio)
+            {
+                var c = libres.Where(criterio).ToList();
+                return c.Count == 1 ? c[0] : null;
+            }
+
+            foreach (var p in propuestas)
+            {
+                var prog = Unico(x => x.IdTracto == p.IdTracto && x.IdCarreta == p.IdCarreta)
+                           ?? Unico(x => p.IdCarreta.HasValue && x.IdCarreta == p.IdCarreta)
+                           ?? Unico(x => p.IdTracto.HasValue && x.IdTracto == p.IdTracto);
+                if (prog == null) continue;
+
+                libres.Remove(prog);
+                p.IdDespachoProgramado = prog.IdDespacho;
+                if (p.IdConductor != prog.IdConductor || p.IdTracto != prog.IdTracto || p.IdCarreta != prog.IdCarreta)
+                    p.Avisos.Add($"El despacho programado de esta unidad tiene {prog.NombreConductor} / {prog.PlacaTracto} / {prog.PlacaCarreta}: " +
+                                 "se completa ese despacho tal como está; para cambiarle chofer o placas, edítelo en la lista de despachos.");
+                p.IdConductor = prog.IdConductor;
+                p.IdTracto = prog.IdTracto;
+                p.IdCarreta = prog.IdCarreta;
+            }
+
+            if (libres.Count > 0)
+                pedido.Programacion.AvisosGenerales.Add($"{libres.Count} despacho(s) programado(s) quedaron sin guía en estos documentos: " +
+                    string.Join(", ", libres.Select(x => $"{x.NombreConductor} / {x.PlacaTracto} / {x.PlacaCarreta}")) +
+                    ". Si alguno fue un cambio de chofer, elíjalo en la guía que le corresponde.");
+        }
+
+        private static void AplicarSeccion(ImportacionPedido pedido, SeccionProgramacion seccion, string nombreArchivo,
+            DateTime? fechaProgramacion, DateTime? fechaCarga, bool desdeDespachos)
+        {
             var conductores = RegistroDespachoService.ObtenerConductoresActivos().Rows.Cast<DataRow>()
                 .Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r["idConductor"]), r["NombreCompleto"].ToString())).ToList();
             var tractos = RegistroDespachoService.ObtenerTractosActivos().Rows.Cast<DataRow>()
@@ -389,25 +493,14 @@ namespace WebSGV.Services.Despachos.Importacion
 
             pedido.Programacion = new ProgramacionAplicada
             {
-                NombreArchivo = word.Nombre,
-                Fecha = programacion.Fecha,
+                NombreArchivo = nombreArchivo,
+                Fecha = fechaProgramacion,
                 Titulo = seccion.Titulo,
-                FechaCarga = ProgramacionCarga.FechaDeCarga(seccion, programacion.Fecha),
+                FechaCarga = fechaCarga,
                 Encontrados = propuestas.Values.Count(p => p.EnProgramacion),
-                AvisosGenerales = avisosGenerales
+                AvisosGenerales = avisosGenerales,
+                DesdeDespachos = desdeDespachos
             };
-
-            // Planta de carga: si las guías no la dieron, la del título ("TRUJILLO-VITAPRO-...")
-            if (!pedido.IdPlantaSugerida.HasValue)
-            {
-                string titulo = LectorDocumentosPedido.Normalizar(seccion.Titulo);
-                var enTitulo = RegistroDespachoService.ObtenerPlantasPorAmbito(false).Rows.Cast<DataRow>()
-                    .Where(r => titulo.Contains(LectorDocumentosPedido.Normalizar(r["nombre"].ToString())))
-                    .Select(r => Convert.ToInt32(r["idPlanta"])).Distinct().ToList();
-                if (enTitulo.Count == 1) pedido.IdPlantaSugerida = enTitulo[0];
-            }
-
-            AplicarProgramacion(pedido);
         }
 
         /// <summary>

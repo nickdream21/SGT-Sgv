@@ -132,21 +132,11 @@ namespace WebSGV.Services.GpsIntegracion
                 var dispositivo1 = string.IsNullOrEmpty(placaTracto1) ? null : cliente.BuscarDispositivoPorPlaca(placaTracto1);
                 var dispositivo2 = string.IsNullOrEmpty(placaTracto2) ? null : cliente.BuscarDispositivoPorPlaca(placaTracto2);
 
-                var cacheHistorial = new Dictionary<string, List<OnwayHistoryPoint>>();
+                // Los días ya terminados salen de HistorialGpsCache (disco), no del API.
                 Func<int, DateTime, List<OnwayHistoryPoint>> obtenerHistorialDia = (numeroTracto, dia) =>
                 {
                     var dispositivo = numeroTracto == 1 ? dispositivo1 : dispositivo2;
-                    if (dispositivo == null) return new List<OnwayHistoryPoint>();
-
-                    string clave = dispositivo.Id + "|" + dia.ToString("yyyy-MM-dd");
-                    if (cacheHistorial.TryGetValue(clave, out var cacheado))
-                        return cacheado;
-
-                    DateTime desdeUtc = dia.AddHours(5);
-                    DateTime hastaUtc = dia.AddDays(1).AddHours(5).AddSeconds(-1);
-                    var historial = cliente.ObtenerHistorial(dispositivo.Id, desdeUtc, hastaUtc);
-                    cacheHistorial[clave] = historial;
-                    return historial;
+                    return dispositivo == null ? new List<OnwayHistoryPoint>() : HistorialGpsCache.Dia(cliente, dispositivo, dia);
                 };
 
                 Func<int, DateTime, DateTime, List<OnwayHistoryPoint>> historialEntre = (numeroTracto, desdeDia, hastaDia) =>

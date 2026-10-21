@@ -1,9 +1,11 @@
 -- ============================================================
 -- Crea y actualiza los viajes del seguimiento de exportación a partir de los despachos
 -- (la programación), desde @desde:
---   1. Cada despacho de CARGA de exportación (nacional, con pedido) es un viaje: pedido,
---      carreta, tracto y chofer de carga, fecha de programación. El despacho manda: si se
---      corrige en Despachos, el viaje se corrige aquí.
+--   1. Cada despacho de CARGA de exportación (nacional) es un viaje: pedido, carreta, tracto
+--      y chofer de carga, fecha de programación. El despacho manda: si se corrige en
+--      Despachos, el viaje se corrige aquí. Un despacho programado solo con el Word (sin
+--      documentos todavía) crea el viaje con pedido 'PENDIENTE', para que el GPS lo siga
+--      desde que sale; cuando llega el correo y se completa el despacho, toma el pedido.
 --   2. Su despacho de DESCARGA en Ecuador (enlazado por idDespachoCarga, o por pedido y
 --      carreta) completa el tracto y el chofer de descarga.
 --   3. La planta de descarga sale del despacho de descarga (Jave / Milagro = Inbalnor) o de
@@ -24,7 +26,7 @@ BEGIN
 
         -- Despachos de carga de exportación desde @desde (activos y anulados).
         SELECT d.idDespacho, d.activo,
-               LTRIM(RTRIM(d.numeroPedido)) AS pedido,
+               ISNULL(NULLIF(LTRIM(RTRIM(d.numeroPedido)), ''), 'PENDIENTE') AS pedido,
                LTRIM(RTRIM(ca.placaCarreta)) AS carreta,
                LTRIM(RTRIM(t.placaTracto)) AS tracto,
                LTRIM(RTRIM(ISNULL(LTRIM(RTRIM(co.nombre)), '') + ISNULL(' ' + NULLIF(LTRIM(RTRIM(co.apPaterno)), ''), '')
@@ -36,7 +38,6 @@ BEGIN
         LEFT JOIN dbo.Carreta ca   ON ca.idCarreta = d.idCarreta
         LEFT JOIN dbo.Conductor co ON co.idConductor = d.idConductor
         WHERE d.esExportacion = 1 AND d.tipoOperacion = 'CARGA' AND ISNULL(d.esInternacional, 0) = 0
-          AND NULLIF(LTRIM(RTRIM(d.numeroPedido)), '') IS NOT NULL
           AND d.fechaDespacho >= @desde;
 
         -- 1a. Un viaje creado a mano (desde la programación, antes de tener el pedido) se adopta en

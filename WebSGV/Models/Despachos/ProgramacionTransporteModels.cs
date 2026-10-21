@@ -46,6 +46,78 @@ namespace WebSGV.Models.Despachos
 
         /// <summary>Hora estimada de llegada a la planta (solo referencia).</summary>
         public string Horario { get; set; }
+
+        /// <summary>
+        /// La fila no viene del Word sino de un despacho ya programado que espera sus
+        /// documentos (ver <see cref="DespachoProgramado"/>). Null en las filas del Word.
+        /// </summary>
+        public DespachoProgramado Programado { get; set; }
+    }
+
+    /// <summary>
+    /// Despacho de CARGA registrado solo con el Word de la programación (chofer, tracto,
+    /// carreta y hora), antes de que lleguen por correo la factura y las guías. Sin pedido,
+    /// guía, N° de transporte ni detalle de carga: los completa la importación de documentos.
+    /// </summary>
+    [Serializable]
+    public class DespachoProgramado
+    {
+        public int IdDespacho { get; set; }
+        public DateTime FechaDespacho { get; set; }
+        public TimeSpan? Hora { get; set; }
+        public int IdCliente { get; set; }
+        public int IdPlanta { get; set; }
+        public int IdConductor { get; set; }
+        public string NombreConductor { get; set; }
+        public int IdTracto { get; set; }
+        public string PlacaTracto { get; set; }
+        public int IdCarreta { get; set; }
+        public string PlacaCarreta { get; set; }
+
+        public string Texto => $"{FechaDespacho:dd/MM}{(Hora.HasValue ? " " + Hora.Value.ToString(@"hh\:mm") : "")} · " +
+                               $"{NombreConductor} · {PlacaTracto} / {PlacaCarreta}";
+    }
+
+    /// <summary>
+    /// Sección de CARGA del Word leída para programar los despachos antes de los
+    /// documentos ("Programar con el Word" de RegistroDespacho). Se guarda en sesión
+    /// mientras el usuario revisa la vista previa.
+    /// </summary>
+    [Serializable]
+    public class ProgramacionNueva
+    {
+        public string NombreArchivo { get; set; }
+        public string Titulo { get; set; }
+        public DateTime? FechaCarga { get; set; }
+        public int? IdCliente { get; set; }
+        public int? IdPlanta { get; set; }
+
+        /// <summary>Propuesto con el último despacho de carga del cliente en esa planta.</summary>
+        public bool EsExportacion { get; set; }
+
+        public List<FilaProgramacionNueva> Filas { get; set; } = new List<FilaProgramacionNueva>();
+
+        /// <summary>Otras secciones de carga del Word que no se usaron, filas vacías, etc.</summary>
+        public List<string> AvisosGenerales { get; set; } = new List<string>();
+    }
+
+    [Serializable]
+    public class FilaProgramacionNueva
+    {
+        public string Chofer { get; set; }
+        public string Tracto { get; set; }
+        public string Carreta { get; set; }
+        public string Horario { get; set; }
+        public TimeSpan? Hora { get; set; }
+
+        public int? IdConductor { get; set; }
+        public int? IdTracto { get; set; }
+        public int? IdCarreta { get; set; }
+
+        /// <summary>Ya hay un despacho de carga ese día con este tracto o esta carreta: no se vuelve a crear.</summary>
+        public int? IdDespachoExistente { get; set; }
+
+        public List<string> Avisos { get; set; } = new List<string>();
     }
 
     /// <summary>
@@ -58,6 +130,12 @@ namespace WebSGV.Models.Despachos
     {
         /// <summary>La guía se unió con una fila de la sección de carga.</summary>
         public bool EnProgramacion { get; set; }
+
+        /// <summary>
+        /// Despacho ya programado con el Word que esta guía completa (no se crea otro): se le
+        /// agregan pedido, guía, factura y carga; chofer, tracto y carreta quedan los suyos.
+        /// </summary>
+        public int? IdDespachoProgramado { get; set; }
 
         public string ChoferProgramado { get; set; }
         public string TractoProgramado { get; set; }
@@ -93,6 +171,9 @@ namespace WebSGV.Models.Despachos
 
         public int Encontrados { get; set; }
         public List<string> AvisosGenerales { get; set; } = new List<string>();
+
+        /// <summary>No se subió el Word: las filas son los despachos ya programados que esperan documentos.</summary>
+        public bool DesdeDespachos { get; set; }
     }
 
     /// <summary>Lo que la programación propone para una carga pendiente de descarga.</summary>

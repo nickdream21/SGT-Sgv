@@ -40,6 +40,12 @@ namespace WebSGV.Models.Despachos
         /// <summary>Programación en Word aplicada (null si no se subió).</summary>
         public ProgramacionAplicada Programacion { get; set; }
 
+        /// <summary>
+        /// Despachos programados con el Word que esperan documentos, de este cliente y de
+        /// los días de las guías: cada guía puede completar uno en vez de crear otro.
+        /// </summary>
+        public List<DespachoProgramado> Programados { get; set; } = new List<DespachoProgramado>();
+
         /// <summary>Archivos que no se reconocieron o no se pudieron leer.</summary>
         public List<string> ArchivosIgnorados { get; set; } = new List<string>();
 

@@ -196,7 +196,7 @@ namespace WebSGV.Services.Despachos
                     cmd.Parameters.AddWithValue("@idCarreta", conductor.IdCarreta);
                     cmd.Parameters.AddWithValue("@idCliente", lote.IdCliente);
                     cmd.Parameters.AddWithValue("@fechaDespacho", DateTime.Parse(lote.FechaProgramacion).Date);
-                    cmd.Parameters.AddWithValue("@horaDespacho", fechaCreacion.TimeOfDay);
+                    cmd.Parameters.AddWithValue("@horaDespacho", conductor.HoraProgramada ?? fechaCreacion.TimeOfDay);
                     cmd.Parameters.AddWithValue("@fechaCreacion", fechaCreacion);
                     cmd.Parameters.AddWithValue("@idPlanta", conductor.IdPlanta ?? lote.IdPlanta);
                     cmd.Parameters.AddWithValue("@tipoOperacion", lote.TipoOperacion);
@@ -227,6 +227,42 @@ namespace WebSGV.Services.Despachos
                     return Convert.ToInt32(pIdDespacho.Value);
                 }
             }
+        }
+
+        /// <summary>
+        /// Completa con sus documentos un despacho programado solo con el Word
+        /// (<c>sp_CompletarDespachoProgramado</c>): pedido, factura, CPIC, guías, N° de entrega
+        /// y de transporte, destino y carga. Chofer, tracto, carreta y viaje no cambian (la
+        /// liquidación pudo empezar antes del correo). Devuelve el id del despacho.
+        /// </summary>
+        public static int CompletarDespachoProgramado(LoteDespachos lote, ConductorLote conductor, int? idFactura, int? idCPIC)
+        {
+            DbHelper.EjecutarNonQuerySp("sp_CompletarDespachoProgramado",
+                DbHelper.Param("@idDespacho", conductor.IdDespachoProgramado.Value),
+                DbHelper.Param("@numeroPedido", string.IsNullOrWhiteSpace(lote.NumeroPedido) ? null : lote.NumeroPedido),
+                DbHelper.Param("@idFactura", idFactura),
+                DbHelper.Param("@idCPIC", idCPIC),
+                DbHelper.Param("@guiaRemitente", string.IsNullOrWhiteSpace(conductor.GuiaRemitente) ? null : conductor.GuiaRemitente.Trim()),
+                DbHelper.Param("@guiaTransportista", string.IsNullOrWhiteSpace(conductor.GuiaTransportista) ? null : conductor.GuiaTransportista.Trim()),
+                DbHelper.Param("@numeroEntrega", string.IsNullOrWhiteSpace(conductor.NumeroEntrega) ? null : conductor.NumeroEntrega),
+                DbHelper.Param("@numeroTransporte", string.IsNullOrWhiteSpace(conductor.NumeroTransporte) ? null : conductor.NumeroTransporte),
+                DbHelper.Param("@cargaJson", CargaComoJson(conductor.Carga)),
+                DbHelper.Param("@destinoCarga", string.IsNullOrWhiteSpace(lote.DestinoCarga) ? null
+                    : (lote.DestinoCarga.Length > 200 ? lote.DestinoCarga.Substring(0, 200) : lote.DestinoCarga)),
+                DbHelper.Param("@esExportacion", lote.EsExportacion),
+                DbHelper.Param("@usuario", lote.UsuarioCreacion));
+            return conductor.IdDespachoProgramado.Value;
+        }
+
+        /// <summary>
+        /// Viaje abierto al que se suma una CARGA del conductor: el más reciente, entre los
+        /// nacionales si hay alguno. Null: el despacho abre un viaje nuevo.
+        /// </summary>
+        public static ViajeEnProgreso ViajeAbiertoParaCarga(int idConductor)
+        {
+            var viajes = ObtenerViajesAbiertosConductor(idConductor);
+            var delAmbito = viajes.Where(v => !v.EsInternacional.HasValue || !v.EsInternacional.Value).ToList();
+            return (delAmbito.Count > 0 ? delAmbito : viajes).FirstOrDefault();
         }
 
         /// <summary>

@@ -61,7 +61,8 @@
                                 <asp:Panel ID="pnlImportarDocumentos" runat="server" CssClass="card mb-4 rd-import-card">
                                     <div class="rd-step-header">
                                         <h5><i class="fas fa-file-import mr-1"></i> Importar desde los documentos del pedido <span class="rd-chip rd-chip-wait ml-2">Opcional</span></h5>
-                                        <div class="rd-subtitle">Suba el ZIP del correo o los PDF (factura, packing list y guías de remisión) junto con el Word de la programación del día. El chofer, el tracto y la carreta salen de la programación; la carga, de los documentos. Usted lo revisa antes de guardar.</div>
+                                        <div class="rd-subtitle">Suba el ZIP del correo o los PDF (factura, packing list y guías de remisión) junto con el Word de la programación del día. El chofer, el tracto y la carreta salen de la programación; la carga, de los documentos. Usted lo revisa antes de guardar.
+                                            Si el correo todavía no llega, suba <strong>solo el Word</strong> para programar los despachos (el seguimiento GPS empieza ya); cuando llegue, suba el ZIP y cada guía completará su despacho.</div>
                                     </div>
                                     <div class="card-body">
                                         <asp:Panel ID="pnlSubirDocumentos" runat="server">
@@ -83,6 +84,103 @@
                                         <!-- Mensajes de la importación -->
                                         <asp:Panel ID="pnlMensajeImportacion" runat="server" Visible="false" CssClass="mt-3">
                                             <asp:Label ID="lblMensajeImportacion" runat="server" CssClass="alert d-block mb-0"></asp:Label>
+                                        </asp:Panel>
+
+                                        <!-- Programar con el Word: despachos de carga sin documentos todavía -->
+                                        <asp:Panel ID="pnlProgramacionNueva" runat="server" Visible="false" CssClass="mt-3">
+                                            <div class="rd-lote-bar mb-3">
+                                                <div class="rd-lote-grid">
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Programación</span><span class="rd-lote-v"><asp:Literal ID="litProgTitulo" runat="server" /></span></div>
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Archivo</span><span class="rd-lote-v"><asp:Literal ID="litProgArchivo" runat="server" /></span></div>
+                                                    <div class="rd-lote-item"><span class="rd-lote-k">Unidades</span><span class="rd-lote-v"><asp:Literal ID="litProgUnidades" runat="server" /></span></div>
+                                                </div>
+                                            </div>
+
+                                            <div class="rd-notice mb-3">
+                                                <i class="fas fa-calendar-check mr-1"></i>
+                                                Se registra un despacho de carga por unidad, sin pedido ni guías: el viaje del chofer y su seguimiento GPS empiezan ya.
+                                                Cuando llegue el correo, suba el ZIP en este mismo recuadro y cada guía completará su despacho (pedido, factura y carga).
+                                            </div>
+
+                                            <asp:Panel ID="pnlAvisosProg" runat="server" CssClass="rd-notice rd-notice-warn mb-3" Visible="false">
+                                                <strong><i class="fas fa-exclamation-triangle mr-1"></i> Revise antes de continuar:</strong>
+                                                <asp:Literal ID="litAvisosProg" runat="server" />
+                                            </asp:Panel>
+
+                                            <div class="rd-section-label"><i class="fas fa-clipboard-list mr-1"></i> Datos de la carga</div>
+                                            <div class="row mb-2">
+                                                <div class="col-md-3 form-group mb-2">
+                                                    <label for="<%= ddlClienteProg.ClientID %>" class="form-label small font-weight-bold mb-1">Cliente <span class="text-danger">*</span></label>
+                                                    <asp:DropDownList ID="ddlClienteProg" runat="server" CssClass="form-select form-select-sm" />
+                                                </div>
+                                                <div class="col-md-3 form-group mb-2">
+                                                    <label for="<%= txtFechaProg.ClientID %>" class="form-label small font-weight-bold mb-1">Fecha de carga <span class="text-danger">*</span></label>
+                                                    <asp:TextBox ID="txtFechaProg" runat="server" CssClass="form-control form-control-sm" TextMode="Date" />
+                                                    <small class="form-text text-muted">El día del título ("CARGAN 21 DE OCTUBRE").</small>
+                                                </div>
+                                                <div class="col-md-3 form-group mb-2">
+                                                    <label for="<%= ddlPlantaProg.ClientID %>" class="form-label small font-weight-bold mb-1">Planta de carga <span class="text-danger">*</span></label>
+                                                    <asp:DropDownList ID="ddlPlantaProg" runat="server" CssClass="form-select form-select-sm" />
+                                                </div>
+                                                <div class="col-md-3 form-group mb-2 d-flex align-items-end">
+                                                    <asp:CheckBox ID="chkExportacionProg" runat="server" Text="Carga para exportación (seguimiento a Ecuador)" CssClass="small" />
+                                                </div>
+                                            </div>
+
+                                            <div class="rd-section-label"><i class="fas fa-truck mr-1"></i> Unidades de la programación</div>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm rd-tabla-conductores rd-tabla-import align-middle mb-3">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Incluir</th>
+                                                            <th>Hora</th>
+                                                            <th>Conductor</th>
+                                                            <th>Tracto</th>
+                                                            <th>Carreta</th>
+                                                            <th>Estado</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <asp:Repeater ID="rptProgramacionNueva" runat="server" OnItemDataBound="rptProgramacionNueva_ItemDataBound">
+                                                            <ItemTemplate>
+                                                                <tr>
+                                                                    <td><asp:CheckBox ID="chkIncluirProg" runat="server" /></td>
+                                                                    <td class="rd-col-hora">
+                                                                        <small class="rd-doc-dato">Word: <%# HttpUtility.HtmlEncode(Eval("Horario") ?? "—") %></small>
+                                                                        <asp:TextBox ID="txtHoraProg" runat="server" CssClass="form-control form-control-sm" TextMode="Time" />
+                                                                    </td>
+                                                                    <td class="rd-col-conductor">
+                                                                        <small class="rd-doc-dato">Word: <%# HttpUtility.HtmlEncode(Eval("Chofer")) %></small>
+                                                                        <asp:DropDownList ID="ddlConductorProg" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                    </td>
+                                                                    <td class="rd-col-placa">
+                                                                        <small class="rd-doc-dato">Word: <%# HttpUtility.HtmlEncode(Eval("Tracto")) %></small>
+                                                                        <asp:DropDownList ID="ddlTractoProg" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                    </td>
+                                                                    <td class="rd-col-placa">
+                                                                        <small class="rd-doc-dato">Word: <%# HttpUtility.HtmlEncode(Eval("Carreta")) %></small>
+                                                                        <asp:DropDownList ID="ddlCarretaProg" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                    </td>
+                                                                    <td><asp:Literal ID="litEstadoProg" runat="server" /></td>
+                                                                </tr>
+                                                            </ItemTemplate>
+                                                        </asp:Repeater>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <div class="d-flex justify-content-end gap-2">
+                                                <asp:Button ID="btnDescartarProgramacion" runat="server"
+                                                    Text="Descartar"
+                                                    CssClass="btn btn-outline-secondary"
+                                                    CausesValidation="false"
+                                                    OnClick="btnDescartarProgramacion_Click" />
+                                                <asp:Button ID="btnProgramarDespachos" runat="server"
+                                                    Text="Programar despachos"
+                                                    CssClass="btn btn-primary"
+                                                    CausesValidation="false"
+                                                    OnClick="btnProgramarDespachos_Click" />
+                                            </div>
                                         </asp:Panel>
 
                                         <!-- Vista previa -->
@@ -152,6 +250,11 @@
                                                                         <div class="rd-placa"><%# HttpUtility.HtmlEncode(Eval("NumeroTransporte")) %></div>
                                                                         <small class="text-muted"><%# HttpUtility.HtmlEncode(Eval("NumeroGuia") ?? "sin guía") %></small>
                                                                         <asp:Literal ID="litYaRegistrado" runat="server" />
+                                                                        <asp:Panel ID="pnlProgramadoImp" runat="server" CssClass="mt-1 rd-programado-sel">
+                                                                            <small class="rd-doc-dato">Completa el despacho</small>
+                                                                            <asp:DropDownList ID="ddlProgramadoImp" runat="server" CssClass="form-select form-select-sm"
+                                                                                ToolTip="Despacho programado con el Word que esta guía completa. Si eligió uno, chofer, tracto y carreta son los del despacho." />
+                                                                        </asp:Panel>
                                                                     </td>
                                                                     <td class="rd-col-conductor">
                                                                         <small class="rd-doc-dato">Documento: <%# HttpUtility.HtmlEncode(Eval("NombreChofer")) %><%# Eval("Licencia") == null ? "" : " · Lic. " + HttpUtility.HtmlEncode(Eval("Licencia")) %></small>
@@ -709,7 +812,8 @@
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtNumeroCPICBase" class="form-label">
                                                                         <strong>N° CPIC:</strong>
-                                                                        <span class="text-danger">*</span>
+                                                                        <span class="text-danger rd-req">*</span>
+                                                                        <span class="text-muted small rd-opcional">(Opcional: si llega después, agréguelo en Lista de despachos)</span>
                                                                     </label>
                                                                     <asp:TextBox ID="txtNumeroCPICBase" runat="server"
                                                                         CssClass="form-control"
@@ -739,7 +843,7 @@
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtFechaEmisionCPICBase" class="form-label">
                                                                         <strong>Fecha emisión CPIC:</strong>
-                                                                        <span class="text-danger">*</span>
+                                                                        <span class="text-danger rd-req">*</span>
                                                                     </label>
                                                                     <asp:TextBox ID="txtFechaEmisionCPICBase" runat="server"
                                                                         CssClass="form-control"
@@ -768,7 +872,7 @@
                                                                 <div class="form-group mb-2">
                                                                     <label for="txtValorFleteBase" class="form-label">
                                                                         <strong>Valor flete (S/):</strong>
-                                                                        <span class="text-danger">*</span>
+                                                                        <span class="text-danger rd-req">*</span>
                                                                     </label>
                                                                     <asp:TextBox ID="txtValorFleteBase" runat="server"
                                                                         CssClass="form-control"
@@ -1265,6 +1369,8 @@
                                 <asp:PostBackTrigger ControlID="btnLeerDocumentos" />
                                 <asp:PostBackTrigger ControlID="btnLeerProgramacionDescarga" />
                                 <asp:AsyncPostBackTrigger ControlID="btnAplicarImportacion" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnProgramarDespachos" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnDescartarProgramacion" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnCorregirImportacion" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnVerCargasPendientes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnAplicarDescarga" EventName="Click" />

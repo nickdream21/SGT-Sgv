@@ -83,6 +83,16 @@ namespace WebSGV.Models.Despachos
         public int CantidadDespachos { get; set; }
         public string NumeroFactura { get; set; }
         public string NumeroCPIC { get; set; }
+
+        /// <summary>
+        /// N° de pedido para la grilla. Una carga sin pedido ni factura es la programada con
+        /// el Word que espera el correo (RegistroDespacho la completa al leer los documentos).
+        /// </summary>
+        public string PedidoMostrado =>
+            string.IsNullOrWhiteSpace(NumeroPedido) && string.IsNullOrWhiteSpace(NumeroFactura)
+                && string.Equals(TipoOperacion, "CARGA", StringComparison.OrdinalIgnoreCase)
+                ? "Faltan documentos" : NumeroPedido;
+
         public DateTime FechaCreacion { get; set; }
         public string UsuarioCreacion { get; set; }
 

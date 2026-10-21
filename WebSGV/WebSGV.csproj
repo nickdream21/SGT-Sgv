@@ -194,6 +194,7 @@
     <Content Include="Database\Scripts\script_TrazabilidadVolqueteCamioneta.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearCPIC.sql" />
     <Content Include="Database\StoredProcedures\sp_ActualizarLicenciaConductor.sql" />
+    <Content Include="Database\StoredProcedures\sp_CompletarDespachoProgramado.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearDespacho.sql" />
     <Content Include="Database\StoredProcedures\sp_DD_QuitarDestino.sql" />
     <Content Include="Database\StoredProcedures\sp_DD_RegistrarDestino.sql" />
@@ -472,6 +473,7 @@
     <Compile Include="Services\GpsIntegracion\GeocercaGps.cs" />
     <Compile Include="Services\GpsIntegracion\PuntoControlGpsService.cs" />
     <Compile Include="Services\GpsIntegracion\CheckpointMatchingService.cs" />
+    <Compile Include="Services\GpsIntegracion\HistorialGpsCache.cs" />
     <Compile Include="Services\GpsIntegracion\HoraLlegadaGpsService.cs" />
     <Compile Include="Services\GpsIntegracion\RutaViajeService.cs" />
     <Compile Include="Services\GpsIntegracion\SeguimientoExportacionGpsService.cs" />
@@ -489,6 +491,7 @@
     <Compile Include="Services\Despachos\DestinoDescargaService.cs" />
     <Compile Include="Services\Despachos\ProgramacionCarga.cs" />
     <Compile Include="Services\Despachos\ProgramacionDescarga.cs" />
+    <Compile Include="Services\Despachos\ProgramacionDespachoService.cs" />
     <Compile Include="Services\Despachos\Importacion\ExtractorTextoPdf.cs" />
     <Compile Include="Services\Despachos\Importacion\ImportacionPedidoService.cs" />
     <Compile Include="Services\Despachos\Importacion\LectorDocumentosPedido.cs" />

@@ -228,18 +228,43 @@ namespace WebSGV.Services.GpsIntegracion
             });
         }
 
-        // Lista de dispositivos de esta instancia: una consulta busca Tracto 1 y Tracto 2 y no
-        // hace falta pedir la lista completa dos veces.
-        private List<OnwayDevice> _dispositivos;
+        // Lista de dispositivos compartida entre instancias por unos minutos: "Actualizar GPS"
+        // consulta varios viajes seguidos y cada uno la pedía completa otra vez.
+        private static readonly TimeSpan VigenciaDispositivos = TimeSpan.FromMinutes(30);
+        private static List<OnwayDevice> _dispositivos;
+        private static DateTime _dispositivosHastaUtc;
 
-        /// <summary>Busca un dispositivo por placa (campo <c>alias</c> del API) entre todos los de la cuenta. Null si no hay match.</summary>
+        /// <summary>
+        /// Busca un dispositivo por placa (campo <c>alias</c> del API) entre todos los de la cuenta.
+        /// Null si no hay match. Si la placa no está en la lista guardada, la vuelve a pedir una vez
+        /// (equipo recién instalado).
+        /// </summary>
         public OnwayDevice BuscarDispositivoPorPlaca(string placa)
         {
             if (string.IsNullOrWhiteSpace(placa)) return null;
-            var dispositivos = _dispositivos ?? (_dispositivos = ListarDispositivos());
-            return dispositivos.FirstOrDefault(d =>
-                string.Equals(d.Alias?.Trim(), placa.Trim(), StringComparison.OrdinalIgnoreCase));
+            var lista = _dispositivos;
+            bool recienPedida = false;
+            if (lista == null || DateTime.UtcNow > _dispositivosHastaUtc)
+            {
+                lista = RenovarDispositivos();
+                recienPedida = true;
+            }
+            var encontrado = Buscar(lista, placa);
+            if (encontrado == null && !recienPedida)
+                encontrado = Buscar(RenovarDispositivos(), placa);
+            return encontrado;
         }
+
+        private List<OnwayDevice> RenovarDispositivos()
+        {
+            var lista = ListarDispositivos();
+            _dispositivos = lista;
+            _dispositivosHastaUtc = DateTime.UtcNow.Add(VigenciaDispositivos);
+            return lista;
+        }
+
+        private static OnwayDevice Buscar(List<OnwayDevice> lista, string placa) =>
+            lista.FirstOrDefault(d => string.Equals(d.Alias?.Trim(), placa.Trim(), StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
         /// Historial de posiciones/eventos de un dispositivo entre <paramref name="desdeUtc"/> y

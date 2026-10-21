@@ -260,5 +260,103 @@ namespace WebSGV.Tests
             Assert.Empty(propuestas[1].Avisos);
             Assert.Empty(generales);   // la fila del ya registrado no es un sobrante
         }
+
+        [Theory]
+        [InlineData("05:30AM", "05:30")]
+        [InlineData("5:30 a. m.", "05:30")]
+        [InlineData("12:15AM", "00:15")]
+        [InlineData("01:05 PM", "13:05")]
+        [InlineData("17:45", "17:45")]
+        [InlineData("13:00PM", null)]
+        [InlineData("POR CONFIRMAR", null)]
+        [InlineData("", null)]
+        public void HoraDelHorario_LeeLasFormasDelWord(string horario, string esperada)
+        {
+            Assert.Equal(esperada == null ? (TimeSpan?)null : TimeSpan.Parse(esperada), ProgramacionCarga.HoraDelHorario(horario));
+        }
+
+        // ── Despachos programados con el Word (sin documentos) ─────────────────
+
+        private static DespachoProgramado Programado(int id, int idConductor, string chofer, int idTracto, string tracto, int idCarreta, string carreta) =>
+            new DespachoProgramado
+            {
+                IdDespacho = id, FechaDespacho = new DateTime(2026, 10, 21), Hora = new TimeSpan(5, 30, 0),
+                IdConductor = idConductor, NombreConductor = chofer,
+                IdTracto = idTracto, PlacaTracto = tracto, IdCarreta = idCarreta, PlacaCarreta = carreta
+            };
+
+        [Fact]
+        public void Proponer_ConProgramados_CadaGuiaCompletaSuDespachoConLosIdsDelDespacho()
+        {
+            var seccion = WebSGV.Services.Despachos.ProgramacionDespachoService.ComoSeccion(new[]
+            {
+                Programado(501, 1, "PEDRO JOSE RAMOS LUNA", 10, "AAA-111", 100, "TXA-001"),
+                Programado(502, 2, "MARIO QUISPE ROJAS", 20, "BBB-222", 200, "TXA-002")
+            });
+            var guias = new List<TractoImportado>
+            {
+                Guia("1", "QUISPE ROJAS MARIO", "BBB-222", 2),
+                Guia("2", "RAMOS LUNA PEDRO JOSE", "AAA-111", 1, carreta: "TXA-001")
+            };
+
+            var propuestas = Proponer(guias, seccion, out var generales);
+
+            Assert.Equal(502, propuestas[0].IdDespachoProgramado);
+            Assert.Equal(501, propuestas[1].IdDespachoProgramado);
+            Assert.Equal(20, propuestas[0].IdTracto);
+            Assert.Equal(200, propuestas[0].IdCarreta);
+            Assert.Equal(2, propuestas[0].IdConductor);
+            Assert.Null(propuestas[0].Cambio);
+            Assert.Empty(propuestas[0].Avisos);
+            Assert.Empty(propuestas[1].Avisos);
+            Assert.Empty(generales);
+        }
+
+        [Fact]
+        public void Proponer_ConProgramados_CambioDeChoferPorDescarte_QuedaLoProgramado()
+        {
+            // La guía se emitió con PEDRO RAMOS / AAA-111, pero salió LUIS PRADO con DDD-444 (cambio de chofer)
+            var seccion = WebSGV.Services.Despachos.ProgramacionDespachoService.ComoSeccion(new[]
+            {
+                Programado(501, 4, "LUIS PRADO VEGA", 40, "DDD-444", 300, "TXC-001")
+            });
+            var guias = new List<TractoImportado> { Guia("1", "RAMOS LUNA PEDRO JOSE", "AAA-111", 1) };
+
+            var p = Proponer(guias, seccion, out var generales)[0];
+
+            Assert.Equal(501, p.IdDespachoProgramado);
+            Assert.Equal(4, p.IdConductor);
+            Assert.Equal(40, p.IdTracto);
+            Assert.Equal(300, p.IdCarreta);
+            Assert.True(p.ChoferCambiado);
+            Assert.True(p.TractoCambiado);
+            Assert.Contains("cambio de chofer", p.Cambio);
+            Assert.Contains(p.Avisos, a => a.Contains("despacho programado") && a.Contains("por descarte"));
+            Assert.Empty(generales);
+        }
+
+        [Fact]
+        public void Proponer_ConProgramados_GuiaSinDespachoYProgramadoSinGuia_SeAvisan()
+        {
+            var seccion = WebSGV.Services.Despachos.ProgramacionDespachoService.ComoSeccion(new[]
+            {
+                Programado(501, 1, "PEDRO JOSE RAMOS LUNA", 10, "AAA-111", 100, "TXA-001"),
+                Programado(502, 2, "MARIO QUISPE ROJAS", 20, "BBB-222", 200, "TXA-002"),
+                Programado(503, 3, "ANA MARIA TORRES DIAZ", 30, "CCC-333", 300, "TXC-001")
+            });
+            // Una guía de un tracto que no se programó y otra que sí: quedan dos programados sin guía
+            var guias = new List<TractoImportado>
+            {
+                Guia("1", "RAMOS LUNA PEDRO JOSE", "AAA-111", 1),
+                Guia("2", "ALCANTARA ROQUE AUGUSTO EMILIO", "ZZZ-999", 6)
+            };
+
+            var propuestas = Proponer(guias, seccion, out var generales);
+
+            Assert.Equal(501, propuestas[0].IdDespachoProgramado);
+            Assert.Null(propuestas[1].IdDespachoProgramado);
+            Assert.Contains(propuestas[1].Avisos, a => a.Contains("no tiene un despacho programado"));
+            Assert.Contains(generales, g => g.Contains("2 despacho(s) programado(s) quedaron sin guía") && g.Contains("CCC-333"));
+        }
     }
 }

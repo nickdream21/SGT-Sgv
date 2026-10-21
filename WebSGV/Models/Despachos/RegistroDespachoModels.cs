@@ -118,6 +118,15 @@ namespace WebSGV.Models.Despachos
         public int? IdDespachoCarga { get; set; }
 
         /// <summary>
+        /// Despacho ya programado con el Word que esta fila completa con sus documentos
+        /// (pedido, guía, factura, carga) en vez de crear uno nuevo.
+        /// </summary>
+        public int? IdDespachoProgramado { get; set; }
+
+        /// <summary>Hora del HORARIO del Word; sin ella se guarda la hora del registro.</summary>
+        public TimeSpan? HoraProgramada { get; set; }
+
+        /// <summary>
         /// Planta propia de esta unidad cuando no es la del lote: un pedido puede repartirse
         /// entre varias plantas del cliente (Milagro y Jave). Null = la planta del lote.
         /// </summary>

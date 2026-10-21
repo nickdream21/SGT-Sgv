@@ -62,7 +62,7 @@ namespace WebSGV.Services.Despachos
             return delCliente.Count == 1 ? delCliente[0].s : null;
         }
 
-        private static bool NombraAlCliente(string titulo, string nombreCliente)
+        internal static bool NombraAlCliente(string titulo, string nombreCliente)
         {
             string t = LectorDocumentosPedido.Normalizar(titulo);
             return Regex.Split(LectorDocumentosPedido.Normalizar(nombreCliente), @"[^A-Z0-9]+")
@@ -139,6 +139,7 @@ namespace WebSGV.Services.Despachos
                 libres.Clear();
             }
 
+            bool desdeDespachos = seccion.Filas.Any(f => f.Programado != null);
             var propuestas = new Dictionary<int, PropuestaCarga>();
             foreach (int i in pendientes)
             {
@@ -148,8 +149,11 @@ namespace WebSGV.Services.Despachos
 
                 if (!unidas.TryGetValue(i, out var fila))
                 {
-                    p.Avisos.Add($"El tracto {t.Placa ?? "(sin placa)"} de la guía {t.NumeroGuia ?? t.NumeroTransporte} no figura en la programación: " +
-                                 "quedan los datos de la guía; revíselos.");
+                    p.Avisos.Add(desdeDespachos
+                        ? $"El tracto {t.Placa ?? "(sin placa)"} de la guía {t.NumeroGuia ?? t.NumeroTransporte} no tiene un despacho programado: " +
+                          "se registrará como despacho nuevo con los datos de la guía. Si es un cambio de chofer, elija su despacho programado."
+                        : $"El tracto {t.Placa ?? "(sin placa)"} de la guía {t.NumeroGuia ?? t.NumeroTransporte} no figura en la programación: " +
+                          "quedan los datos de la guía; revíselos.");
                     continue;
                 }
 
@@ -160,7 +164,28 @@ namespace WebSGV.Services.Despachos
                 p.Horario = fila.Horario?.Trim();
 
                 if (motivos.TryGetValue(i, out string motivo))
-                    p.Avisos.Add($"La guía se unió con la fila {p.ChoferProgramado} / {p.TractoProgramado} / {p.CarretaProgramada} {motivo}. Confírmelo.");
+                    p.Avisos.Add($"La guía se unió con {(desdeDespachos ? "el despacho programado" : "la fila")} {p.ChoferProgramado} / {p.TractoProgramado} / {p.CarretaProgramada} {motivo}. Confírmelo.");
+
+                // Despacho ya programado: sus ids son exactos (no hay nombre que resolver) y se
+                // completa tal cual; la guía solo aporta los documentos y la carga.
+                if (fila.Programado != null)
+                {
+                    var prog = fila.Programado;
+                    p.IdDespachoProgramado = prog.IdDespacho;
+                    p.IdConductor = prog.IdConductor;
+                    p.IdTracto = prog.IdTracto;
+                    p.IdCarreta = prog.IdCarreta;
+                    p.ChoferCambiado = t.IdConductorGuia.HasValue
+                        ? t.IdConductorGuia.Value != prog.IdConductor
+                        : !ProgramacionDescarga.NombreCoincide(t.NombreChofer ?? "", prog.NombreConductor ?? "");
+                    p.TractoCambiado = t.Placa != null && LectorDocumentosPedido.NormalizarPlaca(prog.PlacaTracto) != t.Placa;
+                    if (t.PlacaCarreta != null && LectorDocumentosPedido.NormalizarPlaca(prog.PlacaCarreta) != t.PlacaCarreta)
+                        p.Avisos.Add($"La guía trae la carreta {t.PlacaCarreta} y el despacho programado {prog.PlacaCarreta}: queda la del despacho.");
+                    if (p.ChoferCambiado || p.TractoCambiado)
+                        p.Cambio = $"La guía {t.NumeroGuia ?? t.NumeroTransporte} se emitió con {t.NombreChofer ?? "(sin chofer)"} y el tracto {t.Placa ?? "(sin placa)"}; " +
+                                   $"salió {prog.NombreConductor} con el tracto {prog.PlacaTracto} (cambio de chofer). La guía no se reemite: queda lo programado.";
+                    continue;
+                }
 
                 p.IdTracto = BuscarPlaca(tractosCatalogo, fila.Tracto, out bool tractoEnWord);
                 if (!tractoEnWord) p.Avisos.Add("La programación no trae el tracto de esta guía.");
@@ -195,7 +220,11 @@ namespace WebSGV.Services.Despachos
                                "La guía no se reemite: se registra lo de la programación.";
             }
 
-            if (libres.Count > 0)
+            if (libres.Count > 0 && desdeDespachos)
+                avisosGenerales.Add($"{libres.Count} despacho(s) programado(s) quedaron sin guía en estos documentos: " +
+                                    string.Join(", ", libres.Select(f => $"{f.Chofer?.Trim()} / {f.Tracto?.Trim()} / {f.Carreta?.Trim()}")) +
+                                    ". Si alguno fue un cambio de chofer, elíjalo en la guía que le corresponde; si no, sus documentos llegarán en otro correo.");
+            else if (libres.Count > 0)
                 avisosGenerales.Add($"La sección de la programación tiene {libres.Count} fila(s) que no se unieron con ninguna guía de este pedido: " +
                                     string.Join(", ", libres.Select(f => $"{f.Chofer?.Trim()} / {f.Tracto?.Trim()} / {f.Carreta?.Trim()}")) +
                                     ". Si alguna corresponde a una guía de arriba, elija sus datos a mano.");
@@ -203,8 +232,23 @@ namespace WebSGV.Services.Despachos
             return propuestas;
         }
 
+        /// <summary>"05:30AM", "5:30 a. m.", "17:45" → hora del día; null si no se puede leer.</summary>
+        public static TimeSpan? HoraDelHorario(string horario)
+        {
+            var m = Regex.Match(LectorDocumentosPedido.Normalizar(horario), @"(\d{1,2})\s*[:.H]\s*(\d{2})\s*([AP])?");
+            if (!m.Success) return null;
+            int h = int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture);
+            int min = int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture);
+            if (m.Groups[3].Success)
+            {
+                if (h < 1 || h > 12) return null;
+                h = h % 12 + (m.Groups[3].Value == "P" ? 12 : 0);
+            }
+            return h > 23 || min > 59 ? (TimeSpan?)null : new TimeSpan(h, min, 0);
+        }
+
         /// <summary>Id de la placa en el catálogo (null si no está o hay varias); <paramref name="enWord"/>: la fila la trae.</summary>
-        private static int? BuscarPlaca(IList<KeyValuePair<int, string>> catalogo, string placa, out bool enWord)
+        internal static int? BuscarPlaca(IList<KeyValuePair<int, string>> catalogo, string placa, out bool enWord)
         {
             string buscada = LectorDocumentosPedido.NormalizarPlaca(placa);
             enWord = buscada != null;

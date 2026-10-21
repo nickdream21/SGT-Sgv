@@ -415,7 +415,7 @@
                                                         
                                                         <asp:BoundField DataField="NombreCliente" HeaderText="Cliente" />
                                                         
-                                                        <asp:BoundField DataField="NumeroPedido" HeaderText="N° Pedido" 
+                                                        <asp:BoundField DataField="PedidoMostrado" HeaderText="N° Pedido"
                                                             ItemStyle-CssClass="pedido-number" />
                                                         
                                                         <asp:BoundField DataField="TipoOperacion" HeaderText="Operación" />
