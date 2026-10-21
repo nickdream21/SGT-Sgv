@@ -83,13 +83,12 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       entonces el sitio sigue mostrando "Rumbo a Trujillo" a las unidades en la cola. (El viaje 7381 ya se corrigió
       con `corregir_seguimiento_7381_2026-10-21.sql` el 21/10 y el GPS nuevo, corrido desde el sitio local, ya llenó
       las llegadas a Trujillo en sgvActualizada.)
-- [ ] **Descargas del pedido 4400133881 que faltan** (2026-10-21): con `DESPACHO 20-10-26.docx` (sección GUAYAQUIL-VITAPRO) se registraron las
-      descargas de ASU-862, TBM-815, CBU-928, ARN-917 y AMQ-859 (despachos 874–878; viajes 7342–7346 con tracto 2 y salida de base).
-      Conductores registrados con sus documentos: HUGO JEFERSON FLORES VARGAS (id 144, DNI 44520592, lic. B44520592) y SEGUNDO IGNACIO
-      SAAVEDRA BRAVO (id 145, DNI 45541126, lic. C45541126; falta su fecha de nacimiento y dirección: 04/05/1986, Calle Santa Rosa, Sexi, Santa Cruz,
-      Cajamarca). Falta BNG-758 → ASU-748 (JULIO IMAN): el despacho 873/viaje 7402 (guía T660-00016530) sigue con PIEDRA VEGA, T7J-861/T0L-981;
-      hay que pasarlo a HUGO FLORES, BNG-758 y T0L-975 (el Word manda), borrar el viaje 7402 y enlazar el viaje 7341. El pedido 4400133879 no
-      aparece como "pendiente de descarga" en RegistroDespacho.
+- [x] **Descargas del pedido 4400133881** (2026-10-21): con `DESPACHO 20-10-26.docx` (sección GUAYAQUIL-VITAPRO) quedaron registradas las 6 descargas
+      (despachos 874–879; viajes 7341–7346 con tracto 2 y salida de base). Conductores nuevos: HUGO JEFERSON FLORES VARGAS (id 144, DNI 44520592,
+      lic. B44520592) y SEGUNDO IGNACIO SAAVEDRA BRAVO (id 145, DNI 45541126, lic. C45541126). El despacho 873 (guía T660-00016530, a nombre de
+      PIEDRA VEGA) pasó a HUGO FLORES / BNG-758 / T0L-975 como manda el Word y el viaje 7341 lo adoptó; se borró el viaje 7402.
+- [ ] **Pedido 4400133879 y fichas de conductores**: el pedido 4400133879 no aparece como "pendiente de descarga" en RegistroDespacho (sus despachos
+      609–614 siguen `PROGRAMADO`); a SEGUNDO SAAVEDRA le falta guardar fecha de nacimiento (04/05/1986) y dirección (Calle Santa Rosa, Sexi, Santa Cruz, Cajamarca).
 - [ ] **Registrar las descargas del 21/10 que no tienen viaje**: AMQ-859 (salió de base 10:55), ARN-917 (07:45) y
       ASU-748 (en la noche del 20/10) van a Ecuador sin despacho de descarga; las cargas del 20/10 con pedido
       `PENDIENTE` (BNG-758, ASU-862, TBM-815, CBU-928, BPT-788, BPS-816) siguen "Descarga sin tracto asignado".
