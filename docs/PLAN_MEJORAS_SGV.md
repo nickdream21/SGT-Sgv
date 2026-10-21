@@ -83,6 +83,11 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       entonces el sitio sigue mostrando "Rumbo a Trujillo" a las unidades en la cola. (El viaje 7381 ya se corrigió
       con `corregir_seguimiento_7381_2026-10-21.sql` el 21/10 y el GPS nuevo, corrido desde el sitio local, ya llenó
       las llegadas a Trujillo en sgvActualizada.)
+- [ ] **Descargas del pedido 4400133881 que faltan** (2026-10-21): con `DESPACHO 20-10-26.docx` (sección GUAYAQUIL-VITAPRO) se registraron las
+      descargas de ASU-862, TBM-815, CBU-928 y ARN-917 (despachos 874–877; viajes 7342–7344 y 7346 ya con tracto 2 y salida de base).
+      Faltan BPT-788 → AMQ-859 (SEGUNDO SAAVEDRA, sin registrar en Conductor) y BNG-758 → ASU-748 (JULIO IMAN); además HUGO FLORES VARGAS
+      HUGO JEFERSON (DNI 44520592) no está en Conductor (falta su licencia) y el despacho 873/viaje 7402 (guía T660-00016530) sigue con
+      T7J-861/T0L-981 en lugar de BNG-758/T0L-975. El pedido 4400133879 no aparece como "pendiente de descarga" en RegistroDespacho.
 - [ ] **Registrar las descargas del 21/10 que no tienen viaje**: AMQ-859 (salió de base 10:55), ARN-917 (07:45) y
       ASU-748 (en la noche del 20/10) van a Ecuador sin despacho de descarga; las cargas del 20/10 con pedido
       `PENDIENTE` (BNG-758, ASU-862, TBM-815, CBU-928, BPT-788, BPS-816) siguen "Descarga sin tracto asignado".
