@@ -176,8 +176,19 @@ Lo que enseñó el GPS:
   -80.026 (al norte de Chiclayo), -7.414, -79.551 (Pacasmayo), -7.932, -79.101 (Paiján), -6.063, -80.509 y
   -5.272, -80.612. Las de Novopan de vuelta: -3.526, -79.995 (Arenillas, de noche) y -3.4896, -80.212 (Aguas
   Verdes, hasta 44 h: ¿aduana de importación?).
-- BPT-788 se queda ~24 h en -8.1386, -79.0176 (a 500 m de Vitapro Trujillo) después de entregar cartón: no es la
-  cochera, es **otro punto de descarga de Novopan** (lo confirmó la oficina); geocerca `NOVOPAN_TRUJILLO_2`.
+- BPT-788 se queda ~24 h en -8.1386, -79.0176 (a 500 m de Vitapro Trujillo) después de entregar cartón. La oficina
+  dijo que es **otro punto de descarga de Novopan** (geocerca `NOVOPAN_TRUJILLO_2`), pero ver el punto siguiente.
+- **"UNIDAD DESCARGADA EN COCHERA TRUJILLO"** (5 viajes de Polinplast, carga 25–27/08). El GPS muestra que las 5
+  unidades **descargaron primero en su destino** (Casa Grande 1,5–3 h; BPT-788 en ACP) y después fueron a Trujillo
+  y se quedaron paradas de 1 a 4 días. Así que el STATUS no habla de otra descarga: es el final del viaje, la unidad
+  guardada en Trujillo. Hay dos puntos de cochera:
+  - **A** [-8.13850, -79.01750](https://www.google.com/maps?q=-8.13850,-79.01750): T6F-857 (26–28/08, ~48 h),
+    BNG-758 (27–31/08, ~4,5 días) y BPT-788 (27–31/08, ~4 días). Es el mismo punto que la oficina señaló como
+    Novopan: cinco estadías de 1 a 4 días se parecen más a una cochera que a una descarga (Novopan descarga en
+    2–4 h). **Por confirmar.**
+  - **B** [-8.14795, -79.01280](https://www.google.com/maps?q=-8.14795,-79.01280): BNG-862 y T6F-864
+    (28/08–01/09, ~4 días). Ahí también esperan 6–7 h las unidades de Novopan después de descargar (BFK-879,
+    15/10) y T6F-864 después de Salaverry (24/07).
 
 ## 5. Calidad de los datos del Excel
 
@@ -197,7 +208,8 @@ Lo que enseñó el GPS:
 - **ACP** es un lugar de entrega de Polinplast (el GPS lo ubica en el mismo punto que Chepén). En la oficina no
   saben qué son **Rapel** (el GPS la lleva a Jayanca) ni **TALSA**: preguntar a quien arma el Word.
 - Resuelto (2026-10-21): -3.536, -80.184 es TCI; -8.1386, -79.0176 es otro punto de descarga de Novopan.
-- ¿Dónde queda la cochera de Trujillo? (el Excel tiene descargas "EN COCHERA TRUJILLO").
+- Cochera de Trujillo: el GPS de los 5 viajes "DESCARGADA EN COCHERA TRUJILLO" da dos puntos (A y B, sección 4.3).
+  Confirmar cuál es la cochera y si A es Novopan o cochera.
 - Polinplast: confirmar con Rosmery cómo es la guía (remitente digital + transportista).
 - Crisar y Novopan: ¿se registran en el SGV como despacho con su factura, como Vitapro, o solo se siguen?
 - ¿Cómo se cobra el falso flete y cómo se registra?
