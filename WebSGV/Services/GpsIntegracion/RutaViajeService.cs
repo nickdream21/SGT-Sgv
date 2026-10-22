@@ -93,15 +93,20 @@ namespace WebSGV.Services.GpsIntegracion
             var cliente = new Lazy<OnwayApiClient>(() => new OnwayApiClient());
 
             // Cliente tercero: la carga en su planta y, desde que sale cargado, el camino a la entrega y el fin.
+            // Con relevo (Crisar) la carga termina en la base y la descarga empieza cuando el otro tracto sale de
+            // ahí con la carreta: antes se dibujaba desde la salida de Cartavio el viaje anterior de ese tracto.
             if (RutaTercero.Es(v.TipoRuta))
             {
+                bool relevo = !string.IsNullOrWhiteSpace(v.Tracto2) && !string.Equals(v.Tracto1?.Trim(), v.Tracto2.Trim(), StringComparison.OrdinalIgnoreCase);
                 DateTime? desde = (H("fhLlegadaTrujillo") ?? v.FhProgramacion)?.AddHours(-14);
-                ruta.Tramos.Add(Tramo(cliente, "carga", "Carga en " + RutaTercero.Nombre(v.LugarCarga, "la planta de carga"), v.Tracto1, v.Chofer1,
-                    idSeguimiento, desde, H("fhSalidaPlanta"), desde?.AddHours(36), ahora,
+                DateTime? finCarga = relevo ? H("fhLlegadaBase2") : H("fhSalidaPlanta");
+                ruta.Tramos.Add(Tramo(cliente, "carga", "Carga en " + RutaTercero.Nombre(v.LugarCarga, "la planta de carga") + (relevo ? " → base" : ""),
+                    v.Tracto1, v.Chofer1, idSeguimiento, desde, finCarga, (H("fhSalidaPlanta") ?? desde?.AddHours(22))?.AddHours(14), ahora,
                     v.Hitos.Where(x => x.Tramo == TramoViaje.Carga).Select(x => hitos[x.Columna])));
+                DateTime? desdeDescarga = relevo ? H("fhSalidaBase2") : H("fhSalidaPlanta");
                 ruta.Tramos.Add(Tramo(cliente, "descarga", "Entrega en " + RutaTercero.Nombre(v.LugarEntrega, "destino por confirmar"),
-                    v.Tracto2 ?? v.Tracto1, v.Chofer2 ?? v.Chofer1, idSeguimiento,
-                    H("fhSalidaPlanta"), H("fhLlegadaBaseFinal"), H("fhSalidaPlanta")?.AddDays(6), ahora,
+                    relevo ? v.Tracto2 : v.Tracto1, relevo ? v.Chofer2 : v.Chofer1, idSeguimiento,
+                    desdeDescarga, H("fhLlegadaBaseFinal"), desdeDescarga?.AddDays(6), ahora,
                     v.Hitos.Where(x => x.Tramo == TramoViaje.Descarga).Select(x => hitos[x.Columna])));
                 return ruta;
             }
@@ -212,6 +217,34 @@ namespace WebSGV.Services.GpsIntegracion
             return puntos;
         }
 
+        /// <summary>Más rápido que esto entre dos puntos es un error del equipo, no un camión.</summary>
+        private const double KmHMaximo = 160;
+
+        /// <summary>
+        /// Quita los puntos sueltos que el equipo marca lejos de la ruta y que vuelven al instante
+        /// (AVO-818 el 20/10/2026 04:39: 3,5 km y de regreso en 6 s, más de 2 000 km/h): en el mapa
+        /// dibujaban un zigzag. Un punto se descarta si para llegar a él desde el último bueno habría
+        /// que ir a más de <see cref="KmHMaximo"/>.
+        /// </summary>
+        internal static List<OnwayHistoryPoint> SinSaltos(List<OnwayHistoryPoint> ordenados)
+        {
+            var buenos = new List<OnwayHistoryPoint>();
+            int descartados = 0;
+            foreach (var p in ordenados)
+            {
+                var a = buenos.Count > 0 ? buenos[buenos.Count - 1] : null;
+                if (a != null && descartados < 3) // tres seguidos "imposibles": el malo era el anterior, se sigue con estos
+                {
+                    double horas = (TrazabilidadCargaService.Hora(p) - TrazabilidadCargaService.Hora(a)).TotalHours;
+                    double km = Metros(a.Lat, a.Lng, p.Lat, p.Lng) / 1000.0;
+                    if (km > 1 && km / Math.Max(horas, 1.0 / 3600) > KmHMaximo) { descartados++; continue; }
+                }
+                descartados = 0;
+                buenos.Add(p);
+            }
+            return buenos;
+        }
+
         /// <summary>
         /// Ordena por hora, descarta posiciones sin coordenadas y los puntos a menos de 40 m del
         /// anterior (la unidad parada), y si aún son muchos se queda con uno de cada n.
@@ -220,8 +253,8 @@ namespace WebSGV.Services.GpsIntegracion
         {
             var lista = new List<double[]>();
             double[] ultimo = null;
-            foreach (var p in crudos.Where(x => Math.Abs(x.Lat) > 0.01 && Math.Abs(x.Lng) > 0.01)
-                                    .OrderBy(TrazabilidadCargaService.Hora))
+            foreach (var p in SinSaltos(crudos.Where(x => Math.Abs(x.Lat) > 0.01 && Math.Abs(x.Lng) > 0.01)
+                                              .OrderBy(TrazabilidadCargaService.Hora).ToList()))
             {
                 var punto = new[] { Math.Round(p.Lat, 5), Math.Round(p.Lng, 5), Ms(TrazabilidadCargaService.Hora(p)), Math.Round(p.Speed) };
                 if (ultimo != null && Metros(ultimo[0], ultimo[1], punto[0], punto[1]) < MetrosMinimos)

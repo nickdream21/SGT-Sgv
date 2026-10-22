@@ -45,6 +45,36 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void Simplificar_PuntoSueltoLejosDeLaRuta_SeDescarta()
+        {
+            // AVO-818, 20/10/2026 04:39: el equipo marca un punto 3,5 km al costado y vuelve al instante (zigzag en el mapa).
+            var crudos = new List<OnwayHistoryPoint>
+            {
+                Punto(0, -3.6380, -80.5920), Punto(1, -3.6384, -80.5940),
+                new OnwayHistoryPoint { MessageTime = Base.AddMinutes(1).AddSeconds(6), Lat = -3.65628, Lng = -80.61938, Speed = 0 },
+                Punto(2, -3.6388, -80.5960), Punto(3, -3.6392, -80.5980),
+            };
+
+            var r = RutaViajeService.Simplificar(crudos);
+
+            Assert.DoesNotContain(r, p => p[0] == -3.65628);
+            Assert.Equal(4, r.Count);
+        }
+
+        [Fact]
+        public void Simplificar_ElPrimerPuntoEsElMalo_SeRecuperaConLosSiguientes()
+        {
+            // Si el que queda como "bueno" es el erróneo, tres puntos seguidos "imposibles" lo corrigen.
+            var crudos = new List<OnwayHistoryPoint> { Punto(0, -4.000) };
+            for (int m = 1; m <= 6; m++) crudos.Add(Punto(m, -5.000 - m * 0.001));
+
+            var r = RutaViajeService.Simplificar(crudos);
+
+            Assert.Equal(Math.Round(-5.006, 5), r.Last()[0]);
+            Assert.True(r.Count >= 3);
+        }
+
+        [Fact]
         public void Simplificar_MuchosPuntos_SeReduceConservandoElPrimeroYElUltimo()
         {
             var crudos = Enumerable.Range(0, 6000).Select(i => Punto(i, -5.0 - i * 0.001)).ToList();
