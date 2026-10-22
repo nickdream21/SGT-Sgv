@@ -26,10 +26,16 @@ namespace WebSGV.Services.Despachos
         /// <summary>
         /// Las secciones de carga dicen "CARGAN &lt;fecha&gt;" en el título; si no, se reconocen
         /// por la columna HORARIO sin N° de pedido (las de descarga traen pedido y CAMBIO).
+        /// Las de los clientes sin pedido (Crisar, Novopan, Polinplast) las dice su título:
+        /// NOVOPAN-QUITO no trae hora y POLINPLAST-VIRU sí, pero es la descarga.
         /// </summary>
-        public static bool EsSeccionDeCarga(SeccionProgramacion s) =>
-            LectorDocumentosPedido.Normalizar(s.Titulo).Contains("CARGA")
-            || (string.IsNullOrEmpty(s.NumeroPedido) && s.Filas.Any(f => !string.IsNullOrEmpty(f.Horario)));
+        public static bool EsSeccionDeCarga(SeccionProgramacion s)
+        {
+            var ruta = RutaProgramacion.Reconocer(s);
+            if (ruta != null) return ruta.EsCarga;
+            return LectorDocumentosPedido.Normalizar(s.Titulo).Contains("CARGA")
+                || (string.IsNullOrEmpty(s.NumeroPedido) && s.Filas.Any(f => !string.IsNullOrEmpty(f.Horario)));
+        }
 
         /// <summary>
         /// Sección de carga del pedido: la que comparte más tractos (o carretas) con las

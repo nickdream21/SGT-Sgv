@@ -2314,6 +2314,12 @@ namespace WebSGV.Views
             pnlConfiguracionBase.Visible = false;
             pnlProgramacionNueva.Visible = true;
 
+            pnlSeccionProg.Visible = p.SeccionesCarga.Count > 1;
+            ddlSeccionProg.Items.Clear();
+            for (int i = 0; i < p.SeccionesCarga.Count; i++)
+                ddlSeccionProg.Items.Add(new ListItem(p.SeccionesCarga[i], i.ToString()));
+            RestaurarSeleccion(ddlSeccionProg, p.IndiceSeccion.ToString());
+
             litProgTitulo.Text = Html(p.Titulo);
             litProgArchivo.Text = Html(p.NombreArchivo);
             litProgUnidades.Text = $"{p.Filas.Count(f => !f.IdDespachoExistente.HasValue)} por programar" +
@@ -2327,7 +2333,7 @@ namespace WebSGV.Views
 
             ddlPlantaProg.Items.Clear();
             ddlPlantaProg.Items.Add(new ListItem("-- Seleccione planta --", "0"));
-            foreach (DataRow r in RegistroDespachoService.ObtenerPlantasPorAmbito(false).Rows)
+            foreach (DataRow r in RegistroDespachoService.ObtenerPlantasPorAmbito(p.EsInternacional).Rows)
                 ddlPlantaProg.Items.Add(new ListItem(r["nombre"].ToString(), r["idPlanta"].ToString()));
             RestaurarSeleccion(ddlPlantaProg, p.IdPlanta?.ToString());
 
@@ -2343,6 +2349,30 @@ namespace WebSGV.Views
             rptProgramacionNueva.DataSource = p.Filas;
             rptProgramacionNueva.DataBind();
             UpdatePanelMain.Update();
+        }
+
+        protected void ddlSeccionProg_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            var actual = ProgramacionNuevaActual;
+            if (actual?.Programacion == null)
+            {
+                MostrarMensajeImportacion("La programación expiró. Vuelva a subir el Word.", "warning");
+                pnlProgramacionNueva.Visible = false;
+                pnlConfiguracionBase.Visible = !TieneLoteActivo;
+                return;
+            }
+            try
+            {
+                int.TryParse(ddlSeccionProg.SelectedValue, out int indice);
+                var p = ProgramacionDespachoService.Proponer(actual.Programacion, actual.NombreArchivo, indice);
+                ProgramacionNuevaActual = p;
+                MostrarVistaPreviaProgramacion(p);
+            }
+            catch (Exception ex)
+            {
+                RegistrarError("ddlSeccionProg_SelectedIndexChanged", ex);
+                MostrarMensajeImportacion("No se pudo mostrar esa sección. " + MensajeErrorHelper.ParaUsuario(ex), "warning");
+            }
         }
 
         protected void rptProgramacionNueva_ItemDataBound(object sender, RepeaterItemEventArgs e)
@@ -2446,7 +2476,7 @@ namespace WebSGV.Views
                     return;
                 }
 
-                var r = ProgramacionDespachoService.Programar(filas, idCliente, idPlanta, fecha, chkExportacionProg.Checked, ObtenerUsuarioActual());
+                var r = ProgramacionDespachoService.Programar(filas, idCliente, idPlanta, fecha, chkExportacionProg.Checked, ObtenerUsuarioActual(), p.EsInternacional);
 
                 if (r.Creados.Count == 0)
                 {
@@ -2458,6 +2488,17 @@ namespace WebSGV.Views
                 pnlProgramacionNueva.Visible = false;
                 pnlConfiguracionBase.Visible = !TieneLoteActivo;
                 CargarDatos();
+                // El Word trae otras secciones de carga (otro cliente): se pasa a la siguiente sin volver a subirlo.
+                if (p.Programacion != null && p.SeccionesCarga.Count > 1)
+                {
+                    try
+                    {
+                        var siguiente = ProgramacionDespachoService.Proponer(p.Programacion, p.NombreArchivo, (p.IndiceSeccion + 1) % p.SeccionesCarga.Count);
+                        ProgramacionNuevaActual = siguiente;
+                        MostrarVistaPreviaProgramacion(siguiente);
+                    }
+                    catch (Exception ex) { RegistrarError("btnProgramarDespachos_Click (siguiente sección)", ex); }
+                }
                 MostrarMensajeImportacion($"Se programaron {r.Creados.Count} despacho(s) de carga del {fecha:dd/MM/yyyy}" +
                     (chkExportacionProg.Checked ? " y su seguimiento de exportación ya está en el tablero (pedido PENDIENTE)" : "") +
                     ". Cuando llegue el correo, suba el ZIP aquí: cada guía completará su despacho." +

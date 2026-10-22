@@ -95,6 +95,18 @@ namespace WebSGV.Models.Despachos
         /// <summary>Propuesto con el último despacho de carga del cliente en esa planta.</summary>
         public bool EsExportacion { get; set; }
 
+        /// <summary>La carga es fuera del Perú (Novopan en Quito): la planta se elige entre las internacionales.</summary>
+        public bool EsInternacional { get; set; }
+
+        /// <summary>El Word leído, para cambiar de sección sin volver a subirlo.</summary>
+        public ProgramacionTransporte Programacion { get; set; }
+
+        /// <summary>Secciones de carga del Word ("CARTAVIO-AZUCAR (5 unidades)"), en el orden de <see cref="Programacion"/>.</summary>
+        public List<string> SeccionesCarga { get; set; } = new List<string>();
+
+        /// <summary>Posición en <see cref="SeccionesCarga"/> de la sección que se está programando.</summary>
+        public int IndiceSeccion { get; set; }
+
         public List<FilaProgramacionNueva> Filas { get; set; } = new List<FilaProgramacionNueva>();
 
         /// <summary>Otras secciones de carga del Word que no se usaron, filas vacías, etc.</summary>

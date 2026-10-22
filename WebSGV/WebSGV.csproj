@@ -493,6 +493,8 @@
     <Compile Include="Services\Despachos\ProgramacionCarga.cs" />
     <Compile Include="Services\Despachos\ProgramacionDescarga.cs" />
     <Compile Include="Services\Despachos\ProgramacionDespachoService.cs" />
+    <Compile Include="Services\Despachos\RutaProgramacion.cs" />
+    <Compile Include="Services\GpsIntegracion\GeocercasTerceros.cs" />
     <Compile Include="Services\Despachos\Importacion\ExtractorTextoPdf.cs" />
     <Compile Include="Services\Despachos\Importacion\ImportacionPedidoService.cs" />
     <Compile Include="Services\Despachos\Importacion\LectorDocumentosPedido.cs" />

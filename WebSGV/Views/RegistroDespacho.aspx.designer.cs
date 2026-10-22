@@ -850,6 +850,16 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Panel pnlProgramacionNueva;
 
         /// <summary>
+        /// Control pnlSeccionProg.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.Panel pnlSeccionProg;
+
+        /// <summary>
+        /// Control ddlSeccionProg.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.DropDownList ddlSeccionProg;
+
+        /// <summary>
         /// Control litProgTitulo.
         /// </summary>
         /// <remarks>

@@ -90,6 +90,12 @@
 
                                         <!-- Programar con el Word: despachos de carga sin documentos todavía -->
                                         <asp:Panel ID="pnlProgramacionNueva" runat="server" Visible="false" CssClass="mt-3">
+                                            <%-- El Word trae una sección de carga por cliente (Vitapro, Crisar, Novopan, Polinplast): se programa una a la vez. --%>
+                                            <asp:Panel ID="pnlSeccionProg" runat="server" CssClass="form-group mb-3" Visible="false">
+                                                <label for="<%= ddlSeccionProg.ClientID %>" class="form-label small font-weight-bold mb-1">Sección del Word</label>
+                                                <asp:DropDownList ID="ddlSeccionProg" runat="server" CssClass="form-select form-select-sm"
+                                                    AutoPostBack="true" OnSelectedIndexChanged="ddlSeccionProg_SelectedIndexChanged" />
+                                            </asp:Panel>
                                             <div class="rd-lote-bar mb-3">
                                                 <div class="rd-lote-grid">
                                                     <div class="rd-lote-item"><span class="rd-lote-k">Programación</span><span class="rd-lote-v"><asp:Literal ID="litProgTitulo" runat="server" /></span></div>

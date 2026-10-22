@@ -79,48 +79,79 @@ namespace WebSGV.Services.Despachos
         // ── Programar con el Word ─────────────────────────────────────────────
 
         /// <summary>
-        /// Lee la sección de CARGA del Word ("TRUJILLO-VITAPRO-CARGAN 21 DE OCTUBRE") y
-        /// propone un despacho por fila: chofer, tracto y carreta buscados en el catálogo,
-        /// hora del HORARIO, cliente y planta del título. Marca las filas que ya tienen
-        /// despacho ese día (mismo tracto o carreta) para no duplicarlas.
+        /// Lee las secciones de CARGA del Word ("TRUJILLO-VITAPRO-CARGAN 21 DE OCTUBRE",
+        /// "CARTAVIO-AZUCAR", "NOVOPAN-QUITO", "POLINPLAST-CHAPAIRA") y propone los despachos
+        /// de una: la que nombra a un cliente del catálogo (Vitapro primero, como siempre), o
+        /// la de <paramref name="indiceSeccion"/> si se eligió otra.
         /// </summary>
-        public static ProgramacionNueva LeerWord(byte[] docx, string nombreArchivo)
+        public static ProgramacionNueva LeerWord(byte[] docx, string nombreArchivo, int? indiceSeccion = null) =>
+            Proponer(LectorProgramacionWord.Leer(docx), nombreArchivo, indiceSeccion);
+
+        /// <summary>
+        /// Propone un despacho por fila de la sección de carga elegida: chofer, tracto y
+        /// carreta buscados en el catálogo, hora del HORARIO, cliente y planta del título.
+        /// Marca las filas que ya tienen despacho ese día (mismo tracto o carreta) para no
+        /// duplicarlas.
+        /// </summary>
+        public static ProgramacionNueva Proponer(ProgramacionTransporte programacion, string nombreArchivo, int? indiceSeccion)
         {
-            var programacion = LectorProgramacionWord.Leer(docx);
             var secciones = programacion.Secciones.Where(ProgramacionCarga.EsSeccionDeCarga).ToList();
             if (secciones.Count == 0)
                 throw new ErrorNegocioException($"El Word {nombreArchivo} no tiene una sección de carga (\"…-CARGAN <día>\"): no hay nada que programar.");
 
             var clientes = RegistroDespachoService.ObtenerClientesActivos().Rows.Cast<DataRow>()
                 .Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r["idCliente"]), r["nombre"].ToString())).ToList();
-            var plantas = RegistroDespachoService.ObtenerPlantasPorAmbito(false).Rows.Cast<DataRow>()
-                .Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r["idPlanta"]), r["nombre"].ToString())).ToList();
 
             int? ClienteDe(SeccionProgramacion s)
             {
-                var c = clientes.Where(x => ProgramacionCarga.NombraAlCliente(s.Titulo, x.Value)).ToList();
+                var ruta = RutaProgramacion.Reconocer(s);
+                var c = ruta != null
+                    ? clientes.Where(x => LectorDocumentosPedido.Normalizar(x.Value).Contains(ruta.Cliente)).ToList()
+                    : clientes.Where(x => ProgramacionCarga.NombraAlCliente(s.Titulo, x.Value)).ToList();
                 return c.Count == 1 ? c[0].Key : (int?)null;
             }
 
-            var seccion = secciones.FirstOrDefault(s => ClienteDe(s).HasValue) ?? secciones[0];
+            int indice = indiceSeccion.HasValue && indiceSeccion.Value >= 0 && indiceSeccion.Value < secciones.Count
+                ? indiceSeccion.Value
+                : Math.Max(0, secciones.FindIndex(s => ClienteDe(s).HasValue));
+            var seccion = secciones[indice];
+            var rutaElegida = RutaProgramacion.Reconocer(seccion);
+
             var p = new ProgramacionNueva
             {
                 NombreArchivo = nombreArchivo,
                 Titulo = seccion.Titulo,
                 FechaCarga = ProgramacionCarga.FechaDeCarga(seccion, programacion.Fecha),
-                IdCliente = ClienteDe(seccion)
+                IdCliente = ClienteDe(seccion),
+                EsInternacional = rutaElegida?.EsInternacional ?? false,
+                Programacion = programacion,
+                SeccionesCarga = secciones.Select(s => $"{s.Titulo} ({s.Filas.Count} unidad(es))").ToList(),
+                IndiceSeccion = indice
             };
-            foreach (var otra in secciones.Where(s => s != seccion))
-                p.AvisosGenerales.Add($"El Word tiene otra sección de carga que no se programó: {otra.Titulo} ({otra.Filas.Count} fila(s)).");
+            if (secciones.Count > 1)
+                p.AvisosGenerales.Add($"El Word tiene {secciones.Count} secciones de carga: se muestra {seccion.Titulo}. Elija otra arriba para programarla después de esta.");
+
+            // Las secciones de Crisar, Novopan y Polinplast no dicen el día: cargan el día siguiente al del Word.
+            if (!p.FechaCarga.HasValue && rutaElegida != null && programacion.Fecha.HasValue)
+            {
+                p.FechaCarga = programacion.Fecha.Value.AddDays(1);
+                p.AvisosGenerales.Add($"El título no dice el día de carga: se propone el día siguiente al del Word ({p.FechaCarga:dd/MM}). Revíselo.");
+            }
             if (!p.FechaCarga.HasValue)
                 p.AvisosGenerales.Add("No se leyó el día de carga del título (\"CARGAN 21 DE OCTUBRE\"): elíjalo.");
             if (!p.IdCliente.HasValue)
-                p.AvisosGenerales.Add("No se reconoció al cliente en el título de la sección: elíjalo.");
+                p.AvisosGenerales.Add(rutaElegida != null
+                    ? $"El cliente {rutaElegida.Cliente} no está en el catálogo de clientes activos: regístrelo en Clientes o elíjalo."
+                    : "No se reconoció al cliente en el título de la sección: elíjalo.");
 
-            string titulo = LectorDocumentosPedido.Normalizar(seccion.Titulo);
+            var plantas = RegistroDespachoService.ObtenerPlantasPorAmbito(p.EsInternacional).Rows.Cast<DataRow>()
+                .Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r["idPlanta"]), r["nombre"].ToString())).ToList();
+            string titulo = LectorDocumentosPedido.Normalizar(rutaElegida?.Lugar ?? seccion.Titulo);
             var enTitulo = plantas.Where(x => titulo.Contains(LectorDocumentosPedido.Normalizar(x.Value))).Select(x => x.Key).Distinct().ToList();
             if (enTitulo.Count == 1) p.IdPlanta = enTitulo[0];
-            else p.AvisosGenerales.Add("No se reconoció la planta de carga en el título: elíjala.");
+            else p.AvisosGenerales.Add(rutaElegida != null
+                ? $"La planta de carga {Capital(rutaElegida.Lugar)} no está registrada{(p.EsInternacional ? " como internacional" : "")}: regístrela en Plantas o elíjala."
+                : "No se reconoció la planta de carga en el título: elíjala.");
 
             if (p.IdCliente.HasValue && p.IdPlanta.HasValue)
                 p.EsExportacion = Convert.ToBoolean(DbHelper.EjecutarEscalar(@"
@@ -181,6 +212,9 @@ namespace WebSGV.Services.Despachos
             return p;
         }
 
+        private static string Capital(string s) =>
+            string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1).ToLowerInvariant();
+
         /// <summary>Pone <see cref="FilaProgramacionNueva.IdDespachoExistente"/> a las filas cuyo tracto o carreta ya tiene despacho de carga ese día.</summary>
         public static void MarcarExistentes(IEnumerable<FilaProgramacionNueva> filas, DateTime fecha)
         {
@@ -226,7 +260,7 @@ namespace WebSGV.Services.Despachos
         /// tengan ya despacho ese día (doble clic, otra pestaña).
         /// </summary>
         public static ResultadoProgramacion Programar(IList<FilaElegida> filas, int idCliente, int idPlanta,
-            DateTime fecha, bool esExportacion, string usuario)
+            DateTime fecha, bool esExportacion, string usuario, bool esInternacional = false)
         {
             var r = new ResultadoProgramacion();
             var lote = new LoteDespachos
@@ -234,7 +268,7 @@ namespace WebSGV.Services.Despachos
                 FechaProgramacion = fecha.ToString("yyyy-MM-dd"),
                 IdCliente = idCliente,
                 TipoOperacion = "CARGA",
-                EsInternacional = false,
+                EsInternacional = esInternacional,
                 IdPlanta = idPlanta,
                 EsExportacion = esExportacion,
                 UsuarioCreacion = usuario
