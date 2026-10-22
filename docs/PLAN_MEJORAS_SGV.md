@@ -1,6 +1,6 @@
 # Plan de mejoras SGV — estado y tareas pendientes
 
-Última actualización: **2026-10-21**, STATUS de la unidad en el tablero (migración 33); antes, seguimiento: unidades en la cola de Trujillo, carga que tomaba la del viaje anterior del tracto y "Actualizar GPS" en paralelo (sobre `fa9f6ab`; sin migración ni SP; sección 3); antes, despacho en dos momentos (programar con el Word, completar con el correo) y caché del historial GPS para "Actualizar GPS" (sobre `5c94014`; SP `sp_CompletarDespachoProgramado` y `sp_SE_SincronizarDespachos`; sección 3); antes, al día con el seguimiento de exportación (`a22748b`) más el cuadro STATUS GENERAL de octubre armado desde los Word y el GPS (119 viajes de octubre ya en `sgvActualizada`) y el mapa de la ruta en el detalle del viaje, la salida en camino y la vuelta corrida (sin migración; SP `sp_SE_RegistrarHitoGps` y `sp_SE_SincronizarDespachos`; sección 4). Este documento es el punto de partida para seguir trabajando
+Última actualización: **2026-10-21**, Word del 21/10 subido (cargas del 22/10 y descargas de 4400133950 y 4400133952; sobre `ec7d06e`); antes, STATUS de la unidad en el tablero (migración 33); antes, seguimiento: unidades en la cola de Trujillo, carga que tomaba la del viaje anterior del tracto y "Actualizar GPS" en paralelo (sobre `fa9f6ab`; sin migración ni SP; sección 3); antes, despacho en dos momentos (programar con el Word, completar con el correo) y caché del historial GPS para "Actualizar GPS" (sobre `5c94014`; SP `sp_CompletarDespachoProgramado` y `sp_SE_SincronizarDespachos`; sección 3); antes, al día con el seguimiento de exportación (`a22748b`) más el cuadro STATUS GENERAL de octubre armado desde los Word y el GPS (119 viajes de octubre ya en `sgvActualizada`) y el mapa de la ruta en el detalle del viaje, la salida en camino y la vuelta corrida (sin migración; SP `sp_SE_RegistrarHitoGps` y `sp_SE_SincronizarDespachos`; sección 4). Este documento es el punto de partida para seguir trabajando
 desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 
 ## 1. Estado actual
@@ -120,6 +120,13 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       conductores y su DNI no figura en ningún documento (solo el nombre corto en los Word del 18–20/10; maneja
       ANU-794 desde el 18/10). Con su DNI y nombre completo: registrarlo en RegistroChoferes y volver a subir el
       Word del 20/10 en RegistroDespacho (las otras 11 salen "Ya programado"; se programa solo la suya).
+- [ ] **Completar las 10 cargas del 22/10 con el correo** cuando llegue (despachos 880–889, viajes del
+      seguimiento 7403–7412 con pedido PENDIENTE; programadas con el Word del 21/10).
+- [ ] **Jefes de convoy**: el WhatsApp del Word del 21/10 nombra dos por pedido (4400133950: Mercedes
+      Chapoñan y Miguel Rivas; 4400133952: Adrián Hidalgo y Juan Ortiz). El sistema no tiene dónde guardarlo:
+      decidir con la administradora si hace falta un campo en el lote de descarga o en el seguimiento.
+- [ ] **Sección GUAYAQUIL-AZÚCAR del Word** (7 unidades en el del 21/10, sin pedido): el sistema la ignora.
+      Confirmar si esos viajes (azúcar a Guayaquil) deben registrarse y con qué cliente.
 - [ ] **Completar las 11 cargas del 21/10 con el correo** cuando llegue (despachos 809–819, viajes del
       seguimiento 7371–7381 con pedido PENDIENTE): primera prueba real de "completar con el correo".
       5 de ellas se sumaron al viaje abierto de su chofer (VP 342, 343, 345, 347, 349), con la misma regla de la
@@ -228,6 +235,10 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 
 ### Hechas
 
+- [x] **Word del 21/10 subido a mano por el usuario en RegistroDespacho** (2026-10-21): 10 cargas del 22/10
+      programadas (despachos 880–889, viajes 7403–7412; JUAN ALBERTO APONTE GRANDA, que estaba inactivo, en
+      BNH-795) y descargas a Guayaquil de 4400133950 (despachos 890–895) y 4400133952 (896–901) con la
+      "Programación del día": las 12 enlazadas a su carga y con tracto 2 en el seguimiento (7371–7381 y 7401).
 - [x] **Documentos del correo del 21/10 importados** (2026-10-21): ZIP 4400133950 (6 guías, F222-00008539) y 4400133952      (6 guías, F222-00008541) como dos lotes, cada guía completó su despacho programado y los 12 viajes del seguimiento      tomaron su pedido. La guía de JULIO FLORES PARDO / P1Y-906 se asignó al despacho de VICTOR MARZAL / BNH-735 (cambio de      chofer). Se aprobó el producto nuevo NICOVITA KATAL CAMARON 35% 1.2 EX (código 7530977, id 62). Avisos de la guía      T660-00016548 (C6K-799): dice 330 bolsas y 8 283 kg y el packing list 1 188 bolsas y 29 818,8 kg (lotes distintos): es el      documento, revisar con quien lo emitió. Guía T660-00016547 repite el N° de transporte 1296281.
 - [x] **Pedido 4400133881 (carga del 20/10) importado** (2026-10-21): la factura F222-00008535 y las 6 guías del correo no estaban
       asociadas a nada (el Word del 19/10 solo había programado las 6 primeras placas). Se programaron ASU-862, TBM-815, CBU-928,
