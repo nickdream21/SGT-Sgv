@@ -147,9 +147,9 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       T0Q-991, TAN-976, TDN-986, TBE-995) no tienen viaje: su carga es la sección AZÚCAR-CARTAVIO del Word del
       **14/10** (cargaron el 15/10; el Word ya está en la PC de la oficina). El GPS (2026-10-22) los ve cruzar el
       20/10, dormir en el parqueo de Naranjal, descargar en La Troncal el 21/10 (2–9 h) y volver a la base el 22/10.
-      Programarlos con "Programar con el Word" (Word del 14/10, sección AZÚCAR-CARTAVIO, fecha 15/10: el límite es
-      7 días atrás, **solo hasta el 22/10**) y "Registrar entregas" con el Word del 19/10; los 5 conductores, tractos
-      y carretas ya se reconocen. Pendiente de confirmación del usuario (escribe en sgvActualizada, la BD del sitio).
+      **Hecho el 22/10** (con el visto bueno del usuario, por los mismos servicios de la pantalla): despachos
+      1151–1155 (Crisar, Cartavio, 15/10) y entregas del Word del 19/10 → viajes 7524–7528 con su relevo; el GPS
+      ya los marcó (11–12 hitos): 3 descargados en su totalidad y 2 retornando a base.
 - [ ] **Terceros: viajes ya en curso sin despacho**: los de antes de registrar a los clientes no tienen despacho
       de carga, así que no entran al seguimiento; si se quieren, programarlos con su Word (fecha de carga de hasta
       7 días atrás) o crearlos a mano.
