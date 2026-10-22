@@ -95,9 +95,22 @@ namespace WebSGV.Services.Despachos
         /// </summary>
         public static ProgramacionNueva Proponer(ProgramacionTransporte programacion, string nombreArchivo, int? indiceSeccion)
         {
+            var entregas = ProponerEntregas(programacion);
             var secciones = programacion.Secciones.Where(ProgramacionCarga.EsSeccionDeCarga).ToList();
             if (secciones.Count == 0)
-                throw new ErrorNegocioException($"El Word {nombreArchivo} no tiene una sección de carga (\"…-CARGAN <día>\"): no hay nada que programar.");
+            {
+                if (entregas.Count == 0)
+                    throw new ErrorNegocioException($"El Word {nombreArchivo} no tiene una sección de carga (\"…-CARGAN <día>\"): no hay nada que programar.");
+                // Solo entregas de terceros: no hay cargas que programar, pero sí viajes que completar.
+                return new ProgramacionNueva
+                {
+                    NombreArchivo = nombreArchivo,
+                    Titulo = "Entregas de clientes terceros",
+                    Programacion = programacion,
+                    SinCarga = true,
+                    Entregas = entregas
+                };
+            }
 
             var clientes = RegistroDespachoService.ObtenerClientesActivos().Rows.Cast<DataRow>()
                 .Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r["idCliente"]), r["nombre"].ToString())).ToList();
@@ -126,7 +139,8 @@ namespace WebSGV.Services.Despachos
                 EsInternacional = rutaElegida?.EsInternacional ?? false,
                 Programacion = programacion,
                 SeccionesCarga = secciones.Select(s => $"{s.Titulo} ({s.Filas.Count} unidad(es))").ToList(),
-                IndiceSeccion = indice
+                IndiceSeccion = indice,
+                Entregas = entregas
             };
             if (secciones.Count > 1)
                 p.AvisosGenerales.Add($"El Word tiene {secciones.Count} secciones de carga: se muestra {seccion.Titulo}. Elija otra arriba para programarla después de esta.");
@@ -214,6 +228,81 @@ namespace WebSGV.Services.Despachos
 
         private static string Capital(string s) =>
             string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1).ToLowerInvariant();
+
+        // ── Entregas de terceros (secciones de descarga del Word) ─────────────
+
+        /// <summary>Días hacia atrás desde el Word en que se busca la carga de una entrega (Quito → Trujillo son ~4).</summary>
+        private const int DiasCargaAntesDeEntrega = 10;
+
+        /// <summary>
+        /// Filas de las secciones de descarga de Crisar, Novopan y Polinplast (GUAYAQUIL-AZUCAR, NOVOPAN-PIURA,
+        /// POLINPLAST-VIRU), cada una con el viaje del seguimiento de su carga: del mismo cliente, con la
+        /// misma carreta (o, si no, el mismo tracto), programado en los días anteriores al Word.
+        /// </summary>
+        public static List<EntregaTercero> ProponerEntregas(ProgramacionTransporte programacion)
+        {
+            var entregas = new List<EntregaTercero>();
+            foreach (var s in programacion.Secciones)
+            {
+                var ruta = RutaProgramacion.Reconocer(s);
+                if (ruta == null || ruta.EsCarga) continue;
+                foreach (var f in s.Filas.Where(f => LectorDocumentosPedido.NormalizarPlaca(f.Tracto) != null || LectorDocumentosPedido.NormalizarPlaca(f.Carreta) != null))
+                    entregas.Add(new EntregaTercero
+                    {
+                        Seccion = s.Titulo, Cliente = ruta.Cliente, Lugar = ruta.Lugar,
+                        Chofer = f.Chofer?.Trim(), Tracto = f.Tracto?.Trim(), Carreta = f.Carreta?.Trim(),
+                        Cambio = f.Cambio?.Trim(), Horario = f.Horario?.Trim()
+                    });
+            }
+            if (entregas.Count == 0) return entregas;
+
+            DateTime referencia = (programacion.Fecha ?? FechaHelper.Hoy()).Date;
+            var viajes = DbHelper.ConsultarTabla(@"
+                    SELECT idSeguimiento, tipoRuta, carreta, tracto1, tracto2, fhProgramacion, lugarEntrega
+                    FROM SeguimientoExportacion
+                    WHERE activo = 1 AND tipoRuta IS NOT NULL AND ISNULL(estado, '') <> 'CANCELADO'
+                      AND fhProgramacion >= @desde AND fhProgramacion < @hasta",
+                    DbHelper.Param("@desde", referencia.AddDays(-DiasCargaAntesDeEntrega)), DbHelper.Param("@hasta", referencia.AddDays(2)))
+                .Rows.Cast<DataRow>().ToList();
+
+            string P(object o) => o == DBNull.Value ? null : LectorDocumentosPedido.NormalizarPlaca(Convert.ToString(o));
+            foreach (var e in entregas)
+            {
+                string carreta = LectorDocumentosPedido.NormalizarPlaca(e.Carreta), tracto = LectorDocumentosPedido.NormalizarPlaca(e.Tracto);
+                var delCliente = viajes.Where(v => string.Equals(Convert.ToString(v["tipoRuta"]), e.Cliente, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(v => Convert.ToDateTime(v["fhProgramacion"])).ToList();
+                var viaje = (carreta != null ? delCliente.FirstOrDefault(v => P(v["carreta"]) == carreta) : null)
+                            ?? (tracto != null ? delCliente.FirstOrDefault(v => P(v["tracto1"]) == tracto) : null);
+                if (viaje == null) continue;
+
+                e.IdSeguimiento = Convert.ToInt32(viaje["idSeguimiento"]);
+                e.Viaje = $"carga {Convert.ToDateTime(viaje["fhProgramacion"]):dd/MM} · {viaje["tracto1"]} / {viaje["carreta"]}";
+                e.Relevo = tracto != null && tracto != P(viaje["tracto1"]);
+                e.YaRegistrada = string.Equals(Convert.ToString(viaje["lugarEntrega"]), e.Lugar, StringComparison.OrdinalIgnoreCase)
+                                 && (!e.Relevo || P(viaje["tracto2"]) == tracto);
+            }
+            return entregas;
+        }
+
+        /// <summary>Completa los viajes de las entregas encontradas (sp_SE_RegistrarEntregaTercero). Devuelve cuántos cambiaron.</summary>
+        public static int RegistrarEntregas(IEnumerable<EntregaTercero> entregas, int? idUsuario)
+        {
+            int cambiados = 0;
+            foreach (var e in entregas.Where(x => x.IdSeguimiento.HasValue))
+            {
+                object r = DbHelper.EjecutarEscalarSp("sp_SE_RegistrarEntregaTercero",
+                    DbHelper.Param("@idSeguimiento", e.IdSeguimiento.Value),
+                    DbHelper.Param("@lugarEntrega", e.Lugar),
+                    DbHelper.Param("@tracto2", e.Relevo ? e.Tracto?.ToUpperInvariant() : null),
+                    DbHelper.Param("@conductorDestino", e.Relevo ? e.Chofer?.ToUpperInvariant() : null),
+                    DbHelper.Param("@idUsuario", idUsuario));
+                if (Convert.ToInt32(r) != 1) continue;
+                cambiados++;
+                AuditoriaHelper.Registrar("UPDATE", "SeguimientoExportacion", e.IdSeguimiento.Value,
+                    $"Entrega de {e.Cliente} desde el Word ({e.Seccion}): {e.Lugar}" + (e.Relevo ? $", descarga {e.Tracto} ({e.Chofer})" : "") + ".");
+            }
+            return cambiados;
+        }
 
         /// <summary>Pone <see cref="FilaProgramacionNueva.IdDespachoExistente"/> a las filas cuyo tracto o carreta ya tiene despacho de carga ese día.</summary>
         public static void MarcarExistentes(IEnumerable<FilaProgramacionNueva> filas, DateTime fecha)
@@ -308,12 +397,9 @@ namespace WebSGV.Services.Despachos
             {
                 AuditoriaHelper.Registrar("INSERT", "Despachos", null,
                     $"{r.Creados.Count} despacho(s) de carga del {fecha:dd/MM/yyyy} programados con el Word, sin documentos (ids {string.Join(", ", r.Creados)})");
-                if (esExportacion)
-                {
-                    // El viaje del seguimiento se crea ya: el GPS no espera al correo.
-                    try { SeguimientoViajesService.SincronizarDespachos(fecha.AddDays(-1)); }
-                    catch (Exception ex) { LogSGV.Error(ex, "No se pudo sincronizar el seguimiento tras programar despachos"); }
-                }
+                // El viaje del seguimiento se crea ya (exportación y clientes terceros): el GPS no espera al correo.
+                try { SeguimientoViajesService.SincronizarDespachos(fecha.AddDays(-1)); }
+                catch (Exception ex) { LogSGV.Error(ex, "No se pudo sincronizar el seguimiento tras programar despachos"); }
             }
             return r;
         }

@@ -495,6 +495,7 @@
     <Compile Include="Services\Despachos\ProgramacionDespachoService.cs" />
     <Compile Include="Services\Despachos\RutaProgramacion.cs" />
     <Compile Include="Services\GpsIntegracion\GeocercasTerceros.cs" />
+    <Compile Include="Services\GpsIntegracion\TrazabilidadTercerosService.cs" />
     <Compile Include="Services\Despachos\Importacion\ExtractorTextoPdf.cs" />
     <Compile Include="Services\Despachos\Importacion\ImportacionPedidoService.cs" />
     <Compile Include="Services\Despachos\Importacion\LectorDocumentosPedido.cs" />
@@ -508,6 +509,8 @@
     <Compile Include="Services\Exportacion\FechaHoraExcel.cs" />
     <Compile Include="Services\Exportacion\HitosSeguimiento.cs" />
     <Compile Include="Services\Exportacion\StatusUnidad.cs" />
+    <Compile Include="Services\Exportacion\RutaTercero.cs" />
+    <Compile Include="Services\Exportacion\ExportacionStatusExtra.cs" />
     <Compile Include="Services\Exportacion\ExportacionStatusUnidades.cs" />
     <Compile Include="Services\Exportacion\SeguimientoViajesService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionCalculos.cs" />

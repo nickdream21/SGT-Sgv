@@ -111,6 +111,45 @@ namespace WebSGV.Models.Despachos
 
         /// <summary>Otras secciones de carga del Word que no se usaron, filas vacías, etc.</summary>
         public List<string> AvisosGenerales { get; set; } = new List<string>();
+
+        /// <summary>El Word no trae secciones de carga, solo entregas de terceros.</summary>
+        public bool SinCarga { get; set; }
+
+        /// <summary>Filas de las secciones de descarga de terceros (POLINPLAST-VIRU, GUAYAQUIL-AZUCAR…) con su viaje del seguimiento.</summary>
+        public List<EntregaTercero> Entregas { get; set; } = new List<EntregaTercero>();
+    }
+
+    /// <summary>
+    /// Fila de una sección de descarga de un cliente tercero en el Word: completa el viaje del
+    /// seguimiento de su carga (unido por la carreta o el tracto) con el lugar de entrega y, si
+    /// la descarga la hace otro tracto (CAMBIO de Crisar), con el tracto y el chofer de descarga.
+    /// </summary>
+    [Serializable]
+    public class EntregaTercero
+    {
+        public string Seccion { get; set; }
+        public string Cliente { get; set; }
+
+        /// <summary>Destino ("VIRU", "PIURA", "GUAYAQUIL").</summary>
+        public string Lugar { get; set; }
+
+        public string Chofer { get; set; }
+        public string Tracto { get; set; }
+        public string Carreta { get; set; }
+        public string Cambio { get; set; }
+        public string Horario { get; set; }
+
+        /// <summary>Viaje del seguimiento de la carga; null si no se encontró.</summary>
+        public int? IdSeguimiento { get; set; }
+
+        /// <summary>"carga 19/10 · BNG-758 / TDX-994".</summary>
+        public string Viaje { get; set; }
+
+        /// <summary>La descarga la hace otro tracto: va como tracto y chofer de descarga.</summary>
+        public bool Relevo { get; set; }
+
+        /// <summary>El viaje ya tiene este lugar de entrega (y este tracto de descarga).</summary>
+        public bool YaRegistrada { get; set; }
     }
 
     [Serializable]

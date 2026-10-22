@@ -105,7 +105,26 @@ y planta se completen solos hay que registrar antes en el catálogo los clientes
 (Clientes) y las plantas **Cartavio** y **Chapaira** como nacionales (Plantas); Quito ya existe como internacional.
 POLINPLAST-RAPEL se propone como carga en Chapaira.
 
-### 4.2 Propuesta: control y STATUS de los terceros (el STATUS EXTRA que se envía)
+### 4.2 Hecho (2026-10-21): control y STATUS de los terceros (el STATUS EXTRA que se envía)
+
+**Cómo se usa:**
+
+1. Registrar una vez los clientes CRISAR y POLINPLAST (Novopan ya está) y las plantas Cartavio y Chapaira.
+2. Subir el Word del día en RegistroDespacho. Cada sección de carga de terceros se programa como las de Vitapro
+   y crea su viaje en el seguimiento. Las secciones de descarga (GUAYAQUIL-AZUCAR, NOVOPAN-PIURA,
+   POLINPLAST-VIRU…) salen en **"Entregas de clientes terceros en este Word"**: "Registrar entregas" pone el lugar
+   de entrega y el relevo (tracto y chofer de descarga) en el viaje de la carga con la misma carreta.
+3. En el seguimiento, filtrar **Cliente: Terceros** (o uno). "Actualizar GPS" marca las horas y el STATUS sale
+   solo. **"Excel STATUS EXTRA"** baja el cuadro con las columnas del Excel de la administradora.
+
+Si el viaje no tiene lugar de entrega, el GPS lo deduce del primer destino del cliente donde la unidad se detuvo.
+Probado con el GPS real de tres viajes del Excel, con las mismas horas y el mismo STATUS final:
+
+- Polinplast BNG-758: Casa Grande y luego la cochera.
+- Crisar BNG-758 → CBX-832: con relevo y una noche en TCI.
+- Novopan BFK-879: Quito → Trujillo.
+
+Lo que sigue es la propuesta tal como se aprobó:
 
 El Excel `STATUS EXTRA VIVIANA` es al de terceros lo que el STATUS GENERAL es a Vitapro: una fila por unidad con
 FECHA CARGA, CONDUCTOR DE CARGA / DE DESCARGA, PLACA TRACTOR CARGA / DESCARGA, PLACA SEMIREMOLQUE, CLIENTE, LUGAR DE

@@ -11,6 +11,10 @@
 --   3. La planta de descarga sale del despacho de descarga (Jave / Milagro = Inbalnor) o de
 --      la lista de destinos por carreta (DestinoDescarga), si el viaje todavía no la tiene.
 --   4. Un despacho de carga anulado (activo = 0) deja su viaje como CANCELADO.
+--   5. Las cargas de los clientes terceros (Crisar, Novopan, Polinplast; migración 34) también
+--      son viajes, con tipoRuta, lugar de carga (la planta) y lugar de entrega (el destino del
+--      despacho, si lo tiene; si no, lo pone la sección de descarga del Word o el GPS). No tienen
+--      pedido: la columna cliente lleva el nombre del cliente.
 -- Devuelve cuántos viajes creó y cuántos actualizó.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_SE_SincronizarDespachos
@@ -24,7 +28,65 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        -- Despachos de carga de exportación desde @desde (activos y anulados).
+        -- 5. Cargas de los clientes terceros desde @desde (activas y anuladas).
+        SELECT x.idDespacho, x.activo, x.ruta, x.carreta, x.tracto, x.chofer, x.fhProgramacion, x.lugarCarga, x.lugarEntrega
+        INTO #tercero
+        FROM (
+            SELECT d.idDespacho, d.activo,
+                   CASE WHEN UPPER(cl.nombre) LIKE '%CRISAR%' THEN 'CRISAR'
+                        WHEN UPPER(cl.nombre) LIKE '%NOVOPAN%' THEN 'NOVOPAN'
+                        WHEN UPPER(cl.nombre) LIKE '%POLINPLAST%' THEN 'POLINPLAST' END AS ruta,
+                   LTRIM(RTRIM(ca.placaCarreta)) AS carreta,
+                   LTRIM(RTRIM(t.placaTracto)) AS tracto,
+                   LTRIM(RTRIM(ISNULL(LTRIM(RTRIM(co.nombre)), '') + ISNULL(' ' + NULLIF(LTRIM(RTRIM(co.apPaterno)), ''), '')
+                               + ISNULL(' ' + NULLIF(LTRIM(RTRIM(co.apMaterno)), ''), ''))) AS chofer,
+                   CAST(d.fechaDespacho AS DATETIME) AS fhProgramacion,
+                   UPPER(LTRIM(RTRIM(p.nombre))) AS lugarCarga,
+                   UPPER(NULLIF(LTRIM(RTRIM(d.destinoCarga)), '')) AS lugarEntrega
+            FROM dbo.Despachos d
+            JOIN dbo.Cliente cl        ON cl.idCliente = d.idCliente
+            LEFT JOIN dbo.Planta p     ON p.idPlanta = d.idPlanta
+            LEFT JOIN dbo.Tracto t     ON t.idTracto = d.idTracto
+            LEFT JOIN dbo.Carreta ca   ON ca.idCarreta = d.idCarreta
+            LEFT JOIN dbo.Conductor co ON co.idConductor = d.idConductor
+            WHERE d.tipoOperacion = 'CARGA' AND d.fechaDespacho >= @desde
+        ) x
+        WHERE x.ruta IS NOT NULL;
+
+        INSERT INTO dbo.SeguimientoExportacion
+            (cliente, carreta, tracto1, conductorOrigen, fhProgramacion, idDespachoOrigen, origen, estado, fechaRegistro, activo,
+             tipoRuta, lugarCarga, lugarEntrega)
+        SELECT c.ruta, c.carreta, c.tracto, NULLIF(c.chofer, ''), c.fhProgramacion, c.idDespacho, 'DESPACHO', 'EN_CURSO', dbo.fn_AhoraPeru(), 1,
+               c.ruta, c.lugarCarga, c.lugarEntrega
+        FROM #tercero c
+        WHERE c.activo = 1
+          AND NOT EXISTS (SELECT 1 FROM dbo.SeguimientoExportacion se WHERE se.idDespachoOrigen = c.idDespacho AND se.activo = 1);
+        SET @creados = @@ROWCOUNT;
+
+        -- El despacho manda; el lugar de entrega solo si el despacho lo trae (si no, el del Word o del GPS se queda).
+        UPDATE se SET
+            carreta = c.carreta, tracto1 = c.tracto, conductorOrigen = NULLIF(c.chofer, ''), tipoRuta = c.ruta, lugarCarga = c.lugarCarga,
+            lugarEntrega = ISNULL(c.lugarEntrega, se.lugarEntrega),
+            fhProgramacion = CASE WHEN se.fhProgramacion IS NULL OR CAST(se.fhProgramacion AS DATE) <> CAST(c.fhProgramacion AS DATE)
+                                  THEN c.fhProgramacion ELSE se.fhProgramacion END,
+            fechaModificacion = dbo.fn_AhoraPeru()
+        FROM dbo.SeguimientoExportacion se
+        JOIN #tercero c ON c.idDespacho = se.idDespachoOrigen
+        WHERE se.activo = 1 AND c.activo = 1
+          AND (ISNULL(se.carreta, '') <> ISNULL(c.carreta, '') OR ISNULL(se.tracto1, '') <> ISNULL(c.tracto, '')
+               OR ISNULL(se.conductorOrigen, '') <> ISNULL(NULLIF(c.chofer, ''), '') OR ISNULL(se.tipoRuta, '') <> c.ruta
+               OR ISNULL(se.lugarCarga, '') <> ISNULL(c.lugarCarga, '')
+               OR (c.lugarEntrega IS NOT NULL AND ISNULL(se.lugarEntrega, '') <> c.lugarEntrega)
+               OR se.fhProgramacion IS NULL OR CAST(se.fhProgramacion AS DATE) <> CAST(c.fhProgramacion AS DATE));
+        SET @actualizados = @actualizados + @@ROWCOUNT;
+
+        UPDATE se SET estado = 'CANCELADO', fechaModificacion = dbo.fn_AhoraPeru()
+        FROM dbo.SeguimientoExportacion se
+        JOIN #tercero c ON c.idDespacho = se.idDespachoOrigen
+        WHERE se.activo = 1 AND c.activo = 0 AND se.estado <> 'CANCELADO';
+        SET @actualizados = @actualizados + @@ROWCOUNT;
+
+        -- Despachos de carga de exportación desde @desde (activos y anulados), sin los de terceros.
         SELECT d.idDespacho, d.activo,
                ISNULL(NULLIF(LTRIM(RTRIM(d.numeroPedido)), ''), 'PENDIENTE') AS pedido,
                LTRIM(RTRIM(ca.placaCarreta)) AS carreta,
@@ -38,7 +100,8 @@ BEGIN
         LEFT JOIN dbo.Carreta ca   ON ca.idCarreta = d.idCarreta
         LEFT JOIN dbo.Conductor co ON co.idConductor = d.idConductor
         WHERE d.esExportacion = 1 AND d.tipoOperacion = 'CARGA' AND ISNULL(d.esInternacional, 0) = 0
-          AND d.fechaDespacho >= @desde;
+          AND d.fechaDespacho >= @desde
+          AND NOT EXISTS (SELECT 1 FROM #tercero tc WHERE tc.idDespacho = d.idDespacho);
 
         -- 1a. Un viaje creado a mano (desde la programación, antes de tener el pedido) se adopta en
         --     vez de duplicarlo: mismo tracto y carreta, programado con 1 día de diferencia como
@@ -68,7 +131,7 @@ BEGIN
         FROM #carga c
         WHERE c.activo = 1
           AND NOT EXISTS (SELECT 1 FROM dbo.SeguimientoExportacion se WHERE se.idDespachoOrigen = c.idDespacho AND se.activo = 1);
-        SET @creados = @@ROWCOUNT;
+        SET @creados = @creados + @@ROWCOUNT;
 
         -- Lo que dice el despacho de carga manda sobre el viaje (solo si cambió).
         UPDATE se SET

@@ -120,6 +120,30 @@ namespace WebSGV.Services.GpsIntegracion
             ["POLINPLAST|COCHERA TRUJILLO"] = CocheraTrujillo,
         };
 
+        /// <summary>Destinos de Polinplast: donde se busca la descarga si el viaje no sabe a cuál va.</summary>
+        public static IReadOnlyList<GeocercaGps> DescargasPolinplast { get; } = new[]
+        {
+            PolinplastViru, PolinplastChao, PolinplastCasaGrande, PolinplastAcpChepen, PolinplastJayanca, PolinplastOlmos, PolinplastSalaverry
+        };
+
+        // Nombre del lugar de cada descarga, como se guarda en lugarEntrega.
+        private static readonly Dictionary<string, string> LugarPorCodigo = new Dictionary<string, string>
+        {
+            [CrisarLaTroncal.Codigo] = "LA TRONCAL",
+            [NovopanPiura.Codigo] = "PIURA",
+            [NovopanTrujillo.Codigo] = "TRUJILLO",
+            [PolinplastViru.Codigo] = "VIRU",
+            [PolinplastChao.Codigo] = "CHAO",
+            [PolinplastCasaGrande.Codigo] = "CASAGRANDE",
+            [PolinplastAcpChepen.Codigo] = "ACP",
+            [PolinplastJayanca.Codigo] = "JAYANCA",
+            [PolinplastOlmos.Codigo] = "OLMOS",
+            [PolinplastSalaverry.Codigo] = "SALAVERRY",
+        };
+
+        /// <summary>Lugar de entrega que corresponde a una geocerca de descarga ("VIRU"); null si no es una.</summary>
+        public static string LugarDe(GeocercaGps g) => g != null && LugarPorCodigo.TryGetValue(g.Codigo, out var l) ? l : null;
+
         /// <summary>Geocerca del lugar de carga o entrega de un cliente ("POLINPLAST", "VIRU"); null si no hay.</summary>
         public static GeocercaGps DeLugar(string cliente, string lugar)
         {

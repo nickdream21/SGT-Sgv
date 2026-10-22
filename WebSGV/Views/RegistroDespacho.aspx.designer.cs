@@ -860,6 +860,26 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.DropDownList ddlSeccionProg;
 
         /// <summary>
+        /// Control pnlEntregasTerceros.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.Panel pnlEntregasTerceros;
+
+        /// <summary>
+        /// Control rptEntregasTerceros.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.Repeater rptEntregasTerceros;
+
+        /// <summary>
+        /// Control btnRegistrarEntregas.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.Button btnRegistrarEntregas;
+
+        /// <summary>
+        /// Control pnlCargaProg.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.Panel pnlCargaProg;
+
+        /// <summary>
         /// Control litProgTitulo.
         /// </summary>
         /// <remarks>

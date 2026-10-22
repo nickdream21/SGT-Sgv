@@ -50,7 +50,7 @@ BEGIN
             END AS horasViaje
 
         FROM SeguimientoExportacion
-        WHERE activo = 1
+        WHERE activo = 1 AND tipoRuta IS NULL
           AND fhProgramacion IS NOT NULL
           AND (@mes     IS NULL OR MONTH(fhProgramacion) = @mes)
           AND (@anio    IS NULL OR YEAR (fhProgramacion) = @anio)

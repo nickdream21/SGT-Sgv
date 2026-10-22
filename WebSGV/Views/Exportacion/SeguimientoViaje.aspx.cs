@@ -82,8 +82,9 @@ namespace WebSGV.Views.Exportacion
             }
 
             var v = d.Resumen;
-            Title = "Pedido " + v.Pedido;
-            litTitulo.Text = "Pedido <span class=\"sx-mono\">" + Html(v.Pedido ?? "sin número") + "</span>";
+            bool tercero = RutaTercero.Es(v.TipoRuta);
+            Title = (tercero ? "Viaje " : "Pedido ") + v.Pedido;
+            litTitulo.Text = (tercero ? "Viaje " : "Pedido ") + "<span class=\"sx-mono\">" + Html(v.Pedido ?? "sin número") + "</span>";
             litFase.Text = $"<span class=\"sx-fase sx-fase-{v.Fase.Grupo}\" style=\"font-size:0.8125rem;vertical-align:middle;\">{Html(v.Fase.Nombre)}</span>";
             bool deDespacho = v.Origen == "DESPACHO";
             var partes = new List<string>
@@ -91,7 +92,8 @@ namespace WebSGV.Views.Exportacion
                 deDespacho ? "Desde el despacho" : v.Origen == "MANUAL" ? "Creado a mano" : "Importado del Excel",
                 "Carreta " + (v.Carreta ?? "por confirmar"),
                 "Programación " + (v.FhProgramacion?.ToString("dd/MM/yyyy HH:mm") ?? "sin fecha"),
-                v.Planta != null ? "Descarga en " + Capital(v.Planta) : "Planta de descarga por detectar",
+                tercero ? RutaTercero.Nombre(v.LugarCarga, "Carga por confirmar") + " → " + RutaTercero.Nombre(v.LugarEntrega, "entrega por confirmar")
+                : v.Planta != null ? "Descarga en " + Capital(v.Planta) : "Planta de descarga por detectar",
             };
             if (v.UltimaConsultaGps.HasValue) partes.Add("GPS consultado " + v.UltimaConsultaGps.Value.ToString("dd/MM HH:mm"));
             litSubtitulo.Text = Html(string.Join(" · ", partes));
@@ -115,19 +117,24 @@ namespace WebSGV.Views.Exportacion
             SeleccionarValor(ddlPlanta, v.Planta?.ToUpperInvariant());
 
             var hitos = d.Hitos.ToDictionary(h => h.Definicion.Columna);
+            var hitosCarga = v.Hitos.Where(h => h.Tramo == TramoViaje.Carga).ToList();
+            var hitosDescarga = v.Hitos.Where(h => h.Tramo == TramoViaje.Descarga).ToList();
             rptTramos.DataSource = new[]
             {
                 new
                 {
-                    Titulo = "Carga: Base → Trujillo → Base", Tracto = v.Tracto1 ?? "Sin tracto", Chofer = v.Chofer1 ?? "",
-                    Resumen = $"{v.AvanceCarga} de {HitosSeguimiento.Carga.Count} hitos",
-                    Hitos = HitosSeguimiento.Carga.Select(h => VistaHito(hitos[h.Columna], v.UltimaConsultaGps.HasValue)).ToList(),
+                    Titulo = tercero ? "Carga en " + RutaTercero.Nombre(v.LugarCarga, "la planta de carga") : "Carga: Base → Trujillo → Base",
+                    Tracto = v.Tracto1 ?? "Sin tracto", Chofer = v.Chofer1 ?? "",
+                    Resumen = $"{v.AvanceCarga} de {hitosCarga.Count} hitos",
+                    Hitos = hitosCarga.Select(h => VistaHito(hitos[h.Columna], v.UltimaConsultaGps.HasValue)).ToList(),
                 },
                 new
                 {
-                    Titulo = "Descarga: Base → Ecuador → Base", Tracto = v.Tracto2 ?? "Sin tracto", Chofer = v.Chofer2 ?? "",
-                    Resumen = $"{v.AvanceDescarga} de {HitosSeguimiento.Descarga.Count} hitos" + (v.Planta != null ? " · " + Capital(v.Planta) : ""),
-                    Hitos = HitosSeguimiento.Descarga.Select(h => VistaHito(hitos[h.Columna], v.UltimaConsultaGps.HasValue)).ToList(),
+                    Titulo = tercero ? "Entrega en " + RutaTercero.Nombre(v.LugarEntrega, "destino por confirmar") : "Descarga: Base → Ecuador → Base",
+                    Tracto = (tercero ? v.Tracto2 ?? v.Tracto1 : v.Tracto2) ?? "Sin tracto",
+                    Chofer = (tercero ? v.Chofer2 ?? v.Chofer1 : v.Chofer2) ?? "",
+                    Resumen = $"{v.AvanceDescarga} de {hitosDescarga.Count} hitos" + (!tercero && v.Planta != null ? " · " + Capital(v.Planta) : ""),
+                    Hitos = hitosDescarga.Select(h => VistaHito(hitos[h.Columna], v.UltimaConsultaGps.HasValue)).ToList(),
                 },
             };
             rptTramos.DataBind();

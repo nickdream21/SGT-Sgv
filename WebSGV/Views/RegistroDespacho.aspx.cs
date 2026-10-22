@@ -2320,6 +2320,14 @@ namespace WebSGV.Views
                 ddlSeccionProg.Items.Add(new ListItem(p.SeccionesCarga[i], i.ToString()));
             RestaurarSeleccion(ddlSeccionProg, p.IndiceSeccion.ToString());
 
+            MostrarEntregasTerceros(p);
+            pnlCargaProg.Visible = btnProgramarDespachos.Visible = !p.SinCarga;
+            if (p.SinCarga)
+            {
+                UpdatePanelMain.Update();
+                return;
+            }
+
             litProgTitulo.Text = Html(p.Titulo);
             litProgArchivo.Text = Html(p.NombreArchivo);
             litProgUnidades.Text = $"{p.Filas.Count(f => !f.IdDespachoExistente.HasValue)} por programar" +
@@ -2500,7 +2508,8 @@ namespace WebSGV.Views
                     catch (Exception ex) { RegistrarError("btnProgramarDespachos_Click (siguiente sección)", ex); }
                 }
                 MostrarMensajeImportacion($"Se programaron {r.Creados.Count} despacho(s) de carga del {fecha:dd/MM/yyyy}" +
-                    (chkExportacionProg.Checked ? " y su seguimiento de exportación ya está en el tablero (pedido PENDIENTE)" : "") +
+                    (RutaProgramacion.Reconocer(p.Titulo) != null ? " y su seguimiento ya está en el tablero (cliente " + RutaProgramacion.Reconocer(p.Titulo).Cliente + ")"
+                     : chkExportacionProg.Checked ? " y su seguimiento de exportación ya está en el tablero (pedido PENDIENTE)" : "") +
                     ". Cuando llegue el correo, suba el ZIP aquí: cada guía completará su despacho." +
                     (r.Errores.Count > 0 ? " No se pudieron programar: " + string.Join(" ", r.Errores) : ""),
                     r.Errores.Count > 0 ? "warning" : "success");
@@ -2509,6 +2518,50 @@ namespace WebSGV.Views
             {
                 RegistrarError("btnProgramarDespachos_Click", ex);
                 MostrarMensajeImportacion("No se pudieron programar los despachos. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+            }
+        }
+
+        private void MostrarEntregasTerceros(ProgramacionNueva p)
+        {
+            pnlEntregasTerceros.Visible = p.Entregas.Count > 0;
+            btnRegistrarEntregas.Visible = p.Entregas.Any(x => x.IdSeguimiento.HasValue && !x.YaRegistrada);
+            rptEntregasTerceros.DataSource = p.Entregas.Select(x => new
+            {
+                x.Seccion,
+                Horario = string.IsNullOrEmpty(x.Horario) ? "" : "Hora " + x.Horario,
+                x.Chofer,
+                CambioTexto = string.IsNullOrEmpty(x.Cambio) ? (x.Relevo ? "Relevo" : "") : "Cambio: " + x.Cambio,
+                x.Tracto,
+                x.Carreta,
+                Estado = !x.IdSeguimiento.HasValue ? "Sin viaje de carga" : x.YaRegistrada ? "Ya registrada" : x.Relevo ? "Lugar y relevo" : "Lugar de entrega",
+                ChipCss = !x.IdSeguimiento.HasValue ? "rd-chip-warn" : x.YaRegistrada ? "rd-chip-ok" : "rd-chip-wait",
+                Viaje = x.IdSeguimiento.HasValue ? x.Viaje : "No hay una carga de " + x.Cliente + " con esta carreta o tracto en los 10 días anteriores.",
+            }).ToList();
+            rptEntregasTerceros.DataBind();
+        }
+
+        protected void btnRegistrarEntregas_Click(object sender, EventArgs e)
+        {
+            var p = ProgramacionNuevaActual;
+            if (p == null)
+            {
+                MostrarMensajeImportacion("La programación expiró. Vuelva a subir el Word.", "warning");
+                pnlProgramacionNueva.Visible = false;
+                pnlConfiguracionBase.Visible = !TieneLoteActivo;
+                return;
+            }
+            try
+            {
+                int n = ProgramacionDespachoService.RegistrarEntregas(p.Entregas.Where(x => !x.YaRegistrada), Session["UsuarioID"] as int?);
+                if (p.Programacion != null) p.Entregas = ProgramacionDespachoService.ProponerEntregas(p.Programacion);
+                ProgramacionNuevaActual = p;
+                MostrarVistaPreviaProgramacion(p);
+                MostrarMensajeImportacion($"Se completaron {n} viaje(s) de clientes terceros con su lugar de entrega. Véalos en el seguimiento.", "success");
+            }
+            catch (Exception ex)
+            {
+                RegistrarError("btnRegistrarEntregas_Click", ex);
+                MostrarMensajeImportacion("No se pudieron registrar las entregas. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 

@@ -14,6 +14,7 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.Literal litUltimaConsulta;
         protected global::System.Web.UI.WebControls.Button btnExportarStatus;
         protected global::System.Web.UI.WebControls.Button btnExportar;
+        protected global::System.Web.UI.WebControls.Button btnExportarStatusExtra;
         protected global::System.Web.UI.WebControls.Button btnActualizarGps;
         protected global::System.Web.UI.WebControls.Panel pnlMensaje;
         protected global::System.Web.UI.WebControls.Literal litMensaje;
@@ -21,6 +22,7 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.TextBox txtBuscar;
         protected global::System.Web.UI.WebControls.TextBox txtDesde;
         protected global::System.Web.UI.WebControls.TextBox txtHasta;
+        protected global::System.Web.UI.WebControls.DropDownList ddlCliente;
         protected global::System.Web.UI.WebControls.DropDownList ddlPlanta;
         protected global::System.Web.UI.WebControls.CheckBox chkHistorial;
         protected global::System.Web.UI.WebControls.Button btnFiltrar;

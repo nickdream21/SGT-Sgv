@@ -41,7 +41,7 @@ namespace WebSGV.Views.Exportacion
         private static readonly (string Grupo, string Nombre)[] Pestanas =
         {
             ("todos", "Todos"), ("carga", "En carga"), ("base", "En base"),
-            ("ecuador", "Rumbo a Ecuador / en Ecuador"), ("retorno", "Retorno"), ("cerrado", "Cerrados"),
+            ("ecuador", "Rumbo a Ecuador / a la descarga"), ("retorno", "Retorno"), ("cerrado", "Cerrados"),
         };
 
         protected void Page_Load(object sender, EventArgs e)
@@ -86,12 +86,19 @@ namespace WebSGV.Views.Exportacion
             Cargar();
         }
 
-        protected void btnExportar_Click(object sender, EventArgs e) => Exportar(false);
+        private enum TipoExcel { StatusGeneral, Status, StatusExtra }
 
-        protected void btnExportarStatus_Click(object sender, EventArgs e) => Exportar(true);
+        protected void btnExportar_Click(object sender, EventArgs e) => Exportar(TipoExcel.StatusGeneral);
 
-        /// <summary>Excel de los viajes que muestra el tablero (con el pedido en Buscar, solo ese pedido): STATUS GENERAL completo o el liviano de STATUS.</summary>
-        private void Exportar(bool soloStatus)
+        protected void btnExportarStatus_Click(object sender, EventArgs e) => Exportar(TipoExcel.Status);
+
+        protected void btnExportarStatusExtra_Click(object sender, EventArgs e) => Exportar(TipoExcel.StatusExtra);
+
+        /// <summary>
+        /// Excel de los viajes que muestra el tablero (con el pedido en Buscar, solo ese pedido): STATUS GENERAL
+        /// completo (Vitapro), el liviano de STATUS o el STATUS EXTRA de los clientes terceros.
+        /// </summary>
+        private void Exportar(TipoExcel tipo)
         {
             List<ViajeResumen> viajes;
             try
@@ -104,22 +111,30 @@ namespace WebSGV.Views.Exportacion
                 Cargar();
                 return;
             }
+            // El STATUS GENERAL es el de Vitapro; el STATUS EXTRA, el de los terceros.
+            if (tipo == TipoExcel.StatusGeneral) viajes = viajes.Where(v => !RutaTercero.Es(v.TipoRuta)).ToList();
+            if (tipo == TipoExcel.StatusExtra) viajes = viajes.Where(v => RutaTercero.Es(v.TipoRuta)).ToList();
             if (viajes.Count == 0)
             {
-                MostrarMensaje("No hay viajes para exportar con estos filtros.", "alerta");
+                MostrarMensaje(tipo == TipoExcel.StatusExtra
+                    ? "No hay viajes de clientes terceros (Crisar, Novopan, Polinplast) para exportar con estos filtros."
+                    : "No hay viajes para exportar con estos filtros.", "alerta");
                 Cargar();
                 return;
             }
 
-            var reporte = soloStatus
-                ? ExportacionStatusUnidades.Construir(viajes, DescribirFiltros(), Convert.ToString(Session["Nombre"]))
-                : ExportacionStatusGeneral.Construir(viajes.Select(v => v.Fila).ToList(), DescribirFiltros(), Convert.ToString(Session["Nombre"]),
-                viajes.ToDictionary(v => v.Id, v => v.Status));
+            string usuario = Convert.ToString(Session["Nombre"]);
+            var reporte =
+                tipo == TipoExcel.Status ? ExportacionStatusUnidades.Construir(viajes, DescribirFiltros(), usuario)
+                : tipo == TipoExcel.StatusExtra ? ExportacionStatusExtra.Construir(viajes, DescribirFiltros(), usuario)
+                : ExportacionStatusGeneral.Construir(viajes.Select(v => v.Fila).ToList(), DescribirFiltros(), usuario,
+                    viajes.ToDictionary(v => v.Id, v => v.Status));
+            string prefijo = tipo == TipoExcel.Status ? "STATUS_UNIDADES_" : tipo == TipoExcel.StatusExtra ? "STATUS_EXTRA_" : "STATUS_GENERAL_";
             byte[] archivo = ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(), Server.MapPath("~/Content/favicon.png"));
             var resp = HttpContext.Current.Response;
             resp.Clear();
             resp.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            resp.AddHeader("Content-Disposition", $"attachment; filename={(soloStatus ? "STATUS_UNIDADES_" : "STATUS_GENERAL_")}{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
+            resp.AddHeader("Content-Disposition", $"attachment; filename={prefijo}{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
             resp.AddHeader("Content-Length", archivo.Length.ToString());
             resp.BinaryWrite(archivo);
             resp.Flush();
@@ -201,13 +216,15 @@ namespace WebSGV.Views.Exportacion
             v.Status,
             Ubicacion = v.UbicacionHora != null ? "Ubicación al " + v.UbicacionHora : "",
             v.Fase.Grupo,
-            Planta = v.Planta != null ? "Descarga en " + Capital(v.Planta) : "",
+            Planta = RutaTercero.Es(v.TipoRuta)
+                ? RutaTercero.Nombre(v.LugarCarga, "Carga por confirmar") + " → " + RutaTercero.Nombre(v.LugarEntrega, "entrega por confirmar")
+                : v.Planta != null ? "Descarga en " + Capital(v.Planta) : "",
             UltimoHito = v.UltimoHito ?? "Sin hitos todavía",
             UltimoHora = v.UltimoHitoHora.HasValue ? v.UltimoHitoHora.Value.ToString("dd/MM HH:mm:ss") : "",
-            CargaTxt = v.AvanceCarga + "/" + HitosSeguimiento.Carga.Count,
-            DescargaTxt = v.AvanceDescarga + "/" + HitosSeguimiento.Descarga.Count,
-            CargaPct = 100 * v.AvanceCarga / HitosSeguimiento.Carga.Count,
-            DescargaPct = 100 * v.AvanceDescarga / HitosSeguimiento.Descarga.Count,
+            CargaTxt = v.AvanceCarga + "/" + v.TotalCarga,
+            DescargaTxt = v.AvanceDescarga + "/" + v.TotalDescarga,
+            CargaPct = v.TotalCarga == 0 ? 0 : 100 * v.AvanceCarga / v.TotalCarga,
+            DescargaPct = v.TotalDescarga == 0 ? 0 : 100 * v.AvanceDescarga / v.TotalDescarga,
             Avisos = v.Avisos.Select(a => new { a.Texto, Css = a.Tipo.ToString().ToLowerInvariant() }).ToList(),
         };
 
@@ -221,6 +238,7 @@ namespace WebSGV.Views.Exportacion
                 Texto = txtBuscar.Text,
                 Planta = ddlPlanta.SelectedValue,
                 IncluirHistorial = chkHistorial.Checked,
+                Cliente = ddlCliente.SelectedValue,
             };
         }
 
@@ -228,6 +246,7 @@ namespace WebSGV.Views.Exportacion
         {
             if (!string.IsNullOrWhiteSpace(txtBuscar.Text)) yield return "Búsqueda: " + txtBuscar.Text.Trim();
             else yield return $"Programación: {FechaTexto(txtDesde.Text)} al {FechaTexto(txtHasta.Text)}";
+            if (!string.IsNullOrEmpty(ddlCliente.SelectedValue)) yield return "Cliente: " + ddlCliente.SelectedItem.Text;
             if (!string.IsNullOrEmpty(ddlPlanta.SelectedValue)) yield return "Planta: " + ddlPlanta.SelectedItem.Text;
             yield return chkHistorial.Checked ? "Incluye los importados del Excel" : "Viajes de los despachos y creados a mano";
             var pestana = Pestanas.FirstOrDefault(p => p.Grupo == hdnFase.Value);

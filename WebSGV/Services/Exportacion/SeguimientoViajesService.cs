@@ -21,6 +21,9 @@ namespace WebSGV.Services.Exportacion
 
         /// <summary>Incluir los viajes importados del Excel o del formulario viejo (origen NULL); por defecto solo despachos y manuales.</summary>
         public bool IncluirHistorial { get; set; }
+
+        /// <summary>VITAPRO | TERCEROS | CRISAR | NOVOPAN | POLINPLAST | null (todos).</summary>
+        public string Cliente { get; set; }
     }
 
     /// <summary>Un viaje (pedido y carreta) en el tablero, con su fase y avisos ya calculados.</summary>
@@ -35,6 +38,16 @@ namespace WebSGV.Services.Exportacion
         public string Chofer2 { get; set; }
         public string Planta { get; set; }
         public string Estado { get; set; }
+
+        /// <summary>CRISAR | NOVOPAN | POLINPLAST; null = exportación de Vitapro.</summary>
+        public string TipoRuta { get; set; }
+        public string LugarCarga { get; set; }
+        public string LugarEntrega { get; set; }
+
+        /// <summary>Hitos de la ruta del viaje (los de Vitapro o los de su cliente tercero).</summary>
+        public IReadOnlyList<DefinicionHito> Hitos { get; set; } = HitosSeguimiento.Todos;
+        public int TotalCarga => Hitos.Count(h => h.Tramo == TramoViaje.Carga);
+        public int TotalDescarga => Hitos.Count(h => h.Tramo == TramoViaje.Descarga);
 
         /// <summary>DESPACHO | MANUAL | null (importado del Excel o del formulario viejo).</summary>
         public string Origen { get; set; }
@@ -123,9 +136,11 @@ namespace WebSGV.Services.Exportacion
                 SELECT TOP {MaximoFilasTablero} * FROM ({SqlBase}
                   AND (@texto IS NOT NULL OR COALESCE(se.fhProgramacion, se.fechaRegistro) >= @desde AND COALESCE(se.fhProgramacion, se.fechaRegistro) < @hasta)
                   AND (@texto IS NULL OR se.cliente LIKE @like OR se.carreta LIKE @like OR se.tracto1 LIKE @like OR se.tracto2 LIKE @like
-                       OR se.conductorOrigen LIKE @like OR se.conductorDestino LIKE @like)
+                       OR se.conductorOrigen LIKE @like OR se.conductorDestino LIKE @like OR se.lugarEntrega LIKE @like)
                   AND (@planta IS NULL OR UPPER(se.bodegaDescarga) = @planta OR UPPER(se.bodegaEcuatoriana) = @planta)
                   AND (@historial = 1 OR se.origen IN ('DESPACHO', 'MANUAL'))
+                  AND (@cliente IS NULL OR (@cliente = 'VITAPRO' AND se.tipoRuta IS NULL)
+                       OR (@cliente = 'TERCEROS' AND se.tipoRuta IS NOT NULL) OR se.tipoRuta = @cliente)
                 ) t
                 ORDER BY COALESCE(t.fhProgramacion, t.fechaRegistro) DESC, t.idSeguimiento DESC",
                 DbHelper.Param("@desde", f.Desde.Date),
@@ -133,7 +148,8 @@ namespace WebSGV.Services.Exportacion
                 DbHelper.Param("@texto", texto),
                 DbHelper.Param("@like", texto == null ? null : "%" + texto + "%"),
                 DbHelper.Param("@planta", planta),
-                DbHelper.Param("@historial", f.IncluirHistorial));
+                DbHelper.Param("@historial", f.IncluirHistorial),
+                DbHelper.Param("@cliente", string.IsNullOrWhiteSpace(f.Cliente) ? null : f.Cliente.Trim().ToUpperInvariant()));
             return dt.Rows.Cast<DataRow>().Select(Resumir).ToList();
         }
 
@@ -159,7 +175,8 @@ namespace WebSGV.Services.Exportacion
                 .Rows.Cast<DataRow>()
                 .ToDictionary(r => Convert.ToString(r["columna"]), r => r, StringComparer.OrdinalIgnoreCase);
 
-            var hitos = HitosSeguimiento.Todos.Select(def =>
+            var resumen = Resumir(fila);
+            var hitos = resumen.Hitos.Select(def =>
             {
                 meta.TryGetValue(def.Columna, out DataRow m);
                 return new HitoDetalle
@@ -177,7 +194,7 @@ namespace WebSGV.Services.Exportacion
                 };
             }).ToList();
 
-            return new ViajeDetalle { Resumen = Resumir(fila), Fila = fila, Hitos = hitos };
+            return new ViajeDetalle { Resumen = resumen, Fila = fila, Hitos = hitos };
         }
 
         /// <summary>Corrige la hora de un hito a mano (con motivo); la llegada a planta en Ecuador también cambia la del almacén.</summary>
@@ -273,6 +290,9 @@ namespace WebSGV.Services.Exportacion
                 v.Horas.TryGetValue("fhSalidaBase1", out var salidaBase);
                 v.Horas.TryGetValue("fhSalidaPlanta", out var salidaPlanta);
                 DateTime inicio = (salidaBase ?? v.FhProgramacion ?? FechaHelper.Hoy()).Date;
+                if (RutaTercero.Es(v.TipoRuta))
+                    return SeguimientoExportacionGpsService.DiasDeHistorialTercero(v.Tracto1, v.Tracto2, inicio,
+                        RutaTercero.TractoActivo(v.Horas, v.Tracto1, v.Tracto2));
                 return SeguimientoExportacionGpsService.DiasDeHistorial(v.Tracto1, v.Tracto2, inicio, salidaPlanta,
                     v.AvanceCarga == HitosSeguimiento.Carga.Count, StatusUnidad.TractoActivo(v.Horas, v.Tracto1, v.Tracto2));
             }).ToList();
@@ -315,6 +335,8 @@ namespace WebSGV.Services.Exportacion
             var horas = ColumnasHora.ToDictionary(c => c, c => Fecha(r, c), StringComparer.OrdinalIgnoreCase);
             string estado = Texto(r, "estado");
             string tracto1 = Texto(r, "tracto1"), tracto2 = Texto(r, "tracto2");
+            string tipoRuta = Texto(r, "tipoRuta");
+            if (RutaTercero.Es(tipoRuta)) return ResumirTercero(r, horas, estado, tipoRuta, tracto1, tracto2);
             var ultimo = FaseViaje.UltimoHito(horas);
             return new ViajeResumen
             {
@@ -339,6 +361,48 @@ namespace WebSGV.Services.Exportacion
                 Avisos = FaseViaje.Avisos(horas, tracto1, tracto2, r.Table.Columns.Contains("pasoDirectoTci") && !r.IsNull("pasoDirectoTci") && Convert.ToBoolean(r["pasoDirectoTci"]), FechaHelper.Ahora()),
                 AvanceCarga = FaseViaje.Avance(horas, TramoViaje.Carga),
                 AvanceDescarga = FaseViaje.Avance(horas, TramoViaje.Descarga),
+                UltimoHito = ultimo?.Item1.Nombre,
+                UltimoHitoHora = ultimo?.Item2,
+                Fila = r,
+            };
+        }
+
+        /// <summary>Viaje de un cliente tercero: sus hitos, fase, STATUS y avisos salen de <see cref="RutaTercero"/>.</summary>
+        private static ViajeResumen ResumirTercero(DataRow r, Dictionary<string, DateTime?> horas, string estado, string tipoRuta,
+            string tracto1, string tracto2)
+        {
+            string lugarCarga = Texto(r, "lugarCarga"), lugarEntrega = Texto(r, "lugarEntrega");
+            string lugar = StatusUnidad.LugarDeDireccion(Texto(r, "ultimaDireccion"));
+            var hitos = RutaTercero.Hitos(tipoRuta, lugarCarga, lugarEntrega);
+            bool Hay(DefinicionHito d) => horas.TryGetValue(d.Columna, out var v) && v.HasValue;
+            var ultimo = hitos.Where(Hay).Select(d => Tuple.Create(d, horas[d.Columna].Value)).OrderByDescending(t => t.Item2).FirstOrDefault();
+            return new ViajeResumen
+            {
+                Id = Convert.ToInt32(r["idSeguimiento"]),
+                Pedido = Texto(r, "cliente") ?? tipoRuta,
+                Carreta = Texto(r, "carreta"),
+                Tracto1 = tracto1,
+                Chofer1 = Texto(r, "conductorOrigen"),
+                Tracto2 = tracto2,
+                Chofer2 = Texto(r, "conductorDestino"),
+                Planta = lugarEntrega,
+                Estado = estado,
+                TipoRuta = tipoRuta,
+                LugarCarga = lugarCarga,
+                LugarEntrega = lugarEntrega,
+                Hitos = hitos,
+                Origen = Texto(r, "origen"),
+                FhProgramacion = Fecha(r, "fhProgramacion"),
+                UltimaConsultaGps = Fecha(r, "fhUltimaConsultaGps"),
+                UltimaPosicion = Fecha(r, "fhUltimaPosicion"),
+                Lugar = lugar,
+                Horas = horas,
+                Fase = RutaTercero.Fase(tipoRuta, horas, estado, lugarCarga, lugarEntrega),
+                Status = RutaTercero.Status(tipoRuta, horas, estado, lugarCarga, lugarEntrega, Texto(r, "lugarFin"),
+                    lugar, Fecha(r, "fhUltimaPosicion"), FechaHelper.Ahora()),
+                Avisos = RutaTercero.Avisos(tipoRuta, horas, tracto1, lugarCarga, lugarEntrega, FechaHelper.Ahora()),
+                AvanceCarga = hitos.Count(d => d.Tramo == TramoViaje.Carga && Hay(d)),
+                AvanceDescarga = hitos.Count(d => d.Tramo == TramoViaje.Descarga && Hay(d)),
                 UltimoHito = ultimo?.Item1.Nombre,
                 UltimoHitoHora = ultimo?.Item2,
                 Fila = r,

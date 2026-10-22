@@ -96,6 +96,40 @@
                                                 <asp:DropDownList ID="ddlSeccionProg" runat="server" CssClass="form-select form-select-sm"
                                                     AutoPostBack="true" OnSelectedIndexChanged="ddlSeccionProg_SelectedIndexChanged" />
                                             </asp:Panel>
+
+                                            <%-- Secciones de descarga de Crisar, Novopan y Polinplast: completan el viaje del seguimiento de su carga. --%>
+                                            <asp:Panel ID="pnlEntregasTerceros" runat="server" CssClass="rd-entregas mb-3" Visible="false">
+                                                <div class="rd-section-label"><i class="fas fa-flag-checkered mr-1"></i> Entregas de clientes terceros en este Word</div>
+                                                <p class="small text-muted mb-2">
+                                                    Cada fila completa el viaje del seguimiento de su carga (misma carreta): el lugar de entrega y, si descarga otro tracto, el tracto y el chofer de descarga.
+                                                </p>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm rd-tabla-import align-middle mb-2">
+                                                        <thead>
+                                                            <tr><th>Sección</th><th>Conductor</th><th>Tracto</th><th>Carreta</th><th>Viaje de la carga</th></tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <asp:Repeater ID="rptEntregasTerceros" runat="server">
+                                                                <ItemTemplate>
+                                                                    <tr>
+                                                                        <td><%#: Eval("Seccion") %><small class="d-block text-muted"><%#: Eval("Horario") %></small></td>
+                                                                        <td><%#: Eval("Chofer") %><small class="d-block text-muted"><%#: Eval("CambioTexto") %></small></td>
+                                                                        <td class="text-monospace"><%#: Eval("Tracto") %></td>
+                                                                        <td class="text-monospace"><%#: Eval("Carreta") %></td>
+                                                                        <td><span class='<%# "rd-chip " + Eval("ChipCss") %>'><%#: Eval("Estado") %></span><small class="d-block text-muted"><%#: Eval("Viaje") %></small></td>
+                                                                    </tr>
+                                                                </ItemTemplate>
+                                                            </asp:Repeater>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <div class="d-flex justify-content-end">
+                                                    <asp:Button ID="btnRegistrarEntregas" runat="server" Text="Registrar entregas" CssClass="btn btn-outline-primary btn-sm"
+                                                        CausesValidation="false" OnClick="btnRegistrarEntregas_Click" />
+                                                </div>
+                                            </asp:Panel>
+
+                                            <asp:Panel ID="pnlCargaProg" runat="server">
                                             <div class="rd-lote-bar mb-3">
                                                 <div class="rd-lote-grid">
                                                     <div class="rd-lote-item"><span class="rd-lote-k">Programación</span><span class="rd-lote-v"><asp:Literal ID="litProgTitulo" runat="server" /></span></div>
@@ -176,6 +210,7 @@
                                                     </tbody>
                                                 </table>
                                             </div>
+                                            </asp:Panel>
 
                                             <div class="d-flex justify-content-end gap-2">
                                                 <asp:Button ID="btnDescartarProgramacion" runat="server"
@@ -1383,6 +1418,7 @@
                                 <asp:AsyncPostBackTrigger ControlID="btnAplicarImportacion" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnProgramarDespachos" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnDescartarProgramacion" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="btnRegistrarEntregas" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnCorregirImportacion" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnVerCargasPendientes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnAplicarDescarga" EventName="Click" />

@@ -32,7 +32,7 @@ namespace WebSGV.Services.Exportacion
             if (e == "FINALIZADO" || Hay("fhLlegadaBaseFinal")) return "UNIDAD DESCARGADA EN SU TOTALIDAD";
 
             string pl = string.IsNullOrWhiteSpace(planta) ? "PLANTA DE DESCARGA" : planta.Trim().ToUpperInvariant();
-            string EnCamino(string frase) => frase + Lugar(lugar, horaPosicion, ahora);
+            string EnCamino(string frase) => frase + Sufijo(lugar, horaPosicion, ahora);
 
             if (Hay("fhSalida")) return EnCamino("UNIDAD DESCARGADA CAMINO A BASE");
             if (Hay("fhIngreso")) return "UNIDAD EN PROCESO DE DESCARGA - " + pl;
@@ -65,7 +65,8 @@ namespace WebSGV.Services.Exportacion
             return descarga ? t2 ?? t1 : t1 ?? t2;
         }
 
-        private static string Lugar(string lugar, DateTime? horaPosicion, DateTime ahora)
+        /// <summary>" - LUGAR" para los tramos en camino, con la hora si la señal es vieja.</summary>
+        public static string Sufijo(string lugar, DateTime? horaPosicion, DateTime ahora)
         {
             if (string.IsNullOrWhiteSpace(lugar)) return "";
             string texto = " - " + lugar.Trim();

@@ -92,6 +92,20 @@ namespace WebSGV.Services.GpsIntegracion
             var ruta = new RutaViaje { Zonas = Zonas() };
             var cliente = new Lazy<OnwayApiClient>(() => new OnwayApiClient());
 
+            // Cliente tercero: la carga en su planta y, desde que sale cargado, el camino a la entrega y el fin.
+            if (RutaTercero.Es(v.TipoRuta))
+            {
+                DateTime? desde = (H("fhLlegadaTrujillo") ?? v.FhProgramacion)?.AddHours(-14);
+                ruta.Tramos.Add(Tramo(cliente, "carga", "Carga en " + RutaTercero.Nombre(v.LugarCarga, "la planta de carga"), v.Tracto1, v.Chofer1,
+                    idSeguimiento, desde, H("fhSalidaPlanta"), desde?.AddHours(36), ahora,
+                    v.Hitos.Where(x => x.Tramo == TramoViaje.Carga).Select(x => hitos[x.Columna])));
+                ruta.Tramos.Add(Tramo(cliente, "descarga", "Entrega en " + RutaTercero.Nombre(v.LugarEntrega, "destino por confirmar"),
+                    v.Tracto2 ?? v.Tracto1, v.Chofer2 ?? v.Chofer1, idSeguimiento,
+                    H("fhSalidaPlanta"), H("fhLlegadaBaseFinal"), H("fhSalidaPlanta")?.AddDays(6), ahora,
+                    v.Hitos.Where(x => x.Tramo == TramoViaje.Descarga).Select(x => hitos[x.Columna])));
+                return ruta;
+            }
+
             // Carga: desde la salida de base (o 14 h antes del ingreso a planta) hasta la llegada a base.
             DateTime? anclaCarga = H("fhIngresoPlanta") ?? H("fhLlegadaTrujillo") ?? v.FhProgramacion;
             DateTime? desdeCarga = H("fhSalidaBase1") ?? anclaCarga?.AddHours(-14);

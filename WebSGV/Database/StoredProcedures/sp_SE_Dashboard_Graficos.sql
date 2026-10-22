@@ -85,7 +85,7 @@ BEGIN
       ) AS DECIMAL(10,2)) AS permanenciaPlanta,
       SUM(CASE WHEN fhIngresoPlanta IS NOT NULL AND fhSalidaPlanta IS NOT NULL THEN 1 ELSE 0 END) AS nPermanencia
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -108,7 +108,7 @@ BEGIN
                       ELSE (dbo.fn_SE_Horas(CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)) - 8
                     END END) AS DECIMAL(10,2)) AS esperaIngresoDepsa
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -134,7 +134,7 @@ BEGIN
                               THEN dbo.fn_SE_Horas(fhLlegadaCEBAF, fhCruceEcuador) * 60 END
                END) AS DECIMAL(10,2)) AS tiempoCEBAFMin
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -147,7 +147,7 @@ BEGIN
                               THEN dbo.fn_SE_Horas(fhLlegadaBase2, fhSalidaBase2) END
                END) AS DECIMAL(10,2)) AS tiempoBaseHoras
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -160,7 +160,7 @@ BEGIN
                               THEN dbo.fn_SE_Horas(fhSalidaPlanta, fhLlegadaPlantaEcuador) / 24 END
                END) AS DECIMAL(10,2)) AS diasTrujilloPlantaEcu
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -179,7 +179,7 @@ BEGIN
                               THEN dbo.fn_SE_Horas(fhIngreso, fhInicioDescarga) END
                END) AS DECIMAL(10,2)) AS inbalnorEsperaDescarga
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -198,7 +198,7 @@ BEGIN
                               THEN dbo.fn_SE_Horas(fhIngreso, fhInicioDescarga) END
                END) AS DECIMAL(10,2)) AS javeEsperaDescarga
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -215,7 +215,7 @@ BEGIN
                               THEN dbo.fn_SE_Horas(fhSalidaTCI, fhLlegadaAlmacen) END
                END) AS DECIMAL(10,2)) AS tciAAlmacen
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -232,7 +232,7 @@ BEGIN
         Meses.m AS mes,
         ISNULL((SELECT COUNT(*)
                 FROM SeguimientoExportacion se
-                WHERE se.activo = 1
+                WHERE se.activo = 1 AND se.tipoRuta IS NULL
                   AND se.fhProgramacion IS NOT NULL
                   AND YEAR (se.fhProgramacion) = @anioRef
                   AND MONTH(se.fhProgramacion) = Meses.m
@@ -245,7 +245,7 @@ BEGIN
         ISNULL(cliente,'(Sin cliente)') AS cliente,
         COUNT(*) AS totalCamiones
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -256,7 +256,7 @@ BEGIN
     -- 11) Distribucion por estado
     SELECT estado, COUNT(*) AS total
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -269,7 +269,7 @@ BEGIN
         ISNULL(SUM(sacosRotos),0)   AS rotos,
         ISNULL(SUM(sacosMojados),0) AS mojados
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -291,7 +291,7 @@ BEGIN
                       ELSE (dbo.fn_SE_Horas(CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)) - 8
                     END END) AS DECIMAL(10,2)) AS esperaIngresoComplex
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -313,7 +313,7 @@ BEGIN
                       ELSE (dbo.fn_SE_Horas(CAST(CAST(fhIngresoBodegaNacional AS DATE) AS DATETIME), fhIngresoBodegaNacional)) - 8
                     END END) AS DECIMAL(10,2)) AS esperaIngresoDepsaPuro
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -330,7 +330,7 @@ BEGIN
                     THEN dbo.fn_SE_Horas(fhSalidaBodegaNacional, fhLlegadaAlmacen)
                END) AS DECIMAL(10,2)) AS depsaAJave
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -349,7 +349,7 @@ BEGIN
                               THEN dbo.fn_SE_Horas(fhSalidaTCI, fhLlegadaAlmacen) END
                END) AS DECIMAL(10,2)) AS tciAJave
     FROM SeguimientoExportacion
-    WHERE activo = 1
+    WHERE activo = 1 AND tipoRuta IS NULL
       AND fhProgramacion IS NOT NULL
       AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
       AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -368,7 +368,7 @@ BEGIN
                  ELSE DATEDIFF(MINUTE, fhProgramacion, fhLlegadaTrujillo)/60.0
             END AS retrasoHrs
         FROM SeguimientoExportacion
-        WHERE activo = 1
+        WHERE activo = 1 AND tipoRuta IS NULL
           AND fhProgramacion IS NOT NULL
           AND (@mes  IS NULL OR MONTH(fhProgramacion) = @mes)
           AND (@anio IS NULL OR YEAR (fhProgramacion) = @anio)
@@ -390,7 +390,7 @@ BEGIN
             ISNULL(cliente,'(Sin pedido)') AS cliente,
             COUNT(*) AS tot
         FROM SeguimientoExportacion
-        WHERE activo = 1
+        WHERE activo = 1 AND tipoRuta IS NULL
           AND fhProgramacion IS NOT NULL
           AND YEAR(fhProgramacion) = @anioRefC
           AND (@cliente IS NULL OR cliente LIKE '%' + @cliente + '%')
@@ -403,7 +403,7 @@ BEGIN
         COUNT(*)                 AS totalCamiones
     FROM SeguimientoExportacion se
     INNER JOIN TopCli tc ON ISNULL(se.cliente,'(Sin pedido)') = tc.cliente
-    WHERE se.activo = 1
+    WHERE se.activo = 1 AND se.tipoRuta IS NULL
       AND se.fhProgramacion IS NOT NULL
       AND YEAR(se.fhProgramacion) = @anioRefC
     GROUP BY tc.cliente, MONTH(se.fhProgramacion)
@@ -522,7 +522,7 @@ BEGIN
                      THEN dbo.fn_SE_Horas(fhLlegadaCEBAF, fhCruceEcuador) * 60
                 END AS mCebaf
             FROM SeguimientoExportacion
-            WHERE activo = 1
+            WHERE activo = 1 AND tipoRuta IS NULL
               AND fhProgramacion IS NOT NULL
               AND MONTH(fhProgramacion) = @mes
               AND YEAR(fhProgramacion)  = @anio

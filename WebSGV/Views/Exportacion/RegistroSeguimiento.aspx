@@ -7,7 +7,7 @@
         <div class="sgv-encabezado">
             <div>
                 <h2>Seguimiento de exportación</h2>
-                <p>Un viaje por cada carreta de los despachos de exportación. Las horas salen del GPS; tú completas lo que el GPS no sabe.</p>
+                <p>Un viaje por cada carreta de los despachos de exportación y de los clientes terceros. Las horas salen del GPS; tú completas lo que el GPS no sabe.</p>
             </div>
             <div class="sx-barra-acciones">
                 <span class="sx-nota"><asp:Literal ID="litUltimaConsulta" runat="server" /></span>
@@ -15,7 +15,10 @@
                 <a href="ImportarSeguimiento.aspx" class="sx-btn"><i class="fas fa-file-import" aria-hidden="true"></i>Importar Excel</a>
                 <asp:Button ID="btnExportarStatus" runat="server" Text="Excel de STATUS" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatus_Click"
                     ToolTip="Baja un Excel liviano con el STATUS de las unidades que muestra la tabla (con el pedido en Buscar, solo ese pedido)" />
-                <asp:Button ID="btnExportar" runat="server" Text="Exportar STATUS GENERAL" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportar_Click" />
+                <asp:Button ID="btnExportar" runat="server" Text="Exportar STATUS GENERAL" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportar_Click"
+                    ToolTip="STATUS GENERAL de Vitapro con todas las horas (sin los clientes terceros)" />
+                <asp:Button ID="btnExportarStatusExtra" runat="server" Text="Excel STATUS EXTRA" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatusExtra_Click"
+                    ToolTip="Cuadro de los clientes terceros (Crisar, Novopan, Polinplast) que muestra la tabla, con las columnas del STATUS EXTRA" />
                 <a href="SeguimientoViaje.aspx?nuevo=1" class="sx-btn">Nuevo viaje</a>
                 <button type="button" class="sx-btn" id="btnCopiarStatus" title="Copia el STATUS de cada fila de la tabla, en orden, para pegar en la columna STATUS del Excel"><i class="fas fa-copy" aria-hidden="true"></i>Copiar STATUS</button>
                 <asp:Button ID="btnActualizarGps" runat="server" Text="Actualizar GPS de viajes abiertos" CssClass="sx-btn sx-btn-primario" CausesValidation="false"
@@ -38,6 +41,16 @@
             </label>
             <label class="sx-campo">hasta
                 <asp:TextBox ID="txtHasta" runat="server" TextMode="Date" />
+            </label>
+            <label class="sx-campo">Cliente
+                <asp:DropDownList ID="ddlCliente" runat="server">
+                    <asp:ListItem Value="" Text="Todos" />
+                    <asp:ListItem Value="VITAPRO" Text="Vitapro" />
+                    <asp:ListItem Value="TERCEROS" Text="Terceros (todos)" />
+                    <asp:ListItem Value="CRISAR" Text="Crisar" />
+                    <asp:ListItem Value="NOVOPAN" Text="Novopan" />
+                    <asp:ListItem Value="POLINPLAST" Text="Polinplast" />
+                </asp:DropDownList>
             </label>
             <label class="sx-campo">Planta de descarga
                 <asp:DropDownList ID="ddlPlanta" runat="server">
