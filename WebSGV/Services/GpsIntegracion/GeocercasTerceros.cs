@@ -47,11 +47,21 @@ namespace WebSGV.Services.GpsIntegracion
         /// <summary>Descarga de Novopan en Trujillo, a ~1 km de Vitapro (2 de 2 viajes, 2–4 h).</summary>
         public static readonly GeocercaGps NovopanTrujillo = GeocercaGps.Circulo("NOVOPAN_TRUJILLO", "Novopan Trujillo", -8.14396, -79.01987, 250);
 
+        // ---- Espera en Trujillo ----
+
         /// <summary>
-        /// Segundo punto de descarga de Novopan en Trujillo, a ~500 m de Vitapro (lo confirmó la oficina).
-        /// En la muestra solo aparece BPT-788 tres veces, con paradas de ~24 h después de entregar cartón.
+        /// Cochera de Trujillo: estacionamiento de la calle Fundo Larrea (Curva de Sun, Moche; OpenStreetMap),
+        /// a ~500 m de Vitapro. Después de descargar, las unidades esperan aquí de 1 a 4 días la carga
+        /// siguiente cerca de Trujillo: T6F-857, BNG-758 y BPT-788 a fines de agosto ("UNIDAD DESCARGADA EN
+        /// COCHERA TRUJILLO"), que el 02/09 cargaron azúcar en Cartavio.
         /// </summary>
-        public static readonly GeocercaGps NovopanTrujillo2 = GeocercaGps.Circulo("NOVOPAN_TRUJILLO_2", "Novopan Trujillo (2.º punto)", -8.13857, -79.01758, 150);
+        public static readonly GeocercaGps CocheraTrujillo = GeocercaGps.Circulo("COCHERA_TRUJILLO", "Cochera Trujillo (Fundo Larrea)", -8.13855, -79.01755, 150);
+
+        /// <summary>
+        /// Grifo de la Panamericana en Curva de Sun, ~1,4 km al sur de Vitapro: el otro lugar de espera
+        /// (BNG-862 y T6F-864, 28/08–01/09; también las de Novopan después de descargar).
+        /// </summary>
+        public static readonly GeocercaGps EsperaGrifoCurvaSun = GeocercaGps.Circulo("ESPERA_GRIFO_CURVA_SUN", "Grifo Curva de Sun (espera Trujillo)", -8.14790, -79.01282, 150);
 
         /// <summary>Polinplast en Virú (3 de 3 viajes, ~4 h; a 1,5 km al norte esperan antes de entrar).</summary>
         public static readonly GeocercaGps PolinplastViru = GeocercaGps.Circulo("POLINPLAST_VIRU", "Virú (Polinplast)", -8.40868, -78.81249, 300);
@@ -63,8 +73,9 @@ namespace WebSGV.Services.GpsIntegracion
         public static readonly GeocercaGps PolinplastCasaGrande = GeocercaGps.Circulo("POLINPLAST_CASAGRANDE", "Casa Grande (Polinplast)", -7.70956, -79.26271, 400);
 
         /// <summary>
-        /// Polinplast para ACP y para Chepén: es el mismo punto (3 de 3 viajes de cada uno, 2–3 h). ACP es
-        /// un lugar de entrega.
+        /// Polinplast para ACP y para Chepén: es el mismo punto (3 de 3 viajes de cada uno, 2–3 h), en la
+        /// Panamericana en Pacanga (Chepén): ACP es Agrícola Cerro Prieto, cuyo fundo está en la Panamericana
+        /// Norte km 733, Pacanga (acpagro.com).
         /// </summary>
         public static readonly GeocercaGps PolinplastAcpChepen = GeocercaGps.Circulo("POLINPLAST_ACP", "ACP / Chepén (Polinplast)", -7.06923, -79.55870, 300);
 
@@ -80,8 +91,9 @@ namespace WebSGV.Services.GpsIntegracion
         public static IReadOnlyList<GeocercaGps> Todas { get; } = new[]
         {
             CrisarCartavio, PolinplastChapaira, NovopanQuito,
-            CrisarLaTroncal, CrisarPernocte, NovopanPiura, NovopanTrujillo, NovopanTrujillo2,
-            PolinplastViru, PolinplastChao, PolinplastCasaGrande, PolinplastAcpChepen, PolinplastJayanca, PolinplastOlmos, PolinplastSalaverry
+            CrisarLaTroncal, CrisarPernocte, NovopanPiura, NovopanTrujillo,
+            PolinplastViru, PolinplastChao, PolinplastCasaGrande, PolinplastAcpChepen, PolinplastJayanca, PolinplastOlmos, PolinplastSalaverry,
+            CocheraTrujillo, EsperaGrifoCurvaSun
         };
 
         // Lugar como lo escribe el Word o el Excel (RutaProgramacion.Lugar / LUGAR DE ENTREGA) → geocerca, por cliente.
@@ -105,6 +117,7 @@ namespace WebSGV.Services.GpsIntegracion
             ["POLINPLAST|RAPEL"] = PolinplastJayanca,
             ["POLINPLAST|OLMOS"] = PolinplastOlmos,
             ["POLINPLAST|SALAVERRY"] = PolinplastSalaverry,
+            ["POLINPLAST|COCHERA TRUJILLO"] = CocheraTrujillo,
         };
 
         /// <summary>Geocerca del lugar de carga o entrega de un cliente ("POLINPLAST", "VIRU"); null si no hay.</summary>

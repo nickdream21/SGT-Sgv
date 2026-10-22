@@ -154,7 +154,8 @@ círculos. Antes de usarlas para marcar horas hay que dibujarlas sobre el terren
 | Parqueo antes de La Troncal | [-2.77225, -79.69339](https://www.google.com/maps?q=-2.77225,-79.69339) | 200 m | 5/5 | pasan la noche (6–13 h, hasta 56 h) |
 | Novopan Piura | [-5.11323, -80.70448](https://www.google.com/maps?q=-5.11323,-80.70448) | 300 m | 3/3 | ~1,5 h |
 | Novopan Trujillo | [-8.14396, -79.01987](https://www.google.com/maps?q=-8.14396,-79.01987) | 250 m | 2/3 | 2–4 h (a 1 km de Vitapro) |
-| Novopan Trujillo, 2.º punto (confirmado por la oficina) | [-8.13857, -79.01758](https://www.google.com/maps?q=-8.13857,-79.01758) | 150 m | BPT-788, 3 veces | ~24 h (a 500 m de Vitapro) |
+| Cochera Trujillo (estacionamiento, calle Fundo Larrea) | [-8.13855, -79.01755](https://www.google.com/maps?q=-8.13855,-79.01755) | 150 m | 5 estadías de 3 tractos | 1–4 días esperando la carga siguiente |
+| Grifo Curva de Sun (espera en Trujillo) | [-8.14790, -79.01282](https://www.google.com/maps?q=-8.14790,-79.01282) | 150 m | 2 tractos + Novopan después de descargar | 6 h a 4 días |
 | Virú | [-8.40868, -78.81249](https://www.google.com/maps?q=-8.40868,-78.81249) | 300 m | 3/3 | ~4 h (esperan 1,5 km al norte) |
 | Chao | [-8.58301, -78.64513](https://www.google.com/maps?q=-8.58301,-78.64513) | 300 m | 3/3 | ~1,5 h |
 | Casa Grande | [-7.70956, -79.26271](https://www.google.com/maps?q=-7.70956,-79.26271) | 400 m | 3/3 | ~1 h |
@@ -176,19 +177,18 @@ Lo que enseñó el GPS:
   -80.026 (al norte de Chiclayo), -7.414, -79.551 (Pacasmayo), -7.932, -79.101 (Paiján), -6.063, -80.509 y
   -5.272, -80.612. Las de Novopan de vuelta: -3.526, -79.995 (Arenillas, de noche) y -3.4896, -80.212 (Aguas
   Verdes, hasta 44 h: ¿aduana de importación?).
-- BPT-788 se queda ~24 h en -8.1386, -79.0176 (a 500 m de Vitapro Trujillo) después de entregar cartón. La oficina
-  dijo que es **otro punto de descarga de Novopan** (geocerca `NOVOPAN_TRUJILLO_2`), pero ver el punto siguiente.
 - **"UNIDAD DESCARGADA EN COCHERA TRUJILLO"** (5 viajes de Polinplast, carga 25–27/08). El GPS muestra que las 5
-  unidades **descargaron primero en su destino** (Casa Grande 1,5–3 h; BPT-788 en ACP) y después fueron a Trujillo
-  y se quedaron paradas de 1 a 4 días. Así que el STATUS no habla de otra descarga: es el final del viaje, la unidad
-  guardada en Trujillo. Hay dos puntos de cochera:
-  - **A** [-8.13850, -79.01750](https://www.google.com/maps?q=-8.13850,-79.01750): T6F-857 (26–28/08, ~48 h),
-    BNG-758 (27–31/08, ~4,5 días) y BPT-788 (27–31/08, ~4 días). Es el mismo punto que la oficina señaló como
-    Novopan: cinco estadías de 1 a 4 días se parecen más a una cochera que a una descarga (Novopan descarga en
-    2–4 h). **Por confirmar.**
-  - **B** [-8.14795, -79.01280](https://www.google.com/maps?q=-8.14795,-79.01280): BNG-862 y T6F-864
-    (28/08–01/09, ~4 días). Ahí también esperan 6–7 h las unidades de Novopan después de descargar (BFK-879,
-    15/10) y T6F-864 después de Salaverry (24/07).
+  unidades **descargaron primero en su destino** (Casa Grande 1,5–3 h; BPT-788 en ACP), después fueron a Trujillo y
+  se quedaron de 1 a 4 días, y el Word del 01/09 las programa a las cinco en `CARTAVIO-AZUCAR-CARGAN 02 DE
+  SEPTIEMBRE`: **esperaban en Trujillo la carga siguiente** (azúcar de Crisar en Cartavio, a ~30 km), en vez de
+  volver vacías a Sullana. El STATUS es el final del viaje, no otra descarga. Dos lugares de espera:
+  - **Cochera** [-8.13855, -79.01755](https://www.google.com/maps?q=-8.13855,-79.01755): OpenStreetMap lo marca
+    como estacionamiento (calle Fundo Larrea, Curva de Sun, Moche), a ~500 m de Vitapro. T6F-857, BNG-758 y
+    BPT-788 (y BPT-788 otras dos veces, ~24 h, en julio y agosto). La oficina lo había señalado como Novopan, pero
+    Novopan descarga en 2–4 h en su almacén (calle Camino Real, -8.14396, -79.01987); este punto es la cochera.
+  - **Grifo de Curva de Sun** [-8.14790, -79.01282](https://www.google.com/maps?q=-8.14790,-79.01282): grifo
+    de la Panamericana (OpenStreetMap), ~1,4 km al sur de Vitapro. BNG-862 y T6F-864 (28/08–01/09); ahí también
+    esperan 6–7 h las de Novopan después de descargar.
 
 ## 5. Calidad de los datos del Excel
 
@@ -205,11 +205,18 @@ Lo que enseñó el GPS:
 
 ## 6. Preguntas abiertas (también en el plan)
 
-- **ACP** es un lugar de entrega de Polinplast (el GPS lo ubica en el mismo punto que Chepén). En la oficina no
-  saben qué son **Rapel** (el GPS la lleva a Jayanca) ni **TALSA**: preguntar a quien arma el Word.
-- Resuelto (2026-10-21): -3.536, -80.184 es TCI; -8.1386, -79.0176 es otro punto de descarga de Novopan.
-- Cochera de Trujillo: el GPS de los 5 viajes "DESCARGADA EN COCHERA TRUJILLO" da dos puntos (A y B, sección 4.3).
-  Confirmar cuál es la cochera y si A es Novopan o cochera.
+- Resuelto (2026-10-21, GPS y web):
+  - **ACP = Agrícola Cerro Prieto**, agroexportadora con fundo en la Panamericana Norte km 733, Pacanga (Chepén)
+    ([acpagro.com](https://www.acpagro.com/aboutus)); el punto del GPS está en la Panamericana en Pacanga. Por eso
+    el Word dice ACP o CHEPEN para el mismo lugar.
+  - **TALSA** = Agroindustrial TALSA (Grupo Rocío), palta y arándano con campos en Virú, Chao y Zaña
+    ([agraria.pe](https://agraria.pe/index.php/noticias/talsa-contara-con-mil-hectareas-de-palta-al-18061)). Falta
+    un viaje con GPS para ubicar dónde se entrega.
+  - -3.536, -80.184 es TCI; -8.1386, -79.0176 es la cochera de Trujillo (sección 4.3).
+- **Rapel**: Sociedad Agrícola Rapel (capital chileno, uva, arándano y limón) está en Piura, fundo El Papayo
+  ([FreshPlaza](https://www.freshplaza.com/latin-america/article/9498952/sociedad-agricola-rapel-exports-some-4-500-containers-of-fruit-each-year/)),
+  pero los viajes "RAPEL" del GPS terminan en Jayanca (carretera Lambayeque–Olmos, El Camal). Puede ser otro
+  fundo suyo o un packing de terceros: confirmar con quien arma el Word.
 - Polinplast: confirmar con Rosmery cómo es la guía (remitente digital + transportista).
 - Crisar y Novopan: ¿se registran en el SGV como despacho con su factura, como Vitapro, o solo se siguen?
 - ¿Cómo se cobra el falso flete y cómo se registra?

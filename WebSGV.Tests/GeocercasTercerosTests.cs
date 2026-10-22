@@ -20,8 +20,13 @@ namespace WebSGV.Tests
         [InlineData("NOVOPAN_PIURA", -5.11382, -80.70553)]          // AVN-758
         [InlineData("NOVOPAN_PIURA", -5.11234, -80.70310)]          // AVN-709
         [InlineData("NOVOPAN_TRUJILLO", -8.14399, -79.01987)]       // BFK-879
-        [InlineData("NOVOPAN_TRUJILLO_2", -8.13857, -79.01755)]     // BPT-788, ~24 h
-        [InlineData("NOVOPAN_TRUJILLO_2", -8.13858, -79.01762)]     // BPT-788
+        [InlineData("COCHERA_TRUJILLO", -8.13850, -79.01751)]       // T6F-857, 27–28/08 (~25 h)
+        [InlineData("COCHERA_TRUJILLO", -8.13845, -79.01755)]       // BNG-758, 27–31/08
+        [InlineData("COCHERA_TRUJILLO", -8.13848, -79.01741)]       // BPT-788, 27–31/08
+        [InlineData("COCHERA_TRUJILLO", -8.13858, -79.01762)]       // BPT-788, 20–21/08
+        [InlineData("ESPERA_GRIFO_CURVA_SUN", -8.14795, -79.01281)] // BNG-862, 28/08–01/09
+        [InlineData("ESPERA_GRIFO_CURVA_SUN", -8.14792, -79.01278)] // T6F-864
+        [InlineData("ESPERA_GRIFO_CURVA_SUN", -8.14738, -79.01295)] // BFK-879 después de descargar Novopan
         [InlineData("POLINPLAST_VIRU", -8.40885, -78.81247)]        // TBM-893
         [InlineData("POLINPLAST_CHAO", -8.58288, -78.64503)]        // BNG-758
         [InlineData("POLINPLAST_CASAGRANDE", -7.71101, -79.26297)]  // BPT-788
