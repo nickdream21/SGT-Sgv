@@ -75,6 +75,9 @@ namespace WebSGV.Services.Reportes
         public DateTime Generado { get; set; } = FechaHelper.Ahora();
         /// <summary>Usuario que generó el reporte (opcional, se imprime junto a la fecha).</summary>
         public string GeneradoPor { get; set; }
+
+        /// <summary>Más hojas del mismo Excel (p. ej. el detalle después de un cuadro simple). El PDF y la imagen usan solo esta.</summary>
+        public List<ReporteTabular> HojasAdicionales { get; } = new List<ReporteTabular>();
     }
 
     /// <summary>Genera el Excel y el PDF de un <see cref="ReporteTabular"/>.</summary>
@@ -119,171 +122,13 @@ namespace WebSGV.Services.Reportes
         public static byte[] GenerarExcel(ReporteTabular r, EmpresaInfo emp, string rutaLogo = null)
         {
             emp = emp ?? new EmpresaInfo();
-            int n = Math.Max(r.Columnas.Count, 4);
-
             using (var wb = new XLWorkbook())
             {
                 wb.Properties.Title = r.Titulo;
                 wb.Properties.Author = emp.RazonSocial;
                 wb.Properties.Company = emp.RazonSocial;
-
-                var ws = wb.Worksheets.Add(NombreHojaValido(r.NombreHoja));
-                ws.Style.Font.FontName = "Arial";
-                ws.Style.Font.FontSize = 10;
-                ws.ShowGridLines = false;
-
-                // --- Encabezado: empresa, título, filtros ---
-                // El logo ocupa la esquina superior izquierda (columna A, filas 1-2) y el texto
-                // de la empresa se corre una columna a la derecha.
-                bool conLogo = !string.IsNullOrWhiteSpace(rutaLogo) && File.Exists(rutaLogo);
-                int colTexto = conLogo ? 2 : 1;
-                int fila = 1;
-                Titular(ws, fila++, n, emp.RazonSocial ?? "", 13, true, AzulHex, colTexto);
-                Titular(ws, fila++, n, LineaEmpresa(emp), 9, false, TextoSuaveHex, colTexto);
-                if (conLogo)
-                {
-                    ws.Row(1).Height = 26;
-                    ws.Row(2).Height = 22;
-                    ws.AddPicture(rutaLogo).MoveTo(ws.Cell(1, 1), 4, 3).WithSize(56, 58);
-                }
-                fila++;
-                Titular(ws, fila++, n, r.Titulo, 12, true, "#1F2937");
-                foreach (string filtro in r.Filtros)
-                    Titular(ws, fila++, n, filtro, 9, false, TextoSuaveHex);
-                Titular(ws, fila++, n, LineaGenerado(r), 9, false, TextoSuaveHex);
-                fila++;
-
-                // --- Cabecera de columnas ---
-                int filaCabecera = fila;
-                for (int i = 0; i < r.Columnas.Count; i++)
-                {
-                    var celda = ws.Cell(filaCabecera, i + 1);
-                    celda.Value = r.Columnas[i].Titulo;
-                    celda.Style.Alignment.Horizontal = AlineacionExcel(r.Columnas[i].Tipo);
-                }
-                var cabecera = ws.Range(filaCabecera, 1, filaCabecera, r.Columnas.Count);
-                cabecera.Style.Font.Bold = true;
-                cabecera.Style.Font.FontColor = XLColor.FromHtml(AzulHex);
-                cabecera.Style.Fill.BackgroundColor = XLColor.FromHtml(FondoTituloHex);
-                cabecera.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-                cabecera.Style.Alignment.WrapText = true;
-                cabecera.Style.Border.BottomBorder = XLBorderStyleValues.Medium;
-                cabecera.Style.Border.BottomBorderColor = XLColor.FromHtml(AzulHex);
-                ws.Row(filaCabecera).Height = 30;
-
-                // --- Filas ---
-                fila = filaCabecera + 1;
-                foreach (DataRow dr in r.Filas)
-                {
-                    for (int i = 0; i < r.Columnas.Count; i++)
-                        EscribirCelda(ws.Cell(fila, i + 1), r.Columnas[i], dr);
-                    var rango = ws.Range(fila, 1, fila, r.Columnas.Count);
-                    rango.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
-                    rango.Style.Border.BottomBorderColor = XLColor.FromHtml(BordeHex);
-                    rango.Style.Alignment.Vertical = XLAlignmentVerticalValues.Top;
-                    fila++;
-                }
-                int ultimaFilaDatos = fila - 1;
-
-                if (r.Filas.Count == 0)
-                {
-                    ws.Cell(fila, 1).Value = "No hay registros para los filtros seleccionados.";
-                    ws.Cell(fila, 1).Style.Font.Italic = true;
-                    ws.Cell(fila, 1).Style.Font.FontColor = XLColor.FromHtml(TextoSuaveHex);
-                    fila++;
-                }
-
-                // --- Totales: SUBTOTAL respeta el autofiltro ---
-                bool hayMontos = r.Columnas.Any(c => c.EsMonto);
-                if (r.IncluirTotales && hayMontos && r.Filas.Count > 0)
-                {
-                    int columnasEtiqueta = Math.Max(1, r.Columnas.TakeWhile(c => !c.EsMonto).Count());
-                    ws.Cell(fila, 1).Value = "Total";
-                    if (columnasEtiqueta > 1) ws.Range(fila, 1, fila, columnasEtiqueta).Merge();
-                    for (int i = 0; i < r.Columnas.Count; i++)
-                    {
-                        if (!r.Columnas[i].EsMonto) continue;
-                        var celda = ws.Cell(fila, i + 1);
-                        string col = celda.Address.ColumnLetter;
-                        celda.FormulaA1 = $"SUBTOTAL(109,{col}{filaCabecera + 1}:{col}{ultimaFilaDatos})";
-                        celda.Style.NumberFormat.Format = FormatoMontoExcel(r.Columnas[i]);
-                        celda.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-                    }
-                    var total = ws.Range(fila, 1, fila, r.Columnas.Count);
-                    total.Style.Font.Bold = true;
-                    total.Style.Fill.BackgroundColor = XLColor.FromHtml(FondoTituloHex);
-                    total.Style.Border.TopBorder = XLBorderStyleValues.Medium;
-                    total.Style.Border.TopBorderColor = XLColor.FromHtml(AzulHex);
-                    fila++;
-                }
-
-                // --- Resumen ---
-                if (r.Resumen.Count > 0)
-                {
-                    fila++;
-                    int colValor = Math.Max(2, r.Columnas.Count);
-                    int colEtiquetaFin = colValor - 1;
-                    var tituloRes = ws.Cell(fila, 1);
-                    tituloRes.Value = r.TituloResumen;
-                    tituloRes.Style.Font.Bold = true;
-                    tituloRes.Style.Font.FontColor = XLColor.FromHtml(AzulHex);
-                    var bordeTitulo = ws.Range(fila, 1, fila, colValor);
-                    bordeTitulo.Style.Border.BottomBorder = XLBorderStyleValues.Medium;
-                    bordeTitulo.Style.Border.BottomBorderColor = XLColor.FromHtml(AzulHex);
-                    fila++;
-
-                    foreach (var linea in r.Resumen)
-                    {
-                        ws.Cell(fila, 1).Value = linea.Etiqueta;
-                        if (colEtiquetaFin > 1) ws.Range(fila, 1, fila, colEtiquetaFin).Merge();
-                        var valor = ws.Cell(fila, colValor);
-                        valor.Value = linea.Valor;
-                        valor.Style.NumberFormat.Format = FormatoResumenExcel(linea.Tipo);
-                        valor.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-
-                        var rango = ws.Range(fila, 1, fila, colValor);
-                        rango.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
-                        rango.Style.Border.BottomBorderColor = XLColor.FromHtml(BordeHex);
-                        if (linea.Destacada)
-                        {
-                            bool neg = linea.Valor < 0;
-                            rango.Style.Font.Bold = true;
-                            rango.Style.Font.FontColor = XLColor.FromHtml(neg ? "#B91C1C" : "#166534");
-                            rango.Style.Fill.BackgroundColor = XLColor.FromHtml(neg ? "#FDF0F0" : "#ECF7EF");
-                            rango.Style.Border.TopBorder = XLBorderStyleValues.Medium;
-                            rango.Style.Border.TopBorderColor = XLColor.FromHtml(neg ? "#B91C1C" : "#166534");
-                        }
-                        fila++;
-                    }
-                }
-
-                if (!string.IsNullOrWhiteSpace(r.Nota))
-                {
-                    fila++;
-                    var nota = ws.Cell(fila, 1);
-                    nota.Value = r.Nota;
-                    nota.Style.Font.FontSize = 9;
-                    nota.Style.Font.FontColor = XLColor.FromHtml(TextoSuaveHex);
-                }
-
-                // --- Anchos, filtro, paneles e impresión ---
-                for (int i = 0; i < r.Columnas.Count; i++)
-                    ws.Column(i + 1).Width = AnchoExcel(ws, r.Columnas[i], i + 1, filaCabecera, ultimaFilaDatos);
-
-                if (r.Filas.Count > 0)
-                    ws.Range(filaCabecera, 1, ultimaFilaDatos, r.Columnas.Count).SetAutoFilter();
-                ws.SheetView.FreezeRows(filaCabecera);
-
-                ws.PageSetup.PageOrientation = XLPageOrientation.Landscape;
-                ws.PageSetup.PaperSize = XLPaperSize.A4Paper;
-                ws.PageSetup.FitToPages(1, 0);
-                ws.PageSetup.SetRowsToRepeatAtTop(filaCabecera, filaCabecera);
-                ws.PageSetup.Margins.Left = 0.4;
-                ws.PageSetup.Margins.Right = 0.4;
-                ws.PageSetup.Margins.Top = 0.5;
-                ws.PageSetup.Margins.Bottom = 0.6;
-                ws.PageSetup.Footer.Left.AddText("&8" + (emp.RazonSocial ?? "") + " · " + r.Titulo);
-                ws.PageSetup.Footer.Right.AddText("&8Página &P de &N");
+                foreach (var hoja in new[] { r }.Concat(r.HojasAdicionales))
+                    EscribirHoja(wb, hoja, emp, rutaLogo);
 
                 using (var ms = new MemoryStream())
                 {
@@ -291,6 +136,170 @@ namespace WebSGV.Services.Reportes
                     return ms.ToArray();
                 }
             }
+        }
+
+        /// <summary>Una hoja con el formato del reporte: encabezado, tabla, totales, resumen y nota.</summary>
+        private static void EscribirHoja(XLWorkbook wb, ReporteTabular r, EmpresaInfo emp, string rutaLogo)
+        {
+            int n = Math.Max(r.Columnas.Count, 4);
+
+            var ws = wb.Worksheets.Add(NombreHojaValido(r.NombreHoja));
+            ws.Style.Font.FontName = "Arial";
+            ws.Style.Font.FontSize = 10;
+            ws.ShowGridLines = false;
+
+            // --- Encabezado: empresa, título, filtros ---
+            // El logo ocupa la esquina superior izquierda (columna A, filas 1-2) y el texto
+            // de la empresa se corre una columna a la derecha.
+            bool conLogo = !string.IsNullOrWhiteSpace(rutaLogo) && File.Exists(rutaLogo);
+            int colTexto = conLogo ? 2 : 1;
+            int fila = 1;
+            Titular(ws, fila++, n, emp.RazonSocial ?? "", 13, true, AzulHex, colTexto);
+            Titular(ws, fila++, n, LineaEmpresa(emp), 9, false, TextoSuaveHex, colTexto);
+            if (conLogo)
+            {
+                ws.Row(1).Height = 26;
+                ws.Row(2).Height = 22;
+                ws.AddPicture(rutaLogo).MoveTo(ws.Cell(1, 1), 4, 3).WithSize(56, 58);
+            }
+            fila++;
+            Titular(ws, fila++, n, r.Titulo, 12, true, "#1F2937");
+            foreach (string filtro in r.Filtros)
+                Titular(ws, fila++, n, filtro, 9, false, TextoSuaveHex);
+            Titular(ws, fila++, n, LineaGenerado(r), 9, false, TextoSuaveHex);
+            fila++;
+
+            // --- Cabecera de columnas ---
+            int filaCabecera = fila;
+            for (int i = 0; i < r.Columnas.Count; i++)
+            {
+                var celda = ws.Cell(filaCabecera, i + 1);
+                celda.Value = r.Columnas[i].Titulo;
+                celda.Style.Alignment.Horizontal = AlineacionExcel(r.Columnas[i].Tipo);
+            }
+            var cabecera = ws.Range(filaCabecera, 1, filaCabecera, r.Columnas.Count);
+            cabecera.Style.Font.Bold = true;
+            cabecera.Style.Font.FontColor = XLColor.FromHtml(AzulHex);
+            cabecera.Style.Fill.BackgroundColor = XLColor.FromHtml(FondoTituloHex);
+            cabecera.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            cabecera.Style.Alignment.WrapText = true;
+            cabecera.Style.Border.BottomBorder = XLBorderStyleValues.Medium;
+            cabecera.Style.Border.BottomBorderColor = XLColor.FromHtml(AzulHex);
+            ws.Row(filaCabecera).Height = 30;
+
+            // --- Filas ---
+            fila = filaCabecera + 1;
+            foreach (DataRow dr in r.Filas)
+            {
+                for (int i = 0; i < r.Columnas.Count; i++)
+                    EscribirCelda(ws.Cell(fila, i + 1), r.Columnas[i], dr);
+                var rango = ws.Range(fila, 1, fila, r.Columnas.Count);
+                rango.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+                rango.Style.Border.BottomBorderColor = XLColor.FromHtml(BordeHex);
+                rango.Style.Alignment.Vertical = XLAlignmentVerticalValues.Top;
+                fila++;
+            }
+            int ultimaFilaDatos = fila - 1;
+
+            if (r.Filas.Count == 0)
+            {
+                ws.Cell(fila, 1).Value = "No hay registros para los filtros seleccionados.";
+                ws.Cell(fila, 1).Style.Font.Italic = true;
+                ws.Cell(fila, 1).Style.Font.FontColor = XLColor.FromHtml(TextoSuaveHex);
+                fila++;
+            }
+
+            // --- Totales: SUBTOTAL respeta el autofiltro ---
+            bool hayMontos = r.Columnas.Any(c => c.EsMonto);
+            if (r.IncluirTotales && hayMontos && r.Filas.Count > 0)
+            {
+                int columnasEtiqueta = Math.Max(1, r.Columnas.TakeWhile(c => !c.EsMonto).Count());
+                ws.Cell(fila, 1).Value = "Total";
+                if (columnasEtiqueta > 1) ws.Range(fila, 1, fila, columnasEtiqueta).Merge();
+                for (int i = 0; i < r.Columnas.Count; i++)
+                {
+                    if (!r.Columnas[i].EsMonto) continue;
+                    var celda = ws.Cell(fila, i + 1);
+                    string col = celda.Address.ColumnLetter;
+                    celda.FormulaA1 = $"SUBTOTAL(109,{col}{filaCabecera + 1}:{col}{ultimaFilaDatos})";
+                    celda.Style.NumberFormat.Format = FormatoMontoExcel(r.Columnas[i]);
+                    celda.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                }
+                var total = ws.Range(fila, 1, fila, r.Columnas.Count);
+                total.Style.Font.Bold = true;
+                total.Style.Fill.BackgroundColor = XLColor.FromHtml(FondoTituloHex);
+                total.Style.Border.TopBorder = XLBorderStyleValues.Medium;
+                total.Style.Border.TopBorderColor = XLColor.FromHtml(AzulHex);
+                fila++;
+            }
+
+            // --- Resumen ---
+            if (r.Resumen.Count > 0)
+            {
+                fila++;
+                int colValor = Math.Max(2, r.Columnas.Count);
+                int colEtiquetaFin = colValor - 1;
+                var tituloRes = ws.Cell(fila, 1);
+                tituloRes.Value = r.TituloResumen;
+                tituloRes.Style.Font.Bold = true;
+                tituloRes.Style.Font.FontColor = XLColor.FromHtml(AzulHex);
+                var bordeTitulo = ws.Range(fila, 1, fila, colValor);
+                bordeTitulo.Style.Border.BottomBorder = XLBorderStyleValues.Medium;
+                bordeTitulo.Style.Border.BottomBorderColor = XLColor.FromHtml(AzulHex);
+                fila++;
+
+                foreach (var linea in r.Resumen)
+                {
+                    ws.Cell(fila, 1).Value = linea.Etiqueta;
+                    if (colEtiquetaFin > 1) ws.Range(fila, 1, fila, colEtiquetaFin).Merge();
+                    var valor = ws.Cell(fila, colValor);
+                    valor.Value = linea.Valor;
+                    valor.Style.NumberFormat.Format = FormatoResumenExcel(linea.Tipo);
+                    valor.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+
+                    var rango = ws.Range(fila, 1, fila, colValor);
+                    rango.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+                    rango.Style.Border.BottomBorderColor = XLColor.FromHtml(BordeHex);
+                    if (linea.Destacada)
+                    {
+                        bool neg = linea.Valor < 0;
+                        rango.Style.Font.Bold = true;
+                        rango.Style.Font.FontColor = XLColor.FromHtml(neg ? "#B91C1C" : "#166534");
+                        rango.Style.Fill.BackgroundColor = XLColor.FromHtml(neg ? "#FDF0F0" : "#ECF7EF");
+                        rango.Style.Border.TopBorder = XLBorderStyleValues.Medium;
+                        rango.Style.Border.TopBorderColor = XLColor.FromHtml(neg ? "#B91C1C" : "#166534");
+                    }
+                    fila++;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(r.Nota))
+            {
+                fila++;
+                var nota = ws.Cell(fila, 1);
+                nota.Value = r.Nota;
+                nota.Style.Font.FontSize = 9;
+                nota.Style.Font.FontColor = XLColor.FromHtml(TextoSuaveHex);
+            }
+
+            // --- Anchos, filtro, paneles e impresión ---
+            for (int i = 0; i < r.Columnas.Count; i++)
+                ws.Column(i + 1).Width = AnchoExcel(ws, r.Columnas[i], i + 1, filaCabecera, ultimaFilaDatos);
+
+            if (r.Filas.Count > 0)
+                ws.Range(filaCabecera, 1, ultimaFilaDatos, r.Columnas.Count).SetAutoFilter();
+            ws.SheetView.FreezeRows(filaCabecera);
+
+            ws.PageSetup.PageOrientation = XLPageOrientation.Landscape;
+            ws.PageSetup.PaperSize = XLPaperSize.A4Paper;
+            ws.PageSetup.FitToPages(1, 0);
+            ws.PageSetup.SetRowsToRepeatAtTop(filaCabecera, filaCabecera);
+            ws.PageSetup.Margins.Left = 0.4;
+            ws.PageSetup.Margins.Right = 0.4;
+            ws.PageSetup.Margins.Top = 0.5;
+            ws.PageSetup.Margins.Bottom = 0.6;
+            ws.PageSetup.Footer.Left.AddText("&8" + (emp.RazonSocial ?? "") + " · " + r.Titulo);
+            ws.PageSetup.Footer.Right.AddText("&8Página &P de &N");
         }
 
         private static void Titular(IXLWorksheet ws, int fila, int columnas, string texto, double tamano, bool negrita, string color, int colInicio = 1)
@@ -491,7 +500,8 @@ namespace WebSGV.Services.Reportes
             doc.Page(page =>
             {
                 var tamano = _r.Columnas.Count > 24 ? PageSizes.A3.Landscape() : PageSizes.A4.Landscape();
-                if (_continuo) page.ContinuousSize(tamano.Width);
+                // La imagen de una tabla angosta (el cuadro del grifo) va en A4 vertical: se lee mejor en el celular.
+                if (_continuo) page.ContinuousSize(_r.Columnas.Count <= 5 ? PageSizes.A4.Width : tamano.Width);
                 else page.Size(tamano);
                 page.MarginHorizontal(28);
                 page.MarginTop(24);

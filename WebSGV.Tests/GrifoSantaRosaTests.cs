@@ -121,6 +121,68 @@ namespace WebSGV.Tests
             Assert.Equal("", ExportacionGrifoSantaRosa.Texto(new List<ExportacionGrifoSantaRosa.Unidad>(), Ahora));
         }
 
+        // ---------- Hora al grifo de los que todavía no salen de la planta ----------
+
+        // Descargas de 2 a 6 h (como Jave: mediana ~3,5 h).
+        private static readonly List<double> Duraciones = Enumerable.Range(0, 21).Select(i => 120.0 + i * 12).ToList();
+
+        [Fact]
+        public void DuracionRestante_CuentaLoQueYaLlevaDescargando()
+        {
+            var sinEmpezar = ExportacionGrifoSantaRosa.DuracionRestante(Duraciones, 0);
+            Assert.Equal(240, sinEmpezar[1], 0);                                 // mediana de 2 a 6 h
+            var conTresHoras = ExportacionGrifoSantaRosa.DuracionRestante(Duraciones, 180);
+            Assert.InRange(conTresHoras[1], 60, 100);                           // le falta ~1,5 h, no 4
+            Assert.True(conTresHoras[0] <= conTresHoras[1] && conTresHoras[1] <= conTresHoras[2]);
+            Assert.Equal(new double[] { 15, 30, 60 }, ExportacionGrifoSantaRosa.DuracionRestante(Duraciones, 400)); // ya pasó lo normal
+        }
+
+        [Fact]
+        public void DescargandoYYendoADescargar_TienenHoraAlGrifo()
+        {
+            var descargando = Viaje(1, null, "fhLlegadaPlantaEcuador");          // en Jave desde hace 2 h
+            var yendo = Viaje(2, null, "fhCruceEcuador", "fhSalidaTCI");
+            yendo.Llegada = new LlegadaEstimada.Estimado
+            {
+                Destino = "JAVE", KmRestantes = 90, Llegada = Ahora.AddHours(2), Desde = Ahora.AddHours(1.5), Hasta = Ahora.AddHours(3),
+                HoraPosicion = Ahora.AddMinutes(-5), Muestras = 10,
+            };
+            var duraciones = new Dictionary<string, List<double>> { ["JAVE"] = Duraciones, ["*"] = Duraciones };
+            var u = ExportacionGrifoSantaRosa.Unidades(new[] { yendo, descargando }, Ahora, duraciones);
+
+            var d = u.Single(x => x.Viaje.Id == 1);
+            var y = u.Single(x => x.Viaje.Id == 2);
+            Assert.NotNull(d.AlGrifo);
+            Assert.NotNull(y.AlGrifo);
+            Assert.Equal(LlegadaEstimada.DestinoGrifo, d.AlGrifo.Destino);
+            Assert.True(d.AlGrifo.Llegada > Ahora.AddHours(2));                  // termina de descargar y luego ~4 h de camino
+            Assert.True(y.AlGrifo.Llegada > yendo.Llegada.Llegada.AddHours(4));   // llega a Jave, descarga ~4 h y luego el camino
+            Assert.True(d.AlGrifo.Desde <= d.AlGrifo.Llegada && d.AlGrifo.Llegada <= d.AlGrifo.Hasta);
+            Assert.Contains("al grifo aprox.", ExportacionGrifoSantaRosa.Texto(u, Ahora));
+        }
+
+        [Fact]
+        public void Excel_PrimeraHojaSimplePorHoraYDetalleEnLaSegunda()
+        {
+            var t = new System.Data.DataTable();
+            t.Columns.Add("idSeguimiento", typeof(int));
+            ViajeResumen ConFila(ViajeResumen v) { var f = t.NewRow(); f["idSeguimiento"] = v.Id; t.Rows.Add(f); v.Fila = f; v.Chofer2 = "CHOFER " + v.Id; return v; }
+            var tarde = ConFila(Viaje(1, null, "fhSalida")); tarde.Llegada = AlGrifo(5);
+            var pronto = ConFila(Viaje(2, null, "fhSalida")); pronto.Llegada = AlGrifo(1);
+            var enGrifo = ConFila(Viaje(3, null, "fhSalida", "fhLlegadaGrifo"));
+            var u = ExportacionGrifoSantaRosa.Unidades(new[] { tarde, pronto, enGrifo }, Ahora);
+
+            var r = ExportacionGrifoSantaRosa.Construir(u, "prueba", Ahora);
+            Assert.Equal(new[] { "CONDUCTOR", "TRACTO", "LLEGADA AL GRIFO APROX." }, r.Columnas.Select(c => c.Titulo));
+            Assert.Equal(new[] { 3, 2, 1 }, r.Filas.Select(f => (int)f["idSeguimiento"]));   // en el grifo, luego por hora
+            Assert.StartsWith("En el grifo desde", (string)r.Columnas[2].Valor(r.Filas[0]));
+            Assert.Single(r.HojasAdicionales);
+
+            var empresa = new WebSGV.Helpers.EmpresaInfo { RazonSocial = "SERVICIOS GENERALES VIVIANA E.I.R.L.", Ruc = "20483851171" };
+            var wb = new ClosedXML.Excel.XLWorkbook(new MemoryStream(WebSGV.Services.Reportes.ReporteTabularExportador.GenerarExcel(r, empresa)));
+            Assert.Equal(new[] { "Llegada al grifo", "Detalle" }, wb.Worksheets.Select(w => w.Name));
+        }
+
         // ---------- Llegada al grifo y a la base ----------
 
         [Fact]

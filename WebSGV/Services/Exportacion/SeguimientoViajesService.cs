@@ -345,6 +345,40 @@ namespace WebSGV.Services.Exportacion
         }
 
         /// <summary>
+        /// Minutos que duraron las descargas en Ecuador en los últimos 60 días (de la llegada a la planta a la
+        /// salida), por planta (JAVE, INBALNOR; el lugar de entrega en los terceros) y "*" con todas las de Vitapro.
+        /// Para estimar cuándo baja al grifo un carro que todavía descarga. Se guarda 6 h en memoria.
+        /// </summary>
+        public static Dictionary<string, List<double>> DuracionesDescarga()
+        {
+            const string clave = "SGV|DuracionesDescarga";
+            if (System.Web.HttpRuntime.Cache[clave] is Dictionary<string, List<double>> guardadas) return guardadas;
+            DataTable dt = DbHelper.ConsultarTabla(@"
+                SELECT UPPER(LTRIM(RTRIM(CASE WHEN tipoRuta IS NULL THEN bodegaDescarga ELSE lugarEntrega END))) AS planta,
+                       CASE WHEN tipoRuta IS NULL THEN 1 ELSE 0 END AS vitapro,
+                       DATEDIFF(MINUTE, ISNULL(fhLlegadaPlantaEcuador, fhLlegadaAlmacen), fhSalida) AS minutos
+                FROM SeguimientoExportacion
+                WHERE activo = 1 AND fhSalida >= DATEADD(DAY, -60, dbo.fn_AhoraPeru())
+                  AND ISNULL(fhLlegadaPlantaEcuador, fhLlegadaAlmacen) IS NOT NULL
+                  AND DATEDIFF(MINUTE, ISNULL(fhLlegadaPlantaEcuador, fhLlegadaAlmacen), fhSalida) BETWEEN 20 AND 4320");
+            var res = new Dictionary<string, List<double>>(StringComparer.OrdinalIgnoreCase) { ["*"] = new List<double>() };
+            foreach (DataRow r in dt.Rows)
+            {
+                double minutos = Convert.ToDouble(r["minutos"]);
+                string planta = Texto(r, "planta");
+                if (planta != null)
+                {
+                    if (!res.TryGetValue(planta, out var lista)) res[planta] = lista = new List<double>();
+                    lista.Add(minutos);
+                }
+                if (Convert.ToInt32(r["vitapro"]) == 1) res["*"].Add(minutos);
+            }
+            foreach (var l in res.Values) l.Sort();
+            System.Web.HttpRuntime.Cache.Insert(clave, res, null, DateTime.UtcNow.AddHours(6), System.Web.Caching.Cache.NoSlidingExpiration);
+            return res;
+        }
+
+        /// <summary>
         /// Viaje sin movimiento: la posición guardada pasa a la hora y velocidad de la foto de la flota (el lugar y
         /// la dirección siguen siendo los mismos). Así el tablero no muestra "última señal" de una unidad parada.
         /// </summary>

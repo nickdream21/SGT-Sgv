@@ -186,6 +186,37 @@ namespace WebSGV.Services.Exportacion
             return ParaRetorno(false, lat.Value, lng.Value, horaPosicion.Value);
         }
 
+        /// <summary>
+        /// Llegada al grifo de una unidad que todavía no sale de la planta de descarga: a la salida estimada de la
+        /// planta (mediana y rango) se le suma lo que tardaron los viajes anteriores desde la puerta de la planta
+        /// hasta el grifo saliendo a esa hora (los primeros km del perfil <see cref="RetornoGrifo"/>).
+        /// </summary>
+        public static Estimado AlGrifoTrasDescargar(DateTime salidaDesde, DateTime salida, DateTime salidaHasta, DateTime horaReferencia)
+        {
+            var ruta = Perfil(RetornoGrifo);
+            if (ruta == null || ruta.Muestras.Count == 0) return null;
+            var inicio = ruta.Muestras.Where(m => m[0] <= VentanaKm).ToList();
+            double hora = salida.TimeOfDay.TotalHours;
+            List<double> minutos = null;
+            foreach (double franja in FranjasHoras)
+            {
+                minutos = inicio.Where(m => DiferenciaHoras(m[1], hora) <= franja).Select(m => m[2]).ToList();
+                if (minutos.Count >= MuestrasMinimas) break;
+            }
+            if (minutos == null || minutos.Count == 0) return null;
+            minutos.Sort();
+            return new Estimado
+            {
+                Destino = DestinoGrifo,
+                KmRestantes = ruta.LargoKm,
+                Llegada = Redondear(salida.AddMinutes(Percentil(minutos, 0.5))),
+                Desde = Redondear(salidaDesde.AddMinutes(Percentil(minutos, 0.25))),
+                Hasta = Redondear(salidaHasta.AddMinutes(Percentil(minutos, 0.75))),
+                Muestras = minutos.Count,
+                HoraPosicion = horaReferencia,
+            };
+        }
+
         /// <summary>La posición está en el grifo Santa Rosa.</summary>
         public static bool EnElGrifo(double lat, double lng) =>
             WebSGV.Services.GpsIntegracion.GeocercasTrazabilidad.GrifoSantaRosa.Contiene(lat, lng);
