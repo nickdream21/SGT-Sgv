@@ -11,8 +11,7 @@
             </div>
             <div class="sx-barra-acciones">
                 <span class="sx-nota"><asp:Literal ID="litUltimaConsulta" runat="server" /></span>
-                <a href="DashboardExportacion.aspx" class="sx-btn"><i class="fas fa-chart-line" aria-hidden="true"></i>Dashboard</a>
-                <a href="ImportarSeguimiento.aspx" class="sx-btn"><i class="fas fa-file-import" aria-hidden="true"></i>Importar Excel</a>
+                <%-- A la vista, los reportes que se envían y Actualizar GPS; el resto queda en "Más". --%>
                 <asp:Button ID="btnExportarStatus" runat="server" Text="Excel de STATUS" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatus_Click"
                     ToolTip="Baja un Excel liviano con el STATUS de las unidades que muestra la tabla (con el pedido en Buscar, solo ese pedido)" />
                 <asp:Button ID="btnExportar" runat="server" Text="Exportar STATUS GENERAL" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportar_Click"
@@ -21,14 +20,22 @@
                     ToolTip="Cuadro de los clientes terceros (Crisar, Novopan, Polinplast) que muestra la tabla, con las columnas del STATUS EXTRA" />
                 <asp:Button ID="btnExportarGrifo" runat="server" Text="Cuadro grifo Santa Rosa" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarGrifo_Click"
                     ToolTip="Excel de los carros que bajan al grifo Santa Rosa a cargar combustible (Vitapro y Crisar de vuelta de Ecuador): en camino con su hora aproximada de llegada, en el grifo y descargando" />
-                <button type="button" class="sx-btn" id="btnReporteGrifo" title="Copia, listo para enviar al grifo, cuántos y cuáles carros bajan al grifo Santa Rosa y a qué hora llegan aprox."><i class="fas fa-gas-pump" aria-hidden="true"></i>Reporte grifo Santa Rosa</button>
-                <textarea id="txtReporteGrifo" hidden readonly><asp:Literal ID="litReporteGrifo" runat="server" /></textarea>
-                <a href="SeguimientoViaje.aspx?nuevo=1" class="sx-btn">Nuevo viaje</a>
-                <button type="button" class="sx-btn" id="btnCopiarStatus" title="Copia el STATUS de cada fila de la tabla, en orden, para pegar en la columna STATUS del Excel"><i class="fas fa-copy" aria-hidden="true"></i>Copiar STATUS</button>
-                <button type="button" class="sx-btn" id="btnReporteLlegadas" title="Copia, listo para enviar, el estado y la hora aproximada de llegada de las unidades que van en camino a cargar a Trujillo o a descargar a Jave/Inbalnor"><i class="fas fa-clock" aria-hidden="true"></i>Reporte de llegadas</button>
-                <textarea id="txtReporteLlegadas" hidden readonly><asp:Literal ID="litReporteLlegadas" runat="server" /></textarea>
                 <asp:Button ID="btnExportarLlegadas" runat="server" Text="Excel de llegadas" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarLlegadas_Click"
-                    ToolTip="Las mismas unidades del Reporte de llegadas en Excel: en camino a cargar a Trujillo o a descargar a Jave/Inbalnor, con ubicación, km restantes y llegada aproximada" />
+                    ToolTip="Las unidades en camino a cargar a Trujillo o a descargar a Jave/Inbalnor, con ubicación, km restantes y llegada aproximada" />
+                <div class="dropdown sx-mas">
+                    <button type="button" class="sx-btn dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Más</button>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <button type="button" class="dropdown-item" id="btnReporteLlegadas" title="Copia, listo para enviar, el estado y la hora aproximada de llegada de las unidades que van en camino a cargar a Trujillo o a descargar a Jave/Inbalnor"><i class="fas fa-clock" aria-hidden="true"></i> Copiar reporte de llegadas</button>
+                        <button type="button" class="dropdown-item" id="btnReporteGrifo" title="Copia, listo para enviar al grifo, cuántos y cuáles carros bajan al grifo Santa Rosa y a qué hora llegan aprox."><i class="fas fa-gas-pump" aria-hidden="true"></i> Copiar reporte grifo Santa Rosa</button>
+                        <button type="button" class="dropdown-item" id="btnCopiarStatus" title="Copia el STATUS de cada fila de la tabla, en orden, para pegar en la columna STATUS del Excel"><i class="fas fa-copy" aria-hidden="true"></i> Copiar STATUS</button>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="SeguimientoViaje.aspx?nuevo=1"><i class="fas fa-plus" aria-hidden="true"></i> Nuevo viaje</a>
+                        <a class="dropdown-item" href="ImportarSeguimiento.aspx"><i class="fas fa-file-import" aria-hidden="true"></i> Importar Excel</a>
+                        <a class="dropdown-item" href="DashboardExportacion.aspx"><i class="fas fa-chart-line" aria-hidden="true"></i> Dashboard</a>
+                    </div>
+                </div>
+                <textarea id="txtReporteLlegadas" hidden readonly><asp:Literal ID="litReporteLlegadas" runat="server" /></textarea>
+                <textarea id="txtReporteGrifo" hidden readonly><asp:Literal ID="litReporteGrifo" runat="server" /></textarea>
                 <asp:Button ID="btnActualizarGps" runat="server" Text="Actualizar GPS de viajes abiertos" CssClass="sx-btn sx-btn-primario" CausesValidation="false"
                     OnClick="btnActualizarGps_Click" OnClientClick="this.value='Consultando el GPS…';" UseSubmitBehavior="false" />
             </div>
