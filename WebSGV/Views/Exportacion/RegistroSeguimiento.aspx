@@ -21,6 +21,8 @@
                     ToolTip="Cuadro de los clientes terceros (Crisar, Novopan, Polinplast) que muestra la tabla, con las columnas del STATUS EXTRA" />
                 <a href="SeguimientoViaje.aspx?nuevo=1" class="sx-btn">Nuevo viaje</a>
                 <button type="button" class="sx-btn" id="btnCopiarStatus" title="Copia el STATUS de cada fila de la tabla, en orden, para pegar en la columna STATUS del Excel"><i class="fas fa-copy" aria-hidden="true"></i>Copiar STATUS</button>
+                <button type="button" class="sx-btn" id="btnReporteLlegadas" title="Copia, listo para enviar, el estado y la hora aproximada de llegada de las unidades que van en camino a cargar a Trujillo o a descargar a Jave/Inbalnor"><i class="fas fa-clock" aria-hidden="true"></i>Reporte de llegadas</button>
+                <textarea id="txtReporteLlegadas" hidden readonly><asp:Literal ID="litReporteLlegadas" runat="server" /></textarea>
                 <asp:Button ID="btnActualizarGps" runat="server" Text="Actualizar GPS de viajes abiertos" CssClass="sx-btn sx-btn-primario" CausesValidation="false"
                     OnClick="btnActualizarGps_Click" OnClientClick="this.value='Consultando el GPS…';" UseSubmitBehavior="false" />
             </div>
@@ -97,6 +99,7 @@
                                 <td class="sx-status">
                                     <span class="sx-status-texto"><%#: Eval("Status") %></span>
                                     <span class="sx-sub sx-mono sx-ubicacion"><%#: Eval("Ubicacion") %></span>
+                                    <span class="sx-sub sx-llegada"><%#: Eval("Llegada") %></span>
                                     <button type="button" class="sx-copiar" data-copiar title="Copiar este STATUS" aria-label="Copiar este STATUS"><i class="fas fa-copy" aria-hidden="true"></i></button>
                                 </td>
                                 <td><%#: Eval("UltimoHito") %><span class="sx-sub sx-mono"><%#: Eval("UltimoHora") %></span></td>

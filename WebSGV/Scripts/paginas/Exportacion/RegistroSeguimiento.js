@@ -48,6 +48,13 @@
             if (!filas.length) { SGV.avisar('No hay filas para copiar.'); return; }
             // Una fila por línea, en el orden de la tabla: se pega directo en la columna STATUS del Excel.
             copiar(filas.join('\r\n'), 'STATUS de ' + filas.length + ' unidad(es) copiado, en el orden de la tabla.');
+            return;
+        }
+        if (e.target.closest('#btnReporteLlegadas')) {
+            // El servidor arma el reporte con todas las unidades en camino a planta (no solo la pestaña elegida).
+            var reporte = document.getElementById('txtReporteLlegadas').value.trim();
+            if (!reporte) { SGV.avisar('No hay unidades en camino a cargar a Trujillo ni a descargar a Jave/Inbalnor con posición del GPS.'); return; }
+            copiar(reporte, 'Reporte de llegadas copiado: pégalo en el mensaje.');
         }
     });
 })();

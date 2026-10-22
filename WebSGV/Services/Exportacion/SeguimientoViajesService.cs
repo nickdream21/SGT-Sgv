@@ -69,6 +69,12 @@ namespace WebSGV.Services.Exportacion
         public string UltimoHito { get; set; }
         public DateTime? UltimoHitoHora { get; set; }
 
+        /// <summary>Velocidad (km/h) de la última posición del GPS.</summary>
+        public double? Velocidad { get; set; }
+
+        /// <summary>Hora aproximada de llegada a la planta si va en camino a cargar o a descargar; null si no.</summary>
+        public LlegadaEstimada.Estimado Llegada { get; set; }
+
         /// <summary>La fila completa de SeguimientoExportacion (para exportar al STATUS GENERAL).</summary>
         public DataRow Fila { get; set; }
     }
@@ -363,6 +369,9 @@ namespace WebSGV.Services.Exportacion
                 AvanceDescarga = FaseViaje.Avance(horas, TramoViaje.Descarga),
                 UltimoHito = ultimo?.Item1.Nombre,
                 UltimoHitoHora = ultimo?.Item2,
+                Velocidad = Numero(r, "ultimaVelocidad"),
+                Llegada = LlegadaEstimada.ParaViaje(horas, estado, Texto(r, "bodegaDescarga") ?? Texto(r, "bodegaEcuatoriana"),
+                    Texto(r, "ultimaPlacaGps"), tracto1, tracto2, Numero(r, "ultimaLatitud"), Numero(r, "ultimaLongitud"), Fecha(r, "fhUltimaPosicion")),
                 Fila = r,
             };
         }
@@ -411,6 +420,9 @@ namespace WebSGV.Services.Exportacion
 
         private static DateTime? Fecha(DataRow r, string c) =>
             r.Table.Columns.Contains(c) && !r.IsNull(c) ? Convert.ToDateTime(r[c]) : (DateTime?)null;
+
+        private static double? Numero(DataRow r, string c) =>
+            r.Table.Columns.Contains(c) && !r.IsNull(c) ? Convert.ToDouble(r[c]) : (double?)null;
 
         private static string Texto(DataRow r, string c)
         {

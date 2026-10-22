@@ -418,5 +418,6 @@ docs/migracion_somee/generado/CREDENCIALES_ADMIN.md
 
 # Cuadro STATUS GENERAL: compilado, historial del GPS y Excel generados
 herramientas/cuadro-status-general/bin/
+herramientas/perfil-llegada/bin/
 herramientas/cuadro-status-general/cache/
 herramientas/cuadro-status-general/salida/

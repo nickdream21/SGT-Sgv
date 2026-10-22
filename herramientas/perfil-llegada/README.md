@@ -1,0 +1,40 @@
+# Perfiles de llegada (hora aproximada de llegada a planta)
+
+El tablero del seguimiento (RegistroSeguimiento) muestra, para cada unidad que va en camino a **cargar a
+Trujillo** o a **descargar a Jave / Inbalnor**, "Llega aprox. 23/10 14:30 (13:50–16:10)" y los km que le
+faltan, y el botón **Reporte de llegadas** copia el texto para enviar. El cálculo (`Services/Exportacion/LlegadaEstimada.cs`)
+no es distancia ÷ velocidad: compara la posición del GPS con lo que tardaron **de verdad** los viajes
+anteriores desde ese mismo punto del camino y a la misma hora del día. Así entran solas las paradas de
+siempre (descanso en Mórrope, la noche en Pacasmayo, el parqueo de Naranjal). El rango es lo que tardó la
+mitad de esos viajes (percentiles 25–75).
+
+Esos viajes salen de `WebSGV/Services/Exportacion/PerfilesLlegada.json` (va **dentro de WebSGV.dll** como
+recurso), que arma esta herramienta:
+
+| Ruta | Viajes | Desde → hasta |
+|---|---|---|
+| `CARGA_TRUJILLO` | tracto 1 | salida de base → llegada a Trujillo |
+| `DESCARGA_JAVE`, `DESCARGA_INBALNOR` | tracto 2 | salida de TCI (o el cruce, si no pasó por TCI) → llegada a la planta |
+
+Para cada ruta guarda el camino (un punto cada km, tomado del viaje con más puntos del GPS) y, por cada
+viaje, una muestra cada 5 km: `[km, hora del día, minutos que faltaban para llegar]`.
+
+## Uso
+
+```powershell
+msbuild WebSGV.sln /p:Configuration=Debug /nologo /verbosity:minimal   # necesita WebSGV\bin\WebSGV.dll
+.\herramientas\perfil-llegada\Generar-Perfil.ps1 -Desde 2026-08-15 -MaxLlamadas 900
+msbuild WebSGV.sln ...   # otra vez: el JSON nuevo entra en la DLL; luego publicar
+```
+
+Usa los viajes del seguimiento de `sgvActualizada` (horas de salida y llegada ya detectadas por el GPS) y el
+historial de Onway del mismo caché que `herramientas/cuadro-status-general` (`cache\`, por placa y día); lo que
+falta lo pide al API (2 llamadas por segundo como máximo, ~2,3 s cada una). Conviene regenerarlo cada mes o
+cuando cambie la ruta.
+
+## Límites
+
+- No estima en base, en la cola de Trujillo, en el Complex ni esperando en TCI (depende de la aduana, no del
+  camino), ni si la unidad está a más de 8 km del camino.
+- Si la posición es vieja (equipo sin señal), la hora sale desde esa posición y el reporte lo dice ("última señal").
+- Clientes terceros (Crisar a Cartavio, Novopan, Polinplast): todavía no.

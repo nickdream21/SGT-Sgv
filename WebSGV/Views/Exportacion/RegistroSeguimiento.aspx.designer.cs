@@ -15,6 +15,7 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.Button btnExportarStatus;
         protected global::System.Web.UI.WebControls.Button btnExportar;
         protected global::System.Web.UI.WebControls.Button btnExportarStatusExtra;
+        protected global::System.Web.UI.WebControls.Literal litReporteLlegadas;
         protected global::System.Web.UI.WebControls.Button btnActualizarGps;
         protected global::System.Web.UI.WebControls.Panel pnlMensaje;
         protected global::System.Web.UI.WebControls.Literal litMensaje;

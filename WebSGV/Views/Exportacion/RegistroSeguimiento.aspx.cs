@@ -190,6 +190,8 @@ namespace WebSGV.Views.Exportacion
                 AutoActualizarGps = hayAbiertos && (consultas.Count == 0 || FechaHelper.Ahora() - consultas.Max() > EdadMaximaGps);
             }
             litUltimaConsulta.Text = consultas.Count > 0 ? "GPS consultado por última vez " + consultas.Max().ToString("dd/MM HH:mm") : "";
+            // Todas las unidades en camino a planta (no solo las de la pestaña de fase elegida).
+            litReporteLlegadas.Text = HttpUtility.HtmlEncode(LlegadaEstimada.Reporte(todos, FechaHelper.Ahora()));
             litResumen.Text = HttpUtility.HtmlEncode((string.IsNullOrWhiteSpace(txtBuscar.Text)
                 ? $"{todos.Count} viaje(s) con programación entre {FechaTexto(txtDesde.Text)} y {FechaTexto(txtHasta.Text)}. Con texto en Buscar se busca en todas las fechas."
                 : $"{todos.Count} viaje(s) con \"{txtBuscar.Text.Trim()}\" en cualquier fecha.")
@@ -215,6 +217,7 @@ namespace WebSGV.Views.Exportacion
             Fase = v.Fase.Nombre,
             v.Status,
             Ubicacion = v.UbicacionHora != null ? "Ubicación al " + v.UbicacionHora : "",
+            Llegada = v.Llegada != null ? $"Llega aprox. {v.Llegada.Texto} · faltan {v.Llegada.KmRestantes:0} km a {Capital(v.Llegada.Destino)}" : "",
             v.Fase.Grupo,
             Planta = RutaTercero.Es(v.TipoRuta)
                 ? RutaTercero.Nombre(v.LugarCarga, "Carga por confirmar") + " → " + RutaTercero.Nombre(v.LugarEntrega, "entrega por confirmar")
