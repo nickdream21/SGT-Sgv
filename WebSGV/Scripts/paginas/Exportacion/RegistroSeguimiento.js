@@ -35,6 +35,30 @@
         }
     }
 
+    // La actualización automática del GPS corre en el servidor cada 10–15 min: con la página abierta se
+    // pregunta cada 2 min si hay una consulta más nueva que la mostrada y se avisa (sin recargar sola:
+    // "Ver datos nuevos" vuelve a buscar con los mismos filtros).
+    var aviso = document.getElementById('avisoGpsNuevo');
+    if (aviso && SGV.urlEstadoGps) {
+        var revisar = function () {
+            if (document.hidden) return;
+            fetch(SGV.urlEstadoGps, { credentials: 'same-origin', cache: 'no-store' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (d) {
+                    if (!d || !d.ultima || (SGV.ultimaConsultaGps && d.ultima <= SGV.ultimaConsultaGps)) return;
+                    document.getElementById('avisoGpsHora').textContent = d.ultima.substr(11, 5);
+                    aviso.hidden = false;
+                })
+                .catch(function () { /* sin red: se reintenta en la próxima vuelta */ });
+        };
+        setInterval(revisar, 120000);
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) revisar(); });
+        document.getElementById('btnVerDatosNuevos').addEventListener('click', function () {
+            var filtrar = document.getElementById(SGV.btnFiltrar);
+            if (filtrar) filtrar.click(); else location.reload();
+        });
+    }
+
     document.addEventListener('click', function (e) {
         var uno = e.target.closest('[data-copiar]');
         if (uno) {

@@ -4,6 +4,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using WebSGV.Helpers;
+using WebSGV.Models.GpsIntegracion;
 using WebSGV.Services.GpsIntegracion;
 
 namespace WebSGV.Services.Exportacion
@@ -110,6 +111,10 @@ namespace WebSGV.Services.Exportacion
         public int Consultados { get; set; }
         public int CamposNuevos { get; set; }
         public int Pendientes { get; set; }
+
+        /// <summary>Viajes cuyos tractos no se movieron: solo se refrescó la hora de su posición.</summary>
+        public int SinMovimiento { get; set; }
+
         public List<string> Errores { get; } = new List<string>();
     }
 
@@ -294,6 +299,24 @@ namespace WebSGV.Services.Exportacion
             var r = new ResultadoActualizacionGps();
             var reloj = Stopwatch.StartNew();
 
+            // Una sola consulta con la última posición de toda la flota: los viajes cuyos tractos no se movieron
+            // desde su última consulta completa solo refrescan la hora de su posición (MovimientoGps).
+            Dictionary<string, OnwayDevice> foto = null;
+            try { foto = new OnwayApiClient().UltimasPosiciones(); }
+            catch (Exception ex) when (ex is OnwayApiException || ex is System.Net.Http.HttpRequestException || ex is System.Threading.Tasks.TaskCanceledException)
+            {
+                LogSGV.Advertencia("No se pudo traer la última posición de la flota: {Error}", ex.Message); // se consulta todo, como antes
+            }
+            DateTime ahoraUtc = DateTime.UtcNow;
+            if (foto != null)
+            {
+                var quietos = abiertos.Where(v => MovimientoGps.SinMovimiento(v.Id, MovimientoGps.Posiciones(new[] { v.Tracto1, v.Tracto2 }, foto), ahoraUtc)).ToList();
+                foreach (var v in quietos)
+                    RefrescarPosicion(v, foto);
+                r.SinMovimiento = quietos.Count;
+                abiertos = abiertos.Except(quietos).ToList();
+            }
+
             var tramos = abiertos.Take(maximo).SelectMany(v =>
             {
                 v.Horas.TryGetValue("fhSalidaBase1", out var salidaBase);
@@ -314,9 +337,33 @@ namespace WebSGV.Services.Exportacion
                 r.Consultados++;
                 if (res.Exito) r.CamposNuevos += res.Campos.Count(c => c.Encontrado && !c.YaEstabaConfirmado);
                 else r.Errores.Add($"{v.Pedido} ({v.Tracto1 ?? v.Tracto2}, carreta {v.Carreta}): {res.Mensaje}");
+                if (res.Exito && foto != null)
+                    MovimientoGps.Registrar(v.Id, MovimientoGps.Posiciones(new[] { v.Tracto1, v.Tracto2 }, foto), ahoraUtc);
             }
             r.Pendientes = abiertos.Count - r.Consultados;
             return r;
+        }
+
+        /// <summary>
+        /// Viaje sin movimiento: la posición guardada pasa a la hora y velocidad de la foto de la flota (el lugar y
+        /// la dirección siguen siendo los mismos). Así el tablero no muestra "última señal" de una unidad parada.
+        /// </summary>
+        private static void RefrescarPosicion(ViajeResumen v, Dictionary<string, OnwayDevice> foto)
+        {
+            string activo = RutaTercero.Es(v.TipoRuta) ? RutaTercero.TractoActivo(v.Horas, v.Tracto1, v.Tracto2)
+                                                       : StatusUnidad.TractoActivo(v.Horas, v.Tracto1, v.Tracto2);
+            if (string.IsNullOrWhiteSpace(activo) || !foto.TryGetValue(activo.Trim(), out var d) || d.Expand?.LastLocation == null) return;
+            var l = d.Expand.LastLocation;
+            DateTime? horaUtc = l.GeneratedTime ?? l.MessageTime;
+            if (!horaUtc.HasValue) return;
+            DbHelper.EjecutarNonQuery(@"
+                UPDATE SeguimientoExportacion
+                SET fhUltimaPosicion = @hora, ultimaVelocidad = @velocidad, ultimaLatitud = @lat, ultimaLongitud = @lng,
+                    ultimaPlacaGps = @placa, fhUltimaConsultaGps = dbo.fn_AhoraPeru()
+                WHERE idSeguimiento = @id AND (fhUltimaPosicion IS NULL OR fhUltimaPosicion < @hora)",
+                DbHelper.Param("@id", v.Id), DbHelper.Param("@hora", FechaHelper.ConvertirDeUtc(DateTime.SpecifyKind(horaUtc.Value, DateTimeKind.Utc))),
+                DbHelper.Param("@velocidad", Math.Round((decimal)l.Speed, 1)), DbHelper.Param("@lat", Math.Round((decimal)l.Latitude, 6)),
+                DbHelper.Param("@lng", Math.Round((decimal)l.Longitude, 6)), DbHelper.Param("@placa", activo.Trim().ToUpperInvariant()));
         }
 
         /// <summary>Orden de "Actualizar GPS": cargas, descargas, retornos y al final los atrasados.</summary>

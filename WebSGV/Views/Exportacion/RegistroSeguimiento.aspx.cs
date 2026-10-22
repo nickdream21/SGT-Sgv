@@ -38,6 +38,9 @@ namespace WebSGV.Views.Exportacion
         /// <summary>Verdadero cuando la página debe lanzar sola "Actualizar GPS" al abrir (lo lee el aspx).</summary>
         protected bool AutoActualizarGps { get; private set; }
 
+        /// <summary>Última consulta al GPS de lo que muestra la página (ISO): el script avisa si llegan datos más nuevos.</summary>
+        protected string UltimaConsultaGps { get; private set; } = "";
+
         private static readonly (string Grupo, string Nombre)[] Pestanas =
         {
             ("todos", "Todos"), ("carga", "En carga"), ("base", "En base"),
@@ -72,9 +75,10 @@ namespace WebSGV.Views.Exportacion
             try
             {
                 var r = SeguimientoViajesService.ActualizarGpsAbiertos(SeguimientoViajesService.ListarTablero(Filtro()), ViajesGpsPorClic, PresupuestoGps);
-                string texto = r.Consultados == 0
+                string texto = r.Consultados == 0 && r.SinMovimiento == 0
                     ? "No hay viajes abiertos con tracto asignado en este rango."
                     : $"Se consultó el GPS de {r.Consultados} viaje(s): {r.CamposNuevos} hora(s) nueva(s)." +
+                      (r.SinMovimiento > 0 ? $" {r.SinMovimiento} sin movimiento desde la última consulta (solo se actualizó su hora)." : "") +
                       (r.Pendientes > 0 ? $" Faltan {r.Pendientes}: vuelve a presionar el botón para seguir." : "");
                 if (r.Errores.Count > 0) texto += " Sin respuesta del GPS: " + string.Join("; ", r.Errores.Take(3)) + ".";
                 MostrarMensaje(texto, r.Errores.Count > 0 ? "alerta" : "ok");
@@ -263,6 +267,7 @@ namespace WebSGV.Views.Exportacion
                 AutoActualizarGps = hayAbiertos && (consultas.Count == 0 || FechaHelper.Ahora() - consultas.Max() > EdadMaximaGps);
             }
             litUltimaConsulta.Text = consultas.Count > 0 ? "GPS consultado por última vez " + consultas.Max().ToString("dd/MM HH:mm") : "";
+            UltimaConsultaGps = consultas.Count > 0 ? consultas.Max().ToString("yyyy-MM-ddTHH:mm:ss") : "";
             // Todas las unidades en camino a planta (no solo las de la pestaña de fase elegida).
             litReporteLlegadas.Text = HttpUtility.HtmlEncode(LlegadaEstimada.Reporte(todos, FechaHelper.Ahora()));
             try

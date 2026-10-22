@@ -405,6 +405,7 @@
     <Content Include="Views\Exportacion\DashboardExportacion.aspx" />
     <Content Include="Views\Exportacion\ImportarSeguimiento.aspx" />
     <Content Include="Views\Exportacion\RegistroSeguimiento.aspx" />
+    <Content Include="Views\Exportacion\GpsAutomatico.ashx" />
     <Content Include="Views\Exportacion\SeguimientoViaje.aspx" />
     <Content Include="Views\FirmarLiquidacion.aspx" />
     <Content Include="Views\Inicio.aspx" />
@@ -475,6 +476,7 @@
     <Compile Include="Services\GpsIntegracion\PuntoControlGpsService.cs" />
     <Compile Include="Services\GpsIntegracion\CheckpointMatchingService.cs" />
     <Compile Include="Services\GpsIntegracion\HistorialGpsCache.cs" />
+    <Compile Include="Services\GpsIntegracion\MovimientoGps.cs" />
     <Compile Include="Services\GpsIntegracion\HoraLlegadaGpsService.cs" />
     <Compile Include="Services\GpsIntegracion\RutaViajeService.cs" />
     <Compile Include="Services\GpsIntegracion\SeguimientoExportacionGpsService.cs" />
@@ -512,6 +514,7 @@
     <Compile Include="Services\Exportacion\LlegadaEstimada.cs" />
     <Compile Include="Services\Exportacion\ExportacionGrifoSantaRosa.cs" />
     <Compile Include="Services\Exportacion\ExportacionLlegadas.cs" />
+    <Compile Include="Services\Exportacion\ActualizacionGpsAutomatica.cs" />
     <EmbeddedResource Include="Services\Exportacion\PerfilesLlegada.json" />
     <Compile Include="Services\Exportacion\RutaTercero.cs" />
     <Compile Include="Services\Exportacion\ExportacionStatusExtra.cs" />
@@ -644,6 +647,9 @@
     </Compile>
     <Compile Include="Views\Exportacion\DashboardExportacion.aspx.designer.cs">
       <DependentUpon>DashboardExportacion.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Exportacion\GpsAutomatico.ashx.cs">
+      <DependentUpon>GpsAutomatico.ashx</DependentUpon>
     </Compile>
     <Compile Include="Views\Exportacion\RegistroSeguimiento.aspx.cs">
       <DependentUpon>RegistroSeguimiento.aspx</DependentUpon>

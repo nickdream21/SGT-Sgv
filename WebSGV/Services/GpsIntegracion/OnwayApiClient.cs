@@ -207,7 +207,13 @@ namespace WebSGV.Services.GpsIntegracion
         /// Lista todos los dispositivos GPS de la cuenta (pagina automáticamente). Renueva
         /// sesión/token solo y reintenta automáticamente si el API rechaza la credencial vigente.
         /// </summary>
-        public List<OnwayDevice> ListarDispositivos()
+        public List<OnwayDevice> ListarDispositivos() => ListarDispositivos(false);
+
+        /// <summary>
+        /// Con <paramref name="conUltimaPosicion"/> (deviceExpandEnum=1, no documentado en el swagger, verificado el
+        /// 22/10/2026) cada dispositivo trae su última posición y odómetro: una sola consulta para toda la flota.
+        /// </summary>
+        public List<OnwayDevice> ListarDispositivos(bool conUltimaPosicion)
         {
             return EjecutarConReintento((accessToken, userId) =>
             {
@@ -216,7 +222,7 @@ namespace WebSGV.Services.GpsIntegracion
                 while (true)
                 {
                     string url = $"{ApiBaseUrl}/v1/{Domain}/{Subdomain}/users/{userId}/devices" +
-                                 $"?deviceExpandEnum=none&deviceFieldSortEnum=imei&directionSortEnum=asc&page={page}&pageSize={PageSizeDispositivos}";
+                                 $"?deviceExpandEnum={(conUltimaPosicion ? "1" : "none")}&deviceFieldSortEnum=imei&directionSortEnum=asc&page={page}&pageSize={PageSizeDispositivos}";
                     var respuesta = Get<OnwayDeviceListResponse>(url, accessToken);
                     if (respuesta.Content == null || respuesta.Content.Count == 0) break;
 
@@ -253,6 +259,30 @@ namespace WebSGV.Services.GpsIntegracion
             if (encontrado == null && !recienPedida)
                 encontrado = Buscar(RenovarDispositivos(), placa);
             return encontrado;
+        }
+
+        // Foto de la flota (última posición de cada equipo): la comparten los viajes de una misma actualización.
+        private static readonly TimeSpan VigenciaFoto = TimeSpan.FromSeconds(60);
+        private static Dictionary<string, OnwayDevice> _foto;
+        private static DateTime _fotoHastaUtc;
+
+        /// <summary>
+        /// Última posición de todos los equipos, por placa (alias en mayúsculas), en una sola consulta. Sirve
+        /// también de lista de dispositivos. Se guarda un minuto.
+        /// </summary>
+        public Dictionary<string, OnwayDevice> UltimasPosiciones()
+        {
+            var foto = _foto;
+            if (foto != null && DateTime.UtcNow < _fotoHastaUtc) return foto;
+            var lista = ListarDispositivos(true);
+            foto = lista.Where(d => !string.IsNullOrWhiteSpace(d.Alias))
+                        .GroupBy(d => d.Alias.Trim().ToUpperInvariant())
+                        .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+            _foto = foto;
+            _fotoHastaUtc = DateTime.UtcNow.Add(VigenciaFoto);
+            _dispositivos = lista;
+            _dispositivosHastaUtc = DateTime.UtcNow.Add(VigenciaDispositivos);
+            return foto;
         }
 
         private List<OnwayDevice> RenovarDispositivos()

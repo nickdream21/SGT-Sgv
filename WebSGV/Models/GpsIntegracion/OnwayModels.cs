@@ -44,6 +44,38 @@ namespace WebSGV.Models.GpsIntegracion
 
         [JsonProperty("deviceTypeDescription")]
         public string DeviceTypeDescription { get; set; }
+
+        /// <summary>Solo con deviceExpandEnum=1: odómetro y última posición (no documentado en el swagger).</summary>
+        [JsonProperty("expand")]
+        public OnwayDeviceExpand Expand { get; set; }
+    }
+
+    public class OnwayDeviceExpand
+    {
+        [JsonProperty("currentOdometer")]
+        public double? CurrentOdometer { get; set; }
+
+        [JsonProperty("lastLocation")]
+        public OnwayLastLocation LastLocation { get; set; }
+    }
+
+    /// <summary>Última posición del equipo; las horas vienen en UTC.</summary>
+    public class OnwayLastLocation
+    {
+        [JsonProperty("speed")]
+        public double Speed { get; set; }
+
+        [JsonProperty("latitude")]
+        public double Latitude { get; set; }
+
+        [JsonProperty("longitude")]
+        public double Longitude { get; set; }
+
+        [JsonProperty("messageTime")]
+        public DateTime? MessageTime { get; set; }
+
+        [JsonProperty("generatedTime")]
+        public DateTime? GeneratedTime { get; set; }
     }
 
     public class OnwayDeviceListResponse

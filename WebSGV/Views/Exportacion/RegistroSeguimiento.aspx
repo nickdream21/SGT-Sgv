@@ -44,6 +44,11 @@
         <asp:Panel ID="pnlMensaje" runat="server" Visible="false">
             <asp:Literal ID="litMensaje" runat="server" />
         </asp:Panel>
+        <%-- La actualización automática trajo datos nuevos mientras la página estaba abierta. --%>
+        <div class="sx-mensaje sx-mensaje-info sx-aviso-gps" id="avisoGpsNuevo" role="status" hidden>
+            <span>El GPS se actualizó a las <strong id="avisoGpsHora"></strong>.</span>
+            <button type="button" class="sx-btn sx-btn-chico" id="btnVerDatosNuevos">Ver datos nuevos</button>
+        </div>
 
         <asp:HiddenField ID="hdnFase" runat="server" Value="todos" />
 
@@ -143,6 +148,7 @@
 
         <p class="sx-nota" style="margin-top: 0.75rem;"><asp:Literal ID="litResumen" runat="server" /></p>
     </div>
-    <script>var SGV = Object.assign(window.SGV || {}, { autoActualizarGps: <%= AutoActualizarGps ? "true" : "false" %>, btnActualizarGps: '<%= btnActualizarGps.ClientID %>' });</script>
+    <script>var SGV = Object.assign(window.SGV || {}, { autoActualizarGps: <%= AutoActualizarGps ? "true" : "false" %>, btnActualizarGps: '<%= btnActualizarGps.ClientID %>',
+        btnFiltrar: '<%= btnFiltrar.ClientID %>', ultimaConsultaGps: '<%= UltimaConsultaGps %>', urlEstadoGps: '<%= ResolveUrl("~/Views/Exportacion/GpsAutomatico.ashx?estado=1") %>' });</script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/Exportacion/RegistroSeguimiento.js") %>"></script>
 </asp:Content>
