@@ -1,6 +1,6 @@
 # Plan de mejoras SGV — estado y tareas pendientes
 
-Última actualización: **2026-10-21**, terceros: seguimiento y "Excel STATUS EXTRA" (migración 34; SP `sp_SE_SincronizarDespachos`, `sp_SE_RegistrarEntregaTercero` nuevo y `sp_SE_Dashboard_*`, ya en sgvActualizada; sobre `9ab3d9a`; sección 3 y 6); antes, terceros: la cochera de Trujillo sale del GPS de los 5 viajes "DESCARGADA EN COCHERA TRUJILLO" (esperan 1–4 días y cargan azúcar en Cartavio; geocercas `COCHERA_TRUJILLO` y `ESPERA_GRIFO_CURVA_SUN` en lugar de `NOVOPAN_TRUJILLO_2`) y ACP, TALSA y Rapel buscados en la web (sobre `ddf048e`; sin migración ni SP; sección 3); antes, recorrido GPS de los 5 viajes (sobre `ba168c5`); antes, terceros: respuestas de la oficina (-3.536, -80.184 es TCI; -8.1386, -79.0176 es un 2.º punto de descarga de Novopan, nueva geocerca; ACP es lugar de entrega) y el GPS muestra que Crisar y Novopan hacen el tramo de frontera de Vitapro (sobre `5775413`; sin migración ni SP; sección 3); antes, terceros: "Programar con el Word" reconoce Crisar, Novopan y Polinplast (selector de sección) y 14 geocercas desde el GPS (sobre `c4d9c38`; sin migración ni SP; sección 3); antes, análisis de los clientes terceros (Crisar, Novopan, Polinplast) en `docs/CLIENTES_TERCEROS.md` (sobre `da3782a`); antes, cargas de mañana visibles en el tablero del seguimiento y formulario manual de RegistroDespacho plegado (sobre `3a84af0`; sin migración ni SP; sección 3); antes, Word del 21/10 subido (cargas del 22/10 y descargas de 4400133950 y 4400133952; sobre `ec7d06e`); antes, STATUS de la unidad en el tablero (migración 33); antes, seguimiento: unidades en la cola de Trujillo, carga que tomaba la del viaje anterior del tracto y "Actualizar GPS" en paralelo (sobre `fa9f6ab`; sin migración ni SP; sección 3); antes, despacho en dos momentos (programar con el Word, completar con el correo) y caché del historial GPS para "Actualizar GPS" (sobre `5c94014`; SP `sp_CompletarDespachoProgramado` y `sp_SE_SincronizarDespachos`; sección 3); antes, al día con el seguimiento de exportación (`a22748b`) más el cuadro STATUS GENERAL de octubre armado desde los Word y el GPS (119 viajes de octubre ya en `sgvActualizada`) y el mapa de la ruta en el detalle del viaje, la salida en camino y la vuelta corrida (sin migración; SP `sp_SE_RegistrarHitoGps` y `sp_SE_SincronizarDespachos`; sección 4). Este documento es el punto de partida para seguir trabajando
+Última actualización: **2026-10-21**, terceros: clientes Crisar y Polinplast registrados, 7 cargas de Crisar del 19/10 con sus entregas, y corrección del relevo en el GPS (sobre `a5cdbe5`; sin migración ni SP; script de corrección; volver a publicar); antes, terceros: seguimiento y "Excel STATUS EXTRA" (migración 34; SP `sp_SE_SincronizarDespachos`, `sp_SE_RegistrarEntregaTercero` nuevo y `sp_SE_Dashboard_*`, ya en sgvActualizada; sobre `9ab3d9a`; sección 3 y 6); antes, terceros: la cochera de Trujillo sale del GPS de los 5 viajes "DESCARGADA EN COCHERA TRUJILLO" (esperan 1–4 días y cargan azúcar en Cartavio; geocercas `COCHERA_TRUJILLO` y `ESPERA_GRIFO_CURVA_SUN` en lugar de `NOVOPAN_TRUJILLO_2`) y ACP, TALSA y Rapel buscados en la web (sobre `ddf048e`; sin migración ni SP; sección 3); antes, recorrido GPS de los 5 viajes (sobre `ba168c5`); antes, terceros: respuestas de la oficina (-3.536, -80.184 es TCI; -8.1386, -79.0176 es un 2.º punto de descarga de Novopan, nueva geocerca; ACP es lugar de entrega) y el GPS muestra que Crisar y Novopan hacen el tramo de frontera de Vitapro (sobre `5775413`; sin migración ni SP; sección 3); antes, terceros: "Programar con el Word" reconoce Crisar, Novopan y Polinplast (selector de sección) y 14 geocercas desde el GPS (sobre `c4d9c38`; sin migración ni SP; sección 3); antes, análisis de los clientes terceros (Crisar, Novopan, Polinplast) en `docs/CLIENTES_TERCEROS.md` (sobre `da3782a`); antes, cargas de mañana visibles en el tablero del seguimiento y formulario manual de RegistroDespacho plegado (sobre `3a84af0`; sin migración ni SP; sección 3); antes, Word del 21/10 subido (cargas del 22/10 y descargas de 4400133950 y 4400133952; sobre `ec7d06e`); antes, STATUS de la unidad en el tablero (migración 33); antes, seguimiento: unidades en la cola de Trujillo, carga que tomaba la del viaje anterior del tracto y "Actualizar GPS" en paralelo (sobre `fa9f6ab`; sin migración ni SP; sección 3); antes, despacho en dos momentos (programar con el Word, completar con el correo) y caché del historial GPS para "Actualizar GPS" (sobre `5c94014`; SP `sp_CompletarDespachoProgramado` y `sp_SE_SincronizarDespachos`; sección 3); antes, al día con el seguimiento de exportación (`a22748b`) más el cuadro STATUS GENERAL de octubre armado desde los Word y el GPS (119 viajes de octubre ya en `sgvActualizada`) y el mapa de la ruta en el detalle del viaje, la salida en camino y la vuelta corrida (sin migración; SP `sp_SE_RegistrarHitoGps` y `sp_SE_SincronizarDespachos`; sección 4). Este documento es el punto de partida para seguir trabajando
 desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 
 ## 1. Estado actual
@@ -8,7 +8,7 @@ desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 | | Al empezar (2026-10-07) | Ahora |
 |---|---|---|
 | Puntuación general | 5.5 / 10 | **8 / 10** |
-| Tests | 215 | **641** en verde (2026-10-21; incluye los de integración, varios escriben con rollback) |
+| Tests | 215 | **642** en verde (2026-10-21; incluye los de integración, varios escriben con rollback) |
 | Paquetes NuGet | 40 | 23 |
 | Procedimientos del repo vs BD de pruebas | sin control, 2 inexistentes | **79/79 iguales** (la BD tiene exactamente los del repo) |
 
@@ -131,10 +131,11 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 - [ ] **Sección GUAYAQUIL-AZÚCAR del Word**: desde 2026-10-21 completa el viaje del seguimiento de Crisar
       (lugar de entrega y el relevo como tracto y chofer de descarga, "Registrar entregas"). Falta decidir si
       además se registra como despacho de descarga (factura que manda el chofer).
-- [ ] **Probar el seguimiento de terceros con viajes reales**: registrar CRISAR y POLINPLAST (y Cartavio y
-      Chapaira), programar con el Word sus cargas, abrir el seguimiento con el filtro "Terceros" y comparar el
-      STATUS y el "Excel STATUS EXTRA" con el Excel de la administradora; ver el detalle (SeguimientoViaje) de un
-      viaje de tercero en el navegador (no se pudo probar sin viajes de terceros en la BD).
+- [ ] **Seguir los 7 viajes de Crisar del 19/10** (seguimiento 7466–7472, primeros de terceros): hoy "UNIDAD
+      CARGADA EN BASE SULLANA"; los tractos de descarga del Word del 21/10 salen con las carretas el 22/10.
+      Comparar el STATUS y el "Excel STATUS EXTRA" con el Excel de la administradora y ver el detalle
+      (SeguimientoViaje) de uno en el navegador. Los de GUAYAQUIL-AZÚCAR del Word del 19/10 (carretas T6P-989,
+      T0Q-991, TAN-976, TDN-986, TBE-995) no tienen viaje: su carga es del Word del 16/10, que no está.
 - [ ] **Terceros: viajes ya en curso sin despacho**: los de antes de registrar a los clientes no tienen despacho
       de carga, así que no entran al seguimiento; si se quieren, programarlos con su Word (fecha de carga de hasta
       7 días atrás) o crearlos a mano.
@@ -260,6 +261,15 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 
 ### Hechas
 
+- [x] **Clientes terceros registrados y primeras cargas programadas** (2026-10-21, pedido del usuario, después de
+      publicar el sitio): POLINPLAST S.A.C. (RUC 20505520638, datos de su guía T700-00001683) y CRISAR LOGISTICA
+      S.A.C. (RUC 20603930844, datos de la web), plantas nacionales Cartavio y Chapaira (con auditoría). Con el
+      sitio local: las 7 cargas de azúcar del Word del 18/10 (despachos 1039–1045, carga 19/10, seguimiento
+      7466–7472) y sus 7 entregas con relevo del Word del 21/10 ("Registrar entregas"). La primera consulta al
+      GPS tomó para el tracto de descarga el TCI y La Troncal de su viaje anterior: corregido (con relevo, la
+      descarga empieza cuando ese tracto sale de la base con la carreta; test) y horas borradas con
+      `Database/Scripts/corregir_seguimiento_crisar_2026-10-21.sql`. **Hay que volver a publicar** el código con
+      esa corrección.
 - [x] **Seguimiento y STATUS EXTRA de los clientes terceros** (2026-10-21, pedido del usuario): migración 34,
       `sp_SE_SincronizarDespachos`, `sp_SE_RegistrarEntregaTercero`, `RutaTercero`, `TrazabilidadTercerosService`,
       "Registrar entregas" en RegistroDespacho, filtro Cliente y "Excel STATUS EXTRA" en el tablero. Ver la fila

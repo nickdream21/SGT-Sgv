@@ -90,6 +90,9 @@ namespace WebSGV.Services.GpsIntegracion
                 }
             }
 
+            // Con relevo, el tracto de descarga recoge la carreta en la base: sin llegada a la base no hay descarga todavía.
+            if (ruta == RutaTercero.Crisar && historialDescarga != null && r.Buscar("fhLlegadaBase2") == null) return r;
+
             int cursorD = pd.FindIndex(p => Hora(p) >= desdeDescarga);
             if (cursorD < 0) return r;
             if (ruta == RutaTercero.Crisar && r.Buscar("fhLlegadaBase2") != null)
@@ -102,6 +105,10 @@ namespace WebSGV.Services.GpsIntegracion
                     Agregar("fhSalidaBase2", Hito(pd[salidaBase.Ultimo + 1], "Primer punto fuera de la base Sullana"));
                     cursorD = salidaBase.Ultimo + 1;
                 }
+                // Con relevo, sin esa salida la carreta sigue en la base: lo que el tracto de descarga haga
+                // mientras tanto es de otro viaje (BSD-716 y BNH-712 el 20–21/10/2026 terminaban una descarga
+                // de Vitapro y una de Crisar anterior; se tomaban su TCI y su La Troncal).
+                else if (historialDescarga != null) return r;
             }
 
             // 3. Descarga (segunda ancla): el lugar del viaje o, si no se sabe, el primero de la ruta donde se detuvo.

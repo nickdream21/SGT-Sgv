@@ -88,6 +88,23 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void Crisar_RelevoQueNoSaleDeLaBase_NoTomaLaFronteraDeOtroViaje()
+        {
+            // El tracto de descarga anda en otro viaje (aquí: el mismo recorrido sin pasar por la base). Sin salir de
+            // la base con la carreta no hay descarga: antes se tomaban su TCI y La Troncal (BSD-716, 20/10/2026).
+            var otroViaje = Gps("CBX-832_2026-10-14_crisar.json")
+                .Where(p => !GeocercasTrazabilidad.BaseSullana.Contiene(p.Lat, p.Lng)).ToList();
+            var r = TrazabilidadTercerosService.Detectar("CRISAR", "CARTAVIO", "GUAYAQUIL",
+                Gps("BNG-758_2026-10-14_crisar.json"), otroViaje, Utc("2026-10-13 12:00"));
+
+            Hora(r, "fhLlegadaBase2", "2026-10-15 01:11");
+            Assert.Null(r.Buscar("fhSalidaBase2"));
+            Assert.Null(r.Buscar("fhLlegadaTCI"));
+            Assert.Null(r.Buscar("fhLlegadaPlantaEcuador"));
+            Assert.Equal("UNIDAD CARGADA EN BASE SULLANA", StatusFinal("CRISAR", r, "CARTAVIO", "GUAYAQUIL"));
+        }
+
+        [Fact]
         public void Novopan_CargaEnQuitoEntraPorElCebafYDescargaEnTrujillo()
         {
             var r = TrazabilidadTercerosService.Detectar("NOVOPAN", "QUITO", null,

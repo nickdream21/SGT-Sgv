@@ -232,6 +232,12 @@ Lo que enseñó el GPS:
     ([agraria.pe](https://agraria.pe/index.php/noticias/talsa-contara-con-mil-hectareas-de-palta-al-18061)). Falta
     un viaje con GPS para ubicar dónde se entrega.
   - -3.536, -80.184 es TCI; -8.1386, -79.0176 es la cochera de Trujillo (sección 4.3).
+- **Guía de Polinplast** (T700-00001683, 14/10/2026, C6K-799 / TEC-993, la recibió el usuario): la emite
+  Polinplast (guía de remitente electrónica, con su factura F700-00001751); nosotros vamos como transportista
+  (RUC 20483851171). Punto de partida: Car. Piura–Tambogrande km 19, caserío San Vicente, "costado comedor
+  Olivares **Rapel**", Tambogrande: es la planta de Chapaira, y Rapel es el nombre del lugar (por eso
+  POLINPLAST-RAPEL carga en Chapaira). Llegada: Hortifrut Perú, Fundos Armonía (Panamericana Norte km 495,
+  Chao, Virú): el destino CHAO es Hortifrut.
 - **Rapel**: Sociedad Agrícola Rapel (capital chileno, uva, arándano y limón) está en Piura, fundo El Papayo
   ([FreshPlaza](https://www.freshplaza.com/latin-america/article/9498952/sociedad-agricola-rapel-exports-some-4-500-containers-of-fruit-each-year/)),
   pero los viajes "RAPEL" del GPS terminan en Jayanca (carretera Lambayeque–Olmos, El Camal). Puede ser otro
