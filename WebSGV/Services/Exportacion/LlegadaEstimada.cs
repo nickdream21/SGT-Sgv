@@ -191,9 +191,16 @@ namespace WebSGV.Services.Exportacion
         /// planta (mediana y rango) se le suma lo que tardaron los viajes anteriores desde la puerta de la planta
         /// hasta el grifo saliendo a esa hora (los primeros km del perfil <see cref="RetornoGrifo"/>).
         /// </summary>
-        public static Estimado AlGrifoTrasDescargar(DateTime salidaDesde, DateTime salida, DateTime salidaHasta, DateTime horaReferencia)
+        public static Estimado AlGrifoTrasDescargar(DateTime salidaDesde, DateTime salida, DateTime salidaHasta, DateTime horaReferencia) =>
+            DesdeElInicio(RetornoGrifo, salidaDesde, salida, salidaHasta, horaReferencia);
+
+        /// <summary>
+        /// Llegada al final de un tramo saliendo de su inicio a una hora estimada (mediana y rango): lo que tardaron
+        /// los viajes anteriores desde los primeros km del perfil, saliendo a esa hora (TCI → planta, planta → grifo).
+        /// </summary>
+        public static Estimado DesdeElInicio(string codigoRuta, DateTime salidaDesde, DateTime salida, DateTime salidaHasta, DateTime horaReferencia)
         {
-            var ruta = Perfil(RetornoGrifo);
+            var ruta = Perfil(codigoRuta);
             if (ruta == null || ruta.Muestras.Count == 0) return null;
             var inicio = ruta.Muestras.Where(m => m[0] <= VentanaKm).ToList();
             double hora = salida.TimeOfDay.TotalHours;
@@ -207,7 +214,7 @@ namespace WebSGV.Services.Exportacion
             minutos.Sort();
             return new Estimado
             {
-                Destino = DestinoGrifo,
+                Destino = ruta.Destino,
                 KmRestantes = ruta.LargoKm,
                 Llegada = Redondear(salida.AddMinutes(Percentil(minutos, 0.5))),
                 Desde = Redondear(salidaDesde.AddMinutes(Percentil(minutos, 0.25))),

@@ -147,8 +147,7 @@ namespace WebSGV.Tests
                 Destino = "JAVE", KmRestantes = 90, Llegada = Ahora.AddHours(2), Desde = Ahora.AddHours(1.5), Hasta = Ahora.AddHours(3),
                 HoraPosicion = Ahora.AddMinutes(-5), Muestras = 10,
             };
-            var duraciones = new Dictionary<string, List<double>> { ["JAVE"] = Duraciones, ["*"] = Duraciones };
-            var u = ExportacionGrifoSantaRosa.Unidades(new[] { yendo, descargando }, Ahora, duraciones);
+            var u = ExportacionGrifoSantaRosa.Unidades(new[] { yendo, descargando }, Ahora, DuracionesEtapas());
 
             var d = u.Single(x => x.Viaje.Id == 1);
             var y = u.Single(x => x.Viaje.Id == 2);
@@ -159,6 +158,40 @@ namespace WebSGV.Tests
             Assert.True(y.AlGrifo.Llegada > yendo.Llegada.Llegada.AddHours(4));   // llega a Jave, descarga ~4 h y luego el camino
             Assert.True(d.AlGrifo.Desde <= d.AlGrifo.Llegada && d.AlGrifo.Llegada <= d.AlGrifo.Hasta);
             Assert.Contains("al grifo aprox.", ExportacionGrifoSantaRosa.Texto(u, Ahora));
+        }
+
+        /// <summary>Espera en la puerta ~10 min, descarga de 2 a 6 h y TCI de 10 min a 2 h.</summary>
+        private static Dictionary<string, List<double>> DuracionesEtapas() => new Dictionary<string, List<double>>
+        {
+            ["ESPERA|JAVE"] = Enumerable.Range(0, 10).Select(i => 5.0 + i).ToList(),
+            ["DESCARGA|JAVE"] = Duraciones,
+            ["ESPERA|*"] = Enumerable.Range(0, 10).Select(i => 5.0 + i).ToList(),
+            ["DESCARGA|*"] = Duraciones,
+            ["TCI|*"] = Enumerable.Range(0, 12).Select(i => 10.0 + i * 10).ToList(),
+        };
+
+        [Fact]
+        public void YaEntroADescargar_LlegaAntesQueSiRecienLlegaALaPuerta()
+        {
+            // Los dos llegaron hace 3 h; uno ya está adentro hace 3 h, el otro sigue en la puerta (no hay ingreso).
+            var adentro = Viaje(1, null, "fhLlegadaPlantaEcuador", "fhIngreso");
+            var enPuerta = Viaje(2, null, "fhLlegadaPlantaEcuador");
+            adentro.Horas["fhLlegadaPlantaEcuador"] = adentro.Horas["fhIngreso"] = enPuerta.Horas["fhLlegadaPlantaEcuador"] = Ahora.AddHours(-3);
+            var u = ExportacionGrifoSantaRosa.Unidades(new[] { adentro, enPuerta }, Ahora, DuracionesEtapas());
+            Assert.True(u.Single(x => x.Viaje.Id == 1).AlGrifo.Llegada < u.Single(x => x.Viaje.Id == 2).AlGrifo.Llegada);
+        }
+
+        [Fact]
+        public void EnTci_SumaTciElCaminoALaPlantaLaDescargaYElRetorno()
+        {
+            var enTci = Viaje(1, null, "fhCruceEcuador", "fhLlegadaTCI");
+            enTci.Horas["fhLlegadaTCI"] = Ahora.AddMinutes(-20);
+            var u = ExportacionGrifoSantaRosa.Unidades(new[] { enTci }, Ahora, DuracionesEtapas());
+            var g = u.Single().AlGrifo;
+            Assert.NotNull(g);
+            // TCI → Jave (~5 h con la noche en Naranjal o menos de día) + descarga ~4 h + retorno ~4–5 h: medio día o más.
+            Assert.InRange((g.Llegada - Ahora).TotalHours, 8, 30);
+            Assert.Equal(ExportacionGrifoSantaRosa.Situacion.VanADescargar, u.Single().Situacion);
         }
 
         [Fact]

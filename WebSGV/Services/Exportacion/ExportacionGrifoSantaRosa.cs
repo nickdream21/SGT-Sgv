@@ -44,13 +44,22 @@ namespace WebSGV.Services.Exportacion
             return new[] { 0.25, 0.5, 0.75 }.Select(p => Math.Max(10, LlegadaEstimada.Percentil(mayores, p) - transcurrido)).ToArray();
         }
 
-        private static IList<double> DuracionesDe(IDictionary<string, List<double>> duraciones, ViajeResumen v)
+        /// <summary>Etapas en Ecuador cuya duración se toma del historial (claves "ETAPA|PLANTA" de las duraciones).</summary>
+        public const string EtapaTci = "TCI", EtapaEspera = "ESPERA", EtapaDescarga = "DESCARGA";
+
+        /// <summary>Duraciones (min) de una etapa en la planta del viaje; si hay pocas, las de todas las plantas ("ETAPA|*").</summary>
+        private static IList<double> DuracionesDe(IDictionary<string, List<double>> duraciones, string etapa, ViajeResumen v)
         {
             if (duraciones == null) return null;
             string planta = (v.Planta ?? "").Trim().ToUpperInvariant();
-            return duraciones.TryGetValue(planta, out var d) && d.Count >= MuestrasMinimasDescarga ? d
-                 : duraciones.TryGetValue("*", out var todas) ? todas : null;
+            return duraciones.TryGetValue(etapa + "|" + planta, out var d) && d.Count >= MuestrasMinimasDescarga ? d
+                 : duraciones.TryGetValue(etapa + "|*", out var todas) && todas.Count >= MuestrasMinimasDescarga ? todas : null;
         }
+
+        private static double[] Sumar(double[] a, double[] b) => new[] { a[0] + b[0], a[1] + b[1], a[2] + b[2] };
+
+        private static DateTime[] Mas(DateTime[] horas, double[] minutos) =>
+            new[] { horas[0].AddMinutes(minutos[0]), horas[1].AddMinutes(minutos[1]), horas[2].AddMinutes(minutos[2]) };
 
         public static string Nombre(Situacion s) =>
             s == Situacion.EnElGrifo ? "En el grifo" : s == Situacion.EnCamino ? "En camino al grifo"
@@ -100,34 +109,61 @@ namespace WebSGV.Services.Exportacion
                 }
             }
             foreach (var u in res)
-                u.AlGrifo = EstimarAlGrifo(u, ahora, DuracionesDe(duraciones, u.Viaje));
+                u.AlGrifo = EstimarAlGrifo(u, ahora, duraciones);
             return res.OrderBy(u => u.Situacion)
                       .ThenBy(u => u.AlGrifo?.Llegada ?? u.Desde ?? DateTime.MaxValue)
                       .ToList();
         }
 
-        private static LlegadaEstimada.Estimado EstimarAlGrifo(Unidad u, DateTime ahora, IList<double> duraciones)
+        /// <summary>
+        /// Hora aproximada al grifo según la etapa en que está el carro (cada una con lo que duró de verdad en los viajes
+        /// anteriores; en la etapa en curso, solo lo que le falta según lo que ya lleva):
+        /// ya salió de descargar → por su posición en el camino; descargando → resto de la descarga + retorno;
+        /// en la puerta → resto de la espera + descarga + retorno; yendo a la planta → su llegada + espera + descarga +
+        /// retorno; en TCI → resto de TCI + TCI → planta + espera + descarga + retorno.
+        /// </summary>
+        private static LlegadaEstimada.Estimado EstimarAlGrifo(Unidad u, DateTime ahora, IDictionary<string, List<double>> duraciones)
         {
-            switch (u.Situacion)
+            if (u.Situacion == Situacion.EnCamino) return u.Viaje.Llegada;
+            if (duraciones == null || (u.Situacion != Situacion.Descargando && u.Situacion != Situacion.VanADescargar)) return null;
+            var v = u.Viaje;
+            var espera = DuracionesDe(duraciones, EtapaEspera, v);
+            var descarga = DuracionesDe(duraciones, EtapaDescarga, v);
+            if (espera == null || descarga == null) return null;
+            double Desde(DateTime? inicio) => Math.Max(0, (ahora - (inicio ?? ahora)).TotalMinutes);
+
+            DateTime[] salidaPlanta;
+            DateTime referencia = ahora;
+            if (u.Situacion == Situacion.Descargando)
             {
-                case Situacion.EnCamino:
-                    return u.Viaje.Llegada;
-                case Situacion.Descargando:
-                {
-                    if (duraciones == null) return null;
-                    var resto = DuracionRestante(duraciones, Math.Max(0, (ahora - (u.Desde ?? ahora)).TotalMinutes));
-                    return LlegadaEstimada.AlGrifoTrasDescargar(ahora.AddMinutes(resto[0]), ahora.AddMinutes(resto[1]), ahora.AddMinutes(resto[2]), ahora);
-                }
-                case Situacion.VanADescargar:
-                {
-                    var l = u.Viaje.Llegada;
-                    if (duraciones == null || l == null || l.Destino == LlegadaEstimada.DestinoGrifo) return null;
-                    var d = DuracionRestante(duraciones, 0);
-                    return LlegadaEstimada.AlGrifoTrasDescargar(l.Desde.AddMinutes(d[0]), l.Llegada.AddMinutes(d[1]), l.Hasta.AddMinutes(d[2]), l.HoraPosicion);
-                }
-                default:
-                    return null;
+                var ingreso = Hora(v, "fhIngreso");
+                var resto = ingreso.HasValue
+                    ? DuracionRestante(descarga, Desde(ingreso))                                                   // ya entró
+                    : Sumar(DuracionRestante(espera, Desde(u.Desde)), DuracionRestante(descarga, 0));             // en la puerta
+                salidaPlanta = Mas(new[] { ahora, ahora, ahora }, resto);
             }
+            else
+            {
+                DateTime[] llegaPlanta;
+                var l = v.Llegada;
+                if (l != null && l.Destino != LlegadaEstimada.DestinoGrifo)
+                {
+                    llegaPlanta = new[] { l.Desde, l.Llegada, l.Hasta };                                           // ya salió de TCI
+                    referencia = l.HoraPosicion;
+                }
+                else
+                {
+                    // En TCI (o recién cruzó): lo que le falta ahí y el camino de TCI a la planta saliendo a esa hora.
+                    var tci = DuracionesDe(duraciones, EtapaTci, v);
+                    if (tci == null) return null;
+                    var salidaTci = Mas(new[] { ahora, ahora, ahora }, DuracionRestante(tci, Desde(Hora(v, "fhLlegadaTCI"))));
+                    var tramo = LlegadaEstimada.DesdeElInicio(LlegadaEstimada.RutaDescarga(v.Planta), salidaTci[0], salidaTci[1], salidaTci[2], ahora);
+                    if (tramo == null) return null;
+                    llegaPlanta = new[] { tramo.Desde, tramo.Llegada, tramo.Hasta };
+                }
+                salidaPlanta = Mas(llegaPlanta, Sumar(DuracionRestante(espera, 0), DuracionRestante(descarga, 0)));
+            }
+            return LlegadaEstimada.AlGrifoTrasDescargar(salidaPlanta[0], salidaPlanta[1], salidaPlanta[2], referencia);
         }
 
         /// <summary>Texto para enviar al grifo (WhatsApp).</summary>

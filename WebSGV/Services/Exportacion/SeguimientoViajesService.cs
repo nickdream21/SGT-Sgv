@@ -345,33 +345,38 @@ namespace WebSGV.Services.Exportacion
         }
 
         /// <summary>
-        /// Minutos que duraron las descargas en Ecuador en los últimos 60 días (de la llegada a la planta a la
-        /// salida), por planta (JAVE, INBALNOR; el lugar de entrega en los terceros) y "*" con todas las de Vitapro.
-        /// Para estimar cuándo baja al grifo un carro que todavía descarga. Se guarda 6 h en memoria.
+        /// Minutos que duró cada etapa en Ecuador en los últimos 60 días, para estimar cuándo baja al grifo un carro que
+        /// todavía no sale de la planta: "TCI|planta" (llegada → salida de TCI), "ESPERA|planta" (llegada a la planta →
+        /// ingreso) y "DESCARGA|planta" (ingreso → salida). Planta = JAVE, INBALNOR (el lugar de entrega en los
+        /// terceros); "ETAPA|*" junta todas las de Vitapro. Se guarda 6 h en memoria.
         /// </summary>
-        public static Dictionary<string, List<double>> DuracionesDescarga()
+        public static Dictionary<string, List<double>> DuracionesEnEcuador()
         {
-            const string clave = "SGV|DuracionesDescarga";
+            const string clave = "SGV|DuracionesEnEcuador";
             if (System.Web.HttpRuntime.Cache[clave] is Dictionary<string, List<double>> guardadas) return guardadas;
             DataTable dt = DbHelper.ConsultarTabla(@"
-                SELECT UPPER(LTRIM(RTRIM(CASE WHEN tipoRuta IS NULL THEN bodegaDescarga ELSE lugarEntrega END))) AS planta,
-                       CASE WHEN tipoRuta IS NULL THEN 1 ELSE 0 END AS vitapro,
-                       DATEDIFF(MINUTE, ISNULL(fhLlegadaPlantaEcuador, fhLlegadaAlmacen), fhSalida) AS minutos
-                FROM SeguimientoExportacion
-                WHERE activo = 1 AND fhSalida >= DATEADD(DAY, -60, dbo.fn_AhoraPeru())
-                  AND ISNULL(fhLlegadaPlantaEcuador, fhLlegadaAlmacen) IS NOT NULL
-                  AND DATEDIFF(MINUTE, ISNULL(fhLlegadaPlantaEcuador, fhLlegadaAlmacen), fhSalida) BETWEEN 20 AND 4320");
-            var res = new Dictionary<string, List<double>>(StringComparer.OrdinalIgnoreCase) { ["*"] = new List<double>() };
+                SELECT e.etapa, UPPER(LTRIM(RTRIM(CASE WHEN se.tipoRuta IS NULL THEN se.bodegaDescarga ELSE se.lugarEntrega END))) AS planta,
+                       CASE WHEN se.tipoRuta IS NULL THEN 1 ELSE 0 END AS vitapro, DATEDIFF(MINUTE, e.desde, e.hasta) AS minutos
+                FROM SeguimientoExportacion se
+                CROSS APPLY (VALUES
+                    ('TCI', se.fhLlegadaTCI, se.fhSalidaTCI),
+                    ('ESPERA', ISNULL(se.fhLlegadaPlantaEcuador, se.fhLlegadaAlmacen), se.fhIngreso),
+                    ('DESCARGA', se.fhIngreso, se.fhSalida)
+                ) e(etapa, desde, hasta)
+                WHERE se.activo = 1 AND ISNULL(se.fhSalida, se.fhSalidaTCI) >= DATEADD(DAY, -60, dbo.fn_AhoraPeru())
+                  AND e.desde IS NOT NULL AND e.hasta IS NOT NULL AND DATEDIFF(MINUTE, e.desde, e.hasta) BETWEEN 0 AND 4320");
+            var res = new Dictionary<string, List<double>>(StringComparer.OrdinalIgnoreCase);
+            void Agregar(string k, double m)
+            {
+                if (!res.TryGetValue(k, out var lista)) res[k] = lista = new List<double>();
+                lista.Add(m);
+            }
             foreach (DataRow r in dt.Rows)
             {
+                string etapa = Texto(r, "etapa"), planta = Texto(r, "planta");
                 double minutos = Convert.ToDouble(r["minutos"]);
-                string planta = Texto(r, "planta");
-                if (planta != null)
-                {
-                    if (!res.TryGetValue(planta, out var lista)) res[planta] = lista = new List<double>();
-                    lista.Add(minutos);
-                }
-                if (Convert.ToInt32(r["vitapro"]) == 1) res["*"].Add(minutos);
+                if (planta != null) Agregar(etapa + "|" + planta, minutos);
+                if (Convert.ToInt32(r["vitapro"]) == 1) Agregar(etapa + "|*", minutos);
             }
             foreach (var l in res.Values) l.Sort();
             System.Web.HttpRuntime.Cache.Insert(clave, res, null, DateTime.UtcNow.AddHours(6), System.Web.Caching.Cache.NoSlidingExpiration);

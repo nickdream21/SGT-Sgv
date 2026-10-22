@@ -154,7 +154,7 @@ namespace WebSGV.Views.Exportacion
             return ExportacionGrifoSantaRosa.Unidades(SeguimientoViajesService.ListarTablero(new FiltroTablero
             {
                 Desde = hoy.AddDays(-DiasRetorno), Hasta = hoy.AddDays(1),
-            }), FechaHelper.Ahora(), SeguimientoViajesService.DuracionesDescarga());
+            }), FechaHelper.Ahora(), SeguimientoViajesService.DuracionesEnEcuador());
         }
 
         /// <summary>
