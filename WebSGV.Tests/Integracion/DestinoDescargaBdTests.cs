@@ -88,6 +88,39 @@ namespace WebSGV.Tests.Integracion
         }
 
         [FactBD]
+        public void Registrar_CambiaLaBodegaDelViaje_SoloSiLaUnidadNoLlegoALaPlanta()
+        {
+            using (new TransaccionDePrueba())
+            {
+                // Pedido 4400133879 del 21/10/2026: el despacho de descarga puso Milagro (INBALNOR) a las 6
+                // unidades y la lista del cliente mandó T0L-981 a Jave.
+                const string pedido = "9900000080";
+                int enCamino = Viaje(pedido, "ZZG-111", llegoAPlanta: false);
+                int enPlanta = Viaje(pedido, "ZZH-222", llegoAPlanta: true);
+
+                DestinoDescargaService.RegistrarManual(pedido, null, "ZZG-111", IdPlanta("Jave"), "prueba");
+                DestinoDescargaService.RegistrarManual(pedido, null, "ZZH-222", IdPlanta("Jave"), "prueba");
+                Assert.Equal("JAVE", Bodega(enCamino));
+                Assert.Equal("INBALNOR", Bodega(enPlanta)); // ya llegó: manda lo que vio el GPS
+
+                DestinoDescargaService.RegistrarManual(pedido, null, "ZZG-111", IdPlanta("Milagro"), "prueba");
+                Assert.Equal("INBALNOR", Bodega(enCamino));
+            }
+        }
+
+        private static int Viaje(string pedido, string carreta, bool llegoAPlanta) =>
+            Convert.ToInt32(DbHelper.EjecutarEscalar(@"
+                INSERT INTO SeguimientoExportacion (cliente, carreta, bodegaDescarga, bodegaEcuatoriana, fhLlegadaPlantaEcuador, fhProgramacion, estado, activo)
+                OUTPUT INSERTED.idSeguimiento
+                VALUES (@p, @c, 'INBALNOR', 'INBALNOR', @llegada, dbo.fn_AhoraPeru(), 'EN_CURSO', 1)",
+                DbHelper.Param("@p", pedido), DbHelper.Param("@c", carreta),
+                DbHelper.Param("@llegada", llegoAPlanta ? (object)DateTime.Now : null)));
+
+        private static string Bodega(int idSeguimiento) =>
+            Convert.ToString(DbHelper.EjecutarEscalar("SELECT bodegaDescarga FROM SeguimientoExportacion WHERE idSeguimiento = @id",
+                DbHelper.Param("@id", idSeguimiento)));
+
+        [FactBD]
         public void RegistrarManual_ConDatosInvalidos_NoGuarda()
         {
             Assert.Throws<WebSGV.Services.Common.ErrorNegocioException>(() =>

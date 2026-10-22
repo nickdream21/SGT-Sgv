@@ -369,7 +369,9 @@ namespace WebSGV.Services.GpsIntegracion
                     Registrar("fhIngreso", descarga.IngresoPlanta);
                     Registrar("fhSalida", descarga.SalidaPlanta);
                     Registrar("fhLlegadaBaseFinal", descarga.LlegadaBase);
-                    if (rama == null) rama = descarga.PlantaDescarga;
+                    // La planta donde el GPS vio entrar a la unidad manda sobre la del despacho o la
+                    // lista de destinos (desvío en ruta: la lista decía Milagro y fue a Jave).
+                    if (descarga.PlantaDescarga != null) rama = descarga.PlantaDescarga;
                     enEcuador = descarga.Cruce != null || descarga.LlegadaTci != null || valoresYaConfirmados.ContainsKey("fhCruceEcuador");
                     if (descarga.PasoDirectoTci && descarga.LlegadaTci != null)
                         avisoPasoDirecto += " Pasó directo por TCI: se tomó el control aduanero cercano.";
@@ -413,7 +415,8 @@ namespace WebSGV.Services.GpsIntegracion
 
                 DbHelper.EjecutarNonQuery(
                     "UPDATE SeguimientoExportacion SET fhUltimaConsultaGps = dbo.fn_AhoraPeru()" +
-                    (rama != null && ramaExistente == null ? ", bodegaEcuatoriana = @rama, bodegaDescarga = @rama" : "") +
+                    (rama != null && !string.Equals(rama, ramaExistente, StringComparison.OrdinalIgnoreCase)
+                        ? ", bodegaEcuatoriana = @rama, bodegaDescarga = @rama" : "") +
                     (lugarEntregaDetectado != null ? ", lugarEntrega = ISNULL(lugarEntrega, @entrega)" : "") +
                     (lugarFinDetectado != null ? ", lugarFin = @fin" : "") +
                     " WHERE idSeguimiento = @id",
@@ -427,7 +430,8 @@ namespace WebSGV.Services.GpsIntegracion
                 if (valoresEncontrados.Count > 0)
                     AuditoriaHelper.Registrar("CONSULTAR_HORA_GPS", "SeguimientoExportacion", idSeguimiento,
                         $"GPS actualizó {valoresEncontrados.Count} campo(s) de fecha/hora" +
-                        (rama != null && rama != ramaExistente ? $" (ruta detectada: {rama})." : "."));
+                        (rama != null && rama != ramaExistente
+                            ? $" (ruta detectada: {rama}{(ramaExistente != null ? ", antes " + ramaExistente : "")})." : "."));
 
                 // ColumnasGps es la única fuente de verdad de qué campos llena el GPS: es la misma
                 // lista que alimenta el SELECT y `valoresYaConfirmados`, así que el conteo y el

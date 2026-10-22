@@ -8,8 +8,10 @@
 --      desde que sale; cuando llega el correo y se completa el despacho, toma el pedido.
 --   2. Su despacho de DESCARGA en Ecuador (enlazado por idDespachoCarga, o por pedido y
 --      carreta) completa el tracto y el chofer de descarga.
---   3. La planta de descarga sale del despacho de descarga (Jave / Milagro = Inbalnor) o de
---      la lista de destinos por carreta (DestinoDescarga), si el viaje todavía no la tiene.
+--   3. La planta de descarga sale de la lista de destinos del cliente por carreta
+--      (DestinoDescarga) o, sin lista, del despacho de descarga (Jave / Milagro = Inbalnor),
+--      si el viaje todavía no la tiene. La lista manda: el despacho toma el destino de la
+--      factura ("CD VITAPRO MILAGRO") para todo el pedido aunque una unidad vaya a Jave.
 --   4. Un despacho de carga anulado (activo = 0) deja su viaje como CANCELADO.
 --   5. Las cargas de los clientes terceros (Crisar, Novopan, Polinplast; migración 34) también
 --      son viajes, con tipoRuta, lugar de carga (la planta) y lugar de entrega (el destino del
@@ -193,9 +195,9 @@ BEGIN
         CROSS APPLY (
             SELECT TOP 1 CASE x.nombre WHEN 'MILAGRO' THEN 'INBALNOR' WHEN 'INBALNOR' THEN 'INBALNOR' WHEN 'JAVE' THEN 'JAVE' END AS planta
             FROM (
-                SELECT 1 AS prioridad, dd.planta AS nombre FROM #descarga dd WHERE dd.idSeguimiento = se.idSeguimiento
+                SELECT 2 AS prioridad, dd.planta AS nombre FROM #descarga dd WHERE dd.idSeguimiento = se.idSeguimiento
                 UNION ALL
-                SELECT 2, UPPER(LTRIM(RTRIM(p.nombre)))
+                SELECT 1, UPPER(LTRIM(RTRIM(p.nombre)))
                 FROM dbo.DestinoDescarga dest
                 JOIN dbo.Planta p ON p.idPlanta = dest.idPlanta
                 WHERE dest.activo = 1 AND dest.numeroPedido = se.cliente
