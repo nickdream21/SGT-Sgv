@@ -29,6 +29,8 @@
                                 
                                 <!-- Estado del lote para JS (se actualiza en cada postback parcial) -->
                                 <asp:HiddenField ID="hfLoteActivo" runat="server" Value="0" />
+                                <!-- "1" con el formulario manual abierto: sobrevive a los postbacks parciales -->
+                                <asp:HiddenField ID="hfManualAbierto" runat="server" Value="0" />
 
                                 <!-- Indicador de progreso de pasos -->
                                 <div class="rd-stepper mb-4">
@@ -518,14 +520,18 @@
                                     </div>
                                 </asp:Panel>
 
-                                <!-- ====== FASE 1: CONFIGURACIÓN BASE DEL LOTE ====== -->
+                                <!-- ====== FASE 1: CONFIGURACIÓN BASE DEL LOTE ======
+                                     Camino manual (despachos sin Word ni ZIP): cerrado por defecto, se abre con
+                                     el encabezado o con "Corregir datos a mano". -->
                                 <asp:Panel ID="pnlConfiguracionBase" runat="server">
                                     <div class="card mb-4" style="border-top: 3px solid #1e40af;">
-                                        <div class="rd-step-header">
-                                            <h5><span class="rd-step-num">1</span> Configuración base del lote</h5>
-                                            <div class="rd-subtitle">Complete los datos comunes que aplicarán a todos los despachos de este lote</div>
-                                        </div>
-                                        <div class="card-body">
+                                        <button type="button" class="rd-step-header rd-manual-toggle<%= ManualAbierto ? "" : " collapsed" %>"
+                                            data-toggle="collapse" data-target="#rdManualCuerpo"
+                                            aria-expanded="<%= ManualAbierto ? "true" : "false" %>" aria-controls="rdManualCuerpo">
+                                            <h5><span class="rd-step-num">1</span> Registrar un lote a mano <i class="fas fa-chevron-down rd-manual-chevron ml-auto"></i></h5>
+                                            <div class="rd-subtitle">Para despachos sin Word ni documentos del correo (nacionales u otros clientes). Los de exportación se registran arriba.</div>
+                                        </button>
+                                        <div id="rdManualCuerpo" class="card-body collapse<%= ManualAbierto ? " show" : "" %>">
                                             <div class="row">
                                                 <!-- Columna Izquierda -->
                                                 <div class="col-md-6">
@@ -1476,6 +1482,7 @@
             txtFechaEmisionCPICBase: '<%= txtFechaEmisionCPICBase.ClientID %>',
             pnlAdicionConductores: '<%= pnlAdicionConductores.ClientID %>',
             hfLoteActivo: '<%= hfLoteActivo.ClientID %>',
+            hfManualAbierto: '<%= hfManualAbierto.ClientID %>',
             txtNumeroPedidoBase: '<%= txtNumeroPedidoBase.ClientID %>'
         });
     </script>

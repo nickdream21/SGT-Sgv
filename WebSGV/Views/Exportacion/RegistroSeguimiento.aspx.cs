@@ -26,6 +26,9 @@ namespace WebSGV.Views.Exportacion
         private static readonly TimeSpan PresupuestoGps = TimeSpan.FromSeconds(80);
         private const int DiasPorDefecto = 30;
 
+        /// <summary>El Word programa las cargas de mañana (pedido PENDIENTE): el rango por defecto las incluye.</summary>
+        private const int DiasProgramadosAdelante = 7;
+
         /// <summary>Despachos de carga que se revisan para crear o completar viajes.</summary>
         private const int DiasSincronizacion = 60;
 
@@ -48,7 +51,7 @@ namespace WebSGV.Views.Exportacion
             if (!IsPostBack)
             {
                 txtDesde.Text = FechaHelper.Hoy().AddDays(-DiasPorDefecto).ToString("yyyy-MM-dd");
-                txtHasta.Text = FechaHelper.Hoy().ToString("yyyy-MM-dd");
+                txtHasta.Text = FechaHelper.Hoy().AddDays(DiasProgramadosAdelante).ToString("yyyy-MM-dd");
                 if (!string.IsNullOrEmpty(Request.QueryString["msg"]))
                     MostrarMensaje(Request.QueryString["msg"], "ok");
                 Cargar();
@@ -214,7 +217,7 @@ namespace WebSGV.Views.Exportacion
             return new FiltroTablero
             {
                 Desde = LeerFecha(txtDesde.Text) ?? hoy.AddDays(-DiasPorDefecto),
-                Hasta = LeerFecha(txtHasta.Text) ?? hoy,
+                Hasta = LeerFecha(txtHasta.Text) ?? hoy.AddDays(DiasProgramadosAdelante),
                 Texto = txtBuscar.Text,
                 Planta = ddlPlanta.SelectedValue,
                 IncluirHistorial = chkHistorial.Checked,

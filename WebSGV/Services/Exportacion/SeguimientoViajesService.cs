@@ -259,9 +259,12 @@ namespace WebSGV.Services.Exportacion
         /// </summary>
         public static ResultadoActualizacionGps ActualizarGpsAbiertos(IEnumerable<ViajeResumen> viajes, int maximo, TimeSpan presupuesto)
         {
+            // Las cargas programadas para mañana o después (el tablero las muestra) aún no salen.
+            DateTime hoy = FechaHelper.Hoy();
             var abiertos = OrdenarParaGps(viajes
-                .Where(v => v.Fase.Grupo != "cerrado" && (!string.IsNullOrWhiteSpace(v.Tracto1) || !string.IsNullOrWhiteSpace(v.Tracto2))),
-                FechaHelper.Hoy()).ToList();
+                .Where(v => v.Fase.Grupo != "cerrado" && (!string.IsNullOrWhiteSpace(v.Tracto1) || !string.IsNullOrWhiteSpace(v.Tracto2)))
+                .Where(v => !(v.FhProgramacion.HasValue && v.FhProgramacion.Value.Date > hoy)),
+                hoy).ToList();
             var r = new ResultadoActualizacionGps();
             var reloj = Stopwatch.StartNew();
 

@@ -63,6 +63,14 @@ function showHistorialModal() {
     modal.show();
 }
 
+// Formulario manual (Configuración base) plegable: se recuerda en un campo oculto para
+// que el servidor lo vuelva a pintar igual tras cada postback.
+$(document).on('shown.bs.collapse hidden.bs.collapse', '#rdManualCuerpo', function (e) {
+    if (e.target.id !== 'rdManualCuerpo') return;
+    $('#' + SGV.hfManualAbierto).val(e.type === 'shown' ? '1' : '0');
+    if (e.type === 'shown') initializeSelect2();
+});
+
 // Re-inicializar después de un postback parcial del UpdatePanel
 var prm = Sys.WebForms.PageRequestManager.getInstance();
 prm.add_endRequest(function () {

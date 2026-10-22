@@ -41,6 +41,11 @@ namespace WebSGV.Views
         /// </remarks>
         protected global::System.Web.UI.WebControls.HiddenField hfLoteActivo;
 
+        /// <summary>
+        /// Control hfManualAbierto.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.HiddenField hfManualAbierto;
+
         protected global::System.Web.UI.WebControls.Panel pnlMensajes;
 
         /// <summary>

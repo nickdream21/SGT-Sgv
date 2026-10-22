@@ -103,7 +103,13 @@ namespace WebSGV.Views
             // Sincroniza el estado del lote con el cliente en cada postback
             // (parcial o completo) para que el beforeunload JS esté siempre al día.
             hfLoteActivo.Value = TieneLoteActivo ? "1" : "0";
+            // Importación o descarga preparadas esperan "Iniciar lote", que está en el formulario manual.
+            if (pnlImportacionAplicada.Visible || pnlDescargaAplicada.Visible)
+                hfManualAbierto.Value = "1";
         }
+
+        /// <summary>El formulario manual (configuración base) se pinta abierto; si no, plegado.</summary>
+        protected bool ManualAbierto => hfManualAbierto.Value == "1";
 
         private void ConfigurarEstadoPagina()
         {
@@ -296,8 +302,9 @@ namespace WebSGV.Views
 
         private void MostrarFaseConfiguracionBase()
         {
-            // Mostrar fase 1
+            // Mostrar fase 1 (el formulario manual vuelve a quedar plegado)
             pnlConfiguracionBase.Visible = true;
+            hfManualAbierto.Value = "0";
             pnlImportarDocumentos.Visible = true;
             pnlDescargaPedido.Visible = true;
 
