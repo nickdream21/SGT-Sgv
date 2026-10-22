@@ -1,6 +1,6 @@
 # Plan de mejoras SGV — estado y tareas pendientes
 
-Última actualización: **2026-10-21**, cargas de mañana visibles en el tablero del seguimiento y formulario manual de RegistroDespacho plegado (sobre `3a84af0`; sin migración ni SP; sección 3); antes, Word del 21/10 subido (cargas del 22/10 y descargas de 4400133950 y 4400133952; sobre `ec7d06e`); antes, STATUS de la unidad en el tablero (migración 33); antes, seguimiento: unidades en la cola de Trujillo, carga que tomaba la del viaje anterior del tracto y "Actualizar GPS" en paralelo (sobre `fa9f6ab`; sin migración ni SP; sección 3); antes, despacho en dos momentos (programar con el Word, completar con el correo) y caché del historial GPS para "Actualizar GPS" (sobre `5c94014`; SP `sp_CompletarDespachoProgramado` y `sp_SE_SincronizarDespachos`; sección 3); antes, al día con el seguimiento de exportación (`a22748b`) más el cuadro STATUS GENERAL de octubre armado desde los Word y el GPS (119 viajes de octubre ya en `sgvActualizada`) y el mapa de la ruta en el detalle del viaje, la salida en camino y la vuelta corrida (sin migración; SP `sp_SE_RegistrarHitoGps` y `sp_SE_SincronizarDespachos`; sección 4). Este documento es el punto de partida para seguir trabajando
+Última actualización: **2026-10-21**, análisis de los clientes terceros (Crisar, Novopan, Polinplast) en `docs/CLIENTES_TERCEROS.md` (sobre `da3782a`); antes, cargas de mañana visibles en el tablero del seguimiento y formulario manual de RegistroDespacho plegado (sobre `3a84af0`; sin migración ni SP; sección 3); antes, Word del 21/10 subido (cargas del 22/10 y descargas de 4400133950 y 4400133952; sobre `ec7d06e`); antes, STATUS de la unidad en el tablero (migración 33); antes, seguimiento: unidades en la cola de Trujillo, carga que tomaba la del viaje anterior del tracto y "Actualizar GPS" en paralelo (sobre `fa9f6ab`; sin migración ni SP; sección 3); antes, despacho en dos momentos (programar con el Word, completar con el correo) y caché del historial GPS para "Actualizar GPS" (sobre `5c94014`; SP `sp_CompletarDespachoProgramado` y `sp_SE_SincronizarDespachos`; sección 3); antes, al día con el seguimiento de exportación (`a22748b`) más el cuadro STATUS GENERAL de octubre armado desde los Word y el GPS (119 viajes de octubre ya en `sgvActualizada`) y el mapa de la ruta en el detalle del viaje, la salida en camino y la vuelta corrida (sin migración; SP `sp_SE_RegistrarHitoGps` y `sp_SE_SincronizarDespachos`; sección 4). Este documento es el punto de partida para seguir trabajando
 desde cualquier máquina. No contiene contraseñas: solo indica dónde están.
 
 ## 1. Estado actual
@@ -127,7 +127,17 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       Chapoñan y Miguel Rivas; 4400133952: Adrián Hidalgo y Juan Ortiz). El sistema no tiene dónde guardarlo:
       decidir con la administradora si hace falta un campo en el lote de descarga o en el seguimiento.
 - [ ] **Sección GUAYAQUIL-AZÚCAR del Word** (7 unidades en el del 21/10, sin pedido): el sistema la ignora.
-      Confirmar si esos viajes (azúcar a Guayaquil) deben registrarse y con qué cliente.
+      Es **CRISAR** (azúcar de Cartavio a Guayaquil; ver `docs/CLIENTES_TERCEROS.md`): la CAMBIO son los
+      choferes que cargaron en Cartavio el 19/10. Decidir si se registra como despacho (factura que manda el
+      chofer) o solo se sigue.
+- [ ] **Clientes terceros en el SGV** (análisis en `docs/CLIENTES_TERCEROS.md`): Crisar (como la exportación de
+      Vitapro, carga en Cartavio), Novopan (importación Quito → Piura/Trujillo, factura y packing list después
+      de cargar) y Polinplast (nacional Chapaira → La Libertad/Lambayeque, sin relevo). Cruzado con los 222 Word
+      de enero–octubre: el Word ya programa el 100 % de Crisar y Polinplast y el 94 % de Novopan, con carga
+      (HORARIO) y descarga (por carreta, con CAMBIO) como Vitapro. Siguiente paso propuesto: que "Programar con
+      el Word" reconozca CARTAVIO-AZUCAR / GUAYAQUIL-AZUCAR, NOVOPAN-QUITO / NOVOPAN-<destino> y
+      POLINPLAST-CHAPAIRA|RAPEL / POLINPLAST-<destino>. Preguntas: qué son ACP, Rapel y TALSA, la guía de
+      Polinplast (Rosmery), cómo se registra el falso flete.
 - [ ] **Completar las 11 cargas del 21/10 con el correo** cuando llegue (despachos 809–819, viajes del
       seguimiento 7371–7381 con pedido PENDIENTE): primera prueba real de "completar con el correo".
       5 de ellas se sumaron al viaje abierto de su chofer (VP 342, 343, 345, 347, 349), con la misma regla de la
