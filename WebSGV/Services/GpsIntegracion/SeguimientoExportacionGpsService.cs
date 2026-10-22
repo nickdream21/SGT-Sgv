@@ -326,7 +326,7 @@ namespace WebSGV.Services.GpsIntegracion
                         historialEntre(1, fechaInicio.AddDays(-1), hasta),
                         dispositivo2 != null && !string.Equals(placaTracto1, placaTracto2, StringComparison.OrdinalIgnoreCase)
                             ? historialEntre(2, fechaInicio, hasta) : null,
-                        desdeCargaUtc);
+                        desdeCargaUtc, descargaAsignada: !string.IsNullOrEmpty(placaTracto2));
                     foreach (var h in tercero.Hitos) Registrar(h.Item1, h.Item2);
                     if (lugarEntrega == null) lugarEntregaDetectado = tercero.LugarEntrega;
                     lugarFinDetectado = tercero.LugarFin;

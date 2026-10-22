@@ -279,7 +279,7 @@ namespace WebSGV.Services.Despachos
                 e.Viaje = $"carga {Convert.ToDateTime(viaje["fhProgramacion"]):dd/MM} · {viaje["tracto1"]} / {viaje["carreta"]}";
                 e.Relevo = tracto != null && tracto != P(viaje["tracto1"]);
                 e.YaRegistrada = string.Equals(Convert.ToString(viaje["lugarEntrega"]), e.Lugar, StringComparison.OrdinalIgnoreCase)
-                                 && (!e.Relevo || P(viaje["tracto2"]) == tracto);
+                                 && (tracto == null || P(viaje["tracto2"]) == tracto);
             }
             return entregas;
         }
@@ -293,8 +293,9 @@ namespace WebSGV.Services.Despachos
                 object r = DbHelper.EjecutarEscalarSp("sp_SE_RegistrarEntregaTercero",
                     DbHelper.Param("@idSeguimiento", e.IdSeguimiento.Value),
                     DbHelper.Param("@lugarEntrega", e.Lugar),
-                    DbHelper.Param("@tracto2", e.Relevo ? e.Tracto?.ToUpperInvariant() : null),
-                    DbHelper.Param("@conductorDestino", e.Relevo ? e.Chofer?.ToUpperInvariant() : null),
+                    // También sin relevo: el tracto de descarga queda asignado (para Crisar el GPS sigue la descarga desde ahí).
+                    DbHelper.Param("@tracto2", e.Tracto?.ToUpperInvariant()),
+                    DbHelper.Param("@conductorDestino", e.Chofer?.ToUpperInvariant()),
                     DbHelper.Param("@idUsuario", idUsuario));
                 if (Convert.ToInt32(r) != 1) continue;
                 cambiados++;

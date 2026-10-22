@@ -43,6 +43,12 @@ namespace WebSGV.Services.GpsIntegracion
         private const int MinutosMinimosEnTci = 3;
         private const int MinutosMinimosEnFin = 30;
 
+        /// <summary>Estadía en la cochera de Trujillo para que el viaje termine "EN COCHERA".</summary>
+        private const int MinutosMinimosCochera = 20 * 60;
+
+        /// <summary>Días que la carreta de Crisar puede esperar en la base al tracto de descarga (BPT-919: 3, del 16 al 19/10/2026).</summary>
+        private const int DiasCarretaEnBase = 6;
+
         /// <summary>Días desde la programación hasta llegar a la planta de carga.</summary>
         private const int DiasHastaCarga = 3;
 
@@ -54,9 +60,11 @@ namespace WebSGV.Services.GpsIntegracion
 
         /// <param name="historialCarga">Puntos del tracto que carga.</param>
         /// <param name="historialDescarga">Puntos del tracto que descarga (relevo de Crisar); null si es el mismo.</param>
-        /// <param name="desdeUtc">Desde cuándo buscar la llegada a la planta de carga.</param>
+        /// <param name="desdeUtc">Desde cuándo buscar la planta de carga (vale también si ya estaba ahí: el Excel de Novopan pone el día siguiente al de la carga en Quito).</param>
+        /// <param name="descargaAsignada">Crisar: el Word ya dijo qué tracto descarga. Sin eso, el tracto de carga que sale de la base puede llevar otra carreta (AMQ-859 el 20/10/2026 se fue con una de Vitapro).</param>
         public static ResultadoTramoTercero Detectar(string tipoRuta, string lugarCarga, string lugarEntrega,
-            IEnumerable<OnwayHistoryPoint> historialCarga, IEnumerable<OnwayHistoryPoint> historialDescarga, DateTime desdeUtc)
+            IEnumerable<OnwayHistoryPoint> historialCarga, IEnumerable<OnwayHistoryPoint> historialDescarga, DateTime desdeUtc,
+            bool descargaAsignada = true)
         {
             var r = new ResultadoTramoTercero();
             string ruta = (tipoRuta ?? "").Trim().ToUpperInvariant();
@@ -70,7 +78,7 @@ namespace WebSGV.Services.GpsIntegracion
             // 1. Planta de carga (ancla).
             var zonaCarga = GeocercasTerceros.DeLugar(ruta, lugarCarga) ?? CargaPorDefecto(ruta);
             if (zonaCarga == null) return r;
-            var carga = Primera(pc, new[] { zonaCarga }, cursor, Limite(pc, cursor, DiasHastaCarga), MinutosMinimosEnCarga);
+            var carga = Primera(pc, new[] { zonaCarga }, cursor, Limite(pc, cursor, DiasHastaCarga), MinutosMinimosEnCarga, yaAdentro: true);
             if (carga == null) return r;
             Agregar("fhLlegadaTrujillo", Hito(pc[carga.Item2.Primero], "Primer punto en " + zonaCarga.Nombre));
             if (!carga.Item2.Cerrada) return r;
@@ -92,6 +100,7 @@ namespace WebSGV.Services.GpsIntegracion
 
             // Con relevo, el tracto de descarga recoge la carreta en la base: sin llegada a la base no hay descarga todavía.
             if (ruta == RutaTercero.Crisar && historialDescarga != null && r.Buscar("fhLlegadaBase2") == null) return r;
+            if (ruta == RutaTercero.Crisar && !descargaAsignada && r.Buscar("fhLlegadaBase2") != null) return r;
 
             int cursorD = pd.FindIndex(p => Hora(p) >= desdeDescarga);
             if (cursorD < 0) return r;
@@ -99,7 +108,7 @@ namespace WebSGV.Services.GpsIntegracion
             {
                 // La salida de la base con la carreta: la primera salida del tracto de descarga desde ahí.
                 var salidaBase = Visitas(pd, GeocercasTrazabilidad.BaseSullana)
-                    .FirstOrDefault(v => v.Cerrada && v.Ultimo + 1 >= cursorD && Hora(pd[v.Ultimo + 1]) <= desdeDescarga.AddDays(3));
+                    .FirstOrDefault(v => v.Cerrada && v.Ultimo + 1 >= cursorD && Hora(pd[v.Ultimo + 1]) <= desdeDescarga.AddDays(DiasCarretaEnBase));
                 if (salidaBase != null)
                 {
                     Agregar("fhSalidaBase2", Hito(pd[salidaBase.Ultimo + 1], "Primer punto fuera de la base Sullana"));
@@ -112,8 +121,8 @@ namespace WebSGV.Services.GpsIntegracion
             }
 
             // 3. Descarga (segunda ancla): el lugar del viaje o, si no se sabe, el primero de la ruta donde se detuvo.
-            var zonaEntrega = GeocercasTerceros.DeLugar(ruta, lugarEntrega);
-            var candidatas = zonaEntrega != null ? new[] { zonaEntrega } : DescargasPosibles(ruta);
+            var zonasEntrega = GeocercasTerceros.ZonasDe(ruta, lugarEntrega);
+            var candidatas = zonasEntrega.Count > 0 ? zonasEntrega.ToArray() : DescargasPosibles(ruta);
             int limiteDescarga = Limite(pd, cursorD, DiasHastaDescarga);
             var descarga = Primera(pd, candidatas, cursorD, limiteDescarga, MinutosMinimosEnDescarga);
             int hasta = descarga != null ? descarga.Item2.Primero : limiteDescarga;
@@ -141,7 +150,7 @@ namespace WebSGV.Services.GpsIntegracion
 
             if (descarga == null) return r;
             var zona = descarga.Item1;
-            if (zonaEntrega == null) r.LugarEntrega = GeocercasTerceros.LugarDe(zona);
+            if (zonasEntrega.Count == 0) r.LugarEntrega = GeocercasTerceros.LugarDe(zona);
             Agregar("fhLlegadaPlantaEcuador", Hito(pd[descarga.Item2.Primero], "Primer punto en " + zona.Nombre));
             Agregar("fhLlegadaAlmacen", Hito(pd[descarga.Item2.Primero], "Primer punto en " + zona.Nombre));
             if (!descarga.Item2.Cerrada) return r;
@@ -154,7 +163,7 @@ namespace WebSGV.Services.GpsIntegracion
             string lugarFin = null;
             foreach (var f in Finales)
             {
-                var v = Primera(pd, new[] { f.Item1 }, cursorFin, limiteFin, f.Item3);
+                var v = Primera(pd, new[] { f.Item1 }, cursorFin, limiteFin, f.Item3, abiertaSinMinimo: f.Item3 < MinutosMinimosCochera);
                 if (v != null && (fin == null || v.Item2.Primero < fin.Item2.Primero)) { fin = v; lugarFin = f.Item2; }
             }
             if (fin != null)
@@ -171,7 +180,9 @@ namespace WebSGV.Services.GpsIntegracion
         private static readonly Tuple<GeocercaGps, string, int>[] Finales =
         {
             Tuple.Create(GeocercasTrazabilidad.BaseSullana, "BASE", MinutosMinimosEnFin),
-            Tuple.Create(GeocercasTerceros.CocheraTrujillo, RutaTercero.FinCochera, MinutosMinimosEnFin),
+            // La cochera es donde la unidad se guarda un día o más (los 5 viajes de fines de agosto: 1 a 4 días);
+            // BPT-788 para unas horas ahí en casi todos sus viajes y el Excel dice "EN SU TOTALIDAD".
+            Tuple.Create(GeocercasTerceros.CocheraTrujillo, RutaTercero.FinCochera, MinutosMinimosCochera),
             Tuple.Create(GeocercasTerceros.EsperaGrifoCurvaSun, RutaTercero.FinEsperaTrujillo, 60),
             Tuple.Create(GeocercasTrazabilidad.TrujilloAcceso, "VITAPRO TRUJILLO", 180),
             Tuple.Create(GeocercasTerceros.CrisarCartavio, "CARTAVIO", 60),
@@ -213,13 +224,16 @@ namespace WebSGV.Services.GpsIntegracion
         /// La primera visita a cualquiera de las zonas que empieza en [desde, hasta) y dura al menos
         /// <paramref name="minutos"/> (o sigue adentro: la unidad está ahí ahora).
         /// </summary>
-        private static Tuple<GeocercaGps, Visita> Primera(List<OnwayHistoryPoint> puntos, GeocercaGps[] zonas, int desde, int hasta, int minutos)
+        /// <param name="yaAdentro">Vale también una visita que empezó antes de <paramref name="desde"/> y sigue después.</param>
+        /// <param name="abiertaSinMinimo">Una visita en curso vale aunque todavía no dure <paramref name="minutos"/>.</param>
+        private static Tuple<GeocercaGps, Visita> Primera(List<OnwayHistoryPoint> puntos, GeocercaGps[] zonas, int desde, int hasta, int minutos,
+            bool yaAdentro = false, bool abiertaSinMinimo = true)
         {
             Tuple<GeocercaGps, Visita> mejor = null;
             foreach (var z in zonas)
             {
-                var v = Visitas(puntos, z).FirstOrDefault(x => x.Primero >= desde && x.Primero < hasta &&
-                    (!x.Cerrada || (Hora(puntos[x.Ultimo]) - Hora(puntos[x.Primero])).TotalMinutes >= minutos));
+                var v = Visitas(puntos, z).FirstOrDefault(x => (yaAdentro ? x.Ultimo >= desde : x.Primero >= desde) && x.Primero < hasta &&
+                    ((!x.Cerrada && abiertaSinMinimo) || (Hora(puntos[x.Ultimo]) - Hora(puntos[x.Primero])).TotalMinutes >= minutos));
                 if (v != null && (mejor == null || v.Primero < mejor.Item2.Primero)) mejor = Tuple.Create(z, v);
             }
             return mejor;

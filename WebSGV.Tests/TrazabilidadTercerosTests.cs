@@ -122,6 +122,27 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void Novopan_YaEstabaEnQuitoAntesDeLaFecha_IgualTomaLaCarga()
+        {
+            // El Excel de Novopan pone el día siguiente al de la carga (T7J-861: cargó el 04/10, el Excel dice 05/10).
+            var r = TrazabilidadTercerosService.Detectar("NOVOPAN", "QUITO", "TRUJILLO",
+                Gps("BFK-879_2026-10-11_novopan.json"), null, Utc("2026-10-11 12:00"));
+            Hora(r, "fhLlegadaTrujillo", "2026-10-11 08:47");
+            Hora(r, "fhLlegadaPlantaEcuador", "2026-10-15 10:28");
+        }
+
+        [Fact]
+        public void Crisar_SinTractoDeDescargaAsignado_SeQuedaEnLaBase()
+        {
+            // Sin la sección de descarga del Word, el tracto de carga que sale de la base puede llevar otra carreta.
+            var r = TrazabilidadTercerosService.Detectar("CRISAR", "CARTAVIO", "GUAYAQUIL",
+                Gps("BNG-758_2026-10-14_crisar.json"), null, Utc("2026-10-13 12:00"), descargaAsignada: false);
+            Hora(r, "fhLlegadaBase2", "2026-10-15 01:11");
+            Assert.Null(r.Buscar("fhSalidaBase2"));
+            Assert.Null(r.Buscar("fhLlegadaPlantaEcuador"));
+        }
+
+        [Fact]
         public void SinVisitaALaPlantaDeCarga_NoHayViaje()
         {
             // Desde después de la descarga: la unidad ya no vuelve a Chapaira en el historial.

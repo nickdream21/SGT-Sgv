@@ -69,6 +69,14 @@ namespace WebSGV.Services.GpsIntegracion
         /// <summary>Polinplast en Chao (3 de 3 viajes, ~1,5 h).</summary>
         public static readonly GeocercaGps PolinplastChao = GeocercaGps.Circulo("POLINPLAST_CHAO", "Chao (Polinplast)", -8.58301, -78.64513, 300);
 
+        /// <summary>
+        /// Los otros dos puntos de entrega en Chao: Hortifrut tiene varios fundos (guía T700-00001683: Fundos
+        /// Armonía 1 2 3 4, Panamericana Norte km 495). BNH-735 (12/10/2026, 2 h en cada uno), T6F-864 (13/10)
+        /// y BNG-758 (16/10) descargaron aquí y no en el primero.
+        /// </summary>
+        public static readonly GeocercaGps PolinplastChao2 = GeocercaGps.Circulo("POLINPLAST_CHAO_2", "Chao 2 - Hortifrut (Polinplast)", -8.60195, -78.62635, 250);
+        public static readonly GeocercaGps PolinplastChao3 = GeocercaGps.Circulo("POLINPLAST_CHAO_3", "Chao 3 - Hortifrut (Polinplast)", -8.58978, -78.66828, 250);
+
         /// <summary>Polinplast en Casa Grande (3 de 3 viajes, ~1 h; paradas a 170 m del centro).</summary>
         public static readonly GeocercaGps PolinplastCasaGrande = GeocercaGps.Circulo("POLINPLAST_CASAGRANDE", "Casa Grande (Polinplast)", -7.70956, -79.26271, 400);
 
@@ -92,38 +100,42 @@ namespace WebSGV.Services.GpsIntegracion
         {
             CrisarCartavio, PolinplastChapaira, NovopanQuito,
             CrisarLaTroncal, CrisarPernocte, NovopanPiura, NovopanTrujillo,
-            PolinplastViru, PolinplastChao, PolinplastCasaGrande, PolinplastAcpChepen, PolinplastJayanca, PolinplastOlmos, PolinplastSalaverry,
+            PolinplastViru, PolinplastChao, PolinplastChao2, PolinplastChao3, PolinplastCasaGrande, PolinplastAcpChepen, PolinplastJayanca,
+            PolinplastOlmos, PolinplastSalaverry,
             CocheraTrujillo, EsperaGrifoCurvaSun
         };
 
-        // Lugar como lo escribe el Word o el Excel (RutaProgramacion.Lugar / LUGAR DE ENTREGA) → geocerca, por cliente.
-        private static readonly Dictionary<string, GeocercaGps> PorLugar = new Dictionary<string, GeocercaGps>
+        // Lugar como lo escribe el Word o el Excel (RutaProgramacion.Lugar / LUGAR DE ENTREGA) → geocercas, por cliente.
+        // El azúcar de Crisar ("GUAYAQUIL") se descarga en La Troncal o en Jave o Inbalnor (AMN-912 el 21/09/2026 en
+        // Jave, BNH-795 el mismo día en Inbalnor, BPT-919 el 17/10 en Jave): las de Vitapro.
+        private static readonly Dictionary<string, GeocercaGps[]> PorLugar = new Dictionary<string, GeocercaGps[]>
         {
-            ["CRISAR|CARTAVIO"] = CrisarCartavio,
-            ["CRISAR|GUAYAQUIL"] = CrisarLaTroncal,
-            ["CRISAR|LA TRONCAL"] = CrisarLaTroncal,
-            ["NOVOPAN|QUITO"] = NovopanQuito,
-            ["NOVOPAN|PIURA"] = NovopanPiura,
-            ["NOVOPAN|TRUJILLO"] = NovopanTrujillo,
-            ["POLINPLAST|CHAPAIRA"] = PolinplastChapaira,
-            ["POLINPLAST|VIRU"] = PolinplastViru,
-            ["POLINPLAST|CHAO"] = PolinplastChao,
-            ["POLINPLAST|CASAGRANDE"] = PolinplastCasaGrande,
-            ["POLINPLAST|CASA GRANDE"] = PolinplastCasaGrande,
-            ["POLINPLAST|ACP"] = PolinplastAcpChepen,
-            ["POLINPLAST|CHEPEN"] = PolinplastAcpChepen,
-            ["POLINPLAST|CHEPE"] = PolinplastAcpChepen,
-            ["POLINPLAST|JAYANCA"] = PolinplastJayanca,
-            ["POLINPLAST|RAPEL"] = PolinplastJayanca,
-            ["POLINPLAST|OLMOS"] = PolinplastOlmos,
-            ["POLINPLAST|SALAVERRY"] = PolinplastSalaverry,
-            ["POLINPLAST|COCHERA TRUJILLO"] = CocheraTrujillo,
+            ["CRISAR|CARTAVIO"] = new[] { CrisarCartavio },
+            ["CRISAR|GUAYAQUIL"] = new[] { CrisarLaTroncal, GeocercasTrazabilidad.JaveAcceso, GeocercasTrazabilidad.InbalnorAcceso },
+            ["CRISAR|LA TRONCAL"] = new[] { CrisarLaTroncal },
+            ["NOVOPAN|QUITO"] = new[] { NovopanQuito },
+            ["NOVOPAN|PIURA"] = new[] { NovopanPiura },
+            ["NOVOPAN|TRUJILLO"] = new[] { NovopanTrujillo },
+            ["POLINPLAST|CHAPAIRA"] = new[] { PolinplastChapaira },
+            ["POLINPLAST|VIRU"] = new[] { PolinplastViru },
+            ["POLINPLAST|CHAO"] = new[] { PolinplastChao, PolinplastChao2, PolinplastChao3 },
+            ["POLINPLAST|CASAGRANDE"] = new[] { PolinplastCasaGrande },
+            ["POLINPLAST|CASA GRANDE"] = new[] { PolinplastCasaGrande },
+            ["POLINPLAST|ACP"] = new[] { PolinplastAcpChepen },
+            ["POLINPLAST|CHEPEN"] = new[] { PolinplastAcpChepen },
+            ["POLINPLAST|CHEPE"] = new[] { PolinplastAcpChepen },
+            ["POLINPLAST|JAYANCA"] = new[] { PolinplastJayanca },
+            ["POLINPLAST|RAPEL"] = new[] { PolinplastJayanca },
+            ["POLINPLAST|OLMOS"] = new[] { PolinplastOlmos },
+            ["POLINPLAST|SALAVERRY"] = new[] { PolinplastSalaverry },
+            ["POLINPLAST|COCHERA TRUJILLO"] = new[] { CocheraTrujillo },
         };
 
         /// <summary>Destinos de Polinplast: donde se busca la descarga si el viaje no sabe a cuál va.</summary>
         public static IReadOnlyList<GeocercaGps> DescargasPolinplast { get; } = new[]
         {
-            PolinplastViru, PolinplastChao, PolinplastCasaGrande, PolinplastAcpChepen, PolinplastJayanca, PolinplastOlmos, PolinplastSalaverry
+            PolinplastViru, PolinplastChao, PolinplastChao2, PolinplastChao3, PolinplastCasaGrande, PolinplastAcpChepen, PolinplastJayanca,
+            PolinplastOlmos, PolinplastSalaverry
         };
 
         // Nombre del lugar de cada descarga, como se guarda en lugarEntrega.
@@ -134,6 +146,10 @@ namespace WebSGV.Services.GpsIntegracion
             [NovopanTrujillo.Codigo] = "TRUJILLO",
             [PolinplastViru.Codigo] = "VIRU",
             [PolinplastChao.Codigo] = "CHAO",
+            [PolinplastChao2.Codigo] = "CHAO",
+            [PolinplastChao3.Codigo] = "CHAO",
+            [GeocercasTrazabilidad.JaveAcceso.Codigo] = "GUAYAQUIL",
+            [GeocercasTrazabilidad.InbalnorAcceso.Codigo] = "GUAYAQUIL",
             [PolinplastCasaGrande.Codigo] = "CASAGRANDE",
             [PolinplastAcpChepen.Codigo] = "ACP",
             [PolinplastJayanca.Codigo] = "JAYANCA",
@@ -145,11 +161,14 @@ namespace WebSGV.Services.GpsIntegracion
         public static string LugarDe(GeocercaGps g) => g != null && LugarPorCodigo.TryGetValue(g.Codigo, out var l) ? l : null;
 
         /// <summary>Geocerca del lugar de carga o entrega de un cliente ("POLINPLAST", "VIRU"); null si no hay.</summary>
-        public static GeocercaGps DeLugar(string cliente, string lugar)
+        public static GeocercaGps DeLugar(string cliente, string lugar) => ZonasDe(cliente, lugar).FirstOrDefault();
+
+        /// <summary>Todas las geocercas de ese lugar (Chao tiene tres fundos; el azúcar de Guayaquil, tres bodegas); vacío si no hay.</summary>
+        public static IReadOnlyList<GeocercaGps> ZonasDe(string cliente, string lugar)
         {
             string c = LectorDocumentosPedido.Normalizar(cliente), l = LectorDocumentosPedido.Normalizar(lugar);
             string clave = new[] { "CRISAR", "NOVOPAN", "POLINPLAST" }.FirstOrDefault(c.Contains);
-            return clave != null && PorLugar.TryGetValue(clave + "|" + l, out var g) ? g : null;
+            return clave != null && PorLugar.TryGetValue(clave + "|" + l, out var g) ? g : new GeocercaGps[0];
         }
     }
 }

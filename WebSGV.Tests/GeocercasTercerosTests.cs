@@ -29,6 +29,9 @@ namespace WebSGV.Tests
         [InlineData("ESPERA_GRIFO_CURVA_SUN", -8.14738, -79.01295)] // BFK-879 después de descargar Novopan
         [InlineData("POLINPLAST_VIRU", -8.40885, -78.81247)]        // TBM-893
         [InlineData("POLINPLAST_CHAO", -8.58288, -78.64503)]        // BNG-758
+        [InlineData("POLINPLAST_CHAO_2", -8.60177, -78.62645)]      // BNH-735, 12/10
+        [InlineData("POLINPLAST_CHAO_2", -8.60200, -78.62636)]      // T6F-864, 13/10
+        [InlineData("POLINPLAST_CHAO_3", -8.58981, -78.66827)]      // BNH-735, 12/10
         [InlineData("POLINPLAST_CASAGRANDE", -7.71101, -79.26297)]  // BPT-788
         [InlineData("POLINPLAST_ACP", -7.06991, -79.55964)]         // BPT-788 (ACP)
         [InlineData("POLINPLAST_JAYANCA", -6.37462, -79.80219)]     // BNG-862 (RAPEL)
