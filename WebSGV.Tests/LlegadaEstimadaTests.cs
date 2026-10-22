@@ -166,5 +166,47 @@ namespace WebSGV.Tests
             Assert.Contains("última señal 22/10 07:00", lineas[jave + 1]);
             Assert.Equal("", LlegadaEstimada.Reporte(viajes.Where(v => v.Llegada == null), Ahora));
         }
+
+        [Fact]
+        public void ExcelDeLlegadas_MismasUnidadesYOrdenQueElTexto()
+        {
+            LlegadaEstimada.Estimado E(string destino, int horas, int km) => new LlegadaEstimada.Estimado
+            {
+                Destino = destino, KmRestantes = km, Llegada = Ahora.AddHours(horas), Desde = Ahora.AddHours(horas - 1), Hasta = Ahora.AddHours(horas + 1),
+                Muestras = 10, HoraPosicion = Ahora.AddMinutes(-10),
+            };
+            var t = new System.Data.DataTable();
+            t.Columns.Add("idSeguimiento", typeof(int));
+            ViajeResumen V(int id, LlegadaEstimada.Estimado e)
+            {
+                var fila = t.NewRow(); fila["idSeguimiento"] = id; t.Rows.Add(fila);
+                return new ViajeResumen { Id = id, Pedido = "44001339" + id, Tracto1 = "T1-" + id, Tracto2 = "T2-" + id, Carreta = "C-" + id,
+                                          Chofer1 = "CARGA " + id, Chofer2 = "DESCARGA " + id, Lugar = "LUGAR " + id, Velocidad = 60, Llegada = e, Fila = fila };
+            }
+            var viajes = new List<ViajeResumen>
+            {
+                V(1, E("JAVE", 3, 90)), V(2, E("TRUJILLO", 5, 210)), V(3, E("TRUJILLO", 1, 60)),
+                V(4, E(LlegadaEstimada.DestinoGrifo, 2, 50)), V(5, E("TRUJILLO", -1, 5)),
+            };
+            var enCamino = LlegadaEstimada.EnCaminoAPlanta(viajes);
+            Assert.Equal(new[] { 5, 3, 2, 1 }, enCamino.Select(v => v.Id));
+
+            var r = ExportacionLlegadas.Construir(enCamino, new[] { "Programación: 15/10 al 29/10" }, "prueba", Ahora);
+            var titulos = r.Columnas.Select(c => c.Titulo).ToList();
+            object Celda(int id, string columna) => r.Columnas[titulos.IndexOf(columna)].Valor(enCamino.Single(v => v.Id == id).Fila);
+            Assert.Equal("CARGA EN TRUJILLO", Celda(3, "OPERACIÓN"));
+            Assert.Equal("T1-3", Celda(3, "TRACTO"));
+            Assert.Equal("DESCARGA 1", Celda(1, "CONDUCTOR"));      // a Jave va el tracto de descarga
+            Assert.Equal("22/10 11:00", Celda(3, "LLEGADA APROX."));
+            Assert.Equal("22/10 10:00 y 22/10 12:00", Celda(3, "ENTRE"));
+            Assert.Equal("Ya debería haber llegado", Celda(5, "OBSERVACIÓN"));
+            Assert.Equal(4m, r.Resumen.Single(x => x.Etiqueta == "Total").Valor);
+
+            var empresa = new WebSGV.Helpers.EmpresaInfo { RazonSocial = "SERVICIOS GENERALES VIVIANA E.I.R.L.", Ruc = "20483851171", DomicilioFiscal = "Sullana" };
+            var ws = new ClosedXML.Excel.XLWorkbook(new System.IO.MemoryStream(
+                WebSGV.Services.Reportes.ReporteTabularExportador.GenerarExcel(r, empresa))).Worksheet(1);
+            Assert.Contains(ws.CellsUsed(), c => c.GetString() == "LLEGADA APROX.");
+            Assert.Contains(ws.CellsUsed(), c => c.GetString() == "T2-1");
+        }
     }
 }

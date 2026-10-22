@@ -200,31 +200,49 @@ namespace WebSGV.Services.Exportacion
         /// </summary>
         public static string Reporte(IEnumerable<ViajeResumen> viajes, DateTime ahora)
         {
-            // El retorno (al grifo y a la base) va en el reporte del grifo Santa Rosa, no aquí.
-            var enCamino = viajes.Where(v => v.Llegada != null && v.Llegada.Destino != DestinoBase && v.Llegada.Destino != DestinoGrifo).ToList();
+            var enCamino = EnCaminoAPlanta(viajes);
             if (enCamino.Count == 0) return "";
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"UNIDADES EN CAMINO A PLANTA - {ahora.ToString("dd/MM HH:mm", CultureInfo.InvariantCulture)}");
             sb.AppendLine("Llegada aproximada según el GPS y lo que tardaron los viajes anteriores desde el mismo punto y a la misma hora.");
-            foreach (var g in enCamino.GroupBy(v => v.Llegada.Destino).OrderBy(g => g.Key == "TRUJILLO" ? 0 : 1).ThenBy(g => g.Key))
+            foreach (var g in enCamino.GroupBy(v => v.Llegada.Destino))
             {
                 sb.AppendLine();
-                sb.AppendLine(g.Key == "TRUJILLO" ? "CARGA EN TRUJILLO" : "DESCARGA EN " + g.Key);
-                foreach (var v in g.OrderBy(x => x.Llegada.Llegada))
+                sb.AppendLine(Operacion(g.Key));
+                foreach (var v in g)
                 {
-                    bool carga = g.Key == "TRUJILLO";
-                    string tracto = carga ? v.Tracto1 : v.Tracto2 ?? v.Tracto1;
-                    string chofer = carga ? v.Chofer1 : v.Chofer2 ?? v.Chofer1;
                     var l = v.Llegada;
-                    string senal = ahora - l.HoraPosicion > TimeSpan.FromHours(2)
-                        ? $"última señal {l.HoraPosicion.ToString("dd/MM HH:mm", CultureInfo.InvariantCulture)}"
-                        : (v.Velocidad.HasValue && v.Velocidad.Value < 3 ? "detenida" : "en marcha") + " a las " + l.HoraPosicion.ToString("HH:mm", CultureInfo.InvariantCulture);
                     string atraso = l.Llegada < ahora ? " (ya debería haber llegado)" : "";
-                    sb.AppendLine($"- {tracto} / {v.Carreta} - {chofer}: {(string.IsNullOrWhiteSpace(v.Lugar) ? "en ruta" : v.Lugar)}, " +
-                                  $"faltan {l.KmRestantes:0} km ({senal}). Llega aprox. {l.Texto}{atraso}");
+                    sb.AppendLine($"- {TractoHacia(v)} / {v.Carreta} - {ChoferHacia(v)}: {(string.IsNullOrWhiteSpace(v.Lugar) ? "en ruta" : v.Lugar)}, " +
+                                  $"faltan {l.KmRestantes:0} km ({Senal(v, ahora)}). Llega aprox. {l.Texto}{atraso}");
                 }
             }
             return sb.ToString().TrimEnd();
+        }
+
+        /// <summary>
+        /// Unidades en camino a cargar (Trujillo) o a descargar (Jave/Inbalnor): primero Trujillo, luego cada planta,
+        /// y dentro de cada una la que llega primero. El retorno (al grifo y a la base) va en el reporte del grifo.
+        /// </summary>
+        public static List<ViajeResumen> EnCaminoAPlanta(IEnumerable<ViajeResumen> viajes) =>
+            viajes.Where(v => v.Llegada != null && v.Llegada.Destino != DestinoBase && v.Llegada.Destino != DestinoGrifo)
+                  .OrderBy(v => v.Llegada.Destino == "TRUJILLO" ? 0 : 1).ThenBy(v => v.Llegada.Destino).ThenBy(v => v.Llegada.Llegada)
+                  .ToList();
+
+        /// <summary>"CARGA EN TRUJILLO" o "DESCARGA EN JAVE".</summary>
+        public static string Operacion(string destino) => destino == "TRUJILLO" ? "CARGA EN TRUJILLO" : "DESCARGA EN " + destino;
+
+        /// <summary>El tracto (y chofer) que va a esa planta: el de carga a Trujillo, el de descarga a Ecuador.</summary>
+        public static string TractoHacia(ViajeResumen v) => v.Llegada?.Destino == "TRUJILLO" ? v.Tracto1 : v.Tracto2 ?? v.Tracto1;
+        public static string ChoferHacia(ViajeResumen v) => v.Llegada?.Destino == "TRUJILLO" ? v.Chofer1 : v.Chofer2 ?? v.Chofer1;
+
+        /// <summary>"en marcha a las 09:46", "detenida a las 09:34" o "última señal 22/10 07:10" (más de 2 h).</summary>
+        public static string Senal(ViajeResumen v, DateTime ahora)
+        {
+            var l = v.Llegada;
+            return ahora - l.HoraPosicion > TimeSpan.FromHours(2)
+                ? $"última señal {l.HoraPosicion.ToString("dd/MM HH:mm", CultureInfo.InvariantCulture)}"
+                : (v.Velocidad.HasValue && v.Velocidad.Value < 3 ? "detenida" : "en marcha") + " a las " + l.HoraPosicion.ToString("HH:mm", CultureInfo.InvariantCulture);
         }
 
         /// <summary>Diferencia entre dos horas del día, dando la vuelta a medianoche (23:00 y 01:00 = 2 h).</summary>

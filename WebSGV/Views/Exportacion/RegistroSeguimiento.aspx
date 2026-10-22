@@ -27,6 +27,8 @@
                 <button type="button" class="sx-btn" id="btnCopiarStatus" title="Copia el STATUS de cada fila de la tabla, en orden, para pegar en la columna STATUS del Excel"><i class="fas fa-copy" aria-hidden="true"></i>Copiar STATUS</button>
                 <button type="button" class="sx-btn" id="btnReporteLlegadas" title="Copia, listo para enviar, el estado y la hora aproximada de llegada de las unidades que van en camino a cargar a Trujillo o a descargar a Jave/Inbalnor"><i class="fas fa-clock" aria-hidden="true"></i>Reporte de llegadas</button>
                 <textarea id="txtReporteLlegadas" hidden readonly><asp:Literal ID="litReporteLlegadas" runat="server" /></textarea>
+                <asp:Button ID="btnExportarLlegadas" runat="server" Text="Excel de llegadas" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarLlegadas_Click"
+                    ToolTip="Las mismas unidades del Reporte de llegadas en Excel: en camino a cargar a Trujillo o a descargar a Jave/Inbalnor, con ubicación, km restantes y llegada aproximada" />
                 <asp:Button ID="btnActualizarGps" runat="server" Text="Actualizar GPS de viajes abiertos" CssClass="sx-btn sx-btn-primario" CausesValidation="false"
                     OnClick="btnActualizarGps_Click" OnClientClick="this.value='Consultando el GPS…';" UseSubmitBehavior="false" />
             </div>

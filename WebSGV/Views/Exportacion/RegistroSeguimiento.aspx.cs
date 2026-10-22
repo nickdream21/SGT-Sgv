@@ -150,6 +150,34 @@ namespace WebSGV.Views.Exportacion
             }), FechaHelper.Ahora());
         }
 
+        /// <summary>
+        /// Excel del Reporte de llegadas: las mismas unidades que el texto (todas las de la tabla en camino a planta,
+        /// sin importar la pestaña de fase elegida).
+        /// </summary>
+        protected void btnExportarLlegadas_Click(object sender, EventArgs e)
+        {
+            List<ViajeResumen> enCamino;
+            try
+            {
+                enCamino = LlegadaEstimada.EnCaminoAPlanta(SeguimientoViajesService.ListarTablero(Filtro()));
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex), "peligro");
+                Cargar();
+                return;
+            }
+            if (enCamino.Count == 0)
+            {
+                MostrarMensaje("No hay unidades en camino a cargar a Trujillo ni a descargar a Jave/Inbalnor con posición del GPS.", "alerta");
+                Cargar();
+                return;
+            }
+            var reporte = ExportacionLlegadas.Construir(enCamino, DescribirFiltros(), Convert.ToString(Session["Nombre"]), FechaHelper.Ahora());
+            EnviarExcel(ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(), Server.MapPath("~/Content/favicon.png")),
+                $"LLEGADAS_{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
+        }
+
         protected void btnExportarGrifo_Click(object sender, EventArgs e)
         {
             List<ExportacionGrifoSantaRosa.Unidad> unidades;
