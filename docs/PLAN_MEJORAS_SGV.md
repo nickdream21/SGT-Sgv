@@ -144,7 +144,12 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       CARGADA EN BASE SULLANA"; los tractos de descarga del Word del 21/10 salen con las carretas el 22/10.
       Comparar el STATUS y el "Excel STATUS EXTRA" con el Excel de la administradora y ver el detalle
       (SeguimientoViaje) de uno en el navegador. Los de GUAYAQUIL-AZÚCAR del Word del 19/10 (carretas T6P-989,
-      T0Q-991, TAN-976, TDN-986, TBE-995) no tienen viaje: su carga es del Word del 16/10, que no está.
+      T0Q-991, TAN-976, TDN-986, TBE-995) no tienen viaje: su carga es la sección AZÚCAR-CARTAVIO del Word del
+      **14/10** (cargaron el 15/10; el Word ya está en la PC de la oficina). El GPS (2026-10-22) los ve cruzar el
+      20/10, dormir en el parqueo de Naranjal, descargar en La Troncal el 21/10 (2–9 h) y volver a la base el 22/10.
+      Programarlos con "Programar con el Word" (Word del 14/10, sección AZÚCAR-CARTAVIO, fecha 15/10: el límite es
+      7 días atrás, **solo hasta el 22/10**) y "Registrar entregas" con el Word del 19/10; los 5 conductores, tractos
+      y carretas ya se reconocen. Pendiente de confirmación del usuario (escribe en sgvActualizada, la BD del sitio).
 - [ ] **Terceros: viajes ya en curso sin despacho**: los de antes de registrar a los clientes no tienen despacho
       de carga, así que no entran al seguimiento; si se quieren, programarlos con su Word (fecha de carga de hasta
       7 días atrás) o crearlos a mano.
