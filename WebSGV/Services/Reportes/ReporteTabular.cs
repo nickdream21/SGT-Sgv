@@ -400,6 +400,15 @@ namespace WebSGV.Services.Reportes
         public static IDocument CrearPdf(ReporteTabular r, EmpresaInfo emp, string rutaLogo) =>
             new ReporteTabularPdf(r, emp ?? new EmpresaInfo(), rutaLogo);
 
+        /// <summary>
+        /// El mismo diseño del PDF como una sola imagen PNG (una página continua del alto que haga falta), para
+        /// mandarla por WhatsApp desde el celular sin abrir un Excel.
+        /// </summary>
+        public static byte[] GenerarImagen(ReporteTabular r, EmpresaInfo emp, string rutaLogo = null) =>
+            new ReporteTabularPdf(r, emp ?? new EmpresaInfo(), rutaLogo, continuo: true)
+                .GenerateImages(new ImageGenerationSettings { ImageFormat = ImageFormat.Png, RasterDpi = 144 })
+                .First();
+
         internal static string TextoMonto(decimal v) => v == 0 ? "—" : v.ToString("N2", CulturaPe);
 
         internal static string TextoHora(object v)
@@ -454,12 +463,15 @@ namespace WebSGV.Services.Reportes
         private readonly EmpresaInfo _emp;
         private readonly string _rutaLogo;
         private readonly float _fuente;
+        private readonly bool _continuo;
 
-        public ReporteTabularPdf(ReporteTabular r, EmpresaInfo emp, string rutaLogo)
+        /// <param name="continuo">Una sola página del alto del contenido (para la imagen), sin número de página.</param>
+        public ReporteTabularPdf(ReporteTabular r, EmpresaInfo emp, string rutaLogo, bool continuo = false)
         {
             _r = r;
             _emp = emp;
             _rutaLogo = rutaLogo;
+            _continuo = continuo;
             int n = r.Columnas.Count;
             _fuente = n <= 8 ? 8.5f : n <= 12 ? 7.5f : n <= 18 ? 6.5f : 6f;
         }
@@ -478,7 +490,9 @@ namespace WebSGV.Services.Reportes
         {
             doc.Page(page =>
             {
-                page.Size(_r.Columnas.Count > 24 ? PageSizes.A3.Landscape() : PageSizes.A4.Landscape());
+                var tamano = _r.Columnas.Count > 24 ? PageSizes.A3.Landscape() : PageSizes.A4.Landscape();
+                if (_continuo) page.ContinuousSize(tamano.Width);
+                else page.Size(tamano);
                 page.MarginHorizontal(28);
                 page.MarginTop(24);
                 page.MarginBottom(20);
@@ -657,7 +671,9 @@ namespace WebSGV.Services.Reportes
                 row.RelativeItem().AlignRight().Text(t =>
                 {
                     t.DefaultTextStyle(s => s.FontSize(6.5f).FontColor(TextoSuave));
-                    t.Span(_r.Titulo + "  ·  Página ");
+                    t.Span(_r.Titulo);
+                    if (_continuo) return; // la imagen es una sola página
+                    t.Span("  ·  Página ");
                     t.CurrentPageNumber();
                     t.Span(" de ");
                     t.TotalPages();

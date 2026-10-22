@@ -195,6 +195,12 @@
 /* STATUS de la unidad (texto para copiar al Excel) */
 .sx-status { min-width: 13rem; max-width: 19rem; }
 .sx-status-texto { font-weight: 600; font-size: 0.8125rem; letter-spacing: 0.01em; }
+/* Excel + su versión en imagen, pegados */
+.sx-par { display: inline-flex; }
+.sx-par > .sx-btn:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.sx-par > .sx-btn-imagen { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; padding: 0 0.625rem; color: var(--sgv-texto-suave); }
+.sx-par > .sx-btn-imagen:hover, .sx-par > .sx-btn-imagen:focus-visible { color: var(--sgv-primario, #1d4ed8); text-decoration: none; }
+
 /* Menú "Más" de la barra de acciones (copiar textos, nuevo viaje, importar, dashboard) */
 .sx-mas { display: inline-block; }
 .sx-mas .dropdown-item { font-size: 0.875rem; cursor: pointer; }

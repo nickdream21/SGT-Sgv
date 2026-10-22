@@ -12,16 +12,33 @@
             <div class="sx-barra-acciones">
                 <span class="sx-nota"><asp:Literal ID="litUltimaConsulta" runat="server" /></span>
                 <%-- A la vista, los reportes que se envían y Actualizar GPS; el resto queda en "Más". --%>
-                <asp:Button ID="btnExportarStatus" runat="server" Text="Excel de STATUS" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatus_Click"
-                    ToolTip="Baja un Excel liviano con el STATUS de las unidades que muestra la tabla (con el pedido en Buscar, solo ese pedido)" />
+                <%-- Cada reporte en Excel y, al lado, el mismo como imagen (para mandarlo por WhatsApp desde el celular). --%>
+                <span class="sx-par">
+                    <asp:Button ID="btnExportarStatus" runat="server" Text="Excel de STATUS" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatus_Click"
+                        ToolTip="Baja un Excel liviano con el STATUS de las unidades que muestra la tabla (con el pedido en Buscar, solo ese pedido)" />
+                    <asp:LinkButton ID="btnImagenStatus" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenStatus_Click"
+                        ToolTip="El STATUS como imagen, para mandarlo por WhatsApp"><i class="fas fa-image" aria-hidden="true"></i><span class="sr-only">STATUS como imagen</span></asp:LinkButton>
+                </span>
                 <asp:Button ID="btnExportar" runat="server" Text="Exportar STATUS GENERAL" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportar_Click"
                     ToolTip="STATUS GENERAL de Vitapro con todas las horas (sin los clientes terceros)" />
-                <asp:Button ID="btnExportarStatusExtra" runat="server" Text="Excel STATUS EXTRA" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatusExtra_Click"
-                    ToolTip="Cuadro de los clientes terceros (Crisar, Novopan, Polinplast) que muestra la tabla, con las columnas del STATUS EXTRA" />
-                <asp:Button ID="btnExportarGrifo" runat="server" Text="Cuadro grifo Santa Rosa" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarGrifo_Click"
-                    ToolTip="Excel de los carros que bajan al grifo Santa Rosa a cargar combustible (Vitapro y Crisar de vuelta de Ecuador): en camino con su hora aproximada de llegada, en el grifo y descargando" />
-                <asp:Button ID="btnExportarLlegadas" runat="server" Text="Excel de llegadas" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarLlegadas_Click"
-                    ToolTip="Las unidades en camino a cargar a Trujillo o a descargar a Jave/Inbalnor, con ubicación, km restantes y llegada aproximada" />
+                <span class="sx-par">
+                    <asp:Button ID="btnExportarStatusExtra" runat="server" Text="Excel STATUS EXTRA" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatusExtra_Click"
+                        ToolTip="Cuadro de los clientes terceros (Crisar, Novopan, Polinplast) que muestra la tabla, con las columnas del STATUS EXTRA" />
+                    <asp:LinkButton ID="btnImagenStatusExtra" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenStatusExtra_Click"
+                        ToolTip="El STATUS EXTRA como imagen, para mandarlo por WhatsApp"><i class="fas fa-image" aria-hidden="true"></i><span class="sr-only">STATUS EXTRA como imagen</span></asp:LinkButton>
+                </span>
+                <span class="sx-par">
+                    <asp:Button ID="btnExportarGrifo" runat="server" Text="Cuadro grifo Santa Rosa" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarGrifo_Click"
+                        ToolTip="Excel de los carros que bajan al grifo Santa Rosa a cargar combustible (Vitapro y Crisar de vuelta de Ecuador): en camino con su hora aproximada de llegada, en el grifo y descargando" />
+                    <asp:LinkButton ID="btnImagenGrifo" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenGrifo_Click"
+                        ToolTip="El cuadro del grifo Santa Rosa como imagen, para mandarlo por WhatsApp"><i class="fas fa-image" aria-hidden="true"></i><span class="sr-only">Cuadro grifo como imagen</span></asp:LinkButton>
+                </span>
+                <span class="sx-par">
+                    <asp:Button ID="btnExportarLlegadas" runat="server" Text="Excel de llegadas" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarLlegadas_Click"
+                        ToolTip="Las unidades en camino a cargar a Trujillo o a descargar a Jave/Inbalnor, con ubicación, km restantes y llegada aproximada" />
+                    <asp:LinkButton ID="btnImagenLlegadas" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenLlegadas_Click"
+                        ToolTip="Las llegadas como imagen, para mandarlas por WhatsApp"><i class="fas fa-image" aria-hidden="true"></i><span class="sr-only">Llegadas como imagen</span></asp:LinkButton>
+                </span>
                 <div class="dropdown sx-mas">
                     <button type="button" class="sx-btn dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Más</button>
                     <div class="dropdown-menu dropdown-menu-right">

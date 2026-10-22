@@ -92,17 +92,21 @@ namespace WebSGV.Views.Exportacion
 
         private enum TipoExcel { StatusGeneral, Status, StatusExtra }
 
-        protected void btnExportar_Click(object sender, EventArgs e) => Exportar(TipoExcel.StatusGeneral);
+        protected void btnExportar_Click(object sender, EventArgs e) => Exportar(TipoExcel.StatusGeneral, false);
 
-        protected void btnExportarStatus_Click(object sender, EventArgs e) => Exportar(TipoExcel.Status);
+        protected void btnExportarStatus_Click(object sender, EventArgs e) => Exportar(TipoExcel.Status, false);
 
-        protected void btnExportarStatusExtra_Click(object sender, EventArgs e) => Exportar(TipoExcel.StatusExtra);
+        protected void btnImagenStatus_Click(object sender, EventArgs e) => Exportar(TipoExcel.Status, true);
+
+        protected void btnExportarStatusExtra_Click(object sender, EventArgs e) => Exportar(TipoExcel.StatusExtra, false);
+
+        protected void btnImagenStatusExtra_Click(object sender, EventArgs e) => Exportar(TipoExcel.StatusExtra, true);
 
         /// <summary>
-        /// Excel de los viajes que muestra el tablero (con el pedido en Buscar, solo ese pedido): STATUS GENERAL
-        /// completo (Vitapro), el liviano de STATUS o el STATUS EXTRA de los clientes terceros.
+        /// Excel (o imagen) de los viajes que muestra el tablero (con el pedido en Buscar, solo ese pedido): STATUS
+        /// GENERAL completo (Vitapro), el liviano de STATUS o el STATUS EXTRA de los clientes terceros.
         /// </summary>
-        private void Exportar(TipoExcel tipo)
+        private void Exportar(TipoExcel tipo, bool imagen)
         {
             List<ViajeResumen> viajes;
             try
@@ -134,8 +138,7 @@ namespace WebSGV.Views.Exportacion
                 : ExportacionStatusGeneral.Construir(viajes.Select(v => v.Fila).ToList(), DescribirFiltros(), usuario,
                     viajes.ToDictionary(v => v.Id, v => v.Status));
             string prefijo = tipo == TipoExcel.Status ? "STATUS_UNIDADES_" : tipo == TipoExcel.StatusExtra ? "STATUS_EXTRA_" : "STATUS_GENERAL_";
-            EnviarExcel(ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(), Server.MapPath("~/Content/favicon.png")),
-                $"{prefijo}{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
+            Enviar(reporte, prefijo, imagen);
         }
 
         /// <summary>Días hacia atrás (por programación) en que se buscan los carros que vuelven de Ecuador.</summary>
@@ -158,7 +161,11 @@ namespace WebSGV.Views.Exportacion
         /// Excel del Reporte de llegadas: las mismas unidades que el texto (todas las de la tabla en camino a planta,
         /// sin importar la pestaña de fase elegida).
         /// </summary>
-        protected void btnExportarLlegadas_Click(object sender, EventArgs e)
+        protected void btnExportarLlegadas_Click(object sender, EventArgs e) => ExportarLlegadas(false);
+
+        protected void btnImagenLlegadas_Click(object sender, EventArgs e) => ExportarLlegadas(true);
+
+        private void ExportarLlegadas(bool imagen)
         {
             List<ViajeResumen> enCamino;
             try
@@ -178,11 +185,14 @@ namespace WebSGV.Views.Exportacion
                 return;
             }
             var reporte = ExportacionLlegadas.Construir(enCamino, DescribirFiltros(), Convert.ToString(Session["Nombre"]), FechaHelper.Ahora());
-            EnviarExcel(ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(), Server.MapPath("~/Content/favicon.png")),
-                $"LLEGADAS_{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
+            Enviar(reporte, "LLEGADAS_", imagen);
         }
 
-        protected void btnExportarGrifo_Click(object sender, EventArgs e)
+        protected void btnExportarGrifo_Click(object sender, EventArgs e) => ExportarGrifo(false);
+
+        protected void btnImagenGrifo_Click(object sender, EventArgs e) => ExportarGrifo(true);
+
+        private void ExportarGrifo(bool imagen)
         {
             List<ExportacionGrifoSantaRosa.Unidad> unidades;
             try
@@ -202,15 +212,30 @@ namespace WebSGV.Views.Exportacion
                 return;
             }
             var reporte = ExportacionGrifoSantaRosa.Construir(unidades, Convert.ToString(Session["Nombre"]), FechaHelper.Ahora());
-            EnviarExcel(ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(), Server.MapPath("~/Content/favicon.png")),
-                $"GRIFO_SANTA_ROSA_{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
+            Enviar(reporte, "GRIFO_SANTA_ROSA_", imagen);
         }
 
-        private static void EnviarExcel(byte[] archivo, string nombre)
+        /// <summary>
+        /// Baja el reporte como Excel o como imagen PNG (el mismo diseño del PDF en una sola imagen, para mandarla por
+        /// WhatsApp desde el celular).
+        /// </summary>
+        private void Enviar(Services.Reportes.ReporteTabular reporte, string prefijo, bool imagen)
+        {
+            var empresa = EmpresaConfigHelper.ObtenerEmpresa();
+            string logo = Server.MapPath("~/Content/favicon.png");
+            string nombre = $"{prefijo}{FechaHelper.Ahora():yyyyMMdd_HHmm}";
+            if (imagen)
+                EnviarArchivo(ReporteTabularExportador.GenerarImagen(reporte, empresa, logo), nombre + ".png", "image/png");
+            else
+                EnviarArchivo(ReporteTabularExportador.GenerarExcel(reporte, empresa, logo), nombre + ".xlsx",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        }
+
+        private static void EnviarArchivo(byte[] archivo, string nombre, string tipo)
         {
             var resp = HttpContext.Current.Response;
             resp.Clear();
-            resp.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            resp.ContentType = tipo;
             resp.AddHeader("Content-Disposition", "attachment; filename=" + nombre);
             resp.AddHeader("Content-Length", archivo.Length.ToString());
             resp.BinaryWrite(archivo);

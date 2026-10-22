@@ -52,9 +52,11 @@ namespace WebSGV.Services.Exportacion
             Col("UBICACIÓN", TipoColumnaReporte.Texto, 1.4f, v => string.IsNullOrWhiteSpace(v.Lugar) ? "En ruta" : v.Lugar);
             Col("UBICACIÓN AL", TipoColumnaReporte.Codigo, 1f, v => F(v.Llegada.HoraPosicion));
             Col("SEÑAL", TipoColumnaReporte.Texto, 1.4f, v => Capital(LlegadaEstimada.Senal(v, ahora)), v => ahora - v.Llegada.HoraPosicion > TimeSpan.FromHours(2));
-            Col("KM RESTANTES", TipoColumnaReporte.Entero, 0.8f, v => (int)Math.Round(v.Llegada.KmRestantes));
+            Col("KM QUE FALTAN", TipoColumnaReporte.Entero, 1f, v => (int)Math.Round(v.Llegada.KmRestantes));
             Col("LLEGADA APROX.", TipoColumnaReporte.Codigo, 1f, v => F(v.Llegada.Llegada), v => v.Llegada.Llegada < ahora);
-            Col("ENTRE", TipoColumnaReporte.Codigo, 1.6f, v => F(v.Llegada.Desde) + " y " + F(v.Llegada.Hasta));
+            // El día solo si cambia respecto de la llegada ("12:40 y 13:00", "23:10 y 23/10 02:00").
+            string H(DateTime t, DateTime llegada) => t.Date == llegada.Date ? t.ToString("HH:mm", CultureInfo.InvariantCulture) : F(t);
+            Col("ENTRE", TipoColumnaReporte.Codigo, 1.3f, v => H(v.Llegada.Desde, v.Llegada.Llegada) + " y " + H(v.Llegada.Hasta, v.Llegada.Llegada));
             Col("OBSERVACIÓN", TipoColumnaReporte.Texto, 1.5f, v => v.Llegada.Llegada < ahora ? "Ya debería haber llegado" : null);
             return r;
         }

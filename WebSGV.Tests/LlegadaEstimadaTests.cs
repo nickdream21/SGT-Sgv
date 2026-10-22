@@ -198,7 +198,7 @@ namespace WebSGV.Tests
             Assert.Equal("T1-3", Celda(3, "TRACTO"));
             Assert.Equal("DESCARGA 1", Celda(1, "CONDUCTOR"));      // a Jave va el tracto de descarga
             Assert.Equal("22/10 11:00", Celda(3, "LLEGADA APROX."));
-            Assert.Equal("22/10 10:00 y 22/10 12:00", Celda(3, "ENTRE"));
+            Assert.Equal("10:00 y 12:00", Celda(3, "ENTRE"));
             Assert.Equal("Ya debería haber llegado", Celda(5, "OBSERVACIÓN"));
             Assert.Equal(4m, r.Resumen.Single(x => x.Etiqueta == "Total").Valor);
 
@@ -207,6 +207,11 @@ namespace WebSGV.Tests
                 WebSGV.Services.Reportes.ReporteTabularExportador.GenerarExcel(r, empresa))).Worksheet(1);
             Assert.Contains(ws.CellsUsed(), c => c.GetString() == "LLEGADA APROX.");
             Assert.Contains(ws.CellsUsed(), c => c.GetString() == "T2-1");
+
+            // La misma tabla como una sola imagen PNG (para WhatsApp).
+            byte[] png = WebSGV.Services.Reportes.ReporteTabularExportador.GenerarImagen(r, empresa);
+            Assert.True(png.Length > 1000);
+            Assert.Equal(new byte[] { 0x89, 0x50, 0x4E, 0x47 }, png.Take(4).ToArray());
         }
     }
 }
