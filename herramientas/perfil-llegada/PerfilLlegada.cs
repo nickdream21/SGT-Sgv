@@ -17,6 +17,7 @@ using WebSGV.Services.GpsIntegracion;
 //   - CARGA_TRUJILLO: tracto 1 desde la salida de base hasta la llegada a Trujillo.
 //   - DESCARGA_JAVE / DESCARGA_INBALNOR: tracto 2 desde la salida de TCI (o el cruce) hasta la planta.
 //   - RETORNO_BASE: tracto 2 desde la salida de la planta (Jave o Inbalnor) hasta la llegada a la base.
+//   - RETORNO_GRIFO: los mismos viajes hasta la primera parada en el grifo Santa Rosa (sale del GPS).
 // Ver README.md.
 //
 // PerfilLlegada <raizRepo> <carpetaCache> <salida.json> --desde=2026-09-01 [--max-llamadas=600]
@@ -58,6 +59,13 @@ class PerfilLlegada
             FROM SeguimientoExportacion
             WHERE activo = 1 AND tipoRuta IS NULL AND tracto2 IS NOT NULL AND UPPER(bodegaDescarga) IN ('JAVE', 'INBALNOR')
               AND fhSalida >= @desde AND fhLlegadaBaseFinal > fhSalida AND DATEDIFF(HOUR, fhSalida, fhLlegadaBaseFinal) BETWEEN 6 AND 96", desde)));
+        // Mismos viajes, hasta la llegada al grifo Santa Rosa (sale del GPS: el seguimiento lo guarda desde la migración 35).
+        rutas.Add(Armar(LlegadaEstimada.RetornoGrifo, LlegadaEstimada.DestinoGrifo, Viajes(@"
+            SELECT idSeguimiento, tracto2 AS tracto, fhSalida AS inicio, fhLlegadaBaseFinal AS llegada
+            FROM SeguimientoExportacion
+            WHERE activo = 1 AND tipoRuta IS NULL AND tracto2 IS NOT NULL AND UPPER(bodegaDescarga) IN ('JAVE', 'INBALNOR')
+              AND fhSalida >= @desde AND fhLlegadaBaseFinal > fhSalida AND DATEDIFF(HOUR, fhSalida, fhLlegadaBaseFinal) BETWEEN 6 AND 96", desde),
+            GeocercasTrazabilidad.GrifoSantaRosa));
 
         File.WriteAllText(salida, JsonConvert.SerializeObject(new { generado = DateTime.Now.ToString("yyyy-MM-dd HH:mm"), desde = desde.ToString("yyyy-MM-dd"), rutas }), new UTF8Encoding(false));
         foreach (var r in rutas)
@@ -75,7 +83,8 @@ class PerfilLlegada
         }).ToList();
 
     /// <summary>Recorrido de cada viaje (puntos del GPS entre el inicio y la llegada, en hora local).</summary>
-    static LlegadaEstimada.Ruta Armar(string codigo, string destino, List<Viaje> viajes)
+    /// <param name="llegadaEn">Si se da, la llegada es la primera parada de 10+ min en esa zona (y el viaje sin parada se descarta).</param>
+    static LlegadaEstimada.Ruta Armar(string codigo, string destino, List<Viaje> viajes, GeocercaGps llegadaEn = null)
     {
         Console.WriteLine($"{codigo}: {viajes.Count} viajes en el seguimiento");
         var recorridos = new List<Tuple<Viaje, List<OnwayHistoryPoint>>>();
@@ -85,6 +94,16 @@ class PerfilLlegada
             if (d == null) continue;
             var pts = Historial(d, v.Inicio.Date, v.Llegada.Date);
             if (pts == null) continue;
+            if (llegadaEn != null)
+            {
+                DateTime desdeUtc = FechaHelper.ConvertirAUtc(v.Inicio), hastaUtc = FechaHelper.ConvertirAUtc(v.Llegada);
+                var dentro = pts.Where(p => TrazabilidadCargaService.Hora(p) > desdeUtc && TrazabilidadCargaService.Hora(p) < hastaUtc && llegadaEn.Contiene(p.Lat, p.Lng))
+                    .Select(TrazabilidadCargaService.Hora).OrderBy(t => t).ToList();
+                // Primer punto de una estadía de 10+ min (pasar por la carretera no cuenta).
+                var llegada = dentro.Where(t => dentro.Any(u => u >= t.AddMinutes(10) && u <= t.AddHours(24))).Select(t => (DateTime?)t).FirstOrDefault();
+                if (!llegada.HasValue) continue;
+                v.Llegada = FechaHelper.ConvertirDeUtc(llegada.Value);
+            }
             DateTime iniUtc = FechaHelper.ConvertirAUtc(v.Inicio), finUtc = FechaHelper.ConvertirAUtc(v.Llegada);
             var tramo = pts.Where(p => !(p.Lat == 0 && p.Lng == 0))
                 .Where(p => TrazabilidadCargaService.Hora(p) >= iniUtc && TrazabilidadCargaService.Hora(p) <= finUtc)

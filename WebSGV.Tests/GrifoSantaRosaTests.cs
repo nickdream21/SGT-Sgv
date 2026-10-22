@@ -68,54 +68,95 @@ namespace WebSGV.Tests
 
         // ---------- Cuadro ----------
 
-        private static ViajeResumen Viaje(int id, string estado, params string[] columnas) =>
-            new ViajeResumen { Id = id, Estado = estado, Horas = Horas(columnas) };
+        // Naranjal, por la Troncal de la Costa entre Guayaquil y Machala: antes del grifo.
+        private const double NaranjalLat = -2.7730, NaranjalLng = -79.6950;
+
+        private static ViajeResumen Viaje(int id, string tipoRuta, params string[] columnas) =>
+            new ViajeResumen { Id = id, Estado = "EN_CURSO", TipoRuta = tipoRuta, Tracto2 = "T" + id, Carreta = "C" + id, Planta = "JAVE", Horas = Horas(columnas) };
+
+        private static LlegadaEstimada.Estimado AlGrifo(int horas) => new LlegadaEstimada.Estimado
+        {
+            Destino = LlegadaEstimada.DestinoGrifo, KmRestantes = 90, Llegada = Ahora.AddHours(horas), Desde = Ahora.AddHours(horas - 1),
+            Hasta = Ahora.AddHours(horas + 1), HoraPosicion = Ahora.AddMinutes(-10), Muestras = 10,
+        };
 
         [Fact]
-        public void Retornando_SoloLasQueSalieronDeLaPlantaYNoLleganABase()
+        public void Unidades_LasQueVienenAlGrifo_YNoLasQueYaCargaron()
         {
-            var viajes = new List<ViajeResumen>
-            {
-                Viaje(1, "EN_CURSO", "fhSalida"),
-                Viaje(2, "EN_CURSO", "fhSalida", "fhLlegadaBaseFinal"),
-                Viaje(3, "EN_CURSO", "fhIngreso"),
-                Viaje(4, "CANCELADO", "fhSalida"),
-                new ViajeResumen { Id = 5, Estado = "EN_CURSO", TipoRuta = "CRISAR", Horas = Horas("fhSalida") },
-            };
-            Assert.Equal(new[] { 1 }, ExportacionGrifoSantaRosa.Retornando(viajes).Select(v => v.Id));
+            var enCaminoTarde = Viaje(1, null, "fhSalida"); enCaminoTarde.Llegada = AlGrifo(5);
+            var enCaminoPronto = Viaje(2, "CRISAR", "fhSalida"); enCaminoPronto.Llegada = AlGrifo(2);
+            var enGrifo = Viaje(3, null, "fhSalida", "fhLlegadaGrifo");
+            var yaCargo = Viaje(4, null, "fhSalida", "fhLlegadaGrifo", "fhSalidaGrifo");
+            var descargando = Viaje(5, null, "fhLlegadaPlantaEcuador", "fhIngreso");
+            var enBase = Viaje(6, null, "fhSalida", "fhLlegadaBaseFinal");
+            var novopan = Viaje(7, "NOVOPAN", "fhSalida"); novopan.Llegada = AlGrifo(1);
+            var sinEstimado = Viaje(8, null, "fhSalida"); // ya pasó el grifo sin marcar la parada, o sin posición
+            var cancelado = Viaje(9, null, "fhSalida"); cancelado.Estado = "CANCELADO"; cancelado.Llegada = AlGrifo(1);
+            var crisarEnGrifo = Viaje(10, "CRISAR", "fhSalida"); crisarEnGrifo.Latitud = -3.42855; crisarEnGrifo.Longitud = -79.96242;
+            var yendo = Viaje(11, null, "fhCruceEcuador", "fhSalidaTCI");
+            var enPeru = Viaje(12, null, "fhSalidaBase2");
+            var viejo = Viaje(13, null, "fhCruceEcuador"); viejo.Horas["fhCruceEcuador"] = Ahora.AddDays(-6); // el GPS le perdió el rastro
+
+            var u = ExportacionGrifoSantaRosa.Unidades(new[] { enCaminoTarde, enCaminoPronto, enGrifo, yaCargo, descargando, enBase, novopan, sinEstimado, cancelado, crisarEnGrifo, yendo, enPeru, viejo }, Ahora);
+            Assert.Equal(new[] { 3, 10, 2, 1, 5, 11 }, u.Select(x => x.Viaje.Id));
+            Assert.Equal(ExportacionGrifoSantaRosa.Situacion.VanADescargar, u[5].Situacion);
+            Assert.Equal(ExportacionGrifoSantaRosa.Situacion.EnElGrifo, u[0].Situacion);
+            Assert.Equal(ExportacionGrifoSantaRosa.Situacion.EnCamino, u[2].Situacion);
+            Assert.Equal(ExportacionGrifoSantaRosa.Situacion.Descargando, u[4].Situacion);
         }
 
         [Fact]
-        public void SituacionYTiempoEnElGrifo()
+        public void Texto_ParaEnviarAlGrifo()
         {
-            var v = new ViajeResumen
-            {
-                Horas = new Dictionary<string, DateTime?>(StringComparer.OrdinalIgnoreCase)
-                {
-                    ["fhSalida"] = Ahora.AddHours(-6), ["fhLlegadaGrifo"] = Ahora.AddHours(-2).AddMinutes(-15),
-                },
-            };
-            Assert.Equal("En el grifo", ExportacionGrifoSantaRosa.Situacion(v));
-            Assert.Equal("2 h 15 min (sigue)", ExportacionGrifoSantaRosa.TiempoEnGrifo(v, Ahora));
-            v.Horas["fhSalidaGrifo"] = Ahora.AddMinutes(-80);
-            Assert.Equal("Pasó por el grifo, camino a base", ExportacionGrifoSantaRosa.Situacion(v));
-            Assert.Equal("55 min", ExportacionGrifoSantaRosa.TiempoEnGrifo(v, Ahora));
-            Assert.Equal("Todavía no llega al grifo", ExportacionGrifoSantaRosa.Situacion(new ViajeResumen { Horas = Horas("fhSalida") }));
+            var a = Viaje(1, null, "fhSalida"); a.Llegada = AlGrifo(3); a.Chofer2 = "JUAN PEREZ"; a.Lugar = "NARANJAL"; a.Velocidad = 70;
+            var b = Viaje(2, null, "fhLlegadaPlantaEcuador");
+            string t = ExportacionGrifoSantaRosa.Texto(ExportacionGrifoSantaRosa.Unidades(new[] { a, b }, Ahora), Ahora);
+            Assert.StartsWith("CARROS QUE BAJAN AL GRIFO SANTA ROSA - 22/10 12:00", t);
+            Assert.Contains("Total: 2 (1 en camino al grifo, 0 en el grifo, 1 descargando, 0 yendo a descargar)", t);
+            Assert.Contains("EN CAMINO AL GRIFO (1)", t);
+            Assert.Contains("1. T1 / C1 - JUAN PEREZ (Vitapro): NARANJAL, faltan 90 km (en marcha a las 11:50). Llega aprox. 22/10 15:00", t);
+            Assert.Contains("TODAVÍA DESCARGANDO, BAJAN DESPUÉS (1)", t);
+            Assert.Contains("1. T2 / C2 (Vitapro): en JAVE desde las 22/10 10:00", t);
+            Assert.DoesNotContain("EN EL GRIFO AHORA", t);
+            Assert.Equal("", ExportacionGrifoSantaRosa.Texto(new List<ExportacionGrifoSantaRosa.Unidad>(), Ahora));
         }
 
-        // ---------- Llegada a la base ----------
+        // ---------- Llegada al grifo y a la base ----------
 
         [Fact]
-        public void Retorno_SeEstimaLaLlegadaALaBaseYNoVaEnElReporteDePlanta()
+        public void Retorno_AntesDelGrifoSeEstimaLaLlegadaAlGrifo()
         {
-            // Pasando por Arenillas de vuelta, con el tracto de descarga.
+            var e = LlegadaEstimada.ParaViaje(Horas("fhSalidaBase2", "fhSalida"), "EN_CURSO", "JAVE",
+                "T7J-861", "TBM-898", "T7J-861", NaranjalLat, NaranjalLng, Ahora);
+            Assert.NotNull(e);
+            Assert.Equal(LlegadaEstimada.DestinoGrifo, e.Destino);
+            Assert.InRange(e.KmRestantes, 40, 150);
+            Assert.InRange((e.Llegada - Ahora).TotalHours, 0.5, 12);
+        }
+
+        [Fact]
+        public void Retorno_EnElGrifoODespues_SeEstimaLaLlegadaALaBase()
+        {
+            Assert.Equal(LlegadaEstimada.DestinoBase, LlegadaEstimada.ParaRetorno(false, -3.42855, -79.96242, Ahora)?.Destino);
+            // Pasando por Arenillas de vuelta, con la parada en el grifo ya marcada.
             var e = LlegadaEstimada.ParaViaje(Horas("fhSalidaBase2", "fhSalida", "fhLlegadaGrifo", "fhSalidaGrifo"), "EN_CURSO", "JAVE",
                 "T7J-861", "TBM-898", "T7J-861", -3.5500, -80.0600, Ahora);
             Assert.NotNull(e);
             Assert.Equal(LlegadaEstimada.DestinoBase, e.Destino);
             Assert.InRange((e.Llegada - Ahora).TotalHours, 3, 20);
+            // El retorno no va en el reporte de llegadas a planta.
             var viajes = new List<ViajeResumen> { new ViajeResumen { Tracto2 = "T7J-861", Carreta = "T0L-981", Llegada = e } };
             Assert.Equal("", LlegadaEstimada.Reporte(viajes, Ahora));
+        }
+
+        [Fact]
+        public void Crisar_DeVueltaDeLaTroncal_SeEstimaLaLlegadaAlGrifo()
+        {
+            var e = LlegadaEstimada.ParaRetornoCrisar(Horas("fhLlegadaPlantaEcuador", "fhSalida"), "EN_CURSO", "BNH712", "CBV-761", "BNH-712",
+                NaranjalLat, NaranjalLng, Ahora);
+            Assert.Equal(LlegadaEstimada.DestinoGrifo, e?.Destino);
+            Assert.Null(LlegadaEstimada.ParaRetornoCrisar(Horas("fhLlegadaPlantaEcuador"), "EN_CURSO", "BNH712", "CBV-761", "BNH-712",
+                NaranjalLat, NaranjalLng, Ahora));
         }
     }
 }

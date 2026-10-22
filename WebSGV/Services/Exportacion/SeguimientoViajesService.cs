@@ -69,8 +69,10 @@ namespace WebSGV.Services.Exportacion
         public string UltimoHito { get; set; }
         public DateTime? UltimoHitoHora { get; set; }
 
-        /// <summary>Velocidad (km/h) de la última posición del GPS.</summary>
+        /// <summary>Velocidad (km/h) y coordenadas de la última posición del GPS.</summary>
         public double? Velocidad { get; set; }
+        public double? Latitud { get; set; }
+        public double? Longitud { get; set; }
 
         /// <summary>Hora aproximada de llegada a la planta si va en camino a cargar o a descargar; null si no.</summary>
         public LlegadaEstimada.Estimado Llegada { get; set; }
@@ -371,6 +373,8 @@ namespace WebSGV.Services.Exportacion
                 UltimoHito = ultimo?.Item1.Nombre,
                 UltimoHitoHora = ultimo?.Item2,
                 Velocidad = Numero(r, "ultimaVelocidad"),
+                Latitud = Numero(r, "ultimaLatitud"),
+                Longitud = Numero(r, "ultimaLongitud"),
                 Llegada = LlegadaEstimada.ParaViaje(horas, estado, Texto(r, "bodegaDescarga") ?? Texto(r, "bodegaEcuatoriana"),
                     Texto(r, "ultimaPlacaGps"), tracto1, tracto2, Numero(r, "ultimaLatitud"), Numero(r, "ultimaLongitud"), Fecha(r, "fhUltimaPosicion")),
                 Fila = r,
@@ -415,6 +419,13 @@ namespace WebSGV.Services.Exportacion
                 AvanceDescarga = hitos.Count(d => d.Tramo == TramoViaje.Descarga && Hay(d)),
                 UltimoHito = ultimo?.Item1.Nombre,
                 UltimoHitoHora = ultimo?.Item2,
+                Velocidad = Numero(r, "ultimaVelocidad"),
+                Latitud = Numero(r, "ultimaLatitud"),
+                Longitud = Numero(r, "ultimaLongitud"),
+                Llegada = string.Equals(tipoRuta, "CRISAR", StringComparison.OrdinalIgnoreCase)
+                    ? LlegadaEstimada.ParaRetornoCrisar(horas, estado, Texto(r, "ultimaPlacaGps"), tracto1, tracto2,
+                        Numero(r, "ultimaLatitud"), Numero(r, "ultimaLongitud"), Fecha(r, "fhUltimaPosicion"))
+                    : null,
                 Fila = r,
             };
         }

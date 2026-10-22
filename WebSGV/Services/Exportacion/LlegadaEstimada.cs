@@ -24,6 +24,10 @@ namespace WebSGV.Services.Exportacion
         public const string RetornoBase = "RETORNO_BASE";
         public const string DestinoBase = "BASE SULLANA";
 
+        /// <summary>De vuelta de Ecuador: de la salida de Jave o Inbalnor al grifo Santa Rosa (carga de combustible).</summary>
+        public const string RetornoGrifo = "RETORNO_GRIFO";
+        public const string DestinoGrifo = "GRIFO SANTA ROSA";
+
         /// <summary>Una posición más lejos que esto del camino no se estima (otro camino, taller, desvío).</summary>
         public const double MaximoFueraDeRutaKm = 8;
 
@@ -149,9 +153,42 @@ namespace WebSGV.Services.Exportacion
                      && !Hay("fhLlegadaPlantaEcuador", "fhLlegadaAlmacen", "fhIngreso", "fhSalida") && MismaPlaca(placaGps, tracto2))
                 ruta = RutaDescarga(planta);
             else if (Hay("fhSalida") && !Hay("fhLlegadaBaseFinal") && MismaPlaca(placaGps, tracto2))
-                ruta = RetornoBase;
+                return ParaRetorno(Hay("fhLlegadaGrifo"), lat.Value, lng.Value, horaPosicion.Value);
             return ruta == null ? null : Estimar(ruta, lat.Value, lng.Value, horaPosicion.Value);
         }
+
+        /// <summary>
+        /// De vuelta de Ecuador: hasta llegar al grifo Santa Rosa, la llegada al grifo (para avisar al grifo cuántos
+        /// carros bajan y a qué hora); después, o si ya lo pasó sin que el GPS marcara la parada, la llegada a la base.
+        /// </summary>
+        public static Estimado ParaRetorno(bool yaLlegoAlGrifo, double lat, double lng, DateTime horaPosicion)
+        {
+            if (!yaLlegoAlGrifo && !EnElGrifo(lat, lng))
+            {
+                var alGrifo = Estimar(RetornoGrifo, lat, lng, horaPosicion);
+                // Al final del camino pero fuera del grifo: ya lo pasó (la parada no se marcó).
+                if (alGrifo != null && alGrifo.KmRestantes >= 1) return alGrifo;
+            }
+            return Estimar(RetornoBase, lat, lng, horaPosicion);
+        }
+
+        /// <summary>
+        /// Crisar de vuelta de La Troncal (o Jave/Inbalnor): salió de la descarga y no llegó al final, con la
+        /// posición del tracto que la trae. Su parada en el grifo no se marca (va por RutaTercero): cuenta la posición.
+        /// </summary>
+        public static Estimado ParaRetornoCrisar(IDictionary<string, DateTime?> h, string estado, string placaGps,
+            string tracto1, string tracto2, double? lat, double? lng, DateTime? horaPosicion)
+        {
+            bool Hay(string c) => h.TryGetValue(c, out var v) && v.HasValue;
+            string e = (estado ?? "").Trim().ToUpperInvariant();
+            if (e == "FINALIZADO" || e == "CANCELADO" || !lat.HasValue || !lng.HasValue || !horaPosicion.HasValue) return null;
+            if (!Hay("fhSalida") || Hay("fhLlegadaBaseFinal") || !MismaPlaca(placaGps, tracto2 ?? tracto1)) return null;
+            return ParaRetorno(false, lat.Value, lng.Value, horaPosicion.Value);
+        }
+
+        /// <summary>La posición está en el grifo Santa Rosa.</summary>
+        public static bool EnElGrifo(double lat, double lng) =>
+            WebSGV.Services.GpsIntegracion.GeocercasTrazabilidad.GrifoSantaRosa.Contiene(lat, lng);
 
         private static bool MismaPlaca(string a, string b) =>
             !string.IsNullOrWhiteSpace(a) && !string.IsNullOrWhiteSpace(b)
@@ -163,8 +200,8 @@ namespace WebSGV.Services.Exportacion
         /// </summary>
         public static string Reporte(IEnumerable<ViajeResumen> viajes, DateTime ahora)
         {
-            // El retorno a la base va en el cuadro del grifo Santa Rosa, no aquí.
-            var enCamino = viajes.Where(v => v.Llegada != null && v.Llegada.Destino != DestinoBase).ToList();
+            // El retorno (al grifo y a la base) va en el reporte del grifo Santa Rosa, no aquí.
+            var enCamino = viajes.Where(v => v.Llegada != null && v.Llegada.Destino != DestinoBase && v.Llegada.Destino != DestinoGrifo).ToList();
             if (enCamino.Count == 0) return "";
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"UNIDADES EN CAMINO A PLANTA - {ahora.ToString("dd/MM HH:mm", CultureInfo.InvariantCulture)}");

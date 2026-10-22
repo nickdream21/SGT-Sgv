@@ -55,6 +55,12 @@
             var reporte = document.getElementById('txtReporteLlegadas').value.trim();
             if (!reporte) { SGV.avisar('No hay unidades en camino a cargar a Trujillo ni a descargar a Jave/Inbalnor con posición del GPS.'); return; }
             copiar(reporte, 'Reporte de llegadas copiado: pégalo en el mensaje.');
+            return;
+        }
+        if (e.target.closest('#btnReporteGrifo')) {
+            var grifo = document.getElementById('txtReporteGrifo').value.trim();
+            if (!grifo) { SGV.avisar('No hay carros de vuelta de Ecuador camino al grifo Santa Rosa (ni descargando).'); return; }
+            copiar(grifo, 'Reporte del grifo Santa Rosa copiado: pégalo en el mensaje al grifo.');
         }
     });
 })();

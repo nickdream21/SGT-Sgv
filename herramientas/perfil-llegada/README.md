@@ -15,7 +15,8 @@ recurso), que arma esta herramienta:
 |---|---|---|
 | `CARGA_TRUJILLO` | tracto 1 | salida de base → llegada a Trujillo |
 | `DESCARGA_JAVE`, `DESCARGA_INBALNOR` | tracto 2 | salida de TCI (o el cruce, si no pasó por TCI) → llegada a la planta |
-| `RETORNO_BASE` | tracto 2 | salida de Jave o Inbalnor → llegada a la base (va en el cuadro del grifo Santa Rosa, no en el reporte de llegadas) |
+| `RETORNO_GRIFO` | tracto 2 | salida de Jave o Inbalnor → primera parada de 10+ min en el grifo Santa Rosa (sale del GPS; reporte del grifo) |
+| `RETORNO_BASE` | tracto 2 | salida de Jave o Inbalnor → llegada a la base (en el tablero, después del grifo) |
 
 Para cada ruta guarda el camino (un punto cada km, tomado del viaje con más puntos del GPS) y, por cada
 viaje, una muestra cada 5 km: `[km, hora del día, minutos que faltaban para llegar]`.

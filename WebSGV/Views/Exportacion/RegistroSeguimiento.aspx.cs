@@ -134,23 +134,28 @@ namespace WebSGV.Views.Exportacion
                 $"{prefijo}{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
         }
 
-        /// <summary>Días hacia atrás (por programación) en que se buscan las unidades que vuelven de Ecuador.</summary>
+        /// <summary>Días hacia atrás (por programación) en que se buscan los carros que vuelven de Ecuador.</summary>
         private const int DiasRetorno = 20;
 
         /// <summary>
-        /// Cuadro de las unidades que vuelven de Ecuador y su paso por el grifo Santa Rosa. No depende de los
-        /// filtros de la tabla: toma todos los viajes de Vitapro que salieron de la planta y no llegan a la base.
+        /// Carros que bajan al grifo Santa Rosa (Vitapro y Crisar de vuelta de Ecuador). No depende de los
+        /// filtros de la tabla: siempre son todos los de los últimos <see cref="DiasRetorno"/> días.
         /// </summary>
+        private static List<ExportacionGrifoSantaRosa.Unidad> UnidadesGrifo()
+        {
+            DateTime hoy = FechaHelper.Hoy();
+            return ExportacionGrifoSantaRosa.Unidades(SeguimientoViajesService.ListarTablero(new FiltroTablero
+            {
+                Desde = hoy.AddDays(-DiasRetorno), Hasta = hoy.AddDays(1),
+            }), FechaHelper.Ahora());
+        }
+
         protected void btnExportarGrifo_Click(object sender, EventArgs e)
         {
-            List<ViajeResumen> retornando;
+            List<ExportacionGrifoSantaRosa.Unidad> unidades;
             try
             {
-                DateTime hoy = FechaHelper.Hoy();
-                retornando = ExportacionGrifoSantaRosa.Retornando(SeguimientoViajesService.ListarTablero(new FiltroTablero
-                {
-                    Desde = hoy.AddDays(-DiasRetorno), Hasta = hoy.AddDays(1), Cliente = "VITAPRO",
-                }));
+                unidades = UnidadesGrifo();
             }
             catch (Exception ex)
             {
@@ -158,13 +163,13 @@ namespace WebSGV.Views.Exportacion
                 Cargar();
                 return;
             }
-            if (retornando.Count == 0)
+            if (unidades.Count == 0)
             {
-                MostrarMensaje("No hay unidades volviendo de Ecuador (todas las que descargaron ya llegaron a la base).", "alerta");
+                MostrarMensaje("No hay carros de vuelta de Ecuador camino al grifo Santa Rosa (ni descargando).", "alerta");
                 Cargar();
                 return;
             }
-            var reporte = ExportacionGrifoSantaRosa.Construir(retornando, Convert.ToString(Session["Nombre"]), FechaHelper.Ahora());
+            var reporte = ExportacionGrifoSantaRosa.Construir(unidades, Convert.ToString(Session["Nombre"]), FechaHelper.Ahora());
             EnviarExcel(ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(), Server.MapPath("~/Content/favicon.png")),
                 $"GRIFO_SANTA_ROSA_{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
         }
@@ -232,6 +237,16 @@ namespace WebSGV.Views.Exportacion
             litUltimaConsulta.Text = consultas.Count > 0 ? "GPS consultado por última vez " + consultas.Max().ToString("dd/MM HH:mm") : "";
             // Todas las unidades en camino a planta (no solo las de la pestaña de fase elegida).
             litReporteLlegadas.Text = HttpUtility.HtmlEncode(LlegadaEstimada.Reporte(todos, FechaHelper.Ahora()));
+            try
+            {
+                litReporteGrifo.Text = HttpUtility.HtmlEncode(ExportacionGrifoSantaRosa.Texto(UnidadesGrifo(), FechaHelper.Ahora()));
+            }
+            catch (Exception ex)
+            {
+                // El reporte del grifo es un extra: si falla, la tabla se muestra igual.
+                MensajeErrorHelper.ParaUsuario(ex);
+                litReporteGrifo.Text = "";
+            }
             litResumen.Text = HttpUtility.HtmlEncode((string.IsNullOrWhiteSpace(txtBuscar.Text)
                 ? $"{todos.Count} viaje(s) con programación entre {FechaTexto(txtDesde.Text)} y {FechaTexto(txtHasta.Text)}. Con texto en Buscar se busca en todas las fechas."
                 : $"{todos.Count} viaje(s) con \"{txtBuscar.Text.Trim()}\" en cualquier fecha.")
@@ -258,7 +273,9 @@ namespace WebSGV.Views.Exportacion
             v.Status,
             Ubicacion = v.UbicacionHora != null ? "Ubicación al " + v.UbicacionHora : "",
             Llegada = v.Llegada != null
-                ? $"Llega aprox. {v.Llegada.Texto} · faltan {v.Llegada.KmRestantes:0} km a {(v.Llegada.Destino == LlegadaEstimada.DestinoBase ? "la base" : Capital(v.Llegada.Destino))}"
+                ? $"Llega aprox. {v.Llegada.Texto} · faltan {v.Llegada.KmRestantes:0} km a " +
+                  (v.Llegada.Destino == LlegadaEstimada.DestinoBase ? "la base"
+                   : v.Llegada.Destino == LlegadaEstimada.DestinoGrifo ? "el grifo Santa Rosa" : Capital(v.Llegada.Destino))
                 : "",
             v.Fase.Grupo,
             Planta = RutaTercero.Es(v.TipoRuta)
