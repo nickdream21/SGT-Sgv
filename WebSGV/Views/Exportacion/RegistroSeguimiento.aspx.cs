@@ -41,10 +41,17 @@ namespace WebSGV.Views.Exportacion
         /// <summary>Última consulta al GPS de lo que muestra la página (ISO): el script avisa si llegan datos más nuevos.</summary>
         protected string UltimaConsultaGps { get; private set; } = "";
 
+        /// <summary>
+        /// "Activos" (la pestaña al abrir): los viajes en curso o programados, sin los cerrados. "Todos" suma los cerrados
+        /// del rango de fechas (el historial).
+        /// </summary>
+        private const string PestanaActivos = "activos";
+        private const string PestanaTodos = "todos";
+
         private static readonly (string Grupo, string Nombre)[] Pestanas =
         {
-            ("todos", "Todos"), ("carga", "En carga"), ("base", "En base"),
-            ("ecuador", "Rumbo a Ecuador / a la descarga"), ("retorno", "Retorno"), ("cerrado", "Cerrados"),
+            (PestanaActivos, "Activos"), ("carga", "En carga"), ("base", "En base"),
+            ("ecuador", "Rumbo a Ecuador / a la descarga"), ("retorno", "Retorno"), ("cerrado", "Cerrados"), (PestanaTodos, "Todos"),
         };
 
         protected void Page_Load(object sender, EventArgs e)
@@ -270,17 +277,17 @@ namespace WebSGV.Views.Exportacion
                 todos = new List<ViajeResumen>();
             }
 
-            string fase = hdnFase.Value ?? "todos";
+            string fase = Fase();
             rptFases.DataSource = Pestanas.Select(p => new
             {
                 p.Grupo,
                 p.Nombre,
-                Cantidad = p.Grupo == "todos" ? todos.Count : todos.Count(v => v.Fase.Grupo == p.Grupo),
+                Cantidad = DeLaPestana(todos, p.Grupo).Count,
                 Activo = p.Grupo == fase,
             }).ToList();
             rptFases.DataBind();
 
-            var visibles = FiltrarPorFase(todos);
+            var visibles = DeLaPestana(todos, fase);
             rptViajes.DataSource = visibles.Select(Fila).ToList();
             rptViajes.DataBind();
             pnlVacio.Visible = visibles.Count == 0;
@@ -305,16 +312,29 @@ namespace WebSGV.Views.Exportacion
                 MensajeErrorHelper.ParaUsuario(ex);
                 litReporteGrifo.Text = "";
             }
+            int activos = DeLaPestana(todos, PestanaActivos).Count;
             litResumen.Text = HttpUtility.HtmlEncode((string.IsNullOrWhiteSpace(txtBuscar.Text)
-                ? $"{todos.Count} viaje(s) con programación entre {FechaTexto(txtDesde.Text)} y {FechaTexto(txtHasta.Text)}. Con texto en Buscar se busca en todas las fechas."
-                : $"{todos.Count} viaje(s) con \"{txtBuscar.Text.Trim()}\" en cualquier fecha.")
+                ? $"{activos} viaje(s) activo(s) (en curso o programados, de cualquier fecha) de {todos.Count}; los cerrados son los programados entre " +
+                  $"{FechaTexto(txtDesde.Text)} y {FechaTexto(txtHasta.Text)} (pestañas Cerrados y Todos). Con texto en Buscar se busca en todas las fechas."
+                : $"{todos.Count} viaje(s) con \"{txtBuscar.Text.Trim()}\" en cualquier fecha, {activos} activo(s).")
                 + (chkHistorial.Checked ? " Incluye los importados del Excel." : " Solo viajes de los despachos y creados a mano."));
         }
 
+        private string Fase() => string.IsNullOrEmpty(hdnFase.Value) ? PestanaActivos : hdnFase.Value;
+
+        private static List<ViajeResumen> DeLaPestana(List<ViajeResumen> todos, string fase) =>
+            fase == PestanaTodos ? todos
+            : fase == PestanaActivos ? todos.Where(v => v.Fase.Grupo != "cerrado").ToList()
+            : todos.Where(v => v.Fase.Grupo == fase).ToList();
+
+        /// <summary>
+        /// Los viajes de la pestaña elegida para los Excel e imágenes. En "Activos" van todos los del rango, como
+        /// siempre (el STATUS y el historial en Excel incluyen los cerrados); en las de fase, solo esa fase.
+        /// </summary>
         private List<ViajeResumen> FiltrarPorFase(List<ViajeResumen> todos)
         {
-            string fase = hdnFase.Value ?? "todos";
-            return fase == "todos" ? todos : todos.Where(v => v.Fase.Grupo == fase).ToList();
+            string fase = Fase();
+            return DeLaPestana(todos, fase == PestanaActivos ? PestanaTodos : fase);
         }
 
         private static object Fila(ViajeResumen v) => new
@@ -370,7 +390,7 @@ namespace WebSGV.Views.Exportacion
             if (!string.IsNullOrEmpty(ddlPlanta.SelectedValue)) yield return "Planta: " + ddlPlanta.SelectedItem.Text;
             yield return chkHistorial.Checked ? "Incluye los importados del Excel" : "Viajes de los despachos y creados a mano";
             var pestana = Pestanas.FirstOrDefault(p => p.Grupo == hdnFase.Value);
-            if (pestana.Grupo != null && pestana.Grupo != "todos") yield return "Fase: " + pestana.Nombre;
+            if (pestana.Grupo != null && pestana.Grupo != PestanaTodos && pestana.Grupo != PestanaActivos) yield return "Fase: " + pestana.Nombre;
         }
 
         private static DateTime? LeerFecha(string s) =>

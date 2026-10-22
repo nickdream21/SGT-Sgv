@@ -40,9 +40,14 @@
                         <asp:Literal ID="litPlacasPedido" runat="server" />
                     </div>
                     <div class="col-lg-7 form-group">
-                        <label class="font-weight-bold" for="<%= txtPlacas.ClientID %>">Placas de los tractos</label>
+                        <div class="d-flex justify-content-between align-items-end flex-wrap mb-2">
+                            <label class="font-weight-bold mb-0" for="<%= txtPlacas.ClientID %>">Placas de los tractos</label>
+                            <asp:Button ID="btnActivasVitapro" runat="server" CssClass="btn btn-outline-primary btn-sm" Text="Activas de Vitapro" OnClick="btnActivasVitapro_Click"
+                                ToolTip="Las unidades que hoy cargan, llevan, descargan o vuelven de un viaje de Vitapro, seg&#xFA;n el seguimiento" />
+                        </div>
                         <asp:TextBox ID="txtPlacas" runat="server" TextMode="MultiLine" Rows="4" CssClass="form-control text-uppercase"
                             placeholder="CBU-945, BNG-862, C6K-799 (separadas por coma, espacio o una por l&#xED;nea)"></asp:TextBox>
+                        <asp:Literal ID="litActivas" runat="server" />
                     </div>
                 </div>
                 <div class="row align-items-end">

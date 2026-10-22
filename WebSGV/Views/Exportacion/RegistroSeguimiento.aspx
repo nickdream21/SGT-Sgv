@@ -67,7 +67,7 @@
             <button type="button" class="sx-btn sx-btn-chico" id="btnVerDatosNuevos">Ver datos nuevos</button>
         </div>
 
-        <asp:HiddenField ID="hdnFase" runat="server" Value="todos" />
+        <asp:HiddenField ID="hdnFase" runat="server" Value="activos" />
 
         <div class="sx-filtros">
             <label class="sx-campo">Buscar

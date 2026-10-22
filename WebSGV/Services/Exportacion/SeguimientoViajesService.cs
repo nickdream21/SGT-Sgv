@@ -142,13 +142,18 @@ namespace WebSGV.Services.Exportacion
             FROM SeguimientoExportacion se
             WHERE se.activo = 1";
 
+        /// <summary>
+        /// Viajes del tablero: los programados en el rango de fechas y, siempre, los abiertos de los despachos o creados
+        /// a mano (aunque se programaran antes), para que ninguno en curso quede fuera. Con texto, en todas las fechas.
+        /// </summary>
         public static List<ViajeResumen> ListarTablero(FiltroTablero f)
         {
             string texto = string.IsNullOrWhiteSpace(f.Texto) ? null : f.Texto.Trim();
             string planta = string.IsNullOrWhiteSpace(f.Planta) ? null : f.Planta.Trim().ToUpperInvariant();
             DataTable dt = DbHelper.ConsultarTabla($@"
                 SELECT TOP {MaximoFilasTablero} * FROM ({SqlBase}
-                  AND (@texto IS NOT NULL OR COALESCE(se.fhProgramacion, se.fechaRegistro) >= @desde AND COALESCE(se.fhProgramacion, se.fechaRegistro) < @hasta)
+                  AND (@texto IS NOT NULL OR COALESCE(se.fhProgramacion, se.fechaRegistro) >= @desde AND COALESCE(se.fhProgramacion, se.fechaRegistro) < @hasta
+                       OR se.origen IN ('DESPACHO', 'MANUAL') AND ISNULL(se.estado, '') NOT IN ('FINALIZADO', 'CANCELADO') AND se.fhLlegadaBaseFinal IS NULL)
                   AND (@texto IS NULL OR se.cliente LIKE @like OR se.carreta LIKE @like OR se.tracto1 LIKE @like OR se.tracto2 LIKE @like
                        OR se.conductorOrigen LIKE @like OR se.conductorDestino LIKE @like OR se.lugarEntrega LIKE @like)
                   AND (@planta IS NULL OR UPPER(se.bodegaDescarga) = @planta OR UPPER(se.bodegaEcuatoriana) = @planta)

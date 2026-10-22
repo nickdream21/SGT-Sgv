@@ -24,7 +24,11 @@ namespace WebSGV.Views
 
         protected global::System.Web.UI.WebControls.Literal litPlacasPedido;
 
+        protected global::System.Web.UI.WebControls.Button btnActivasVitapro;
+
         protected global::System.Web.UI.WebControls.TextBox txtPlacas;
+
+        protected global::System.Web.UI.WebControls.Literal litActivas;
 
         protected global::System.Web.UI.WebControls.TextBox txtDesde;
 

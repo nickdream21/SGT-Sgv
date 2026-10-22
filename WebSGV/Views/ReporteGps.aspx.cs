@@ -6,6 +6,7 @@ using System.Text;
 using System.Web;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Exportacion;
 using WebSGV.Services.GpsIntegracion;
 
 namespace WebSGV.Views
@@ -28,6 +29,61 @@ namespace WebSGV.Views
             {
                 PonerHoy();
                 Session.Remove(SesionResultados);
+                PonerActivasVitapro(false);
+            }
+        }
+
+        protected void btnActivasVitapro_Click(object sender, EventArgs e) => PonerActivasVitapro(true);
+
+        /// <summary>
+        /// Llena las placas con las unidades activas de Vitapro (al abrir la página y con el botón). Al abrir, un
+        /// error solo deja la lista vacía para escribirla a mano.
+        /// </summary>
+        private void PonerActivasVitapro(bool avisarError)
+        {
+            try
+            {
+                DateTime hoy = FechaHelper.Hoy();
+                var activas = UnidadesActivas.DeVitapro(SeguimientoViajesService.ListarTablero(new FiltroTablero
+                {
+                    Desde = hoy.AddDays(-DiasActivas), Hasta = hoy.AddDays(DiasProgramados), Cliente = "VITAPRO",
+                }), FechaHelper.Ahora());
+                txtPlacas.Text = string.Join(", ", activas.Select(u => u.Placa));
+                litActivas.Text = ResumenActivas(activas);
+                litPlacasPedido.Text = "";
+                pnlMensaje.Visible = false;
+            }
+            catch (Exception ex)
+            {
+                if (avisarError) MostrarMensaje("No se pudieron traer las unidades activas: " + MensajeErrorHelper.ParaUsuario(ex));
+                else LogSGV.Advertencia("Reporte GPS: no se cargaron las unidades activas de Vitapro: {Error}", ex.Message);
+            }
+        }
+
+        /// <summary>Viajes programados desde hace esto se revisan (los que llevan más de 4 días sin avanzar no cuentan).</summary>
+        private const int DiasActivas = 45;
+
+        /// <summary>Y hasta esto hacia adelante: una programación nueva suma su unidad.</summary>
+        private const int DiasProgramados = 10;
+
+        private static string ResumenActivas(IList<UnidadesActivas.Unidad> activas)
+        {
+            if (activas.Count == 0)
+                return "<small class=\"text-muted d-block mt-1\">No hay viajes de Vitapro en curso en el seguimiento.</small>";
+            var partes = activas.GroupBy(u => u.Viaje.Fase.Grupo).Select(g => $"{g.Count()} {NombreGrupo(g.Key)}");
+            return $"<small class=\"text-muted d-block mt-1\"><strong>{activas.Count} unidades activas de Vitapro</strong> " +
+                   $"seg&#xFA;n el seguimiento: {HttpUtility.HtmlEncode(string.Join(" · ", partes))}.</small>";
+        }
+
+        private static string NombreGrupo(string grupo)
+        {
+            switch (grupo)
+            {
+                case "carga": return "yendo a Trujillo, cargando o volviendo a la base";
+                case "base": return "en la base, cargadas";
+                case "ecuador": return "rumbo a Ecuador o descargando";
+                case "retorno": return "volviendo de Ecuador";
+                default: return grupo;
             }
         }
 

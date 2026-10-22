@@ -511,6 +511,7 @@
     <Compile Include="Services\Exportacion\FechaHoraExcel.cs" />
     <Compile Include="Services\Exportacion\HitosSeguimiento.cs" />
     <Compile Include="Services\Exportacion\StatusUnidad.cs" />
+    <Compile Include="Services\Exportacion\UnidadesActivas.cs" />
     <Compile Include="Services\Exportacion\LlegadaEstimada.cs" />
     <Compile Include="Services\Exportacion\ExportacionGrifoSantaRosa.cs" />
     <Compile Include="Services\Exportacion\ExportacionLlegadas.cs" />

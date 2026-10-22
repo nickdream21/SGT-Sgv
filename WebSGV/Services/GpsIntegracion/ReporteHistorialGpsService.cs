@@ -20,7 +20,7 @@ namespace WebSGV.Services.GpsIntegracion
     /// </summary>
     public static class ReporteHistorialGpsService
     {
-        public const int MaxPlacas = 40;
+        public const int MaxPlacas = 60;
         public const int MaxDias = 3;
 
         /// <summary>Grupo de la flota en el portal. El API no expone los grupos.</summary>
