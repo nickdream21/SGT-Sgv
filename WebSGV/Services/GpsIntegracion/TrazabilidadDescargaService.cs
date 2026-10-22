@@ -31,6 +31,11 @@ namespace WebSGV.Services.GpsIntegracion
         public HitoGps LlegadaPlanta { get; set; }
         public HitoGps IngresoPlanta { get; set; }
         public HitoGps SalidaPlanta { get; set; }
+
+        /// <summary>Parada en el grifo Santa Rosa de vuelta a la base (casi todas cargan combustible ahí).</summary>
+        public HitoGps LlegadaGrifo { get; set; }
+        public HitoGps SalidaGrifo { get; set; }
+
         public HitoGps LlegadaBase { get; set; }
     }
 
@@ -166,6 +171,15 @@ namespace WebSGV.Services.GpsIntegracion
                 // fue a Quito después de descargar en Inbalnor el 10/10/2026 y llegó a la base el 13/10).
                 BuscarRegresoBase(puntos, cursor, out var llegada, out _, out _, DiasMaximosRegreso);
                 r.LlegadaBase = llegada ?? SiguioATrujilloSinEntrar(puntos, cursor);
+
+                // 7. Grifo Santa Rosa, entre la salida de la planta y la llegada a la base.
+                var grifo = PrimeraVisita(puntos, GeocercasTrazabilidad.GrifoSantaRosa, cursor, MinutosMinimosEnBodega);
+                if (grifo != null && Hora(puntos[grifo.Primero]) <= Hora(puntos[cursor]).AddDays(DiasMaximosRegreso)
+                    && (r.LlegadaBase == null || Hora(puntos[grifo.Primero]) < r.LlegadaBase.HoraUtc))
+                {
+                    r.LlegadaGrifo = Hito(puntos[grifo.Primero], "Primer punto en el grifo Santa Rosa (El Retiro)");
+                    if (grifo.Cerrada) r.SalidaGrifo = Hito(puntos[grifo.Ultimo + 1], "Primer punto fuera del grifo Santa Rosa");
+                }
             }
             return r;
         }

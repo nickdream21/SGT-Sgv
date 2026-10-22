@@ -130,11 +130,51 @@ namespace WebSGV.Views.Exportacion
                 : ExportacionStatusGeneral.Construir(viajes.Select(v => v.Fila).ToList(), DescribirFiltros(), usuario,
                     viajes.ToDictionary(v => v.Id, v => v.Status));
             string prefijo = tipo == TipoExcel.Status ? "STATUS_UNIDADES_" : tipo == TipoExcel.StatusExtra ? "STATUS_EXTRA_" : "STATUS_GENERAL_";
-            byte[] archivo = ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(), Server.MapPath("~/Content/favicon.png"));
+            EnviarExcel(ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(), Server.MapPath("~/Content/favicon.png")),
+                $"{prefijo}{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
+        }
+
+        /// <summary>Días hacia atrás (por programación) en que se buscan las unidades que vuelven de Ecuador.</summary>
+        private const int DiasRetorno = 20;
+
+        /// <summary>
+        /// Cuadro de las unidades que vuelven de Ecuador y su paso por el grifo Santa Rosa. No depende de los
+        /// filtros de la tabla: toma todos los viajes de Vitapro que salieron de la planta y no llegan a la base.
+        /// </summary>
+        protected void btnExportarGrifo_Click(object sender, EventArgs e)
+        {
+            List<ViajeResumen> retornando;
+            try
+            {
+                DateTime hoy = FechaHelper.Hoy();
+                retornando = ExportacionGrifoSantaRosa.Retornando(SeguimientoViajesService.ListarTablero(new FiltroTablero
+                {
+                    Desde = hoy.AddDays(-DiasRetorno), Hasta = hoy.AddDays(1), Cliente = "VITAPRO",
+                }));
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex), "peligro");
+                Cargar();
+                return;
+            }
+            if (retornando.Count == 0)
+            {
+                MostrarMensaje("No hay unidades volviendo de Ecuador (todas las que descargaron ya llegaron a la base).", "alerta");
+                Cargar();
+                return;
+            }
+            var reporte = ExportacionGrifoSantaRosa.Construir(retornando, Convert.ToString(Session["Nombre"]), FechaHelper.Ahora());
+            EnviarExcel(ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(), Server.MapPath("~/Content/favicon.png")),
+                $"GRIFO_SANTA_ROSA_{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
+        }
+
+        private static void EnviarExcel(byte[] archivo, string nombre)
+        {
             var resp = HttpContext.Current.Response;
             resp.Clear();
             resp.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            resp.AddHeader("Content-Disposition", $"attachment; filename={prefijo}{FechaHelper.Ahora():yyyyMMdd_HHmm}.xlsx");
+            resp.AddHeader("Content-Disposition", "attachment; filename=" + nombre);
             resp.AddHeader("Content-Length", archivo.Length.ToString());
             resp.BinaryWrite(archivo);
             resp.Flush();
@@ -217,7 +257,9 @@ namespace WebSGV.Views.Exportacion
             Fase = v.Fase.Nombre,
             v.Status,
             Ubicacion = v.UbicacionHora != null ? "Ubicación al " + v.UbicacionHora : "",
-            Llegada = v.Llegada != null ? $"Llega aprox. {v.Llegada.Texto} · faltan {v.Llegada.KmRestantes:0} km a {Capital(v.Llegada.Destino)}" : "",
+            Llegada = v.Llegada != null
+                ? $"Llega aprox. {v.Llegada.Texto} · faltan {v.Llegada.KmRestantes:0} km a {(v.Llegada.Destino == LlegadaEstimada.DestinoBase ? "la base" : Capital(v.Llegada.Destino))}"
+                : "",
             v.Fase.Grupo,
             Planta = RutaTercero.Es(v.TipoRuta)
                 ? RutaTercero.Nombre(v.LugarCarga, "Carga por confirmar") + " → " + RutaTercero.Nombre(v.LugarEntrega, "entrega por confirmar")

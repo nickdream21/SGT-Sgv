@@ -510,6 +510,7 @@
     <Compile Include="Services\Exportacion\HitosSeguimiento.cs" />
     <Compile Include="Services\Exportacion\StatusUnidad.cs" />
     <Compile Include="Services\Exportacion\LlegadaEstimada.cs" />
+    <Compile Include="Services\Exportacion\ExportacionGrifoSantaRosa.cs" />
     <EmbeddedResource Include="Services\Exportacion\PerfilesLlegada.json" />
     <Compile Include="Services\Exportacion\RutaTercero.cs" />
     <Compile Include="Services\Exportacion\ExportacionStatusExtra.cs" />

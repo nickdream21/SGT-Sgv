@@ -16,6 +16,7 @@ using WebSGV.Services.GpsIntegracion;
 // del seguimiento: para cada punto del camino (km) y hora del día, cuánto tardaron las unidades en llegar.
 //   - CARGA_TRUJILLO: tracto 1 desde la salida de base hasta la llegada a Trujillo.
 //   - DESCARGA_JAVE / DESCARGA_INBALNOR: tracto 2 desde la salida de TCI (o el cruce) hasta la planta.
+//   - RETORNO_BASE: tracto 2 desde la salida de la planta (Jave o Inbalnor) hasta la llegada a la base.
 // Ver README.md.
 //
 // PerfilLlegada <raizRepo> <carpetaCache> <salida.json> --desde=2026-09-01 [--max-llamadas=600]
@@ -52,6 +53,11 @@ class PerfilLlegada
                 WHERE activo = 1 AND tipoRuta IS NULL AND tracto2 IS NOT NULL AND UPPER(bodegaDescarga) = '" + planta + @"'
                   AND ISNULL(fhSalidaTCI, fhCruceEcuador) >= @desde AND fhLlegadaPlantaEcuador > ISNULL(fhSalidaTCI, fhCruceEcuador)
                   AND DATEDIFF(HOUR, ISNULL(fhSalidaTCI, fhCruceEcuador), fhLlegadaPlantaEcuador) BETWEEN 2 AND 72", desde)));
+        rutas.Add(Armar(LlegadaEstimada.RetornoBase, "BASE SULLANA", Viajes(@"
+            SELECT idSeguimiento, tracto2 AS tracto, fhSalida AS inicio, fhLlegadaBaseFinal AS llegada
+            FROM SeguimientoExportacion
+            WHERE activo = 1 AND tipoRuta IS NULL AND tracto2 IS NOT NULL AND UPPER(bodegaDescarga) IN ('JAVE', 'INBALNOR')
+              AND fhSalida >= @desde AND fhLlegadaBaseFinal > fhSalida AND DATEDIFF(HOUR, fhSalida, fhLlegadaBaseFinal) BETWEEN 6 AND 96", desde)));
 
         File.WriteAllText(salida, JsonConvert.SerializeObject(new { generado = DateTime.Now.ToString("yyyy-MM-dd HH:mm"), desde = desde.ToString("yyyy-MM-dd"), rutas }), new UTF8Encoding(false));
         foreach (var r in rutas)

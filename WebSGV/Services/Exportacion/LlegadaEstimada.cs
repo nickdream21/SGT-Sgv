@@ -20,6 +20,10 @@ namespace WebSGV.Services.Exportacion
     {
         public const string CargaTrujillo = "CARGA_TRUJILLO";
 
+        /// <summary>De vuelta de Ecuador: de la salida de Jave o Inbalnor a la llegada a la base.</summary>
+        public const string RetornoBase = "RETORNO_BASE";
+        public const string DestinoBase = "BASE SULLANA";
+
         /// <summary>Una posición más lejos que esto del camino no se estima (otro camino, taller, desvío).</summary>
         public const double MaximoFueraDeRutaKm = 8;
 
@@ -144,6 +148,8 @@ namespace WebSGV.Services.Exportacion
             else if ((Hay("fhSalidaTCI") || (Hay("fhCruceEcuador") && !Hay("fhLlegadaTCI")))
                      && !Hay("fhLlegadaPlantaEcuador", "fhLlegadaAlmacen", "fhIngreso", "fhSalida") && MismaPlaca(placaGps, tracto2))
                 ruta = RutaDescarga(planta);
+            else if (Hay("fhSalida") && !Hay("fhLlegadaBaseFinal") && MismaPlaca(placaGps, tracto2))
+                ruta = RetornoBase;
             return ruta == null ? null : Estimar(ruta, lat.Value, lng.Value, horaPosicion.Value);
         }
 
@@ -157,7 +163,8 @@ namespace WebSGV.Services.Exportacion
         /// </summary>
         public static string Reporte(IEnumerable<ViajeResumen> viajes, DateTime ahora)
         {
-            var enCamino = viajes.Where(v => v.Llegada != null).ToList();
+            // El retorno a la base va en el cuadro del grifo Santa Rosa, no aquí.
+            var enCamino = viajes.Where(v => v.Llegada != null && v.Llegada.Destino != DestinoBase).ToList();
             if (enCamino.Count == 0) return "";
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"UNIDADES EN CAMINO A PLANTA - {ahora.ToString("dd/MM HH:mm", CultureInfo.InvariantCulture)}");

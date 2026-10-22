@@ -19,6 +19,8 @@
                     ToolTip="STATUS GENERAL de Vitapro con todas las horas (sin los clientes terceros)" />
                 <asp:Button ID="btnExportarStatusExtra" runat="server" Text="Excel STATUS EXTRA" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatusExtra_Click"
                     ToolTip="Cuadro de los clientes terceros (Crisar, Novopan, Polinplast) que muestra la tabla, con las columnas del STATUS EXTRA" />
+                <asp:Button ID="btnExportarGrifo" runat="server" Text="Cuadro grifo Santa Rosa" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarGrifo_Click"
+                    ToolTip="Excel de las unidades que vuelven de Ecuador (salieron de Jave o Inbalnor y no llegan a la base): llegada y salida del grifo Santa Rosa, tiempo ahí, ubicación y llegada aproximada a la base" />
                 <a href="SeguimientoViaje.aspx?nuevo=1" class="sx-btn">Nuevo viaje</a>
                 <button type="button" class="sx-btn" id="btnCopiarStatus" title="Copia el STATUS de cada fila de la tabla, en orden, para pegar en la columna STATUS del Excel"><i class="fas fa-copy" aria-hidden="true"></i>Copiar STATUS</button>
                 <button type="button" class="sx-btn" id="btnReporteLlegadas" title="Copia, listo para enviar, el estado y la hora aproximada de llegada de las unidades que van en camino a cargar a Trujillo o a descargar a Jave/Inbalnor"><i class="fas fa-clock" aria-hidden="true"></i>Reporte de llegadas</button>

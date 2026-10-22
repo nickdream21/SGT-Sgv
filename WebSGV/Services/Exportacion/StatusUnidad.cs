@@ -34,7 +34,10 @@ namespace WebSGV.Services.Exportacion
             string pl = string.IsNullOrWhiteSpace(planta) ? "PLANTA DE DESCARGA" : planta.Trim().ToUpperInvariant();
             string EnCamino(string frase) => frase + Sufijo(lugar, horaPosicion, ahora);
 
-            if (Hay("fhSalida")) return EnCamino("UNIDAD DESCARGADA CAMINO A BASE");
+            if (Hay("fhSalida"))
+                return Hay("fhLlegadaGrifo") && !Hay("fhSalidaGrifo")
+                    ? "UNIDAD DESCARGADA EN GRIFO SANTA ROSA"
+                    : EnCamino("UNIDAD DESCARGADA CAMINO A BASE");
             if (Hay("fhIngreso")) return "UNIDAD EN PROCESO DE DESCARGA - " + pl;
             if (Hay("fhLlegadaPlantaEcuador", "fhLlegadaAlmacen")) return "UNIDAD EN COLA PARA DESCARGA - " + pl;
             if (Hay("fhSalidaTCI")) return EnCamino("UNIDAD CARGADA EN ECUADOR CAMINO A " + pl);

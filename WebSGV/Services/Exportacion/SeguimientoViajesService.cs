@@ -122,7 +122,8 @@ namespace WebSGV.Services.Exportacion
         private static readonly string[] ColumnasHora =
             HitosSeguimiento.Todos.Select(h => h.Columna)
                 .Concat(new[] { "fhLlegadaAlmacen", "fhRegistro", "fhInicioCarga", "fhTerminoCarga",
-                                "fhAutorizacionNacionalizacion", "fhInicioDescarga", "fhTerminoDescarga" })
+                                "fhAutorizacionNacionalizacion", "fhInicioDescarga", "fhTerminoDescarga",
+                                "fhLlegadaGrifo", "fhSalidaGrifo" })
                 .Distinct().ToArray();
 
         // Paso directo por TCI: la regla del hito de llegada lo dice (TrazabilidadDescargaService).

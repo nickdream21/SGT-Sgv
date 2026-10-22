@@ -257,6 +257,16 @@ namespace WebSGV.Services.GpsIntegracion
             -3.5330, -80.1790);
 
         /// <summary>
+        /// Grifo Santa Rosa: estación de combustible de la Troncal de la Costa en El Retiro (Machala, camino
+        /// a Santa Rosa; en OpenStreetMap "p&amp;s", -3.42855, -79.96242). Después de descargar, 111 de 112
+        /// viajes del 15/09 al 20/10/2026 paran ahí a cargar combustible antes de volver a la base (mediana
+        /// 4,6 h después de salir de la planta y 2,2 h en el grifo; a veces duermen). El círculo cubre el
+        /// patio donde se estacionan; pasar de largo por la carretera dura menos de los 10 minutos que cuentan.
+        /// </summary>
+        public static readonly GeocercaGps GrifoSantaRosa =
+            GeocercaGps.Circulo("GRIFO_SANTA_ROSA", "Grifo Santa Rosa (El Retiro, Machala)", -3.42855, -79.96280, 150);
+
+        /// <summary>
         /// Llegada a Inbalnor (F.H.LL.Planta / Almacén): el camino de acceso desde la carretera y el
         /// terreno. Comprobada con el historial de BSD-716 del 30/09/2026.
         /// </summary>

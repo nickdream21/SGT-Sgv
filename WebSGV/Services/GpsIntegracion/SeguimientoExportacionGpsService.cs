@@ -135,6 +135,10 @@ namespace WebSGV.Services.GpsIntegracion
         /// Guarda en el viaje el último punto del tracto activo (hoy; ayer si hoy todavía no reportó).
         /// Si el GPS falla no se pierde la consulta de las horas: la posición queda como estaba.
         /// </summary>
+        /// <summary>Hora local de un hito, en segundos enteros como la muestra el portal.</summary>
+        private static DateTime HoraLocalGps(HitoGps hito) =>
+            FechaHelper.ConvertirDeUtc(hito.HoraUtc.AddTicks(-(hito.HoraUtc.Ticks % TimeSpan.TicksPerSecond)));
+
         private static void GuardarUltimaPosicion(int idSeguimiento, OnwayApiClient cliente, string placa,
             string placaTracto1, OnwayDevice dispositivo1, OnwayDevice dispositivo2)
         {
@@ -350,6 +354,7 @@ namespace WebSGV.Services.GpsIntegracion
                 // viaje si no se sabe): la carreta la lleva otro tracto, o el mismo después de pasar por base.
                 string rama = ramaExistente;
                 bool enEcuador = false;
+                DateTime? llegadaGrifo = null, salidaGrifo = null;
                 if (!esTercero && dispositivo2 != null && !TramoCompleto(columnasDescarga))
                 {
                     DateTime desdeDescargaUtc = salidaPlantaUtc ?? FechaHelper.ConvertirAUtc(fechaInicio);
@@ -375,6 +380,9 @@ namespace WebSGV.Services.GpsIntegracion
                     enEcuador = descarga.Cruce != null || descarga.LlegadaTci != null || valoresYaConfirmados.ContainsKey("fhCruceEcuador");
                     if (descarga.PasoDirectoTci && descarga.LlegadaTci != null)
                         avisoPasoDirecto += " Pasó directo por TCI: se tomó el control aduanero cercano.";
+                    // Grifo Santa Rosa de vuelta (no es hito del STATUS GENERAL: va en sus columnas).
+                    if (descarga.LlegadaGrifo != null) llegadaGrifo = HoraLocalGps(descarga.LlegadaGrifo);
+                    if (descarga.SalidaGrifo != null) salidaGrifo = HoraLocalGps(descarga.SalidaGrifo);
                 }
 
                 var valoresEncontrados = new Dictionary<string, DateTime>();
@@ -419,9 +427,11 @@ namespace WebSGV.Services.GpsIntegracion
                         ? ", bodegaEcuatoriana = @rama, bodegaDescarga = @rama" : "") +
                     (lugarEntregaDetectado != null ? ", lugarEntrega = ISNULL(lugarEntrega, @entrega)" : "") +
                     (lugarFinDetectado != null ? ", lugarFin = @fin" : "") +
+                    (llegadaGrifo.HasValue ? ", fhLlegadaGrifo = @grifoLlegada, fhSalidaGrifo = @grifoSalida" : "") +
                     " WHERE idSeguimiento = @id",
                     DbHelper.Param("@id", idSeguimiento), DbHelper.Param("@rama", rama),
-                    DbHelper.Param("@entrega", lugarEntregaDetectado), DbHelper.Param("@fin", lugarFinDetectado));
+                    DbHelper.Param("@entrega", lugarEntregaDetectado), DbHelper.Param("@fin", lugarFinDetectado),
+                    DbHelper.Param("@grifoLlegada", llegadaGrifo), DbHelper.Param("@grifoSalida", salidaGrifo));
 
                 int totalConfirmados = valoresEncontrados.Count + valoresYaConfirmados.Count;
                 if (totalConfirmados == 0)
