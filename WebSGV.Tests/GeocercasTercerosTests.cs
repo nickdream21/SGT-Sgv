@@ -20,6 +20,8 @@ namespace WebSGV.Tests
         [InlineData("NOVOPAN_PIURA", -5.11382, -80.70553)]          // AVN-758
         [InlineData("NOVOPAN_PIURA", -5.11234, -80.70310)]          // AVN-709
         [InlineData("NOVOPAN_TRUJILLO", -8.14399, -79.01987)]       // BFK-879
+        [InlineData("NOVOPAN_TRUJILLO_2", -8.13857, -79.01755)]     // BPT-788, ~24 h
+        [InlineData("NOVOPAN_TRUJILLO_2", -8.13858, -79.01762)]     // BPT-788
         [InlineData("POLINPLAST_VIRU", -8.40885, -78.81247)]        // TBM-893
         [InlineData("POLINPLAST_CHAO", -8.58288, -78.64503)]        // BNG-758
         [InlineData("POLINPLAST_CASAGRANDE", -7.71101, -79.26297)]  // BPT-788
@@ -40,7 +42,8 @@ namespace WebSGV.Tests
             var vitapro = new[]
             {
                 GeocercasTrazabilidad.BaseSullana, GeocercasTrazabilidad.TrujilloAcceso, GeocercasTrazabilidad.TrujilloPlanta,
-                GeocercasTrazabilidad.ComplexAcceso, GeocercasTrazabilidad.Cebaf
+                GeocercasTrazabilidad.ComplexAcceso, GeocercasTrazabilidad.Cebaf,
+                GeocercasTrazabilidad.Tci, GeocercasTrazabilidad.TciControlAduana
             };
             foreach (var t in GeocercasTerceros.Todas)
                 foreach (var v in vitapro)

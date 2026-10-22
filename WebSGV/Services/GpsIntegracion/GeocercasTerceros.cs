@@ -10,6 +10,10 @@ namespace WebSGV.Services.GpsIntegracion
     /// de 20 min o más a 3 km/h o menos, agrupadas a 500 m (docs/CLIENTES_TERCEROS.md, sección 4.3).
     /// El centro es el promedio de las paradas y el radio cubre su dispersión con margen.
     ///
+    /// Solo los puntos propios de cada cliente: en el tramo de frontera Crisar y Novopan pasan por las
+    /// mismas geocercas que la descarga de Vitapro (Complex, TCI, CEBAF), que ya están en
+    /// <see cref="GeocercasTrazabilidad"/>.
+    ///
     /// Todavía son círculos: cuando se usen para detectar horas hay que dibujarlas sobre el terreno
     /// como las de Vitapro (<see cref="GeocercasTrazabilidad"/>) y comprobarlas con casos marcados.
     /// </summary>
@@ -43,6 +47,12 @@ namespace WebSGV.Services.GpsIntegracion
         /// <summary>Descarga de Novopan en Trujillo, a ~1 km de Vitapro (2 de 2 viajes, 2–4 h).</summary>
         public static readonly GeocercaGps NovopanTrujillo = GeocercaGps.Circulo("NOVOPAN_TRUJILLO", "Novopan Trujillo", -8.14396, -79.01987, 250);
 
+        /// <summary>
+        /// Segundo punto de descarga de Novopan en Trujillo, a ~500 m de Vitapro (lo confirmó la oficina).
+        /// En la muestra solo aparece BPT-788 tres veces, con paradas de ~24 h después de entregar cartón.
+        /// </summary>
+        public static readonly GeocercaGps NovopanTrujillo2 = GeocercaGps.Circulo("NOVOPAN_TRUJILLO_2", "Novopan Trujillo (2.º punto)", -8.13857, -79.01758, 150);
+
         /// <summary>Polinplast en Virú (3 de 3 viajes, ~4 h; a 1,5 km al norte esperan antes de entrar).</summary>
         public static readonly GeocercaGps PolinplastViru = GeocercaGps.Circulo("POLINPLAST_VIRU", "Virú (Polinplast)", -8.40868, -78.81249, 300);
 
@@ -53,8 +63,8 @@ namespace WebSGV.Services.GpsIntegracion
         public static readonly GeocercaGps PolinplastCasaGrande = GeocercaGps.Circulo("POLINPLAST_CASAGRANDE", "Casa Grande (Polinplast)", -7.70956, -79.26271, 400);
 
         /// <summary>
-        /// Polinplast para ACP y para Chepén: es el mismo punto (3 de 3 viajes de cada uno, 2–3 h). Falta
-        /// confirmar qué es ACP.
+        /// Polinplast para ACP y para Chepén: es el mismo punto (3 de 3 viajes de cada uno, 2–3 h). ACP es
+        /// un lugar de entrega.
         /// </summary>
         public static readonly GeocercaGps PolinplastAcpChepen = GeocercaGps.Circulo("POLINPLAST_ACP", "ACP / Chepén (Polinplast)", -7.06923, -79.55870, 300);
 
@@ -70,7 +80,7 @@ namespace WebSGV.Services.GpsIntegracion
         public static IReadOnlyList<GeocercaGps> Todas { get; } = new[]
         {
             CrisarCartavio, PolinplastChapaira, NovopanQuito,
-            CrisarLaTroncal, CrisarPernocte, NovopanPiura, NovopanTrujillo,
+            CrisarLaTroncal, CrisarPernocte, NovopanPiura, NovopanTrujillo, NovopanTrujillo2,
             PolinplastViru, PolinplastChao, PolinplastCasaGrande, PolinplastAcpChepen, PolinplastJayanca, PolinplastOlmos, PolinplastSalaverry
         };
 

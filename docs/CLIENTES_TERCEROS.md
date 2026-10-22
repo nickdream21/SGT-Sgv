@@ -123,9 +123,15 @@ Propuesta, sobre lo que ya funciona para Vitapro:
    GUAYAQUIL-AZUCAR pone el tracto y el chofer de descarga (CAMBIO), NOVOPAN-PIURA/TRUJILLO y POLINPLAST-<destino>
    ponen el lugar de entrega y la hora programada.
 3. **Hitos por tipo de ruta**, que son subconjuntos de las columnas que ya existen:
-   - Crisar: los de Vitapro, con la planta de carga en Cartavio y la descarga en las bodegas de azúcar de Ecuador.
-   - Novopan, de Ecuador a Perú: llegada y salida de planta en Quito, cruce de frontera, llegada a base,
-     llegada y salida de la descarga en Piura o Trujillo.
+   - Crisar: los de Vitapro, con la planta de carga en Cartavio y la descarga en La Troncal. El GPS lo confirma: la
+     ida hace **el mismo tramo que la descarga de Vitapro** (Base Sullana → Complex → TCI → Arenillas), luego el
+     parqueo antes de La Troncal y la descarga; la vuelta pasa por el CEBAF. Así que el tramo de frontera se sigue
+     con `TrazabilidadDescargaService` tal como está, cambiando solo el destino final (La Troncal en vez de Jave o
+     Inbalnor). En TCI a veces la unidad se queda a dormir y sigue al día siguiente (hasta ~22 h en la muestra):
+     eso ya lo marca el aviso de estadía larga en TCI.
+   - Novopan, de Ecuador a Perú: la ida vacía hace el mismo tramo (Complex → TCI); luego llegada y salida de planta
+     en Quito y, de vuelta cargada, Aguas Verdes (-3.4896, -80.212), TCI, CEBAF, llegada a base, llegada y salida de
+     la descarga en Piura o Trujillo.
    - Polinplast, nacional: salida de base, carga en Chapaira o Rapel, llegada y salida del destino, retorno.
 4. **El GPS los detecta con las geocercas de la sección 4.3** y el mismo "Actualizar GPS" del tablero.
 5. **STATUS por tipo de ruta** con el mismo motor (`StatusUnidad`), cambiando los nombres de lugar.
@@ -148,6 +154,7 @@ círculos. Antes de usarlas para marcar horas hay que dibujarlas sobre el terren
 | Parqueo antes de La Troncal | [-2.77225, -79.69339](https://www.google.com/maps?q=-2.77225,-79.69339) | 200 m | 5/5 | pasan la noche (6–13 h, hasta 56 h) |
 | Novopan Piura | [-5.11323, -80.70448](https://www.google.com/maps?q=-5.11323,-80.70448) | 300 m | 3/3 | ~1,5 h |
 | Novopan Trujillo | [-8.14396, -79.01987](https://www.google.com/maps?q=-8.14396,-79.01987) | 250 m | 2/3 | 2–4 h (a 1 km de Vitapro) |
+| Novopan Trujillo, 2.º punto (confirmado por la oficina) | [-8.13857, -79.01758](https://www.google.com/maps?q=-8.13857,-79.01758) | 150 m | BPT-788, 3 veces | ~24 h (a 500 m de Vitapro) |
 | Virú | [-8.40868, -78.81249](https://www.google.com/maps?q=-8.40868,-78.81249) | 300 m | 3/3 | ~4 h (esperan 1,5 km al norte) |
 | Chao | [-8.58301, -78.64513](https://www.google.com/maps?q=-8.58301,-78.64513) | 300 m | 3/3 | ~1,5 h |
 | Casa Grande | [-7.70956, -79.26271](https://www.google.com/maps?q=-7.70956,-79.26271) | 400 m | 3/3 | ~1 h |
@@ -159,8 +166,9 @@ círculos. Antes de usarlas para marcar horas hay que dibujarlas sobre el terren
 Lo que enseñó el GPS:
 
 - **Crisar descarga en La Troncal**, no en la ciudad de Guayaquil. Pasan la noche en el parqueo de -2.772 y entran
-  temprano. En la ida pasan muchas horas en la frontera: una parada de ~22 h en -3.536, -80.184, del lado
-  ecuatoriano, que hay que identificar.
+  temprano. La parada larga de la ida (~22 h en -3.536, -80.184) es **TCI**, el mismo punto de la descarga de
+  Vitapro (geocerca `TCI` ya existente): a veces la unidad duerme ahí y sigue al día siguiente. Las de Novopan
+  también pasan por TCI a la ida y a la vuelta.
 - **Rapel no es otra planta de carga**: las secciones POLINPLAST-RAPEL cargan en Chapaira como las demás, y los
   viajes van al punto de Jayanca. Rapel es a quién va el cartón.
 - **ACP y Chepén son el mismo punto de descarga.**
@@ -168,8 +176,8 @@ Lo que enseñó el GPS:
   -80.026 (al norte de Chiclayo), -7.414, -79.551 (Pacasmayo), -7.932, -79.101 (Paiján), -6.063, -80.509 y
   -5.272, -80.612. Las de Novopan de vuelta: -3.526, -79.995 (Arenillas, de noche) y -3.4896, -80.212 (Aguas
   Verdes, hasta 44 h: ¿aduana de importación?).
-- BPT-788 se queda ~24 h en -8.1386, -79.0176 (a 600 m de Vitapro Trujillo) después de entregar cartón:
-  ¿es la cochera de Trujillo? El Excel tiene descargas "EN COCHERA TRUJILLO".
+- BPT-788 se queda ~24 h en -8.1386, -79.0176 (a 500 m de Vitapro Trujillo) después de entregar cartón: no es la
+  cochera, es **otro punto de descarga de Novopan** (lo confirmó la oficina); geocerca `NOVOPAN_TRUJILLO_2`.
 
 ## 5. Calidad de los datos del Excel
 
@@ -186,9 +194,10 @@ Lo que enseñó el GPS:
 
 ## 6. Preguntas abiertas (también en el plan)
 
-- ¿Qué es **ACP** (28 viajes de Polinplast)? El GPS lo ubica en el mismo punto que Chepén. ¿Qué es **Rapel**
-  (fundo en Jayanca, según el GPS) y **TALSA**?
-- ¿Es la cochera de Trujillo el punto -8.1386, -79.0176? ¿Y qué es la parada de ~22 h en -3.536, -80.184?
+- **ACP** es un lugar de entrega de Polinplast (el GPS lo ubica en el mismo punto que Chepén). En la oficina no
+  saben qué son **Rapel** (el GPS la lleva a Jayanca) ni **TALSA**: preguntar a quien arma el Word.
+- Resuelto (2026-10-21): -3.536, -80.184 es TCI; -8.1386, -79.0176 es otro punto de descarga de Novopan.
+- ¿Dónde queda la cochera de Trujillo? (el Excel tiene descargas "EN COCHERA TRUJILLO").
 - Polinplast: confirmar con Rosmery cómo es la guía (remitente digital + transportista).
 - Crisar y Novopan: ¿se registran en el SGV como despacho con su factura, como Vitapro, o solo se siguen?
 - ¿Cómo se cobra el falso flete y cómo se registra?
