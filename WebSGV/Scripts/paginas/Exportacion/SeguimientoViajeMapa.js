@@ -95,6 +95,7 @@
         var clave = datos.Clave;
         var km = document.getElementById('rutaKm' + clave);
         if (datos.Aviso) aviso(datos.Titulo + ': ' + datos.Aviso);
+        if (datos.Inicio) aviso(datos.Titulo + ': ' + datos.Inicio);
         if (!datos.Puntos || datos.Puntos.length < 2) {
             if (km) km.textContent = '· sin recorrido';
             return;

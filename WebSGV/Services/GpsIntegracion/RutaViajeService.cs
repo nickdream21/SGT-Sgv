@@ -45,6 +45,9 @@ namespace WebSGV.Services.GpsIntegracion
         /// <summary>El tramo no tiene todavía su llegada a base: el recorrido llega hasta ahora.</summary>
         public bool EnCurso { get; set; }
         public string Aviso { get; set; }
+
+        /// <summary>De dónde viene la unidad cuando el recorrido no empieza en la base (terceros): "venía de descargar en Jave…".</summary>
+        public string Inicio { get; set; }
     }
 
     public sealed class ZonaRuta
@@ -98,11 +101,20 @@ namespace WebSGV.Services.GpsIntegracion
             if (RutaTercero.Es(v.TipoRuta))
             {
                 bool relevo = !string.IsNullOrWhiteSpace(v.Tracto2) && !string.Equals(v.Tracto1?.Trim(), v.Tracto2.Trim(), StringComparison.OrdinalIgnoreCase);
-                DateTime? desde = (H("fhLlegadaTrujillo") ?? v.FhProgramacion)?.AddHours(-14);
+                // Los terceros no tienen salida de base: muchas veces el tracto viene directo de su viaje anterior
+                // (descargó Vitapro en Jave, entregó cartón en Chao, esperó en Trujillo). El recorrido empieza en la
+                // última salida de base antes de llegar a cargar o, si no pasó por la base, donde terminó ese viaje.
+                DateTime? ancla = H("fhLlegadaTrujillo") ?? v.FhProgramacion?.AddHours(12);
+                var anterior = ancla.HasValue ? ViajeAnterior(idSeguimiento, v.Tracto1, ancla.Value) : null;
+                // Un viaje anterior más viejo que la ventana no explica de dónde venía (hizo otra cosa entre medio).
+                if (anterior != null && anterior.Item1 <= ancla.Value.AddDays(-DiasAntesDeCargar)) anterior = null;
+                DateTime? desde = ancla.HasValue ? anterior?.Item1 ?? ancla.Value.AddDays(-DiasAntesDeCargar) : (DateTime?)null;
                 DateTime? finCarga = relevo ? H("fhLlegadaBase2") : H("fhSalidaPlanta");
-                ruta.Tramos.Add(Tramo(cliente, "carga", "Carga en " + RutaTercero.Nombre(v.LugarCarga, "la planta de carga") + (relevo ? " → base" : ""),
-                    v.Tracto1, v.Chofer1, idSeguimiento, desde, finCarga, (H("fhSalidaPlanta") ?? desde?.AddHours(22))?.AddHours(14), ahora,
-                    v.Hitos.Where(x => x.Tramo == TramoViaje.Carga).Select(x => hitos[x.Columna])));
+                var tramoCarga = Tramo(cliente, "carga", "Carga en " + RutaTercero.Nombre(v.LugarCarga, "la planta de carga") + (relevo ? " → base" : ""),
+                    v.Tracto1, v.Chofer1, idSeguimiento, desde, finCarga, (H("fhSalidaPlanta") ?? ancla?.AddHours(10))?.AddHours(14), ahora,
+                    v.Hitos.Where(x => x.Tramo == TramoViaje.Carga).Select(x => hitos[x.Columna]),
+                    ancla.HasValue ? (Func<List<double[]>, Tuple<List<double[]>, string>>)(p => RecortarInicio(p, Ms(FechaHelper.ConvertirAUtc(ancla.Value)), anterior?.Item2)) : null);
+                ruta.Tramos.Add(tramoCarga);
                 DateTime? desdeDescarga = relevo ? H("fhSalidaBase2") : H("fhSalidaPlanta");
                 ruta.Tramos.Add(Tramo(cliente, "descarga", "Entrega en " + RutaTercero.Nombre(v.LugarEntrega, "destino por confirmar"),
                     relevo ? v.Tracto2 : v.Tracto1, relevo ? v.Chofer2 : v.Chofer1, idSeguimiento,
@@ -127,8 +139,10 @@ namespace WebSGV.Services.GpsIntegracion
             return ruta;
         }
 
+        /// <param name="recortarInicio">Si se da, decide desde qué punto empieza el recorrido y explica de dónde venía la unidad.</param>
         private static RutaTramo Tramo(Lazy<OnwayApiClient> cliente, string clave, string titulo, string tracto, string chofer,
-            int idSeguimiento, DateTime? desde, DateTime? hasta, DateTime? hastaEstimado, DateTime ahora, IEnumerable<HitoDetalle> hitos)
+            int idSeguimiento, DateTime? desde, DateTime? hasta, DateTime? hastaEstimado, DateTime ahora, IEnumerable<HitoDetalle> hitos,
+            Func<List<double[]>, Tuple<List<double[]>, string>> recortarInicio = null)
         {
             var t = new RutaTramo { Clave = clave, Titulo = titulo, Tracto = tracto, Chofer = chofer };
             if (string.IsNullOrWhiteSpace(tracto)) { t.Aviso = "El viaje no tiene tracto para este tramo."; return t; }
@@ -160,6 +174,14 @@ namespace WebSGV.Services.GpsIntegracion
                 t.Aviso = ex.Message;
             }
             if (t.Puntos.Count == 0 && t.Aviso == null) t.Aviso = "El GPS no tiene posiciones de " + tracto + " en ese intervalo.";
+            if (recortarInicio != null && t.Puntos.Count > 0)
+            {
+                var r = recortarInicio(t.Puntos);
+                t.Puntos = r.Item1;
+                t.Inicio = r.Item2;
+                if (t.Puntos.Count > 0)
+                    t.Desde = FechaHelper.ConvertirDeUtc(Epoch.AddMilliseconds(t.Puntos[0][2])).ToString("dd/MM/yyyy HH:mm");
+            }
 
             for (int i = 1; i < t.Puntos.Count; i++)
                 t.Km += Metros(t.Puntos[i - 1][0], t.Puntos[i - 1][1], t.Puntos[i][0], t.Puntos[i][1]) / 1000.0;
@@ -215,6 +237,91 @@ namespace WebSGV.Services.GpsIntegracion
             else
                 HttpRuntime.Cache.Insert(claveMemoria, puntos, null, DateTime.UtcNow.AddMinutes(10), Cache.NoSlidingExpiration);
             return puntos;
+        }
+
+        /// <summary>Hasta cuántos días antes de llegar a cargar se busca de dónde venía un tracto de terceros.</summary>
+        private const int DiasAntesDeCargar = 4;
+
+        /// <summary>Una parada de esto o más antes de llegar a cargar se avisa (esperó la carga, durmió…).</summary>
+        private static readonly TimeSpan ParadaLarga = TimeSpan.FromHours(6);
+
+        /// <summary>
+        /// Último viaje del mismo tracto que terminó antes de <paramref name="antes"/>: (hora, "venía de descargar
+        /// en JAVE (pedido 4400133873)"). Cuenta lo que hizo ese tracto: la carga si era el tracto 1, la descarga o
+        /// la entrega si era el tracto 2 (o el único).
+        /// </summary>
+        private static Tuple<DateTime, string> ViajeAnterior(int idSeguimiento, string tracto, DateTime antes)
+        {
+            if (string.IsNullOrWhiteSpace(tracto)) return null;
+            var dt = DbHelper.ConsultarTabla(@"
+                SELECT TOP 1 se.cliente, se.tipoRuta, se.bodegaDescarga, se.lugarCarga, se.lugarEntrega, e.columna, e.hora
+                FROM SeguimientoExportacion se
+                CROSS APPLY (VALUES
+                    ('fhSalidaPlanta',     CASE WHEN REPLACE(se.tracto1, '-', '') = @t THEN se.fhSalidaPlanta END),
+                    ('fhLlegadaBase2',     CASE WHEN REPLACE(se.tracto1, '-', '') = @t THEN se.fhLlegadaBase2 END),
+                    ('fhSalida',           CASE WHEN REPLACE(ISNULL(se.tracto2, se.tracto1), '-', '') = @t THEN se.fhSalida END),
+                    ('fhLlegadaBaseFinal', CASE WHEN REPLACE(ISNULL(se.tracto2, se.tracto1), '-', '') = @t THEN se.fhLlegadaBaseFinal END)
+                ) e(columna, hora)
+                WHERE se.activo = 1 AND se.idSeguimiento <> @id AND ISNULL(se.estado, '') <> 'CANCELADO'
+                  AND e.hora IS NOT NULL AND e.hora < @antes AND e.hora > DATEADD(DAY, -10, @antes)
+                ORDER BY e.hora DESC",
+                DbHelper.Param("@t", tracto.Replace("-", "").Trim().ToUpperInvariant()), DbHelper.Param("@id", idSeguimiento),
+                DbHelper.Param("@antes", antes));
+            if (dt.Rows.Count == 0) return null;
+            var r = dt.Rows[0];
+            string Txt(string c) => r.IsNull(c) ? null : Convert.ToString(r[c]).Trim();
+            DateTime hora = Convert.ToDateTime(r["hora"]);
+            string cliente = RutaTercero.Es(Txt("tipoRuta")) ? RutaTercero.Nombre(Txt("tipoRuta"), "") : "Vitapro";
+            string pedido = Txt("cliente");
+            string viaje = cliente + (pedido != null && pedido != "PENDIENTE" && !RutaTercero.Es(pedido) ? " " + pedido : "");
+            string cuando = hora.ToString("dd/MM HH:mm");
+            switch (Txt("columna"))
+            {
+                case "fhSalida":
+                    return Tuple.Create(hora, $"venía de descargar en {RutaTercero.Nombre(Txt("lugarEntrega") ?? Txt("bodegaDescarga"), "su entrega")} ({viaje}, salió el {cuando})");
+                case "fhSalidaPlanta":
+                    return Tuple.Create(hora, $"venía de cargar en {RutaTercero.Nombre(Txt("lugarCarga"), "Trujillo")} ({viaje}, salió el {cuando})");
+                default:
+                    // La vuelta puede ser el paso frente a la base sin entrar (vuelta corrida): "al volver a Sullana".
+                    return Tuple.Create(hora, $"su viaje anterior ({viaje}) terminó al volver a Sullana el {cuando}");
+            }
+        }
+
+        /// <summary>
+        /// Inicio del recorrido de una carga de terceros: la última salida de la base antes de llegar a cargar
+        /// (<paramref name="anclaMs"/>); si no pasó por la base, desde el primer punto (el fin de su viaje anterior).
+        /// Devuelve los puntos desde ahí y el texto que explica de dónde venía, con las paradas largas del camino.
+        /// </summary>
+        public static Tuple<List<double[]>, string> RecortarInicio(List<double[]> puntos, double anclaMs, string viajeAnterior)
+        {
+            var baseSullana = GeocercasTrazabilidad.BaseSullana;
+            bool EnBase(double[] p) => baseSullana.Contiene(p[0], p[1]);
+            string Hora(double ms) => FechaHelper.ConvertirDeUtc(Epoch.AddMilliseconds(ms)).ToString("dd/MM HH:mm");
+
+            int salida = -1;
+            for (int i = 0; i + 1 < puntos.Count && puntos[i + 1][2] <= anclaMs; i++)
+                if (EnBase(puntos[i]) && !EnBase(puntos[i + 1])) salida = i;
+
+            var recorte = salida >= 0 ? puntos.Skip(salida).ToList() : puntos;
+            var partes = new List<string>();
+            if (salida >= 0)
+                partes.Add("salió de la base el " + Hora(puntos[salida + 1][2]) + (viajeAnterior != null ? " (" + viajeAnterior + ")" : ""));
+            else if (viajeAnterior != null)
+                partes.Add(char.ToUpperInvariant(viajeAnterior[0]) + viajeAnterior.Substring(1) + " y no entró a la base antes de ir a cargar");
+            else
+                partes.Add($"no salió de la base en los {DiasAntesDeCargar} días antes de llegar a cargar: el recorrido empieza en su primera posición de ese rango");
+
+            // Paradas largas antes de llegar a cargar (fuera de la base): dos puntos seguidos en el mismo sitio.
+            for (int i = 0; i + 1 < recorte.Count && recorte[i + 1][2] <= anclaMs; i++)
+            {
+                var a = recorte[i]; var b = recorte[i + 1];
+                if (EnBase(a) || Metros(a[0], a[1], b[0], b[1]) > 200) continue;
+                var duracion = TimeSpan.FromMilliseconds(b[2] - a[2]);
+                if (duracion >= ParadaLarga)
+                    partes.Add($"parada de {Math.Round(duracion.TotalHours):0} h del {Hora(a[2])} al {Hora(b[2])}");
+            }
+            string texto = string.Join("; ", partes);
+            return Tuple.Create(recorte, char.ToUpperInvariant(texto[0]) + texto.Substring(1) + ".");
         }
 
         /// <summary>Más rápido que esto entre dos puntos es un error del equipo, no un camión.</summary>
