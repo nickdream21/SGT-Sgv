@@ -76,6 +76,12 @@ namespace WebSGV.Services.Reportes
         /// <summary>Usuario que generó el reporte (opcional, se imprime junto a la fecha).</summary>
         public string GeneradoPor { get; set; }
 
+        /// <summary>
+        /// Título de la sección de cada fila (p. ej. "CARGA EN TRUJILLO"): cuando cambia, va una fila con el título y
+        /// cuántas filas tiene la sección. Las filas ya deben venir ordenadas por sección. Null = sin secciones.
+        /// </summary>
+        public Func<DataRow, string> Seccion { get; set; }
+
         /// <summary>Más hojas del mismo Excel (p. ej. el detalle después de un cuadro simple). El PDF y la imagen usan solo esta.</summary>
         public List<ReporteTabular> HojasAdicionales { get; } = new List<ReporteTabular>();
     }
@@ -189,8 +195,21 @@ namespace WebSGV.Services.Reportes
 
             // --- Filas ---
             fila = filaCabecera + 1;
+            string seccion = null;
             foreach (DataRow dr in r.Filas)
             {
+                if (r.Seccion != null && r.Seccion(dr) != seccion)
+                {
+                    seccion = r.Seccion(dr);
+                    var titulo = ws.Range(fila, 1, fila, r.Columnas.Count).Merge();
+                    titulo.FirstCell().Value = ReporteTabularExportador.TituloSeccion(r, seccion);
+                    titulo.Style.Font.Bold = true;
+                    titulo.Style.Font.FontColor = XLColor.FromHtml(AzulHex);
+                    titulo.Style.Fill.BackgroundColor = XLColor.FromHtml("#F5F7FB");
+                    titulo.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+                    titulo.Style.Border.BottomBorderColor = XLColor.FromHtml(AzulHex);
+                    fila++;
+                }
                 for (int i = 0; i < r.Columnas.Count; i++)
                     EscribirCelda(ws.Cell(fila, i + 1), r.Columnas[i], dr);
                 var rango = ws.Range(fila, 1, fila, r.Columnas.Count);
@@ -286,7 +305,8 @@ namespace WebSGV.Services.Reportes
             for (int i = 0; i < r.Columnas.Count; i++)
                 ws.Column(i + 1).Width = AnchoExcel(ws, r.Columnas[i], i + 1, filaCabecera, ultimaFilaDatos);
 
-            if (r.Filas.Count > 0)
+            // Con secciones no: el filtro ordenaría las filas de título junto con los datos.
+            if (r.Filas.Count > 0 && r.Seccion == null)
                 ws.Range(filaCabecera, 1, ultimaFilaDatos, r.Columnas.Count).SetAutoFilter();
             ws.SheetView.FreezeRows(filaCabecera);
 
@@ -417,6 +437,10 @@ namespace WebSGV.Services.Reportes
             new ReporteTabularPdf(r, emp ?? new EmpresaInfo(), rutaLogo, continuo: true)
                 .GenerateImages(new ImageGenerationSettings { ImageFormat = ImageFormat.Png, RasterDpi = 144 })
                 .First();
+
+        /// <summary>"CARGA EN TRUJILLO (5)": el título de la sección con cuántas filas tiene.</summary>
+        internal static string TituloSeccion(ReporteTabular r, string seccion) =>
+            $"{seccion} ({r.Filas.Count(f => r.Seccion(f) == seccion)})";
 
         internal static string TextoMonto(decimal v) => v == 0 ? "—" : v.ToString("N2", CulturaPe);
 
@@ -581,8 +605,16 @@ namespace WebSGV.Services.Reportes
                         .Text("No hay registros para los filtros seleccionados.").Italic().FontColor(TextoSuave);
                 }
 
+                string seccion = null;
                 foreach (DataRow fila in _r.Filas)
                 {
+                    if (_r.Seccion != null && _r.Seccion(fila) != seccion)
+                    {
+                        seccion = _r.Seccion(fila);
+                        table.Cell().ColumnSpan((uint)cols.Count).Background(Color.FromHex("#F5F7FB")).BorderBottom(0.6f).BorderColor(Azul)
+                            .PaddingTop(6).PaddingBottom(3).PaddingHorizontal(3)
+                            .Text(ReporteTabularExportador.TituloSeccion(_r, seccion)).Bold().FontColor(Azul);
+                    }
                     foreach (var col in cols)
                     {
                         var t = Alinear(table.Cell().BorderBottom(0.5f).BorderColor(Borde).PaddingVertical(2.5f).PaddingHorizontal(3), col.Tipo)

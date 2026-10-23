@@ -191,7 +191,18 @@ namespace WebSGV.Tests
             var enCamino = LlegadaEstimada.EnCaminoAPlanta(viajes);
             Assert.Equal(new[] { 5, 3, 2, 1 }, enCamino.Select(v => v.Id));
 
-            var r = ExportacionLlegadas.Construir(enCamino, new[] { "Programación: 15/10 al 29/10" }, "prueba", Ahora);
+            var simple = ExportacionLlegadas.Construir(enCamino, new[] { "Programación: 15/10 al 29/10" }, "prueba", Ahora);
+            // 1.ª hoja: 3 columnas, dividida en carga y descarga.
+            Assert.Equal(new[] { "CONDUCTOR", "TRACTO", "LLEGADA APROX." }, simple.Columnas.Select(c => c.Titulo));
+            Assert.Equal(new[] { "CARGA EN TRUJILLO", "CARGA EN TRUJILLO", "CARGA EN TRUJILLO", "DESCARGA EN JAVE" }, simple.Filas.Select(simple.Seccion));
+            Assert.Equal("CARGA 3", simple.Columnas[0].Valor(simple.Filas[1]));
+            Assert.Equal("T2-1", simple.Columnas[1].Valor(simple.Filas[3]));
+            Assert.StartsWith("22/10 11:00", Convert.ToString(simple.Columnas[2].Valor(simple.Filas[1])));
+            Assert.EndsWith("(ya debería haber llegado)", Convert.ToString(simple.Columnas[2].Valor(simple.Filas[0])));
+            Assert.Equal(3m, simple.Resumen.Single(x => x.Etiqueta == "Van a cargar a Trujillo").Valor);
+            Assert.Equal(1m, simple.Resumen.Single(x => x.Etiqueta == "Van a descargar a Ecuador").Valor);
+
+            var r = Assert.Single(simple.HojasAdicionales);
             var titulos = r.Columnas.Select(c => c.Titulo).ToList();
             object Celda(int id, string columna) => r.Columnas[titulos.IndexOf(columna)].Valor(enCamino.Single(v => v.Id == id).Fila);
             Assert.Equal("CARGA EN TRUJILLO", Celda(3, "OPERACIÓN"));
@@ -203,13 +214,17 @@ namespace WebSGV.Tests
             Assert.Equal(4m, r.Resumen.Single(x => x.Etiqueta == "Total").Valor);
 
             var empresa = new WebSGV.Helpers.EmpresaInfo { RazonSocial = "SERVICIOS GENERALES VIVIANA E.I.R.L.", Ruc = "20483851171", DomicilioFiscal = "Sullana" };
-            var ws = new ClosedXML.Excel.XLWorkbook(new System.IO.MemoryStream(
-                WebSGV.Services.Reportes.ReporteTabularExportador.GenerarExcel(r, empresa))).Worksheet(1);
+            var libro = new ClosedXML.Excel.XLWorkbook(new System.IO.MemoryStream(
+                WebSGV.Services.Reportes.ReporteTabularExportador.GenerarExcel(simple, empresa)));
+            Assert.Equal(new[] { "Llegada a planta", "Detalle" }, libro.Worksheets.Select(w => w.Name));
+            Assert.Contains(libro.Worksheet(1).CellsUsed(), c => c.GetString() == "CARGA EN TRUJILLO (3)");
+            Assert.Contains(libro.Worksheet(1).CellsUsed(), c => c.GetString() == "DESCARGA EN JAVE (1)");
+            var ws = libro.Worksheet(2);
             Assert.Contains(ws.CellsUsed(), c => c.GetString() == "LLEGADA APROX.");
             Assert.Contains(ws.CellsUsed(), c => c.GetString() == "T2-1");
 
-            // La misma tabla como una sola imagen PNG (para WhatsApp).
-            byte[] png = WebSGV.Services.Reportes.ReporteTabularExportador.GenerarImagen(r, empresa);
+            // La hoja simple como una sola imagen PNG (para WhatsApp).
+            byte[] png = WebSGV.Services.Reportes.ReporteTabularExportador.GenerarImagen(simple, empresa);
             Assert.True(png.Length > 1000);
             Assert.Equal(new byte[] { 0x89, 0x50, 0x4E, 0x47 }, png.Take(4).ToArray());
         }
