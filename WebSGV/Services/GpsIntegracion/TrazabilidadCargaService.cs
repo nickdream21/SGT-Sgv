@@ -145,12 +145,38 @@ namespace WebSGV.Services.GpsIntegracion
                 .FirstOrDefault(v => Hora(puntos[v.Primero]) >= desdeUtc &&
                                      (!v.Cerrada || (Hora(puntos[v.Ultimo]) - Hora(puntos[v.Primero])).TotalMinutes >= MinutosMinimosEnPlanta));
 
-        /// <summary>Puntos con coordenadas, ordenados por la hora del portal.</summary>
-        internal static List<OnwayHistoryPoint> Ordenar(IEnumerable<OnwayHistoryPoint> historial) =>
-            (historial ?? Enumerable.Empty<OnwayHistoryPoint>())
+        /// <summary>Puntos con coordenadas, ordenados por la hora del portal, sin los saltos sueltos del GPS.</summary>
+        internal static List<OnwayHistoryPoint> Ordenar(IEnumerable<OnwayHistoryPoint> historial)
+        {
+            var puntos = (historial ?? Enumerable.Empty<OnwayHistoryPoint>())
                 .Where(p => p != null && !(p.Lat == 0 && p.Lng == 0))
                 .OrderBy(Hora)
                 .ToList();
+            return puntos.Where((p, i) => !EsSaltoAislado(puntos, i)).ToList();
+        }
+
+        /// <summary>
+        /// Un punto suelto lejos de donde estaba la unidad justo antes y justo después, al que habría ido
+        /// y vuelto a más de 150 km/h: es un error del GPS (AVM-877 estacionado en Jave el 13/10/2026,
+        /// una alerta a 13 km por un minuto, que cortaba la descarga y daba la salida a las 11:00).
+        /// </summary>
+        internal static bool EsSaltoAislado(List<OnwayHistoryPoint> puntos, int i)
+        {
+            const double MetrosSalto = 1000, MetrosMismoLugar = 300, KmhImposible = 150;
+            if (i == 0 || i == puntos.Count - 1) return false;
+            OnwayHistoryPoint a = puntos[i - 1], p = puntos[i], b = puntos[i + 1];
+            double ida = CheckpointMatchingService.CalcularDistanciaMetros(a.Lat, a.Lng, p.Lat, p.Lng);
+            double vuelta = CheckpointMatchingService.CalcularDistanciaMetros(p.Lat, p.Lng, b.Lat, b.Lng);
+            if (ida < MetrosSalto || vuelta < MetrosSalto ||
+                CheckpointMatchingService.CalcularDistanciaMetros(a.Lat, a.Lng, b.Lat, b.Lng) > MetrosMismoLugar)
+                return false;
+            double Kmh(double metros, OnwayHistoryPoint desde, OnwayHistoryPoint hasta)
+            {
+                double horas = (Hora(hasta) - Hora(desde)).TotalHours;
+                return horas <= 0 ? double.MaxValue : metros / 1000 / horas;
+            }
+            return Math.Max(Kmh(ida, a, p), Kmh(vuelta, p, b)) > KmhImposible;
+        }
 
         /// <summary>Hora del punto como la muestra el portal (recepción); el envío, si no la hay.</summary>
         public static DateTime Hora(OnwayHistoryPoint p) => p.GenerateTime ?? p.MessageTime;

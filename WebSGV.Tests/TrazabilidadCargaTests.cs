@@ -47,6 +47,12 @@ namespace WebSGV.Tests
             var datos = Casos().First(c => (string)c["caso"] == caso);
             var historial = Historial((string)datos["historial"]);
             var desde = AUtc(HoraPeru((string)datos["desde"]));
+            // "hasta": el historial como estaba a esa hora, para ver lo que marcaba el viaje en curso.
+            if (datos["hasta"] != null)
+            {
+                var hasta = AUtc(HoraPeru((string)datos["hasta"]));
+                historial = historial.Where(p => TrazabilidadCargaService.Hora(p) <= hasta).ToList();
+            }
             Dictionary<string, HitoGps> detectado;
             string plantaDescarga = null;
 

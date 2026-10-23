@@ -246,5 +246,97 @@
       "salidaPlanta": null,
       "llegadaBase": null
     }
+  },
+  {
+    "caso": "BSD-716 (pedido 4400133753, carreta T2I-990) en Jave 17/10/2026: entra 10:25, no lo descargan, sale a esperar a la orilla y vuelve a entrar 14:32",
+    "tramo": "descarga",
+    "historial": "BSD-716_2026-10-16.json",
+    "desde": "2026-10-16 05:00:00",
+    "notas": "Reclamo de la administradora (2026-10-23): filas 87-93 del STATUS, ingresaron pero no los cargaron y salieron a esperar; la salida quedaba 11:44.",
+    "esperado": {
+      "plantaDescarga": "JAVE",
+      "llegadaPlanta": "2026-10-17 10:18:57",
+      "ingresoPlanta": "2026-10-17 14:32:40",
+      "salidaPlanta": "2026-10-17 16:13:41"
+    }
+  },
+  {
+    "caso": "BSD-716 en Jave 17/10/2026 a las 12:30: salió de la bodega a esperar a la orilla, todavía sin salida",
+    "tramo": "descarga",
+    "historial": "BSD-716_2026-10-16.json",
+    "desde": "2026-10-16 05:00:00",
+    "hasta": "2026-10-17 12:30:00",
+    "notas": "Mientras espera el ingreso es el de la primera entrada; cuando vuelve a entrar, el GPS lo reemplaza (fhIngreso es provisional).",
+    "esperado": {
+      "plantaDescarga": "JAVE",
+      "llegadaPlanta": "2026-10-17 10:18:57",
+      "ingresoPlanta": "2026-10-17 10:25:57",
+      "salidaPlanta": null
+    }
+  },
+  {
+    "caso": "ASU-748 (pedido 4400133753, carreta T3Z-972) en Jave 17/10/2026: tres entradas; la última es un paso de segundos por la esquina al irse",
+    "tramo": "descarga",
+    "historial": "ASU-748_2026-10-16.json",
+    "desde": "2026-10-16 05:00:00",
+    "notas": "Entradas 11:20-11:48, 15:40-15:56 y 17:50 (15 s, y a los 5 min se va). El ingreso es el de las 15:40.",
+    "esperado": {
+      "plantaDescarga": "JAVE",
+      "llegadaPlanta": "2026-10-17 11:16:40",
+      "ingresoPlanta": "2026-10-17 15:40:03",
+      "salidaPlanta": "2026-10-17 17:50:56"
+    }
+  },
+  {
+    "caso": "BSD-900 (pedido 4400133753, carreta T4Q-995) en Jave 17/10/2026: vuelve a entrar 15:17 y descarga casi todo en el patio de al lado de las bodegas",
+    "tramo": "descarga",
+    "historial": "BSD-900_2026-10-16.json",
+    "desde": "2026-10-16 00:00:00",
+    "notas": "Entradas 10:29-11:46, 15:17-15:26 (9 min en el polígono, luego el patio hasta 17:09) y 17:09 (paso al irse).",
+    "esperado": {
+      "plantaDescarga": "JAVE",
+      "llegadaPlanta": "2026-10-17 10:20:46",
+      "ingresoPlanta": "2026-10-17 15:17:01",
+      "salidaPlanta": "2026-10-17 17:10:39"
+    }
+  },
+  {
+    "caso": "AVM-877 (pedido 4400133436, carreta T4G-975) en Jave 13/10/2026: una alerta del GPS a 13 km a las 11:00 cortaba la descarga",
+    "tramo": "descarga",
+    "historial": "AVM-877_2026-10-12.json",
+    "desde": "2026-10-12 00:00:00",
+    "notas": "Reclamo de la administradora (2026-10-23): fila 71, la salida quedaba 11:00:26 (el punto suelto en -2.2308, -79.6626). Adentro de 09:43 a 17:14 con 37 min afuera a las 15:50.",
+    "esperado": {
+      "plantaDescarga": "JAVE",
+      "llegadaPlanta": "2026-10-13 09:38:25",
+      "ingresoPlanta": "2026-10-13 09:43:44",
+      "salidaPlanta": "2026-10-13 17:14:56"
+    }
+  },
+  {
+    "caso": "ARN-917 (pedido 4400133406, carreta TMB-988) en Jave 10/10/2026: pasa la puerta 12:10, espera en la orilla y entra a descargar 15:32",
+    "tramo": "descarga",
+    "historial": "ARN-917_2026-10-09.json",
+    "desde": "2026-10-09 00:00:00",
+    "notas": "Reclamo de la administradora (2026-10-23): filas 59-63, se registraba la hora del primer ingreso.",
+    "esperado": {
+      "plantaDescarga": "JAVE",
+      "llegadaPlanta": "2026-10-10 12:06:42",
+      "ingresoPlanta": "2026-10-10 15:32:15",
+      "salidaPlanta": "2026-10-10 15:45:47"
+    }
+  },
+  {
+    "caso": "BNH-712 (pedido 4400133406, carreta AVA-983) en Jave 12/10/2026: dos pasos cortos por la puerta en la mañana y descarga desde las 16:13",
+    "tramo": "descarga",
+    "historial": "BNH-712_2026-10-10.json",
+    "desde": "2026-10-10 06:00:00",
+    "notas": "Reclamo de la administradora (2026-10-23): filas 59-63.",
+    "esperado": {
+      "plantaDescarga": "JAVE",
+      "llegadaPlanta": "2026-10-12 08:40:50",
+      "ingresoPlanta": "2026-10-12 16:13:11",
+      "salidaPlanta": "2026-10-12 17:19:18"
+    }
   }
 ]

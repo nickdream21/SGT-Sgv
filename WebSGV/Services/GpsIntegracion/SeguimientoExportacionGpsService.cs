@@ -67,9 +67,13 @@ namespace WebSGV.Services.GpsIntegracion
             "fhLlegadaPlantaEcuador", "fhLlegadaAlmacen", "fhIngreso", "fhSalida", "fhLlegadaBaseFinal",
         };
 
-        /// <summary>Salidas de base de cada tramo: se registran mientras la unidad va en camino y se pueden afinar después.</summary>
-        private static readonly HashSet<string> ColumnasSalidaBase =
-            new HashSet<string>(new[] { "fhSalidaBase1", "fhSalidaBase2" }, StringComparer.OrdinalIgnoreCase);
+        /// <summary>
+        /// Horas del GPS que una consulta posterior puede corregir: las salidas de base (se registran
+        /// mientras la unidad va en camino) y el ingreso y la salida de la planta de descarga (en Jave
+        /// la unidad entra, sale a esperar y vuelve a entrar: vale la última entrada).
+        /// </summary>
+        private static readonly HashSet<string> ColumnasProvisionales =
+            new HashSet<string>(new[] { "fhSalidaBase1", "fhSalidaBase2", "fhIngreso", "fhSalida" }, StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Trae en paralelo a <see cref="HistorialGpsCache"/> el historial que van a leer varios
@@ -407,8 +411,8 @@ namespace WebSGV.Services.GpsIntegracion
                         DbHelper.Param("@latitud", hito.Punto != null ? (object)Math.Round((decimal)hito.Punto.Lat, 6) : null),
                         DbHelper.Param("@longitud", hito.Punto != null ? (object)Math.Round((decimal)hito.Punto.Lng, 6) : null),
                         DbHelper.Param("@regla", regla),
-                        // La salida de base puede haberse registrado "en camino" (provisional): el GPS la puede afinar.
-                        DbHelper.Param("@reemplazarGps", ColumnasSalidaBase.Contains(d.Item1)));
+                        // Hora provisional (salida de base "en camino", ingreso antes de salir a esperar): el GPS la puede afinar.
+                        DbHelper.Param("@reemplazarGps", ColumnasProvisionales.Contains(d.Item1)));
                     if (Convert.ToInt32(aplicado) == 1)
                     {
                         valoresEncontrados[d.Item1] = horaLocal;

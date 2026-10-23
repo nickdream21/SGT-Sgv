@@ -267,24 +267,101 @@ namespace WebSGV.Services.GpsIntegracion
             return null;
         }
 
-        /// <summary>Visita al acceso de la planta (10+ min) con una estadía dentro de la bodega en la que se movió.</summary>
+        /// <summary>Más de esto afuera de la bodega es que salió a esperar: la entrada siguiente es otra.</summary>
+        private const int MinutosEsperaAfuera = 60;
+
+        /// <summary>Una entrada corta seguida de irse en estos minutos es el paso por la esquina al salir, no una entrada.</summary>
+        private const int MinutosPasoAlIrse = 15;
+
+        /// <summary>Hasta esta distancia del acceso la unidad sigue esperando su turno, aunque salga del acceso.</summary>
+        private const double MetrosEsperaCerca = 3000;
+
+        /// <summary>Horas máximas esperando cerca de la planta entre una entrada y la siguiente.</summary>
+        private const int HorasMaximasEspera = 24;
+
+        /// <summary>
+        /// Visita al acceso de la planta (10+ min) con una estadía dentro de la bodega en la que se movió.
+        /// Devuelve el acceso (de la llegada a la última salida) y la bodega (del ingreso a la salida).
+        /// </summary>
         private static Tuple<Visita, Visita> BuscarDescarga(List<OnwayHistoryPoint> puntos, GeocercaGps acceso, GeocercaGps planta, int desde)
         {
+            var visitasAcceso = Visitas(puntos, acceso);
             var visitasPlanta = Visitas(puntos, planta);
-            foreach (var va in Visitas(puntos, acceso).Where(v => v.Primero >= desde &&
-                         (Hora(puntos[v.Ultimo]) - Hora(puntos[v.Primero])).TotalMinutes >= MinutosMinimosEnBodega))
+            for (int k = 0; k < visitasAcceso.Count; k++)
             {
-                var dentro = visitasPlanta.Where(v => v.Primero >= va.Primero && v.Primero <= va.Ultimo).ToList();
-                var primera = dentro.FirstOrDefault(v => SeMovioAdentro(puntos, v));
-                if (primera == null) continue;
+                var va = visitasAcceso[k];
+                if (va.Primero < desde || (Hora(puntos[va.Ultimo]) - Hora(puntos[va.Primero])).TotalMinutes < MinutosMinimosEnBodega)
+                    continue;
+                var dentro = visitasPlanta.Where(v => v.Primero >= va.Primero && v.Primero <= va.Ultimo)
+                    .SkipWhile(v => !SeMovioAdentro(puntos, v)).ToList();
+                if (dentro.Count == 0) continue;
+
+                // Si espera afuera del acceso pero a la vista de la planta y vuelve a entrar, sigue siendo
+                // la misma descarga; mientras siga cerca, todavía no salió.
+                var fin = va;
+                bool sigueEsperando = false;
+                for (int j = k + 1; fin.Cerrada; j++)
+                {
+                    int hasta = j < visitasAcceso.Count ? visitasAcceso[j].Primero : puntos.Count;
+                    if (!EsperoCerca(puntos, acceso, fin.Ultimo + 1, hasta)) break;
+                    if (j >= visitasAcceso.Count) { sigueEsperando = true; break; }
+                    var siguiente = visitasAcceso[j];
+                    dentro.AddRange(visitasPlanta.Where(v => v.Primero >= siguiente.Primero && v.Primero <= siguiente.Ultimo));
+                    fin = siguiente;
+                }
+
+                // En Jave a veces pasan la puerta pero no los descargan: salen a esperar (a la orilla de la
+                // vía, horas) y vuelven a entrar a descargar. El ingreso es el de la última entrada, después
+                // de más de 1 h afuera (pedidos 4400133406, 4400133436 y 4400133753 de octubre de 2026: el
+                // ingreso era el del primer paso por la puerta). Se cuentan los puntos adentro, no las
+                // estadías: la orilla donde esperan queda a pocos metros de la cerca y la estadía no se
+                // corta (ARN-917 el 10/10).
+                var ultima = dentro.Last();
+                var entradas = new List<Visita>();
+                int ultimoDentro = -1;
+                bool huboAfuera = false;
+                for (int i = dentro[0].Primero; i <= ultima.Ultimo; i++)
+                {
+                    if (!planta.Contiene(puntos[i].Lat, puntos[i].Lng)) { huboAfuera = true; continue; }
+                    if (ultimoDentro >= 0 && !(huboAfuera && (Hora(puntos[i]) - Hora(puntos[ultimoDentro])).TotalMinutes > MinutosEsperaAfuera))
+                        entradas[entradas.Count - 1].Ultimo = i;
+                    else
+                        entradas.Add(new Visita { Primero = i, Ultimo = i });
+                    ultimoDentro = i;
+                    huboAfuera = false;
+                }
+                // Al volver no siempre se queda dentro del polígono: descarga en el patio de al lado
+                // (BSD-900 el 17/10: 9 min en la bodega y casi 2 h en el patio). Solo no cuenta un paso
+                // corto justo antes de irse (ASU-748 el 17/10: 15 s por la esquina y a los 5 min se fue).
+                var ingreso = entradas.Last();
+                if (entradas.Count > 1 && (Hora(puntos[ingreso.Ultimo]) - Hora(puntos[ingreso.Primero])).TotalMinutes < MinutosMinimosEnBodega
+                    && fin.Cerrada && (Hora(puntos[fin.Ultimo]) - Hora(puntos[ingreso.Ultimo])).TotalMinutes <= MinutosPasoAlIrse)
+                    ingreso = entradas[entradas.Count - 2];
+
                 // Al pasar la puerta la unidad cruza la esquina de las bodegas y se estaciona en el patio
                 // de al lado: eso no es la salida (BSD-900 y otras 7 en Jave el 21/10/2026: "salían" al
                 // minuto de entrar y seguían adentro). La salida es la última de la bodega, y solo
                 // cuando la unidad ya dejó el recinto.
-                var ultima = dentro.Last();
-                return Tuple.Create(va, new Visita { Primero = primera.Primero, Ultimo = ultima.Ultimo, Cerrada = va.Cerrada && ultima.Cerrada });
+                bool salio = fin.Cerrada && ultima.Cerrada && !sigueEsperando;
+                return Tuple.Create(new Visita { Primero = va.Primero, Ultimo = fin.Ultimo, Cerrada = salio },
+                                    new Visita { Primero = ingreso.Primero, Ultimo = ultima.Ultimo, Cerrada = salio });
             }
             return null;
+        }
+
+        /// <summary>
+        /// Entre los índices [desde, hasta) la unidad se quedó a menos de <see cref="MetrosEsperaCerca"/>
+        /// del acceso y no más de <see cref="HorasMaximasEspera"/> horas: esperaba para volver a entrar.
+        /// </summary>
+        private static bool EsperoCerca(List<OnwayHistoryPoint> puntos, GeocercaGps acceso, int desde, int hasta)
+        {
+            if (desde >= puntos.Count) return true;
+            DateTime tope = Hora(puntos[desde]).AddHours(HorasMaximasEspera);
+            if (hasta < puntos.Count && Hora(puntos[hasta]) > tope) return false;
+            for (int i = desde; i < hasta; i++)
+                if (Hora(puntos[i]) > tope || acceso.DistanciaAlBordeMetros(puntos[i].Lat, puntos[i].Lng) > MetrosEsperaCerca)
+                    return false;
+            return true;
         }
     }
 }

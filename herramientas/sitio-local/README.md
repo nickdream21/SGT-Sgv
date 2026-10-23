@@ -11,6 +11,8 @@ Para probar cambios en la app real (no solo con tests), en cualquiera de las dos
      conectada (ver abajo). Usuarios de prueba por rol: `privado/CREDENCIALES_USUARIOS.txt`.
    - **Sin navegador:** `probar-importacion.ps1 -Archivos <zip/pdf>, <docx>` hace lo mismo que
      "Leer documentos" en RegistroDespacho y resume la vista previa. Solo lee: no crea el lote.
+   - **Recalcular viajes del seguimiento:** `actualizar-gps.ps1 -Ids 7250, 7273` pulsa "Actualizar GPS"
+     en el detalle de cada viaje (escribe en la BD de pruebas, como el botón) y muestra el mensaje.
 
 ## Conectar Chrome con Claude Code (una vez por máquina)
 
