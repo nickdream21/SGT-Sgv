@@ -59,36 +59,76 @@
                                 <i class="fas fa-plus-circle"></i>Agregar Despacho
                             </a>
                             <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ListaDespachos.aspx") %>'>
-                                <i class="fas fa-list-ul"></i>Listar Despachos
+                                <i class="fas fa-list-ul"></i>Lista de despachos
                             </a>
                             <a class="dropdown-item" href='<%= ResolveUrl("~/Views/DestinoDescarga.aspx") %>'>
                                 <i class="fas fa-map-marked-alt"></i>Destino de descarga
                             </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ReporteGps.aspx") %>'>
-                                <i class="fas fa-satellite-dish"></i>Reporte GPS por placas
+                        </div>
+                    </li>
+                    <% } %>
+
+                    <!-- ==================== SEGUIMIENTO (ADMIN, ADMIN SISTEMA, SUPERVISOR) ==================== -->
+                    <% if (EsAdmin || EsAdminSistema || RolUsuario == "SUPERVISOR")
+                        { %>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownExportacion" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-ship"></i>Seguimiento
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownExportacion">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/Exportacion/RegistroSeguimiento.aspx") %>'>
+                                <i class="fas fa-clipboard-list"></i>Tablero de seguimiento
+                            </a>
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/Exportacion/DashboardExportacion.aspx") %>'>
+                                <i class="fas fa-chart-line"></i>Dashboard de exportaci&#xF3;n
                             </a>
                         </div>
                     </li>
+                    <% } %>
 
-                    <!-- Orden de Viaje -->
+                    <% if (EsAdmin)
+                        { %>
+                    <!-- Liquidaciones -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownOrdenViaje" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-route"></i>Orden de Viaje
+                            <i class="fas fa-route"></i>Liquidaciones
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdownOrdenViaje">
                             <a class="dropdown-item" href='<%= ResolveUrl("~/Views/LiquidacionesPendientes.aspx") %>'>
-                                <i class="fas fa-clock"></i>Liquidaciones Pendientes
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ReportesOrdenesViaje.aspx") %>'>
-                                <i class="fas fa-file-invoice-dollar"></i>Reportes
+                                <i class="fas fa-clock"></i>Liquidaciones pendientes
                             </a>
                         </div>
                     </li>
+                    <% } %>
 
-                    <!-- Registro -->
+                    <!-- ==================== REPORTES (ADMIN, SUPERVISOR) ==================== -->
+                    <% if (EsAdmin || RolUsuario == "SUPERVISOR")
+                        { %>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownReportes" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-chart-bar"></i>Reportes
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownReportes">
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ReporteCargas.aspx") %>'>
+                                <i class="fas fa-boxes"></i>Cargas (pedidos, gu&#xED;as y carga)
+                            </a>
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ReportesOrdenesViaje.aspx") %>'>
+                                <i class="fas fa-file-invoice-dollar"></i>Liquidaciones y viajes
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ReporteGps.aspx") %>'>
+                                <i class="fas fa-satellite-dish"></i>GPS por placas
+                            </a>
+                        </div>
+                    </li>
+                    <% } %>
+
+                    <% if (EsAdmin)
+                        { %>
+                    <!-- Catálogos -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownRegistro" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-database"></i>Registro
+                            <i class="fas fa-database"></i>Cat&#xE1;logos
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdownRegistro">
                             <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroChoferes.aspx") %>'>
@@ -98,7 +138,7 @@
                                 <i class="fas fa-truck"></i>Tractos
                             </a>
                             <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroSemiremolques.aspx") %>'>
-                                <i class="fas fa-trailer"></i>Semiremolques
+                                <i class="fas fa-trailer"></i>Semirremolques
                             </a>
                             <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroClientes.aspx") %>'>
                                 <i class="fas fa-building"></i>Clientes
@@ -107,30 +147,11 @@
                                 <i class="fas fa-boxes"></i>Cat&#xE1;logo del Cliente
                             </a>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroPeajes.aspx") %>'>
-                                <i class="fas fa-road"></i>Peajes
-                            </a>
                             <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroPlantas.aspx") %>'>
                                 <i class="fas fa-industry"></i>Plantas
                             </a>
-                                </div>
-                             </li>
-
-                             <% } %>
-
-                     <!-- ==================== MENÚ EXPORTACIÓN (ADMIN, ADMIN SISTEMA, SUPERVISOR) ==================== -->
-                     <% if (EsAdmin || EsAdminSistema || RolUsuario == "SUPERVISOR")
-                         { %>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownExportacion" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-ship"></i>Exportación
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdownExportacion">
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/Exportacion/DashboardExportacion.aspx") %>'>
-                                <i class="fas fa-chart-line"></i>Dashboard Exportación
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/Exportacion/RegistroSeguimiento.aspx") %>'>
-                                <i class="fas fa-clipboard-list"></i>Registro Seguimiento
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroPeajes.aspx") %>'>
+                                <i class="fas fa-road"></i>Peajes
                             </a>
                         </div>
                     </li>

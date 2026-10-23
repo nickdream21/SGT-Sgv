@@ -307,6 +307,7 @@
     <Content Include="Content\paginas\AgregarIndicadores.css" />
     <Content Include="Content\paginas\AgregarOrdenViaje.css" />
     <Content Include="Content\paginas\Auditoria.css" />
+    <Content Include="Content\paginas\ReporteCargas.css" />
     <Content Include="Content\paginas\BuscarAbastecimiento.css" />
     <Content Include="Content\paginas\BuscarCPIC.css" />
     <Content Include="Content\paginas\BuscarFactura.css" />
@@ -414,6 +415,7 @@
     </Content>
     <Content Include="Views\LiquidacionesPendientes.aspx" />
     <Content Include="Views\DestinoDescarga.aspx" />
+    <Content Include="Views\ReporteCargas.aspx" />
     <Content Include="Views\ReporteGps.aspx" />
     <Content Include="Views\ListaDespachos.aspx" />
     <Content Include="Views\Login.aspx" />
@@ -483,6 +485,7 @@
     <Compile Include="Services\GpsIntegracion\TrazabilidadCargaService.cs" />
     <Compile Include="Services\GpsIntegracion\TrazabilidadDescargaService.cs" />
     <Compile Include="Services\Reportes\ReportesOrdenesViajeService.cs" />
+    <Compile Include="Services\Reportes\ReporteCargasService.cs" />
     <Compile Include="Services\Reportes\ReporteTabular.cs" />
     <Compile Include="Services\Despachos\DespachoValidaciones.cs" />
     <Compile Include="Services\Despachos\DocumentoCpicService.cs" />
@@ -818,6 +821,13 @@
     </Compile>
     <Compile Include="Views\DestinoDescarga.aspx.designer.cs">
       <DependentUpon>DestinoDescarga.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ReporteCargas.aspx.cs">
+      <DependentUpon>ReporteCargas.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\ReporteCargas.aspx.designer.cs">
+      <DependentUpon>ReporteCargas.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\ReporteGps.aspx.cs">
       <DependentUpon>ReporteGps.aspx</DependentUpon>

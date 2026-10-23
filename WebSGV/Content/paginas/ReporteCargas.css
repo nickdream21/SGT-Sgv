@@ -1,0 +1,20 @@
+/* Reporte de cargas */
+.rc-titulo { color: #1e293b; font-weight: 600; }
+.rc-titulo i { color: #2563eb; }
+
+.rc-acciones { gap: .5rem; }
+
+.rc-tarjeta {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #2563eb;
+    border-radius: .375rem;
+    padding: .65rem .9rem;
+    height: 100%;
+}
+.rc-tarjeta span { display: block; font-size: .8rem; color: #64748b; }
+.rc-tarjeta strong { display: block; font-size: 1.35rem; color: #1e293b; font-weight: 600; }
+.rc-tarjeta-destacada { border-left-color: #16a34a; background: #f0fdf4; }
+
+.rc-tabla td, .rc-tabla th { white-space: nowrap; vertical-align: middle; }
+.rc-sin-viaje { color: #64748b; font-style: italic; }
