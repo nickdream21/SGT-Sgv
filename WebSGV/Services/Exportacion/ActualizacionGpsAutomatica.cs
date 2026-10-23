@@ -63,7 +63,7 @@ namespace WebSGV.Services.Exportacion
             SeguimientoViajesService.SincronizarDespachos(hoy.AddDays(-DiasSincronizacion));
             var viajes = SeguimientoViajesService.ListarTablero(new FiltroTablero { Desde = hoy.AddDays(-DiasViajes), Hasta = hoy.AddDays(1) });
             var r = SeguimientoViajesService.ActualizarGpsAbiertos(viajes, MaximoViajes, Presupuesto);
-            UltimoResumen = $"{r.Consultados} consultados, {r.SinMovimiento} sin movimiento, {r.CamposNuevos} horas nuevas, " +
+            UltimoResumen = $"{r.Consultados} consultados, {r.SinMovimiento} sin movimiento, {r.CamposNuevos} horas nuevas, {r.Aproximados} aproximados con su grupo, " +
                             $"{r.Pendientes} pendientes, {r.Errores.Count} con error, {reloj.Elapsed.TotalSeconds:0} s";
             LogSGV.Info("Actualización automática del GPS: {Resumen}", UltimoResumen);
         }

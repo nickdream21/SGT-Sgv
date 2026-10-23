@@ -159,7 +159,7 @@ namespace WebSGV.Services.GpsIntegracion
                 string direccion = ultimo.Address;
                 DbHelper.EjecutarNonQuery(
                     @"UPDATE SeguimientoExportacion SET fhUltimaPosicion = @hora, ultimaLatitud = @lat, ultimaLongitud = @lng,
-                             ultimaVelocidad = @vel, ultimaDireccion = @dir, ultimaPlacaGps = @placa
+                             ultimaVelocidad = @vel, ultimaDireccion = @dir, ultimaPlacaGps = @placa, gpsAproximadoDe = NULL
                       WHERE idSeguimiento = @id",
                     DbHelper.Param("@id", idSeguimiento),
                     DbHelper.Param("@hora", FechaHelper.ConvertirDeUtc(TrazabilidadCargaService.Hora(ultimo))),

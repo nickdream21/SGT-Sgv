@@ -75,6 +75,9 @@ namespace WebSGV.Services.Exportacion
         public double? Latitud { get; set; }
         public double? Longitud { get; set; }
 
+        /// <summary>Tracto de la compañera del grupo cuya posición se tomó porque el GPS de este no tiene señal; null = su propio GPS.</summary>
+        public string GpsAproximadoDe { get; set; }
+
         /// <summary>Hora aproximada de llegada a la planta si va en camino a cargar o a descargar; null si no.</summary>
         public LlegadaEstimada.Estimado Llegada { get; set; }
 
@@ -114,6 +117,9 @@ namespace WebSGV.Services.Exportacion
 
         /// <summary>Viajes cuyos tractos no se movieron: solo se refrescó la hora de su posición.</summary>
         public int SinMovimiento { get; set; }
+
+        /// <summary>Viajes sin señal del GPS aproximados con su grupo (<see cref="AproximacionGrupo"/>).</summary>
+        public int Aproximados { get; set; }
 
         public List<string> Errores { get; } = new List<string>();
     }
@@ -346,7 +352,53 @@ namespace WebSGV.Services.Exportacion
                     MovimientoGps.Registrar(v.Id, MovimientoGps.Posiciones(new[] { v.Tracto1, v.Tracto2 }, foto), ahoraUtc);
             }
             r.Pendientes = abiertos.Count - r.Consultados;
+            if (foto != null) r.Aproximados = AproximarPorGrupo(foto);
             return r;
+        }
+
+        /// <summary>Días hacia atrás (por programación) en que se buscan los grupos para aproximar a los que no tienen señal.</summary>
+        private const int DiasGrupo = 20;
+
+        /// <summary>
+        /// Los viajes cuyo tracto no manda señal toman los hitos y la posición de su grupo (<see cref="AproximacionGrupo"/>).
+        /// Se hace con todos los viajes abiertos, no solo los del filtro del tablero, para que el grupo esté completo.
+        /// </summary>
+        private static int AproximarPorGrupo(Dictionary<string, OnwayDevice> foto)
+        {
+            DateTime hoy = FechaHelper.Hoy();
+            var viajes = ListarTablero(new FiltroTablero { Desde = hoy.AddDays(-DiasGrupo), Hasta = hoy.AddDays(1) });
+            DateTime? Senal(string tracto)
+            {
+                if (!foto.TryGetValue(tracto, out var d) || d.Expand?.LastLocation == null) return null;
+                var l = d.Expand.LastLocation;
+                DateTime? horaUtc = l.GeneratedTime ?? l.MessageTime;
+                return horaUtc.HasValue ? FechaHelper.ConvertirDeUtc(DateTime.SpecifyKind(horaUtc.Value, DateTimeKind.Utc)) : (DateTime?)null;
+            }
+            var aproximados = AproximacionGrupo.Calcular(viajes, Senal, FechaHelper.Ahora(), v => Texto(v.Fila, "ultimaDireccion"));
+            foreach (var a in aproximados)
+            {
+                string regla = $"Aproximado con su grupo: el GPS de {a.Tracto} no tiene señal";
+                foreach (var h in a.Hitos)
+                    DbHelper.ConsultarTablaSp("sp_SE_RegistrarHitoGps",
+                        DbHelper.Param("@idSeguimiento", a.Viaje.Id),
+                        DbHelper.Param("@columna", h.Key),
+                        DbHelper.Param("@horaGps", h.Value),
+                        DbHelper.Param("@fuenteGps", "GRUPO"),
+                        DbHelper.Param("@regla", regla));
+                if (a.Posicion != null)
+                    DbHelper.EjecutarNonQuery(@"
+                        UPDATE SeguimientoExportacion
+                        SET fhUltimaPosicion = @hora, ultimaLatitud = @lat, ultimaLongitud = @lng, ultimaVelocidad = @vel,
+                            ultimaDireccion = @dir, ultimaPlacaGps = @placa, gpsAproximadoDe = @de, fhUltimaConsultaGps = dbo.fn_AhoraPeru()
+                        WHERE idSeguimiento = @id",
+                        DbHelper.Param("@id", a.Viaje.Id), DbHelper.Param("@hora", a.Posicion.Hora),
+                        DbHelper.Param("@lat", Math.Round((decimal)a.Posicion.Latitud, 6)), DbHelper.Param("@lng", Math.Round((decimal)a.Posicion.Longitud, 6)),
+                        DbHelper.Param("@vel", a.Posicion.Velocidad.HasValue ? Math.Round((decimal)a.Posicion.Velocidad.Value, 1) : (decimal?)null),
+                        DbHelper.Param("@dir", a.Posicion.Direccion), DbHelper.Param("@placa", a.Tracto), DbHelper.Param("@de", a.Posicion.DeTracto));
+            }
+            if (aproximados.Count > 0)
+                LogSGV.Info("Aproximados con su grupo (GPS sin señal): {Viajes}", string.Join(", ", aproximados.Select(a => a.Tracto + " #" + a.Viaje.Id)));
+            return aproximados.Count;
         }
 
         /// <summary>
@@ -403,7 +455,7 @@ namespace WebSGV.Services.Exportacion
             DbHelper.EjecutarNonQuery(@"
                 UPDATE SeguimientoExportacion
                 SET fhUltimaPosicion = @hora, ultimaVelocidad = @velocidad, ultimaLatitud = @lat, ultimaLongitud = @lng,
-                    ultimaPlacaGps = @placa, fhUltimaConsultaGps = dbo.fn_AhoraPeru()
+                    ultimaPlacaGps = @placa, gpsAproximadoDe = NULL, fhUltimaConsultaGps = dbo.fn_AhoraPeru()
                 WHERE idSeguimiento = @id AND (fhUltimaPosicion IS NULL OR fhUltimaPosicion < @hora)",
                 DbHelper.Param("@id", v.Id), DbHelper.Param("@hora", FechaHelper.ConvertirDeUtc(DateTime.SpecifyKind(horaUtc.Value, DateTimeKind.Utc))),
                 DbHelper.Param("@velocidad", Math.Round((decimal)l.Speed, 1)), DbHelper.Param("@lat", Math.Round((decimal)l.Latitude, 6)),
@@ -436,9 +488,9 @@ namespace WebSGV.Services.Exportacion
             string estado = Texto(r, "estado");
             string tracto1 = Texto(r, "tracto1"), tracto2 = Texto(r, "tracto2");
             string tipoRuta = Texto(r, "tipoRuta");
-            if (RutaTercero.Es(tipoRuta)) return ResumirTercero(r, horas, estado, tipoRuta, tracto1, tracto2);
+            if (RutaTercero.Es(tipoRuta)) return ConGrupo(ResumirTercero(r, horas, estado, tipoRuta, tracto1, tracto2), r);
             var ultimo = FaseViaje.UltimoHito(horas);
-            return new ViajeResumen
+            return ConGrupo(new ViajeResumen
             {
                 Id = Convert.ToInt32(r["idSeguimiento"]),
                 Pedido = Texto(r, "cliente"),
@@ -469,7 +521,20 @@ namespace WebSGV.Services.Exportacion
                 Llegada = LlegadaEstimada.ParaViaje(horas, estado, Texto(r, "bodegaDescarga") ?? Texto(r, "bodegaEcuatoriana"),
                     Texto(r, "ultimaPlacaGps"), tracto1, tracto2, Numero(r, "ultimaLatitud"), Numero(r, "ultimaLongitud"), Fecha(r, "fhUltimaPosicion")),
                 Fila = r,
-            };
+            }, r);
+        }
+
+        /// <summary>Posición tomada de su grupo porque su GPS no tiene señal: se avisa en el tablero.</summary>
+        private static ViajeResumen ConGrupo(ViajeResumen v, DataRow r)
+        {
+            v.GpsAproximadoDe = Texto(r, "gpsAproximadoDe");
+            if (v.GpsAproximadoDe != null && v.Fase.Grupo != "cerrado")
+                (v.Avisos = v.Avisos ?? new List<AvisoViaje>()).Add(new AvisoViaje
+                {
+                    Tipo = TipoAviso.Alerta,
+                    Texto = $"GPS de {Texto(r, "ultimaPlacaGps")} sin señal: posición y horas aproximadas con su grupo (como {v.GpsAproximadoDe}).",
+                });
+            return v;
         }
 
         /// <summary>Viaje de un cliente tercero: sus hitos, fase, STATUS y avisos salen de <see cref="RutaTercero"/>.</summary>

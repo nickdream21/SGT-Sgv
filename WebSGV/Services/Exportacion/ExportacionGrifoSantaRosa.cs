@@ -301,7 +301,8 @@ namespace WebSGV.Services.Exportacion
         private static string Carro(ViajeResumen v)
         {
             string chofer = v.Chofer2 ?? v.Chofer1;
-            return $"{Tracto(v)} / {v.Carreta}" + (string.IsNullOrWhiteSpace(chofer) ? "" : " - " + chofer) + $" ({Cliente(v)})";
+            return $"{Tracto(v)} / {v.Carreta}" + (string.IsNullOrWhiteSpace(chofer) ? "" : " - " + chofer) + $" ({Cliente(v)})"
+                   + (v.GpsAproximadoDe != null ? $" [GPS sin señal, aprox. como {v.GpsAproximadoDe}]" : "");
         }
 
         private static string Tracto(ViajeResumen v) => v.Tracto2 ?? v.Tracto1;

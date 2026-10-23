@@ -86,6 +86,7 @@ namespace WebSGV.Views.Exportacion
                     ? "No hay viajes abiertos con tracto asignado en este rango."
                     : $"Se consultó el GPS de {r.Consultados} viaje(s): {r.CamposNuevos} hora(s) nueva(s)." +
                       (r.SinMovimiento > 0 ? $" {r.SinMovimiento} sin movimiento desde la última consulta (solo se actualizó su hora)." : "") +
+                      (r.Aproximados > 0 ? $" {r.Aproximados} sin señal del GPS, aproximado(s) con su grupo." : "") +
                       (r.Pendientes > 0 ? $" Faltan {r.Pendientes}: vuelve a presionar el botón para seguir." : "");
                 if (r.Errores.Count > 0) texto += " Sin respuesta del GPS: " + string.Join("; ", r.Errores.Take(3)) + ".";
                 MostrarMensaje(texto, r.Errores.Count > 0 ? "alerta" : "ok");

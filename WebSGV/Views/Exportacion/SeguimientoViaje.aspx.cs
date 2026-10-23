@@ -165,9 +165,10 @@ namespace WebSGV.Views.Exportacion
                 case "ONWAY": css = "onway"; corto = "Alerta Onway"; largo = "Alerta de geocerca de Onway"; break;
                 case "MANUAL": css = "manual"; corto = "Corregido a mano"; largo = "Corregido a mano"; break;
                 case "EXCEL": css = "excel"; corto = "Excel"; largo = "Excel STATUS GENERAL"; break;
+                case "GRUPO": css = "onway"; corto = "Aprox. por el grupo"; largo = "Aproximado con las unidades de su grupo (su GPS no tiene señal)"; break;
                 default: css = "excel"; corto = "Registro anterior"; largo = "Registro anterior (Excel o formulario antiguo)"; break;
             }
-            bool gpsDistinto = h.HoraGps.HasValue && fuente != "GPS" && fuente != "ONWAY" && (vacio || h.Hora.Value != h.HoraGps.Value);
+            bool gpsDistinto = h.HoraGps.HasValue && fuente != "GPS" && fuente != "ONWAY" && fuente != "GRUPO" && (vacio || h.Hora.Value != h.HoraGps.Value);
             bool hayPunto = h.Latitud.HasValue && h.Longitud.HasValue;
             string coords = hayPunto
                 ? h.Latitud.Value.ToString("0.000000", CultureInfo.InvariantCulture) + ", " + h.Longitud.Value.ToString("0.000000", CultureInfo.InvariantCulture)
