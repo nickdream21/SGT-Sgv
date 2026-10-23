@@ -16,5 +16,46 @@
 .rc-tarjeta strong { display: block; font-size: 1.35rem; color: #1e293b; font-weight: 600; }
 .rc-tarjeta-destacada { border-left-color: #16a34a; background: #f0fdf4; }
 
-.rc-tabla td, .rc-tabla th { white-space: nowrap; vertical-align: middle; }
+/* Vista por pedido: una fila por pedido; al abrirla, sus unidades */
+.rc-cabecera, .rc-resumen {
+    display: flex;
+    align-items: center;
+    padding: .55rem 1rem;
+    gap: .75rem;
+}
+.rc-cabecera {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: .8rem;
+    font-weight: 600;
+    border-bottom: 1px solid #e2e8f0;
+}
+.rc-grupo { border-bottom: 1px solid #e2e8f0; }
+.rc-resumen { cursor: pointer; list-style: none; }
+.rc-resumen::-webkit-details-marker { display: none; }
+.rc-resumen:hover { background: #f8fafc; }
+.rc-grupo[open] > .rc-resumen { background: #eff6ff; border-bottom: 1px solid #dbeafe; }
+
+.rc-flecha { color: #94a3b8; font-size: .75rem; margin-right: .5rem; transition: transform .15s; }
+.rc-grupo[open] .rc-flecha { transform: rotate(90deg); color: #2563eb; }
+
+.rc-c-pedido { flex: 0 0 9.5rem; font-weight: 600; color: #1e293b; }
+.rc-c-fecha { flex: 0 0 6rem; }
+.rc-c-cliente { flex: 1 1 8rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc-c-factura { flex: 0 0 8.5rem; }
+.rc-c-num { flex: 0 0 5.5rem; text-align: right; }
+.rc-c-valor { flex: 0 0 9rem; }
+.rc-c-descarga { flex: 0 0 10rem; color: #475569; font-size: .85rem; }
+
+.rc-detalle { font-size: .875rem; background: #fff; }
+.rc-detalle th { background: #fafafa; color: #64748b; font-weight: 600; border-top: 0; }
+.rc-detalle td, .rc-detalle th { white-space: nowrap; vertical-align: middle; padding-left: 1rem; }
 .rc-sin-viaje { color: #64748b; font-style: italic; }
+
+/* Pantallas angostas: la fila del pedido pasa a dos líneas */
+@media (max-width: 991.98px) {
+    .rc-resumen { flex-wrap: wrap; row-gap: .25rem; }
+    .rc-c-pedido { flex-basis: 100%; }
+    .rc-c-fecha, .rc-c-cliente, .rc-c-factura, .rc-c-valor, .rc-c-descarga { flex: 0 0 auto; }
+    .rc-c-num { flex: 0 0 auto; text-align: left; }
+}

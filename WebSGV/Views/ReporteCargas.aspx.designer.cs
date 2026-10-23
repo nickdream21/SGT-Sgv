@@ -32,7 +32,7 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Literal litKg;
         protected global::System.Web.UI.WebControls.Literal litFacturado;
         protected global::System.Web.UI.WebControls.Literal litAvisos;
-        protected global::System.Web.UI.WebControls.GridView gvCargas;
+        protected global::System.Web.UI.WebControls.Literal litGrupos;
         protected global::System.Web.UI.WebControls.Literal litPie;
     }
 }

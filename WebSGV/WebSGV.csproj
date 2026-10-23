@@ -374,6 +374,7 @@
     <Content Include="Scripts\paginas\RegistroSemiremolques.js" />
     <Content Include="Scripts\paginas\RegistroTractos.js" />
     <Content Include="Scripts\paginas\ReportesOrdenesViaje.js" />
+    <Content Include="Scripts\paginas\ReporteCargas.js" />
     <Content Include="Scripts\paginas\ReporteGps.js" />
     <Content Include="Scripts\paginas\SiteMaster-2.js" />
     <Content Include="Scripts\paginas\SiteMaster.js" />

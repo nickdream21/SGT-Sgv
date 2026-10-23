@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Text;
 using System.Globalization;
 using System.Web;
 using System.Web.UI.WebControls;
@@ -122,8 +124,7 @@ namespace WebSGV.Views
                 litPie.Text = $"{tot.SinViajeChofer} de {tot.Despachos} despacho(s) sin viaje del chofer (cargas registradas con los documentos del correo, " +
                               "fuera de la liquidación). Excel: incluye una hoja con cada producto y lote.";
 
-                gvCargas.DataSource = dt;
-                gvCargas.DataBind();
+                litGrupos.Text = HtmlGrupos(ReporteCargasService.AgruparPorPedido(dt));
                 pnlResultados.Visible = true;
             }
             catch (Exception ex)
@@ -168,12 +169,51 @@ namespace WebSGV.Views
             }
         }
 
-        /// <summary>N° del viaje del chofer, o "Sin viaje del chofer" en gris para las cargas históricas.</summary>
-        protected string ViajeChofer(object item)
+        /// <summary>
+        /// Un &lt;details&gt; por pedido: la fila resumen (siempre visible) y, al abrirlo, la tabla de sus
+        /// unidades. Así el mes entra en una pantalla (un pedido por fila en vez de una unidad por fila).
+        /// </summary>
+        private static string HtmlGrupos(List<ReporteCargasService.GrupoPedido> grupos)
         {
-            var fila = ((DataRowView)item).Row;
-            string texto = HttpUtility.HtmlEncode(ReporteCargasService.ViajeChofer(fila));
-            return fila["ViajeChofer"] == DBNull.Value ? $"<span class=\"rc-sin-viaje\">{texto}</span>" : texto;
+            if (grupos.Count == 0)
+                return "<div class=\"text-center text-muted p-4\">No hay cargas con esos filtros.</div>";
+
+            Func<object, string> h = v => HttpUtility.HtmlEncode(Convert.ToString(v));
+            Func<object, string> n0 = v => v == null || v == DBNull.Value ? "" : Convert.ToDecimal(v).ToString("N0", CulturaPe);
+            var sb = new StringBuilder();
+            foreach (var g in grupos)
+            {
+                string fecha = g.Desde == g.Hasta ? g.Desde.ToString("dd/MM") : $"{g.Desde:dd/MM}–{g.Hasta:dd/MM}";
+                string valor = g.ValorFactura.HasValue
+                    ? (g.Moneda == "USD" ? "US$ " : "S/ ") + g.ValorFactura.Value.ToString("N2", CulturaPe) : "";
+                sb.Append("<details class=\"rc-grupo\"><summary class=\"rc-resumen\">")
+                  .Append($"<span class=\"rc-c-pedido\"><i class=\"fas fa-chevron-right rc-flecha\"></i>{h(g.Titulo)}</span>")
+                  .Append($"<span class=\"rc-c-fecha\">{fecha}</span>")
+                  .Append($"<span class=\"rc-c-cliente\">{h(g.Cliente)}</span>")
+                  .Append($"<span class=\"rc-c-factura\">{h(g.Factura)}</span>")
+                  .Append($"<span class=\"rc-c-num\"><span class=\"d-lg-none text-muted\">Unidades </span>{g.Filas.Count}</span>")
+                  .Append($"<span class=\"rc-c-num\"><span class=\"d-lg-none text-muted\">Bolsas </span>{n0(g.Bolsas)}</span>")
+                  .Append($"<span class=\"rc-c-num\"><span class=\"d-lg-none text-muted\">Kg </span>{n0(g.KgBruto)}</span>")
+                  .Append($"<span class=\"rc-c-num rc-c-valor\">{h(valor)}</span>")
+                  .Append($"<span class=\"rc-c-descarga\">{h(g.Descargas)}</span>")
+                  .Append("</summary><div class=\"table-responsive\"><table class=\"table table-sm mb-0 rc-detalle\"><thead><tr>")
+                  .Append("<th>Fecha</th><th>Gu&#xED;a</th><th>Conductor</th><th>Tracto</th><th>Carreta</th>")
+                  .Append("<th class=\"text-right\">Bolsas</th><th class=\"text-right\">Kg bruto</th><th>Descarga</th><th>Viaje del chofer</th></tr></thead><tbody>");
+                foreach (DataRow r in g.Filas)
+                {
+                    string viaje = h(ReporteCargasService.ViajeChofer(r));
+                    if (r["ViajeChofer"] == DBNull.Value) viaje = $"<span class=\"rc-sin-viaje\">{viaje}</span>";
+                    sb.Append("<tr>")
+                      .Append($"<td>{Convert.ToDateTime(r["Fecha"]):dd/MM/yyyy}</td>")
+                      .Append($"<td>{(r["Guia"] == DBNull.Value ? "<span class=\"text-muted\">sin guía</span>" : h(r["Guia"]))}</td>")
+                      .Append($"<td>{h(r["Conductor"])}</td><td>{h(r["Tracto"])}</td><td>{h(r["Carreta"])}</td>")
+                      .Append($"<td class=\"text-right\">{n0(r["Bolsas"])}</td>")
+                      .Append($"<td class=\"text-right\">{(r["KgBruto"] == DBNull.Value ? "" : Convert.ToDecimal(r["KgBruto"]).ToString("N1", CulturaPe))}</td>")
+                      .Append($"<td>{h(r["Descarga"])}</td><td>{viaje}</td></tr>");
+                }
+                sb.Append("</tbody></table></div></details>");
+            }
+            return sb.ToString();
         }
 
         private void MostrarMensaje(string mensaje)

@@ -70,29 +70,26 @@
             <asp:Literal ID="litAvisos" runat="server" />
 
             <div class="card shadow-sm mb-4">
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <asp:GridView ID="gvCargas" runat="server" AutoGenerateColumns="false" CssClass="table table-sm table-hover mb-0 rc-tabla"
-                            GridLines="None" EmptyDataText="No hay cargas con esos filtros." EmptyDataRowStyle-CssClass="text-center text-muted p-4">
-                            <HeaderStyle CssClass="thead-light" />
-                            <Columns>
-                                <asp:BoundField DataField="Fecha" HeaderText="Fecha" DataFormatString="{0:dd/MM/yyyy}" />
-                                <asp:BoundField DataField="Cliente" HeaderText="Cliente" />
-                                <asp:BoundField DataField="Pedido" HeaderText="Pedido" ItemStyle-CssClass="font-weight-bold" />
-                                <asp:BoundField DataField="Factura" HeaderText="Factura" />
-                                <asp:BoundField DataField="Guia" HeaderText="Gu&#xED;a" />
-                                <asp:BoundField DataField="Conductor" HeaderText="Conductor" />
-                                <asp:BoundField DataField="Tracto" HeaderText="Tracto" />
-                                <asp:BoundField DataField="Carreta" HeaderText="Carreta" />
-                                <asp:BoundField DataField="Bolsas" HeaderText="Bolsas" DataFormatString="{0:N0}" ItemStyle-CssClass="text-right" HeaderStyle-CssClass="text-right" />
-                                <asp:BoundField DataField="KgBruto" HeaderText="Kg bruto" DataFormatString="{0:N1}" ItemStyle-CssClass="text-right" HeaderStyle-CssClass="text-right" />
-                                <asp:BoundField DataField="Descarga" HeaderText="Descarga" />
-                                <asp:TemplateField HeaderText="Viaje del chofer">
-                                    <ItemTemplate><%# ViajeChofer(Container.DataItem) %></ItemTemplate>
-                                </asp:TemplateField>
-                            </Columns>
-                        </asp:GridView>
+                <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap rc-acciones">
+                    <h5 class="mb-0"><i class="fas fa-layer-group mr-2"></i>Por pedido <small class="text-muted">(clic en un pedido para ver sus unidades)</small></h5>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="rcExpandir">Expandir todo</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="rcContraer">Contraer todo</button>
                     </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="rc-cabecera d-none d-lg-flex">
+                        <span class="rc-c-pedido">Pedido</span>
+                        <span class="rc-c-fecha">Fecha</span>
+                        <span class="rc-c-cliente">Cliente</span>
+                        <span class="rc-c-factura">Factura</span>
+                        <span class="rc-c-num">Unidades</span>
+                        <span class="rc-c-num">Bolsas</span>
+                        <span class="rc-c-num">Kg bruto</span>
+                        <span class="rc-c-num rc-c-valor">Valor factura</span>
+                        <span class="rc-c-descarga">Descarga</span>
+                    </div>
+                    <asp:Literal ID="litGrupos" runat="server" />
                 </div>
                 <div class="card-footer bg-white small text-muted">
                     <asp:Literal ID="litPie" runat="server" />
@@ -101,4 +98,5 @@
         </asp:Panel>
 
     </div>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/ReporteCargas.js") %>"></script>
 </asp:Content>

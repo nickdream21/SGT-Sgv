@@ -56,7 +56,7 @@ namespace WebSGV.Services.Reportes
                        NULLIF(LTRIM(RTRIM(d.numeroPedido)), '') AS Pedido, f.numeroFactura AS Factura, f.moneda AS Moneda,
                        f.valorTotal AS ValorFactura, d.idFactura, d.guiaRemitente AS Guia, d.numeroTransporte AS Transporte,
                        LTRIM(RTRIM(LTRIM(RTRIM(co.nombre)) + ' ' + LTRIM(RTRIM(co.apPaterno)) + ' ' + ISNULL(LTRIM(RTRIM(co.apMaterno)), ''))) AS Conductor,
-                       t.placaTracto AS Tracto, ca.placaCarreta AS Carreta,
+                       t.placaTracto AS Tracto, ca.placaCarreta AS Carreta, CAST(ISNULL(d.esExportacion, 0) AS BIT) AS EsExportacion,
                        c.Bolsas, c.KgBruto, c.KgNeto, c.Productos,
                        s.idSeguimiento, s.estado AS EstadoSeguimiento, s.bodegaDescarga AS Descarga,
                        vp.numeroViajeProgreso AS ViajeChofer
@@ -117,10 +117,59 @@ namespace WebSGV.Services.Reportes
                 KgBruto = filas.Sum(r => Dec(r["KgBruto"])),
                 FacturadoUsd = facturas.Where(r => Convert.ToString(r["Moneda"]) == "USD").Sum(r => Dec(r["ValorFactura"])),
                 FacturadoPen = facturas.Where(r => Convert.ToString(r["Moneda"]) != "USD").Sum(r => Dec(r["ValorFactura"])),
-                SinDocumentos = filas.Count(r => r["Guia"] == DBNull.Value),
+                // Solo exportación espera la guía del correo; los terceros (Crisar) no la reciben.
+                SinDocumentos = filas.Count(r => r["Guia"] == DBNull.Value && Convert.ToBoolean(r["EsExportacion"])),
                 SinViajeChofer = filas.Count(r => r["ViajeChofer"] == DBNull.Value),
             };
         }
+
+        /// <summary>Despachos de un mismo pedido (o, sin pedido, del mismo cliente y día), para la vista agrupada.</summary>
+        public sealed class GrupoPedido
+        {
+            public string Titulo { get; set; }
+            public string Cliente { get; set; }
+            public DateTime Desde { get; set; }
+            public DateTime Hasta { get; set; }
+            public string Factura { get; set; }
+            public string Moneda { get; set; }
+            public decimal? ValorFactura { get; set; }
+            public decimal Bolsas { get; set; }
+            public decimal KgBruto { get; set; }
+            /// <summary>"JAVE 3 · INBALNOR 2".</summary>
+            public string Descargas { get; set; }
+            public int SinViajeChofer { get; set; }
+            public List<DataRow> Filas { get; set; }
+        }
+
+        public static List<GrupoPedido> AgruparPorPedido(DataTable dt) =>
+            dt.Rows.Cast<DataRow>()
+                .GroupBy(r => r["Pedido"] != DBNull.Value
+                    ? Convert.ToString(r["Pedido"])
+                    : $"{r["Cliente"]}|{Convert.ToDateTime(r["Fecha"]):yyyyMMdd}")
+                .Select(g =>
+                {
+                    var filas = g.ToList();
+                    var primera = filas[0];
+                    return new GrupoPedido
+                    {
+                        Titulo = primera["Pedido"] != DBNull.Value ? Convert.ToString(primera["Pedido"]) : "Sin pedido",
+                        Cliente = Convert.ToString(primera["Cliente"]),
+                        Desde = filas.Min(r => Convert.ToDateTime(r["Fecha"])),
+                        Hasta = filas.Max(r => Convert.ToDateTime(r["Fecha"])),
+                        Factura = filas.Select(r => Convert.ToString(r["Factura"])).FirstOrDefault(s => s != ""),
+                        Moneda = filas.Select(r => Convert.ToString(r["Moneda"])).FirstOrDefault(s => s != ""),
+                        ValorFactura = filas.Where(r => r["ValorFactura"] != DBNull.Value).Select(r => (decimal?)Dec(r["ValorFactura"])).FirstOrDefault(),
+                        Bolsas = filas.Sum(r => Dec(r["Bolsas"])),
+                        KgBruto = filas.Sum(r => Dec(r["KgBruto"])),
+                        Descargas = string.Join(" · ", filas.Where(r => r["Descarga"] != DBNull.Value)
+                            .GroupBy(r => Convert.ToString(r["Descarga"])).OrderByDescending(x => x.Count())
+                            .Select(x => $"{x.Key} {x.Count()}")),
+                        SinViajeChofer = filas.Count(r => r["ViajeChofer"] == DBNull.Value),
+                        Filas = filas
+                    };
+                })
+                .OrderBy(x => x.Desde).ThenBy(x => x.Titulo)
+                .ToList();
 
         private static decimal Dec(object v) => v == null || v == DBNull.Value ? 0m : Convert.ToDecimal(v);
 
