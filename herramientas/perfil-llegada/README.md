@@ -39,4 +39,31 @@ cuando cambie la ruta.
 - No estima en base, en la cola de Trujillo, en el Complex ni esperando en TCI (depende de la aduana, no del
   camino), ni si la unidad está a más de 8 km del camino.
 - Si la posición es vieja (equipo sin señal), la hora sale desde esa posición y el reporte lo dice ("última señal").
-- Clientes terceros (Crisar a Cartavio, Novopan, Polinplast): todavía no.
+- Clientes terceros: Crisar a La Troncal sí (abajo); Crisar a Cartavio, Novopan y Polinplast todavía no.
+
+## Crisar a La Troncal (reporte del grifo Santa Rosa)
+
+Crisar descarga azúcar en La Troncal, más al norte que Jave e Inbalnor y con otro camino, y casi no está en el
+seguimiento desde atrás. `Generar-PerfilCrisar.ps1` saca los viajes de los **Word de programación** (secciones de
+Crisar: tracto y día; por defecto `docs\DOCUMENTACION\2026`) y en el historial del GPS de cada tracto busca las
+estadías en La Troncal y, alrededor de cada una, la salida de TCI, el parqueo de Naranjal, el grifo Santa Rosa y
+la base. Agrega a `PerfilesLlegada.json`, **sin tocar las demás rutas**:
+
+| Ruta / dato | Desde → hasta |
+|---|---|
+| `DESCARGA_LA_TRONCAL` | salida de TCI → llegada a La Troncal (con la noche en el parqueo de Naranjal) |
+| `RETORNO_GRIFO_TRONCAL` | salida de La Troncal → primera parada en el grifo Santa Rosa |
+| `duraciones["DESCARGA\|LA TRONCAL"]` | minutos dentro de La Troncal (llegada → salida) |
+
+Deja el informe en `crisar-la-troncal.md` (tiempos de cada tramo y cada viaje). Con los Word del 02/09 al 21/10/2026:
+86 descargas; TCI → La Troncal 15,9 h (mediana; pasan la noche en Naranjal 10 h y entran a las 06–12 h),
+descarga 6,0 h (4,1–7,1), La Troncal → grifo 4,0 h (3,4–4,5); **86 de 86 paran en el grifo**.
+
+```powershell
+msbuild WebSGV.sln ...                                     # necesita WebSGV\bin\WebSGV.dll
+.\herramientas\perfil-llegada\Generar-PerfilCrisar.ps1     # -Word <carpeta> -MaxLlamadas 1500
+msbuild WebSGV.sln ...                                     # el JSON entra en la DLL; luego publicar
+```
+
+Si se regenera `PerfilesLlegada.json` con `Generar-Perfil.ps1`, correr después `Generar-PerfilCrisar.ps1`
+(el primero escribe el archivo entero y borraría las rutas de Crisar).

@@ -265,5 +265,47 @@ namespace WebSGV.Tests
             Assert.Null(LlegadaEstimada.ParaRetornoCrisar(Horas("fhLlegadaPlantaEcuador"), "EN_CURSO", "BNH712", "CBV-761", "BNH-712",
                 NaranjalLat, NaranjalLng, Ahora));
         }
+
+        /// <summary>
+        /// Crisar yendo a La Troncal o descargando ahí: la hora al grifo sale de sus viajes anteriores (PerfilCrisar,
+        /// GPS de septiembre y octubre): de Balao a La Troncal pasan la noche en el parqueo de Naranjal y entran
+        /// temprano, descargan ~6 h y tardan ~3,6 h hasta el grifo.
+        /// </summary>
+        [Fact]
+        public void Crisar_YendoODescargandoEnLaTroncal_TieneHoraAlGrifo()
+        {
+            var tarde = new DateTime(2026, 10, 22, 17, 0, 0);
+            ViajeResumen Crisar(int id, double lat, double lng, params string[] columnas)
+            {
+                var v = Viaje(id, "CRISAR", columnas); v.Planta = "GUAYAQUIL";
+                v.Latitud = lat; v.Longitud = lng; v.UltimaPosicion = tarde.AddMinutes(-5);
+                return v;
+            }
+            var yendo = Crisar(1, -2.904, -79.706, "fhSalidaBase2");       // Balao, camino al parqueo
+            var adentro = Crisar(2, -2.44208, -79.35272, "fhSalidaBase2");  // dentro de La Troncal
+            var u = ExportacionGrifoSantaRosa.Unidades(new[] { yendo, adentro }, tarde);
+
+            var d = u.Single(x => x.Viaje.Id == 2);
+            Assert.Equal(ExportacionGrifoSantaRosa.Situacion.Descargando, d.Situacion);
+            Assert.NotNull(d.AlGrifo);
+            Assert.InRange((d.AlGrifo.Llegada - tarde).TotalHours, 3, 14);
+
+            var y = u.Single(x => x.Viaje.Id == 1);
+            Assert.Equal(ExportacionGrifoSantaRosa.Situacion.VanADescargar, y.Situacion);
+            Assert.NotNull(y.AlGrifo);
+            // Llega a Naranjal de noche, entra a La Troncal temprano: baja al grifo al día siguiente por la tarde.
+            Assert.Equal(tarde.Date.AddDays(1), y.AlGrifo.Llegada.Date);
+            Assert.InRange(y.AlGrifo.Llegada.Hour, 12, 23);
+        }
+
+        [Fact]
+        public void Crisar_SalioDeLaTroncal_UsaSuPropioCamino()
+        {
+            // Recién salió de La Troncal (a ~10 km), lejos del camino de Jave e Inbalnor.
+            var e = LlegadaEstimada.ParaRetornoCrisar(Horas("fhLlegadaPlantaEcuador", "fhSalida"), "EN_CURSO", "BNH712", "CBV-761", "BNH-712",
+                -2.46615, -79.42965, Ahora);
+            Assert.Equal(LlegadaEstimada.DestinoGrifo, e?.Destino);
+            Assert.InRange(e.KmRestantes, 100, 160);
+        }
     }
 }

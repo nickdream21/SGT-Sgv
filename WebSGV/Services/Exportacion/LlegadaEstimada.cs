@@ -28,6 +28,11 @@ namespace WebSGV.Services.Exportacion
         public const string RetornoGrifo = "RETORNO_GRIFO";
         public const string DestinoGrifo = "GRIFO SANTA ROSA";
 
+        /// <summary>Crisar: salida de TCI → llegada a La Troncal, y salida de La Troncal → grifo Santa Rosa (herramientas/perfil-llegada/PerfilCrisar).</summary>
+        public const string DescargaLaTroncal = "DESCARGA_LA_TRONCAL";
+        public const string RetornoGrifoTroncal = "RETORNO_GRIFO_TRONCAL";
+        public const string DestinoLaTroncal = "LA TRONCAL";
+
         /// <summary>Una posición más lejos que esto del camino no se estima (otro camino, taller, desvío).</summary>
         public const double MaximoFueraDeRutaKm = 8;
 
@@ -183,8 +188,25 @@ namespace WebSGV.Services.Exportacion
             string e = (estado ?? "").Trim().ToUpperInvariant();
             if (e == "FINALIZADO" || e == "CANCELADO" || !lat.HasValue || !lng.HasValue || !horaPosicion.HasValue) return null;
             if (!Hay("fhSalida") || Hay("fhLlegadaBaseFinal") || !MismaPlaca(placaGps, tracto2 ?? tracto1)) return null;
+            // Desde La Troncal el camino al grifo es otro (más al norte que Jave e Inbalnor): su propio perfil primero.
+            if (!EnElGrifo(lat.Value, lng.Value))
+            {
+                var desdeTroncal = Estimar(RetornoGrifoTroncal, lat.Value, lng.Value, horaPosicion.Value);
+                if (desdeTroncal != null && desdeTroncal.KmRestantes >= 1) return desdeTroncal;
+            }
             return ParaRetorno(false, lat.Value, lng.Value, horaPosicion.Value);
         }
+
+        /// <summary>
+        /// Crisar todavía yendo a descargar a La Troncal: la llegada por su posición en el camino TCI → La Troncal
+        /// (perfil <see cref="DescargaLaTroncal"/>, con la noche en el parqueo de Naranjal). Null si está fuera del camino.
+        /// </summary>
+        public static Estimado ALaTroncal(double lat, double lng, DateTime horaPosicion) =>
+            Estimar(DescargaLaTroncal, lat, lng, horaPosicion);
+
+        /// <summary>Llegada al grifo saliendo de La Troncal a esa hora (perfil <see cref="RetornoGrifoTroncal"/>).</summary>
+        public static Estimado AlGrifoDesdeLaTroncal(DateTime salidaDesde, DateTime salida, DateTime salidaHasta, DateTime horaReferencia) =>
+            DesdeElInicio(RetornoGrifoTroncal, salidaDesde, salida, salidaHasta, horaReferencia);
 
         /// <summary>
         /// Llegada al grifo de una unidad que todavía no sale de la planta de descarga: a la salida estimada de la
@@ -317,14 +339,34 @@ namespace WebSGV.Services.Exportacion
             return (archivo?.rutas ?? new List<Ruta>()).ToDictionary(r => r.Codigo, StringComparer.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Minutos que duró una etapa en los viajes del historial del GPS ("DESCARGA|LA TRONCAL": dentro de La Troncal),
+        /// ordenados; null si el perfil no la tiene. Sale de herramientas/perfil-llegada (Crisar no está en el seguimiento
+        /// desde tan atrás como para sacarla de la BD).
+        /// </summary>
+        public static List<double> DuracionesHistoricas(string clave) =>
+            clave != null && duracionesHistoricas.Value.TryGetValue(clave, out var l) ? l : null;
+
+        private static readonly Lazy<Dictionary<string, List<double>>> duracionesHistoricas = new Lazy<Dictionary<string, List<double>>>(() =>
+        {
+            var archivo = JsonConvert.DeserializeAnonymousType(LeerRecurso() ?? "{}", new { duraciones = new Dictionary<string, List<double>>() });
+            return new Dictionary<string, List<double>>(archivo?.duraciones ?? new Dictionary<string, List<double>>(), StringComparer.OrdinalIgnoreCase);
+        });
+
         private static Dictionary<string, Ruta> CargarPerfiles()
+        {
+            string json = LeerRecurso();
+            return json == null ? new Dictionary<string, Ruta>(StringComparer.OrdinalIgnoreCase) : LeerPerfiles(json);
+        }
+
+        private static string LeerRecurso()
         {
             var asm = Assembly.GetExecutingAssembly();
             string nombre = asm.GetManifestResourceNames().FirstOrDefault(n => n.EndsWith("PerfilesLlegada.json", StringComparison.OrdinalIgnoreCase));
-            if (nombre == null) return new Dictionary<string, Ruta>(StringComparer.OrdinalIgnoreCase);
+            if (nombre == null) return null;
             using (var s = asm.GetManifestResourceStream(nombre))
             using (var r = new StreamReader(s))
-                return LeerPerfiles(r.ReadToEnd());
+                return r.ReadToEnd();
         }
     }
 }

@@ -103,6 +103,9 @@ namespace WebSGV.Services.Exportacion
                     {
                         if (ahora - enPlanta.Value < SinAvanzar) res.Add(new Unidad { Viaje = v, Situacion = Situacion.Descargando, Desde = enPlanta });
                     }
+                    // Crisar: el GPS lo ve dentro de La Troncal aunque todavía no se marque la llegada.
+                    else if (crisar && EnLaTroncal(v) && v.UltimaPosicion.HasValue && ahora - v.UltimaPosicion.Value < SinAvanzar)
+                        res.Add(new Unidad { Viaje = v, Situacion = Situacion.Descargando });
                     // Ya en Ecuador (cruzó o pasó por TCI) camino a descargar: bajan al grifo después.
                     else if (enEcuador.HasValue && ahora - enEcuador.Value < SinAvanzar)
                         res.Add(new Unidad { Viaje = v, Situacion = Situacion.VanADescargar, Desde = enEcuador });
@@ -129,7 +132,9 @@ namespace WebSGV.Services.Exportacion
         private static LlegadaEstimada.Estimado EstimarAlGrifo(Unidad u, DateTime ahora, IDictionary<string, List<double>> duraciones)
         {
             if (u.Situacion == Situacion.EnCamino) return u.Viaje.Llegada;
-            if (duraciones == null || (u.Situacion != Situacion.Descargando && u.Situacion != Situacion.VanADescargar)) return null;
+            if (u.Situacion != Situacion.Descargando && u.Situacion != Situacion.VanADescargar) return null;
+            if (string.Equals(u.Viaje.TipoRuta, "CRISAR", StringComparison.OrdinalIgnoreCase)) return EstimarCrisar(u, ahora);
+            if (duraciones == null) return null;
             var v = u.Viaje;
             var espera = DuracionesDe(duraciones, EtapaEspera, v);
             var descarga = DuracionesDe(duraciones, EtapaDescarga, v);
@@ -169,6 +174,42 @@ namespace WebSGV.Services.Exportacion
             }
             return LlegadaEstimada.AlGrifoTrasDescargar(salidaPlanta[0], salidaPlanta[1], salidaPlanta[2], referencia);
         }
+
+        /// <summary>Lo que duró la descarga en La Troncal en los viajes de Crisar del historial del GPS (de llegada a salida).</summary>
+        public const string ClaveDescargaLaTroncal = "DESCARGA|LA TRONCAL";
+
+        /// <summary>Hora a la que suelen entrar a La Troncal (mediana de los viajes de Crisar): para el que está adentro sin llegada marcada.</summary>
+        private static readonly TimeSpan EntradaTipicaLaTroncal = TimeSpan.FromHours(9);
+
+        /// <summary>
+        /// Crisar descarga en La Troncal, más al norte que Jave e Inbalnor, con su propio camino (aprendido del GPS de
+        /// sus viajes anteriores, herramientas/perfil-llegada/PerfilCrisar): yendo → su llegada a La Troncal por la
+        /// posición (con la noche en el parqueo de Naranjal) + la descarga + La Troncal → grifo; descargando → lo
+        /// que le falta de la descarga + La Troncal → grifo.
+        /// </summary>
+        private static LlegadaEstimada.Estimado EstimarCrisar(Unidad u, DateTime ahora,
+            IList<double> estadias = null)
+        {
+            var v = u.Viaje;
+            estadias = estadias ?? LlegadaEstimada.DuracionesHistoricas(ClaveDescargaLaTroncal);
+            if (estadias == null) return null;
+            if (u.Situacion == Situacion.Descargando)
+            {
+                // Sin la llegada marcada: entran temprano (81 de 86 entre las 06:00 y las 12:00, GPS de septiembre y octubre).
+                DateTime entrada = u.Desde ?? (ahora.TimeOfDay > EntradaTipicaLaTroncal ? ahora.Date + EntradaTipicaLaTroncal : ahora);
+                double lleva = Math.Max(0, (ahora - entrada).TotalMinutes);
+                var salida = Mas(new[] { ahora, ahora, ahora }, DuracionRestante(estadias, lleva));
+                return LlegadaEstimada.AlGrifoDesdeLaTroncal(salida[0], salida[1], salida[2], ahora);
+            }
+            if (!v.Latitud.HasValue || !v.Longitud.HasValue || !v.UltimaPosicion.HasValue) return null;
+            var llega = LlegadaEstimada.ALaTroncal(v.Latitud.Value, v.Longitud.Value, v.UltimaPosicion.Value);
+            if (llega == null) return null;
+            var sale = Mas(new[] { llega.Desde, llega.Llegada, llega.Hasta }, DuracionRestante(estadias, 0));
+            return LlegadaEstimada.AlGrifoDesdeLaTroncal(sale[0], sale[1], sale[2], llega.HoraPosicion);
+        }
+
+        private static bool EnLaTroncal(ViajeResumen v) =>
+            v.Latitud.HasValue && v.Longitud.HasValue && GpsIntegracion.GeocercasTerceros.CrisarLaTroncal.Contiene(v.Latitud.Value, v.Longitud.Value);
 
         /// <summary>Texto para enviar al grifo (WhatsApp).</summary>
         public static string Texto(IList<Unidad> unidades, DateTime ahora)
