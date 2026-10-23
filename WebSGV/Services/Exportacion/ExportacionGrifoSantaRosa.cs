@@ -106,6 +106,10 @@ namespace WebSGV.Services.Exportacion
                     // Ya en Ecuador (cruzó o pasó por TCI) camino a descargar: bajan al grifo después.
                     else if (enEcuador.HasValue && ahora - enEcuador.Value < SinAvanzar)
                         res.Add(new Unidad { Viaje = v, Situacion = Situacion.VanADescargar, Desde = enEcuador });
+                    // Sin ninguna hora de la frontera (Crisar no las marca todas) pero el GPS ya lo ve en Ecuador.
+                    else if (v.Latitud.HasValue && v.Longitud.HasValue && EnEcuador(v.Latitud.Value, v.Longitud.Value)
+                             && v.UltimaPosicion.HasValue && ahora - v.UltimaPosicion.Value < SinAvanzar)
+                        res.Add(new Unidad { Viaje = v, Situacion = Situacion.VanADescargar, Desde = v.UltimaPosicion });
                 }
             }
             foreach (var u in res)
@@ -290,6 +294,9 @@ namespace WebSGV.Services.Exportacion
             Col("UBICACIÓN AL", TipoColumnaReporte.Codigo, 1f, u => u.Viaje.UltimaPosicion is DateTime t ? F(t, "dd/MM HH:mm") : null);
             return r;
         }
+
+        /// <summary>Al norte de Huaquillas (-3.48): la frontera con TCI y Aguas Verdes queda del lado peruano.</summary>
+        private static bool EnEcuador(double lat, double lng) => lat >= -3.46 && lng >= -80.3;
 
         private static string Carro(ViajeResumen v)
         {

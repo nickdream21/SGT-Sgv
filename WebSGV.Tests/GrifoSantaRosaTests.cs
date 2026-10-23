@@ -106,6 +106,18 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void Unidades_SinHorasDeFrontera_EntranSiElGpsLasVeEnEcuador()
+        {
+            var troncal = Viaje(1, "CRISAR", "fhSalidaBase2"); troncal.Latitud = -2.907; troncal.Longitud = -79.707; troncal.UltimaPosicion = Ahora.AddMinutes(-5);
+            var enTci = Viaje(2, "CRISAR", "fhSalidaBase2"); enTci.Latitud = -3.536; enTci.Longitud = -80.184; enTci.UltimaPosicion = Ahora.AddMinutes(-5);
+            var perdido = Viaje(3, "CRISAR", "fhSalidaBase2"); perdido.Latitud = -2.907; perdido.Longitud = -79.707; perdido.UltimaPosicion = Ahora.AddDays(-6);
+
+            var u = ExportacionGrifoSantaRosa.Unidades(new[] { troncal, enTci, perdido }, Ahora);
+            Assert.Equal(new[] { 1 }, u.Select(x => x.Viaje.Id));
+            Assert.Equal(ExportacionGrifoSantaRosa.Situacion.VanADescargar, u[0].Situacion);
+        }
+
+        [Fact]
         public void Texto_ParaEnviarAlGrifo()
         {
             var a = Viaje(1, null, "fhSalida"); a.Llegada = AlGrifo(3); a.Chofer2 = "JUAN PEREZ"; a.Lugar = "NARANJAL"; a.Velocidad = 70;
