@@ -15,6 +15,24 @@ Hora de llegada a La Troncal: 06–09 h: 47, 09–12 h: 34, 12–15 h: 5
 Perfil DESCARGA_LA_TRONCAL: 78 recorridos, 191 km, 3042 muestras
 Perfil RETORNO_GRIFO_TRONCAL: 86 recorridos, 146 km, 2580 muestras
 
+## Cola en La Troncal (descargan una tras otra)
+
+- 192 de 205 pares de unidades del mismo día salieron en el orden en que llegaron (94 %).
+- Ritmo (una cada; por día): 16 viajes: mediana 1.0 h (p25–p75 0.6–1.3, p10–p90 0.5–1.6).
+
+| Turno (orden de llegada en el día) | Días | Sale después de la 1.ª llegada del día: mediana | p25–p75 |
+|---|---|---|---|
+| 1 | 16 | 3.4 h | 2.6–4.0 h |
+| 2 | 16 | 5.2 h | 3.7–6.7 h |
+| 3 | 16 | 6.1 h | 3.7–6.7 h |
+| 4 | 16 | 7.2 h | 5.2–7.7 h |
+| 5 | 14 | 7.4 h | 6.9–8.8 h |
+| 6 | 2 | 10.0 h | 9.0–10.9 h |
+| 7 | 2 | 12.4 h | 10.3–14.6 h |
+| 8 | 2 | 12.0 h | 10.4–13.6 h |
+| 9 | 1 | 9.5 h | 9.5–9.5 h |
+| 10 | 1 | 10.8 h | 10.8–10.8 h |
+
 | Tracto | Salida TCI | Parqueo | Llega La Troncal | Sale La Troncal | Grifo | Base |
 |---|---|---|---|---|---|---|
 | CBV-854 | 08/09 18:40 |  | 09/09 09:58 | 09/09 13:07 | 09/09 16:53–09/09 18:40 | 12/09 10:27 |
@@ -103,3 +121,33 @@ Perfil RETORNO_GRIFO_TRONCAL: 86 recorridos, 146 km, 2580 muestras
 | BPT-919 | 20/10 15:15 | 20/10 21:04–21/10 06:15 | 21/10 08:48 | 21/10 14:46 | 21/10 18:06–21/10 18:56 | 22/10 07:28 |
 | AVO-818 | 20/10 15:15 | 20/10 20:47–21/10 06:15 | 21/10 08:52 | 21/10 16:24 | 21/10 19:51–21/10 21:18 | 22/10 08:45 |
 | BNG-892 | 20/10 15:16 | 20/10 21:04–21/10 06:15 | 21/10 08:54 | 21/10 17:57 | 21/10 21:33–21/10 22:46 | 22/10 09:50 |
+
+## Error de la hora al grifo (cada día estimado con lo aprendido de los demás días)
+
+Error = hora estimada − llegada real al grifo. "En rango" = la real cayó en el rango que da el reporte (±10 min).
+"Hasta hoy" = sin la llegada a La Troncal marcada (adentro se suponía 09:00) y sin cola; "solo descarga" = con la llegada real pero sin cola; "cola" = lo nuevo.
+
+| A las | Unidad | Casos | Hasta hoy: error típico | 8 de 10 dentro de | en rango | Solo descarga: error típico | 8 de 10 dentro de | en rango | Cola: error típico | 8 de 10 dentro de | en rango |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 06:00 | yendo | 86 | 2.0 h | 3.0 h | 63 % | 2.0 h | 3.0 h | 63 % | 2.0 h | 3.0 h | 63 % |
+| 07:00 | yendo | 86 | 1.7 h | 3.2 h | 63 % | 1.7 h | 3.2 h | 63 % | 1.7 h | 3.2 h | 63 % |
+| 08:00 | descargando | 10 | 1.4 h | 2.3 h | 90 % | 1.2 h | 1.9 h | 100 % | 0.5 h | 1.2 h | 100 % |
+| 08:00 | en-la-puerta | 18 | 2.4 h | 3.1 h | 44 % | 2.4 h | 3.1 h | 44 % | 2.1 h | 3.6 h | 39 % |
+| 08:00 | yendo | 58 | 1.4 h | 3.3 h | 66 % | 1.4 h | 3.3 h | 66 % | 1.4 h | 3.3 h | 66 % |
+| 09:00 | descargando | 47 | 2.0 h | 3.5 h | 53 % | 2.0 h | 3.0 h | 57 % | 1.4 h | 3.0 h | 60 % |
+| 09:00 | en-la-puerta | 9 | 0.4 h | 1.8 h | 89 % | 0.4 h | 1.8 h | 89 % | 0.9 h | 1.2 h | 89 % |
+| 09:00 | yendo | 30 | 1.8 h | 2.7 h | 60 % | 1.8 h | 2.7 h | 60 % | 1.8 h | 2.7 h | 60 % |
+| 10:00 | descargando | 73 | 1.6 h | 3.1 h | 62 % | 1.8 h | 2.8 h | 62 % | 1.2 h | 2.3 h | 68 % |
+| 10:00 | en-la-puerta | 3 | 2.4 h | 2.6 h | 67 % | 2.4 h | 2.6 h | 67 % | 2.4 h | 2.6 h | 33 % |
+| 10:00 | yendo | 10 | 5.3 h | 9.7 h | 50 % | 5.3 h | 9.7 h | 50 % | 5.3 h | 9.7 h | 50 % |
+| 11:00 | descargando | 70 | 1.3 h | 2.6 h | 69 % | 1.5 h | 2.6 h | 63 % | 1.2 h | 2.3 h | 69 % |
+| 11:00 | yendo | 10 | 5.8 h | 10.2 h | 40 % | 5.8 h | 10.2 h | 40 % | 5.8 h | 10.2 h | 40 % |
+| 12:00 | descargando | 66 | 1.4 h | 2.5 h | 64 % | 1.2 h | 2.2 h | 70 % | 1.1 h | 2.2 h | 67 % |
+| 12:00 | yendo | 5 | 10.2 h | 10.2 h | 0 % | 10.2 h | 10.2 h | 0 % | 10.2 h | 10.2 h | 0 % |
+| 15:00 | descargando | 44 | 1.2 h | 2.6 h | 48 % | 0.8 h | 1.9 h | 64 % | 0.9 h | 1.9 h | 59 % |
+
+Si se supiera la hora real de salida de La Troncal, el tramo al grifo solo se equivocaría 0.6 h (típico; 8 de 10 dentro de 1.6 h): el resto del error es cuándo sale cada una de La Troncal.
+
+**Hasta hoy**: 625 estimaciones, error típico 1.7 h, 8 de 10 dentro de 3.1 h, la real en el rango 61 %.
+**Solo descarga**: 625 estimaciones, error típico 1.6 h, 8 de 10 dentro de 2.9 h, la real en el rango 63 %.
+**Con la cola**: 625 estimaciones, error típico 1.5 h, 8 de 10 dentro de 2.9 h, la real en el rango 63 %.

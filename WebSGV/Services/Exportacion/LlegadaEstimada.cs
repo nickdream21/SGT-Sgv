@@ -196,18 +196,6 @@ namespace WebSGV.Services.Exportacion
             }
             return ParaRetorno(false, lat.Value, lng.Value, horaPosicion.Value);
         }
-
-        /// <summary>
-        /// Crisar todavía yendo a descargar a La Troncal: la llegada por su posición en el camino TCI → La Troncal
-        /// (perfil <see cref="DescargaLaTroncal"/>, con la noche en el parqueo de Naranjal). Null si está fuera del camino.
-        /// </summary>
-        public static Estimado ALaTroncal(double lat, double lng, DateTime horaPosicion) =>
-            Estimar(DescargaLaTroncal, lat, lng, horaPosicion);
-
-        /// <summary>Llegada al grifo saliendo de La Troncal a esa hora (perfil <see cref="RetornoGrifoTroncal"/>).</summary>
-        public static Estimado AlGrifoDesdeLaTroncal(DateTime salidaDesde, DateTime salida, DateTime salidaHasta, DateTime horaReferencia) =>
-            DesdeElInicio(RetornoGrifoTroncal, salidaDesde, salida, salidaHasta, horaReferencia);
-
         /// <summary>
         /// Llegada al grifo de una unidad que todavía no sale de la planta de descarga: a la salida estimada de la
         /// planta (mediana y rango) se le suma lo que tardaron los viajes anteriores desde la puerta de la planta
@@ -220,9 +208,11 @@ namespace WebSGV.Services.Exportacion
         /// Llegada al final de un tramo saliendo de su inicio a una hora estimada (mediana y rango): lo que tardaron
         /// los viajes anteriores desde los primeros km del perfil, saliendo a esa hora (TCI → planta, planta → grifo).
         /// </summary>
-        public static Estimado DesdeElInicio(string codigoRuta, DateTime salidaDesde, DateTime salida, DateTime salidaHasta, DateTime horaReferencia)
+        public static Estimado DesdeElInicio(string codigoRuta, DateTime salidaDesde, DateTime salida, DateTime salidaHasta, DateTime horaReferencia) =>
+            DesdeElInicio(Perfil(codigoRuta), salidaDesde, salida, salidaHasta, horaReferencia);
+
+        public static Estimado DesdeElInicio(Ruta ruta, DateTime salidaDesde, DateTime salida, DateTime salidaHasta, DateTime horaReferencia)
         {
-            var ruta = Perfil(codigoRuta);
             if (ruta == null || ruta.Muestras.Count == 0) return null;
             var inicio = ruta.Muestras.Where(m => m[0] <= VentanaKm).ToList();
             double hora = salida.TimeOfDay.TotalHours;

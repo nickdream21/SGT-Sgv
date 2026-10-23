@@ -322,6 +322,7 @@ namespace WebSGV.Services.GpsIntegracion
 
                 // Clientes terceros: un solo recorrido (carga → frontera → descarga → fin) con sus geocercas.
                 string lugarEntregaDetectado = null, lugarFinDetectado = null;
+                DateTime? llegadaGrifoTercero = null, salidaGrifoTercero = null;
                 if (esTercero)
                 {
                     DateTime hasta = fechaInicio.AddDays(DiasViajeTercero);
@@ -334,6 +335,8 @@ namespace WebSGV.Services.GpsIntegracion
                     foreach (var h in tercero.Hitos) Registrar(h.Item1, h.Item2);
                     if (lugarEntrega == null) lugarEntregaDetectado = tercero.LugarEntrega;
                     lugarFinDetectado = tercero.LugarFin;
+                    if (tercero.LlegadaGrifo != null) llegadaGrifoTercero = HoraLocalGps(tercero.LlegadaGrifo);
+                    if (tercero.SalidaGrifo != null) salidaGrifoTercero = HoraLocalGps(tercero.SalidaGrifo);
                 }
 
                 if (!esTercero && dispositivo1 != null && !TramoCompleto(columnasCarga))
@@ -354,7 +357,7 @@ namespace WebSGV.Services.GpsIntegracion
                 // viaje si no se sabe): la carreta la lleva otro tracto, o el mismo después de pasar por base.
                 string rama = ramaExistente;
                 bool enEcuador = false;
-                DateTime? llegadaGrifo = null, salidaGrifo = null;
+                DateTime? llegadaGrifo = llegadaGrifoTercero, salidaGrifo = salidaGrifoTercero;
                 if (!esTercero && dispositivo2 != null && !TramoCompleto(columnasDescarga))
                 {
                     DateTime desdeDescargaUtc = salidaPlantaUtc ?? FechaHelper.ConvertirAUtc(fechaInicio);

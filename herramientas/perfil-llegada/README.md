@@ -55,7 +55,16 @@ la base. Agrega a `PerfilesLlegada.json`, **sin tocar las demás rutas**:
 | `RETORNO_GRIFO_TRONCAL` | salida de La Troncal → primera parada en el grifo Santa Rosa |
 | `duraciones["DESCARGA\|LA TRONCAL"]` | minutos dentro de La Troncal (llegada → salida) |
 
-Deja el informe en `crisar-la-troncal.md` (tiempos de cada tramo y cada viaje). Con los Word del 02/09 al 21/10/2026:
+También aprende la **cola de La Troncal** (`ColaLaTroncal`): descargan una tras otra y en orden de llegada
+(94 % de los pares del mismo día), así que guarda por turno (1.ª, 2.ª… en llegar ese día) cuánto después de la
+primera llegada salió (`TURNO|LA TRONCAL|k`) y el ritmo de salidas de cada día (`RITMO|LA TRONCAL`).
+
+Y **mide el error**: por cada día del historial aprende con los demás días y, a las 06–12 y 15 h de ese día,
+estima con lo que se sabía a esa hora (posiciones, llegadas y salidas ya ocurridas) y lo compara con la llegada
+real al grifo. Compara "hasta hoy" (sin horas de La Troncal), "solo descarga" y "cola". `--detalle=1` (corriendo
+el .exe a mano) lista los casos con más de 3 h de error.
+
+Deja el informe en `crisar-la-troncal.md` (tiempos de cada tramo, la cola, el error y cada viaje). Con los Word del 02/09 al 21/10/2026:
 86 descargas; TCI → La Troncal 15,9 h (mediana; pasan la noche en Naranjal 10 h y entran a las 06–12 h),
 descarga 6,0 h (4,1–7,1), La Troncal → grifo 4,0 h (3,4–4,5); **86 de 86 paran en el grifo**.
 

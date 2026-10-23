@@ -19,6 +19,10 @@ namespace WebSGV.Services.GpsIntegracion
         /// <summary>Dónde terminó: BASE, COCHERA TRUJILLO, ESPERA TRUJILLO o la carga siguiente.</summary>
         public string LugarFin { get; set; }
 
+        /// <summary>Crisar de vuelta de La Troncal: parada en el grifo Santa Rosa (no es hito de la ruta: va en sus columnas).</summary>
+        public HitoGps LlegadaGrifo { get; set; }
+        public HitoGps SalidaGrifo { get; set; }
+
         public HitoGps Buscar(string columna) => Hitos.FirstOrDefault(h => h.Item1 == columna)?.Item2;
     }
 
@@ -129,22 +133,33 @@ namespace WebSGV.Services.GpsIntegracion
 
             // 4. Paso por la frontera, entre la carga y la descarga.
             int c = cursorD;
-            void Bodega(GeocercaGps paso, int minutos, string llegada, string salida, string nombre)
+            void Marcar(Tuple<GeocercaGps, Visita> v, string llegada, string salida, string nombre)
             {
-                var v = Primera(pd, new[] { paso }, c, hasta, minutos);
                 if (v == null) return;
                 Agregar(llegada, Hito(pd[v.Item2.Primero], "Primer punto en " + nombre));
                 if (salida != null && v.Item2.Cerrada) Agregar(salida, Hito(pd[v.Item2.Ultimo + 1], "Primer punto fuera de " + nombre));
                 c = v.Item2.Cerrada ? v.Item2.Ultimo + 1 : v.Item2.Ultimo;
             }
+            void Bodega(GeocercaGps paso, int minutos, string llegada, string salida, string nombre) =>
+                Marcar(Primera(pd, new[] { paso }, c, hasta, minutos), llegada, salida, nombre);
+            // TCI como en Vitapro (TrazabilidadDescargaService): si no entra al patio (o entra menos de los minutos),
+            // el control de la Aduana del Ecuador de al lado. BSD-716 de Crisar, 22/10/2026: 2 min en TCI y 7 en el
+            // control; sin esto no se marcaba TCI y el viaje no llegaba nunca a La Troncal.
+            void Tci()
+            {
+                var tci = Primera(pd, new[] { GeocercasTrazabilidad.Tci }, c, hasta, MinutosMinimosEnTci);
+                var control = Primera(pd, new[] { GeocercasTrazabilidad.TciControlAduana }, c, hasta, 1);
+                bool directo = tci == null || (control != null && control.Item2.Primero < tci.Item2.Primero);
+                Marcar(directo ? control : tci, "fhLlegadaTCI", "fhSalidaTCI", directo ? "el control de la Aduana junto a TCI (paso directo)" : "TCI");
+            }
             if (ruta == RutaTercero.Crisar)
             {
                 Bodega(GeocercasTrazabilidad.ComplexAcceso, MinutosMinimosEnBodega, "fhLlegadaBodegaNacional", "fhSalidaBodegaNacional", "la cola del Complex");
-                Bodega(GeocercasTrazabilidad.Tci, MinutosMinimosEnTci, "fhLlegadaTCI", "fhSalidaTCI", "TCI");
+                Tci();
             }
             else if (ruta == RutaTercero.Novopan)
             {
-                Bodega(GeocercasTrazabilidad.Tci, MinutosMinimosEnTci, "fhLlegadaTCI", "fhSalidaTCI", "TCI");
+                Tci();
                 Bodega(GeocercasTrazabilidad.Cebaf, 0, "fhLlegadaCEBAF", null, "el CEBAF");
             }
 
@@ -170,6 +185,18 @@ namespace WebSGV.Services.GpsIntegracion
             {
                 r.LugarFin = lugarFin;
                 Agregar("fhLlegadaBaseFinal", Hito(pd[fin.Item2.Primero], "Primer punto en " + fin.Item1.Nombre + " después de descargar"));
+            }
+
+            // 6. Crisar: el grifo Santa Rosa de vuelta (86 de 86 viajes de sep–oct 2026 paran ahí), antes del fin.
+            if (ruta == RutaTercero.Crisar)
+            {
+                var grifo = Primera(pd, new[] { GeocercasTrazabilidad.GrifoSantaRosa }, cursorFin, fin != null ? fin.Item2.Primero : limiteFin,
+                    MinutosMinimosEnBodega, abiertaSinMinimo: false);
+                if (grifo != null)
+                {
+                    r.LlegadaGrifo = Hito(pd[grifo.Item2.Primero], "Primer punto en el grifo Santa Rosa (El Retiro)");
+                    if (grifo.Item2.Cerrada) r.SalidaGrifo = Hito(pd[grifo.Item2.Ultimo + 1], "Primer punto fuera del grifo Santa Rosa");
+                }
             }
             return r;
         }

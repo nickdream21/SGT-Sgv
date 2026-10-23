@@ -88,6 +88,30 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void Crisar_DeVueltaDeLaTroncal_MarcaElGrifoSantaRosa()
+        {
+            var r = TrazabilidadTercerosService.Detectar("CRISAR", "CARTAVIO", "GUAYAQUIL",
+                Gps("BNG-758_2026-10-14_crisar.json"), Gps("CBX-832_2026-10-14_crisar.json"), Utc("2026-10-13 12:00"));
+            // Sale de La Troncal 13:19, para en el grifo 17:33–18:46 y llega a la base 02:52.
+            Assert.NotNull(r.LlegadaGrifo);
+            Assert.InRange((r.LlegadaGrifo.HoraUtc - Utc("2026-10-19 17:33")).TotalMinutes, -3, 3);
+            Assert.InRange((r.SalidaGrifo.HoraUtc - Utc("2026-10-19 18:46")).TotalMinutes, -3, 3);
+        }
+
+        [Fact]
+        public void Crisar_SinEntrarAlPatioDeTci_TomaElControlDeLaAduana()
+        {
+            // BSD-716, 22/10/2026: 2 min en el patio de TCI y 7 en el control de al lado. Sin el patio, el control.
+            var sinPatio = Gps("CBX-832_2026-10-14_crisar.json").Where(p => !GeocercasTrazabilidad.Tci.Contiene(p.Lat, p.Lng)).ToList();
+            var r = TrazabilidadTercerosService.Detectar("CRISAR", "CARTAVIO", "GUAYAQUIL",
+                Gps("BNG-758_2026-10-14_crisar.json"), sinPatio, Utc("2026-10-13 12:00"));
+            var tci = r.Buscar("fhLlegadaTCI");
+            Assert.NotNull(tci);
+            Assert.Contains("paso directo", tci.Fuente);
+            Hora(r, "fhLlegadaPlantaEcuador", "2026-10-19 08:46");   // y sigue hasta La Troncal
+        }
+
+        [Fact]
         public void Crisar_RelevoQueNoSaleDeLaBase_NoTomaLaFronteraDeOtroViaje()
         {
             // El tracto de descarga anda en otro viaje (aquí: el mismo recorrido sin pasar por la base). Sin salir de

@@ -76,12 +76,14 @@ namespace WebSGV.Services.Exportacion
         /// <paramref name="duraciones"/>: minutos que duraron las descargas por planta (JAVE, INBALNOR; "*" todas), para
         /// estimar la llegada al grifo de los que todavía no salen de la planta.
         /// </summary>
-        public static List<Unidad> Unidades(IEnumerable<ViajeResumen> viajes, DateTime ahora, IDictionary<string, List<double>> duraciones = null)
+        public static List<Unidad> Unidades(IEnumerable<ViajeResumen> viajes, DateTime ahora, IDictionary<string, List<double>> duraciones = null,
+            ColaLaTroncal.Datos laTroncal = null)
         {
+            var lista = viajes.ToList();
             var res = new List<Unidad>();
-            foreach (var v in viajes)
+            foreach (var v in lista)
             {
-                bool crisar = string.Equals(v.TipoRuta, "CRISAR", StringComparison.OrdinalIgnoreCase);
+                bool crisar = EsCrisar(v);
                 if ((!crisar && RutaTercero.Es(v.TipoRuta)) || EsCerrado(v.Estado) || Hora(v, "fhLlegadaBaseFinal").HasValue) continue;
                 if (Hora(v, "fhSalidaGrifo").HasValue) continue; // ya cargó combustible
 
@@ -117,6 +119,8 @@ namespace WebSGV.Services.Exportacion
             }
             foreach (var u in res)
                 u.AlGrifo = EstimarAlGrifo(u, ahora, duraciones);
+            EstimarCrisar(res.Where(u => EsCrisar(u.Viaje) && (u.Situacion == Situacion.Descargando || u.Situacion == Situacion.VanADescargar)).ToList(),
+                lista, ahora, laTroncal ?? ColaLaTroncal.Cargados);
             return res.OrderBy(u => u.Situacion)
                       .ThenBy(u => u.AlGrifo?.Llegada ?? u.Desde ?? DateTime.MaxValue)
                       .ToList();
@@ -133,8 +137,7 @@ namespace WebSGV.Services.Exportacion
         {
             if (u.Situacion == Situacion.EnCamino) return u.Viaje.Llegada;
             if (u.Situacion != Situacion.Descargando && u.Situacion != Situacion.VanADescargar) return null;
-            if (string.Equals(u.Viaje.TipoRuta, "CRISAR", StringComparison.OrdinalIgnoreCase)) return EstimarCrisar(u, ahora);
-            if (duraciones == null) return null;
+            if (EsCrisar(u.Viaje) || duraciones == null) return null;   // Crisar: EstimarCrisar, con la cola del día
             var v = u.Viaje;
             var espera = DuracionesDe(duraciones, EtapaEspera, v);
             var descarga = DuracionesDe(duraciones, EtapaDescarga, v);
@@ -175,38 +178,39 @@ namespace WebSGV.Services.Exportacion
             return LlegadaEstimada.AlGrifoTrasDescargar(salidaPlanta[0], salidaPlanta[1], salidaPlanta[2], referencia);
         }
 
-        /// <summary>Lo que duró la descarga en La Troncal en los viajes de Crisar del historial del GPS (de llegada a salida).</summary>
-        public const string ClaveDescargaLaTroncal = "DESCARGA|LA TRONCAL";
-
-        /// <summary>Hora a la que suelen entrar a La Troncal (mediana de los viajes de Crisar): para el que está adentro sin llegada marcada.</summary>
-        private static readonly TimeSpan EntradaTipicaLaTroncal = TimeSpan.FromHours(9);
-
         /// <summary>
-        /// Crisar descarga en La Troncal, más al norte que Jave e Inbalnor, con su propio camino (aprendido del GPS de
-        /// sus viajes anteriores, herramientas/perfil-llegada/PerfilCrisar): yendo → su llegada a La Troncal por la
-        /// posición (con la noche en el parqueo de Naranjal) + la descarga + La Troncal → grifo; descargando → lo
-        /// que le falta de la descarga + La Troncal → grifo.
+        /// Crisar descarga en La Troncal, más al norte que Jave e Inbalnor, una unidad tras otra (<see cref="ColaLaTroncal"/>):
+        /// la hora al grifo de cada una sale de su turno en el día y de las que ya salieron. Las que van llegando
+        /// entran a la cola con su llegada estimada por la posición (perfil TCI → La Troncal, con la noche en Naranjal).
         /// </summary>
-        private static LlegadaEstimada.Estimado EstimarCrisar(Unidad u, DateTime ahora,
-            IList<double> estadias = null)
+        private static void EstimarCrisar(List<Unidad> pendientes, IList<ViajeResumen> viajes, DateTime ahora, ColaLaTroncal.Datos datos)
         {
-            var v = u.Viaje;
-            estadias = estadias ?? LlegadaEstimada.DuracionesHistoricas(ClaveDescargaLaTroncal);
-            if (estadias == null) return null;
-            if (u.Situacion == Situacion.Descargando)
+            if (datos == null || pendientes.Count == 0) return;
+            var cola = new List<ColaLaTroncal.Unidad>();
+            foreach (var u in pendientes)
             {
-                // Sin la llegada marcada: entran temprano (81 de 86 entre las 06:00 y las 12:00, GPS de septiembre y octubre).
-                DateTime entrada = u.Desde ?? (ahora.TimeOfDay > EntradaTipicaLaTroncal ? ahora.Date + EntradaTipicaLaTroncal : ahora);
-                double lleva = Math.Max(0, (ahora - entrada).TotalMinutes);
-                var salida = Mas(new[] { ahora, ahora, ahora }, DuracionRestante(estadias, lleva));
-                return LlegadaEstimada.AlGrifoDesdeLaTroncal(salida[0], salida[1], salida[2], ahora);
+                var v = u.Viaje;
+                var c = new ColaLaTroncal.Unidad { Id = v.Id };
+                if (u.Situacion == Situacion.Descargando)
+                    // Adentro sin la llegada marcada: entran temprano (81 de 86 entre las 06:00 y las 12:00).
+                    c.Entrada = u.Desde ?? (ahora.TimeOfDay > ColaLaTroncal.EntradaTipica ? ahora.Date + ColaLaTroncal.EntradaTipica : ahora);
+                else if (v.Latitud.HasValue && v.Longitud.HasValue && v.UltimaPosicion.HasValue)
+                    c.LlegadaEstimada = LlegadaEstimada.Estimar(datos.ALaTroncal, v.Latitud.Value, v.Longitud.Value, v.UltimaPosicion.Value);
+                cola.Add(c);
             }
-            if (!v.Latitud.HasValue || !v.Longitud.HasValue || !v.UltimaPosicion.HasValue) return null;
-            var llega = LlegadaEstimada.ALaTroncal(v.Latitud.Value, v.Longitud.Value, v.UltimaPosicion.Value);
-            if (llega == null) return null;
-            var sale = Mas(new[] { llega.Desde, llega.Llegada, llega.Hasta }, DuracionRestante(estadias, 0));
-            return LlegadaEstimada.AlGrifoDesdeLaTroncal(sale[0], sale[1], sale[2], llega.HoraPosicion);
+            // Las de Crisar que ya salieron de La Troncal en estos días: marcan el ritmo de las que faltan.
+            var ids = new HashSet<int>(cola.Select(c => c.Id));
+            foreach (var v in viajes.Where(v => string.Equals(v.TipoRuta, "CRISAR", StringComparison.OrdinalIgnoreCase) && !ids.Contains(v.Id)))
+                if (Hora(v, "fhLlegadaPlantaEcuador") is DateTime entrada && Hora(v, "fhSalida") is DateTime salida && ahora - entrada < TimeSpan.FromDays(2))
+                    cola.Add(new ColaLaTroncal.Unidad { Id = v.Id, Entrada = entrada, Salida = salida });
+
+            var salidas = ColaLaTroncal.Salidas(cola, ahora, datos);
+            foreach (var u in pendientes)
+                if (salidas.TryGetValue(u.Viaje.Id, out var s))
+                    u.AlGrifo = ColaLaTroncal.AlGrifo(s, ahora, datos);
         }
+
+        private static bool EsCrisar(ViajeResumen v) => string.Equals(v.TipoRuta, "CRISAR", StringComparison.OrdinalIgnoreCase);
 
         private static bool EnLaTroncal(ViajeResumen v) =>
             v.Latitud.HasValue && v.Longitud.HasValue && GpsIntegracion.GeocercasTerceros.CrisarLaTroncal.Contiene(v.Latitud.Value, v.Longitud.Value);
