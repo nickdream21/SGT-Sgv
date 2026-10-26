@@ -33,6 +33,7 @@ namespace WebSGV.Services.GpsIntegracion
     ///   Crisar      Cartavio → base Sullana → (relevo) Complex → TCI → La Troncal → fin
     ///   Novopan     Quito → TCI → CEBAF → Piura o Trujillo → fin
     ///   Polinplast  Chapaira → destino (Virú, Casa Grande, ACP…) → fin
+    ///   Afrecho     Alicorp Paita → Complex → TCI → primera parada larga en Ecuador (sin geocerca aún) → fin
     ///
     /// La planta de carga es el ancla: sin ella no hay viaje. La descarga es la segunda ancla: las
     /// paradas intermedias (base, Complex, TCI, CEBAF) solo se buscan entre las dos, para no tomar
@@ -152,7 +153,7 @@ namespace WebSGV.Services.GpsIntegracion
                 bool directo = tci == null || (control != null && control.Item2.Primero < tci.Item2.Primero);
                 Marcar(directo ? control : tci, "fhLlegadaTCI", "fhSalidaTCI", directo ? "el control de la Aduana junto a TCI (paso directo)" : "TCI");
             }
-            if (ruta == RutaTercero.Crisar)
+            if (ruta == RutaTercero.Crisar || ruta == RutaTercero.Afrecho)
             {
                 Bodega(GeocercasTrazabilidad.ComplexAcceso, MinutosMinimosEnBodega, "fhLlegadaBodegaNacional", "fhSalidaBodegaNacional", "la cola del Complex");
                 Tci();
@@ -163,16 +164,30 @@ namespace WebSGV.Services.GpsIntegracion
                 Bodega(GeocercasTrazabilidad.Cebaf, 0, "fhLlegadaCEBAF", null, "el CEBAF");
             }
 
-            if (descarga == null) return r;
-            var zona = descarga.Item1;
-            if (zonasEntrega.Count == 0) r.LugarEntrega = GeocercasTerceros.LugarDe(zona);
-            Agregar("fhLlegadaPlantaEcuador", Hito(pd[descarga.Item2.Primero], "Primer punto en " + zona.Nombre));
-            Agregar("fhLlegadaAlmacen", Hito(pd[descarga.Item2.Primero], "Primer punto en " + zona.Nombre));
-            if (!descarga.Item2.Cerrada) return r;
-            Agregar("fhSalida", Hito(pd[descarga.Item2.Ultimo + 1], "Primer punto fuera de " + zona.Nombre));
+            // Afrecho: todavía sin geocerca de descarga, es la primera parada larga después de salir de TCI
+            // (ya en Ecuador), con el lugar que da la dirección de Onway. Por confirmar con cada viaje.
+            Visita enDescarga = descarga?.Item2;
+            string nombreDescarga = descarga?.Item1.Nombre;
+            string lugarDetectado = descarga == null ? null : GeocercasTerceros.LugarDe(descarga.Item1);
+            if (enDescarga == null && ruta == RutaTercero.Afrecho && candidatas.Length == 0 && r.Buscar("fhSalidaTCI") != null)
+            {
+                enDescarga = ParadaLarga(pd, c, limiteDescarga, MinutosMinimosParadaDescarga, ZonasDeFrontera);
+                if (enDescarga != null)
+                {
+                    lugarDetectado = StatusUnidad.LugarDeDireccion(pd[enDescarga.Primero].Address);
+                    nombreDescarga = "la primera parada larga en Ecuador" + (lugarDetectado == null ? "" : " (" + lugarDetectado + ")");
+                }
+            }
+
+            if (enDescarga == null) return r;
+            if (zonasEntrega.Count == 0) r.LugarEntrega = lugarDetectado;
+            Agregar("fhLlegadaPlantaEcuador", Hito(pd[enDescarga.Primero], "Primer punto en " + nombreDescarga));
+            Agregar("fhLlegadaAlmacen", Hito(pd[enDescarga.Primero], "Primer punto en " + nombreDescarga));
+            if (!enDescarga.Cerrada) return r;
+            Agregar("fhSalida", Hito(pd[enDescarga.Ultimo + 1], "Primer punto fuera de " + nombreDescarga));
 
             // 5. Fin del viaje.
-            int cursorFin = descarga.Item2.Ultimo + 1;
+            int cursorFin = enDescarga.Ultimo + 1;
             int limiteFin = Limite(pd, cursorFin, DiasHastaFin);
             Tuple<GeocercaGps, Visita> fin = null;
             string lugarFin = null;
@@ -214,7 +229,43 @@ namespace WebSGV.Services.GpsIntegracion
             Tuple.Create(GeocercasTrazabilidad.TrujilloAcceso, "VITAPRO TRUJILLO", 180),
             Tuple.Create(GeocercasTerceros.CrisarCartavio, "CARTAVIO", 60),
             Tuple.Create(GeocercasTerceros.PolinplastChapaira, "CHAPAIRA", 60),
+            Tuple.Create(GeocercasTerceros.AlicorpPaita, "PAITA", 60),
         };
+
+        /// <summary>Parada que cuenta como descarga cuando no hay geocerca (afrecho): una hora detenido.</summary>
+        private const int MinutosMinimosParadaDescarga = 60;
+
+        /// <summary>Velocidad (km/h) por debajo de la cual la unidad está detenida.</summary>
+        private const double KmhDetenido = 3;
+
+        /// <summary>Esperas de la frontera que no son la descarga.</summary>
+        private static readonly GeocercaGps[] ZonasDeFrontera =
+        {
+            GeocercasTrazabilidad.ComplexAcceso, GeocercasTrazabilidad.Tci, GeocercasTrazabilidad.TciControlAduana,
+            GeocercasTrazabilidad.Cebaf, GeocercasTrazabilidad.Cruce
+        };
+
+        /// <summary>
+        /// La primera parada de al menos <paramref name="minutos"/> (puntos seguidos a <see cref="KmhDetenido"/>
+        /// o menos) que empieza en [desde, hasta) fuera de las zonas dadas. Abierta si el historial termina
+        /// detenido: la unidad sigue ahí (vale aunque todavía no llegue a los minutos).
+        /// </summary>
+        private static Visita ParadaLarga(List<OnwayHistoryPoint> puntos, int desde, int hasta, int minutos, GeocercaGps[] excluir)
+        {
+            int i = Math.Max(desde, 0);
+            while (i < hasta && i < puntos.Count)
+            {
+                if (puntos[i].Speed > KmhDetenido) { i++; continue; }
+                int j = i;
+                while (j + 1 < puntos.Count && puntos[j + 1].Speed <= KmhDetenido) j++;
+                bool cerrada = j + 1 < puntos.Count;
+                bool larga = !cerrada || (Hora(puntos[j + 1]) - Hora(puntos[i])).TotalMinutes >= minutos;
+                if (larga && !excluir.Any(z => z.Contiene(puntos[i].Lat, puntos[i].Lng)))
+                    return new Visita { Primero = i, Ultimo = j, Cerrada = cerrada };
+                i = j + 1;
+            }
+            return null;
+        }
 
         private static GeocercaGps CargaPorDefecto(string ruta)
         {
@@ -223,6 +274,7 @@ namespace WebSGV.Services.GpsIntegracion
                 case RutaTercero.Crisar: return GeocercasTerceros.CrisarCartavio;
                 case RutaTercero.Novopan: return GeocercasTerceros.NovopanQuito;
                 case RutaTercero.Polinplast: return GeocercasTerceros.PolinplastChapaira;
+                case RutaTercero.Afrecho: return GeocercasTerceros.AlicorpPaita;
                 default: return null;
             }
         }

@@ -87,6 +87,7 @@
                     <asp:ListItem Value="CRISAR" Text="Crisar" />
                     <asp:ListItem Value="NOVOPAN" Text="Novopan" />
                     <asp:ListItem Value="POLINPLAST" Text="Polinplast" />
+                    <asp:ListItem Value="AFRECHO" Text="Afrecho (Paita)" />
                 </asp:DropDownList>
             </label>
             <label class="sx-campo">Planta de descarga

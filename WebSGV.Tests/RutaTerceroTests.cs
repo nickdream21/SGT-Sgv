@@ -36,6 +36,21 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void Afrecho_FrasesDelRecorrido_SinPasarPorLaBase()
+        {
+            string S(params string[] cols) =>
+                RutaTercero.Status("AFRECHO", Horas(cols), "EN_CURSO", "PAITA", "BALSAS", null, "TUMBES", Ahora.AddMinutes(-10), Ahora);
+            Assert.Equal("UNIDAD EN PROCESO DE CARGA - PAITA", S("fhLlegadaTrujillo"));
+            Assert.Equal("UNIDAD CARGADA CAMINO A FRONTERA - TUMBES", S("fhLlegadaTrujillo", "fhSalidaPlanta"));
+            Assert.Equal("UNIDAD EN COMPLEX", S("fhSalidaPlanta", "fhLlegadaBodegaNacional"));
+            Assert.Equal("UNIDAD CARGADA EN TCI - ECUADOR", S("fhSalidaPlanta", "fhSalidaBodegaNacional", "fhLlegadaTCI"));
+            Assert.Equal("UNIDAD CARGADA EN ECUADOR CAMINO A BALSAS - TUMBES", S("fhLlegadaTCI", "fhSalidaTCI"));
+            Assert.Equal("UNIDAD EN BODEGA PARA DESCARGA - BALSAS", S("fhSalidaTCI", "fhLlegadaPlantaEcuador"));
+            Assert.Equal("Rumbo a Ecuador", RutaTercero.Fase("AFRECHO", Horas("fhSalidaPlanta"), "EN_CURSO", "PAITA", null).Nombre);
+            Assert.Equal("En frontera", RutaTercero.Fase("AFRECHO", Horas("fhSalidaPlanta", "fhLlegadaBodegaNacional"), "EN_CURSO", "PAITA", null).Nombre);
+        }
+
+        [Fact]
         public void Polinplast_EnCamino_YCochera()
         {
             var h = Horas("fhLlegadaTrujillo", "fhSalidaPlanta");
@@ -69,6 +84,7 @@ namespace WebSGV.Tests
         [InlineData("CRISAR", 3, 8)]
         [InlineData("NOVOPAN", 2, 6)]
         [InlineData("POLINPLAST", 2, 3)]
+        [InlineData("AFRECHO", 2, 7)]
         public void Hitos_PorRuta(string ruta, int carga, int descarga)
         {
             var hitos = RutaTercero.Hitos(ruta, "CHAPAIRA", "VIRU");

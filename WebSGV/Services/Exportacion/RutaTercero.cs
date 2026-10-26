@@ -6,7 +6,7 @@ using System.Linq;
 namespace WebSGV.Services.Exportacion
 {
     /// <summary>
-    /// Viajes de los clientes terceros en el seguimiento (tipoRuta CRISAR, NOVOPAN o POLINPLAST;
+    /// Viajes de los clientes terceros en el seguimiento (tipoRuta CRISAR, NOVOPAN, POLINPLAST o AFRECHO;
     /// docs/CLIENTES_TERCEROS.md): qué hitos tiene cada ruta, su fase en el tablero, los avisos y
     /// el texto de STATUS para el Excel STATUS EXTRA. Usan las mismas columnas de hora que Vitapro:
     ///
@@ -27,7 +27,17 @@ namespace WebSGV.Services.Exportacion
         public const string Novopan = "NOVOPAN";
         public const string Polinplast = "POLINPLAST";
 
-        public static readonly string[] Rutas = { Crisar, Novopan, Polinplast };
+        /// <summary>
+        /// Afrecho de trigo de Alicorp Paita a Ecuador (FCA Paita → Huaquillas; primer viaje 24/10/2026,
+        /// cliente MALDONADO TORRES, Balsas). La ruta se aprende del GPS: carga en Paita, Complex y TCI como
+        /// Crisar, y la descarga es la primera parada larga en Ecuador hasta tener su geocerca.
+        /// </summary>
+        public const string Afrecho = "AFRECHO";
+
+        public static readonly string[] Rutas = { Crisar, Novopan, Polinplast, Afrecho };
+
+        /// <summary>Rutas que cruzan a Ecuador por el Complex y TCI a la ida.</summary>
+        private static bool PorComplexYTci(string ruta) => ruta == Crisar || ruta == Afrecho;
 
         /// <summary>lugarFin de los viajes que terminan guardados en Trujillo ("UNIDAD DESCARGADA EN COCHERA TRUJILLO").</summary>
         public const string FinCochera = "COCHERA TRUJILLO";
@@ -61,6 +71,12 @@ namespace WebSGV.Services.Exportacion
                     l.Add(new DefinicionHito("fhSalidaTCI", "Salida de TCI", TramoViaje.Descarga));
                     l.Add(new DefinicionHito("fhLlegadaCEBAF", "Llegada al CEBAF (Perú)", TramoViaje.Descarga));
                     break;
+                case Afrecho:
+                    l.Add(new DefinicionHito("fhLlegadaBodegaNacional", "Llegada al Complex", TramoViaje.Descarga));
+                    l.Add(new DefinicionHito("fhSalidaBodegaNacional", "Salida del Complex", TramoViaje.Descarga));
+                    l.Add(new DefinicionHito("fhLlegadaTCI", "Llegada a TCI", TramoViaje.Descarga));
+                    l.Add(new DefinicionHito("fhSalidaTCI", "Salida de TCI", TramoViaje.Descarga));
+                    break;
             }
             l.Add(new DefinicionHito("fhLlegadaPlantaEcuador", "Llegada a " + entrega, TramoViaje.Descarga, "fhLlegadaAlmacen"));
             l.Add(new DefinicionHito("fhSalida", "Salida de " + entrega, TramoViaje.Descarga));
@@ -79,10 +95,14 @@ namespace WebSGV.Services.Exportacion
             if (e == "FINALIZADO" || Hay("fhLlegadaBaseFinal")) return F("Cerrado", "cerrado");
             if (Hay("fhSalida")) return F("Descargado, retorno", "retorno");
             if (Hay("fhLlegadaPlantaEcuador", "fhLlegadaAlmacen")) return F("Descargando", "ecuador");
-            if (ruta == Crisar)
+            if (PorComplexYTci(ruta))
             {
                 if (Hay("fhLlegadaTCI", "fhSalidaTCI")) return F("En Ecuador", "ecuador");
                 if (Hay("fhLlegadaBodegaNacional", "fhSalidaBodegaNacional")) return F("En frontera", "ecuador");
+            }
+            if (ruta == Afrecho && Hay("fhSalidaPlanta")) return F("Rumbo a Ecuador", "ecuador");
+            if (ruta == Crisar)
+            {
                 if (Hay("fhSalidaBase2")) return F("Rumbo a Ecuador", "ecuador");
                 if (Hay("fhLlegadaBase2")) return F("En base, cargado", "base");
                 if (Hay("fhSalidaPlanta")) return F("Rumbo a base", "carga");
@@ -121,12 +141,16 @@ namespace WebSGV.Services.Exportacion
 
             if (Hay("fhSalida")) return EnCamino("UNIDAD DESCARGADA RETORNO A BASE");
             if (Hay("fhLlegadaPlantaEcuador", "fhLlegadaAlmacen")) return "UNIDAD EN BODEGA PARA DESCARGA - " + entrega;
-            if (ruta == Crisar)
+            if (PorComplexYTci(ruta))
             {
                 if (Hay("fhSalidaTCI")) return EnCamino("UNIDAD CARGADA EN ECUADOR CAMINO A " + entrega);
                 if (Hay("fhLlegadaTCI")) return "UNIDAD CARGADA EN TCI - ECUADOR";
                 if (Hay("fhSalidaBodegaNacional")) return EnCamino("UNIDAD CARGADA CAMINO A ECUADOR");
                 if (Hay("fhLlegadaBodegaNacional")) return "UNIDAD EN COMPLEX";
+            }
+            if (ruta == Afrecho && Hay("fhSalidaPlanta")) return EnCamino("UNIDAD CARGADA CAMINO A FRONTERA");
+            if (ruta == Crisar)
+            {
                 if (Hay("fhSalidaBase2")) return EnCamino("UNIDAD CARGADA CAMINO A FRONTERA");
                 if (Hay("fhLlegadaBase2")) return "UNIDAD CARGADA EN BASE SULLANA";
                 if (Hay("fhSalidaPlanta")) return EnCamino("UNIDAD CARGADA CAMINO A BASE");

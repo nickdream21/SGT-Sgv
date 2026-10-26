@@ -30,6 +30,13 @@ namespace WebSGV.Services.GpsIntegracion
         /// <summary>Planta de Novopan en Itulcachi (Pifo, Quito): carga de tableros (6 de 6 viajes, ~2 h).</summary>
         public static readonly GeocercaGps NovopanQuito = GeocercaGps.Circulo("NOVOPAN_QUITO", "Novopan Quito (Itulcachi)", -0.27143, -78.33215, 400);
 
+        /// <summary>
+        /// Alicorp Paita (Car. Paita–Sullana km 3,5, Zona Industrial II, por la Av. Industrial): carga de afrecho
+        /// de trigo. Un solo viaje: AVM-877 el 24/10/2026 llegó a las 06:51, esperó en la puerta hasta las 07:59
+        /// y desde las 08:06 carga ~70 m más adentro. Por confirmar con los viajes siguientes.
+        /// </summary>
+        public static readonly GeocercaGps AlicorpPaita = GeocercaGps.Circulo("ALICORP_PAITA", "Alicorp Paita (afrecho)", -5.08610, -81.09440, 300);
+
         // ---- Descarga ----
 
         /// <summary>Bodega de azúcar en La Troncal (Ecuador): descarga de Crisar (5 de 5 viajes, 2–5 h en varias paradas seguidas).</summary>
@@ -98,7 +105,7 @@ namespace WebSGV.Services.GpsIntegracion
 
         public static IReadOnlyList<GeocercaGps> Todas { get; } = new[]
         {
-            CrisarCartavio, PolinplastChapaira, NovopanQuito,
+            CrisarCartavio, PolinplastChapaira, NovopanQuito, AlicorpPaita,
             CrisarLaTroncal, CrisarPernocte, NovopanPiura, NovopanTrujillo,
             PolinplastViru, PolinplastChao, PolinplastChao2, PolinplastChao3, PolinplastCasaGrande, PolinplastAcpChepen, PolinplastJayanca,
             PolinplastOlmos, PolinplastSalaverry,
@@ -129,6 +136,7 @@ namespace WebSGV.Services.GpsIntegracion
             ["POLINPLAST|OLMOS"] = new[] { PolinplastOlmos },
             ["POLINPLAST|SALAVERRY"] = new[] { PolinplastSalaverry },
             ["POLINPLAST|COCHERA TRUJILLO"] = new[] { CocheraTrujillo },
+            ["AFRECHO|PAITA"] = new[] { AlicorpPaita },
         };
 
         /// <summary>Destinos de Polinplast: donde se busca la descarga si el viaje no sabe a cuál va.</summary>
@@ -167,7 +175,7 @@ namespace WebSGV.Services.GpsIntegracion
         public static IReadOnlyList<GeocercaGps> ZonasDe(string cliente, string lugar)
         {
             string c = LectorDocumentosPedido.Normalizar(cliente), l = LectorDocumentosPedido.Normalizar(lugar);
-            string clave = new[] { "CRISAR", "NOVOPAN", "POLINPLAST" }.FirstOrDefault(c.Contains);
+            string clave = new[] { "CRISAR", "NOVOPAN", "POLINPLAST", "AFRECHO" }.FirstOrDefault(c.Contains);
             return clave != null && PorLugar.TryGetValue(clave + "|" + l, out var g) ? g : new GeocercaGps[0];
         }
     }

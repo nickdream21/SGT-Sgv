@@ -167,6 +167,60 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void Afrecho_PrimerViaje_LlegaAAlicorpPaitaYSigueCargando()
+        {
+            // AVM-877 el 24/10/2026: sale de la base 04:34, llega por la Av. Industrial 06:51, espera en la puerta
+            // hasta las 07:59 y desde las 08:06 carga; sigue adentro al final del historial (y un salto suelto del
+            // GPS a 24 km a las 06:50:59 no corta la llegada).
+            var r = TrazabilidadTercerosService.Detectar("AFRECHO", "PAITA", null,
+                Gps("AVM-877_2026-10-24_afrecho.json"), null, Utc("2026-10-24 00:00"));
+            Hora(r, "fhLlegadaTrujillo", "2026-10-24 06:52");
+            Assert.Null(r.Buscar("fhSalidaPlanta"));
+            Assert.Equal("UNIDAD EN PROCESO DE CARGA - PAITA", StatusFinal("AFRECHO", r, "PAITA", null));
+        }
+
+        private static OnwayHistoryPoint Punto(string horaPeru, double lat, double lng, double kmh, string direccion = null) =>
+            new OnwayHistoryPoint { MessageTime = Utc(horaPeru), Lat = lat, Lng = lng, Speed = kmh, Address = direccion };
+
+        private static IEnumerable<OnwayHistoryPoint> Parado(GeocercaGps g, params string[] horas) =>
+            horas.Select(h => Punto(h, g.LatitudCentro, g.LongitudCentro, 0));
+
+        [Fact]
+        public void Afrecho_SinGeocercaDeDescarga_TomaLaPrimeraParadaLargaDespuesDeTci()
+        {
+            // Recorrido supuesto (todavía no hay un viaje completo): Paita → Complex → TCI → Balsas → base.
+            var gps = new List<OnwayHistoryPoint> { Punto("2026-10-24 07:00", -5.00, -80.90, 40) };
+            gps.AddRange(Parado(GeocercasTerceros.AlicorpPaita, "2026-10-24 08:06", "2026-10-24 10:00", "2026-10-24 12:00"));
+            gps.Add(Punto("2026-10-24 12:30", -5.00, -80.80, 50));
+            gps.AddRange(Parado(GeocercasTrazabilidad.ComplexAcceso, "2026-10-24 18:00", "2026-10-24 19:00", "2026-10-24 20:00"));
+            gps.Add(Punto("2026-10-24 20:30", -4.30, -80.50, 60));
+            gps.AddRange(Parado(GeocercasTrazabilidad.Tci, "2026-10-24 21:00", "2026-10-24 22:00", "2026-10-24 23:00"));
+            gps.Add(Punto("2026-10-24 23:30", -3.60, -80.00, 50));
+            // Parada corta (20 min) en el camino: no es la descarga.
+            gps.Add(Punto("2026-10-24 23:45", -3.55, -80.05, 0, "Vía Arenillas, Arenillas, El Oro"));
+            gps.Add(Punto("2026-10-25 00:05", -3.60, -79.95, 45));
+            foreach (var h in new[] { "2026-10-25 01:00", "2026-10-25 02:00", "2026-10-25 04:00" })
+                gps.Add(Punto(h, -3.77, -79.84, 0, "Calle Sucre, Balsas, El Oro"));
+            gps.Add(Punto("2026-10-25 04:30", -3.60, -80.00, 40));
+            gps.AddRange(Parado(GeocercasTrazabilidad.BaseSullana, "2026-10-25 09:00", "2026-10-25 10:00", "2026-10-25 11:00"));
+
+            var r = TrazabilidadTercerosService.Detectar("AFRECHO", "PAITA", null, gps, null, Utc("2026-10-24 00:00"));
+
+            Hora(r, "fhLlegadaTrujillo", "2026-10-24 08:06");
+            Hora(r, "fhSalidaPlanta", "2026-10-24 12:30");
+            Hora(r, "fhLlegadaBodegaNacional", "2026-10-24 18:00");
+            Hora(r, "fhSalidaBodegaNacional", "2026-10-24 20:30");
+            Hora(r, "fhLlegadaTCI", "2026-10-24 21:00");
+            Hora(r, "fhSalidaTCI", "2026-10-24 23:30");
+            Hora(r, "fhLlegadaPlantaEcuador", "2026-10-25 01:00");
+            Hora(r, "fhSalida", "2026-10-25 04:30");
+            Hora(r, "fhLlegadaBaseFinal", "2026-10-25 09:00");
+            Assert.Equal("BALSAS", r.LugarEntrega);
+            Assert.Equal("BASE", r.LugarFin);
+            Assert.Equal("UNIDAD DESCARGADA EN SU TOTALIDAD", StatusFinal("AFRECHO", r, "PAITA", null));
+        }
+
+        [Fact]
         public void SinVisitaALaPlantaDeCarga_NoHayViaje()
         {
             // Desde después de la descarga: la unidad ya no vuelve a Chapaira en el historial.

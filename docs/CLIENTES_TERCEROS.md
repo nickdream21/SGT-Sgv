@@ -209,6 +209,19 @@ Lo que enseñó el GPS:
     de la Panamericana (OpenStreetMap), ~1,4 km al sur de Vitapro. BNG-862 y T6F-864 (28/08–01/09); ahí también
     esperan 6–7 h las de Novopan después de descargar.
 
+### 4.4 Afrecho de Alicorp Paita a Ecuador (desde 2026-10-24, se aprende del GPS)
+
+- Sección **AFRECHO-PAITA** del Word del 23/10/2026 (cargan el día siguiente): afrecho de trigo en sacos de 40 kg
+  que Alicorp vende FCA Paita, puerto de descarga Huaquillas. El comprador contrata el flete y es el cliente
+  (primera factura F319-00021039 a MALDONADO TORRES JOSE RODRIGO, Balsas, El Oro); como puede cambiar, al leer el
+  Word se propone el cliente de la última carga en Paita.
+- La ruta la da la planta: toda carga en la planta **Paita** es `tipoRuta = AFRECHO` (`sp_SE_SincronizarDespachos`).
+- Recorrido supuesto: Alicorp Paita (geocerca `ALICORP_PAITA`, de AVM-877 el 24/10: llega 06:51 por la Av.
+  Industrial, espera en la puerta 1 h y carga desde las 08:06) → Complex → TCI (como Crisar) → **primera parada
+  de 1 h o más después de TCI** como descarga, con el lugar que da la dirección de Onway → fin (base, Paita…).
+- Por aprender con los primeros viajes: el punto de descarga (geocerca en Balsas u otro), si pasan por la base
+  antes de la frontera, si cruzan por el Complex y TCI o por otro paso, y cuánto esperan en cada uno.
+
 ## 5. Calidad de los datos del Excel
 
 - 7 filas sin cliente (las del 19/10 en Cartavio son de Crisar); la de Wiler Cruz (ARN-917, 19/10) dice

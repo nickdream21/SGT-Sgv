@@ -13,7 +13,8 @@
 --      si el viaje todavía no la tiene. La lista manda: el despacho toma el destino de la
 --      factura ("CD VITAPRO MILAGRO") para todo el pedido aunque una unidad vaya a Jave.
 --   4. Un despacho de carga anulado (activo = 0) deja su viaje como CANCELADO.
---   5. Las cargas de los clientes terceros (Crisar, Novopan, Polinplast; migración 34) también
+--   5. Las cargas de los clientes terceros (Crisar, Novopan, Polinplast; migración 34, y el
+--      afrecho que carga en la planta Paita, tipoRuta AFRECHO) también
 --      son viajes, con tipoRuta, lugar de carga (la planta) y lugar de entrega (el destino del
 --      despacho, si lo tiene; si no, lo pone la sección de descarga del Word o el GPS). No tienen
 --      pedido: la columna cliente lleva el nombre del cliente.
@@ -37,7 +38,9 @@ BEGIN
             SELECT d.idDespacho, d.activo,
                    CASE WHEN UPPER(cl.nombre) LIKE '%CRISAR%' THEN 'CRISAR'
                         WHEN UPPER(cl.nombre) LIKE '%NOVOPAN%' THEN 'NOVOPAN'
-                        WHEN UPPER(cl.nombre) LIKE '%POLINPLAST%' THEN 'POLINPLAST' END AS ruta,
+                        WHEN UPPER(cl.nombre) LIKE '%POLINPLAST%' THEN 'POLINPLAST'
+                        -- Afrecho de Alicorp Paita a Ecuador: la ruta la da la planta, no el comprador (cambia).
+                        WHEN UPPER(LTRIM(RTRIM(p.nombre))) = 'PAITA' THEN 'AFRECHO' END AS ruta,
                    LTRIM(RTRIM(ca.placaCarreta)) AS carreta,
                    LTRIM(RTRIM(t.placaTracto)) AS tracto,
                    LTRIM(RTRIM(ISNULL(LTRIM(RTRIM(co.nombre)), '') + ISNULL(' ' + NULLIF(LTRIM(RTRIM(co.apPaterno)), ''), '')

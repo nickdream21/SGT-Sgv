@@ -24,6 +24,8 @@ namespace WebSGV.Tests
         [InlineData("POLINPLAST-OLMOS PROYECTO", "POLINPLAST", false, "OLMOS", false)]
         [InlineData("POLINPLAST-OLMOS OROYECTO", "POLINPLAST", false, "OLMOS", false)]
         [InlineData("POLINPAST-ACP", "POLINPLAST", false, "ACP", false)]
+        [InlineData("AFRECHO-PAITA", "AFRECHO", true, "PAITA", false)]
+        [InlineData("AFRECHO", "AFRECHO", true, "PAITA", false)]
         public void Reconocer_ClienteOperacionYLugar(string titulo, string cliente, bool esCarga, string lugar, bool internacional)
         {
             var r = RutaProgramacion.Reconocer(titulo);

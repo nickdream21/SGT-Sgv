@@ -23,7 +23,7 @@ namespace WebSGV.Services.Exportacion
         /// <summary>Incluir los viajes importados del Excel o del formulario viejo (origen NULL); por defecto solo despachos y manuales.</summary>
         public bool IncluirHistorial { get; set; }
 
-        /// <summary>VITAPRO | TERCEROS | CRISAR | NOVOPAN | POLINPLAST | null (todos).</summary>
+        /// <summary>VITAPRO | TERCEROS | CRISAR | NOVOPAN | POLINPLAST | AFRECHO | null (todos).</summary>
         public string Cliente { get; set; }
     }
 
@@ -40,7 +40,7 @@ namespace WebSGV.Services.Exportacion
         public string Planta { get; set; }
         public string Estado { get; set; }
 
-        /// <summary>CRISAR | NOVOPAN | POLINPLAST; null = exportación de Vitapro.</summary>
+        /// <summary>CRISAR | NOVOPAN | POLINPLAST | AFRECHO; null = exportación de Vitapro.</summary>
         public string TipoRuta { get; set; }
         public string LugarCarga { get; set; }
         public string LugarEntrega { get; set; }

@@ -118,6 +118,7 @@ namespace WebSGV.Services.Despachos
             int? ClienteDe(SeccionProgramacion s)
             {
                 var ruta = RutaProgramacion.Reconocer(s);
+                if (ruta?.Cliente == RutaProgramacion.Afrecho) return UltimoClienteQueCargoEn(ruta.Lugar);
                 var c = ruta != null
                     ? clientes.Where(x => LectorDocumentosPedido.Normalizar(x.Value).Contains(ruta.Cliente)).ToList()
                     : clientes.Where(x => ProgramacionCarga.NombraAlCliente(s.Titulo, x.Value)).ToList();
@@ -154,7 +155,9 @@ namespace WebSGV.Services.Despachos
             if (!p.FechaCarga.HasValue)
                 p.AvisosGenerales.Add("No se leyó el día de carga del título (\"CARGAN 21 DE OCTUBRE\"): elíjalo.");
             if (!p.IdCliente.HasValue)
-                p.AvisosGenerales.Add(rutaElegida != null
+                p.AvisosGenerales.Add(rutaElegida?.Cliente == RutaProgramacion.Afrecho
+                    ? "Elija el cliente del afrecho: el comprador de la factura de Alicorp (si es nuevo, regístrelo en Clientes)."
+                    : rutaElegida != null
                     ? $"El cliente {rutaElegida.Cliente} no está en el catálogo de clientes activos: regístrelo en Clientes o elíjalo."
                     : "No se reconoció al cliente en el título de la sección: elíjalo.");
 
@@ -224,6 +227,22 @@ namespace WebSGV.Services.Despachos
             if (p.FechaCarga.HasValue)
                 MarcarExistentes(p.Filas, p.FechaCarga.Value);
             return p;
+        }
+
+        /// <summary>
+        /// Cliente de la última carga en esa planta ("PAITA"): el afrecho de Alicorp lo compra quien
+        /// salga en la factura, el Word no lo dice. Null si nunca se cargó ahí (se elige a mano).
+        /// </summary>
+        private static int? UltimoClienteQueCargoEn(string planta)
+        {
+            object id = DbHelper.EjecutarEscalar(@"
+                SELECT TOP 1 d.idCliente FROM Despachos d
+                JOIN Planta p ON p.idPlanta = d.idPlanta
+                JOIN Cliente c ON c.idCliente = d.idCliente AND c.activo = 1
+                WHERE d.activo = 1 AND d.tipoOperacion = 'CARGA' AND UPPER(LTRIM(RTRIM(p.nombre))) = @planta
+                ORDER BY d.fechaDespacho DESC, d.idDespacho DESC",
+                DbHelper.Param("@planta", (planta ?? "").Trim().ToUpperInvariant()));
+            return id == null || id == DBNull.Value ? (int?)null : Convert.ToInt32(id);
         }
 
         private static string Capital(string s) =>

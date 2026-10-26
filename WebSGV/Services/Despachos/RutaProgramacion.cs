@@ -17,6 +17,9 @@ namespace WebSGV.Services.Despachos
     ///                                           que las de RAPEL también cargan en Chapaira: Rapel es
     ///                                           a quien va la carga (fundo en Jayanca), no otra planta.
     ///   POLINPLAST-VIRU / -ACP / -OLMOS …     → Polinplast, descarga en ese destino
+    ///   AFRECHO-PAITA                         → afrecho de Alicorp, carga en Paita (Word del 23/10/2026).
+    ///                                           El comprador cambia: el cliente es el de la última carga
+    ///                                           en Paita (ProgramacionDespachoService).
     ///
     /// Los títulos se escriben a mano: se toleran las erratas vistas (POLINPAST, TRUJILO,
     /// OLMOS OROYECTO, AZÚCAR con o sin tilde). Null para Vitapro y lo que no se reconoce:
@@ -27,6 +30,7 @@ namespace WebSGV.Services.Despachos
         public const string Crisar = "CRISAR";
         public const string Novopan = "NOVOPAN";
         public const string Polinplast = "POLINPLAST";
+        public const string Afrecho = "AFRECHO";
 
         /// <summary>Nombre corto del cliente tal como se busca en el catálogo.</summary>
         public string Cliente { get; private set; }
@@ -80,6 +84,9 @@ namespace WebSGV.Services.Despachos
                     return new RutaProgramacion { Cliente = Polinplast, EsCarga = true, Lugar = PlantaPolinplast, Destino = lugar };
                 return new RutaProgramacion { Cliente = Polinplast, EsCarga = false, Lugar = lugar };
             }
+
+            if (t.Contains(Afrecho))
+                return new RutaProgramacion { Cliente = Afrecho, EsCarga = true, Lugar = LugarDelTitulo(t, Afrecho) ?? "PAITA" };
 
             return null;
         }

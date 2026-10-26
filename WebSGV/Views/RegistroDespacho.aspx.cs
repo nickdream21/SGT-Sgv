@@ -2484,7 +2484,11 @@ namespace WebSGV.Views
                     return;
                 }
 
-                var r = ProgramacionDespachoService.Programar(filas, idCliente, idPlanta, fecha, chkExportacionProg.Checked, ObtenerUsuarioActual(), p.EsInternacional);
+                // Leído antes de mostrar la sección siguiente, que cambia la casilla (el mensaje decía
+                // "seguimiento de exportación" al programar el afrecho del 24/10/2026 sin exportación).
+                bool esExportacion = chkExportacionProg.Checked;
+                var rutaProgramada = RutaProgramacion.Reconocer(p.Titulo);
+                var r = ProgramacionDespachoService.Programar(filas, idCliente, idPlanta, fecha, esExportacion, ObtenerUsuarioActual(), p.EsInternacional);
 
                 if (r.Creados.Count == 0)
                 {
@@ -2508,8 +2512,8 @@ namespace WebSGV.Views
                     catch (Exception ex) { RegistrarError("btnProgramarDespachos_Click (siguiente sección)", ex); }
                 }
                 MostrarMensajeImportacion($"Se programaron {r.Creados.Count} despacho(s) de carga del {fecha:dd/MM/yyyy}" +
-                    (RutaProgramacion.Reconocer(p.Titulo) != null ? " y su seguimiento ya está en el tablero (cliente " + RutaProgramacion.Reconocer(p.Titulo).Cliente + ")"
-                     : chkExportacionProg.Checked ? " y su seguimiento de exportación ya está en el tablero (pedido PENDIENTE)" : "") +
+                    (rutaProgramada != null ? " y su seguimiento ya está en el tablero (" + rutaProgramada.Cliente + ")"
+                     : esExportacion ? " y su seguimiento de exportación ya está en el tablero (pedido PENDIENTE)" : "") +
                     ". Cuando llegue el correo, suba el ZIP aquí: cada guía completará su despacho." +
                     (r.Errores.Count > 0 ? " No se pudieron programar: " + string.Join(" ", r.Errores) : ""),
                     r.Errores.Count > 0 ? "warning" : "success");
