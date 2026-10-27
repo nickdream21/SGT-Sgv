@@ -26,6 +26,7 @@ namespace WebSGV.Tests
         [InlineData("POLINPAST-ACP", "POLINPLAST", false, "ACP", false)]
         [InlineData("AFRECHO-PAITA", "AFRECHO", true, "PAITA", false)]
         [InlineData("AFRECHO", "AFRECHO", true, "PAITA", false)]
+        [InlineData("AFRECHO-HUAQUILLAS", "AFRECHO", false, "HUAQUILLAS", true)]
         public void Reconocer_ClienteOperacionYLugar(string titulo, string cliente, bool esCarga, string lugar, bool internacional)
         {
             var r = RutaProgramacion.Reconocer(titulo);
@@ -71,6 +72,9 @@ namespace WebSGV.Tests
             Assert.False(ProgramacionCarga.EsSeccionDeCarga(Seccion("POLINPLAST-VIRU", "08:00AM")));
             Assert.True(ProgramacionCarga.EsSeccionDeCarga(Seccion("CARTAVIO-AZUCAR", "06:00AM")));
             Assert.False(ProgramacionCarga.EsSeccionDeCarga(Seccion("GUAYAQUIL-AZÚCAR", null)));
+            Assert.False(ProgramacionCarga.EsSeccionDeCarga(Seccion("AFRECHO-HUAQUILLAS", null)));
+            // La vuelta de Ecuador con la importación (Word del 25/10/2026): tiene hora, pero no es una carga de exportación.
+            Assert.False(ProgramacionCarga.EsSeccionDeCarga(Seccion("IMPORTACION-TRUJILLO", "06:00AM")));
 
             // Vitapro sigue con la regla de siempre.
             Assert.True(ProgramacionCarga.EsSeccionDeCarga(Seccion("TRUJILLO-VITAPRO-CARGAN 22 DE OCTUBRE", "05:30AM")));

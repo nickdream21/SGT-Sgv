@@ -179,6 +179,72 @@ namespace WebSGV.Tests
             Assert.Equal("UNIDAD EN PROCESO DE CARGA - PAITA", StatusFinal("AFRECHO", r, "PAITA", null));
         }
 
+        [Fact]
+        public void Afrecho_EsperaEnLaBaseYEnTci_SinDescargaFalsaAlReconectarElGps()
+        {
+            // AVM-877, 24–27/10/2026: carga en Paita, vuelve a la base y espera 36 h, baja por la costa y desde las 14:41
+            // del 26/10 está en TCI. Cortan la batería a las 16:18; al reconectarla (27/10 07:42) el equipo manda dos
+            // posiciones viejas, en Aguas Verdes y en el cruce, y a las 07:50 vuelve a estar en TCI. El sitio tomaba
+            // esas posiciones como la salida de TCI y la descarga "en AGUAS VERDES" (que además es Perú).
+            var r = TrazabilidadTercerosService.Detectar("AFRECHO", "PAITA", "HUAQUILLAS",
+                Gps("AVM-877_2026-10-24_afrecho_tci.json"), null, Utc("2026-10-24 00:00"));
+
+            Hora(r, "fhLlegadaTrujillo", "2026-10-24 06:52");
+            Hora(r, "fhSalidaPlanta", "2026-10-24 14:45");
+            Hora(r, "fhLlegadaBase2", "2026-10-24 16:32");
+            Hora(r, "fhSalidaBase2", "2026-10-26 04:48");
+            Hora(r, "fhLlegadaTCI", "2026-10-26 14:41");
+            Assert.Null(r.Buscar("fhSalidaTCI"));
+            Assert.Null(r.Buscar("fhLlegadaPlantaEcuador"));
+            Assert.Equal("UNIDAD CARGADA EN TCI - ECUADOR", StatusFinal("AFRECHO", r, "PAITA", "HUAQUILLAS"));
+        }
+
+        [Fact]
+        public void Afrecho_VuelveALaBase_EstaEnBaseCargado()
+        {
+            // El mismo viaje hasta el 25/10: la unidad está en la base con la carga ("CAMINO A FRONTERA" antes).
+            var gps = Gps("AVM-877_2026-10-24_afrecho_tci.json").Where(p => (p.GenerateTime ?? p.MessageTime) < Utc("2026-10-25 12:00")).ToList();
+            var r = TrazabilidadTercerosService.Detectar("AFRECHO", "PAITA", null, gps, null, Utc("2026-10-24 00:00"));
+
+            Hora(r, "fhLlegadaBase2", "2026-10-24 16:32");
+            Assert.Null(r.Buscar("fhSalidaBase2"));
+            var horas = r.Hitos.ToDictionary(h => h.Item1, h => (DateTime?)h.Item2.HoraUtc.AddHours(-5));
+            Assert.Equal("En base, cargado", RutaTercero.Fase("AFRECHO", horas, "EN_CURSO", "PAITA", null).Nombre);
+            Assert.Equal("UNIDAD CARGADA EN BASE SULLANA", StatusFinal("AFRECHO", r, "PAITA", null));
+        }
+
+        [Fact]
+        public void Afrecho_Enero_DescargaEnHuaquillas()
+        {
+            // BPT-919, carga del 10/01/2026 (Excel STATUS EXTRA: AFRECHO, PAITA → "TCI"): 35 h en la base, Zarumilla,
+            // 3,8 h en Huaquillas (la descarga, sin pasar por TCI) y después descanso en Bellavista y vuelta a la base.
+            var r = TrazabilidadTercerosService.Detectar("AFRECHO", "PAITA", null,
+                Gps("BPT-919_2026-01-10_afrecho.json"), null, Utc("2026-01-10 00:00"));
+
+            Hora(r, "fhLlegadaTrujillo", "2026-01-10 10:02");
+            Hora(r, "fhSalidaPlanta", "2026-01-10 17:06");
+            Hora(r, "fhLlegadaBase2", "2026-01-10 18:39");
+            Hora(r, "fhSalidaBase2", "2026-01-12 05:56");
+            Hora(r, "fhLlegadaPlantaEcuador", "2026-01-12 14:52");
+            Hora(r, "fhSalida", "2026-01-12 18:38");
+            Hora(r, "fhLlegadaBaseFinal", "2026-01-13 12:47");
+            Assert.Equal("HUAQUILLAS", r.LugarEntrega);
+            Assert.Equal("BASE", r.LugarFin);
+        }
+
+        [Fact]
+        public void Polinplast_JayancaPueblo()
+        {
+            // BPT-788, 23–24/10/2026: Chapaira → Jayanca, pero en el pueblo (a 15 km del punto de Rapel).
+            var r = TrazabilidadTercerosService.Detectar("POLINPLAST", "CHAPAIRA", "JAYANCA",
+                Gps("BPT-788_2026-10-23_polinplast_jayanca.json"), null, Utc("2026-10-23 00:00"));
+
+            Hora(r, "fhLlegadaTrujillo", "2026-10-23 06:49");
+            Hora(r, "fhSalidaPlanta", "2026-10-23 10:43");
+            Hora(r, "fhLlegadaPlantaEcuador", "2026-10-24 08:23");
+            Hora(r, "fhSalida", "2026-10-24 13:01");
+        }
+
         private static OnwayHistoryPoint Punto(string horaPeru, double lat, double lng, double kmh, string direccion = null) =>
             new OnwayHistoryPoint { MessageTime = Utc(horaPeru), Lat = lat, Lng = lng, Speed = kmh, Address = direccion };
 

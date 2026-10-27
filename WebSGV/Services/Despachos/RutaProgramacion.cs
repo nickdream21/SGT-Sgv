@@ -20,6 +20,8 @@ namespace WebSGV.Services.Despachos
     ///   AFRECHO-PAITA                         → afrecho de Alicorp, carga en Paita (Word del 23/10/2026).
     ///                                           El comprador cambia: el cliente es el de la última carga
     ///                                           en Paita (ProgramacionDespachoService).
+    ///   AFRECHO-HUAQUILLAS                    → afrecho, descarga en Huaquillas (Word del 25/10/2026, sin hora;
+    ///                                           CAMBIO vacío = descarga el mismo tracto).
     ///
     /// Los títulos se escriben a mano: se toleran las erratas vistas (POLINPAST, TRUJILO,
     /// OLMOS OROYECTO, AZÚCAR con o sin tilde). Null para Vitapro y lo que no se reconoce:
@@ -47,6 +49,7 @@ namespace WebSGV.Services.Despachos
         public string Destino { get; private set; }
 
         private const string PlantaPolinplast = "CHAPAIRA";
+        private const string PlantaAfrecho = "PAITA";
         private static readonly string[] DestinosEnTituloDeCarga = { "RAPEL" };
 
         public static RutaProgramacion Reconocer(SeccionProgramacion seccion) => Reconocer(seccion?.Titulo);
@@ -86,7 +89,12 @@ namespace WebSGV.Services.Despachos
             }
 
             if (t.Contains(Afrecho))
-                return new RutaProgramacion { Cliente = Afrecho, EsCarga = true, Lugar = LugarDelTitulo(t, Afrecho) ?? "PAITA" };
+            {
+                string lugar = LugarDelTitulo(t, Afrecho) ?? PlantaAfrecho;
+                return lugar == PlantaAfrecho
+                    ? new RutaProgramacion { Cliente = Afrecho, EsCarga = true, Lugar = PlantaAfrecho }
+                    : new RutaProgramacion { Cliente = Afrecho, EsCarga = false, Lugar = lugar, EsInternacional = true };
+            }
 
             return null;
         }

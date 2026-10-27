@@ -152,7 +152,40 @@ namespace WebSGV.Services.GpsIntegracion
                 .Where(p => p != null && !(p.Lat == 0 && p.Lng == 0))
                 .OrderBy(Hora)
                 .ToList();
-            return puntos.Where((p, i) => !EsSaltoAislado(puntos, i)).ToList();
+            puntos = puntos.Where((p, i) => !EsSaltoAislado(puntos, i)).ToList();
+            return SinPuntosViejosAlReconectar(puntos);
+        }
+
+        /// <summary>
+        /// Al volver la corriente después de un corte, el equipo manda hasta 3 posiciones viejas lejos de donde está
+        /// y enseguida vuelve al mismo lugar (AVM-877 en TCI el 27/10/2026: batería cortada 26/10 16:18; a las 07:42
+        /// "Encendido o Entró en cobertura" en Aguas Verdes, 07:44 en el cruce y a las 07:50 otra vez en TCI). Como
+        /// el corte dura horas no es una velocidad imposible, pero se tomaba como la salida de TCI y la descarga.
+        /// Se quitan si después de un silencio de 30+ min saltan a más de 1 km y en menos de 1 h el equipo vuelve a
+        /// menos de 300 m de donde estaba antes del corte.
+        /// </summary>
+        internal static List<OnwayHistoryPoint> SinPuntosViejosAlReconectar(List<OnwayHistoryPoint> puntos)
+        {
+            const double MinutosCorte = 30, MetrosSalto = 1000, MetrosMismoLugar = 300, MinutosVuelta = 60;
+            const int MaximoViejos = 3;
+            var res = new List<OnwayHistoryPoint>(puntos.Count);
+            for (int i = 0; i < puntos.Count; i++)
+            {
+                var antes = res.Count > 0 ? res[res.Count - 1] : null;
+                if (antes != null && (Hora(puntos[i]) - Hora(antes)).TotalMinutes >= MinutosCorte &&
+                    CheckpointMatchingService.CalcularDistanciaMetros(antes.Lat, antes.Lng, puntos[i].Lat, puntos[i].Lng) > MetrosSalto)
+                {
+                    int vuelta = -1;
+                    for (int k = i + 1; k <= i + MaximoViejos && k < puntos.Count; k++)
+                    {
+                        if ((Hora(puntos[k]) - Hora(puntos[i])).TotalMinutes > MinutosVuelta) break;
+                        if (CheckpointMatchingService.CalcularDistanciaMetros(antes.Lat, antes.Lng, puntos[k].Lat, puntos[k].Lng) <= MetrosMismoLugar) { vuelta = k; break; }
+                    }
+                    if (vuelta > 0) { i = vuelta - 1; continue; }
+                }
+                res.Add(puntos[i]);
+            }
+            return res;
         }
 
         /// <summary>

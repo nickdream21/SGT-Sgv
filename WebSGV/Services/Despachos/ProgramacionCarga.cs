@@ -33,6 +33,9 @@ namespace WebSGV.Services.Despachos
         {
             var ruta = RutaProgramacion.Reconocer(s);
             if (ruta != null) return ruta.EsCarga;
+            // "IMPORTACION-TRUJILLO" (Word del 25/10/2026): la vuelta de Ecuador cargada desde Jave hasta Trujillo,
+            // con HORARIO de la descarga. No es una carga de exportación y todavía no hay ruta para ella.
+            if (LectorDocumentosPedido.Normalizar(s.Titulo).Contains("IMPORTACION")) return false;
             return LectorDocumentosPedido.Normalizar(s.Titulo).Contains("CARGA")
                 || (string.IsNullOrEmpty(s.NumeroPedido) && s.Filas.Any(f => !string.IsNullOrEmpty(f.Horario)));
         }

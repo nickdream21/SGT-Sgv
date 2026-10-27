@@ -299,7 +299,11 @@ namespace WebSGV.Views.Exportacion
                 bool hayAbiertos = todos.Any(v => v.Fase.Grupo != "cerrado" && (!string.IsNullOrWhiteSpace(v.Tracto1) || !string.IsNullOrWhiteSpace(v.Tracto2)));
                 AutoActualizarGps = hayAbiertos && (consultas.Count == 0 || FechaHelper.Ahora() - consultas.Max() > EdadMaximaGps);
             }
-            litUltimaConsulta.Text = consultas.Count > 0 ? "GPS consultado por última vez " + consultas.Max().ToString("dd/MM HH:mm") : "";
+            int sinReportar = todos.Count(v => v.GpsSinReportar);
+            litUltimaConsulta.Text = consultas.Count > 0
+                ? "GPS consultado por última vez " + consultas.Max().ToString("dd/MM HH:mm") +
+                  (sinReportar > 0 ? $" · {sinReportar} viaje(s) con el GPS sin reportar hace más de {StatusUnidad.SenalAntigua.TotalHours:0} h (unidad apagada o sin cobertura)" : "")
+                : "";
             UltimaConsultaGps = consultas.Count > 0 ? consultas.Max().ToString("yyyy-MM-ddTHH:mm:ss") : "";
             // Todas las unidades en camino a planta (no solo las de la pestaña de fase elegida).
             litReporteLlegadas.Text = HttpUtility.HtmlEncode(LlegadaEstimada.Reporte(todos, FechaHelper.Ahora()));
@@ -350,7 +354,10 @@ namespace WebSGV.Views.Exportacion
             Chofer2 = v.Chofer2 ?? (v.Tracto2 != null && v.Tracto2 == v.Tracto1 ? "Mismo tracto" : ""),
             Fase = v.Fase.Nombre,
             v.Status,
-            Ubicacion = v.UbicacionHora != null ? "Ubicación al " + v.UbicacionHora : "",
+            Ubicacion = v.UbicacionHora == null ? ""
+                : v.GpsSinReportar ? $"GPS sin reportar desde {v.UbicacionHora} ({FaseViaje.Duracion(FechaHelper.Ahora() - v.UltimaPosicion.Value)}): apagado o sin cobertura"
+                : "Ubicación al " + v.UbicacionHora,
+            UbicacionClase = v.GpsSinReportar ? "sx-ubicacion sx-sin-reporte" : "sx-ubicacion",
             Llegada = v.Llegada != null
                 ? $"Llega aprox. {v.Llegada.Texto} · faltan {v.Llegada.KmRestantes:0} km a " +
                   (v.Llegada.Destino == LlegadaEstimada.DestinoBase ? "la base"

@@ -62,6 +62,12 @@ namespace WebSGV.Services.Exportacion
 
         /// <summary>"dd/MM HH:mm" de la última posición del GPS mientras el viaje sigue abierto; null si ya cerró o no hay.</summary>
         public string UbicacionHora => UltimaPosicion.HasValue && Fase != null && Fase.Grupo != "cerrado" ? UltimaPosicion.Value.ToString("dd/MM HH:mm") : null;
+
+        /// <summary>
+        /// Viaje abierto cuyo GPS no reporta hace más de <see cref="StatusUnidad.SenalAntigua"/>. Casi siempre es la unidad
+        /// estacionada con la batería cortada (base, TCI): el 25/10/2026, 25 de 33 tractos; no es que la consulta no corra.
+        /// </summary>
+        public bool GpsSinReportar => UbicacionHora != null && FechaHelper.Ahora() - UltimaPosicion.Value > StatusUnidad.SenalAntigua;
         public Dictionary<string, DateTime?> Horas { get; set; }
         public FaseCalculada Fase { get; set; }
         public List<AvisoViaje> Avisos { get; set; }
