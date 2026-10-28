@@ -337,7 +337,7 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       09:41 no hubo ninguna consulta al GPS y el tablero mostraba posiciones del 23/10 13:00. Prueba 202 a las
       10:19; a las 10:30 actualizó sola 40 viajes. Si cambia `GpsAutomaticoClave` o la URL del sitio, cambiarla
       también en cron-job.org (pasos en `herramientas/gps-automatico/README.md`).
-- [ ] **URGENTE: Copiar `appSettings.Secrets.config` a la laptop de casa** (ahora tiene `GpsAutomaticoClave`): el
+- [x] ~~**Copiar `appSettings.Secrets.config` a la laptop de casa**~~ (2026-10-27, clave tomada del encabezado de cron-job.org) (ahora tiene `GpsAutomaticoClave`): el
       27/10 se publicó desde la laptop sin la clave y cron-job.org quedó con 403 y desactivado (sección 3, "GPS
       automático detenido"). Desde ahora publicar sin la clave da error. Si no se tiene el archivo de la oficina, la
       clave es el valor del encabezado `X-SGV-Clave` de la tarea en cron-job.org (Edit → Advanced → Headers).
