@@ -35,6 +35,9 @@ namespace WebSGV.Views.Exportacion
         /// <summary>Al abrir la pantalla, si la última consulta al GPS es más vieja que esto, se consulta sola.</summary>
         private static readonly TimeSpan EdadMaximaGps = TimeSpan.FromMinutes(15);
 
+        /// <summary>cron-job.org llama cada 10 min: sin consulta en más de esto, la actualización automática se detuvo.</summary>
+        private static readonly TimeSpan ConsultaAutomaticaDetenida = TimeSpan.FromMinutes(30);
+
         /// <summary>Verdadero cuando la página debe lanzar sola "Actualizar GPS" al abrir (lo lee el aspx).</summary>
         protected bool AutoActualizarGps { get; private set; }
 
@@ -302,8 +305,13 @@ namespace WebSGV.Views.Exportacion
             int sinReportar = todos.Count(v => v.GpsSinReportar);
             litUltimaConsulta.Text = consultas.Count > 0
                 ? "GPS consultado por última vez " + consultas.Max().ToString("dd/MM HH:mm") +
+                  (FechaHelper.Ahora() - consultas.Max() > ConsultaAutomaticaDetenida
+                      ? $" (hace {FaseViaje.Duracion(FechaHelper.Ahora() - consultas.Max())}: la actualización automática no está corriendo, revisar la tarea de cron-job.org)"
+                      : "") +
                   (sinReportar > 0 ? $" · {sinReportar} viaje(s) con el GPS sin reportar hace más de {StatusUnidad.SenalAntigua.TotalHours:0} h (unidad apagada o sin cobertura)" : "")
                 : "";
+            if (string.IsNullOrWhiteSpace(System.Configuration.ConfigurationManager.AppSettings["GpsAutomaticoClave"]))
+                litUltimaConsulta.Text += " · Falta GpsAutomaticoClave en el appSettings.Secrets.config publicado: la actualización automática responde 403.";
             UltimaConsultaGps = consultas.Count > 0 ? consultas.Max().ToString("yyyy-MM-ddTHH:mm:ss") : "";
             // Todas las unidades en camino a planta (no solo las de la pestaña de fase elegida).
             litReporteLlegadas.Text = HttpUtility.HtmlEncode(LlegadaEstimada.Reporte(todos, FechaHelper.Ahora()));

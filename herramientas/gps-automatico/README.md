@@ -47,3 +47,10 @@ Register-ScheduledTask -TaskName 'SGV - GPS automático' -Action $accion -Trigge
 
 Cambiarla en `appSettings.Secrets.config`, publicar y actualizarla en cron-job.org (o la tarea lee el archivo
 sola). Copiar el archivo a la laptop de casa como los demás secretos.
+
+## Si cron-job.org manda 403 o desactiva la tarea
+
+403 = el sitio publicado no tiene la misma `GpsAutomaticoClave` (pasó el 27/10/2026: se publicó desde la laptop con
+un `appSettings.Secrets.config` viejo y todos los viajes salían "GPS sin reportar"). Copiar el archivo correcto (o
+poner como clave el valor del encabezado `X-SGV-Clave` de la tarea), volver a publicar y en cron-job.org activar la
+tarea y hacer *Test run* (202). Desde entonces publicar sin la clave da error y el tablero avisa si falta.

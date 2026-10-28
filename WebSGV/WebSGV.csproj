@@ -1007,6 +1007,14 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.4.1.0\build\net472\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.4.1.0\build\net472\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.targets'))" />
   </Target>
+  <!-- Al publicar (no al compilar): appSettings.Secrets.config reemplaza al del servidor. Sin GpsAutomaticoClave,
+       cron-job.org recibe 403 y desactiva la tarea (27/10/2026, publicado desde una PC con el archivo viejo). -->
+  <Target Name="VerificarSecretosAlPublicar" BeforeTargets="PipelineCollectFilesPhase">
+    <PropertyGroup>
+      <SecretosSGV Condition="Exists('$(MSBuildProjectDirectory)\appSettings.Secrets.config')">$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\appSettings.Secrets.config'))</SecretosSGV>
+    </PropertyGroup>
+    <Error Condition="!$(SecretosSGV.Contains('GpsAutomaticoClave'))" Text="appSettings.Secrets.config no tiene GpsAutomaticoClave: al publicar, la actualizacion automatica del GPS (cron-job.org) quedaria con 403. Copiar el archivo de la otra PC (ver herramientas/gps-automatico/README.md)." />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -64,10 +64,13 @@ namespace WebSGV.Services.Exportacion
         public string UbicacionHora => UltimaPosicion.HasValue && Fase != null && Fase.Grupo != "cerrado" ? UltimaPosicion.Value.ToString("dd/MM HH:mm") : null;
 
         /// <summary>
-        /// Viaje abierto cuyo GPS no reporta hace más de <see cref="StatusUnidad.SenalAntigua"/>. Casi siempre es la unidad
-        /// estacionada con la batería cortada (base, TCI): el 25/10/2026, 25 de 33 tractos; no es que la consulta no corra.
+        /// Viaje abierto cuyo GPS no reportaba hace más de <see cref="StatusUnidad.SenalAntigua"/> cuando se le consultó por
+        /// última vez. Casi siempre es la unidad estacionada con la batería cortada (base, TCI): el 25/10/2026, 25 de 33 tractos.
+        /// Se mide contra la consulta y no contra la hora actual: si la consulta automática se detiene (27/10/2026, cron-job.org
+        /// con 403), todas las posiciones envejecen a la vez sin que las unidades estén apagadas.
         /// </summary>
-        public bool GpsSinReportar => UbicacionHora != null && FechaHelper.Ahora() - UltimaPosicion.Value > StatusUnidad.SenalAntigua;
+        public bool GpsSinReportar => UbicacionHora != null && UltimaConsultaGps.HasValue
+            && UltimaConsultaGps.Value - UltimaPosicion.Value > StatusUnidad.SenalAntigua;
         public Dictionary<string, DateTime?> Horas { get; set; }
         public FaseCalculada Fase { get; set; }
         public List<AvisoViaje> Avisos { get; set; }
@@ -515,7 +518,7 @@ namespace WebSGV.Services.Exportacion
                 Horas = horas,
                 Fase = FaseViaje.Calcular(horas, estado),
                 Status = StatusUnidad.Texto(horas, estado, Texto(r, "bodegaDescarga") ?? Texto(r, "bodegaEcuatoriana"),
-                    StatusUnidad.LugarDeDireccion(Texto(r, "ultimaDireccion")), Fecha(r, "fhUltimaPosicion"), FechaHelper.Ahora()),
+                    StatusUnidad.LugarDeDireccion(Texto(r, "ultimaDireccion")), Fecha(r, "fhUltimaPosicion"), Fecha(r, "fhUltimaConsultaGps") ?? FechaHelper.Ahora()),
                 Avisos = FaseViaje.Avisos(horas, tracto1, tracto2, r.Table.Columns.Contains("pasoDirectoTci") && !r.IsNull("pasoDirectoTci") && Convert.ToBoolean(r["pasoDirectoTci"]), FechaHelper.Ahora()),
                 AvanceCarga = FaseViaje.Avance(horas, TramoViaje.Carga),
                 AvanceDescarga = FaseViaje.Avance(horas, TramoViaje.Descarga),
@@ -575,7 +578,7 @@ namespace WebSGV.Services.Exportacion
                 Horas = horas,
                 Fase = RutaTercero.Fase(tipoRuta, horas, estado, lugarCarga, lugarEntrega),
                 Status = RutaTercero.Status(tipoRuta, horas, estado, lugarCarga, lugarEntrega, Texto(r, "lugarFin"),
-                    lugar, Fecha(r, "fhUltimaPosicion"), FechaHelper.Ahora()),
+                    lugar, Fecha(r, "fhUltimaPosicion"), Fecha(r, "fhUltimaConsultaGps") ?? FechaHelper.Ahora()),
                 Avisos = RutaTercero.Avisos(tipoRuta, horas, tracto1, lugarCarga, lugarEntrega, FechaHelper.Ahora()),
                 AvanceCarga = hitos.Count(d => d.Tramo == TramoViaje.Carga && Hay(d)),
                 AvanceDescarga = hitos.Count(d => d.Tramo == TramoViaje.Descarga && Hay(d)),
