@@ -247,9 +247,14 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       sigue al tracto de descarga, pero el despacho de DESCARGA (liquidación del chofer de descarga, CPIC) se
       registra como siempre cuando llegue el ZIP de cada pedido (completa sus cargas) y después con el Word en
       "Descarga por pedido".
-- [ ] **TMB-988 (pedido 4400134113) descarga con BFR-730, que no tiene GPS en Onway**: el viaje 7763 sigue
-      mostrando la posición de T6F-864 (el tracto de la carga, en la base) en vez del grupo, que el 27/10 ya
-      estaba en Naranjal. Revisar por qué el aproximado con el grupo (migración 36) no lo tomó.
+- [x] ~~**TMB-988 (pedido 4400134113) descarga con BFR-730, sin GPS en Onway**~~ (2026-10-27): el viaje 7761
+      mostraba a T6F-864 en la base porque se recalculó viaje por viaje (detalle → "Actualizar GPS"), que no
+      aproxima con el grupo; el aproximado (`AproximacionGrupo`) solo corre en la actualización de todos los
+      abiertos (botón del tablero o cron-job.org). Con ella: salida de base 26/10 05:14, CEBAF 19:01, TCI 19:57,
+      salida de TCI 27/10 16:55, en Naranjal como CBU-928.
+- [ ] **"Actualizar GPS" del detalle de un viaje borra el aproximado con el grupo** (`gpsAproximadoDe = NULL` y
+      la posición vuelve al tracto con GPS) hasta la siguiente actualización de todos (10 min con cron-job.org).
+      Decidir si el detalle también debe aproximar con el grupo.
 - [ ] **F6O-779 sin GPS** (ARMANDO FRANCO, viaje 7786): no tiene equipo en Onway. En la captura del usuario sale
       **A4A-809** en Paita (parado en -5.1007, -81.0737 desde el 23/10 18:24, a 1,4 km de Alicorp): confirmar si
       ese equipo va en F6O-779 o si A4A-809 es otra unidad. El aproximado con su grupo no lo cubre (pide 2
