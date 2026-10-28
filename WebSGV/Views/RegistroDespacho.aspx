@@ -97,11 +97,11 @@
                                                     AutoPostBack="true" OnSelectedIndexChanged="ddlSeccionProg_SelectedIndexChanged" />
                                             </asp:Panel>
 
-                                            <%-- Secciones de descarga de Crisar, Novopan y Polinplast: completan el viaje del seguimiento de su carga. --%>
+                                            <%-- Secciones de descarga (GUAYAQUIL-VITAPRO con su pedido, Crisar, Novopan, Polinplast, afrecho): completan el viaje del seguimiento de su carga. --%>
                                             <asp:Panel ID="pnlEntregasTerceros" runat="server" CssClass="rd-entregas mb-3" Visible="false">
-                                                <div class="rd-section-label"><i class="fas fa-flag-checkered mr-1"></i> Entregas de clientes terceros en este Word</div>
+                                                <div class="rd-section-label"><i class="fas fa-flag-checkered mr-1"></i> Descargas y entregas en este Word</div>
                                                 <p class="small text-muted mb-2">
-                                                    Cada fila completa el viaje del seguimiento de su carga (misma carreta): el lugar de entrega y, si descarga otro tracto, el tracto y el chofer de descarga.
+                                                    Cada fila completa el viaje del seguimiento de su carga (misma carreta): en GUAYAQUIL-VITAPRO, el pedido y el tracto y chofer de descarga (el GPS sigue a ese tracto desde la base, sin esperar el ZIP); en las de clientes terceros, el lugar de entrega y, si descarga otro tracto, el tracto y el chofer.
                                                 </p>
                                                 <div class="table-responsive">
                                                     <table class="table table-sm rd-tabla-import align-middle mb-2">
@@ -124,7 +124,7 @@
                                                     </table>
                                                 </div>
                                                 <div class="d-flex justify-content-end">
-                                                    <asp:Button ID="btnRegistrarEntregas" runat="server" Text="Registrar entregas" CssClass="btn btn-outline-primary btn-sm"
+                                                    <asp:Button ID="btnRegistrarEntregas" runat="server" Text="Registrar descargas y entregas" CssClass="btn btn-outline-primary btn-sm"
                                                         CausesValidation="false" OnClick="btnRegistrarEntregas_Click" />
                                                 </div>
                                             </asp:Panel>

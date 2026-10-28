@@ -263,6 +263,20 @@ namespace WebSGV.Services.Despachos
             var entregas = new List<EntregaTercero>();
             foreach (var s in programacion.Secciones)
             {
+                if (ProgramacionCarga.EsSeccionDeDescargaVitapro(s))
+                {
+                    // GUAYAQUIL-VITAPRO: CHOFER / TRACTO hacen la descarga; CAMBIO es el chofer que trajo la carga.
+                    string pedido = s.NumeroPedido.Trim();
+                    foreach (var f in s.Filas.Where(f => LectorDocumentosPedido.NormalizarPlaca(f.Carreta) != null))
+                        entregas.Add(new EntregaTercero
+                        {
+                            Seccion = $"{(string.IsNullOrWhiteSpace(s.Titulo) ? "GUAYAQUIL-VITAPRO" : s.Titulo)} · pedido {pedido}",
+                            Cliente = "VITAPRO", Pedido = pedido, Lugar = "GUAYAQUIL",
+                            Chofer = f.Chofer?.Trim(), Tracto = f.Tracto?.Trim(), Carreta = f.Carreta?.Trim(),
+                            Cambio = f.Cambio?.Trim(), Horario = f.Horario?.Trim()
+                        });
+                    continue;
+                }
                 var ruta = RutaProgramacion.Reconocer(s);
                 if (ruta == null || ruta.EsCarga) continue;
                 foreach (var f in s.Filas.Where(f => LectorDocumentosPedido.NormalizarPlaca(f.Tracto) != null || LectorDocumentosPedido.NormalizarPlaca(f.Carreta) != null))
@@ -277,15 +291,17 @@ namespace WebSGV.Services.Despachos
 
             DateTime referencia = (programacion.Fecha ?? FechaHelper.Hoy()).Date;
             var viajes = DbHelper.ConsultarTabla(@"
-                    SELECT idSeguimiento, tipoRuta, carreta, tracto1, tracto2, fhProgramacion, lugarEntrega
+                    SELECT idSeguimiento, tipoRuta, cliente, carreta, tracto1, tracto2, fhProgramacion, lugarEntrega
                     FROM SeguimientoExportacion
-                    WHERE activo = 1 AND tipoRuta IS NOT NULL AND ISNULL(estado, '') <> 'CANCELADO'
+                    WHERE activo = 1 AND ISNULL(estado, '') <> 'CANCELADO'
                       AND fhProgramacion >= @desde AND fhProgramacion < @hasta",
                     DbHelper.Param("@desde", referencia.AddDays(-DiasCargaAntesDeEntrega)), DbHelper.Param("@hasta", referencia.AddDays(2)))
                 .Rows.Cast<DataRow>().ToList();
 
             string P(object o) => o == DBNull.Value ? null : LectorDocumentosPedido.NormalizarPlaca(Convert.ToString(o));
-            foreach (var e in entregas)
+            foreach (var e in entregas.Where(x => x.EsDescargaVitapro))
+                UnirDescargaVitapro(e, viajes, referencia, P);
+            foreach (var e in entregas.Where(x => !x.EsDescargaVitapro))
             {
                 string carreta = LectorDocumentosPedido.NormalizarPlaca(e.Carreta), tracto = LectorDocumentosPedido.NormalizarPlaca(e.Tracto);
                 var delCliente = viajes.Where(v => string.Equals(Convert.ToString(v["tipoRuta"]), e.Cliente, StringComparison.OrdinalIgnoreCase))
@@ -303,11 +319,50 @@ namespace WebSGV.Services.Despachos
             return entregas;
         }
 
-        /// <summary>Completa los viajes de las entregas encontradas (sp_SE_RegistrarEntregaTercero). Devuelve cuántos cambiaron.</summary>
+        /// <summary>
+        /// Viaje de Vitapro de una fila GUAYAQUIL-VITAPRO: misma carreta, cargado hasta el día del Word y sin
+        /// otro pedido (el del Word o todavía PENDIENTE); primero el que ya tiene ese pedido, si no el más reciente.
+        /// </summary>
+        private static void UnirDescargaVitapro(EntregaTercero e, List<DataRow> viajes, DateTime referencia, Func<object, string> P)
+        {
+            string carreta = LectorDocumentosPedido.NormalizarPlaca(e.Carreta), tracto = LectorDocumentosPedido.NormalizarPlaca(e.Tracto);
+            string Pedido(DataRow v) => Convert.ToString(v["cliente"]).Trim();
+            var viaje = viajes
+                .Where(v => v["tipoRuta"] == DBNull.Value && P(v["carreta"]) == carreta
+                            && Convert.ToDateTime(v["fhProgramacion"]).Date <= referencia
+                            && (Pedido(v) == e.Pedido || Pedido(v) == "" || Pedido(v).Equals("PENDIENTE", StringComparison.OrdinalIgnoreCase)))
+                .OrderByDescending(v => Pedido(v) == e.Pedido)
+                .ThenByDescending(v => Convert.ToDateTime(v["fhProgramacion"]))
+                .FirstOrDefault();
+            if (viaje == null) return;
+
+            e.IdSeguimiento = Convert.ToInt32(viaje["idSeguimiento"]);
+            e.Viaje = $"carga {Convert.ToDateTime(viaje["fhProgramacion"]):dd/MM} · {viaje["tracto1"]} / {viaje["carreta"]} · pedido {Pedido(viaje)}";
+            e.Relevo = tracto != null && tracto != P(viaje["tracto1"]);
+            e.YaRegistrada = Pedido(viaje) == e.Pedido && (tracto == null || P(viaje["tracto2"]) == tracto);
+        }
+
+        /// <summary>
+        /// Completa los viajes de las entregas encontradas (sp_SE_RegistrarEntregaTercero) y de las descargas de
+        /// Vitapro (sp_SE_RegistrarDescargaWord). Devuelve cuántos cambiaron.
+        /// </summary>
         public static int RegistrarEntregas(IEnumerable<EntregaTercero> entregas, int? idUsuario)
         {
             int cambiados = 0;
-            foreach (var e in entregas.Where(x => x.IdSeguimiento.HasValue))
+            foreach (var e in entregas.Where(x => x.IdSeguimiento.HasValue && x.EsDescargaVitapro))
+            {
+                object r = DbHelper.EjecutarEscalarSp("sp_SE_RegistrarDescargaWord",
+                    DbHelper.Param("@idSeguimiento", e.IdSeguimiento.Value),
+                    DbHelper.Param("@pedido", e.Pedido),
+                    DbHelper.Param("@tracto2", e.Tracto?.ToUpperInvariant()),
+                    DbHelper.Param("@conductorDestino", e.Chofer?.ToUpperInvariant()),
+                    DbHelper.Param("@idUsuario", idUsuario));
+                if (Convert.ToInt32(r) != 1) continue;
+                cambiados++;
+                AuditoriaHelper.Registrar("UPDATE", "SeguimientoExportacion", e.IdSeguimiento.Value,
+                    $"Descarga de Vitapro desde el Word (pedido {e.Pedido}): {e.Tracto} ({e.Chofer}), carreta {e.Carreta}.");
+            }
+            foreach (var e in entregas.Where(x => x.IdSeguimiento.HasValue && !x.EsDescargaVitapro))
             {
                 object r = DbHelper.EjecutarEscalarSp("sp_SE_RegistrarEntregaTercero",
                     DbHelper.Param("@idSeguimiento", e.IdSeguimiento.Value),

@@ -123,12 +123,19 @@ namespace WebSGV.Models.Despachos
     /// Fila de una sección de descarga de un cliente tercero en el Word: completa el viaje del
     /// seguimiento de su carga (unido por la carreta o el tracto) con el lugar de entrega y, si
     /// la descarga la hace otro tracto (CAMBIO de Crisar), con el tracto y el chofer de descarga.
+    /// También la descarga de Vitapro (GUAYAQUIL-VITAPRO + N° de pedido): el viaje toma el pedido
+    /// y el tracto y chofer de descarga sin esperar el ZIP del correo (<see cref="Pedido"/>).
     /// </summary>
     [Serializable]
     public class EntregaTercero
     {
         public string Seccion { get; set; }
         public string Cliente { get; set; }
+
+        /// <summary>N° de pedido de la sección GUAYAQUIL-VITAPRO; null en las entregas de terceros.</summary>
+        public string Pedido { get; set; }
+
+        public bool EsDescargaVitapro => !string.IsNullOrEmpty(Pedido);
 
         /// <summary>Destino ("VIRU", "PIURA", "GUAYAQUIL").</summary>
         public string Lugar { get; set; }

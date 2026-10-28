@@ -2537,9 +2537,12 @@ namespace WebSGV.Views
                 CambioTexto = string.IsNullOrEmpty(x.Cambio) ? (x.Relevo ? "Relevo" : "") : "Cambio: " + x.Cambio,
                 x.Tracto,
                 x.Carreta,
-                Estado = !x.IdSeguimiento.HasValue ? "Sin viaje de carga" : x.YaRegistrada ? "Ya registrada" : x.Relevo ? "Lugar y relevo" : "Lugar de entrega",
+                Estado = !x.IdSeguimiento.HasValue ? "Sin viaje de carga" : x.YaRegistrada ? "Ya registrada"
+                    : x.EsDescargaVitapro ? "Pedido y descarga" : x.Relevo ? "Lugar y relevo" : "Lugar de entrega",
                 ChipCss = !x.IdSeguimiento.HasValue ? "rd-chip-warn" : x.YaRegistrada ? "rd-chip-ok" : "rd-chip-wait",
-                Viaje = x.IdSeguimiento.HasValue ? x.Viaje : "No hay una carga de " + x.Cliente + " con esta carreta o tracto en los 10 días anteriores.",
+                Viaje = x.IdSeguimiento.HasValue ? x.Viaje
+                    : x.EsDescargaVitapro ? $"No hay una carga de Vitapro con esta carreta hasta el día del Word (pendiente o con el pedido {x.Pedido}) en los 10 días anteriores."
+                    : "No hay una carga de " + x.Cliente + " con esta carreta o tracto en los 10 días anteriores.",
             }).ToList();
             rptEntregasTerceros.DataBind();
         }
@@ -2560,7 +2563,7 @@ namespace WebSGV.Views
                 if (p.Programacion != null) p.Entregas = ProgramacionDespachoService.ProponerEntregas(p.Programacion);
                 ProgramacionNuevaActual = p;
                 MostrarVistaPreviaProgramacion(p);
-                MostrarMensajeImportacion($"Se completaron {n} viaje(s) de clientes terceros con su lugar de entrega. Véalos en el seguimiento.", "success");
+                MostrarMensajeImportacion($"Se completaron {n} viaje(s) con su descarga o lugar de entrega. Véalos en el seguimiento.", "success");
             }
             catch (Exception ex)
             {

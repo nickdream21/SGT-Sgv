@@ -80,5 +80,18 @@ namespace WebSGV.Tests
             Assert.True(ProgramacionCarga.EsSeccionDeCarga(Seccion("TRUJILLO-VITAPRO-CARGAN 22 DE OCTUBRE", "05:30AM")));
             Assert.False(ProgramacionCarga.EsSeccionDeCarga(Seccion("GUAYAQUIL-VITAPRO", null, "4400133950")));
         }
+
+        [Fact]
+        public void EsSeccionDeDescargaVitapro_GuayaquilVitaproConPedido()
+        {
+            Assert.True(ProgramacionCarga.EsSeccionDeDescargaVitapro(Seccion("GUAYAQUIL-VITAPRO", null, "4400134236")));
+            // Word del 27/10/2026: la 2.ª tabla del mismo título solo tiene el pedido encima.
+            Assert.True(ProgramacionCarga.EsSeccionDeDescargaVitapro(Seccion(null, null, "4400134238")));
+
+            Assert.False(ProgramacionCarga.EsSeccionDeDescargaVitapro(Seccion("GUAYAQUIL-VITAPRO", null)));
+            Assert.False(ProgramacionCarga.EsSeccionDeDescargaVitapro(Seccion("TRUJILLO-VITAPRO-CARGAN 28 DE OCTUBRE", "05:30AM")));
+            Assert.False(ProgramacionCarga.EsSeccionDeDescargaVitapro(Seccion("GUAYAQUIL-AZUCAR", null, "4400134236")));
+            Assert.False(ProgramacionCarga.EsSeccionDeDescargaVitapro(Seccion("IMPORTACION-TRUJILLO", "06:00AM", "4400134236")));
+        }
     }
 }

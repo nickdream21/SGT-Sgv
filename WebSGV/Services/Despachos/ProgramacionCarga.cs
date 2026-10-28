@@ -41,6 +41,14 @@ namespace WebSGV.Services.Despachos
         }
 
         /// <summary>
+        /// Descarga de Vitapro ("GUAYAQUIL-VITAPRO" con el N° de pedido encima de la tabla): no es de un
+        /// cliente tercero ni de carga ni la importación, y trae pedido.
+        /// </summary>
+        public static bool EsSeccionDeDescargaVitapro(SeccionProgramacion s) =>
+            !string.IsNullOrWhiteSpace(s.NumeroPedido) && RutaProgramacion.Reconocer(s) == null && !EsSeccionDeCarga(s)
+            && !LectorDocumentosPedido.Normalizar(s.Titulo).Contains("IMPORTACION");
+
+        /// <summary>
         /// Sección de carga del pedido: la que comparte más tractos (o carretas) con las
         /// guías; a igualdad, la que nombra al cliente. Si ninguna comparte placas, la única
         /// que nombra al cliente. Null si no hay ninguna relacionada.

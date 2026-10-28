@@ -7,7 +7,7 @@
 .DESCRIPTION
     Escribe en la BD de pruebas (sgvActualizada), igual que el botón. -Seccion elige la sección de
     carga del Word por su texto (por defecto, la que el sitio muestra primero). -RegistrarEntregas
-    pulsa "Registrar entregas" (secciones de descarga de terceros: POLINPLAST-VIRU, AFRECHO-HUAQUILLAS).
+    pulsa "Registrar descargas y entregas" (GUAYAQUIL-VITAPRO con su pedido y las de terceros: POLINPLAST-VIRU, AFRECHO-HUAQUILLAS).
     Contraseña de privado\CREDENCIALES_USUARIOS.txt, sin imprimirla. Solo contra el sitio local; por
     http (el certificado de IIS Express no lo acepta HttpClient desde PowerShell).
 
@@ -119,7 +119,7 @@ if ($RegistrarEntregas) {
     if (-not $entregas) { throw 'El Word no tiene entregas de clientes terceros.' }
     $f = Formulario $html
     $f['__EVENTTARGET'] = ''
-    $f[(NombreDe $html 'btnRegistrarEntregas')] = 'Registrar entregas'
+    $f[(NombreDe $html 'btnRegistrarEntregas')] = 'Registrar descargas y entregas'
     $html = Pedir $url $f
     "=== DESPUÉS DE REGISTRAR LAS ENTREGAS"
     $m = [regex]::Match($html, 'id="[^"]*_lblMensajeImportacion"[^>]*>(.*?)</span>', 'Singleline').Groups[1].Value
