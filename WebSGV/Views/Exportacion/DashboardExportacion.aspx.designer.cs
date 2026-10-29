@@ -11,16 +11,8 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.Literal litAlert;
         protected global::System.Web.UI.WebControls.DropDownList ddlMes;
         protected global::System.Web.UI.WebControls.DropDownList ddlAnio;
-        protected global::System.Web.UI.WebControls.TextBox txtCliente;
         protected global::System.Web.UI.WebControls.Button btnFiltrar;
-        protected global::System.Web.UI.WebControls.Button btnLimpiar;
-        protected global::System.Web.UI.WebControls.Literal litCumplimiento;
-        protected global::System.Web.UI.WebControls.Literal litCamiones;
-        protected global::System.Web.UI.WebControls.Literal litPedidos;
-        protected global::System.Web.UI.WebControls.Literal litCamionesPedido;
-        protected global::System.Web.UI.WebControls.Literal litHorasViaje;
-        protected global::System.Web.UI.WebControls.Literal litIncidencias;
+        protected global::System.Web.UI.WebControls.Button btnMesActual;
         protected global::System.Web.UI.WebControls.HiddenField hdnDatos;
-        protected global::System.Web.UI.WebControls.HiddenField hdnCumplDetalle;
     }
 }
