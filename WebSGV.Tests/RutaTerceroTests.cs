@@ -84,7 +84,7 @@ namespace WebSGV.Tests
         [InlineData("CRISAR", 3, 8)]
         [InlineData("NOVOPAN", 2, 6)]
         [InlineData("POLINPLAST", 2, 3)]
-        [InlineData("AFRECHO", 2, 7)]
+        [InlineData("AFRECHO", 3, 8)]
         public void Hitos_PorRuta(string ruta, int carga, int descarga)
         {
             var hitos = RutaTercero.Hitos(ruta, "CHAPAIRA", "VIRU");

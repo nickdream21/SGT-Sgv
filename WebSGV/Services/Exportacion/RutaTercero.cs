@@ -72,6 +72,8 @@ namespace WebSGV.Services.Exportacion
                     l.Add(new DefinicionHito("fhLlegadaCEBAF", "Llegada al CEBAF (Perú)", TramoViaje.Descarga));
                     break;
                 case Afrecho:
+                    l.Add(new DefinicionHito("fhLlegadaBase2", "Llegada a base Sullana", TramoViaje.Carga));
+                    l.Add(new DefinicionHito("fhSalidaBase2", "Salida de base Sullana", TramoViaje.Descarga));
                     l.Add(new DefinicionHito("fhLlegadaBodegaNacional", "Llegada al Complex", TramoViaje.Descarga));
                     l.Add(new DefinicionHito("fhSalidaBodegaNacional", "Salida del Complex", TramoViaje.Descarga));
                     l.Add(new DefinicionHito("fhLlegadaTCI", "Llegada a TCI", TramoViaje.Descarga));
@@ -99,14 +101,11 @@ namespace WebSGV.Services.Exportacion
             {
                 if (Hay("fhLlegadaTCI", "fhSalidaTCI")) return F("En Ecuador", "ecuador");
                 if (Hay("fhLlegadaBodegaNacional", "fhSalidaBodegaNacional")) return F("En frontera", "ecuador");
-            }
-            if (ruta == Afrecho && Hay("fhSalidaPlanta")) return F("Rumbo a Ecuador", "ecuador");
-            if (ruta == Crisar)
-            {
                 if (Hay("fhSalidaBase2")) return F("Rumbo a Ecuador", "ecuador");
                 if (Hay("fhLlegadaBase2")) return F("En base, cargado", "base");
-                if (Hay("fhSalidaPlanta")) return F("Rumbo a base", "carga");
             }
+            if (ruta == Afrecho && Hay("fhSalidaPlanta")) return F("Rumbo a Ecuador", "ecuador");
+            if (ruta == Crisar && Hay("fhSalidaPlanta")) return F("Rumbo a base", "carga");
             if (ruta == Novopan)
             {
                 if (Hay("fhLlegadaCEBAF")) return F("En Perú, rumbo a la descarga", "ecuador");
@@ -147,14 +146,11 @@ namespace WebSGV.Services.Exportacion
                 if (Hay("fhLlegadaTCI")) return "UNIDAD CARGADA EN TCI - ECUADOR";
                 if (Hay("fhSalidaBodegaNacional")) return EnCamino("UNIDAD CARGADA CAMINO A ECUADOR");
                 if (Hay("fhLlegadaBodegaNacional")) return "UNIDAD EN COMPLEX";
-            }
-            if (ruta == Afrecho && Hay("fhSalidaPlanta")) return EnCamino("UNIDAD CARGADA CAMINO A FRONTERA");
-            if (ruta == Crisar)
-            {
                 if (Hay("fhSalidaBase2")) return EnCamino("UNIDAD CARGADA CAMINO A FRONTERA");
                 if (Hay("fhLlegadaBase2")) return "UNIDAD CARGADA EN BASE SULLANA";
-                if (Hay("fhSalidaPlanta")) return EnCamino("UNIDAD CARGADA CAMINO A BASE");
             }
+            if (ruta == Afrecho && Hay("fhSalidaPlanta")) return EnCamino("UNIDAD CARGADA CAMINO A FRONTERA");
+            if (ruta == Crisar && Hay("fhSalidaPlanta")) return EnCamino("UNIDAD CARGADA CAMINO A BASE");
             if (ruta == Novopan)
             {
                 if (Hay("fhLlegadaCEBAF")) return EnCamino("UNIDAD CARGADA EN PERÚ CAMINO A " + entrega);

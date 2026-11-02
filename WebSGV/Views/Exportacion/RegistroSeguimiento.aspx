@@ -134,7 +134,7 @@
                                 <td><span class='<%# "sx-fase sx-fase-" + Eval("Grupo") %>'><%#: Eval("Fase") %></span><span class="sx-sub"><%#: Eval("Planta") %></span></td>
                                 <td class="sx-status">
                                     <span class="sx-status-texto"><%#: Eval("Status") %></span>
-                                    <span class="sx-sub sx-mono sx-ubicacion"><%#: Eval("Ubicacion") %></span>
+                                    <span class='<%# "sx-sub sx-mono " + Eval("UbicacionClase") %>'><%#: Eval("Ubicacion") %></span>
                                     <span class="sx-sub sx-llegada"><%#: Eval("Llegada") %></span>
                                     <button type="button" class="sx-copiar" data-copiar title="Copiar este STATUS" aria-label="Copiar este STATUS"><i class="fas fa-copy" aria-hidden="true"></i></button>
                                 </td>

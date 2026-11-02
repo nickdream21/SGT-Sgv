@@ -39,6 +39,14 @@ namespace WebSGV.Services.GpsIntegracion
 
         // ---- Descarga ----
 
+        /// <summary>
+        /// Huaquillas (Ecuador), ~0,8 km al este del cruce: descarga del afrecho ("AFRECHO-HUAQUILLAS" en el Word del
+        /// 25/10/2026). Los 4 viajes anteriores del Excel (BPT-919 y BFH-852 el 10/01/2026, T7J-860 y CBX-832 el
+        /// 06/05/2025) paran aquí 3,8–4,6 h y vuelven vacíos; las paradas de después en Bellavista (estacionamiento
+        /// de la Troncal de la Costa) y El Retiro (grifo Santa Rosa) son descanso y combustible. docs/RUTA_AFRECHO.md.
+        /// </summary>
+        public static readonly GeocercaGps AfrechoHuaquillas = GeocercaGps.Circulo("AFRECHO_HUAQUILLAS", "Huaquillas (descarga afrecho)", -3.50100, -80.20430, 300);
+
         /// <summary>Bodega de azúcar en La Troncal (Ecuador): descarga de Crisar (5 de 5 viajes, 2–5 h en varias paradas seguidas).</summary>
         public static readonly GeocercaGps CrisarLaTroncal = GeocercaGps.Circulo("CRISAR_LA_TRONCAL", "La Troncal (descarga azúcar)", -2.44208, -79.35272, 400);
 
@@ -97,6 +105,12 @@ namespace WebSGV.Services.GpsIntegracion
         /// <summary>Polinplast en Jayanca, que es también a donde va lo de "RAPEL" (3 viajes, 3–6 h).</summary>
         public static readonly GeocercaGps PolinplastJayanca = GeocercaGps.Circulo("POLINPLAST_JAYANCA", "Jayanca / Rapel (Polinplast)", -6.37473, -79.80202, 250);
 
+        /// <summary>
+        /// 2.º punto de entrega de Polinplast en Jayanca, en el pueblo, a 15 km del de Rapel: BPT-788 el 24/10/2026
+        /// descargó aquí de 08:31 a 13:01 y el tablero seguía con "Descarga 0/3".
+        /// </summary>
+        public static readonly GeocercaGps PolinplastJayanca2 = GeocercaGps.Circulo("POLINPLAST_JAYANCA_2", "Jayanca pueblo (Polinplast)", -6.28023, -79.90534, 300);
+
         /// <summary>Polinplast para Olmos (Proyecto Olmos): 3 de 3 viajes en el mismo punto, a 30 m, de noche.</summary>
         public static readonly GeocercaGps PolinplastOlmos = GeocercaGps.Circulo("POLINPLAST_OLMOS", "Olmos - proyecto (Polinplast)", -6.31556, -80.24402, 200);
 
@@ -106,9 +120,9 @@ namespace WebSGV.Services.GpsIntegracion
         public static IReadOnlyList<GeocercaGps> Todas { get; } = new[]
         {
             CrisarCartavio, PolinplastChapaira, NovopanQuito, AlicorpPaita,
-            CrisarLaTroncal, CrisarPernocte, NovopanPiura, NovopanTrujillo,
+            CrisarLaTroncal, CrisarPernocte, NovopanPiura, NovopanTrujillo, AfrechoHuaquillas,
             PolinplastViru, PolinplastChao, PolinplastChao2, PolinplastChao3, PolinplastCasaGrande, PolinplastAcpChepen, PolinplastJayanca,
-            PolinplastOlmos, PolinplastSalaverry,
+            PolinplastJayanca2, PolinplastOlmos, PolinplastSalaverry,
             CocheraTrujillo, EsperaGrifoCurvaSun
         };
 
@@ -131,19 +145,20 @@ namespace WebSGV.Services.GpsIntegracion
             ["POLINPLAST|ACP"] = new[] { PolinplastAcpChepen },
             ["POLINPLAST|CHEPEN"] = new[] { PolinplastAcpChepen },
             ["POLINPLAST|CHEPE"] = new[] { PolinplastAcpChepen },
-            ["POLINPLAST|JAYANCA"] = new[] { PolinplastJayanca },
+            ["POLINPLAST|JAYANCA"] = new[] { PolinplastJayanca, PolinplastJayanca2 },
             ["POLINPLAST|RAPEL"] = new[] { PolinplastJayanca },
             ["POLINPLAST|OLMOS"] = new[] { PolinplastOlmos },
             ["POLINPLAST|SALAVERRY"] = new[] { PolinplastSalaverry },
             ["POLINPLAST|COCHERA TRUJILLO"] = new[] { CocheraTrujillo },
             ["AFRECHO|PAITA"] = new[] { AlicorpPaita },
+            ["AFRECHO|HUAQUILLAS"] = new[] { AfrechoHuaquillas },
         };
 
         /// <summary>Destinos de Polinplast: donde se busca la descarga si el viaje no sabe a cuál va.</summary>
         public static IReadOnlyList<GeocercaGps> DescargasPolinplast { get; } = new[]
         {
             PolinplastViru, PolinplastChao, PolinplastChao2, PolinplastChao3, PolinplastCasaGrande, PolinplastAcpChepen, PolinplastJayanca,
-            PolinplastOlmos, PolinplastSalaverry
+            PolinplastJayanca2, PolinplastOlmos, PolinplastSalaverry
         };
 
         // Nombre del lugar de cada descarga, como se guarda en lugarEntrega.
@@ -161,6 +176,8 @@ namespace WebSGV.Services.GpsIntegracion
             [PolinplastCasaGrande.Codigo] = "CASAGRANDE",
             [PolinplastAcpChepen.Codigo] = "ACP",
             [PolinplastJayanca.Codigo] = "JAYANCA",
+            [PolinplastJayanca2.Codigo] = "JAYANCA",
+            [AfrechoHuaquillas.Codigo] = "HUAQUILLAS",
             [PolinplastOlmos.Codigo] = "OLMOS",
             [PolinplastSalaverry.Codigo] = "SALAVERRY",
         };

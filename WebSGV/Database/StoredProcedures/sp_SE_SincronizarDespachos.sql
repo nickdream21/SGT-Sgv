@@ -6,6 +6,8 @@
 --      Despachos, el viaje se corrige aquí. Un despacho programado solo con el Word (sin
 --      documentos todavía) crea el viaje con pedido 'PENDIENTE', para que el GPS lo siga
 --      desde que sale; cuando llega el correo y se completa el despacho, toma el pedido.
+--      Si antes el Word de la descarga (GUAYAQUIL-VITAPRO) ya le puso el pedido al viaje
+--      (sp_SE_RegistrarDescargaWord), el 'PENDIENTE' del despacho no lo borra.
 --   2. Su despacho de DESCARGA en Ecuador (enlazado por idDespachoCarga, o por pedido y
 --      carreta) completa el tracto y el chofer de descarga.
 --   3. La planta de descarga sale de la lista de destinos del cliente por carreta
@@ -140,14 +142,16 @@ BEGIN
 
         -- Lo que dice el despacho de carga manda sobre el viaje (solo si cambió).
         UPDATE se SET
-            cliente = c.pedido, carreta = c.carreta, tracto1 = c.tracto, conductorOrigen = NULLIF(c.chofer, ''),
+            cliente = CASE WHEN c.pedido = 'PENDIENTE' AND ISNULL(se.cliente, '') NOT IN ('', 'PENDIENTE') THEN se.cliente ELSE c.pedido END,
+            carreta = c.carreta, tracto1 = c.tracto, conductorOrigen = NULLIF(c.chofer, ''),
             fhProgramacion = CASE WHEN se.fhProgramacion IS NULL OR CAST(se.fhProgramacion AS DATE) <> CAST(c.fhProgramacion AS DATE)
                                   THEN c.fhProgramacion ELSE se.fhProgramacion END,
             fechaModificacion = dbo.fn_AhoraPeru()
         FROM dbo.SeguimientoExportacion se
         JOIN #carga c ON c.idDespacho = se.idDespachoOrigen
         WHERE se.activo = 1 AND c.activo = 1
-          AND (ISNULL(se.cliente, '') <> ISNULL(c.pedido, '') OR ISNULL(se.carreta, '') <> ISNULL(c.carreta, '')
+          AND ((ISNULL(se.cliente, '') <> ISNULL(c.pedido, '') AND NOT (c.pedido = 'PENDIENTE' AND ISNULL(se.cliente, '') NOT IN ('', 'PENDIENTE')))
+               OR ISNULL(se.carreta, '') <> ISNULL(c.carreta, '')
                OR ISNULL(se.tracto1, '') <> ISNULL(c.tracto, '') OR ISNULL(se.conductorOrigen, '') <> ISNULL(NULLIF(c.chofer, ''), '')
                OR se.fhProgramacion IS NULL OR CAST(se.fhProgramacion AS DATE) <> CAST(c.fhProgramacion AS DATE));
         SET @actualizados = @actualizados + @@ROWCOUNT;

@@ -102,6 +102,20 @@ namespace WebSGV.Services.GpsIntegracion
                     desdeDescarga = Hora(pc[llegadaBase.Item2.Primero]);
                 }
             }
+            // Afrecho: de Paita vuelve a la base y espera ahí con la carga (AVM-877 36 h el 24–26/10/2026; BPT-919 y
+            // BFH-852 34–35 h en enero). Solo si llega en las horas siguientes a la carga: T7J-860 (mayo 2025) se fue
+            // de frente por la costa y recién volvió a la base después de descargar.
+            if (ruta == RutaTercero.Afrecho)
+            {
+                DateTime tope = salidaCarga.AddHours(HorasPaitaABase);
+                int limiteBase = pc.FindIndex(cursorCarga, p => Hora(p) > tope);
+                var llegadaBase = Primera(pc, new[] { GeocercasTrazabilidad.BaseSullana }, cursorCarga, limiteBase < 0 ? pc.Count : limiteBase, 1);
+                if (llegadaBase != null)
+                {
+                    Agregar("fhLlegadaBase2", Hito(pc[llegadaBase.Item2.Primero], "Primer punto en la base Sullana"));
+                    desdeDescarga = Hora(pc[llegadaBase.Item2.Primero]);
+                }
+            }
 
             // Con relevo, el tracto de descarga recoge la carreta en la base: sin llegada a la base no hay descarga todavía.
             if (ruta == RutaTercero.Crisar && historialDescarga != null && r.Buscar("fhLlegadaBase2") == null) return r;
@@ -109,7 +123,7 @@ namespace WebSGV.Services.GpsIntegracion
 
             int cursorD = pd.FindIndex(p => Hora(p) >= desdeDescarga);
             if (cursorD < 0) return r;
-            if (ruta == RutaTercero.Crisar && r.Buscar("fhLlegadaBase2") != null)
+            if ((ruta == RutaTercero.Crisar || ruta == RutaTercero.Afrecho) && r.Buscar("fhLlegadaBase2") != null)
             {
                 // La salida de la base con la carreta: la primera salida del tracto de descarga desde ahí.
                 var salidaBase = Visitas(pd, GeocercasTrazabilidad.BaseSullana)
@@ -164,12 +178,12 @@ namespace WebSGV.Services.GpsIntegracion
                 Bodega(GeocercasTrazabilidad.Cebaf, 0, "fhLlegadaCEBAF", null, "el CEBAF");
             }
 
-            // Afrecho: todavía sin geocerca de descarga, es la primera parada larga después de salir de TCI
-            // (ya en Ecuador), con el lugar que da la dirección de Onway. Por confirmar con cada viaje.
+            // Afrecho: si no paró en Huaquillas, la primera parada larga después de salir de TCI (ya en Ecuador),
+            // con el lugar que da la dirección de Onway (el comprador cambia: el de octubre 2026 es de Balsas).
             Visita enDescarga = descarga?.Item2;
             string nombreDescarga = descarga?.Item1.Nombre;
             string lugarDetectado = descarga == null ? null : GeocercasTerceros.LugarDe(descarga.Item1);
-            if (enDescarga == null && ruta == RutaTercero.Afrecho && candidatas.Length == 0 && r.Buscar("fhSalidaTCI") != null)
+            if (enDescarga == null && ruta == RutaTercero.Afrecho && r.Buscar("fhSalidaTCI") != null)
             {
                 enDescarga = ParadaLarga(pd, c, limiteDescarga, MinutosMinimosParadaDescarga, ZonasDeFrontera);
                 if (enDescarga != null)
@@ -260,12 +274,21 @@ namespace WebSGV.Services.GpsIntegracion
                 while (j + 1 < puntos.Count && puntos[j + 1].Speed <= KmhDetenido) j++;
                 bool cerrada = j + 1 < puntos.Count;
                 bool larga = !cerrada || (Hora(puntos[j + 1]) - Hora(puntos[i])).TotalMinutes >= minutos;
-                if (larga && !excluir.Any(z => z.Contiene(puntos[i].Lat, puntos[i].Lng)))
+                if (larga && !EnPeruJuntoALaFrontera(puntos[i].Lat, puntos[i].Lng) && !excluir.Any(z => z.Contiene(puntos[i].Lat, puntos[i].Lng)))
                     return new Visita { Primero = i, Ultimo = j, Cerrada = cerrada };
                 i = j + 1;
             }
             return null;
         }
+
+        /// <summary>
+        /// Lado peruano de la frontera (Aguas Verdes, Zarumilla, Tumbes): al oeste del canal internacional, que en el
+        /// cruce de Huaquillas pasa por ~-80,225. Una parada ahí es la vuelta, no la descarga en Ecuador.
+        /// </summary>
+        internal static bool EnPeruJuntoALaFrontera(double lat, double lng) => lat < -3.40 && lng < -80.225;
+
+        /// <summary>Paita → base Sullana son ~2 h; si no llega en este tiempo, no pasó por la base.</summary>
+        private const int HorasPaitaABase = 6;
 
         private static GeocercaGps CargaPorDefecto(string ruta)
         {
@@ -286,6 +309,7 @@ namespace WebSGV.Services.GpsIntegracion
                 case RutaTercero.Crisar: return new[] { GeocercasTerceros.CrisarLaTroncal };
                 case RutaTercero.Novopan: return new[] { GeocercasTerceros.NovopanPiura, GeocercasTerceros.NovopanTrujillo };
                 case RutaTercero.Polinplast: return GeocercasTerceros.DescargasPolinplast.ToArray();
+                case RutaTercero.Afrecho: return new[] { GeocercasTerceros.AfrechoHuaquillas };
                 default: return new GeocercaGps[0];
             }
         }

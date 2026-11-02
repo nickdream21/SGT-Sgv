@@ -33,9 +33,20 @@ namespace WebSGV.Services.Despachos
         {
             var ruta = RutaProgramacion.Reconocer(s);
             if (ruta != null) return ruta.EsCarga;
+            // "IMPORTACION-TRUJILLO" (Word del 25/10/2026): la vuelta de Ecuador cargada desde Jave hasta Trujillo,
+            // con HORARIO de la descarga. No es una carga de exportación y todavía no hay ruta para ella.
+            if (LectorDocumentosPedido.Normalizar(s.Titulo).Contains("IMPORTACION")) return false;
             return LectorDocumentosPedido.Normalizar(s.Titulo).Contains("CARGA")
                 || (string.IsNullOrEmpty(s.NumeroPedido) && s.Filas.Any(f => !string.IsNullOrEmpty(f.Horario)));
         }
+
+        /// <summary>
+        /// Descarga de Vitapro ("GUAYAQUIL-VITAPRO" con el N° de pedido encima de la tabla): no es de un
+        /// cliente tercero ni de carga ni la importación, y trae pedido.
+        /// </summary>
+        public static bool EsSeccionDeDescargaVitapro(SeccionProgramacion s) =>
+            !string.IsNullOrWhiteSpace(s.NumeroPedido) && RutaProgramacion.Reconocer(s) == null && !EsSeccionDeCarga(s)
+            && !LectorDocumentosPedido.Normalizar(s.Titulo).Contains("IMPORTACION");
 
         /// <summary>
         /// Sección de carga del pedido: la que comparte más tractos (o carretas) con las
