@@ -14,6 +14,16 @@
 -- agrupar arruinaría CantidadDespachos (solo se verían los del
 -- conductor buscado). Con EXISTS se conserva el lote completo,
 -- con todos sus conductores, cuando al menos uno coincide.
+--
+-- Documentos pendientes (2026-11-02): el despacho se registra con el
+-- Word aunque la factura, las guias y el CPIC lleguen despues. Por
+-- lote se cuentan los despachos no anulados a los que les falta cada
+-- documento (las mismas reglas que EstadoDocumental.cs):
+--   CARGA          -> pedido, guia de remitente y factura
+--   con factura    -> el PDF de la factura
+--   internacional  -> CPIC; con CPIC -> su PDF
+-- @documentos = 'PENDIENTES' deja los lotes con algo por completar y
+-- 'COMPLETOS' los que no; NULL no filtra.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_ObtenerLotesRegistrados
     @idCliente       INT          = NULL,
@@ -26,7 +36,8 @@ CREATE OR ALTER PROCEDURE sp_LD_ObtenerLotesRegistrados
     @numeroCPIC      VARCHAR(20)  = NULL,
     @nombreConductor VARCHAR(200) = NULL,
     @idPlanta        INT          = NULL,
-    @planta          VARCHAR(100) = NULL
+    @planta          VARCHAR(100) = NULL,
+    @documentos      VARCHAR(20)  = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -45,7 +56,29 @@ BEGIN
     IF @fechaHasta IS NOT NULL
         SET @fechaHastaFin = DATEADD(SECOND, -1, DATEADD(DAY, 1, CAST(@fechaHasta AS DATETIME)));
 
-    ;WITH LotesAgrupados AS (
+    ;WITH DespachosDocumentos AS (
+        -- Un 1 por documento que le falta al despacho (0 si esta anulado:
+        -- un anulado no espera documentos).
+        SELECT
+            d.idDespacho,
+            CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.tipoOperacion = 'CARGA'
+                      AND NULLIF(LTRIM(RTRIM(d.numeroPedido)), '') IS NULL THEN 1 ELSE 0 END AS SinPedido,
+            CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.tipoOperacion = 'CARGA'
+                      AND NULLIF(LTRIM(RTRIM(d.guiaRemitente)), '') IS NULL THEN 1 ELSE 0 END AS SinGuia,
+            CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.tipoOperacion = 'CARGA'
+                      AND d.idFactura IS NULL THEN 1 ELSE 0 END AS SinFactura,
+            CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.idFactura IS NOT NULL
+                      AND NOT EXISTS (SELECT 1 FROM DocumentosFactura df
+                                      WHERE df.idFactura = d.idFactura AND df.activo = 1) THEN 1 ELSE 0 END AS SinPdfFactura,
+            CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.esInternacional = 1
+                      AND d.idCPIC IS NULL THEN 1 ELSE 0 END AS SinCPIC,
+            CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.idCPIC IS NOT NULL
+                      AND NOT EXISTS (SELECT 1 FROM DocumentosCPIC dcp
+                                      WHERE dcp.idCPIC = d.idCPIC AND dcp.activo = 1) THEN 1 ELSE 0 END AS SinPdfCPIC
+        FROM Despachos d
+        WHERE d.activo = 1
+    ),
+    LotesAgrupados AS (
         SELECT
             CONCAT(
                 CAST(d.idCliente AS VARCHAR(10)), '_',
@@ -72,8 +105,17 @@ BEGIN
 
             MAX(f.fechaEmision)       AS FechaEmisionFactura,
             MAX(f.valorTotal)         AS ValorTotalFactura,
+            MAX(f.moneda)             AS MonedaFactura,
             MAX(cp.fechaEmision)      AS FechaEmisionCPIC,
             MAX(cp.valorTotalFlete)   AS ValorFlete,
+
+            SUM(CASE WHEN d.estadoDespacho <> 'ANULADO' THEN 1 ELSE 0 END) AS DespachosVigentes,
+            SUM(dd.SinPedido)         AS DespachosSinPedido,
+            SUM(dd.SinGuia)           AS DespachosSinGuia,
+            SUM(dd.SinFactura)        AS DespachosSinFactura,
+            SUM(dd.SinPdfFactura)     AS DespachosSinPdfFactura,
+            SUM(dd.SinCPIC)           AS DespachosSinCPIC,
+            SUM(dd.SinPdfCPIC)        AS DespachosSinPdfCPIC,
 
             CASE
                 WHEN SUM(CASE WHEN d.estadoDespacho = 'ANULADO' THEN 1 ELSE 0 END) = COUNT(*)
@@ -82,6 +124,7 @@ BEGIN
             END AS EstadoLote
 
         FROM Despachos d
+        INNER JOIN DespachosDocumentos dd ON dd.idDespacho = d.idDespacho
         INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
         LEFT  JOIN Planta  pl ON d.idPlanta  = pl.idPlanta
         LEFT  JOIN Factura f  ON d.idFactura = f.idFactura
@@ -103,6 +146,11 @@ BEGIN
     SELECT la.*
     FROM LotesAgrupados la
     WHERE (@estadoFiltro IS NULL OR la.EstadoLote = @estadoFiltro)
+      AND (@documentos IS NULL
+           OR (@documentos = 'PENDIENTES' AND la.DespachosSinPedido + la.DespachosSinGuia + la.DespachosSinFactura
+                 + la.DespachosSinPdfFactura + la.DespachosSinCPIC + la.DespachosSinPdfCPIC > 0)
+           OR (@documentos = 'COMPLETOS' AND la.DespachosSinPedido + la.DespachosSinGuia + la.DespachosSinFactura
+                 + la.DespachosSinPdfFactura + la.DespachosSinCPIC + la.DespachosSinPdfCPIC = 0))
       AND (@nombreConductor IS NULL OR EXISTS (
             SELECT 1
             FROM Despachos d2

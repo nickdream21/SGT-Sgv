@@ -29,3 +29,26 @@ msbuild WebSGV.sln /p:Configuration=Debug /nologo /verbosity:minimal
 ```
 
 La ventana de viajes (01–20/10) está fija en `CargaHistorica.cs`: cámbiela para otro mes.
+
+## Completar las cargas programadas con varios ZIP a la vez (2026-11-02)
+
+Para cuando se juntan varios correos: en vez de leer los ZIP uno por uno en RegistroDespacho,
+`CompletarConCorreo` completa los despachos de CARGA programados con el Word que esperan documentos, con los
+mismos servicios de la pantalla (`ImportacionPedidoService.Leer/Asociar`, `sp_CrearFactura`,
+`sp_CompletarDespachoProgramado`). Va pedido por pedido en orden (fecha de guía) y cada guía toma un programado una
+sola vez: 1) mismo tracto, del día de la guía a 2 días después (Vitapro emite la guía hasta 2 días antes de
+cargar); 2) misma carreta; 3) cambio de tracto solo si quedan exactamente una guía y un programado en su ventana.
+Chofer, tracto y carreta quedan los del programado (el Word manda). `prueba` hace todo dentro de una
+`TransactionScope` y la deshace; `aplicar` la confirma (usuario `carga.correo`). Después: `sp_SE_SincronizarDespachos`.
+
+`AdjuntarPdfFacturas` adjunta el PDF de la factura del ZIP a la factura ya registrada sin PDF (despachos de octubre
+en adelante). Los archivos quedan en `WebSGV\Uploads\Factura\aaaa\mm\` de **esta PC**: copiarlos por FTP a la
+misma ruta del sitio publicado. `AnalizarCorreo` solo lee: por pedido, factura y guías y con qué despacho se une cada una.
+
+```powershell
+.\herramientas\carga-historica-correo\Ejecutar.ps1 -Herramienta AnalizarCorreo
+.\herramientas\carga-historica-correo\Ejecutar.ps1 -Herramienta CompletarConCorreo -Modo prueba
+.\herramientas\carga-historica-correo\Ejecutar.ps1 -Herramienta CompletarConCorreo -Modo aplicar
+.\WebSGV\Database\sql.ps1 "EXEC sp_SE_SincronizarDespachos @desde='2026-10-20'"
+.\herramientas\carga-historica-correo\Ejecutar.ps1 -Herramienta AdjuntarPdfFacturas -Modo aplicar
+```

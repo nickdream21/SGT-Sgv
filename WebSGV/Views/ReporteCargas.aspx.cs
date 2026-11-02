@@ -120,7 +120,8 @@ namespace WebSGV.Views
                 litFacturado.Text = facturado == "" ? "—" : HttpUtility.HtmlEncode(facturado);
 
                 litAvisos.Text = tot.SinDocumentos == 0 ? "" :
-                    $"<div class=\"alert alert-warning\">{tot.SinDocumentos} despacho(s) todavía sin guía: programados con el Word, esperan el correo con los documentos.</div>";
+                    $"<div class=\"alert alert-warning\">{tot.SinDocumentos} despacho(s) todavía sin guía: programados con el Word, esperan el correo con los documentos. " +
+                    $"<a href=\"{ResolveUrl("~/Views/ListaDespachos.aspx?documentos=pendientes")}\">Ver los documentos pendientes</a></div>";
                 litPie.Text = $"{tot.SinViajeChofer} de {tot.Despachos} despacho(s) sin viaje del chofer (cargas registradas con los documentos del correo, " +
                               "fuera de la liquidación). Excel: incluye una hoja con cada producto y lote.";
 

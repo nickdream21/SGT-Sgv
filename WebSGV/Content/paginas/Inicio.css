@@ -33,6 +33,27 @@
     line-height: 1.6;
 }
 
+/* Aviso de documentos pendientes (enlace a ListaDespachos) */
+.inicio-aviso {
+    margin-top: 2rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .75rem 1.1rem;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+    border-radius: 6px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.inicio-aviso:hover {
+    color: #78350f;
+    background: #fde68a;
+    text-decoration: none;
+}
+
 /* Media query para dispositivos móviles */
 @media (max-width: 768px) {
     .inicio-titulo {

@@ -96,6 +96,33 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Label lblStatManifiestosPendientes;
 
         /// <summary>
+        /// Control lnkStatDocumentosPendientes.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.LinkButton lnkStatDocumentosPendientes;
+
+        /// <summary>
+        /// Control lblStatDocumentosPendientes.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblStatDocumentosPendientes;
+
+        /// <summary>
+        /// Control lblStatDocumentosAtrasados.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblStatDocumentosAtrasados;
+
+        /// <summary>
         /// Control lblMensaje.
         /// </summary>
         /// <remarks>
@@ -366,6 +393,15 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.DropDownList ddlFiltroEstadoLotes;
 
         /// <summary>
+        /// Control ddlFiltroDocumentosLotes.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlFiltroDocumentosLotes;
+
+        /// <summary>
         /// Control pnlDetallesViaje.
         /// </summary>
         /// <remarks>
@@ -609,6 +645,15 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.TextBox txtValorTotalFacturaEdit;
 
         /// <summary>
+        /// Control ddlMonedaFacturaEdit.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlMonedaFacturaEdit;
+
+        /// <summary>
         /// Control pnlCPICEdit.
         /// </summary>
         /// <remarks>
@@ -843,13 +888,40 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Label lblMensajeManifiesto;
 
         /// <summary>
-        /// Control pnlDocFacturaManifiesto.
+        /// Control lblEstadoDocumentalLote.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Panel pnlDocFacturaManifiesto;
+        protected global::System.Web.UI.WebControls.Label lblEstadoDocumentalLote;
+
+        /// <summary>
+        /// Control pnlEsperaZip.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlEsperaZip;
+
+        /// <summary>
+        /// Control lnkCompletarConZip.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HyperLink lnkCompletarConZip;
+
+        /// <summary>
+        /// Control lblNumeroFacturaDocs.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblNumeroFacturaDocs;
 
         /// <summary>
         /// Control lnkVerDocFactura.
@@ -861,13 +933,49 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.LinkButton lnkVerDocFactura;
 
         /// <summary>
-        /// Control pnlDocCpicManifiesto.
+        /// Control pnlSubirPdfFactura.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Panel pnlDocCpicManifiesto;
+        protected global::System.Web.UI.WebControls.Panel pnlSubirPdfFactura;
+
+        /// <summary>
+        /// Control fuPdfFactura.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.FileUpload fuPdfFactura;
+
+        /// <summary>
+        /// Control btnSubirPdfFactura.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnSubirPdfFactura;
+
+        /// <summary>
+        /// Control pnlFilaCpicDocs.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlFilaCpicDocs;
+
+        /// <summary>
+        /// Control lblNumeroCpicDocs.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblNumeroCpicDocs;
 
         /// <summary>
         /// Control lnkVerDocCpic.
@@ -877,6 +985,60 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.LinkButton lnkVerDocCpic;
+
+        /// <summary>
+        /// Control pnlSubirPdfCpic.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlSubirPdfCpic;
+
+        /// <summary>
+        /// Control fuPdfCpic.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.FileUpload fuPdfCpic;
+
+        /// <summary>
+        /// Control btnSubirPdfCpic.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnSubirPdfCpic;
+
+        /// <summary>
+        /// Control pnlGuiasLote.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlGuiasLote;
+
+        /// <summary>
+        /// Control gvGuiasLote.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.GridView gvGuiasLote;
+
+        /// <summary>
+        /// Control btnGuardarGuias.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnGuardarGuias;
 
         /// <summary>
         /// Control pnlAvisoNacionalSinManifiesto.
@@ -895,15 +1057,6 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Panel pnlSeccionManifiestoConductor;
-
-        /// <summary>
-        /// Control lblSinDocsBase.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblSinDocsBase;
 
         /// <summary>
         /// Control gvManifiestosLote.

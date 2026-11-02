@@ -7,5 +7,11 @@
         <p class="inicio-descripcion">
             Gestiona de manera eficiente tus operaciones de transporte y logística.
         </p>
+        <%-- Cargas registradas que esperan factura, guía o CPIC (ListaDespachos, filtro "Documentos"). --%>
+        <asp:HyperLink ID="lnkDocumentosPendientes" runat="server" Visible="false"
+            NavigateUrl="~/Views/ListaDespachos.aspx?documentos=pendientes" CssClass="inicio-aviso">
+            <i class="fas fa-file-invoice"></i>
+            <asp:Label ID="lblDocumentosPendientes" runat="server"></asp:Label>
+        </asp:HyperLink>
     </div>
 </asp:Content>

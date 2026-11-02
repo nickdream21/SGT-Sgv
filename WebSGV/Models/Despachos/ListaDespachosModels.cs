@@ -98,10 +98,21 @@ namespace WebSGV.Models.Despachos
 
         public DateTime? FechaEmisionFactura { get; set; }
         public decimal? ValorTotalFactura { get; set; }
+        public string MonedaFactura { get; set; }
         public DateTime? FechaEmisionCPIC { get; set; }
         public decimal? ValorFlete { get; set; }
         public List<int> IdsDespachos { get; set; }
         public string EstadoLote { get; set; }
+
+        // Documentos pendientes: cuántos despachos no anulados del lote no tienen cada
+        // documento (sp_LD_ObtenerLotesRegistrados; los arma EstadoDocumental).
+        public int DespachosVigentes { get; set; }
+        public int DespachosSinPedido { get; set; }
+        public int DespachosSinGuia { get; set; }
+        public int DespachosSinFactura { get; set; }
+        public int DespachosSinPdfFactura { get; set; }
+        public int DespachosSinCPIC { get; set; }
+        public int DespachosSinPdfCPIC { get; set; }
 
         public LoteRegistrado()
         {
@@ -141,6 +152,8 @@ namespace WebSGV.Models.Despachos
         public string NumeroFactura { get; set; }
         public DateTime FechaEmisionFactura { get; set; }
         public decimal ValorTotalFactura { get; set; }
+        /// <summary>PEN o USD; null deja la que tenía.</summary>
+        public string MonedaFactura { get; set; }
 
         // CPIC: gestionar o desvincular.
         public bool GestionarCpic { get; set; }

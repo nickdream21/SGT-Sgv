@@ -172,11 +172,21 @@ namespace WebSGV.Services.Despachos
             return despachos;
         }
 
-        /// <summary>Lotes registrados filtrados (<c>sp_LD_ObtenerLotesRegistrados</c>).</summary>
+        /// <summary>Filtro de documentos de <c>sp_LD_ObtenerLotesRegistrados</c>: lotes con algo por completar.</summary>
+        public const string DOCUMENTOS_PENDIENTES = "PENDIENTES";
+
+        /// <summary>Filtro de documentos: lotes sin nada pendiente.</summary>
+        public const string DOCUMENTOS_COMPLETOS = "COMPLETOS";
+
+        /// <summary>
+        /// Lotes registrados filtrados (<c>sp_LD_ObtenerLotesRegistrados</c>).
+        /// <paramref name="documentos"/>: <see cref="DOCUMENTOS_PENDIENTES"/>, <see cref="DOCUMENTOS_COMPLETOS"/> o null.
+        /// </summary>
         public static List<LoteRegistrado> ObtenerLotesRegistrados(
             int? idCliente, string tipoOperacion, int? idPlanta, string numeroPedido,
             DateTime? fechaDesde, DateTime? fechaHasta, string estadoFiltro,
-            string numeroFactura = null, string numeroCPIC = null, string nombreConductor = null)
+            string numeroFactura = null, string numeroCPIC = null, string nombreConductor = null,
+            string documentos = null)
         {
             List<LoteRegistrado> lotes = new List<LoteRegistrado>();
 
@@ -202,6 +212,8 @@ namespace WebSGV.Services.Despachos
                         string.IsNullOrEmpty(numeroCPIC) ? (object)DBNull.Value : numeroCPIC);
                     cmd.Parameters.AddWithValue("@nombreConductor",
                         string.IsNullOrEmpty(nombreConductor) ? (object)DBNull.Value : nombreConductor);
+                    cmd.Parameters.AddWithValue("@documentos",
+                        string.IsNullOrEmpty(documentos) ? (object)DBNull.Value : documentos);
 
                     conn.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
@@ -384,6 +396,8 @@ namespace WebSGV.Services.Despachos
                                 cmd.Parameters.AddWithValue("@numeroFactura", input.NumeroFactura);
                                 cmd.Parameters.AddWithValue("@fechaEmision", input.FechaEmisionFactura);
                                 cmd.Parameters.AddWithValue("@valorTotal", input.ValorTotalFactura);
+                                cmd.Parameters.AddWithValue("@moneda",
+                                    string.IsNullOrEmpty(input.MonedaFactura) ? (object)DBNull.Value : input.MonedaFactura);
                                 cmd.ExecuteNonQuery();
                             }
                         }
@@ -484,11 +498,30 @@ namespace WebSGV.Services.Despachos
                 UsuarioCreacion = GetSafeValue<string>(reader, "UsuarioCreacion"),
                 FechaEmisionFactura = GetSafeValue<DateTime?>(reader, "FechaEmisionFactura"),
                 ValorTotalFactura = GetSafeValue<decimal?>(reader, "ValorTotalFactura"),
+                MonedaFactura = GetSafeValue<string>(reader, "MonedaFactura"),
                 FechaEmisionCPIC = GetSafeValue<DateTime?>(reader, "FechaEmisionCPIC"),
                 ValorFlete = GetSafeValue<decimal?>(reader, "ValorFlete"),
-                EstadoLote = GetSafeValue<string>(reader, "EstadoLote", "ACTIVO")
+                EstadoLote = GetSafeValue<string>(reader, "EstadoLote", "ACTIVO"),
+                DespachosVigentes = GetSafeValue<int>(reader, "DespachosVigentes"),
+                DespachosSinPedido = GetSafeValue<int>(reader, "DespachosSinPedido"),
+                DespachosSinGuia = GetSafeValue<int>(reader, "DespachosSinGuia"),
+                DespachosSinFactura = GetSafeValue<int>(reader, "DespachosSinFactura"),
+                DespachosSinPdfFactura = GetSafeValue<int>(reader, "DespachosSinPdfFactura"),
+                DespachosSinCPIC = GetSafeValue<int>(reader, "DespachosSinCPIC"),
+                DespachosSinPdfCPIC = GetSafeValue<int>(reader, "DespachosSinPdfCPIC")
             };
         }
+
+        /// <summary>
+        /// Guarda las guías de un despacho registrado sin ellas (<c>sp_LD_ActualizarGuiaDespacho</c>;
+        /// vacío = sin guía). Rechaza una guía de remitente que ya está en otro despacho.
+        /// </summary>
+        public static void ActualizarGuiaDespacho(int idDespacho, string guiaRemitente, string guiaTransportista, string usuario) =>
+            DbHelper.EjecutarNonQuerySp("sp_LD_ActualizarGuiaDespacho",
+                DbHelper.Param("@idDespacho", idDespacho),
+                DbHelper.Param("@guiaRemitente", string.IsNullOrWhiteSpace(guiaRemitente) ? (object)DBNull.Value : guiaRemitente.Trim()),
+                DbHelper.Param("@guiaTransportista", string.IsNullOrWhiteSpace(guiaTransportista) ? (object)DBNull.Value : guiaTransportista.Trim()),
+                DbHelper.Param("@usuario", usuario));
 
         /// <summary>
         /// Descompone el id de lote virtual que arma <c>sp_LD_ObtenerLotesRegistrados</c>.

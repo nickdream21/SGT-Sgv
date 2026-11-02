@@ -55,6 +55,15 @@
                                             <span class="ld-stat-label">Manifiestos pendientes</span>
                                         </span>
                                     </asp:LinkButton>
+
+                                    <asp:LinkButton ID="lnkStatDocumentosPendientes" runat="server" CssClass="ld-stat-tile" OnClick="lnkStatDocumentosPendientes_Click" CausesValidation="false">
+                                        <span class="ld-stat-icon ld-stat-icon-amber"><i class="fas fa-file-invoice"></i></span>
+                                        <span class="ld-stat-text">
+                                            <span class="ld-stat-value"><asp:Label ID="lblStatDocumentosPendientes" runat="server">0</asp:Label></span>
+                                            <span class="ld-stat-label">Lotes con documentos pendientes</span>
+                                            <asp:Label ID="lblStatDocumentosAtrasados" runat="server" CssClass="ld-stat-sub"></asp:Label>
+                                        </span>
+                                    </asp:LinkButton>
                                 </div>
 
                                 <!-- NAVEGACIÓN PRINCIPAL -->
@@ -352,7 +361,7 @@
 
                                                 <!-- Filtro por Fechas y Estado -->
                                                 <div class="row ld-filter-row-dates">
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-2">
                                                         <div class="form-group">
                                                             <label class="form-label"><i class="fas fa-calendar-alt"></i>Fecha desde</label>
                                                             <asp:TextBox ID="txtFechaDesde" runat="server"
@@ -361,7 +370,7 @@
                                                             </asp:TextBox>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-2">
                                                         <div class="form-group">
                                                             <label class="form-label"><i class="fas fa-calendar-alt"></i>Fecha hasta</label>
                                                             <asp:TextBox ID="txtFechaHasta" runat="server"
@@ -370,7 +379,7 @@
                                                             </asp:TextBox>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-2">
                                                         <div class="form-group">
                                                             <label class="form-label"><i class="fas fa-flag"></i>Estado del lote</label>
                                                             <asp:DropDownList ID="ddlFiltroEstadoLotes" runat="server"
@@ -380,6 +389,20 @@
                                                                 <asp:ListItem Value="" Text="-- Todos --"></asp:ListItem>
                                                                 <asp:ListItem Value="ACTIVO" Text="Activos" Selected="True"></asp:ListItem>
                                                                 <asp:ListItem Value="ANULADO" Text="Anulados"></asp:ListItem>
+                                                            </asp:DropDownList>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label class="form-label"><i class="fas fa-file-invoice"></i>Documentos</label>
+                                                            <%-- Valores = ListaDespachosService.DOCUMENTOS_PENDIENTES / DOCUMENTOS_COMPLETOS. --%>
+                                                            <asp:DropDownList ID="ddlFiltroDocumentosLotes" runat="server"
+                                                                CssClass="form-select"
+                                                                AutoPostBack="true"
+                                                                OnSelectedIndexChanged="ddlFiltroDocumentosLotes_SelectedIndexChanged">
+                                                                <asp:ListItem Value="" Text="-- Todos --"></asp:ListItem>
+                                                                <asp:ListItem Value="PENDIENTES" Text="Con documentos pendientes"></asp:ListItem>
+                                                                <asp:ListItem Value="COMPLETOS" Text="Completos"></asp:ListItem>
                                                             </asp:DropDownList>
                                                         </div>
                                                     </div>
@@ -434,6 +457,20 @@
                                                                 <asp:Label runat="server"
                                                                     Text='<%# Eval("ManifiestoEstado") %>'
                                                                     CssClass='<%# GetManifiestoBadgeClass(Eval("ManifiestoEstado").ToString()) %>'>
+                                                                </asp:Label>
+                                                            </ItemTemplate>
+                                                        </asp:TemplateField>
+
+                                                        <asp:TemplateField HeaderText="Documentos" ItemStyle-CssClass="ld-docs-cell">
+                                                            <ItemTemplate>
+                                                                <asp:Label runat="server"
+                                                                    Text='<%# Eval("DocumentosResumen") %>'
+                                                                    CssClass='<%# (string)Eval("DocumentosClase") %>'>
+                                                                </asp:Label>
+                                                                <asp:Label runat="server"
+                                                                    Text='<%# Eval("DocumentosAntiguedad") %>'
+                                                                    CssClass='<%# (bool)Eval("DocumentosAtrasado") ? "ld-docs-edad ld-docs-edad-atrasado" : "ld-docs-edad" %>'
+                                                                    Visible='<%# !string.IsNullOrEmpty((string)Eval("DocumentosAntiguedad")) %>'>
                                                                 </asp:Label>
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
@@ -769,12 +806,19 @@
                                                                 </div>
                                                                 <div class="form-group">
                                                                     <label class="form-label">Valor total:</label>
-                                                                    <asp:TextBox ID="txtValorTotalFacturaEdit" runat="server" 
-                                                                        CssClass="form-control" 
+                                                                    <asp:TextBox ID="txtValorTotalFacturaEdit" runat="server"
+                                                                        CssClass="form-control"
                                                                         placeholder="0.00"
                                                                         TextMode="Number"
                                                                         step="0.01">
                                                                     </asp:TextBox>
+                                                                </div>
+                                                                <div class="form-group">
+                                                                    <label class="form-label">Moneda:</label>
+                                                                    <asp:DropDownList ID="ddlMonedaFacturaEdit" runat="server" CssClass="form-select">
+                                                                        <asp:ListItem Value="PEN" Text="Soles (PEN)"></asp:ListItem>
+                                                                        <asp:ListItem Value="USD" Text="Dólares (USD)"></asp:ListItem>
+                                                                    </asp:DropDownList>
                                                                 </div>
                                                             </div>
                                                         </asp:Panel>
@@ -1055,21 +1099,84 @@
                                                 <asp:Label ID="lblMensajeManifiesto" runat="server" CssClass="alert d-block"></asp:Label>
                                             </asp:Panel>
 
-                                            <!-- Documentos base del lote (Factura/CPIC), si fueron adjuntados -->
+                                            <!-- Documentos del lote: qué falta y dónde completarlo. El despacho se
+                                                 registra aunque la factura y las guías lleguen después. -->
                                             <div class="data-section mb-3">
                                                 <h6 class="data-section-title"><i class="fas fa-file-invoice"></i> Documentos base</h6>
-                                                <div class="rd-notice" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:5px;padding:.7rem 1rem;">
-                                                    <asp:Panel ID="pnlDocFacturaManifiesto" runat="server" Visible="false" CssClass="mb-1">
-                                                        <i class="fas fa-receipt mr-1"></i> Factura:
-                                                        <asp:LinkButton ID="lnkVerDocFactura" runat="server" OnClick="lnkVerDocFactura_Click" CausesValidation="false"></asp:LinkButton>
+                                                <asp:Label ID="lblEstadoDocumentalLote" runat="server" CssClass="d-block mb-2"></asp:Label>
+
+                                                <asp:Panel ID="pnlEsperaZip" runat="server" Visible="false" CssClass="alert alert-info small">
+                                                    <i class="fas fa-envelope-open-text mr-1"></i>
+                                                    Estas cargas se programaron con el Word y esperan el correo. Cuando llegue el ZIP (factura, packing list y guías),
+                                                    léalo en <asp:HyperLink ID="lnkCompletarConZip" runat="server" NavigateUrl="~/Views/RegistroDespacho.aspx">Registro de despacho → Leer documentos</asp:HyperLink>:
+                                                    completa el pedido, la factura, las guías y la carga de cada unidad sin crear otro despacho.
+                                                    Si escribe la guía o la factura a mano aquí, el ZIP ya no reconoce esa carga.
+                                                </asp:Panel>
+
+                                                <div class="ld-docs-base">
+                                                    <div class="ld-doc-fila">
+                                                        <div class="ld-doc-dato">
+                                                            <i class="fas fa-receipt mr-1"></i> <strong>Factura:</strong>
+                                                            <asp:Label ID="lblNumeroFacturaDocs" runat="server"></asp:Label>
+                                                            <asp:LinkButton ID="lnkVerDocFactura" runat="server" OnClick="lnkVerDocFactura_Click" CausesValidation="false" Visible="false"></asp:LinkButton>
+                                                        </div>
+                                                        <asp:Panel ID="pnlSubirPdfFactura" runat="server" CssClass="ld-doc-subir" Visible="false">
+                                                            <asp:FileUpload ID="fuPdfFactura" runat="server" CssClass="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png" />
+                                                            <asp:Button ID="btnSubirPdfFactura" runat="server" Text="Adjuntar PDF"
+                                                                CssClass="btn btn-primary btn-sm" OnClick="btnSubirPdfFactura_Click" CausesValidation="false" />
+                                                        </asp:Panel>
+                                                    </div>
+                                                    <asp:Panel ID="pnlFilaCpicDocs" runat="server" CssClass="ld-doc-fila">
+                                                        <div class="ld-doc-dato">
+                                                            <i class="fas fa-shipping-fast mr-1"></i> <strong>CPIC:</strong>
+                                                            <asp:Label ID="lblNumeroCpicDocs" runat="server"></asp:Label>
+                                                            <asp:LinkButton ID="lnkVerDocCpic" runat="server" OnClick="lnkVerDocCpic_Click" CausesValidation="false" Visible="false"></asp:LinkButton>
+                                                        </div>
+                                                        <asp:Panel ID="pnlSubirPdfCpic" runat="server" CssClass="ld-doc-subir" Visible="false">
+                                                            <asp:FileUpload ID="fuPdfCpic" runat="server" CssClass="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png" />
+                                                            <asp:Button ID="btnSubirPdfCpic" runat="server" Text="Adjuntar PDF"
+                                                                CssClass="btn btn-primary btn-sm" OnClick="btnSubirPdfCpic_Click" CausesValidation="false" />
+                                                        </asp:Panel>
                                                     </asp:Panel>
-                                                    <asp:Panel ID="pnlDocCpicManifiesto" runat="server" Visible="false">
-                                                        <i class="fas fa-shipping-fast mr-1"></i> CPIC:
-                                                        <asp:LinkButton ID="lnkVerDocCpic" runat="server" OnClick="lnkVerDocCpic_Click" CausesValidation="false"></asp:LinkButton>
-                                                    </asp:Panel>
-                                                    <asp:Label ID="lblSinDocsBase" runat="server" Text="Sin documentos base adjuntados." Visible="false" CssClass="text-muted"></asp:Label>
+                                                    <p class="text-muted small mb-0 mt-2">
+                                                        El número, la fecha y el valor de la factura o del CPIC se registran en <strong>Editar</strong> del lote
+                                                        (o los trae el ZIP); aquí se adjunta su PDF.
+                                                    </p>
                                                 </div>
                                             </div>
+
+                                            <!-- Guías por despacho: la que manda el chofer o el cliente después del registro. -->
+                                            <asp:Panel ID="pnlGuiasLote" runat="server" CssClass="data-section mb-3">
+                                                <h6 class="data-section-title"><i class="fas fa-truck-loading"></i> Guías por despacho</h6>
+                                                <p class="text-muted small">Escriba la guía de cada unidad cuando la tenga. Vacío = sin guía.</p>
+                                                <div class="data-grid-container">
+                                                    <asp:GridView ID="gvGuiasLote" runat="server"
+                                                        CssClass="table data-table detail-table"
+                                                        AutoGenerateColumns="false"
+                                                        DataKeyNames="IdDespacho"
+                                                        EmptyDataText="No hay despachos en este lote">
+                                                        <Columns>
+                                                            <asp:BoundField DataField="NumeroDespacho" HeaderText="N° Despacho" />
+                                                            <asp:BoundField DataField="NombreConductor" HeaderText="Conductor" />
+                                                            <asp:BoundField DataField="PlacaTracto" HeaderText="Tracto" />
+                                                            <asp:TemplateField HeaderText="Guía remitente">
+                                                                <ItemTemplate>
+                                                                    <asp:TextBox ID="txtGuiaRemitenteFila" runat="server" CssClass="form-control form-control-sm"
+                                                                        MaxLength="50" placeholder="Ej: T660-00016530" Text='<%# Eval("GuiaRemitente") %>'></asp:TextBox>
+                                                                </ItemTemplate>
+                                                            </asp:TemplateField>
+                                                            <asp:TemplateField HeaderText="Guía transportista">
+                                                                <ItemTemplate>
+                                                                    <asp:TextBox ID="txtGuiaTransportistaFila" runat="server" CssClass="form-control form-control-sm"
+                                                                        MaxLength="50" Text='<%# Eval("GuiaTransportista") %>'></asp:TextBox>
+                                                                </ItemTemplate>
+                                                            </asp:TemplateField>
+                                                        </Columns>
+                                                    </asp:GridView>
+                                                </div>
+                                                <asp:Button ID="btnGuardarGuias" runat="server" Text="Guardar guías"
+                                                    CssClass="btn btn-primary btn-sm" OnClick="btnGuardarGuias_Click" CausesValidation="false" />
+                                            </asp:Panel>
 
                                             <!-- Manifiesto por conductor/despacho: solo aplica a viajes internacionales -->
                                             <asp:Panel ID="pnlAvisoNacionalSinManifiesto" runat="server" Visible="false" CssClass="rd-notice" Style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:5px;padding:.7rem 1rem;">
@@ -1142,6 +1249,9 @@
                                 <asp:AsyncPostBackTrigger ControlID="lnkStatViajes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="lnkStatLotes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="lnkStatManifiestosPendientes" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="lnkStatDocumentosPendientes" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="ddlFiltroDocumentosLotes" EventName="SelectedIndexChanged" />
+                                <asp:AsyncPostBackTrigger ControlID="btnGuardarGuias" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnMostrarViajes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnRefrescarViajes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="ddlFiltroConductorViajes" EventName="SelectedIndexChanged" />
@@ -1179,6 +1289,9 @@
                                 <asp:AsyncPostBackTrigger ControlID="lnkVerDocFactura" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="lnkVerDocCpic" EventName="Click" />
                                 <asp:PostBackTrigger ControlID="gvManifiestosLote" />
+                                <%-- FileUpload: postback completo, en uno parcial el archivo no llega. --%>
+                                <asp:PostBackTrigger ControlID="btnSubirPdfFactura" />
+                                <asp:PostBackTrigger ControlID="btnSubirPdfCpic" />
 
                                 <asp:PostBackTrigger ControlID="btnVolver" />
                             </Triggers>

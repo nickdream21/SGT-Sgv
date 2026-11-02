@@ -239,6 +239,7 @@
     <Content Include="Database\StoredProcedures\sp_LD_DesvincularDocumentoLote.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_EliminarLote.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_GestionarCPICLote.sql" />
+    <Content Include="Database\StoredProcedures\sp_LD_ActualizarGuiaDespacho.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_GestionarFacturaLote.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ObtenerClientesRecientes.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ObtenerConductoresConViajes.sql" />
@@ -491,6 +492,7 @@
     <Compile Include="Services\Despachos\DespachoValidaciones.cs" />
     <Compile Include="Services\Despachos\DocumentoCpicService.cs" />
     <Compile Include="Services\Despachos\EditarDespachoService.cs" />
+    <Compile Include="Services\Despachos\EstadoDocumental.cs" />
     <Compile Include="Services\Despachos\ListaDespachosService.cs" />
     <Compile Include="Services\Despachos\ManifiestoService.cs" />
     <Compile Include="Services\Despachos\RegistroDespachoService.cs" />

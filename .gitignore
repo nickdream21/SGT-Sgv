@@ -421,3 +421,6 @@ herramientas/cuadro-status-general/bin/
 herramientas/perfil-llegada/bin/
 herramientas/cuadro-status-general/cache/
 herramientas/cuadro-status-general/salida/
+
+# Salidas de las herramientas del correo (nombres, placas y guías)
+herramientas/carga-historica-correo/*.txt
