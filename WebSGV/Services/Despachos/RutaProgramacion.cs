@@ -17,6 +17,9 @@ namespace WebSGV.Services.Despachos
     ///                                           que las de RAPEL también cargan en Chapaira: Rapel es
     ///                                           a quien va la carga (fundo en Jayanca), no otra planta.
     ///   POLINPLAST-VIRU / -ACP / -OLMOS …     → Polinplast, descarga en ese destino
+    ///   IMPORTACION-TRUJILLO                  → retorno con carga: unidades que cargaron en Ecuador y
+    ///                                           descargan en Trujillo (Word del 01/11/2026). No es una carga
+    ///                                           en Trujillo: completa el viaje de ida de Vitapro.
     ///   AFRECHO-PAITA                         → afrecho de Alicorp, carga en Paita (Word del 23/10/2026).
     ///                                           El comprador cambia: el cliente es el de la última carga
     ///                                           en Paita (ProgramacionDespachoService).
@@ -31,6 +34,7 @@ namespace WebSGV.Services.Despachos
         public const string Novopan = "NOVOPAN";
         public const string Polinplast = "POLINPLAST";
         public const string Afrecho = "AFRECHO";
+        public const string RetornoConCarga = "RETORNO";
 
         /// <summary>Nombre corto del cliente tal como se busca en el catálogo.</summary>
         public string Cliente { get; private set; }
@@ -42,6 +46,9 @@ namespace WebSGV.Services.Despachos
 
         /// <summary>La operación es fuera del Perú (carga en Quito, descarga en Guayaquil).</summary>
         public bool EsInternacional { get; private set; }
+
+        /// <summary>Unidades que vuelven de Ecuador con carga y descargan en <see cref="Lugar"/> (IMPORTACION-TRUJILLO).</summary>
+        public bool EsRetornoConCarga { get; private set; }
 
         /// <summary>A quién va la carga cuando el título de carga lo dice en vez de la planta ("POLINPLAST-RAPEL").</summary>
         public string Destino { get; private set; }
@@ -55,6 +62,13 @@ namespace WebSGV.Services.Despachos
         {
             string t = LectorDocumentosPedido.Normalizar(titulo);
             if (t.Length == 0) return null;
+
+            if (Regex.IsMatch(t, @"\bIMPORTAC\w*"))
+                return new RutaProgramacion
+                {
+                    Cliente = RetornoConCarga, EsCarga = false, EsRetornoConCarga = true,
+                    Lugar = LugarDelTitulo(t, @"IMPORTAC\w*") ?? "TRUJILLO"
+                };
 
             if (Regex.IsMatch(t, @"AZUCAR|CARTAVIO"))
             {

@@ -490,7 +490,7 @@ namespace WebSGV.Services.Exportacion
             string tipoRuta = Texto(r, "tipoRuta");
             if (RutaTercero.Es(tipoRuta)) return ConGrupo(ResumirTercero(r, horas, estado, tipoRuta, tracto1, tracto2), r);
             var ultimo = FaseViaje.UltimoHito(horas);
-            return ConGrupo(new ViajeResumen
+            return ConRetornoConCarga(ConGrupo(new ViajeResumen
             {
                 Id = Convert.ToInt32(r["idSeguimiento"]),
                 Pedido = Texto(r, "cliente"),
@@ -521,7 +521,29 @@ namespace WebSGV.Services.Exportacion
                 Llegada = LlegadaEstimada.ParaViaje(horas, estado, Texto(r, "bodegaDescarga") ?? Texto(r, "bodegaEcuatoriana"),
                     Texto(r, "ultimaPlacaGps"), tracto1, tracto2, Numero(r, "ultimaLatitud"), Numero(r, "ultimaLongitud"), Fecha(r, "fhUltimaPosicion")),
                 Fila = r,
-            }, r);
+            }, r), r);
+        }
+
+        /// <summary>
+        /// La unidad vuelve de Ecuador con carga y descarga en Trujillo (sección IMPORTACION-TRUJILLO del Word):
+        /// el viaje de ida lo muestra como "Retorno con carga" y lleva un aviso con el día programado.
+        /// </summary>
+        private static ViajeResumen ConRetornoConCarga(ViajeResumen v, DataRow r)
+        {
+            if (!r.Table.Columns.Contains("retornoConCarga") || r.IsNull("retornoConCarga") || !Convert.ToBoolean(r["retornoConCarga"]))
+                return v;
+            string destino = Texto(r, "retornoDestino") ?? "Trujillo";
+            destino = char.ToUpperInvariant(destino[0]) + destino.Substring(1).ToLowerInvariant();
+            var fh = Fecha(r, "fhRetornoProgramado");
+            if (v.Fase.Grupo == "retorno")
+                v.Fase = new FaseCalculada { Nombre = "Retorno con carga a " + destino, Grupo = "retorno" };
+            if (v.Fase.Grupo != "cerrado")
+                (v.Avisos = v.Avisos ?? new List<AvisoViaje>()).Add(new AvisoViaje
+                {
+                    Tipo = TipoAviso.Info,
+                    Texto = $"Vuelve de Ecuador con carga y descarga en {destino}" + (fh.HasValue ? $" (programado {fh.Value:dd/MM HH:mm})." : "."),
+                });
+            return v;
         }
 
         /// <summary>Posición tomada de su grupo porque su GPS no tiene señal: se avisa en el tablero.</summary>

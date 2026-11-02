@@ -99,9 +99,10 @@
 
                                             <%-- Secciones de descarga de Crisar, Novopan y Polinplast: completan el viaje del seguimiento de su carga. --%>
                                             <asp:Panel ID="pnlEntregasTerceros" runat="server" CssClass="rd-entregas mb-3" Visible="false">
-                                                <div class="rd-section-label"><i class="fas fa-flag-checkered mr-1"></i> Entregas de clientes terceros en este Word</div>
+                                                <div class="rd-section-label"><i class="fas fa-flag-checkered mr-1"></i> Entregas de clientes terceros y retornos con carga en este Word</div>
                                                 <p class="small text-muted mb-2">
                                                     Cada fila completa el viaje del seguimiento de su carga (misma carreta): el lugar de entrega y, si descarga otro tracto, el tracto y el chofer de descarga.
+                                                    "IMPORTACION-TRUJILLO" son unidades que cargaron en Ecuador y descargan en Trujillo: se anotan como retorno con carga en su viaje de ida de Vitapro.
                                                 </p>
                                                 <div class="table-responsive">
                                                     <table class="table table-sm rd-tabla-import align-middle mb-2">

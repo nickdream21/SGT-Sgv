@@ -257,6 +257,7 @@ namespace WebSGV.Services.Despachos
         /// Filas de las secciones de descarga de Crisar, Novopan y Polinplast (GUAYAQUIL-AZUCAR, NOVOPAN-PIURA,
         /// POLINPLAST-VIRU), cada una con el viaje del seguimiento de su carga: del mismo cliente, con la
         /// misma carreta (o, si no, el mismo tracto), programado en los días anteriores al Word.
+        /// IMPORTACION-TRUJILLO (retorno con carga) se une igual, pero al viaje de ida de Vitapro.
         /// </summary>
         public static List<EntregaTercero> ProponerEntregas(ProgramacionTransporte programacion)
         {
@@ -268,7 +269,7 @@ namespace WebSGV.Services.Despachos
                 foreach (var f in s.Filas.Where(f => LectorDocumentosPedido.NormalizarPlaca(f.Tracto) != null || LectorDocumentosPedido.NormalizarPlaca(f.Carreta) != null))
                     entregas.Add(new EntregaTercero
                     {
-                        Seccion = s.Titulo, Cliente = ruta.Cliente, Lugar = ruta.Lugar,
+                        Seccion = s.Titulo, Cliente = ruta.Cliente, Lugar = ruta.Lugar, EsRetorno = ruta.EsRetornoConCarga,
                         Chofer = f.Chofer?.Trim(), Tracto = f.Tracto?.Trim(), Carreta = f.Carreta?.Trim(),
                         Cambio = f.Cambio?.Trim(), Horario = f.Horario?.Trim()
                     });
@@ -277,9 +278,10 @@ namespace WebSGV.Services.Despachos
 
             DateTime referencia = (programacion.Fecha ?? FechaHelper.Hoy()).Date;
             var viajes = DbHelper.ConsultarTabla(@"
-                    SELECT idSeguimiento, tipoRuta, carreta, tracto1, tracto2, fhProgramacion, lugarEntrega
+                    SELECT idSeguimiento, tipoRuta, cliente, carreta, tracto1, tracto2, fhProgramacion, lugarEntrega,
+                           retornoConCarga, retornoDestino
                     FROM SeguimientoExportacion
-                    WHERE activo = 1 AND tipoRuta IS NOT NULL AND ISNULL(estado, '') <> 'CANCELADO'
+                    WHERE activo = 1 AND ISNULL(estado, '') <> 'CANCELADO'
                       AND fhProgramacion >= @desde AND fhProgramacion < @hasta",
                     DbHelper.Param("@desde", referencia.AddDays(-DiasCargaAntesDeEntrega)), DbHelper.Param("@hasta", referencia.AddDays(2)))
                 .Rows.Cast<DataRow>().ToList();
@@ -288,6 +290,19 @@ namespace WebSGV.Services.Despachos
             foreach (var e in entregas)
             {
                 string carreta = LectorDocumentosPedido.NormalizarPlaca(e.Carreta), tracto = LectorDocumentosPedido.NormalizarPlaca(e.Tracto);
+                if (e.EsRetorno)
+                {
+                    // Sale al día siguiente del Word (como las cargas de terceros) a la hora del HORARIO.
+                    var hora = ProgramacionCarga.HoraDelHorario(e.Horario);
+                    e.FhRetorno = referencia.AddDays(1) + (hora ?? TimeSpan.Zero);
+                    var ida = ElegirViajeDeIda(viajes, carreta, tracto, referencia.AddDays(1));
+                    if (ida == null) continue;
+                    e.IdSeguimiento = Convert.ToInt32(ida["idSeguimiento"]);
+                    e.Viaje = $"ida {Convert.ToDateTime(ida["fhProgramacion"]):dd/MM} · {ida["tracto1"]} / {ida["carreta"]} · pedido {ida["cliente"]}";
+                    e.YaRegistrada = ida["retornoConCarga"] != DBNull.Value && Convert.ToBoolean(ida["retornoConCarga"])
+                                     && string.Equals(Convert.ToString(ida["retornoDestino"]), e.Lugar, StringComparison.OrdinalIgnoreCase);
+                    continue;
+                }
                 var delCliente = viajes.Where(v => string.Equals(Convert.ToString(v["tipoRuta"]), e.Cliente, StringComparison.OrdinalIgnoreCase))
                     .OrderByDescending(v => Convert.ToDateTime(v["fhProgramacion"])).ToList();
                 var viaje = (carreta != null ? delCliente.FirstOrDefault(v => P(v["carreta"]) == carreta) : null)
@@ -303,12 +318,48 @@ namespace WebSGV.Services.Despachos
             return entregas;
         }
 
-        /// <summary>Completa los viajes de las entregas encontradas (sp_SE_RegistrarEntregaTercero). Devuelve cuántos cambiaron.</summary>
+        /// <summary>
+        /// Viaje de ida de Vitapro (sin tipoRuta) al que vuelve con carga una unidad: el más reciente
+        /// programado antes de <paramref name="hasta"/> con su carreta y su tracto; si no, solo con la
+        /// carreta; si no, solo con el tracto. Null si ninguno coincide.
+        /// </summary>
+        public static DataRow ElegirViajeDeIda(IEnumerable<DataRow> viajes, string carreta, string tracto, DateTime hasta)
+        {
+            string P(object o) => o == DBNull.Value ? null : LectorDocumentosPedido.NormalizarPlaca(Convert.ToString(o));
+            var ida = viajes
+                .Where(v => v["tipoRuta"] == DBNull.Value || string.IsNullOrWhiteSpace(Convert.ToString(v["tipoRuta"])))
+                .Where(v => v["fhProgramacion"] != DBNull.Value && Convert.ToDateTime(v["fhProgramacion"]) < hasta)
+                .OrderByDescending(v => Convert.ToDateTime(v["fhProgramacion"])).ToList();
+            bool MismaCarreta(DataRow v) => carreta != null && P(v["carreta"]) == carreta;
+            bool MismoTracto(DataRow v) => tracto != null && (P(v["tracto1"]) == tracto || P(v["tracto2"]) == tracto);
+            return ida.FirstOrDefault(v => MismaCarreta(v) && MismoTracto(v))
+                   ?? ida.FirstOrDefault(MismaCarreta)
+                   ?? ida.FirstOrDefault(MismoTracto);
+        }
+
+        /// <summary>
+        /// Completa los viajes de las entregas encontradas: lugar de entrega de los terceros
+        /// (sp_SE_RegistrarEntregaTercero) y retorno con carga de Vitapro (sp_SE_RegistrarRetornoConCarga).
+        /// Devuelve cuántos cambiaron.
+        /// </summary>
         public static int RegistrarEntregas(IEnumerable<EntregaTercero> entregas, int? idUsuario)
         {
             int cambiados = 0;
             foreach (var e in entregas.Where(x => x.IdSeguimiento.HasValue))
             {
+                if (e.EsRetorno)
+                {
+                    object rr = DbHelper.EjecutarEscalarSp("sp_SE_RegistrarRetornoConCarga",
+                        DbHelper.Param("@idSeguimiento", e.IdSeguimiento.Value),
+                        DbHelper.Param("@retornoDestino", e.Lugar),
+                        DbHelper.Param("@fhRetornoProgramado", (object)e.FhRetorno ?? DBNull.Value),
+                        DbHelper.Param("@idUsuario", idUsuario));
+                    if (Convert.ToInt32(rr) != 1) continue;
+                    cambiados++;
+                    AuditoriaHelper.Registrar("UPDATE", "SeguimientoExportacion", e.IdSeguimiento.Value,
+                        $"Retorno con carga desde el Word ({e.Seccion}): descarga en {e.Lugar}" + (e.FhRetorno.HasValue ? $", programado {e.FhRetorno:dd/MM HH:mm}" : "") + ".");
+                    continue;
+                }
                 object r = DbHelper.EjecutarEscalarSp("sp_SE_RegistrarEntregaTercero",
                     DbHelper.Param("@idSeguimiento", e.IdSeguimiento.Value),
                     DbHelper.Param("@lugarEntrega", e.Lugar),

@@ -150,6 +150,15 @@ namespace WebSGV.Models.Despachos
 
         /// <summary>El viaje ya tiene este lugar de entrega (y este tracto de descarga).</summary>
         public bool YaRegistrada { get; set; }
+
+        /// <summary>
+        /// Retorno con carga (IMPORTACION-TRUJILLO): la unidad cargó en Ecuador y descarga en <see cref="Lugar"/>.
+        /// El viaje es el de ida de Vitapro, no uno de terceros.
+        /// </summary>
+        public bool EsRetorno { get; set; }
+
+        /// <summary>Día y hora programados del retorno (día siguiente al del Word + HORARIO).</summary>
+        public DateTime? FhRetorno { get; set; }
     }
 
     [Serializable]

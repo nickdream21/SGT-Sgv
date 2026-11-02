@@ -1,3 +1,6 @@
+using System;
+using System.Data;
+using System.Linq;
 using WebSGV.Models.Despachos;
 using WebSGV.Services.Despachos;
 using Xunit;
@@ -26,6 +29,9 @@ namespace WebSGV.Tests
         [InlineData("POLINPAST-ACP", "POLINPLAST", false, "ACP", false)]
         [InlineData("AFRECHO-PAITA", "AFRECHO", true, "PAITA", false)]
         [InlineData("AFRECHO", "AFRECHO", true, "PAITA", false)]
+        [InlineData("IMPORTACION-TRUJILLO", "RETORNO", false, "TRUJILLO", false)]
+        [InlineData("IMPORTACIÓN-TRUJILLO", "RETORNO", false, "TRUJILLO", false)]
+        [InlineData("IMPORTACION", "RETORNO", false, "TRUJILLO", false)]
         public void Reconocer_ClienteOperacionYLugar(string titulo, string cliente, bool esCarga, string lugar, bool internacional)
         {
             var r = RutaProgramacion.Reconocer(titulo);
@@ -75,6 +81,60 @@ namespace WebSGV.Tests
             // Vitapro sigue con la regla de siempre.
             Assert.True(ProgramacionCarga.EsSeccionDeCarga(Seccion("TRUJILLO-VITAPRO-CARGAN 22 DE OCTUBRE", "05:30AM")));
             Assert.False(ProgramacionCarga.EsSeccionDeCarga(Seccion("GUAYAQUIL-VITAPRO", null, "4400133950")));
+        }
+
+        [Fact]
+        public void ImportacionTrujillo_EsRetornoConCarga_NoEsCargaAunqueTraigaHorario()
+        {
+            // Word del 01/11/2026: las 4 unidades vuelven de Ecuador con carga, a las 06:00.
+            var seccion = Seccion("IMPORTACION-TRUJILLO", "06:00AM");
+
+            var r = RutaProgramacion.Reconocer(seccion);
+
+            Assert.True(r.EsRetornoConCarga);
+            Assert.False(ProgramacionCarga.EsSeccionDeCarga(seccion));
+            Assert.False(RutaProgramacion.Reconocer("POLINPLAST-VIRU").EsRetornoConCarga);
+            Assert.False(RutaProgramacion.Reconocer("NOVOPAN-PIURA").EsRetornoConCarga);
+        }
+
+        private static DataTable Viajes(params object[][] filas)
+        {
+            var dt = new DataTable();
+            dt.Columns.Add("idSeguimiento", typeof(int));
+            dt.Columns.Add("tipoRuta", typeof(string));
+            dt.Columns.Add("carreta", typeof(string));
+            dt.Columns.Add("tracto1", typeof(string));
+            dt.Columns.Add("tracto2", typeof(string));
+            dt.Columns.Add("fhProgramacion", typeof(DateTime));
+            foreach (var f in filas) dt.Rows.Add(f);
+            return dt;
+        }
+
+        [Fact]
+        public void ElegirViajeDeIda_ElMasRecienteConLaMismaCarretaYTracto()
+        {
+            var dt = Viajes(
+                new object[] { 1, null, "T0L-975", "ASU-748", null, new DateTime(2026, 10, 19) },
+                new object[] { 2, null, "T0L-975", "ASU-748", null, new DateTime(2026, 10, 26) },   // la ida de este retorno
+                new object[] { 3, null, "T0L-975", "ASU-748", null, new DateTime(2026, 11, 2) },    // carga posterior: no
+                new object[] { 4, null, "T0L-975", "OTR-111", null, new DateTime(2026, 10, 28) });  // misma carreta, otro tracto
+
+            var v = ProgramacionDespachoService.ElegirViajeDeIda(dt.Rows.Cast<DataRow>(), "T0L975", "ASU748", new DateTime(2026, 11, 2));
+
+            Assert.Equal(2, (int)v["idSeguimiento"]);
+        }
+
+        [Fact]
+        public void ElegirViajeDeIda_SinTracto_UsaLaCarreta_YIgnoraLosTerceros()
+        {
+            var dt = Viajes(
+                new object[] { 1, "POLINPLAST", "T4Q-995", "CBV-761", null, new DateTime(2026, 10, 30) },  // tercero: no es la ida de Vitapro
+                new object[] { 2, null, "T4Q-995", "CBV-761", null, new DateTime(2026, 10, 26) });
+
+            var v = ProgramacionDespachoService.ElegirViajeDeIda(dt.Rows.Cast<DataRow>(), "T4Q995", "XXX999", new DateTime(2026, 11, 2));
+
+            Assert.Equal(2, (int)v["idSeguimiento"]);
+            Assert.Null(ProgramacionDespachoService.ElegirViajeDeIda(dt.Rows.Cast<DataRow>(), "ZZZ111", "YYY222", new DateTime(2026, 11, 2)));
         }
     }
 }
