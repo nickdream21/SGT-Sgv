@@ -24,7 +24,7 @@ namespace WebSGV.Tests.Integracion
     /// (HostingEnvironment), algo que no corresponde a estos tests.
     /// </summary>
     [Collection(TransaccionDePrueba.ColeccionEscritura)]
-    public class FlujoDespachoLiquidacionTests
+    public partial class FlujoDespachoLiquidacionTests
     {
         public FlujoDespachoLiquidacionTests() => BaseDePruebas.Preparar();
 

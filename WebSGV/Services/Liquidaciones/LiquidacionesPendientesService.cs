@@ -597,156 +597,106 @@ namespace WebSGV.Services.Liquidaciones
 
                             reader.Close(); // ✅ Cerrar reader antes de nuevas consultas
 
-                            // ✅ INGRESOS ADICIONALES (detalle + total)
-                            using (SqlCommand cmdAdicionales = new SqlCommand(
-                                "SELECT nombreCategoria, soles, dolares, descripcion FROM IngresosAdicionales WHERE numeroOrdenViaje = @numeroOrden", conn))
+                            // Un solo viaje a la BD para todos los detalles (varios SELECT, un resultado
+                            // por cada uno): antes eran 6 consultas seguidas y, con la BD remota, cada
+                            // una sumaba ~100 ms. El orden de los resultados es el de los SELECT.
+                            decimal gastosAdicionalesSoles = 0;
+                            decimal gastosAdicionalesDolares = 0;
+
+                            const string sqlDetalles =
+                                "SELECT nombreCategoria, soles, dolares, descripcion FROM IngresosAdicionales WHERE numeroOrdenViaje = @n;" +
+                                "SELECT nombreCategoria, soles, dolares, descripcion FROM CategoriasAdicionales WHERE numeroOrdenViaje = @n;" +
+                                "SELECT estacion, CONVERT(varchar,fecha,103) AS fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetallePeajes WHERE numeroOrdenViaje = @n ORDER BY fecha;" +
+                                "SELECT CONVERT(varchar,fechaComprobante,103) AS fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleReparacionesVarios WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante;" +
+                                "SELECT CONVERT(varchar,fechaComprobante,103) AS fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleHospedaje WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante;" +
+                                "SELECT CONVERT(varchar,fechaComprobante,103) AS fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleCombustible WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante;" +
+                                "SELECT TOP 1 descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares FROM DescuentosReintegros WHERE numeroOrdenViaje = @n;";
+
+                            using (SqlCommand cmdDetalles = new SqlCommand(sqlDetalles, conn))
                             {
-                                cmdAdicionales.Parameters.AddWithValue("@numeroOrden", detalle.NumeroOrdenViaje);
-                                using (SqlDataReader readerAdicionales = cmdAdicionales.ExecuteReader())
+                                cmdDetalles.Parameters.AddWithValue("@n", detalle.NumeroOrdenViaje);
+                                using (SqlDataReader rd = cmdDetalles.ExecuteReader())
                                 {
-                                    while (readerAdicionales.Read())
+                                    // 1) INGRESOS ADICIONALES (detalle + total)
+                                    while (rd.Read())
                                     {
-                                        decimal s = Convert.ToDecimal(readerAdicionales["soles"]);
-                                        decimal d = Convert.ToDecimal(readerAdicionales["dolares"]);
+                                        decimal s = Convert.ToDecimal(rd["soles"]);
+                                        decimal d = Convert.ToDecimal(rd["dolares"]);
                                         detalle.IngresosAdicionalesSoles += s;
                                         detalle.IngresosAdicionalesDolares += d;
                                         detalle.TotalIngresosSoles += s;
                                         detalle.TotalIngresosDolares += d;
                                         detalle.DetallesIngresosAdicionales.Add(new ItemAdicional
                                         {
-                                            Nombre = readerAdicionales["nombreCategoria"].ToString(),
+                                            Nombre = rd["nombreCategoria"].ToString(),
                                             Soles = s,
                                             Dolares = d,
-                                            Descripcion = readerAdicionales["descripcion"].ToString()
+                                            Descripcion = rd["descripcion"].ToString()
                                         });
                                     }
-                                }
-                            }
 
-                            // ✅ GASTOS ADICIONALES (detalle + total)
-                            decimal gastosAdicionalesSoles = 0;
-                            decimal gastosAdicionalesDolares = 0;
-
-                            using (SqlCommand cmdGastosAd = new SqlCommand(
-                                "SELECT nombreCategoria, soles, dolares, descripcion FROM CategoriasAdicionales WHERE numeroOrdenViaje = @numeroOrden", conn))
-                            {
-                                cmdGastosAd.Parameters.AddWithValue("@numeroOrden", detalle.NumeroOrdenViaje);
-                                using (SqlDataReader readerGastosAd = cmdGastosAd.ExecuteReader())
-                                {
-                                    while (readerGastosAd.Read())
+                                    // 2) GASTOS ADICIONALES (detalle + total)
+                                    rd.NextResult();
+                                    while (rd.Read())
                                     {
-                                        decimal s = Convert.ToDecimal(readerGastosAd["soles"]);
-                                        decimal d = Convert.ToDecimal(readerGastosAd["dolares"]);
+                                        decimal s = Convert.ToDecimal(rd["soles"]);
+                                        decimal d = Convert.ToDecimal(rd["dolares"]);
                                         gastosAdicionalesSoles += s;
                                         gastosAdicionalesDolares += d;
                                         detalle.DetallesGastosAdicionales.Add(new ItemAdicional
                                         {
-                                            Nombre = readerGastosAd["nombreCategoria"].ToString(),
+                                            Nombre = rd["nombreCategoria"].ToString(),
                                             Soles = s,
                                             Dolares = d,
-                                            Descripcion = readerGastosAd["descripcion"].ToString()
+                                            Descripcion = rd["descripcion"].ToString()
                                         });
                                     }
-                                }
-                            }
 
-                            // Guardar gastos adicionales para desglose
-                            detalle.GastosAdicionalesSoles = gastosAdicionalesSoles;
-                            detalle.GastosAdicionalesDolares = gastosAdicionalesDolares;
+                                    // Guardar gastos adicionales para desglose
+                                    detalle.GastosAdicionalesSoles = gastosAdicionalesSoles;
+                                    detalle.GastosAdicionalesDolares = gastosAdicionalesDolares;
 
-                            // ✅ DETALLE DE PEAJES
-                            using (SqlCommand cmdP = new SqlCommand(
-                                "SELECT estacion, CONVERT(varchar,fecha,103) AS fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetallePeajes WHERE numeroOrdenViaje = @n ORDER BY fecha", conn))
-                            {
-                                cmdP.Parameters.AddWithValue("@n", detalle.NumeroOrdenViaje);
-                                using (SqlDataReader rP = cmdP.ExecuteReader())
-                                {
-                                    while (rP.Read())
+                                    // 3) DETALLE DE PEAJES
+                                    rd.NextResult();
+                                    while (rd.Read())
                                         detalle.DetallesPeajes.Add(new DetallePeajeItem
                                         {
-                                            Estacion = rP["estacion"].ToString(),
-                                            Fecha = rP["fecha"].ToString(),
-                                            Comprobante = rP["numeroComprobante"].ToString(),
-                                            Soles = Convert.ToDecimal(rP["montoSoles"]),
-                                            Dolares = Convert.ToDecimal(rP["montoDolares"]),
-                                            Observaciones = rP["observaciones"].ToString()
+                                            Estacion = rd["estacion"].ToString(),
+                                            Fecha = rd["fecha"].ToString(),
+                                            Comprobante = rd["numeroComprobante"].ToString(),
+                                            Soles = Convert.ToDecimal(rd["montoSoles"]),
+                                            Dolares = Convert.ToDecimal(rd["montoDolares"]),
+                                            Observaciones = rd["observaciones"].ToString()
                                         });
-                                }
-                            }
 
-                            // ✅ DETALLE DE REPARACIONES
-                            using (SqlCommand cmdR = new SqlCommand(
-                                "SELECT CONVERT(varchar,fechaComprobante,103) AS fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleReparacionesVarios WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante", conn))
-                            {
-                                cmdR.Parameters.AddWithValue("@n", detalle.NumeroOrdenViaje);
-                                using (SqlDataReader rR = cmdR.ExecuteReader())
-                                {
-                                    while (rR.Read())
-                                        detalle.DetallesReparaciones.Add(new DetalleGenericoItem
-                                        {
-                                            Fecha = rR["fecha"].ToString(),
-                                            Comprobante = rR["numeroComprobante"].ToString(),
-                                            Soles = Convert.ToDecimal(rR["montoSoles"]),
-                                            Dolares = Convert.ToDecimal(rR["montoDolares"]),
-                                            Observaciones = rR["observaciones"].ToString()
-                                        });
-                                }
-                            }
-
-                            // ✅ DETALLE DE HOSPEDAJE
-                            using (SqlCommand cmdH = new SqlCommand(
-                                "SELECT CONVERT(varchar,fechaComprobante,103) AS fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleHospedaje WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante", conn))
-                            {
-                                cmdH.Parameters.AddWithValue("@n", detalle.NumeroOrdenViaje);
-                                using (SqlDataReader rH = cmdH.ExecuteReader())
-                                {
-                                    while (rH.Read())
-                                        detalle.DetallesHospedaje.Add(new DetalleGenericoItem
-                                        {
-                                            Fecha = rH["fecha"].ToString(),
-                                            Comprobante = rH["numeroComprobante"].ToString(),
-                                            Soles = Convert.ToDecimal(rH["montoSoles"]),
-                                            Dolares = Convert.ToDecimal(rH["montoDolares"]),
-                                            Observaciones = rH["observaciones"].ToString()
-                                        });
-                                }
-                            }
-
-                            // ✅ DETALLE DE COMBUSTIBLE
-                            using (SqlCommand cmdC = new SqlCommand(
-                                "SELECT CONVERT(varchar,fechaComprobante,103) AS fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleCombustible WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante", conn))
-                            {
-                                cmdC.Parameters.AddWithValue("@n", detalle.NumeroOrdenViaje);
-                                using (SqlDataReader rC = cmdC.ExecuteReader())
-                                {
-                                    while (rC.Read())
-                                        detalle.DetallesCombustible.Add(new DetalleGenericoItem
-                                        {
-                                            Fecha = rC["fecha"].ToString(),
-                                            Comprobante = rC["numeroComprobante"].ToString(),
-                                            Soles = Convert.ToDecimal(rC["montoSoles"]),
-                                            Dolares = Convert.ToDecimal(rC["montoDolares"]),
-                                            Observaciones = rC["observaciones"].ToString()
-                                        });
-                                }
-                            }
-
-                            // ✅ DESCUENTOS Y REINTEGROS
-                            using (SqlCommand cmdDR = new SqlCommand(
-                                "SELECT TOP 1 descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares FROM DescuentosReintegros WHERE numeroOrdenViaje = @n", conn))
-                            {
-                                cmdDR.Parameters.AddWithValue("@n", detalle.NumeroOrdenViaje);
-                                using (SqlDataReader rDR = cmdDR.ExecuteReader())
-                                {
-                                    if (rDR.Read())
+                                    // 4) REPARACIONES, 5) HOSPEDAJE, 6) COMBUSTIBLE (mismas columnas)
+                                    foreach (List<DetalleGenericoItem> destino in new[]
+                                        { detalle.DetallesReparaciones, detalle.DetallesHospedaje, detalle.DetallesCombustible })
                                     {
-                                        detalle.DescuentoSoles = Convert.ToDecimal(rDR["descuentoSoles"]);
-                                        detalle.DescuentoDolares = Convert.ToDecimal(rDR["descuentoDolares"]);
-                                        detalle.ReintegroSoles = Convert.ToDecimal(rDR["reintegroSoles"]);
-                                        detalle.ReintegroDolares = Convert.ToDecimal(rDR["reintegroDolares"]);
+                                        rd.NextResult();
+                                        while (rd.Read())
+                                            destino.Add(new DetalleGenericoItem
+                                            {
+                                                Fecha = rd["fecha"].ToString(),
+                                                Comprobante = rd["numeroComprobante"].ToString(),
+                                                Soles = Convert.ToDecimal(rd["montoSoles"]),
+                                                Dolares = Convert.ToDecimal(rd["montoDolares"]),
+                                                Observaciones = rd["observaciones"].ToString()
+                                            });
+                                    }
+
+                                    // 7) DESCUENTOS Y REINTEGROS
+                                    rd.NextResult();
+                                    if (rd.Read())
+                                    {
+                                        detalle.DescuentoSoles = Convert.ToDecimal(rd["descuentoSoles"]);
+                                        detalle.DescuentoDolares = Convert.ToDecimal(rd["descuentoDolares"]);
+                                        detalle.ReintegroSoles = Convert.ToDecimal(rd["reintegroSoles"]);
+                                        detalle.ReintegroDolares = Convert.ToDecimal(rd["reintegroDolares"]);
                                     }
                                 }
                             }
+
 
                             // ✅ CALCULAR TOTAL DE GASTOS
                             detalle.TotalGastosSoles =
