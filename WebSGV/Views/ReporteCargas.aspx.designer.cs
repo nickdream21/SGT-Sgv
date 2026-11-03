@@ -25,14 +25,16 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Button btnBuscar;
         protected global::System.Web.UI.WebControls.Button btnExcel;
         protected global::System.Web.UI.WebControls.Button btnPdf;
+        protected global::System.Web.UI.WebControls.HiddenField hfPestana;
         protected global::System.Web.UI.WebControls.Panel pnlResultados;
-        protected global::System.Web.UI.WebControls.Literal litDespachos;
-        protected global::System.Web.UI.WebControls.Literal litPedidos;
-        protected global::System.Web.UI.WebControls.Literal litBolsas;
-        protected global::System.Web.UI.WebControls.Literal litKg;
-        protected global::System.Web.UI.WebControls.Literal litFacturado;
-        protected global::System.Web.UI.WebControls.Literal litAvisos;
+        protected global::System.Web.UI.WebControls.Literal litTarjetas;
+        protected global::System.Web.UI.WebControls.Literal litComparacion;
+        protected global::System.Web.UI.WebControls.Literal litTituloPeriodo;
+        protected global::System.Web.UI.WebControls.Literal litDocumentacion;
+        protected global::System.Web.UI.WebControls.Literal litClientes;
+        protected global::System.Web.UI.WebControls.Literal litProductos;
         protected global::System.Web.UI.WebControls.Literal litGrupos;
         protected global::System.Web.UI.WebControls.Literal litPie;
+        protected global::System.Web.UI.WebControls.Literal litDatosGraficos;
     }
 }

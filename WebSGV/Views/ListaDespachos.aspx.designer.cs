@@ -84,6 +84,8 @@ namespace WebSGV.Views
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl divStatManifiestos;
+
         protected global::System.Web.UI.WebControls.LinkButton lnkStatManifiestosPendientes;
 
         /// <summary>
@@ -102,6 +104,8 @@ namespace WebSGV.Views
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl divStatDocumentos;
+
         protected global::System.Web.UI.WebControls.LinkButton lnkStatDocumentosPendientes;
 
         /// <summary>

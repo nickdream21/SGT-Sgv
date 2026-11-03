@@ -48,6 +48,9 @@
                                         </span>
                                     </asp:LinkButton>
 
+                                    <%-- El rojo va en el div y no en el LinkButton: un LinkButton con controles
+                                         dentro al que se le cambia CssClass sale vacío tras un postback. --%>
+                                    <div id="divStatManifiestos" runat="server" class="ld-stat-wrap">
                                     <asp:LinkButton ID="lnkStatManifiestosPendientes" runat="server" CssClass="ld-stat-tile" OnClick="lnkStatManifiestosPendientes_Click" CausesValidation="false">
                                         <span class="ld-stat-icon ld-stat-icon-amber"><i class="fas fa-passport"></i></span>
                                         <span class="ld-stat-text">
@@ -55,7 +58,9 @@
                                             <span class="ld-stat-label">Manifiestos pendientes</span>
                                         </span>
                                     </asp:LinkButton>
+                                    </div>
 
+                                    <div id="divStatDocumentos" runat="server" class="ld-stat-wrap">
                                     <asp:LinkButton ID="lnkStatDocumentosPendientes" runat="server" CssClass="ld-stat-tile" OnClick="lnkStatDocumentosPendientes_Click" CausesValidation="false">
                                         <span class="ld-stat-icon ld-stat-icon-amber"><i class="fas fa-file-invoice"></i></span>
                                         <span class="ld-stat-text">
@@ -64,6 +69,7 @@
                                             <asp:Label ID="lblStatDocumentosAtrasados" runat="server" CssClass="ld-stat-sub"></asp:Label>
                                         </span>
                                     </asp:LinkButton>
+                                    </div>
                                 </div>
 
                                 <!-- NAVEGACIÓN PRINCIPAL -->

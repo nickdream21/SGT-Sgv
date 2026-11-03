@@ -15,6 +15,44 @@
 .rc-tarjeta span { display: block; font-size: .8rem; color: #64748b; }
 .rc-tarjeta strong { display: block; font-size: 1.35rem; color: #1e293b; font-weight: 600; }
 .rc-tarjeta-destacada { border-left-color: #16a34a; background: #f0fdf4; }
+.rc-tarjeta-destacada strong { font-size: 1.05rem; line-height: 1.35; }
+.rc-tarjeta-ok { border-left-color: #16a34a; }
+.rc-tarjeta-aviso { border-left-color: #d97706; background: #fffbeb; }
+
+/* Variación frente al período anterior */
+.rc-var { display: block; font-size: .75rem; color: #64748b; margin-top: .1rem; }
+.rc-var-sube { color: #15803d; }
+.rc-var-baja { color: #b91c1c; }
+
+/* Pestañas */
+.rc-pestanas .nav-link { color: #475569; font-weight: 500; }
+.rc-pestanas .nav-link.active { color: #1d4ed8; font-weight: 600; }
+.rc-contenido { padding-top: 1rem; }
+
+/* Resumen: gráficos y tablas */
+.rc-canvas { position: relative; height: 300px; }
+.rc-tabla { font-size: .875rem; }
+.rc-tabla th { background: #f8fafc; color: #475569; font-weight: 600; white-space: nowrap; border-top: 0; }
+.rc-tabla tfoot th { background: #f1f5f9; color: #1e293b; }
+.rc-tabla td, .rc-tabla th { vertical-align: middle; padding-left: .9rem; padding-right: .9rem; }
+.rc-tabla-alta { max-height: 460px; overflow-y: auto; }
+.rc-tabla-alta thead th { position: sticky; top: 0; z-index: 1; }
+.rc-col-barra { min-width: 150px; }
+
+.rc-barra { position: relative; background: #eef2f7; border-radius: 3px; height: 1.15rem; min-width: 120px; }
+.rc-barra-relleno { position: absolute; left: 0; top: 0; bottom: 0; background: #bfdbfe; border-radius: 3px; }
+.rc-barra span { position: relative; font-size: .75rem; color: #1e3a8a; padding-left: .4rem; line-height: 1.15rem; }
+
+/* Documentación */
+.rc-docs { gap: .75rem; }
+.rc-doc { border: 1px solid #e2e8f0; border-radius: .375rem; padding: .5rem .9rem; min-width: 10rem; background: #fff; }
+.rc-doc strong { display: block; font-size: 1.25rem; color: #1e293b; }
+.rc-doc span { font-size: .8rem; color: #64748b; }
+.rc-doc-ok { background: #f0fdf4; border-color: #bbf7d0; }
+.rc-doc-aviso { background: #fffbeb; border-color: #fde68a; }
+.rc-doc-mal { background: #fef2f2; border-color: #fecaca; }
+.rc-doc-mal strong { color: #b91c1c; }
+.rc-faltante { background: #fef3c7; color: #92400e; font-weight: 500; font-size: .8rem; padding: .35em .6em; margin-bottom: .25rem; }
 
 /* Vista por pedido: una fila por pedido; al abrirla, sus unidades */
 .rc-cabecera, .rc-resumen {

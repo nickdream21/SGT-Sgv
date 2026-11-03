@@ -1809,7 +1809,7 @@ namespace WebSGV.Views
                 var estadosManifiesto = CalcularEstadosManifiestoPorLote(lotesActivos);
                 int pendientes = estadosManifiesto.Values.Count(v => v == "Pendiente" || v.StartsWith("Parcial"));
                 lblStatManifiestosPendientes.Text = pendientes.ToString();
-                lnkStatManifiestosPendientes.CssClass = pendientes > 0 ? "ld-stat-tile ld-stat-tile-alert" : "ld-stat-tile";
+                divStatManifiestos.Attributes["class"] = pendientes > 0 ? "ld-stat-wrap ld-stat-alerta" : "ld-stat-wrap";
 
                 ContarDocumentosPendientes(lotesActivos);
 
@@ -1855,7 +1855,7 @@ namespace WebSGV.Views
 
             lblStatDocumentosPendientes.Text = pendientes.Count.ToString();
             lblStatDocumentosAtrasados.Text = atrasados > 0 ? $"{atrasados} con más de 3 días" : "";
-            lnkStatDocumentosPendientes.CssClass = atrasados > 0 ? "ld-stat-tile ld-stat-tile-alert" : "ld-stat-tile";
+            divStatDocumentos.Attributes["class"] = atrasados > 0 ? "ld-stat-wrap ld-stat-alerta" : "ld-stat-wrap";
         }
 
         /// <summary>Lista de lotes con documentos pendientes, de cualquier fecha, el más antiguo primero.</summary>

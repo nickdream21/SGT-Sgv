@@ -27,8 +27,9 @@
 .ld-stat-text { display: flex; flex-direction: column; }
 .ld-stat-value { font-size: 1.5rem; font-weight: 700; color: #1e293b; line-height: 1.15; }
 .ld-stat-label { font-size: .8125rem; font-weight: 600; color: #64748b; margin-top: .15rem; }
-.ld-stat-tile-alert { border-color: #fca5a5 !important; background: #fff5f5 !important; }
-.ld-stat-tile-alert .ld-stat-value { color: #b91c1c !important; }
+.ld-stat-wrap { display: flex; }
+.ld-stat-alerta > .ld-stat-tile { border-color: #fca5a5 !important; background: #fff5f5 !important; }
+.ld-stat-alerta .ld-stat-value { color: #b91c1c !important; }
 .ld-stat-sub { font-size: .75rem; font-weight: 600; color: #b91c1c; margin-top: .1rem; }
 
 /* ---- Documentos pendientes del lote (columna de la grilla y panel Documentos) ---- */
