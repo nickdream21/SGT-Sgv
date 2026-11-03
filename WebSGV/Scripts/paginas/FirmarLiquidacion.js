@@ -60,6 +60,10 @@
         ev.preventDefault();
         dibujando = false;
         trazoActual = null;
+        // Al soltar el dedo el trazo ya tiene puntos suficientes: habilitar "Firmar y Enviar" si la
+        // declaración ya está marcada (antes solo se evaluaba al empezar el trazo, cuando aún tenía
+        // un solo punto, y el botón quedaba apagado hasta hacer un segundo trazo).
+        actualizarEstadoBotones();
     }
 
     canvas.addEventListener('mousedown',  start);
