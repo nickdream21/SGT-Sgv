@@ -447,6 +447,42 @@ namespace WebSGV.Services.Despachos
             }
         }
 
+        /// <summary>
+        /// Registra (o corrige) solo la factura del lote, sin tocar el resto de sus datos:
+        /// lo que "Editar" hace junto con todo lo demás, para completar la documentación después.
+        /// </summary>
+        public static void RegistrarFacturaLote(List<int> idsDespachos, string numeroFactura, DateTime fechaEmision, decimal valorTotal, string moneda)
+        {
+            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
+            using (SqlCommand cmd = new SqlCommand("sp_LD_GestionarFacturaLote", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@idsDespachos", string.Join(",", idsDespachos));
+                cmd.Parameters.AddWithValue("@numeroFactura", numeroFactura);
+                cmd.Parameters.AddWithValue("@fechaEmision", fechaEmision);
+                cmd.Parameters.AddWithValue("@valorTotal", valorTotal);
+                cmd.Parameters.AddWithValue("@moneda", string.IsNullOrEmpty(moneda) ? (object)DBNull.Value : moneda);
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>Registra (o corrige) solo el CPIC del lote (ver <see cref="RegistrarFacturaLote"/>).</summary>
+        public static void RegistrarCpicLote(List<int> idsDespachos, string numeroCpic, DateTime fechaEmision, decimal valorFlete)
+        {
+            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
+            using (SqlCommand cmd = new SqlCommand("sp_LD_GestionarCPICLote", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@idsDespachos", string.Join(",", idsDespachos));
+                cmd.Parameters.AddWithValue("@numeroCPIC", numeroCpic);
+                cmd.Parameters.AddWithValue("@fechaEmision", fechaEmision);
+                cmd.Parameters.AddWithValue("@valorTotalFlete", valorFlete);
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+        }
+
         // ------------------------------------------------------------------
         // Mapeo y utilidades de lectura (movidas verbatim del code-behind)
         // ------------------------------------------------------------------

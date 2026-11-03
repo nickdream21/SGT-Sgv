@@ -317,11 +317,27 @@ namespace WebSGV.Views
 
         #region Métodos de Gestión de Lotes
 
+        /// <summary>Cambió un filtro o la vista: se vuelve a la primera página de la lista.</summary>
+        private void CargarLotesDesdeInicio()
+        {
+            gvLotesRegistrados.PageIndex = 0;
+            CargarLotesRegistrados();
+        }
+
+        protected void gvLotesRegistrados_PageIndexChanging(object sender, GridViewPageEventArgs e)
+        {
+            gvLotesRegistrados.PageIndex = e.NewPageIndex;
+            CargarLotesRegistrados();
+        }
+
         private void CargarLotesRegistrados()
         {
             try
             {
-                List<LoteRegistrado> lotes = ObtenerLotesRegistrados();
+                // Lo que falta documentar va primero (el resto conserva el orden por fecha de la consulta).
+                List<LoteRegistrado> lotes = ObtenerLotesRegistrados()
+                    .OrderBy(l => l.EstadoLote == "ANULADO" || EstadoDocumental.DeLote(l).Completo ? 1 : 0)
+                    .ToList();
                 var estadosManifiesto = CalcularEstadosManifiestoPorLote(lotes);
                 DateTime hoy = FechaHelper.Hoy();
 
@@ -542,7 +558,7 @@ namespace WebSGV.Views
             try
             {
                 MostrarListaLotes();
-                CargarLotesRegistrados();
+                CargarLotesDesdeInicio();
             }
             catch (Exception ex)
             {
@@ -597,42 +613,42 @@ namespace WebSGV.Views
 
         protected void ddlFiltroClienteLotes_SelectedIndexChanged(object sender, EventArgs e)
         {
-            CargarLotesRegistrados();
+            CargarLotesDesdeInicio();
         }
 
         protected void ddlFiltroOperacionLotes_SelectedIndexChanged(object sender, EventArgs e)
         {
-            CargarLotesRegistrados();
+            CargarLotesDesdeInicio();
         }
 
         protected void ddlFiltroPlantaLotes_SelectedIndexChanged(object sender, EventArgs e)
         {
-            CargarLotesRegistrados();
+            CargarLotesDesdeInicio();
         }
 
         protected void ddlFiltroEstadoLotes_SelectedIndexChanged(object sender, EventArgs e)
         {
-            CargarLotesRegistrados();
+            CargarLotesDesdeInicio();
         }
 
         protected void ddlFiltroDocumentosLotes_SelectedIndexChanged(object sender, EventArgs e)
         {
-            CargarLotesRegistrados();
+            CargarLotesDesdeInicio();
         }
 
         protected void btnBuscarLote_Click(object sender, EventArgs e)
         {
-            CargarLotesRegistrados();
+            CargarLotesDesdeInicio();
         }
 
         protected void btnBuscarDocumento_Click(object sender, EventArgs e)
         {
-            CargarLotesRegistrados();
+            CargarLotesDesdeInicio();
         }
 
         protected void btnFiltrarFecha_Click(object sender, EventArgs e)
         {
-            CargarLotesRegistrados();
+            CargarLotesDesdeInicio();
         }
 
         protected void btnLimpiarFiltros_Click(object sender, EventArgs e)
@@ -640,7 +656,7 @@ namespace WebSGV.Views
             try
             {
                 LimpiarFiltrosLotes();
-                CargarLotesRegistrados();
+                CargarLotesDesdeInicio();
                 MostrarMensaje("Filtros limpiados correctamente.", "info");
             }
             catch (Exception ex)
@@ -657,7 +673,7 @@ namespace WebSGV.Views
                 LimpiarFiltrosLotes();
                 CargarClientesFiltro();
                 CargarPlantasFiltro();
-                CargarLotesRegistrados();
+                CargarLotesDesdeInicio();
                 MostrarMensaje("Datos de lotes actualizados correctamente.", "success");
             }
             catch (Exception ex)
@@ -1301,10 +1317,18 @@ namespace WebSGV.Views
 
             var documentos = EstadoDocumental.DeLote(lote);
             bool anulado = lote.EstadoLote == "ANULADO";
-            lblEstadoDocumentalLote.Text = HttpUtility.HtmlEncode(anulado ? "Lote anulado." : documentos.Resumen);
-            lblEstadoDocumentalLote.CssClass = anulado ? "d-block mb-2 text-muted"
-                : documentos.Completo ? "ld-docs-badge ld-docs-completo ld-docs-estado-lote" : "ld-docs-badge ld-docs-pendiente ld-docs-estado-lote";
+            lblEstadoDocumentalLote.Text = HttpUtility.HtmlEncode(anulado ? "Lote anulado."
+                : documentos.Completo ? "Documentación completa" : "Falta: " + documentos.Resumen);
+            lblEstadoDocumentalLote.CssClass = anulado ? "ld-docs-titular ld-docs-titular-anulado"
+                : documentos.Completo ? "ld-docs-titular ld-docs-titular-ok" : "ld-docs-titular ld-docs-titular-falta";
+            litAvanceDocs.Text = anulado ? "" : ArmarAvanceDocumentos(lote, documentos);
             pnlEsperaZip.Visible = !anulado && documentos.SinNingunDocumento;
+
+            // Lo que falta registrar se anota aquí mismo (la factura de una carga; el CPIC de un lote internacional).
+            pnlRegistrarFactura.Visible = !anulado && lote.TipoOperacion == "CARGA" && string.IsNullOrEmpty(lote.NumeroFactura);
+            pnlRegistrarCpic.Visible = !anulado && lote.EsInternacional && string.IsNullOrEmpty(lote.NumeroCPIC);
+            if (string.IsNullOrEmpty(txtFacturaFecha.Text)) txtFacturaFecha.Text = FechaHelper.Hoy().ToString("yyyy-MM-dd");
+            if (string.IsNullOrEmpty(txtCpicFecha.Text)) txtCpicFecha.Text = FechaHelper.Hoy().ToString("yyyy-MM-dd");
 
             // Factura: el número viene del ZIP o de "Editar"; aquí solo su PDF.
             lnkVerDocFactura.Visible = false;
@@ -1327,7 +1351,7 @@ namespace WebSGV.Views
                     }
                     else
                     {
-                        lblNumeroFacturaDocs.Text += " — sin PDF";
+                        lblNumeroFacturaDocs.Text += InsigniaDocumento(false, "PDF pendiente");
                     }
                     pnlSubirPdfFactura.Visible = !anulado;
                 }
@@ -1354,13 +1378,64 @@ namespace WebSGV.Views
                     }
                     else
                     {
-                        lblNumeroCpicDocs.Text += " — sin PDF";
+                        lblNumeroCpicDocs.Text += InsigniaDocumento(false, "PDF pendiente");
                     }
                     pnlSubirPdfCpic.Visible = !anulado;
                 }
             }
 
             pnlGuiasLote.Visible = !anulado;
+        }
+
+        /// <summary>Insignia verde/ámbar junto al número de un documento.</summary>
+        private static string InsigniaDocumento(bool listo, string texto) =>
+            "<span class=\"ld-estado " + (listo ? "ld-estado-ok" : "ld-estado-falta") + "\"><i class=\"fas "
+            + (listo ? "fa-check-circle" : "fa-clock") + "\"></i> " + HttpUtility.HtmlEncode(texto) + "</span>";
+
+        /// <summary>
+        /// Barra de avance y una pastilla por documento que aplica al lote (verde = listo,
+        /// ámbar = falta, con cuántos despachos). Solo cuenta lo que EstadoDocumental ya calcula.
+        /// </summary>
+        private static string ArmarAvanceDocumentos(LoteRegistrado lote, EstadoDocumental d)
+        {
+            var items = new List<KeyValuePair<string, int>>();
+            bool esCarga = lote.TipoOperacion == "CARGA";
+            // Sin el documento no hay PDF que adjuntar: ese paso queda pendiente (nunca "listo" por defecto).
+            int pdfFactura = d.SinFactura > 0 ? Math.Max(1, d.SinPdfFactura) : d.SinPdfFactura;
+            int pdfCpic = d.SinCPIC > 0 ? Math.Max(1, d.SinPdfCPIC) : d.SinPdfCPIC;
+            if (esCarga)
+            {
+                items.Add(new KeyValuePair<string, int>("Pedido", d.SinPedido));
+                items.Add(new KeyValuePair<string, int>("Factura", d.SinFactura));
+            }
+            if (esCarga || d.SinPdfFactura > 0 || !string.IsNullOrEmpty(lote.NumeroFactura))
+                items.Add(new KeyValuePair<string, int>("PDF factura", pdfFactura));
+            if (esCarga)
+                items.Add(new KeyValuePair<string, int>("Guías", d.SinGuia));
+            if (lote.EsInternacional || !string.IsNullOrEmpty(lote.NumeroCPIC))
+            {
+                items.Add(new KeyValuePair<string, int>("CPIC", d.SinCPIC));
+                items.Add(new KeyValuePair<string, int>("PDF CPIC", pdfCpic));
+            }
+            if (items.Count == 0) return "";
+
+            int listos = items.Count(i => i.Value == 0);
+            int pct = (int)Math.Round(100.0 * listos / items.Count);
+            var sb = new System.Text.StringBuilder();
+            sb.Append("<div class=\"ld-avance\"><div class=\"ld-avance-barra\"><div class=\"ld-avance-relleno")
+              .Append(listos == items.Count ? " ld-avance-completo" : "").Append("\" style=\"width:").Append(pct).Append("%\"></div></div>")
+              .Append("<span class=\"ld-avance-texto\">").Append(listos).Append(" de ").Append(items.Count).Append(" listos</span></div>")
+              .Append("<div class=\"ld-checklist\">");
+            foreach (var it in items)
+            {
+                bool ok = it.Value == 0;
+                string detalle = ok ? "" : (it.Value >= d.Despachos ? "" : " (" + it.Value + " de " + d.Despachos + ")");
+                sb.Append("<span class=\"ld-check ").Append(ok ? "ld-check-ok" : "ld-check-falta").Append("\"><i class=\"fas ")
+                  .Append(ok ? "fa-check-circle" : "fa-exclamation-circle").Append("\"></i> ")
+                  .Append(HttpUtility.HtmlEncode(it.Key + detalle)).Append("</span>");
+            }
+            sb.Append("</div>");
+            return sb.ToString();
         }
 
         /// <summary>Guías de cada despacho del lote, editables ("N/A" del lector = vacío).</summary>
@@ -1432,6 +1507,92 @@ namespace WebSGV.Views
             {
                 LogSGV.Error(ex, "Error al guardar las guías del lote {Lote}", LoteSeleccionadoId);
                 MostrarMensajeManifiesto("Error al guardar las guías: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+            }
+        }
+
+        protected void btnRegistrarFactura_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(LoteSeleccionadoId)) return;
+            try
+            {
+                var lote = ObtenerLotePorId(LoteSeleccionadoId);
+                if (lote == null || lote.IdsDespachos.Count == 0 || lote.EstadoLote == "ANULADO") return;
+
+                string numero = txtFacturaNueva.Text.Trim().ToUpperInvariant();
+                if (numero.Length == 0)
+                {
+                    MostrarMensajeManifiesto("Escriba el número de la factura.", "warning");
+                    return;
+                }
+                if (!DateTime.TryParse(txtFacturaFecha.Text, out DateTime fecha))
+                {
+                    MostrarMensajeManifiesto("Indique la fecha de emisión de la factura.", "warning");
+                    return;
+                }
+                decimal valor = 0;
+                if (!string.IsNullOrWhiteSpace(txtFacturaValor.Text) &&
+                    !decimal.TryParse(txtFacturaValor.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valor))
+                {
+                    MostrarMensajeManifiesto("El valor de la factura no es válido.", "warning");
+                    return;
+                }
+
+                ListaDespachosService.RegistrarFacturaLote(lote.IdsDespachos, numero, fecha, valor, ddlFacturaMoneda.SelectedValue);
+                AuditoriaHelper.Registrar("UPDATE", "Despachos", LoteSeleccionadoId, $"Factura {numero} registrada desde Documentos del lote");
+
+                txtFacturaNueva.Text = "";
+                txtFacturaValor.Text = "";
+                CargarManifiestosLote(LoteSeleccionadoId);
+                EstablecerContadores();
+                MostrarMensajeManifiesto($"Factura {numero} registrada. Ahora puede adjuntar su PDF.", "success");
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Error al registrar la factura del lote {Lote}", LoteSeleccionadoId);
+                MostrarMensajeManifiesto("Error al registrar la factura: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+            }
+        }
+
+        protected void btnRegistrarCpic_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(LoteSeleccionadoId)) return;
+            try
+            {
+                var lote = ObtenerLotePorId(LoteSeleccionadoId);
+                if (lote == null || lote.IdsDespachos.Count == 0 || lote.EstadoLote == "ANULADO") return;
+
+                string numero = txtCpicNuevo.Text.Trim();
+                if (!Regex.IsMatch(numero, @"^\d{7}$"))
+                {
+                    MostrarMensajeManifiesto("El número de CPIC debe tener 7 dígitos.", "warning");
+                    return;
+                }
+                if (!DateTime.TryParse(txtCpicFecha.Text, out DateTime fecha))
+                {
+                    MostrarMensajeManifiesto("Indique la fecha de emisión del CPIC.", "warning");
+                    return;
+                }
+                decimal flete = 0;
+                if (!string.IsNullOrWhiteSpace(txtCpicFlete.Text) &&
+                    !decimal.TryParse(txtCpicFlete.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out flete))
+                {
+                    MostrarMensajeManifiesto("El valor del flete no es válido.", "warning");
+                    return;
+                }
+
+                ListaDespachosService.RegistrarCpicLote(lote.IdsDespachos, numero, fecha, flete);
+                AuditoriaHelper.Registrar("UPDATE", "Despachos", LoteSeleccionadoId, $"CPIC {numero} registrado desde Documentos del lote");
+
+                txtCpicNuevo.Text = "";
+                txtCpicFlete.Text = "";
+                CargarManifiestosLote(LoteSeleccionadoId);
+                EstablecerContadores();
+                MostrarMensajeManifiesto($"CPIC {numero} registrado. Ahora puede adjuntar su PDF.", "success");
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Error al registrar el CPIC del lote {Lote}", LoteSeleccionadoId);
+                MostrarMensajeManifiesto("Error al registrar el CPIC: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
@@ -1831,13 +1992,13 @@ namespace WebSGV.Views
         protected void lnkStatLotes_Click(object sender, EventArgs e)
         {
             MostrarListaLotes();
-            CargarLotesRegistrados();
+            CargarLotesDesdeInicio();
         }
 
         protected void lnkStatManifiestosPendientes_Click(object sender, EventArgs e)
         {
             MostrarListaLotes();
-            CargarLotesRegistrados();
+            CargarLotesDesdeInicio();
         }
 
         /// <summary>
@@ -1866,7 +2027,7 @@ namespace WebSGV.Views
             txtFechaDesde.Text = string.Empty;
             txtFechaHasta.Text = string.Empty;
             ddlFiltroDocumentosLotes.SelectedValue = ListaDespachosService.DOCUMENTOS_PENDIENTES;
-            CargarLotesRegistrados();
+            CargarLotesDesdeInicio();
         }
 
         private void ActualizarContadorGeneral()

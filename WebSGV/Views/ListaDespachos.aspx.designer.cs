@@ -901,6 +901,15 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Label lblEstadoDocumentalLote;
 
         /// <summary>
+        /// Control litAvanceDocs.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litAvanceDocs;
+
+        /// <summary>
         /// Control pnlEsperaZip.
         /// </summary>
         /// <remarks>
@@ -944,6 +953,21 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Panel pnlSubirPdfFactura;
+
+        /// <summary>Registro de la factura desde Documentos del lote.</summary>
+        protected global::System.Web.UI.WebControls.Panel pnlRegistrarFactura;
+        protected global::System.Web.UI.WebControls.TextBox txtFacturaNueva;
+        protected global::System.Web.UI.WebControls.TextBox txtFacturaFecha;
+        protected global::System.Web.UI.WebControls.TextBox txtFacturaValor;
+        protected global::System.Web.UI.WebControls.DropDownList ddlFacturaMoneda;
+        protected global::System.Web.UI.WebControls.Button btnRegistrarFactura;
+
+        /// <summary>Registro del CPIC desde Documentos del lote.</summary>
+        protected global::System.Web.UI.WebControls.Panel pnlRegistrarCpic;
+        protected global::System.Web.UI.WebControls.TextBox txtCpicNuevo;
+        protected global::System.Web.UI.WebControls.TextBox txtCpicFecha;
+        protected global::System.Web.UI.WebControls.TextBox txtCpicFlete;
+        protected global::System.Web.UI.WebControls.Button btnRegistrarCpic;
 
         /// <summary>
         /// Control fuPdfFactura.

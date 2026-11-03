@@ -157,3 +157,111 @@
 .edit-warning { background: #fffbeb !important; border-color: #fde68a !important; color: #92400e !important; border-radius: 8px; }
 
 .active-nav { font-weight: 600 !important; }
+
+/* ==========================================================================
+   Panel "Documentos del lote" rediseñado: resumen con avance, tarjetas de
+   Factura/CPIC con zona de carga, guías y manifiestos en bloques.
+   ========================================================================== */
+.ld-docs-page .section-content { padding-top: 1rem; }
+.ld-docs-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: .75rem 1rem; padding: 1.1rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc; border-radius: 6px 6px 0 0; }
+.ld-docs-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.ld-chip { display: inline-flex; align-items: center; gap: .35rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: .2rem .7rem; font-size: .8rem; color: #334155; font-weight: 600; }
+.ld-chip i { color: #94a3b8; }
+
+/* Resumen */
+.ld-docs-resumen { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+.ld-docs-titular { display: block; font-size: 1.05rem; font-weight: 700; margin-bottom: .6rem; }
+.ld-docs-titular-ok { color: #166534; }
+.ld-docs-titular-falta { color: #92400e; }
+.ld-docs-titular-anulado { color: #64748b; }
+.ld-avance { display: flex; align-items: center; gap: .75rem; margin-bottom: .75rem; }
+.ld-avance-barra { flex: 1; height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+.ld-avance-relleno { height: 100%; background: #f59e0b; border-radius: 999px; transition: width .4s ease; }
+.ld-avance-completo { background: #16a34a; }
+.ld-avance-texto { font-size: .78rem; font-weight: 600; color: #64748b; white-space: nowrap; }
+.ld-checklist { display: flex; flex-wrap: wrap; gap: .45rem; }
+.ld-check { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; font-weight: 600; padding: .25rem .65rem; border-radius: 999px; }
+.ld-check-ok { background: #dcfce7; color: #166534; }
+.ld-check-falta { background: #fef3c7; color: #92400e; }
+
+/* Avisos */
+.ld-aviso { display: flex; gap: .75rem; align-items: flex-start; padding: .8rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: .85rem; line-height: 1.45; }
+.ld-aviso > i { margin-top: .15rem; font-size: 1rem; }
+.ld-aviso-info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; }
+.ld-aviso-neutro { background: #f8fafc; border: 1px solid #e2e8f0; color: #475569; }
+
+/* Tarjetas de documento */
+.ld-docs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+.ld-doc-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: .7rem; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+.ld-doc-card-head { display: flex; align-items: center; gap: .75rem; }
+.ld-doc-card-icon { width: 40px; height: 40px; border-radius: 10px; background: #dbeafe; color: #1e40af; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ld-doc-card-titulo { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #64748b; }
+.ld-doc-card-numero { font-size: 1rem; font-weight: 700; color: #1e293b; word-break: break-word; }
+.ld-estado { display: inline-flex; align-items: center; gap: .3rem; font-size: .72rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px; margin-left: .5rem; vertical-align: middle; }
+.ld-estado-ok { background: #dcfce7; color: #166534; }
+.ld-estado-falta { background: #fef3c7; color: #92400e; }
+.ld-doc-archivo:empty { display: none; }
+.ld-doc-ver { display: inline-flex; align-items: center; gap: .4rem; font-size: .85rem; font-weight: 600; color: #1d4ed8; word-break: break-all; }
+.ld-doc-ver:hover { text-decoration: underline; }
+.ld-doc-subir { display: flex; align-items: stretch; gap: .5rem; flex-wrap: wrap; margin-top: auto; }
+.ld-doc-elegir { flex: 1; min-width: 180px; margin: 0; display: flex; align-items: center; gap: .5rem; border: 2px dashed #cbd5e1; border-radius: 8px; padding: .55rem .8rem; color: #475569; font-size: .85rem; font-weight: 600; cursor: pointer; background: #f8fafc; transition: border-color .15s, background .15s; overflow: hidden; }
+.ld-doc-elegir:hover, .ld-doc-elegir:focus-within { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; }
+.ld-doc-elegir.ld-con-archivo { border-style: solid; border-color: #16a34a; background: #f0fdf4; color: #166534; }
+.ld-doc-elegir-texto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ld-doc-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.ld-doc-btn[disabled], .ld-doc-btn.ld-desactivado { opacity: .5; pointer-events: none; }
+.ld-nota { font-size: .8rem; color: #64748b; margin: .75rem 0 1.25rem; }
+.ld-nota i { margin-right: .3rem; }
+
+/* Bloques (guías, manifiestos) */
+.ld-bloque { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 1.25rem; overflow: hidden; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+.ld-bloque-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: .25rem 1rem; padding: .85rem 1.1rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+.ld-bloque-head h6 { margin: 0; font-weight: 700; color: #1e293b; }
+.ld-bloque-head h6 i { color: #64748b; margin-right: .35rem; }
+.ld-bloque-ayuda { font-size: .8rem; color: #64748b; }
+.ld-bloque .data-grid-container { margin: 0; }
+.ld-bloque-pie { display: flex; justify-content: flex-end; padding: .8rem 1.1rem; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+.ld-guia-input { min-width: 150px; }
+.ld-guia-input.ld-modificado { border-color: #f59e0b; background: #fffbeb; }
+.ld-sin-adjuntar { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; color: #92400e; font-weight: 600; }
+.ld-sin-adjuntar i { font-size: .45rem; }
+
+/* Lista de lotes: botón Documentos destacado cuando hay pendientes */
+.ld-btn-docs { white-space: nowrap; }
+.ld-btn-docs.btn-warning { font-weight: 600; }
+
+@media (max-width: 576px) {
+    .ld-docs-top { padding: .9rem 1rem; }
+    .ld-docs-top .btn { width: 100%; }
+    .ld-doc-subir { flex-direction: column; }
+    .ld-bloque-pie .btn { width: 100%; }
+}
+
+/* Página más ancha: la lista de lotes tiene muchas columnas y las acciones quedaban fuera de vista. */
+.container:has(.ld-page-header) { max-width: min(1560px, 96vw); }
+
+/* Acciones siempre visibles aunque la tabla desborde horizontalmente */
+.ld-tabla-lotes th:last-child,
+.ld-tabla-lotes td:last-child { position: sticky; right: 0; background: #fff; box-shadow: -6px 0 8px -6px rgba(15,23,42,.18); z-index: 1; }
+.ld-tabla-lotes th:last-child { background: #f1f5f9; z-index: 2; }
+.ld-tabla-lotes tbody tr:nth-child(even) td:last-child { background: #f8fafc; }
+.ld-tabla-lotes tbody tr:hover td:last-child { background: #eff6ff; }
+
+/* Paginado de la lista de lotes */
+.ld-pager td { padding: .6rem !important; background: #f8fafc !important; border: 0 !important; }
+.ld-pager table { margin: 0 auto; }
+.ld-pager td td { padding: 0 .15rem !important; }
+.ld-pager a, .ld-pager span { display: inline-block; min-width: 34px; padding: .3rem .6rem; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; color: #1e40af; font-weight: 600; font-size: .85rem; text-decoration: none; text-align: center; }
+.ld-pager a:hover { background: #eff6ff; border-color: #93c5fd; }
+.ld-pager span { background: #1e40af; border-color: #1e40af; color: #fff; }
+.ld-tabla-lotes .ld-pager td, .ld-tabla-lotes .ld-pager td td { position: static !important; box-shadow: none !important; }
+
+/* Registrar factura / CPIC dentro de su tarjeta */
+.ld-doc-registrar { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: .8rem .9rem; display: flex; flex-direction: column; gap: .6rem; }
+.ld-doc-registrar-titulo { font-size: .8rem; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: .03em; }
+.ld-doc-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem .75rem; }
+.ld-campo { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.ld-campo-ancho { grid-column: 1 / -1; }
+.ld-campo label { font-size: .72rem; font-weight: 600; color: #64748b; margin: 0; }
+.ld-doc-registrar .btn { align-self: flex-start; }
+@media (max-width: 576px) { .ld-doc-campos { grid-template-columns: 1fr; } .ld-doc-registrar .btn { width: 100%; } }
