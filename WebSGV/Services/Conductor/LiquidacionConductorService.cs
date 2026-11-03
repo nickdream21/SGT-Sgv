@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
+using System.Text;
 using WebSGV.Helpers;
 using WebSGV.Models.Conductor;
 using WebSGV.Services.Common;
@@ -15,7 +17,12 @@ namespace WebSGV.Services.Conductor
     /// <c>Insertar*</c>/<c>Cerrar*</c>). El code-behind conserva la sesión, validación,
     /// el parseo de <c>Request.Form</c>/hidden fields, la auditoría, la notificación y el
     /// redirect a la firma; este servicio sólo orquesta el SQL/SPs dentro de una única
-    /// transacción. SQL y stored procedures movidos verbatim (sin cambios de comportamiento).
+    /// transacción. Los stored procedures son los mismos de siempre.
+    ///
+    /// Rendimiento: cada SP era un viaje a la BD (con la BD remota, ~100 ms cada uno desde la
+    /// oficina; una liquidación con adicionales y peajes sumaba una decena). Ahora todas las
+    /// llamadas se arman primero y viajan juntas en un solo lote dentro de la misma
+    /// transacción (<see cref="LoteSql"/>): abrir, iniciar transacción, el lote y confirmar.
     ///
     /// El servicio no depende de <c>System.Web</c>: recibe un <see cref="LiquidacionConductorInput"/>
     /// con todos los valores ya parseados/validados y lanza la excepción para que el
@@ -32,7 +39,10 @@ namespace WebSGV.Services.Conductor
         {
             if (input == null) throw new ArgumentNullException(nameof(input));
 
-            int idOrdenGuardada = 0;
+            // Se arma todo antes de tocar la BD: una validación de montos que falle no abre
+            // conexión ni transacción.
+            LoteSql lote = ConstruirLote(input);
+            int idOrdenGuardada;
 
             using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
             {
@@ -42,34 +52,14 @@ namespace WebSGV.Services.Conductor
                 {
                     try
                     {
-                        if (input.EsReliquidacion)
-                        {
-                            EliminarDatosFinancierosOrdenExistente(conn, transaction, input.NumeroOrdenViaje);
-                            ActualizarOrdenViajeConductor(conn, transaction, input);
+                        LoteSql.Resultado resultado = lote.Ejecutar(conn, transaction);
 
-                            using (SqlCommand cmdId = new SqlCommand(
-                                "SELECT idOrdenViaje FROM OrdenViaje WHERE numeroOrdenViaje = @n", conn, transaction))
-                            {
-                                cmdId.Parameters.AddWithValue("@n", input.NumeroOrdenViaje);
-                                object obj = cmdId.ExecuteScalar();
-                                idOrdenGuardada = (obj != null && obj != DBNull.Value) ? Convert.ToInt32(obj) : 0;
-                            }
-                        }
-                        else
-                        {
-                            idOrdenGuardada = InsertarOrdenViajeConductor(conn, transaction, input);
-                        }
+                        if (!input.EsReliquidacion && resultado.IdOrden <= 0)
+                            throw new Exception("No se pudo insertar la orden de viaje");
+                        idOrdenGuardada = resultado.IdOrden;
 
-                        InsertarIngresosPrincipales(conn, transaction, input);
-                        InsertarGastosPrincipales(conn, transaction, input);
-                        InsertarIngresosAdicionales(conn, transaction, input);
-                        InsertarGastosAdicionales(conn, transaction, input);
-                        InsertarDescuentosReintegros(conn, transaction, input);
-
-                        if (input.GastosFinancieros != null && input.GastosFinancieros.Count > 0)
-                            InsertarGastosFinancierosDetallados(conn, transaction, input.NumeroOrdenViaje, input.GastosFinancieros);
-
-                        CerrarViajesProgreso(conn, transaction, input.IdsViajesActivos, input.NumeroOrdenViaje, input.IdConductorActual);
+                        if (resultado.FilasViajesCerrados == 0)
+                            throw new ErrorNegocioException($"No se pudo cerrar ninguno de los viajes: {string.Join(", ", input.IdsViajesActivos)}");
 
                         transaction.Commit();
                     }
@@ -86,179 +76,167 @@ namespace WebSGV.Services.Conductor
         }
 
         // ------------------------------------------------------------------
-        // Helpers de inserción (SQL/SP movido verbatim del code-behind)
+        // Armado del lote, en el mismo orden en que antes se ejecutaban los SP
         // ------------------------------------------------------------------
 
-        private static void EliminarDatosFinancierosOrdenExistente(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje)
+        private static LoteSql ConstruirLote(LiquidacionConductorInput input)
         {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_EliminarDatosFinancierosOrden", conn, transaction))
+            var lote = new LoteSql();
+
+            if (input.EsReliquidacion)
             {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.ExecuteNonQuery();
+                lote.Sp("sp_DC_EliminarDatosFinancierosOrden", "@numeroOrdenViaje", input.NumeroOrdenViaje);
+                AgregarActualizarOrdenViajeConductor(lote, input);
+                // Es el primer (y único) conjunto de resultados de la orden: el id.
+                lote.Crudo("SELECT idOrdenViaje FROM OrdenViaje WHERE numeroOrdenViaje = <<0>>", input.NumeroOrdenViaje);
             }
+            else
+            {
+                AgregarInsertarOrdenViajeConductor(lote, input);
+            }
+
+            AgregarIngresosPrincipales(lote, input);
+            AgregarGastosPrincipales(lote, input);
+            AgregarIngresosAdicionales(lote, input);
+            AgregarGastosAdicionales(lote, input);
+            AgregarDescuentosReintegros(lote, input);
+
+            if (input.GastosFinancieros != null && input.GastosFinancieros.Count > 0)
+                AgregarGastosFinancierosDetallados(lote, input.NumeroOrdenViaje, input.GastosFinancieros);
+
+            AgregarCerrarViajesProgreso(lote, input.IdsViajesActivos, input.IdConductorActual);
+            return lote;
         }
 
-        private static void ActualizarOrdenViajeConductor(SqlConnection conn, SqlTransaction transaction, LiquidacionConductorInput input)
+        private static object Nulo(string valor) => string.IsNullOrEmpty(valor) ? (object)DBNull.Value : valor;
+
+        private static void AgregarActualizarOrdenViajeConductor(LoteSql lote, LiquidacionConductorInput input)
         {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_ActualizarOrdenViajeConductor", conn, transaction))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", input.NumeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@fechaSalida", FechaSeguraSQL(input.FechaSalida));
-                cmd.Parameters.AddWithValue("@horaSalida", string.IsNullOrEmpty(input.HoraSalida) ? (object)DBNull.Value : input.HoraSalida);
-                cmd.Parameters.AddWithValue("@fechaLlegada", FechaSeguraSQL(input.FechaLlegada));
-                cmd.Parameters.AddWithValue("@horaLlegada", string.IsNullOrEmpty(input.HoraLlegada) ? (object)DBNull.Value : input.HoraLlegada);
-                cmd.Parameters.AddWithValue("@horaLlegadaDeclarada", string.IsNullOrEmpty(input.HoraLlegadaDeclarada) ? (object)DBNull.Value : input.HoraLlegadaDeclarada);
-                cmd.Parameters.AddWithValue("@observaciones", string.IsNullOrEmpty(input.Observaciones) ? (object)DBNull.Value : input.Observaciones);
-                cmd.Parameters.AddWithValue("@idUsuarioRegistro", input.IdUsuarioRegistro > 0 ? (object)input.IdUsuarioRegistro : DBNull.Value);
-                cmd.ExecuteNonQuery();
-            }
+            lote.Sp("sp_DC_ActualizarOrdenViajeConductor",
+                "@numeroOrdenViaje", input.NumeroOrdenViaje,
+                "@fechaSalida", FechaSeguraSQL(input.FechaSalida),
+                "@horaSalida", Nulo(input.HoraSalida),
+                "@fechaLlegada", FechaSeguraSQL(input.FechaLlegada),
+                "@horaLlegada", Nulo(input.HoraLlegada),
+                "@horaLlegadaDeclarada", Nulo(input.HoraLlegadaDeclarada),
+                "@observaciones", Nulo(input.Observaciones),
+                "@idUsuarioRegistro", input.IdUsuarioRegistro > 0 ? (object)input.IdUsuarioRegistro : DBNull.Value);
         }
 
-        private static int InsertarOrdenViajeConductor(SqlConnection conn, SqlTransaction transaction, LiquidacionConductorInput input)
+        private static void AgregarInsertarOrdenViajeConductor(LoteSql lote, LiquidacionConductorInput input)
         {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarOrdenViajeConductor", conn, transaction))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", input.NumeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@fechaSalida", FechaSeguraSQL(input.FechaSalida));
-                cmd.Parameters.AddWithValue("@horaSalida", string.IsNullOrEmpty(input.HoraSalida) ? (object)DBNull.Value : input.HoraSalida);
-                cmd.Parameters.AddWithValue("@fechaLlegada", FechaSeguraSQL(input.FechaLlegada));
-                cmd.Parameters.AddWithValue("@horaLlegada", string.IsNullOrEmpty(input.HoraLlegada) ? (object)DBNull.Value : input.HoraLlegada);
-                cmd.Parameters.AddWithValue("@horaLlegadaDeclarada", string.IsNullOrEmpty(input.HoraLlegadaDeclarada) ? (object)DBNull.Value : input.HoraLlegadaDeclarada);
-                cmd.Parameters.AddWithValue("@idConductor", input.IdConductor);
-                cmd.Parameters.AddWithValue("@idTracto", input.IdTracto);
-                cmd.Parameters.AddWithValue("@idCarreta", input.IdCarreta);
-                cmd.Parameters.AddWithValue("@observaciones", string.IsNullOrEmpty(input.Observaciones) ? (object)DBNull.Value : input.Observaciones);
-                cmd.Parameters.AddWithValue("@idViajeProgreso", input.IdViajeProgreso);
-                cmd.Parameters.AddWithValue("@idUsuarioRegistro", input.IdUsuarioRegistro > 0 ? (object)input.IdUsuarioRegistro : DBNull.Value);
-
-                object result = cmd.ExecuteScalar();
-
-                if (result != null && result != DBNull.Value)
-                    return Convert.ToInt32(result);
-
-                throw new Exception("No se pudo insertar la orden de viaje");
-            }
+            // Devuelve el id de la orden como su primer conjunto de resultados.
+            lote.Sp("sp_DC_InsertarOrdenViajeConductor",
+                "@numeroOrdenViaje", input.NumeroOrdenViaje,
+                "@fechaSalida", FechaSeguraSQL(input.FechaSalida),
+                "@horaSalida", Nulo(input.HoraSalida),
+                "@fechaLlegada", FechaSeguraSQL(input.FechaLlegada),
+                "@horaLlegada", Nulo(input.HoraLlegada),
+                "@horaLlegadaDeclarada", Nulo(input.HoraLlegadaDeclarada),
+                "@idConductor", input.IdConductor,
+                "@idTracto", input.IdTracto,
+                "@idCarreta", input.IdCarreta,
+                "@observaciones", Nulo(input.Observaciones),
+                "@idViajeProgreso", input.IdViajeProgreso,
+                "@idUsuarioRegistro", input.IdUsuarioRegistro > 0 ? (object)input.IdUsuarioRegistro : DBNull.Value);
         }
 
-        private static void InsertarIngresosPrincipales(SqlConnection conn, SqlTransaction transaction, LiquidacionConductorInput input)
+        private static void AgregarIngresosPrincipales(LoteSql lote, LiquidacionConductorInput input)
         {
             if (input.DespachoSoles > 0 || input.DespachoDolares > 0 || input.PrestamoSoles > 0 || input.PrestamoDolares > 0 ||
                 input.MensualidadSoles > 0 || input.MensualidadDolares > 0 || input.OtrosSoles > 0 || input.OtrosDolares > 0)
             {
-                using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarIngresos", conn, transaction))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", input.NumeroOrdenViaje);
-                    cmd.Parameters.AddWithValue("@despachoSoles", input.DespachoSoles);
-                    cmd.Parameters.AddWithValue("@despachoDolares", input.DespachoDolares);
-                    cmd.Parameters.AddWithValue("@prestamoSoles", input.PrestamoSoles);
-                    cmd.Parameters.AddWithValue("@prestamoDolares", input.PrestamoDolares);
-                    cmd.Parameters.AddWithValue("@mensualidadSoles", input.MensualidadSoles);
-                    cmd.Parameters.AddWithValue("@mensualidadDolares", input.MensualidadDolares);
-                    cmd.Parameters.AddWithValue("@otrosSoles", input.OtrosSoles);
-                    cmd.Parameters.AddWithValue("@otrosDolares", input.OtrosDolares);
-                    cmd.Parameters.AddWithValue("@descDespacho", string.IsNullOrEmpty(input.DescDespacho) ? (object)DBNull.Value : input.DescDespacho);
-                    cmd.Parameters.AddWithValue("@descMensualidad", string.IsNullOrEmpty(input.DescMensualidad) ? (object)DBNull.Value : input.DescMensualidad);
-                    cmd.Parameters.AddWithValue("@descOtros", string.IsNullOrEmpty(input.DescOtros) ? (object)DBNull.Value : input.DescOtros);
-                    cmd.Parameters.AddWithValue("@descPrestamo", string.IsNullOrEmpty(input.DescPrestamo) ? (object)DBNull.Value : input.DescPrestamo);
-                    cmd.ExecuteNonQuery();
-                }
+                lote.Sp("sp_DC_InsertarIngresos",
+                    "@numeroOrdenViaje", input.NumeroOrdenViaje,
+                    "@despachoSoles", input.DespachoSoles,
+                    "@despachoDolares", input.DespachoDolares,
+                    "@prestamoSoles", input.PrestamoSoles,
+                    "@prestamoDolares", input.PrestamoDolares,
+                    "@mensualidadSoles", input.MensualidadSoles,
+                    "@mensualidadDolares", input.MensualidadDolares,
+                    "@otrosSoles", input.OtrosSoles,
+                    "@otrosDolares", input.OtrosDolares,
+                    "@descDespacho", Nulo(input.DescDespacho),
+                    "@descMensualidad", Nulo(input.DescMensualidad),
+                    "@descOtros", Nulo(input.DescOtros),
+                    "@descPrestamo", Nulo(input.DescPrestamo));
             }
         }
 
-        private static void InsertarGastosPrincipales(SqlConnection conn, SqlTransaction transaction, LiquidacionConductorInput input)
+        private static void AgregarGastosPrincipales(LoteSql lote, LiquidacionConductorInput input)
         {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarEgresos", conn, transaction))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", input.NumeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@peajesSoles", input.PeajesSoles);
-                cmd.Parameters.AddWithValue("@peajesDolares", input.PeajesDolares);
-                cmd.Parameters.AddWithValue("@descPeajes", string.IsNullOrEmpty(input.DescPeajes) ? (object)DBNull.Value : input.DescPeajes);
-                cmd.Parameters.AddWithValue("@alimentacionSoles", input.AlimentacionSoles);
-                cmd.Parameters.AddWithValue("@alimentacionDolares", input.AlimentacionDolares);
-                cmd.Parameters.AddWithValue("@descAlimentacion", string.IsNullOrEmpty(input.DescAlimentacion) ? (object)DBNull.Value : input.DescAlimentacion);
-                cmd.Parameters.AddWithValue("@apoyoSeguridadSoles", input.ApoyoSeguridadSoles);
-                cmd.Parameters.AddWithValue("@apoyoSeguridadDolares", input.ApoyoSeguridadDolares);
-                cmd.Parameters.AddWithValue("@descApoyoSeguridad", string.IsNullOrEmpty(input.DescApoyoSeguridad) ? (object)DBNull.Value : input.DescApoyoSeguridad);
-                cmd.Parameters.AddWithValue("@reparacionesSoles", input.ReparacionesSoles);
-                cmd.Parameters.AddWithValue("@reparacionesDolares", input.ReparacionesDolares);
-                cmd.Parameters.AddWithValue("@descReparaciones", string.IsNullOrEmpty(input.DescReparaciones) ? (object)DBNull.Value : input.DescReparaciones);
-                cmd.Parameters.AddWithValue("@movilidadSoles", input.MovilidadSoles);
-                cmd.Parameters.AddWithValue("@movilidadDolares", input.MovilidadDolares);
-                cmd.Parameters.AddWithValue("@descMovilidad", string.IsNullOrEmpty(input.DescMovilidad) ? (object)DBNull.Value : input.DescMovilidad);
-                cmd.Parameters.AddWithValue("@encapadaSoles", input.EncapadaSoles);
-                cmd.Parameters.AddWithValue("@encapadaDolares", input.EncapadaDolares);
-                cmd.Parameters.AddWithValue("@descEncapada", string.IsNullOrEmpty(input.DescEncapada) ? (object)DBNull.Value : input.DescEncapada);
-                cmd.Parameters.AddWithValue("@hospedajeSoles", input.HospedajeSoles);
-                cmd.Parameters.AddWithValue("@hospedajeDolares", input.HospedajeDolares);
-                cmd.Parameters.AddWithValue("@descHospedaje", string.IsNullOrEmpty(input.DescHospedaje) ? (object)DBNull.Value : input.DescHospedaje);
-                cmd.Parameters.AddWithValue("@combustibleSoles", input.CombustibleSoles);
-                cmd.Parameters.AddWithValue("@combustibleDolares", input.CombustibleDolares);
-                cmd.Parameters.AddWithValue("@descCombustible", string.IsNullOrEmpty(input.DescCombustible) ? (object)DBNull.Value : input.DescCombustible);
-                cmd.ExecuteNonQuery();
-            }
+            lote.Sp("sp_DC_InsertarEgresos",
+                "@numeroOrdenViaje", input.NumeroOrdenViaje,
+                "@peajesSoles", input.PeajesSoles,
+                "@peajesDolares", input.PeajesDolares,
+                "@descPeajes", Nulo(input.DescPeajes),
+                "@alimentacionSoles", input.AlimentacionSoles,
+                "@alimentacionDolares", input.AlimentacionDolares,
+                "@descAlimentacion", Nulo(input.DescAlimentacion),
+                "@apoyoSeguridadSoles", input.ApoyoSeguridadSoles,
+                "@apoyoSeguridadDolares", input.ApoyoSeguridadDolares,
+                "@descApoyoSeguridad", Nulo(input.DescApoyoSeguridad),
+                "@reparacionesSoles", input.ReparacionesSoles,
+                "@reparacionesDolares", input.ReparacionesDolares,
+                "@descReparaciones", Nulo(input.DescReparaciones),
+                "@movilidadSoles", input.MovilidadSoles,
+                "@movilidadDolares", input.MovilidadDolares,
+                "@descMovilidad", Nulo(input.DescMovilidad),
+                "@encapadaSoles", input.EncapadaSoles,
+                "@encapadaDolares", input.EncapadaDolares,
+                "@descEncapada", Nulo(input.DescEncapada),
+                "@hospedajeSoles", input.HospedajeSoles,
+                "@hospedajeDolares", input.HospedajeDolares,
+                "@descHospedaje", Nulo(input.DescHospedaje),
+                "@combustibleSoles", input.CombustibleSoles,
+                "@combustibleDolares", input.CombustibleDolares,
+                "@descCombustible", Nulo(input.DescCombustible));
         }
 
-        private static void InsertarIngresosAdicionales(SqlConnection conn, SqlTransaction transaction, LiquidacionConductorInput input)
+        private static void AgregarIngresosAdicionales(LoteSql lote, LiquidacionConductorInput input)
         {
             if (input.IngresosAdicionales == null) return;
 
             foreach (var ingreso in input.IngresosAdicionales)
             {
-                using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarIngresoAdicional", conn, transaction))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", input.NumeroOrdenViaje);
-                    cmd.Parameters.AddWithValue("@nombreCategoria", ingreso.Categoria ?? ingreso.NombreCategoria ?? "");
-                    cmd.Parameters.AddWithValue("@soles", ValidarMonto(ingreso.Soles, "soles de ingreso adicional"));
-                    cmd.Parameters.AddWithValue("@dolares", ValidarMonto(ingreso.Dolares, "dólares de ingreso adicional"));
-                    cmd.Parameters.AddWithValue("@descripcion", ingreso.Descripcion ?? "");
-                    cmd.ExecuteNonQuery();
-                }
+                lote.Sp("sp_DC_InsertarIngresoAdicional",
+                    "@numeroOrdenViaje", input.NumeroOrdenViaje,
+                    "@nombreCategoria", ingreso.Categoria ?? ingreso.NombreCategoria ?? "",
+                    "@soles", ValidarMonto(ingreso.Soles, "soles de ingreso adicional"),
+                    "@dolares", ValidarMonto(ingreso.Dolares, "dólares de ingreso adicional"),
+                    "@descripcion", ingreso.Descripcion ?? "");
             }
         }
 
-        private static void InsertarGastosAdicionales(SqlConnection conn, SqlTransaction transaction, LiquidacionConductorInput input)
+        private static void AgregarGastosAdicionales(LoteSql lote, LiquidacionConductorInput input)
         {
             if (input.GastosAdicionales == null) return;
 
             foreach (var gasto in input.GastosAdicionales)
             {
-                using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarGastoAdicional", conn, transaction))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", input.NumeroOrdenViaje);
-                    cmd.Parameters.AddWithValue("@nombreCategoria", gasto.Categoria ?? gasto.NombreCategoria ?? "");
-                    cmd.Parameters.AddWithValue("@soles", ValidarMonto(gasto.Soles, "soles de gasto adicional"));
-                    cmd.Parameters.AddWithValue("@dolares", ValidarMonto(gasto.Dolares, "dólares de gasto adicional"));
-                    cmd.Parameters.AddWithValue("@descripcion", gasto.Descripcion ?? "");
-                    cmd.ExecuteNonQuery();
-                }
+                lote.Sp("sp_DC_InsertarGastoAdicional",
+                    "@numeroOrdenViaje", input.NumeroOrdenViaje,
+                    "@nombreCategoria", gasto.Categoria ?? gasto.NombreCategoria ?? "",
+                    "@soles", ValidarMonto(gasto.Soles, "soles de gasto adicional"),
+                    "@dolares", ValidarMonto(gasto.Dolares, "dólares de gasto adicional"),
+                    "@descripcion", gasto.Descripcion ?? "");
             }
         }
 
-        private static void InsertarDescuentosReintegros(SqlConnection conn, SqlTransaction transaction, LiquidacionConductorInput input)
+        private static void AgregarDescuentosReintegros(LoteSql lote, LiquidacionConductorInput input)
         {
             if (input.DescuentoSoles > 0 || input.DescuentoDolares > 0 || input.ReintegroSoles > 0 || input.ReintegroDolares > 0)
             {
-                using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDescuentosReintegros", conn, transaction))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", input.NumeroOrdenViaje);
-                    cmd.Parameters.AddWithValue("@descuentoSoles", input.DescuentoSoles);
-                    cmd.Parameters.AddWithValue("@descuentoDolares", input.DescuentoDolares);
-                    cmd.Parameters.AddWithValue("@reintegroSoles", input.ReintegroSoles);
-                    cmd.Parameters.AddWithValue("@reintegroDolares", input.ReintegroDolares);
-                    cmd.ExecuteNonQuery();
-                }
+                lote.Sp("sp_DC_InsertarDescuentosReintegros",
+                    "@numeroOrdenViaje", input.NumeroOrdenViaje,
+                    "@descuentoSoles", input.DescuentoSoles,
+                    "@descuentoDolares", input.DescuentoDolares,
+                    "@reintegroSoles", input.ReintegroSoles,
+                    "@reintegroDolares", input.ReintegroDolares);
             }
         }
 
-        private static void InsertarGastosFinancierosDetallados(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, List<GastoFinanciero> gastos)
+        private static void AgregarGastosFinancierosDetallados(LoteSql lote, string numeroOrdenViaje, List<GastoFinanciero> gastos)
         {
             foreach (var gasto in gastos)
             {
@@ -267,104 +245,50 @@ namespace WebSGV.Services.Conductor
                 switch (categoria)
                 {
                     case "peajes":
-                        InsertarPeajeDetallado(conn, transaction, numeroOrdenViaje, gasto);
+                        lote.Sp("sp_DC_InsertarDetallePeaje",
+                            "@numeroOrdenViaje", numeroOrdenViaje,
+                            "@estacion", gasto.Estacion ?? gasto.Lugar ?? "",
+                            "@fecha", FechaSeguraSQL(gasto.Fecha),
+                            "@numeroComprobante", gasto.Comprobante ?? "",
+                            "@montoSoles", ValidarMonto(gasto.Soles, "soles de peaje"),
+                            "@montoDolares", ValidarMonto(gasto.Dolares, "dólares de peaje"),
+                            "@observaciones", gasto.Observaciones ?? "");
                         break;
                     case "reparaciones":
-                        InsertarReparacionDetallada(conn, transaction, numeroOrdenViaje, gasto);
+                        AgregarDetalleComprobante(lote, "sp_DC_InsertarDetalleReparacion", numeroOrdenViaje, gasto, "reparación");
                         break;
                     case "hospedaje":
-                        InsertarHospedajeDetallado(conn, transaction, numeroOrdenViaje, gasto);
+                        AgregarDetalleComprobante(lote, "sp_DC_InsertarDetalleHospedaje", numeroOrdenViaje, gasto, "hospedaje");
                         break;
                     case "combustible":
-                        InsertarCombustibleDetallado(conn, transaction, numeroOrdenViaje, gasto);
+                        AgregarDetalleComprobante(lote, "sp_DC_InsertarDetalleCombustible", numeroOrdenViaje, gasto, "combustible");
                         break;
                 }
             }
         }
 
-        private static void InsertarPeajeDetallado(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
+        /// <summary>Reparaciones, hospedaje y combustible comparten los mismos parámetros.</summary>
+        private static void AgregarDetalleComprobante(LoteSql lote, string sp, string numeroOrdenViaje, GastoFinanciero gasto, string nombre)
         {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDetallePeaje", conn, transaction))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@estacion", gasto.Estacion ?? gasto.Lugar ?? "");
-                cmd.Parameters.AddWithValue("@fecha", FechaSeguraSQL(gasto.Fecha));
-                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles", ValidarMonto(gasto.Soles, "soles de peaje"));
-                cmd.Parameters.AddWithValue("@montoDolares", ValidarMonto(gasto.Dolares, "dólares de peaje"));
-                cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
-                cmd.ExecuteNonQuery();
-            }
+            lote.Sp(sp,
+                "@numeroOrdenViaje", numeroOrdenViaje,
+                "@fechaComprobante", FechaSeguraSQL(gasto.Fecha),
+                "@numeroComprobante", gasto.Comprobante ?? "",
+                "@montoSoles", ValidarMonto(gasto.Soles, "soles de " + nombre),
+                "@montoDolares", ValidarMonto(gasto.Dolares, "dólares de " + nombre),
+                "@observaciones", gasto.Observaciones ?? "");
         }
 
-        private static void InsertarReparacionDetallada(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
+        private static void AgregarCerrarViajesProgreso(LoteSql lote, List<int> idsViajes, int idConductor)
         {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDetalleReparacion", conn, transaction))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
-                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles", ValidarMonto(gasto.Soles, "soles de reparación"));
-                cmd.Parameters.AddWithValue("@montoDolares", ValidarMonto(gasto.Dolares, "dólares de reparación"));
-                cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        private static void InsertarHospedajeDetallado(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
-        {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDetalleHospedaje", conn, transaction))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
-                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles", ValidarMonto(gasto.Soles, "soles de hospedaje"));
-                cmd.Parameters.AddWithValue("@montoDolares", ValidarMonto(gasto.Dolares, "dólares de hospedaje"));
-                cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        private static void InsertarCombustibleDetallado(SqlConnection conn, SqlTransaction transaction, string numeroOrdenViaje, GastoFinanciero gasto)
-        {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_InsertarDetalleCombustible", conn, transaction))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                cmd.Parameters.AddWithValue("@fechaComprobante", FechaSeguraSQL(gasto.Fecha));
-                cmd.Parameters.AddWithValue("@numeroComprobante", gasto.Comprobante ?? "");
-                cmd.Parameters.AddWithValue("@montoSoles", ValidarMonto(gasto.Soles, "soles de combustible"));
-                cmd.Parameters.AddWithValue("@montoDolares", ValidarMonto(gasto.Dolares, "dólares de combustible"));
-                cmd.Parameters.AddWithValue("@observaciones", gasto.Observaciones ?? "");
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        private static void CerrarViajesProgreso(SqlConnection conn, SqlTransaction transaction, List<int> idsViajes, string numeroOrdenViaje, int idConductor)
-        {
-            using (SqlCommand cmd = new SqlCommand("sp_DC_CerrarViajesProgreso", conn, transaction))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@idsViajes", string.Join(",", idsViajes));
-                cmd.Parameters.AddWithValue("@idConductor", idConductor); // IDOR guard: el SP valida que los viajes pertenecen a este conductor
-
-                SqlParameter pViajesCerrados = new SqlParameter("@filasViajesCerrados", SqlDbType.Int) { Direction = ParameterDirection.Output };
-                SqlParameter pDespachosCerrados = new SqlParameter("@filasDespachosCerrados", SqlDbType.Int) { Direction = ParameterDirection.Output };
-                cmd.Parameters.Add(pViajesCerrados);
-                cmd.Parameters.Add(pDespachosCerrados);
-
-                cmd.ExecuteNonQuery();
-
-                int filasAfectadas = (int)pViajesCerrados.Value;
-
-                if (filasAfectadas == 0)
-                {
-                    throw new ErrorNegocioException($"No se pudo cerrar ninguno de los viajes: {string.Join(", ", idsViajes)}");
-                }
-            }
+            // IDOR guard: el SP valida que los viajes pertenecen a este conductor. Va siempre al final
+            // (tiene transacción propia). Sus salidas se devuelven como el último conjunto de resultados.
+            lote.Crudo(
+                "DECLARE @filasViajes INT, @filasDespachos INT; " +
+                "EXEC sp_DC_CerrarViajesProgreso @idsViajes = <<0>>, @idConductor = <<1>>, " +
+                "@filasViajesCerrados = @filasViajes OUTPUT, @filasDespachosCerrados = @filasDespachos OUTPUT; " +
+                "SELECT @filasViajes AS " + LoteSql.ColumnaFilasViajesCerrados,
+                string.Join(",", idsViajes), idConductor);
         }
 
         // ------------------------------------------------------------------
@@ -376,5 +300,119 @@ namespace WebSGV.Services.Conductor
 
         private static decimal ValidarMonto(decimal? monto, string campo) => MontoHelper.ValidarMonto(monto, campo);
         private static decimal ValidarMonto(decimal monto, string campo) => MontoHelper.ValidarMonto(monto, campo);
+
+        /// <summary>
+        /// Instrucciones SQL (EXEC de SP y alguna consulta) que se mandan a la BD juntas, en el
+        /// orden en que se agregaron y dentro de la transacción que recibe <see cref="Ejecutar"/>.
+        /// Cada valor viaja como parámetro (nunca concatenado). Se parte en varios envíos solo si
+        /// hubiera tantos renglones que se acercara al límite de parámetros de SQL Server (2100).
+        /// </summary>
+        private sealed class LoteSql
+        {
+            public const string ColumnaFilasViajesCerrados = "__filasViajesCerrados";
+            private const int MaxParametrosPorEnvio = 1800;
+
+            public sealed class Resultado
+            {
+                public int IdOrden;
+                public int FilasViajesCerrados;
+            }
+
+            private sealed class Instruccion
+            {
+                public string Plantilla;
+                public object[] Valores;
+            }
+
+            private readonly List<Instruccion> _instrucciones = new List<Instruccion>();
+
+            /// <summary>EXEC de un stored procedure con pares nombre/valor (<c>"@x", valor, "@y", valor…</c>).</summary>
+            public void Sp(string procedimiento, params object[] pares)
+            {
+                int n = pares.Length / 2;
+                var args = new List<string>(n);
+                var valores = new object[n];
+                for (int i = 0; i < n; i++)
+                {
+                    args.Add(pares[2 * i] + " = <<" + i + ">>");
+                    valores[i] = pares[2 * i + 1];
+                }
+                _instrucciones.Add(new Instruccion { Plantilla = "EXEC " + procedimiento + " " + string.Join(", ", args), Valores = valores });
+            }
+
+            /// <summary>SQL propio; los valores se citan en el texto como <c>&lt;&lt;0&gt;&gt;</c>, <c>&lt;&lt;1&gt;&gt;</c>…</summary>
+            public void Crudo(string plantilla, params object[] valores) =>
+                _instrucciones.Add(new Instruccion { Plantilla = plantilla, Valores = valores });
+
+            public Resultado Ejecutar(SqlConnection conn, SqlTransaction transaction)
+            {
+                var resultado = new Resultado();
+                bool idLeido = false;
+
+                foreach (List<Instruccion> envio in Partir())
+                {
+                    var sql = new StringBuilder();
+                    // Ante cualquier error en tiempo de ejecución el lote se detiene y se deshace todo,
+                    // como cuando cada SP se ejecutaba por separado y el primer error cortaba el flujo.
+                    sql.Append("SET XACT_ABORT ON;\n");
+
+                    using (SqlCommand cmd = new SqlCommand { Connection = conn, Transaction = transaction })
+                    {
+                        int p = 0;
+                        foreach (Instruccion ins in envio)
+                        {
+                            string texto = ins.Plantilla;
+                            for (int i = 0; i < ins.Valores.Length; i++)
+                            {
+                                string nombre = "@p" + (p++);
+                                cmd.Parameters.AddWithValue(nombre, ins.Valores[i] ?? DBNull.Value);
+                                texto = texto.Replace("<<" + i + ">>", nombre);
+                            }
+                            sql.Append(texto).Append(";\n");
+                        }
+                        cmd.CommandText = sql.ToString();
+
+                        using (SqlDataReader rd = cmd.ExecuteReader())
+                        {
+                            do
+                            {
+                                bool esFilas = rd.FieldCount == 1 && rd.GetName(0) == ColumnaFilasViajesCerrados;
+                                if (esFilas)
+                                {
+                                    if (rd.Read() && !rd.IsDBNull(0)) resultado.FilasViajesCerrados = Convert.ToInt32(rd[0]);
+                                }
+                                else if (!idLeido && rd.Read())
+                                {
+                                    // Primer conjunto de resultados del lote: el id de la orden
+                                    // (lo mismo que leía el ExecuteScalar de antes).
+                                    if (!rd.IsDBNull(0)) resultado.IdOrden = Convert.ToInt32(rd[0]);
+                                    idLeido = true;
+                                }
+                            } while (rd.NextResult());
+                        }
+                    }
+                }
+
+                return resultado;
+            }
+
+            private IEnumerable<List<Instruccion>> Partir()
+            {
+                var actual = new List<Instruccion>();
+                int parametros = 0;
+                foreach (Instruccion ins in _instrucciones)
+                {
+                    if (actual.Count > 0 && parametros + ins.Valores.Length > MaxParametrosPorEnvio)
+                    {
+                        yield return actual;
+                        actual = new List<Instruccion>();
+                        parametros = 0;
+                    }
+                    actual.Add(ins);
+                    parametros += ins.Valores.Length;
+                }
+                if (actual.Count > 0) yield return actual;
+            }
+        }
     }
 }

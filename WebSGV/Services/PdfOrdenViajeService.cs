@@ -128,6 +128,28 @@ namespace WebSGV.Services
                 firmas ?? new FirmasOrdenViaje(), rutaLogo);
         }
 
+        /// <summary>
+        /// Genera un PDF de descarte (sin BD, sin disco, sin logo) para cargar las librerías gráficas
+        /// de QuestPDF (Skia) y las fuentes antes de que alguien firme: el primer PDF tras arrancar el
+        /// sitio tardaba entre 0,4 y 2,9 s. Se llama en segundo plano desde Application_Start; nunca
+        /// lanza (si falla, el primer PDF real simplemente paga ese costo, como antes).
+        /// </summary>
+        public static void Precalentar()
+        {
+            try
+            {
+                var reloj = System.Diagnostics.Stopwatch.StartNew();
+                new OrdenViajeDocumento(
+                    new DetalleLiquidacion { NumeroOrdenViaje = "PRECALENTAMIENTO", NombreConductor = "-" },
+                    new EmpresaInfo(), null, new FirmasOrdenViaje(), null).GeneratePdf();
+                LogSGV.Info("Generador de PDF precalentado en {Ms} ms", reloj.ElapsedMilliseconds);
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "No se pudo precalentar el generador de PDF (el primer PDF será más lento)");
+            }
+        }
+
         // ============================================================================
         // HELPERS DE ARCHIVO
         // ============================================================================

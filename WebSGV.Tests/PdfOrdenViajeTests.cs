@@ -109,6 +109,15 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void Precalentar_NoLanzaYDejaElGeneradorListo()
+        {
+            // Se llama en segundo plano al iniciar el sitio: nunca debe tumbar el arranque.
+            PdfOrdenViajeService.Precalentar();
+
+            Assert.Equal(1, Paginas(new DetalleLiquidacion { NumeroOrdenViaje = "OV-2026-000001" }, new FirmasOrdenViaje()));
+        }
+
+        [Fact]
         public void Metadatos_IdentificanLaOrden()
         {
             var meta = PdfOrdenViajeService.CrearDocumento(LiquidacionTipica(), Empresa, Formato, null, null).GetMetadata();

@@ -27,6 +27,9 @@ namespace WebSGV
 
             // Crear tabla de auditoría si no existe
             AuditoriaHelper.CrearTablaAuditoriaSiNoExiste();
+
+            // Cargar QuestPDF en segundo plano para que el primer conductor que firme no espere.
+            System.Threading.ThreadPool.QueueUserWorkItem(_ => WebSGV.Services.PdfOrdenViajeService.Precalentar());
         }
 
         void Application_End(object sender, EventArgs e)

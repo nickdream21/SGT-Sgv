@@ -7,9 +7,11 @@ using System.Text;
 using System.Threading.Tasks;
 using QuestPDF.Fluent;
 using WebSGV.Helpers;
+using WebSGV.Models.Conductor;
 using WebSGV.Models.Liquidaciones;
 using WebSGV.Services;
 using WebSGV.Services.Conductor;
+using WebSGV.Services.Despachos;
 using WebSGV.Services.Liquidaciones;
 using Xunit;
 
@@ -31,6 +33,69 @@ namespace WebSGV.Tests.Integracion
                     Skip = BaseDePruebas.MotivoNoDisponible;
                 else if (Environment.GetEnvironmentVariable("SGV_RENDIMIENTO") != "1")
                     Skip = "Medición de rendimiento: definir SGV_RENDIMIENTO=1 para ejecutarla.";
+            }
+        }
+
+        [FactBD]
+        public void EnviarLiquidacion_ConservaLosDecimalesDeCadaMonto()
+        {
+            // Los montos viajan como parámetros de un único lote: no deben perder centavos.
+            using (new TransaccionDePrueba())
+            {
+                var datos = DatosBase.Cargar();
+                int idViaje = CrearDespacho(datos, NuevoLote(datos), out _);
+                var input = NuevaLiquidacion(datos, idViaje);
+                input.DespachoSoles = 1234.56m;
+                input.PeajesSoles = 78.9m;
+                input.AlimentacionSoles = 0.07m;
+                input.CombustibleDolares = 45.67m;
+                input.IngresosAdicionales[0].Soles = 10.25m;
+                input.GastosAdicionales[0].Soles = 3.35m;
+                input.GastosFinancieros[0].Soles = 78.9m;
+                input.DescuentoSoles = 12.34m;
+                input.ReintegroDolares = 5.55m;
+
+                int idOrden = LiquidacionConductorService.EnviarLiquidacion(input);
+
+                var d = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrden);
+                Assert.Equal(1234.56m, d.DespachoSoles);
+                Assert.Equal(78.9m, d.GastosPeajesSoles);
+                Assert.Equal(0.07m, d.GastosAlimentacionSoles);
+                Assert.Equal(45.67m, d.GastosCombustibleDolares);
+                Assert.Equal(10.25m, d.IngresosAdicionalesSoles);
+                Assert.Equal(3.35m, d.GastosAdicionalesSoles);
+                Assert.Equal(78.9m, d.DetallesPeajes.Single().Soles);
+                Assert.Equal(12.34m, d.DescuentoSoles);
+                Assert.Equal(5.55m, d.ReintegroDolares);
+                Assert.Equal("Liquidación de prueba", d.Observaciones);
+                Assert.Equal("08:00", d.HoraSalida);
+            }
+        }
+
+        [FactBD]
+        public void EnviarLiquidacion_ConMuchosRenglones_SeEnviaPartidoYCompleto()
+        {
+            // 300 peajes x 7 parámetros superan el tope por envío (1800): el lote se parte en dos
+            // y todo sigue en la misma transacción, con el cierre del viaje en el último envío.
+            using (new TransaccionDePrueba())
+            {
+                var datos = DatosBase.Cargar();
+                int idViaje = CrearDespacho(datos, NuevoLote(datos), out _);
+                var input = NuevaLiquidacion(datos, idViaje);
+                input.GastosFinancieros.Clear();
+                for (int i = 0; i < 300; i++)
+                    input.GastosFinancieros.Add(new GastoFinanciero
+                    {
+                        Categoria = "peajes", Estacion = "Peaje " + i, FechaString = FechaHelper.Hoy().ToString("yyyy-MM-dd"),
+                        Comprobante = "P-" + i, Soles = 0.5m
+                    });
+
+                int idOrden = LiquidacionConductorService.EnviarLiquidacion(input);
+
+                var d = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrden);
+                Assert.Equal(300, d.DetallesPeajes.Count);
+                Assert.Equal(150m, d.DetallesPeajes.Sum(x => x.Soles));
+                Assert.Equal("CERRADO", RegistroDespachoService.ObtenerInfoViaje(idViaje).EstadoViaje);
             }
         }
 
