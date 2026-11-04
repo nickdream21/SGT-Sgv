@@ -145,10 +145,13 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
 - [x] **Firma del conductor: "Firmar y Enviar" no se habilitaba al marcar la declaración primero** (2026-11-03): ver sección 3.
 - [x] **Video de capacitación para conductores** (2026-11-03): `docs/DOCUMENTACION/capacitacion/Como-registrar-su-liquidacion-conductor.mp4`
       (2 min 33 s, vertical 720×1280, voz `es-PE-CamilaNeural`; está en una carpeta gitignored: copiarlo a mano a la otra máquina).
-- [ ] **Video de capacitación: guardar las herramientas para regenerarlo** (2026-11-03): el guion (`escenas.json`), el
-      grabador (puppeteer-core + Edge, captura por CDP) y el armado con ffmpeg quedaron en la carpeta temporal de la sesión.
-      Si la interfaz cambia hay que regrabarlo: moverlos a `herramientas/video-capacitacion/` sin datos reales (el
-      nombre y DNI del conductor de prueba se enmascaran en pantalla; que se lean de la BD, no del código).
+- [x] **Videos nuevos con el formulario de noviembre y herramientas guardadas** (2026-11-03, pedido del usuario):
+      `docs/DOCUMENTACION/capacitacion/Como-liquidar-tu-viaje-celular.mp4` (2 min 20 s, vertical, voz `es-PE-CamilaNeural`,
+      subtítulos por paso, nombre y DNI ocultos) y `SGV-beneficios-del-sistema.mp4` (2 min 37 s, 1920×1080, voz
+      `es-PE-AlexNeural`, para gerencia; muestra pantallas reales con nombres de choferes: uso interno). Grabadores en
+      `herramientas/video/` (README); se grabaron con el viaje 946 real, retirando la orden de prueba y restaurando todo.
+      Los MP4 están en carpeta gitignored: copiarlos a mano a la otra máquina. El video anterior
+      (`Como-registrar-su-liquidacion-conductor.mp4`) quedó obsoleto: no difundirlo.
 - [ ] **Video de capacitación: ver si conviene uno por tema** (2026-11-03): solo cubre el viaje nacional sin peajes ni
       hospedaje/reparaciones; faltan el viaje internacional (peajes en soles y dólares), "liquidación rechazada y
       corregida" y "retirar liquidación".
@@ -163,7 +166,7 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       corta con su celular, guía de una hoja con capturas, periodo de convivencia con carga en papel y un
       responsable de soporte por WhatsApp. En el sistema: guardar un borrador del formulario de liquidación (hoy solo avisa
       al cerrar) y probar la vista de celular y el lienzo de firma en equipos de gama baja (el formulario ya se
-      simplificó para el celular el 2026-11-03; el video de capacitación muestra la versión anterior y hay que regrabarlo).
+      simplificó para el celular el 2026-11-03 y el video de capacitación ya se regrabó con esa versión).
 - [ ] **Confirmar en el servidor qué BD usa el sitio publicado** (2026-11-03): el repo lo apunta a `sgvActualizada`
       pero no puede ver el archivo del servidor; antes del paso a producción real, comprobarlo.
 - [x] **Reporte de cargas: pestaña Resumen** (2026-11-02): ver sección 3.
