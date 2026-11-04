@@ -215,6 +215,7 @@
     <Content Include="Database\StoredProcedures\sp_DC_InsertarGastoAdicional.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_InsertarIngresoAdicional.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_InsertarIngresos.sql" />
+    <Content Include="Database\StoredProcedures\sp_LD_RegistrarIngresosEntregados.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_InsertarOrdenViajeConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_ObtenerDatosConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_ObtenerDatosFinancierosOrden.sql" />
@@ -471,6 +472,7 @@
     <Compile Include="Services\Common\MontoHelper.cs" />
     <Compile Include="Services\Common\ErrorNegocio.cs" />
     <Compile Include="Services\Conductor\DashboardConductorService.cs" />
+    <Compile Include="Services\Conductor\FechasViajeGpsService.cs" />
     <Compile Include="Services\Conductor\LiquidacionConductorService.cs" />
     <Compile Include="Services\Conductor\ListaChoferesService.cs" />
     <Compile Include="Services\GpsIntegracion\OnwayApiClient.cs" />

@@ -119,6 +119,8 @@ namespace WebSGV.Models.Conductor
         public string HoraLlegada { get; set; }
         /// <summary>Hora de llegada autoreportada por el conductor (editable), distinta de HoraLlegada (automática, inmutable).</summary>
         public string HoraLlegadaDeclarada { get; set; }
+        /// <summary>Hora de llegada a base según el GPS del seguimiento (HH:mm), o null. Se guarda en OrdenViaje.horaLlegadaGps.</summary>
+        public string HoraLlegadaGps { get; set; }
         public string Observaciones { get; set; }
         public int IdConductor { get; set; }
         public int IdTracto { get; set; }

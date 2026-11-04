@@ -229,7 +229,8 @@ namespace WebSGV.Services.Liquidaciones
         /// </summary>
         public static ResultadoAprobacionAjustes AprobarConAjustes(
             int idOrdenViaje, decimal descuentoSoles, decimal descuentoDolares,
-            decimal reintegroSoles, decimal reintegroDolares, string notaAprobacion, int idUsuario)
+            decimal reintegroSoles, decimal reintegroDolares, string notaAprobacion, int idUsuario,
+            IngresosEntregados ingresos = null)
         {
             string numeroOrdenViaje = null;
 
@@ -281,6 +282,26 @@ namespace WebSGV.Services.Liquidaciones
                         cmd.ExecuteNonQuery();
                         System.Diagnostics.Debug.WriteLine($"✅ Ajustes guardados: DescS={descuentoSoles} DescD={descuentoDolares} ReintS={reintegroSoles} ReintD={reintegroDolares}");
                     }
+                }
+
+                // 2b. Dinero entregado al conductor (lo registra la administración, no el conductor).
+                //     null = la pantalla no lo envió y se respeta lo que ya hubiera.
+                if (ingresos != null)
+                {
+                    DbHelper.EjecutarNonQuerySp(conn, tran, "sp_LD_RegistrarIngresosEntregados",
+                        DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje),
+                        DbHelper.Param("@despachoSoles", ingresos.DespachoSoles),
+                        DbHelper.Param("@despachoDolares", ingresos.DespachoDolares),
+                        DbHelper.Param("@prestamoSoles", ingresos.PrestamoSoles),
+                        DbHelper.Param("@prestamoDolares", ingresos.PrestamoDolares),
+                        DbHelper.Param("@mensualidadSoles", ingresos.MensualidadSoles),
+                        DbHelper.Param("@mensualidadDolares", ingresos.MensualidadDolares),
+                        DbHelper.Param("@otrosSoles", ingresos.OtrosSoles),
+                        DbHelper.Param("@otrosDolares", ingresos.OtrosDolares),
+                        DbHelper.Param("@descDespacho", (object)ingresos.DescDespacho ?? DBNull.Value),
+                        DbHelper.Param("@descMensualidad", (object)ingresos.DescMensualidad ?? DBNull.Value),
+                        DbHelper.Param("@descOtros", (object)ingresos.DescOtros ?? DBNull.Value),
+                        DbHelper.Param("@descPrestamo", (object)ingresos.DescPrestamo ?? DBNull.Value));
                 }
 
                 // 3. Llamar sp_AprobarLiquidacion

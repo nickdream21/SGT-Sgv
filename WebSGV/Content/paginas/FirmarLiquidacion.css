@@ -90,6 +90,7 @@ h1, h2, h3, h4 { font-family: 'Montserrat', sans-serif; margin: 0; }
 }
 .fl-monto .label { font-size: 12px; color: var(--gris-600); }
 .fl-monto .valor { font-size: 18px; font-weight: 700; color: var(--azul); }
+.fl-nota { margin: 8px 0 0; font-size: 12px; color: var(--gris-600); }
 
 /* ---------- Declaración jurada ---------- */
 .fl-declaracion {

@@ -125,5 +125,178 @@ namespace WebSGV.Services.Conductor
                 };
             }
         }
+
+        // ------------------------------------------------------------------
+        // Orden rechazada (REABIERTO): datos para volver a llenar el formulario
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Orden rechazada de los viajes, con sus gastos por nombre de campo del formulario
+        /// (<c>alimentacionSoles</c>, <c>descAlimentacion</c>…) para volver a mostrarlos, y lo que
+        /// registró la administración (dinero entregado, descuentos), que se conserva al reenviar.
+        /// </summary>
+        public static OrdenRechazadaConductor ObtenerOrdenRechazada(List<int> idsViajes)
+        {
+            DataTable dt = DbHelper.ConsultarTablaSp("sp_DC_ObtenerOrdenRechazada",
+                DbHelper.Param("@idsViajes", string.Join(",", idsViajes)));
+            if (dt.Rows.Count == 0) return null;
+
+            DataRow r = dt.Rows[0];
+            var orden = new OrdenRechazadaConductor
+            {
+                NumeroOrdenViaje = r["numeroOrdenViaje"].ToString(),
+                FechaSalida = r["fechaSalida"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(r["fechaSalida"]),
+                FechaLlegada = r["fechaLlegada"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(r["fechaLlegada"]),
+                // TIME llega como TimeSpan ("06:00:00"); los inputs usan HH:mm.
+                HoraSalida = r["horaSalida"] is TimeSpan hs ? hs.ToString(@"hh\:mm") : "",
+                HoraLlegadaDeclarada = dt.Columns.Contains("horaLlegadaDeclarada") && r["horaLlegadaDeclarada"] is TimeSpan hd ? hd.ToString(@"hh\:mm") : "",
+                Observaciones = Liquidaciones.LiquidacionCalculos.ObservacionesDelConductor(r["observaciones"]?.ToString())
+            };
+            if (string.IsNullOrEmpty(orden.NumeroOrdenViaje)) return null;
+
+            CargarFinancieros(orden);
+            return orden;
+        }
+
+        /// <summary>
+        /// Lo que registró la administración en una orden (dinero entregado, ingresos adicionales
+        /// antiguos, descuentos y reintegros). Al reenviar una orden rechazada se borran sus datos
+        /// financieros y se vuelven a insertar: esto evita que se pierda lo de la administración.
+        /// </summary>
+        public static OrdenRechazadaConductor ObtenerDatosAdministracion(string numeroOrdenViaje)
+        {
+            var orden = new OrdenRechazadaConductor { NumeroOrdenViaje = numeroOrdenViaje };
+            CargarFinancieros(orden);
+            return orden;
+        }
+
+        private static decimal Dec(SqlDataReader r, string col) => r[col] == DBNull.Value ? 0m : Convert.ToDecimal(r[col]);
+        private static string Txt(SqlDataReader r, string col) => r[col] == DBNull.Value ? "" : r[col].ToString();
+        private static bool Tiene(SqlDataReader r, string col)
+        {
+            for (int i = 0; i < r.FieldCount; i++)
+                if (string.Equals(r.GetName(i), col, StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
+        }
+
+        private static void CargarFinancieros(OrdenRechazadaConductor o)
+        {
+            var g = o.Gastos;
+            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
+            using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerDatosFinancierosOrden", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@numeroOrdenViaje", o.NumeroOrdenViaje);
+                conn.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    // 1. Ingresos (los registra la administración)
+                    if (r.Read())
+                    {
+                        o.Ingresos.DespachoSoles = Dec(r, "despachoSoles");
+                        o.Ingresos.DespachoDolares = Dec(r, "despachoDolares");
+                        o.Ingresos.PrestamoSoles = Dec(r, "prestamoSoles");
+                        o.Ingresos.PrestamoDolares = Dec(r, "prestamosDolares");
+                        o.Ingresos.MensualidadSoles = Dec(r, "mensualidadSoles");
+                        o.Ingresos.MensualidadDolares = Dec(r, "mensualidadDolares");
+                        o.Ingresos.OtrosSoles = Dec(r, "otrosSoles");
+                        o.Ingresos.OtrosDolares = Dec(r, "otrosDolares");
+                        o.Ingresos.DescDespacho = Txt(r, "descDespacho");
+                        o.Ingresos.DescPrestamo = Txt(r, "descPrestamo");
+                        o.Ingresos.DescMensualidad = Txt(r, "descMensualidad");
+                        o.Ingresos.DescOtros = Txt(r, "descOtrosAutorizados");
+                    }
+
+                    // 2. Egresos (totales por concepto)
+                    r.NextResult();
+                    if (r.Read())
+                    {
+                        Poner(g, "alimentacion", Dec(r, "alimentacionSoles"), Dec(r, "alimentacionDolares"), "descAlimentacion", Txt(r, "descAlimentacion"));
+                        Poner(g, "apoyoSeguridad", Dec(r, "apoyoseguridadSoles"), Dec(r, "apoyoseguridadDolares"), "descApoyoSeguridad", Txt(r, "descApoyoSeguridad"));
+                        Poner(g, "movilidad", Dec(r, "movilidadSoles"), Dec(r, "movilidadDolares"), "descMovilidad", Txt(r, "descMovilidad"));
+                        Poner(g, "encapada", Dec(r, "encarpada_desencarpadaSoles"), Dec(r, "encarpada_desencarpadaDolares"), "descEncapada", Txt(r, "descEncarpadaDesencarpada"));
+                        if (Tiene(r, "combustibleSoles"))
+                        {
+                            Poner(g, "reparaciones", Dec(r, "reparacionesSoles"), Dec(r, "reparacionesDolares"), "descReparaciones", Txt(r, "descReparaciones"));
+                            Poner(g, "hospedaje", Dec(r, "hospedajeSoles"), Dec(r, "hospedajeDolares"), "descHospedaje", Txt(r, "descHospedaje"));
+                            Poner(g, "combustible", Dec(r, "combustibleSoles"), Dec(r, "combustibleDolares"), "descCombustible", Txt(r, "descCombustible"));
+                        }
+                    }
+
+                    // 3. Peajes: nacionales en soles y de Ecuador en dólares
+                    r.NextResult();
+                    decimal pNac = 0, pExt = 0; string dNac = "", dExt = "";
+                    while (r.Read())
+                    {
+                        decimal s = Dec(r, "montoSoles"), d = Dec(r, "montoDolares");
+                        if (s > 0) { pNac += s; if (dNac == "") dNac = Txt(r, "observaciones"); }
+                        if (d > 0) { pExt += d; if (dExt == "") dExt = Txt(r, "observaciones"); }
+                    }
+                    if (pNac > 0) { g["peajesNacSoles"] = pNac.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture); g["descPeajesNacionales"] = dNac; }
+                    if (pExt > 0) { g["peajesExtDolares"] = pExt.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture); g["descPeajesExtranjeros"] = dExt; }
+
+                    // 4–6. Detalle por comprobante (liquidaciones antiguas): ya está sumado en Egresos.
+                    r.NextResult(); r.NextResult(); r.NextResult();
+
+                    // 7. Ingresos adicionales (formato antiguo; se conservan)
+                    r.NextResult();
+                    while (r.Read())
+                        o.IngresosAdicionales.Add(new Models.Conductor.IngresoAdicionalData
+                        {
+                            Categoria = Txt(r, "nombreCategoria"), Descripcion = Txt(r, "descripcion"),
+                            Soles = Dec(r, "soles"), Dolares = Dec(r, "dolares")
+                        });
+
+                    // 8. Gastos adicionales del conductor
+                    r.NextResult();
+                    while (r.Read())
+                        o.GastosAdicionales.Add(new Models.Conductor.GastoAdicionalData
+                        {
+                            Categoria = Txt(r, "nombreCategoria"), Descripcion = Txt(r, "descripcion"),
+                            Soles = Dec(r, "soles"), Dolares = Dec(r, "dolares")
+                        });
+
+                    // 9. Descuentos y reintegros (administración)
+                    r.NextResult();
+                    if (r.Read())
+                    {
+                        o.DescuentoSoles = Dec(r, "descuentoSoles");
+                        o.DescuentoDolares = Dec(r, "descuentoDolares");
+                        o.ReintegroSoles = Dec(r, "reintegroSoles");
+                        o.ReintegroDolares = Dec(r, "reintegroDolares");
+                    }
+                }
+            }
+        }
+
+        private static void Poner(Dictionary<string, string> g, string campo, decimal soles, decimal dolares, string campoDesc, string desc)
+        {
+            var ic = System.Globalization.CultureInfo.InvariantCulture;
+            if (soles > 0) g[campo + "Soles"] = soles.ToString("0.00", ic);
+            if (dolares > 0) g[campo + "Dolares"] = dolares.ToString("0.00", ic);
+            if ((soles > 0 || dolares > 0) && !string.IsNullOrWhiteSpace(desc)) g[campoDesc] = desc;
+        }
+    }
+
+    /// <summary>Orden rechazada (o reenviada) del conductor, lista para el formulario y para conservar lo de la administración.</summary>
+    public class OrdenRechazadaConductor
+    {
+        public string NumeroOrdenViaje { get; set; }
+        public DateTime? FechaSalida { get; set; }
+        public DateTime? FechaLlegada { get; set; }
+        public string HoraSalida { get; set; }
+        public string HoraLlegadaDeclarada { get; set; }
+        public string Observaciones { get; set; }
+
+        /// <summary>Valores del formulario de gastos por nombre de campo (montos en formato invariante).</summary>
+        public Dictionary<string, string> Gastos { get; } = new Dictionary<string, string>();
+        public List<Models.Conductor.GastoAdicionalData> GastosAdicionales { get; } = new List<Models.Conductor.GastoAdicionalData>();
+
+        public Models.Liquidaciones.IngresosEntregados Ingresos { get; } = new Models.Liquidaciones.IngresosEntregados();
+        public List<Models.Conductor.IngresoAdicionalData> IngresosAdicionales { get; } = new List<Models.Conductor.IngresoAdicionalData>();
+        public decimal DescuentoSoles { get; set; }
+        public decimal DescuentoDolares { get; set; }
+        public decimal ReintegroSoles { get; set; }
+        public decimal ReintegroDolares { get; set; }
     }
 }

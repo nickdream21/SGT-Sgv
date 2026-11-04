@@ -80,11 +80,23 @@ BEGIN
             RETURN;
         END
 
-        -- 4. Re-abrir el viaje en progreso
-        UPDATE ViajesEnProgreso 
+        -- 4. Re-abrir el viaje en progreso y los demás que cerró la misma liquidación (el
+        --    conductor liquida todos sus viajes abiertos juntos; sp_DC_CerrarViajesProgreso los
+        --    cierra en un solo UPDATE, con la misma fechaCierre). Antes solo se reabría uno.
+        DECLARE @viajes TABLE (idViajeProgreso INT PRIMARY KEY);
+        INSERT INTO @viajes (idViajeProgreso)
+        SELECT o.idViajeProgreso
+        FROM ViajesEnProgreso p
+        INNER JOIN ViajesEnProgreso o
+                ON o.idViajeProgreso = p.idViajeProgreso
+                OR (o.idConductor = p.idConductor AND o.estadoViaje = 'CERRADO'
+                    AND p.fechaCierre IS NOT NULL AND o.fechaCierre = p.fechaCierre)
+        WHERE p.idViajeProgreso = @idViajeProgreso;
+
+        UPDATE ViajesEnProgreso
         SET estadoViaje = 'ABIERTO',
             fechaCierre = NULL
-        WHERE idViajeProgreso = @idViajeProgreso;
+        WHERE idViajeProgreso IN (SELECT idViajeProgreso FROM @viajes);
 
         IF @@ROWCOUNT = 0
         BEGIN
@@ -100,7 +112,7 @@ BEGIN
         UPDATE Despachos 
         SET estadoDespacho = 'PROGRAMADO',
             fechaModificacion = dbo.fn_AhoraPeru()
-        WHERE idViajeProgreso = @idViajeProgreso 
+        WHERE idViajeProgreso IN (SELECT idViajeProgreso FROM @viajes)
             AND activo = 1;
 
         COMMIT TRANSACTION;

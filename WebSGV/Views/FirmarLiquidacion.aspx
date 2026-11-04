@@ -58,14 +58,15 @@
                         <div class="val" id="vUnidades">-</div>
                     </div>
                 </div>
-                <div class="fl-monto">
-                    <span class="label">Total ingresos declarados</span>
-                    <span class="valor" id="vTotal">S/ 0.00</span>
-                </div>
                 <div class="fl-monto" style="border-left-color: var(--rojo); background: #FEF2F2;">
-                    <span class="label">Total gastos sustentados</span>
+                    <span class="label">Total de mis gastos</span>
                     <span class="valor" style="color: var(--rojo);" id="vGastos">S/ 0.00</span>
                 </div>
+                <div class="fl-monto" id="vGastosDolaresFila" style="border-left-color: var(--rojo); background: #FEF2F2; display: none;">
+                    <span class="label">Gastos en dólares</span>
+                    <span class="valor" style="color: var(--rojo);" id="vGastosDolares">$ 0.00</span>
+                </div>
+                <p class="fl-nota">El dinero que te entregaron para el viaje lo registra la administración al revisar tu liquidación.</p>
             </section>
 
             <!-- Declaración jurada -->

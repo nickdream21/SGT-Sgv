@@ -519,7 +519,7 @@ namespace WebSGV.Views
             }
         }
 
-        public static object AprobarConAjustes(int idOrdenViaje, decimal descuentoSoles, decimal descuentoDolares, decimal reintegroSoles, decimal reintegroDolares, string notaAprobacion = null)
+        public static object AprobarConAjustes(int idOrdenViaje, decimal descuentoSoles, decimal descuentoDolares, decimal reintegroSoles, decimal reintegroDolares, string notaAprobacion = null, IngresosEntregados ingresos = null)
         {
             try
             {
@@ -542,13 +542,24 @@ namespace WebSGV.Views
                 if (errorMonto != null)
                     return new { success = false, message = errorMonto };
 
+                errorMonto = LiquidacionCalculos.ValidarIngresosEntregados(ingresos);
+                if (errorMonto != null)
+                    return new { success = false, message = errorMonto };
+                if (ingresos != null)
+                {
+                    ingresos.DescDespacho = NormalizarTexto(ingresos.DescDespacho, 250);
+                    ingresos.DescMensualidad = NormalizarTexto(ingresos.DescMensualidad, 250);
+                    ingresos.DescPrestamo = NormalizarTexto(ingresos.DescPrestamo, 250);
+                    ingresos.DescOtros = NormalizarTexto(ingresos.DescOtros, 250);
+                }
+
                 notaAprobacion = NormalizarTexto(notaAprobacion, MaxLongitudNotaAprobacion);
 
                 // Transacción (UPSERT ajustes + sp_AprobarLiquidacion) en el Service;
                 // la sesión/validación de montos y el objeto de respuesta quedan aquí.
                 var resultado = LiquidacionesPendientesService.AprobarConAjustes(
                     idOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares,
-                    notaAprobacion, idUsuario);
+                    notaAprobacion, idUsuario, ingresos);
 
                 if (!resultado.Exito)
                     return new { success = false, message = resultado.Mensaje };
@@ -559,7 +570,11 @@ namespace WebSGV.Views
 
                 AuditoriaHelper.Registrar("APROBAR", "OrdenViaje", idOrdenViaje,
                     $"Liquidación aprobada - Orden: {numeroOrdenViaje}. Descuento S/ {descuentoSoles:0.00} $ {descuentoDolares:0.00}; " +
-                    $"Reintegro S/ {reintegroSoles:0.00} $ {reintegroDolares:0.00}");
+                    $"Reintegro S/ {reintegroSoles:0.00} $ {reintegroDolares:0.00}" +
+                    (ingresos != null
+                        ? $"; Entregado al conductor S/ {ingresos.DespachoSoles + ingresos.MensualidadSoles + ingresos.PrestamoSoles + ingresos.OtrosSoles:0.00} " +
+                          $"$ {ingresos.DespachoDolares + ingresos.MensualidadDolares + ingresos.PrestamoDolares + ingresos.OtrosDolares:0.00}"
+                        : ""));
 
                 // Garantizar PDF archivado también en flujo con ajustes (modal).
                 try
@@ -1030,7 +1045,8 @@ namespace WebSGV.Views
             decimal descuentoDolares,
             decimal reintegroSoles,
             decimal reintegroDolares,
-            string notaAprobacion = null)
+            string notaAprobacion = null,
+            IngresosEntregados ingresos = null)
         {
             try
             {
@@ -1053,7 +1069,7 @@ namespace WebSGV.Views
                 notaAprobacion = NormalizarTexto(notaAprobacion, MaxLongitudNotaAprobacion);
 
                 // 1) Ejecutar el flujo de aprobación existente (ajustes + sp_AprobarLiquidacion)
-                var resAprobacion = AprobarConAjustes(idOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, notaAprobacion)
+                var resAprobacion = AprobarConAjustes(idOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, notaAprobacion, ingresos)
                     as dynamic;
                 bool okAprobacion = resAprobacion != null && (bool)resAprobacion.success;
                 if (!okAprobacion)

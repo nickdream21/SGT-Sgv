@@ -453,18 +453,23 @@ namespace WebSGV.Services
 
         private void ComponerDatosViaje(IContainer cont)
         {
-            // La hora declarada por el conductor y la verificada por GPS acompañan a la de registro
-            // en la misma celda (si van en filas propias, el bloque de firmas pasa a otra página).
+            // La llegada a la base es la del GPS o, si no hay, la que declaró el conductor; la hora en que
+            // registró la liquidación queda debajo como constancia (en la misma celda: si van en filas
+            // propias, el bloque de firmas pasa a otra página).
+            bool hayGps = !string.IsNullOrWhiteSpace(_d.HoraLlegadaGps);
+            bool hayDeclarada = !string.IsNullOrWhiteSpace(_d.HoraLlegadaDeclarada);
+            string horaLlegada = hayGps ? _d.HoraLlegadaGps : hayDeclarada ? _d.HoraLlegadaDeclarada : _d.HoraLlegadaSistema;
             string otrasLlegadas = Unir("  ·  ",
-                string.IsNullOrWhiteSpace(_d.HoraLlegadaDeclarada) ? null : "declarada " + _d.HoraLlegadaDeclarada,
-                string.IsNullOrWhiteSpace(_d.HoraLlegadaGps) ? null : "GPS " + _d.HoraLlegadaGps);
+                hayGps ? "según GPS" : hayDeclarada ? "declarada por el conductor" : null,
+                hayGps && hayDeclarada && _d.HoraLlegadaDeclarada != _d.HoraLlegadaGps ? "declarada " + _d.HoraLlegadaDeclarada : null,
+                (hayGps || hayDeclarada) && !string.IsNullOrWhiteSpace(_d.HoraLlegadaSistema) ? "registrada " + _d.HoraLlegadaSistema : null);
 
             var celdas = new List<Tuple<string, string, string>>
             {
                 Tuple.Create("Conductor", NombreConductor, (string)null),
                 Tuple.Create("Tracto / carreta", Unir(" / ", _d.PlacaTracto, _d.PlacaCarreta), (string)null),
                 Tuple.Create("Salida", Unir("  ", _d.FechaSalida, _d.HoraSalida), (string)null),
-                Tuple.Create("Llegada", Unir("  ", _d.FechaLlegada, _d.HoraLlegadaSistema), otrasLlegadas)
+                Tuple.Create("Llegada", Unir("  ", _d.FechaLlegada, horaLlegada), otrasLlegadas)
             };
 
             cont.Table(table =>
@@ -503,7 +508,7 @@ namespace WebSGV.Services
         {
             var lista = new List<Concepto>
             {
-                C("Despacho / flete", _d.DescDespacho, _d.DespachoSoles, _d.DespachoDolares),
+                C("Adelanto para el viaje", _d.DescDespacho, _d.DespachoSoles, _d.DespachoDolares),
                 C("Préstamo", _d.DescPrestamo, _d.PrestamoSoles, _d.PrestamoDolares),
                 C("Mensualidad", _d.DescMensualidad, _d.MensualidadSoles, _d.MensualidadDolares),
                 C("Otros ingresos", _d.DescOtros, _d.OtrosIngresosSoles, _d.OtrosIngresosDolares)

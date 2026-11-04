@@ -143,8 +143,11 @@
             document.getElementById('vFechas').textContent    = (d.FechaSalida || '') + ' → ' + (d.FechaLlegada || '');
             document.getElementById('vConductor').textContent = d.NombreConductor || '-';
             document.getElementById('vUnidades').textContent  = (d.PlacaTracto || '') + ' / ' + (d.PlacaCarreta || '');
-            document.getElementById('vTotal').textContent     = fmtDinero(d.TotalIngresosSoles, 'S/');
             document.getElementById('vGastos').textContent    = fmtDinero(d.TotalGastosSoles, 'S/');
+            if (parseFloat(d.TotalGastosDolares) > 0) {
+                document.getElementById('vGastosDolares').textContent = fmtDinero(d.TotalGastosDolares, '$');
+                document.getElementById('vGastosDolaresFila').style.display = '';
+            }
         }).fail(function(xhr) {
             mostrarAlerta('error', 'Error al cargar: ' + (xhr.status || '') + ' ' + (xhr.statusText || ''));
         });

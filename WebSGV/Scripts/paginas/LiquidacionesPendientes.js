@@ -3,6 +3,8 @@ let _idOrdenDetalleActual = 0;
 let modoAprobacion = false;
 let _balanceSoles = 0;
 let _balanceDolares = 0;
+// Para recalcular el balance mientras se registra el dinero entregado al conductor.
+let _ingresosFijosSoles = 0, _ingresosFijosDolares = 0, _gastosSoles = 0, _gastosDolares = 0;
 
 function verDetalleLiquidacion(idOrdenViaje) {
     console.log('Ver detalle:', idOrdenViaje);
@@ -110,13 +112,15 @@ function makeRow(icon, iconClass, label, soles, dolares, desc, subTable) {
 }
 
 function actualizarTextoHoraLlegada(horaDeclarada, horaSistema, horaGps) {
-    var partes = [
-        horaDeclarada ? horaDeclarada + ' h (declarada por el conductor)' : 'sin declarar',
-        horaSistema ? horaSistema + ' h (envío al sistema)' : 'sin registrar'
-    ];
+    var partes = [];
     if (horaGps) {
-        partes.push(horaGps + ' h (verificada por GPS)');
+        // Desde 2026-11 la llegada la pone el GPS; si el conductor declaró otra hora, se muestra aparte.
+        partes.push(horaGps + ' h (GPS)');
+        if (horaDeclarada && horaDeclarada !== horaGps) partes.push(horaDeclarada + ' h (declarada por el conductor)');
+    } else {
+        partes.push(horaDeclarada ? horaDeclarada + ' h (declarada por el conductor)' : 'sin declarar');
     }
+    partes.push(horaSistema ? horaSistema + ' h (envío al sistema)' : 'sin registrar');
     $('#detalleHoraLlegada').text(partes.join(' · '));
 }
 
@@ -208,7 +212,7 @@ function mostrarDetalle(datos) {
 
     // --- Desglose de Ingresos ---
     var ingresosItems = [
-        { key: 'Despacho',      label: 'Flete / Despacho', descKey: 'DescDespacho' },
+        { key: 'Despacho',      label: 'Adelanto para el viaje', descKey: 'DescDespacho' },
         { key: 'Prestamo',      label: 'Pr&eacute;stamo',  descKey: 'DescPrestamo' },
         { key: 'Mensualidad',   label: 'Mensualidad',      descKey: 'DescMensualidad' },
         { key: 'OtrosIngresos', label: 'Otros Ingresos',   descKey: 'DescOtros' }
@@ -288,6 +292,24 @@ function mostrarDetalle(datos) {
     $('#ajusteDescuentoDolares').val(descDolares > 0 ? descDolares.toFixed(2) : '');
     $('#ajusteReintegroSoles').val(reintSoles > 0 ? reintSoles.toFixed(2) : '');
     $('#ajusteReintegroDolares').val(reintDolares > 0 ? reintDolares.toFixed(2) : '');
+
+    // --- Dinero entregado al conductor: pre-poblar y separar lo que no se edita aquí ---
+    // (ingresos adicionales de liquidaciones antiguas, que siguen sumando al balance).
+    var principalS = 0, principalD = 0;
+    $('.tabla-entregado tr[data-ingreso]').each(function () {
+        var k = $(this).data('ingreso');
+        var s = parseFloat(datos[k + 'Soles'] || 0);
+        var d = parseFloat(datos[k + 'Dolares'] || 0);
+        var descKey = { Despacho: 'DescDespacho', Mensualidad: 'DescMensualidad', Prestamo: 'DescPrestamo', OtrosIngresos: 'DescOtros' }[k];
+        principalS += s; principalD += d;
+        $(this).find('.ing-soles').val(s > 0 ? s.toFixed(2) : '');
+        $(this).find('.ing-dolares').val(d > 0 ? d.toFixed(2) : '');
+        $(this).find('.ing-desc').val(datos[descKey] || '');
+    });
+    _ingresosFijosSoles = parseFloat(datos.TotalIngresosSoles || 0) - principalS;
+    _ingresosFijosDolares = parseFloat(datos.TotalIngresosDolares || 0) - principalD;
+    _gastosSoles = parseFloat(datos.TotalGastosSoles || 0);
+    _gastosDolares = parseFloat(datos.TotalGastosDolares || 0);
     actualizarBalanceAjustado();
 
     $('#detalleLoading').hide();
@@ -385,10 +407,14 @@ function actualizarBalanceAjustado() {
     var descD = parseFloat($('#ajusteDescuentoDolares').val()) || 0;
     var reintS = parseFloat($('#ajusteReintegroSoles').val()) || 0;
     var reintD = parseFloat($('#ajusteReintegroDolares').val()) || 0;
+    var ent = leerIngresosEntregados();
 
-    if (descS > 0 || descD > 0 || reintS > 0 || reintD > 0) {
-        var balS = _balanceSoles - descS + reintS;
-        var balD = _balanceDolares - descD + reintD;
+    // En aprobación el balance se recalcula con lo entregado que se está registrando.
+    if (modoAprobacion || descS > 0 || descD > 0 || reintS > 0 || reintD > 0) {
+        var baseS = modoAprobacion ? (_ingresosFijosSoles + ent.totalSoles - _gastosSoles) : _balanceSoles;
+        var baseD = modoAprobacion ? (_ingresosFijosDolares + ent.totalDolares - _gastosDolares) : _balanceDolares;
+        var balS = baseS - descS + reintS;
+        var balD = baseD - descD + reintD;
         $('#balanceAjustadoSoles').text(balS.toFixed(2))
             .toggleClass('sgv-negativo', balS < 0).toggleClass('sgv-positivo', balS > 0);
         $('#balanceAjustadoDolares').text(balD.toFixed(2))
@@ -397,6 +423,23 @@ function actualizarBalanceAjustado() {
     } else {
         $('#balanceAjustadoPanel').hide();
     }
+}
+
+// Dinero entregado al conductor, tal como lo espera el WebMethod (IngresosEntregados).
+function leerIngresosEntregados() {
+    var r = { totalSoles: 0, totalDolares: 0, negativo: false, datos: {} };
+    $('.tabla-entregado tr[data-ingreso]').each(function () {
+        var k = $(this).data('ingreso');
+        var campo = k === 'OtrosIngresos' ? 'Otros' : k;
+        var s = parseFloat($(this).find('.ing-soles').val()) || 0;
+        var d = parseFloat($(this).find('.ing-dolares').val()) || 0;
+        if (s < 0 || d < 0) r.negativo = true;
+        r.totalSoles += s; r.totalDolares += d;
+        r.datos[campo + 'Soles'] = s;
+        r.datos[campo + 'Dolares'] = d;
+        r.datos['Desc' + campo] = $(this).find('.ing-desc').val().trim() || null;
+    });
+    return r;
 }
 
 function toggleCorregirSalida() {
@@ -475,6 +518,12 @@ function aprobarDesdeModal() {
         return;
     }
 
+    var ent = leerIngresosEntregados();
+    if (ent.negativo) {
+        SGV.avisar('⚠️ Los montos entregados al conductor no pueden ser negativos.');
+        return;
+    }
+
     if (nota.length > 500) {
         SGV.avisar('La nota de aprobación no puede superar 500 caracteres.');
         $('#notaAprobacion').focus();
@@ -482,6 +531,11 @@ function aprobarDesdeModal() {
     }
 
     var confirmMsg = '¿Está seguro de APROBAR esta liquidación?\n\n';
+    if (ent.totalSoles > 0 || ent.totalDolares > 0) {
+        confirmMsg += 'Entregado al conductor: S/ ' + ent.totalSoles.toFixed(2) + ' · $ ' + ent.totalDolares.toFixed(2) + '\n\n';
+    } else {
+        confirmMsg += 'No se registra dinero entregado al conductor.\n\n';
+    }
     if (descS > 0 || descD > 0 || reintS > 0 || reintD > 0) {
         confirmMsg += 'Se aplicarán los siguientes ajustes:\n';
         if (descS > 0) confirmMsg += '  \u2022 Descuento S/: ' + descS.toFixed(2) + '\n';
@@ -494,11 +548,11 @@ function aprobarDesdeModal() {
     confirmMsg += 'Esta acción completará el viaje y no se podrá deshacer.';
 
     SGV.confirmar(confirmMsg,
-        function () { enviarAprobacion(descS, descD, reintS, reintD, nota); },
+        function () { enviarAprobacion(descS, descD, reintS, reintD, nota, ent.datos); },
         { titulo: 'Aprobar liquidación', textoAceptar: 'Aprobar' });
 }
 
-function enviarAprobacion(descS, descD, reintS, reintD, nota) {
+function enviarAprobacion(descS, descD, reintS, reintD, nota, ingresos) {
     var $btn = $('#btnAprobarDesdeModal');
     $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Aprobando...');
 
@@ -511,7 +565,8 @@ function enviarAprobacion(descS, descD, reintS, reintD, nota) {
             descuentoDolares: descD,
             reintegroSoles: reintS,
             reintegroDolares: reintD,
-            notaAprobacion: nota || null
+            notaAprobacion: nota || null,
+            ingresos: ingresos || null
         }),
         contentType: "application/json; charset=utf-8",
         dataType: "json",

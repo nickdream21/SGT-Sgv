@@ -9,8 +9,9 @@ BEGIN
         fechaSalida, 
         fechaLlegada, 
         horaSalida, 
-        horaLlegada, 
-        observaciones
+        horaLlegada,
+        observaciones,
+        horaLlegadaDeclarada
     FROM OrdenViaje
     WHERE idViajeProgreso IN (SELECT CAST(value AS INT) FROM STRING_SPLIT(@idsViajes, ','))
         AND estadoAprobacion = 'REABIERTO'

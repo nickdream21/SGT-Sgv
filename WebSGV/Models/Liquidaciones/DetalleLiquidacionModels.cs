@@ -33,6 +33,32 @@ namespace WebSGV.Models.Liquidaciones
     }
 
     /// <summary>
+    /// Dinero entregado al conductor para el viaje (fila de <c>Ingresos</c>). Lo registra la
+    /// administración al aprobar; el conductor ya no declara ingresos, solo gastos.
+    /// </summary>
+    public class IngresosEntregados
+    {
+        public decimal DespachoSoles { get; set; }
+        public decimal DespachoDolares { get; set; }
+        public decimal MensualidadSoles { get; set; }
+        public decimal MensualidadDolares { get; set; }
+        public decimal PrestamoSoles { get; set; }
+        public decimal PrestamoDolares { get; set; }
+        public decimal OtrosSoles { get; set; }
+        public decimal OtrosDolares { get; set; }
+        public string DescDespacho { get; set; }
+        public string DescMensualidad { get; set; }
+        public string DescPrestamo { get; set; }
+        public string DescOtros { get; set; }
+
+        public IEnumerable<decimal> Montos() => new[]
+        {
+            DespachoSoles, DespachoDolares, MensualidadSoles, MensualidadDolares,
+            PrestamoSoles, PrestamoDolares, OtrosSoles, OtrosDolares
+        };
+    }
+
+    /// <summary>
     /// DTO completo del detalle de una liquidación para la revisión del administrador y
     /// la generación del PDF/firma. Movido desde <c>LiquidacionesPendientes.aspx.cs</c>
     /// para que <c>LiquidacionesPendientesService.ObtenerDetalleLiquidacion</c> pueda

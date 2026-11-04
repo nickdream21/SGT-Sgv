@@ -327,7 +327,7 @@
                         <div class="agb-content">
                             <div class="agb-text">
                                 <strong>Revisión para aprobación</strong>
-                                <span>Revise el balance financiero. Si aplica descuentos o reintegros, complételos en los <a href="#" onclick="scrollToAjustes(); return false;" class="agb-link">ajustes administrativos</a>. Luego use el botón <strong>Aprobar liquidación</strong>.</span>
+                                <span>Revise los gastos declarados por el conductor. Registre el <a href="#" onclick="scrollToAjustes(); return false;" class="agb-link">dinero que se le entregó</a> y, si aplica, descuentos o reintegros. Luego use el botón <strong>Aprobar liquidación</strong>.</span>
                             </div>
                         </div>
                     </div>
@@ -501,9 +501,52 @@
 
                     <div class="detail-section" id="sectionAjustes">
                         <h6 class="detail-section-title">
-                            Ajustes administrativos
-
+                            Dinero entregado y ajustes administrativos
                         </h6>
+                        <div class="ajuste-card ajuste-entregado mb-3">
+                            <div class="ajuste-header">
+                                Dinero entregado al conductor
+                                <span class="ajuste-sub">El conductor solo declara sus gastos: registre aquí lo que se le entregó para el viaje.</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm tabla-entregado mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Concepto</th>
+                                            <th class="col-monto">Soles (S/)</th>
+                                            <th class="col-monto">Dólares ($)</th>
+                                            <th>Detalle</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr data-ingreso="Despacho">
+                                            <td>Adelanto para el viaje</td>
+                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
+                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
+                                            <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
+                                        </tr>
+                                        <tr data-ingreso="Mensualidad">
+                                            <td>Mensualidad</td>
+                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
+                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
+                                            <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
+                                        </tr>
+                                        <tr data-ingreso="Prestamo">
+                                            <td>Préstamo</td>
+                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
+                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
+                                            <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
+                                        </tr>
+                                        <tr data-ingreso="OtrosIngresos">
+                                            <td>Otros autorizados</td>
+                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
+                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
+                                            <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                         <div class="alert-warning-light mb-3" style="font-size:0.85rem;padding:0.75rem;border:1px solid #fde68a;border-radius:0.375rem;background:#fffbeb;">
                             Registra descuentos o reintegros a aplicar al balance del conductor. Deja en cero si no aplica.
                         </div>
@@ -554,7 +597,7 @@
                         <div id="balanceAjustadoPanel" class="mt-2" style="display:none;">
                             <div class="financial-card financial-card-neutral">
                                 <div class="financial-header">
-                                    <span>Balance con descuentos y reintegros</span>
+                                    <span>Balance final (entregado − gastos − descuentos + reintegros)</span>
                                 </div>
                                 <div class="financial-amounts">
                                     <div class="amount-row">

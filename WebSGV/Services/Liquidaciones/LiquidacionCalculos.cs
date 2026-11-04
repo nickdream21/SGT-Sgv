@@ -33,6 +33,18 @@ namespace WebSGV.Services.Liquidaciones
             return null;
         }
 
+        /// <summary>Valida el dinero entregado al conductor (null = no se envió, es válido).</summary>
+        public static string ValidarIngresosEntregados(WebSGV.Models.Liquidaciones.IngresosEntregados ingresos)
+        {
+            if (ingresos == null) return null;
+            foreach (decimal m in ingresos.Montos())
+            {
+                if (m < 0) return "Los montos entregados al conductor no pueden ser negativos.";
+                if (m > MontoMaximoAjuste) return "Los montos no pueden superar S/ 9,999,999.";
+            }
+            return null;
+        }
+
         /// <summary>Clase CSS según el signo del balance (cero o positivo = positivo).</summary>
         public static string ClaseBalance(decimal balance) =>
             balance >= 0 ? "balance-positivo" : "balance-negativo";

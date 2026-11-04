@@ -95,6 +95,11 @@ namespace WebSGV.Services.Conductor
                 AgregarInsertarOrdenViajeConductor(lote, input);
             }
 
+            // La llegada que vio el GPS queda también como "verificada por GPS" para la revisión.
+            if (!string.IsNullOrEmpty(input.HoraLlegadaGps))
+                lote.Crudo("UPDATE OrdenViaje SET horaLlegadaGps = <<0>> WHERE numeroOrdenViaje = <<1>>",
+                    input.HoraLlegadaGps, input.NumeroOrdenViaje);
+
             AgregarIngresosPrincipales(lote, input);
             AgregarGastosPrincipales(lote, input);
             AgregarIngresosAdicionales(lote, input);

@@ -304,30 +304,11 @@ namespace WebSGV.Views
             string rechazadoPorSafe = System.Web.HttpUtility.HtmlEncode(rechazadoPor);
 
             string mensajeHtml = $@"
-                <div class='alert alert-warning alert-rechazo' role='alert'>
-                    <div class='d-flex align-items-start'>
-                        <div class='alert-icon'>
-                            <i class='fas fa-exclamation-triangle fa-lg'></i>
-                        </div>
-                        <div class='alert-content ml-3' style='flex: 1;'>
-                            <h5 class='alert-heading mb-2'>
-                                <i class='fas fa-undo-alt mr-2'></i>
-                                Liquidación Rechazada - Orden {numeroOrdenSafe}
-                            </h5>
-                            <p class='mb-2'>
-                                <strong>Tu liquidación fue rechazada el {fechaRechazo:dd/MM/yyyy HH:mm} por {rechazadoPorSafe}.</strong>
-                            </p>
-                            <div class='rechazo-motivo'>
-                                <label class='font-weight-bold text-danger'>Motivo del rechazo:</label>
-                                <p class='mb-0'>{observacionesSafe}</p>
-                            </div>
-                            <hr class='my-2' />
-                            <p class='mb-0 text-muted'>
-                                <i class='fas fa-info-circle mr-1'></i>
-                                Por favor, corrige los datos según las observaciones y vuelve a liquidar el viaje.
-                            </p>
-                        </div>
-                    </div>
+                <div class='dc-rechazo alert-rechazo' role='alert'>
+                    <div class='dc-rechazo-tit'>Tu liquidación {numeroOrdenSafe} fue rechazada</div>
+                    <div class='dc-rechazo-meta'>{fechaRechazo:dd/MM/yyyy HH:mm} · {rechazadoPorSafe}</div>
+                    <div class='dc-rechazo-motivo'>{observacionesSafe}</div>
+                    <div class='dc-rechazo-pie'>Corrige lo indicado y vuelve a enviarla. Tus datos anteriores ya están cargados.</div>
                 </div>";
 
             // Mostrar mensaje en el panel
@@ -339,9 +320,8 @@ namespace WebSGV.Views
             string script = @"
                 $(document).ready(function() {
                     $('#liquidarViaje-tab').tab('show');
-                    $('html, body').animate({
-                        scrollTop: $('.alert-rechazo').offset().top - 100
-                    }, 500);
+                    var $r = $('.alert-rechazo');
+                    if ($r.length) $('html, body').animate({ scrollTop: $r.offset().top - 80 }, 300);
                 });
             ";
             System.Web.UI.ScriptManager.RegisterStartupScript(this, GetType(), "ScrollToRechazo", script, true);
@@ -351,329 +331,37 @@ namespace WebSGV.Views
 
         #region Pre-cargar Datos de Orden Rechazada
 
-        private decimal DecimalOrZero(SqlDataReader r, string column)
-        {
-            try { return r[column] != DBNull.Value ? Convert.ToDecimal(r[column]) : 0m; }
-            catch { return 0m; }
-        }
-
-        private string StringOrEmpty(SqlDataReader r, string column)
-        {
-            try { return r[column] != DBNull.Value ? r[column].ToString() : ""; }
-            catch { return ""; }
-        }
-
         private void CargarDatosOrdenRechazada(List<int> idsViajes)
         {
             try
             {
-                string connStr = connectionString;
-                using (SqlConnection conn = new SqlConnection(connStr))
+                OrdenRechazadaConductor orden = DashboardConductorService.ObtenerOrdenRechazada(idsViajes);
+                if (orden == null) return;
+
+                Log($"✅ Orden rechazada encontrada: {orden.NumeroOrdenViaje}");
+                hfNumeroOrdenExistente.Value = orden.NumeroOrdenViaje;
+
+                // Fechas: solo cuentan si el GPS no las da (los paneles manuales están visibles).
+                if (pnlSalidaManual.Visible && orden.FechaSalida.HasValue)
                 {
-                    conn.Open();
-
-                    // 1. Find the REABIERTO order for these trips
-                    string ordenNumero = null;
-                    DateTime fechaSal = DateTime.MinValue, fechaLleg = DateTime.MinValue;
-                    string horaSal = "", horaLleg = "", obs = "";
-
-                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerOrdenRechazada", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@idsViajes", string.Join(",", idsViajes));
-                        using (SqlDataReader r = cmd.ExecuteReader())
-                        {
-                            if (!r.Read()) return;
-                            ordenNumero = r["numeroOrdenViaje"].ToString();
-                            fechaSal = r["fechaSalida"] != DBNull.Value ? Convert.ToDateTime(r["fechaSalida"]) : DateTime.MinValue;
-                            fechaLleg = r["fechaLlegada"] != DBNull.Value ? Convert.ToDateTime(r["fechaLlegada"]) : DateTime.MinValue;
-                            // TIME llega como TimeSpan ("06:00:00"); el input y la validación usan HH:mm.
-                            horaSal = r["horaSalida"] is TimeSpan hs ? hs.ToString(@"hh\:mm") : "";
-                            horaLleg = r["horaLlegada"] is TimeSpan hl ? hl.ToString(@"hh\:mm") : "";
-                            obs = LiquidacionCalculos.ObservacionesDelConductor(r["observaciones"]?.ToString());
-                        }
-                    }
-
-                    if (string.IsNullOrEmpty(ordenNumero)) return;
-
-                    Log($"✅ Orden rechazada encontrada: {ordenNumero}");
-
-                    // 2. Store existing order number and populate TextBox controls
-                    hfNumeroOrdenExistente.Value = ordenNumero;
-                    if (fechaSal != DateTime.MinValue) txtFechaSalida.Text = fechaSal.ToString("yyyy-MM-dd");
-                    if (fechaLleg != DateTime.MinValue) txtFechaLlegada.Text = fechaLleg.ToString("yyyy-MM-dd");
-                    txtHoraSalida.Text = horaSal;
-                    txtHoraLlegada.Text = horaLleg;
-                    txtObservaciones.Text = obs;
-
-                    // 3-11. Read all financial data via single multi-resultset SP
-                    decimal despachoS = 0, despachoD = 0, prestamoS = 0, prestamoD = 0;
-                    decimal mensualS = 0, mensualD = 0, otrosS = 0, otrosD = 0;
-                    string descDespacho = "", descPrestamo = "", descMensual = "", descOtros = "";
-                    decimal alimentS = 0, alimentD = 0, apoyoS = 0, apoyoD = 0;
-                    decimal movilS = 0, movilD = 0, encapS = 0, encapD = 0;
-                    string descAliment = "", descApoyo = "", descMovil = "", descEncap = "";
-                    var peajesList = new List<object>();
-                    var repList = new List<object>();
-                    var hospList = new List<object>();
-                    var combList = new List<object>();
-                    var ingAdList = new List<object>();
-                    var gastAdList = new List<object>();
-                    decimal descS = 0, descD = 0, reintS = 0, reintD = 0;
-
-                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerDatosFinancierosOrden", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@numeroOrdenViaje", ordenNumero);
-                        using (SqlDataReader r = cmd.ExecuteReader())
-                        {
-                            // ResultSet 1: Ingresos
-                            if (r.Read())
-                            {
-                                despachoS = DecimalOrZero(r, "despachoSoles");
-                                despachoD = DecimalOrZero(r, "despachoDolares");
-                                prestamoS = DecimalOrZero(r, "prestamoSoles");
-                                prestamoD = DecimalOrZero(r, "prestamosDolares");
-                                mensualS = DecimalOrZero(r, "mensualidadSoles");
-                                mensualD = DecimalOrZero(r, "mensualidadDolares");
-                                otrosS = DecimalOrZero(r, "otrosSoles");
-                                otrosD = DecimalOrZero(r, "otrosDolares");
-                                descDespacho = StringOrEmpty(r, "descDespacho");
-                                descPrestamo = StringOrEmpty(r, "descPrestamo");
-                                descMensual = StringOrEmpty(r, "descMensualidad");
-                                descOtros = StringOrEmpty(r, "descOtrosAutorizados");
-                            }
-
-                            // ResultSet 2: Egresos
-                            r.NextResult();
-                            if (r.Read())
-                            {
-                                alimentS = DecimalOrZero(r, "alimentacionSoles");
-                                alimentD = DecimalOrZero(r, "alimentacionDolares");
-                                apoyoS = DecimalOrZero(r, "apoyoseguridadSoles");
-                                apoyoD = DecimalOrZero(r, "apoyoseguridadDolares");
-                                movilS = DecimalOrZero(r, "movilidadSoles");
-                                movilD = DecimalOrZero(r, "movilidadDolares");
-                                encapS = DecimalOrZero(r, "encarpada_desencarpadaSoles");
-                                encapD = DecimalOrZero(r, "encarpada_desencarpadaDolares");
-                                descAliment = StringOrEmpty(r, "descAlimentacion");
-                                descApoyo = StringOrEmpty(r, "descApoyoSeguridad");
-                                descMovil = StringOrEmpty(r, "descMovilidad");
-                                descEncap = StringOrEmpty(r, "descEncarpadaDesencarpada");
-                            }
-
-                            // ResultSet 3: DetallePeajes
-                            r.NextResult();
-                            int idx = 1;
-                            while (r.Read())
-                            {
-                                peajesList.Add(new
-                                {
-                                    id = idx++,
-                                    estacion = StringOrEmpty(r, "estacion"),
-                                    fecha = r["fecha"] != DBNull.Value ? Convert.ToDateTime(r["fecha"]).ToString("yyyy-MM-dd") : "",
-                                    comprobante = StringOrEmpty(r, "numeroComprobante"),
-                                    soles = DecimalOrZero(r, "montoSoles"),
-                                    dolares = DecimalOrZero(r, "montoDolares"),
-                                    observaciones = StringOrEmpty(r, "observaciones")
-                                });
-                            }
-
-                            // ResultSet 4: DetalleReparacionesVarios
-                            r.NextResult();
-                            idx = 1;
-                            while (r.Read())
-                            {
-                                repList.Add(new
-                                {
-                                    id = idx++,
-                                    tipo = StringOrEmpty(r, "observaciones"),
-                                    fecha = r["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(r["fechaComprobante"]).ToString("yyyy-MM-dd") : "",
-                                    comprobante = StringOrEmpty(r, "numeroComprobante"),
-                                    soles = DecimalOrZero(r, "montoSoles"),
-                                    dolares = DecimalOrZero(r, "montoDolares"),
-                                    observaciones = StringOrEmpty(r, "observaciones")
-                                });
-                            }
-
-                            // ResultSet 5: DetalleHospedaje
-                            r.NextResult();
-                            idx = 1;
-                            while (r.Read())
-                            {
-                                hospList.Add(new
-                                {
-                                    id = idx++,
-                                    lugar = StringOrEmpty(r, "observaciones"),
-                                    fecha = r["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(r["fechaComprobante"]).ToString("yyyy-MM-dd") : "",
-                                    comprobante = StringOrEmpty(r, "numeroComprobante"),
-                                    soles = DecimalOrZero(r, "montoSoles"),
-                                    dolares = DecimalOrZero(r, "montoDolares"),
-                                    observaciones = StringOrEmpty(r, "observaciones")
-                                });
-                            }
-
-                            // ResultSet 6: DetalleCombustible
-                            r.NextResult();
-                            idx = 1;
-                            while (r.Read())
-                            {
-                                combList.Add(new
-                                {
-                                    id = idx++,
-                                    lugar = StringOrEmpty(r, "observaciones"),
-                                    fecha = r["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(r["fechaComprobante"]).ToString("yyyy-MM-dd") : "",
-                                    comprobante = StringOrEmpty(r, "numeroComprobante"),
-                                    soles = DecimalOrZero(r, "montoSoles"),
-                                    dolares = DecimalOrZero(r, "montoDolares"),
-                                    observaciones = StringOrEmpty(r, "observaciones")
-                                });
-                            }
-
-                            // ResultSet 7: IngresosAdicionales
-                            r.NextResult();
-                            while (r.Read())
-                            {
-                                ingAdList.Add(new
-                                {
-                                    categoria = StringOrEmpty(r, "nombreCategoria"),
-                                    descripcion = StringOrEmpty(r, "descripcion"),
-                                    soles = DecimalOrZero(r, "soles"),
-                                    dolares = DecimalOrZero(r, "dolares")
-                                });
-                            }
-
-                            // ResultSet 8: CategoriasAdicionales
-                            r.NextResult();
-                            while (r.Read())
-                            {
-                                gastAdList.Add(new
-                                {
-                                    categoria = StringOrEmpty(r, "nombreCategoria"),
-                                    descripcion = StringOrEmpty(r, "descripcion"),
-                                    soles = DecimalOrZero(r, "soles"),
-                                    dolares = DecimalOrZero(r, "dolares")
-                                });
-                            }
-
-                            // ResultSet 9: DescuentosReintegros
-                            r.NextResult();
-                            if (r.Read())
-                            {
-                                descS = DecimalOrZero(r, "descuentoSoles");
-                                descD = DecimalOrZero(r, "descuentoDolares");
-                                reintS = DecimalOrZero(r, "reintegroSoles");
-                                reintD = DecimalOrZero(r, "reintegroDolares");
-                            }
-                        }
-                    }
-
-                    // 12. Build and emit startup JS to restore all form state
-                    string peajesJson = JsonConvert.SerializeObject(peajesList);
-                    string repJson = JsonConvert.SerializeObject(repList);
-                    string hospJson = JsonConvert.SerializeObject(hospList);
-                    string combJson = JsonConvert.SerializeObject(combList);
-                    string ingAdJson = JsonConvert.SerializeObject(ingAdList);
-                    string gastAdJson = JsonConvert.SerializeObject(gastAdList);
-
-                    var ic = System.Globalization.CultureInfo.InvariantCulture;
-                    var sb = new System.Text.StringBuilder();
-                    sb.AppendLine("$(function() {");
-
-                    // Peajes: el formulario ya no tiene modal de detalle, sino dos filas fijas
-                    // (nacionales en soles, extranjeros en dólares). Se restauran desde el detalle.
-                    sb.AppendLine($"  (function() {{ var p = {peajesJson};");
-                    sb.AppendLine("    var nac = p.filter(function(x) { return x.soles > 0; });");
-                    sb.AppendLine("    var ext = p.filter(function(x) { return x.dolares > 0; });");
-                    sb.AppendLine("    var suma = function(l, k) { return l.reduce(function(a, x) { return a + x[k]; }, 0); };");
-                    sb.AppendLine("    if (nac.length) { $('#peajesNacSoles').val(suma(nac, 'soles').toFixed(2)); $('#descPeajesNacionales').val(nac[0].observaciones || ''); }");
-                    sb.AppendLine("    if (ext.length) { $('#peajesExtDolares').val(suma(ext, 'dolares').toFixed(2)); $('#descPeajesExtranjeros').val(ext[0].observaciones || ''); }");
-                    sb.AppendLine("  })();");
-
-                    // Restore modal detail arrays
-
-                    sb.AppendLine($"  reparacionesData = {repJson};");
-                    sb.AppendLine("  contadorReparaciones = reparacionesData.length;");
-                    sb.AppendLine("  actualizarTablaReparaciones(); actualizarTotalesReparaciones();");
-
-                    sb.AppendLine($"  hospedajesData = {hospJson};");
-                    sb.AppendLine("  contadorHospedajes = hospedajesData.length;");
-                    sb.AppendLine("  actualizarTablaHospedajes(); actualizarTotalesHospedajes();");
-
-                    sb.AppendLine($"  combustiblesData = {combJson};");
-                    sb.AppendLine("  contadorCombustibles = combustiblesData.length;");
-                    sb.AppendLine("  actualizarTablaCombustibles(); actualizarTotalesCombustibles();");
-
-                    // Restore fixed income fields
-                    sb.AppendLine($"  $('input[name=\"despachoSoles\"]').val('{despachoS.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"despachoDolares\"]').val('{despachoD.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"descDespacho\"]').val({JsonConvert.SerializeObject(descDespacho)});");
-                    sb.AppendLine($"  $('input[name=\"prestamoSoles\"]').val('{prestamoS.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"prestamoDolares\"]').val('{prestamoD.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"descPrestamo\"]').val({JsonConvert.SerializeObject(descPrestamo)});");
-                    sb.AppendLine($"  $('input[name=\"mensualidadSoles\"]').val('{mensualS.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"mensualidadDolares\"]').val('{mensualD.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"descMensualidad\"]').val({JsonConvert.SerializeObject(descMensual)});");
-                    sb.AppendLine($"  $('input[name=\"otrosSoles\"]').val('{otrosS.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"otrosDolares\"]').val('{otrosD.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"descOtros\"]').val({JsonConvert.SerializeObject(descOtros)});");
-
-                    // Restore fixed expense fields (manual, non-modal)
-                    sb.AppendLine($"  $('input[name=\"alimentacionSoles\"]').val('{alimentS.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"alimentacionDolares\"]').val('{alimentD.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"descAlimentacion\"]').val({JsonConvert.SerializeObject(descAliment)});");
-                    sb.AppendLine($"  $('input[name=\"apoyoSeguridadSoles\"]').val('{apoyoS.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"apoyoSeguridadDolares\"]').val('{apoyoD.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"descApoyoSeguridad\"]').val({JsonConvert.SerializeObject(descApoyo)});");
-                    sb.AppendLine($"  $('input[name=\"movilidadSoles\"]').val('{movilS.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"movilidadDolares\"]').val('{movilD.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"descMovilidad\"]').val({JsonConvert.SerializeObject(descMovil)});");
-                    sb.AppendLine($"  $('input[name=\"encapadaSoles\"]').val('{encapS.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"encapadaDolares\"]').val('{encapD.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"descEncapada\"]').val({JsonConvert.SerializeObject(descEncap)});");
-
-                    // Restore descuentos/reintegros if fields exist
-                    sb.AppendLine($"  $('input[name=\"descuentoSoles\"]').val('{descS.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"descuentoDolares\"]').val('{descD.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"reintegroSoles\"]').val('{reintS.ToString("F2", ic)}');");
-                    sb.AppendLine($"  $('input[name=\"reintegroDolares\"]').val('{reintD.ToString("F2", ic)}');");
-
-                    // Restore additional income rows
-                    if (ingAdList.Count > 0)
-                    {
-                        sb.AppendLine($"  (function() {{ var items = {ingAdJson};");
-                        sb.AppendLine("    items.forEach(function(item, i) {");
-                        sb.AppendLine("      agregarIngreso();");
-                        sb.AppendLine("      var idx = contadorIngresosAdicionales;");
-                        sb.AppendLine("      $('input[name=\"conceptoIngreso_' + idx + '\"]').val(item.categoria);");
-                        sb.AppendLine("      $('input[name=\"descIngreso_' + idx + '\"]').val(item.descripcion);");
-                        sb.AppendLine("      if (item.soles > 0) $('input[name=\"ingresoSoles_' + idx + '\"]').val(item.soles.toFixed(2));");
-                        sb.AppendLine("      if (item.dolares > 0) $('input[name=\"ingresoDolares_' + idx + '\"]').val(item.dolares.toFixed(2));");
-                        sb.AppendLine("    });");
-                        sb.AppendLine("  })();");
-                    }
-
-                    // Restore additional expense rows
-                    if (gastAdList.Count > 0)
-                    {
-                        sb.AppendLine($"  (function() {{ var items = {gastAdJson};");
-                        sb.AppendLine("    items.forEach(function(item, i) {");
-                        sb.AppendLine("      agregarGasto();");
-                        sb.AppendLine("      var idx = contadorGastosAdicionales;");
-                        sb.AppendLine("      $('input[name=\"conceptoGasto_' + idx + '\"]').val(item.categoria);");
-                        sb.AppendLine("      $('input[name=\"descGasto_' + idx + '\"]').val(item.descripcion);");
-                        sb.AppendLine("      if (item.soles > 0) $('input[name=\"gastoSoles_' + idx + '\"]').val(item.soles.toFixed(2));");
-                        sb.AppendLine("      if (item.dolares > 0) $('input[name=\"gastoDolares_' + idx + '\"]').val(item.dolares.toFixed(2));");
-                        sb.AppendLine("    });");
-                        sb.AppendLine("  })();");
-                    }
-
-                    sb.AppendLine("  calcularTotales();");
-                    sb.AppendLine("});");
-
-                    ScriptManager.RegisterStartupScript(this, GetType(), "RestaurarOrdenRechazada", sb.ToString(), true);
-                    Log($"✅ Formulario pre-cargado con datos de orden rechazada: {ordenNumero}");
+                    txtFechaSalida.Text = orden.FechaSalida.Value.ToString("yyyy-MM-dd");
+                    txtHoraSalida.Text = orden.HoraSalida;
                 }
+                if (pnlLlegadaManual.Visible && orden.FechaLlegada.HasValue && !string.IsNullOrEmpty(orden.HoraLlegadaDeclarada))
+                {
+                    txtFechaLlegada.Text = orden.FechaLlegada.Value.ToString("yyyy-MM-dd");
+                    txtHoraLlegadaDeclarada.Text = orden.HoraLlegadaDeclarada;
+                }
+                txtObservaciones.Text = orden.Observaciones;
+
+                // Gastos: el formulario los toma por nombre de campo (restaurarLiquidacion en el JS).
+                string json = JsonConvert.SerializeObject(new
+                {
+                    campos = orden.Gastos,
+                    gastosAdicionales = orden.GastosAdicionales.Select(g => new { concepto = g.Categoria, descripcion = g.Descripcion, soles = g.Soles, dolares = g.Dolares })
+                });
+                ScriptManager.RegisterStartupScript(this, GetType(), "RestaurarOrdenRechazada",
+                    "$(function() { restaurarLiquidacion(" + json + "); });", true);
             }
             catch (Exception ex)
             {
@@ -748,8 +436,8 @@ namespace WebSGV.Views
                 TimeSpan diasRuta = FechaHelper.Ahora() - viajePrimario.FechaInicio;
                 lblDiasRuta.Text = $"{diasRuta.Days} días";
 
-                lblEstadoViaje.Text = $"Viaje Activo - {totalDespachos} despacho(s)";
-                pnlEstadoViaje.CssClass = "badge-status badge badge-success";
+                lblEstadoViaje.Text = "Viaje en curso";
+                pnlEstadoViaje.CssClass = "dc-estado dc-estado-activo";
 
                 hfIdViajeActivo.Value = viajePrimario.IdViajeProgreso.ToString();
                 hfIdsViajesActivos.Value = string.Join(",", ids);
@@ -778,8 +466,8 @@ namespace WebSGV.Views
             pnlSinViajes.Visible = true;
             pnlDespachos.Visible = false;
 
-            lblEstadoViaje.Text = "Sin viajes activos";
-            pnlEstadoViaje.CssClass = "badge-status badge badge-secondary";
+            lblEstadoViaje.Text = "Sin viaje activo";
+            pnlEstadoViaje.CssClass = "dc-estado dc-estado-sin";
 
             pnlBadgeLiquidar.Visible = false;
             pnlBadgeActivos.Visible = false;
@@ -823,8 +511,8 @@ namespace WebSGV.Views
                     }
                 }
 
-                gvDespachosActivos.DataSource = despachos;
-                gvDespachosActivos.DataBind();
+                rptDespachosActivos.DataSource = despachos;
+                rptDespachosActivos.DataBind();
 
                 Log($"✅ {despachos.Count} despachos cargados de {idsViajes.Count} viaje(s)");
             }
@@ -846,18 +534,27 @@ namespace WebSGV.Views
 
                 string numerosViaje = string.Join(", ", viajes.Select(v => v.NumeroViajeProgreso));
                 lblNumeroViajeResumen.Text = numerosViaje;
-                lblFechaInicioResumen.Text = viajePrimario.FechaInicio.ToString("dd/MM/yyyy");
                 lblDespachosResumen.Text = totalDespachos.ToString();
 
+                // Salida y llegada a base: las da el GPS del seguimiento; lo que falte lo escribe el conductor.
+                FechasViajeGps gps = ObtenerFechasGps(viajes.Select(v => v.IdViajeProgreso).ToList());
+                // El viaje puede no estar marcado internacional aunque el tracto pase a Ecuador
+                // (p. ej. Crisar sin relevo): el GPS lo dice y así puede registrar peajes y gastos en dólares.
+                if (gps.CruzaFrontera) hfEsInternacional.Value = "1";
+                pnlSalidaGps.Visible = gps.SalidaPorGps;
+                pnlSalidaManual.Visible = !gps.SalidaPorGps;
+                if (gps.SalidaPorGps) lblSalidaGps.Text = FormatoFechaHora(gps.Salida.Value);
+
+                pnlLlegadaGps.Visible = gps.LlegadaPorGps;
+                pnlLlegadaManual.Visible = !gps.LlegadaPorGps;
+                if (gps.LlegadaPorGps) lblLlegadaGps.Text = FormatoFechaHora(gps.Llegada.Value);
+
                 DateTime ahoraServidor = FechaHelper.Ahora();
-                // Fecha de salida: se sugiere la fecha de inicio del viaje como referencia,
-                // pero el conductor la ajusta a la hora/fecha real en que salió de base.
+                // Sugerencias editables cuando no hay GPS: la salida parte del inicio del viaje
+                // (sin hora: no hay hora programada) y la llegada es ahora.
                 txtFechaSalida.Text = viajePrimario.FechaInicio.ToString("yyyy-MM-dd");
-                txtFechaLlegada.Text = ahoraServidor.ToString("yyyy-MM-dd");
-                // La hora de salida la registra el conductor (no hay hora programada); sin valor por defecto.
                 txtHoraSalida.Text = string.Empty;
-                txtHoraLlegada.Text = ahoraServidor.ToString("HH:mm");
-                // Sugerencia editable: el conductor la ajusta si llegó antes de registrar la liquidación.
+                txtFechaLlegada.Text = ahoraServidor.ToString("yyyy-MM-dd");
                 txtHoraLlegadaDeclarada.Text = ahoraServidor.ToString("HH:mm");
 
                 Log("✅ Formulario de liquidación habilitado");
@@ -936,21 +633,48 @@ namespace WebSGV.Views
                     return;
                 }
 
-                DateTime fechaSalida = DateTime.TryParse(txtFechaSalida.Text, out DateTime fs) ? fs : DateTime.MinValue;
-                DateTime fechaLlegada = FechaHelper.Hoy();
-                string horaSalida = txtHoraSalida.Text;
-                string horaLlegada = FechaHelper.Ahora().ToString("HH:mm");
-                string horaLlegadaDeclarada = txtHoraLlegadaDeclarada.Text;
+                // Salida y llegada: el GPS manda (se vuelve a consultar aquí; lo que llega del
+                // navegador solo cuenta cuando el GPS no tiene el dato).
+                DateTime ahora = FechaHelper.Ahora();
+                FechasViajeGps gps = ObtenerFechasGps(idsViajesActivos);
+
+                DateTime fechaSalida;
+                string horaSalida;
+                if (gps.SalidaPorGps)
+                {
+                    fechaSalida = gps.Salida.Value.Date;
+                    horaSalida = gps.Salida.Value.ToString("HH:mm");
+                }
+                else
+                {
+                    fechaSalida = DateTime.TryParse(txtFechaSalida.Text, out DateTime fs) ? fs : DateTime.MinValue;
+                    horaSalida = txtHoraSalida.Text;
+                }
+
+                DateTime fechaLlegada;
+                string horaLlegadaDeclarada;
+                if (gps.LlegadaPorGps)
+                {
+                    fechaLlegada = gps.Llegada.Value.Date;
+                    horaLlegadaDeclarada = gps.Llegada.Value.ToString("HH:mm");
+                }
+                else
+                {
+                    fechaLlegada = DateTime.TryParse(txtFechaLlegada.Text, out DateTime fl) ? fl : DateTime.MinValue;
+                    horaLlegadaDeclarada = txtHoraLlegadaDeclarada.Text;
+                }
+
+                // Hora de envío (automática): queda como constancia de cuándo se registró.
+                string horaLlegada = ahora.ToString("HH:mm");
                 string observaciones = txtObservaciones.Text;
 
-                // Reflejar en UI la hora oficial usada para registrar la liquidación
-                txtFechaLlegada.Text = fechaLlegada.ToString("yyyy-MM-dd");
-                txtHoraLlegada.Text = horaLlegada;
-
                 string errores = ValidarDatosGenerales(fechaSalida, fechaLlegada, horaSalida, horaLlegada, horaLlegadaDeclarada);
+                if (string.IsNullOrEmpty(errores))
+                    errores = OrdenViajeValidaciones.ValidarSalidaLlegada(fechaSalida, horaSalida, fechaLlegada, horaLlegadaDeclarada, ahora);
                 if (!string.IsNullOrEmpty(errores))
                 {
-                    MostrarMensaje(errores.Replace("\n", "<br/>"), "danger");
+                    MostrarMensaje(System.Web.HttpUtility.HtmlEncode(errores).Replace("\n", "<br/>"), "danger");
+                    MantenerPestanaLiquidar();
                     return;
                 }
 
@@ -965,10 +689,17 @@ namespace WebSGV.Views
 
                 // Armar el DTO de entrada leyendo Request.Form/hidden fields (el parseo
                 // queda en el code-behind; el Service sólo ejecuta el SQL/SPs).
+                // Lo que registró la administración (dinero entregado, descuentos) no viene del
+                // formulario: en una orden rechazada se conserva; en una nueva empieza en cero.
+                OrdenRechazadaConductor admin = esReliquidacion
+                    ? DashboardConductorService.ObtenerDatosAdministracion(numeroOrdenViaje)
+                    : new OrdenRechazadaConductor();
+
                 LiquidacionConductorInput input = ConstruirInputLiquidacion(
                     esReliquidacion, numeroOrdenViaje, fechaSalida, fechaLlegada,
                     horaSalida, horaLlegada, horaLlegadaDeclarada, observaciones, datosViaje,
-                    idViajeProgreso, idsViajesActivos);
+                    idViajeProgreso, idsViajesActivos, admin);
+                input.HoraLlegadaGps = gps.LlegadaPorGps ? horaLlegadaDeclarada : null;
 
                 Log("Iniciando transacción de base de datos...");
                 bool transaccionExitosa = false;
@@ -984,6 +715,7 @@ namespace WebSGV.Views
                 {
                     LogSGV.Error(ex, "Error en la transacción de liquidación del conductor (orden {Numero})", numeroOrdenViaje);
                     MostrarMensaje($"Error al enviar la liquidación: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
+                    MantenerPestanaLiquidar();
                 }
 
                 // Post-commit: mostrar resultado y programar redirect (fuera del using de la transacción)
@@ -1016,7 +748,10 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error general al enviar la liquidación del conductor");
-                MostrarMensaje("Error al enviar la liquidación. Por favor, intente nuevamente o contacte al administrador.", "danger");
+                MostrarMensaje(ex is ErrorNegocioException
+                    ? System.Web.HttpUtility.HtmlEncode(ex.Message)
+                    : "Error al enviar la liquidación. Por favor, intente nuevamente o contacte al administrador.", "danger");
+                MantenerPestanaLiquidar();
             }
         }
 
@@ -1035,8 +770,10 @@ namespace WebSGV.Views
             DateTime fechaSalida, DateTime fechaLlegada,
             string horaSalida, string horaLlegada, string horaLlegadaDeclarada, string observaciones,
             DatosViajeParaLiquidacion datosViaje,
-            int idViajeProgreso, List<int> idsViajesActivos)
+            int idViajeProgreso, List<int> idsViajesActivos,
+            OrdenRechazadaConductor admin)
         {
+            var ing = admin.Ingresos;
             // Peajes simplificados: Nacionales solo en Soles (Perú), Extranjeros solo en Dólares (Ecuador)
             decimal peajesSoles   = ParseMonto(Request.Form["peajesNacSoles"]);
             decimal peajesDolares = ParseMonto(Request.Form["peajesExtDolares"]);
@@ -1069,19 +806,19 @@ namespace WebSGV.Views
                 IdConductorActual = IdConductorActual,
                 IdsViajesActivos = idsViajesActivos,
 
-                // Ingresos principales
-                DespachoSoles      = ParseMonto(Request.Form["despachoSoles"]),
-                DespachoDolares    = ParseMonto(Request.Form["despachoDolares"]),
-                PrestamoSoles      = ParseMonto(Request.Form["prestamoSoles"]),
-                PrestamoDolares    = ParseMonto(Request.Form["prestamoDolares"]),
-                MensualidadSoles   = ParseMonto(Request.Form["mensualidadSoles"]),
-                MensualidadDolares = ParseMonto(Request.Form["mensualidadDolares"]),
-                OtrosSoles         = ParseMonto(Request.Form["otrosSoles"]),
-                OtrosDolares       = ParseMonto(Request.Form["otrosDolares"]),
-                DescDespacho       = Request.Form["descDespacho"] ?? "",
-                DescMensualidad    = Request.Form["descMensualidad"] ?? "",
-                DescOtros          = Request.Form["descOtros"] ?? "",
-                DescPrestamo       = Request.Form["descPrestamo"] ?? "",
+                // Ingresos: los registra la administración al revisar, no el conductor.
+                DespachoSoles      = ing.DespachoSoles,
+                DespachoDolares    = ing.DespachoDolares,
+                PrestamoSoles      = ing.PrestamoSoles,
+                PrestamoDolares    = ing.PrestamoDolares,
+                MensualidadSoles   = ing.MensualidadSoles,
+                MensualidadDolares = ing.MensualidadDolares,
+                OtrosSoles         = ing.OtrosSoles,
+                OtrosDolares       = ing.OtrosDolares,
+                DescDespacho       = ing.DescDespacho ?? "",
+                DescMensualidad    = ing.DescMensualidad ?? "",
+                DescOtros          = ing.DescOtros ?? "",
+                DescPrestamo       = ing.DescPrestamo ?? "",
 
                 // Egresos principales
                 PeajesSoles           = peajesSoles,
@@ -1109,26 +846,17 @@ namespace WebSGV.Views
                 CombustibleDolares    = ParseMonto(Request.Form["combustibleDolares"]),
                 DescCombustible       = Request.Form["descCombustible"] ?? "",
 
-                // Descuentos / reintegros
-                DescuentoSoles   = ParseMonto(Request.Form["descuentoSoles"]),
-                DescuentoDolares = ParseMonto(Request.Form["descuentoDolares"]),
-                ReintegroSoles   = ParseMonto(Request.Form["reintegroSoles"]),
-                ReintegroDolares = ParseMonto(Request.Form["reintegroDolares"]),
+                // Descuentos / reintegros: también de la administración (se conservan al reenviar).
+                DescuentoSoles   = admin.DescuentoSoles,
+                DescuentoDolares = admin.DescuentoDolares,
+                ReintegroSoles   = admin.ReintegroSoles,
+                ReintegroDolares = admin.ReintegroDolares,
 
                 // Listas dinámicas / detalladas
-                IngresosAdicionales = DeserializarIngresosAdicionales(),
+                IngresosAdicionales = admin.IngresosAdicionales,
                 GastosAdicionales   = DeserializarGastosAdicionales(),
                 GastosFinancieros   = ObtenerGastosFinancierosDeSession()
             };
-        }
-
-        private List<IngresoAdicionalData> DeserializarIngresosAdicionales()
-        {
-            string ingresosAdicionalesJson = hfIngresosAdicionales.Value ?? "[]";
-            if (string.IsNullOrEmpty(ingresosAdicionalesJson) || ingresosAdicionalesJson == "[]")
-                return new List<IngresoAdicionalData>();
-
-            return JsonConvert.DeserializeObject<List<IngresoAdicionalData>>(ingresosAdicionalesJson) ?? new List<IngresoAdicionalData>();
         }
 
         private List<GastoAdicionalData> DeserializarGastosAdicionales()
@@ -1137,8 +865,71 @@ namespace WebSGV.Views
             if (string.IsNullOrEmpty(gastosAdicionalesJson) || gastosAdicionalesJson == "[]")
                 return new List<GastoAdicionalData>();
 
-            return JsonConvert.DeserializeObject<List<GastoAdicionalData>>(gastosAdicionalesJson) ?? new List<GastoAdicionalData>();
+            try
+            {
+                return JsonConvert.DeserializeObject<List<GastoAdicionalData>>(gastosAdicionalesJson) ?? new List<GastoAdicionalData>();
+            }
+            catch (JsonException)
+            {
+                throw new ErrorNegocioException("No se pudieron leer los otros gastos. Revísalos e intenta de nuevo.");
+            }
         }
+
+        /// <summary>Campos de gastos del formulario (los mismos que restaura <c>restaurarLiquidacion</c> en el JS).</summary>
+        private static readonly string[] CamposGasto =
+        {
+            "combustibleSoles", "combustibleDolares", "descCombustible",
+            "alimentacionSoles", "alimentacionDolares", "descAlimentacion",
+            "peajesNacSoles", "descPeajesNacionales", "peajesExtDolares", "descPeajesExtranjeros",
+            "hospedajeSoles", "hospedajeDolares", "descHospedaje",
+            "movilidadSoles", "movilidadDolares", "descMovilidad",
+            "encapadaSoles", "encapadaDolares", "descEncapada",
+            "reparacionesSoles", "reparacionesDolares", "descReparaciones",
+            "apoyoSeguridadSoles", "apoyoSeguridadDolares", "descApoyoSeguridad"
+        };
+
+        /// <summary>
+        /// Tras un envío fallido, vuelve a la pestaña Liquidar con lo que el conductor escribió
+        /// (los montos son inputs HTML simples y el postback no los conserva solo).
+        /// </summary>
+        private void MantenerPestanaLiquidar()
+        {
+            var campos = new Dictionary<string, string>();
+            foreach (string c in CamposGasto)
+            {
+                string v = Request.Form[c];
+                if (!string.IsNullOrEmpty(v)) campos[c] = v;
+            }
+
+            List<GastoAdicionalData> adicionales;
+            try { adicionales = DeserializarGastosAdicionales(); }
+            catch (ErrorNegocioException) { adicionales = new List<GastoAdicionalData>(); }
+
+            string json = JsonConvert.SerializeObject(new
+            {
+                campos,
+                gastosAdicionales = adicionales.Select(g => new { concepto = g.Categoria ?? g.NombreCategoria, descripcion = g.Descripcion, soles = g.Soles, dolares = g.Dolares })
+            });
+            ScriptManager.RegisterStartupScript(this, GetType(), "MantenerLiquidar",
+                "$(function() { restaurarLiquidacion(" + json + "); $('#liquidarViaje-tab').tab('show'); });", true);
+        }
+
+        private static FechasViajeGps ObtenerFechasGps(List<int> idsViajes)
+        {
+            try
+            {
+                return FechasViajeGpsService.Obtener(idsViajes);
+            }
+            catch (Exception ex)
+            {
+                // Sin GPS el conductor registra las fechas a mano; no debe impedir liquidar.
+                LogSGV.Error(ex, "No se pudieron leer las fechas del GPS para los viajes {Viajes}", string.Join(",", idsViajes));
+                return new FechasViajeGps();
+            }
+        }
+
+        private static string FormatoFechaHora(DateTime f) =>
+            f.ToString("ddd dd/MM/yyyy · HH:mm", CultureInfo.GetCultureInfo("es-PE"));
 
         private List<GastoFinanciero> ObtenerGastosFinancierosDeSession()
         {
@@ -1161,68 +952,48 @@ namespace WebSGV.Views
         protected void btnBuscarHistorial_Click(object sender, EventArgs e)
         {
             CargarHistorialLiquidaciones();
+            ScriptManager.RegisterStartupScript(this, GetType(), "MostrarHistorial",
+                "$(function() { $('#historial-tab').tab('show'); });", true);
         }
 
         private void CargarHistorialLiquidaciones()
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                DataTable dt = DbHelper.ConsultarTablaSp("sp_DC_ObtenerHistorialLiquidaciones",
+                    DbHelper.Param("@idConductor", IdConductorActual));
+
+                DateTime? desde = DateTime.TryParse(txtFechaDesde.Text, out DateTime d) ? d.Date : (DateTime?)null;
+                DateTime? hasta = DateTime.TryParse(txtFechaHasta.Text, out DateTime h) ? h.Date : (DateTime?)null;
+                string estadoFiltro = ddlEstadoFiltro.SelectedValue;
+
+                var filas = new List<object>();
+                foreach (DataRow row in dt.Rows)
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerHistorialLiquidaciones", conn))
+                    string estado = row["estadoAprobacion"] != DBNull.Value ? row["estadoAprobacion"].ToString().ToUpperInvariant() : "PENDIENTE";
+                    DateTime? salida = row["fechaSalida"] != DBNull.Value ? Convert.ToDateTime(row["fechaSalida"]) : (DateTime?)null;
+
+                    if (desde.HasValue && (!salida.HasValue || salida.Value.Date < desde.Value)) continue;
+                    if (hasta.HasValue && (!salida.HasValue || salida.Value.Date > hasta.Value)) continue;
+                    if (!string.IsNullOrEmpty(estadoFiltro) && GrupoEstado(estado) != GrupoEstado(estadoFiltro)) continue;
+
+                    filas.Add(new
                     {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@idConductor", IdConductorActual);
-                        conn.Open();
-
-                        DataTable dt = new DataTable();
-                        using (SqlDataAdapter da = new SqlDataAdapter(cmd))
-                        {
-                            da.Fill(dt);
-                        }
-
-                        DataTable dtMapeado = new DataTable();
-                        dtMapeado.Columns.Add("IdOrdenViaje", typeof(int));
-                        dtMapeado.Columns.Add("NumeroViaje", typeof(string));
-                        dtMapeado.Columns.Add("FechaSalida", typeof(DateTime));
-                        dtMapeado.Columns.Add("FechaLlegada", typeof(DateTime));
-                        dtMapeado.Columns.Add("CantidadDespachos", typeof(int));
-                        dtMapeado.Columns.Add("BalanceSoles", typeof(decimal));
-                        dtMapeado.Columns.Add("BalanceDolares", typeof(decimal));
-                        dtMapeado.Columns.Add("Estado", typeof(string));
-
-                        foreach (DataRow row in dt.Rows)
-                        {
-                            decimal ingrSoles = row["totalIngresosSoles"] != DBNull.Value ? Convert.ToDecimal(row["totalIngresosSoles"]) : 0;
-                            decimal ingrDolares = row["totalIngresosDolares"] != DBNull.Value ? Convert.ToDecimal(row["totalIngresosDolares"]) : 0;
-                            decimal gastSoles = row["totalGastosSoles"] != DBNull.Value ? Convert.ToDecimal(row["totalGastosSoles"]) : 0;
-                            decimal gastDolares = row["totalGastosDolares"] != DBNull.Value ? Convert.ToDecimal(row["totalGastosDolares"]) : 0;
-
-                            decimal balanceSoles = ingrSoles - gastSoles;
-                            decimal balanceDolares = ingrDolares - gastDolares;
-
-                            string estado = row["estadoAprobacion"] != DBNull.Value
-                                ? row["estadoAprobacion"].ToString()
-                                : "PENDIENTE";
-
-                            DataRow newRow = dtMapeado.NewRow();
-                            newRow["IdOrdenViaje"] = row["idOrdenViaje"];
-                            newRow["NumeroViaje"] = row["numeroOrdenViaje"];
-                            newRow["FechaSalida"] = row["fechaSalida"];
-                            newRow["FechaLlegada"] = row["fechaLlegada"];
-                            newRow["CantidadDespachos"] = 0;
-                            newRow["BalanceSoles"] = balanceSoles;
-                            newRow["BalanceDolares"] = balanceDolares;
-                            newRow["Estado"] = estado;
-                            dtMapeado.Rows.Add(newRow);
-                        }
-
-                        gvHistorial.DataSource = dtMapeado;
-                        gvHistorial.DataBind();
-
-                        lblTotalHistorial.Text = $"{dtMapeado.Rows.Count} registros";
-                    }
+                        IdOrdenViaje = Convert.ToInt32(row["idOrdenViaje"]),
+                        NumeroViaje = row["numeroOrdenViaje"].ToString(),
+                        FechaSalida = row["fechaSalida"],
+                        FechaLlegada = row["fechaLlegada"],
+                        GastosSoles = row["totalGastosSoles"] != DBNull.Value ? Convert.ToDecimal(row["totalGastosSoles"]) : 0m,
+                        GastosDolares = row["totalGastosDolares"] != DBNull.Value ? Convert.ToDecimal(row["totalGastosDolares"]) : 0m,
+                        Estado = estado,
+                        Firmada = dt.Columns.Contains("firmada") && row["firmada"] != DBNull.Value && Convert.ToBoolean(row["firmada"])
+                    });
                 }
+
+                rptHistorial.DataSource = filas;
+                rptHistorial.DataBind();
+                pnlHistorialVacio.Visible = filas.Count == 0;
+                lblTotalHistorial.Text = filas.Count == 1 ? "1 liquidación" : $"{filas.Count} liquidaciones";
             }
             catch (Exception ex)
             {
@@ -1231,8 +1002,27 @@ namespace WebSGV.Views
             }
         }
 
-        protected void gvHistorial_RowCommand(object sender, GridViewCommandEventArgs e)
+        /// <summary>Estados equivalentes (la BD usa APROBADO o COMPLETADO, REABIERTO o RECHAZADO).</summary>
+        private static string GrupoEstado(string estado)
         {
+            switch ((estado ?? "").ToUpperInvariant())
+            {
+                case "APROBADO":
+                case "COMPLETADO": return "APROBADO";
+                case "REABIERTO":
+                case "RECHAZADO": return "RECHAZADO";
+                default: return "PENDIENTE";
+            }
+        }
+
+        protected string TextoEstado(object estado)
+        {
+            switch (GrupoEstado(estado?.ToString()))
+            {
+                case "APROBADO": return "Aprobada";
+                case "RECHAZADO": return "Rechazada";
+                default: return "En revisión";
+            }
         }
 
         #endregion
@@ -1434,6 +1224,7 @@ namespace WebSGV.Views
                 case "PENDIENTE":
                     return "programado";
                 case "RECHAZADO":
+                case "REABIERTO":
                     return "cancelado";
                 default:
                     return "programado";

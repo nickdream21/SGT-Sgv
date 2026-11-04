@@ -136,5 +136,28 @@ namespace WebSGV.Services.OrdenViaje
 
             return mensajeError;
         }
+
+        /// <summary>
+        /// Coherencia de salida y llegada a base (con sus horas, ya validadas en formato): la
+        /// llegada es obligatoria, posterior a la salida y no futura (se tolera un desfase de
+        /// 15 minutos con el reloj del celular). Devuelve "" si todo está bien.
+        /// </summary>
+        public static string ValidarSalidaLlegada(DateTime fechaSalida, string horaSalida,
+            DateTime fechaLlegada, string horaLlegada, DateTime ahora)
+        {
+            if (string.IsNullOrWhiteSpace(horaLlegada))
+                return "Indica la hora en que llegaste a base.\n";
+            if (!ValidarFormatoHora(horaSalida) || !ValidarFormatoHora(horaLlegada))
+                return "";
+
+            DateTime salida = fechaSalida.Date + TimeSpan.ParseExact(horaSalida.Trim(), new[] { @"h\:mm", @"hh\:mm" }, CultureInfo.InvariantCulture);
+            DateTime llegada = fechaLlegada.Date + TimeSpan.ParseExact(horaLlegada.Trim(), new[] { @"h\:mm", @"hh\:mm" }, CultureInfo.InvariantCulture);
+
+            if (llegada <= salida)
+                return "La llegada a base debe ser posterior a la salida.\n";
+            if (llegada > ahora.AddMinutes(15))
+                return "La llegada a base no puede ser una hora que todavía no pasa.\n";
+            return "";
+        }
     }
 }

@@ -260,6 +260,14 @@
     margin-bottom: 0.25rem;
 }
 
+/* Dinero entregado al conductor (lo registra la administración) */
+.ajuste-entregado { background: #eff6ff; border-color: #bfdbfe; border-left: 3px solid var(--primary-color); height: auto; }
+.ajuste-sub { display: block; font-weight: 400; font-size: 0.8rem; color: var(--dark-gray); margin-top: 2px; }
+.tabla-entregado { margin-top: 0.5rem; background: transparent; }
+.tabla-entregado th { font-size: 0.75rem; font-weight: 600; color: var(--dark-gray); border-top: 0; }
+.tabla-entregado td { vertical-align: middle; border-color: #dbeafe; font-size: 0.85rem; }
+.tabla-entregado .col-monto { width: 22%; min-width: 96px; }
+
 /* === Aviso de modo aprobación === */
 .approval-guidance-banner {
     background: #f0fdf4;

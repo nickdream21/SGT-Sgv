@@ -226,6 +226,106 @@ namespace WebSGV.Tests.Integracion
         }
 
         [FactBD]
+        public void LiquidacionSoloConGastos_LaAdministracionRegistraLoEntregadoAlAprobar()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var datos = DatosBase.Cargar();
+                int idViaje = CrearDespacho(datos, NuevoLote(datos), out _);
+                var input = NuevaLiquidacion(datos, idViaje);
+                // El conductor ya no declara ingresos, solo gastos (y la llegada vista por el GPS).
+                input.DespachoSoles = 0m;
+                input.IngresosAdicionales.Clear();
+                input.HoraLlegadaGps = "17:40";
+                int idOrden = LiquidacionConductorService.EnviarLiquidacion(input);
+                FirmarComoConductor(idOrden, datos.IdUsuarioConductor);
+
+                var antes = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrden);
+                Assert.Equal(0m, antes.TotalIngresosSoles);
+                Assert.Equal("17:40", antes.HoraLlegadaGps);
+
+                var entregado = new WebSGV.Models.Liquidaciones.IngresosEntregados
+                {
+                    DespachoSoles = 800m, DespachoDolares = 60m, PrestamoSoles = 50m, DescDespacho = "Adelanto en base"
+                };
+                var r = LiquidacionesPendientesService.AprobarConAjustes(idOrden, 0m, 0m, 0m, 0m, null, datos.IdUsuarioAdmin, entregado);
+
+                Assert.True(r.Exito, r.Mensaje);
+                var detalle = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrden);
+                Assert.Equal(800m, detalle.DespachoSoles);
+                Assert.Equal(60m, detalle.DespachoDolares);
+                Assert.Equal(50m, detalle.PrestamoSoles);
+                Assert.Equal("Adelanto en base", detalle.DescDespacho);
+                Assert.Equal(850m, detalle.TotalIngresosSoles);
+                Assert.Equal(1, Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM Ingresos WHERE numeroOrdenViaje = @n", DbHelper.Param("@n", input.NumeroOrdenViaje))));
+            }
+        }
+
+        [FactBD]
+        public void ReenviarOrdenRechazada_ConservaLoQueRegistroLaAdministracion()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var datos = DatosBase.Cargar();
+                int idViaje = CrearDespacho(datos, NuevoLote(datos), out _);
+                var input = NuevaLiquidacion(datos, idViaje);
+                int idOrden = LiquidacionConductorService.EnviarLiquidacion(input);
+                FirmarComoConductor(idOrden, datos.IdUsuarioConductor);
+                LiquidacionesPendientesService.Rechazar(input.NumeroOrdenViaje, datos.IdUsuarioAdmin, "Corregir alimentación");
+
+                // Lo que la página lee de la orden rechazada: gastos para el formulario y lo de la administración.
+                var rechazada = DashboardConductorService.ObtenerOrdenRechazada(new List<int> { idViaje });
+                Assert.NotNull(rechazada);
+                Assert.Equal(input.NumeroOrdenViaje, rechazada.NumeroOrdenViaje);
+                Assert.Equal("200.00", rechazada.Gastos["alimentacionSoles"]);
+                Assert.Equal("150.00", rechazada.Gastos["peajesNacSoles"]);
+                Assert.Equal(DespachoSoles, rechazada.Ingresos.DespachoSoles);
+
+                var admin = DashboardConductorService.ObtenerDatosAdministracion(input.NumeroOrdenViaje);
+                input.EsReliquidacion = true;
+                input.AlimentacionSoles = 120m;
+                input.DespachoSoles = admin.Ingresos.DespachoSoles;
+                Assert.Equal(idOrden, LiquidacionConductorService.EnviarLiquidacion(input));
+
+                var detalle = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrden);
+                Assert.Equal(120m, detalle.GastosAlimentacionSoles);
+                Assert.Equal(DespachoSoles, detalle.DespachoSoles);
+            }
+        }
+
+        [FactBD]
+        public void ConVariosViajesAbiertos_RechazarYRetirarReabrenTodosLosViajesLiquidados()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var datos = DatosBase.Cargar();
+                int viaje1 = CrearDespacho(datos, NuevoLote(datos), out _);
+                int viaje2 = RegistroDespachoService.CrearNuevoViajeProgreso(datos.IdConductor, "Segundo viaje abierto (test)", "test");
+                var input = NuevaLiquidacion(datos, viaje1);
+                input.IdsViajesActivos = new List<int> { viaje1, viaje2 };
+                int idOrden = LiquidacionConductorService.EnviarLiquidacion(input);
+                Assert.Equal("CERRADO", RegistroDespachoService.ObtenerInfoViaje(viaje2).EstadoViaje);
+                FirmarComoConductor(idOrden, datos.IdUsuarioConductor);
+
+                // Rechazar reabre los dos (antes solo el de la orden).
+                LiquidacionesPendientesService.Rechazar(input.NumeroOrdenViaje, datos.IdUsuarioAdmin, "Corregir montos (test)");
+                Assert.Equal("ABIERTO", RegistroDespachoService.ObtenerInfoViaje(viaje1).EstadoViaje);
+                Assert.Equal("ABIERTO", RegistroDespachoService.ObtenerInfoViaje(viaje2).EstadoViaje);
+
+                // Reenviar los cierra de nuevo; retirar los vuelve a abrir todos.
+                input.EsReliquidacion = true;
+                Assert.Equal(idOrden, LiquidacionConductorService.EnviarLiquidacion(input));
+                Assert.Equal("CERRADO", RegistroDespachoService.ObtenerInfoViaje(viaje2).EstadoViaje);
+
+                var r = DashboardConductorService.RetirarLiquidacion(idOrden, datos.IdConductor);
+                Assert.Equal(1, r.Resultado);
+                Assert.Equal("ABIERTO", RegistroDespachoService.ObtenerInfoViaje(viaje1).EstadoViaje);
+                Assert.Equal("ABIERTO", RegistroDespachoService.ObtenerInfoViaje(viaje2).EstadoViaje);
+            }
+        }
+
+        [FactBD]
         public void AprobarSinFirmaDelConductor_NoSeAprueba()
         {
             using (new TransaccionDePrueba())

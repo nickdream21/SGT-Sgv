@@ -34,7 +34,17 @@ BEGIN
         ISNULL(descAlimentacion, '') AS descAlimentacion,
         ISNULL(descApoyoSeguridad, '') AS descApoyoSeguridad,
         ISNULL(descMovilidad, '') AS descMovilidad,
-        ISNULL(descEncarpadaDesencarpada, '') AS descEncarpadaDesencarpada
+        ISNULL(descEncarpadaDesencarpada, '') AS descEncarpadaDesencarpada,
+        -- Totales que el conductor registra "por encima" (sin detalle por comprobante).
+        ISNULL(reparacionesVariosSoles, 0) AS reparacionesSoles,
+        ISNULL(repacionesVariosDolares, 0) AS reparacionesDolares,
+        ISNULL(descReparacionesVarios, '') AS descReparaciones,
+        ISNULL(hospedajeSoles, 0) AS hospedajeSoles,
+        ISNULL(hospedajeDolares, 0) AS hospedajeDolares,
+        ISNULL(descHospedaje, '') AS descHospedaje,
+        ISNULL(combustibleSoles, 0) AS combustibleSoles,
+        ISNULL(combustibleDolares, 0) AS combustibleDolares,
+        ISNULL(descCombustible, '') AS descCombustible
     FROM Egresos
     WHERE numeroOrdenViaje = @numeroOrdenViaje;
 

@@ -41,19 +41,31 @@ BEGIN
                 '**RECHAZADO ' + CONVERT(VARCHAR, dbo.fn_AhoraPeru(), 120) + '**: ' + @observaciones
         WHERE numeroOrdenViaje = @numeroOrdenViaje;
 
-        -- Reabrir el viaje en progreso (si existe)
+        -- Reabrir el viaje en progreso (si existe) y los demás viajes que cerró la misma
+        -- liquidación: el conductor liquida todos sus viajes abiertos juntos y
+        -- sp_DC_CerrarViajesProgreso los cierra en un solo UPDATE (misma fechaCierre).
         IF @idViajeProgreso IS NOT NULL
         BEGIN
+            DECLARE @viajes TABLE (idViajeProgreso INT PRIMARY KEY);
+            INSERT INTO @viajes (idViajeProgreso)
+            SELECT o.idViajeProgreso
+            FROM ViajesEnProgreso p
+            INNER JOIN ViajesEnProgreso o
+                    ON o.idViajeProgreso = p.idViajeProgreso
+                    OR (o.idConductor = p.idConductor AND o.estadoViaje = 'CERRADO'
+                        AND p.fechaCierre IS NOT NULL AND o.fechaCierre = p.fechaCierre)
+            WHERE p.idViajeProgreso = @idViajeProgreso;
+
             UPDATE ViajesEnProgreso
             SET
                 estadoViaje = 'ABIERTO',
                 fechaCierre = NULL
-            WHERE idViajeProgreso = @idViajeProgreso;
+            WHERE idViajeProgreso IN (SELECT idViajeProgreso FROM @viajes);
 
             -- Reabrir despachos asociados
             UPDATE Despachos
             SET estadoDespacho = 'EN_PROCESO'
-            WHERE idViajeProgreso = @idViajeProgreso
+            WHERE idViajeProgreso IN (SELECT idViajeProgreso FROM @viajes)
               AND activo          = 1;
         END
 
