@@ -126,8 +126,9 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       con `privado/registrar_chofer_salazar_2026-11-05.sql`, fuera de git por sus datos personales; no está en las listas
       de choferes actuales) y registrado su despacho 2640 (BNG-928 / TMB-988, 23/09, pedido 4400132772, guía
       T660-00016014 emitida con CBV-854 / Roberto Macalupu). Setiembre queda 9 de 9 pedidos conformes.
-- [ ] **Licencia de JOSÉ SALAZAR (conductor 218)**: no la tenían a la mano; completarla en Catálogos → Conductores.
-      Activarlo si vuelve a manejar.
+- [x] **Licencia de José Salazar (conductor 218)** (2026-11-05): registrada con la foto de la licencia del MTC, junto con
+      la fecha de nacimiento corregida y la dirección del carnet (mismo script de `privado/`). Sigue inactivo: activarlo
+      en Catálogos → Conductores si vuelve a manejar.
 - [ ] **Confirmar con Vitapro (o quien factura) las placas de las guías**: las guías T660-00016196 (BPT-919), T660-00016305
       (BNH-795) y las de los pedidos 4400133403 / 4400133406 salieron con unidades que no cargaron (lo cargado se registró
       con el Word y el GPS). Si alguien revisa las guías contra el despacho verá placas distintas: ya está anotado en la
