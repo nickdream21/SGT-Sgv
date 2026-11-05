@@ -17,14 +17,18 @@ class CargaHistorica
     {
         bool aplicar = a[2] == "aplicar";
         var pedidos = a[1].Split(',');
+        // Ventana de viajes del seguimiento (por defecto la de octubre, 01-20/10): <desde> <hasta> en yyyy-MM-dd.
+        DateTime desde = a.Length > 3 ? DateTime.Parse(a[3]) : new DateTime(2026, 10, 1);
+        DateTime hasta = a.Length > 4 ? DateTime.Parse(a[4]) : new DateTime(2026, 10, 20);
         string usuario = "historico.correo";
         var log = new StringBuilder();
         Action<string> W = s => { Console.WriteLine(s); log.AppendLine(s); };
 
-        // Viajes Vitapro del seguimiento sin despacho, 01-20/10
+        // Viajes Vitapro del seguimiento sin despacho, en la ventana
         var segs = new List<Seg>();
         foreach (DataRow r in DbHelper.ConsultarTabla(@"SELECT idSeguimiento, fhProgramacion, tracto1, carreta, conductorOrigen, cliente FROM SeguimientoExportacion
-            WHERE activo = 1 AND tipoRuta IS NULL AND idDespachoOrigen IS NULL AND fhProgramacion >= '2026-10-01' AND fhProgramacion < '2026-10-21'").Rows)
+            WHERE activo = 1 AND tipoRuta IS NULL AND idDespachoOrigen IS NULL AND fhProgramacion >= @desde AND fhProgramacion < @hasta",
+            DbHelper.Param("@desde", desde.Date), DbHelper.Param("@hasta", hasta.Date.AddDays(1))).Rows)
             segs.Add(new Seg { Id = (int)r[0], Prog = (DateTime)r[1], Tracto = r[2].ToString(), Carreta = r[3].ToString(), Chofer = r[4].ToString(), Pedido = r[5].ToString() });
 
         var tractos = DbHelper.ConsultarTabla("SELECT idTracto, placaTracto FROM Tracto WHERE activo = 1").Rows.Cast<DataRow>().ToDictionary(r => P(r[1].ToString()), r => (int)r[0]);
@@ -187,15 +191,15 @@ class CargaHistorica
             }
 
             W("");
-            W("Viajes del seguimiento 01-19/10 que quedan sin guía:");
-            foreach (var s in segs.Where(x => !x.Usado && x.Prog < new DateTime(2026, 10, 20)).OrderBy(x => x.Prog))
+            W($"Viajes del seguimiento {desde:dd/MM}-{hasta:dd/MM} que quedan sin guía:");
+            foreach (var s in segs.Where(x => !x.Usado && x.Prog < hasta.Date).OrderBy(x => x.Prog))
                 W($"   viaje {s.Id} {s.Prog:dd/MM HH:mm} {s.Tracto}/{s.Carreta}/{s.Chofer} pedido {s.Pedido}");
             W($"Despachos: {creados}");
 
             if (aplicar)
             {
                 C($"INSERT INTO AuditoriaLog (FechaHora, NombreUsuario, Accion, TablaAfectada, IdRegistroAfectado, Descripcion) SELECT dbo.fn_AhoraPeru(), '{usuario}', 'INSERT', 'Despachos', NULL, " +
-                  $"N'Carga histórica de octubre desde el correo: {creados} despachos de carga sin viaje del chofer (pedidos {string.Join(", ", pedidos)})' WHERE OBJECT_ID('AuditoriaLog') IS NOT NULL").ExecuteNonQuery();
+                  $"N'Carga histórica ({desde:dd/MM}-{hasta:dd/MM}) desde el correo: {creados} despachos de carga sin viaje del chofer (pedidos {string.Join(", ", pedidos)})' WHERE OBJECT_ID('AuditoriaLog') IS NOT NULL").ExecuteNonQuery();
                 tx.Commit(); W("APLICADO");
             }
             else { tx.Rollback(); W("PRUEBA: deshecho"); }

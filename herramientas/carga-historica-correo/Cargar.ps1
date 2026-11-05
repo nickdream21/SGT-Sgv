@@ -1,7 +1,10 @@
 ﻿param(
     [Parameter(Mandatory)] [string[]]$Pedidos,
     [ValidateSet('prueba', 'aplicar')] [string]$Modo = 'prueba',
-    [string]$Zips = 'docs\DOCUMENTACION\correo guias'
+    [string]$Zips = 'docs\DOCUMENTACION\correo guias',
+    # Ventana de viajes del seguimiento (yyyy-MM-dd); por defecto la de octubre (01-20/10).
+    [string]$Desde = '2026-10-01',
+    [string]$Hasta = '2026-10-20'
 )
 $ErrorActionPreference = 'Stop'
 $aqui = $PSScriptRoot
@@ -30,4 +33,4 @@ $config = "<?xml version=`"1.0`" encoding=`"utf-8`"?><configuration><startup><su
           "$($web.configuration.appSettings.OuterXml)<connectionStrings configSource=`"connectionStrings.config`"/>$($web.configuration.runtime.OuterXml)</configuration>"
 Set-Content "$bin\CargaHistorica.exe.config" $config -Encoding UTF8
 
-& "$bin\CargaHistorica.exe" (Join-Path $raiz $Zips) ($Pedidos -join ',') $Modo
+& "$bin\CargaHistorica.exe" (Join-Path $raiz $Zips) ($Pedidos -join ',') $Modo $Desde $Hasta

@@ -28,7 +28,16 @@ msbuild WebSGV.sln /p:Configuration=Debug /nologo /verbosity:minimal
 .\WebSGV\Database\sql.ps1 "EXEC sp_SE_SincronizarDespachos @desde='2026-10-01'"
 ```
 
-La ventana de viajes (01–20/10) está fija en `CargaHistorica.cs`: cámbiela para otro mes.
+La ventana de viajes es 01–20/10 por defecto; para otro período use `-Desde` y `-Hasta` (yyyy-MM-dd) y, si los ZIP
+están en otra carpeta, `-Zips`. Ejemplo (2026-11-05, cargas de fines de setiembre y las 3 unidades que faltaban en
+octubre, halladas con la conciliación de facturas de flete):
+
+```powershell
+.\herramientas\carga-historica-correo\Cargar.ps1 -Pedidos 4400132637,4400133136 -Modo prueba -Zips 'docs\DOCUMENTACION\DOC TRANSPORTE' -Desde 2026-09-15 -Hasta 2026-09-30
+```
+
+La guía se une a un viaje del tablero: si la unidad no tiene viaje (o su tracto está mal escrito, p. ej. "F60-779" con
+cero), créelo o corríjalo antes (`sp_SE_GuardarDatosViaje`, como en `Database/Scripts/viajes_faltantes_octubre_2026-11-05.sql`).
 
 ## Completar las cargas programadas con varios ZIP a la vez (2026-11-02)
 

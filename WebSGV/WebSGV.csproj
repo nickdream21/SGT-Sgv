@@ -216,6 +216,9 @@
     <Content Include="Database\StoredProcedures\sp_DC_InsertarIngresoAdicional.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_InsertarIngresos.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_RegistrarIngresosEntregados.sql" />
+    <Content Include="Database\StoredProcedures\sp_FF_RegistrarFacturaFlete.sql" />
+    <Content Include="Database\StoredProcedures\sp_FF_ObtenerFacturasFlete.sql" />
+    <Content Include="Database\StoredProcedures\sp_FF_ObtenerPedidosCargados.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_InsertarOrdenViajeConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_ObtenerDatosConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_ObtenerDatosFinancierosOrden.sql" />
@@ -310,6 +313,7 @@
     <Content Include="Content\paginas\AgregarOrdenViaje.css" />
     <Content Include="Content\paginas\Auditoria.css" />
     <Content Include="Content\paginas\ReporteCargas.css" />
+    <Content Include="Content\paginas\FacturasFlete.css" />
     <Content Include="Content\paginas\BuscarAbastecimiento.css" />
     <Content Include="Content\paginas\BuscarCPIC.css" />
     <Content Include="Content\paginas\BuscarFactura.css" />
@@ -377,6 +381,7 @@
     <Content Include="Scripts\paginas\RegistroTractos.js" />
     <Content Include="Scripts\paginas\ReportesOrdenesViaje.js" />
     <Content Include="Scripts\paginas\ReporteCargas.js" />
+    <Content Include="Scripts\paginas\FacturasFlete.js" />
     <Content Include="Scripts\paginas\ReporteGps.js" />
     <Content Include="Scripts\paginas\SiteMaster-2.js" />
     <Content Include="Scripts\paginas\SiteMaster.js" />
@@ -419,6 +424,7 @@
     <Content Include="Views\LiquidacionesPendientes.aspx" />
     <Content Include="Views\DestinoDescarga.aspx" />
     <Content Include="Views\ReporteCargas.aspx" />
+    <Content Include="Views\FacturasFlete.aspx" />
     <Content Include="Views\ReporteGps.aspx" />
     <Content Include="Views\ListaDespachos.aspx" />
     <Content Include="Views\Login.aspx" />
@@ -514,6 +520,8 @@
     <Compile Include="Services\Facturas\FacturaConsultasService.cs" />
     <Compile Include="Services\Facturas\FacturaEscrituraService.cs" />
     <Compile Include="Services\Facturas\FacturaValidaciones.cs" />
+    <Compile Include="Services\Facturas\FacturaFleteService.cs" />
+    <Compile Include="Services\Facturas\LectorFacturaFlete.cs" />
     <Compile Include="Services\FirmaService.cs" />
     <Compile Include="Services\Exportacion\ExportacionStatusGeneral.cs" />
     <Compile Include="Services\Exportacion\FechaHoraExcel.cs" />
@@ -592,6 +600,7 @@
     <Compile Include="Models\Despachos\ImportacionPedidoModels.cs" />
     <Compile Include="Models\Despachos\ProgramacionTransporteModels.cs" />
     <Compile Include="Models\Despachos\RegistroDespachoModels.cs" />
+    <Compile Include="Models\Facturas\FacturaFleteModels.cs" />
     <Compile Include="Models\Liquidaciones\DetalleLiquidacionModels.cs" />
     <Compile Include="Models\OrdenViaje\AgregarOrdenViajeModels.cs" />
     <Compile Include="Models\OrdenViaje\EditarOrdenViajeModels.cs" />
@@ -836,6 +845,13 @@
     </Compile>
     <Compile Include="Views\ReporteCargas.aspx.designer.cs">
       <DependentUpon>ReporteCargas.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FacturasFlete.aspx.cs">
+      <DependentUpon>FacturasFlete.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\FacturasFlete.aspx.designer.cs">
+      <DependentUpon>FacturasFlete.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\ReporteGps.aspx.cs">
       <DependentUpon>ReporteGps.aspx</DependentUpon>

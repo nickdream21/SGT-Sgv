@@ -23,7 +23,9 @@ namespace WebSGV.Services.Reportes
         Hora,
         Entero,
         Soles,
-        Dolares
+        Dolares,
+        /// <summary>Número con 2 decimales que no es dinero (toneladas): sin moneda ni total.</summary>
+        Decimal
     }
 
     /// <summary>Columna de un <see cref="ReporteTabular"/>.</summary>
@@ -348,6 +350,9 @@ namespace WebSGV.Services.Reportes
                 case TipoColumnaReporte.Entero:
                     if (v != null) { celda.Value = Convert.ToDecimal(v); celda.Style.NumberFormat.Format = "0"; }
                     break;
+                case TipoColumnaReporte.Decimal:
+                    if (v != null) { celda.Value = Convert.ToDecimal(v); celda.Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00"; }
+                    break;
                 case TipoColumnaReporte.Soles:
                 case TipoColumnaReporte.Dolares:
                     celda.Value = v == null ? 0m : Convert.ToDecimal(v);
@@ -388,6 +393,7 @@ namespace WebSGV.Services.Reportes
             {
                 case TipoColumnaReporte.Soles:
                 case TipoColumnaReporte.Dolares:
+                case TipoColumnaReporte.Decimal:
                     return XLAlignmentHorizontalValues.Right;
                 case TipoColumnaReporte.Texto:
                     return XLAlignmentHorizontalValues.Left;
@@ -407,6 +413,7 @@ namespace WebSGV.Services.Reportes
                     return 12;
                 case TipoColumnaReporte.Hora:
                 case TipoColumnaReporte.Entero:
+                case TipoColumnaReporte.Decimal:
                     return 11;
             }
             int largo = c.Titulo.Length / 2 + 2;
@@ -460,6 +467,7 @@ namespace WebSGV.Services.Reportes
                 case TipoColumnaReporte.Fecha: return v == null ? "" : Convert.ToDateTime(v).ToString("dd/MM/yyyy");
                 case TipoColumnaReporte.Hora: return TextoHora(v);
                 case TipoColumnaReporte.Entero: return v == null ? "" : Convert.ToDecimal(v).ToString("0");
+                case TipoColumnaReporte.Decimal: return v == null ? "" : Convert.ToDecimal(v).ToString("N2", CulturaPe);
                 case TipoColumnaReporte.Soles:
                 case TipoColumnaReporte.Dolares: return TextoMonto(v == null ? 0m : Convert.ToDecimal(v));
                 default: return v?.ToString() ?? "";
@@ -649,6 +657,7 @@ namespace WebSGV.Services.Reportes
             {
                 case TipoColumnaReporte.Soles:
                 case TipoColumnaReporte.Dolares:
+                case TipoColumnaReporte.Decimal:
                     return c.AlignRight();
                 case TipoColumnaReporte.Texto:
                     return c.AlignLeft();
