@@ -7,9 +7,10 @@
         <p class="inicio-descripcion">
             Gestiona de manera eficiente tus operaciones de transporte y logística.
         </p>
-        <%-- Cargas registradas que esperan factura, guía o CPIC (ListaDespachos, filtro "Documentos"). --%>
+        <%-- Cargas registradas que esperan factura, guía o CPIC: la bandeja de documentos las muestra por
+             cliente y pedido y es donde se suben (antes, ListaDespachos con el filtro "Documentos"). --%>
         <asp:HyperLink ID="lnkDocumentosPendientes" runat="server" Visible="false"
-            NavigateUrl="~/Views/ListaDespachos.aspx?documentos=pendientes" CssClass="inicio-aviso">
+            NavigateUrl="~/Views/BandejaDocumentos.aspx" CssClass="inicio-aviso">
             <i class="fas fa-file-invoice"></i>
             <asp:Label ID="lblDocumentosPendientes" runat="server"></asp:Label>
         </asp:HyperLink>

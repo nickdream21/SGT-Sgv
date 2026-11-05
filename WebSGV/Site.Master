@@ -58,6 +58,9 @@
                             <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroDespacho.aspx") %>'>
                                 <i class="fas fa-plus-circle"></i>Agregar Despacho
                             </a>
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/BandejaDocumentos.aspx") %>'>
+                                <i class="fas fa-inbox"></i>Bandeja de documentos
+                            </a>
                             <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ListaDespachos.aspx") %>'>
                                 <i class="fas fa-list-ul"></i>Lista de despachos
                             </a>

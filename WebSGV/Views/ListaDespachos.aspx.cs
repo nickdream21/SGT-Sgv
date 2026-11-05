@@ -98,6 +98,11 @@ namespace WebSGV.Views
                     // Enlace del aviso de Inicio: abre los lotes con documentos pendientes.
                     if (string.Equals(Request.QueryString["documentos"], "pendientes", StringComparison.OrdinalIgnoreCase))
                         lnkStatDocumentosPendientes_Click(this, EventArgs.Empty);
+
+                    // Enlace de la bandeja de documentos: abre los documentos de ese lote.
+                    string lote = Request.QueryString["lote"];
+                    if (!string.IsNullOrWhiteSpace(lote) && ObtenerLotePorId(lote) != null)
+                        MostrarManifiestosLote(lote);
                 }
                 catch (Exception ex)
                 {

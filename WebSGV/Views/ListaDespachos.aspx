@@ -1106,14 +1106,22 @@
                                                 <asp:Literal ID="litAvanceDocs" runat="server"></asp:Literal>
                                             </div>
 
+                                            <%-- Lo recomendado: subir los documentos del correo; la bandeja los lee y los une solos. --%>
+                                            <div class="ld-subir-docs">
+                                                <i class="fas fa-inbox"></i>
+                                                <div class="ld-subir-docs-texto">
+                                                    <strong>Suba los documentos del correo</strong>
+                                                    <span>El ZIP del cliente (factura, packing list y guías) o sus PDF: el sistema completa pedido, factura,
+                                                        guías y carga de cada unidad, y adjunta el PDF de la factura. Sin escribir a mano.</span>
+                                                </div>
+                                                <asp:HyperLink ID="lnkCompletarConZip" runat="server" NavigateUrl="~/Views/BandejaDocumentos.aspx"
+                                                    CssClass="btn btn-primary ld-subir-docs-btn"><i class="fas fa-cloud-upload-alt mr-1"></i>Subir documentos</asp:HyperLink>
+                                            </div>
                                             <asp:Panel ID="pnlEsperaZip" runat="server" Visible="false" CssClass="ld-aviso ld-aviso-info">
                                                 <i class="fas fa-envelope-open-text"></i>
                                                 <div>
                                                     <strong>Esperando el correo con los documentos.</strong>
-                                                    Cuando llegue el ZIP (factura, packing list y guías), léalo en
-                                                    <asp:HyperLink ID="lnkCompletarConZip" runat="server" NavigateUrl="~/Views/RegistroDespacho.aspx">Registro de despacho → Leer documentos</asp:HyperLink>:
-                                                    completa pedido, factura, guías y carga de cada unidad sin crear otro despacho.
-                                                    Si escribe la guía o la factura a mano aquí, el ZIP ya no reconoce esa carga.
+                                                    Si escribe la guía o la factura a mano aquí, el ZIP ya no reconoce esa carga: use la bandeja.
                                                 </div>
                                             </asp:Panel>
 
@@ -1131,7 +1139,10 @@
                                                         <asp:LinkButton ID="lnkVerDocFactura" runat="server" OnClick="lnkVerDocFactura_Click" CausesValidation="false" Visible="false" CssClass="ld-doc-ver"></asp:LinkButton>
                                                     </div>
                                                     <%-- Factura aún sin registrar: se anota aquí mismo, sin pasar por "Editar". --%>
-                                                    <asp:Panel ID="pnlRegistrarFactura" runat="server" CssClass="ld-doc-registrar" Visible="false" DefaultButton="btnRegistrarFactura">
+                                                    <asp:Panel ID="pnlRegistrarFactura" runat="server" CssClass="ld-doc-manual-envoltura" Visible="false" DefaultButton="btnRegistrarFactura">
+                                                    <details class="ld-manual">
+                                                        <summary><i class="fas fa-keyboard"></i> Escribir la factura a mano <small>(solo si no tiene el documento)</small></summary>
+                                                    <div class="ld-doc-registrar">
                                                         <div class="ld-doc-registrar-titulo">Registrar factura</div>
                                                         <div class="ld-doc-campos">
                                                             <div class="ld-campo ld-campo-ancho">
@@ -1156,6 +1167,8 @@
                                                         </div>
                                                         <asp:Button ID="btnRegistrarFactura" runat="server" Text="Registrar factura"
                                                             CssClass="btn btn-primary btn-sm" OnClick="btnRegistrarFactura_Click" CausesValidation="false" />
+                                                    </div>
+                                                    </details>
                                                     </asp:Panel>
                                                     <asp:Panel ID="pnlSubirPdfFactura" runat="server" CssClass="ld-doc-subir" Visible="false">
                                                         <label class="ld-doc-elegir">
@@ -1211,15 +1224,17 @@
                                             </div>
                                             <p class="ld-nota">
                                                 <i class="fas fa-info-circle"></i>
-                                                Registre aquí el número de la factura o del CPIC y adjunte su archivo (el ZIP del correo también los trae). Para corregir un número ya registrado use <strong>Editar</strong>.
+                                                La factura, su PDF y las guías se registran solos al subir el ZIP del correo. El CPIC se registra aquí con su número y su archivo. Para corregir un número ya registrado use <strong>Editar</strong>.
                                             </p>
 
                                             <%-- 2. Guías por despacho --%>
                                             <asp:Panel ID="pnlGuiasLote" runat="server" CssClass="ld-bloque">
                                                 <div class="ld-bloque-head">
                                                     <h6><i class="fas fa-truck-loading"></i> Guías por despacho</h6>
-                                                    <span class="ld-bloque-ayuda">Escriba cada guía cuando la tenga. Vacío = sin guía.</span>
+                                                    <span class="ld-bloque-ayuda">Las guías llegan en el ZIP del correo: súbalo con <strong>Subir documentos</strong>.</span>
                                                 </div>
+                                                <details class="ld-manual">
+                                                    <summary><i class="fas fa-keyboard"></i> Ver o escribir las guías a mano <small>(solo si no tiene el documento)</small></summary>
                                                 <div class="data-grid-container">
                                                     <asp:GridView ID="gvGuiasLote" runat="server"
                                                         CssClass="table data-table detail-table ld-tabla-guias"
@@ -1249,6 +1264,7 @@
                                                     <asp:Button ID="btnGuardarGuias" runat="server" Text="Guardar guías"
                                                         CssClass="btn btn-primary" OnClick="btnGuardarGuias_Click" CausesValidation="false" />
                                                 </div>
+                                                </details>
                                             </asp:Panel>
 
                                             <%-- 3. Manifiestos de aduana (solo internacional) --%>

@@ -265,3 +265,18 @@
 .ld-campo label { font-size: .72rem; font-weight: 600; color: #64748b; margin: 0; }
 .ld-doc-registrar .btn { align-self: flex-start; }
 @media (max-width: 576px) { .ld-doc-campos { grid-template-columns: 1fr; } .ld-doc-registrar .btn { width: 100%; } }
+
+/* Subir documentos del correo (bandeja) y escritura a mano plegada */
+.ld-subir-docs { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: .9rem 1.1rem; margin-bottom: 1rem; }
+.ld-subir-docs > i { font-size: 1.6rem; color: #2563eb; }
+.ld-subir-docs-texto { flex: 1 1 320px; display: flex; flex-direction: column; color: #1e3a8a; }
+.ld-subir-docs-texto span { font-size: .82rem; color: #475569; }
+.ld-subir-docs-btn { font-weight: 600; white-space: nowrap; }
+.ld-manual { margin-top: .5rem; }
+.ld-manual > summary { cursor: pointer; font-size: .8rem; color: #64748b; padding: .35rem 0; list-style: none; }
+.ld-manual > summary::-webkit-details-marker { display: none; }
+.ld-manual > summary::before { content: '\25B8'; display: inline-block; margin-right: .35rem; transition: transform .15s; }
+.ld-manual[open] > summary::before { transform: rotate(90deg); }
+.ld-manual > summary:hover { color: #1e293b; }
+.ld-manual > summary small { color: #94a3b8; }
+.ld-manual[open] > .ld-doc-registrar, .ld-manual[open] > .data-grid-container { margin-top: .4rem; }

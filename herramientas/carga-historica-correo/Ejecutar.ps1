@@ -33,6 +33,6 @@ Set-Content "$bin\$Herramienta.exe.config" $config -Encoding UTF8
 $carpetaZips = Join-Path $raiz $Zips
 switch ($Herramienta) {
     'AnalizarCorreo'      { & "$bin\$Herramienta.exe" $carpetaZips }
-    'CompletarConCorreo'  { & "$bin\$Herramienta.exe" $carpetaZips $Modo }
+    'CompletarConCorreo'  { & "$bin\$Herramienta.exe" $carpetaZips $Modo (Join-Path $raiz 'WebSGV') }
     'AdjuntarPdfFacturas' { & "$bin\$Herramienta.exe" $carpetaZips (Join-Path $raiz 'WebSGV') $Modo }
 }

@@ -41,8 +41,10 @@ cero), créelo o corríjalo antes (`sp_SE_GuardarDatosViaje`, como en `Database/
 
 ## Completar las cargas programadas con varios ZIP a la vez (2026-11-02)
 
-Para cuando se juntan varios correos: en vez de leer los ZIP uno por uno en RegistroDespacho,
-`CompletarConCorreo` completa los despachos de CARGA programados con el Word que esperan documentos, con los
+Desde el 2026-11-05 lo normal es la **bandeja de documentos** (Despacho → Bandeja de documentos), que hace esto mismo
+desde la pantalla. `CompletarConCorreo` quedó como la bandeja por consola para una carpeta entera de ZIP: usa
+`BandejaDocumentosService` (la misma lectura, unión y registro; no crea despachos nuevos). Antes:
+`CompletarConCorreo` completaba los despachos de CARGA programados con el Word que esperan documentos, con los
 mismos servicios de la pantalla (`ImportacionPedidoService.Leer/Asociar`, `sp_CrearFactura`,
 `sp_CompletarDespachoProgramado`). Va pedido por pedido en orden (fecha de guía) y cada guía toma un programado una
 sola vez: 1) mismo tracto, del día de la guía a 2 días después (Vitapro emite la guía hasta 2 días antes de

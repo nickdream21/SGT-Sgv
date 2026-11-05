@@ -7,6 +7,7 @@ namespace WebSGV.Models.Facturas
     /// Factura de flete (la nuestra, E001-xxxxx) leída de la representación impresa de SUNAT
     /// (<see cref="WebSGV.Services.Facturas.LectorFacturaFlete"/>).
     /// </summary>
+    [Serializable]
     public class FacturaFleteLeida
     {
         public string NumeroFactura { get; set; }          // E001-18645
