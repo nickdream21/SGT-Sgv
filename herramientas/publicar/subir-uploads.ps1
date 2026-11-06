@@ -14,7 +14,8 @@ param(
     [string] $Usuario = 'SGVTRANSPORTES',
     [string] $Servidor = 'ftp://sgvtransporte.somee.com',
     [string] $RutaSitio = '/www.sgvtransporte.somee.com',
-    [switch] $SoloListar
+    [switch] $SoloListar,
+    [switch] $Diagnostico
 )
 $ErrorActionPreference = 'Stop'
 $raiz = (Resolve-Path (Join-Path $PSScriptRoot '..\..\WebSGV\Uploads')).Path
@@ -31,6 +32,19 @@ function Pedir($url, $metodo, $bytes) {
     $resp = $r.GetResponse(); $len = $resp.ContentLength; $resp.Close(); $len
 }
 $base = $Servidor.TrimEnd('/') + $RutaSitio
+if ($Diagnostico) {
+    function Listar($url) {
+        try {
+            $r = [System.Net.FtpWebRequest]::Create($url); $r.Method = 'NLST'; $r.Credentials = $cred; $r.UsePassive = $true; $r.KeepAlive = $false
+            $resp = $r.GetResponse(); $sr = New-Object IO.StreamReader($resp.GetResponseStream()); $x = $sr.ReadToEnd(); $sr.Close(); $resp.Close(); $x -split "`r?`n" | Where-Object { $_ }
+        } catch { "(no se pudo listar: $($_.Exception.Message))" }
+    }
+    "== Raíz del FTP ($Servidor/)"; Listar "$Servidor/" | Select-Object -First 40
+    "== $RutaSitio"; Listar $base | Select-Object -First 60
+    "== $RutaSitio/Uploads"; Listar "$base/Uploads"
+    "== $RutaSitio/Uploads/FacturasFlete/2026 (primeros 5)"; Listar "$base/Uploads/FacturasFlete/2026" | Select-Object -First 5
+    return
+}
 $creadas = New-Object System.Collections.Generic.HashSet[string]
 $subidos = 0; $iguales = 0; $fallos = 0
 foreach ($a in $archivos) {

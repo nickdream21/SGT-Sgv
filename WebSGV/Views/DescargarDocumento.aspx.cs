@@ -19,7 +19,8 @@ namespace WebSGV.Views
             string rutaVirtual = DocumentoHelper.ObtenerRutaPermitida(Context, Request.QueryString["k"]);
             if (rutaVirtual == null)
             {
-                NoEncontrado();
+                LogSGV.Error("Descarga: la llave {Llave} no está registrada en la sesión (sesión nueva o enlace de otra sesión)", Request.QueryString["k"]);
+                NoEncontrado("A");
                 return;
             }
 
@@ -31,13 +32,20 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Ruta de documento inválida: {Ruta}", rutaVirtual);
-                NoEncontrado();
+                NoEncontrado("B");
                 return;
             }
 
-            if (!DocumentoHelper.EstaDentroDe(rutaFisica, DocumentoHelper.RaizFisicaUploads(Server)) || !File.Exists(rutaFisica))
+            if (!DocumentoHelper.EstaDentroDe(rutaFisica, DocumentoHelper.RaizFisicaUploads(Server)))
             {
-                NoEncontrado();
+                LogSGV.Error("Descarga: {Ruta} resuelve a {Fisica}, fuera de {Raiz}", rutaVirtual, rutaFisica, DocumentoHelper.RaizFisicaUploads(Server));
+                NoEncontrado("C");
+                return;
+            }
+            if (!File.Exists(rutaFisica))
+            {
+                LogSGV.Error("Descarga: no existe (o sin permiso de lectura) {Fisica} para {Ruta}", rutaFisica, rutaVirtual);
+                NoEncontrado("D");
                 return;
             }
 
@@ -53,13 +61,14 @@ namespace WebSGV.Views
             Response.End();
         }
 
-        private void NoEncontrado()
+        /// <summary>El código (A sesión, B ruta, C fuera de Uploads, D archivo) ayuda a diagnosticar sin abrir el log.</summary>
+        private void NoEncontrado(string codigo)
         {
             Response.Clear();
             Response.StatusCode = 404;
             Response.TrySkipIisCustomErrors = true;
             Response.ContentType = "text/plain";
-            Response.Write("Documento no disponible.");
+            Response.Write("Documento no disponible. (" + codigo + ")");
             Response.End();
         }
     }
