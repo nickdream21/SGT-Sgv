@@ -17,9 +17,50 @@ namespace WebSGV.Helpers
     /// </summary>
     public static class DocumentoHelper
     {
-        private const string ClaveSesion = "SGV_DocumentosPermitidos";
-        private const int MaximoLlavesPorSesion = 50;
+        private const string ClaveSesion = "SGV_DocumentosRegistrados";
+        private const int MaximoLlavesPorSesion = 1000;
         private const string RaizUploads = "~/Uploads/";
+
+        /// <summary>
+        /// Llaves de documento de una sesión. La misma ruta conserva su llave (una página con 68
+        /// facturas no gasta 68 llaves nuevas en cada recarga) y, al llegar al máximo, sale solo la
+        /// más antigua: antes se borraban todas al llegar a 50 y los enlaces ya mostrados en esa
+        /// página u otras pestañas respondían "Documento no disponible".
+        /// </summary>
+        [Serializable]
+        public sealed class RegistroDocumentos
+        {
+            private readonly int _maximo;
+            private readonly Dictionary<string, string> _rutaPorLlave = new Dictionary<string, string>(StringComparer.Ordinal);
+            private readonly Dictionary<string, string> _llavePorRuta = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            private readonly Queue<string> _orden = new Queue<string>();
+
+            public RegistroDocumentos(int maximo) { _maximo = Math.Max(1, maximo); }
+
+            public int Cantidad => _rutaPorLlave.Count;
+
+            public string Registrar(string rutaVirtual, Func<string> nuevaLlave)
+            {
+                if (_llavePorRuta.TryGetValue(rutaVirtual, out string existente)) return existente;
+                while (_rutaPorLlave.Count >= _maximo)
+                {
+                    string vieja = _orden.Dequeue();
+                    if (_rutaPorLlave.TryGetValue(vieja, out string rutaVieja))
+                    {
+                        _rutaPorLlave.Remove(vieja);
+                        _llavePorRuta.Remove(rutaVieja);
+                    }
+                }
+                string llave = nuevaLlave();
+                _rutaPorLlave[llave] = rutaVirtual;
+                _llavePorRuta[rutaVirtual] = llave;
+                _orden.Enqueue(llave);
+                return llave;
+            }
+
+            public string Ruta(string llave) =>
+                !string.IsNullOrEmpty(llave) && _rutaPorLlave.TryGetValue(llave, out string ruta) ? ruta : null;
+        }
 
         /// <summary>Registra la ruta virtual (~/Uploads/...) y devuelve la URL de descarga ya resuelta.</summary>
         public static string UrlDescarga(string rutaVirtual)
@@ -28,17 +69,14 @@ namespace WebSGV.Helpers
             if (contexto?.Session == null) throw new InvalidOperationException("Se requiere sesión para registrar un documento.");
             if (string.IsNullOrWhiteSpace(rutaVirtual)) throw new ArgumentException("Ruta vacía.", nameof(rutaVirtual));
 
-            var permitidos = contexto.Session[ClaveSesion] as Dictionary<string, string>;
-            if (permitidos == null)
+            var registro = contexto.Session[ClaveSesion] as RegistroDocumentos;
+            if (registro == null)
             {
-                permitidos = new Dictionary<string, string>();
-                contexto.Session[ClaveSesion] = permitidos;
+                registro = new RegistroDocumentos(MaximoLlavesPorSesion);
+                contexto.Session[ClaveSesion] = registro;
             }
-            if (permitidos.Count >= MaximoLlavesPorSesion)
-                permitidos.Clear();
 
-            string llave = GenerarLlave();
-            permitidos[llave] = rutaVirtual;
+            string llave = registro.Registrar(rutaVirtual, GenerarLlave);
             return VirtualPathUtility.ToAbsolute("~/Views/DescargarDocumento.aspx") + "?k=" + llave;
         }
 
@@ -46,8 +84,7 @@ namespace WebSGV.Helpers
         public static string ObtenerRutaPermitida(HttpContext contexto, string llave)
         {
             if (contexto?.Session == null || string.IsNullOrEmpty(llave)) return null;
-            var permitidos = contexto.Session[ClaveSesion] as Dictionary<string, string>;
-            return permitidos != null && permitidos.TryGetValue(llave, out string ruta) ? ruta : null;
+            return (contexto.Session[ClaveSesion] as RegistroDocumentos)?.Ruta(llave);
         }
 
         /// <summary>Ruta física de ~/Uploads (con separador final).</summary>
