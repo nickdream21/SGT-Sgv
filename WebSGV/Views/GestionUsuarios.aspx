@@ -71,7 +71,7 @@
                             </span>
                         </ItemTemplate>
                     </asp:TemplateField>
-                    <asp:TemplateField HeaderText="Acciones" ItemStyle-Width="250px">
+                    <asp:TemplateField HeaderText="Acciones" ItemStyle-Width="270px" ItemStyle-Wrap="false">
                         <ItemTemplate>
                             <asp:Button runat="server" Text="Editar" CssClass="btn btn-sm btn-info mr-1"
                                 CommandName="EditarUsuario" CommandArgument='<%# Eval("idUsuario") %>' />

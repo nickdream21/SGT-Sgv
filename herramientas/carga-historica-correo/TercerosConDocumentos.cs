@@ -189,7 +189,7 @@ class TercerosConDocumentos
                 DbHelper.Param("@fecha", dia), DbHelper.Param("@ch", Convert.ToInt32(ids["idConductor"])), DbHelper.Param("@tr", Convert.ToInt32(ids["idTracto"])),
                 DbHelper.Param("@ca", Convert.ToInt32(ids["idCarreta"])), DbHelper.Param("@cli", idCliente), DbHelper.Param("@pl", idPlanta),
                 DbHelper.Param("@usr", Usuario), DbHelper.Param("@grr", Num(grr)), DbHelper.Param("@grt", Num(grt)),
-                DbHelper.Param("@dest", llegada == null ? (object)DBNull.Value : Regex.Replace(llegada, @"\s+", " ").Substring(0, Math.Min(200, Regex.Replace(llegada, @"\s+", " ").Length))),
+                DbHelper.Param("@dest", DestinoCorto(llegada)),
                 DbHelper.Param("@obs", $"Carga de tercero registrada el {FechaHelper.Hoy():dd/MM/yyyy} con su GRE transportista {Num(grt)} de SUNAT para unir sus facturas de flete: " +
                                        "sin viaje del chofer, no entra a la liquidación.")));
             W(cab + $" -> despacho {id}");
@@ -197,6 +197,15 @@ class TercerosConDocumentos
             n++;
         }
         return n;
+    }
+
+    /// <summary>Destino corto para el viaje del tablero (lugarEntrega admite 60): los 3 últimos tramos de la dirección de llegada.</summary>
+    static object DestinoCorto(string llegada)
+    {
+        if (string.IsNullOrWhiteSpace(llegada)) return DBNull.Value;
+        var partes = Regex.Replace(llegada, @"\s+", " ").Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).ToList();
+        string d = string.Join(" - ", partes.Skip(Math.Max(0, partes.Count - 3)));
+        return d.Length > 60 ? d.Substring(d.Length - 60) : d;
     }
 
     static void SubirCpics(string carpeta, List<string> numeros, string ruc, string uploads, Action<string> W)

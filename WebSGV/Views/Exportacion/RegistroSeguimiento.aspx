@@ -130,7 +130,7 @@
                                     <span class="sx-sub">Prog. <%#: Eval("Programacion") %></span>
                                 </td>
                                 <td><span class="sx-mono"><%#: Eval("Tracto1") %></span><span class="sx-sub"><%#: Eval("Chofer1") %></span></td>
-                                <td><span class="sx-mono"><%#: Eval("Tracto2") %></span><span class="sx-sub"><%#: Eval("Chofer2") %></span></td>
+                                <td><span class='<%# Convert.ToString(Eval("Tracto2")) == "Sin asignar" ? "sx-sin-asignar" : "sx-mono" %>'><%#: Eval("Tracto2") %></span><span class="sx-sub"><%#: Eval("Chofer2") %></span></td>
                                 <td><span class='<%# "sx-fase sx-fase-" + Eval("Grupo") %>'><%#: Eval("Fase") %></span><span class="sx-sub"><%#: Eval("Planta") %></span></td>
                                 <td class="sx-status">
                                     <span class="sx-status-texto"><%#: Eval("Status") %></span>

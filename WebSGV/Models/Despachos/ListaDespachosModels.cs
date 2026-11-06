@@ -91,6 +91,7 @@ namespace WebSGV.Models.Despachos
         public string PedidoMostrado =>
             string.IsNullOrWhiteSpace(NumeroPedido) && string.IsNullOrWhiteSpace(NumeroFactura)
                 && string.Equals(TipoOperacion, "CARGA", StringComparison.OrdinalIgnoreCase)
+                && (string.IsNullOrEmpty(PerfilDocumentos) || PerfilDocumentos == "PEDIDO")   // los terceros no traen pedido
                 ? "Faltan documentos" : NumeroPedido;
 
         public DateTime FechaCreacion { get; set; }

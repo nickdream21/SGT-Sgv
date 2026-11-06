@@ -128,3 +128,23 @@ input.af-shield[readonly] {
     white-space: pre-line;
     word-break: break-word;
 }
+
+/* Contenedor general más ancho: en pantallas grandes las páginas quedaban en una columna de 1140 px y las tablas se apretaban.
+   Las páginas con su propio ancho (.container:has(...) en su CSS) siguen mandando. */
+body > .container, form > .container, .container.mt-4 { max-width: min(1680px, 96vw); }
+
+/* Tablas: contenido centrado en vertical (la celda de contacto quedaba más abajo que el resto de la fila). */
+.table td, .table th { vertical-align: middle; }
+
+/* Selector de archivos con el mismo aspecto que los botones (antes salía el botón gris por defecto del navegador). */
+input[type=file] { font-size: .875rem; color: #475569; }
+input[type=file]::file-selector-button {
+    margin-right: .75rem; padding: .35rem .85rem; border: 1px solid #94a3b8; border-radius: .25rem;
+    background: #fff; color: #334155; font-weight: 500; cursor: pointer; transition: background-color .15s, border-color .15s;
+}
+input[type=file]::file-selector-button:hover { background: #f1f5f9; border-color: #64748b; }
+
+/* GridView: el borde duro (border="1") se suaviza en todas las grillas del sistema. */
+table[border="1"] { border: 1px solid #e2e8f0 !important; }
+table[border="1"] th, table[border="1"] td { border-color: #e2e8f0 !important; }
+table[border="1"] td .btn { white-space: nowrap; }

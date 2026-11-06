@@ -238,7 +238,7 @@
 }
 
 /* Página más ancha: la lista de lotes tiene muchas columnas y las acciones quedaban fuera de vista. */
-.container:has(.ld-page-header) { max-width: min(1560px, 96vw); }
+.container:has(.ld-page-header) { max-width: min(1880px, 97vw); }
 
 /* Acciones siempre visibles aunque la tabla desborde horizontalmente */
 .ld-tabla-lotes th:last-child,
@@ -280,3 +280,9 @@
 .ld-manual > summary:hover { color: #1e293b; }
 .ld-manual > summary small { color: #94a3b8; }
 .ld-manual[open] > .ld-doc-registrar, .ld-manual[open] > .data-grid-container { margin-top: .4rem; }
+
+/* Pulido (2026-11-06): iconos de las etiquetas con su espacio y grillas sin el borde duro que agrega el GridView. */
+.form-label i { width: 1rem; text-align: center; flex: 0 0 1rem; margin-right: .1rem; }
+.data-table { border: 0 !important; border-collapse: collapse; }
+.data-table th, .data-table td { border-left: 0 !important; border-right: 0 !important; border-top: 0 !important; }
+.data-table thead th { border-bottom: 2px solid #cbd5e1 !important; }
