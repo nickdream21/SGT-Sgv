@@ -28,8 +28,11 @@ namespace WebSGV.Models.Facturas
         public decimal? ImporteTotal { get; set; }
         public decimal? MontoNetoPendiente { get; set; }
         public DateTime? FechaVencimiento { get; set; }
-        public string NumeroFacturaComercial { get; set; } // F222-00008426
+        public string NumeroFacturaComercial { get; set; } // F222-00008426 (la de la primera línea)
         public string NumeroCPIC { get; set; }             // 0003892
+
+        /// <summary>Líneas del detalle, cada una con la referencia de su carga (las de terceros pueden ser varias).</summary>
+        public List<ItemFacturaFlete> Items { get; } = new List<ItemFacturaFlete>();
 
         /// <summary>Lo que no se pudo leer o no cuadra dentro de la propia factura.</summary>
         public List<string> Observaciones { get; } = new List<string>();
@@ -38,6 +41,34 @@ namespace WebSGV.Models.Facturas
         public List<string> Errores { get; } = new List<string>();
 
         public bool EsValida => Errores.Count == 0;
+    }
+
+    /// <summary>
+    /// Una línea del detalle de la factura de flete y la carga a la que corresponde: la factura comercial del cliente
+    /// (F222-00008426 de Vitapro, FX01-00000540 de Cartavio para Crisar, 001-098-000331036 de Novopan) o, en las
+    /// nacionales sin factura comercial (Polinplast), la guía del remitente (T700-00001643).
+    /// </summary>
+    [Serializable]
+    public class ItemFacturaFlete
+    {
+        public int Orden { get; set; }
+        public decimal? Cantidad { get; set; }
+        public string UnidadMedida { get; set; }
+        public decimal? ValorUnitario { get; set; }
+        public string Descripcion { get; set; }
+        public string FacturaComercial { get; set; }
+        public string Cpic { get; set; }
+        public string Manifiestos { get; set; }          // "0019301, 0019302"
+        public string GuiaRemitente { get; set; }        // T700-00001643
+        public string GuiaTransportista { get; set; }    // EG03-00015116
+
+        /// <summary>Primera carga en el sistema de su referencia (solo al leer de la BD; null = no está).</summary>
+        public DateTime? FechaCargaSistema { get; set; }
+
+        /// <summary>Con qué se une a su carga: la factura comercial o, si no tiene, la guía del remitente.</summary>
+        public string Referencia => FacturaComercial ?? GuiaRemitente;
+
+        public decimal? ValorVenta => Cantidad.HasValue && ValorUnitario.HasValue ? Math.Round(Cantidad.Value * ValorUnitario.Value, 2) : (decimal?)null;
     }
 
     /// <summary>Resultado de subir un PDF en la página de facturas de flete.</summary>
@@ -57,11 +88,16 @@ namespace WebSGV.Models.Facturas
         public string Cliente { get; set; }
         public string NumeroPedido { get; set; }
         public string FacturaComercial { get; set; }   // F222-00008426 (null si aún no llegan los documentos)
+        public string GuiaRemitente { get; set; }      // T700-00001643: carga nacional sin factura comercial (Polinplast)
+        public string GuiaTransportista { get; set; }  // EG03-00015116: la nuestra (por si la factura cita mal la del remitente)
         public DateTime FechaCarga { get; set; }
         public int Unidades { get; set; }
         public decimal ToneladasNetas { get; set; }    // de los productos de las guías (DespachoCarga)
         public int UnidadesSinCarga { get; set; }      // despachos sin productos leídos (programados sin ZIP)
         public int ViajesSeguimiento { get; set; }
+
+        /// <summary>Con qué la cita la factura de flete: la factura comercial o la guía del remitente.</summary>
+        public string Referencia => FacturaComercial ?? GuiaRemitente;
     }
 
     /// <summary>Factura de flete registrada (fila de sp_FF_ObtenerFacturasFlete).</summary>
@@ -73,16 +109,25 @@ namespace WebSGV.Models.Facturas
         public DateTime? FechaVencimiento { get; set; }
         public int? IdCliente { get; set; }
         public string Cliente { get; set; }
+        public string RucCliente { get; set; }
         public string Moneda { get; set; }
         public string OrdenServicio { get; set; }
         public decimal? Cantidad { get; set; }
         public string UnidadMedida { get; set; }
         public decimal? ValorUnitario { get; set; }
+        public decimal? ValorVenta { get; set; }
         public decimal ImporteTotal { get; set; }
         public decimal? MontoNetoPendiente { get; set; }
         public string FacturaComercial { get; set; }
         public string NumeroCPIC { get; set; }
         public string RutaArchivo { get; set; }
+        public string Descripcion { get; set; }
+
+        /// <summary>Líneas con su referencia (FacturaFleteItem). Si está vacía se usa la cabecera como una sola línea.</summary>
+        public List<ItemFacturaFlete> Items { get; set; } = new List<ItemFacturaFlete>();
+
+        /// <summary>Quién paga: el cliente registrado o, si no lo está (Novopan del Ecuador), su RUC o nombre.</summary>
+        public string Pagador => IdCliente.HasValue ? "c" + IdCliente.Value : (RucCliente ?? Cliente ?? NumeroFactura);
     }
 
     public enum EstadoConciliacion
@@ -105,6 +150,9 @@ namespace WebSGV.Models.Facturas
         public EstadoConciliacion Estado { get; set; }
         public PedidoCargado Pedido { get; set; }
         public List<FacturaFleteRegistrada> Facturas { get; } = new List<FacturaFleteRegistrada>();
+
+        /// <summary>La carga de la fila: factura comercial o guía del remitente (de su pedido o de la línea facturada).</summary>
+        public string Referencia { get; set; }
 
         public decimal? CantidadFacturada { get; set; }
         public decimal? CantidadCargada { get; set; }

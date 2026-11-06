@@ -17,6 +17,12 @@ namespace WebSGV.Services.Despachos.Importacion
         public decimal? PesoNetoKg { get; set; }
         public decimal? PesoBrutoKg { get; set; }
         public DateTime? FechaEmision { get; set; }
+
+        /// <summary>Casilla 6: día en que el transportista recibe la mercancía (≈ el de la carga).</summary>
+        public DateTime? FechaRecepcion { get; set; }
+
+        /// <summary>Casilla 16: precio de las mercancías (valor de la factura comercial).</summary>
+        public decimal? ValorMercancias { get; set; }
     }
 
     /// <summary>Manifiesto de Carga Internacional (MCI) de una unidad, leído de su PDF.</summary>
@@ -69,15 +75,7 @@ namespace WebSGV.Services.Despachos.Importacion
 
             // Perú: "F222 - 00008545", "FX01-0000570" (serie de 4 + correlativo, se guarda con 8 dígitos como la
             // tabla Factura); Ecuador: "001-098-000331059" (establecimiento-punto-secuencial, tal cual).
-            var fc = l.Select(x => Regex.Match(x, @"FACTURA\s+COMERCIAL\s*(?:N[o°º]?\.?)?\s*:?\s*([A-Z0-9]{3,4}(?:\s*-\s*\d{3})?)\s*-\s*(\d{1,10})\b", Opc))
-                      .FirstOrDefault(m => m.Success);
-            if (fc != null)
-            {
-                string serie = Regex.Replace(fc.Groups[1].Value, @"\s+", "").ToUpperInvariant();
-                c.FacturaComercial = Regex.IsMatch(serie, @"^[A-Z][A-Z0-9]{3}$")
-                    ? LectorFacturaFlete.NormalizarNumero(serie, fc.Groups[2].Value)
-                    : serie + "-" + fc.Groups[2].Value;
-            }
+            c.FacturaComercial = l.Select(LectorFacturaFlete.LeerFacturaComercial).FirstOrDefault(x => x != null);
 
             int iFlete = l.FindIndex(x => Regex.IsMatch(x, @"Valor\s+de\s+flete", Opc));
             if (iFlete >= 0)
@@ -92,7 +90,14 @@ namespace WebSGV.Services.Despachos.Importacion
             }
 
             // La fecha de emisión es la última del documento (casilla 19); las anteriores son de recepción y embarque.
-            c.FechaEmision = l.Select(Fecha).Where(f => f.HasValue).LastOrDefault();
+            var fechas = l.Select(Fecha).Where(f => f.HasValue).ToList();
+            c.FechaEmision = fechas.LastOrDefault();
+            c.FechaRecepcion = fechas.FirstOrDefault();
+
+            int iPrecio = l.FindIndex(x => Regex.IsMatch(x, @"Precio\s+de\s+las\s+mercanc", Opc));
+            if (iPrecio >= 0)
+                c.ValorMercancias = l.Skip(iPrecio).Take(5).Select(x => Regex.Match(x, @"\$\s*([\d,]+\.\d{2})")).Where(m => m.Success)
+                                     .Select(m => Numero(m.Groups[1].Value)).FirstOrDefault();
             return c;
         }
 

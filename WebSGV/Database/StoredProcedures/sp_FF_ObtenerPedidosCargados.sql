@@ -1,8 +1,12 @@
 -- ============================================================
 -- Cargas del sistema entre @desde y @hasta, una fila por pedido, para
 -- conciliarlas con las facturas de flete (FacturasFlete.aspx):
---   * Con documentos del correo: los despachos de su factura comercial
---     (Factura, la F222 de Vitapro).
+--   * Con factura comercial: los despachos de esa factura (Factura: la
+--     F222 de Vitapro, la FX01 de Cartavio para Crisar, la 001-098 de
+--     Novopan).
+--   * Sin factura comercial pero con guía del remitente (Polinplast,
+--     nacional): una fila por guía (guiaRemitente); guiaTransportista = la nuestra,
+--     por si la factura cita mal la del remitente.
 --   * Sin documentos todavía (programados con el Word): por cliente, pedido
 --     y día de carga.
 -- Toneladas = peso neto de los productos de las guías (DespachoCarga);
@@ -22,6 +26,8 @@ BEGIN
     ;WITH carga AS (
         SELECT d.idDespacho, d.idCliente, d.idFactura, d.fechaDespacho,
                NULLIF(LTRIM(RTRIM(d.numeroPedido)), '') AS numeroPedido,
+               CASE WHEN d.idFactura IS NULL THEN NULLIF(LTRIM(RTRIM(d.guiaRemitente)), '') END AS guiaRemitente,
+               CASE WHEN d.idFactura IS NULL THEN NULLIF(LTRIM(RTRIM(d.guiaTransportista)), '') END AS guiaTransportista,
                (SELECT SUM(dc.pesoNetoKg) FROM dbo.DespachoCarga dc WHERE dc.idDespacho = d.idDespacho) AS kgNeto,
                (SELECT COUNT(*) FROM dbo.SeguimientoExportacion s
                  WHERE s.idDespachoOrigen = d.idDespacho AND s.activo = 1 AND ISNULL(s.estado, '') <> 'CANCELADO') AS viajes
@@ -33,6 +39,8 @@ BEGIN
     grupo AS (
         SELECT ca.idCliente,
                f.numeroFactura AS facturaComercial,
+               ca.guiaRemitente,
+               MAX(ca.guiaTransportista) AS guiaTransportista,
                COALESCE(NULLIF(LTRIM(RTRIM(f.numeroPedido)), ''), MAX(ca.numeroPedido)) AS numeroPedido,
                MIN(ca.fechaDespacho) AS fechaCarga,
                COUNT(*) AS unidades,
@@ -41,11 +49,11 @@ BEGIN
                SUM(ca.viajes) AS viajesSeguimiento
         FROM carga ca
         LEFT JOIN dbo.Factura f ON f.idFactura = ca.idFactura
-        GROUP BY ca.idCliente, f.idFactura, f.numeroFactura, f.numeroPedido,
-                 CASE WHEN f.idFactura IS NULL THEN ca.numeroPedido END,
-                 CASE WHEN f.idFactura IS NULL THEN ca.fechaDespacho END
+        GROUP BY ca.idCliente, f.idFactura, f.numeroFactura, f.numeroPedido, ca.guiaRemitente,
+                 CASE WHEN f.idFactura IS NULL AND ca.guiaRemitente IS NULL THEN ca.numeroPedido END,
+                 CASE WHEN f.idFactura IS NULL AND ca.guiaRemitente IS NULL THEN ca.fechaDespacho END
     )
-    SELECT g.idCliente, c.nombre AS cliente, g.facturaComercial, g.numeroPedido, g.fechaCarga, g.unidades,
+    SELECT g.idCliente, c.nombre AS cliente, g.facturaComercial, g.guiaRemitente, g.guiaTransportista, g.numeroPedido, g.fechaCarga, g.unidades,
            g.toneladasNetas, g.unidadesSinCarga, g.viajesSeguimiento,
            t.valorUnitario AS tarifaValorUnitario, t.unidadMedida AS tarifaUnidad, t.moneda AS tarifaMoneda,
            (SELECT COUNT(*) FROM dbo.FacturaFlete x WHERE x.activo = 1 AND x.idCliente = g.idCliente) AS facturasDelCliente

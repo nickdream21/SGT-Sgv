@@ -221,6 +221,7 @@
     <Content Include="Database\StoredProcedures\sp_FF_ObtenerFacturasFlete.sql" />
     <Content Include="Database\StoredProcedures\sp_FF_ObtenerPedidosCargados.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_VincularCPIC.sql" />
+    <Content Include="Database\StoredProcedures\sp_LD_RegistrarFacturaTercero.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_InsertarOrdenViajeConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_ObtenerDatosConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_ObtenerDatosFinancierosOrden.sql" />

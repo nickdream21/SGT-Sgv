@@ -35,7 +35,7 @@ namespace WebSGV.Services.Facturas
         private const RegexOptions Opc = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
 
         private static readonly Regex ReNumero = new Regex(@"^\s*([EF][A-Z0-9]{3})\s*-\s*(\d{1,8})\s*$", Opc);
-        private static readonly Regex ReRuc = new Regex(@"\bRUC\s*:?\s*(\d{11})\b", Opc);
+        private static readonly Regex ReRuc = new Regex(@"\bRUC\s*:?\s*(\d{13}|\d{11})\b", Opc);   // 13 = RUC de Ecuador
         private static readonly Regex ReEmision = new Regex(@"Fecha\s+de\s+Emisi[oó]n\s*:\s*(\d{2}/\d{2}/\d{4})", Opc);
         private static readonly Regex ReFormaPago = new Regex(@"Forma\s+de\s+pago\s*:\s*(\S+)", Opc);
         private static readonly Regex ReSenor = new Regex(@"^\s*Se[ñn]or\(es\)\s*:\s*(.+)$", Opc);
@@ -47,8 +47,13 @@ namespace WebSGV.Services.Facturas
         private static readonly Regex ReItem = new Regex(@"^\s*(\d[\d,]*(?:\.\d+)?)\s+([A-ZÁÉÍÓÚÑ]+)\s+(.*?)\s+(\d[\d,]*\.\d{2,})\s*$", Opc);
         private static readonly Regex ReImporte = new Regex(@"(?:\$|S/\.?|US\$)?\s*(-?\d[\d,]*\.\d{2})", Opc);
         private static readonly Regex ReCuota = new Regex(@"\b\d{1,2}\s+(\d{2}/\d{2}/\d{4})\s+\d[\d,]*\.\d{2}\b", Opc);
-        private static readonly Regex ReFacturaComercial = new Regex(@"FACTURA\s+COMERCIAL\s*:?\s*([A-Z]\d{3})\s*-\s*(\d{1,8})", Opc);
+        // Perú: "F222-00008426", "FX01- 0000540" (serie de 4 + correlativo); Ecuador: "001-098-000331036".
+        private static readonly Regex ReFacturaComercial = new Regex(
+            @"FACTURA\s+COMERCIAL\s*(?:N[o°º]?\.?)?\s*:?\s*([A-Z0-9]{3,4}(?:\s*-\s*\d{3})?)\s*-\s*(\d{1,10})\b", Opc);
         private static readonly Regex ReCpic = new Regex(@"C\s*\.?\s*P\s*\.?\s*I\s*\.?\s*C?\s*\.?\s*:?\s*N?[°º]?\s*(\d{4,})", Opc);
+        private static readonly Regex ReMci = new Regex(@"\bMCI\s*:?\s*((?:N?[°º]?\s*\d{5,8}\s*[,y]?\s*)+)", Opc);
+        private static readonly Regex ReGuiaRemitente = new Regex(@"G\s*\.?\s*R\s*\.?\s*R\s*\.?\s*:?\s*([A-Z0-9]{4})\s*-\s*(\d{1,8})\b", Opc);
+        private static readonly Regex ReGuiaTransportista = new Regex(@"G\s*\.?\s*R\s*\.?\s*T\s*\.?\s*:?\s*([A-Z0-9]{4})\s*-\s*(\d{1,8})\b", Opc);
 
         public static FacturaFleteLeida Leer(IList<IList<string>> paginas)
         {
@@ -111,14 +116,43 @@ namespace WebSGV.Services.Facturas
                 if (fechas.Count > 0) f.FechaVencimiento = fechas.Max();
             }
 
-            var desc = f.Descripcion ?? string.Empty;
-            var fc = ReFacturaComercial.Match(desc);
-            if (fc.Success) f.NumeroFacturaComercial = NormalizarNumero(fc.Groups[1].Value, fc.Groups[2].Value);
-            var cp = ReCpic.Match(desc);
-            if (cp.Success) f.NumeroCPIC = cp.Groups[1].Value.PadLeft(7, '0');
+            f.NumeroFacturaComercial = f.Items.Select(x => x.FacturaComercial).FirstOrDefault(x => x != null);
+            f.NumeroCPIC = f.Items.Select(x => x.Cpic).FirstOrDefault(x => x != null);
 
             Validar(f, texto);
             return f;
+        }
+
+        /// <summary>
+        /// Factura comercial citada en un texto ("SEGUN FACTURA COMERCIAL: F222-8426", "FX01- 0000540",
+        /// "001-098-000331036"): las del Perú con 8 dígitos, como Factura.numeroFactura; las del Ecuador
+        /// (establecimiento-punto-secuencial) tal cual. Null si no la menciona.
+        /// </summary>
+        public static string LeerFacturaComercial(string texto)
+        {
+            var m = ReFacturaComercial.Match(texto ?? string.Empty);
+            if (!m.Success) return null;
+            string serie = Regex.Replace(m.Groups[1].Value, @"\s+", "").ToUpperInvariant();
+            return Regex.IsMatch(serie, @"^[A-Z][A-Z0-9]{3}$")
+                ? NormalizarNumero(serie, m.Groups[2].Value)
+                : serie + "-" + m.Groups[2].Value;
+        }
+
+        /// <summary>Referencias de la carga en el texto de una línea del detalle.</summary>
+        public static void LeerReferencias(ItemFacturaFlete item, string texto)
+        {
+            texto = texto ?? string.Empty;
+            item.FacturaComercial = LeerFacturaComercial(texto);
+            var cp = ReCpic.Match(texto);
+            if (cp.Success) item.Cpic = cp.Groups[1].Value.TrimStart('0').PadLeft(7, '0');
+            var mci = ReMci.Match(texto);
+            if (mci.Success)
+                item.Manifiestos = string.Join(", ", Regex.Matches(mci.Groups[1].Value, @"\d{5,8}").Cast<Match>()
+                    .Select(x => x.Value.TrimStart('0').PadLeft(7, '0')));
+            var grr = ReGuiaRemitente.Match(texto);
+            if (grr.Success) item.GuiaRemitente = NormalizarNumero(grr.Groups[1].Value, grr.Groups[2].Value);
+            var grt = ReGuiaTransportista.Match(texto);
+            if (grt.Success) item.GuiaTransportista = NormalizarNumero(grt.Groups[1].Value, grt.Groups[2].Value);
         }
 
         /// <summary>Serie y correlativo con el formato de Factura.numeroFactura: "F222-00008426".</summary>
@@ -152,6 +186,17 @@ namespace WebSGV.Services.Facturas
                     items[items.Count - 1].texto.Add(lineas[i].Trim());
             }
             if (items.Count == 0) return;
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                var item = new ItemFacturaFlete
+                {
+                    Orden = i + 1, Cantidad = items[i].cantidad, UnidadMedida = items[i].unidad,
+                    ValorUnitario = items[i].valorUnitario, Descripcion = string.Join(" ", items[i].texto)
+                };
+                LeerReferencias(item, item.Descripcion);
+                f.Items.Add(item);
+            }
 
             f.Descripcion = string.Join(" | ", items.Select(x => string.Join(" ", x.texto)));
             if (items.Select(x => x.unidad).Distinct().Count() == 1)
@@ -187,8 +232,14 @@ namespace WebSGV.Services.Facturas
             if (f.FechaVencimiento.HasValue && f.FechaVencimiento.Value < f.FechaEmision.Value)
                 f.Observaciones.Add("El vencimiento es anterior a la emisión.");
 
-            if (f.NumeroFacturaComercial == null)
-                f.Observaciones.Add("La descripción no menciona la factura comercial: no se podrá unir sola con su pedido.");
+            var sinReferencia = f.Items.Where(x => x.Referencia == null).ToList();
+            if (f.Items.Count == 0 || sinReferencia.Count == f.Items.Count)
+                f.Observaciones.Add("La descripción no menciona la factura comercial ni la guía del remitente: no se podrá unir sola con su carga.");
+            else if (sinReferencia.Count > 0)
+                f.Observaciones.Add($"{sinReferencia.Count} de {f.Items.Count} líneas no mencionan la factura comercial ni la guía del remitente.");
+
+            foreach (var g in f.Items.Where(x => x.Referencia != null).GroupBy(x => x.Referencia).Where(g => g.Count() > 1))
+                f.Observaciones.Add($"La carga {g.Key} aparece en {g.Count()} líneas de la factura.");
         }
 
         private static decimal? Importe(List<string> lineas, string etiqueta)

@@ -268,11 +268,13 @@ namespace WebSGV.Services.Despachos
             {
                 var pedido = l.Pedidos.FirstOrDefault(p => string.Equals(p.Pedido.Factura?.NumeroFactura, cp.FacturaComercial, StringComparison.OrdinalIgnoreCase));
                 bool seRegistraAhora = pedido != null && pedido.Guias.Any(g => g.Estado == EstadoGuiaBandeja.Unida || g.Estado == EstadoGuiaBandeja.Nueva);
+                if (!seRegistraAhora && ResolverCpicTercero(l, c)) return;
                 c.Estado = seRegistraAhora ? EstadoAduanaBandeja.Registrar : EstadoAduanaBandeja.NoSeRegistra;
                 c.Pedido = pedido?.Pedido.NumeroPedido;
                 c.Detalle = seRegistraAhora
                     ? $"Se une al pedido {pedido.Pedido.NumeroPedido} que se registra en esta misma bandeja."
-                    : $"La factura comercial {cp.FacturaComercial} no está en el sistema: suba primero el ZIP del pedido.";
+                    : c.Detalle ?? $"La factura comercial {cp.FacturaComercial} no está en el sistema: suba primero el ZIP del pedido " +
+                                   "(o, si es de un cliente tercero, súbala junto con sus MCI).";
                 return;
             }
 
@@ -301,6 +303,114 @@ namespace WebSGV.Services.Despachos
             if (c.EsBorrador) c.Detalle += " Es un borrador: se registra el número, pero no se adjunta; suba la CPIC firmada cuando la tenga.";
         }
 
+        // ── CPIC de clientes terceros ────────────────────────────────────────
+
+        /// <summary>Días antes y después de la recepción de la CPIC en que se busca la carga programada.</summary>
+        public const int DiasAntesCpicTercero = 4, DiasDespuesCpicTercero = 2;
+
+        /// <summary>
+        /// Carga de un cliente tercero (Crisar, Novopan): no llega un ZIP con la factura comercial, la cita la CPIC. Se
+        /// buscan los despachos de carga programados con el Word (sin factura) alrededor del día en que se recibió la
+        /// mercancía con la carreta (o el tracto) de los MCI de esa CPIC que vienen en la bandeja. Si se hallan y son de
+        /// un mismo cliente, al registrar se crea la factura comercial para ese cliente y se une a esos despachos.
+        /// </summary>
+        private static bool ResolverCpicTercero(LecturaBandeja l, CpicBandeja c)
+        {
+            var cp = c.Cpic;
+            // Todos los MCI de la carta: Crisar cruza al Ecuador; Novopan carga en Quito y descarga en el Perú.
+            var mcis = l.Mcis.Where(m => m.Mci.CartaPorte == cp.Numero)
+                .GroupBy(m => m.Mci.Numero ?? m.Archivo)
+                .Select(g => g.OrderBy(m => LectorDocumentosAduana.PrioridadVersion(m.Archivo)).First().Mci).ToList();
+            if (mcis.Count == 0) return false;
+
+            DateTime dia = (cp.FechaRecepcion ?? cp.FechaEmision ?? mcis.Select(m => m.FechaEmision).FirstOrDefault(f => f.HasValue) ?? FechaHelper.Hoy()).Date;
+            DateTime desde = dia.AddDays(-DiasAntesCpicTercero), hasta = dia.AddDays(DiasDespuesCpicTercero);
+            var candidatos = DbHelper.ConsultarTabla(@"
+                SELECT d.idDespacho, d.idCliente, c.nombre AS cliente, d.fechaDespacho, t.placaTracto, ca.placaCarreta,
+                       (SELECT STRING_AGG(s.tracto2, ',') FROM SeguimientoExportacion s WHERE s.idDespachoOrigen = d.idDespacho AND s.activo = 1) AS tractos2
+                FROM Despachos d
+                JOIN Tracto t ON t.idTracto = d.idTracto
+                JOIN Carreta ca ON ca.idCarreta = d.idCarreta
+                LEFT JOIN Cliente c ON c.idCliente = d.idCliente
+                WHERE d.activo = 1 AND ISNULL(d.estadoDespacho, '') <> 'ANULADO' AND d.tipoOperacion = 'CARGA'
+                  AND d.idFactura IS NULL AND d.fechaDespacho BETWEEN @desde AND @hasta",
+                DbHelper.Param("@desde", desde), DbHelper.Param("@hasta", hasta)).Rows.Cast<DataRow>()
+                .Select(r => new DespachoTercero
+                {
+                    IdDespacho = Convert.ToInt32(r["idDespacho"]), IdCliente = Convert.ToInt32(r["idCliente"]),
+                    Cliente = Convert.ToString(r["cliente"]).Trim(), Fecha = Convert.ToDateTime(r["fechaDespacho"]),
+                    Tracto = Convert.ToString(r["placaTracto"]), Carreta = Convert.ToString(r["placaCarreta"]),
+                    Tractos2 = Convert.ToString(r["tractos2"]).Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).ToList()
+                }).ToList();
+
+            var union = UnirMcisTercero(mcis, candidatos, dia);
+            var sinDespacho = mcis.Where(m => !union.ContainsKey(m.Numero ?? "")).ToList();
+            string faltan = sinDespacho.Count == 0 ? "" :
+                $" {sinDespacho.Count} MCI sin despacho programado del {desde:dd/MM} al {hasta:dd/MM} con su carreta o tracto " +
+                $"({string.Join(", ", sinDespacho.Select(m => $"{m.PlacaTracto}/{m.PlacaCarreta}"))}): prográmelos con el Word y vuelva a subir la CPIC con esos MCI.";
+            if (union.Count == 0)
+            {
+                c.Detalle = $"La factura comercial {cp.FacturaComercial} no está en el sistema y ningún despacho de carga sin documentos " +
+                            $"del {desde:dd/MM} al {hasta:dd/MM} tiene la carreta o el tracto de sus MCI." + faltan;
+                return false;
+            }
+            var elegidos = candidatos.Where(x => union.Values.Contains(x.IdDespacho)).ToList();
+            if (elegidos.Select(x => x.IdCliente).Distinct().Count() > 1)
+            {
+                c.Detalle = $"Sus MCI coinciden con despachos de clientes distintos ({string.Join(", ", elegidos.Select(x => x.Cliente).Distinct())}): " +
+                            "revíselos en la lista de despachos.";
+                return false;
+            }
+
+            c.IdsDespachos = elegidos.Select(x => x.IdDespacho).OrderBy(x => x).ToList();
+            c.IdClienteTercero = elegidos[0].IdCliente;
+            c.ClienteTercero = elegidos[0].Cliente;
+            c.Pedido = cp.FacturaComercial;
+            c.Estado = EstadoAduanaBandeja.Registrar;
+            c.Detalle = $"Carga de {c.ClienteTercero}: se registra su factura comercial {cp.FacturaComercial} y se une a " +
+                        $"{c.IdsDespachos.Count} despacho(s) por la carreta o el tracto de sus MCI." + faltan;
+            if (c.EsBorrador) c.Detalle += " Es un borrador: se registra el número, pero no se adjunta; suba la CPIC firmada cuando la tenga.";
+            return true;
+        }
+
+        /// <summary>Despacho de carga sin factura comercial, candidato a la CPIC de un cliente tercero.</summary>
+        public class DespachoTercero
+        {
+            public int IdDespacho { get; set; }
+            public int IdCliente { get; set; }
+            public string Cliente { get; set; }
+            public DateTime Fecha { get; set; }
+            public string Tracto { get; set; }
+            public string Carreta { get; set; }
+            public List<string> Tractos2 { get; set; } = new List<string>();
+        }
+
+        /// <summary>
+        /// Une cada MCI (número → despacho) con un despacho de carga, cada uno una sola vez: primero por la carreta (viaja
+        /// de punta a punta; el tracto del MCI puede ser el del relevo en la base), luego por el tracto (o el del relevo
+        /// del tablero); entre varios, el de fecha más cercana al día de la CPIC.
+        /// </summary>
+        public static Dictionary<string, int> UnirMcisTercero(IList<MciLeido> mcis, IList<DespachoTercero> candidatos, DateTime dia)
+        {
+            var union = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var usados = new HashSet<int>();
+            var orden = mcis.Where(m => m.Numero != null).OrderBy(m => m.Numero).ToList();
+            foreach (bool porCarreta in new[] { true, false })
+                foreach (var m in orden.Where(x => !union.ContainsKey(x.Numero)))
+                {
+                    var elegido = candidatos.Where(d => !usados.Contains(d.IdDespacho))
+                        .Where(d => porCarreta
+                            ? m.PlacaCarreta != null && P(d.Carreta) == P(m.PlacaCarreta)
+                            : m.PlacaTracto != null && (P(d.Tracto) == P(m.PlacaTracto) || d.Tractos2.Any(t => P(t) == P(m.PlacaTracto))))
+                        .OrderBy(d => Math.Abs((d.Fecha.Date - dia.Date).TotalDays)).ThenBy(d => d.IdDespacho)
+                        .FirstOrDefault();
+                    if (elegido == null) continue;
+                    union[m.Numero] = elegido.IdDespacho;
+                    usados.Add(elegido.IdDespacho);
+                }
+            return union;
+        }
+
         private static void AsociarMcis(LecturaBandeja l)
         {
             foreach (var grupo in l.Mcis.GroupBy(m => m.Mci.Numero ?? m.Archivo))
@@ -320,6 +430,10 @@ namespace WebSGV.Services.Despachos
         {
             string factura = l.Cpics.Where(c => c.Cpic.Numero == cartaPorte && c.Cpic.FacturaComercial != null)
                 .Select(c => c.Cpic.FacturaComercial).FirstOrDefault();
+            // CPIC de un cliente tercero que se registra en esta bandeja: sus despachos todavía no tienen la factura.
+            string deTercero = string.Join(",", l.Cpics.Where(c => c.Cpic.Numero == cartaPorte && c.IdClienteTercero.HasValue
+                                                                   && c.Estado == EstadoAduanaBandeja.Registrar)
+                                                       .SelectMany(c => c.IdsDespachos).Distinct());
             // Las cargas de la carta (o de su factura comercial) y sus descargas en destino; las descargas primero.
             return DbHelper.ConsultarTabla(@"
                 ;WITH carga AS (
@@ -328,7 +442,8 @@ namespace WebSGV.Services.Despachos
                     LEFT JOIN CPIC c ON c.idCPIC = d.idCPIC
                     LEFT JOIN Factura f ON f.idFactura = d.idFactura
                     WHERE d.activo = 1 AND ISNULL(d.estadoDespacho, '') <> 'ANULADO' AND d.tipoOperacion = 'CARGA'
-                      AND (c.numeroCPIC = @carta OR (@factura IS NOT NULL AND f.numeroFactura = @factura)))
+                      AND (c.numeroCPIC = @carta OR (@factura IS NOT NULL AND f.numeroFactura = @factura)
+                           OR d.idDespacho IN (SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@tercero, ','))))
                 SELECT d.idDespacho, d.fechaDespacho, d.tipoOperacion, ISNULL(d.esInternacional, 0) AS esInternacional,
                        t.placaTracto, ca.placaCarreta,
                        LTRIM(RTRIM(CONCAT(co.nombre, ' ', co.apPaterno))) AS chofer,
@@ -340,7 +455,8 @@ namespace WebSGV.Services.Despachos
                 WHERE d.activo = 1 AND ISNULL(d.estadoDespacho, '') <> 'ANULADO'
                   AND (d.idDespacho IN (SELECT idDespacho FROM carga) OR d.idDespachoCarga IN (SELECT idDespacho FROM carga))
                 ORDER BY ISNULL(d.esInternacional, 0) DESC, d.fechaDespacho, d.idDespacho",
-                DbHelper.Param("@carta", cartaPorte), DbHelper.Param("@factura", factura)).Rows.Cast<DataRow>().ToList();
+                DbHelper.Param("@carta", cartaPorte), DbHelper.Param("@factura", factura), DbHelper.Param("@tercero", deTercero))
+                .Rows.Cast<DataRow>().ToList();
         }
 
         private static string P(object placa) => (Convert.ToString(placa) ?? "").Replace("-", "").Trim().ToUpperInvariant();
@@ -684,6 +800,20 @@ namespace WebSGV.Services.Despachos
                         r.Errores.Add($"CPIC {c.Cpic.Numero}: {c.Detalle}");
                         continue;
                     }
+                    if (c.IdClienteTercero.HasValue)
+                    {
+                        DataTable ft = DbHelper.ConsultarTablaSp("sp_LD_RegistrarFacturaTercero",
+                            DbHelper.Param("@idsDespachos", string.Join(",", c.IdsDespachos)),
+                            DbHelper.Param("@numeroFactura", c.Cpic.FacturaComercial),
+                            DbHelper.Param("@idCliente", c.IdClienteTercero.Value),
+                            DbHelper.Param("@fechaEmision", c.Cpic.FechaRecepcion ?? c.Cpic.FechaEmision),
+                            DbHelper.Param("@valorTotal", c.Cpic.ValorMercancias),
+                            DbHelper.Param("@moneda", "USD"));
+                        int idFactura = Convert.ToInt32(ft.Rows[0]["idFactura"]);
+                        AuditoriaHelper.Registrar(Convert.ToString(ft.Rows[0]["accion"]) == "CREADA" ? "INSERT" : "UPDATE", "Factura", idFactura,
+                            $"Bandeja de documentos: factura comercial {c.Cpic.FacturaComercial} de {c.ClienteTercero} (de la CPIC {c.Cpic.Numero}) " +
+                            $"unida a los despachos [{string.Join(", ", c.IdsDespachos)}]");
+                    }
                     DataTable dt = DbHelper.ConsultarTablaSp("sp_LD_VincularCPIC",
                         DbHelper.Param("@idsDespachos", string.Join(",", c.IdsDespachos)),
                         DbHelper.Param("@numeroCPIC", c.Cpic.Numero),
@@ -699,7 +829,7 @@ namespace WebSGV.Services.Despachos
                         DocumentoCpicService.InsertarDocumento(idCpic, c.Archivo, nombre, ruta, ".pdf", c.Pdf.LongLength, usuario);
                     }
                     r.CpicsRegistradas++;
-                    r.Detalle.Add($"CPIC {c.Cpic.Numero}: unida al pedido {c.Pedido} ({c.IdsDespachos.Count} despacho(s))" +
+                    r.Detalle.Add($"CPIC {c.Cpic.Numero}: unida " + (c.ClienteTercero != null ? $"a la carga de {c.ClienteTercero}, factura comercial {c.Pedido}" : $"al pedido {c.Pedido}") + $" ({c.IdsDespachos.Count} despacho(s))" +
                                   (adjunta ? ", con su PDF." : c.EsBorrador ? "; solo había el borrador: falta adjuntar la firmada." : "."));
                     AuditoriaHelper.Registrar("UPDATE", "CPIC", idCpic,
                         $"Bandeja de documentos: CPIC {c.Cpic.Numero} ({dt.Rows[0]["accion"]}) unida a los despachos [{string.Join(", ", c.IdsDespachos)}] desde {c.Archivo}");

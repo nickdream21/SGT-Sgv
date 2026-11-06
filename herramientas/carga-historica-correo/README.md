@@ -63,3 +63,29 @@ misma ruta del sitio publicado. `AnalizarCorreo` solo lee: por pedido, factura y
 .\WebSGV\Database\sql.ps1 "EXEC sp_SE_SincronizarDespachos @desde='2026-10-20'"
 .\herramientas\carga-historica-correo\Ejecutar.ps1 -Herramienta AdjuntarPdfFacturas -Modo aplicar
 ```
+
+## Cargas de clientes terceros con sus CPIC y MCI (2026-11-06)
+
+`TercerosConDocumentos` regulariza cargas de Crisar y Novopan ya facturadas que no estaban en el sistema, con los
+servicios de la aplicación y en una transacción (`prueba` la deshace). Lee un archivo de tareas (UTF-8, una por línea):
+
+- `WORD|<docx>|<texto de la sección>`: un despacho de CARGA por fila de esa sección, con lo que propone "Programar con
+  el Word" (chofer, tracto, carreta, cliente, planta y día), **sin viaje del chofer** (no entra a la liquidación),
+  estado COMPLETADO, usuario `historico.terceros` y sin viaje del tablero. Salta las filas que ya tienen despacho ese día.
+- `UNIDAD|yyyy-MM-dd|idCliente|idPlanta|tracto|carreta|apellido del chofer|motivo`: una carga que el Word trae mal.
+- `GRE|<carpeta>|idCliente|idPlanta`: una carga por PDF de nuestra GRE transportista de SUNAT (fecha de traslado, placas,
+  chofer por DNI, guía del remitente y la nuestra), para las nacionales como Polinplast; si ese día ya hay un programado
+  con el mismo tracto o carreta, solo le pone las guías.
+- `CPIC|<carpeta>|0003901,0003903,...`: sube por la bandeja cada CPIC con sus MCI de la carpeta; la de un tercero crea
+  su factura comercial y se une a los despachos por la carreta de sus MCI.
+- `FLETE|<carpeta>|E001-18677,E001-18715`: registra las facturas de flete de la carpeta, menos las indicadas.
+
+`ConciliarFletes` muestra por consola la conciliación de Reportes → Facturas de flete (solo lee).
+
+```powershell
+.\herramientas\carga-historica-correo\Ejecutar.ps1 -Herramienta TercerosConDocumentos -Modo prueba -Tareas herramientas\carga-historica-correo\tareas_terceros_2026-11-06.txt
+.\herramientas\carga-historica-correo\Ejecutar.ps1 -Herramienta ConciliarFletes -Desde 2026-09-15 -Hasta 2026-10-31
+```
+
+`tareas_terceros_2026-11-06.txt` y `tareas_polinplast_2026-11-06.txt` (fuera de git, rutas de la PC de la oficina) son las que se aplicaron
+ en sgvActualizada.

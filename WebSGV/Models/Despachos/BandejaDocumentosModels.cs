@@ -136,6 +136,13 @@ namespace WebSGV.Models.Despachos
         public int? IdCpicExistente { get; set; }
         public bool TienePdf { get; set; }
 
+        /// <summary>
+        /// Carga de un cliente tercero (Crisar, Novopan): su factura comercial no está en el sistema y se crea para este
+        /// cliente al registrar, unida a los despachos que se hallaron por la carreta (o el tracto) de sus MCI.
+        /// </summary>
+        public int? IdClienteTercero { get; set; }
+        public string ClienteTercero { get; set; }
+
         /// <summary>Solo llegó el borrador: se registra el número, pero no se adjunta como el documento final.</summary>
         public bool EsBorrador => WebSGV.Services.Despachos.Importacion.LectorDocumentosAduana.PrioridadVersion(Archivo) == 3;
     }

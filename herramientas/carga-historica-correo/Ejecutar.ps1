@@ -1,7 +1,10 @@
 ﻿param(
-    [Parameter(Mandatory)] [ValidateSet('AnalizarCorreo', 'CompletarConCorreo', 'AdjuntarPdfFacturas')] [string]$Herramienta,
+    [Parameter(Mandatory)] [ValidateSet('AnalizarCorreo', 'CompletarConCorreo', 'AdjuntarPdfFacturas', 'TercerosConDocumentos', 'ConciliarFletes')] [string]$Herramienta,
     [ValidateSet('prueba', 'aplicar')] [string]$Modo = 'prueba',
-    [string]$Zips = 'docs\DOCUMENTACION\informacion'
+    [string]$Zips = 'docs\DOCUMENTACION\informacion',
+    [string]$Tareas,
+    [string]$Desde = '2026-10-01',
+    [string]$Hasta = '2026-10-31'
 )
 # Compila y corre una de las herramientas del correo contra el WebSGV.dll ya compilado (msbuild WebSGV.sln antes),
 # con la cadena de conexión de WebSGV\connectionStrings.config (BD de pruebas). Ver README.md.
@@ -35,4 +38,6 @@ switch ($Herramienta) {
     'AnalizarCorreo'      { & "$bin\$Herramienta.exe" $carpetaZips }
     'CompletarConCorreo'  { & "$bin\$Herramienta.exe" $carpetaZips $Modo (Join-Path $raiz 'WebSGV') }
     'AdjuntarPdfFacturas' { & "$bin\$Herramienta.exe" $carpetaZips (Join-Path $raiz 'WebSGV') $Modo }
+    'ConciliarFletes'     { & "$bin\$Herramienta.exe" $Desde $Hasta }
+    'TercerosConDocumentos' { & "$bin\$Herramienta.exe" (Resolve-Path $Tareas).Path $Modo (Join-Path $raiz 'WebSGV') }
 }
