@@ -258,7 +258,7 @@ namespace WebSGV.Views
             var sb = new StringBuilder();
             var facturado = emitidas.GroupBy(f => f.Moneda).OrderByDescending(g => g.Key)
                 .Select(g => H(Monto(g.Key, g.Sum(x => x.ImporteTotal)))).ToList();
-            sb.Append(Tarjeta("Facturado en el per&#xED;odo", facturado.Count == 0 ? "—" : string.Join("<br>", facturado),
+            sb.Append(Tarjeta("Facturado en el per&#xED;odo", facturado.Count == 0 ? "—" : string.Join("", facturado.Select((m, i) => $"<em class=\"{(i == 0 ? "" : "ff-monto-2")}\">{m}</em>")),
                               $"<small>{emitidas.Count} factura(s)</small>", ""));
 
             int facturados = filas.Count(x => x.Estado == EstadoConciliacion.Conforme || x.Estado == EstadoConciliacion.Diferencia);
@@ -284,14 +284,13 @@ namespace WebSGV.Views
 
             var porVencer = emitidas.Where(f => { int? d = FacturaFleteService.DiasParaVencer(f, hoy); return d.HasValue && d.Value >= 0 && d.Value <= DiasAvisoVencimiento; }).ToList();
             var montoVencer = porVencer.GroupBy(f => f.Moneda).Select(g => H(Monto(g.Key, g.Sum(x => x.ImporteTotal)))).ToList();
-            sb.Append(Tarjeta($"Vencen en {DiasAvisoVencimiento} d&#xED;as", montoVencer.Count == 0 ? "—" : string.Join("<br>", montoVencer),
+            sb.Append(Tarjeta($"Vencen en {DiasAvisoVencimiento} d&#xED;as", montoVencer.Count == 0 ? "—" : string.Join("", montoVencer.Select((m, i) => $"<em class=\"{(i == 0 ? "" : "ff-monto-2")}\">{m}</em>")),
                               $"<small>{porVencer.Count} factura(s) del per&#xED;odo</small>", porVencer.Count > 0 ? "ff-tarjeta-aviso" : ""));
             return sb.ToString();
         }
 
         private static string Tarjeta(string etiqueta, string valorHtml, string pieHtml, string clase) =>
-            $"<div class=\"col-6 col-md-4 col-xl mb-3\"><div class=\"ff-tarjeta {clase}\"><span>{etiqueta}</span>" +
-            $"<strong>{valorHtml}</strong>{pieHtml}</div></div>";
+            $"<div class=\"ff-tarjeta {clase}\"><span>{etiqueta}</span><strong>{valorHtml}</strong>{pieHtml}</div>";
 
         private string HtmlConciliacion(List<FilaConciliacion> filas)
         {
@@ -300,14 +299,16 @@ namespace WebSGV.Views
             var sb = new StringBuilder("<table class=\"table table-sm ff-tabla\"><thead><tr><th>Estado</th><th>Carga</th><th>Cliente</th>" +
                 "<th>Pedido</th><th>Factura comercial / gu&#xED;a</th><th class=\"ff-num\">Unid.</th><th>Factura de flete</th>" +
                 "<th class=\"ff-num\">Facturado</th><th class=\"ff-num\">Cargado</th><th class=\"ff-num\">Dif.</th>" +
-                "<th class=\"ff-num\">Importe</th><th>Avisos</th></tr></thead><tbody>");
+                "<th class=\"ff-num\">Importe</th><th class=\"ff-col-avisos\">Avisos</th></tr></thead><tbody>");
             foreach (var x in filas)
             {
-                string clase = x.Estado == EstadoConciliacion.Conforme ? (x.Avisos.Count > 0 ? "ff-fila-aviso" : "") : "ff-fila-mal";
-                sb.Append($"<tr class=\"{clase}\">")
+                bool conAvisos = x.Avisos.Any(a => !EsInformativo(a));
+                string clase = x.Estado == EstadoConciliacion.Conforme ? (conAvisos ? "ff-fila-aviso" : "") : "ff-fila-mal";
+                string estado = x.Estado == EstadoConciliacion.Conforme && !conAvisos ? "ok" : "revisar";
+                sb.Append($"<tr class=\"{clase}\" data-estado=\"{estado}\">")
                   .Append($"<td>{Chip(x.Estado)}</td>")
                   .Append($"<td class=\"ff-cod\">{(x.Pedido != null ? x.Pedido.FechaCarga.ToString("dd/MM/yyyy") : "—")}</td>")
-                  .Append($"<td>{H(x.Pedido?.Cliente ?? x.Facturas.FirstOrDefault()?.Cliente)}</td>")
+                  .Append(Cliente(x.Pedido?.Cliente ?? x.Facturas.FirstOrDefault()?.Cliente))
                   .Append($"<td class=\"ff-cod\">{H(x.Pedido?.NumeroPedido ?? "—")}</td>")
                   .Append($"<td class=\"ff-cod\">{H(x.Referencia ?? "—")}</td>")
                   .Append($"<td class=\"ff-num\">{(x.Pedido != null ? x.Pedido.Unidades.ToString() : "")}</td>")
@@ -330,16 +331,16 @@ namespace WebSGV.Views
             else
             {
                 sb.Append("<table class=\"table table-sm ff-tabla\"><thead><tr><th>Estado</th><th>Carga</th><th>Cliente</th><th>Pedido</th>" +
-                          "<th>Factura comercial</th><th class=\"ff-num\">Unid.</th><th class=\"ff-num\">Viajes</th><th class=\"ff-num\">Cargado</th>" +
-                          "<th class=\"ff-num\">Estimado</th><th>Avisos</th></tr></thead><tbody>");
+                          "<th>Factura comercial / gu&#xED;a</th><th class=\"ff-num\">Unid.</th><th class=\"ff-num\">Viajes</th><th class=\"ff-num\">Cargado</th>" +
+                          "<th class=\"ff-num\">Estimado</th><th class=\"ff-col-avisos\">Avisos</th></tr></thead><tbody>");
                 foreach (var x in filas)
                 {
-                    sb.Append("<tr>")
+                    sb.Append("<tr data-estado=\"revisar\">")
                       .Append($"<td>{Chip(x.Estado)}</td>")
                       .Append($"<td class=\"ff-cod\">{x.Pedido.FechaCarga:dd/MM/yyyy}</td>")
-                      .Append($"<td>{H(x.Pedido.Cliente)}</td>")
+                      .Append(Cliente(x.Pedido.Cliente))
                       .Append($"<td class=\"ff-cod\">{H(x.Pedido.NumeroPedido ?? "—")}</td>")
-                      .Append($"<td class=\"ff-cod\">{H(x.Pedido.FacturaComercial ?? "—")}</td>")
+                      .Append($"<td class=\"ff-cod\">{H(x.Pedido.Referencia ?? "—")}</td>")
                       .Append($"<td class=\"ff-num\">{x.Pedido.Unidades}</td>")
                       .Append($"<td class=\"ff-num\">{x.Pedido.ViajesSeguimiento}</td>")
                       .Append($"<td class=\"ff-num\">{Cantidad(x.CantidadCargada, x.Unidad)}</td>")
@@ -372,10 +373,11 @@ namespace WebSGV.Views
                 int? dias = FacturaFleteService.DiasParaVencer(f, hoy);
                 string claseDias = !dias.HasValue ? "" : dias.Value < 0 ? "ff-vencida" : dias.Value <= DiasAvisoVencimiento ? "ff-por-vencer" : "";
                 bool netoDistinto = FacturaFleteService.NetoNoCuadra(f);
-                sb.Append(netoDistinto ? "<tr class=\"ff-fila-aviso\">" : "<tr>")
+                bool revisar = netoDistinto || (dias.HasValue && dias.Value <= DiasAvisoVencimiento);
+                sb.Append($"<tr class=\"{(netoDistinto ? "ff-fila-aviso" : "")}\" data-estado=\"{(revisar ? "revisar" : "ok")}\">")
                   .Append($"<td class=\"ff-cod\">{EnlaceFactura(f)}</td>")
                   .Append($"<td class=\"ff-cod\">{f.FechaEmision:dd/MM/yyyy}</td>")
-                  .Append($"<td>{H(f.Cliente)}</td>")
+                  .Append(Cliente(f.Cliente))
                   .Append($"<td class=\"ff-cod\">{H(f.OrdenServicio)}</td>")
                   .Append($"<td class=\"ff-cod\">{string.Join("<br>", FacturaFleteService.Referencias(f).Select(H))}</td>")
                   .Append($"<td class=\"ff-cod\">{string.Join("<br>", FacturaFleteService.Cpics(f).Select(H))}</td>")
@@ -410,8 +412,15 @@ namespace WebSGV.Views
             return $"<span class=\"ff-chip {clase}\">{H(FacturaFleteService.TextoEstado(e))}</span>";
         }
 
+        /// <summary>Celda del cliente en una línea (el nombre completo en el título).</summary>
+        private static string Cliente(string nombre) => $"<td class=\"ff-cliente\" title=\"{H(nombre)}\">{H(nombre)}</td>";
+
+        /// <summary>Nota que no pide revisar nada (la carga se cobró por tramos a dos clientes, como debe ser).</summary>
+        private static bool EsInformativo(string aviso) => aviso != null && aviso.StartsWith("Facturado por tramos", StringComparison.Ordinal);
+
         private static string Avisos(List<string> avisos) =>
-            avisos.Count == 0 ? "" : "<ul class=\"ff-avisos\">" + string.Concat(avisos.Select(a => $"<li>{H(a)}</li>")) + "</ul>";
+            avisos.Count == 0 ? "" : "<ul class=\"ff-avisos\">" +
+                string.Concat(avisos.Select(a => EsInformativo(a) ? $"<li class=\"ff-aviso-info\">{H(a)}</li>" : $"<li>{H(a)}</li>")) + "</ul>";
 
         private static string Cantidad(decimal? v, string unidad) =>
             v.HasValue ? H(v.Value.ToString(unidad == "t" ? "N2" : "N0", Pe) + " " + unidad) : "";

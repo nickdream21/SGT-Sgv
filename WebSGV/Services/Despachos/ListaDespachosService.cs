@@ -544,7 +544,8 @@ namespace WebSGV.Services.Despachos
                 DespachosSinFactura = GetSafeValue<int>(reader, "DespachosSinFactura"),
                 DespachosSinPdfFactura = GetSafeValue<int>(reader, "DespachosSinPdfFactura"),
                 DespachosSinCPIC = GetSafeValue<int>(reader, "DespachosSinCPIC"),
-                DespachosSinPdfCPIC = GetSafeValue<int>(reader, "DespachosSinPdfCPIC")
+                DespachosSinPdfCPIC = GetSafeValue<int>(reader, "DespachosSinPdfCPIC"),
+                PerfilDocumentos = GetSafeValue<string>(reader, "PerfilDocumentos", "PEDIDO")
             };
         }
 

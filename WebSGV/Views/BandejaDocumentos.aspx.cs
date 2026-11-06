@@ -525,11 +525,14 @@ namespace WebSGV.Views
                 sb.Append($"<span class='bd-doc {(ok ? "bd-doc-ok" : "bd-doc-falta")}'><i class='fas {(ok ? "fa-check" : "fa-times")}'></i>{H(nombre)}{detalle}</span>");
             }
             bool carga = lote.TipoOperacion == "CARGA";
-            Doc("Pedido", e.SinPedido, carga);
-            Doc("Factura", e.SinFactura, carga);
-            Doc("PDF factura", e.SinPdfFactura, carga && e.SinFactura < e.Despachos);   // sin factura todavía, su PDF no aplica
-            Doc("Guías", e.SinGuia, carga);
-            Doc("CPIC", e.SinCPIC, lote.EsInternacional);
+            // Cada cliente manda lo suyo: Vitapro el ZIP (pedido, factura con PDF, guías); Crisar y Novopan la CPIC
+            // (con su factura comercial); Polinplast la guía del remitente.
+            bool pedido = e.Perfil == "PEDIDO", cpic = e.Perfil == "CPIC", guia = e.Perfil == "GUIA";
+            Doc("Pedido", e.SinPedido, carga && pedido);
+            Doc(cpic ? "Factura comercial" : "Factura", e.SinFactura, carga && (pedido || cpic));
+            Doc("PDF factura", e.SinPdfFactura, carga && pedido && e.SinFactura < e.Despachos);   // sin factura todavía, su PDF no aplica
+            Doc(guia ? "Guía remitente" : "Guías", e.SinGuia, carga && (pedido || guia));
+            Doc("CPIC", e.SinCPIC, lote.EsInternacional || (carga && cpic));
             // Un lote nacional no exige CPIC, pero si ya tiene una (la de su pedido) se espera su PDF (EstadoDocumental).
             Doc("PDF CPIC", e.SinPdfCPIC, lote.EsInternacional || !string.IsNullOrEmpty(lote.NumeroCPIC));
             return sb.ToString();

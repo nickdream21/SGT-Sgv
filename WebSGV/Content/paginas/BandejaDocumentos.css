@@ -1,5 +1,7 @@
 /* Bandeja de documentos */
-.bd-pagina { max-width: 1400px; }
+/* Página ancha (como Facturas de flete y la lista de despachos): el tablero tiene muchas pastillas por fila. */
+.container:has(> .bd-pagina) { max-width: min(1880px, 97vw); }
+.bd-pagina { max-width: none; }
 .bd-cabecera { margin-bottom: 1.25rem; }
 .bd-titulo { color: #1e293b; font-weight: 600; margin-bottom: .25rem; }
 .bd-titulo i { color: #2563eb; }
@@ -112,4 +114,19 @@
     .bd-previa-acciones { width: 100%; }
     .bd-previa-acciones .btn { flex: 1; }
     .bd-selector { min-width: 200px; }
+}
+
+/* Tablero: las tablas de todos los clientes con las mismas columnas alineadas. */
+.bd-tabla-tablero { table-layout: fixed; width: 100%; }
+.bd-tabla-tablero th:nth-child(1) { width: 110px; }
+.bd-tabla-tablero th:nth-child(2) { width: 130px; }
+.bd-tabla-tablero th:nth-child(3) { width: 170px; }
+.bd-tabla-tablero th:nth-child(4) { width: 70px; }
+.bd-tabla-tablero th:nth-child(6) { width: 130px; }
+.bd-tabla-tablero th:nth-child(7) { width: 90px; }
+.bd-tabla-tablero td:nth-child(3) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bd-tabla-tablero tbody tr:hover td { background-color: #f8fafc; }
+.bd-filtro select.form-control { min-width: 200px; }
+@media (max-width: 991.98px) {
+    .bd-tabla-tablero { table-layout: auto; min-width: 760px; }
 }

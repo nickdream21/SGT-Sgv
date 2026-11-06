@@ -25,6 +25,9 @@ namespace WebSGV.Services.Despachos
         public int SinCPIC { get; set; }
         public int SinPdfCPIC { get; set; }
 
+        /// <summary>PEDIDO, CPIC o GUIA (ver <see cref="LoteRegistrado.PerfilDocumentos"/>).</summary>
+        public string Perfil { get; set; } = "PEDIDO";
+
         public static EstadoDocumental DeLote(LoteRegistrado lote) => new EstadoDocumental
         {
             Despachos = lote.DespachosVigentes,
@@ -33,7 +36,8 @@ namespace WebSGV.Services.Despachos
             SinFactura = lote.DespachosSinFactura,
             SinPdfFactura = lote.DespachosSinPdfFactura,
             SinCPIC = lote.DespachosSinCPIC,
-            SinPdfCPIC = lote.DespachosSinPdfCPIC
+            SinPdfCPIC = lote.DespachosSinPdfCPIC,
+            Perfil = string.IsNullOrEmpty(lote.PerfilDocumentos) ? "PEDIDO" : lote.PerfilDocumentos
         };
 
         public bool Completo =>
@@ -44,7 +48,7 @@ namespace WebSGV.Services.Despachos
         /// (RegistroDespacho → "Leer documentos" la completa).
         /// </summary>
         public bool SinNingunDocumento =>
-            Despachos > 0 && SinPedido == Despachos && SinGuia == Despachos && SinFactura == Despachos;
+            Perfil == "PEDIDO" && Despachos > 0 && SinPedido == Despachos && SinGuia == Despachos && SinFactura == Despachos;
 
         /// <summary>Lo que falta, un texto por documento ("Falta guía (2 de 6)").</summary>
         public IReadOnlyList<string> Faltantes
@@ -59,8 +63,8 @@ namespace WebSGV.Services.Despachos
                 else
                 {
                     Agregar(faltan, SinPedido, "Falta pedido");
-                    Agregar(faltan, SinFactura, "Falta factura");
-                    Agregar(faltan, SinGuia, "Falta guía");
+                    Agregar(faltan, SinFactura, Perfil == "CPIC" ? "Falta factura comercial (de la CPIC)" : "Falta factura");
+                    Agregar(faltan, SinGuia, Perfil == "GUIA" ? "Falta guía del remitente" : "Falta guía");
                 }
                 Agregar(faltan, SinPdfFactura, "Sin PDF de factura");
                 Agregar(faltan, SinCPIC, "Falta CPIC");

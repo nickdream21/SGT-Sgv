@@ -95,5 +95,25 @@ namespace WebSGV.Tests
             Assert.Equal(1, e.SinCPIC);
             Assert.Equal(2, e.SinPdfCPIC);
         }
-    }
+    
+        [Fact]
+        public void TerceroQueCruza_EsperaLaFacturaComercialDeLaCpic()
+        {
+            var e = EstadoDocumental.DeLote(new LoteRegistrado
+            {
+                DespachosVigentes = 5, DespachosSinFactura = 5, DespachosSinCPIC = 5, PerfilDocumentos = "CPIC"
+            });
+
+            Assert.False(e.SinNingunDocumento);   // no espera el ZIP del correo
+            Assert.Contains("Falta factura comercial (de la CPIC)", e.Faltantes);
+            Assert.Contains("Falta CPIC", e.Faltantes);
+        }
+
+        [Fact]
+        public void TerceroNacional_EsperaLaGuiaDelRemitente()
+        {
+            var e = EstadoDocumental.DeLote(new LoteRegistrado { DespachosVigentes = 1, DespachosSinGuia = 1, PerfilDocumentos = "GUIA" });
+
+            Assert.Equal("Falta guía del remitente", e.Resumen);
+        }    }
 }

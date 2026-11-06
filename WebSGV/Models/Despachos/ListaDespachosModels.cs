@@ -114,6 +114,13 @@ namespace WebSGV.Models.Despachos
         public int DespachosSinCPIC { get; set; }
         public int DespachosSinPdfCPIC { get; set; }
 
+        /// <summary>
+        /// Qué documentos se esperan del cliente (sp_LD_ObtenerLotesRegistrados): PEDIDO (ZIP del correo: pedido, factura
+        /// con PDF y guías), CPIC (tercero que cruza: factura comercial de la CPIC y la CPIC) o GUIA (tercero nacional:
+        /// guía del remitente).
+        /// </summary>
+        public string PerfilDocumentos { get; set; } = "PEDIDO";
+
         public LoteRegistrado()
         {
             IdsDespachos = new List<int>();
