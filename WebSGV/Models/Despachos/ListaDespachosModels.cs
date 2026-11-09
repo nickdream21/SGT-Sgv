@@ -114,6 +114,7 @@ namespace WebSGV.Models.Despachos
         public int DespachosSinPdfFactura { get; set; }
         public int DespachosSinCPIC { get; set; }
         public int DespachosSinPdfCPIC { get; set; }
+        public int DespachosSinManifiesto { get; set; }
 
         /// <summary>
         /// Qué documentos se esperan del cliente (sp_LD_ObtenerLotesRegistrados): PEDIDO (ZIP del correo: pedido, factura

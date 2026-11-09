@@ -12,7 +12,7 @@ namespace WebSGV.Services.Despachos
     /// <list type="bullet">
     /// <item>CARGA: pedido, guía de remitente y factura.</item>
     /// <item>Con factura: su PDF.</item>
-    /// <item>Internacional: CPIC; con CPIC, su PDF.</item>
+    /// <item>Internacional: CPIC; con CPIC, su PDF; y su manifiesto (MCI).</item>
     /// </list>
     /// </summary>
     public sealed class EstadoDocumental
@@ -24,6 +24,7 @@ namespace WebSGV.Services.Despachos
         public int SinPdfFactura { get; set; }
         public int SinCPIC { get; set; }
         public int SinPdfCPIC { get; set; }
+        public int SinManifiesto { get; set; }
 
         /// <summary>PEDIDO, CPIC o GUIA (ver <see cref="LoteRegistrado.PerfilDocumentos"/>).</summary>
         public string Perfil { get; set; } = "PEDIDO";
@@ -37,11 +38,12 @@ namespace WebSGV.Services.Despachos
             SinPdfFactura = lote.DespachosSinPdfFactura,
             SinCPIC = lote.DespachosSinCPIC,
             SinPdfCPIC = lote.DespachosSinPdfCPIC,
+            SinManifiesto = lote.DespachosSinManifiesto,
             Perfil = string.IsNullOrEmpty(lote.PerfilDocumentos) ? "PEDIDO" : lote.PerfilDocumentos
         };
 
         public bool Completo =>
-            SinPedido + SinGuia + SinFactura + SinPdfFactura + SinCPIC + SinPdfCPIC == 0;
+            SinPedido + SinGuia + SinFactura + SinPdfFactura + SinCPIC + SinPdfCPIC + SinManifiesto == 0;
 
         /// <summary>
         /// Carga programada con el Word que todavía no recibió nada: espera el ZIP del correo
@@ -69,6 +71,7 @@ namespace WebSGV.Services.Despachos
                 Agregar(faltan, SinPdfFactura, "Sin PDF de factura");
                 Agregar(faltan, SinCPIC, "Falta CPIC");
                 Agregar(faltan, SinPdfCPIC, "Sin PDF del CPIC");
+                Agregar(faltan, SinManifiesto, "Falta manifiesto (MCI)");
                 return faltan;
             }
         }

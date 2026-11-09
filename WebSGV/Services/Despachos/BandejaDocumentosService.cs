@@ -36,6 +36,7 @@ namespace WebSGV.Services.Despachos
     {
         public const int DiasDespuesDeLaGuia = 2;
         public const int MaximoArchivos = 60;
+        public const string ReglaPorDescarte = "Única guía y único programado libre (cambio de tracto)";
 
         // ── Lectura ──────────────────────────────────────────────────────────
 
@@ -369,6 +370,7 @@ namespace WebSGV.Services.Despachos
             c.Estado = EstadoAduanaBandeja.Registrar;
             c.Detalle = $"Carga de {c.ClienteTercero}: se registra su factura comercial {cp.FacturaComercial} y se une a " +
                         $"{c.IdsDespachos.Count} despacho(s) por la carreta o el tracto de sus MCI." + faltan;
+            c.ConMcisSinDespacho = sinDespacho.Count > 0;
             if (c.EsBorrador) c.Detalle += " Es un borrador: se registra el número, pero no se adjunta; suba la CPIC firmada cuando la tenga.";
             return true;
         }
@@ -477,9 +479,9 @@ namespace WebSGV.Services.Despachos
             if (despachos.Count == 0)
             {
                 bool cpicEnBandeja = l.Cpics.Any(c => c.Cpic.Numero == mci.CartaPorte && c.Estado == EstadoAduanaBandeja.Registrar);
-                m.Estado = EstadoAduanaBandeja.NoSeRegistra;
+                m.Estado = cpicEnBandeja ? EstadoAduanaBandeja.TrasSuCpic : EstadoAduanaBandeja.NoSeRegistra;
                 m.Detalle = cpicEnBandeja
-                    ? $"Su CPIC {mci.CartaPorte} se registra en esta bandeja: vuelva a leer el MCI después de registrar."
+                    ? $"Se une a su despacho al registrar la CPIC {mci.CartaPorte} de esta misma bandeja."
                     : $"La CPIC {mci.CartaPorte} no está en el sistema: súbala junto con el MCI.";
                 return;
             }
@@ -566,7 +568,7 @@ namespace WebSGV.Services.Despachos
             {
                 var cand = libres.Where(x => EnVentana(g, x)).ToList();
                 bool otras = orden.Any(x => x != g && x.IdProgramado == null && cand.Any(c => EnVentana(x, c)));
-                if (cand.Count == 1 && !otras) Asignar(g, cand[0], "Única guía y único programado libre (cambio de tracto)");
+                if (cand.Count == 1 && !otras) Asignar(g, cand[0], ReglaPorDescarte);
             }
             foreach (var g in orden.Where(x => x.IdProgramado.HasValue))
             {
@@ -608,9 +610,9 @@ namespace WebSGV.Services.Despachos
                     errores.Add($"{guia}: ese despacho no corresponde a su cliente o a sus fechas.");
                     continue;
                 }
+                if (e.IdProgramado.HasValue && e.IdProgramado != g.IdProgramado) g.Regla = "Elegido por el usuario";
                 g.IdProgramado = e.IdProgramado;
                 g.Estado = e.IdProgramado.HasValue ? EstadoGuiaBandeja.Unida : EstadoGuiaBandeja.SinProgramado;
-                if (e.IdProgramado.HasValue && g.Regla == null) g.Regla = "Elegido por el usuario";
             }
             foreach (var rep in l.Guias.Where(g => g.IdProgramado.HasValue && g.Estado == EstadoGuiaBandeja.Unida)
                          .GroupBy(g => g.IdProgramado.Value).Where(x => x.Count() > 1))
@@ -744,7 +746,44 @@ namespace WebSGV.Services.Despachos
                 try { SeguimientoViajesService.SincronizarDespachos(primeraCarga.Value.AddDays(-1)); }
                 catch (Exception ex) { LogSGV.Error(ex, "Bandeja: no se pudo sincronizar el seguimiento"); }
             }
+            r.SinRegistrar.AddRange(QuedoSinRegistrar(l).Except(r.Errores));
             return r;
+        }
+
+        /// <summary>
+        /// Lo que estaba en la lectura y no entra al sistema, con el motivo y qué hacer. Al confirmar, la lectura se
+        /// descarta: si no se dice aquí, el usuario no tiene otra forma de saberlo.
+        /// </summary>
+        public static List<string> QuedoSinRegistrar(LecturaBandeja l)
+        {
+            var quedo = new List<string>();
+            foreach (var p in l.Pedidos)
+                foreach (var grupo in p.Guias.Where(x => x.Estado == EstadoGuiaBandeja.SinProgramado).GroupBy(x => x.Candidatos.Count > 0))
+                {
+                    var numeros = grupo.Select(g => g.Tracto.NumeroGuia ?? g.Tracto.NumeroTransporte).ToList();
+                    bool una = numeros.Count == 1;
+                    string motivo = grupo.Key
+                        ? (una ? "no se eligió su despacho." : "no se eligió su despacho a ninguna.")
+                        : (una ? "no tiene despacho programado." : "no tienen despacho programado.");
+                    quedo.Add($"{(una ? "Guía" : "Guías")} {string.Join(", ", numeros)} (pedido {p.Pedido.NumeroPedido ?? "sin número"}): {motivo} " +
+                              "Vuelva a subir su archivo cuando corresponda.");
+                }
+            foreach (var c in l.Cpics.Where(x => x.Estado == EstadoAduanaBandeja.NoSeRegistra))
+                quedo.Add($"CPIC {c.Cpic.Numero ?? c.Archivo}: {c.Detalle}");
+            foreach (var m in l.Mcis)
+            {
+                string mci = m.Mci.Numero ?? m.Archivo;
+                if (m.Estado == EstadoAduanaBandeja.Elegir)
+                    quedo.Add($"MCI {mci}: no se adjuntó porque falta indicar su despacho. Vuelva a subirlo para elegirlo.");
+                else if (m.Estado == EstadoAduanaBandeja.TrasSuCpic)
+                    quedo.Add($"MCI {mci}: no se adjuntó porque su CPIC {m.Mci.CartaPorte} no se registró. Vuelva a subirlo junto con ella.");
+                else if (m.Estado == EstadoAduanaBandeja.NoSeRegistra)
+                    quedo.Add($"MCI {mci}: {m.Detalle}");
+            }
+            foreach (var f in l.FacturasFlete.Where(x => x.Estado == EstadoFacturaFleteBandeja.NoValida))
+                quedo.Add($"{f.Archivo}: {f.Detalle}");
+            quedo.AddRange(l.NoReconocidos);
+            return quedo;
         }
 
         /// <summary>Antes de escribir: los programados elegidos siguen esperando documentos y los tractos/carretas de los nuevos están libres.</summary>
@@ -844,11 +883,26 @@ namespace WebSGV.Services.Despachos
 
         private static void RegistrarMcis(LecturaBandeja l, string usuario, string raiz, ResultadoBandeja r)
         {
+            // Su CPIC se acaba de registrar: ahora sí hay despachos con los que unirlos.
+            foreach (var m in l.Mcis.Where(x => x.Estado == EstadoAduanaBandeja.TrasSuCpic))
+            {
+                try { ResolverMci(l, m); }
+                catch (Exception ex)
+                {
+                    LogSGV.Error(ex, "Bandeja: no se pudo unir el MCI {Numero} tras su CPIC", m.Mci.Numero);
+                    r.Errores.Add($"MCI {m.Mci.Numero}: {MensajeErrorHelper.ParaUsuario(ex)}");
+                }
+            }
+
             foreach (var m in l.Mcis.Where(x => x.Estado == EstadoAduanaBandeja.Registrar && x.IdDespacho.HasValue))
             {
                 try
                 {
-                    if (TieneManifiesto(m.IdDespacho.Value, m.Tipo)) continue;
+                    if (TieneManifiesto(m.IdDespacho.Value, m.Tipo))
+                    {
+                        r.SinRegistrar.Add($"MCI {m.Mci.Numero}: su despacho ya tiene un manifiesto de {(m.Mci.EsRetorno ? "retorno" : "cruce")}.");
+                        continue;
+                    }
                     if (string.IsNullOrEmpty(raiz)) { r.ManifiestosAdjuntados++; continue; }   // prueba sin disco
                     string ruta = GuardarArchivo(raiz, "Manifiesto", $"MANIFIESTO_{m.Tipo}_{m.IdDespacho}", m.Pdf, out string nombre);
                     ManifiestoService.InsertarDocumentoManifiesto(m.IdDespacho.Value, m.Tipo, m.Archivo, nombre, ruta, ".pdf", m.Pdf.LongLength, usuario);

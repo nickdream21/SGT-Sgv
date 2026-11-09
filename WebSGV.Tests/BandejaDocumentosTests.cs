@@ -226,5 +226,104 @@ namespace WebSGV.Tests
 
             Assert.NotEmpty(BandejaDocumentosService.AplicarEleccion(l, new Dictionary<string, EleccionGuia>(), new Dictionary<int, int?> { [0] = 99 }));
         }
+
+        // ── Certeza de la unión ─────────────────────────────────────────────
+
+        [Fact]
+        public void La_union_por_descarte_se_marca_por_revisar_y_la_del_tracto_no()
+        {
+            var porTracto = Guia("T660-1", 10, 20);
+            var porDescarte = Guia("T660-2", 30, 40);
+            BandejaDocumentosService.Unir(new[] { porTracto, porDescarte }, new[] { Prog(1, 10, 20), Prog(2, 77, 78) });
+
+            Assert.False(porTracto.PorDescarte);
+            Assert.False(porTracto.PorRevisar);
+            Assert.True(porDescarte.PorDescarte);
+            Assert.True(porDescarte.PorRevisar);
+        }
+
+        [Fact]
+        public void Al_elegir_otro_despacho_deja_de_ser_por_descarte()
+        {
+            var a = Guia("T660-1", 10, 20);
+            var b = Guia("T660-2", 30, 40);
+            var l = Lectura(a, b);
+            Assert.True(b.PorDescarte);
+
+            // Sin cambiarlo sigue siendo por descarte: registrar no lo vuelve una unión segura.
+            BandejaDocumentosService.AplicarEleccion(l, E(("T660-1", 1), ("T660-2", 2)));
+            Assert.True(b.PorDescarte);
+
+            BandejaDocumentosService.AplicarEleccion(l, E(("T660-1", 2), ("T660-2", 1)));
+            Assert.Equal("Elegido por el usuario", b.Regla);
+            Assert.False(b.PorDescarte);
+            Assert.False(b.PorRevisar);
+        }
+
+        // ── Lo que queda sin registrar ──────────────────────────────────────
+
+        private static MciBandeja Mci(string numero, EstadoAduanaBandeja estado, string detalle = null) => new MciBandeja
+        {
+            Archivo = numero + ".pdf", Estado = estado, Detalle = detalle,
+            Mci = new WebSGV.Services.Despachos.Importacion.MciLeido { Numero = numero, CartaPorte = "0003900" }
+        };
+
+        [Fact]
+        public void Dice_lo_que_quedo_sin_registrar_con_su_motivo()
+        {
+            var sinElegir = Guia("T660-1", 30, 40);
+            sinElegir.Candidatos.Add(1);
+            var sinDespacho = Guia("T660-2", 30, 40);
+            var l = new LecturaBandeja();
+            var p = new PedidoBandeja { Pedido = new ImportacionPedido { NumeroPedido = "4400000001" } };
+            p.Guias.AddRange(new[] { sinElegir, sinDespacho });
+            l.Pedidos.Add(p);
+            l.Cpics.Add(new CpicBandeja
+            {
+                Archivo = "c.pdf", Estado = EstadoAduanaBandeja.NoSeRegistra, Detalle = "Suba primero el ZIP.",
+                Cpic = new WebSGV.Services.Despachos.Importacion.CpicLeido { Numero = "0003900" }
+            });
+            l.Mcis.Add(Mci("0001", EstadoAduanaBandeja.Elegir));
+            l.Mcis.Add(Mci("0002", EstadoAduanaBandeja.TrasSuCpic));
+            l.Mcis.Add(Mci("0003", EstadoAduanaBandeja.NoSeRegistra, "No se leyó la carta de porte."));
+            l.NoReconocidos.Add("foto.pdf: no tiene guías ni factura del cliente.");
+
+            var quedo = BandejaDocumentosService.QuedoSinRegistrar(l);
+
+            Assert.Equal(7, quedo.Count);
+            Assert.Contains(quedo, x => x.Contains("T660-1") && x.Contains("no se eligió"));
+            Assert.Contains(quedo, x => x.Contains("T660-2") && x.Contains("no tiene despacho programado"));
+            Assert.Contains("CPIC 0003900: Suba primero el ZIP.", quedo);
+            Assert.Contains(quedo, x => x.StartsWith("MCI 0001") && x.Contains("falta indicar su despacho"));
+            Assert.Contains(quedo, x => x.StartsWith("MCI 0002") && x.Contains("no se registró"));
+            Assert.Contains("MCI 0003: No se leyó la carta de porte.", quedo);
+            Assert.Contains("foto.pdf: no tiene guías ni factura del cliente.", quedo);
+        }
+
+        [Fact]
+        public void Las_guias_de_un_pedido_con_el_mismo_motivo_van_en_una_linea()
+        {
+            var l = new LecturaBandeja();
+            var p = new PedidoBandeja { Pedido = new ImportacionPedido { NumeroPedido = "4400000001" } };
+            p.Guias.AddRange(new[] { Guia("T660-1", 30, 40), Guia("T660-2", 31, 41) });
+            l.Pedidos.Add(p);
+
+            var quedo = Assert.Single(BandejaDocumentosService.QuedoSinRegistrar(l));
+
+            Assert.StartsWith("Guías T660-1, T660-2 (pedido 4400000001): no tienen despacho programado.", quedo);
+        }
+
+        [Fact]
+        public void Lo_que_se_registra_o_ya_estaba_no_aparece_como_pendiente()
+        {
+            var a = Guia("T660-1", 10, 20);
+            var ya = Guia("T660-2", 30, 40, estado: EstadoGuiaBandeja.YaRegistrada);
+            var l = Lectura(a, ya);
+            l.Mcis.Add(Mci("0001", EstadoAduanaBandeja.Registrar));
+            l.Mcis.Add(Mci("0002", EstadoAduanaBandeja.YaRegistrado));
+            l.Mcis.Add(Mci("0003", EstadoAduanaBandeja.OtraVersion));
+
+            Assert.Empty(BandejaDocumentosService.QuedoSinRegistrar(l));
+        }
     }
 }

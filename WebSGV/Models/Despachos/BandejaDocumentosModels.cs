@@ -89,6 +89,12 @@ namespace WebSGV.Models.Despachos
         public DateTime? NuevaFecha { get; set; }
 
         public string Clave => (Tracto?.NumeroGuia ?? Tracto?.NumeroTransporte ?? "").Trim().ToUpperInvariant();
+
+        /// <summary>Unida solo porque era la única opción: ni el tracto ni la carreta coinciden.</summary>
+        public bool PorDescarte => Estado == EstadoGuiaBandeja.Unida && Regla == WebSGV.Services.Despachos.BandejaDocumentosService.ReglaPorDescarte;
+
+        /// <summary>El usuario debe mirarla antes de registrar: sin despacho, despacho nuevo o unida por descarte.</summary>
+        public bool PorRevisar => Estado == EstadoGuiaBandeja.Nueva || Estado == EstadoGuiaBandeja.SinProgramado || PorDescarte;
     }
 
     /// <summary>Lo que el usuario eligió para una guía en la vista previa.</summary>
@@ -112,6 +118,8 @@ namespace WebSGV.Models.Despachos
         Registrar,
         /// <summary>Hay que elegir a qué despacho va (MCI sin unir).</summary>
         Elegir,
+        /// <summary>MCI cuya CPIC se registra en esta misma bandeja: se une a su despacho justo después de ella.</summary>
+        TrasSuCpic,
         /// <summary>Ya estaba registrado y con su PDF.</summary>
         YaRegistrado,
         /// <summary>Otra versión del mismo documento en la bandeja (se usa la mejor).</summary>
@@ -145,6 +153,12 @@ namespace WebSGV.Models.Despachos
 
         /// <summary>Solo llegó el borrador: se registra el número, pero no se adjunta como el documento final.</summary>
         public bool EsBorrador => WebSGV.Services.Despachos.Importacion.LectorDocumentosAduana.PrioridadVersion(Archivo) == 3;
+
+        /// <summary>Carga de un tercero con algún MCI que no halló su despacho: se registra, pero queda algo por hacer.</summary>
+        public bool ConMcisSinDespacho { get; set; }
+
+        public bool PorRevisar => Estado == EstadoAduanaBandeja.NoSeRegistra
+            || (Estado == EstadoAduanaBandeja.Registrar && (EsBorrador || ConMcisSinDespacho));
     }
 
     /// <summary>Un MCI encontrado en la bandeja y el despacho al que se adjunta.</summary>
@@ -163,6 +177,8 @@ namespace WebSGV.Models.Despachos
 
         public string Tipo => Mci != null && Mci.EsRetorno
             ? WebSGV.Services.Despachos.ManifiestoService.TIPO_RETORNO : WebSGV.Services.Despachos.ManifiestoService.TIPO_CRUCE;
+
+        public bool PorRevisar => Estado == EstadoAduanaBandeja.Elegir || Estado == EstadoAduanaBandeja.NoSeRegistra;
     }
 
     public enum EstadoFacturaFleteBandeja { Nueva, YaRegistrada, NoValida }
@@ -190,5 +206,8 @@ namespace WebSGV.Models.Despachos
         public int FacturasFleteRegistradas { get; set; }
         public List<string> Detalle { get; } = new List<string>();
         public List<string> Errores { get; } = new List<string>();
+
+        /// <summary>Lo que el usuario subió y no entró al sistema (sin ser un error), con el motivo y qué hacer.</summary>
+        public List<string> SinRegistrar { get; } = new List<string>();
     }
 }

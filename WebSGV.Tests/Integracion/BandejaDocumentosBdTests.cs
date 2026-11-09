@@ -202,6 +202,89 @@ namespace WebSGV.Tests.Integracion
             }
         }
 
+        /// <summary>
+        /// ZIP, CPIC y MCI en la misma tanda: el MCI no tiene despacho al leerlo (su pedido aún no se registra), pero
+        /// queda adjunto al confirmar, sin volver a subirlo.
+        /// </summary>
+        [FactBD]
+        public void El_mci_se_une_en_la_misma_tanda_que_su_pedido_y_su_cpic()
+        {
+            string raiz = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "sgv_bandeja_" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                using (new TransaccionDePrueba())
+                {
+                    DateTime fecha = FechaHelper.Hoy().AddDays(12);
+                    DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0 WHERE fechaDespacho BETWEEN DATEADD(day, -1, @f) AND DATEADD(day, 2, @f)", DbHelper.Param("@f", fecha));
+
+                    DataRow cliente = DbHelper.ConsultarTabla("SELECT TOP 1 idCliente, ruc FROM Cliente WHERE activo = 1 AND ruc IS NOT NULL ORDER BY idCliente").Rows[0];
+                    int idCliente = Convert.ToInt32(cliente["idCliente"]);
+                    int idPlanta = Convert.ToInt32(DbHelper.EjecutarEscalar("SELECT TOP 1 idPlanta FROM Planta WHERE activo = 1 AND esInternacional = 0 ORDER BY idPlanta"));
+                    int idConductor = Ids("SELECT TOP 1 idConductor FROM Conductor WHERE activo = 1 ORDER BY idConductor")[0];
+                    DataRow tracto = DbHelper.ConsultarTabla("SELECT TOP 1 idTracto, placaTracto FROM Tracto WHERE activo = 1 ORDER BY idTracto DESC").Rows[0];
+                    DataRow carreta = DbHelper.ConsultarTabla("SELECT TOP 1 idCarreta, placaCarreta FROM Carreta WHERE activo = 1 ORDER BY idCarreta DESC").Rows[0];
+                    string sufijo = Guid.NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant();
+
+                    var imp = new ImportacionPedido
+                    {
+                        RucRemitente = cliente["ruc"].ToString().Trim(), NumeroPedido = "4497" + new Random().Next(100000, 999999),
+                        Factura = new FacturaImportada { NumeroFactura = "F997-" + sufijo, FechaEmision = fecha, Moneda = "USD", ValorTotal = 1000m },
+                        EsExportacion = true, Destino = "CD PRUEBA"
+                    };
+                    imp.Tractos.Add(new TractoImportado
+                    {
+                        NumeroTransporte = "TM" + sufijo, NumeroGuia = "T662-M" + sufijo, FechaTraslado = fecha,
+                        Placa = LectorDocumentosPedido.NormalizarPlaca(tracto["placaTracto"].ToString()),
+                        Lineas = { new LineaCarga { CodigoProducto = "7000001", Descripcion = "Producto", Lote = "L", Cantidad = 1188m, PesoBrutoKg = 29818.8m, PesoNetoKg = 29700m } }
+                    });
+                    ImportacionPedidoService.Asociar(imp);
+                    imp.IdPlantaSugerida = idPlanta;
+
+                    var lectura = new LecturaBandeja();
+                    var pedido = new PedidoBandeja { Archivo = "prueba.zip", Pedido = imp };
+                    pedido.Guias.Add(new GuiaBandeja { Tracto = imp.Tractos[0], IdCliente = idCliente });
+                    lectura.Pedidos.Add(pedido);
+                    BandejaDocumentosService.Unir(pedido.Guias, new List<DespachoProgramado>());
+                    Assert.Empty(BandejaDocumentosService.AplicarEleccion(lectura, new Dictionary<string, EleccionGuia>
+                    {
+                        [pedido.Guias[0].Clave] = new EleccionGuia
+                        {
+                            Nuevo = true, IdConductor = idConductor, IdTracto = Convert.ToInt32(tracto["idTracto"]),
+                            IdCarreta = Convert.ToInt32(carreta["idCarreta"]), Fecha = fecha
+                        }
+                    }));
+
+                    string numeroCpic = "8" + new Random().Next(100000, 999999);
+                    lectura.Cpics.Add(new CpicBandeja
+                    {
+                        Archivo = "C.P.I 888 CF.pdf", Pdf = new byte[] { 37, 80, 68, 70 }, Estado = EstadoAduanaBandeja.Registrar,
+                        Cpic = new CpicLeido { Numero = numeroCpic, FacturaComercial = imp.Factura.NumeroFactura, ValorFlete = 1841.4m, FechaEmision = fecha }
+                    });
+                    lectura.Mcis.Add(new MciBandeja
+                    {
+                        Archivo = "MCI 2.pdf", Pdf = new byte[] { 37, 80, 68, 70 },
+                        Mci = new MciLeido { Numero = "0090002", CartaPorte = numeroCpic, PlacaCarreta = carreta["placaCarreta"].ToString(), PlacaTracto = "ZZZ-999" }
+                    });
+                    typeof(BandejaDocumentosService).GetMethod("AsociarMcis", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
+                        .Invoke(null, new object[] { lectura });
+                    Assert.Equal(EstadoAduanaBandeja.TrasSuCpic, lectura.Mcis[0].Estado);
+
+                    var res = BandejaDocumentosService.Registrar(lectura, "test", raiz, null);
+
+                    Assert.Empty(res.Errores);
+                    Assert.Empty(res.SinRegistrar);
+                    Assert.Equal(1, res.ManifiestosAdjuntados);
+                    Assert.Equal(1, Convert.ToInt32(DbHelper.EjecutarEscalar(@"
+                        SELECT COUNT(*) FROM DocumentosManifiesto m JOIN Despachos d ON d.idDespacho = m.idDespacho
+                        WHERE d.guiaRemitente = @g AND m.tipoManifiesto = 'CRUCE'", DbHelper.Param("@g", imp.Tractos[0].NumeroGuia))));
+                }
+            }
+            finally
+            {
+                if (System.IO.Directory.Exists(raiz)) System.IO.Directory.Delete(raiz, true);
+            }
+        }
+
         private static List<int> Ids(string sql) =>
             DbHelper.ConsultarTabla(sql).Rows.Cast<DataRow>().Select(r => Convert.ToInt32(r[0])).ToList();
     }

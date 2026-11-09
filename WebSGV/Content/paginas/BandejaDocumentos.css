@@ -56,6 +56,14 @@
 
 .bd-pedido { border: 1px solid #e2e8f0; border-radius: .5rem; margin-bottom: 1rem; overflow: hidden; }
 .bd-pedido-cabecera { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem; padding: .7rem .9rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+.bd-pedido > summary { cursor: pointer; list-style: none; }
+.bd-pedido > summary::-webkit-details-marker { display: none; }
+.bd-pedido:not([open]) > summary { border-bottom: 0; }
+.bd-plegar { font-size: .7rem; color: #64748b; margin-right: .5rem; transition: transform .15s; }
+.bd-pedido[open] > summary .bd-plegar { transform: rotate(90deg); }
+.bd-grupo { font-size: .85rem; font-weight: 600; color: #15803d; margin: 0 0 .5rem; }
+.bd-grupo-revisar { color: #b45309; }
+.bd-conteos { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .3rem; }
 .bd-pedido-titulo { font-weight: 600; color: #1e293b; }
 .bd-pedido-sub { font-size: .8rem; color: #64748b; }
 .bd-pedido-factura { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; }

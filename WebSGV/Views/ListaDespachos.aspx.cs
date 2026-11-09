@@ -1422,6 +1422,9 @@ namespace WebSGV.Views
                 items.Add(new KeyValuePair<string, int>("CPIC", d.SinCPIC));
                 items.Add(new KeyValuePair<string, int>("PDF CPIC", pdfCpic));
             }
+            // Mismos despachos a los que el SP les exige el MCI; en una carga nacional con CPIC queda en su descarga.
+            if (lote.EsInternacional || (esCarga && d.Perfil == "CPIC"))
+                items.Add(new KeyValuePair<string, int>("Manifiesto (MCI)", d.SinManifiesto));
             if (items.Count == 0) return "";
 
             int listos = items.Count(i => i.Value == 0);

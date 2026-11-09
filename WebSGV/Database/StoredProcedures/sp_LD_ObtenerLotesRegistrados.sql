@@ -26,6 +26,8 @@
 -- que cruzan (Crisar, Novopan) esperan factura comercial y CPIC; los nacionales
 -- (Polinplast) la guia del remitente; solo los clientes con pedido (ZIP) esperan
 -- pedido y PDF de la factura.
+-- Desde el 2026-11-09 tambien el manifiesto (MCI, de cruce o de retorno) en los mismos
+-- despachos que exigen CPIC. La carga nacional de Vitapro no: su MCI queda en su descarga.
 -- @documentos = 'PENDIENTES' deja los lotes con algo por completar y
 -- 'COMPLETOS' los que no; NULL no filtra.
 -- ============================================================
@@ -103,7 +105,11 @@ BEGIN
                       AND d.idCPIC IS NULL THEN 1 ELSE 0 END AS SinCPIC,
             CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.idCPIC IS NOT NULL
                       AND NOT EXISTS (SELECT 1 FROM DocumentosCPIC dcp
-                                      WHERE dcp.idCPIC = d.idCPIC AND dcp.activo = 1) THEN 1 ELSE 0 END AS SinPdfCPIC
+                                      WHERE dcp.idCPIC = d.idCPIC AND dcp.activo = 1) THEN 1 ELSE 0 END AS SinPdfCPIC,
+            CASE WHEN d.estadoDespacho <> 'ANULADO'
+                      AND (d.esInternacional = 1 OR (d.perfil = 'CPIC' AND d.tipoOperacion = 'CARGA'))
+                      AND NOT EXISTS (SELECT 1 FROM DocumentosManifiesto dm
+                                      WHERE dm.idDespacho = d.idDespacho) THEN 1 ELSE 0 END AS SinManifiesto
         FROM DespachosPerfil d
     ),
     LotesAgrupados AS (
@@ -144,6 +150,7 @@ BEGIN
             SUM(dd.SinPdfFactura)     AS DespachosSinPdfFactura,
             SUM(dd.SinCPIC)           AS DespachosSinCPIC,
             SUM(dd.SinPdfCPIC)        AS DespachosSinPdfCPIC,
+            SUM(dd.SinManifiesto)     AS DespachosSinManifiesto,
             MAX(dd.perfil)            AS PerfilDocumentos,
 
             CASE
@@ -177,9 +184,9 @@ BEGIN
     WHERE (@estadoFiltro IS NULL OR la.EstadoLote = @estadoFiltro)
       AND (@documentos IS NULL
            OR (@documentos = 'PENDIENTES' AND la.DespachosSinPedido + la.DespachosSinGuia + la.DespachosSinFactura
-                 + la.DespachosSinPdfFactura + la.DespachosSinCPIC + la.DespachosSinPdfCPIC > 0)
+                 + la.DespachosSinPdfFactura + la.DespachosSinCPIC + la.DespachosSinPdfCPIC + la.DespachosSinManifiesto > 0)
            OR (@documentos = 'COMPLETOS' AND la.DespachosSinPedido + la.DespachosSinGuia + la.DespachosSinFactura
-                 + la.DespachosSinPdfFactura + la.DespachosSinCPIC + la.DespachosSinPdfCPIC = 0))
+                 + la.DespachosSinPdfFactura + la.DespachosSinCPIC + la.DespachosSinPdfCPIC + la.DespachosSinManifiesto = 0))
       AND (@nombreConductor IS NULL OR EXISTS (
             SELECT 1
             FROM Despachos d2

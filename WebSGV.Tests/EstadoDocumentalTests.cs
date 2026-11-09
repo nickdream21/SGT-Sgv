@@ -115,5 +115,15 @@ namespace WebSGV.Tests
             var e = EstadoDocumental.DeLote(new LoteRegistrado { DespachosVigentes = 1, DespachosSinGuia = 1, PerfilDocumentos = "GUIA" });
 
             Assert.Equal("Falta guía del remitente", e.Resumen);
-        }    }
+        }
+
+        [Fact]
+        public void SinManifiesto_NoEstaCompleto_YLoDice()
+        {
+            var e = EstadoDocumental.DeLote(new LoteRegistrado { DespachosVigentes = 4, DespachosSinManifiesto = 1 });
+
+            Assert.False(e.Completo);
+            Assert.Equal("Falta manifiesto (MCI) (1 de 4)", e.Resumen);
+        }
+    }
 }
