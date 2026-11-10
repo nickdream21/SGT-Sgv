@@ -109,6 +109,29 @@ namespace WebSGV.Models.Despachos
         public bool TieneGuia => !string.IsNullOrEmpty(NumeroGuia);
         public bool TienePackingList { get; set; }
 
+        /// <summary>
+        /// Otras guías del mismo N° de transporte: Vitapro a veces parte la carga de un camión en dos o tres
+        /// guías (66 + 1 122 bolsas). <see cref="NumeroGuia"/> es la principal (la de más bolsas).
+        /// </summary>
+        public List<string> GuiasAdicionales { get; set; } = new List<string>();
+
+        /// <summary>Largo de <c>Despachos.guiaRemitente</c>.</summary>
+        public const int LargoGuiaRemitente = 50;
+
+        /// <summary>
+        /// Lo que se guarda en el despacho: "T660-00016951 / T660-00016952" cuando el camión trae varias guías
+        /// (la principal primero); solo la principal si no entran en <see cref="LargoGuiaRemitente"/>.
+        /// </summary>
+        public string GuiasParaDespacho
+        {
+            get
+            {
+                if (GuiasAdicionales.Count == 0) return NumeroGuia;
+                string todas = string.Join(" / ", new[] { NumeroGuia }.Concat(GuiasAdicionales).Where(g => !string.IsNullOrWhiteSpace(g)));
+                return todas.Length <= LargoGuiaRemitente ? todas : NumeroGuia;
+            }
+        }
+
         // Asociación con la BD
         public int? IdConductor { get; set; }
         public string NombreConductorSistema { get; set; }

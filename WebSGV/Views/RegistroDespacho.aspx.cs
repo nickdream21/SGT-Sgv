@@ -2187,7 +2187,7 @@ namespace WebSGV.Views
                 PlacaTracto = f.PlacaTracto,
                 IdCarreta = f.IdCarreta,
                 PlacaCarreta = f.PlacaCarreta,
-                GuiaRemitente = f.Tracto.NumeroGuia,
+                GuiaRemitente = f.Tracto.GuiasParaDespacho,
                 NumeroEntrega = f.Tracto.NumeroEntrega,
                 NumeroTransporte = f.Tracto.NumeroTransporte,
                 Carga = f.Tracto.Lineas,

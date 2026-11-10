@@ -124,9 +124,13 @@ namespace WebSGV.Services.Facturas
         /// mucho después del <c>SqlConnection</c>/<c>SqlTransaction</c> que lo creó).
         /// </summary>
         public static void InsertarDocumentoStandalone(int idFactura, string nombreOriginal, string nombreArchivo,
-            string rutaArchivo, string tipoArchivo, long tamanoBytes, string usuarioSubida)
+            string rutaArchivo, string tipoArchivo, long tamanoBytes, string usuarioSubida, bool reemplazarAnteriores = false)
         {
+            // reemplazarAnteriores: "Adjuntar" del lote cambia el PDF (la pantalla muestra uno solo); los anteriores
+            // quedan de baja en vez de seguir activos apuntando a otro archivo.
             DbHelper.EjecutarNonQuery(@"
+                IF @reemplazar = 1
+                    UPDATE DocumentosFactura SET activo = 0 WHERE idFactura = @idFactura AND activo = 1;
                 INSERT INTO DocumentosFactura
                 (idFactura, nombreOriginal, nombreArchivo, rutaArchivo, tipoArchivo, tamanoBytes, fechaSubida, usuarioSubida)
                 VALUES
@@ -138,7 +142,8 @@ namespace WebSGV.Services.Facturas
                 DbHelper.Param("@tipoArchivo", tipoArchivo),
                 DbHelper.Param("@tamanoBytes", tamanoBytes),
                 DbHelper.Param("@fechaSubida", FechaHelper.Ahora()),
-                DbHelper.Param("@usuarioSubida", usuarioSubida));
+                DbHelper.Param("@usuarioSubida", usuarioSubida),
+                DbHelper.Param("@reemplazar", reemplazarAnteriores));
         }
     }
 }

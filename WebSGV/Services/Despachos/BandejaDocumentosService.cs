@@ -207,10 +207,11 @@ namespace WebSGV.Services.Despachos
             var r = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (numeros.Count == 0) return r;
             foreach (DataRow d in DbHelper.ConsultarTabla(@"
-                    SELECT UPPER(LTRIM(RTRIM(d.guiaRemitente))) AS guia, d.fechaDespacho, t.placaTracto, d.numeroPedido
+                    SELECT UPPER(LTRIM(RTRIM(g.value))) AS guia, d.fechaDespacho, t.placaTracto, d.numeroPedido
                     FROM Despachos d LEFT JOIN Tracto t ON t.idTracto = d.idTracto
+                    CROSS APPLY STRING_SPLIT(d.guiaRemitente, '/') g   -- varias guías del mismo camión: 'A / B'
                     WHERE d.activo = 1 AND ISNULL(d.estadoDespacho, '') <> 'ANULADO'
-                      AND UPPER(LTRIM(RTRIM(d.guiaRemitente))) IN (SELECT UPPER(LTRIM(RTRIM(value))) FROM STRING_SPLIT(@g, ','))",
+                      AND UPPER(LTRIM(RTRIM(g.value))) IN (SELECT UPPER(LTRIM(RTRIM(value))) FROM STRING_SPLIT(@g, ','))",
                     DbHelper.Param("@g", string.Join(",", numeros))).Rows)
                 r[d["guia"].ToString()] = $"{Convert.ToDateTime(d["fechaDespacho"]):dd/MM} · {d["placaTracto"]} · pedido {d["numeroPedido"]}";
             return r;
@@ -823,7 +824,7 @@ namespace WebSGV.Services.Despachos
 
         private static ConductorLote ConductorDeGuia(GuiaBandeja g, int? idProgramado) => new ConductorLote
         {
-            IdDespachoProgramado = idProgramado, GuiaRemitente = g.Tracto.NumeroGuia,
+            IdDespachoProgramado = idProgramado, GuiaRemitente = g.Tracto.GuiasParaDespacho,
             NumeroEntrega = g.Tracto.NumeroEntrega, NumeroTransporte = g.Tracto.NumeroTransporte, Carga = g.Tracto.Lineas
         };
 

@@ -296,17 +296,43 @@ namespace WebSGV.Services.Despachos.Importacion
         private static void Combinar(ImportacionPedido pedido, List<TractoImportado> guias, List<TractoImportado> paginasPl)
         {
             var porTransporte = new Dictionary<string, TractoImportado>();
+            var bolsasDeLaPrincipal = new Dictionary<TractoImportado, decimal>();
 
             foreach (var guia in guias)
             {
-                if (porTransporte.ContainsKey(guia.NumeroTransporte))
+                if (guia.NumeroTransporte != null && porTransporte.TryGetValue(guia.NumeroTransporte, out var primera))
                 {
-                    pedido.Advertencias.Add($"La guía {guia.NumeroGuia} repite el N° de transporte {guia.NumeroTransporte}; se tomó solo la primera.");
+                    // La misma guía dos veces (copia del PDF): no es otra parte de la carga.
+                    if (string.Equals(guia.NumeroGuia, primera.NumeroGuia, StringComparison.OrdinalIgnoreCase)
+                        || primera.GuiasAdicionales.Contains(guia.NumeroGuia, StringComparer.OrdinalIgnoreCase))
+                    {
+                        pedido.Advertencias.Add($"La guía {guia.NumeroGuia} se subió dos veces (transporte {guia.NumeroTransporte}); se repite y se tomó una sola vez.");
+                        continue;
+                    }
+                    // Carga partida en varias guías del mismo camión (Vitapro, 11/2026: 66 + 1 122 bolsas):
+                    // es un solo despacho con la carga de todas. La principal es la de más bolsas.
+                    decimal bolsas = guia.Lineas.Sum(l => l.Cantidad);
+                    if (bolsas > bolsasDeLaPrincipal[primera])
+                    {
+                        primera.GuiasAdicionales.Add(primera.NumeroGuia);
+                        primera.NumeroGuia = guia.NumeroGuia;
+                        bolsasDeLaPrincipal[primera] = bolsas;
+                    }
+                    else
+                        primera.GuiasAdicionales.Add(guia.NumeroGuia);
+                    primera.Lineas.AddRange(guia.Lineas);
+                    if (primera.PesoDeclaradoKg.HasValue || guia.PesoDeclaradoKg.HasValue)
+                        primera.PesoDeclaradoKg = (primera.PesoDeclaradoKg ?? 0) + (guia.PesoDeclaradoKg ?? 0);
                     continue;
                 }
-                porTransporte[guia.NumeroTransporte] = guia;
+                if (guia.NumeroTransporte != null) porTransporte[guia.NumeroTransporte] = guia;
+                bolsasDeLaPrincipal[guia] = guia.Lineas.Sum(l => l.Cantidad);
                 pedido.Tractos.Add(guia);
             }
+
+            foreach (var t in pedido.Tractos.Where(x => x.GuiasAdicionales.Count > 0))
+                pedido.Advertencias.Add($"Tracto {t.Placa}: el transporte {t.NumeroTransporte} viene en {t.GuiasAdicionales.Count + 1} guías " +
+                    $"({string.Join(", ", new[] { t.NumeroGuia }.Concat(t.GuiasAdicionales))}); se juntaron en un solo despacho con la carga de todas.");
 
             foreach (var pagina in paginasPl)
             {

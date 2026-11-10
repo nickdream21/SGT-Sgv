@@ -292,6 +292,40 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void Leer_CargaPartidaEnDosGuias_SeJuntanEnUnSoloTractoConLaPrincipalPrimero()
+        {
+            // Vitapro, 11/2026: el camión del transporte 1000001 sale con dos guías (520 + 668 bolsas) y
+            // una sola página del packing list con las 1 188. Antes se tomaba solo la primera guía.
+            var docs = PedidoCompleto();
+            docs[2] = Doc("guia1a.pdf", Guia("T660 - 00000003", "PEREZ GOMEZ JUAN", "B12345678", "AAA111", "8000001", "1000001", "13052.000", Bien1B));
+            docs.Add(Doc("guia1b.pdf", Guia("T660 - 00000001", "PEREZ GOMEZ JUAN", "B12345678", "AAA111", "8000001", "1000001", "16766.800", Bien1A)));
+
+            var pedido = LectorDocumentosPedido.Leer(docs);
+
+            Assert.Equal(2, pedido.Tractos.Count);
+            var t = pedido.Tractos.Single(x => x.NumeroTransporte == "1000001");
+            Assert.Equal("T660-00000001", t.NumeroGuia);                       // la de más bolsas
+            Assert.Equal(new[] { "T660-00000003" }, t.GuiasAdicionales);
+            Assert.Equal("T660-00000001 / T660-00000003", t.GuiasParaDespacho);
+            Assert.Equal(1188m, t.CantidadTotal);                               // carga completa del packing list
+            Assert.Equal(29818.8m, t.PesoDeclaradoKg);                          // suma de las dos guías
+            Assert.Contains(pedido.Advertencias, a => a.Contains("viene en 2 guías"));
+            // Ya no hay avisos falsos de bolsas, lotes ni peso por mirar una sola guía.
+            Assert.DoesNotContain(pedido.Advertencias, a => a.Contains("bolsas y el packing list") || a.Contains("lotes") || a.Contains("declara"));
+        }
+
+        [Fact]
+        public void GuiasParaDespacho_SiNoEntranEnElCampo_QuedaSoloLaPrincipal()
+        {
+            var t = new TractoImportado { NumeroGuia = "T660-00000001" };
+            t.GuiasAdicionales.AddRange(new[] { "T660-00000002", "T660-00000003", "T660-00000004" });
+
+            Assert.Equal("T660-00000001", t.GuiasParaDespacho);   // 4 guías = 61 caracteres > 50
+            t.GuiasAdicionales.RemoveAt(2);
+            Assert.Equal("T660-00000001 / T660-00000002 / T660-00000003", t.GuiasParaDespacho);
+        }
+
+        [Fact]
         public void Leer_ArchivoDesconocido_SeInformaComoIgnorado()
         {
             var docs = PedidoCompleto();

@@ -1351,7 +1351,7 @@ namespace WebSGV.Views
                     if (docs.Rows.Count > 0)
                     {
                         ViewState["RutaDocFacturaManifiesto"] = docs.Rows[0]["rutaArchivo"].ToString();
-                        lnkVerDocFactura.Text = docs.Rows[0]["nombreOriginal"].ToString();
+                        lnkVerDocFactura.Text = docs.Rows[0]["nombreOriginal"].ToString() + AvisoSiNoEstaEnServidor(docs.Rows[0]["rutaArchivo"].ToString());
                         lnkVerDocFactura.Visible = true;
                     }
                     else
@@ -1378,7 +1378,7 @@ namespace WebSGV.Views
                     if (docs.Rows.Count > 0)
                     {
                         ViewState["RutaDocCpicManifiesto"] = docs.Rows[0]["rutaArchivo"].ToString();
-                        lnkVerDocCpic.Text = docs.Rows[0]["nombreOriginal"].ToString();
+                        lnkVerDocCpic.Text = docs.Rows[0]["nombreOriginal"].ToString() + AvisoSiNoEstaEnServidor(docs.Rows[0]["rutaArchivo"].ToString());
                         lnkVerDocCpic.Visible = true;
                     }
                     else
@@ -1618,6 +1618,7 @@ namespace WebSGV.Views
         {
             if (string.IsNullOrEmpty(LoteSeleccionadoId)) return;
             string documento = esFactura ? "la factura" : "el CPIC";
+            string deDocumento = esFactura ? "de la factura" : "del CPIC";
             try
             {
                 if (idDocumentoBase == null)
@@ -1626,14 +1627,14 @@ namespace WebSGV.Views
                 }
                 else if (!control.HasFile)
                 {
-                    MostrarMensajeManifiesto($"Seleccione el archivo de {documento}.", "warning");
+                    MostrarMensajeManifiesto($"Seleccione el archivo {deDocumento}.", "warning");
                 }
                 else
                 {
                     string error = ValidarArchivoManifiesto(control);
                     if (!string.IsNullOrEmpty(error))
                     {
-                        MostrarMensajeManifiesto($"Archivo de {documento}: {error}.", "danger");
+                        MostrarMensajeManifiesto($"Archivo {deDocumento}: {error}.", "danger");
                     }
                     else
                     {
@@ -1654,16 +1655,18 @@ namespace WebSGV.Views
                         string nombreOriginal = Path.GetFileName(control.FileName);
                         long tamano = new FileInfo(rutaDestino).Length;
                         string rutaRelativa = carpetaRelativa + nombreArchivo;
+                        // Reemplaza al PDF anterior: el panel muestra uno solo y el viejo podía apuntar a un
+                        // archivo que no está en este servidor (registrado desde otra PC).
                         if (esFactura)
                             FacturaEscrituraService.InsertarDocumentoStandalone(idDocumentoBase.Value, nombreOriginal, nombreArchivo,
-                                rutaRelativa, extension, tamano, ObtenerUsuarioActual());
+                                rutaRelativa, extension, tamano, ObtenerUsuarioActual(), reemplazarAnteriores: true);
                         else
                             DocumentoCpicService.InsertarDocumento(idDocumentoBase.Value, nombreOriginal, nombreArchivo,
-                                rutaRelativa, extension, tamano, ObtenerUsuarioActual());
+                                rutaRelativa, extension, tamano, ObtenerUsuarioActual(), reemplazarAnteriores: true);
 
                         AuditoriaHelper.Registrar("INSERT", esFactura ? "DocumentosFactura" : "DocumentosCPIC",
-                            idDocumentoBase.Value.ToString(), $"PDF de {documento} adjuntado desde la lista de lotes: {nombreOriginal}");
-                        MostrarMensajeManifiesto($"PDF de {documento} adjuntado.", "success");
+                            idDocumentoBase.Value.ToString(), $"PDF {deDocumento} adjuntado desde la lista de lotes: {nombreOriginal}");
+                        MostrarMensajeManifiesto($"PDF {deDocumento} adjuntado.", "success");
                     }
                 }
 
@@ -1673,10 +1676,27 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al adjuntar el PDF de {Documento} del lote {Lote}", documento, LoteSeleccionadoId);
-                MostrarMensajeManifiesto($"Error al adjuntar el PDF de {documento}: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeManifiesto($"Error al adjuntar el PDF {deDocumento}: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
+        /// <summary>
+        /// El PDF está registrado pero su archivo no está en este servidor (se registró desde otra PC y no se subió):
+        /// se avisa junto al nombre para que se vuelva a adjuntar, en vez de dar el documento por completo.
+        /// </summary>
+        private string AvisoSiNoEstaEnServidor(string rutaVirtual)
+        {
+            try
+            {
+                return string.IsNullOrEmpty(rutaVirtual) || File.Exists(Server.MapPath(rutaVirtual))
+                    ? "" : " — no está en el servidor: vuelva a adjuntarlo";
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "No se pudo comprobar el archivo {Ruta}", rutaVirtual);
+                return "";
+            }
+        }
         protected void lnkVerDocFactura_Click(object sender, EventArgs e)
         {
             if (ViewState["RutaDocFacturaManifiesto"] is string ruta && !string.IsNullOrEmpty(ruta))

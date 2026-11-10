@@ -12,9 +12,12 @@ namespace WebSGV.Services.Despachos
     public static class DocumentoCpicService
     {
         public static void InsertarDocumento(int idCPIC, string nombreOriginal, string nombreArchivo,
-            string rutaArchivo, string tipoArchivo, long tamanoBytes, string usuarioSubida)
+            string rutaArchivo, string tipoArchivo, long tamanoBytes, string usuarioSubida, bool reemplazarAnteriores = false)
         {
+            // reemplazarAnteriores: ver FacturaEscrituraService.InsertarDocumentoStandalone.
             DbHelper.EjecutarNonQuery(@"
+                IF @reemplazar = 1
+                    UPDATE DocumentosCPIC SET activo = 0 WHERE idCPIC = @idCPIC AND activo = 1;
                 INSERT INTO DocumentosCPIC
                 (idCPIC, nombreOriginal, nombreArchivo, rutaArchivo, tipoArchivo, tamanoBytes, fechaSubida, usuarioSubida)
                 VALUES
@@ -26,7 +29,8 @@ namespace WebSGV.Services.Despachos
                 DbHelper.Param("@tipoArchivo", tipoArchivo),
                 DbHelper.Param("@tamanoBytes", tamanoBytes),
                 DbHelper.Param("@fechaSubida", FechaHelper.Ahora()),
-                DbHelper.Param("@usuarioSubida", usuarioSubida));
+                DbHelper.Param("@usuarioSubida", usuarioSubida),
+                DbHelper.Param("@reemplazar", reemplazarAnteriores));
         }
 
         /// <summary>Id del CPIC por número (para resolver a partir de <c>LoteRegistrado.NumeroCPIC</c>).</summary>
