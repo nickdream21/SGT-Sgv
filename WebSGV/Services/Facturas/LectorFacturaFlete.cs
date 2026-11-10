@@ -44,6 +44,8 @@ namespace WebSGV.Services.Facturas
         private static readonly Regex ReOs = new Regex(@"\bO\.?\s?S\.?\s*:?\s*(\d{6,})", Opc);
         private static readonly Regex ReEncabezadoItems = new Regex(@"^\s*Cantidad\s+Unidad\s+Medida\s+Descripci[oó]n", Opc);
         private static readonly Regex ReFinItems = new Regex(@"(Operaciones\s+Gratuitas|Sub\s*Total\s+Ventas|^\s*SON\s*:)", Opc);
+        /// <summary>"… 62.00 0.00": valor unitario seguido del ICBPER; deja solo el valor unitario.</summary>
+        private static readonly Regex ReIcbperAlFinal = new Regex(@"(\d[\d,]*\.\d{2,})\s+\d[\d,]*\.\d{2}\s*$", Opc);
         private static readonly Regex ReItem = new Regex(@"^\s*(\d[\d,]*(?:\.\d+)?)\s+([A-ZÁÉÍÓÚÑ]+)\s+(.*?)\s+(\d[\d,]*\.\d{2,})\s*$", Opc);
         private static readonly Regex ReImporte = new Regex(@"(?:\$|S/\.?|US\$)?\s*(-?\d[\d,]*\.\d{2})", Opc);
         private static readonly Regex ReCuota = new Regex(@"\b\d{1,2}\s+(\d{2}/\d{2}/\d{4})\s+\d[\d,]*\.\d{2}\b", Opc);
@@ -175,10 +177,15 @@ namespace WebSGV.Services.Facturas
             int inicio = lineas.FindIndex(l => ReEncabezadoItems.IsMatch(l));
             if (inicio < 0) return;
 
+            // Desde 11/2026 el PDF de SUNAT trae la columna ICBPER (impuesto a las bolsas) después del valor
+            // unitario: "297.00 TONELADAS … TRUJILLO A 62.00 0.00". Sin esto el 0.00 se tomaba como tarifa.
+            bool conIcbper = lineas[inicio].IndexOf("ICBPER", StringComparison.OrdinalIgnoreCase) >= 0;
+
             var items = new List<(decimal cantidad, string unidad, decimal valorUnitario, List<string> texto)>();
             for (int i = inicio + 1; i < lineas.Count && !ReFinItems.IsMatch(lineas[i]); i++)
             {
-                var m = ReItem.Match(lineas[i]);
+                string linea = conIcbper ? ReIcbperAlFinal.Replace(lineas[i], "$1") : lineas[i];
+                var m = ReItem.Match(linea);
                 decimal cant, vu;
                 if (m.Success && Numero(m.Groups[1].Value, out cant) && Numero(m.Groups[4].Value, out vu))
                     items.Add((cant, m.Groups[2].Value.ToUpperInvariant(), vu, new List<string> { m.Groups[3].Value.Trim() }));

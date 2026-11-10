@@ -89,6 +89,28 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void Con_la_columna_ICBPER_de_noviembre_la_tarifa_no_se_confunde_con_el_cero()
+        {
+            // SUNAT, 11/2026: "Cantidad Unidad Medida Descripción Valor Unitario ICBPER" y el ítem termina
+            // en "62.00 0.00". Antes se leía tarifa 0.00 y se avisaba que la cantidad × tarifa no cuadraba.
+            var paginas = Factura(total: "18,414.00", neto: "18,414.00");
+            var lineas = (List<string>)paginas[0];
+            int i = lineas.FindIndex(l => l.StartsWith("Cantidad Unidad"));
+            lineas[i] = "Cantidad Unidad Medida Descripción Valor Unitario ICBPER";
+            lineas[i + 1] = "297.00 TONELADAS SERVICIO DE TRANSPORTE DE TRUJILLO A 62.00 0.00";
+            lineas[i + 2] = "GUAYAQUIL - ECUADOR CON NICOVITA KATAL CAMARON, SEGUN FACTURA";
+
+            var f = LectorFacturaFlete.Leer(paginas);
+
+            Assert.Equal(297m, f.Cantidad);
+            Assert.Equal(62.00m, f.ValorUnitario);
+            Assert.Equal(18414m, f.ValorVenta);
+            Assert.Contains("GUAYAQUIL", f.Descripcion);
+            Assert.Equal("F222-00008426", f.NumeroFacturaComercial);
+            Assert.Empty(f.Observaciones);
+        }
+
+        [Fact]
         public void La_factura_comercial_partida_en_dos_lineas_y_la_observacion_con_TG_se_leen()
         {
             var lineas = Factura(observacion: "OS: 4301317188 - TG: 1292334", comercial: "FACTURA COMERCIAL: F222-8515 - C.P.I 3929");
