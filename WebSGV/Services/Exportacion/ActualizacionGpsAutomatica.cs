@@ -66,6 +66,9 @@ namespace WebSGV.Services.Exportacion
             UltimoResumen = $"{r.Consultados} consultados, {r.SinMovimiento} sin movimiento, {r.CamposNuevos} horas nuevas, {r.Aproximados} aproximados con su grupo, " +
                             $"{r.Pendientes} pendientes, {r.Errores.Count} con error, {reloj.Elapsed.TotalSeconds:0} s";
             LogSGV.Info("Actualización automática del GPS: {Resumen}", UltimoResumen);
+            // Sin esto el resumen dice "3 con error" y no hay cómo saber cuáles.
+            foreach (var error in r.Errores)
+                LogSGV.Advertencia("GPS automático, viaje con error: {Error}", error);
         }
     }
 }

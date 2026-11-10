@@ -82,6 +82,35 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void Interpretar_HorasBajoElTituloCambio_SeLeenComoHorario()
+        {
+            // Word del 08/11/2026: "CHOFER | TRACTO | CARRETA | CAMBIO" con las horas de la carga.
+            var p = LectorProgramacionWord.Interpretar(new List<B>
+            {
+                B.Parrafo("TRUJILLO-VITAPRO-CARGAN 09 DE NOVIEMBRE"),
+                B.DeTabla(Tabla(
+                    "CHOFER | TRACTO | CARRETA | CAMBIO",
+                    "PEDRO RAMOS | AAA-111 | TXA-001 | 05:30AM",
+                    "MARIO QUISPE | BBB-222 | TXA-002 | 5.35 a.m.")),
+                B.Parrafo("GUAYAQUIL-VITAPRO"),
+                B.Parrafo("9900000001"),
+                B.DeTabla(Tabla(
+                    "CHOFER | TRACTO | CARRETA | CAMBIO",
+                    "LUIS PRADO | AAA-111 | TXZ-009 | JUAN SOTO"))
+            });
+
+            var carga = p.Secciones[0];
+            Assert.Equal(new[] { "05:30AM", "5.35 a.m." }, carga.Filas.Select(f => f.Horario));
+            Assert.All(carga.Filas, f => Assert.Null(f.Cambio));
+            Assert.True(ProgramacionCarga.EsSeccionDeCarga(carga));
+            Assert.Equal(new TimeSpan(5, 35, 0), ProgramacionCarga.HoraDelHorario(carga.Filas[1].Horario));
+
+            var descarga = p.Secciones[1].Filas[0];
+            Assert.Equal("JUAN SOTO", descarga.Cambio);
+            Assert.Null(descarga.Horario);
+        }
+
+        [Fact]
         public void SeccionDelPedido_LaDeCargaConMasTractosOLaDelCliente()
         {
             var p = ProgramacionDeEjemplo();

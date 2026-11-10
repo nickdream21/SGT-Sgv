@@ -164,10 +164,21 @@ namespace WebSGV.Services.Despachos.Importacion
                     Cambio = Celda(fila, cambio),
                     Horario = Celda(fila, horario)
                 };
+                // Word del 08/11/2026: la tabla de carga tituló "CAMBIO" a la columna de horas ("05:30AM").
+                // Una hora no es el nombre de un chofer: sin columna HORARIO, se toma como horario.
+                if (horario < 0 && f.Cambio != null && EsHora(f.Cambio))
+                {
+                    f.Horario = f.Cambio;
+                    f.Cambio = null;
+                }
                 if (f.Chofer == null && f.Tracto == null && f.Carreta == null) continue;
                 seccion.Filas.Add(f);
             }
             return seccion;
         }
+
+        /// <summary>"05:30AM", "5.30 a.m.", "14:00": solo una hora, sin otro texto.</summary>
+        internal static bool EsHora(string texto) =>
+            Regex.IsMatch(LectorDocumentosPedido.Normalizar(texto) ?? "", @"^\d{1,2}\s*[:.]\s*\d{2}\s*([AP]\.?\s*M\.?)?$");
     }
 }
