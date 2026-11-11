@@ -138,3 +138,20 @@
 @media (max-width: 991.98px) {
     .bd-tabla-tablero { table-layout: auto; min-width: 760px; }
 }
+/* ── Expediente de un pedido (?lote=) ── */
+.bd-exp-cabecera { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .75rem; align-items: flex-start; margin-bottom: 1rem; }
+.bd-exp-volver { display: inline-block; font-size: .85rem; margin-bottom: .35rem; }
+.bd-exp-acciones { display: flex; flex-wrap: wrap; gap: .25rem; align-items: center; }
+.bd-exp-avance { margin-bottom: 1rem; }
+.bd-exp-avance-texto { display: flex; justify-content: space-between; font-size: .9rem; margin-bottom: .3rem; }
+.bd-exp-barra { height: .5rem; }
+.bd-exp-docs { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }
+.bd-exp-doc { flex: 1 1 14rem; border: 1px solid #e5e7eb; border-radius: .5rem; padding: .6rem .8rem; background: #fff; }
+.bd-exp-doc-falta { border-color: #fcd34d; background: #fffbeb; }
+.bd-exp-doc-titulo { font-size: .8rem; text-transform: uppercase; color: #6b7280; letter-spacing: .02em; }
+.bd-exp-doc-numero { font-size: 1rem; font-weight: 600; margin: .15rem 0; }
+.bd-exp-subtitulo { margin: .5rem 0; }
+.bd-exp-tabla td { vertical-align: top; }
+.bd-exp-celda { white-space: nowrap; }
+.bd-exp-pdf { font-size: .8rem; margin-left: .35rem; white-space: nowrap; }
+.bd-exp-sinpdf { font-size: .75rem; color: #b45309; margin-left: .35rem; }

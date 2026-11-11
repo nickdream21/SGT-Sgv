@@ -30,5 +30,8 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.DropDownList ddlVer;
         protected global::System.Web.UI.WebControls.Button btnBuscar;
         protected global::System.Web.UI.WebControls.Literal litTablero;
+        protected global::System.Web.UI.WebControls.Panel pnlTablero;
+        protected global::System.Web.UI.WebControls.Panel pnlExpediente;
+        protected global::System.Web.UI.WebControls.Literal litExpediente;
     }
 }

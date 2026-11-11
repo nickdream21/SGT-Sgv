@@ -99,10 +99,14 @@ namespace WebSGV.Views
                     if (string.Equals(Request.QueryString["documentos"], "pendientes", StringComparison.OrdinalIgnoreCase))
                         lnkStatDocumentosPendientes_Click(this, EventArgs.Empty);
 
-                    // Enlace de la bandeja de documentos: abre los documentos de ese lote.
+                    // Enlace del expediente de la bandeja: abre el lote (operación). Los documentos se ven y
+                    // se suben en la bandeja; "manual=1" abre el registro a mano (números sin documento).
                     string lote = Request.QueryString["lote"];
                     if (!string.IsNullOrWhiteSpace(lote) && ObtenerLotePorId(lote) != null)
-                        MostrarManifiestosLote(lote);
+                    {
+                        if (Request.QueryString["manual"] == "1") MostrarManifiestosLote(lote);
+                        else MostrarDetallesLote(lote);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -732,7 +736,7 @@ namespace WebSGV.Views
                 }
                 else if (e.CommandName == "VerManifiestosLote")
                 {
-                    MostrarManifiestosLote(idLoteVirtual);
+                    IrAlExpediente(idLoteVirtual);
                 }
             }
             catch (Exception ex)
@@ -843,9 +847,17 @@ namespace WebSGV.Views
         protected void btnGestionarManifiestos_Click(object sender, EventArgs e)
         {
             if (!string.IsNullOrEmpty(LoteSeleccionadoId))
-            {
-                MostrarManifiestosLote(LoteSeleccionadoId);
-            }
+                IrAlExpediente(LoteSeleccionadoId);
+        }
+
+        /// <summary>
+        /// Los documentos del pedido (factura, CPIC, guías con su PDF y los MCI de sus descargas) se ven
+        /// y se suben en un solo lugar: el expediente de la bandeja (2026-11-11).
+        /// </summary>
+        private void IrAlExpediente(string idLoteVirtual)
+        {
+            Response.Redirect(ResolveUrl("~/Views/BandejaDocumentos.aspx") + "?lote=" + HttpUtility.UrlEncode(idLoteVirtual), false);
+            Context.ApplicationInstance.CompleteRequest();
         }
 
         protected void btnVolverManifiestos_Click(object sender, EventArgs e)

@@ -72,7 +72,62 @@ namespace WebSGV.Services.Despachos
             AsociarCpics(l);
             AsociarMcis(l);
             AsociarGres(l);
+            MarcarGuiasSinPdf(l);
             return l;
+        }
+
+        /// <summary>Clave de <see cref="LecturaBandeja.GuiasSinPdf"/>: "REMITENTE:T660-00016565".</summary>
+        public static string ClavePdf(string tipo, string numero) => tipo + ":" + (numero ?? "").Trim();
+
+        /// <summary>Qué guías traen un PDF que el sistema aún no tiene (se guarda al registrar).</summary>
+        private static void MarcarGuiasSinPdf(LecturaBandeja l)
+        {
+            if (!GuiaDocumentoService.TablaExiste) return;
+            var remitente = l.Pedidos.SelectMany(p => p.PdfGuias.Keys).ToList();
+            var conPdf = GuiaDocumentoService.NumerosConPdf(remitente, GuiaDocumentoService.REMITENTE);
+            foreach (var n in remitente.Where(n => !conPdf.Contains(n)))
+                l.GuiasSinPdf.Add(ClavePdf(GuiaDocumentoService.REMITENTE, n));
+
+            var gres = l.Gres.Where(g => g.Pdf != null && g.Gre?.Numero != null && g.Estado != EstadoGreBandeja.NoSeRegistra)
+                             .Select(g => g.Gre.Numero).ToList();
+            var gresConPdf = GuiaDocumentoService.NumerosConPdf(gres, GuiaDocumentoService.TRANSPORTISTA);
+            foreach (var n in gres.Where(n => !gresConPdf.Contains(n)))
+                l.GuiasSinPdf.Add(ClavePdf(GuiaDocumentoService.TRANSPORTISTA, n));
+        }
+
+        /// <summary>
+        /// Guarda el PDF de cada guía en el despacho que tiene su número: las recién registradas y las que
+        /// ya estaban (volver a subir el ZIP o la GRE completa el histórico sin duplicar nada).
+        /// </summary>
+        private static void GuardarPdfsDeGuias(LecturaBandeja l, string usuario, string raiz, ResultadoBandeja r)
+        {
+            if (l.GuiasSinPdf.Count == 0 || string.IsNullOrEmpty(raiz) || !GuiaDocumentoService.TablaExiste) return;
+            var porGuardar = l.Pedidos.SelectMany(p => p.PdfGuias.Select(x => new { Tipo = GuiaDocumentoService.REMITENTE, Numero = x.Key, x.Value.Nombre, x.Value.Pdf }))
+                .Concat(l.Gres.Where(g => g.Pdf != null && g.Gre?.Numero != null)
+                    .Select(g => new { Tipo = GuiaDocumentoService.TRANSPORTISTA, Numero = g.Gre.Numero, Nombre = g.Archivo, g.Pdf }))
+                .Where(x => l.GuiasSinPdf.Contains(ClavePdf(x.Tipo, x.Numero)))
+                .GroupBy(x => ClavePdf(x.Tipo, x.Numero)).Select(x => x.First()).ToList();
+
+            var sinDespacho = new List<string>();
+            foreach (var g in porGuardar)
+            {
+                try
+                {
+                    r.PdfGuiasGuardados += GuiaDocumentoService.GuardarEnSusDespachos(g.Tipo, g.Numero, g.Nombre, g.Pdf, usuario, raiz, out bool sin);
+                    if (sin) sinDespacho.Add(g.Numero);
+                }
+                catch (Exception ex)
+                {
+                    LogSGV.Error(ex, "Bandeja: no se pudo guardar el PDF de la guía {Numero}", g.Numero);
+                    r.Errores.Add($"Guía {g.Numero}: no se pudo guardar su PDF. {MensajeErrorHelper.ParaUsuario(ex)}");
+                }
+            }
+            if (r.PdfGuiasGuardados > 0) r.Detalle.Add($"{r.PdfGuiasGuardados} PDF de guía(s) guardado(s) en su despacho.");
+            // Las que no se registraron ya salen en "Quedó sin registrar" con su motivo; aquí solo las que sí debían estar.
+            var registradas = new HashSet<string>(l.Guias.Where(x => x.Estado == EstadoGuiaBandeja.YaRegistrada).Select(x => x.Tracto.NumeroGuia ?? ""),
+                                                  StringComparer.OrdinalIgnoreCase);
+            foreach (var n in sinDespacho.Where(registradas.Contains))
+                r.SinRegistrar.Add($"Guía {n}: se leyó su PDF pero ningún despacho tiene ese número; revise la guía del despacho en su lote.");
         }
 
         /// <summary>Factura de flete de la empresa, CPIC o MCI: lo agrega y devuelve true. Si no, es de un pedido.</summary>
@@ -102,7 +157,7 @@ namespace WebSGV.Services.Despachos
                 if (!string.IsNullOrWhiteSpace(rucEmpresa) && gre.RucEmisor != null && gre.RucEmisor != rucEmpresa.Trim())
                     l.NoReconocidos.Add($"{a.Nombre}: es una GRE transportista de otra empresa (RUC {gre.RucEmisor}).");
                 else
-                    l.Gres.Add(new GreBandeja { Archivo = a.Nombre, Gre = gre });
+                    l.Gres.Add(new GreBandeja { Archivo = a.Nombre, Pdf = a.Contenido, Gre = gre });
                 return true;
             }
 
@@ -124,7 +179,8 @@ namespace WebSGV.Services.Despachos
         {
             ImportacionPedido imp;
             ImportacionPedidoService.ArchivoSubido facturaPdf;
-            try { imp = ImportacionPedidoService.Leer(archivos, out facturaPdf); }
+            Dictionary<string, ImportacionPedidoService.ArchivoSubido> pdfGuias;
+            try { imp = ImportacionPedidoService.Leer(archivos, out facturaPdf, out pdfGuias); }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Bandeja: no se pudo leer {Archivo}", nombre);
@@ -143,6 +199,8 @@ namespace WebSGV.Services.Despachos
                 Archivo = nombre, Pedido = imp,
                 FacturaPdfNombre = facturaPdf?.Nombre, FacturaPdf = facturaPdf?.Contenido
             };
+            foreach (var kv in pdfGuias)
+                p.PdfGuias[kv.Key] = new PdfGuia { Nombre = kv.Value.Nombre, Pdf = kv.Value.Contenido };
             p.Avisos.AddRange(imp.Advertencias);
             if (!imp.IdCliente.HasValue)
                 p.Avisos.Add($"No se reconoció al cliente (RUC {imp.RucRemitente ?? "?"}): regístrelo en Catálogos → Clientes.");
@@ -1032,6 +1090,7 @@ namespace WebSGV.Services.Despachos
             RegistrarCpics(l, usuario, raizFisicaUploads, r);
             RegistrarMcis(l, usuario, raizFisicaUploads, r);
             RegistrarGres(l, usuario, r);
+            GuardarPdfsDeGuias(l, usuario, raizFisicaUploads, r);
 
             // El viaje del tablero toma el pedido y el chofer de los despachos completados o creados.
             if (primeraCarga.HasValue)

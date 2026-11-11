@@ -164,7 +164,7 @@ namespace WebSGV.Views
                 var r = BandejaDocumentosService.Registrar(lectura, Convert.ToString(Session["Nombre"]),
                     DocumentoHelper.RaizFisicaUploads(Server), EmpresaConfigHelper.ObtenerEmpresa().Ruc);
                 bool algo = r.DespachosCompletados + r.DespachosCreados + r.FacturasFleteRegistradas + r.PdfAdjuntados
-                            + r.CpicsRegistradas + r.ManifiestosAdjuntados + r.GresRegistradas > 0;
+                            + r.CpicsRegistradas + r.ManifiestosAdjuntados + r.GresRegistradas + r.PdfGuiasGuardados > 0;
                 if (!algo && r.Errores.Count > 0)
                 {
                     MostrarVistaPrevia(lectura, r.Errores);
@@ -180,6 +180,7 @@ namespace WebSGV.Views
                 if (r.CpicsRegistradas > 0) partes.Add($"{r.CpicsRegistradas} CPIC");
                 if (r.ManifiestosAdjuntados > 0) partes.Add($"{r.ManifiestosAdjuntados} manifiesto(s)");
                 if (r.GresRegistradas > 0) partes.Add($"{r.GresRegistradas} GRE transportista");
+                if (r.PdfGuiasGuardados > 0) partes.Add($"{r.PdfGuiasGuardados} PDF de guía(s)");
                 if (r.FacturasCreadas > 0) partes.Add($"{r.FacturasCreadas} factura(s) del cliente registrada(s)");
                 if (r.PdfAdjuntados > 0) partes.Add($"{r.PdfAdjuntados} PDF de factura adjuntado(s)");
                 if (r.FacturasFleteRegistradas > 0) partes.Add($"{r.FacturasFleteRegistradas} factura(s) de flete");
@@ -243,6 +244,7 @@ namespace WebSGV.Views
             if (ya > 0) resumen.Add($"{ya} ya registrada(s)");
             int pdfs = l.Pedidos.Count(p => p.FaltaPdfQueTrae);
             if (pdfs > 0) resumen.Add($"<span class='bd-txt-ok'>{pdfs} PDF de factura por adjuntar</span>");
+            if (l.GuiasSinPdf.Count > 0) resumen.Add($"<span class='bd-txt-ok'>{l.GuiasSinPdf.Count} PDF de guía(s) por guardar</span>");
             if (fletes > 0) resumen.Add($"{fletes} factura(s) de flete");
             if (l.NoReconocidos.Count > 0) resumen.Add($"<span class='bd-txt-aviso'>{l.NoReconocidos.Count} archivo(s) con observaciones</span>");
             litResumenPrevia.Text = "<div class='bd-previa-resumen'>" + string.Join(" &#xB7; ", resumen) + "</div>";
@@ -584,6 +586,7 @@ namespace WebSGV.Views
 
         private void CargarTablero()
         {
+            if (MostrarExpediente()) return;
             try
             {
                 DateTime? desde = DateTime.TryParse(txtDesde.Text, out DateTime d) ? d : (DateTime?)null;
@@ -629,7 +632,7 @@ namespace WebSGV.Views
                 {
                     var e = EstadoDocumental.DeLote(lote);
                     bool atrasado = e.Atrasado(lote.FechaProgramacion, hoy);
-                    string url = ResolveUrl("~/Views/ListaDespachos.aspx") + "?lote=" + HttpUtility.UrlEncode(lote.IdLoteVirtual);
+                    string url = UrlExpediente(lote.IdLoteVirtual);
                     sb.Append(atrasado ? "<tr class='bd-fila-atrasada'>" : "<tr>")
                       .Append($"<td class='bd-cod'>{lote.FechaProgramacion:dd/MM/yyyy}</td>")
                       .Append($"<td class='bd-cod'>{H(string.IsNullOrEmpty(lote.NumeroPedido) ? "—" : lote.NumeroPedido)}</td>")
@@ -668,6 +671,128 @@ namespace WebSGV.Views
             Doc("PDF CPIC", e.SinPdfCPIC, lote.EsInternacional || !string.IsNullOrEmpty(lote.NumeroCPIC));
             Doc("MCI", e.SinManifiesto, lote.EsInternacional || (carga && cpic));
             return sb.ToString();
+        }
+
+        // ── Expediente ───────────────────────────────────────────────────────
+
+        private string UrlExpediente(string idLote) => ResolveUrl("~/Views/BandejaDocumentos.aspx") + "?lote=" + HttpUtility.UrlEncode(idLote);
+
+        /// <summary>
+        /// Con ?lote= la bandeja muestra el expediente del pedido en vez del tablero: factura, CPIC y, por cada
+        /// camión, su guía del remitente, nuestra GRE y el MCI de su descarga, con el PDF de cada uno.
+        /// Lo que falta se sube arriba, en la misma zona de siempre.
+        /// </summary>
+        private bool MostrarExpediente()
+        {
+            string idLote = Request.QueryString["lote"];
+            if (string.IsNullOrWhiteSpace(idLote)) return false;
+            pnlTablero.Visible = false;
+            pnlExpediente.Visible = true;
+            try
+            {
+                var e = ExpedienteDocumentosService.Obtener(idLote);
+                litExpediente.Text = e == null
+                    ? $"<div class='bd-vacio'>Ese lote ya no existe. <a href='{H(ResolveUrl("~/Views/BandejaDocumentos.aspx"))}'>Volver a la bandeja</a></div>"
+                    : HtmlExpediente(e);
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Bandeja de documentos: error al cargar el expediente {Lote}", idLote);
+                litExpediente.Text = $"<div class='alert alert-danger bd-alerta'>No se pudo cargar el expediente. {H(MensajeErrorHelper.ParaUsuario(ex))}</div>";
+            }
+            return true;
+        }
+
+        private string HtmlExpediente(ExpedienteDocumentos e)
+        {
+            int listos = e.Requeridos - e.Faltan;
+            int pct = e.Requeridos == 0 ? 100 : (int)Math.Round(100.0 * listos / e.Requeridos);
+            string volver = H(ResolveUrl("~/Views/BandejaDocumentos.aspx"));
+            string lote = H(ResolveUrl("~/Views/ListaDespachos.aspx") + "?lote=" + HttpUtility.UrlEncode(e.IdLote));
+            string manual = H(ResolveUrl("~/Views/ListaDespachos.aspx") + "?manual=1&lote=" + HttpUtility.UrlEncode(e.IdLote));
+            string queSube = e.Perfil == "PEDIDO" ? "el ZIP del correo, la CPIC o los MCI"
+                           : e.Perfil == "CPIC" ? "la CPIC o los MCI" : "nuestra GRE transportista de SUNAT";
+
+            var sb = new StringBuilder();
+            sb.Append("<div class='bd-exp-cabecera'><div>")
+              .Append($"<a class='bd-exp-volver' href='{volver}'><i class='fas fa-arrow-left mr-1'></i>Bandeja</a>")
+              .Append($"<h5 class='mb-1'><i class='fas fa-folder-open mr-2'></i>{H(e.Cliente)}{(string.IsNullOrEmpty(e.NumeroPedido) ? "" : " &#xB7; pedido " + H(e.NumeroPedido))}</h5>")
+              .Append($"<div class='text-muted small'>{e.Filas.Count} camión(es){(e.Filas.Count > 0 ? $", carga del {e.Filas.Min(f => f.Fecha):dd/MM/yyyy}" : "")}. ")
+              .Append($"Para completar, suba arriba {queSube}: la bandeja los une solos.</div></div>")
+              .Append("<div class='bd-exp-acciones'>")
+              .Append($"<a class='btn btn-outline-secondary btn-sm' href='{lote}'><i class='fas fa-truck mr-1'></i>Ver el lote (viajes y choferes)</a>")
+              .Append($"<a class='btn btn-link btn-sm' href='{manual}' title='Solo si no tiene el documento: escribir números a mano'>Registro manual</a>")
+              .Append("</div></div>");
+
+            string estado = e.Faltan == 0 ? (e.SinPdf == 0 ? "Documentación completa" : "Números completos; faltan PDF") : $"Faltan {e.Faltan} documento(s)";
+            sb.Append($"<div class='bd-exp-avance'><div class='bd-exp-avance-texto'><strong>{H(estado)}</strong><span>{listos} de {e.Requeridos}</span></div>")
+              .Append($"<div class='progress bd-exp-barra'><div class='progress-bar {(e.Faltan == 0 ? "bg-success" : "bg-warning")}' style='width:{pct}%'></div></div>");
+            if (e.SinPdf > 0)
+                sb.Append($"<div class='small text-muted mt-1'><i class='fas fa-info-circle mr-1'></i>{e.SinPdf} documento(s) tienen el número pero no el PDF: vuelva a subir el ZIP o la GRE y la bandeja solo agrega el PDF.</div>");
+            sb.Append("</div>");
+
+            // Documentos del pedido
+            sb.Append("<div class='bd-exp-docs'>");
+            if (e.Factura.Requerido || e.Factura.Numero != null) sb.Append(Tarjeta(e.Perfil == "CPIC" ? "Factura comercial" : "Factura", e.Factura));
+            foreach (var c in e.Cpics) sb.Append(Tarjeta("CPIC", c));
+            sb.Append("</div>");
+
+            // Un renglón por camión: carga (guías) → descarga (MCI)
+            bool conGuiaRem = e.Filas.Any(f => f.EsperaGuiaRemitente || f.GuiasRemitente.Any(g => g.Numero != null));
+            bool conGre = e.Filas.Any(f => f.EsperaGre || f.GreTransportista.Numero != null);
+            bool conMci = e.Filas.Concat(e.DescargasSueltas).Any(f => f.EsperaManifiesto);
+            sb.Append("<h6 class='bd-exp-subtitulo'><i class='fas fa-truck-loading mr-1'></i>Por camión</h6>")
+              .Append("<div class='table-responsive'><table class='table table-sm bd-tabla bd-exp-tabla'><thead><tr>")
+              .Append("<th>Carga</th><th>Chofer y unidad</th>");
+            if (conGuiaRem) sb.Append("<th>Guía del remitente</th>");
+            if (conGre) sb.Append("<th>GRE transportista</th>");
+            if (conMci) sb.Append("<th>Descarga y MCI</th>");
+            sb.Append("</tr></thead><tbody>");
+            foreach (var f in e.Filas.Concat(e.DescargasSueltas))
+            {
+                bool suelta = e.DescargasSueltas.Contains(f);
+                sb.Append("<tr>")
+                  .Append($"<td class='bd-cod'>{f.Fecha:dd/MM/yyyy}{(suelta ? "<div class='small text-muted'>descarga</div>" : "")}</td>")
+                  .Append($"<td>{H(f.Conductor)}<div class='small text-muted bd-cod'>{H(f.Tracto)} / {H(f.Carreta)}</div></td>");
+                if (conGuiaRem) sb.Append("<td>").Append(string.Concat(f.GuiasRemitente.Select(Celda))).Append("</td>");
+                if (conGre) sb.Append("<td>").Append(Celda(f.GreTransportista)).Append("</td>");
+                if (conMci)
+                {
+                    sb.Append("<td>");
+                    if (f.IdDescarga.HasValue && (f.TractoDescarga != f.Tracto || f.ConductorDescarga != f.Conductor))
+                        sb.Append($"<div class='small text-muted'>Descarga: {H(f.ConductorDescarga)} &#xB7; <span class='bd-cod'>{H(f.TractoDescarga)}</span></div>");
+                    sb.Append(f.EsperaManifiesto ? string.Concat(f.Manifiestos.Select(m => Celda(m, "MCI "))) : "<span class='text-muted'>—</span>");
+                    sb.Append("</td>");
+                }
+                sb.Append("</tr>");
+            }
+            sb.Append("</tbody></table></div>");
+            return sb.ToString();
+        }
+
+        /// <summary>Tarjeta de un documento del pedido: número, PDF o lo que falta.</summary>
+        private string Tarjeta(string titulo, DocumentoExpediente d)
+        {
+            string icono = d.Falta ? "fa-times bd-txt-mal" : d.SinPdf ? "fa-exclamation bd-txt-aviso" : "fa-check bd-txt-ok";
+            return $"<div class='bd-exp-doc {(d.Falta ? "bd-exp-doc-falta" : "")}'><div class='bd-exp-doc-titulo'><i class='fas {icono} mr-1'></i>{H(titulo)}</div>"
+                 + $"<div class='bd-cod bd-exp-doc-numero'>{H(d.Numero ?? "Falta")}</div>{EnlacePdf(d)}</div>";
+        }
+
+        /// <summary>Celda de un documento por camión: número con su PDF, "sin PDF" o "falta".</summary>
+        private string Celda(DocumentoExpediente d) => Celda(d, "");
+
+        private string Celda(DocumentoExpediente d, string prefijo)
+        {
+            if (d.Numero == null && d.RutaPdf == null)
+                return d.Requerido ? "<div><span class='bd-doc bd-doc-falta'><i class='fas fa-times'></i>Falta</span></div>" : "<div class='text-muted'>—</div>";
+            return $"<div class='bd-exp-celda'><span class='bd-cod'>{H(prefijo + (d.Numero ?? ""))}</span> {EnlacePdf(d)}</div>";
+        }
+
+        private string EnlacePdf(DocumentoExpediente d)
+        {
+            if (d.RutaPdf != null)
+                return $"<a class='bd-exp-pdf' target='_blank' rel='noopener' href='{H(DocumentoHelper.UrlDescarga(d.RutaPdf))}' title='{H(d.NombrePdf)}'><i class='fas fa-file-pdf mr-1'></i>PDF</a>";
+            return d.Numero != null ? "<span class='bd-exp-sinpdf'>sin PDF</span>" : "";
         }
 
         // ── Utilidades ───────────────────────────────────────────────────────

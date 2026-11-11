@@ -222,6 +222,7 @@
     <Content Include="Database\StoredProcedures\sp_FF_ObtenerPedidosCargados.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_VincularCPIC.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_RegistrarGreTransportista.sql" />
+    <Content Include="Database\StoredProcedures\sp_LD_RegistrarDocumentoGuia.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_RegistrarFacturaTercero.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_InsertarOrdenViajeConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_ObtenerDatosConductor.sql" />
@@ -510,6 +511,8 @@
     <Compile Include="Services\Despachos\EstadoDocumental.cs" />
     <Compile Include="Services\Despachos\ListaDespachosService.cs" />
     <Compile Include="Services\Despachos\ManifiestoService.cs" />
+    <Compile Include="Services\Despachos\GuiaDocumentoService.cs" />
+    <Compile Include="Services\Despachos\ExpedienteDocumentosService.cs" />
     <Compile Include="Services\Despachos\RegistroDespachoService.cs" />
     <Compile Include="Services\Despachos\DescargaPedidoService.cs" />
     <Compile Include="Services\Despachos\DestinoDescargaService.cs" />

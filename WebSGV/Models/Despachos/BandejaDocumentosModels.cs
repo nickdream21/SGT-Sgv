@@ -20,6 +20,12 @@ namespace WebSGV.Models.Despachos
         public List<GreBandeja> Gres { get; set; } = new List<GreBandeja>();
         public List<string> NoReconocidos { get; set; } = new List<string>();
 
+        /// <summary>
+        /// Guías (del remitente o nuestras GRE) cuyo PDF aún no está guardado: se guarda al registrar,
+        /// también si la guía ya estaba registrada (así se completa el histórico volviendo a subirlo).
+        /// </summary>
+        public HashSet<string> GuiasSinPdf { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         /// <summary>Despachos programados que esperan documentos (candidatos de cada guía), por id.</summary>
         public Dictionary<int, DespachoProgramado> Programados { get; set; } = new Dictionary<int, DespachoProgramado>();
 
@@ -29,7 +35,16 @@ namespace WebSGV.Models.Despachos
             || Pedidos.Any(p => p.FaltaPdfQueTrae)
             || Cpics.Any(c => c.Estado == EstadoAduanaBandeja.Registrar)
             || Mcis.Any(m => m.Estado == EstadoAduanaBandeja.Registrar || m.Estado == EstadoAduanaBandeja.Elegir)
-            || Gres.Any(g => g.Estado == EstadoGreBandeja.Unida || g.Estado == EstadoGreBandeja.Nueva || g.Estado == EstadoGreBandeja.Elegir);
+            || Gres.Any(g => g.Estado == EstadoGreBandeja.Unida || g.Estado == EstadoGreBandeja.Nueva || g.Estado == EstadoGreBandeja.Elegir)
+            || GuiasSinPdf.Count > 0;
+    }
+
+    /// <summary>El PDF de una guía tal como llegó (en el ZIP o suelto).</summary>
+    [Serializable]
+    public class PdfGuia
+    {
+        public string Nombre { get; set; }
+        public byte[] Pdf { get; set; }
     }
 
     /// <summary>Un pedido del cliente: su factura comercial y sus guías.</summary>
@@ -51,6 +66,9 @@ namespace WebSGV.Models.Despachos
 
         public List<GuiaBandeja> Guias { get; set; } = new List<GuiaBandeja>();
         public List<string> Avisos { get; set; } = new List<string>();
+
+        /// <summary>PDF de cada guía del remitente, por su número (T660-00016565).</summary>
+        public Dictionary<string, PdfGuia> PdfGuias { get; set; } = new Dictionary<string, PdfGuia>(StringComparer.OrdinalIgnoreCase);
     }
 
     public enum EstadoGuiaBandeja
@@ -203,6 +221,7 @@ namespace WebSGV.Models.Despachos
     public class GreBandeja
     {
         public string Archivo { get; set; }
+        public byte[] Pdf { get; set; }
         public WebSGV.Services.Despachos.Importacion.GreTransportistaLeida Gre { get; set; }
         public EstadoGreBandeja Estado { get; set; }
         public string Detalle { get; set; }
@@ -256,6 +275,8 @@ namespace WebSGV.Models.Despachos
         public int FacturasFleteRegistradas { get; set; }
         /// <summary>GRE transportista puestas en su despacho (o con despacho nuevo).</summary>
         public int GresRegistradas { get; set; }
+        /// <summary>PDF de guías (del remitente o GRE) guardados en su despacho.</summary>
+        public int PdfGuiasGuardados { get; set; }
         public List<string> Detalle { get; } = new List<string>();
         public List<string> Errores { get; } = new List<string>();
 

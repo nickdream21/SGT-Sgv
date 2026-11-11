@@ -35,9 +35,18 @@ namespace WebSGV.Services.Despachos.Importacion
         /// Los ZIP se recorren en memoria: nunca se extraen a disco.
         /// <paramref name="facturaPdf"/> devuelve el PDF de la factura para adjuntarlo al lote.
         /// </summary>
-        public static ImportacionPedido Leer(IEnumerable<ArchivoSubido> archivos, out ArchivoSubido facturaPdf)
+        public static ImportacionPedido Leer(IEnumerable<ArchivoSubido> archivos, out ArchivoSubido facturaPdf) =>
+            Leer(archivos, out facturaPdf, out _);
+
+        /// <summary>
+        /// Igual que el anterior y además devuelve el PDF de cada guía de remisión por su número
+        /// (T660-00016565), para guardarlo con su despacho (bandeja, 2026-11-11).
+        /// </summary>
+        public static ImportacionPedido Leer(IEnumerable<ArchivoSubido> archivos, out ArchivoSubido facturaPdf,
+                                             out Dictionary<string, ArchivoSubido> pdfGuias)
         {
             facturaPdf = null;
+            pdfGuias = new Dictionary<string, ArchivoSubido>(StringComparer.OrdinalIgnoreCase);
             var ignorados = new List<string>();
             var pdfs = new List<ArchivoSubido>();
 
@@ -90,6 +99,13 @@ namespace WebSGV.Services.Despachos.Importacion
                 LectorDocumentosPedido.Clasificar(d.Paginas) == TipoDocumentoPedido.Factura);
             if (docFactura != null)
                 facturaPdf = porNombre[docFactura];
+
+            foreach (var d in documentos.Where(x => LectorDocumentosPedido.Clasificar(x.Paginas) == TipoDocumentoPedido.GuiaRemision))
+            {
+                string numero = LectorDocumentosPedido.LeerGuia(d.Paginas.SelectMany(p => p).ToList()).NumeroGuia?.Trim();
+                if (!string.IsNullOrEmpty(numero) && !pdfGuias.ContainsKey(numero))
+                    pdfGuias[numero] = porNombre[d];
+            }
 
             return pedido;
         }

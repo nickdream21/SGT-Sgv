@@ -52,8 +52,13 @@
             <asp:Literal ID="litVistaPrevia" runat="server" EnableViewState="false" />
         </asp:Panel>
 
-        <%-- ===== 3. Tablero de pendientes ===== --%>
-        <div class="bd-card">
+        <%-- ===== 3a. Expediente de un pedido (?lote=): toda su documentación con el PDF de cada documento ===== --%>
+        <asp:Panel ID="pnlExpediente" runat="server" Visible="false" CssClass="bd-card bd-expediente">
+            <asp:Literal ID="litExpediente" runat="server" EnableViewState="false" />
+        </asp:Panel>
+
+        <%-- ===== 3b. Tablero de pendientes ===== --%>
+        <asp:Panel ID="pnlTablero" runat="server" CssClass="bd-card">
             <div class="bd-tablero-cabecera">
                 <h5 class="mb-0"><i class="fas fa-tasks mr-2"></i>Documentos por cliente y pedido</h5>
                 <asp:Literal ID="litContadorTablero" runat="server" EnableViewState="false" />
@@ -88,7 +93,7 @@
                 </div>
             </asp:Panel>
             <asp:Literal ID="litTablero" runat="server" EnableViewState="false" />
-        </div>
+        </asp:Panel>
     </div>
 
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/BandejaDocumentos.js") %>"></script>
