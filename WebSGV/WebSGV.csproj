@@ -221,6 +221,7 @@
     <Content Include="Database\StoredProcedures\sp_FF_ObtenerFacturasFlete.sql" />
     <Content Include="Database\StoredProcedures\sp_FF_ObtenerPedidosCargados.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_VincularCPIC.sql" />
+    <Content Include="Database\StoredProcedures\sp_LD_RegistrarGreTransportista.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_RegistrarFacturaTercero.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_InsertarOrdenViajeConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_ObtenerDatosConductor.sql" />
@@ -610,6 +611,7 @@
     <Compile Include="Models\Despachos\BandejaDocumentosModels.cs" />
     <Compile Include="Services\Despachos\BandejaDocumentosService.cs" />
     <Compile Include="Services\Despachos\Importacion\LectorDocumentosAduana.cs" />
+    <Compile Include="Services\Despachos\Importacion\LectorGreTransportista.cs" />
     <Compile Include="Models\Liquidaciones\DetalleLiquidacionModels.cs" />
     <Compile Include="Models\OrdenViaje\AgregarOrdenViajeModels.cs" />
     <Compile Include="Models\OrdenViaje\EditarOrdenViajeModels.cs" />

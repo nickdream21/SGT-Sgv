@@ -24,7 +24,8 @@
 --   internacional  -> CPIC; con CPIC -> su PDF
 -- Desde el 2026-11-06 segun el perfil del cliente (PerfilDocumentos): los terceros
 -- que cruzan (Crisar, Novopan) esperan factura comercial y CPIC; los nacionales
--- (Polinplast) la guia del remitente; solo los clientes con pedido (ZIP) esperan
+-- (Polinplast) nuestra GRE transportista (desde el 2026-11-11; antes la guia del
+-- remitente); solo los clientes con pedido (ZIP) esperan
 -- pedido y PDF de la factura.
 -- Desde el 2026-11-09 tambien el manifiesto (MCI, de cruce o de retorno) en los mismos
 -- despachos que exigen CPIC. La carga nacional de Vitapro no: su MCI queda en su descarga.
@@ -74,8 +75,8 @@ BEGIN
         -- Que documentos se esperan de cada carga (2026-11-06):
         --   PEDIDO: cliente con pedido (ZIP del correo).
         --   CPIC:   tercero que cruza la frontera (Crisar, Novopan): su factura comercial la cita la CPIC.
-        --   GUIA:   tercero nacional (Polinplast): la guia del remitente.
-        SELECT d.idDespacho, d.estadoDespacho, d.tipoOperacion, d.numeroPedido, d.guiaRemitente, d.idFactura,
+        --   GUIA:   tercero nacional (Polinplast): nuestra GRE transportista (cita la guia del remitente).
+        SELECT d.idDespacho, d.estadoDespacho, d.tipoOperacion, d.numeroPedido, d.guiaRemitente, d.guiaTransportista, d.idFactura,
                d.esInternacional, d.idCPIC,
                CASE WHEN cpe.idCliente IS NOT NULL THEN 'PEDIDO'
                     WHEN d.esInternacional = 1 OR ccp.idCliente IS NOT NULL THEN 'CPIC'
@@ -93,8 +94,11 @@ BEGIN
             d.perfil,
             CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.tipoOperacion = 'CARGA' AND d.perfil = 'PEDIDO'
                       AND NULLIF(LTRIM(RTRIM(d.numeroPedido)), '') IS NULL THEN 1 ELSE 0 END AS SinPedido,
-            CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.tipoOperacion = 'CARGA' AND d.perfil IN ('PEDIDO', 'GUIA')
-                      AND NULLIF(LTRIM(RTRIM(d.guiaRemitente)), '') IS NULL THEN 1 ELSE 0 END AS SinGuia,
+            -- GUIA (2026-11-11): el tercero nacional no manda nada por correo; la base es nuestra GRE
+            -- transportista de SUNAT (cita la guia del remitente), que se sube en la bandeja.
+            CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.tipoOperacion = 'CARGA'
+                      AND ((d.perfil = 'PEDIDO' AND NULLIF(LTRIM(RTRIM(d.guiaRemitente)), '') IS NULL)
+                        OR (d.perfil = 'GUIA' AND NULLIF(LTRIM(RTRIM(d.guiaTransportista)), '') IS NULL)) THEN 1 ELSE 0 END AS SinGuia,
             CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.tipoOperacion = 'CARGA' AND d.perfil IN ('PEDIDO', 'CPIC')
                       AND d.idFactura IS NULL THEN 1 ELSE 0 END AS SinFactura,
             CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.idFactura IS NOT NULL AND d.perfil = 'PEDIDO'

@@ -71,6 +71,7 @@ namespace WebSGV.Services.Despachos
             AsociarGuias(l);
             AsociarCpics(l);
             AsociarMcis(l);
+            AsociarGres(l);
             return l;
         }
 
@@ -93,6 +94,16 @@ namespace WebSGV.Services.Despachos
                 case TipoDocumentoAduana.Mci:
                     l.Mcis.Add(new MciBandeja { Archivo = a.Nombre, Pdf = a.Contenido, Mci = LectorDocumentosAduana.LeerMci(paginas) });
                     return true;
+            }
+
+            if (LectorGreTransportista.EsGreTransportista(paginas))
+            {
+                var gre = LectorGreTransportista.Leer(paginas);
+                if (!string.IsNullOrWhiteSpace(rucEmpresa) && gre.RucEmisor != null && gre.RucEmisor != rucEmpresa.Trim())
+                    l.NoReconocidos.Add($"{a.Nombre}: es una GRE transportista de otra empresa (RUC {gre.RucEmisor}).");
+                else
+                    l.Gres.Add(new GreBandeja { Archivo = a.Nombre, Gre = gre });
+                return true;
             }
 
             var f = LectorFacturaFlete.Leer(paginas);
@@ -325,6 +336,21 @@ namespace WebSGV.Services.Despachos
                 .Select(g => g.OrderBy(m => LectorDocumentosAduana.PrioridadVersion(m.Archivo)).First().Mci).ToList();
             if (mcis.Count == 0) return false;
 
+            // Factura de la serie de un cliente que manda su pedido por correo (F222 = Vitapro): no es de un tercero,
+            // aunque una carreta de sus MCI coincida con la carga de otro cliente (CPIC 0003886 y 0003888, 2026-11-11).
+            string serie = cp.FacturaComercial.Split('-')[0].Trim();
+            if (System.Text.RegularExpressions.Regex.IsMatch(serie, @"^[A-Z]\d{3}$") && Convert.ToInt32(DbHelper.EjecutarEscalar(@"
+                    SELECT COUNT(*) FROM Factura f
+                    WHERE f.numeroFactura LIKE @s + '-%'
+                      AND EXISTS (SELECT 1 FROM Despachos d WHERE d.idFactura = f.idFactura AND d.activo = 1
+                                  AND NULLIF(LTRIM(RTRIM(d.numeroPedido)), '') IS NOT NULL)",
+                    DbHelper.Param("@s", serie))) > 0)
+            {
+                c.Detalle = $"La factura comercial {cp.FacturaComercial} es de un cliente que manda su pedido por correo y no está en el sistema: " +
+                            "suba primero el ZIP de ese pedido.";
+                return false;
+            }
+
             DateTime dia = (cp.FechaRecepcion ?? cp.FechaEmision ?? mcis.Select(m => m.FechaEmision).FirstOrDefault(f => f.HasValue) ?? FechaHelper.Hoy()).Date;
             DateTime desde = dia.AddDays(-DiasAntesCpicTercero), hasta = dia.AddDays(DiasDespuesCpicTercero);
             var candidatos = DbHelper.ConsultarTabla(@"
@@ -521,6 +547,246 @@ namespace WebSGV.Services.Despachos
                 "SELECT COUNT(*) FROM DocumentosManifiesto WHERE idDespacho = @d AND tipoManifiesto = @t",
                 DbHelper.Param("@d", idDespacho), DbHelper.Param("@t", tipo))) > 0;
 
+        // ── GRE transportista (la que emite la empresa) ──────────────────────
+
+        /// <summary>Días antes y después de la fecha de traslado de la GRE en que se busca su carga.</summary>
+        public const int DiasAntesGre = 1, DiasDespuesGre = 1;
+
+        /// <summary>Carga candidata a una GRE: del cliente, cercana a la fecha de traslado y sin GRE todavía.</summary>
+        [Serializable]
+        public class DespachoGre
+        {
+            public int IdDespacho { get; set; }
+            public int IdCliente { get; set; }
+            public DateTime Fecha { get; set; }
+            public int IdTracto { get; set; }
+            public int IdCarreta { get; set; }
+            public int IdConductor { get; set; }
+            public string Texto { get; set; }
+        }
+
+        private static void AsociarGres(LecturaBandeja l)
+        {
+            if (l.Gres.Count == 0) return;
+            foreach (var grupo in l.Gres.GroupBy(g => g.Gre.Numero ?? g.Archivo))
+                foreach (var otra in grupo.Skip(1))
+                {
+                    otra.Estado = EstadoGreBandeja.YaRegistrada;
+                    otra.Detalle = $"Repetida en esta bandeja: se usa {grupo.First().Archivo}.";
+                }
+            var vigentes = l.Gres.Where(g => g.Detalle == null).ToList();
+            foreach (var g in vigentes) ResolverGre(g);
+
+            var porUnir = vigentes.Where(g => g.Estado == EstadoGreBandeja.Elegir && g.IdCliente.HasValue).ToList();
+            var candidatos = new List<DespachoGre>();
+            foreach (var cli in porUnir.GroupBy(g => g.IdCliente.Value))
+            {
+                DateTime desde = cli.Min(g => g.Gre.FechaTraslado.Value).AddDays(-DiasAntesGre);
+                DateTime hasta = cli.Max(g => g.Gre.FechaTraslado.Value).AddDays(DiasDespuesGre);
+                candidatos.AddRange(DbHelper.ConsultarTabla(@"
+                    SELECT d.idDespacho, d.idCliente, d.fechaDespacho, d.idTracto, d.idCarreta, d.idConductor,
+                           t.placaTracto, ca.placaCarreta, LTRIM(RTRIM(CONCAT(co.nombre, ' ', co.apPaterno))) AS chofer
+                    FROM Despachos d
+                    JOIN Tracto t ON t.idTracto = d.idTracto
+                    JOIN Carreta ca ON ca.idCarreta = d.idCarreta
+                    JOIN Conductor co ON co.idConductor = d.idConductor
+                    WHERE d.activo = 1 AND ISNULL(d.estadoDespacho, '') <> 'ANULADO' AND d.tipoOperacion = 'CARGA'
+                      AND d.idCliente = @c AND d.fechaDespacho BETWEEN @desde AND @hasta
+                      AND NULLIF(LTRIM(RTRIM(d.guiaTransportista)), '') IS NULL",
+                    DbHelper.Param("@c", cli.Key), DbHelper.Param("@desde", desde), DbHelper.Param("@hasta", hasta))
+                    .Rows.Cast<DataRow>().Select(r => new DespachoGre
+                    {
+                        IdDespacho = Convert.ToInt32(r["idDespacho"]), IdCliente = Convert.ToInt32(r["idCliente"]),
+                        Fecha = Convert.ToDateTime(r["fechaDespacho"]), IdTracto = Convert.ToInt32(r["idTracto"]),
+                        IdCarreta = Convert.ToInt32(r["idCarreta"]), IdConductor = Convert.ToInt32(r["idConductor"]),
+                        Texto = $"Carga {Convert.ToDateTime(r["fechaDespacho"]):dd/MM} · {r["placaTracto"]} / {r["placaCarreta"]} · {r["chofer"]}"
+                    }));
+            }
+            UnirGres(porUnir, candidatos);
+        }
+
+        /// <summary>Lo ya registrado y lo que dice el catálogo (cliente por RUC, placas, chofer por DNI). Deja Elegir si hay que buscar su carga.</summary>
+        private static void ResolverGre(GreBandeja g)
+        {
+            var gre = g.Gre;
+            if (!gre.Completa)
+            {
+                var falta = new List<string>();
+                if (gre.Numero == null) falta.Add("número");
+                if (!gre.FechaTraslado.HasValue) falta.Add("fecha de traslado");
+                if (gre.PlacaTracto == null || gre.PlacaCarreta == null) falta.Add("placas");
+                if (gre.DniConductor == null) falta.Add("DNI del chofer");
+                if (gre.RucRemitente == null) falta.Add("RUC del remitente");
+                g.Estado = EstadoGreBandeja.NoSeRegistra;
+                g.Detalle = "No se leyó " + string.Join(", ", falta) + ".";
+                return;
+            }
+            DataRow r = DbHelper.ConsultarTabla(@"
+                SELECT TOP 1 d.idDespacho, d.fechaDespacho, t.placaTracto, d.numeroPedido
+                FROM Despachos d LEFT JOIN Tracto t ON t.idTracto = d.idTracto
+                CROSS APPLY STRING_SPLIT(d.guiaTransportista, '/') x
+                WHERE d.activo = 1 AND ISNULL(d.estadoDespacho, '') <> 'ANULADO' AND UPPER(LTRIM(RTRIM(x.value))) = @n",
+                DbHelper.Param("@n", gre.Numero)).Rows.Cast<DataRow>().FirstOrDefault();
+            if (r != null)
+            {
+                g.Estado = EstadoGreBandeja.YaRegistrada;
+                g.IdDespacho = Convert.ToInt32(r["idDespacho"]);
+                g.Detalle = $"Ya está en la carga del {Convert.ToDateTime(r["fechaDespacho"]):dd/MM} · {r["placaTracto"]}.";
+                return;
+            }
+
+            DataRow c = DbHelper.ConsultarTabla(@"
+                SELECT cl.idCliente, cl.nombre,
+                       CASE WHEN EXISTS (SELECT 1 FROM Despachos x WHERE x.idCliente = cl.idCliente AND x.activo = 1
+                                         AND NULLIF(LTRIM(RTRIM(x.numeroPedido)), '') IS NOT NULL) THEN 1 ELSE 0 END AS conPedido,
+                       (SELECT TOP 1 x.idPlanta FROM Despachos x WHERE x.idCliente = cl.idCliente AND x.activo = 1 AND x.idPlanta IS NOT NULL
+                        GROUP BY x.idPlanta ORDER BY COUNT(*) DESC) AS idPlanta,
+                       (SELECT TOP 1 idTracto FROM Tracto WHERE REPLACE(placaTracto, '-', '') = @tr ORDER BY activo DESC) AS idTracto,
+                       (SELECT TOP 1 idCarreta FROM Carreta WHERE REPLACE(placaCarreta, '-', '') = @ca ORDER BY activo DESC) AS idCarreta,
+                       (SELECT TOP 1 idConductor FROM Conductor WHERE LTRIM(RTRIM(DNI)) = @dni ORDER BY activo DESC) AS idConductor,
+                       (SELECT TOP 1 LTRIM(RTRIM(CONCAT(nombre, ' ', apPaterno))) FROM Conductor WHERE LTRIM(RTRIM(DNI)) = @dni ORDER BY activo DESC) AS conductor
+                FROM (SELECT 1 AS x) u LEFT JOIN Cliente cl ON cl.ruc = @ruc",
+                DbHelper.Param("@ruc", gre.RucRemitente), DbHelper.Param("@tr", gre.PlacaTracto.Replace("-", "")),
+                DbHelper.Param("@ca", gre.PlacaCarreta.Replace("-", "")), DbHelper.Param("@dni", gre.DniConductor)).Rows[0];
+            int? Id(string col) => c[col] == DBNull.Value ? (int?)null : Convert.ToInt32(c[col]);
+            g.IdCliente = Id("idCliente");
+            g.Cliente = c["nombre"] == DBNull.Value ? null : Convert.ToString(c["nombre"]).Trim();
+            g.ClienteConPedido = Convert.ToInt32(c["conPedido"]) == 1;
+            g.IdPlanta = Id("idPlanta");
+            g.IdTracto = Id("idTracto");
+            g.IdCarreta = Id("idCarreta");
+            g.IdConductor = Id("idConductor");
+            g.Conductor = c["conductor"] == DBNull.Value ? null : Convert.ToString(c["conductor"]);
+            if (!g.IdCliente.HasValue)
+            {
+                g.Estado = EstadoGreBandeja.NoSeRegistra;
+                g.Detalle = $"El remitente {gre.NombreRemitente} (RUC {gre.RucRemitente}) no está en Catálogos → Clientes: regístrelo y vuelva a subir la GRE.";
+                return;
+            }
+            g.Estado = EstadoGreBandeja.Elegir;   // se resuelve en UnirGres
+        }
+
+        /// <summary>
+        /// Une cada GRE con una carga de su cliente (cada carga una sola vez), en orden de traslado: del día de traslado
+        /// −<see cref="DiasAntesGre"/> a +<see cref="DiasDespuesGre"/>, 1) mismo tracto y carreta, 2) mismo tracto,
+        /// 3) misma carreta; entre varias, la de fecha más cercana. Sin carga: despacho nuevo si el cliente no manda
+        /// pedido por correo y se reconoció todo; si hay cargas en su ventana que no coinciden, el usuario elige.
+        /// </summary>
+        public static void UnirGres(IList<GreBandeja> gres, IList<DespachoGre> candidatos)
+        {
+            var orden = gres.Where(g => g.Estado == EstadoGreBandeja.Elegir && g.IdCliente.HasValue && g.Gre.FechaTraslado.HasValue)
+                .OrderBy(g => g.Gre.FechaTraslado).ThenBy(g => g.Gre.Numero).ToList();
+            var usados = new HashSet<int>();
+            bool EnVentana(GreBandeja g, DespachoGre d) => d.IdCliente == g.IdCliente.Value
+                && d.Fecha.Date >= g.Gre.FechaTraslado.Value.Date.AddDays(-DiasAntesGre)
+                && d.Fecha.Date <= g.Gre.FechaTraslado.Value.Date.AddDays(DiasDespuesGre);
+            foreach (var g in orden)
+            {
+                g.IdDespacho = null; g.Regla = null;
+                g.Candidatos = candidatos.Where(d => EnVentana(g, d)).OrderBy(d => d.Fecha).ThenBy(d => d.IdDespacho)
+                    .ToDictionary(d => d.IdDespacho, d => d.Texto);
+            }
+
+            var reglas = new (string regla, Func<GreBandeja, DespachoGre, bool> coincide)[]
+            {
+                ("Mismo tracto y carreta", (g, d) => d.IdTracto == g.IdTracto && d.IdCarreta == g.IdCarreta),
+                ("Mismo tracto (cambio de carreta)", (g, d) => d.IdTracto == g.IdTracto),
+                ("Misma carreta (cambio de tracto)", (g, d) => d.IdCarreta == g.IdCarreta)
+            };
+            foreach (var (regla, coincide) in reglas)
+                foreach (var g in orden.Where(x => !x.IdDespacho.HasValue))
+                {
+                    var d = candidatos.Where(x => !usados.Contains(x.IdDespacho) && EnVentana(g, x) && coincide(g, x))
+                        .OrderBy(x => Math.Abs((x.Fecha.Date - g.Gre.FechaTraslado.Value.Date).TotalDays)).ThenBy(x => x.IdDespacho)
+                        .FirstOrDefault();
+                    if (d == null) continue;
+                    usados.Add(d.IdDespacho);
+                    g.IdDespacho = d.IdDespacho; g.Regla = regla; g.Estado = EstadoGreBandeja.Unida;
+                    g.Detalle = $"Se pone en la {d.Texto}" + (d.IdConductor != g.IdConductor && g.Conductor != null
+                        ? $". La GRE dice {g.Conductor}: queda el chofer del Word." : ".");
+                }
+
+            foreach (var g in orden.Where(x => !x.IdDespacho.HasValue))
+            {
+                if (g.Candidatos.Count > 0)
+                {
+                    g.Estado = EstadoGreBandeja.Elegir;
+                    g.Detalle = "Ninguna carga de esos días tiene su tracto ni su carreta: elija a cuál va" +
+                                (g.PuedeCrear ? " o cree un despacho nuevo." : ".");
+                }
+                else if (g.PuedeCrear)
+                {
+                    g.Estado = EstadoGreBandeja.Nueva;
+                    g.Detalle = $"No hay una carga de {g.Cliente} el {g.Gre.FechaTraslado:dd/MM}: se crea con lo que dice la GRE (sin viaje del chofer).";
+                }
+                else
+                {
+                    g.Estado = EstadoGreBandeja.NoSeRegistra;
+                    var falta = new List<string>();
+                    if (!g.IdTracto.HasValue) falta.Add($"el tracto {g.Gre.PlacaTracto}");
+                    if (!g.IdCarreta.HasValue) falta.Add($"la carreta {g.Gre.PlacaCarreta}");
+                    if (!g.IdConductor.HasValue) falta.Add($"el chofer con DNI {g.Gre.DniConductor}");
+                    g.Detalle = g.ClienteConPedido
+                        ? $"No hay una carga de {g.Cliente} el {g.Gre.FechaTraslado:dd/MM}: regístrela con el ZIP de su pedido y vuelva a subir la GRE."
+                        : falta.Count > 0 ? $"Sin carga ese día y no se puede crear: falta en Catálogos {string.Join(", ", falta)}."
+                        : $"Sin carga ese día y {g.Cliente} no tiene una planta de carga conocida: regístrela en Registro de despacho.";
+                }
+            }
+        }
+
+        /// <summary>Elección del usuario por GRE: "" no registrar, un id de carga, o "nuevo".</summary>
+        public const string GreNuevo = "nuevo";
+
+        private static void RegistrarGres(LecturaBandeja l, string usuario, ResultadoBandeja r)
+        {
+            foreach (var g in l.Gres.Where(x => (x.Estado == EstadoGreBandeja.Unida && x.IdDespacho.HasValue) || x.Estado == EstadoGreBandeja.Nueva))
+            {
+                try
+                {
+                    bool nuevo = g.Estado == EstadoGreBandeja.Nueva;
+                    DataTable dt = DbHelper.ConsultarTablaSp("sp_LD_RegistrarGreTransportista",
+                        DbHelper.Param("@idDespacho", nuevo ? (object)DBNull.Value : g.IdDespacho.Value),
+                        DbHelper.Param("@guiaTransportista", g.Gre.Numero),
+                        DbHelper.Param("@guiaRemitente", (object)Recortar(g.Gre.GuiasRemitenteTexto, 50) ?? DBNull.Value),
+                        DbHelper.Param("@usuario", usuario),
+                        DbHelper.Param("@fechaTraslado", nuevo ? (object)g.Gre.FechaTraslado.Value.Date : DBNull.Value),
+                        DbHelper.Param("@idCliente", nuevo ? (object)g.IdCliente.Value : DBNull.Value),
+                        DbHelper.Param("@idPlanta", nuevo ? (object)g.IdPlanta.Value : DBNull.Value),
+                        DbHelper.Param("@idConductor", nuevo ? (object)g.IdConductor.Value : DBNull.Value),
+                        DbHelper.Param("@idTracto", nuevo ? (object)g.IdTracto.Value : DBNull.Value),
+                        DbHelper.Param("@idCarreta", nuevo ? (object)g.IdCarreta.Value : DBNull.Value),
+                        DbHelper.Param("@destino", nuevo ? (object)DestinoCorto(g.Gre.PuntoLlegada) ?? DBNull.Value : DBNull.Value));
+                    int id = Convert.ToInt32(dt.Rows[0]["idDespacho"]);
+                    string accion = Convert.ToString(dt.Rows[0]["accion"]);
+                    if (accion == "SIN_CAMBIOS") continue;
+                    r.GresRegistradas++;
+                    if (nuevo) r.DespachosCreados++;
+                    r.Detalle.Add($"GRE {g.Gre.Numero} ({g.Cliente}, {g.Gre.FechaTraslado:dd/MM}, guía del remitente {g.Gre.GuiasRemitenteTexto ?? "—"}): " +
+                                  (nuevo ? $"despacho nuevo {id}." : "puesta en su carga."));
+                    AuditoriaHelper.Registrar(nuevo ? "INSERT" : "UPDATE", "Despachos", id,
+                        $"Bandeja de documentos: GRE transportista {g.Gre.Numero} (guía del remitente {g.Gre.GuiasRemitenteTexto}) " +
+                        (nuevo ? "con despacho nuevo" : "en la carga") + $" desde {g.Archivo}");
+                }
+                catch (Exception ex)
+                {
+                    LogSGV.Error(ex, "Bandeja: no se pudo registrar la GRE {Numero}", g.Gre.Numero);
+                    r.Errores.Add($"GRE {g.Gre.Numero}: {MensajeErrorHelper.ParaUsuario(ex)}");
+                }
+            }
+        }
+
+        private static string Recortar(string s, int max) => s == null || s.Length <= max ? s : s.Substring(0, max);
+
+        /// <summary>Destino corto para el despacho (los 3 últimos tramos de la dirección de llegada), como TercerosConDocumentos.</summary>
+        public static string DestinoCorto(string llegada)
+        {
+            if (string.IsNullOrWhiteSpace(llegada)) return null;
+            var partes = System.Text.RegularExpressions.Regex.Replace(llegada, @"\s+", " ")
+                .Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).ToList();
+            string d = string.Join(" - ", partes.Skip(Math.Max(0, partes.Count - 3)));
+            return d.Length > 60 ? d.Substring(d.Length - 60) : d;
+        }
+
         // ── Unión guía ↔ despacho programado (sin BD) ───────────────────────
 
         public static bool EnVentana(GuiaBandeja g, DespachoProgramado p) =>
@@ -590,9 +856,34 @@ namespace WebSGV.Services.Despachos
         /// el despacho al que va) y devuelve los errores que impiden registrar.
         /// </summary>
         public static List<string> AplicarEleccion(LecturaBandeja l, IDictionary<string, EleccionGuia> eleccion,
-                                                   IDictionary<int, int?> mcis = null)
+                                                   IDictionary<int, int?> mcis = null, IDictionary<int, string> gres = null)
         {
             var errores = new List<string>();
+            if (gres != null)
+            {
+                foreach (var kv in gres)
+                {
+                    if (kv.Key < 0 || kv.Key >= l.Gres.Count) continue;
+                    var g = l.Gres[kv.Key];
+                    if (g.Estado != EstadoGreBandeja.Unida && g.Estado != EstadoGreBandeja.Nueva && g.Estado != EstadoGreBandeja.Elegir) continue;
+                    string v = (kv.Value ?? "").Trim();
+                    if (v == GreNuevo)
+                    {
+                        if (!g.PuedeCrear) { errores.Add($"GRE {g.Gre.Numero}: no se puede crear el despacho (falta cliente, planta, chofer, tracto o carreta en Catálogos)."); continue; }
+                        g.IdDespacho = null; g.Estado = EstadoGreBandeja.Nueva;
+                    }
+                    else if (int.TryParse(v, out int id))
+                    {
+                        if (!g.Candidatos.ContainsKey(id)) { errores.Add($"GRE {g.Gre.Numero}: esa carga no es de su cliente o de sus fechas."); continue; }
+                        if (g.IdDespacho != id) g.Regla = "Elegido por el usuario";
+                        g.IdDespacho = id; g.Estado = EstadoGreBandeja.Unida;
+                    }
+                    else { g.IdDespacho = null; g.Estado = EstadoGreBandeja.Elegir; }
+                }
+                foreach (var rep in l.Gres.Where(g => g.Estado == EstadoGreBandeja.Unida && g.IdDespacho.HasValue)
+                             .GroupBy(g => g.IdDespacho.Value).Where(x => x.Count() > 1))
+                    errores.Add($"La misma carga está elegida para más de una GRE ({string.Join(", ", rep.Select(g => g.Gre.Numero))}).");
+            }
             foreach (var g in l.Guias.Where(x => x.Estado != EstadoGuiaBandeja.YaRegistrada))
             {
                 if (!eleccion.TryGetValue(g.Clave, out var e) || e == null) continue;
@@ -740,6 +1031,7 @@ namespace WebSGV.Services.Despachos
 
             RegistrarCpics(l, usuario, raizFisicaUploads, r);
             RegistrarMcis(l, usuario, raizFisicaUploads, r);
+            RegistrarGres(l, usuario, r);
 
             // El viaje del tablero toma el pedido y el chofer de los despachos completados o creados.
             if (primeraCarga.HasValue)
@@ -780,6 +1072,13 @@ namespace WebSGV.Services.Despachos
                     quedo.Add($"MCI {mci}: no se adjuntó porque su CPIC {m.Mci.CartaPorte} no se registró. Vuelva a subirlo junto con ella.");
                 else if (m.Estado == EstadoAduanaBandeja.NoSeRegistra)
                     quedo.Add($"MCI {mci}: {m.Detalle}");
+            }
+            foreach (var g in l.Gres)
+            {
+                if (g.Estado == EstadoGreBandeja.Elegir)
+                    quedo.Add($"GRE {g.Gre.Numero ?? g.Archivo}: no se registró porque falta elegir su carga. Vuelva a subirla para elegirla.");
+                else if (g.Estado == EstadoGreBandeja.NoSeRegistra)
+                    quedo.Add($"GRE {g.Gre.Numero ?? g.Archivo}: {g.Detalle}");
             }
             foreach (var f in l.FacturasFlete.Where(x => x.Estado == EstadoFacturaFleteBandeja.NoValida))
                 quedo.Add($"{f.Archivo}: {f.Detalle}");

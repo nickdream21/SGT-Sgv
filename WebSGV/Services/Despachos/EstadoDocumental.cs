@@ -10,7 +10,7 @@ namespace WebSGV.Services.Despachos
     /// solo se muestra lo pendiente y desde cuándo. Los conteos los hace
     /// <c>sp_LD_ObtenerLotesRegistrados</c> por despacho no anulado:
     /// <list type="bullet">
-    /// <item>CARGA: pedido, guía de remitente y factura.</item>
+    /// <item>CARGA: pedido, guía de remitente y factura (tercero nacional sin pedido: nuestra GRE transportista, que cita la del remitente).</item>
     /// <item>Con factura: su PDF.</item>
     /// <item>Internacional: CPIC; con CPIC, su PDF; y su manifiesto (MCI).</item>
     /// </list>
@@ -66,7 +66,7 @@ namespace WebSGV.Services.Despachos
                 {
                     Agregar(faltan, SinPedido, "Falta pedido");
                     Agregar(faltan, SinFactura, Perfil == "CPIC" ? "Falta factura comercial (de la CPIC)" : "Falta factura");
-                    Agregar(faltan, SinGuia, Perfil == "GUIA" ? "Falta guía del remitente" : "Falta guía");
+                    Agregar(faltan, SinGuia, Perfil == "GUIA" ? "Falta GRE transportista" : "Falta guía");
                 }
                 Agregar(faltan, SinPdfFactura, "Sin PDF de factura");
                 Agregar(faltan, SinCPIC, "Falta CPIC");

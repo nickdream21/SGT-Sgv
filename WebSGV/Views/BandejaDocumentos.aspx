@@ -26,7 +26,8 @@
                 <span class="bd-zona-titulo">Arrastre aqu&#xED; los archivos o haga clic para elegirlos</span>
                 <span class="bd-zona-ayuda">
                     ZIP del correo del cliente (factura, packing list y gu&#xED;as) &#xB7; PDF sueltos de un pedido &#xB7;
-                    CPIC y manifiestos (MCI) &#xB7; facturas de flete de SUNAT (E001). Puede subir varios a la vez.
+                    CPIC y manifiestos (MCI) &#xB7; facturas de flete de SUNAT (E001) &#xB7; nuestras gu&#xED;as transportista de SUNAT (GRE EG03),
+                    la base de los clientes que no mandan factura. Puede subir varios a la vez.
                 </span>
                 <span class="bd-zona-archivos" id="bdArchivos"></span>
                 <asp:FileUpload ID="fuArchivos" runat="server" AllowMultiple="true" accept=".zip,.pdf" CssClass="bd-zona-input" />

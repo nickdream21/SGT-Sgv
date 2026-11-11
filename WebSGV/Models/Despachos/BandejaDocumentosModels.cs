@@ -17,6 +17,7 @@ namespace WebSGV.Models.Despachos
         public List<FacturaFleteBandeja> FacturasFlete { get; set; } = new List<FacturaFleteBandeja>();
         public List<CpicBandeja> Cpics { get; set; } = new List<CpicBandeja>();
         public List<MciBandeja> Mcis { get; set; } = new List<MciBandeja>();
+        public List<GreBandeja> Gres { get; set; } = new List<GreBandeja>();
         public List<string> NoReconocidos { get; set; } = new List<string>();
 
         /// <summary>Despachos programados que esperan documentos (candidatos de cada guía), por id.</summary>
@@ -27,7 +28,8 @@ namespace WebSGV.Models.Despachos
             Guias.Any(g => g.Estado != EstadoGuiaBandeja.YaRegistrada) || FacturasFlete.Any(f => f.Estado == EstadoFacturaFleteBandeja.Nueva)
             || Pedidos.Any(p => p.FaltaPdfQueTrae)
             || Cpics.Any(c => c.Estado == EstadoAduanaBandeja.Registrar)
-            || Mcis.Any(m => m.Estado == EstadoAduanaBandeja.Registrar || m.Estado == EstadoAduanaBandeja.Elegir);
+            || Mcis.Any(m => m.Estado == EstadoAduanaBandeja.Registrar || m.Estado == EstadoAduanaBandeja.Elegir)
+            || Gres.Any(g => g.Estado == EstadoGreBandeja.Unida || g.Estado == EstadoGreBandeja.Nueva || g.Estado == EstadoGreBandeja.Elegir);
     }
 
     /// <summary>Un pedido del cliente: su factura comercial y sus guías.</summary>
@@ -181,6 +183,54 @@ namespace WebSGV.Models.Despachos
         public bool PorRevisar => Estado == EstadoAduanaBandeja.Elegir || Estado == EstadoAduanaBandeja.NoSeRegistra;
     }
 
+    public enum EstadoGreBandeja
+    {
+        /// <summary>Completa el despacho de carga de ese día (el del Word) con la GRE y la guía del remitente.</summary>
+        Unida,
+        /// <summary>Sin despacho: se crea uno con lo que dice la GRE (clientes sin pedido por correo).</summary>
+        Nueva,
+        /// <summary>Hay despachos posibles pero ninguno coincide: el usuario elige o no la registra.</summary>
+        Elegir,
+        YaRegistrada,
+        NoSeRegistra
+    }
+
+    /// <summary>
+    /// Una GRE transportista de SUNAT (la que emite la empresa) encontrada en la bandeja y el despacho de carga al que
+    /// se une. Es el documento base de los clientes que no mandan factura ni guías por correo.
+    /// </summary>
+    [Serializable]
+    public class GreBandeja
+    {
+        public string Archivo { get; set; }
+        public WebSGV.Services.Despachos.Importacion.GreTransportistaLeida Gre { get; set; }
+        public EstadoGreBandeja Estado { get; set; }
+        public string Detalle { get; set; }
+        public string Regla { get; set; }
+
+        public int? IdCliente { get; set; }
+        public string Cliente { get; set; }
+        /// <summary>El cliente manda su pedido por correo (Vitapro): sus despachos los crea el ZIP, no la GRE.</summary>
+        public bool ClienteConPedido { get; set; }
+        public int? IdTracto { get; set; }
+        public int? IdCarreta { get; set; }
+        public int? IdConductor { get; set; }
+        public string Conductor { get; set; }
+        /// <summary>Planta de carga del despacho nuevo (la habitual del cliente).</summary>
+        public int? IdPlanta { get; set; }
+
+        public int? IdDespacho { get; set; }
+        /// <summary>Cargas del cliente cercanas a la fecha de traslado sin GRE: id → "09/09 · BNH-865 / T5F-972 · CRISTHIAN FLORES".</summary>
+        public Dictionary<int, string> Candidatos { get; set; } = new Dictionary<int, string>();
+
+        /// <summary>Se puede crear el despacho si no se elige ninguno.</summary>
+        public bool PuedeCrear => !ClienteConPedido && IdCliente.HasValue && IdTracto.HasValue && IdCarreta.HasValue
+                                  && IdConductor.HasValue && IdPlanta.HasValue && Gre?.FechaTraslado != null;
+
+        public bool PorRevisar => Estado == EstadoGreBandeja.Elegir || Estado == EstadoGreBandeja.NoSeRegistra
+                                  || Estado == EstadoGreBandeja.Nueva;
+    }
+
     public enum EstadoFacturaFleteBandeja { Nueva, YaRegistrada, NoValida }
 
     /// <summary>Una factura de flete (E001) de SUNAT encontrada en la bandeja.</summary>
@@ -204,6 +254,8 @@ namespace WebSGV.Models.Despachos
         public int FacturasCreadas { get; set; }
         public int PdfAdjuntados { get; set; }
         public int FacturasFleteRegistradas { get; set; }
+        /// <summary>GRE transportista puestas en su despacho (o con despacho nuevo).</summary>
+        public int GresRegistradas { get; set; }
         public List<string> Detalle { get; } = new List<string>();
         public List<string> Errores { get; } = new List<string>();
 

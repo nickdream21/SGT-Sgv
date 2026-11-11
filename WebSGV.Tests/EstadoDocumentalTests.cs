@@ -110,11 +110,11 @@ namespace WebSGV.Tests
         }
 
         [Fact]
-        public void TerceroNacional_EsperaLaGuiaDelRemitente()
+        public void TerceroNacional_EsperaNuestraGreTransportista()
         {
             var e = EstadoDocumental.DeLote(new LoteRegistrado { DespachosVigentes = 1, DespachosSinGuia = 1, PerfilDocumentos = "GUIA" });
 
-            Assert.Equal("Falta guía del remitente", e.Resumen);
+            Assert.Equal("Falta GRE transportista", e.Resumen);
         }
 
         [Fact]

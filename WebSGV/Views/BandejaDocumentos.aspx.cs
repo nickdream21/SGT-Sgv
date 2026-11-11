@@ -26,6 +26,7 @@ namespace WebSGV.Views
         private const string PrefijoSeleccion = "bd_sel_";
         private const string PrefijoNuevo = "bd_nuevo_";
         private const string PrefijoMci = "bd_mci_";
+        private const string PrefijoGre = "bd_gre_";
         private const string ValorNuevo = "nuevo";
 
         private static int? Entero(string s) => int.TryParse(s, out int v) ? v : (int?)null;
@@ -146,7 +147,13 @@ namespace WebSGV.Views
                     string valor = Request.Form[PrefijoMci + i];
                     if (valor != null) mcis[i] = Entero(valor);
                 }
-                var errores = BandejaDocumentosService.AplicarEleccion(lectura, eleccion, mcis);
+                var gres = new Dictionary<int, string>();
+                for (int i = 0; i < lectura.Gres.Count; i++)
+                {
+                    string valor = Request.Form[PrefijoGre + i];
+                    if (valor != null) gres[i] = valor;
+                }
+                var errores = BandejaDocumentosService.AplicarEleccion(lectura, eleccion, mcis, gres);
                 if (errores.Count > 0)
                 {
                     MostrarVistaPrevia(lectura, errores);
@@ -157,7 +164,7 @@ namespace WebSGV.Views
                 var r = BandejaDocumentosService.Registrar(lectura, Convert.ToString(Session["Nombre"]),
                     DocumentoHelper.RaizFisicaUploads(Server), EmpresaConfigHelper.ObtenerEmpresa().Ruc);
                 bool algo = r.DespachosCompletados + r.DespachosCreados + r.FacturasFleteRegistradas + r.PdfAdjuntados
-                            + r.CpicsRegistradas + r.ManifiestosAdjuntados > 0;
+                            + r.CpicsRegistradas + r.ManifiestosAdjuntados + r.GresRegistradas > 0;
                 if (!algo && r.Errores.Count > 0)
                 {
                     MostrarVistaPrevia(lectura, r.Errores);
@@ -172,6 +179,7 @@ namespace WebSGV.Views
                 if (r.DespachosCreados > 0) partes.Add($"{r.DespachosCreados} despacho(s) nuevo(s)");
                 if (r.CpicsRegistradas > 0) partes.Add($"{r.CpicsRegistradas} CPIC");
                 if (r.ManifiestosAdjuntados > 0) partes.Add($"{r.ManifiestosAdjuntados} manifiesto(s)");
+                if (r.GresRegistradas > 0) partes.Add($"{r.GresRegistradas} GRE transportista");
                 if (r.FacturasCreadas > 0) partes.Add($"{r.FacturasCreadas} factura(s) del cliente registrada(s)");
                 if (r.PdfAdjuntados > 0) partes.Add($"{r.PdfAdjuntados} PDF de factura adjuntado(s)");
                 if (r.FacturasFleteRegistradas > 0) partes.Add($"{r.FacturasFleteRegistradas} factura(s) de flete");
@@ -226,6 +234,12 @@ namespace WebSGV.Views
             if (cpics > 0) resumen.Add($"<span class='bd-txt-ok'>{cpics} CPIC</span>");
             if (mcis > 0) resumen.Add($"<span class='bd-txt-ok'>{mcis} manifiesto(s)</span>");
             if (mcisPorElegir > 0) resumen.Add($"<span class='bd-txt-aviso'>{mcisPorElegir} manifiesto(s) por elegir</span>");
+            int gresUnidas = l.Gres.Count(g => g.Estado == EstadoGreBandeja.Unida);
+            int gresNuevas = l.Gres.Count(g => g.Estado == EstadoGreBandeja.Nueva);
+            int gresRevisar = l.Gres.Count(g => g.Estado == EstadoGreBandeja.Elegir || g.Estado == EstadoGreBandeja.NoSeRegistra);
+            if (gresUnidas > 0) resumen.Add($"<span class='bd-txt-ok'>{gresUnidas} GRE en su carga</span>");
+            if (gresNuevas > 0) resumen.Add($"<span class='bd-txt-aviso'>{gresNuevas} GRE con despacho nuevo</span>");
+            if (gresRevisar > 0) resumen.Add($"<span class='bd-txt-aviso'>{gresRevisar} GRE por revisar</span>");
             if (ya > 0) resumen.Add($"{ya} ya registrada(s)");
             int pdfs = l.Pedidos.Count(p => p.FaltaPdfQueTrae);
             if (pdfs > 0) resumen.Add($"<span class='bd-txt-ok'>{pdfs} PDF de factura por adjuntar</span>");
@@ -258,6 +272,7 @@ namespace WebSGV.Views
                 Bloque(PedidoPorRevisar(p), abierto => HtmlPedido(l, p, indices, catalogos, abierto));
             if (l.Cpics.Count > 0) Bloque(l.Cpics.Any(c => c.PorRevisar), abierto => HtmlCpics(l, abierto));
             if (l.Mcis.Count > 0) Bloque(l.Mcis.Any(m => m.PorRevisar), abierto => HtmlMcis(l, abierto));
+            if (l.Gres.Count > 0) Bloque(l.Gres.Any(g => g.PorRevisar), abierto => HtmlGres(l, abierto));
             if (l.FacturasFlete.Count > 0) Bloque(l.FacturasFlete.Any(FletePorRevisar), abierto => HtmlFacturasFlete(l, abierto));
 
             bool abrirTodo = errores != null && errores.Count > 0;
@@ -475,6 +490,51 @@ namespace WebSGV.Views
             return sb.Append("</tbody></table></div></details>").ToString();
         }
 
+        private static string HtmlGres(LecturaBandeja l, bool abierto)
+        {
+            var sb = new StringBuilder(AperturaBloque(abierto)).Append("<summary class='bd-pedido-cabecera'><div class='bd-pedido-titulo'>")
+                .Append($"{Flecha}<i class='fas fa-truck mr-1'></i>Gu&#xED;as transportista (GRE de SUNAT)</div>")
+                .Append(Conteos(
+                    (l.Gres.Count(g => g.Estado == EstadoGreBandeja.Elegir), "por elegir", "aviso"),
+                    (l.Gres.Count(g => g.Estado == EstadoGreBandeja.NoSeRegistra), "no se registra(n)", "mal"),
+                    (l.Gres.Count(g => g.Estado == EstadoGreBandeja.Nueva), "despacho(s) nuevo(s)", "aviso"),
+                    (l.Gres.Count(g => g.Estado == EstadoGreBandeja.Unida), "en su carga", "ok"),
+                    (l.Gres.Count(g => g.Estado == EstadoGreBandeja.YaRegistrada), "ya registrada(s)", "gris")))
+                .Append("</summary><div class='table-responsive'><table class='table table-sm bd-tabla'><thead><tr><th>GRE</th><th>Traslado</th>")
+                .Append("<th>Cliente</th><th>Gu&#xED;a remitente</th><th>Seg&#xFA;n la GRE</th><th>Carga</th><th>Estado</th><th>Detalle</th></tr></thead><tbody>");
+            // El nombre del selector lleva la posición en l.Gres, no la fila en pantalla.
+            foreach (int i in Enumerable.Range(0, l.Gres.Count).OrderByDescending(x => l.Gres[x].PorRevisar).ThenBy(x => l.Gres[x].Gre.FechaTraslado))
+            {
+                var g = l.Gres[i];
+                var gre = g.Gre;
+                bool editable = g.Estado == EstadoGreBandeja.Unida || g.Estado == EstadoGreBandeja.Nueva || g.Estado == EstadoGreBandeja.Elegir;
+                string carga;
+                if (editable)
+                {
+                    var sel = new StringBuilder($"<select name='{PrefijoGre}{i}' class='form-control form-control-sm bd-selector'>")
+                        .Append($"<option value=''{(g.Estado == EstadoGreBandeja.Elegir ? " selected" : "")}>— No registrar ahora —</option>");
+                    foreach (var kv in g.Candidatos)
+                        sel.Append($"<option value='{kv.Key}'{(g.Estado == EstadoGreBandeja.Unida && g.IdDespacho == kv.Key ? " selected" : "")}>{H(kv.Value)}</option>");
+                    if (g.PuedeCrear)
+                        sel.Append($"<option value='{BandejaDocumentosService.GreNuevo}'{(g.Estado == EstadoGreBandeja.Nueva ? " selected" : "")}>+ Crear despacho nuevo</option>");
+                    carga = sel.Append("</select>").ToString() + (g.Regla != null && g.Estado == EstadoGreBandeja.Unida ? $"<div class='bd-regla'>{H(g.Regla)}</div>" : "");
+                }
+                else carga = "—";
+                string estado = g.Estado == EstadoGreBandeja.Unida ? Chip("Se pone en su carga", "ok")
+                              : g.Estado == EstadoGreBandeja.Nueva ? Chip("Despacho nuevo", "aviso")
+                              : g.Estado == EstadoGreBandeja.Elegir ? Chip("Elija la carga", "aviso")
+                              : g.Estado == EstadoGreBandeja.YaRegistrada ? Chip("Ya registrada", "gris") : Chip("No se registra", "mal");
+                sb.Append($"<tr class='{(g.PorRevisar ? "bd-fila-aviso" : g.Estado == EstadoGreBandeja.YaRegistrada ? "bd-fila-gris" : "")}'>")
+                  .Append($"<td class='bd-cod'>{H(gre.Numero ?? "?")}<br><small class='text-muted'>{H(g.Archivo)}</small></td>")
+                  .Append($"<td class='bd-cod'>{(gre.FechaTraslado.HasValue ? gre.FechaTraslado.Value.ToString("dd/MM/yyyy") : "")}</td>")
+                  .Append($"<td>{H(g.Cliente ?? gre.NombreRemitente)}<br><small class='text-muted'>a {H(gre.NombreDestinatario)}</small></td>")
+                  .Append($"<td class='bd-cod'>{H(gre.GuiasRemitenteTexto ?? "—")}</td>")
+                  .Append($"<td><span class='bd-cod'>{H(gre.PlacaTracto)} / {H(gre.PlacaCarreta)}</span><br><small class='text-muted'>{H(g.Conductor ?? gre.NombreConductor)}</small></td>")
+                  .Append($"<td>{carga}</td><td>{estado}</td><td><small>{H(g.Detalle)}</small></td></tr>");
+            }
+            return sb.Append("</tbody></table></div></details>").ToString();
+        }
+
         private static string ChipAduana(EstadoAduanaBandeja e)
         {
             switch (e)
@@ -597,12 +657,12 @@ namespace WebSGV.Views
             }
             bool carga = lote.TipoOperacion == "CARGA";
             // Cada cliente manda lo suyo: Vitapro el ZIP (pedido, factura con PDF, guías); Crisar y Novopan la CPIC
-            // (con su factura comercial); Polinplast la guía del remitente.
+            // (con su factura comercial); Polinplast nuestra GRE transportista (cita su guía del remitente).
             bool pedido = e.Perfil == "PEDIDO", cpic = e.Perfil == "CPIC", guia = e.Perfil == "GUIA";
             Doc("Pedido", e.SinPedido, carga && pedido);
             Doc(cpic ? "Factura comercial" : "Factura", e.SinFactura, carga && (pedido || cpic));
             Doc("PDF factura", e.SinPdfFactura, carga && pedido && e.SinFactura < e.Despachos);   // sin factura todavía, su PDF no aplica
-            Doc(guia ? "Guía remitente" : "Guías", e.SinGuia, carga && (pedido || guia));
+            Doc(guia ? "GRE transportista" : "Guías", e.SinGuia, carga && (pedido || guia));
             Doc("CPIC", e.SinCPIC, lote.EsInternacional || (carga && cpic));
             // Un lote nacional no exige CPIC, pero si ya tiene una (la de su pedido) se espera su PDF (EstadoDocumental).
             Doc("PDF CPIC", e.SinPdfCPIC, lote.EsInternacional || !string.IsNullOrEmpty(lote.NumeroCPIC));
