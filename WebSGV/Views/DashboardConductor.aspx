@@ -63,6 +63,20 @@
             <!-- ============ MI VIAJE ============ -->
             <div class="tab-pane fade show active" id="viajesActivos" role="tabpanel">
 
+                <!-- Dinero que la administración registró a su nombre y aún no se liquidó -->
+                <asp:Panel ID="pnlDineroRecibido" runat="server" Visible="false" CssClass="dc-card">
+                    <div class="dc-card-tit">Dinero recibido en este viaje</div>
+                    <asp:Repeater ID="rptDineroRecibido" runat="server">
+                        <ItemTemplate>
+                            <div class="dc-item-fila dc-dinero">
+                                <span><%#: Eval("Texto") %><small class="d-block dc-ayuda"><%#: Eval("Detalle") %></small></span>
+                                <strong class="text-nowrap"><%#: Eval("Monto") %></strong>
+                            </div>
+                        </ItemTemplate>
+                    </asp:Repeater>
+                    <p class="dc-ayuda mb-0 mt-1">Lo registra la administración. Si algo no coincide, avísale antes de liquidar.</p>
+                </asp:Panel>
+
                 <asp:Panel ID="pnlViajeActivo" runat="server" Visible="false">
                     <section class="dc-card">
                         <div class="dc-card-tit">Viaje en curso</div>

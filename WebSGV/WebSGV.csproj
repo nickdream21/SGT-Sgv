@@ -335,6 +335,7 @@
     <Content Include="Content\paginas\FirmarLiquidacion.css" />
     <Content Include="Content\paginas\ConformarLiquidacion.css" />
     <Content Include="Content\paginas\VerificarDocumento.css" />
+    <Content Include="Content\paginas\MovimientosViaje.css" />
     <Content Include="Content\paginas\Inicio.css" />
     <Content Include="Content\paginas\LiquidacionesAprobadasContabilidad.css" />
     <Content Include="Content\paginas\LiquidacionesPendientes.css" />
@@ -376,6 +377,7 @@
     <Content Include="Scripts\paginas\FirmaCanvas.js" />
     <Content Include="Scripts\paginas\ConformarLiquidacion.js" />
     <Content Include="Scripts\paginas\VerificarDocumento.js" />
+    <Content Include="Scripts\paginas\MovimientosViaje.js" />
     <Content Include="Scripts\paginas\LiquidacionesAprobadasContabilidad.js" />
     <Content Include="Scripts\paginas\LiquidacionesPendientes.js" />
     <Content Include="Scripts\paginas\ListaDespachos.js" />
@@ -431,6 +433,7 @@
     <Content Include="Views\FirmarLiquidacion.aspx" />
     <Content Include="Views\ConformarLiquidacion.aspx" />
     <Content Include="Views\VerificarDocumento.aspx" />
+    <Content Include="Views\MovimientosViaje.aspx" />
     <Content Include="Views\Inicio.aspx" />
     <Content Include="Views\LiquidacionesAprobadasContabilidad.aspx">
       <SubType>Designer</SubType>
@@ -561,6 +564,7 @@
     <Compile Include="Services\Liquidaciones\LiquidacionCalculos.cs" />
     <Compile Include="Services\Liquidaciones\FirmaLiquidacion.cs" />
     <Compile Include="Services\Liquidaciones\ArchivoOrdenViajeService.cs" />
+    <Compile Include="Services\Liquidaciones\MovimientosViajeService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionesContabilidadService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionesPendientesService.cs" />
     <Compile Include="Services\NotificacionService.cs" />
@@ -802,6 +806,13 @@
     </Compile>
     <Compile Include="Views\ConformarLiquidacion.aspx.designer.cs">
       <DependentUpon>ConformarLiquidacion.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\MovimientosViaje.aspx.cs">
+      <DependentUpon>MovimientosViaje.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\MovimientosViaje.aspx.designer.cs">
+      <DependentUpon>MovimientosViaje.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\VerificarDocumento.aspx.cs">
       <DependentUpon>VerificarDocumento.aspx</DependentUpon>

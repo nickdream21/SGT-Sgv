@@ -102,6 +102,10 @@ namespace WebSGV.Views
             public string NotaAdministracion { get; set; }
             public string RevisadoPor { get; set; }
             public string FechaRevision { get; set; }
+            /// <summary>Cada entrega de dinero (fecha, medio, quién llevó el sobre).</summary>
+            public List<ConceptoMonto> DetalleEntregas { get; set; }
+            /// <summary>Pagos que la empresa hizo directamente al proveedor: no cambian su saldo.</summary>
+            public List<ConceptoMonto> PagosDirectos { get; set; }
             /// <summary>Huella de lo que se muestra: la conformidad solo se acepta si no cambió.</summary>
             public string Huella { get; set; }
         }
@@ -163,6 +167,26 @@ namespace WebSGV.Views
                     NotaAdministracion = d.NotaAprobacion,
                     RevisadoPor = revision?.Nombre,
                     FechaRevision = revision?.FechaHora.ToString("dd/MM/yyyy HH:mm"),
+                    DetalleEntregas = d.Entregas.Select(m => new ConceptoMonto
+                    {
+                        Concepto = m.Fecha.ToString("dd/MM/yyyy HH:mm") + " · " + MovimientosViajeService.NombreConcepto(m.Tipo, m.Concepto),
+                        Detalle = string.Join(" · ", new[]
+                        {
+                            MovimientosViajeService.NombreMedio(m.Medio),
+                            m.Medio == "SOBRE" && m.NombrePortador != null ? "lo llevó " + m.NombrePortador : null,
+                            string.IsNullOrEmpty(m.NumeroOperacion) ? null : "op. " + m.NumeroOperacion,
+                            m.Descripcion
+                        }.Where(s => !string.IsNullOrEmpty(s))),
+                        Soles = m.MontoSoles,
+                        Dolares = m.MontoDolares
+                    }).ToList(),
+                    PagosDirectos = d.PagosDirectos.Select(m => new ConceptoMonto
+                    {
+                        Concepto = m.Fecha.ToString("dd/MM/yyyy") + " · " + MovimientosViajeService.NombreConcepto(m.Tipo, m.Concepto),
+                        Detalle = string.Join(" · ", new[] { m.NombreProveedor, m.Comprobante, m.Descripcion }.Where(s => !string.IsNullOrEmpty(s))),
+                        Soles = m.MontoSoles,
+                        Dolares = m.MontoDolares
+                    }).ToList(),
                     Huella = HuellaLiquidacion.Calcular(d)
                 };
                 return new { success = true, datos = r };

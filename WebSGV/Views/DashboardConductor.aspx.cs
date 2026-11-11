@@ -210,6 +210,7 @@ namespace WebSGV.Views
                 }
 
                 CargarHistorialLiquidaciones();
+                CargarDineroRecibido();
 
                 Log("✅ Dashboard inicializado correctamente");
             }
@@ -1009,6 +1010,36 @@ namespace WebSGV.Views
             {
                 LogSGV.Error(ex, "Error al cargar el historial en DashboardConductor");
                 MostrarMensaje($"Error al cargar el historial: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
+            }
+        }
+
+        /// <summary>Entregas de dinero registradas a su nombre que aún no están en una liquidación.</summary>
+        private void CargarDineroRecibido()
+        {
+            try
+            {
+                var cultura = System.Globalization.CultureInfo.GetCultureInfo("es-PE");
+                var entregas = Services.Liquidaciones.MovimientosViajeService.ObtenerSinLiquidar(IdConductorActual)
+                    .Where(m => m.Tipo == Services.Liquidaciones.MovimientosViajeService.Entrega)
+                    .Select(m => new
+                    {
+                        Texto = m.Fecha.ToString("dd/MM HH:mm") + " · " + Services.Liquidaciones.MovimientosViajeService.NombreConcepto(m.Tipo, m.Concepto),
+                        Detalle = Services.Liquidaciones.MovimientosViajeService.NombreMedio(m.Medio) +
+                                  (m.Medio == "SOBRE" && m.NombrePortador != null ? " · lo trae " + m.NombrePortador : ""),
+                        Monto = string.Join(" · ", new[]
+                        {
+                            m.MontoSoles != 0 ? "S/ " + m.MontoSoles.ToString("N2", cultura) : null,
+                            m.MontoDolares != 0 ? "US$ " + m.MontoDolares.ToString("N2", cultura) : null
+                        }.Where(s => s != null))
+                    }).ToList();
+                rptDineroRecibido.DataSource = entregas;
+                rptDineroRecibido.DataBind();
+                pnlDineroRecibido.Visible = entregas.Count > 0;
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Error al cargar el dinero recibido en DashboardConductor");
+                pnlDineroRecibido.Visible = false;
             }
         }
 

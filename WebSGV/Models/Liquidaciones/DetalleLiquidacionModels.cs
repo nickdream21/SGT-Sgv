@@ -167,6 +167,40 @@ namespace WebSGV.Models.Liquidaciones
         public string DescuentoMotivo { get; set; }
         /// <summary>Motivo del reintegro (obligatorio si hay reintegro).</summary>
         public string ReintegroMotivo { get; set; }
+
+        /// <summary>Cada entrega de dinero unida a esta liquidación (fecha, medio, quién llevó el sobre…).</summary>
+        public List<MovimientoViaje> Entregas { get; set; } = new List<MovimientoViaje>();
+        /// <summary>Gastos del viaje que pagó la empresa directamente al proveedor: no tocan el saldo del conductor.</summary>
+        public List<MovimientoViaje> PagosDirectos { get; set; } = new List<MovimientoViaje>();
+    }
+
+    /// <summary>
+    /// Dinero del viaje registrado al momento: ENTREGA al conductor (suma a lo entregado) o
+    /// PAGO_DIRECTO de la empresa a un proveedor (costo del viaje que no pasa por el conductor).
+    /// </summary>
+    public class MovimientoViaje
+    {
+        public int IdMovimiento { get; set; }
+        public string Tipo { get; set; }
+        public int IdConductor { get; set; }
+        public string NombreConductor { get; set; }
+        public string NumeroOrdenViaje { get; set; }
+        public System.DateTime Fecha { get; set; }
+        public string Concepto { get; set; }
+        public decimal MontoSoles { get; set; }
+        public decimal MontoDolares { get; set; }
+        public string Medio { get; set; }
+        public int? IdConductorPortador { get; set; }
+        public string NombrePortador { get; set; }
+        public string NumeroOperacion { get; set; }
+        public string RucProveedor { get; set; }
+        public string NombreProveedor { get; set; }
+        public string Comprobante { get; set; }
+        public string Descripcion { get; set; }
+        public string RutaAdjunto { get; set; }
+        public string RegistradoPor { get; set; }
+        public bool Activo { get; set; } = true;
+        public string MotivoAnulacion { get; set; }
     }
 
     /// <summary>Descuento y reintegro que registra la administración al revisar, cada uno con su motivo.</summary>

@@ -325,6 +325,71 @@ namespace WebSGV.Tests.Integracion
         }
 
         [FactBD]
+        public void EntregasYPagosDirectos_SeUnenALaLiquidacionAlRevisarla()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var datos = DatosBase.Cargar();
+                int idViaje = CrearDespacho(datos, NuevoLote(datos), out _);
+                var ahora = FechaHelper.Ahora().AddMinutes(-30);
+
+                // Se registran mientras el viaje está en curso.
+                var adelanto = MovimientosViajeService.Registrar(new WebSGV.Models.Liquidaciones.MovimientoViaje
+                {
+                    Tipo = MovimientosViajeService.Entrega, IdConductor = datos.IdConductor, Fecha = ahora,
+                    Concepto = "ADELANTO", Medio = "EFECTIVO", MontoSoles = 300m
+                }, datos.IdUsuarioAdmin);
+                var sobre = MovimientosViajeService.Registrar(new WebSGV.Models.Liquidaciones.MovimientoViaje
+                {
+                    Tipo = MovimientosViajeService.Entrega, IdConductor = datos.IdConductor, Fecha = ahora,
+                    Concepto = "SEGUNDO_DESPACHO", Medio = "SOBRE", IdConductorPortador = datos.IdOtroConductor, MontoSoles = 200m
+                }, datos.IdUsuarioAdmin);
+                var pago = MovimientosViajeService.Registrar(new WebSGV.Models.Liquidaciones.MovimientoViaje
+                {
+                    Tipo = MovimientosViajeService.PagoDirecto, IdConductor = datos.IdConductor, Fecha = ahora,
+                    Concepto = "REPARACION", Medio = "YAPE", NumeroOperacion = "123456", NombreProveedor = "Llantería de prueba",
+                    MontoSoles = 40m
+                }, datos.IdUsuarioAdmin);
+                Assert.True(adelanto.Exito && sobre.Exito && pago.Exito, adelanto.Mensaje + sobre.Mensaje + pago.Mensaje);
+                Assert.Equal(idViaje, Convert.ToInt32(Fila("SELECT idViajeProgreso FROM MovimientoDineroViaje WHERE idMovimiento = @id", adelanto.IdMovimiento)["idViajeProgreso"]));
+
+                var sinLiquidar = MovimientosViajeService.ObtenerSinLiquidar(datos.IdConductor);
+                Assert.Contains(sinLiquidar, m => m.IdMovimiento == sobre.IdMovimiento && m.NombrePortador != null);
+
+                var input = NuevaLiquidacion(datos, idViaje);
+                input.DespachoSoles = 0m;
+                input.IngresosAdicionales.Clear();
+                int idOrden = LiquidacionConductorService.EnviarLiquidacion(input);
+                FirmarComoConductor(idOrden, datos.IdUsuarioConductor);
+
+                var candidatos = MovimientosViajeService.ObtenerParaRevision(idOrden);
+                Assert.Equal(3, candidatos.Count(m => new[] { adelanto.IdMovimiento, sobre.IdMovimiento, pago.IdMovimiento }.Contains(m.IdMovimiento)));
+
+                // La revisión une el adelanto, el sobre y el pago; lo entregado se suma de las entregas.
+                var entregado = MovimientosViajeService.SumarEntregas(candidatos);
+                var r = LiquidacionesPendientesService.EnviarAConformidad(idOrden, new WebSGV.Models.Liquidaciones.AjustesLiquidacion(),
+                    null, datos.IdUsuarioAdmin, entregado, new[] { adelanto.IdMovimiento, sobre.IdMovimiento, pago.IdMovimiento });
+                Assert.True(r.Exito, r.Mensaje);
+
+                var detalle = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrden);
+                Assert.Equal(500m, detalle.DespachoSoles);                 // 300 adelanto + 200 en sobre
+                Assert.Equal(2, detalle.Entregas.Count);
+                Assert.Single(detalle.PagosDirectos);
+                Assert.Equal(40m, detalle.PagosDirectos[0].MontoSoles);
+                // El pago directo no cambia el saldo del conductor: solo cuenta lo entregado y sus gastos.
+                Assert.Equal(LiquidacionCalculos.SaldoFinal(500m, detalle.TotalGastosSoles, 0m, 0m),
+                    LiquidacionCalculos.SaldoFinal(detalle.TotalIngresosSoles, detalle.TotalGastosSoles, 0m, 0m));
+                Assert.Empty(MovimientosViajeService.ObtenerSinLiquidar(datos.IdConductor)
+                    .Where(m => new[] { adelanto.IdMovimiento, sobre.IdMovimiento, pago.IdMovimiento }.Contains(m.IdMovimiento)));
+
+                // Ya enviada al conductor: no se puede anular lo que él va a firmar.
+                var anular = MovimientosViajeService.Anular(sobre.IdMovimiento, datos.IdUsuarioAdmin, "Anulación de prueba en test");
+                Assert.False(anular.Exito);
+                Assert.Contains("revisada", anular.Mensaje);
+            }
+        }
+
+        [FactBD]
         public void EnviarAConformidad_AjusteSinMotivo_NoSeEnvia()
         {
             using (new TransaccionDePrueba())

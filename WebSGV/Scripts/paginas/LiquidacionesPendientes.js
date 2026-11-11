@@ -323,6 +323,8 @@ function mostrarDetalle(datos) {
     _gastosDolares = parseFloat(datos.TotalGastosDolares || 0);
     actualizarBalanceAjustado();
 
+    if (modoAprobacion) cargarMovimientosRevision(datos.IdOrdenViaje);
+
     $('#detalleLoading').hide();
     $('#modalDetalleLiquidacion .detail-section').show();
     $('#sectionAjustes').toggle(modoAprobacion);
@@ -517,6 +519,86 @@ function enviarCorreccionSalida(fecha, hora, motivo) {
 
 var MINIMO_MOTIVO = 10;
 
+// ============================================================
+// === Entregas y pagos directos registrados durante el viaje ===
+// ============================================================
+
+// null = la revisión no cargó movimientos (no se tocan los ya unidos a la liquidación).
+var _movimientosRevision = null;
+
+function cargarMovimientosRevision(idOrden) {
+    _movimientosRevision = null;
+    $('#panelMovimientos').hide();
+    $('#tbodyMovimientos').html('');
+    $.ajax({
+        type: "POST",
+        url: "LiquidacionesPendientes.aspx/ObtenerMovimientosParaRevision",
+        data: JSON.stringify({ idOrdenViaje: idOrden }),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function (response) {
+            var r = response.d;
+            if (!r || !r.success) return;
+            _movimientosRevision = r.movimientos || [];
+            if (_movimientosRevision.length === 0) return;
+
+            var html = '';
+            _movimientosRevision.forEach(function (m) {
+                var esPago = m.Tipo === 'PAGO_DIRECTO';
+                var sub = [];
+                if (m.NombrePortador) sub.push('lleva: ' + m.NombrePortador);
+                if (m.NumeroOperacion) sub.push('op. ' + m.NumeroOperacion);
+                if (esPago && m.NombreProveedor) sub.push(m.NombreProveedor + (m.Comprobante ? ' · ' + m.Comprobante : ''));
+                if (m.Descripcion) sub.push(m.Descripcion);
+                html += '<tr class="' + (esPago ? 'mov-pago' : '') + '">';
+                html += '<td><input type="checkbox" class="chk-mov" data-id="' + m.IdMovimiento + '" checked onchange="aplicarEntregasALaTabla()"></td>';
+                html += '<td class="text-nowrap">' + htmlEncode(m.Fecha) + '</td>';
+                html += '<td>' + (esPago ? 'Pago directo' : 'Entrega') + '</td>';
+                html += '<td>' + htmlEncode(m.Concepto) + (sub.length ? '<span class="mov-sub">' + htmlEncode(sub.join(' · ')) + '</span>' : '') + '</td>';
+                html += '<td>' + htmlEncode(m.Medio) + '</td>';
+                html += '<td class="text-right">' + (m.MontoSoles ? parseFloat(m.MontoSoles).toFixed(2) : '—') + '</td>';
+                html += '<td class="text-right">' + (m.MontoDolares ? parseFloat(m.MontoDolares).toFixed(2) : '—') + '</td>';
+                html += '</tr>';
+            });
+            $('#tbodyMovimientos').html(html);
+            $('#panelMovimientos').show();
+            aplicarEntregasALaTabla();
+        }
+    });
+}
+
+function idsMovimientosMarcados() {
+    if (_movimientosRevision === null) return null;
+    var ids = [];
+    $('#tbodyMovimientos .chk-mov:checked').each(function () { ids.push(parseInt($(this).data('id'), 10)); });
+    return ids;
+}
+
+// Las entregas marcadas llenan la tabla "Dinero entregado" (adelanto y segundo despacho van a Adelanto).
+function aplicarEntregasALaTabla() {
+    if (!_movimientosRevision) return;
+    var marcados = idsMovimientosMarcados();
+    var filas = { Despacho: { s: 0, d: 0, det: [] }, Mensualidad: { s: 0, d: 0, det: [] }, Prestamo: { s: 0, d: 0, det: [] }, OtrosIngresos: { s: 0, d: 0, det: [] } };
+    var hayEntregas = false;
+    _movimientosRevision.forEach(function (m) {
+        if (m.Tipo !== 'ENTREGA' || marcados.indexOf(m.IdMovimiento) < 0) return;
+        hayEntregas = true;
+        var k = m.ConceptoCodigo === 'MENSUALIDAD' ? 'Mensualidad' : m.ConceptoCodigo === 'PRESTAMO' ? 'Prestamo'
+              : m.ConceptoCodigo === 'OTROS' ? 'OtrosIngresos' : 'Despacho';
+        filas[k].s += parseFloat(m.MontoSoles || 0);
+        filas[k].d += parseFloat(m.MontoDolares || 0);
+        filas[k].det.push(m.Fecha.substr(0, 5) + ' ' + m.Medio.toLowerCase() + (m.NombrePortador ? ' (' + m.NombrePortador + ')' : ''));
+    });
+    if (!hayEntregas && _movimientosRevision.every(function (m) { return m.Tipo !== 'ENTREGA'; })) return;
+    $('.tabla-entregado tr[data-ingreso]').each(function () {
+        var f = filas[$(this).data('ingreso')];
+        $(this).find('.ing-soles').val(f.s > 0 ? f.s.toFixed(2) : '');
+        $(this).find('.ing-dolares').val(f.d > 0 ? f.d.toFixed(2) : '');
+        $(this).find('.ing-desc').val(f.det.join('; ').substr(0, 250));
+    });
+    actualizarBalanceAjustado();
+}
+
 // Un descuento o reintegro sin motivo no se puede enviar: el conductor lo verá en la liquidación
 // final antes de firmar su conformidad y es lo que sustenta el ajuste ante una auditoría.
 function validarMotivoAjuste(hayMonto, selector, selectorError, tipo) {
@@ -606,7 +688,8 @@ function enviarAprobacion(ajustes, nota, ingresos) {
             idOrdenViaje: idOrdenParaAprobar,
             ajustes: ajustes,
             notaAprobacion: nota || null,
-            ingresos: ingresos || null
+            ingresos: ingresos || null,
+            idsMovimientos: idsMovimientosMarcados()
         }),
         contentType: "application/json; charset=utf-8",
         dataType: "json",

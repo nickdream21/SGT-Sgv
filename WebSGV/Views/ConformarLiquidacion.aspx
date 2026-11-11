@@ -58,6 +58,17 @@
                     <a id="lnkPdf" href="#" target="_blank" class="cl-pdf"><i class="fas fa-file-pdf mr-1"></i>Ver el documento completo (PDF)</a>
                 </section>
 
+                <section class="fl-card" id="secEntregas" style="display:none;">
+                    <h2><i class="fas fa-hand-holding-usd mr-2"></i>Cómo le entregaron el dinero</h2>
+                    <table class="cl-tabla"><tbody id="tbEntregas"></tbody></table>
+                </section>
+
+                <section class="fl-card" id="secPagosDirectos" style="display:none;">
+                    <h2><i class="fas fa-store mr-2"></i>Pagado por la empresa directamente</h2>
+                    <p class="fl-nota mt-0 mb-2">La empresa le pagó al proveedor: no pasó por usted y no cambia su saldo.</p>
+                    <table class="cl-tabla"><tbody id="tbPagosDirectos"></tbody></table>
+                </section>
+
                 <section class="fl-card cl-ajustes" id="secAjustes" style="display:none;">
                     <h2><i class="fas fa-balance-scale mr-2"></i>Ajustes de la administración</h2>
                     <div id="vAjustes"></div>

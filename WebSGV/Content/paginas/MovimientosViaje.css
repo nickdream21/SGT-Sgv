@@ -1,0 +1,6 @@
+/* Dinero y pagos del viaje */
+.mv-tipo td { padding-right: 1rem; }
+.mv-tipo label { margin-left: 0.35rem; font-weight: 500; }
+.mv-sub { font-size: 0.78rem; }
+.mv-anulado td { color: #9ca3af; text-decoration: line-through; }
+.mv-anulado td .text-danger { text-decoration: none; }

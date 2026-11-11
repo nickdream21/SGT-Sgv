@@ -89,7 +89,7 @@
                     </li>
                     <% } %>
 
-                    <% if (EsAdmin)
+                    <% if (EsAdmin || RolUsuario == "SUPERVISOR")
                         { %>
                     <!-- Liquidaciones -->
                     <li class="nav-item dropdown">
@@ -100,6 +100,10 @@
                             <a class="dropdown-item" href='<%= ResolveUrl("~/Views/LiquidacionesPendientes.aspx") %>'>
                                 <i class="fas fa-clock"></i>Liquidaciones pendientes
                             </a>
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/MovimientosViaje.aspx") %>'>
+                                <i class="fas fa-hand-holding-usd"></i>Dinero y pagos del viaje
+                            </a>
+
                         </div>
                     </li>
                     <% } %>

@@ -115,7 +115,8 @@ namespace WebSGV.Services.Liquidaciones
         /// (rechazo, reversión, corrección de ajustes), siempre en una línea nueva.
         /// </summary>
         private static readonly string[] MarcadoresNotaSistema =
-            { "**RECHAZADO ", "[RECHAZO ", "[REVERSION ", "[CORRECCION AJUSTES " };
+            { "**RECHAZADO ", "[RECHAZO ", "[REVERSION ", "[CORRECCION AJUSTES ",
+              "[OBSERVACION DEL CONDUCTOR ", "[RETIRO DEL ENVIO AL CONDUCTOR " };
 
         /// <summary>
         /// Devuelve solo lo que escribió el conductor en las observaciones de la orden, sin las

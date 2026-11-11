@@ -398,3 +398,5 @@ body.dc-con-barra { padding-bottom: 84px; }
     .dc { margin-top: -0.75rem; }
     .dc-card { padding: 14px; }
 }
+
+.dc-dinero { padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }

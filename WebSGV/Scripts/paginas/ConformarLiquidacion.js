@@ -99,6 +99,18 @@
             document.getElementById('vLetras').textContent = d.SaldoTexto + ' Son S/: ' + d.SaldoSolesEnLetras +
                 (d.SaldoDolaresEnLetras ? ' · Son US$: ' + d.SaldoDolaresEnLetras : '');
 
+            function listaMovimientos(idTabla, idSeccion, items) {
+                var t = document.getElementById(idTabla);
+                t.innerHTML = '';
+                (items || []).forEach(function (c) {
+                    fila(t, c.Concepto, c.Soles, c.Dolares);
+                    if (c.Detalle) fila(t, c.Detalle, 0, 0, 'sub');
+                });
+                document.getElementById(idSeccion).style.display = (items && items.length) ? '' : 'none';
+            }
+            listaMovimientos('tbEntregas', 'secEntregas', d.DetalleEntregas);
+            listaMovimientos('tbPagosDirectos', 'secPagosDirectos', d.PagosDirectos);
+
             var aj = document.getElementById('vAjustes');
             aj.innerHTML = '';
             function tarjeta(tipo, clase, soles, dolares, motivo) {

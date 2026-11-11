@@ -574,7 +574,7 @@
                                             <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
                                             <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
                                         </tr>
-                                        <tr data-ingreso="OtrosIngresos">
+                                        <tr data-ingreso="OtrosIngresos" data-ultima="1">
                                             <td>Otros autorizados</td>
                                             <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
                                             <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
@@ -582,6 +582,24 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+                            <!-- Entregas y pagos directos registrados en el momento (Dinero y pagos del viaje) -->
+                            <div id="panelMovimientos" class="mt-2" style="display:none;">
+                                <div class="mov-titulo">Registrado durante el viaje
+                                    <span class="ajuste-sub">Las entregas marcadas llenan la tabla de arriba; los pagos directos van al PDF y no cambian el saldo del conductor.</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm tabla-movimientos mb-0">
+                                        <thead>
+                                            <tr><th></th><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Medio</th><th class="text-right">S/</th><th class="text-right">US$</th></tr>
+                                        </thead>
+                                        <tbody id="tbodyMovimientos"></tbody>
+                                    </table>
+                                </div>
+                                <small class="text-danger d-none" id="avisoMovimientos"></small>
+                            </div>
+                            <div class="mt-2 sgv-suave" style="font-size:0.8rem;">
+                                <a href='<%= ResolveUrl("~/Views/MovimientosViaje.aspx") %>' target="_blank"><i class="fas fa-hand-holding-usd mr-1"></i>Registrar una entrega o un pago directo</a>
                             </div>
                         </div>
                         <div class="alert-warning-light mb-3" style="font-size:0.85rem;padding:0.75rem;border:1px solid #fde68a;border-radius:0.375rem;background:#fffbeb;">

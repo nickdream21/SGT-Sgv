@@ -30,6 +30,8 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Label lblMensaje;
         protected global::System.Web.UI.WebControls.Panel pnlPorConformar;
         protected global::System.Web.UI.WebControls.Repeater rptPorConformar;
+        protected global::System.Web.UI.WebControls.Panel pnlDineroRecibido;
+        protected global::System.Web.UI.WebControls.Repeater rptDineroRecibido;
 
         protected global::System.Web.UI.WebControls.Panel pnlBadgeActivos;
         protected global::System.Web.UI.WebControls.Label lblCantidadActivos;

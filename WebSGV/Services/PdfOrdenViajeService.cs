@@ -487,6 +487,20 @@ namespace WebSGV.Services
                     col.Item().Element(c => ComponerComprobantes(c, comprobantes));
                 }
 
+                if (_d.Entregas != null && _d.Entregas.Count > 0)
+                {
+                    col.Item().PaddingTop(8).Element(c => TituloSeccion(c, ++n, "Detalle del dinero entregado"));
+                    col.Item().Element(c => TablaMovimientos(c, _d.Entregas, pagoDirecto: false));
+                }
+
+                if (_d.PagosDirectos != null && _d.PagosDirectos.Count > 0)
+                {
+                    col.Item().PaddingTop(8).Element(c => TituloSeccion(c, ++n, "Gastos del viaje pagados directamente por la empresa"));
+                    col.Item().PaddingBottom(3).Text("No pasaron por el conductor: son costo del viaje y no forman parte de su saldo.")
+                        .FontSize(7.5f).FontColor(TextoSuave);
+                    col.Item().Element(c => TablaMovimientos(c, _d.PagosDirectos, pagoDirecto: true));
+                }
+
                 bool revisada = Etapa == EtapaDocumento.Revision || Etapa == EtapaDocumento.Final;
                 bool hayObs = !string.IsNullOrWhiteSpace(observaciones);
                 bool hayNota = revisada && !string.IsNullOrWhiteSpace(_d.NotaAprobacion);
@@ -511,6 +525,44 @@ namespace WebSGV.Services
                 {
                     col.Item().PageBreak();
                     col.Item().Element(ComponerConstancia);
+                }
+            });
+        }
+
+        private static void TablaMovimientos(IContainer cont, List<MovimientoViaje> movimientos, bool pagoDirecto)
+        {
+            cont.Table(table =>
+            {
+                table.ColumnsDefinition(c =>
+                {
+                    c.ConstantColumn(62);
+                    c.ConstantColumn(104);
+                    c.RelativeColumn();
+                    c.ConstantColumn(62);
+                    c.ConstantColumn(56);
+                });
+                table.Header(h =>
+                {
+                    CeldaCabecera(h.Cell(), "Fecha", false);
+                    CeldaCabecera(h.Cell(), "Concepto", false);
+                    CeldaCabecera(h.Cell(), pagoDirecto ? "Proveedor, comprobante y medio" : "Medio y referencia", false);
+                    CeldaCabecera(h.Cell(), "S/", true);
+                    CeldaCabecera(h.Cell(), "US$", true);
+                });
+                foreach (var m in movimientos)
+                {
+                    string referencia = Unir(" · ",
+                        pagoDirecto ? Unir(" ", m.NombreProveedor, string.IsNullOrEmpty(m.RucProveedor) ? null : "RUC " + m.RucProveedor) : null,
+                        pagoDirecto ? m.Comprobante : null,
+                        MovimientosViajeService.NombreMedio(m.Medio),
+                        m.Medio == "SOBRE" && !string.IsNullOrEmpty(m.NombrePortador) ? "lo llevó " + Normalizar(m.NombrePortador) : null,
+                        string.IsNullOrEmpty(m.NumeroOperacion) ? null : "op. " + m.NumeroOperacion,
+                        m.Descripcion);
+                    CeldaTexto(table.Cell(), m.Fecha.ToString("dd/MM/yyyy HH:mm", CulturaPe));
+                    CeldaTexto(table.Cell(), MovimientosViajeService.NombreConcepto(m.Tipo, m.Concepto));
+                    CeldaTexto(table.Cell(), Recortar(referencia, 120));
+                    CeldaMonto(table.Cell(), m.MontoSoles);
+                    CeldaMonto(table.Cell(), m.MontoDolares);
                 }
             });
         }

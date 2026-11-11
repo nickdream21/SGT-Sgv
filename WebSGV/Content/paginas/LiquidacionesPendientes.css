@@ -510,6 +510,13 @@
     white-space: normal;
 }
 
+/* Entregas y pagos directos registrados durante el viaje */
+.mov-titulo { font-weight: 600; font-size: 0.85rem; margin: 0.5rem 0 0.25rem; }
+.tabla-movimientos { font-size: 0.8rem; }
+.tabla-movimientos td { vertical-align: middle; }
+.tabla-movimientos .mov-pago td { color: #6b7280; }
+.tabla-movimientos .mov-sub { display: block; font-size: 0.72rem; color: #6b7280; }
+
 .campo-con-error {
     border-color: #dc3545 !important;
 }

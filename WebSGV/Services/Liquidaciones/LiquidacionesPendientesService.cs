@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
 using WebSGV.Helpers;
 using WebSGV.Models.Liquidaciones;
 
@@ -209,7 +210,7 @@ namespace WebSGV.Services.Liquidaciones
         /// </summary>
         public static ResultadoEnvioConformidad EnviarAConformidad(
             int idOrdenViaje, AjustesLiquidacion ajustes, string notaAprobacion, int idUsuario,
-            IngresosEntregados ingresos = null)
+            IngresosEntregados ingresos = null, IEnumerable<int> idsMovimientos = null)
         {
             ajustes = ajustes ?? new AjustesLiquidacion();
             string error = LiquidacionCalculos.ValidarMontosAjuste(ajustes.DescuentoSoles, ajustes.DescuentoDolares,
@@ -285,6 +286,10 @@ namespace WebSGV.Services.Liquidaciones
                                 DbHelper.Param("@descOtros", (object)ingresos.DescOtros ?? DBNull.Value),
                                 DbHelper.Param("@descPrestamo", (object)ingresos.DescPrestamo ?? DBNull.Value));
                         }
+
+                        // 3b. Entregas y pagos directos elegidos en la revisión (null = la pantalla no los envió).
+                        if (idsMovimientos != null)
+                            MovimientosViajeService.UnirAOrden(conn, tran, numeroOrdenViaje, idsMovimientos);
 
                         // 4. Estado POR_CONFORMAR.
                         DataTable dt = DbHelper.ConsultarTablaSp(conn, tran, "sp_LD_EnviarLiquidacionAConformidad",
@@ -584,7 +589,8 @@ namespace WebSGV.Services.Liquidaciones
                                 "SELECT CONVERT(varchar,fechaComprobante,103) AS fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleReparacionesVarios WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante;" +
                                 "SELECT CONVERT(varchar,fechaComprobante,103) AS fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleHospedaje WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante;" +
                                 "SELECT CONVERT(varchar,fechaComprobante,103) AS fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleCombustible WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante;" +
-                                "SELECT TOP 1 descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, observacionesDescuento, observacionesReintegro FROM DescuentosReintegros WHERE numeroOrdenViaje = @n AND activo = 1;";
+                                "SELECT TOP 1 descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, observacionesDescuento, observacionesReintegro FROM DescuentosReintegros WHERE numeroOrdenViaje = @n AND activo = 1;" +
+                                MovimientosViajeService.ConsultaDeOrden + ";";
 
                             using (SqlCommand cmdDetalles = new SqlCommand(sqlDetalles, conn))
                             {
@@ -670,6 +676,15 @@ namespace WebSGV.Services.Liquidaciones
                                         detalle.DescuentoMotivo = rd["observacionesDescuento"] != DBNull.Value ? rd["observacionesDescuento"].ToString() : "";
                                         detalle.ReintegroMotivo = rd["observacionesReintegro"] != DBNull.Value ? rd["observacionesReintegro"].ToString() : "";
                                     }
+
+                                    // 8) ENTREGAS Y PAGOS DIRECTOS unidos a esta liquidación (misma conexión:
+                                    //    una segunda conexión dentro de una transacción la volvería distribuida).
+                                    rd.NextResult();
+                                    var tabla = new DataTable();
+                                    tabla.Load(rd);
+                                    var movimientos = MovimientosViajeService.Leer(tabla);
+                                    detalle.Entregas = movimientos.Where(m => m.Tipo == MovimientosViajeService.Entrega).ToList();
+                                    detalle.PagosDirectos = movimientos.Where(m => m.Tipo == MovimientosViajeService.PagoDirecto).ToList();
                                 }
                             }
 
@@ -696,6 +711,7 @@ namespace WebSGV.Services.Liquidaciones
                                 detalle.GastosHospedajeDolares +
                                 detalle.GastosCombustibleDolares +
                                 gastosAdicionalesDolares;
+
 
                             return detalle;
                         }

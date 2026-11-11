@@ -149,6 +149,13 @@ namespace WebSGV.Services.Liquidaciones
             Linea("descuento", d.DescuentoSoles, d.DescuentoDolares, d.DescuentoMotivo);
             Linea("reintegro", d.ReintegroSoles, d.ReintegroDolares, d.ReintegroMotivo);
             Linea("nota", d.NotaAprobacion);
+            // Cada entrega (con su medio y quién llevó el sobre) y cada pago directo: también es lo que
+            // el conductor acepta al dar su conformidad.
+            foreach (var m in (d.Entregas ?? new List<MovimientoViaje>()).Concat(d.PagosDirectos ?? new List<MovimientoViaje>())
+                         .OrderBy(m => m.IdMovimiento))
+                Linea("movimiento", m.IdMovimiento.ToString(CultureInfo.InvariantCulture), m.Tipo,
+                    m.Fecha.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture), m.Concepto, m.MontoSoles, m.MontoDolares,
+                    m.Medio, (m.IdConductorPortador ?? 0).ToString(CultureInfo.InvariantCulture), m.NumeroOperacion);
 
             return HashHelper.ComputeSha256(sb.ToString());
         }

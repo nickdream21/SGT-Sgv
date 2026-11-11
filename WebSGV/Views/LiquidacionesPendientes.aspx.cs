@@ -6,6 +6,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.IO;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web.Hosting;
 using System.Web.Services;
@@ -863,7 +864,8 @@ namespace WebSGV.Views
             int idOrdenViaje,
             AjustesLiquidacion ajustes,
             string notaAprobacion = null,
-            IngresosEntregados ingresos = null)
+            IngresosEntregados ingresos = null,
+            List<int> idsMovimientos = null)
         {
             try
             {
@@ -898,7 +900,7 @@ namespace WebSGV.Views
 
                 // 1) Transacción: ajustes con motivo + dinero entregado + estado POR_CONFORMAR.
                 var envio = LiquidacionesPendientesService.EnviarAConformidad(
-                    idOrdenViaje, ajustes, notaAprobacion, contexto.IdUsuario, ingresos);
+                    idOrdenViaje, ajustes, notaAprobacion, contexto.IdUsuario, ingresos, idsMovimientos);
                 if (!envio.Exito)
                     return new { success = false, message = envio.Mensaje };
 
@@ -954,6 +956,44 @@ namespace WebSGV.Views
             {
                 LogSGV.Error(ex, "Error al enviar a conformidad la liquidación (orden {IdOrden})", idOrdenViaje);
                 return new { success = false, message = "Error al aprobar: " + MensajeErrorHelper.ParaUsuario(ex) };
+            }
+        }
+
+        /// <summary>
+        /// Entregas de dinero y pagos directos que se pueden unir a la liquidación al revisarla: los ya
+        /// unidos y los que el conductor tiene sin liquidar. Las entregas elegidas llenan "Dinero entregado".
+        /// </summary>
+        [WebMethod(EnableSession = true)]
+        public static object ObtenerMovimientosParaRevision(int idOrdenViaje)
+        {
+            try
+            {
+                if (!PuedeGestionarLiquidaciones())
+                    return new { success = false, message = "No tiene permisos." };
+                var lista = MovimientosViajeService.ObtenerParaRevision(idOrdenViaje).Select(m => new
+                {
+                    m.IdMovimiento,
+                    m.Tipo,
+                    Fecha = m.Fecha.ToString("dd/MM/yyyy HH:mm"),
+                    Concepto = MovimientosViajeService.NombreConcepto(m.Tipo, m.Concepto),
+                    ConceptoCodigo = m.Concepto,
+                    m.MontoSoles,
+                    m.MontoDolares,
+                    Medio = MovimientosViajeService.NombreMedio(m.Medio),
+                    MedioCodigo = m.Medio,
+                    m.NombrePortador,
+                    m.NumeroOperacion,
+                    m.NombreProveedor,
+                    m.Comprobante,
+                    m.Descripcion,
+                    Unido = m.NumeroOrdenViaje != null
+                }).ToList();
+                return new { success = true, movimientos = lista };
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Error al leer los movimientos de dinero de la orden {IdOrden}", idOrdenViaje);
+                return new { success = false, message = MensajeErrorHelper.ParaUsuario(ex) };
             }
         }
 

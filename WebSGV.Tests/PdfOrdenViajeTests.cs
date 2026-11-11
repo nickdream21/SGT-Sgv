@@ -117,6 +117,28 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void LiquidacionFinal_ConEntregasYPagosDirectos_SeGeneraYDetallaCadaMovimiento()
+        {
+            var d = LiquidacionTipica();
+            d.Entregas = new List<MovimientoViaje>
+            {
+                new MovimientoViaje { IdMovimiento = 1, Tipo = MovimientosViajeService.Entrega, Concepto = "ADELANTO", Medio = "EFECTIVO",
+                                      MontoSoles = 1000m, Fecha = new DateTime(2026, 7, 17, 7, 30, 0) },
+                new MovimientoViaje { IdMovimiento = 2, Tipo = MovimientosViajeService.Entrega, Concepto = "SEGUNDO_DESPACHO", Medio = "SOBRE",
+                                      NombrePortador = "JUAN PEREZ LOPEZ", MontoSoles = 200m, Fecha = new DateTime(2026, 7, 19, 15, 0, 0) }
+            };
+            d.PagosDirectos = new List<MovimientoViaje>
+            {
+                new MovimientoViaje { IdMovimiento = 3, Tipo = MovimientosViajeService.PagoDirecto, Concepto = "REPARACION", Medio = "YAPE",
+                                      NumeroOperacion = "12345678", NombreProveedor = "Llantería El Rápido", RucProveedor = "20123456789",
+                                      Comprobante = "B001-55", MontoSoles = 40m, Fecha = new DateTime(2026, 7, 18, 11, 0, 0) }
+            };
+
+            // Con las dos tablas nuevas la liquidación puede pasar a una segunda hoja, más la constancia.
+            Assert.InRange(Paginas(d, FirmasFinal()), 2, 3);
+        }
+
+        [Fact]
         public void Declaracion_SoloConSuFirma_LlevaLaConstanciaEnHojaAparte()
         {
             var firmas = new FirmasOrdenViaje

@@ -216,6 +216,8 @@ namespace WebSGV.Tests
         [InlineData("Viaje sin novedad\r\n**RECHAZADO 2026-10-09 11:56:29**: Falta comprobante", "Viaje sin novedad")]
         [InlineData("Llanta baja\r\n[REVERSION 2026-10-09 12:08:55] motivo\r\n[RECHAZO 2026-10-09 12:10:00] otro", "Llanta baja")]
         [InlineData("Linea 1\r\nLinea 2\r\n[CORRECCION AJUSTES 2026-10-09] x", "Linea 1\r\nLinea 2")]
+        [InlineData("Viaje sin novedad\r\n[RETIRO DEL ENVIO AL CONDUCTOR 2026-11-11 18:07:34] motivo", "Viaje sin novedad")]
+        [InlineData("Todo bien\r\n[OBSERVACION DEL CONDUCTOR 2026-11-11 10:00:00] el adelanto fue 800", "Todo bien")]
         [InlineData("\r\n**RECHAZADO 2026-10-09**: sin texto del conductor", "")]
         [InlineData("**RECHAZADO 2026-10-09**: al inicio", "")]
         [InlineData("Solo texto del conductor", "Solo texto del conductor")]
