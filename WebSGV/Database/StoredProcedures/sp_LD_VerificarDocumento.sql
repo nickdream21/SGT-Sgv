@@ -23,7 +23,9 @@ BEGIN
     SELECT f.idFirma,
            f.tipoDocumento,
            ov.numeroOrdenViaje,
-           f.etapa,
+           COALESCE(f.etapa, CASE WHEN f.estadoFirma = 'A' THEN 'ANULACION'
+                                  WHEN f.rolFirmante = 'CONDUCTOR' THEN 'DECLARACION'
+                                  ELSE 'REVISION' END) AS etapa,
            f.nombreFirmante,
            f.rolFirmante,
            f.fechaHoraFirma,
@@ -35,7 +37,10 @@ BEGIN
     LEFT JOIN OrdenViaje ov ON f.tipoDocumento = 'ORDEN_VIAJE' AND ov.idOrdenViaje = TRY_CAST(f.idDocumento AS INT)
     WHERE f.idFirma = @idFirma;
 
-    SELECT f.etapa,
+    -- Firmas anteriores a la migración 41 no tienen etapa: se deduce del rol y del estado.
+    SELECT COALESCE(f.etapa, CASE WHEN f.estadoFirma = 'A' THEN 'ANULACION'
+                                  WHEN f.rolFirmante = 'CONDUCTOR' THEN 'DECLARACION'
+                                  ELSE 'REVISION' END) AS etapa,
            f.nombreFirmante,
            f.rolFirmante,
            f.fechaHoraFirma,

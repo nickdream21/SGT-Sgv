@@ -138,9 +138,7 @@ Ordenadas por valor. Marca `[x]` al terminar. Todo pendiente va como su propio `
       conductor) un descuento de 20 deja −235, es decir, aumenta lo que se le debe. Parece invertido para el caso
       en que la empresa debe al conductor; confirmar qué significa el saldo positivo antes de corregirlo en el
       PDF, la bandeja de aprobadas, la conformidad y los reportes.
-- [ ] **Probar en el navegador la conformidad del conductor** (2026-11-11): OV-2026-000005 (conductor de prueba
-      03497777) quedó POR_CONFORMAR en sgvActualizada para firmar su conformidad en `ConformarLiquidacion.aspx`,
-      probar "No estoy de acuerdo" y la verificación pública con el código del PDF.
+- [x] **Probado en el sitio local la conformidad del conductor** (2026-11-11): con Claude in Chrome y por HTTP, contra sgvActualizada: aviso en el panel del conductor, pantalla de conformidad, contraseña incorrecta y huella cambiada rechazadas, firma registrada, PDF final con constancia, verificación pública (archivo original coincide, copia alterada no) y PDF alterado en el archivo bloqueado con incidente `INTEGRIDAD_PDF`. OV-2026-000004 y OV-2026-000005 (conductor de prueba 03497777) quedaron APROBADO con firmas de prueba.
 - [ ] **Aviso de datos personales y banco de datos ante la ANPD** (fuera del sistema): la firma registra nombre,
       DNI, trazo, IP y dispositivo (Ley 29733, D.S. 016-2024-JUS). Inscribir el banco de datos de trabajadores y
       entregar el aviso de tratamiento; revisarlo con el área legal.

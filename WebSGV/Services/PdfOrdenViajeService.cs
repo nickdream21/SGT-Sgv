@@ -1131,7 +1131,9 @@ namespace WebSGV.Services
                     Fila("Dispositivo", e.Dispositivo);
                     Fila("Documento firmado", e.HashDocumento == null
                         ? "Este documento" + (string.IsNullOrEmpty(e.CodigoVerificacion) ? "" : " (código " + e.CodigoVerificacion + ")")
-                        : "Código " + (e.CodigoVerificacion ?? "—"));
+                        : string.IsNullOrEmpty(e.CodigoVerificacion)
+                            ? "Firmado antes de que existiera el código de verificación"
+                            : "Código " + e.CodigoVerificacion);
                     if (e.HashDocumento != null)
                         Fila("Huella SHA-256", e.HashDocumento, monoespaciado: true);
                 });

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
@@ -84,7 +84,7 @@ namespace WebSGV.Views
 
             lblCodigo.Text = HttpUtility.HtmlEncode(codigo);
             lblDocumento.Text = HttpUtility.HtmlEncode("Orden de viaje N.° " + r["numeroOrdenViaje"] + " — " + EtapaFirma.Nombre(etapa));
-            lblFirmante.Text = HttpUtility.HtmlEncode(Convert.ToString(r["nombreFirmante"]) +
+            lblFirmante.Text = HttpUtility.HtmlEncode(System.Text.RegularExpressions.Regex.Replace(Convert.ToString(r["nombreFirmante"]).Trim(), @"\s+", " ") +
                 (Convert.ToString(r["rolFirmante"]) == "ADMIN" ? " (administración)" : " (conductor)"));
             lblFecha.Text = HttpUtility.HtmlEncode(FechaHelper.ConvertirDeUtc(Convert.ToDateTime(r["fechaHoraFirma"]))
                 .ToString("dd/MM/yyyy HH:mm:ss") + " (hora de Perú)");
@@ -118,7 +118,7 @@ namespace WebSGV.Views
                     firmas.Add(new
                     {
                         Etapa = EtapaFirma.Nombre(esAnulacion ? EtapaFirma.Anulacion : etapaFirma),
-                        Firmante = Convert.ToString(f["nombreFirmante"]),
+                        Firmante = System.Text.RegularExpressions.Regex.Replace(Convert.ToString(f["nombreFirmante"]).Trim(), @"\s+", " "),
                         Fecha = FechaHelper.ConvertirDeUtc(Convert.ToDateTime(f["fechaHoraFirma"])).ToString("dd/MM/yyyy HH:mm"),
                         Estado = esAnulacion ? "Motivo: " + Convert.ToString(f["motivoAnulacion"])
                                : Convert.ToBoolean(f["anulada"]) ? "Anulada" : "Vigente",
