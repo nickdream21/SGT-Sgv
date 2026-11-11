@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -14,12 +14,11 @@ namespace WebSGV.Services.Liquidaciones
     /// las firmas permanecen en el code-behind; este servicio solo ejecuta el SQL.
     /// No se modifica ninguna consulta ni stored procedure.
     ///
-    /// Las transacciones de aprobación/corrección (AprobarConAjustes, CorregirAjustesAprobada)
-    /// y el armador de DTO ObtenerDetalleLiquidacion también viven aquí: el SQL/SP se movió
-    /// verbatim y los WebMethods del code-behind conservan sesión, validación, el objeto de
-    /// respuesta, el PDF/Firma y la auditoría. La orquestación de PDF (archivado en disco vía
-    /// HostingEnvironment + PdfOrdenViajeService) permanece en el code-behind; aquí sólo están
-    /// sus dos consultas (ObtenerRutaPdfArchivado / GuardarRutaPdfArchivado).
+    /// La transacción de revisión (EnviarAConformidad: ajustes con motivo + dinero entregado +
+    /// estado POR_CONFORMAR) y el armador de DTO ObtenerDetalleLiquidacion también viven aquí;
+    /// los WebMethods del code-behind conservan sesión, validación, el objeto de respuesta y la
+    /// auditoría. Las firmas y sus PDF los registra <c>FirmaService</c>: declaración del conductor
+    /// → revisión de la administración → conformidad del conductor (recién ahí queda APROBADO).
     /// </summary>
     public static class LiquidacionesPendientesService
     {
@@ -60,13 +59,6 @@ namespace WebSGV.Services.Liquidaciones
             return DbHelper.ConsultarTablaSp("sp_ObtenerLiquidacionesPendientes", pars.ToArray());
         }
 
-        /// <summary>Aprueba la liquidación vía <c>sp_AprobarLiquidacion</c>.</summary>
-        public static DataTable Aprobar(string numeroOrdenViaje, int idUsuarioAprobacion, object observaciones) =>
-            DbHelper.ConsultarTablaSp("sp_AprobarLiquidacion",
-                DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje),
-                DbHelper.Param("@idUsuarioAprobacion", idUsuarioAprobacion),
-                DbHelper.Param("@observaciones", observaciones));
-
         /// <summary>Rechaza la liquidación vía <c>sp_RechazarLiquidacion</c>.</summary>
         public static DataTable Rechazar(string numeroOrdenViaje, int idUsuarioAprobacion, object observaciones) =>
             DbHelper.ConsultarTablaSp("sp_RechazarLiquidacion",
@@ -87,15 +79,8 @@ namespace WebSGV.Services.Liquidaciones
                         ORDER BY nombreCompleto",
                 DbHelper.Param("@term", "%" + term.Trim() + "%"));
 
-        /// <summary>
-        /// Liquidaciones aprobadas (viajes COMPLETADO) con filtros opcionales. El SQL se
-        /// arma dinámicamente igual que en el code-behind original; el cálculo de balance
-        /// y el mapeo se hacen fuera.
-        /// </summary>
-        public static DataTable ObtenerAprobadas(int idConductor, string fechaDesde, string fechaHasta,
-            string numeroOrden, DateTime? fd, DateTime? fh)
-        {
-            string query = @"
+        /// <summary>Columnas del resumen de una liquidación (bandejas de aprobadas y por conformar).</summary>
+        private const string SelectResumenLiquidacion = @"
                         SELECT
                             ov.idOrdenViaje,
                             ov.numeroOrdenViaje,
@@ -104,6 +89,8 @@ namespace WebSGV.Services.Liquidaciones
                             ca.placaCarreta,
                             ov.fechaSalida,
                             ov.fechaLlegada,
+                            ov.fechaEnvioConformidad,
+                            ov.fechaConformidad,
                             ISNULL(dr.descuentoSoles, 0) AS DescuentoSoles,
                             ISNULL(dr.descuentoDolares, 0) AS DescuentoDolares,
                             ISNULL(dr.reintegroSoles, 0) AS ReintegroSoles,
@@ -123,6 +110,17 @@ namespace WebSGV.Services.Liquidaciones
                         LEFT JOIN DescuentosReintegros dr ON dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1
                         LEFT JOIN Ingresos i ON i.numeroOrdenViaje = ov.numeroOrdenViaje
                         LEFT JOIN Egresos e ON e.numeroOrdenViaje = ov.numeroOrdenViaje
+                        ";
+
+        /// <summary>
+        /// Liquidaciones aprobadas (viajes COMPLETADO) con filtros opcionales. El SQL se
+        /// arma dinámicamente igual que en el code-behind original; el cálculo de balance
+        /// y el mapeo se hacen fuera.
+        /// </summary>
+        public static DataTable ObtenerAprobadas(int idConductor, string fechaDesde, string fechaHasta,
+            string numeroOrden, DateTime? fd, DateTime? fh)
+        {
+            string query = SelectResumenLiquidacion + @"
                         WHERE ov.estadoViaje = 'COMPLETADO'";
 
             if (idConductor > 0)
@@ -148,24 +146,6 @@ namespace WebSGV.Services.Liquidaciones
 
             return DbHelper.ConsultarTabla(query, pars.ToArray());
         }
-
-        /// <summary>Número de orden sólo si el viaje está COMPLETADO (para revertir).</summary>
-        public static object ObtenerNumeroOrdenCompletado(int idOrdenViaje) =>
-            DbHelper.EjecutarEscalar(
-                "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id AND estadoViaje = 'COMPLETADO'",
-                DbHelper.Param("@id", idOrdenViaje));
-
-        /// <summary>Revierte la aprobación devolviendo el viaje a PENDIENTE. Filas afectadas.</summary>
-        public static int RevertirEstado(int idOrdenViaje, string motivo) =>
-            DbHelper.EjecutarNonQuery(@"
-                        UPDATE OrdenViaje
-                        SET estadoViaje = 'PENDIENTE',
-                            estadoAprobacion = 'PENDIENTE',
-                            observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) +
-                                '[REVERSION ' + CONVERT(varchar, dbo.fn_AhoraPeru(), 120) + '] ' + @motivo
-                        WHERE idOrdenViaje = @id AND estadoViaje = 'COMPLETADO'",
-                DbHelper.Param("@id", idOrdenViaje),
-                DbHelper.Param("@motivo", motivo));
 
         /// <summary>Datos de la orden pendiente (número y firma) para el flujo de rechazo.</summary>
         public static DataTable ObtenerOrdenParaRechazo(int idOrdenViaje) =>
@@ -209,29 +189,36 @@ namespace WebSGV.Services.Liquidaciones
                 DbHelper.Param("@fechaSalida", fechaSalida.Date),
                 DbHelper.Param("@horaSalida", horaSalida));
 
-        /// <summary>Resultado de <see cref="AprobarConAjustes"/> (sin presentación).</summary>
-        public class ResultadoAprobacionAjustes
+        /// <summary>Resultado de <see cref="EnviarAConformidad"/> (sin presentación).</summary>
+        public class ResultadoEnvioConformidad
         {
             /// <summary><c>true</c> si la transacción se confirmó (commit).</summary>
             public bool Exito { get; set; }
-            /// <summary>Mensaje de error de negocio (orden inexistente o rechazo del SP) cuando <see cref="Exito"/> es <c>false</c>.</summary>
+            /// <summary>Mensaje de error de negocio cuando <see cref="Exito"/> es <c>false</c>.</summary>
             public string Mensaje { get; set; }
             /// <summary>Número de orden de viaje resuelto (disponible en éxito).</summary>
             public string NumeroOrdenViaje { get; set; }
         }
 
         /// <summary>
-        /// Transacción de aprobación con ajustes: resuelve el número de orden, hace UPSERT de
-        /// <c>DescuentosReintegros</c> (sólo si hay valores) y ejecuta <c>sp_AprobarLiquidacion</c>.
-        /// SQL/SP movido verbatim del code-behind. Hace rollback (vía dispose en los retornos
-        /// tempranos de negocio, y explícito + re-propagación ante excepción). La validación de
-        /// sesión/montos, el objeto de respuesta, el PDF y la auditoría quedan en el WebMethod.
+        /// Cierra la revisión de la administración en una sola transacción: guarda los ajustes con
+        /// su motivo en <c>DescuentosReintegros</c>, el dinero entregado al conductor y deja la orden
+        /// POR_CONFORMAR (<c>sp_LD_EnviarLiquidacionAConformidad</c>). El viaje no se completa aquí:
+        /// lo completa la conformidad firmada del conductor. La firma de revisión y su PDF los
+        /// registra después <c>FirmaService.RegistrarRevisionAdmin</c>.
         /// </summary>
-        public static ResultadoAprobacionAjustes AprobarConAjustes(
-            int idOrdenViaje, decimal descuentoSoles, decimal descuentoDolares,
-            decimal reintegroSoles, decimal reintegroDolares, string notaAprobacion, int idUsuario,
+        public static ResultadoEnvioConformidad EnviarAConformidad(
+            int idOrdenViaje, AjustesLiquidacion ajustes, string notaAprobacion, int idUsuario,
             IngresosEntregados ingresos = null)
         {
+            ajustes = ajustes ?? new AjustesLiquidacion();
+            string error = LiquidacionCalculos.ValidarMontosAjuste(ajustes.DescuentoSoles, ajustes.DescuentoDolares,
+                ajustes.ReintegroSoles, ajustes.ReintegroDolares)
+                ?? ReglasFirma.ValidarMotivosAjuste(ajustes.DescuentoSoles, ajustes.DescuentoDolares, ajustes.MotivoDescuento,
+                    ajustes.ReintegroSoles, ajustes.ReintegroDolares, ajustes.MotivoReintegro);
+            if (error != null)
+                return new ResultadoEnvioConformidad { Exito = false, Mensaje = error };
+
             string numeroOrdenViaje = null;
 
             using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
@@ -239,180 +226,131 @@ namespace WebSGV.Services.Liquidaciones
                 conn.Open();
                 using (SqlTransaction tran = conn.BeginTransaction())
                 {
-                try
-                {
+                    try
+                    {
+                        // 1. La orden debe estar pendiente, con la declaración firmada y sin revisión vigente.
+                        object result = DbHelper.EjecutarEscalar(conn, tran, @"
+                            SELECT numeroOrdenViaje
+                            FROM OrdenViaje WITH (UPDLOCK)
+                            WHERE idOrdenViaje = @id
+                              AND estadoAprobacion = 'PENDIENTE'
+                              AND idFirmaConductor IS NOT NULL",
+                            DbHelper.Param("@id", idOrdenViaje));
+                        if (result == null || result == DBNull.Value)
+                            return new ResultadoEnvioConformidad { Exito = false, Mensaje = "La liquidación no está pendiente o aún no tiene firma del conductor." };
+                        numeroOrdenViaje = result.ToString();
 
-                // 1. Obtener numeroOrdenViaje sólo cuando está pendiente y firmada
-                using (SqlCommand cmd = new SqlCommand(
-                    @"SELECT numeroOrdenViaje
-                      FROM OrdenViaje
-                      WHERE idOrdenViaje = @id
-                        AND estadoAprobacion = 'PENDIENTE'
-                        AND idFirmaConductor IS NOT NULL", conn, tran))
-                {
-                    cmd.Parameters.AddWithValue("@id", idOrdenViaje);
-                    object result = cmd.ExecuteScalar();
-                    if (result == null || result == DBNull.Value)
-                        return new ResultadoAprobacionAjustes { Exito = false, Mensaje = "La liquidación no está pendiente o aún no tiene firma del conductor." };
-                    numeroOrdenViaje = result.ToString();
-                }
-
-                // 2. UPSERT DescuentosReintegros (solo si hay valores)
-                if (descuentoSoles != 0 || descuentoDolares != 0 || reintegroSoles != 0 || reintegroDolares != 0)
-                {
-                    string upsertSql = @"
+                        // 2. Ajustes con su motivo. Sin ajustes se desactiva la fila que hubiera de una
+                        //    revisión anterior (si no, un descuento ya retirado seguiría sumando).
+                        bool hayAjustes = ajustes.HayDescuento || ajustes.HayReintegro;
+                        DbHelper.EjecutarNonQuery(conn, tran, @"
                             IF EXISTS (SELECT 1 FROM DescuentosReintegros WHERE numeroOrdenViaje = @numeroOrden)
                                 UPDATE DescuentosReintegros
                                 SET descuentoSoles = @descS, descuentoDolares = @descD,
                                     reintegroSoles = @reintS, reintegroDolares = @reintD,
-                                    activo = 1
+                                    observacionesDescuento = @motivoDesc, observacionesReintegro = @motivoReint,
+                                    activo = @activo
                                 WHERE numeroOrdenViaje = @numeroOrden
-                            ELSE
+                            ELSE IF @activo = 1
                                 INSERT INTO DescuentosReintegros
-                                    (numeroOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, activo)
-                                VALUES (@numeroOrden, @descS, @descD, @reintS, @reintD, 1)";
+                                    (numeroOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares,
+                                     observacionesDescuento, observacionesReintegro, fechaCreacion, activo)
+                                VALUES (@numeroOrden, @descS, @descD, @reintS, @reintD,
+                                        @motivoDesc, @motivoReint, dbo.fn_AhoraPeru(), 1)",
+                            DbHelper.Param("@numeroOrden", numeroOrdenViaje),
+                            DbHelper.Param("@descS", ajustes.DescuentoSoles),
+                            DbHelper.Param("@descD", ajustes.DescuentoDolares),
+                            DbHelper.Param("@reintS", ajustes.ReintegroSoles),
+                            DbHelper.Param("@reintD", ajustes.ReintegroDolares),
+                            DbHelper.Param("@motivoDesc", ajustes.HayDescuento ? (object)ajustes.MotivoDescuento.Trim() : DBNull.Value),
+                            DbHelper.Param("@motivoReint", ajustes.HayReintegro ? (object)ajustes.MotivoReintegro.Trim() : DBNull.Value),
+                            DbHelper.Param("@activo", hayAjustes));
 
-                    using (SqlCommand cmd = new SqlCommand(upsertSql, conn, tran))
-                    {
-                        cmd.Parameters.AddWithValue("@numeroOrden", numeroOrdenViaje);
-                        cmd.Parameters.AddWithValue("@descS", descuentoSoles);
-                        cmd.Parameters.AddWithValue("@descD", descuentoDolares);
-                        cmd.Parameters.AddWithValue("@reintS", reintegroSoles);
-                        cmd.Parameters.AddWithValue("@reintD", reintegroDolares);
-                        cmd.ExecuteNonQuery();
-                        System.Diagnostics.Debug.WriteLine($"✅ Ajustes guardados: DescS={descuentoSoles} DescD={descuentoDolares} ReintS={reintegroSoles} ReintD={reintegroDolares}");
-                    }
-                }
-
-                // 2b. Dinero entregado al conductor (lo registra la administración, no el conductor).
-                //     null = la pantalla no lo envió y se respeta lo que ya hubiera.
-                if (ingresos != null)
-                {
-                    DbHelper.EjecutarNonQuerySp(conn, tran, "sp_LD_RegistrarIngresosEntregados",
-                        DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje),
-                        DbHelper.Param("@despachoSoles", ingresos.DespachoSoles),
-                        DbHelper.Param("@despachoDolares", ingresos.DespachoDolares),
-                        DbHelper.Param("@prestamoSoles", ingresos.PrestamoSoles),
-                        DbHelper.Param("@prestamoDolares", ingresos.PrestamoDolares),
-                        DbHelper.Param("@mensualidadSoles", ingresos.MensualidadSoles),
-                        DbHelper.Param("@mensualidadDolares", ingresos.MensualidadDolares),
-                        DbHelper.Param("@otrosSoles", ingresos.OtrosSoles),
-                        DbHelper.Param("@otrosDolares", ingresos.OtrosDolares),
-                        DbHelper.Param("@descDespacho", (object)ingresos.DescDespacho ?? DBNull.Value),
-                        DbHelper.Param("@descMensualidad", (object)ingresos.DescMensualidad ?? DBNull.Value),
-                        DbHelper.Param("@descOtros", (object)ingresos.DescOtros ?? DBNull.Value),
-                        DbHelper.Param("@descPrestamo", (object)ingresos.DescPrestamo ?? DBNull.Value));
-                }
-
-                // 3. Llamar sp_AprobarLiquidacion
-                using (SqlCommand cmd = new SqlCommand("sp_AprobarLiquidacion", conn, tran))
-                {
-                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@numeroOrdenViaje", numeroOrdenViaje);
-                    cmd.Parameters.AddWithValue("@idUsuarioAprobacion", idUsuario);
-                    cmd.Parameters.AddWithValue("@observaciones",
-                        string.IsNullOrWhiteSpace(notaAprobacion) ? (object)DBNull.Value : notaAprobacion.Trim());
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
+                        // 3. Dinero entregado al conductor (lo registra la administración, no el conductor).
+                        //    null = la pantalla no lo envió y se respeta lo que ya hubiera.
+                        if (ingresos != null)
                         {
-                            int resultado = Convert.ToInt32(reader["Resultado"]);
-                            string mensaje = reader["Mensaje"].ToString();
-                            if (resultado != 1)
-                                return new ResultadoAprobacionAjustes { Exito = false, Mensaje = mensaje };
+                            DbHelper.EjecutarNonQuerySp(conn, tran, "sp_LD_RegistrarIngresosEntregados",
+                                DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje),
+                                DbHelper.Param("@despachoSoles", ingresos.DespachoSoles),
+                                DbHelper.Param("@despachoDolares", ingresos.DespachoDolares),
+                                DbHelper.Param("@prestamoSoles", ingresos.PrestamoSoles),
+                                DbHelper.Param("@prestamoDolares", ingresos.PrestamoDolares),
+                                DbHelper.Param("@mensualidadSoles", ingresos.MensualidadSoles),
+                                DbHelper.Param("@mensualidadDolares", ingresos.MensualidadDolares),
+                                DbHelper.Param("@otrosSoles", ingresos.OtrosSoles),
+                                DbHelper.Param("@otrosDolares", ingresos.OtrosDolares),
+                                DbHelper.Param("@descDespacho", (object)ingresos.DescDespacho ?? DBNull.Value),
+                                DbHelper.Param("@descMensualidad", (object)ingresos.DescMensualidad ?? DBNull.Value),
+                                DbHelper.Param("@descOtros", (object)ingresos.DescOtros ?? DBNull.Value),
+                                DbHelper.Param("@descPrestamo", (object)ingresos.DescPrestamo ?? DBNull.Value));
                         }
-                    }
-                }
 
-                tran.Commit();
-                }
-                catch
-                {
-                    tran.Rollback();
-                    throw;
-                }
+                        // 4. Estado POR_CONFORMAR.
+                        DataTable dt = DbHelper.ConsultarTablaSp(conn, tran, "sp_LD_EnviarLiquidacionAConformidad",
+                            DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje),
+                            DbHelper.Param("@idUsuarioAprobacion", idUsuario),
+                            DbHelper.Param("@observaciones",
+                                string.IsNullOrWhiteSpace(notaAprobacion) ? (object)DBNull.Value : notaAprobacion.Trim()));
+                        if (dt.Rows.Count == 0 || Convert.ToInt32(dt.Rows[0]["Resultado"]) != 1)
+                        {
+                            tran.Rollback();
+                            return new ResultadoEnvioConformidad
+                            {
+                                Exito = false,
+                                Mensaje = dt.Rows.Count > 0 ? dt.Rows[0]["Mensaje"].ToString() : "No se pudo enviar la liquidación al conductor."
+                            };
+                        }
+
+                        tran.Commit();
+                    }
+                    catch
+                    {
+                        tran.Rollback();
+                        throw;
+                    }
                 }
             }
 
-            return new ResultadoAprobacionAjustes { Exito = true, NumeroOrdenViaje = numeroOrdenViaje };
-        }
-
-        /// <summary>Resultado de <see cref="CorregirAjustesAprobada"/>.</summary>
-        public class ResultadoCorreccionAjustes
-        {
-            /// <summary><c>false</c> si la orden de viaje no existe (no se aplicó nada).</summary>
-            public bool OrdenEncontrada { get; set; }
-            /// <summary>Número de orden de viaje corregido (cuando existe).</summary>
-            public string NumeroOrdenViaje { get; set; }
+            return new ResultadoEnvioConformidad { Exito = true, NumeroOrdenViaje = numeroOrdenViaje };
         }
 
         /// <summary>
-        /// Transacción de corrección de ajustes de una liquidación ya aprobada: UPSERT de
-        /// <c>DescuentosReintegros</c> + registro del cambio en <c>observaciones</c> para
-        /// auditoría. SQL movido verbatim (usa <see cref="DbHelper.EnTransaccion"/>). La
-        /// validación de sesión/montos/motivo y el objeto de respuesta quedan en el WebMethod.
+        /// Liquidaciones revisadas por la administración que esperan la conformidad del conductor
+        /// (mismas columnas que <see cref="ObtenerAprobadas"/> más la fecha de envío).
         /// </summary>
-        public static ResultadoCorreccionAjustes CorregirAjustesAprobada(
-            int idOrdenViaje, decimal descuentoSoles, decimal descuentoDolares,
-            decimal reintegroSoles, decimal reintegroDolares, string motivo, int idUsuario)
+        public static DataTable ObtenerPorConformar(int idConductor) =>
+            DbHelper.ConsultarTabla(SelectResumenLiquidacion + @"
+                        WHERE ov.estadoAprobacion = 'POR_CONFORMAR'
+                          AND (@idConductor = 0 OR ov.idConductor = @idConductor)
+                        ORDER BY ov.fechaEnvioConformidad",
+                DbHelper.Param("@idConductor", idConductor));
+
+        public const string MensajeOrdenFirmadaNoEditable =
+            "Esta liquidación tiene firmas electrónicas: el conductor firmó sus gastos y no se pueden modificar sin su firma. " +
+            "Para corregirla, recházala (el conductor la corrige y la vuelve a firmar) o registra un descuento o reintegro con su motivo al aprobarla.";
+
+        /// <summary>
+        /// La orden tiene alguna firma (declaración, revisión o conformidad): sus montos no se
+        /// editan a mano desde AgregarOrdenViaje, porque cambiarían lo que alguien ya firmó.
+        /// </summary>
+        public static bool OrdenTieneFirmas(int idOrdenViaje)
         {
-            string numeroOrdenViaje = null;
-            bool ordenEncontrada = true;
+            object r = DbHelper.EjecutarEscalar(@"
+                SELECT COUNT(1) FROM OrdenViaje
+                WHERE idOrdenViaje = @id
+                  AND (idFirmaConductor IS NOT NULL OR idFirmaAdmin IS NOT NULL OR idFirmaConformidad IS NOT NULL)",
+                DbHelper.Param("@id", idOrdenViaje));
+            return r != null && r != DBNull.Value && Convert.ToInt32(r) > 0;
+        }
 
-            DbHelper.EnTransaccion((conn, tran) =>
-            {
-                // 1. Obtener número de orden
-                object result = DbHelper.EjecutarEscalar(conn, tran,
-                    "SELECT numeroOrdenViaje FROM OrdenViaje WHERE idOrdenViaje = @id",
-                    DbHelper.Param("@id", idOrdenViaje));
-                if (result == null || result == DBNull.Value)
-                {
-                    ordenEncontrada = false;
-                    return;
-                }
-                numeroOrdenViaje = result.ToString();
-
-                // 2. UPSERT DescuentosReintegros
-                string upsertSql = @"
-                        IF EXISTS (SELECT 1 FROM DescuentosReintegros WHERE numeroOrdenViaje = @numeroOrden)
-                            UPDATE DescuentosReintegros
-                            SET descuentoSoles = @descS, descuentoDolares = @descD,
-                                reintegroSoles = @reintS, reintegroDolares = @reintD,
-                                activo = 1
-                            WHERE numeroOrdenViaje = @numeroOrden
-                        ELSE
-                            INSERT INTO DescuentosReintegros
-                                (numeroOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, activo)
-                            VALUES (@numeroOrden, @descS, @descD, @reintS, @reintD, 1)";
-
-                DbHelper.EjecutarNonQuery(conn, tran, upsertSql,
-                    DbHelper.Param("@numeroOrden", numeroOrdenViaje),
-                    DbHelper.Param("@descS", descuentoSoles),
-                    DbHelper.Param("@descD", descuentoDolares),
-                    DbHelper.Param("@reintS", reintegroSoles),
-                    DbHelper.Param("@reintD", reintegroDolares));
-
-                // 3. Registrar la corrección en observaciones para auditoría
-                DbHelper.EjecutarNonQuery(conn, tran, @"
-                        UPDATE OrdenViaje
-                        SET observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) +
-                            '[CORRECCION AJUSTES ' + CONVERT(varchar, dbo.fn_AhoraPeru(), 120) + '] ' + @motivo +
-                            ' | Desc S/' + CAST(@descS AS varchar) + ' $' + CAST(@descD AS varchar) +
-                            ' | Reint S/' + CAST(@reintS AS varchar) + ' $' + CAST(@reintD AS varchar)
-                        WHERE idOrdenViaje = @id",
-                    DbHelper.Param("@id", idOrdenViaje),
-                    DbHelper.Param("@motivo", motivo),
-                    DbHelper.Param("@descS", descuentoSoles),
-                    DbHelper.Param("@descD", descuentoDolares),
-                    DbHelper.Param("@reintS", reintegroSoles),
-                    DbHelper.Param("@reintD", reintegroDolares));
-
-                System.Diagnostics.Debug.WriteLine($"✅ Ajustes corregidos para {numeroOrdenViaje} por usuario {idUsuario}");
-                System.Diagnostics.Debug.WriteLine($"   DescS={descuentoSoles} DescD={descuentoDolares} ReintS={reintegroSoles} ReintD={reintegroDolares}");
-            });
-
-            return new ResultadoCorreccionAjustes { OrdenEncontrada = ordenEncontrada, NumeroOrdenViaje = numeroOrdenViaje };
+        /// <summary>"DNI 12345678" o "CE 001234567" (vacío si no tiene ninguno registrado).</summary>
+        internal static string DocumentoIdentidad(object dni, object carnet)
+        {
+            string d = dni == null || dni == DBNull.Value ? "" : dni.ToString().Trim();
+            if (d.Length > 0) return "DNI " + d;
+            string c = carnet == null || carnet == DBNull.Value ? "" : carnet.ToString().Trim();
+            return c.Length > 0 ? "CE " + c : "";
         }
 
         /// <summary>Ruta relativa del PDF archivado de la orden (o <c>null</c> si no hay).</summary>
@@ -459,9 +397,15 @@ namespace WebSGV.Services.Liquidaciones
                     ov.horaLlegadaGps,
                     ov.observaciones,
                     ov.estadoAprobacion,
+                    ov.observacionesAprobacion,
+                    ov.observacionConductor,
+                    ov.fechaObservacionConductor,
 
                     -- Conductor y Vehículos
                     c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS nombreConductor,
+                    c.DNI AS dniConductor,
+                    c.carnetExtranjeria AS carnetConductor,
+                    c.numeroLicencia AS licenciaConductor,
                     t.placaTracto AS placaTracto,
                     ca.placaCarreta AS placaCarreta,
 
@@ -562,6 +506,15 @@ namespace WebSGV.Services.Liquidaciones
                                 FechaLlegada = reader["fechaLlegada"] != DBNull.Value
                                     ? Convert.ToDateTime(reader["fechaLlegada"]).ToString("dd/MM/yyyy") : "—",
                                 Observaciones = reader["observaciones"]?.ToString() ?? "",
+                                NotaAprobacion = reader["observacionesAprobacion"] != DBNull.Value
+                                    ? reader["observacionesAprobacion"].ToString() : "",
+                                ObservacionConductor = reader["observacionConductor"] != DBNull.Value
+                                    ? reader["observacionConductor"].ToString() : "",
+                                FechaObservacionConductor = reader["fechaObservacionConductor"] != DBNull.Value
+                                    ? Convert.ToDateTime(reader["fechaObservacionConductor"]).ToString("dd/MM/yyyy HH:mm") : "",
+                                DocumentoConductor = DocumentoIdentidad(reader["dniConductor"], reader["carnetConductor"]),
+                                LicenciaConductor = reader["licenciaConductor"] != DBNull.Value
+                                    ? reader["licenciaConductor"].ToString().Trim() : "",
 
                                 // Ingresos (aún falta sumar adicionales)
                                 TotalIngresosSoles = ingresosPrincipalesSoles,
@@ -631,7 +584,7 @@ namespace WebSGV.Services.Liquidaciones
                                 "SELECT CONVERT(varchar,fechaComprobante,103) AS fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleReparacionesVarios WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante;" +
                                 "SELECT CONVERT(varchar,fechaComprobante,103) AS fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleHospedaje WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante;" +
                                 "SELECT CONVERT(varchar,fechaComprobante,103) AS fecha, numeroComprobante, montoSoles, montoDolares, observaciones FROM DetalleCombustible WHERE numeroOrdenViaje = @n ORDER BY fechaComprobante;" +
-                                "SELECT TOP 1 descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares FROM DescuentosReintegros WHERE numeroOrdenViaje = @n;";
+                                "SELECT TOP 1 descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, observacionesDescuento, observacionesReintegro FROM DescuentosReintegros WHERE numeroOrdenViaje = @n AND activo = 1;";
 
                             using (SqlCommand cmdDetalles = new SqlCommand(sqlDetalles, conn))
                             {
@@ -714,6 +667,8 @@ namespace WebSGV.Services.Liquidaciones
                                         detalle.DescuentoDolares = Convert.ToDecimal(rd["descuentoDolares"]);
                                         detalle.ReintegroSoles = Convert.ToDecimal(rd["reintegroSoles"]);
                                         detalle.ReintegroDolares = Convert.ToDecimal(rd["reintegroDolares"]);
+                                        detalle.DescuentoMotivo = rd["observacionesDescuento"] != DBNull.Value ? rd["observacionesDescuento"].ToString() : "";
+                                        detalle.ReintegroMotivo = rd["observacionesReintegro"] != DBNull.Value ? rd["observacionesReintegro"].ToString() : "";
                                     }
                                 }
                             }

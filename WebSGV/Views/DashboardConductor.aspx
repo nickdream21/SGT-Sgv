@@ -28,6 +28,19 @@
             <asp:Label ID="lblMensaje" runat="server"></asp:Label>
         </asp:Panel>
 
+        <!-- Liquidaciones revisadas que esperan la conformidad del conductor -->
+        <asp:Panel ID="pnlPorConformar" runat="server" Visible="false" CssClass="dc-conformar">
+            <div class="dc-conformar-tit"><i class="fas fa-file-signature mr-1"></i>Tienes liquidaciones para revisar y firmar</div>
+            <p class="dc-conformar-txt">La administración registró el dinero que te entregaron y los descuentos o reintegros. Revisa la liquidación final y firma tu conformidad, o avisa si no estás de acuerdo.</p>
+            <asp:Repeater ID="rptPorConformar" runat="server">
+                <ItemTemplate>
+                    <a class="dc-btn dc-btn-primario dc-btn-bloque mt-2" href='ConformarLiquidacion.aspx?id=<%# Eval("IdOrdenViaje") %>'>
+                        Revisar y firmar <%#: Eval("NumeroViaje") %>
+                    </a>
+                </ItemTemplate>
+            </asp:Repeater>
+        </asp:Panel>
+
         <!-- Pestañas -->
         <nav class="nav dc-tabs" id="conductorTabs" role="tablist">
             <a class="dc-tab active" id="viajesActivos-tab" data-toggle="tab" href="#viajesActivos" role="tab">
@@ -334,6 +347,7 @@
                         <asp:DropDownList ID="ddlEstadoFiltro" runat="server" CssClass="form-control">
                             <asp:ListItem Value="">Todos</asp:ListItem>
                             <asp:ListItem Value="PENDIENTE">En revisión</asp:ListItem>
+                            <asp:ListItem Value="POR_CONFORMAR">Por firmar tu conformidad</asp:ListItem>
                             <asp:ListItem Value="APROBADO">Aprobada</asp:ListItem>
                             <asp:ListItem Value="REABIERTO">Rechazada</asp:ListItem>
                         </asp:DropDownList>
@@ -359,8 +373,14 @@
                                 <asp:PlaceHolder runat="server" Visible='<%# !(bool)Eval("Firmada") && (string)Eval("Estado") == "PENDIENTE" %>'>
                                     <a class="dc-btn dc-btn-primario dc-btn-chico" href='FirmarLiquidacion.aspx?id=<%# Eval("IdOrdenViaje") %>'>Firmar</a>
                                 </asp:PlaceHolder>
+                                <asp:PlaceHolder runat="server" Visible='<%# (string)Eval("Estado") == "POR_CONFORMAR" %>'>
+                                    <a class="dc-btn dc-btn-primario dc-btn-chico" href='ConformarLiquidacion.aspx?id=<%# Eval("IdOrdenViaje") %>'>Revisar y firmar</a>
+                                </asp:PlaceHolder>
                                 <button type="button" class="dc-btn dc-btn-linea dc-btn-chico" onclick='verDetalleLiquidacion(<%# Eval("IdOrdenViaje") %>)'>Ver</button>
-                                <asp:PlaceHolder runat="server" Visible='<%# (string)Eval("Estado") == "PENDIENTE" %>'>
+                                <asp:PlaceHolder runat="server" Visible='<%# (bool)Eval("Firmada") %>'>
+                                    <a class="dc-btn dc-btn-linea dc-btn-chico" target="_blank" href='DescargarPdfOrdenViaje.aspx?id=<%# Eval("IdOrdenViaje") %>' title="Documento firmado vigente">PDF</a>
+                                </asp:PlaceHolder>
+                                <asp:PlaceHolder runat="server" Visible='<%# (string)Eval("Estado") == "PENDIENTE" && !(bool)Eval("Revisada") %>'>
                                     <button type="button" class="dc-btn dc-btn-alerta dc-btn-chico" onclick='abrirModalRetirar(<%# Eval("IdOrdenViaje") %>)'>Retirar</button>
                                 </asp:PlaceHolder>
                             </div>

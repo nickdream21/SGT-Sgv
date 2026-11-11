@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,6 +6,7 @@ using QuestPDF.Fluent;
 using WebSGV.Helpers;
 using WebSGV.Models.Liquidaciones;
 using WebSGV.Services;
+using WebSGV.Services.Liquidaciones;
 using Xunit;
 
 namespace WebSGV.Tests
@@ -74,18 +75,88 @@ namespace WebSGV.Tests
             GastosAdicionalesSoles = 30m
         };
 
+        private static EventoFirma Evento(string etapa, string nombre, DateTime fecha, string codigo, string hash) => new EventoFirma
+        {
+            Etapa = etapa, Nombre = nombre, Documento = etapa == EtapaFirma.Revision ? null : "DNI 12345678",
+            Usuario = etapa == EtapaFirma.Revision ? "mlopez" : "ecastro", FechaHora = fecha, Ip = "190.12.34.56",
+            Dispositivo = "Chrome en Android", Autenticacion = TextosFirma.AutenticacionConductor,
+            CodigoVerificacion = codigo, HashDocumento = hash,
+            TextoAceptado = etapa == EtapaFirma.Declaracion ? TextosFirma.Declaracion
+                          : etapa == EtapaFirma.Revision ? TextosFirma.Revision : TextosFirma.Conformidad
+        };
+
+        /// <summary>Liquidación final: declaración y revisión anteriores + la conformidad de este documento.</summary>
+        private static FirmasOrdenViaje FirmasFinal() => new FirmasOrdenViaje
+        {
+            Etapa = EtapaDocumento.Final,
+            TrazoConductor = Trazo,
+            CodigoVerificacion = "ABCD-EFGH-2345",
+            UrlVerificacion = "https://sgvtransporte.somee.com/Views/VerificarDocumento.aspx",
+            Eventos = new List<EventoFirma>
+            {
+                Evento(EtapaFirma.Declaracion, "Esteban Castro Querevalu", new DateTime(2026, 7, 21, 19, 2, 5), "JKLM-NPQR-6789", new string('a', 64)),
+                Evento(EtapaFirma.Revision, "María López Torres", new DateTime(2026, 7, 22, 9, 40, 0), "STUV-WXYZ-2345", new string('b', 64)),
+                Evento(EtapaFirma.Conformidad, "Esteban Castro Querevalu", new DateTime(2026, 7, 22, 18, 5, 31), "ABCD-EFGH-2345", null)
+            }
+        };
+
         [Fact]
-        public void LiquidacionTipica_FirmadaYAprobada_CabeEnUnaPagina()
+        public void LiquidacionFinal_ConAjustesYMotivos_CabeEnUnaPaginaMasLaConstancia()
         {
             var d = LiquidacionTipica();
             d.DescuentoSoles = 40m;
+            d.DescuentoMotivo = "Alimentación del 18/07 sin comprobante.";
             d.ReintegroSoles = 15m;
+            d.ReintegroMotivo = "Peaje de Chullqui pagado y no declarado.";
+            d.NotaAprobacion = "Comprobantes revisados.";
+            d.DocumentoConductor = "DNI 12345678";
+            d.LicenciaConductor = "Q12345678";
 
-            Assert.Equal(1, Paginas(d, new FirmasOrdenViaje
+            // Página 1: la liquidación con su conformidad; página 2: la constancia de firmas.
+            Assert.Equal(2, Paginas(d, FirmasFinal()));
+        }
+
+        [Fact]
+        public void Declaracion_SoloConSuFirma_LlevaLaConstanciaEnHojaAparte()
+        {
+            var firmas = new FirmasOrdenViaje
             {
-                TrazoConductor = Trazo, FechaFirmaConductor = "21/07/2026 19:02",
-                NombreAprobador = "María López Torres", FechaAprobacion = "22/07/2026 09:40"
-            }));
+                Etapa = EtapaDocumento.Declaracion,
+                TrazoConductor = Trazo,
+                CodigoVerificacion = "JKLM-NPQR-6789",
+                Eventos = new List<EventoFirma> { Evento(EtapaFirma.Declaracion, "Esteban Castro", new DateTime(2026, 7, 21, 19, 2, 5), "JKLM-NPQR-6789", null) }
+            };
+
+            Assert.Equal(2, Paginas(LiquidacionTipica(), firmas));
+        }
+
+        [Fact]
+        public void Revision_SinTrazoDelConductor_SeGenera()
+        {
+            var final = FirmasFinal();
+            var revision = new FirmasOrdenViaje
+            {
+                Etapa = EtapaDocumento.Revision,
+                CodigoVerificacion = "STUV-WXYZ-2345",
+                Eventos = final.Eventos.Take(2).ToList()
+            };
+            revision.Eventos[1].HashDocumento = null; // la revisión es este documento
+
+            Assert.Equal(2, Paginas(LiquidacionTipica(), revision));
+        }
+
+        [Fact]
+        public void PdfGenerado_EsPdfA2b_YLlevaElCodigoEnLosMetadatos()
+        {
+            var doc = PdfOrdenViajeService.CrearDocumento(LiquidacionTipica(), Empresa, Formato, FirmasFinal(), null);
+
+            Assert.Equal(QuestPDF.Infrastructure.PDFA_Conformance.PDFA_2B, doc.GetSettings().PDFA_Conformance);
+            Assert.Contains("ABCD-EFGH-2345", doc.GetMetadata().Keywords);
+            byte[] pdf = doc.GeneratePdf();
+            string cabecera = System.Text.Encoding.ASCII.GetString(pdf, 0, Math.Min(pdf.Length, 8));
+            Assert.StartsWith("%PDF-", cabecera);
+            // PDF/A declara su conformidad en los metadatos XMP del archivo.
+            Assert.Contains("pdfaid:part", System.Text.Encoding.ASCII.GetString(pdf));
         }
 
         [Fact]
@@ -105,7 +176,7 @@ namespace WebSGV.Tests
                 Fecha = "18/07/2026", Comprobante = "F001-" + i, Soles = 10m, Observaciones = "Grifo " + i
             }).ToList();
 
-            Assert.True(Paginas(d, new FirmasOrdenViaje { TrazoConductor = Trazo }) >= 2);
+            Assert.True(Paginas(d, new FirmasOrdenViaje { Etapa = EtapaDocumento.Declaracion, TrazoConductor = Trazo }) >= 2);
         }
 
         [Fact]

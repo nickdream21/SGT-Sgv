@@ -11,6 +11,8 @@ BEGIN
         ov.fechaLlegada,
         ISNULL(ov.estadoAprobacion, 'PENDIENTE') AS estadoAprobacion,
         CAST(CASE WHEN ov.idFirmaConductor IS NULL THEN 0 ELSE 1 END AS BIT) AS firmada,
+        -- Ya la revisó la administración (se envió a su conformidad al menos una vez): no se puede retirar.
+        CAST(CASE WHEN ov.fechaEnvioConformidad IS NULL THEN 0 ELSE 1 END AS BIT) AS revisada,
         ISNULL(ing.totalSoles, 0) AS totalIngresosSoles,
         ISNULL(ing.totalDolares, 0) AS totalIngresosDolares,
         (ISNULL(eg.peajesSoles, 0) + ISNULL(eg.alimentacionSoles, 0) + 

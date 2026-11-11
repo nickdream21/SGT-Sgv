@@ -186,6 +186,17 @@ namespace WebSGV.Helpers
             }
         }
 
+        /// <summary>Ejecuta un stored procedure dentro de una conexión/transacción existentes y devuelve una tabla.</summary>
+        public static DataTable ConsultarTablaSp(SqlConnection conn, SqlTransaction tx, string nombreSp, params SqlParameter[] parametros)
+        {
+            using (SqlCommand cmd = CrearComando(nombreSp, CommandType.StoredProcedure, conn, tx, parametros))
+            {
+                DataTable dt = new DataTable();
+                dt.Load(cmd.ExecuteReader());
+                return dt;
+            }
+        }
+
         // ------------------------------------------------------------------
         // Implementación privada
         // ------------------------------------------------------------------

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -179,7 +179,7 @@ namespace WebSGV.Tests.Integracion
         }
 
         [FactBD]
-        public void FirmarYAprobarConAjustes_CompletaLaOrdenConDescuentoYReintegro()
+        public void DeclararRevisarYConformar_CompletaLaOrdenConAjustesConMotivo()
         {
             using (new TransaccionDePrueba())
             {
@@ -188,40 +188,158 @@ namespace WebSGV.Tests.Integracion
                 var input = NuevaLiquidacion(datos, idViaje);
                 int idOrden = LiquidacionConductorService.EnviarLiquidacion(input);
 
-                int idFirma = FirmarComoConductor(idOrden, datos.IdUsuarioConductor);
-                Assert.Equal(idFirma, Convert.ToInt32(Fila("SELECT idFirmaConductor FROM OrdenViaje WHERE idOrdenViaje = @id", idOrden)["idFirmaConductor"]));
+                int idDeclaracion = FirmarComoConductor(idOrden, datos.IdUsuarioConductor);
+                Assert.Equal(idDeclaracion, Convert.ToInt32(Fila("SELECT idFirmaConductor FROM OrdenViaje WHERE idOrdenViaje = @id", idOrden)["idFirmaConductor"]));
+                Assert.Equal("DECLARACION", Fila("SELECT etapa FROM FirmaDigital WHERE idFirma = @id", idDeclaracion)["etapa"]);
 
-                var r = LiquidacionesPendientesService.AprobarConAjustes(idOrden, 40m, 0m, 15m, 5m, "Aprobado en test", datos.IdUsuarioAdmin);
-
+                // 1) La administración revisa: ajustes con motivo → POR_CONFORMAR (el viaje NO se completa).
+                var r = LiquidacionesPendientesService.EnviarAConformidad(idOrden, AjustesDePrueba(), "Aprobado en test", datos.IdUsuarioAdmin);
                 Assert.True(r.Exito, r.Mensaje);
                 Assert.Equal(input.NumeroOrdenViaje, r.NumeroOrdenViaje);
-                DataRow ov = Fila("SELECT estadoViaje, estadoAprobacion, idUsuarioAprobacion, observacionesAprobacion FROM OrdenViaje WHERE idOrdenViaje = @id", idOrden);
-                Assert.Equal("COMPLETADO", ov["estadoViaje"]);
-                Assert.Equal("APROBADO", ov["estadoAprobacion"]);
+
+                DataRow ov = Fila("SELECT estadoViaje, estadoAprobacion, idUsuarioAprobacion, observacionesAprobacion, fechaEnvioConformidad FROM OrdenViaje WHERE idOrdenViaje = @id", idOrden);
+                Assert.Equal("POR_CONFORMAR", ov["estadoAprobacion"]);
+                Assert.NotEqual("COMPLETADO", ov["estadoViaje"]);
                 Assert.Equal(datos.IdUsuarioAdmin, Convert.ToInt32(ov["idUsuarioAprobacion"]));
                 Assert.Equal("Aprobado en test", ov["observacionesAprobacion"]);
+                Assert.NotEqual(DBNull.Value, ov["fechaEnvioConformidad"]);
 
-                // La aprobación guarda los ajustes en DescuentosReintegros sin tocar la firma del conductor.
                 var detalle = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrden);
                 Assert.Equal(40m, detalle.DescuentoSoles);
+                Assert.Equal("Alimentación del 18/07 sin comprobante", detalle.DescuentoMotivo);
                 Assert.Equal(15m, detalle.ReintegroSoles);
                 Assert.Equal(5m, detalle.ReintegroDolares);
-                Assert.Equal("V", Fila("SELECT estadoFirma FROM FirmaDigital WHERE idFirma = @id", idFirma)["estadoFirma"]);
+                Assert.Equal("Peaje de Chullqui no declarado", detalle.ReintegroMotivo);
+                Assert.Equal("Aprobado en test", detalle.NotaAprobacion);
 
                 Assert.DoesNotContain(LiquidacionesPendientesService.ObtenerPendientes(datos.IdConductor, null, null).Rows.Cast<DataRow>(),
                     p => Convert.ToInt32(p["idOrdenViaje"]) == idOrden);
+                Assert.Contains(LiquidacionesPendientesService.ObtenerPorConformar(datos.IdConductor).Rows.Cast<DataRow>(),
+                    p => Convert.ToInt32(p["idOrdenViaje"]) == idOrden);
+                Assert.Empty(LiquidacionesPendientesService.ObtenerAprobadas(datos.IdConductor, null, null, input.NumeroOrdenViaje, null, null).Rows);
+
+                // 2) Firma de revisión con la huella de lo revisado.
+                string huella = HuellaLiquidacion.Calcular(detalle);
+                int idRevision = FirmarRevision(idOrden, datos.IdUsuarioAdmin, huella);
+                Assert.Equal("REVISION", Fila("SELECT etapa FROM FirmaDigital WHERE idFirma = @id", idRevision)["etapa"]);
+                Assert.Equal(new string('b', 64), Fila("SELECT hashPdfFirmado FROM OrdenViaje WHERE idOrdenViaje = @id", idOrden)["hashPdfFirmado"]);
+
+                // 3) Conformidad sobre una huella distinta (los montos cambiaron): no se acepta.
+                Assert.Equal(0, FirmarConformidad(idOrden, datos.IdUsuarioConductor, new string('0', 64), out string mensaje));
+                Assert.Contains("cambió", mensaje);
+                // Otro usuario no puede dar la conformidad del conductor.
+                Assert.Equal(0, FirmarConformidad(idOrden, datos.IdUsuarioAdmin, huella, out mensaje));
+
+                // 4) Conformidad con la misma huella: queda APROBADO y el viaje COMPLETADO.
+                Assert.Equal(1, FirmarConformidad(idOrden, datos.IdUsuarioConductor, huella, out mensaje));
+                ov = Fila("SELECT estadoViaje, estadoAprobacion, idFirmaConformidad, fechaConformidad, hashPdfFirmado FROM OrdenViaje WHERE idOrdenViaje = @id", idOrden);
+                Assert.Equal("APROBADO", ov["estadoAprobacion"]);
+                Assert.Equal("COMPLETADO", ov["estadoViaje"]);
+                Assert.NotEqual(DBNull.Value, ov["idFirmaConformidad"]);
+                int idConformidad = Convert.ToInt32(ov["idFirmaConformidad"]);
+                Assert.NotEqual(DBNull.Value, ov["fechaConformidad"]);
+                Assert.Equal(new string('c', 64), ov["hashPdfFirmado"]);
+
                 DataRow aprobada = LiquidacionesPendientesService.ObtenerAprobadas(datos.IdConductor, null, null, input.NumeroOrdenViaje, null, null)
                     .Rows.Cast<DataRow>().Single();
                 Assert.Equal(40m, Convert.ToDecimal(aprobada["DescuentoSoles"]));
                 Assert.Equal(TotalGastosSoles - GastoAdicionalSoles, Convert.ToDecimal(aprobada["GastosSoles"]));
+                Assert.NotEqual(DBNull.Value, aprobada["fechaConformidad"]);
 
-                // Corregir los ajustes de una orden ya aprobada reemplaza los montos (no los suma).
-                var correccion = LiquidacionesPendientesService.CorregirAjustesAprobada(idOrden, 10m, 0m, 0m, 0m, "Corrección en test", datos.IdUsuarioAdmin);
-                Assert.True(correccion.OrdenEncontrada);
-                detalle = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrden);
-                Assert.Equal(10m, detalle.DescuentoSoles);
-                Assert.Equal(0m, detalle.ReintegroSoles);
-                Assert.Contains("[CORRECCION AJUSTES", detalle.Observaciones);
+                // La cadena de firmas para la constancia del PDF: declaración, revisión y conformidad.
+                var eventos = WebSGV.Services.FirmaService.ObtenerEventosVigentes(idOrden);
+                Assert.Equal(new[] { "DECLARACION", "REVISION", "CONFORMIDAD" }, eventos.Select(e => e.Etapa).ToArray());
+
+                // 5) Revertir: anula revisión y conformidad (append-only) y la declaración vuelve a ser el documento.
+                var rev = WebSGV.Services.FirmaService.DevolverARevision(idOrden, "REVERSION",
+                    new WebSGV.Services.ContextoFirma { IdUsuario = datos.IdUsuarioAdmin, Ip = "127.0.0.1", UserAgent = "xunit" },
+                    "Admin de prueba", "Reversión en test por monto mal registrado");
+                Assert.True(rev.Exito, rev.Mensaje);
+                ov = Fila("SELECT estadoViaje, estadoAprobacion, idFirmaAdmin, idFirmaConformidad, hashPdfFirmado, observaciones FROM OrdenViaje WHERE idOrdenViaje = @id", idOrden);
+                Assert.Equal("PENDIENTE", ov["estadoAprobacion"]);
+                Assert.Equal("PENDIENTE", ov["estadoViaje"]);
+                Assert.Equal(DBNull.Value, ov["idFirmaAdmin"]);
+                Assert.Equal(DBNull.Value, ov["idFirmaConformidad"]);
+                Assert.Equal(new string('a', 64), ov["hashPdfFirmado"]);
+                Assert.Contains("[REVERSION", (string)ov["observaciones"]);
+                Assert.Equal(2, Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM FirmaDigital WHERE idFirmaAnulada IN (@a, @b) AND estadoFirma = 'A'",
+                    DbHelper.Param("@a", idRevision), DbHelper.Param("@b", idConformidad))));
+                Assert.Single(WebSGV.Services.FirmaService.ObtenerEventosVigentes(idOrden));
+
+                // Revertida vuelve a pendientes y se puede revisar de nuevo.
+                Assert.True(LiquidacionesPendientesService.EnviarAConformidad(idOrden, AjustesDePrueba(), null, datos.IdUsuarioAdmin).Exito);
+            }
+        }
+
+        [FactBD]
+        public void ObservacionDelConductor_VuelveAPendientesConSuObservacion()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var datos = DatosBase.Cargar();
+                int idViaje = CrearDespacho(datos, NuevoLote(datos), out _);
+                int idOrden = LiquidacionConductorService.EnviarLiquidacion(NuevaLiquidacion(datos, idViaje));
+                FirmarComoConductor(idOrden, datos.IdUsuarioConductor);
+                Assert.True(LiquidacionesPendientesService.EnviarAConformidad(idOrden, AjustesDePrueba(), null, datos.IdUsuarioAdmin).Exito);
+                int idRevision = FirmarRevision(idOrden, datos.IdUsuarioAdmin,
+                    HuellaLiquidacion.Calcular(LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrden)));
+
+                var ctxConductor = new WebSGV.Services.ContextoFirma { IdUsuario = datos.IdUsuarioConductor, Ip = "127.0.0.1", UserAgent = "xunit" };
+                var ctxAdmin = new WebSGV.Services.ContextoFirma { IdUsuario = datos.IdUsuarioAdmin, Ip = "127.0.0.1", UserAgent = "xunit" };
+
+                // Solo el conductor dueño de la orden puede observarla.
+                Assert.False(WebSGV.Services.FirmaService.DevolverARevision(idOrden, "OBSERVACION", ctxAdmin, "Admin", "No soy el conductor de esta orden").Exito);
+                // Una observación necesita explicar el desacuerdo.
+                Assert.False(WebSGV.Services.FirmaService.DevolverARevision(idOrden, "OBSERVACION", ctxConductor, "Conductor", "corto").Exito);
+
+                var r = WebSGV.Services.FirmaService.DevolverARevision(idOrden, "OBSERVACION", ctxConductor, "Conductor de prueba",
+                    "El adelanto que recibí fue S/ 800, no S/ 900");
+                Assert.True(r.Exito, r.Mensaje);
+
+                DataRow ov = Fila("SELECT estadoAprobacion, idFirmaAdmin, observacionConductor FROM OrdenViaje WHERE idOrdenViaje = @id", idOrden);
+                Assert.Equal("PENDIENTE", ov["estadoAprobacion"]);
+                Assert.Equal(DBNull.Value, ov["idFirmaAdmin"]);
+                Assert.Equal("El adelanto que recibí fue S/ 800, no S/ 900", ov["observacionConductor"]);
+                Assert.Equal(1, Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM FirmaDigital WHERE idFirmaAnulada = @id", DbHelper.Param("@id", idRevision))));
+
+                DataRow pendiente = LiquidacionesPendientesService.ObtenerPendientes(datos.IdConductor, null, null).Rows.Cast<DataRow>()
+                    .Single(p => Convert.ToInt32(p["idOrdenViaje"]) == idOrden);
+                Assert.Equal("El adelanto que recibí fue S/ 800, no S/ 900", pendiente["ObservacionConductor"]);
+
+                // Ya revisada una vez: el conductor no puede retirarla (borrarla).
+                Assert.Equal(1, Convert.ToInt32(Fila("SELECT CAST(CASE WHEN fechaEnvioConformidad IS NULL THEN 0 ELSE 1 END AS INT) AS r FROM OrdenViaje WHERE idOrdenViaje = @id", idOrden)["r"]));
+
+                // La administración la corrige y la vuelve a enviar.
+                Assert.True(LiquidacionesPendientesService.EnviarAConformidad(idOrden, AjustesDePrueba(), "Corregido el adelanto", datos.IdUsuarioAdmin).Exito);
+
+                // Retirar el envío antes de la conformidad también la devuelve a pendientes.
+                FirmarRevision(idOrden, datos.IdUsuarioAdmin, HuellaLiquidacion.Calcular(LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrden)));
+                var retiro = WebSGV.Services.FirmaService.DevolverARevision(idOrden, "RETIRO", ctxAdmin, "Admin", "Retiro en test para corregir un monto");
+                Assert.True(retiro.Exito, retiro.Mensaje);
+                Assert.Equal("PENDIENTE", Fila("SELECT estadoAprobacion FROM OrdenViaje WHERE idOrdenViaje = @id", idOrden)["estadoAprobacion"]);
+                // No se puede "revertir" algo que no está aprobado.
+                Assert.False(WebSGV.Services.FirmaService.DevolverARevision(idOrden, "REVERSION", ctxAdmin, "Admin", "No está aprobada todavía").Exito);
+            }
+        }
+
+        [FactBD]
+        public void EnviarAConformidad_AjusteSinMotivo_NoSeEnvia()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var datos = DatosBase.Cargar();
+                int idViaje = CrearDespacho(datos, NuevoLote(datos), out _);
+                int idOrden = LiquidacionConductorService.EnviarLiquidacion(NuevaLiquidacion(datos, idViaje));
+                FirmarComoConductor(idOrden, datos.IdUsuarioConductor);
+
+                var sinMotivo = new WebSGV.Models.Liquidaciones.AjustesLiquidacion { DescuentoSoles = 40m };
+                var r = LiquidacionesPendientesService.EnviarAConformidad(idOrden, sinMotivo, null, datos.IdUsuarioAdmin);
+
+                Assert.False(r.Exito);
+                Assert.Contains("motivo del descuento", r.Mensaje);
+                Assert.Equal("PENDIENTE", Fila("SELECT estadoAprobacion FROM OrdenViaje WHERE idOrdenViaje = @id", idOrden)["estadoAprobacion"]);
             }
         }
 
@@ -248,7 +366,7 @@ namespace WebSGV.Tests.Integracion
                 {
                     DespachoSoles = 800m, DespachoDolares = 60m, PrestamoSoles = 50m, DescDespacho = "Adelanto en base"
                 };
-                var r = LiquidacionesPendientesService.AprobarConAjustes(idOrden, 0m, 0m, 0m, 0m, null, datos.IdUsuarioAdmin, entregado);
+                var r = LiquidacionesPendientesService.EnviarAConformidad(idOrden, new WebSGV.Models.Liquidaciones.AjustesLiquidacion(), null, datos.IdUsuarioAdmin, entregado);
 
                 Assert.True(r.Exito, r.Mensaje);
                 var detalle = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrden);
@@ -326,7 +444,7 @@ namespace WebSGV.Tests.Integracion
         }
 
         [FactBD]
-        public void AprobarSinFirmaDelConductor_NoSeAprueba()
+        public void AprobarSinFirmaDelConductor_NoSeEnviaAConformidad()
         {
             using (new TransaccionDePrueba())
             {
@@ -334,7 +452,7 @@ namespace WebSGV.Tests.Integracion
                 int idViaje = CrearDespacho(datos, NuevoLote(datos), out _);
                 int idOrden = LiquidacionConductorService.EnviarLiquidacion(NuevaLiquidacion(datos, idViaje));
 
-                var r = LiquidacionesPendientesService.AprobarConAjustes(idOrden, 0m, 0m, 0m, 0m, null, datos.IdUsuarioAdmin);
+                var r = LiquidacionesPendientesService.EnviarAConformidad(idOrden, new WebSGV.Models.Liquidaciones.AjustesLiquidacion(), null, datos.IdUsuarioAdmin);
 
                 // Último paso: el rollback interno del servicio puede anular la transacción del test.
                 Assert.False(r.Exito);
@@ -523,6 +641,64 @@ namespace WebSGV.Tests.Integracion
         }
 
         /// <summary>Registra la firma del conductor con un trazo ficticio (lo que hace FirmaService sin el PDF).</summary>
+        private static WebSGV.Models.Liquidaciones.AjustesLiquidacion AjustesDePrueba() => new WebSGV.Models.Liquidaciones.AjustesLiquidacion
+        {
+            DescuentoSoles = 40m, MotivoDescuento = "Alimentación del 18/07 sin comprobante",
+            ReintegroSoles = 15m, ReintegroDolares = 5m, MotivoReintegro = "Peaje de Chullqui no declarado"
+        };
+
+        /// <summary>Firma de revisión de la administración por su SP (sin PDF, como la del conductor).</summary>
+        private static int FirmarRevision(int idOrden, int idUsuarioAdmin, string huella)
+        {
+            var pIdFirma = new SqlParameter("@idFirmaSalida", SqlDbType.Int) { Direction = ParameterDirection.Output };
+            var pResultado = new SqlParameter("@resultado", SqlDbType.Int) { Direction = ParameterDirection.Output };
+            var pMensaje = new SqlParameter("@mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+
+            DbHelper.EjecutarNonQuerySp("sp_DC_RegistrarFirmaAdmin",
+                DbHelper.Param("@idOrdenViaje", idOrden),
+                DbHelper.Param("@idUsuarioFirmante", idUsuarioAdmin),
+                DbHelper.Param("@dniFirmante", null),
+                DbHelper.Param("@nombreFirmante", "Admin de prueba"),
+                DbHelper.Param("@hashDocumento", new string('b', 64)),
+                DbHelper.Param("@textoConsentimiento", "Revisión de prueba"),
+                DbHelper.Param("@ipOrigen", "127.0.0.1"),
+                DbHelper.Param("@userAgent", "xunit"),
+                DbHelper.Param("@rutaPdfFirmado", null),
+                DbHelper.Param("@codigoVerificacion", CodigoVerificacion.Generar()),
+                DbHelper.Param("@metodoAutenticacion", "xunit"),
+                DbHelper.Param("@huellaContenido", huella),
+                pIdFirma, pResultado, pMensaje);
+
+            Assert.True(Convert.ToInt32(pResultado.Value) == 1, pMensaje.Value as string);
+            return Convert.ToInt32(pIdFirma.Value);
+        }
+
+        /// <summary>Conformidad del conductor por su SP. Devuelve el resultado (1 = registrada).</summary>
+        private static int FirmarConformidad(int idOrden, int idUsuario, string huella, out string mensaje)
+        {
+            var pIdFirma = new SqlParameter("@idFirmaSalida", SqlDbType.Int) { Direction = ParameterDirection.Output };
+            var pResultado = new SqlParameter("@resultado", SqlDbType.Int) { Direction = ParameterDirection.Output };
+            var pMensaje = new SqlParameter("@mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+
+            DbHelper.EjecutarNonQuerySp("sp_DC_RegistrarConformidadConductor",
+                DbHelper.Param("@idOrdenViaje", idOrden),
+                DbHelper.Param("@idUsuarioFirmante", idUsuario),
+                DbHelper.Param("@nombreFirmante", "Conductor de prueba"),
+                DbHelper.Param("@imagenTrazoPng", new byte[200]),
+                DbHelper.Param("@hashDocumento", new string('c', 64)),
+                DbHelper.Param("@huellaContenido", huella),
+                DbHelper.Param("@textoConsentimiento", "Conformidad de prueba"),
+                DbHelper.Param("@codigoVerificacion", CodigoVerificacion.Generar()),
+                DbHelper.Param("@metodoAutenticacion", "xunit"),
+                DbHelper.Param("@ipOrigen", "127.0.0.1"),
+                DbHelper.Param("@userAgent", "xunit"),
+                DbHelper.Param("@rutaPdfFirmado", null),
+                pIdFirma, pResultado, pMensaje);
+
+            mensaje = pMensaje.Value as string;
+            return Convert.ToInt32(pResultado.Value);
+        }
+
         private static int FirmarComoConductor(int idOrden, int idUsuarioConductor)
         {
             var pIdFirma = new SqlParameter("@idFirmaSalida", SqlDbType.Int) { Direction = ParameterDirection.Output };

@@ -97,9 +97,9 @@ All pages live under `WebSGV/Views/`. Role-specific dashboards redirect on login
 - ADMINISTRADOR DE GRIFO → `DashboardGrifo.aspx`
 - OPERADOR → `DashboardOperador.aspx`
 
-Core business flow: **Despacho → ViajesProgreso → Liquidación del Conductor (firma digital) → Revisión Admin → PDF archivado**.
+Core business flow: **Despacho → ViajesProgreso → Declaración del conductor (firma) → Revisión Admin (firma, POR_CONFORMAR) → Conformidad del conductor (firma, APROBADO) → PDF archivado**.
 
-The digital signature is a PNG biometric trace captured on canvas, stored in the `FirmaDigital` table (append-only, SHA-256 hash). Admin approval stores discounts/reimbursements in `DescuentosReintegros` (one row per order; `OrdenViajeAjuste` exists from migration 03 but nothing writes to it) without invalidating the conductor's original signature. Signed PDFs land in `~/App_Data/OrdenesViaje/`.
+Signatures are electronic signatures (Ley 27269), not certificate-based: a handwritten PNG trace on canvas plus the re-entered password (`ReautenticacionHelper`) for the conductor, session credentials for the admin. They live in the append-only `FirmaDigital` table (`etapa` DECLARACION / REVISION / CONFORMIDAD / ANULACION, `codigoVerificacion`, SHA-256 of the PDF, `huellaContenido` = SHA-256 of amounts and reasons). Every discount/reimbursement in `DescuentosReintegros` needs its reason, and the conductor must sign his conformity with the final amounts before the order becomes APROBADO; reverting or withdrawing anulls the later signatures (`sp_LD_DevolverLiquidacionARevision`). Each signature produces its own PDF (PDF/A-2B, verification code in the footer, evidence page) in `~/App_Data/OrdenesViaje/`. **A signed PDF is never regenerated**: `ArchivoOrdenViajeService` serves the stored file only if its hash matches. Public check: `Views/VerificarDocumento.aspx`. Legal texts the signer accepts live only in `TextosFirma` (`Services/Liquidaciones/FirmaLiquidacion.cs`).
 
 ### Services and PDF generation
 

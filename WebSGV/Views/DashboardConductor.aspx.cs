@@ -968,10 +968,15 @@ namespace WebSGV.Views
                 string estadoFiltro = ddlEstadoFiltro.SelectedValue;
 
                 var filas = new List<object>();
+                var porConformar = new List<object>();
                 foreach (DataRow row in dt.Rows)
                 {
                     string estado = row["estadoAprobacion"] != DBNull.Value ? row["estadoAprobacion"].ToString().ToUpperInvariant() : "PENDIENTE";
                     DateTime? salida = row["fechaSalida"] != DBNull.Value ? Convert.ToDateTime(row["fechaSalida"]) : (DateTime?)null;
+
+                    // El aviso de conformidad pendiente no depende de los filtros del historial.
+                    if (estado == "POR_CONFORMAR")
+                        porConformar.Add(new { IdOrdenViaje = Convert.ToInt32(row["idOrdenViaje"]), NumeroViaje = row["numeroOrdenViaje"].ToString() });
 
                     if (desde.HasValue && (!salida.HasValue || salida.Value.Date < desde.Value)) continue;
                     if (hasta.HasValue && (!salida.HasValue || salida.Value.Date > hasta.Value)) continue;
@@ -986,9 +991,14 @@ namespace WebSGV.Views
                         GastosSoles = row["totalGastosSoles"] != DBNull.Value ? Convert.ToDecimal(row["totalGastosSoles"]) : 0m,
                         GastosDolares = row["totalGastosDolares"] != DBNull.Value ? Convert.ToDecimal(row["totalGastosDolares"]) : 0m,
                         Estado = estado,
-                        Firmada = dt.Columns.Contains("firmada") && row["firmada"] != DBNull.Value && Convert.ToBoolean(row["firmada"])
+                        Firmada = dt.Columns.Contains("firmada") && row["firmada"] != DBNull.Value && Convert.ToBoolean(row["firmada"]),
+                        Revisada = dt.Columns.Contains("revisada") && row["revisada"] != DBNull.Value && Convert.ToBoolean(row["revisada"])
                     });
                 }
+
+                rptPorConformar.DataSource = porConformar;
+                rptPorConformar.DataBind();
+                pnlPorConformar.Visible = porConformar.Count > 0;
 
                 rptHistorial.DataSource = filas;
                 rptHistorial.DataBind();
@@ -1011,6 +1021,7 @@ namespace WebSGV.Views
                 case "COMPLETADO": return "APROBADO";
                 case "REABIERTO":
                 case "RECHAZADO": return "RECHAZADO";
+                case "POR_CONFORMAR": return "POR_CONFORMAR";
                 default: return "PENDIENTE";
             }
         }
@@ -1021,6 +1032,7 @@ namespace WebSGV.Views
             {
                 case "APROBADO": return "Aprobada";
                 case "RECHAZADO": return "Rechazada";
+                case "POR_CONFORMAR": return "Firma tu conformidad";
                 default: return "En revisión";
             }
         }
@@ -1223,6 +1235,8 @@ namespace WebSGV.Views
                     return "completado";
                 case "PENDIENTE":
                     return "programado";
+                case "POR_CONFORMAR":
+                    return "en_proceso";
                 case "RECHAZADO":
                 case "REABIERTO":
                     return "cancelado";

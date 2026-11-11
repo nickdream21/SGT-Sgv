@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -32,17 +32,60 @@ namespace WebSGV.Services
         public string RutaRelativa { get; set; }
     }
 
-    /// <summary>Firmas que se imprimen en el bloque de conformidad de la Orden de Viaje.</summary>
+    /// <summary>
+    /// Qué documento se emite. Cada firma produce su propio PDF y ninguno reutiliza un trazo
+    /// fuera del documento que firmó: la firma de la declaración solo aparece en la declaración y
+    /// la de conformidad solo en la liquidación final.
+    /// </summary>
+    public enum EtapaDocumento
+    {
+        /// <summary>Orden sin firmas (registrada a mano por la administración).</summary>
+        SinFirmas,
+        /// <summary>Declaración jurada de gastos firmada por el conductor, en revisión.</summary>
+        Declaracion,
+        /// <summary>Liquidación final revisada por la administración, pendiente de la conformidad del conductor.</summary>
+        Revision,
+        /// <summary>Liquidación final con la conformidad del conductor (aprobada).</summary>
+        Final
+    }
+
+    /// <summary>Una firma electrónica tal como se imprime en la constancia de firmas del PDF.</summary>
+    public sealed class EventoFirma
+    {
+        /// <summary><see cref="WebSGV.Services.Liquidaciones.EtapaFirma"/>.</summary>
+        public string Etapa { get; set; }
+        public string Nombre { get; set; }
+        /// <summary>"DNI 12345678" (vacío si no se registró).</summary>
+        public string Documento { get; set; }
+        public string Usuario { get; set; }
+        /// <summary>Fecha y hora de Perú.</summary>
+        public DateTime FechaHora { get; set; }
+        public string Ip { get; set; }
+        public string Dispositivo { get; set; }
+        public string Autenticacion { get; set; }
+        /// <summary>Código impreso en el PDF que produjo esta firma.</summary>
+        public string CodigoVerificacion { get; set; }
+        /// <summary>SHA-256 del PDF que produjo esta firma; <c>null</c> para la firma de este mismo documento.</summary>
+        public string HashDocumento { get; set; }
+        /// <summary>Texto que aceptó el firmante.</summary>
+        public string TextoAceptado { get; set; }
+    }
+
+    /// <summary>Firmas y datos de verificación del documento que se emite.</summary>
     public sealed class FirmasOrdenViaje
     {
-        /// <summary>PNG del trazo del conductor; <c>null</c> deja el espacio de firma en blanco.</summary>
+        public EtapaDocumento Etapa { get; set; }
+        /// <summary>PNG del trazo de la firma de ESTE documento (declaración o conformidad).</summary>
         public byte[] TrazoConductor { get; set; }
-        /// <summary>Fecha/hora legible en que firmó el conductor (si falta, la de generación).</summary>
-        public string FechaFirmaConductor { get; set; }
-        /// <summary>Nombre del administrador que aprobó; con valor se imprime el sello de aprobación.</summary>
-        public string NombreAprobador { get; set; }
-        /// <summary>Fecha/hora legible de la aprobación administrativa.</summary>
-        public string FechaAprobacion { get; set; }
+        /// <summary>Código de verificación de este documento (se imprime en el pie de cada página).</summary>
+        public string CodigoVerificacion { get; set; }
+        /// <summary>Dirección de la página pública de verificación.</summary>
+        public string UrlVerificacion { get; set; }
+        /// <summary>Firmas de la cadena (declaración, revisión, conformidad), la de este documento incluida.</summary>
+        public List<EventoFirma> Eventos { get; set; } = new List<EventoFirma>();
+
+        public EventoFirma Firma(string etapa) =>
+            Eventos?.LastOrDefault(e => string.Equals(e.Etapa, etapa, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -68,32 +111,14 @@ namespace WebSGV.Services
         /// es falso, solo devuelve los bytes para vista previa.
         /// </summary>
         /// <param name="detalle">Datos completos de la Orden de Viaje.</param>
-        /// <param name="firmaConductorPng">PNG de la firma manuscrita capturada en canvas.
-        /// Si es <c>null</c>, el espacio de firma del conductor queda en blanco.</param>
+        /// <param name="firmas">Etapa del documento, trazo de su firma, código de verificación y
+        /// cadena de firmas para la constancia. <c>null</c> = orden sin firmas.</param>
         /// <param name="archivar">Si es true, el PDF se guarda en
-        /// <c>~/App_Data/OrdenesViaje/AAAA/MM/OV-AAAA-NNNNNN.pdf</c>.</param>
-        /// <param name="nombreAdminAprobador">Si se especifica, se imprime el sello de
-        /// aprobación administrativa con el nombre del administrador.</param>
-        /// <param name="fechaAprobacionAdmin">Fecha/hora legible de la aprobación administrativa.</param>
-        /// <param name="fechaFirmaConductor">Fecha/hora legible en que firmó el conductor. Al
-        /// regenerar el PDF en la aprobación se pasa la original para no reemplazarla por la actual.</param>
-        public ResultadoGeneracionPdf GenerarYArchivar(
-            DetalleLiquidacion detalle,
-            byte[] firmaConductorPng = null,
-            bool archivar = false,
-            string nombreAdminAprobador = null,
-            string fechaAprobacionAdmin = null,
-            string fechaFirmaConductor = null)
+        /// <c>~/App_Data/OrdenesViaje/AAAA/MM/OV-AAAA-NNNNNN_ETAPA.pdf</c> (nunca sobrescribe).</param>
+        public ResultadoGeneracionPdf GenerarYArchivar(DetalleLiquidacion detalle, FirmasOrdenViaje firmas, bool archivar)
         {
             if (detalle == null) throw new ArgumentNullException(nameof(detalle));
-
-            var firmas = new FirmasOrdenViaje
-            {
-                TrazoConductor = firmaConductorPng,
-                FechaFirmaConductor = fechaFirmaConductor,
-                NombreAprobador = nombreAdminAprobador,
-                FechaAprobacion = fechaAprobacionAdmin
-            };
+            firmas = firmas ?? new FirmasOrdenViaje();
 
             byte[] pdfBytes = CrearDocumento(detalle,
                 EmpresaConfigHelper.ObtenerEmpresa(),
@@ -108,12 +133,29 @@ namespace WebSGV.Services
 
             if (archivar)
             {
-                string rutaFisica = ArchivarEnDisco(detalle.NumeroOrdenViaje ?? "SIN-NUMERO", pdfBytes);
+                string rutaFisica = ArchivarEnDisco(detalle.NumeroOrdenViaje ?? "SIN-NUMERO", firmas.Etapa, pdfBytes);
                 resultado.RutaFisica = rutaFisica;
                 resultado.RutaRelativa = ConvertirARelativa(rutaFisica);
             }
 
             return resultado;
+        }
+
+        /// <summary>
+        /// Borra un PDF recién archivado cuyo registro en la BD no llegó a guardarse (la firma
+        /// falló después de generarlo). Nunca lanza.
+        /// </summary>
+        public static void DescartarArchivo(string rutaFisica)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(rutaFisica) && File.Exists(rutaFisica))
+                    File.Delete(rutaFisica);
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Advertencia("No se pudo borrar el PDF huérfano {Ruta}: {Mensaje}", rutaFisica, ex.Message);
+            }
         }
 
         /// <summary>
@@ -164,22 +206,22 @@ namespace WebSGV.Services
         /// Archiva los bytes del PDF en <c>~/App_Data/OrdenesViaje/AAAA/MM/</c>
         /// usando el número de orden como nombre de archivo. Devuelve ruta física.
         /// </summary>
-        private string ArchivarEnDisco(string numeroOrden, byte[] bytes)
+        private string ArchivarEnDisco(string numeroOrden, EtapaDocumento etapa, byte[] bytes)
         {
             string baseDir = EmpresaConfigHelper.ObtenerRutaArchivoOrdenesViaje();
             var ahora = FechaHelper.Ahora();
             string subDir = Path.Combine(baseDir, ahora.Year.ToString("0000"), ahora.Month.ToString("00"));
             if (!Directory.Exists(subDir)) Directory.CreateDirectory(subDir);
 
-            string safeName = SanitizarNombreArchivo(numeroOrden) + ".pdf";
-            string ruta = Path.Combine(subDir, safeName);
+            string sufijo = etapa == EtapaDocumento.SinFirmas ? "" : "_" + etapa.ToString().ToUpperInvariant();
+            string baseNombre = SanitizarNombreArchivo(numeroOrden) + sufijo;
+            string ruta = Path.Combine(subDir, baseNombre + ".pdf");
 
-            // Si ya existiera, lo renombramos agregando timestamp (nunca se sobreescribe una firma)
+            // Nunca se sobrescribe un documento firmado: cada versión queda con su fecha y hora.
             if (File.Exists(ruta))
-            {
-                string ts = ahora.ToString("_yyyyMMddHHmmss");
-                ruta = Path.Combine(subDir, SanitizarNombreArchivo(numeroOrden) + ts + ".pdf");
-            }
+                ruta = Path.Combine(subDir, baseNombre + ahora.ToString("_yyyyMMddHHmmss") + ".pdf");
+            for (int i = 2; File.Exists(ruta); i++)
+                ruta = Path.Combine(subDir, baseNombre + ahora.ToString("_yyyyMMddHHmmss") + "_" + i + ".pdf");
 
             File.WriteAllBytes(ruta, bytes);
             return ruta;
@@ -252,20 +294,26 @@ namespace WebSGV.Services
         private string VersionFormato => _fmt?.Version ?? "01";
         private string VigenciaFormato => _fmt != null ? _fmt.FechaVigencia.ToString("dd/MM/yyyy") : "01/01/2025";
         private string NombreConductor => Normalizar(_d.NombreConductor);
-        private bool Firmada => _firmas.TrazoConductor != null && _firmas.TrazoConductor.Length > 0;
-        private bool Aprobada => !string.IsNullOrWhiteSpace(_firmas.NombreAprobador)
-                                 || string.Equals(_d.EstadoAprobacion, "APROBADO", StringComparison.OrdinalIgnoreCase);
+        private EtapaDocumento Etapa => _firmas.Etapa;
+        private bool TieneTrazo => _firmas.TrazoConductor != null && _firmas.TrazoConductor.Length > 0;
+        private bool HayConstancia => Etapa != EtapaDocumento.SinFirmas && _firmas.Eventos != null && _firmas.Eventos.Count > 0;
 
         public DocumentMetadata GetMetadata() => new DocumentMetadata
         {
             Title = "Orden de Viaje " + _d.NumeroOrdenViaje,
             Author = _emp.RazonSocial,
             Subject = "Liquidación de ingresos y gastos del conductor",
+            Keywords = string.IsNullOrEmpty(_firmas.CodigoVerificacion) ? null : "Código de verificación " + _firmas.CodigoVerificacion,
             Creator = "Sistema SGV",
             Producer = "Sistema SGV"
         };
 
-        public DocumentSettings GetSettings() => DocumentSettings.Default;
+        /// <summary>
+        /// PDF/A-2B: formato de archivo a largo plazo (fuentes incrustadas, sin dependencias
+        /// externas), para que el documento se pueda abrir igual durante todo el plazo de
+        /// conservación. La B admite la transparencia del trazo de la firma.
+        /// </summary>
+        public DocumentSettings GetSettings() => new DocumentSettings { PDFA_Conformance = PDFA_Conformance.PDFA_2B };
 
         public void Compose(IDocumentContainer doc)
         {
@@ -387,9 +435,19 @@ namespace WebSGV.Services
         private void EtiquetaEstado(IContainer cont)
         {
             string texto; Color fg, bg;
-            if (Aprobada) { texto = "Aprobada"; fg = Verde; bg = FondoVerde; }
-            else if (Firmada) { texto = "Firmada · pendiente de aprobación"; fg = Ambar; bg = FondoAmbar; }
-            else { texto = "Pendiente de firma del conductor"; fg = TextoSuave; bg = FondoFila; }
+            switch (Etapa)
+            {
+                case EtapaDocumento.Final:
+                    texto = "Aprobada · con conformidad del conductor"; fg = Verde; bg = FondoVerde; break;
+                case EtapaDocumento.Revision:
+                    texto = "Revisada · pendiente de conformidad del conductor"; fg = Ambar; bg = FondoAmbar; break;
+                case EtapaDocumento.Declaracion:
+                    texto = "Declaración firmada · en revisión"; fg = Ambar; bg = FondoAmbar; break;
+                default:
+                    bool aprobada = string.Equals(_d.EstadoAprobacion, "APROBADO", StringComparison.OrdinalIgnoreCase);
+                    texto = aprobada ? "Registrada por la administración" : "Sin firmas electrónicas";
+                    fg = TextoSuave; bg = FondoFila; break;
+            }
 
             cont.Border(0.6f).BorderColor(fg).Background(bg).PaddingVertical(2).PaddingHorizontal(7)
                 .Text(texto).Bold().FontSize(7.5f).FontColor(fg);
@@ -429,14 +487,44 @@ namespace WebSGV.Services
                     col.Item().Element(c => ComponerComprobantes(c, comprobantes));
                 }
 
-                if (!string.IsNullOrWhiteSpace(observaciones))
+                bool revisada = Etapa == EtapaDocumento.Revision || Etapa == EtapaDocumento.Final;
+                bool hayObs = !string.IsNullOrWhiteSpace(observaciones);
+                bool hayNota = revisada && !string.IsNullOrWhiteSpace(_d.NotaAprobacion);
+                if (hayObs || hayNota)
                 {
-                    col.Item().PaddingTop(8).Element(c => TituloSeccion(c, ++n, "Observaciones del conductor"));
-                    col.Item().Border(0.5f).BorderColor(Borde).Padding(6).Text(observaciones).FontSize(8.5f);
+                    int numObs = ++n;
+                    col.Item().PaddingTop(8).Row(row =>
+                    {
+                        row.Spacing(12);
+                        if (hayObs)
+                            row.RelativeItem().Element(c => Recuadro(c, numObs, "Observaciones del conductor", observaciones));
+                        if (hayNota)
+                            row.RelativeItem().Element(c => Recuadro(c, hayObs ? (int?)null : numObs, "Nota de la administración", Normalizar(_d.NotaAprobacion)));
+                    });
                 }
 
                 // Conformidad y firmas: nunca partida entre páginas.
                 col.Item().PaddingTop(10).ShowEntire().Element(c => ComponerConformidad(c, ++n));
+
+                // Constancia de firmas electrónicas: siempre en hoja aparte.
+                if (HayConstancia)
+                {
+                    col.Item().PageBreak();
+                    col.Item().Element(ComponerConstancia);
+                }
+            });
+        }
+
+        private static void Recuadro(IContainer cont, int? numero, string titulo, string texto)
+        {
+            cont.Column(c =>
+            {
+                c.Item().PaddingBottom(5).BorderBottom(0.8f).BorderColor(Azul).PaddingBottom(2).Text(t =>
+                {
+                    if (numero.HasValue) t.Span(numero + ".  ").Bold().FontSize(9.5f).FontColor(Azul);
+                    t.Span(titulo).Bold().FontSize(9.5f).FontColor(Azul);
+                });
+                c.Item().Border(0.5f).BorderColor(Borde).Padding(6).Text(texto).FontSize(8.5f);
             });
         }
 
@@ -466,7 +554,9 @@ namespace WebSGV.Services
 
             var celdas = new List<Tuple<string, string, string>>
             {
-                Tuple.Create("Conductor", NombreConductor, (string)null),
+                Tuple.Create("Conductor", NombreConductor,
+                    Unir("  ·  ", _d.DocumentoConductor,
+                        string.IsNullOrWhiteSpace(_d.LicenciaConductor) ? null : "Lic. " + _d.LicenciaConductor.Trim())),
                 Tuple.Create("Tracto / carreta", Unir(" / ", _d.PlacaTracto, _d.PlacaCarreta), (string)null),
                 Tuple.Create("Salida", Unir("  ", _d.FechaSalida, _d.HoraSalida), (string)null),
                 Tuple.Create("Llegada", Unir("  ", _d.FechaLlegada, horaLlegada), otrasLlegadas)
@@ -612,25 +702,83 @@ namespace WebSGV.Services
 
         private void ComponerLiquidacion(IContainer cont)
         {
+            // En la declaración el conductor solo firma sus gastos: el dinero entregado y los ajustes
+            // todavía no existen, así que no se muestra un "balance" que nadie ha revisado.
+            if (Etapa == EtapaDocumento.Declaracion)
+            {
+                ComponerTotalDeclarado(cont);
+                return;
+            }
+
             decimal balanceS = _d.TotalIngresosSoles - TotalGastosSoles;
             decimal balanceD = _d.TotalIngresosDolares - TotalGastosDolares;
-            bool hayAjustes = _d.DescuentoSoles != 0 || _d.DescuentoDolares != 0 || _d.ReintegroSoles != 0 || _d.ReintegroDolares != 0;
+            bool hayDescuento = _d.DescuentoSoles != 0 || _d.DescuentoDolares != 0;
+            bool hayReintegro = _d.ReintegroSoles != 0 || _d.ReintegroDolares != 0;
+            bool hayAjustes = hayDescuento || hayReintegro;
             // Mismo criterio que la bandeja de aprobadas: balance − descuentos + reintegros.
             decimal saldoS = balanceS - _d.DescuentoSoles + _d.ReintegroSoles;
             decimal saldoD = balanceD - _d.DescuentoDolares + _d.ReintegroDolares;
 
+            cont.Column(col =>
+            {
+                col.Item().Row(row =>
+                {
+                    // Montos en letras a la izquierda, cuadro de liquidación a la derecha.
+                    row.RelativeItem().PaddingRight(12).AlignBottom().Column(c =>
+                    {
+                        c.Spacing(3);
+                        // Cada ajuste con su motivo: es lo que el conductor acepta en su conformidad.
+                        if (hayDescuento)
+                            c.Item().Element(x => MotivoAjuste(x, "Motivo del descuento", _d.DescuentoMotivo, Rojo));
+                        if (hayReintegro)
+                            c.Item().Element(x => MotivoAjuste(x, "Motivo del reintegro", _d.ReintegroMotivo, Verde));
+                        c.Item().PaddingTop(hayAjustes ? 3 : 0).Text(hayAjustes ? "Saldo final en letras" : "Balance en letras").FontSize(7.5f).FontColor(TextoSuave);
+                        if (saldoS != 0 || saldoD == 0)
+                            c.Item().Element(x => MontoEnLetras(x, "S/", NumeroALetrasHelper.Convertir(saldoS, "SOLES")));
+                        if (saldoD != 0)
+                            c.Item().Element(x => MontoEnLetras(x, "US$", NumeroALetrasHelper.Convertir(saldoD, "DÓLARES AMERICANOS")));
+                    });
+
+                    row.ConstantItem(280).Table(table =>
+                    {
+                        table.ColumnsDefinition(c =>
+                        {
+                            c.RelativeColumn();
+                            c.ConstantColumn(68);
+                            c.ConstantColumn(62);
+                        });
+
+                        table.Header(h =>
+                        {
+                            CeldaCabecera(h.Cell(), "Concepto", false);
+                            CeldaCabecera(h.Cell(), "S/", true);
+                            CeldaCabecera(h.Cell(), "US$", true);
+                        });
+
+                        FilaLiquidacion(table, "Dinero entregado", _d.TotalIngresosSoles, _d.TotalIngresosDolares);
+                        FilaLiquidacion(table, "(−) Gastos declarados", TotalGastosSoles, TotalGastosDolares);
+
+                        if (hayAjustes)
+                        {
+                            FilaLiquidacion(table, "Balance del viaje", balanceS, balanceD, negrita: true);
+                            FilaLiquidacion(table, "(−) Descuentos", _d.DescuentoSoles, _d.DescuentoDolares, color: Rojo);
+                            FilaLiquidacion(table, "(+) Reintegros", _d.ReintegroSoles, _d.ReintegroDolares, color: Verde);
+                        }
+
+                        FilaSaldo(table, hayAjustes ? "Saldo final" : "Balance del viaje", saldoS, saldoD);
+                    });
+                });
+            });
+        }
+
+        private void ComponerTotalDeclarado(IContainer cont)
+        {
             cont.Row(row =>
             {
-                // Montos en letras a la izquierda, cuadro de liquidación a la derecha.
-                row.RelativeItem().PaddingRight(12).AlignBottom().Column(c =>
-                {
-                    c.Spacing(3);
-                    c.Item().Text(hayAjustes ? "Saldo final en letras" : "Balance en letras").FontSize(7.5f).FontColor(TextoSuave);
-                    if (saldoS != 0 || saldoD == 0)
-                        c.Item().Element(x => MontoEnLetras(x, "S/", NumeroALetrasHelper.Convertir(saldoS, "SOLES")));
-                    if (saldoD != 0)
-                        c.Item().Element(x => MontoEnLetras(x, "US$", NumeroALetrasHelper.Convertir(saldoD, "DÓLARES AMERICANOS")));
-                });
+                row.RelativeItem().PaddingRight(12).AlignMiddle()
+                    .Text("El dinero entregado para el viaje y los descuentos o reintegros, cada uno con su motivo, los " +
+                          "registra la administración en su revisión. El conductor recibirá la liquidación final para dar su conformidad.")
+                    .FontSize(7.5f).FontColor(TextoSuave);
 
                 row.ConstantItem(280).Table(table =>
                 {
@@ -640,26 +788,23 @@ namespace WebSGV.Services
                         c.ConstantColumn(68);
                         c.ConstantColumn(62);
                     });
-
                     table.Header(h =>
                     {
                         CeldaCabecera(h.Cell(), "Concepto", false);
                         CeldaCabecera(h.Cell(), "S/", true);
                         CeldaCabecera(h.Cell(), "US$", true);
                     });
-
-                    FilaLiquidacion(table, "Total ingresos", _d.TotalIngresosSoles, _d.TotalIngresosDolares);
-                    FilaLiquidacion(table, "(−) Total gastos", TotalGastosSoles, TotalGastosDolares);
-
-                    if (hayAjustes)
-                    {
-                        FilaLiquidacion(table, "Balance del viaje", balanceS, balanceD, negrita: true);
-                        FilaLiquidacion(table, "(−) Descuentos", _d.DescuentoSoles, _d.DescuentoDolares, color: Rojo);
-                        FilaLiquidacion(table, "(+) Reintegros", _d.ReintegroSoles, _d.ReintegroDolares, color: Verde);
-                    }
-
-                    FilaSaldo(table, hayAjustes ? "Saldo final" : "Balance del viaje", saldoS, saldoD);
+                    FilaLiquidacion(table, "Total de gastos declarados", TotalGastosSoles, TotalGastosDolares, negrita: true);
                 });
+            });
+        }
+
+        private static void MotivoAjuste(IContainer cont, string titulo, string motivo, Color color)
+        {
+            cont.BorderLeft(2f).BorderColor(color).PaddingVertical(2).PaddingHorizontal(6).Text(t =>
+            {
+                t.Span(titulo + ": ").Bold().FontSize(7.5f).FontColor(color);
+                t.Span(string.IsNullOrWhiteSpace(motivo) ? "sin motivo registrado" : Normalizar(motivo)).FontSize(8);
             });
         }
 
@@ -778,63 +923,129 @@ namespace WebSGV.Services
 
         private void ComponerConformidad(IContainer cont, int numero)
         {
-            string texto = "Yo, " + NombreConductor + ", en mi condición de conductor del viaje " + _d.NumeroOrdenViaje +
-                           ", declaro haber revisado el detalle de ingresos, gastos y balance consignados en el presente " +
-                           "documento y manifiesto mi conformidad con la información registrada. Firmo en señal de " +
-                           "aceptación y asumo las obligaciones derivadas de la presente liquidación.";
+            var declaracion = _firmas.Firma(EtapaFirma.Declaracion);
 
             cont.Column(col =>
             {
                 col.Item().Element(c => TituloSeccion(c, numero, "Conformidad y firmas"));
-                col.Item().PaddingBottom(6).Text(texto).FontSize(8.5f);
+
+                switch (Etapa)
+                {
+                    case EtapaDocumento.Declaracion:
+                        col.Item().PaddingBottom(6).Element(c => TextoAceptado(c, "Declaración jurada del conductor", TextosFirma.Declaracion));
+                        break;
+                    case EtapaDocumento.Revision:
+                        col.Item().PaddingBottom(6).Element(c => TextoAceptado(c, "Revisión de la administración", TextosFirma.Revision));
+                        break;
+                    case EtapaDocumento.Final:
+                        col.Item().PaddingBottom(6).Element(c => TextoAceptado(c, "Conformidad del conductor", TextosFirma.Conformidad));
+                        break;
+                    default:
+                        col.Item().PaddingBottom(6).Text("Documento sin firmas electrónicas registradas en el sistema.")
+                            .FontSize(8).FontColor(TextoSuave);
+                        break;
+                }
 
                 col.Item().Row(row =>
                 {
                     row.Spacing(28);
                     row.RelativeItem().Element(BloqueFirmaConductor);
-                    row.RelativeItem().Element(BloqueAprobacion);
+                    row.RelativeItem().Element(BloqueRevision);
                 });
+
+                // En la liquidación final y en la revisión, la declaración original queda referida
+                // (con su código, para verificarla) pero su trazo no se reutiliza aquí.
+                if (declaracion != null && (Etapa == EtapaDocumento.Revision || Etapa == EtapaDocumento.Final))
+                {
+                    col.Item().PaddingTop(5).Text(t =>
+                    {
+                        t.DefaultTextStyle(s => s.FontSize(7).FontColor(TextoSuave));
+                        t.Span("Declaración jurada de gastos firmada por el conductor el " + FechaLarga(declaracion.FechaHora));
+                        if (!string.IsNullOrEmpty(declaracion.CodigoVerificacion))
+                            t.Span(" (documento " + declaracion.CodigoVerificacion + ")");
+                        t.Span(".");
+                    });
+                }
+            });
+        }
+
+        private static void TextoAceptado(IContainer cont, string titulo, string texto)
+        {
+            cont.BorderLeft(2f).BorderColor(Azul).Background(FondoFila).PaddingVertical(4).PaddingHorizontal(7).Column(c =>
+            {
+                c.Item().Text(titulo).Bold().FontSize(8).FontColor(Azul);
+                c.Item().PaddingTop(1).Text(texto).FontSize(8.5f);
             });
         }
 
         private void BloqueFirmaConductor(IContainer cont)
         {
+            // El trazo solo se imprime en el documento que el conductor firmó con él.
+            bool firmaEsteDocumento = TieneTrazo && (Etapa == EtapaDocumento.Declaracion || Etapa == EtapaDocumento.Final);
+            var firma = Etapa == EtapaDocumento.Final ? _firmas.Firma(EtapaFirma.Conformidad)
+                      : Etapa == EtapaDocumento.Declaracion ? _firmas.Firma(EtapaFirma.Declaracion) : null;
+
             cont.Column(c =>
             {
                 c.Item().Height(48).AlignCenter().AlignBottom().Element(area =>
                 {
-                    if (!Firmada) return;
-                    try { area.PaddingBottom(2).Image(_firmas.TrazoConductor).FitArea(); }
-                    catch { area.Text("[Firma no disponible]").FontSize(7.5f).FontColor(TextoSuave); }
+                    if (firmaEsteDocumento)
+                    {
+                        try { area.PaddingBottom(2).Image(_firmas.TrazoConductor).FitArea(); }
+                        catch { area.Text("[Firma no disponible]").FontSize(7.5f).FontColor(TextoSuave); }
+                    }
+                    else if (Etapa == EtapaDocumento.Revision)
+                    {
+                        area.AlignMiddle().Text("Pendiente de su conformidad").Italic().FontSize(8).FontColor(Ambar);
+                    }
                 });
 
-                string meta = Firmada
-                    ? "Firmado electrónicamente el " + (_firmas.FechaFirmaConductor ?? _emision.ToString("dd/MM/yyyy HH:mm"))
-                    : "Pendiente de firma";
-                c.Item().Element(x => PieFirma(x, NombreConductor, "Conductor", meta));
+                string meta;
+                switch (Etapa)
+                {
+                    case EtapaDocumento.Declaracion:
+                        meta = firma != null ? "Firmó su declaración el " + FechaLarga(firma.FechaHora) : "Declaración firmada";
+                        break;
+                    case EtapaDocumento.Final:
+                        meta = firma != null ? "Firmó su conformidad el " + FechaLarga(firma.FechaHora) : "Conformidad firmada";
+                        break;
+                    case EtapaDocumento.Revision:
+                        meta = "Conformidad pendiente";
+                        break;
+                    default:
+                        meta = " ";
+                        break;
+                }
+
+                string documento = Unir("  ·  ", _d.DocumentoConductor);
+                c.Item().Element(x => PieFirma(x, NombreConductor, Unir("  ·  ", "Conductor", documento), meta));
             });
         }
 
-        private void BloqueAprobacion(IContainer cont)
+        private void BloqueRevision(IContainer cont)
         {
+            var revision = _firmas.Firma(EtapaFirma.Revision);
+            bool revisada = revision != null && (Etapa == EtapaDocumento.Revision || Etapa == EtapaDocumento.Final);
+
             cont.Column(c =>
             {
                 c.Item().Height(48).AlignCenter().AlignMiddle().Element(area =>
                 {
-                    if (!Aprobada) return;
+                    if (!revisada) return;
                     area.Border(1f).BorderColor(Verde).Background(FondoVerde).PaddingVertical(4).PaddingHorizontal(14).Column(sello =>
                     {
-                        sello.Item().AlignCenter().Text("APROBADO").Bold().FontSize(12).FontColor(Verde).LetterSpacing(0.08f);
-                        sello.Item().AlignCenter().Text("Aprobación electrónica con credenciales del sistema")
+                        sello.Item().AlignCenter().Text(Etapa == EtapaDocumento.Final ? "APROBADO" : "REVISADO")
+                            .Bold().FontSize(12).FontColor(Verde).LetterSpacing(0.08f);
+                        sello.Item().AlignCenter().Text("Firma electrónica con credenciales del sistema")
                             .FontSize(6.5f).FontColor(Verde);
                     });
                 });
 
-                string nombre = Aprobada ? Normalizar(_firmas.NombreAprobador) : "";
-                string meta = !Aprobada
-                    ? "Pendiente de aprobación"
-                    : "Aprobado el " + (_firmas.FechaAprobacion ?? _emision.ToString("dd/MM/yyyy HH:mm"));
-                c.Item().Element(x => PieFirma(x, string.IsNullOrEmpty(nombre) ? " " : nombre, "Administración de transporte", meta));
+                string nombre = revisada ? Normalizar(revision.Nombre) : " ";
+                string meta = revisada
+                    ? "Revisó el " + FechaLarga(revision.FechaHora)
+                    : Etapa == EtapaDocumento.SinFirmas ? " " : "Revisión pendiente";
+                c.Item().Element(x => PieFirma(x, nombre, "Administración de transporte", meta));
             });
         }
 
@@ -848,30 +1059,132 @@ namespace WebSGV.Services
             });
         }
 
+        // ---------- Constancia de firmas electrónicas (hoja aparte) ----------
+
+        private void ComponerConstancia(IContainer cont)
+        {
+            cont.Column(col =>
+            {
+                col.Item().PaddingBottom(4).Text("Constancia de firmas electrónicas").Bold().FontSize(13).FontColor(Texto);
+                col.Item().PaddingBottom(8).Text(t =>
+                {
+                    t.DefaultTextStyle(s => s.FontSize(8).FontColor(TextoSuave));
+                    t.Span("Orden de viaje N.° " + (_d.NumeroOrdenViaje ?? "") + ". ");
+                    t.Span(TextosFirma.BaseLegal + " ");
+                    t.Span("Cada firma quedó registrada en el Sistema SGV en un registro que no admite modificaciones ni " +
+                           "borrados, con la huella SHA-256 del documento firmado.");
+                });
+
+                foreach (var e in _firmas.Eventos)
+                    col.Item().PaddingBottom(8).ShowEntire().Element(c => TarjetaFirma(c, e));
+
+                col.Item().PaddingTop(4).Element(c => c.BorderLeft(2f).BorderColor(Azul).Background(FondoFila)
+                    .PaddingVertical(5).PaddingHorizontal(8).Column(v =>
+                    {
+                        v.Item().Text("Verificación de este documento").Bold().FontSize(8.5f).FontColor(Azul);
+                        v.Item().PaddingTop(2).Text(t =>
+                        {
+                            t.DefaultTextStyle(s => s.FontSize(8));
+                            t.Span("Código de verificación: ");
+                            t.Span(_firmas.CodigoVerificacion ?? "—").Bold();
+                            if (!string.IsNullOrWhiteSpace(_firmas.UrlVerificacion))
+                            {
+                                t.Span(". Ingrese el código en ");
+                                t.Span(_firmas.UrlVerificacion).FontColor(Azul);
+                                t.Span(" y cargue este archivo: la página indica si es el documento emitido o si fue modificado.");
+                            }
+                        });
+                    }));
+
+                col.Item().PaddingTop(8).Text(TextosFirma.DatosPersonales).FontSize(7).FontColor(TextoSuave);
+            });
+        }
+
+        private static void TarjetaFirma(IContainer cont, EventoFirma e)
+        {
+            cont.Border(0.6f).BorderColor(Borde).Column(c =>
+            {
+                c.Item().Background(FondoTitulo).PaddingVertical(4).PaddingHorizontal(8)
+                    .Text(EtapaFirma.Nombre(e.Etapa)).Bold().FontSize(9).FontColor(Azul);
+
+                c.Item().PaddingHorizontal(8).PaddingVertical(5).Table(table =>
+                {
+                    table.ColumnsDefinition(cd =>
+                    {
+                        cd.ConstantColumn(118);
+                        cd.RelativeColumn();
+                    });
+
+                    void Fila(string etiqueta, string valor, bool monoespaciado = false)
+                    {
+                        if (string.IsNullOrWhiteSpace(valor)) return;
+                        table.Cell().PaddingVertical(1.5f).Text(etiqueta).FontSize(7.5f).FontColor(TextoSuave);
+                        var t = table.Cell().PaddingVertical(1.5f).Text(valor).FontSize(8);
+                        if (monoespaciado) t.FontFamily("Courier New").FontSize(7.5f);
+                    }
+
+                    Fila("Firmante", Unir("  ·  ", Normalizar(e.Nombre), e.Documento));
+                    Fila("Usuario del sistema", e.Usuario);
+                    Fila("Fecha y hora", e.FechaHora.ToString("dd/MM/yyyy HH:mm:ss", CulturaPe) + "  (hora de Perú, UTC−5)");
+                    Fila("Autenticación", e.Autenticacion);
+                    Fila("Dirección IP", e.Ip);
+                    Fila("Dispositivo", e.Dispositivo);
+                    Fila("Documento firmado", e.HashDocumento == null
+                        ? "Este documento" + (string.IsNullOrEmpty(e.CodigoVerificacion) ? "" : " (código " + e.CodigoVerificacion + ")")
+                        : "Código " + (e.CodigoVerificacion ?? "—"));
+                    if (e.HashDocumento != null)
+                        Fila("Huella SHA-256", e.HashDocumento, monoespaciado: true);
+                });
+
+                if (!string.IsNullOrWhiteSpace(e.TextoAceptado))
+                    c.Item().PaddingHorizontal(8).PaddingBottom(6).Text(t =>
+                    {
+                        t.DefaultTextStyle(s => s.FontSize(7.5f));
+                        t.Span("Texto aceptado: ").Bold();
+                        t.Span("“" + e.TextoAceptado + "”").Italic();
+                    });
+            });
+        }
+
+        private static string FechaLarga(DateTime fecha) => fecha.ToString("dd/MM/yyyy 'a las' HH:mm", CulturaPe);
+
         // ============================================================================
         // PIE DE PÁGINA
         // ============================================================================
 
         private void ComponerPie(IContainer cont)
         {
-            cont.BorderTop(0.5f).BorderColor(BordeFuerte).PaddingTop(4).Row(row =>
+            cont.BorderTop(0.5f).BorderColor(BordeFuerte).PaddingTop(4).Column(col =>
             {
-                row.RelativeItem().Text(t =>
+                col.Item().Row(row =>
                 {
-                    t.DefaultTextStyle(s => s.FontSize(6.5f).FontColor(TextoSuave));
-                    t.Span("Documento interno controlado, generado electrónicamente por el Sistema SGV. ");
-                    t.Span("Los comprobantes que sustentan los importes (facturas, boletas, guías y tickets) se conservan " +
-                           "vinculados a este documento conforme al art. 87 del Código Tributario (mínimo 5 años).");
+                    row.RelativeItem().Text(t =>
+                    {
+                        t.DefaultTextStyle(s => s.FontSize(6.5f).FontColor(TextoSuave));
+                        t.Span("Documento interno controlado, generado electrónicamente por el Sistema SGV. ");
+                        t.Span("Los comprobantes que sustentan los importes (facturas, boletas, guías y tickets) se conservan " +
+                               "vinculados a este documento conforme al art. 87 del Código Tributario (mínimo 5 años).");
+                    });
+                    row.ConstantItem(120).AlignRight().AlignBottom().Text(t =>
+                    {
+                        t.AlignRight();
+                        t.DefaultTextStyle(s => s.FontSize(7).FontColor(TextoSuave));
+                        t.Span(CodigoFormato + " v." + VersionFormato + "  ·  Página ");
+                        t.CurrentPageNumber();
+                        t.Span(" de ");
+                        t.TotalPages();
+                    });
                 });
-                row.ConstantItem(120).AlignRight().AlignBottom().Text(t =>
-                {
-                    t.AlignRight();
-                    t.DefaultTextStyle(s => s.FontSize(7).FontColor(TextoSuave));
-                    t.Span(CodigoFormato + " v." + VersionFormato + "  ·  Página ");
-                    t.CurrentPageNumber();
-                    t.Span(" de ");
-                    t.TotalPages();
-                });
+
+                if (!string.IsNullOrEmpty(_firmas.CodigoVerificacion))
+                    col.Item().PaddingTop(2).Text(t =>
+                    {
+                        t.DefaultTextStyle(s => s.FontSize(7).FontColor(Texto));
+                        t.Span("Código de verificación ");
+                        t.Span(_firmas.CodigoVerificacion).Bold();
+                        if (!string.IsNullOrWhiteSpace(_firmas.UrlVerificacion))
+                            t.Span("  ·  verifique la autenticidad en " + _firmas.UrlVerificacion).FontColor(TextoSuave);
+                    });
             });
         }
 

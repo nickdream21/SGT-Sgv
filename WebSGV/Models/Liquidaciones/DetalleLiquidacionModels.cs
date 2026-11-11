@@ -69,6 +69,9 @@ namespace WebSGV.Models.Liquidaciones
         public int IdOrdenViaje { get; set; }
         public string NumeroOrdenViaje { get; set; }
         public string NombreConductor { get; set; }
+        /// <summary>DNI del conductor o, si no tiene, su carné de extranjería ("DNI 12345678" / "CE 001234567").</summary>
+        public string DocumentoConductor { get; set; }
+        public string LicenciaConductor { get; set; }
         public string PlacaTracto { get; set; }
         public string PlacaCarreta { get; set; }
         public string FechaSalida { get; set; }
@@ -79,8 +82,13 @@ namespace WebSGV.Models.Liquidaciones
         public string HoraLlegadaSistema { get; set; }     // HH:mm - automática, inmutable (hora de envío)
         public string HoraLlegadaDeclarada { get; set; }   // HH:mm - autoreportada por el conductor
         public string HoraLlegadaGps { get; set; }         // HH:mm - verificada por GPS (Onway), null si no se consultó
-        public string EstadoAprobacion { get; set; }   // PENDIENTE / COMPLETADO / RECHAZADO
+        public string EstadoAprobacion { get; set; }   // PENDIENTE / POR_CONFORMAR / APROBADO / REABIERTO
         public string Observaciones { get; set; }
+        /// <summary>Nota de la administración al revisar (OrdenViaje.observacionesAprobacion).</summary>
+        public string NotaAprobacion { get; set; }
+        /// <summary>Último desacuerdo del conductor con una revisión (vuelve a pendientes).</summary>
+        public string ObservacionConductor { get; set; }
+        public string FechaObservacionConductor { get; set; }
 
         // Ingresos
         public decimal TotalIngresosSoles { get; set; }
@@ -155,5 +163,23 @@ namespace WebSGV.Models.Liquidaciones
         public decimal DescuentoDolares { get; set; }
         public decimal ReintegroSoles { get; set; }
         public decimal ReintegroDolares { get; set; }
+        /// <summary>Motivo del descuento (obligatorio si hay descuento): lo acepta el conductor en su conformidad.</summary>
+        public string DescuentoMotivo { get; set; }
+        /// <summary>Motivo del reintegro (obligatorio si hay reintegro).</summary>
+        public string ReintegroMotivo { get; set; }
+    }
+
+    /// <summary>Descuento y reintegro que registra la administración al revisar, cada uno con su motivo.</summary>
+    public class AjustesLiquidacion
+    {
+        public decimal DescuentoSoles { get; set; }
+        public decimal DescuentoDolares { get; set; }
+        public string MotivoDescuento { get; set; }
+        public decimal ReintegroSoles { get; set; }
+        public decimal ReintegroDolares { get; set; }
+        public string MotivoReintegro { get; set; }
+
+        public bool HayDescuento => DescuentoSoles != 0 || DescuentoDolares != 0;
+        public bool HayReintegro => ReintegroSoles != 0 || ReintegroDolares != 0;
     }
 }

@@ -145,6 +145,89 @@ namespace WebSGV.Services
             }
         }
 
+        /// <summary>
+        /// Avisa al conductor que la administración revisó su liquidación y que debe revisar la
+        /// liquidación final (dinero entregado, descuentos y reintegros con su motivo) y firmar su
+        /// conformidad. Sin correo registrado no se envía nada: el aviso también aparece en su panel.
+        /// </summary>
+        public static void NotificarLiquidacionPorConformar(int idOrdenViaje, string numeroOrden)
+        {
+            try
+            {
+                DataTable dt = DbHelper.ConsultarTabla(@"
+                    SELECT COALESCE(NULLIF(LTRIM(RTRIM(c.correo)), ''), NULLIF(LTRIM(RTRIM(u.email)), '')) AS correo,
+                           c.nombre + ' ' + c.apPaterno AS nombreCompleto
+                    FROM   OrdenViaje ov
+                    JOIN   Conductor  c ON ov.idConductor = c.idConductor
+                    LEFT JOIN Usuarios u ON u.idConductor = c.idConductor AND u.activo = 1
+                    WHERE  ov.idOrdenViaje = @id",
+                    DbHelper.Param("@id", idOrdenViaje));
+
+                if (dt.Rows.Count == 0) return;
+                string correo = dt.Rows[0]["correo"]?.ToString();
+                string nombre = dt.Rows[0]["nombreCompleto"]?.ToString() ?? "Conductor";
+                if (string.IsNullOrWhiteSpace(correo)) return;
+
+                string asunto = $"Revisa y firma tu liquidación – Orden {numeroOrden}";
+                string cuerpo = $@"
+<html><body style='font-family:Arial,sans-serif;max-width:600px;margin:auto;'>
+  <h2 style='color:#0B3D91;'>Tu liquidación fue revisada</h2>
+  <p>Hola {HtmlEncode(nombre)},</p>
+  <p>La administración revisó tu liquidación de la orden <strong>{HtmlEncode(numeroOrden)}</strong>
+     y registró el dinero que te entregaron y los descuentos o reintegros, cada uno con su motivo.</p>
+  <p>Ingresa al sistema, revisa la liquidación final y <strong>firma tu conformidad</strong>. Si no estás
+     de acuerdo, puedes enviar tu observación desde la misma pantalla.</p>
+  <br><p>Saludos,<br><em>Administración – SGV</em></p>
+</body></html>";
+
+                Enviar(correo, asunto, cuerpo);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[NotificacionService] NotificarLiquidacionPorConformar: {ex.Message}");
+            }
+        }
+
+        /// <summary>Avisa a la administración que un conductor observó la liquidación final.</summary>
+        public static void NotificarObservacionConductor(string numeroOrden, string nombreConductor, string observacion)
+        {
+            try
+            {
+                DataTable dt = DbHelper.ConsultarTabla(@"
+                    SELECT email FROM Usuarios
+                    WHERE  rol IN ('ADMIN','ADMINISTRADOR','SUPERVISOR',
+                                   'ADMINISTRADOR DE TRANSPORTE','ADMINISTRADOR DE SISTEMA')
+                      AND  activo = 1
+                      AND  email  IS NOT NULL
+                      AND  LTRIM(RTRIM(email)) <> ''");
+                if (dt.Rows.Count == 0) return;
+
+                string asunto = $"Liquidación observada por el conductor – Orden {numeroOrden}";
+                string cuerpo = $@"
+<html><body style='font-family:Arial,sans-serif;max-width:600px;margin:auto;'>
+  <h2 style='color:#b45309;'>El conductor no dio su conformidad</h2>
+  <p>El conductor <strong>{HtmlEncode(nombreConductor)}</strong> observó la liquidación final de la orden
+     <strong>{HtmlEncode(numeroOrden)}</strong>:</p>
+  <blockquote style='border-left:4px solid #b45309;padding:8px 12px;background:#fffbeb;color:#555;'>
+    {HtmlEncode(observacion)}
+  </blockquote>
+  <p>La liquidación volvió a <em>Liquidaciones pendientes</em> para revisarla de nuevo.</p>
+  <br><p>Saludos,<br><em>Sistema SGV</em></p>
+</body></html>";
+
+                foreach (DataRow row in dt.Rows)
+                {
+                    string email = row["email"]?.ToString();
+                    if (!string.IsNullOrWhiteSpace(email))
+                        Enviar(email, asunto, cuerpo);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[NotificacionService] NotificarObservacionConductor: {ex.Message}");
+            }
+        }
+
         private static string HtmlEncode(string s) =>
             HttpUtility.HtmlEncode(s ?? "");
     }

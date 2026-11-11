@@ -95,7 +95,12 @@ namespace WebSGV.Views
                 {
                     int idOrdenViaje = int.TryParse(Request.QueryString["id"], out int id) ? id : 0;
 
-                    if (idOrdenViaje > 0)
+                    if (idOrdenViaje > 0 && Services.Liquidaciones.LiquidacionesPendientesService.OrdenTieneFirmas(idOrdenViaje))
+                    {
+                        MostrarMensaje(Services.Liquidaciones.LiquidacionesPendientesService.MensajeOrdenFirmadaNoEditable, "warning");
+                        CargarDatosNormales();
+                    }
+                    else if (idOrdenViaje > 0)
                     {
                         System.Diagnostics.Debug.WriteLine($"=== MODO EDICIÓN: ID {idOrdenViaje} ===");
                         CargarDatosOrdenExistente(idOrdenViaje);
@@ -693,7 +698,15 @@ namespace WebSGV.Views
                 }
                 else
                 {
-                    // MODO EDICIÓN: Usar el número completo tal como está
+                    // MODO EDICIÓN: una orden con firmas no se modifica a mano (se revalida aquí: el
+                    // id viaja en un campo oculto del formulario).
+                    if (Services.Liquidaciones.LiquidacionesPendientesService.OrdenTieneFirmas(idOrdenExistente))
+                    {
+                        MostrarMensaje(Services.Liquidaciones.LiquidacionesPendientesService.MensajeOrdenFirmadaNoEditable, "danger");
+                        return;
+                    }
+
+                    // Usar el número completo tal como está
                     System.Diagnostics.Debug.WriteLine($"Editando orden con número: {numeroOrdenViaje}");
                     // NO normalizar - usar el formato completo "OV-2025-000005"
                 }

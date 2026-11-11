@@ -23,7 +23,8 @@ BEGIN
     WHERE idOrdenViaje = @idOrdenViaje 
         AND estadoAprobacion = 'PENDIENTE' 
         AND registradoPor = 'CONDUCTOR'
-        AND idConductor   = @idConductor;  -- solo puede retirar su propia orden
+        AND idConductor   = @idConductor   -- solo puede retirar su propia orden
+        AND fechaEnvioConformidad IS NULL; -- ya revisada por la administración: no se borra
 
     IF @numeroOrdenViaje IS NULL
     BEGIN

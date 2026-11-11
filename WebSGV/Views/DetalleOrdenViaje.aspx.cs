@@ -381,6 +381,8 @@ namespace WebSGV.Views
                     return "<span class='badge badge-warning px-3 py-2' style='font-size:0.9rem;color:#78350f;'>Pendiente Revisión</span>";
                 case "REABIERTO":
                     return "<span class='badge badge-danger px-3 py-2' style='font-size:0.9rem;'>Rechazado / Reabierto</span>";
+                case "POR_CONFORMAR":
+                    return "<span class='badge badge-info px-3 py-2' style='font-size:0.9rem;'>Revisada · esperando conformidad del conductor</span>";
                 default:
                     return $"<span class='badge badge-secondary px-3 py-2' style='font-size:0.9rem;'>{System.Web.HttpUtility.HtmlEncode(estado)}</span>";
             }

@@ -73,10 +73,7 @@
             <div class="fl-declaracion">
                 <i class="fas fa-gavel mr-1"></i>
                 <strong>Declaración jurada:</strong>
-                Declaro bajo juramento que los datos y montos de esta liquidación son verdaderos,
-                que los comprobantes entregados son auténticos y que autorizo su uso para los
-                fines administrativos, contables y legales correspondientes. Esta firma tiene pleno
-                valor probatorio y constituye mi manifestación de voluntad.
+                <%: WebSGV.Services.Liquidaciones.TextosFirma.Declaracion %>
             </div>
 
             <!-- Checkbox de consentimiento -->
@@ -108,14 +105,20 @@
                 </button>
             </div>
 
+            <!-- Confirmación de identidad -->
+            <div class="fl-clave">
+                <label for="txtContrasena"><i class="fas fa-lock mr-1"></i>Su contraseña, para confirmar que es usted quien firma</label>
+                <input type="password" id="txtContrasena" class="form-control" autocomplete="current-password" maxlength="100" />
+            </div>
+
             <!-- Botón enviar -->
             <button type="button" class="fl-submit" id="btnFirmar" disabled>
                 <i class="fas fa-check-circle"></i>Firmar y Enviar
             </button>
 
-            <p style="text-align:center; font-size: 11px; color: var(--gris-600); margin-top: 16px;">
-                Al firmar, acepta que se registre la fecha, hora, IP y navegador como
-                evidencia de trazabilidad (append-only, no modificable).
+            <p class="fl-legal">
+                <%: WebSGV.Services.Liquidaciones.TextosFirma.DatosPersonales %>
+                <%: WebSGV.Services.Liquidaciones.TextosFirma.BaseLegal %>
             </p>
         </div>
 
@@ -123,8 +126,15 @@
         <div id="pantallaExito" class="fl-success-screen">
             <div class="icon"><i class="fas fa-check"></i></div>
             <h3>Firma registrada correctamente</h3>
-            <p>Su liquidación ha sido enviada y firmada digitalmente.</p>
-            <div style="margin: 18px 0;">
+            <p>Su declaración fue firmada y enviada a la administración. Cuando la revise, recibirá la
+               liquidación final para dar su conformidad.</p>
+            <div style="margin: 18px 0 8px;">
+                <div style="font-size: 11px; color: var(--gris-600); text-transform: uppercase; margin-bottom: 6px;">
+                    Código de verificación del documento
+                </div>
+                <div class="hash" id="okCodigo" style="font-size: 16px; letter-spacing: 1px;">-</div>
+            </div>
+            <div style="margin: 8px 0 18px;">
                 <div style="font-size: 11px; color: var(--gris-600); text-transform: uppercase; margin-bottom: 6px;">
                     Hash SHA-256 del documento
                 </div>
@@ -145,6 +155,7 @@
     </main>
 
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/FirmaCanvas.js") %>"></script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/FirmarLiquidacion.js") %>"></script>
 </form>
 </body>

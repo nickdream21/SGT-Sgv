@@ -26,6 +26,11 @@
                 <asp:Label ID="lblTotalPendientes" runat="server" CssClass="sgv-tab-contador" Text="0"></asp:Label>
                 <asp:Label ID="lblTotalUrgentes" runat="server" CssClass="sgv-tab-alerta" ToolTip="Liquidaciones esperando más de 24 horas"></asp:Label>
             </button>
+            <button type="button" class="sgv-tab" id="tabPorConformar" onclick="cambiarTab('porConformar')"
+                title="Revisadas y enviadas al conductor: esperan que firme su conformidad">
+                Esperando conformidad
+                <span class="sgv-tab-contador" id="lblTotalPorConformar"></span>
+            </button>
             <button type="button" class="sgv-tab" id="tabAprobadas" onclick="cambiarTab('aprobadas')">
                 Control de aprobadas
             </button>
@@ -105,7 +110,6 @@
                         CssClass="table sgv-tabla mb-0"
                         AutoGenerateColumns="false"
                         EmptyDataText="No hay liquidaciones pendientes de aprobación"
-                        OnRowCommand="gvLiquidacionesPendientes_RowCommand"
                         DataKeyNames="IdOrdenViaje">
                         <Columns>
                             
@@ -113,6 +117,7 @@
                                 <ItemTemplate>
                                     <div class="orden-numero"><%# Eval("NumeroOrdenViaje") %></div>
                                     <div class="sgv-suave"><%# Eval("FechaRegistro", "{0:dd/MM/yyyy HH:mm}") %></div>
+                                    <%# EtiquetaObservada(Eval("ObservacionConductor")) %>
                                 </ItemTemplate>
                             </asp:TemplateField>
 
@@ -169,15 +174,6 @@
                                             <i class="fas fa-eye"></i>
                                         </button>
 
-                                        <asp:LinkButton ID="btnEditar" runat="server"
-                                            CssClass="sgv-btn-icono alerta"
-                                            CommandName="Editar"
-                                            CommandArgument='<%# Eval("IdOrdenViaje") %>'
-                                            ToolTip="Editar liquidación"
-                                            OnClientClick="return confirm('¿Desea editar esta liquidación?');">
-                                            <i class="fas fa-pen"></i>
-                                        </asp:LinkButton>
-
                                         <button type="button" class="sgv-btn-icono ok"
                                             onclick="abrirModalAprobar(<%# Eval("IdOrdenViaje") %>)"
                                             title="Aprobar liquidación">
@@ -204,6 +200,43 @@
         </div>
 
         </div><!-- /seccionPendientes -->
+
+        <!-- SECCIÓN ESPERANDO CONFORMIDAD DEL CONDUCTOR -->
+        <div id="seccionPorConformar" style="display:none;">
+            <div class="sgv-panel sgv-panel-acento">
+                <div class="sgv-panel-cab">
+                    <h5>Esperando la conformidad del conductor <span class="sgv-panel-nota ml-2"><span id="lblResultadosPorConformar">0</span> resultados</span></h5>
+                    <button type="button" class="btn btn-sm btn-light border" onclick="cargarLiquidacionesPorConformar()">
+                        <i class="fas fa-sync-alt mr-1"></i>Actualizar
+                    </button>
+                </div>
+                <div class="sgv-panel-cuerpo py-2">
+                    <p class="sgv-suave mb-0" style="font-size:0.85rem;">
+                        La administración ya revisó estas liquidaciones. El viaje se completa cuando el conductor firma su
+                        conformidad; si no está de acuerdo, la liquidación vuelve a <em>Pendientes</em> con su observación.
+                        Para corregir un monto antes de que firme, use <strong>Retirar envío</strong>.
+                    </p>
+                </div>
+                <div class="table-responsive">
+                    <table class="table sgv-tabla mb-0">
+                        <thead>
+                            <tr>
+                                <th>N° orden</th>
+                                <th>Conductor</th>
+                                <th>Enviada al conductor</th>
+                                <th class="text-right">Descuento</th>
+                                <th class="text-right">Reintegro</th>
+                                <th class="text-right">Saldo final</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyPorConformar">
+                            <tr><td colspan="7" class="sgv-vacio">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div><!-- /seccionPorConformar -->
 
         <!-- SECCIÓN CONTROL DE APROBADAS -->
         <div id="seccionAprobadas" style="display:none;">
@@ -327,7 +360,7 @@
                         <div class="agb-content">
                             <div class="agb-text">
                                 <strong>Revisión para aprobación</strong>
-                                <span>Revise los gastos declarados por el conductor. Registre el <a href="#" onclick="scrollToAjustes(); return false;" class="agb-link">dinero que se le entregó</a> y, si aplica, descuentos o reintegros. Luego use el botón <strong>Aprobar liquidación</strong>.</span>
+                                <span>Revise los gastos declarados por el conductor. Registre el <a href="#" onclick="scrollToAjustes(); return false;" class="agb-link">dinero que se le entregó</a> y, si aplica, descuentos o reintegros. Luego use <strong>Aprobar y enviar al conductor</strong>: el conductor revisará la liquidación final y firmará su conformidad.</span>
                             </div>
                         </div>
                     </div>
@@ -361,6 +394,10 @@
                                     <i class="fas fa-satellite-dish"></i> Verificar GPS
                                 </button>
                             </div>
+                        </div>
+                        <div id="detalleObservacionConductorRow" style="display:none;" class="vi-obs-row vi-obs-alerta">
+                            <span class="vi-obs-label">El conductor observó la revisión anterior<span id="detalleFechaObservacion"></span>:</span>
+                            <span class="vi-obs-text" id="detalleObservacionConductor"></span>
                         </div>
                         <div id="detalleObservacionesRow" style="display:none;" class="vi-obs-row">
                             <span class="vi-obs-label">Obs. Conductor:</span>
@@ -549,6 +586,8 @@
                         </div>
                         <div class="alert-warning-light mb-3" style="font-size:0.85rem;padding:0.75rem;border:1px solid #fde68a;border-radius:0.375rem;background:#fffbeb;">
                             Registra descuentos o reintegros a aplicar al balance del conductor. Deja en cero si no aplica.
+                            Cada ajuste necesita su <strong>motivo</strong>: el conductor lo verá en la liquidación final y
+                            firmará su conformidad (o la observará) antes de que el viaje se complete.
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -570,6 +609,12 @@
                                                 oninput="actualizarBalanceAjustado()">
                                         </div>
                                     </div>
+                                    <div class="mt-2" id="grupoMotivoDescuento">
+                                        <label class="form-label" for="ajusteMotivoDescuento">Motivo del descuento</label>
+                                        <textarea id="ajusteMotivoDescuento" class="form-control form-control-sm" rows="2" maxlength="500"
+                                            placeholder="Ej.: Gasto de alimentación del 18/07 sin comprobante."></textarea>
+                                        <small class="text-danger d-none" id="errorMotivoDescuento"></small>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -590,6 +635,12 @@
                                                 placeholder="0.00" step="0.01" min="0" value=""
                                                 oninput="actualizarBalanceAjustado()">
                                         </div>
+                                    </div>
+                                    <div class="mt-2" id="grupoMotivoReintegro">
+                                        <label class="form-label" for="ajusteMotivoReintegro">Motivo del reintegro</label>
+                                        <textarea id="ajusteMotivoReintegro" class="form-control form-control-sm" rows="2" maxlength="500"
+                                            placeholder="Ej.: Peaje de Chullqui pagado y no declarado (ticket B002-2)."></textarea>
+                                        <small class="text-danger d-none" id="errorMotivoReintegro"></small>
                                     </div>
                                 </div>
                             </div>
@@ -630,7 +681,7 @@
                     </button>
                     <button type="button" id="btnAprobarDesdeModal" class="btn btn-success-custom"
                         onclick="aprobarDesdeModal()" style="display:none;">
-                        <i class="fas fa-check mr-1"></i>Aprobar liquidación
+                        <i class="fas fa-paper-plane mr-1"></i>Aprobar y enviar al conductor
                     </button>
                 </div>
             </div>
@@ -693,7 +744,8 @@
                 <div class="modal-body">
                     <div class="alert alert-danger">
                         <strong>Atención:</strong> Esta acción devolverá la liquidación al estado
-                        <strong>Pendiente de aprobación</strong>. Deberá ser revisada y aprobada nuevamente.
+                        <strong>Pendiente de aprobación</strong> y anulará la revisión y la conformidad firmadas (quedan en el historial).
+                        Al aprobarla de nuevo, el conductor deberá firmar otra vez su conformidad.
                     </div>
                     <input type="hidden" id="revertirIdOrden" />
                     <div class="form-group">
@@ -721,116 +773,41 @@
         </div>
     </div>
 
-    <!-- Modal Corregir Ajustes -->
-    <div class="modal fade" id="modalCorregirAjustes" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+    <!-- Modal Retirar envío al conductor (antes de su conformidad) -->
+    <div class="modal fade" id="modalRetirarEnvio" tabindex="-1">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header modal-header-corregir">
-                    <h5 class="modal-title">
-                        Corregir ajustes de una liquidación aprobada
-                    </h5>
+                    <h5 class="modal-title">Retirar envío al conductor</h5>
                     <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-warning">
-                        Está modificando los ajustes de una liquidación <strong>ya aprobada</strong>.
-                        Los cambios se reflejarán inmediatamente en los reportes.
+                        La liquidación volverá a <strong>Pendientes</strong> y la revisión enviada quedará anulada
+                        (queda registrada en el historial de firmas). Podrá corregirla y aprobarla de nuevo; el conductor
+                        recibirá la nueva versión para firmar su conformidad.
                     </div>
-                    <input type="hidden" id="corregirIdOrden" />
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">N° Orden:</label>
-                            <input type="text" id="corregirNumeroOrden" class="form-control" readonly />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Conductor:</label>
-                            <input type="text" id="corregirConductor" class="form-control" readonly />
-                        </div>
-                    </div>
-
-                    <div class="valores-actuales-panel mb-3">
-                        <div class="vap-title">
-                            Valores registrados actualmente
-                        </div>
-                        <div class="vap-grid">
-                            <div class="vap-item vap-descuento">
-                                <span class="vap-label">Descuento S/</span>
-                                <span class="vap-number" id="corregirDescSolesActual">0.00</span>
-                            </div>
-                            <div class="vap-item vap-descuento">
-                                <span class="vap-label">Descuento $</span>
-                                <span class="vap-number" id="corregirDescDolaresActual">0.00</span>
-                            </div>
-                            <div class="vap-item vap-reintegro">
-                                <span class="vap-label">Reintegro S/</span>
-                                <span class="vap-number" id="corregirReintSolesActual">0.00</span>
-                            </div>
-                            <div class="vap-item vap-reintegro">
-                                <span class="vap-label">Reintegro $</span>
-                                <span class="vap-number" id="corregirReintDolaresActual">0.00</span>
-                            </div>
-                        </div>
-                        <div class="vap-hint">Ingrese los nuevos valores a continuación</div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="ajuste-card ajuste-descuento">
-                                <div class="ajuste-header">
-                                    Nuevo descuento
-                                </div>
-                                <div class="row mt-2">
-                                    <div class="col-6">
-                                        <label class="form-label">Soles (S/)</label>
-                                        <input type="number" id="corregirDescSoles" class="form-control form-control-sm"
-                                            placeholder="0.00" step="0.01" min="0">
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label">Dólares ($)</label>
-                                        <input type="number" id="corregirDescDolares" class="form-control form-control-sm"
-                                            placeholder="0.00" step="0.01" min="0">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="ajuste-card ajuste-reintegro">
-                                <div class="ajuste-header">
-                                    Nuevo reintegro
-                                </div>
-                                <div class="row mt-2">
-                                    <div class="col-6">
-                                        <label class="form-label">Soles (S/)</label>
-                                        <input type="number" id="corregirReintSoles" class="form-control form-control-sm"
-                                            placeholder="0.00" step="0.01" min="0">
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label">Dólares ($)</label>
-                                        <input type="number" id="corregirReintDolares" class="form-control form-control-sm"
-                                            placeholder="0.00" step="0.01" min="0">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                    <input type="hidden" id="retirarIdOrden" />
                     <div class="form-group">
-                        <label class="form-label">Motivo de la corrección <span class="text-danger">*</span></label>
-                        <textarea id="corregirMotivo" class="form-control" rows="3"
-                            placeholder="Explique por qué se corrigen los ajustes..."></textarea>
-                        <small id="errorCorregirMotivo" class="text-danger d-none"></small>
+                        <label class="form-label">N° de Orden:</label>
+                        <input type="text" id="retirarNumeroOrden" class="form-control" readonly />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="retirarMotivo">Motivo <span class="text-danger">*</span></label>
+                        <textarea id="retirarMotivo" class="form-control" rows="3" maxlength="500"
+                            placeholder="Ej.: El adelanto registrado era S/ 800 y no S/ 900."></textarea>
+                        <small id="errorRetirarMotivo" class="text-danger d-none"></small>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary-custom" id="btnConfirmarCorreccion" onclick="confirmarCorreccion()">
-                        <i class="fas fa-save mr-1"></i>Guardar corrección
+                    <button type="button" class="btn btn-primary-custom" id="btnConfirmarRetiro" onclick="confirmarRetiroEnvio()">
+                        <i class="fas fa-undo mr-1"></i>Retirar envío
                     </button>
                 </div>
             </div>
         </div>
     </div>
-
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/LiquidacionesPendientes.css") %>" rel="stylesheet" />
 
     <!-- jQuery y Bootstrap los carga Site.Master -->

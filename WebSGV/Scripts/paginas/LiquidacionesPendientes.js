@@ -292,6 +292,17 @@ function mostrarDetalle(datos) {
     $('#ajusteDescuentoDolares').val(descDolares > 0 ? descDolares.toFixed(2) : '');
     $('#ajusteReintegroSoles').val(reintSoles > 0 ? reintSoles.toFixed(2) : '');
     $('#ajusteReintegroDolares').val(reintDolares > 0 ? reintDolares.toFixed(2) : '');
+    $('#ajusteMotivoDescuento').val(datos.DescuentoMotivo || '');
+    $('#ajusteMotivoReintegro').val(datos.ReintegroMotivo || '');
+
+    // Desacuerdo del conductor con una revisión anterior: lo primero que hay que atender.
+    if (datos.ObservacionConductor) {
+        $('#detalleObservacionConductor').text(datos.ObservacionConductor);
+        $('#detalleFechaObservacion').text(datos.FechaObservacionConductor ? ' el ' + datos.FechaObservacionConductor : '');
+        $('#detalleObservacionConductorRow').show();
+    } else {
+        $('#detalleObservacionConductorRow').hide();
+    }
 
     // --- Dinero entregado al conductor: pre-poblar y separar lo que no se edita aquí ---
     // (ingresos adicionales de liquidaciones antiguas, que siguen sumando al balance).
@@ -503,20 +514,52 @@ function enviarCorreccionSalida(fecha, hora, motivo) {
     });
 }
 
+var MINIMO_MOTIVO = 10;
+
+// Un descuento o reintegro sin motivo no se puede enviar: el conductor lo verá en la liquidación
+// final antes de firmar su conformidad y es lo que sustenta el ajuste ante una auditoría.
+function validarMotivoAjuste(hayMonto, selector, selectorError, tipo) {
+    var motivo = $(selector).val().trim();
+    $(selector).removeClass('campo-con-error');
+    $(selectorError).addClass('d-none').text('');
+    if (hayMonto && motivo.length < MINIMO_MOTIVO) {
+        $(selector).addClass('campo-con-error');
+        $(selectorError).removeClass('d-none')
+            .text('Indique el motivo del ' + tipo + ' (al menos ' + MINIMO_MOTIVO + ' caracteres).');
+        return false;
+    }
+    return true;
+}
+
 function aprobarDesdeModal() {
     if (!idOrdenParaAprobar) return;
     limpiarErroresFormulario();
 
-    var descS = parseFloat($('#ajusteDescuentoSoles').val()) || 0;
-    var descD = parseFloat($('#ajusteDescuentoDolares').val()) || 0;
-    var reintS = parseFloat($('#ajusteReintegroSoles').val()) || 0;
-    var reintD = parseFloat($('#ajusteReintegroDolares').val()) || 0;
+    var ajustes = {
+        DescuentoSoles: parseFloat($('#ajusteDescuentoSoles').val()) || 0,
+        DescuentoDolares: parseFloat($('#ajusteDescuentoDolares').val()) || 0,
+        MotivoDescuento: $('#ajusteMotivoDescuento').val().trim(),
+        ReintegroSoles: parseFloat($('#ajusteReintegroSoles').val()) || 0,
+        ReintegroDolares: parseFloat($('#ajusteReintegroDolares').val()) || 0,
+        MotivoReintegro: $('#ajusteMotivoReintegro').val().trim()
+    };
+    var hayDescuento = ajustes.DescuentoSoles > 0 || ajustes.DescuentoDolares > 0;
+    var hayReintegro = ajustes.ReintegroSoles > 0 || ajustes.ReintegroDolares > 0;
     var nota = $('#notaAprobacion').val().trim();
 
-    if (descS < 0 || descD < 0 || reintS < 0 || reintD < 0) {
+    if (ajustes.DescuentoSoles < 0 || ajustes.DescuentoDolares < 0 || ajustes.ReintegroSoles < 0 || ajustes.ReintegroDolares < 0) {
         SGV.avisar('⚠️ Los montos de ajuste no pueden ser negativos.');
         return;
     }
+
+    var okDesc = validarMotivoAjuste(hayDescuento, '#ajusteMotivoDescuento', '#errorMotivoDescuento', 'descuento');
+    var okReint = validarMotivoAjuste(hayReintegro, '#ajusteMotivoReintegro', '#errorMotivoReintegro', 'reintegro');
+    if (!okDesc || !okReint) {
+        scrollToAjustes();
+        return;
+    }
+    if (!hayDescuento) ajustes.MotivoDescuento = null;
+    if (!hayReintegro) ajustes.MotivoReintegro = null;
 
     var ent = leerIngresosEntregados();
     if (ent.negativo) {
@@ -530,41 +573,37 @@ function aprobarDesdeModal() {
         return;
     }
 
-    var confirmMsg = '¿Está seguro de APROBAR esta liquidación?\n\n';
+    var confirmMsg = '¿Aprobar esta liquidación y enviarla al conductor?\n\n';
     if (ent.totalSoles > 0 || ent.totalDolares > 0) {
         confirmMsg += 'Entregado al conductor: S/ ' + ent.totalSoles.toFixed(2) + ' · $ ' + ent.totalDolares.toFixed(2) + '\n\n';
     } else {
         confirmMsg += 'No se registra dinero entregado al conductor.\n\n';
     }
-    if (descS > 0 || descD > 0 || reintS > 0 || reintD > 0) {
-        confirmMsg += 'Se aplicarán los siguientes ajustes:\n';
-        if (descS > 0) confirmMsg += '  \u2022 Descuento S/: ' + descS.toFixed(2) + '\n';
-        if (descD > 0) confirmMsg += '  \u2022 Descuento $: ' + descD.toFixed(2) + '\n';
-        if (reintS > 0) confirmMsg += '  \u2022 Reintegro S/: ' + reintS.toFixed(2) + '\n';
-        if (reintD > 0) confirmMsg += '  \u2022 Reintegro $: ' + reintD.toFixed(2) + '\n';
+    if (hayDescuento || hayReintegro) {
+        confirmMsg += 'Ajustes:\n';
+        if (hayDescuento) confirmMsg += '  • Descuento S/ ' + ajustes.DescuentoSoles.toFixed(2) + ' · $ ' + ajustes.DescuentoDolares.toFixed(2) + ': ' + ajustes.MotivoDescuento + '\n';
+        if (hayReintegro) confirmMsg += '  • Reintegro S/ ' + ajustes.ReintegroSoles.toFixed(2) + ' · $ ' + ajustes.ReintegroDolares.toFixed(2) + ': ' + ajustes.MotivoReintegro + '\n';
         confirmMsg += '\n';
     }
     if (nota) confirmMsg += 'Nota: ' + nota + '\n\n';
-    confirmMsg += 'Esta acción completará el viaje y no se podrá deshacer.';
+    confirmMsg += 'Se registrará su firma de revisión y el conductor recibirá la liquidación final para firmar su conformidad. ' +
+                  'El viaje se completará cuando él firme.';
 
     SGV.confirmar(confirmMsg,
-        function () { enviarAprobacion(descS, descD, reintS, reintD, nota, ent.datos); },
-        { titulo: 'Aprobar liquidación', textoAceptar: 'Aprobar' });
+        function () { enviarAprobacion(ajustes, nota, ent.datos); },
+        { titulo: 'Aprobar y enviar al conductor', textoAceptar: 'Aprobar y enviar' });
 }
 
-function enviarAprobacion(descS, descD, reintS, reintD, nota, ingresos) {
+function enviarAprobacion(ajustes, nota, ingresos) {
     var $btn = $('#btnAprobarDesdeModal');
-    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Aprobando...');
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Enviando...');
 
     $.ajax({
         type: "POST",
-        url: "LiquidacionesPendientes.aspx/AprobarLiquidacionConFirma",
+        url: "LiquidacionesPendientes.aspx/EnviarAConformidad",
         data: JSON.stringify({
             idOrdenViaje: idOrdenParaAprobar,
-            descuentoSoles: descS,
-            descuentoDolares: descD,
-            reintegroSoles: reintS,
-            reintegroDolares: reintD,
+            ajustes: ajustes,
             notaAprobacion: nota || null,
             ingresos: ingresos || null
         }),
@@ -574,17 +613,17 @@ function enviarAprobacion(descS, descD, reintS, reintD, nota, ingresos) {
             var result = response.d;
             if (result.success) {
                 $('#modalDetalleLiquidacion').modal('hide');
-                SGV.avisar('\u2705 ' + result.message, { trasRecargar: true });
+                SGV.avisar('✅ ' + result.message, { trasRecargar: true });
                 location.reload();
             } else {
-                SGV.avisar('\u274c ' + result.message);
-                $btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar liquidación');
+                SGV.avisar('❌ ' + result.message);
+                $btn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i>Aprobar y enviar al conductor');
             }
         },
         error: function (xhr) {
             console.error('Error:', xhr.responseText);
             SGV.avisar('Error al aprobar la liquidación. Por favor intente de nuevo.');
-            $btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar liquidación');
+            $btn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i>Aprobar y enviar al conductor');
         }
     });
 }
@@ -600,6 +639,8 @@ $(document).ready(function () {
         $('#modalDetalleLiquidacionHeader').removeClass('mode-aprobacion');
         $('#notaAprobacion').val('');
         $('#ajusteDescuentoSoles, #ajusteDescuentoDolares, #ajusteReintegroSoles, #ajusteReintegroDolares').val('');
+        $('#ajusteMotivoDescuento, #ajusteMotivoReintegro').val('').removeClass('campo-con-error');
+        $('#errorMotivoDescuento, #errorMotivoReintegro').addClass('d-none').text('');
         $('#balanceAjustadoPanel').hide();
     });
 });
@@ -619,22 +660,125 @@ $(function () {
 });
 
 function cambiarTab(tab) {
-    if (tab === 'pendientes') {
-        $('#seccionPendientes').show();
-        $('#seccionAprobadas').hide();
-        $('#tabPendientes').addClass('activo');
-        $('#tabAprobadas').removeClass('activo');
-    } else {
-        $('#seccionPendientes').hide();
-        $('#seccionAprobadas').show();
-        $('#tabPendientes').removeClass('activo');
-        $('#tabAprobadas').addClass('activo');
-        if (!_aprobadasCargadas) {
-            inicializarFiltrosAprobadas();
-            cargarLiquidacionesAprobadas();
-            _aprobadasCargadas = true;
-        }
+    $('#seccionPendientes').toggle(tab === 'pendientes');
+    $('#seccionPorConformar').toggle(tab === 'porConformar');
+    $('#seccionAprobadas').toggle(tab === 'aprobadas');
+    $('#tabPendientes').toggleClass('activo', tab === 'pendientes');
+    $('#tabPorConformar').toggleClass('activo', tab === 'porConformar');
+    $('#tabAprobadas').toggleClass('activo', tab === 'aprobadas');
+
+    if (tab === 'porConformar') {
+        cargarLiquidacionesPorConformar();
+    } else if (tab === 'aprobadas' && !_aprobadasCargadas) {
+        inicializarFiltrosAprobadas();
+        cargarLiquidacionesAprobadas();
+        _aprobadasCargadas = true;
     }
+}
+
+// ============================================================
+// === SECCIÓN ESPERANDO CONFORMIDAD DEL CONDUCTOR ===
+// ============================================================
+
+var _porConformarData = {};
+
+// El contador de la pestaña se carga al abrir la página.
+$(function () { cargarLiquidacionesPorConformar(true); });
+
+function cargarLiquidacionesPorConformar(soloContador) {
+    $.ajax({
+        type: "POST",
+        url: "LiquidacionesPendientes.aspx/ObtenerLiquidacionesPorConformar",
+        data: JSON.stringify({ idConductor: 0 }),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function (response) {
+            var datos = response.d || [];
+            $('#lblTotalPorConformar').text(datos.length > 0 ? datos.length : '');
+            $('#lblResultadosPorConformar').text(datos.length);
+            if (soloContador) return;
+
+            _porConformarData = {};
+            if (datos.length === 0) {
+                $('#tbodyPorConformar').html('<tr><td colspan="7" class="sgv-vacio">No hay liquidaciones esperando la conformidad del conductor.</td></tr>');
+                return;
+            }
+
+            var html = '';
+            datos.forEach(function (item) {
+                _porConformarData[item.IdOrdenViaje] = item;
+                var espera = item.HorasEsperando >= 48 ? 'sgv-estado-peligro' : item.HorasEsperando >= 24 ? 'sgv-estado-alerta' : 'sgv-estado-ok';
+                html += '<tr>';
+                html += '<td><div class="orden-numero">' + htmlEncode(item.NumeroOrdenViaje) + '</div>';
+                html += '<div class="sgv-suave">' + htmlEncode(item.FechaSalida) + ' – ' + htmlEncode(item.FechaLlegada) + '</div></td>';
+                html += '<td><div>' + htmlEncode(item.NombreConductor) + '</div>';
+                html += '<div class="sgv-suave">' + htmlEncode(item.PlacaTracto) + ' / ' + htmlEncode(item.PlacaCarreta) + '</div></td>';
+                html += '<td class="text-nowrap"><div>' + htmlEncode(item.FechaEnvio) + '</div>';
+                html += '<span class="sgv-estado ' + espera + '">' + (item.HorasEsperando < 1 ? 'hace menos de 1 h' : 'hace ' + item.HorasEsperando + ' h') + '</span></td>';
+                html += celdaMontos(parseFloat(item.DescuentoSoles || 0), parseFloat(item.DescuentoDolares || 0), 'sgv-negativo');
+                html += celdaMontos(parseFloat(item.ReintegroSoles || 0), parseFloat(item.ReintegroDolares || 0), 'sgv-positivo');
+                html += celdaMontos(parseFloat(item.SaldoSoles || 0), parseFloat(item.SaldoDolares || 0));
+                html += '<td class="text-right"><div class="sgv-acciones">';
+                html += '<button type="button" class="sgv-btn-icono info" onclick="verDetalleLiquidacion(' + item.IdOrdenViaje + ')" title="Ver detalle"><i class="fas fa-eye"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono" onclick="descargarPdfOrdenViaje(' + item.IdOrdenViaje + ')" title="PDF de la liquidación enviada"><i class="fas fa-file-pdf"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono alerta" onclick="abrirModalRetirarEnvio(' + item.IdOrdenViaje + ')" title="Retirar envío (para corregir antes de que firme)"><i class="fas fa-undo"></i></button>';
+                html += '</div></td></tr>';
+            });
+            $('#tbodyPorConformar').html(html);
+        },
+        error: function (xhr) {
+            console.error('Error cargando por conformar:', xhr.responseText);
+            if (!soloContador)
+                $('#tbodyPorConformar').html('<tr><td colspan="7" class="sgv-vacio text-danger">Error al cargar las liquidaciones.</td></tr>');
+        }
+    });
+}
+
+function abrirModalRetirarEnvio(idOrden) {
+    var item = _porConformarData[idOrden];
+    if (!item) { SGV.avisar('No se encontraron datos de la liquidación.'); return; }
+    $('#retirarIdOrden').val(idOrden);
+    $('#retirarNumeroOrden').val(item.NumeroOrdenViaje);
+    $('#retirarMotivo').val('');
+    $('#errorRetirarMotivo').addClass('d-none').text('');
+    $('#modalRetirarEnvio').modal('show');
+}
+
+function confirmarRetiroEnvio() {
+    var idOrden = parseInt($('#retirarIdOrden').val());
+    var motivo = $('#retirarMotivo').val().trim();
+    limpiarErroresFormulario();
+    if (motivo.length < MINIMO_MOTIVO) {
+        mostrarErrorCampo('#retirarMotivo', '#errorRetirarMotivo', 'El motivo debe tener al menos ' + MINIMO_MOTIVO + ' caracteres.');
+        $('#retirarMotivo').focus();
+        return;
+    }
+
+    var $btn = $('#btnConfirmarRetiro');
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Procesando...');
+    $.ajax({
+        type: "POST",
+        url: "LiquidacionesPendientes.aspx/RetirarEnvioConformidad",
+        data: JSON.stringify({ idOrdenViaje: idOrden, motivo: motivo }),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function (response) {
+            var r = response.d;
+            $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Retirar envío');
+            if (r.success) {
+                $('#modalRetirarEnvio').modal('hide');
+                SGV.avisar('✅ ' + r.message, { trasRecargar: true });
+                location.reload();
+            } else {
+                SGV.avisar('❌ ' + r.message);
+            }
+        },
+        error: function (xhr) {
+            console.error('Error:', xhr.responseText);
+            $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Retirar envío');
+            SGV.avisar('Error al retirar el envío.');
+        }
+    });
 }
 
 function inicializarFiltrosAprobadas() {
@@ -701,6 +845,7 @@ function cargarLiquidacionesAprobadas() {
                 // N° Orden
                 html += '<td><div class="orden-numero">' + htmlEncode(item.NumeroOrdenViaje) + '</div>';
                 html += '<div class="sgv-suave">' + htmlEncode(item.FechaSalida) + '</div></td>';
+                if (item.FechaConformidad) html += '<div class="sgv-suave" title="Conformidad firmada por el conductor"><i class="fas fa-signature mr-1"></i>' + htmlEncode(item.FechaConformidad) + '</div>';
 
                 // Conductor
                 html += '<td><div>' + htmlEncode(item.NombreConductor) + '</div>';
@@ -718,7 +863,6 @@ function cargarLiquidacionesAprobadas() {
                 html += '<td class="text-right"><div class="sgv-acciones">';
                 html += '<button type="button" class="sgv-btn-icono info" onclick="verDetalleLiquidacion(' + item.IdOrdenViaje + ')" title="Ver detalle"><i class="fas fa-eye"></i></button>';
                 html += '<button type="button" class="sgv-btn-icono" onclick="descargarPdfOrdenViaje(' + item.IdOrdenViaje + ')" title="Descargar PDF SGV-CDF-F-05"><i class="fas fa-file-pdf"></i></button>';
-                html += '<button type="button" class="sgv-btn-icono alerta" onclick="abrirModalCorregir(' + item.IdOrdenViaje + ')" title="Corregir ajustes"><i class="fas fa-pen"></i></button>';
                 html += '<button type="button" class="sgv-btn-icono peligro" onclick="abrirModalRevertir(' + item.IdOrdenViaje + ')" title="Revertir aprobación"><i class="fas fa-undo"></i></button>';
                 html += '</div></td>';
 
@@ -852,113 +996,6 @@ function enviarReversion(idOrden, motivo) {
     });
 }
 
-// --- Modal Corregir Ajustes ---
-function abrirModalCorregir(idOrden) {
-    var item = _aprobadasData[idOrden];
-    if (!item) { SGV.avisar('No se encontraron datos de la liquidaci\u00f3n.'); return; }
-
-    $('#corregirIdOrden').val(idOrden);
-    $('#corregirNumeroOrden').val(item.NumeroOrdenViaje);
-    $('#corregirConductor').val(item.NombreConductor);
-
-    var descS = parseFloat(item.DescuentoSoles || 0);
-    var descD = parseFloat(item.DescuentoDolares || 0);
-    var reintS = parseFloat(item.ReintegroSoles || 0);
-    var reintD = parseFloat(item.ReintegroDolares || 0);
-
-    $('#corregirDescSolesActual').text(descS.toFixed(2));
-    $('#corregirDescDolaresActual').text(descD.toFixed(2));
-    $('#corregirReintSolesActual').text(reintS.toFixed(2));
-    $('#corregirReintDolaresActual').text(reintD.toFixed(2));
-
-    $('#corregirDescSoles').val(descS > 0 ? descS.toFixed(2) : '');
-    $('#corregirDescDolares').val(descD > 0 ? descD.toFixed(2) : '');
-    $('#corregirReintSoles').val(reintS > 0 ? reintS.toFixed(2) : '');
-    $('#corregirReintDolares').val(reintD > 0 ? reintD.toFixed(2) : '');
-    $('#corregirMotivo').val('');
-
-    $('#modalCorregirAjustes').modal('show');
-}
-
-function confirmarCorreccion() {
-    var idOrden = parseInt($('#corregirIdOrden').val());
-    var motivo = $('#corregirMotivo').val().trim();
-    var descS = parseFloat($('#corregirDescSoles').val()) || 0;
-    var descD = parseFloat($('#corregirDescDolares').val()) || 0;
-    var reintS = parseFloat($('#corregirReintSoles').val()) || 0;
-    var reintD = parseFloat($('#corregirReintDolares').val()) || 0;
-    limpiarErroresFormulario();
-
-    if (!motivo) {
-        mostrarErrorCampo('#corregirMotivo', '#errorCorregirMotivo', 'Debe ingresar el motivo de la corrección.');
-        $('#corregirMotivo').focus();
-        return;
-    }
-    if (motivo.length < 10) {
-        mostrarErrorCampo('#corregirMotivo', '#errorCorregirMotivo', 'El motivo debe tener al menos 10 caracteres.');
-        $('#corregirMotivo').focus();
-        return;
-    }
-    if (motivo.length > 500) {
-        mostrarErrorCampo('#corregirMotivo', '#errorCorregirMotivo', 'El motivo no puede superar 500 caracteres.');
-        $('#corregirMotivo').focus();
-        return;
-    }
-
-    if (descS < 0 || descD < 0 || reintS < 0 || reintD < 0) {
-        SGV.avisar('Los montos de descuento/reintegro no pueden ser negativos.');
-        return;
-    }
-
-    var msg = '\u00bfEst\u00e1 seguro de CORREGIR los ajustes?\n\n';
-    msg += 'Nuevos valores:\n';
-    msg += '  \u2022 Descuento S/: ' + descS.toFixed(2) + '\n';
-    msg += '  \u2022 Descuento $: ' + descD.toFixed(2) + '\n';
-    msg += '  \u2022 Reintegro S/: ' + reintS.toFixed(2) + '\n';
-    msg += '  \u2022 Reintegro $: ' + reintD.toFixed(2) + '\n';
-
-    SGV.confirmar(msg,
-        function () { enviarCorreccionAjustes(idOrden, motivo, descS, descD, reintS, reintD); },
-        { titulo: 'Corregir ajustes', textoAceptar: 'Corregir' });
-}
-
-function enviarCorreccionAjustes(idOrden, motivo, descS, descD, reintS, reintD) {
-    var $btn = $('#btnConfirmarCorreccion');
-    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Guardando...');
-
-    $.ajax({
-        type: "POST",
-        url: "LiquidacionesPendientes.aspx/CorregirAjustesAprobada",
-        data: JSON.stringify({
-            idOrdenViaje: idOrden,
-            descuentoSoles: descS,
-            descuentoDolares: descD,
-            reintegroSoles: reintS,
-            reintegroDolares: reintD,
-            motivo: motivo
-        }),
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-        success: function (response) {
-            var result = response.d;
-            if (result.success) {
-                $('#modalCorregirAjustes').modal('hide');
-                SGV.avisar('\u2705 ' + result.message);
-                _aprobadasCargadas = false;
-                cargarLiquidacionesAprobadas();
-            } else {
-                SGV.avisar('\u274c ' + result.message);
-            }
-            $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar Correcci\u00f3n');
-        },
-        error: function (xhr) {
-            console.error('Error:', xhr.responseText);
-            SGV.avisar('Error al guardar la correcci\u00f3n.');
-            $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar Correcci\u00f3n');
-        }
-    });
-}
-
 // ============================================================
 // === AUTOCOMPLETE DE CONDUCTOR ===
 // ============================================================
@@ -1069,7 +1106,7 @@ function mostrarErrorCampo(selectorInput, selectorError, mensaje) {
 
 function limpiarErroresFormulario() {
     $('.is-invalid').removeClass('is-invalid');
-    $('#errorConductorBuscar,#errorFechaDesde,#errorFechaHasta,#errorPrioridad,#errorRechazoObservaciones,#errorRevertirMotivo,#errorCorregirMotivo').addClass('d-none').text('');
+    $('#errorConductorBuscar,#errorFechaDesde,#errorFechaHasta,#errorPrioridad,#errorRechazoObservaciones,#errorRevertirMotivo,#errorRetirarMotivo').addClass('d-none').text('');
 }
 
 function validarFiltrosPendientesCliente() {

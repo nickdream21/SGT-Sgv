@@ -49,6 +49,11 @@
 .dc-mensajes { margin-bottom: 12px; }
 .dc-mensajes .alert { font-size: 0.9rem; margin-bottom: 0; }
 
+/* Liquidaciones revisadas que esperan la conformidad del conductor */
+.dc-conformar { background: var(--dc-alerta-claro); border: 1px solid #fde68a; border-left: 4px solid var(--dc-alerta); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+.dc-conformar-tit { font-weight: 700; color: var(--dc-alerta); }
+.dc-conformar-txt { font-size: 0.85rem; margin: 4px 0 0; color: #374151; }
+
 /* ---------- Pestañas (control segmentado) ---------- */
 .dc-tabs {
     display: grid;

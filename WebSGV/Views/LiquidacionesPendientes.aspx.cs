@@ -211,125 +211,6 @@ namespace WebSGV.Views
 
         #endregion
 
-        #region Eventos de GridView
-
-        protected void gvLiquidacionesPendientes_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            try
-            {
-                if (!int.TryParse(Convert.ToString(e.CommandArgument), out int idOrdenViaje) || idOrdenViaje <= 0)
-                {
-                    MostrarMensaje("El identificador de la orden no es válido.", "warning");
-                    return;
-                }
-
-                System.Diagnostics.Debug.WriteLine($"Comando: {e.CommandName} - ID: {idOrdenViaje}");
-
-                switch (e.CommandName)
-                {
-                    case "Editar":
-                        EditarLiquidacion(idOrdenViaje);
-                        break;
-
-                    default:
-                        System.Diagnostics.Debug.WriteLine($"⚠️ Comando no reconocido: {e.CommandName}");
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "Error en RowCommand en LiquidacionesPendientes");
-                MostrarMensaje($"Error: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
-            }
-        }
-
-        #endregion
-
-        #region Métodos de Acción
-
-        private void AprobarLiquidacion(int idOrdenViaje)
-        {
-            try
-            {
-                System.Diagnostics.Debug.WriteLine($"=== APROBANDO LIQUIDACIÓN: {idOrdenViaje} ===");
-
-                // Obtener número de orden
-                string numeroOrdenViaje = ObtenerNumeroOrdenViaje(idOrdenViaje);
-
-                if (string.IsNullOrEmpty(numeroOrdenViaje))
-                {
-                    MostrarMensaje("No se pudo obtener el número de orden.", "danger");
-                    return;
-                }
-
-                System.Diagnostics.Debug.WriteLine($"Número Orden: {numeroOrdenViaje}");
-
-                DataTable dt = LiquidacionesPendientesService.Aprobar(numeroOrdenViaje, IdUsuarioActual, DBNull.Value);
-
-                if (dt.Rows.Count > 0)
-                {
-                    int resultado = Convert.ToInt32(dt.Rows[0]["Resultado"]);
-                    string mensaje = dt.Rows[0]["Mensaje"].ToString();
-
-                    if (resultado == 1)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"✅ {mensaje}");
-                    }
-                    else
-                    {
-                        throw new ErrorNegocioException(mensaje);
-                    }
-                }
-
-                AuditoriaHelper.Registrar("APROBAR", "OrdenViaje", idOrdenViaje,
-                    $"Liquidación aprobada - Orden: {numeroOrdenViaje}");
-
-                // Garantizar que el PDF oficial (SGV-CDF-F-05) esté archivado.
-                // Si el conductor firmó, el PDF ya existe desde la firma; este paso
-                // solo lo regenera cuando falta, para que la descarga nunca devuelva 404.
-                try
-                {
-                    GarantizarPdfArchivadoOV(idOrdenViaje, "Aprobación");
-                }
-                catch (Exception exPdf)
-                {
-                    // El fallo al archivar no debe bloquear la aprobación.
-                    LogSGV.Advertencia("No se pudo garantizar el PDF archivado al aprobar (orden {IdOrden}): {Mensaje}", idOrdenViaje, exPdf.Message);
-                }
-
-                MostrarMensaje(
-                    $"Liquidación <strong>{System.Web.HttpUtility.HtmlEncode(numeroOrdenViaje)}</strong> aprobada exitosamente. El viaje ha sido completado.",
-                    "success"
-                );
-
-                // ✅ Recargar directamente sin bloquear el hilo
-                CargarLiquidacionesPendientes();
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "Error al aprobar la liquidación (orden {IdOrden})", idOrdenViaje);
-                MostrarMensaje($"Error al aprobar la liquidación: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
-            }
-        }
-
-        private void EditarLiquidacion(int idOrdenViaje)
-        {
-            try
-            {
-                System.Diagnostics.Debug.WriteLine($"Redirigiendo a editar liquidación: {idOrdenViaje}");
-
-                // Redirigir a la página de edición de orden de viaje
-                Response.Redirect($"~/Views/AgregarOrdenViaje.aspx?id={idOrdenViaje}&modo=editar");
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "Error al redirigir a edición en LiquidacionesPendientes");
-                MostrarMensaje($"Error al redirigir: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
-            }
-        }
-
-        #endregion
-
         #region Rechazar Liquidación
 
         protected void btnConfirmarRechazo_Click(object sender, EventArgs e)
@@ -428,9 +309,6 @@ namespace WebSGV.Views
 
         #region Métodos Auxiliares Adicionales
 
-        private static string ValidarMontosAjuste(decimal descS, decimal descD, decimal reintS, decimal reintD) =>
-            LiquidacionCalculos.ValidarMontosAjuste(descS, descD, reintS, reintD);
-
         private string ObtenerNumeroOrdenViaje(int idOrdenViaje)
         {
             try
@@ -519,82 +397,6 @@ namespace WebSGV.Views
             }
         }
 
-        public static object AprobarConAjustes(int idOrdenViaje, decimal descuentoSoles, decimal descuentoDolares, decimal reintegroSoles, decimal reintegroDolares, string notaAprobacion = null, IngresosEntregados ingresos = null)
-        {
-            try
-            {
-                System.Diagnostics.Debug.WriteLine($"=== APROBAR CON AJUSTES: {idOrdenViaje} ===");
-
-                if (idOrdenViaje <= 0)
-                    return new { success = false, message = "El ID de la orden de viaje es inválido." };
-
-                if (!PuedeGestionarLiquidaciones())
-                    return new { success = false, message = "No tiene permisos para aprobar liquidaciones." };
-
-                int idUsuario = 0;
-                if (System.Web.HttpContext.Current.Session["UsuarioID"] != null)
-                    idUsuario = Convert.ToInt32(System.Web.HttpContext.Current.Session["UsuarioID"]);
-
-                if (idUsuario == 0)
-                    return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
-
-                string errorMonto = ValidarMontosAjuste(descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares);
-                if (errorMonto != null)
-                    return new { success = false, message = errorMonto };
-
-                errorMonto = LiquidacionCalculos.ValidarIngresosEntregados(ingresos);
-                if (errorMonto != null)
-                    return new { success = false, message = errorMonto };
-                if (ingresos != null)
-                {
-                    ingresos.DescDespacho = NormalizarTexto(ingresos.DescDespacho, 250);
-                    ingresos.DescMensualidad = NormalizarTexto(ingresos.DescMensualidad, 250);
-                    ingresos.DescPrestamo = NormalizarTexto(ingresos.DescPrestamo, 250);
-                    ingresos.DescOtros = NormalizarTexto(ingresos.DescOtros, 250);
-                }
-
-                notaAprobacion = NormalizarTexto(notaAprobacion, MaxLongitudNotaAprobacion);
-
-                // Transacción (UPSERT ajustes + sp_AprobarLiquidacion) en el Service;
-                // la sesión/validación de montos y el objeto de respuesta quedan aquí.
-                var resultado = LiquidacionesPendientesService.AprobarConAjustes(
-                    idOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares,
-                    notaAprobacion, idUsuario, ingresos);
-
-                if (!resultado.Exito)
-                    return new { success = false, message = resultado.Mensaje };
-
-                string numeroOrdenViaje = resultado.NumeroOrdenViaje;
-
-                System.Diagnostics.Debug.WriteLine($"✅ Liquidación {numeroOrdenViaje} aprobada con éxito");
-
-                AuditoriaHelper.Registrar("APROBAR", "OrdenViaje", idOrdenViaje,
-                    $"Liquidación aprobada - Orden: {numeroOrdenViaje}. Descuento S/ {descuentoSoles:0.00} $ {descuentoDolares:0.00}; " +
-                    $"Reintegro S/ {reintegroSoles:0.00} $ {reintegroDolares:0.00}" +
-                    (ingresos != null
-                        ? $"; Entregado al conductor S/ {ingresos.DespachoSoles + ingresos.MensualidadSoles + ingresos.PrestamoSoles + ingresos.OtrosSoles:0.00} " +
-                          $"$ {ingresos.DespachoDolares + ingresos.MensualidadDolares + ingresos.PrestamoDolares + ingresos.OtrosDolares:0.00}"
-                        : ""));
-
-                // Garantizar PDF archivado también en flujo con ajustes (modal).
-                try
-                {
-                    GarantizarPdfArchivadoOV(idOrdenViaje, "AprobaciónConAjustes");
-                }
-                catch (Exception exPdf)
-                {
-                    LogSGV.Advertencia("No se pudo garantizar el PDF archivado al aprobar con ajustes (orden {IdOrden}): {Mensaje}", idOrdenViaje, exPdf.Message);
-                }
-
-                return new { success = true, message = $"Liquidación {numeroOrdenViaje} aprobada exitosamente. El viaje ha sido completado." };
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "Error en AprobarConAjustes (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "Error interno al aprobar. Contacte al administrador." };
-            }
-        }
-
         #endregion
 
         #region Eventos de Filtros
@@ -644,6 +446,15 @@ namespace WebSGV.Views
         #endregion
 
         #region Métodos de Formato para GridView
+
+        /// <summary>Etiqueta para una liquidación que el conductor observó (no dio su conformidad).</summary>
+        protected string EtiquetaObservada(object observacion)
+        {
+            string texto = observacion == null || observacion == DBNull.Value ? "" : observacion.ToString().Trim();
+            if (texto.Length == 0) return "";
+            return "<span class=\"sgv-estado sgv-estado-alerta d-inline-block mt-1\" title=\"" + System.Web.HttpUtility.HtmlAttributeEncode(texto) +
+                   "\"><i class=\"fas fa-comment-dots mr-1\"></i>Observada por el conductor</span>";
+        }
 
         // Positivo en verde, negativo en rojo, cero sin color.
         protected string ClaseMonto(object monto)
@@ -700,6 +511,8 @@ namespace WebSGV.Views
             public decimal ReintegroDolares { get; set; }
             public decimal BalanceSoles { get; set; }
             public decimal BalanceDolares { get; set; }
+            /// <summary>Fecha de la conformidad del conductor (vacía en órdenes registradas por la administración).</summary>
+            public string FechaConformidad { get; set; }
         }
 
         [WebMethod(EnableSession = true)]
@@ -755,7 +568,9 @@ namespace WebSGV.Views
                                     ReintegroSoles = reintS,
                                     ReintegroDolares = reintD,
                                     BalanceSoles = (ingresosSoles - gastosSoles) - descS + reintS,
-                                    BalanceDolares = (ingresosDolares - gastosDolares) - descD + reintD
+                                    BalanceDolares = (ingresosDolares - gastosDolares) - descD + reintD,
+                                    FechaConformidad = reader["fechaConformidad"] != DBNull.Value
+                                        ? Convert.ToDateTime(reader["fechaConformidad"]).ToString("dd/MM/yyyy HH:mm") : ""
                                 });
                     }
 
@@ -769,55 +584,112 @@ namespace WebSGV.Views
             }
         }
 
+        /// <summary>
+        /// Revierte una liquidación aprobada: anula la revisión y la conformidad (append-only) y la
+        /// devuelve a pendientes. Al aprobarla de nuevo el conductor vuelve a firmar su conformidad:
+        /// los montos de una liquidación cerrada nunca cambian sin la firma del conductor.
+        /// </summary>
         [WebMethod(EnableSession = true)]
-        public static object RevertirAprobacion(int idOrdenViaje, string motivo)
+        public static object RevertirAprobacion(int idOrdenViaje, string motivo) =>
+            DevolverARevisionAdmin(idOrdenViaje, motivo, "REVERSION");
+
+        /// <summary>
+        /// Retira el envío al conductor de una liquidación que aún no tiene su conformidad (por
+        /// ejemplo, para corregir un monto): vuelve a pendientes y la revisión queda anulada.
+        /// </summary>
+        [WebMethod(EnableSession = true)]
+        public static object RetirarEnvioConformidad(int idOrdenViaje, string motivo) =>
+            DevolverARevisionAdmin(idOrdenViaje, motivo, "RETIRO");
+
+        private static object DevolverARevisionAdmin(int idOrdenViaje, string motivo, string origen)
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"=== REVERTIR APROBACIÓN: {idOrdenViaje} ===");
-
                 if (idOrdenViaje <= 0)
                     return new { success = false, message = "El ID de la orden de viaje es inválido." };
-
                 if (!PuedeGestionarLiquidaciones())
-                    return new { success = false, message = "No tiene permisos para revertir aprobaciones." };
+                    return new { success = false, message = "No tiene permisos para modificar liquidaciones." };
 
                 motivo = NormalizarTexto(motivo, MaxLongitudMotivo);
-                if (string.IsNullOrWhiteSpace(motivo) || motivo.Trim().Length < 10)
-                    return new { success = false, message = "El motivo de reversión debe tener al menos 10 caracteres." };
+                if (string.IsNullOrWhiteSpace(motivo) || motivo.Length < ReglasFirma.MinimoMotivo)
+                    return new { success = false, message = "El motivo debe tener al menos " + ReglasFirma.MinimoMotivo + " caracteres." };
 
-                int idUsuario = 0;
-                if (System.Web.HttpContext.Current.Session["UsuarioID"] != null)
-                    idUsuario = Convert.ToInt32(System.Web.HttpContext.Current.Session["UsuarioID"]);
-
-                if (idUsuario == 0)
+                var ctx = System.Web.HttpContext.Current;
+                var contexto = ContextoFirmaActual(ctx);
+                if (contexto.IdUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
 
-                string numeroOrdenViaje = null;
+                var r = FirmaService.DevolverARevision(idOrdenViaje, origen, contexto,
+                    SesionHelper.ObtenerNombre(ctx.Session), motivo);
+                if (r.Exito)
+                    AuditoriaHelper.Registrar(origen == "REVERSION" ? "REVERTIR" : "RETIRAR_ENVIO_CONFORMIDAD",
+                        "OrdenViaje", idOrdenViaje, r.Mensaje + " Motivo: " + motivo);
 
-                // 1. Obtener datos de la orden y verificar que esté COMPLETADO
-                object result = LiquidacionesPendientesService.ObtenerNumeroOrdenCompletado(idOrdenViaje);
-                if (result == null || result == DBNull.Value)
-                    return new { success = false, message = "La orden no se encontró o ya no está en estado COMPLETADO." };
-                numeroOrdenViaje = result.ToString();
-
-                // 2. Revertir estado de la OrdenViaje a PENDIENTE
-                int affected = LiquidacionesPendientesService.RevertirEstado(idOrdenViaje, motivo);
-                if (affected == 0)
-                    return new { success = false, message = "No se pudo revertir. Es posible que otro usuario ya haya modificado esta liquidación." };
-
-                System.Diagnostics.Debug.WriteLine($"✅ Liquidación {numeroOrdenViaje} revertida por usuario {idUsuario}. Motivo: {motivo}");
-
-                AuditoriaHelper.Registrar("REVERTIR", "OrdenViaje", idOrdenViaje,
-                    $"Reversión de aprobación - Orden: {numeroOrdenViaje}. Motivo: {motivo}");
-
-                return new { success = true, message = $"Liquidación {numeroOrdenViaje} revertida exitosamente. Ahora aparecerá en la lista de pendientes para re-aprobación." };
+                return new { success = r.Exito, message = r.Mensaje };
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al revertir la aprobación (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "Error interno al revertir. Contacte al administrador." };
+                LogSGV.Error(ex, "Error al devolver a revisión la liquidación (orden {IdOrden}, {Origen})", idOrdenViaje, origen);
+                return new { success = false, message = "No se pudo completar la operación: " + MensajeErrorHelper.ParaUsuario(ex) };
             }
+        }
+
+        public class LiquidacionPorConformarItem
+        {
+            public int IdOrdenViaje { get; set; }
+            public string NumeroOrdenViaje { get; set; }
+            public string NombreConductor { get; set; }
+            public string PlacaTracto { get; set; }
+            public string PlacaCarreta { get; set; }
+            public string FechaSalida { get; set; }
+            public string FechaLlegada { get; set; }
+            public string FechaEnvio { get; set; }
+            public int HorasEsperando { get; set; }
+            public decimal DescuentoSoles { get; set; }
+            public decimal DescuentoDolares { get; set; }
+            public decimal ReintegroSoles { get; set; }
+            public decimal ReintegroDolares { get; set; }
+            public decimal SaldoSoles { get; set; }
+            public decimal SaldoDolares { get; set; }
+        }
+
+        /// <summary>Liquidaciones revisadas que esperan la conformidad del conductor.</summary>
+        [WebMethod(EnableSession = true)]
+        public static List<LiquidacionPorConformarItem> ObtenerLiquidacionesPorConformar(int idConductor)
+        {
+            var lista = new List<LiquidacionPorConformarItem>();
+            if (!SecurityHelper.TieneSesionActiva() || !SecurityHelper.PuedeConsultarLiquidacionesGlobales() || idConductor < 0)
+                return lista;
+
+            DateTime ahora = FechaHelper.Ahora();
+            foreach (DataRow r in LiquidacionesPendientesService.ObtenerPorConformar(idConductor).Rows)
+            {
+                decimal ingS = Convert.ToDecimal(r["IngresosSoles"]) + Convert.ToDecimal(r["IngresosAdSoles"]);
+                decimal ingD = Convert.ToDecimal(r["IngresosDolares"]) + Convert.ToDecimal(r["IngresosAdDolares"]);
+                decimal gasS = Convert.ToDecimal(r["GastosSoles"]) + Convert.ToDecimal(r["GastosAdSoles"]);
+                decimal gasD = Convert.ToDecimal(r["GastosDolares"]) + Convert.ToDecimal(r["GastosAdDolares"]);
+                decimal descS = Convert.ToDecimal(r["DescuentoSoles"]), descD = Convert.ToDecimal(r["DescuentoDolares"]);
+                decimal reintS = Convert.ToDecimal(r["ReintegroSoles"]), reintD = Convert.ToDecimal(r["ReintegroDolares"]);
+                DateTime? envio = r["fechaEnvioConformidad"] != DBNull.Value ? Convert.ToDateTime(r["fechaEnvioConformidad"]) : (DateTime?)null;
+
+                lista.Add(new LiquidacionPorConformarItem
+                {
+                    IdOrdenViaje = Convert.ToInt32(r["idOrdenViaje"]),
+                    NumeroOrdenViaje = r["numeroOrdenViaje"].ToString(),
+                    NombreConductor = r["NombreConductor"].ToString(),
+                    PlacaTracto = r["placaTracto"].ToString(),
+                    PlacaCarreta = r["placaCarreta"].ToString(),
+                    FechaSalida = r["fechaSalida"] != DBNull.Value ? Convert.ToDateTime(r["fechaSalida"]).ToString("dd/MM/yyyy") : "—",
+                    FechaLlegada = r["fechaLlegada"] != DBNull.Value ? Convert.ToDateTime(r["fechaLlegada"]).ToString("dd/MM/yyyy") : "—",
+                    FechaEnvio = envio.HasValue ? envio.Value.ToString("dd/MM/yyyy HH:mm") : "—",
+                    HorasEsperando = envio.HasValue ? Math.Max(0, (int)(ahora - envio.Value).TotalHours) : 0,
+                    DescuentoSoles = descS, DescuentoDolares = descD,
+                    ReintegroSoles = reintS, ReintegroDolares = reintD,
+                    SaldoSoles = ingS - gasS - descS + reintS,
+                    SaldoDolares = ingD - gasD - descD + reintD
+                });
+            }
+            return lista;
         }
 
         /// <summary>
@@ -917,94 +789,41 @@ namespace WebSGV.Views
             }
         }
 
-        [WebMethod(EnableSession = true)]
-        public static object CorregirAjustesAprobada(int idOrdenViaje, decimal descuentoSoles, decimal descuentoDolares, decimal reintegroSoles, decimal reintegroDolares, string motivo)
-        {
-            try
-            {
-                System.Diagnostics.Debug.WriteLine($"=== CORREGIR AJUSTES APROBADA: {idOrdenViaje} ===");
-
-                if (idOrdenViaje <= 0)
-                    return new { success = false, message = "El ID de la orden de viaje es inválido." };
-
-                if (!PuedeGestionarLiquidaciones())
-                    return new { success = false, message = "No tiene permisos para corregir ajustes." };
-
-                int idUsuario = 0;
-                if (System.Web.HttpContext.Current.Session["UsuarioID"] != null)
-                    idUsuario = Convert.ToInt32(System.Web.HttpContext.Current.Session["UsuarioID"]);
-
-                if (idUsuario == 0)
-                    return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
-
-                string errorMonto = ValidarMontosAjuste(descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares);
-                if (errorMonto != null)
-                    return new { success = false, message = errorMonto };
-
-                motivo = NormalizarTexto(motivo, MaxLongitudMotivo);
-                if (string.IsNullOrWhiteSpace(motivo) || motivo.Trim().Length < 10)
-                    return new { success = false, message = "El motivo de corrección debe tener al menos 10 caracteres." };
-
-                // Transacción (UPSERT ajustes + registro en observaciones) en el Service;
-                // la sesión/validación de montos/motivo y el objeto de respuesta quedan aquí.
-                var resultado = LiquidacionesPendientesService.CorregirAjustesAprobada(
-                    idOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares,
-                    motivo, idUsuario);
-
-                if (!resultado.OrdenEncontrada)
-                    return new { success = false, message = "No se encontró la orden de viaje." };
-
-                return new { success = true, message = $"Ajustes de la liquidación {resultado.NumeroOrdenViaje} corregidos exitosamente. Los cambios se reflejan en los reportes." };
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "Error al corregir ajustes de la liquidación aprobada (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "Error interno al corregir ajustes. Contacte al administrador." };
-            }
-        }
-
         #endregion
 
         #region WebMethods - Firma Digital (Fase 2.C)
 
         /// <summary>
-        /// Registra la firma del conductor (declaración jurada al enviar la
-        /// liquidación). Append-only: no modifica ni elimina firmas previas.
-        /// Se invoca desde el UI de canvas en móvil/web.
+        /// Firma del conductor sobre su declaración jurada de gastos. Exige la contraseña además
+        /// de la sesión. Append-only: no modifica ni elimina firmas previas.
         /// </summary>
         /// <param name="idOrdenViaje">Identificador de la orden a firmar.</param>
         /// <param name="firmaPngBase64">PNG del trazo canvas en Base64 (con o sin prefijo data:image/...).</param>
+        /// <param name="contrasena">Contraseña del conductor (confirma que es él quien firma).</param>
         [WebMethod(EnableSession = true)]
-        public static object RegistrarFirmaConductor(int idOrdenViaje, string firmaPngBase64)
+        public static object RegistrarFirmaConductor(int idOrdenViaje, string firmaPngBase64, string contrasena)
         {
             try
             {
                 var ctx = System.Web.HttpContext.Current;
-                int idUsuario = SesionHelper.ObtenerUsuarioId(ctx.Session);
+                var contexto = ContextoFirmaActual(ctx);
                 string nombre = SesionHelper.ObtenerNombre(ctx.Session);
-                if (idUsuario == 0)
+                if (contexto.IdUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
                 if (!SecurityHelper.EsConductor())
                     return new { success = false, message = "Sólo un conductor autenticado puede firmar esta liquidación." };
-                if (!LiquidacionesPendientesService.OrdenPerteneceAUsuarioConductor(idOrdenViaje, idUsuario))
+                if (!LiquidacionesPendientesService.OrdenPerteneceAUsuarioConductor(idOrdenViaje, contexto.IdUsuario))
                     return new { success = false, message = "La liquidación no pertenece al conductor autenticado." };
 
                 byte[] pngBytes = DecodificarPngBase64(firmaPngBase64);
                 if (pngBytes == null)
                     return new { success = false, message = "La firma recibida es inválida." };
 
-                string ip = ObtenerIpCliente(ctx);
-                string ua = ctx.Request.UserAgent ?? "";
+                string errorClave = ReautenticacionHelper.Verificar(contexto.IdUsuario, contrasena);
+                if (errorClave != null)
+                    return new { success = false, message = errorClave, contrasenaIncorrecta = true };
 
-                var svc = new WebSGV.Services.FirmaService();
-                var r = svc.RegistrarFirmaConductor(
-                    idOrdenViaje: idOrdenViaje,
-                    idUsuarioFirmante: idUsuario,
-                    dniFirmante: null,
-                    nombreFirmante: nombre,
-                    imagenTrazoPng: pngBytes,
-                    ipOrigen: ip,
-                    userAgent: ua);
+                var r = new FirmaService().RegistrarDeclaracionConductor(idOrdenViaje, contexto, pngBytes);
 
                 if (r.Exito)
                 {
@@ -1013,7 +832,7 @@ namespace WebSGV.Views
                         ? idOrdenViaje.ToString()
                         : numeroObj.ToString();
                     AuditoriaHelper.Registrar("FIRMAR", "OrdenViaje", idOrdenViaje,
-                        "Conductor firmó y envió la liquidación " + numeroOrden);
+                        "Conductor firmó su declaración jurada de la liquidación " + numeroOrden + " (documento " + r.CodigoVerificacion + ")");
                     NotificacionService.NotificarLiquidacionPendiente(numeroOrden, nombre);
                 }
 
@@ -1023,7 +842,7 @@ namespace WebSGV.Views
                     message = r.Mensaje,
                     idFirma = r.IdFirma,
                     hashPdf = r.HashPdf,
-                    rutaPdf = r.RutaRelativa
+                    codigo = r.CodigoVerificacion
                 };
             }
             catch (Exception ex)
@@ -1034,17 +853,15 @@ namespace WebSGV.Views
         }
 
         /// <summary>
-        /// Aprueba la liquidación y registra la firma administrativa de Nivel C
-        /// (constancia con credenciales autenticadas). Ejecuta además el flujo
-        /// existente de aprobación (sp_AprobarLiquidacion) con ajustes opcionales.
+        /// Cierra la revisión de la administración: registra el dinero entregado y los ajustes con
+        /// su motivo, firma la revisión (constancia con credenciales, PDF de la liquidación final) y
+        /// envía la liquidación al conductor para su conformidad. El viaje se completa cuando el
+        /// conductor firma su conformidad, no aquí.
         /// </summary>
         [WebMethod(EnableSession = true)]
-        public static object AprobarLiquidacionConFirma(
+        public static object EnviarAConformidad(
             int idOrdenViaje,
-            decimal descuentoSoles,
-            decimal descuentoDolares,
-            decimal reintegroSoles,
-            decimal reintegroDolares,
+            AjustesLiquidacion ajustes,
             string notaAprobacion = null,
             IngresosEntregados ingresos = null)
         {
@@ -1052,77 +869,101 @@ namespace WebSGV.Views
             {
                 if (idOrdenViaje <= 0)
                     return new { success = false, message = "El ID de la orden de viaje es inválido." };
-
                 if (!PuedeGestionarLiquidaciones())
                     return new { success = false, message = "No tiene permisos para aprobar liquidaciones." };
 
                 var ctx = System.Web.HttpContext.Current;
-                int idUsuario = SesionHelper.ObtenerUsuarioId(ctx.Session);
+                var contexto = ContextoFirmaActual(ctx);
                 string nombre = SesionHelper.ObtenerNombre(ctx.Session);
-                string rol    = SesionHelper.ObtenerRolNormalizado(ctx.Session);
-
-                if (idUsuario == 0)
+                if (contexto.IdUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
-                if (rol == "CONDUCTOR")
+                if (SecurityHelper.EsConductor())
                     return new { success = false, message = "Un conductor no puede aprobar liquidaciones." };
 
+                ajustes = ajustes ?? new AjustesLiquidacion();
+                ajustes.MotivoDescuento = NormalizarTexto(ajustes.MotivoDescuento, ReglasFirma.MaximoMotivo);
+                ajustes.MotivoReintegro = NormalizarTexto(ajustes.MotivoReintegro, ReglasFirma.MaximoMotivo);
                 notaAprobacion = NormalizarTexto(notaAprobacion, MaxLongitudNotaAprobacion);
 
-                // 1) Ejecutar el flujo de aprobación existente (ajustes + sp_AprobarLiquidacion)
-                var resAprobacion = AprobarConAjustes(idOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares, notaAprobacion, ingresos)
-                    as dynamic;
-                bool okAprobacion = resAprobacion != null && (bool)resAprobacion.success;
-                if (!okAprobacion)
-                    return resAprobacion;
+                string error = LiquidacionCalculos.ValidarIngresosEntregados(ingresos);
+                if (error != null)
+                    return new { success = false, message = error };
+                if (ingresos != null)
+                {
+                    ingresos.DescDespacho = NormalizarTexto(ingresos.DescDespacho, 250);
+                    ingresos.DescMensualidad = NormalizarTexto(ingresos.DescMensualidad, 250);
+                    ingresos.DescPrestamo = NormalizarTexto(ingresos.DescPrestamo, 250);
+                    ingresos.DescOtros = NormalizarTexto(ingresos.DescOtros, 250);
+                }
 
-                // 2) Registrar firma administrativa Nivel C (append-only)
-                string ip = ObtenerIpCliente(ctx);
-                string ua = ctx.Request.UserAgent ?? "";
+                // 1) Transacción: ajustes con motivo + dinero entregado + estado POR_CONFORMAR.
+                var envio = LiquidacionesPendientesService.EnviarAConformidad(
+                    idOrdenViaje, ajustes, notaAprobacion, contexto.IdUsuario, ingresos);
+                if (!envio.Exito)
+                    return new { success = false, message = envio.Mensaje };
 
-                var svc = new WebSGV.Services.FirmaService();
-                var r = svc.RegistrarFirmaAdmin(
-                    idOrdenViaje: idOrdenViaje,
-                    idUsuarioFirmante: idUsuario,
-                    dniFirmante: null,
-                    nombreFirmante: nombre,
-                    ipOrigen: ip,
-                    userAgent: ua);
+                // 2) Firma de revisión con su PDF. Si falla, la liquidación vuelve a pendientes
+                //    (sin revisión no puede quedar esperando la conformidad).
+                ResultadoFirma r;
+                try
+                {
+                    r = new FirmaService().RegistrarRevisionAdmin(idOrdenViaje, contexto);
+                }
+                catch (Exception exFirma)
+                {
+                    LogSGV.Error(exFirma, "Falló la firma de revisión (orden {IdOrden})", idOrdenViaje);
+                    r = new ResultadoFirma { Exito = false, Mensaje = MensajeErrorHelper.ParaUsuario(exFirma) };
+                }
 
                 if (!r.Exito)
                 {
-                    string motivoReversion = "Reversión automática: no se pudo registrar la firma administrativa. " + r.Mensaje;
-                    int filasRevertidas = LiquidacionesPendientesService.RevertirEstado(idOrdenViaje, motivoReversion);
-
-                    LogSGV.Advertencia(
-                        "Falló la firma administrativa de la orden {IdOrden}. Reversión aplicada: {Revertida}. Motivo: {Mensaje}",
-                        idOrdenViaje, filasRevertidas > 0, r.Mensaje);
-
+                    var devuelta = FirmaService.DevolverARevision(idOrdenViaje, "RETIRO", contexto, nombre,
+                        "Retiro automático: no se pudo registrar la firma de revisión. " + r.Mensaje);
+                    LogSGV.Advertencia("Falló la firma de revisión de la orden {IdOrden}. Devuelta a pendientes: {Devuelta}. Motivo: {Mensaje}",
+                        idOrdenViaje, devuelta.Exito, r.Mensaje);
                     return new
                     {
                         success = false,
-                        message = filasRevertidas > 0
-                            ? "No se completó la aprobación porque falló la firma administrativa. La liquidación volvió a pendiente; puede intentarlo nuevamente."
-                            : "La liquidación fue aprobada, pero falló la firma administrativa y no se pudo revertir automáticamente. Contacte al administrador.",
-                        firmaAdmin = false
+                        message = devuelta.Exito
+                            ? "No se completó la aprobación porque falló la firma de revisión. La liquidación sigue pendiente; puede intentarlo nuevamente."
+                            : "La liquidación quedó enviada pero falló la firma de revisión. Use \"Retirar envío\" en la pestaña Por conformar y vuelva a aprobarla."
                     };
                 }
+
+                AuditoriaHelper.Registrar("ENVIAR_CONFORMIDAD", "OrdenViaje", idOrdenViaje,
+                    $"Liquidación {envio.NumeroOrdenViaje} revisada y enviada al conductor (documento {r.CodigoVerificacion}). " +
+                    $"Descuento S/ {ajustes.DescuentoSoles:0.00} $ {ajustes.DescuentoDolares:0.00}" +
+                    (ajustes.HayDescuento ? $" ({ajustes.MotivoDescuento})" : "") +
+                    $"; Reintegro S/ {ajustes.ReintegroSoles:0.00} $ {ajustes.ReintegroDolares:0.00}" +
+                    (ajustes.HayReintegro ? $" ({ajustes.MotivoReintegro})" : "") +
+                    (ingresos != null
+                        ? $"; Entregado al conductor S/ {ingresos.DespachoSoles + ingresos.MensualidadSoles + ingresos.PrestamoSoles + ingresos.OtrosSoles:0.00} " +
+                          $"$ {ingresos.DespachoDolares + ingresos.MensualidadDolares + ingresos.PrestamoDolares + ingresos.OtrosDolares:0.00}"
+                        : ""));
+
+                NotificacionService.NotificarLiquidacionPorConformar(idOrdenViaje, envio.NumeroOrdenViaje);
 
                 return new
                 {
                     success = true,
-                    message = (string)resAprobacion.message + " Firma administrativa registrada (id=" + r.IdFirma + ").",
-                    firmaAdmin = true,
-                    idFirma = r.IdFirma,
-                    hashPdf = r.HashPdf,
-                    rutaPdf = r.RutaRelativa
+                    message = $"Liquidación {envio.NumeroOrdenViaje} revisada y enviada al conductor. El viaje se completará cuando él firme su conformidad.",
+                    codigo = r.CodigoVerificacion
                 };
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al aprobar la liquidación con firma (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "Error al aprobar con firma: " + MensajeErrorHelper.ParaUsuario(ex) };
+                LogSGV.Error(ex, "Error al enviar a conformidad la liquidación (orden {IdOrden})", idOrdenViaje);
+                return new { success = false, message = "Error al aprobar: " + MensajeErrorHelper.ParaUsuario(ex) };
             }
         }
+
+        /// <summary>Usuario, IP y navegador del request actual para registrar una firma.</summary>
+        internal static ContextoFirma ContextoFirmaActual(System.Web.HttpContext ctx) => new ContextoFirma
+        {
+            IdUsuario = SesionHelper.ObtenerUsuarioId(ctx.Session),
+            Ip = ObtenerIpCliente(ctx),
+            UserAgent = ctx.Request.UserAgent ?? ""
+        };
 
         /// <summary>
         /// Rechaza una liquidación pendiente. No registra firma (el conductor
@@ -1276,80 +1117,12 @@ namespace WebSGV.Views
 
         #endregion
 
-        #region PDF de Orden de Viaje (archivado y descarga bajo demanda)
+        #region PDF de Orden de Viaje (archivo y descarga)
 
         /// <summary>
-        /// Garantiza que la Orden de Viaje tenga su PDF oficial (SGV-CDF-F-05)
-        /// archivado en disco y registrado en la tabla OrdenViaje. Si ya existe,
-        /// no hace nada. Si falta, lo regenera a partir del DTO de liquidación
-        /// (sin firma embebida — se usa la constancia) y persiste ruta+hash.
-        ///
-        /// Esta estrategia es defensiva: el flujo normal archiva el PDF cuando
-        /// el conductor firma (FirmaService.RegistrarFirmaConductor). Este método
-        /// cubre el caso de aprobaciones administrativas en las que la firma
-        /// pueda no haberse completado o el archivo físico se haya extraviado.
-        /// </summary>
-        private static string GarantizarPdfArchivadoOV(int idOrdenViaje, string origenLog)
-        {
-            string rutaExistente = LiquidacionesPendientesService.ObtenerRutaPdfArchivado(idOrdenViaje);
-
-            // Si hay ruta y el archivo físico existe, reusamos.
-            if (!string.IsNullOrEmpty(rutaExistente))
-            {
-                string fisica = ResolverRutaFisicaPdf(rutaExistente);
-                if (!string.IsNullOrEmpty(fisica) && File.Exists(fisica))
-                {
-                    return rutaExistente;
-                }
-            }
-
-            // Regenerar: obtener DTO y llamar al servicio.
-            var detalle = ObtenerDetalleLiquidacion(idOrdenViaje);
-            if (detalle == null)
-                throw new InvalidOperationException("No se pudo cargar el detalle para generar el PDF.");
-
-            // Con la firma vigente del conductor (si la hay), para no regenerar un PDF sin firma.
-            var firmaSvc = new FirmaService();
-            var svc = new PdfOrdenViajeService();
-            var pdf = svc.GenerarYArchivar(detalle,
-                firmaConductorPng: firmaSvc.ObtenerTrazoConductor(idOrdenViaje),
-                archivar: true,
-                fechaFirmaConductor: firmaSvc.ObtenerFechaFirmaConductor(idOrdenViaje)?.ToString("dd/MM/yyyy HH:mm"));
-
-            // Persistir ruta y hash si la columna acepta (idempotente: sobrescribe
-            // si ya había una ruta huérfana apuntando a un archivo inexistente).
-            LiquidacionesPendientesService.GuardarRutaPdfArchivado(idOrdenViaje, pdf.RutaRelativa, pdf.Hash);
-
-            System.Diagnostics.Debug.WriteLine(
-                $"📄 [{origenLog}] PDF archivado para OV id={idOrdenViaje}: {pdf.RutaRelativa}");
-
-            return pdf.RutaRelativa;
-        }
-
-        /// <summary>
-        /// Resuelve la ruta física absoluta de un PDF archivado, a partir de
-        /// una ruta relativa a <c>~/App_Data/</c>.
-        /// </summary>
-        private static string ResolverRutaFisicaPdf(string rutaRelativa)
-        {
-            if (string.IsNullOrEmpty(rutaRelativa)) return null;
-
-            string appData = HostingEnvironment.MapPath("~/App_Data");
-            if (string.IsNullOrEmpty(appData)) return null;
-
-            string limpia = rutaRelativa
-                .Replace("~/App_Data/", "")
-                .Replace("~/App_Data\\", "")
-                .TrimStart('/', '\\');
-
-            return Path.Combine(appData, limpia.Replace('/', Path.DirectorySeparatorChar));
-        }
-
-        /// <summary>
-        /// WebMethod invocado desde el front para obtener la URL de descarga
-        /// del PDF oficial de una Orden de Viaje. Genera el PDF bajo demanda
-        /// si aún no existe. Devuelve la ruta a la página handler que
-        /// streameará el archivo.
+        /// URL de descarga del PDF vigente de la orden. Comprueba antes que el documento exista y
+        /// no haya sido alterado (un documento firmado nunca se regenera: ver
+        /// <see cref="ArchivoOrdenViajeService"/>), para avisar aquí en vez de abrir una pestaña con error.
         /// </summary>
         [WebMethod(EnableSession = true)]
         public static object ObtenerUrlPdfOrdenViaje(int idOrdenViaje)
@@ -1364,10 +1137,9 @@ namespace WebSGV.Views
                 if (!PuedeConsultarOrden(idOrdenViaje))
                     return new { success = false, message = "No tiene permisos para consultar este documento." };
 
-                GarantizarPdfArchivadoOV(idOrdenViaje, "DescargaBajoDemanda");
-
-                AuditoriaHelper.Registrar("DESCARGAR_PDF", "OrdenViaje", idOrdenViaje,
-                    $"Descarga de PDF SGV-CDF-F-05 solicitada por usuario {idUsuario}");
+                var pdf = ArchivoOrdenViajeService.Obtener(idOrdenViaje);
+                if (!pdf.Ok)
+                    return new { success = false, message = pdf.Error };
 
                 string url = System.Web.VirtualPathUtility.ToAbsolute(
                     "~/Views/DescargarPdfOrdenViaje.aspx?id=" + idOrdenViaje);
@@ -1375,11 +1147,10 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ ObtenerUrlPdfOrdenViaje: {ex.Message}");
+                LogSGV.Error(ex, "No se pudo preparar el PDF de la orden {IdOrden}", idOrdenViaje);
                 return new { success = false, message = "No se pudo preparar el PDF: " + MensajeErrorHelper.ParaUsuario(ex) };
             }
         }
-
         #endregion
     }
 }

@@ -1,0 +1,27 @@
+/* Conformidad del conductor con la liquidación final. Reutiliza los estilos de FirmarLiquidacion.css. */
+
+.cl-cargando { text-align: center; color: var(--gris-600); padding: 40px 0; }
+
+.cl-tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
+.cl-tabla th { font-size: 11px; text-transform: uppercase; color: var(--gris-600); font-weight: 600; padding: 6px 4px; border-bottom: 2px solid var(--gris-300); }
+.cl-tabla td { padding: 7px 4px; border-bottom: 1px solid var(--gris-300); vertical-align: top; }
+.cl-tabla .num { text-align: right; white-space: nowrap; }
+.cl-tabla .sub td { font-size: 12px; color: var(--gris-600); padding-top: 3px; padding-bottom: 3px; }
+.cl-tabla .sub td:first-child { padding-left: 14px; }
+.cl-tabla .total td { font-weight: 700; }
+.cl-tabla .saldo td { font-weight: 700; font-size: 16px; background: var(--azul-claro); border-bottom: 2px solid var(--azul); }
+.cl-tabla .desc td { color: #B91C1C; }
+.cl-tabla .reint td { color: #166534; }
+
+.cl-letras { margin-top: 10px; font-size: 12px; color: var(--gris-600); }
+.cl-pdf { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--azul); }
+
+.cl-ajuste { border-left: 4px solid #B91C1C; background: #FEF2F2; border-radius: 4px; padding: 10px 12px; margin-bottom: 10px; }
+.cl-ajuste.reintegro { border-left-color: #166534; background: #F0FDF4; }
+.cl-ajuste .tipo { font-weight: 700; font-size: 13px; }
+.cl-ajuste .monto { float: right; font-weight: 700; }
+.cl-ajuste .motivo { font-size: 13px; margin-top: 4px; color: #374151; }
+
+.cl-desacuerdo { margin-top: 18px; text-align: center; }
+.cl-desacuerdo label { display: block; text-align: left; font-size: 13px; color: var(--gris-600); margin: 12px 0 6px; }
+.cl-btn-observar { margin-top: 10px; background: #FFFBEB; border-color: #F59E0B; color: #92400E; }

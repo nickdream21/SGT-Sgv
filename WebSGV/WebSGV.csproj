@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -333,6 +333,8 @@
     <Content Include="Content\paginas\Exportacion\DashboardExportacion.css" />
     <Content Include="Content\paginas\Exportacion\SeguimientoExportacion.css" />
     <Content Include="Content\paginas\FirmarLiquidacion.css" />
+    <Content Include="Content\paginas\ConformarLiquidacion.css" />
+    <Content Include="Content\paginas\VerificarDocumento.css" />
     <Content Include="Content\paginas\Inicio.css" />
     <Content Include="Content\paginas\LiquidacionesAprobadasContabilidad.css" />
     <Content Include="Content\paginas\LiquidacionesPendientes.css" />
@@ -371,6 +373,9 @@
     <Content Include="Scripts\paginas\Exportacion\SeguimientoViaje.js" />
     <Content Include="Scripts\paginas\Exportacion\SeguimientoViajeMapa.js" />
     <Content Include="Scripts\paginas\FirmarLiquidacion.js" />
+    <Content Include="Scripts\paginas\FirmaCanvas.js" />
+    <Content Include="Scripts\paginas\ConformarLiquidacion.js" />
+    <Content Include="Scripts\paginas\VerificarDocumento.js" />
     <Content Include="Scripts\paginas\LiquidacionesAprobadasContabilidad.js" />
     <Content Include="Scripts\paginas\LiquidacionesPendientes.js" />
     <Content Include="Scripts\paginas\ListaDespachos.js" />
@@ -424,6 +429,8 @@
     <Content Include="Views\Exportacion\GpsAutomatico.ashx" />
     <Content Include="Views\Exportacion\SeguimientoViaje.aspx" />
     <Content Include="Views\FirmarLiquidacion.aspx" />
+    <Content Include="Views\ConformarLiquidacion.aspx" />
+    <Content Include="Views\VerificarDocumento.aspx" />
     <Content Include="Views\Inicio.aspx" />
     <Content Include="Views\LiquidacionesAprobadasContabilidad.aspx">
       <SubType>Designer</SubType>
@@ -480,6 +487,7 @@
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Helpers\PasswordHelper.cs" />
+    <Compile Include="Helpers\ReautenticacionHelper.cs" />
     <Compile Include="Helpers\RecursoHelper.cs" />
     <Compile Include="Helpers\ValidacionHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -551,6 +559,8 @@
     <Compile Include="Services\Exportacion\ExportacionStatusUnidades.cs" />
     <Compile Include="Services\Exportacion\SeguimientoViajesService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionCalculos.cs" />
+    <Compile Include="Services\Liquidaciones\FirmaLiquidacion.cs" />
+    <Compile Include="Services\Liquidaciones\ArchivoOrdenViajeService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionesContabilidadService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionesPendientesService.cs" />
     <Compile Include="Services\NotificacionService.cs" />
@@ -786,7 +796,20 @@
       <DependentUpon>Error404.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="Views\FirmarLiquidacion.aspx.cs">
+    <Compile Include="Views\ConformarLiquidacion.aspx.cs">
+      <DependentUpon>ConformarLiquidacion.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\ConformarLiquidacion.aspx.designer.cs">
+      <DependentUpon>ConformarLiquidacion.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\VerificarDocumento.aspx.cs">
+      <DependentUpon>VerificarDocumento.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\VerificarDocumento.aspx.designer.cs">
+      <DependentUpon>VerificarDocumento.aspx</DependentUpon>
+    </Compile>    <Compile Include="Views\FirmarLiquidacion.aspx.cs">
       <DependentUpon>FirmarLiquidacion.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
