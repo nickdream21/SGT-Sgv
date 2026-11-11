@@ -86,8 +86,8 @@
             var hayReint = d.ReintegroSoles !== 0 || d.ReintegroDolares !== 0;
             if (hayDesc || hayReint) {
                 fila(tb, 'Balance del viaje', d.BalanceSoles, d.BalanceDolares);
-                if (hayDesc) fila(tb, '(−) Descuento', d.DescuentoSoles, d.DescuentoDolares, 'desc');
-                if (hayReint) fila(tb, '(+) Reintegro', d.ReintegroSoles, d.ReintegroDolares, 'reint');
+                if (hayDesc) fila(tb, '(+) Descuento', d.DescuentoSoles, d.DescuentoDolares, 'desc');
+                if (hayReint) fila(tb, '(−) Reintegro', d.ReintegroSoles, d.ReintegroDolares, 'reint');
             }
             var tr = document.createElement('tr');
             tr.className = 'saldo';
@@ -96,7 +96,7 @@
             tr.appendChild(celda('td', parseFloat(d.SaldoDolares).toLocaleString('es-PE', { minimumFractionDigits: 2 }), 'num'));
             tb.appendChild(tr);
 
-            document.getElementById('vLetras').textContent = 'Son S/: ' + d.SaldoSolesEnLetras +
+            document.getElementById('vLetras').textContent = d.SaldoTexto + ' Son S/: ' + d.SaldoSolesEnLetras +
                 (d.SaldoDolaresEnLetras ? ' · Son US$: ' + d.SaldoDolaresEnLetras : '');
 
             var aj = document.getElementById('vAjustes');

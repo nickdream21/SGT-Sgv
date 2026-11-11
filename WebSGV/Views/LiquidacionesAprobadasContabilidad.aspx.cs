@@ -75,8 +75,8 @@ namespace WebSGV.Views
                     NombreConductor   = reader["NombreConductor"].ToString(),
                     FechaSalida       = Convert.ToDateTime(reader["fechaSalida"]).ToString("dd/MM/yyyy"),
                     FechaLlegada      = Convert.ToDateTime(reader["fechaLlegada"]).ToString("dd/MM/yyyy"),
-                    BalanceSoles      = (ingresosSoles   - gastosSoles)   - descuentoSoles   + reintegroSoles,
-                    BalanceDolares    = (ingresosDolares - gastosDolares) - descuentoDolares + reintegroDolares
+                    BalanceSoles      = WebSGV.Services.Liquidaciones.LiquidacionCalculos.SaldoFinal(ingresosSoles, gastosSoles, descuentoSoles, reintegroSoles),
+                    BalanceDolares    = WebSGV.Services.Liquidaciones.LiquidacionCalculos.SaldoFinal(ingresosDolares, gastosDolares, descuentoDolares, reintegroDolares)
                 });
             }
 

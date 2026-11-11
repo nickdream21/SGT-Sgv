@@ -424,8 +424,9 @@ function actualizarBalanceAjustado() {
     if (modoAprobacion || descS > 0 || descD > 0 || reintS > 0 || reintD > 0) {
         var baseS = modoAprobacion ? (_ingresosFijosSoles + ent.totalSoles - _gastosSoles) : _balanceSoles;
         var baseD = modoAprobacion ? (_ingresosFijosDolares + ent.totalDolares - _gastosDolares) : _balanceDolares;
-        var balS = baseS - descS + reintS;
-        var balD = baseD - descD + reintD;
+        // Saldo: negativo = la empresa paga al conductor; positivo = él devuelve.
+        var balS = baseS + descS - reintS;
+        var balD = baseD + descD - reintD;
         $('#balanceAjustadoSoles').text(balS.toFixed(2))
             .toggleClass('sgv-negativo', balS < 0).toggleClass('sgv-positivo', balS > 0);
         $('#balanceAjustadoDolares').text(balD.toFixed(2))

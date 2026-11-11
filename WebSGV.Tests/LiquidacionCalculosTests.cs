@@ -226,5 +226,28 @@ namespace WebSGV.Tests
         {
             Assert.Equal(esperado, LiquidacionCalculos.ObservacionesDelConductor(entrada));
         }
+
+        // ---------- Saldo final (negativo = la empresa paga al conductor) ----------
+
+        [Theory]
+        // Gastó más de lo entregado (puso de su dinero): la empresa le debe 215; un descuento de 20 lo baja a 195.
+        [InlineData(300, 515, 20, 0, -195)]
+        // Un reintegro de 12.50 aumenta lo que se le debe.
+        [InlineData(300, 515, 0, 12.5, -227.5)]
+        // Le sobró dinero: devuelve 50; un descuento de 10 hace que devuelva 60.
+        [InlineData(500, 450, 10, 0, 60)]
+        // Cuadra.
+        [InlineData(400, 400, 0, 0, 0)]
+        public void SaldoFinal_DescuentoSumaYReintegroResta(decimal entregado, decimal gastos, decimal descuento, decimal reintegro, decimal esperado) =>
+            Assert.Equal(esperado, LiquidacionCalculos.SaldoFinal(entregado, gastos, descuento, reintegro));
+
+        [Fact]
+        public void DescribirSaldo_DiceQuienPagaAQuien()
+        {
+            Assert.Equal("La empresa paga al conductor S/ 195.00.", LiquidacionCalculos.DescribirSaldo(-195m, 0m));
+            Assert.Equal("El conductor devuelve a la empresa S/ 60.00; la empresa paga al conductor US$ 10.00.",
+                LiquidacionCalculos.DescribirSaldo(60m, -10m));
+            Assert.Equal("Liquidación cuadrada: nadie debe nada.", LiquidacionCalculos.DescribirSaldo(0m, 0m));
+        }
     }
 }

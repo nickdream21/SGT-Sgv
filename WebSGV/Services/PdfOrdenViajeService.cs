@@ -715,9 +715,9 @@ namespace WebSGV.Services
             bool hayDescuento = _d.DescuentoSoles != 0 || _d.DescuentoDolares != 0;
             bool hayReintegro = _d.ReintegroSoles != 0 || _d.ReintegroDolares != 0;
             bool hayAjustes = hayDescuento || hayReintegro;
-            // Mismo criterio que la bandeja de aprobadas: balance − descuentos + reintegros.
-            decimal saldoS = balanceS - _d.DescuentoSoles + _d.ReintegroSoles;
-            decimal saldoD = balanceD - _d.DescuentoDolares + _d.ReintegroDolares;
+            // Saldo visto desde el conductor: negativo = la empresa le paga; positivo = él devuelve.
+            decimal saldoS = LiquidacionCalculos.SaldoFinal(_d.TotalIngresosSoles, TotalGastosSoles, _d.DescuentoSoles, _d.ReintegroSoles);
+            decimal saldoD = LiquidacionCalculos.SaldoFinal(_d.TotalIngresosDolares, TotalGastosDolares, _d.DescuentoDolares, _d.ReintegroDolares);
 
             cont.Column(col =>
             {
@@ -732,11 +732,13 @@ namespace WebSGV.Services
                             c.Item().Element(x => MotivoAjuste(x, "Motivo del descuento", _d.DescuentoMotivo, Rojo));
                         if (hayReintegro)
                             c.Item().Element(x => MotivoAjuste(x, "Motivo del reintegro", _d.ReintegroMotivo, Verde));
-                        c.Item().PaddingTop(hayAjustes ? 3 : 0).Text(hayAjustes ? "Saldo final en letras" : "Balance en letras").FontSize(7.5f).FontColor(TextoSuave);
+                        // Quién paga a quién, en palabras: no depende de interpretar un signo.
+                        c.Item().PaddingTop(hayAjustes ? 3 : 0).Text(LiquidacionCalculos.DescribirSaldo(saldoS, saldoD))
+                            .Bold().FontSize(8.5f).FontColor(Azul);
                         if (saldoS != 0 || saldoD == 0)
-                            c.Item().Element(x => MontoEnLetras(x, "S/", NumeroALetrasHelper.Convertir(saldoS, "SOLES")));
+                            c.Item().Element(x => MontoEnLetras(x, "S/", NumeroALetrasHelper.Convertir(Math.Abs(saldoS), "SOLES")));
                         if (saldoD != 0)
-                            c.Item().Element(x => MontoEnLetras(x, "US$", NumeroALetrasHelper.Convertir(saldoD, "DÓLARES AMERICANOS")));
+                            c.Item().Element(x => MontoEnLetras(x, "US$", NumeroALetrasHelper.Convertir(Math.Abs(saldoD), "DÓLARES AMERICANOS")));
                     });
 
                     row.ConstantItem(280).Table(table =>
@@ -761,8 +763,8 @@ namespace WebSGV.Services
                         if (hayAjustes)
                         {
                             FilaLiquidacion(table, "Balance del viaje", balanceS, balanceD, negrita: true);
-                            FilaLiquidacion(table, "(−) Descuentos", _d.DescuentoSoles, _d.DescuentoDolares, color: Rojo);
-                            FilaLiquidacion(table, "(+) Reintegros", _d.ReintegroSoles, _d.ReintegroDolares, color: Verde);
+                            FilaLiquidacion(table, "(+) Descuentos al conductor", _d.DescuentoSoles, _d.DescuentoDolares, color: Rojo);
+                            FilaLiquidacion(table, "(−) Reintegros al conductor", _d.ReintegroSoles, _d.ReintegroDolares, color: Verde);
                         }
 
                         FilaSaldo(table, hayAjustes ? "Saldo final" : "Balance del viaje", saldoS, saldoD);
@@ -826,10 +828,9 @@ namespace WebSGV.Services
 
         private static void FilaSaldo(TableDescriptor table, string concepto, decimal soles, decimal dolares)
         {
-            // Verde si cuadra o queda a favor, rojo si queda en contra (criterio de la bandeja de liquidaciones).
-            bool negativo = soles < 0 || dolares < 0;
-            Color fg = negativo ? Rojo : Verde;
-            Color bg = negativo ? FondoRojo : FondoVerde;
+            // Neutro: un saldo negativo no es un error, es lo que la empresa le debe al conductor.
+            Color fg = Azul;
+            Color bg = FondoTitulo;
 
             table.Cell().Background(bg).BorderTop(0.8f).BorderBottom(0.8f).BorderColor(fg).PaddingVertical(4).PaddingHorizontal(5)
                 .Text(concepto).Bold().FontSize(9.5f).FontColor(fg);

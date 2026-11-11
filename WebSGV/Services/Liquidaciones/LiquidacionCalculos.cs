@@ -33,6 +33,38 @@ namespace WebSGV.Services.Liquidaciones
             return null;
         }
 
+        /// <summary>
+        /// Saldo final de la liquidación, visto desde el conductor:
+        /// <list type="bullet">
+        /// <item>positivo: el conductor tiene dinero de la empresa y debe devolverlo;</item>
+        /// <item>negativo: el conductor puso de su dinero (gastó más de lo entregado) y la empresa le debe;</item>
+        /// <item>cero: cuadra.</item>
+        /// </list>
+        /// Un <b>descuento</b> al conductor (gasto no reconocido, faltante…) reduce lo que la empresa le
+        /// debe o aumenta lo que él devuelve: suma. Un <b>reintegro</b> (la empresa le reconoce algo más)
+        /// resta. Hasta el 2026-11-11 el sistema usaba los signos al revés.
+        /// </summary>
+        public static decimal SaldoFinal(decimal entregado, decimal gastos, decimal descuento, decimal reintegro) =>
+            entregado - gastos + descuento - reintegro;
+
+        /// <summary>"La empresa paga al conductor S/ 195.00", "El conductor devuelve a la empresa US$ 10.00"…</summary>
+        public static string DescribirSaldo(decimal saldoSoles, decimal saldoDolares)
+        {
+            var partes = new System.Collections.Generic.List<string>();
+            void Agregar(decimal saldo, string moneda)
+            {
+                if (saldo < 0) partes.Add("la empresa paga al conductor " + moneda + " " + Math.Abs(saldo).ToString("N2", CulturaPe));
+                else if (saldo > 0) partes.Add("el conductor devuelve a la empresa " + moneda + " " + saldo.ToString("N2", CulturaPe));
+            }
+            Agregar(saldoSoles, "S/");
+            Agregar(saldoDolares, "US$");
+            if (partes.Count == 0) return "Liquidación cuadrada: nadie debe nada.";
+            string texto = string.Join("; ", partes);
+            return char.ToUpper(texto[0], CulturaPe) + texto.Substring(1) + ".";
+        }
+
+        private static readonly CultureInfo CulturaPe = CultureInfo.GetCultureInfo("es-PE");
+
         /// <summary>Valida el dinero entregado al conductor (null = no se envió, es válido).</summary>
         public static string ValidarIngresosEntregados(WebSGV.Models.Liquidaciones.IngresosEntregados ingresos)
         {

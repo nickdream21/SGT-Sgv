@@ -97,6 +97,8 @@ namespace WebSGV.Views
             public decimal SaldoDolares { get; set; }
             public string SaldoSolesEnLetras { get; set; }
             public string SaldoDolaresEnLetras { get; set; }
+            /// <summary>"La empresa paga al conductor S/ 195.00" (quién paga a quién, sin interpretar signos).</summary>
+            public string SaldoTexto { get; set; }
             public string NotaAdministracion { get; set; }
             public string RevisadoPor { get; set; }
             public string FechaRevision { get; set; }
@@ -130,7 +132,8 @@ namespace WebSGV.Views
                 entregado = entregado.Where(c => c.Soles != 0 || c.Dolares != 0).ToList();
 
                 decimal balS = d.TotalIngresosSoles - d.TotalGastosSoles, balD = d.TotalIngresosDolares - d.TotalGastosDolares;
-                decimal saldoS = balS - d.DescuentoSoles + d.ReintegroSoles, saldoD = balD - d.DescuentoDolares + d.ReintegroDolares;
+                decimal saldoS = LiquidacionCalculos.SaldoFinal(d.TotalIngresosSoles, d.TotalGastosSoles, d.DescuentoSoles, d.ReintegroSoles);
+                decimal saldoD = LiquidacionCalculos.SaldoFinal(d.TotalIngresosDolares, d.TotalGastosDolares, d.DescuentoDolares, d.ReintegroDolares);
 
                 var r = new LiquidacionParaConformidad
                 {
@@ -154,8 +157,9 @@ namespace WebSGV.Views
                     ReintegroMotivo = d.ReintegroMotivo,
                     SaldoSoles = saldoS,
                     SaldoDolares = saldoD,
-                    SaldoSolesEnLetras = NumeroALetrasHelper.Convertir(saldoS, "SOLES"),
-                    SaldoDolaresEnLetras = saldoD != 0 ? NumeroALetrasHelper.Convertir(saldoD, "DÓLARES AMERICANOS") : null,
+                    SaldoSolesEnLetras = NumeroALetrasHelper.Convertir(Math.Abs(saldoS), "SOLES"),
+                    SaldoDolaresEnLetras = saldoD != 0 ? NumeroALetrasHelper.Convertir(Math.Abs(saldoD), "DÓLARES AMERICANOS") : null,
+                    SaldoTexto = LiquidacionCalculos.DescribirSaldo(saldoS, saldoD),
                     NotaAdministracion = d.NotaAprobacion,
                     RevisadoPor = revision?.Nombre,
                     FechaRevision = revision?.FechaHora.ToString("dd/MM/yyyy HH:mm"),

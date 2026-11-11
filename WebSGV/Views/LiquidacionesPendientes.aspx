@@ -648,7 +648,7 @@
                         <div id="balanceAjustadoPanel" class="mt-2" style="display:none;">
                             <div class="financial-card financial-card-neutral">
                                 <div class="financial-header">
-                                    <span>Balance final (entregado − gastos − descuentos + reintegros)</span>
+                                    <span>Saldo final (entregado − gastos + descuentos − reintegros) · negativo: la empresa paga al conductor · positivo: el conductor devuelve</span>
                                 </div>
                                 <div class="financial-amounts">
                                     <div class="amount-row">

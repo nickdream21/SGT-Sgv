@@ -567,8 +567,8 @@ namespace WebSGV.Views
                                     DescuentoDolares = descD,
                                     ReintegroSoles = reintS,
                                     ReintegroDolares = reintD,
-                                    BalanceSoles = (ingresosSoles - gastosSoles) - descS + reintS,
-                                    BalanceDolares = (ingresosDolares - gastosDolares) - descD + reintD,
+                                    BalanceSoles = LiquidacionCalculos.SaldoFinal(ingresosSoles, gastosSoles, descS, reintS),
+                                    BalanceDolares = LiquidacionCalculos.SaldoFinal(ingresosDolares, gastosDolares, descD, reintD),
                                     FechaConformidad = reader["fechaConformidad"] != DBNull.Value
                                         ? Convert.ToDateTime(reader["fechaConformidad"]).ToString("dd/MM/yyyy HH:mm") : ""
                                 });
@@ -685,8 +685,8 @@ namespace WebSGV.Views
                     HorasEsperando = envio.HasValue ? Math.Max(0, (int)(ahora - envio.Value).TotalHours) : 0,
                     DescuentoSoles = descS, DescuentoDolares = descD,
                     ReintegroSoles = reintS, ReintegroDolares = reintD,
-                    SaldoSoles = ingS - gasS - descS + reintS,
-                    SaldoDolares = ingD - gasD - descD + reintD
+                    SaldoSoles = LiquidacionCalculos.SaldoFinal(ingS, gasS, descS, reintS),
+                    SaldoDolares = LiquidacionCalculos.SaldoFinal(ingD, gasD, descD, reintD)
                 });
             }
             return lista;

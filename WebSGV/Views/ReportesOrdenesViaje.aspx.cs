@@ -803,8 +803,8 @@ namespace WebSGV.Views
                 decimal descuentoDolares = Convert.ToDecimal(reader["DescuentoDolares"]);
                 decimal reintegroDolares = Convert.ToDecimal(reader["ReintegroDolares"]);
 
-                balanceSoles = ingresosSoles - gastosSoles - descuentoSoles + reintegroSoles;
-                balanceDolares = ingresosDolares - gastosDolares - descuentoDolares + reintegroDolares;
+                balanceSoles = WebSGV.Services.Liquidaciones.LiquidacionCalculos.SaldoFinal(ingresosSoles, gastosSoles, descuentoSoles, reintegroSoles);
+                balanceDolares = WebSGV.Services.Liquidaciones.LiquidacionCalculos.SaldoFinal(ingresosDolares, gastosDolares, descuentoDolares, reintegroDolares);
             }
 
             html.Append("<div class='card'>");
@@ -1009,8 +1009,9 @@ namespace WebSGV.Views
                 decimal gasD = Convert.ToDecimal(r["GastosDolares"]);
                 decimal desD = Convert.ToDecimal(r["DescuentoDolares"]);
                 decimal reiD = Convert.ToDecimal(r["ReintegroDolares"]);
-                r["BalanceSoles"] = ingS - gasS - desS + reiS;
-                r["BalanceDolares"] = ingD - gasD - desD + reiD;
+                // Negativo: la empresa paga al conductor; positivo: él devuelve.
+                r["BalanceSoles"] = WebSGV.Services.Liquidaciones.LiquidacionCalculos.SaldoFinal(ingS, gasS, desS, reiS);
+                r["BalanceDolares"] = WebSGV.Services.Liquidaciones.LiquidacionCalculos.SaldoFinal(ingD, gasD, desD, reiD);
             }
             return dt;
         }

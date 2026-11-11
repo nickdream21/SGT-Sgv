@@ -120,8 +120,9 @@ function calcularTotales() {
     const reintegroSoles = parseFloat($('#reintegroSoles').val()) || 0;
     const reintegroDolares = parseFloat($('#reintegroDolares').val()) || 0;
 
-    const diferenciaSoles = totalIngresosSoles - totalGastosSoles - descuentoSoles + reintegroSoles;
-    const diferenciaDolares = totalIngresosDolares - totalGastosDolares - descuentoDolares + reintegroDolares;
+    // Saldo: negativo = la empresa paga al conductor; positivo = él devuelve (descuento suma, reintegro resta).
+    const diferenciaSoles = totalIngresosSoles - totalGastosSoles + descuentoSoles - reintegroSoles;
+    const diferenciaDolares = totalIngresosDolares - totalGastosDolares + descuentoDolares - reintegroDolares;
 
     $('#totalIngresosSoles').text(totalIngresosSoles.toFixed(2));
     $('#totalIngresosDolares').text(totalIngresosDolares.toFixed(2));
