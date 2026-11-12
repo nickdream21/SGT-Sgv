@@ -814,7 +814,12 @@ namespace WebSGV.Views
         {
             if (d.RutaPdf != null)
                 return $"<a class='bd-exp-pdf' target='_blank' rel='noopener' href='{H(DocumentoHelper.UrlDescarga(d.RutaPdf))}' title='{H(d.NombrePdf)}'><i class='fas fa-file-pdf mr-1'></i>PDF</a>";
-            return d.Numero != null ? "<span class='bd-exp-sinpdf'>sin PDF</span>" : "";
+            if (d.Numero == null) return "";
+            // Un documento que este cliente no manda (la guía del remitente de un tercero: solo viene su número
+            // en nuestra GRE) no es un pendiente: decía "sin PDF" en ámbar bajo "Documentación completa".
+            return d.Requerido
+                ? "<span class='bd-exp-sinpdf'>sin PDF</span>"
+                : "<span class='small text-muted' title='Este cliente no envía el PDF de este documento: solo se registra su número'>solo número</span>";
         }
 
         // ── Utilidades ───────────────────────────────────────────────────────

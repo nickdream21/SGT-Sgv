@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Web;
-using System.Web.Caching;
 using System.Web.Hosting;
 using Newtonsoft.Json;
 using WebSGV.Helpers;
@@ -65,9 +63,9 @@ namespace WebSGV.Services.GpsIntegracion
     /// <summary>
     /// Recorrido GPS de un viaje de exportación para el mapa del detalle: el tracto de carga entre
     /// su salida y su regreso a base, y el de descarga entre su salida y su regreso, con los hitos y
-    /// las geocercas. El historial sale del API de Onway (1 día por llamada, 2 req/s), así que un
-    /// tramo ya cerrado se guarda en ~/App_Data/RutasGps y no se vuelve a consultar; uno en curso se
-    /// guarda 10 minutos en memoria.
+    /// las geocercas. El historial sale de <see cref="HistorialGpsCache"/> (por día, compartido con
+    /// "Actualizar GPS"); el recorrido ya simplificado de un tramo cerrado se guarda además en
+    /// ~/App_Data/RutasGps.
     /// </summary>
     public static class RutaViajeService
     {
@@ -79,6 +77,12 @@ namespace WebSGV.Services.GpsIntegracion
 
         /// <summary>Distancia mínima entre dos puntos guardados (el resto es la unidad parada).</summary>
         private const double MetrosMinimos = 40;
+
+        /// <summary>
+        /// El mapa acepta el historial de hoy que dejó el GPS automático (corre cada 10 minutos): abrir el viaje
+        /// no llama al API. "Actualizar GPS" lo renueva (su vigencia es de 3 minutos) y el mapa toma ese.
+        /// </summary>
+        private static readonly TimeSpan AntiguedadMapa = TimeSpan.FromMinutes(12);
 
         private static readonly DateTime Epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
@@ -213,20 +217,31 @@ namespace WebSGV.Services.GpsIntegracion
             string nombre = $"{idSeguimiento}_{clave}_{placa}_{iniLocal:yyyyMMddHHmm}_{finLocal:yyyyMMddHHmm}.json";
             string carpeta = HostingEnvironment.MapPath("~/App_Data/RutasGps") ?? Path.Combine(Path.GetTempPath(), "SGV_RutasGps");
             string archivo = Path.Combine(carpeta, nombre);
-            string claveMemoria = "RutaGps|" + nombre;
 
             if (cerrado && File.Exists(archivo))
                 return JsonConvert.DeserializeObject<List<double[]>>(File.ReadAllText(archivo));
-            if (HttpRuntime.Cache[claveMemoria] is List<double[]> enMemoria)
-                return enMemoria;
 
             var dispositivo = cliente.Value.BuscarDispositivoPorPlaca(placa);
             if (dispositivo == null) throw new ErrorNegocioException($"La placa {placa} no está registrada en el GPS (Onway).");
 
-            var crudos = new List<OnwayHistoryPoint>();
+            // El historial sale de HistorialGpsCache, por día y compartido con "Actualizar GPS" y el GPS
+            // automático: los días terminados ya están en disco y el de hoy en memoria unos minutos. Antes un
+            // tramo en curso pedía todos sus días al API en cada apertura (su caché llevaba el minuto actual
+            // en la clave y no acertaba nunca): abrir un viaje tardaba de 10 s a más de 45 s.
+            var dias = new List<KeyValuePair<OnwayDevice, DateTime>>();
+            for (DateTime dia = iniLocal.Date; dia <= finLocal.Date; dia = dia.AddDays(1))
+                dias.Add(new KeyValuePair<OnwayDevice, DateTime>(dispositivo, dia));
+            HistorialGpsCache.Precargar(cliente.Value, dias, TimeSpan.FromSeconds(60), AntiguedadMapa); // los que falten, de 4 en 4
+
             DateTime iniUtc = FechaHelper.ConvertirAUtc(iniLocal), finUtc = FechaHelper.ConvertirAUtc(finLocal);
-            for (DateTime d = iniUtc; d < finUtc; d = d.AddDays(1)) // el API acepta como máximo 1 día por llamada
-                crudos.AddRange(cliente.Value.ObtenerHistorial(dispositivo.Id, d, Min(d.AddDays(1).AddSeconds(-1), finUtc)));
+            var crudos = new List<OnwayHistoryPoint>();
+            foreach (var dia in dias)
+                crudos.AddRange(HistorialGpsCache.Dia(cliente.Value, dispositivo, dia.Value, AntiguedadMapa).Where(p =>
+                {
+                    if (p == null) return false;
+                    DateTime hora = TrazabilidadCargaService.Hora(p);
+                    return hora >= iniUtc && hora <= finUtc;
+                }));
 
             var puntos = Simplificar(crudos);
             if (cerrado)
@@ -234,8 +249,6 @@ namespace WebSGV.Services.GpsIntegracion
                 Directory.CreateDirectory(carpeta);
                 File.WriteAllText(archivo, JsonConvert.SerializeObject(puntos));
             }
-            else
-                HttpRuntime.Cache.Insert(claveMemoria, puntos, null, DateTime.UtcNow.AddMinutes(10), Cache.NoSlidingExpiration);
             return puntos;
         }
 

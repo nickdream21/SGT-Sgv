@@ -31,6 +31,8 @@ namespace WebSGV.Services.GpsIntegracion
         private static readonly TimeSpan MargenCierre = TimeSpan.FromHours(24);
         private static readonly TimeSpan VigenciaEnMemoria = TimeSpan.FromMinutes(3);
         private static readonly TimeSpan VigenciaAyer = TimeSpan.FromMinutes(30);
+        /// <summary>Tiempo que un día sigue en memoria para quien acepta una copia más vieja que la vigencia normal.</summary>
+        private static readonly TimeSpan VigenciaMaximaEnMemoria = TimeSpan.FromMinutes(30);
         private const int LlamadasEnParalelo = 4;
         private const int DiasEnDisco = 30; // ~3-45 KB por tracto y día
 
@@ -41,7 +43,12 @@ namespace WebSGV.Services.GpsIntegracion
             HostingEnvironment.MapPath("~/App_Data/HistorialGps") ?? Path.Combine(Path.GetTempPath(), "SGV_HistorialGps");
 
         /// <summary>Puntos del día <paramref name="diaLocal"/> (00:00–23:59:59 hora Perú) del dispositivo.</summary>
-        public static List<OnwayHistoryPoint> Dia(OnwayApiClient cliente, OnwayDevice dispositivo, DateTime diaLocal)
+        /// <param name="antiguedadAceptada">
+        /// Quien no necesita el último minuto (el mapa del viaje) acepta una copia en memoria más vieja que la
+        /// vigencia normal: así aprovecha la que dejó el GPS automático y no llama al API al abrir la pantalla.
+        /// </param>
+        public static List<OnwayHistoryPoint> Dia(OnwayApiClient cliente, OnwayDevice dispositivo, DateTime diaLocal,
+            TimeSpan? antiguedadAceptada = null)
         {
             diaLocal = diaLocal.Date;
             string nombre = Placa(dispositivo) + "_" + diaLocal.ToString("yyyyMMdd"); // el Id es largo: la ruta pasaba de 260
@@ -49,25 +56,42 @@ namespace WebSGV.Services.GpsIntegracion
             string archivo = Path.Combine(Carpeta, nombre + ".json.gz");
             bool cerrado = diaLocal.AddDays(1) + MargenCierre <= FechaHelper.Ahora();
 
-            if (HttpRuntime.Cache[claveMemoria] is List<OnwayHistoryPoint> enMemoria)
-                return enMemoria;
+            // Ayer casi no cambia (solo puntos atrasados de una unidad sin señal): no se vuelve a pedir en cada clic.
+            TimeSpan vigencia = diaLocal < FechaHelper.Hoy() ? VigenciaAyer : VigenciaEnMemoria;
+            if (antiguedadAceptada.HasValue && antiguedadAceptada.Value > vigencia) vigencia = antiguedadAceptada.Value;
+
+            if (HttpRuntime.Cache[claveMemoria] is Entrada enMemoria &&
+                (enMemoria.Definitivo || DateTime.UtcNow - enMemoria.ObtenidoUtc <= vigencia))
+                return enMemoria.Puntos;
             if (cerrado)
             {
                 var guardado = Leer(archivo);
                 if (guardado != null)
                 {
-                    HttpRuntime.Cache.Insert(claveMemoria, guardado, null, DateTime.UtcNow.Add(VigenciaEnMemoria), Cache.NoSlidingExpiration);
+                    Recordar(claveMemoria, guardado, definitivo: true);
                     return guardado;
                 }
             }
 
             var historial = cliente.ObtenerHistorial(dispositivo.Id, diaLocal.AddHours(5), diaLocal.AddDays(1).AddHours(5).AddSeconds(-1));
-            // Ayer casi no cambia (solo puntos atrasados de una unidad sin señal): no se vuelve a pedir en cada clic.
-            TimeSpan vigencia = diaLocal < FechaHelper.Hoy() ? VigenciaAyer : VigenciaEnMemoria;
-            HttpRuntime.Cache.Insert(claveMemoria, historial, null, DateTime.UtcNow.Add(vigencia), Cache.NoSlidingExpiration);
+            Recordar(claveMemoria, historial, definitivo: false);
             if (cerrado) Guardar(archivo, historial);
             return historial;
         }
+
+        /// <summary>Un día en memoria, con la hora en que se pidió: cada consulta decide cuán vieja la acepta.</summary>
+        private sealed class Entrada
+        {
+            public List<OnwayHistoryPoint> Puntos;
+            public DateTime ObtenidoUtc;
+            /// <summary>Leído del disco: un día cerrado que ya no cambia.</summary>
+            public bool Definitivo;
+        }
+
+        private static void Recordar(string claveMemoria, List<OnwayHistoryPoint> puntos, bool definitivo) =>
+            HttpRuntime.Cache.Insert(claveMemoria,
+                new Entrada { Puntos = puntos, ObtenidoUtc = DateTime.UtcNow, Definitivo = definitivo }, null,
+                DateTime.UtcNow.Add(definitivo ? VigenciaEnMemoria : VigenciaMaximaEnMemoria), Cache.NoSlidingExpiration);
 
         /// <summary>
         /// Trae a la caché, en paralelo, los días pedidos (hoy primero). Cada llamada al API tarda
@@ -75,7 +99,8 @@ namespace WebSGV.Services.GpsIntegracion
         /// de 2 por segundo (que sigue respetando <see cref="OnwayApiClient"/>). Lo que no alcanza
         /// en <paramref name="presupuesto"/> se pide después, al consultar cada viaje.
         /// </summary>
-        public static void Precargar(OnwayApiClient cliente, IEnumerable<KeyValuePair<OnwayDevice, DateTime>> dias, TimeSpan presupuesto)
+        public static void Precargar(OnwayApiClient cliente, IEnumerable<KeyValuePair<OnwayDevice, DateTime>> dias, TimeSpan presupuesto,
+            TimeSpan? antiguedadAceptada = null)
         {
             var reloj = System.Diagnostics.Stopwatch.StartNew();
             var pendientes = dias
@@ -88,7 +113,7 @@ namespace WebSGV.Services.GpsIntegracion
                 if (reloj.Elapsed > presupuesto) { estado.Stop(); return; }
                 try
                 {
-                    Dia(cliente, d.Key, d.Value);
+                    Dia(cliente, d.Key, d.Value, antiguedadAceptada);
                 }
                 catch (Exception ex) when (ex is OnwayApiException || ex is System.Net.Http.HttpRequestException || ex is TaskCanceledException)
                 {
