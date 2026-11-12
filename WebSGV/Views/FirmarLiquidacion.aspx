@@ -5,15 +5,12 @@
     <meta charset="utf-8" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <meta name="theme-color" content="#0B3D91" />
+    <meta name="theme-color" content="#f8f9fa" />
     <title>Firmar Liquidación · SGV</title>
 
     <%-- Mismas librerías y versiones que Site.Master (Bootstrap 4.6.2, Font Awesome 5.15.4). --%>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
 
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/FirmarLiquidacion.css") %>" rel="stylesheet" />
 </head>
@@ -58,13 +55,13 @@
                         <div class="val" id="vUnidades">-</div>
                     </div>
                 </div>
-                <div class="fl-monto" style="border-left-color: var(--rojo); background: #FEF2F2;">
+                <div class="fl-monto">
                     <span class="label">Total de mis gastos</span>
-                    <span class="valor" style="color: var(--rojo);" id="vGastos">S/ 0.00</span>
+                    <span class="valor" id="vGastos">S/ 0.00</span>
                 </div>
-                <div class="fl-monto" id="vGastosDolaresFila" style="border-left-color: var(--rojo); background: #FEF2F2; display: none;">
+                <div class="fl-monto" id="vGastosDolaresFila" style="display: none;">
                     <span class="label">Gastos en dólares</span>
-                    <span class="valor" style="color: var(--rojo);" id="vGastosDolares">$ 0.00</span>
+                    <span class="valor" id="vGastosDolares">$ 0.00</span>
                 </div>
                 <p class="fl-nota">El dinero que te entregaron para el viaje lo registra la administración al revisar tu liquidación.</p>
             </section>
@@ -141,12 +138,12 @@
                 <div class="hash" id="okHash">-</div>
             </div>
             <div style="margin-top: 18px;">
-                <a href="#" id="okVerPdf" class="fl-btn" style="text-decoration:none; display:inline-block; max-width:220px;">
+                <a href="#" id="okVerPdf" class="fl-btn" style="text-decoration:none; display:inline-flex; width:100%; max-width:220px;">
                     <i class="fas fa-file-pdf"></i>Ver PDF firmado
                 </a>
             </div>
             <div style="margin-top: 12px;">
-                <a href="<%= ResolveUrl("~/Views/DashboardConductor.aspx") %>" class="fl-btn" style="text-decoration:none; display:inline-block; max-width:220px; background: var(--azul); color:#fff; border-color: var(--azul);">
+                <a href="<%= ResolveUrl("~/Views/DashboardConductor.aspx") %>" class="fl-btn" style="text-decoration:none; display:inline-flex; width:100%; max-width:220px; background: var(--azul); color:#fff; border-color: var(--azul);">
                     <i class="fas fa-home"></i>Volver al inicio
                 </a>
             </div>

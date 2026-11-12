@@ -1,400 +1,192 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Web.UI;
+using System.Globalization;
+using System.Linq;
 using WebSGV.Helpers;
-using WebSGV.Services.OrdenViaje;
+using WebSGV.Models.Liquidaciones;
+using WebSGV.Services;
 using WebSGV.Services.Common;
+using WebSGV.Services.Liquidaciones;
 
 namespace WebSGV.Views
 {
+    /// <summary>
+    /// Detalle de una liquidación para el conductor ("Ver" en su historial).
+    /// Lee el mismo <see cref="DetalleLiquidacion"/> y usa los mismos cálculos
+    /// (<see cref="LiquidacionCalculos"/>) que el PDF y la pantalla de conformidad, para que el
+    /// saldo que ve aquí sea siempre el del documento firmado: entregado − gastos + descuentos −
+    /// reintegros, con el motivo de cada ajuste.
+    /// </summary>
     public partial class DetalleOrdenViaje : PaginaBase
     {
-        #region Clases de Datos
+        private static readonly CultureInfo CulturaPe = CultureInfo.GetCultureInfo("es-PE");
 
-        private class FilaFinanciera
+        /// <summary>Renglón de las listas (concepto, detalle en letra chica y monto ya formateado).</summary>
+        public class Renglon
         {
             public string Concepto { get; set; }
-            public string Descripcion { get; set; }
-            public decimal Soles { get; set; }
-            public decimal Dolares { get; set; }
+            public string Detalle { get; set; }
+            public string Monto { get; set; }
+            public string Clase { get; set; }
         }
-
-        private class FilaPeaje
-        {
-            public string Estacion { get; set; }
-            public DateTime Fecha { get; set; }
-            public string Comprobante { get; set; }
-            public decimal Soles { get; set; }
-            public decimal Dolares { get; set; }
-            public string Observaciones { get; set; }
-        }
-
-        private class FilaGenerico
-        {
-            public string Tipo { get; set; }
-            public string Lugar { get; set; }
-            public DateTime Fecha { get; set; }
-            public string Comprobante { get; set; }
-            public decimal Soles { get; set; }
-            public decimal Dolares { get; set; }
-            public string Observaciones { get; set; }
-        }
-
-        #endregion
-
-        #region Propiedades de Sesión
-
-        private int IdConductorActual
-        {
-            get { return Session["IdConductor"] != null ? Convert.ToInt32(Session["IdConductor"]) : 0; }
-        }
-
-        #endregion
-
-        #region Eventos de Página
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (!IsPostBack)
+            SecurityHelper.ExigirSesion();
+            SecurityHelper.AgregarHeadersSeguridad();
+            if (IsPostBack) return;
+
+            if (!SecurityHelper.EsConductor())
             {
-                VerificarSesion();
-                CargarDetalle();
-            }
-        }
-
-        #endregion
-
-        #region Inicialización
-
-        private void VerificarSesion()
-        {
-            if (Session["UsuarioID"] == null)
-            {
-                Response.Redirect("~/Views/Login.aspx?error=sesion", true);
+                RolesHelper.RedirigirSegunRol();
                 return;
             }
 
-            string rol = Session["Rol"]?.ToString().Trim().ToUpperInvariant() ?? "";
-            bool esAdmin = rol == "ADMIN" || rol == "ADMINISTRADOR DE SISTEMA" || rol == "SUPERVISOR";
-            if (!esAdmin && IdConductorActual == 0)
-            {
-                Response.Redirect("~/Views/Login.aspx?error=sesion", true);
-            }
-        }
-
-        private void CargarDetalle()
-        {
             try
             {
                 if (!int.TryParse(Request.QueryString["id"], out int idOrdenViaje) || idOrdenViaje <= 0)
-                {
-                    MostrarError("No se especificó una liquidación válida.");
-                    return;
-                }
+                    throw new ErrorNegocioException("No se indicó una liquidación válida.");
+                if (!EsDelConductor(idOrdenViaje))
+                    throw new ErrorNegocioException("No tienes permiso para ver esta liquidación.");
 
-                CargarCabecera(idOrdenViaje);
-                CargarIngresos();
-                CargarGastos();
-                CargarDetallesPeajes();
-                CargarDetallesReparaciones();
-                CargarDetallesHospedaje();
-                CargarDetallesCombustible();
-                CalcularBalance();
+                DetalleLiquidacion d = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrdenViaje);
+                if (d == null)
+                    throw new ErrorNegocioException("No se encontró la liquidación.");
 
+                Mostrar(idOrdenViaje, d);
                 pnlContenido.Visible = true;
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al cargar el detalle de la orden de viaje");
-                MostrarError($"Error al cargar la liquidación: {MensajeErrorHelper.ParaUsuario(ex)}");
+                if (!(ex is ErrorNegocioException))
+                    LogSGV.Error(ex, "Error al cargar el detalle de la liquidación del conductor");
+                litError.Text = MensajeErrorHelper.ParaUsuario(ex);
+                pnlError.Visible = true;
             }
         }
 
-        #endregion
-
-        #region Campos de estado interno
-
-        private string _numeroOrden;
-        private decimal _totalIngresosSoles;
-        private decimal _totalIngresosDolares;
-        private decimal _totalGastosSoles;
-        private decimal _totalGastosDolares;
-
-        #endregion
-
-        #region Carga de datos
-
-        private void CargarCabecera(int idOrdenViaje)
+        /// <summary>La orden es del conductor de la sesión (anti-IDOR).</summary>
+        private bool EsDelConductor(int idOrdenViaje)
         {
-            DataTable dt = DetalleOrdenViajeService.ObtenerCabecera(idOrdenViaje);
-
-            if (dt.Rows.Count == 0)
-                throw new ErrorNegocioException("No se encontró la liquidación solicitada.");
-
-            DataRow r = dt.Rows[0];
-
-            int idConductorOrden = Convert.ToInt32(r["idConductor"]);
-            if (idConductorOrden != IdConductorActual)
-                throw new ErrorNegocioException("No tienes permiso para ver esta liquidación.");
-
-            _numeroOrden = r["numeroOrdenViaje"].ToString();
-
-            lblNumeroOrden.Text      = System.Web.HttpUtility.HtmlEncode(_numeroOrden);
-            lblOrdenDetalle.Text     = System.Web.HttpUtility.HtmlEncode(_numeroOrden);
-            lblConductorDetalle.Text = System.Web.HttpUtility.HtmlEncode(r["nombreConductor"].ToString());
-            lblTractoDetalle.Text    = System.Web.HttpUtility.HtmlEncode(r["placaTracto"].ToString());
-            lblCarretaDetalle.Text   = System.Web.HttpUtility.HtmlEncode(r["placaCarreta"].ToString());
-
-            if (r["fechaSalida"] != DBNull.Value)
-                lblFechaSalidaDetalle.Text = Convert.ToDateTime(r["fechaSalida"]).ToString("dd/MM/yyyy");
-
-            if (r["fechaLlegada"] != DBNull.Value)
-                lblFechaLlegadaDetalle.Text = Convert.ToDateTime(r["fechaLlegada"]).ToString("dd/MM/yyyy");
-
-            string horaSalida  = r["horaSalida"]?.ToString()  ?? "";
-            string horaLlegada = r["horaLlegada"]?.ToString() ?? "";
-            lblHoraSalidaDetalle.Text  = string.IsNullOrEmpty(horaSalida)  ? "-" : horaSalida;
-            lblHoraLlegadaDetalle.Text = string.IsNullOrEmpty(horaLlegada) ? "-" : horaLlegada;
-
-            string obs = r["observaciones"]?.ToString() ?? "";
-            lblObservacionesDetalle.Text = string.IsNullOrEmpty(obs) ? "-" : System.Web.HttpUtility.HtmlEncode(obs);
-
-            string estado = r["estadoAprobacion"]?.ToString() ?? "PENDIENTE";
-            lblEstadoDetalle.Text = ObtenerBadgeEstado(estado);
+            int idConductor = Session["IdConductor"] != null ? Convert.ToInt32(Session["IdConductor"]) : 0;
+            if (idConductor <= 0) return false;
+            object n = DbHelper.EjecutarEscalar(
+                "SELECT COUNT(1) FROM OrdenViaje WHERE idOrdenViaje = @id AND idConductor = @idConductor",
+                DbHelper.Param("@id", idOrdenViaje),
+                DbHelper.Param("@idConductor", idConductor));
+            return n != null && n != DBNull.Value && Convert.ToInt32(n) > 0;
         }
 
-        private void CargarIngresos()
+        private void Mostrar(int idOrdenViaje, DetalleLiquidacion d)
         {
-            var filas = new List<FilaFinanciera>();
+            string estado = (d.EstadoAprobacion ?? "").Trim().ToUpperInvariant();
+            bool porConformar = estado == "POR_CONFORMAR";
+            bool aprobada = estado == "APROBADO" || estado == "COMPLETADO";
+            bool rechazada = estado == "REABIERTO" || estado == "RECHAZADO";
 
-            DataTable dtPrinc = DetalleOrdenViajeService.ObtenerIngresosPrincipales(_numeroOrden);
+            litNumero.Text = d.NumeroOrdenViaje;
+            litPeriodo.Text = d.FechaSalida + " → " + d.FechaLlegada;
+            lblEstado.Text = aprobada ? "Aprobada" : porConformar ? "Firma tu conformidad" : rechazada ? "Rechazada" : "En revisión";
+            lblEstado.CssClass = "dc-pill dc-pill-" + (aprobada ? "completado" : porConformar ? "en_proceso" : rechazada ? "cancelado" : "programado");
 
-            if (dtPrinc.Rows.Count > 0)
+            pnlPorConformar.Visible = porConformar;
+            lnkConformar.NavigateUrl = "~/Views/ConformarLiquidacion.aspx?id=" + idOrdenViaje;
+
+            litConductor.Text = d.NombreConductor;
+            litUnidades.Text = d.PlacaTracto + " / " + d.PlacaCarreta;
+            litSalida.Text = Unir(" · ", d.FechaSalida, d.HoraSalida);
+            litLlegada.Text = Unir(" · ", d.FechaLlegada,
+                !string.IsNullOrEmpty(d.HoraLlegadaGps) ? d.HoraLlegadaGps + " (GPS)"
+                : !string.IsNullOrEmpty(d.HoraLlegadaDeclarada) ? d.HoraLlegadaDeclarada : d.HoraLlegadaSistema);
+
+            // Gastos declarados
+            var gastos = new List<Renglon>();
+            void Gasto(string concepto, decimal s, decimal us, string detalle)
             {
-                DataRow r = dtPrinc.Rows[0];
-                AgregarFila(filas, "Despacho",          r["descDespacho"],         r["despachoSoles"],    r["despachoDolares"]);
-                AgregarFila(filas, "Mensualidad",        r["descMensualidad"],      r["mensualidadSoles"], r["mensualidadDolares"]);
-                AgregarFila(filas, "Otros Autorizados",  r["descOtrosAutorizados"], r["otrosSoles"],       r["otrosDolares"]);
-                AgregarFila(filas, "Préstamo",           r["descPrestamo"],         r["prestamoSoles"],    r["prestamosDolares"]);
+                if (s != 0 || us != 0) gastos.Add(new Renglon { Concepto = concepto, Detalle = detalle, Monto = Montos(s, us) });
             }
-
-            DataTable dtAd = DetalleOrdenViajeService.ObtenerIngresosAdicionales(_numeroOrden);
-
-            foreach (DataRow r in dtAd.Rows)
-                AgregarFila(filas, r["nombreCategoria"].ToString(), r["descripcion"], r["soles"], r["dolares"]);
-
-            _totalIngresosSoles = _totalIngresosDolares = 0;
-            foreach (var f in filas) { _totalIngresosSoles += f.Soles; _totalIngresosDolares += f.Dolares; }
-
-            rptIngresos.DataSource = filas;
-            rptIngresos.DataBind();
-
-            lblTotalIngresosSoles.Text   = _totalIngresosSoles.ToString("N2");
-            lblTotalIngresosDolares.Text = _totalIngresosDolares.ToString("N2");
-        }
-
-        private void CargarGastos()
-        {
-            var filas = new List<FilaFinanciera>();
-
-            DataTable dtEg = DetalleOrdenViajeService.ObtenerEgresos(_numeroOrden);
-
-            if (dtEg.Rows.Count > 0)
-            {
-                DataRow r = dtEg.Rows[0];
-                AgregarFila(filas, "Peajes",                r["descPeajes"],                   r["peajesSoles"],                   r["peajesDolares"]);
-                AgregarFila(filas, "Alimentación",           r["descAlimentacion"],             r["alimentacionSoles"],             r["alimentacionDolares"]);
-                AgregarFila(filas, "Apoyo-Seguridad",        r["descApoyoSeguridad"],           r["apoyoseguridadSoles"],           r["apoyoseguridadDolares"]);
-                AgregarFila(filas, "Reparaciones Varios",    r["descReparacionesVarios"],       r["reparacionesVariosSoles"],       r["repacionesVariosDolares"]);
-                AgregarFila(filas, "Movilidad",              r["descMovilidad"],                r["movilidadSoles"],                r["movilidadDolares"]);
-                AgregarFila(filas, "Encarpada/Desencarpada", r["descEncarpadaDesencarpada"],    r["encarpada_desencarpadaSoles"],   r["encarpada_desencarpadaDolares"]);
-                AgregarFila(filas, "Hospedaje",              r["descHospedaje"],                r["hospedajeSoles"],                r["hospedajeDolares"]);
-                AgregarFila(filas, "Combustible",            r["descCombustible"],              r["combustibleSoles"],              r["combustibleDolares"]);
-            }
-
-            DataTable dtAd = DetalleOrdenViajeService.ObtenerCategoriasAdicionales(_numeroOrden);
-
-            foreach (DataRow r in dtAd.Rows)
-                AgregarFila(filas, r["nombreCategoria"].ToString(), r["descripcion"], r["soles"], r["dolares"]);
-
-            _totalGastosSoles = _totalGastosDolares = 0;
-            foreach (var f in filas) { _totalGastosSoles += f.Soles; _totalGastosDolares += f.Dolares; }
-
-            rptGastos.DataSource = filas;
+            Gasto("Combustible", d.GastosCombustibleSoles, d.GastosCombustibleDolares, d.DescCombustible);
+            Gasto("Alimentación", d.GastosAlimentacionSoles, d.GastosAlimentacionDolares, d.DescAlimentacion);
+            Gasto("Peajes", d.GastosPeajesSoles, d.GastosPeajesDolares, d.DescPeajes);
+            Gasto("Hospedaje", d.GastosHospedajeSoles, d.GastosHospedajeDolares, d.DescHospedaje);
+            Gasto("Movilidad", d.GastosMovilidadSoles, d.GastosMovilidadDolares, d.DescMovilidad);
+            Gasto("Encarpada / desencarpada", d.GastosEncarpadaSoles, d.GastosEncarpadaDolares, d.DescEncarpada);
+            Gasto("Reparaciones y varios", d.GastosReparacionesSoles, d.GastosReparacionesDolares, d.DescReparaciones);
+            Gasto("Apoyo / seguridad", d.GastosApoyoSeguridadSoles, d.GastosApoyoSeguridadDolares, d.DescApoyoSeguridad);
+            foreach (var a in d.DetallesGastosAdicionales ?? new List<ItemAdicional>())
+                Gasto(a.Nombre, a.Soles, a.Dolares, a.Descripcion);
+            rptGastos.DataSource = gastos;
             rptGastos.DataBind();
+            phSinGastos.Visible = gastos.Count == 0;
+            litTotalGastos.Text = Montos(d.TotalGastosSoles, d.TotalGastosDolares, siempre: true);
 
-            lblTotalGastosSoles.Text   = _totalGastosSoles.ToString("N2");
-            lblTotalGastosDolares.Text = _totalGastosDolares.ToString("N2");
-        }
-
-        private void CargarDetallesPeajes()
-        {
-            var lista = new List<FilaPeaje>();
-            DataTable dt = DetalleOrdenViajeService.ObtenerDetallePeajes(_numeroOrden);
-
-            foreach (DataRow r in dt.Rows)
+            // La liquidación final solo existe cuando la administración ya la revisó.
+            bool revisada = porConformar || aprobada;
+            pnlSinRevision.Visible = !revisada;
+            pnlLiquidacion.Visible = revisada;
+            if (revisada)
             {
-                lista.Add(new FilaPeaje
+                decimal saldoS = LiquidacionCalculos.SaldoFinal(d.TotalIngresosSoles, d.TotalGastosSoles, d.DescuentoSoles, d.ReintegroSoles);
+                decimal saldoD = LiquidacionCalculos.SaldoFinal(d.TotalIngresosDolares, d.TotalGastosDolares, d.DescuentoDolares, d.ReintegroDolares);
+
+                var filas = new List<Renglon>
                 {
-                    Estacion      = r["estacion"].ToString(),
-                    Fecha         = r["fecha"] != DBNull.Value ? Convert.ToDateTime(r["fecha"]) : DateTime.MinValue,
-                    Comprobante   = r["numeroComprobante"]?.ToString() ?? "",
-                    Soles         = r["montoSoles"]   != DBNull.Value ? Convert.ToDecimal(r["montoSoles"])   : 0,
-                    Dolares       = r["montoDolares"]  != DBNull.Value ? Convert.ToDecimal(r["montoDolares"]) : 0,
-                    Observaciones = r["observaciones"]?.ToString() ?? ""
-                });
-            }
+                    new Renglon { Concepto = "Dinero que te entregaron", Monto = Montos(d.TotalIngresosSoles, d.TotalIngresosDolares, siempre: true) },
+                    new Renglon { Concepto = "(−) Tus gastos declarados", Monto = Montos(d.TotalGastosSoles, d.TotalGastosDolares, siempre: true) }
+                };
+                if (d.DescuentoSoles != 0 || d.DescuentoDolares != 0)
+                    filas.Add(new Renglon { Concepto = "(+) Descuento", Detalle = "Motivo: " + d.DescuentoMotivo, Monto = Montos(d.DescuentoSoles, d.DescuentoDolares), Clase = "dv-ajuste" });
+                if (d.ReintegroSoles != 0 || d.ReintegroDolares != 0)
+                    filas.Add(new Renglon { Concepto = "(−) Reintegro", Detalle = "Motivo: " + d.ReintegroMotivo, Monto = Montos(d.ReintegroSoles, d.ReintegroDolares), Clase = "dv-ajuste" });
+                filas.Add(new Renglon { Concepto = "Saldo final", Monto = Montos(saldoS, saldoD, siempre: true), Clase = "dc-resumen-total" });
+                rptLiquidacion.DataSource = filas;
+                rptLiquidacion.DataBind();
+                litSaldoTexto.Text = LiquidacionCalculos.DescribirSaldo(saldoS, saldoD);
 
-            if (lista.Count > 0)
-            {
-                gvPeajes.DataSource = lista;
-                gvPeajes.DataBind();
-                pnlDetallePeajes.Visible = true;
-            }
-        }
-
-        private void CargarDetallesReparaciones()
-        {
-            var lista = new List<FilaGenerico>();
-            DataTable dt = DetalleOrdenViajeService.ObtenerDetalleReparaciones(_numeroOrden);
-
-            foreach (DataRow r in dt.Rows)
-            {
-                lista.Add(new FilaGenerico
+                var entregas = (d.Entregas ?? new List<MovimientoViaje>()).Select(m => new Renglon
                 {
-                    Tipo          = r["tipo"]?.ToString() ?? "",
-                    Fecha         = r["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(r["fechaComprobante"]) : DateTime.MinValue,
-                    Comprobante   = r["numeroComprobante"]?.ToString() ?? "",
-                    Soles         = r["montoSoles"]   != DBNull.Value ? Convert.ToDecimal(r["montoSoles"])   : 0,
-                    Dolares       = r["montoDolares"]  != DBNull.Value ? Convert.ToDecimal(r["montoDolares"]) : 0,
-                    Observaciones = r["observaciones"]?.ToString() ?? ""
-                });
-            }
+                    Concepto = m.Fecha.ToString("dd/MM/yyyy HH:mm") + " · " + MovimientosViajeService.NombreConcepto(m.Tipo, m.Concepto),
+                    Detalle = Unir(" · ", MovimientosViajeService.NombreMedio(m.Medio),
+                        string.IsNullOrEmpty(m.NumeroOperacion) ? null : "op. " + m.NumeroOperacion, m.Descripcion),
+                    Monto = Montos(m.MontoSoles, m.MontoDolares)
+                }).ToList();
+                rptEntregas.DataSource = entregas;
+                rptEntregas.DataBind();
+                pnlEntregas.Visible = entregas.Count > 0;
 
-            if (lista.Count > 0)
-            {
-                gvReparaciones.DataSource = lista;
-                gvReparaciones.DataBind();
-                pnlDetalleReparaciones.Visible = true;
-            }
-        }
-
-        private void CargarDetallesHospedaje()
-        {
-            var lista = new List<FilaGenerico>();
-            DataTable dt = DetalleOrdenViajeService.ObtenerDetalleHospedaje(_numeroOrden);
-
-            foreach (DataRow r in dt.Rows)
-            {
-                lista.Add(new FilaGenerico
+                var pagos = (d.PagosDirectos ?? new List<MovimientoViaje>()).Select(m => new Renglon
                 {
-                    Lugar         = r["lugar"]?.ToString() ?? "",
-                    Fecha         = r["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(r["fechaComprobante"]) : DateTime.MinValue,
-                    Comprobante   = r["numeroComprobante"]?.ToString() ?? "",
-                    Soles         = r["montoSoles"]   != DBNull.Value ? Convert.ToDecimal(r["montoSoles"])   : 0,
-                    Dolares       = r["montoDolares"]  != DBNull.Value ? Convert.ToDecimal(r["montoDolares"]) : 0,
-                    Observaciones = r["observaciones"]?.ToString() ?? ""
-                });
+                    Concepto = m.Fecha.ToString("dd/MM/yyyy") + " · " + MovimientosViajeService.NombreConcepto(m.Tipo, m.Concepto),
+                    Detalle = Unir(" · ", m.NombreProveedor, m.Comprobante, m.Descripcion),
+                    Monto = Montos(m.MontoSoles, m.MontoDolares)
+                }).ToList();
+                rptPagosDirectos.DataSource = pagos;
+                rptPagosDirectos.DataBind();
+                pnlPagosDirectos.Visible = pagos.Count > 0;
+
+                litNota.Text = d.NotaAprobacion;
+                pnlNota.Visible = !string.IsNullOrWhiteSpace(d.NotaAprobacion);
             }
 
-            if (lista.Count > 0)
-            {
-                gvHospedaje.DataSource = lista;
-                gvHospedaje.DataBind();
-                pnlDetalleHospedaje.Visible = true;
-            }
+            string observaciones = LiquidacionCalculos.ObservacionesDelConductor(d.Observaciones);
+            litObservaciones.Text = observaciones;
+            pnlObservaciones.Visible = !string.IsNullOrWhiteSpace(observaciones);
+
+            // El PDF existe desde la primera firma; se sirve el documento firmado vigente.
+            lnkPdf.Visible = FirmaService.ObtenerEventosVigentes(idOrdenViaje).Any();
+            lnkPdf.NavigateUrl = "~/Views/DescargarPdfOrdenViaje.aspx?id=" + idOrdenViaje;
         }
 
-        private void CargarDetallesCombustible()
+        /// <summary>"S/ 641.90 · US$ 27.25"; un monto en cero se omite (si ambos lo son, "S/ 0.00" o "—").</summary>
+        private static string Montos(decimal soles, decimal dolares, bool siempre = false)
         {
-            var lista = new List<FilaGenerico>();
-            DataTable dt = DetalleOrdenViajeService.ObtenerDetalleCombustible(_numeroOrden);
-
-            foreach (DataRow r in dt.Rows)
-            {
-                lista.Add(new FilaGenerico
-                {
-                    Lugar         = r["lugar"]?.ToString() ?? "",
-                    Fecha         = r["fechaComprobante"] != DBNull.Value ? Convert.ToDateTime(r["fechaComprobante"]) : DateTime.MinValue,
-                    Comprobante   = r["numeroComprobante"]?.ToString() ?? "",
-                    Soles         = r["montoSoles"]   != DBNull.Value ? Convert.ToDecimal(r["montoSoles"])   : 0,
-                    Dolares       = r["montoDolares"]  != DBNull.Value ? Convert.ToDecimal(r["montoDolares"]) : 0,
-                    Observaciones = r["observaciones"]?.ToString() ?? ""
-                });
-            }
-
-            if (lista.Count > 0)
-            {
-                gvCombustible.DataSource = lista;
-                gvCombustible.DataBind();
-                pnlDetalleCombustible.Visible = true;
-            }
+            var partes = new List<string>();
+            if (soles != 0 || (siempre && dolares == 0)) partes.Add("S/ " + soles.ToString("N2", CulturaPe));
+            if (dolares != 0) partes.Add("US$ " + dolares.ToString("N2", CulturaPe));
+            return partes.Count > 0 ? string.Join(" · ", partes) : "—";
         }
 
-        private void CalcularBalance()
-        {
-            decimal balanceSoles   = _totalIngresosSoles   - _totalGastosSoles;
-            decimal balanceDolares = _totalIngresosDolares - _totalGastosDolares;
-
-            string claseSoles   = balanceSoles >= 0   ? "balance-positivo" : "balance-negativo";
-            string claseDolares = balanceDolares >= 0 ? "balance-positivo" : "balance-negativo";
-
-            lblBalanceSoles.Text   = $"<span class='{claseSoles}'>S/ {balanceSoles:N2}</span>";
-            lblBalanceDolares.Text = $"<span class='{claseDolares}'>$ {balanceDolares:N2}</span>";
-        }
-
-        #endregion
-
-        #region Métodos Auxiliares
-
-        private void AgregarFila(List<FilaFinanciera> lista, string concepto, object desc, object soles, object dolares)
-        {
-            decimal s = soles   != DBNull.Value ? Convert.ToDecimal(soles)   : 0;
-            decimal d = dolares != DBNull.Value ? Convert.ToDecimal(dolares) : 0;
-            if (s == 0 && d == 0) return;
-
-            lista.Add(new FilaFinanciera
-            {
-                Concepto    = concepto,
-                Descripcion = desc != null && desc != DBNull.Value ? desc.ToString() : "",
-                Soles       = s,
-                Dolares     = d
-            });
-        }
-
-        protected string FormatearMonto(object valor)
-        {
-            if (valor == null || valor == DBNull.Value) return "-";
-            decimal monto = Convert.ToDecimal(valor);
-            return monto == 0 ? "-" : monto.ToString("N2");
-        }
-
-        private string ObtenerBadgeEstado(string estado)
-        {
-            switch (estado.ToUpper())
-            {
-                case "APROBADO":
-                case "COMPLETADO":
-                    return "<span class='badge badge-success px-3 py-2' style='font-size:0.9rem;'>Aprobado</span>";
-                case "PENDIENTE":
-                    return "<span class='badge badge-warning px-3 py-2' style='font-size:0.9rem;color:#78350f;'>Pendiente Revisión</span>";
-                case "REABIERTO":
-                    return "<span class='badge badge-danger px-3 py-2' style='font-size:0.9rem;'>Rechazado / Reabierto</span>";
-                case "POR_CONFORMAR":
-                    return "<span class='badge badge-info px-3 py-2' style='font-size:0.9rem;'>Revisada · esperando conformidad del conductor</span>";
-                default:
-                    return $"<span class='badge badge-secondary px-3 py-2' style='font-size:0.9rem;'>{System.Web.HttpUtility.HtmlEncode(estado)}</span>";
-            }
-        }
-
-        private void MostrarError(string mensaje)
-        {
-            lblError.Text        = System.Web.HttpUtility.HtmlEncode(mensaje);
-            pnlError.Visible     = true;
-            pnlContenido.Visible = false;
-        }
-
-        #endregion
+        private static string Unir(string separador, params string[] partes) =>
+            string.Join(separador, partes.Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p.Trim()));
     }
 }

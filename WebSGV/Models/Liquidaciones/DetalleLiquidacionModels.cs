@@ -168,7 +168,7 @@ namespace WebSGV.Models.Liquidaciones
         /// <summary>Motivo del reintegro (obligatorio si hay reintegro).</summary>
         public string ReintegroMotivo { get; set; }
 
-        /// <summary>Cada entrega de dinero unida a esta liquidación (fecha, medio, quién llevó el sobre…).</summary>
+        /// <summary>Cada entrega de dinero unida a esta liquidación (fecha, concepto, medio…).</summary>
         public List<MovimientoViaje> Entregas { get; set; } = new List<MovimientoViaje>();
         /// <summary>Gastos del viaje que pagó la empresa directamente al proveedor: no tocan el saldo del conductor.</summary>
         public List<MovimientoViaje> PagosDirectos { get; set; } = new List<MovimientoViaje>();
@@ -190,8 +190,6 @@ namespace WebSGV.Models.Liquidaciones
         public decimal MontoSoles { get; set; }
         public decimal MontoDolares { get; set; }
         public string Medio { get; set; }
-        public int? IdConductorPortador { get; set; }
-        public string NombrePortador { get; set; }
         public string NumeroOperacion { get; set; }
         public string RucProveedor { get; set; }
         public string NombreProveedor { get; set; }

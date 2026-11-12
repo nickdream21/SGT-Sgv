@@ -981,7 +981,6 @@ namespace WebSGV.Views
                     m.MontoDolares,
                     Medio = MovimientosViajeService.NombreMedio(m.Medio),
                     MedioCodigo = m.Medio,
-                    m.NombrePortador,
                     m.NumeroOperacion,
                     m.NombreProveedor,
                     m.Comprobante,

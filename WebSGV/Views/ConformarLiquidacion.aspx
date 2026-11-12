@@ -5,15 +5,12 @@
     <meta charset="utf-8" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0B3D91" />
+    <meta name="theme-color" content="#f8f9fa" />
     <title>Conformidad de la liquidación · SGV</title>
 
     <%-- Mismas librerías y versiones que Site.Master (Bootstrap 4.6.2, Font Awesome 5.15.4). --%>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
 
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/FirmarLiquidacion.css") %>" rel="stylesheet" />
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/ConformarLiquidacion.css") %>" rel="stylesheet" />
@@ -151,12 +148,12 @@
                 <div class="hash" id="okCodigo" style="font-size: 16px; letter-spacing: 1px;">-</div>
             </div>
             <div style="margin-top: 18px;" id="okPdfBloque">
-                <a href="#" id="okVerPdf" class="fl-btn" style="text-decoration:none; display:inline-block; max-width:240px;">
+                <a href="#" id="okVerPdf" class="fl-btn" style="text-decoration:none; display:inline-flex; width:100%; max-width:240px;">
                     <i class="fas fa-file-pdf"></i>Ver PDF firmado
                 </a>
             </div>
             <div style="margin-top: 12px;">
-                <a href="<%= ResolveUrl("~/Views/DashboardConductor.aspx") %>" class="fl-btn" style="text-decoration:none; display:inline-block; max-width:240px; background: var(--azul); color:#fff; border-color: var(--azul);">
+                <a href="<%= ResolveUrl("~/Views/DashboardConductor.aspx") %>" class="fl-btn" style="text-decoration:none; display:inline-flex; width:100%; max-width:240px; background: var(--azul); color:#fff; border-color: var(--azul);">
                     <i class="fas fa-home"></i>Volver al inicio
                 </a>
             </div>

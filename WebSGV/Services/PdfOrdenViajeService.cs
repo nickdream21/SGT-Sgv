@@ -555,7 +555,6 @@ namespace WebSGV.Services
                         pagoDirecto ? Unir(" ", m.NombreProveedor, string.IsNullOrEmpty(m.RucProveedor) ? null : "RUC " + m.RucProveedor) : null,
                         pagoDirecto ? m.Comprobante : null,
                         MovimientosViajeService.NombreMedio(m.Medio),
-                        m.Medio == "SOBRE" && !string.IsNullOrEmpty(m.NombrePortador) ? "lo llevó " + Normalizar(m.NombrePortador) : null,
                         string.IsNullOrEmpty(m.NumeroOperacion) ? null : "op. " + m.NumeroOperacion,
                         m.Descripcion);
                     CeldaTexto(table.Cell(), m.Fecha.ToString("dd/MM/yyyy HH:mm", CulturaPe));

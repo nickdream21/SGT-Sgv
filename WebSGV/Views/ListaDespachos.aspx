@@ -86,11 +86,16 @@
                                             OnClick="btnMostrarLotes_Click"
                                             CausesValidation="false" />
                                     </div>
-                                    <asp:Button ID="btnVolver" runat="server" 
-                                        Text="← Nuevo Registro" 
+                                    <div class="ld-toolbar-acciones">
+                                    <asp:HyperLink ID="hlVolverBandeja" runat="server" Visible="false"
+                                        NavigateUrl="~/Views/BandejaDocumentos.aspx"
+                                        CssClass="btn btn-outline-primary ld-toolbar-back">← Bandeja de documentos</asp:HyperLink>
+                                    <asp:Button ID="btnVolver" runat="server"
+                                        Text="+ Nuevo despacho"
                                         CssClass="btn btn-outline-secondary ld-toolbar-back"
                                         OnClick="btnVolver_Click"
                                         CausesValidation="false" />
+                                    </div>
                                 </div>
 
                                 <!-- PANEL PRINCIPAL: LISTA DE VIAJES ACTIVOS -->
@@ -1089,9 +1094,14 @@
                                                     <span class="ld-chip"><i class="fas fa-hashtag"></i> Pedido <asp:Label ID="lblPedidoManifiestos" runat="server"></asp:Label></span>
                                                 </div>
                                             </div>
-                                            <asp:Button ID="btnVolverManifiestos" runat="server" Text="← Volver al lote"
-                                                CssClass="btn btn-outline-secondary btn-action"
-                                                OnClick="btnVolverManifiestos_Click" CausesValidation="false" />
+                                            <div class="ld-docs-volver">
+                                                <asp:HyperLink ID="hlVolverBandejaDocs" runat="server" Visible="false"
+                                                    NavigateUrl="~/Views/BandejaDocumentos.aspx"
+                                                    CssClass="btn btn-primary btn-action">← Volver a la bandeja</asp:HyperLink>
+                                                <asp:Button ID="btnVolverManifiestos" runat="server" Text="Ver el lote"
+                                                    CssClass="btn btn-outline-secondary btn-action"
+                                                    OnClick="btnVolverManifiestos_Click" CausesValidation="false" />
+                                            </div>
                                         </div>
                                         <div class="section-content">
 

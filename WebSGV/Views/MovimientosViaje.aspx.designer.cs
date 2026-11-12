@@ -25,7 +25,6 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.TextBox txtDolares;
         protected global::System.Web.UI.WebControls.DropDownList ddlMedio;
         protected global::System.Web.UI.WebControls.TextBox txtOperacion;
-        protected global::System.Web.UI.WebControls.DropDownList ddlPortador;
         protected global::System.Web.UI.WebControls.TextBox txtProveedor;
         protected global::System.Web.UI.WebControls.TextBox txtRuc;
         protected global::System.Web.UI.WebControls.TextBox txtComprobante;

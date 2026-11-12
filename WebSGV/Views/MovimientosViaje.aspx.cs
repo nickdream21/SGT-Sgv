@@ -13,7 +13,7 @@ namespace WebSGV.Views
 {
     /// <summary>
     /// Dinero y pagos del viaje: la administración y monitoreo registran en el momento cada entrega
-    /// de dinero al conductor (adelanto, segundo despacho, sobre con otro conductor…) y cada pago que
+    /// de dinero al conductor (adelanto, segundo despacho, mensualidad…) y cada pago que
     /// la empresa hace directamente a un proveedor del viaje. Al aprobar la liquidación del conductor
     /// se unen a ella (LiquidacionesPendientes) y aparecen en su PDF y en su conformidad.
     /// </summary>
@@ -38,7 +38,7 @@ namespace WebSGV.Views
         private void CargarListas()
         {
             // Activos y, aunque estén dados de baja, los que aún tienen un viaje abierto o una
-            // liquidación sin cerrar (puede haber dinero que registrarles). El sobre lo lleva un activo.
+            // liquidación sin cerrar (puede haber dinero que registrarles).
             DataTable dt = DbHelper.ConsultarTabla(@"
                 SELECT c.idConductor, LTRIM(RTRIM(c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, ''))) AS nombre,
                        CAST(ISNULL(c.activo, 0) AS BIT) AS activo
@@ -49,15 +49,12 @@ namespace WebSGV.Views
                               AND o.estadoAprobacion IN ('PENDIENTE', 'REABIERTO', 'POR_CONFORMAR'))
                 ORDER BY nombre");
             ddlConductor.Items.Clear();
-            ddlPortador.Items.Clear();
             ddlConductor.Items.Add(new ListItem("Seleccione…", ""));
-            ddlPortador.Items.Add(new ListItem("Seleccione…", ""));
             foreach (DataRow r in dt.Rows)
             {
                 string nombre = System.Text.RegularExpressions.Regex.Replace(r["nombre"].ToString(), @"\s+", " ");
                 bool activo = Convert.ToBoolean(r["activo"]);
                 ddlConductor.Items.Add(new ListItem(activo ? nombre : nombre + " (inactivo)", r["idConductor"].ToString()));
-                if (activo) ddlPortador.Items.Add(new ListItem(nombre, r["idConductor"].ToString()));
             }
 
             ddlConceptoEntrega.Items.Clear();
@@ -129,7 +126,6 @@ namespace WebSGV.Views
                     MontoSoles = Decimal(txtSoles.Text),
                     MontoDolares = Decimal(txtDolares.Text),
                     Medio = ddlMedio.SelectedValue,
-                    IdConductorPortador = int.TryParse(ddlPortador.SelectedValue, out int p) ? p : (int?)null,
                     NumeroOperacion = Texto(txtOperacion.Text, 50),
                     NombreProveedor = Texto(txtProveedor.Text, 150),
                     RucProveedor = Texto(txtRuc.Text, 11),
@@ -157,7 +153,7 @@ namespace WebSGV.Views
 
                 AuditoriaHelper.Registrar("REGISTRAR_MOVIMIENTO_VIAJE", "MovimientoDineroViaje", r.IdMovimiento,
                     $"{(tipo == MovimientosViajeService.PagoDirecto ? "Pago directo" : "Entrega")} {m.Concepto} S/ {m.MontoSoles:0.00} US$ {m.MontoDolares:0.00} " +
-                    $"({m.Medio}{(m.Medio == "SOBRE" ? ", lleva el conductor " + m.IdConductorPortador : "")}) al conductor {m.IdConductor}");
+                    $"({m.Medio}) al conductor {m.IdConductor}");
 
                 MostrarMensaje("Registrado. Se unirá a la liquidación del conductor cuando la administración la revise.", "success");
                 txtSoles.Text = txtDolares.Text = txtOperacion.Text = txtProveedor.Text = txtRuc.Text = txtComprobante.Text = txtDescripcion.Text = "";
@@ -218,7 +214,6 @@ namespace WebSGV.Views
             var m = (MovimientoViaje)item;
             return string.Join(" · ", new[]
             {
-                m.Medio == "SOBRE" && m.NombrePortador != null ? "lleva: " + m.NombrePortador : null,
                 string.IsNullOrEmpty(m.NumeroOperacion) ? null : "op. " + m.NumeroOperacion,
                 m.Tipo == MovimientosViajeService.PagoDirecto
                     ? string.Join(" ", new[] { m.NombreProveedor, string.IsNullOrEmpty(m.RucProveedor) ? null : "RUC " + m.RucProveedor, m.Comprobante }.Where(s => !string.IsNullOrEmpty(s)))

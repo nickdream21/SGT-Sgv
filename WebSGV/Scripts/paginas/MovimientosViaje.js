@@ -1,5 +1,4 @@
-// Dinero y pagos del viaje: muestra los campos que corresponden al tipo (entrega / pago directo)
-// y al medio (sobre con otro conductor).
+// Dinero y pagos del viaje: muestra los campos que corresponden al tipo (entrega / pago directo).
 (function () {
     'use strict';
 
@@ -25,11 +24,9 @@
             opcionSobre.disabled = esPago;
             if (esPago && medio.value === 'SOBRE') medio.value = 'YAPE';
         }
-        mostrar('.mv-solo-sobre', !esPago && medio.value === 'SOBRE');
     }
 
     document.querySelectorAll('#rblTipo input').forEach(function (r) { r.addEventListener('change', actualizar); });
-    document.getElementById(SGV.ddlMedio).addEventListener('change', actualizar);
     actualizar();
 
     window.abrirAnular = function (id) {

@@ -546,7 +546,6 @@ function cargarMovimientosRevision(idOrden) {
             _movimientosRevision.forEach(function (m) {
                 var esPago = m.Tipo === 'PAGO_DIRECTO';
                 var sub = [];
-                if (m.NombrePortador) sub.push('lleva: ' + m.NombrePortador);
                 if (m.NumeroOperacion) sub.push('op. ' + m.NumeroOperacion);
                 if (esPago && m.NombreProveedor) sub.push(m.NombreProveedor + (m.Comprobante ? ' · ' + m.Comprobante : ''));
                 if (m.Descripcion) sub.push(m.Descripcion);
@@ -587,7 +586,7 @@ function aplicarEntregasALaTabla() {
               : m.ConceptoCodigo === 'OTROS' ? 'OtrosIngresos' : 'Despacho';
         filas[k].s += parseFloat(m.MontoSoles || 0);
         filas[k].d += parseFloat(m.MontoDolares || 0);
-        filas[k].det.push(m.Fecha.substr(0, 5) + ' ' + m.Medio.toLowerCase() + (m.NombrePortador ? ' (' + m.NombrePortador + ')' : ''));
+        filas[k].det.push(m.Fecha.substr(0, 5) + ' ' + m.Medio.toLowerCase());
     });
     if (!hayEntregas && _movimientosRevision.every(function (m) { return m.Tipo !== 'ENTREGA'; })) return;
     $('.tabla-entregado tr[data-ingreso]').each(function () {
@@ -617,6 +616,12 @@ function validarMotivoAjuste(hayMonto, selector, selectorError, tipo) {
 function aprobarDesdeModal() {
     if (!idOrdenParaAprobar) return;
     limpiarErroresFormulario();
+
+    // Sin las entregas cargadas, "Dinero entregado" saldría sin lo registrado durante el viaje.
+    if (_movimientosRevision === null) {
+        SGV.avisar('Todavía se están cargando las entregas registradas de este viaje. Espere un momento; si no aparecen, cierre y vuelva a abrir la revisión.');
+        return;
+    }
 
     var ajustes = {
         DescuentoSoles: parseFloat($('#ajusteDescuentoSoles').val()) || 0,

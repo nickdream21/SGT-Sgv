@@ -22,14 +22,11 @@ namespace WebSGV.Tests
             Assert.Null(MovimientosViajeService.Validar(Entrega(), Ahora));
 
         [Fact]
-        public void Sobre_ExigeOtroConductorQueLoLleve()
+        public void Sobre_NoPideQuienLoLleva()
         {
-            var m = Entrega("SEGUNDO_DESPACHO", "SOBRE");
-            Assert.Contains("lleva el sobre", MovimientosViajeService.Validar(m, Ahora));
-            m.IdConductorPortador = 10;
-            Assert.Contains("debe ser otro", MovimientosViajeService.Validar(m, Ahora));
-            m.IdConductorPortador = 20;
-            Assert.Null(MovimientosViajeService.Validar(m, Ahora));
+            // Basta el monto: el conductor lo reconoce al firmar su conformidad.
+            Assert.Null(MovimientosViajeService.Validar(Entrega("SEGUNDO_DESPACHO", "SOBRE"), Ahora));
+            Assert.Equal("Sobre", MovimientosViajeService.NombreMedio("SOBRE"));
         }
 
         [Fact]
@@ -55,7 +52,7 @@ namespace WebSGV.Tests
             Assert.Contains("11 dígitos", MovimientosViajeService.Validar(m, Ahora));
             m.RucProveedor = "20123456789";
             Assert.Null(MovimientosViajeService.Validar(m, Ahora));
-            m.Medio = "SOBRE"; m.IdConductorPortador = 20;
+            m.Medio = "SOBRE";
             Assert.Contains("no va en sobre", MovimientosViajeService.Validar(m, Ahora));
         }
 
@@ -85,7 +82,7 @@ namespace WebSGV.Tests
             {
                 Entrega("ADELANTO", "EFECTIVO", 300m),
                 new MovimientoViaje { Tipo = MovimientosViajeService.Entrega, Concepto = "SEGUNDO_DESPACHO", Medio = "SOBRE",
-                                      NombrePortador = "JUAN PEREZ", MontoSoles = 200m, Fecha = Ahora },
+                                      MontoSoles = 200m, Fecha = Ahora },
                 new MovimientoViaje { Tipo = MovimientosViajeService.Entrega, Concepto = "PRESTAMO", Medio = "YAPE", MontoSoles = 50m, Fecha = Ahora },
                 new MovimientoViaje { Tipo = MovimientosViajeService.Entrega, Concepto = "OTROS", Medio = "EFECTIVO", MontoDolares = 20m, Fecha = Ahora },
                 new MovimientoViaje { Tipo = MovimientosViajeService.PagoDirecto, Concepto = "REPARACION", Medio = "YAPE", MontoSoles = 40m, Fecha = Ahora },
@@ -98,23 +95,24 @@ namespace WebSGV.Tests
             Assert.Equal(50m, r.PrestamoSoles);
             Assert.Equal(20m, r.OtrosDolares);
             Assert.Equal(0m, r.MensualidadSoles);
-            Assert.Contains("JUAN PEREZ", r.DescDespacho);
+            Assert.Contains("sobre", r.DescDespacho);
         }
 
         [Fact]
-        public void Huella_CambiaSiCambiaUnaEntregaOQuienLlevoElSobre()
+        public void Huella_CambiaSiCambiaElMontoOElMedioDeUnaEntrega()
         {
-            DetalleLiquidacion Detalle(int portador) => new DetalleLiquidacion
+            DetalleLiquidacion Detalle(decimal monto, string medio = "SOBRE") => new DetalleLiquidacion
             {
                 NumeroOrdenViaje = "OV-1",
                 Entregas = new List<MovimientoViaje>
                 {
                     new MovimientoViaje { IdMovimiento = 1, Tipo = MovimientosViajeService.Entrega, Concepto = "SEGUNDO_DESPACHO",
-                                          Medio = "SOBRE", IdConductorPortador = portador, MontoSoles = 200m, Fecha = Ahora }
+                                          Medio = medio, MontoSoles = monto, Fecha = Ahora }
                 }
             };
-            Assert.NotEqual(HuellaLiquidacion.Calcular(Detalle(20)), HuellaLiquidacion.Calcular(Detalle(21)));
-            Assert.Equal(HuellaLiquidacion.Calcular(Detalle(20)), HuellaLiquidacion.Calcular(Detalle(20)));
+            Assert.NotEqual(HuellaLiquidacion.Calcular(Detalle(200m)), HuellaLiquidacion.Calcular(Detalle(201m)));
+            Assert.NotEqual(HuellaLiquidacion.Calcular(Detalle(200m)), HuellaLiquidacion.Calcular(Detalle(200m, "EFECTIVO")));
+            Assert.Equal(HuellaLiquidacion.Calcular(Detalle(200m)), HuellaLiquidacion.Calcular(Detalle(200m)));
         }
     }
 }

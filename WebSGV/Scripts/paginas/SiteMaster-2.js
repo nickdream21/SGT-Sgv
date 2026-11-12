@@ -121,3 +121,35 @@ $(document).ready(function () {
         }
     });
 });
+
+// Atrás sin pantalla gris: las páginas protegidas no se guardan en caché (no-store), así que si
+// una página llegó por POST (un botón del servidor) y el usuario vuelve a ella con Atrás, el
+// navegador muestra "Confirmar reenvío del formulario" (ERR_CACHE_MISS). Se cambia esa entrada
+// del historial por la misma URL como GET: Atrás y F5 vuelven a cargar la página limpia y nunca
+// reenvían un registro.
+(function () {
+    if (!SGV.esRespuestaPost || !window.history || !history.replaceState) return;
+    try { history.replaceState(history.state, document.title, window.location.href); } catch (e) { }
+})();
+
+// Textos con "<" pegado a una letra (o "&#"): ASP.NET los toma por HTML y rechaza el formulario
+// entero ("valor Request.Form peligroso"), con lo que el usuario pierde lo que había llenado.
+// Se separan con un espacio al salir del campo y otra vez al enviar; el texto se lee igual.
+// Las contraseñas no se tocan.
+(function () {
+    function esTexto(el) {
+        if (!el || !el.tagName) return false;
+        if (el.tagName === 'TEXTAREA') return true;
+        return el.tagName === 'INPUT' && /^(text|search|email|tel|url)?$/.test((el.getAttribute('type') || '').toLowerCase());
+    }
+    function limpiar(el) {
+        var v = el.value;
+        if (typeof v !== 'string' || (v.indexOf('<') < 0 && v.indexOf('&#') < 0)) return;
+        el.value = v.replace(/<(?=[A-Za-z!\/?])/g, '< ').replace(/&#/g, '& #');
+    }
+    document.addEventListener('change', function (e) { if (esTexto(e.target)) limpiar(e.target); }, true);
+    document.addEventListener('submit', function (e) {
+        var campos = e.target && e.target.querySelectorAll ? e.target.querySelectorAll('input, textarea') : [];
+        for (var i = 0; i < campos.length; i++) if (esTexto(campos[i])) limpiar(campos[i]);
+    }, true);
+})();

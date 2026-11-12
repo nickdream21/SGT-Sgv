@@ -332,8 +332,8 @@
                     <li class="nav-item">
                         <span class="navbar-text user-info">
                             <i class="fas fa-user-circle"></i>
-                            <%= NombreUsuario %>
-                            <span class="badge badge-primary badge-rol"><%= RolUsuario %></span>
+                            <%: NombreUsuario %>
+                            <span class="badge badge-primary badge-rol"><%: RolUsuario %></span>
                         </span>
                     </li>
                     <li class="nav-item">
@@ -356,8 +356,8 @@
         <footer class="footer text-center py-3 mt-5 bg-light">
             <div class="container">
                 <p class="mb-0 text-muted">
-                    <i class="fas fa-copyright"></i><%: DateTime.Now.Year %> - Sistema SGV | 
-                    Usuario: <strong><%= NombreUsuario %></strong> (<%= RolUsuario %>)
+                    <i class="fas fa-copyright"></i><%: DateTime.Now.Year %> - Sistema SGV<% if (!string.IsNullOrEmpty(NombreUsuario)) { %> |
+                    Usuario: <strong><%: NombreUsuario %></strong> (<%: RolUsuario %>)<% } %>
                 </p>
             </div>
         </footer>
@@ -416,6 +416,7 @@
     <script>
         // Valores del servidor que usa el script de la página (ids de controles ASP.NET).
         var SGV = Object.assign(window.SGV || {}, {
+            esRespuestaPost: <%= Request.HttpMethod == "POST" ? "true" : "false" %>,
             txtContrasenaActual: '<%= txtContrasenaActual.ClientID %>',
             txtNuevaContrasena: '<%= txtNuevaContrasena.ClientID %>',
             txtConfirmarContrasena: '<%= txtConfirmarContrasena.ClientID %>'

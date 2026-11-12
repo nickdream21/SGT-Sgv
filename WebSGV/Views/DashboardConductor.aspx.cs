@@ -667,7 +667,9 @@ namespace WebSGV.Views
 
                 // Hora de envío (automática): queda como constancia de cuándo se registró.
                 string horaLlegada = ahora.ToString("HH:mm");
-                string observaciones = txtObservaciones.Text;
+                // Un textarea no respeta MaxLength por sí solo: el límite se aplica también aquí.
+                string observaciones = (txtObservaciones.Text ?? "").Trim();
+                if (observaciones.Length > 1000) observaciones = observaciones.Substring(0, 1000);
 
                 string errores = ValidarDatosGenerales(fechaSalida, fechaLlegada, horaSalida, horaLlegada, horaLlegadaDeclarada);
                 if (string.IsNullOrEmpty(errores))
@@ -1024,8 +1026,7 @@ namespace WebSGV.Views
                     .Select(m => new
                     {
                         Texto = m.Fecha.ToString("dd/MM HH:mm") + " · " + Services.Liquidaciones.MovimientosViajeService.NombreConcepto(m.Tipo, m.Concepto),
-                        Detalle = Services.Liquidaciones.MovimientosViajeService.NombreMedio(m.Medio) +
-                                  (m.Medio == "SOBRE" && m.NombrePortador != null ? " · lo trae " + m.NombrePortador : ""),
+                        Detalle = Services.Liquidaciones.MovimientosViajeService.NombreMedio(m.Medio),
                         Monto = string.Join(" · ", new[]
                         {
                             m.MontoSoles != 0 ? "S/ " + m.MontoSoles.ToString("N2", cultura) : null,

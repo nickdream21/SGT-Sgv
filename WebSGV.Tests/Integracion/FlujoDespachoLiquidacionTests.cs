@@ -342,7 +342,7 @@ namespace WebSGV.Tests.Integracion
                 var sobre = MovimientosViajeService.Registrar(new WebSGV.Models.Liquidaciones.MovimientoViaje
                 {
                     Tipo = MovimientosViajeService.Entrega, IdConductor = datos.IdConductor, Fecha = ahora,
-                    Concepto = "SEGUNDO_DESPACHO", Medio = "SOBRE", IdConductorPortador = datos.IdOtroConductor, MontoSoles = 200m
+                    Concepto = "SEGUNDO_DESPACHO", Medio = "SOBRE", MontoSoles = 200m
                 }, datos.IdUsuarioAdmin);
                 var pago = MovimientosViajeService.Registrar(new WebSGV.Models.Liquidaciones.MovimientoViaje
                 {
@@ -354,7 +354,7 @@ namespace WebSGV.Tests.Integracion
                 Assert.Equal(idViaje, Convert.ToInt32(Fila("SELECT idViajeProgreso FROM MovimientoDineroViaje WHERE idMovimiento = @id", adelanto.IdMovimiento)["idViajeProgreso"]));
 
                 var sinLiquidar = MovimientosViajeService.ObtenerSinLiquidar(datos.IdConductor);
-                Assert.Contains(sinLiquidar, m => m.IdMovimiento == sobre.IdMovimiento && m.NombrePortador != null);
+                Assert.Contains(sinLiquidar, m => m.IdMovimiento == sobre.IdMovimiento && m.Medio == "SOBRE");
 
                 var input = NuevaLiquidacion(datos, idViaje);
                 input.DespachoSoles = 0m;

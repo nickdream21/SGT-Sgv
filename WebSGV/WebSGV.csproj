@@ -570,7 +570,6 @@
     <Compile Include="Services\NotificacionService.cs" />
     <Compile Include="Services\OrdenViaje\AgregarOrdenViajeService.cs" />
     <Compile Include="Services\OrdenViaje\BuscarOrdenViajeService.cs" />
-    <Compile Include="Services\OrdenViaje\DetalleOrdenViajeService.cs" />
     <Compile Include="Services\OrdenViaje\OrdenViajeValidaciones.cs" />
     <Compile Include="Services\PdfAbastecimientoService.cs" />
     <Compile Include="Services\PdfOrdenViajeService.cs" />

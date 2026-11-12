@@ -48,10 +48,30 @@ namespace WebSGV.Views
                 CargarClientes();
                 txtDesde.Text = FechaHelper.Hoy().AddDays(-60).ToString("yyyy-MM-dd");
                 txtHasta.Text = FechaHelper.Hoy().AddDays(7).ToString("yyyy-MM-dd");
+                LeerFiltrosDeUrl();
                 if (Lectura != null) MostrarVistaPrevia(Lectura, null);
                 CargarTablero();
             }
         }
+
+        // Los filtros del tablero van en la URL (Buscar redirige con ellos): así Atrás desde un lote
+        // abierto y "Volver a la bandeja" regresan a la misma búsqueda, sin reenviar un formulario.
+        private void LeerFiltrosDeUrl()
+        {
+            var q = Request.QueryString;
+            if (q["cliente"] != null && ddlCliente.Items.FindByValue(q["cliente"]) != null) ddlCliente.SelectedValue = q["cliente"];
+            if (q["q"] != null) txtBuscar.Text = q["q"].Length > 60 ? q["q"].Substring(0, 60) : q["q"];
+            if (DateTime.TryParse(q["desde"], out DateTime d)) txtDesde.Text = d.ToString("yyyy-MM-dd");
+            if (DateTime.TryParse(q["hasta"], out DateTime h)) txtHasta.Text = h.ToString("yyyy-MM-dd");
+            if (q["ver"] != null && ddlVer.Items.FindByValue(q["ver"]) != null) ddlVer.SelectedValue = q["ver"];
+        }
+
+        private string FiltrosComoQuery() =>
+            "cliente=" + HttpUtility.UrlEncode(ddlCliente.SelectedValue)
+            + "&q=" + HttpUtility.UrlEncode((txtBuscar.Text ?? "").Trim())
+            + "&desde=" + HttpUtility.UrlEncode(txtDesde.Text)
+            + "&hasta=" + HttpUtility.UrlEncode(txtHasta.Text)
+            + "&ver=" + HttpUtility.UrlEncode(ddlVer.SelectedValue);
 
         private void CargarClientes()
         {
@@ -580,8 +600,9 @@ namespace WebSGV.Views
 
         protected void btnBuscar_Click(object sender, EventArgs e)
         {
-            if (Lectura != null) MostrarVistaPrevia(Lectura, null);
-            CargarTablero();
+            // Redirige (GET): la búsqueda queda en la URL y en el historial del navegador.
+            Response.Redirect(ResolveUrl("~/Views/BandejaDocumentos.aspx") + "?" + FiltrosComoQuery(), false);
+            Context.ApplicationInstance.CompleteRequest();
         }
 
         private void CargarTablero()
@@ -620,6 +641,7 @@ namespace WebSGV.Views
             if (lotes.Count == 0)
                 return "<div class='bd-vacio'><i class='fas fa-check-circle mr-1 text-success'></i>No hay lotes con esos filtros.</div>";
             DateTime hoy = FechaHelper.Hoy();
+            string filtros = FiltrosComoQuery();
             var sb = new StringBuilder();
             foreach (var cliente in lotes.GroupBy(x => x.NombreCliente))
             {

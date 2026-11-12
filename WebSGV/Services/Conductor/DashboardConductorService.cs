@@ -77,10 +77,16 @@ namespace WebSGV.Services.Conductor
             }
         }
 
-        /// <summary>Cuenta las órdenes con ese número que pertenecen al conductor.</summary>
+        /// <summary>
+        /// Cuenta las órdenes con ese número que el conductor puede volver a enviar: suyas y
+        /// rechazadas (REABIERTO). El número llega en un campo oculto del formulario, así que sin
+        /// el estado un conductor podría reescribir una liquidación suya ya firmada o aprobada.
+        /// </summary>
         public static int ContarOrdenDelConductor(string numeroOrden, int idConductor) =>
             Convert.ToInt32(DbHelper.EjecutarEscalar(
-                "SELECT COUNT(*) FROM OrdenViaje WHERE numeroOrdenViaje = @numeroOrden AND idConductor = @idConductor",
+                @"SELECT COUNT(*) FROM OrdenViaje
+                  WHERE numeroOrdenViaje = @numeroOrden AND idConductor = @idConductor
+                    AND estadoAprobacion = 'REABIERTO' AND registradoPor = 'CONDUCTOR'",
                 DbHelper.Param("@numeroOrden", numeroOrden),
                 DbHelper.Param("@idConductor", idConductor)));
 

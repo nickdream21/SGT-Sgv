@@ -291,6 +291,31 @@ namespace WebSGV.Services.Liquidaciones
                         if (idsMovimientos != null)
                             MovimientosViajeService.UnirAOrden(conn, tran, numeroOrdenViaje, idsMovimientos);
 
+                        // 3c. El total entregado no puede ser menor que las entregas unidas a la liquidación:
+                        //     el conductor vería en su conformidad un detalle de entregas que no cuadra con
+                        //     "Dinero entregado" (pasa si se aprueba antes de que la pantalla cargue las entregas).
+                        if (ingresos != null)
+                        {
+                            DataRow unidas = DbHelper.ConsultarTabla(conn, tran, @"
+                                SELECT ISNULL(SUM(montoSoles), 0) AS soles, ISNULL(SUM(montoDolares), 0) AS dolares
+                                FROM MovimientoDineroViaje
+                                WHERE numeroOrdenViaje = @n AND activo = 1 AND tipo = 'ENTREGA'",
+                                DbHelper.Param("@n", numeroOrdenViaje)).Rows[0];
+                            decimal unidasSoles = Convert.ToDecimal(unidas["soles"]), unidasDolares = Convert.ToDecimal(unidas["dolares"]);
+                            decimal totalSoles = ingresos.DespachoSoles + ingresos.MensualidadSoles + ingresos.PrestamoSoles + ingresos.OtrosSoles;
+                            decimal totalDolares = ingresos.DespachoDolares + ingresos.MensualidadDolares + ingresos.PrestamoDolares + ingresos.OtrosDolares;
+                            if (totalSoles < unidasSoles || totalDolares < unidasDolares)
+                            {
+                                tran.Rollback();
+                                return new ResultadoEnvioConformidad
+                                {
+                                    Exito = false,
+                                    Mensaje = "El dinero entregado no coincide con las entregas registradas de este viaje " +
+                                              $"(S/ {unidasSoles:0.00} · US$ {unidasDolares:0.00}). Cierre la revisión, vuelva a abrirla y espere a que carguen las entregas."
+                                };
+                            }
+                        }
+
                         // 4. Estado POR_CONFORMAR.
                         DataTable dt = DbHelper.ConsultarTablaSp(conn, tran, "sp_LD_EnviarLiquidacionAConformidad",
                             DbHelper.Param("@numeroOrdenViaje", numeroOrdenViaje),

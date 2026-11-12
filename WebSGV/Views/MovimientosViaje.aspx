@@ -4,7 +4,7 @@
     <div class="container-fluid px-3 mv-pagina">
         <div class="sgv-encabezado mb-3">
             <h2><i class="fas fa-hand-holding-usd mr-2"></i>Dinero y pagos del viaje</h2>
-            <p class="sgv-suave mb-0">Registre en el momento cada entrega de dinero al conductor (adelanto, segundo despacho, sobre con otro conductor…)
+            <p class="sgv-suave mb-0">Registre en el momento cada entrega de dinero al conductor (adelanto, segundo despacho, mensualidad…)
                y cada pago que la empresa hace directamente a un proveedor del viaje. Al aprobar la liquidación se unen solos.</p>
         </div>
 
@@ -67,11 +67,6 @@
                                 <label class="form-label" for="<%= txtOperacion.ClientID %>">N.° de operación</label>
                                 <asp:TextBox ID="txtOperacion" runat="server" CssClass="form-control" MaxLength="50" placeholder="Yape / transferencia" />
                             </div>
-                        </div>
-
-                        <div class="form-group mv-solo-sobre" style="display:none;">
-                            <label class="form-label" for="<%= ddlPortador.ClientID %>">Conductor que lleva el sobre <span class="text-danger">*</span></label>
-                            <asp:DropDownList ID="ddlPortador" runat="server" CssClass="form-control" />
                         </div>
 
                         <div class="mv-solo-pago" style="display:none;">

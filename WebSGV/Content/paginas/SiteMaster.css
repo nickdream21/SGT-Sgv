@@ -148,3 +148,14 @@ input[type=file]::file-selector-button:hover { background: #f1f5f9; border-color
 table[border="1"] { border: 1px solid #e2e8f0 !important; }
 table[border="1"] th, table[border="1"] td { border-color: #e2e8f0 !important; }
 table[border="1"] td .btn { white-space: nowrap; }
+
+/* Pantallas de 1366 px (las de la oficina): con seis menús y un rol largo, la barra se salía por
+   la derecha y "Cerrar sesión" quedaba cortado. Se compacta la barra y el rol se deja solo en el
+   pie de página hasta que haya ancho para mostrarlo. */
+@media (min-width: 992px) and (max-width: 1599.98px) {
+    .navbar { padding-left: 0.75rem; padding-right: 0.75rem; }
+    .navbar-brand { margin-right: 0.5rem; }
+    .navbar-nav .nav-link { padding-left: 0.45rem; padding-right: 0.45rem; font-size: 0.92rem; white-space: nowrap; }
+    .user-info { white-space: nowrap; }
+    .user-info .badge-rol { display: none; }
+}

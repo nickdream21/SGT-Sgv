@@ -8,7 +8,7 @@ CREATE OR ALTER PROCEDURE sp_DC_InsertarOrdenViajeConductor
     @idConductor       INT,
     @idTracto          INT,
     @idCarreta         INT,
-    @observaciones     VARCHAR(250)  = NULL,
+    @observaciones     VARCHAR(1000) = NULL,   -- 1000: lo que admite el formulario (con 250 se cortaba sin aviso)
     @idViajeProgreso   INT,
     @idUsuarioRegistro INT           = NULL
 AS

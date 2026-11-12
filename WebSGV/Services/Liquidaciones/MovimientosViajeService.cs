@@ -12,7 +12,7 @@ namespace WebSGV.Services.Liquidaciones
     /// Dinero del viaje registrado al momento (tabla <c>MovimientoDineroViaje</c>, migración 42):
     /// <list type="bullet">
     /// <item><b>ENTREGA</b>: dinero que recibe el conductor (adelanto, segundo despacho, mensualidad,
-    /// préstamo…), por efectivo, Yape, transferencia o en sobre con otro conductor. Al aprobar la
+    /// préstamo…), por efectivo, Yape, transferencia o en sobre. Al aprobar la
     /// liquidación se suman en "Dinero entregado".</item>
     /// <item><b>PAGO_DIRECTO</b>: la empresa paga al proveedor (Yape al del parchado…). Es costo del
     /// viaje, se ve en el PDF, pero no toca el saldo del conductor.</item>
@@ -50,7 +50,9 @@ namespace WebSGV.Services.Liquidaciones
             { "EFECTIVO", "Efectivo" },
             { "YAPE", "Yape / Plin" },
             { "TRANSFERENCIA", "Transferencia" },
-            { "SOBRE", "Sobre con otro conductor" },
+            // No se registra quién llevó el sobre: lo que cuenta es el monto que el conductor
+            // reconoce haber recibido al firmar su conformidad.
+            { "SOBRE", "Sobre" },
             { "OTRO", "Otro" }
         };
 
@@ -86,12 +88,7 @@ namespace WebSGV.Services.Liquidaciones
             if (m.Fecha > ahora.AddHours(1)) return "La fecha no puede estar en el futuro.";
             if (m.Fecha < ahora.AddYears(-1)) return "La fecha es de hace más de un año.";
 
-            if (m.Medio == "SOBRE")
-            {
-                if (m.Tipo == PagoDirecto) return "Un pago directo al proveedor no va en sobre.";
-                if (!m.IdConductorPortador.HasValue || m.IdConductorPortador <= 0) return "Indique el conductor que lleva el sobre.";
-                if (m.IdConductorPortador == m.IdConductor) return "El conductor que lleva el sobre debe ser otro.";
-            }
+            if (m.Medio == "SOBRE" && m.Tipo == PagoDirecto) return "Un pago directo al proveedor no va en sobre.";
             if ((m.Medio == "YAPE" || m.Medio == "TRANSFERENCIA") && string.IsNullOrWhiteSpace(m.NumeroOperacion))
                 return "Indique el número de operación del " + NombreMedio(m.Medio).ToLowerInvariant() + ".";
 
@@ -107,7 +104,7 @@ namespace WebSGV.Services.Liquidaciones
 
         /// <summary>
         /// Suma las entregas por la fila de "Dinero entregado" que les corresponde (adelanto y segundo
-        /// despacho van a Adelanto). El detalle de cada fila resume medios y portadores.
+        /// despacho van a Adelanto). El detalle de cada fila resume fechas y medios.
         /// </summary>
         public static IngresosEntregados SumarEntregas(IEnumerable<MovimientoViaje> entregas)
         {
@@ -124,8 +121,7 @@ namespace WebSGV.Services.Liquidaciones
                     default: r.DespachoSoles += m.MontoSoles; r.DespachoDolares += m.MontoDolares; fila = "D"; break;
                 }
                 if (!detalle.ContainsKey(fila)) detalle[fila] = new List<string>();
-                detalle[fila].Add(m.Fecha.ToString("dd/MM") + " " + NombreMedio(m.Medio).ToLowerInvariant() +
-                    (m.Medio == "SOBRE" && !string.IsNullOrEmpty(m.NombrePortador) ? " (" + m.NombrePortador + ")" : ""));
+                detalle[fila].Add(m.Fecha.ToString("dd/MM") + " " + NombreMedio(m.Medio).ToLowerInvariant());
             }
             string Desc(string f) => detalle.ContainsKey(f) ? Recortar(string.Join("; ", detalle[f]), 250) : null;
             r.DescDespacho = Desc("D");
@@ -161,7 +157,6 @@ namespace WebSGV.Services.Liquidaciones
                 DbHelper.Param("@montoSoles", m.MontoSoles),
                 DbHelper.Param("@montoDolares", m.MontoDolares),
                 DbHelper.Param("@medio", m.Medio),
-                DbHelper.Param("@idConductorPortador", m.Medio == "SOBRE" ? (object)m.IdConductorPortador : DBNull.Value),
                 DbHelper.Param("@numeroOperacion", m.NumeroOperacion),
                 DbHelper.Param("@rucProveedor", m.Tipo == PagoDirecto ? m.RucProveedor : null),
                 DbHelper.Param("@nombreProveedor", m.Tipo == PagoDirecto ? m.NombreProveedor : null),
@@ -196,14 +191,11 @@ namespace WebSGV.Services.Liquidaciones
             SELECT m.idMovimiento, m.tipo, m.idConductor,
                    LTRIM(RTRIM(c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, ''))) AS nombreConductor,
                    m.numeroOrdenViaje, m.fecha, m.concepto, m.montoSoles, m.montoDolares, m.medio,
-                   m.idConductorPortador,
-                   LTRIM(RTRIM(p.nombre + ' ' + p.apPaterno + ' ' + ISNULL(p.apMaterno, ''))) AS nombrePortador,
                    m.numeroOperacion, m.rucProveedor, m.nombreProveedor, m.comprobante, m.descripcion,
                    m.rutaAdjunto, LTRIM(RTRIM(ISNULL(u.nombre, '') + ' ' + ISNULL(u.apellido, ''))) AS registradoPor,
                    m.activo, m.motivoAnulacion
             FROM MovimientoDineroViaje m
             INNER JOIN Conductor c ON c.idConductor = m.idConductor
-            LEFT JOIN Conductor p ON p.idConductor = m.idConductorPortador
             LEFT JOIN Usuarios u ON u.idUsuario = m.idUsuarioRegistro";
 
         /// <summary>Movimientos de un conductor: los aún no liquidados y (opcional) los anulados recientes.</summary>
@@ -280,8 +272,6 @@ namespace WebSGV.Services.Liquidaciones
             MontoSoles = Convert.ToDecimal(r["montoSoles"]),
             MontoDolares = Convert.ToDecimal(r["montoDolares"]),
             Medio = r["medio"].ToString(),
-            IdConductorPortador = r["idConductorPortador"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["idConductorPortador"]),
-            NombrePortador = Normalizar(r["nombrePortador"] as string),
             NumeroOperacion = r["numeroOperacion"] as string,
             RucProveedor = r["rucProveedor"] as string,
             NombreProveedor = r["nombreProveedor"] as string,

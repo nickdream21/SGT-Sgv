@@ -286,3 +286,14 @@
 .text-end { text-align: right !important; }
 .text-start { text-align: left !important; }
 .gap-2 { gap: 0.5rem !important; }
+
+/* Botones de acción comunes. Antes solo existían en el CSS de tres páginas, y en las demás
+   (p. ej. Dinero y pagos del viaje) el botón salía sin estilo. */
+.btn-primary-custom { background: var(--sgv-primario); border: 1px solid var(--sgv-primario); color: #fff; font-weight: 500; padding: 0.5rem 1rem; }
+.btn-primary-custom:hover, .btn-primary-custom:focus { background: #1e40af; border-color: #1e40af; color: #fff; }
+.btn-secondary-custom { background: #fff; border: 1px solid #d1d5db; color: #374151; font-weight: 500; }
+.btn-secondary-custom:hover, .btn-secondary-custom:focus { background: #f3f4f6; color: #1f2937; }
+.btn-danger-custom { background: var(--sgv-peligro); border: 1px solid var(--sgv-peligro); color: #fff; font-weight: 500; }
+.btn-danger-custom:hover, .btn-danger-custom:focus { background: #991b1b; border-color: #991b1b; color: #fff; }
+.btn-success-custom { background: var(--sgv-ok); border: 1px solid var(--sgv-ok); color: #fff; font-weight: 500; }
+.btn-success-custom:hover, .btn-success-custom:focus { background: #166534; border-color: #166534; color: #fff; }

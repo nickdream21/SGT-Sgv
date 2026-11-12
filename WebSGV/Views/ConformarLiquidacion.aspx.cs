@@ -102,7 +102,7 @@ namespace WebSGV.Views
             public string NotaAdministracion { get; set; }
             public string RevisadoPor { get; set; }
             public string FechaRevision { get; set; }
-            /// <summary>Cada entrega de dinero (fecha, medio, quién llevó el sobre).</summary>
+            /// <summary>Cada entrega de dinero (fecha, concepto y medio).</summary>
             public List<ConceptoMonto> DetalleEntregas { get; set; }
             /// <summary>Pagos que la empresa hizo directamente al proveedor: no cambian su saldo.</summary>
             public List<ConceptoMonto> PagosDirectos { get; set; }
@@ -173,7 +173,6 @@ namespace WebSGV.Views
                         Detalle = string.Join(" · ", new[]
                         {
                             MovimientosViajeService.NombreMedio(m.Medio),
-                            m.Medio == "SOBRE" && m.NombrePortador != null ? "lo llevó " + m.NombrePortador : null,
                             string.IsNullOrEmpty(m.NumeroOperacion) ? null : "op. " + m.NumeroOperacion,
                             m.Descripcion
                         }.Where(s => !string.IsNullOrEmpty(s))),

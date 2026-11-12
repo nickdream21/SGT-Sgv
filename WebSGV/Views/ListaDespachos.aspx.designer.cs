@@ -163,6 +163,16 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Button btnVolver;
 
         /// <summary>
+        /// Control hlVolverBandeja.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.HyperLink hlVolverBandeja;
+
+        /// <summary>
+        /// Control hlVolverBandejaDocs.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.HyperLink hlVolverBandejaDocs;
+
+        /// <summary>
         /// Control pnlListaViajes.
         /// </summary>
         /// <remarks>

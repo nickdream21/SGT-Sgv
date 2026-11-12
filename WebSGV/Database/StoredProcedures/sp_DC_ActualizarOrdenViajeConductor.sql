@@ -5,7 +5,7 @@ CREATE OR ALTER PROCEDURE sp_DC_ActualizarOrdenViajeConductor
     @fechaLlegada     DATE,
     @horaLlegada      TIME          = NULL,
     @horaLlegadaDeclarada TIME      = NULL,
-    @observaciones    VARCHAR(250)  = NULL,
+    @observaciones    VARCHAR(1000) = NULL,   -- 1000: lo que admite el formulario (con 250 se cortaba sin aviso)
     @idUsuarioRegistro INT          = NULL
 AS
 BEGIN

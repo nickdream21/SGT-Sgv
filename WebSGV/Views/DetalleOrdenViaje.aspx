@@ -1,338 +1,133 @@
-<%@ Page Title="Detalle de Liquidación" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="DetalleOrdenViaje.aspx.cs" Inherits="WebSGV.Views.DetalleOrdenViaje" %>
+<%@ Page Title="Mi liquidación" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="DetalleOrdenViaje.aspx.cs" Inherits="WebSGV.Views.DetalleOrdenViaje" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
-    <div class="container-fluid px-4">
+    <%-- Detalle de una liquidación para el conductor. Usa el mismo aspecto que su panel
+         (DashboardConductor.css) y los mismos datos y cálculos que el PDF y la conformidad. --%>
+    <div class="dc dv">
 
-        <!-- Header -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="page-header d-flex justify-content-between align-items-center flex-wrap">
-                    <div>
-                        <h2 class="page-title mb-1">
-                            <i class="fas fa-file-invoice-dollar mr-2"></i>Detalle de Liquidación
-                        </h2>
-                        <p class="text-muted mb-0">
-                            Orden: <strong><asp:Label ID="lblNumeroOrden" runat="server"></asp:Label></strong>
-                        </p>
-                    </div>
-                    <div class="mt-2 mt-md-0">
-                        <a href="DashboardConductor.aspx" class="btn btn-secondary-custom btn-sm">
-                            <i class="fas fa-arrow-left mr-1"></i>Volver al Dashboard
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <a class="dv-volver" href="DashboardConductor.aspx"><i class="fas fa-arrow-left"></i>Volver a mi panel</a>
 
-        <!-- Panel de mensajes de error -->
-        <asp:Panel ID="pnlError" runat="server" Visible="false">
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-circle mr-2"></i>
-                <asp:Label ID="lblError" runat="server"></asp:Label>
-            </div>
+        <asp:Panel ID="pnlError" runat="server" Visible="false" CssClass="dc-rechazo" role="alert">
+            <div class="dc-rechazo-tit">No se pudo mostrar la liquidación</div>
+            <div class="dc-rechazo-motivo"><asp:Literal ID="litError" runat="server" Mode="Encode" /></div>
         </asp:Panel>
 
-        <!-- Contenido principal -->
         <asp:Panel ID="pnlContenido" runat="server" Visible="false">
 
-            <!-- Resumen General -->
-            <div class="section-card mb-4">
-                <div class="section-header section-header-info">
-                    <h5 class="section-title">
-                        <i class="fas fa-info-circle mr-2"></i>Información General
-                    </h5>
+            <header class="dc-cab">
+                <div class="dc-cab-texto">
+                    <div class="dc-nombre">Liquidación <asp:Literal ID="litNumero" runat="server" Mode="Encode" /></div>
+                    <div class="dc-dni"><asp:Literal ID="litPeriodo" runat="server" Mode="Encode" /></div>
                 </div>
-                <div class="section-body">
-                    <div class="row">
-                        <div class="col-6 col-md-2">
-                            <label class="form-label-summary">N° Orden</label>
-                            <p class="form-value-summary"><asp:Label ID="lblOrdenDetalle" runat="server"></asp:Label></p>
-                        </div>
-                        <div class="col-6 col-md-2">
-                            <label class="form-label-summary">Conductor</label>
-                            <p class="form-value-summary"><asp:Label ID="lblConductorDetalle" runat="server"></asp:Label></p>
-                        </div>
-                        <div class="col-6 col-md-2">
-                            <label class="form-label-summary">Tracto</label>
-                            <p class="form-value-summary">
-                                <span class="badge badge-vehicle"><asp:Label ID="lblTractoDetalle" runat="server"></asp:Label></span>
-                            </p>
-                        </div>
-                        <div class="col-6 col-md-2">
-                            <label class="form-label-summary">Carreta</label>
-                            <p class="form-value-summary">
-                                <span class="badge badge-vehicle"><asp:Label ID="lblCarretaDetalle" runat="server"></asp:Label></span>
-                            </p>
-                        </div>
-                        <div class="col-6 col-md-2">
-                            <label class="form-label-summary">Fecha salida</label>
-                            <p class="form-value-summary"><asp:Label ID="lblFechaSalidaDetalle" runat="server"></asp:Label></p>
-                        </div>
-                        <div class="col-6 col-md-2">
-                            <label class="form-label-summary">Fecha llegada</label>
-                            <p class="form-value-summary"><asp:Label ID="lblFechaLlegadaDetalle" runat="server"></asp:Label></p>
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-6 col-md-3">
-                            <label class="form-label-summary">Hora salida</label>
-                            <p class="form-value-summary"><asp:Label ID="lblHoraSalidaDetalle" runat="server" Text="-"></asp:Label></p>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <label class="form-label-summary">Hora llegada</label>
-                            <p class="form-value-summary"><asp:Label ID="lblHoraLlegadaDetalle" runat="server" Text="-"></asp:Label></p>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <label class="form-label-summary">Estado</label>
-                            <p class="form-value-summary">
-                                <asp:Label ID="lblEstadoDetalle" runat="server"></asp:Label>
-                            </p>
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label-summary">Observaciones</label>
-                            <p class="form-value-summary text-muted" style="font-size:0.95rem;font-weight:400;">
-                                <asp:Label ID="lblObservacionesDetalle" runat="server" Text="-"></asp:Label>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <asp:Label ID="lblEstado" runat="server" CssClass="dc-pill"></asp:Label>
+            </header>
 
-            <!-- Ingresos -->
-            <div class="section-card mb-4">
-                <div class="section-header section-header-success">
-                    <h5 class="section-title">
-                        <i class="fas fa-plus-circle mr-2"></i>Ingresos del Viaje
-                    </h5>
-                </div>
-                <div class="section-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-financial mb-0">
-                            <thead>
-                                <tr>
-                                    <th style="width:5%">#</th>
-                                    <th style="width:22%">Concepto</th>
-                                    <th style="width:35%">Descripción</th>
-                                    <th class="text-right" style="width:18%">Soles (S/)</th>
-                                    <th class="text-right" style="width:18%">Dólares ($)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <asp:Repeater ID="rptIngresos" runat="server">
-                                    <ItemTemplate>
-                                        <tr>
-                                            <td class="text-center"><%# Container.ItemIndex + 1 %></td>
-                                            <td><strong><%# Eval("Concepto") %></strong></td>
-                                            <td class="text-muted"><%# Eval("Descripcion") %></td>
-                                            <td class="text-right"><%# FormatearMonto(Eval("Soles")) %></td>
-                                            <td class="text-right"><%# FormatearMonto(Eval("Dolares")) %></td>
-                                        </tr>
-                                    </ItemTemplate>
-                                </asp:Repeater>
-                            </tbody>
-                            <tfoot>
-                                <tr class="total-row">
-                                    <td colspan="3" class="text-right"><strong>Total ingresos:</strong></td>
-                                    <td class="text-right"><strong>S/ <asp:Label ID="lblTotalIngresosSoles" runat="server" Text="0.00"></asp:Label></strong></td>
-                                    <td class="text-right"><strong>$ <asp:Label ID="lblTotalIngresosDolares" runat="server" Text="0.00"></asp:Label></strong></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Gastos -->
-            <div class="section-card mb-4">
-                <div class="section-header section-header-danger">
-                    <h5 class="section-title">
-                        <i class="fas fa-minus-circle mr-2"></i>Gastos del Viaje
-                    </h5>
-                </div>
-                <div class="section-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-financial mb-0">
-                            <thead>
-                                <tr>
-                                    <th style="width:5%">#</th>
-                                    <th style="width:22%">Concepto</th>
-                                    <th style="width:35%">Descripción</th>
-                                    <th class="text-right" style="width:18%">Soles (S/)</th>
-                                    <th class="text-right" style="width:18%">Dólares ($)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <asp:Repeater ID="rptGastos" runat="server">
-                                    <ItemTemplate>
-                                        <tr>
-                                            <td class="text-center"><%# Container.ItemIndex + 1 %></td>
-                                            <td><strong><%# Eval("Concepto") %></strong></td>
-                                            <td class="text-muted"><%# Eval("Descripcion") %></td>
-                                            <td class="text-right"><%# FormatearMonto(Eval("Soles")) %></td>
-                                            <td class="text-right"><%# FormatearMonto(Eval("Dolares")) %></td>
-                                        </tr>
-                                    </ItemTemplate>
-                                </asp:Repeater>
-                            </tbody>
-                            <tfoot>
-                                <tr class="total-row">
-                                    <td colspan="3" class="text-right"><strong>Total gastos:</strong></td>
-                                    <td class="text-right"><strong>S/ <asp:Label ID="lblTotalGastosSoles" runat="server" Text="0.00"></asp:Label></strong></td>
-                                    <td class="text-right"><strong>$ <asp:Label ID="lblTotalGastosDolares" runat="server" Text="0.00"></asp:Label></strong></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Detalle de Peajes -->
-            <asp:Panel ID="pnlDetallePeajes" runat="server" Visible="false">
-                <div class="section-card mb-4">
-                    <div class="section-header">
-                        <h5 class="section-title"><i class="fas fa-road mr-2"></i>Detalle de peajes</h5>
-                    </div>
-                    <div class="section-body p-0">
-                        <div class="table-responsive">
-                            <asp:GridView ID="gvPeajes" runat="server"
-                                CssClass="table table-conductor mb-0"
-                                AutoGenerateColumns="false"
-                                EmptyDataText="Sin peajes registrados">
-                                <Columns>
-                                    <asp:BoundField DataField="Estacion" HeaderText="ESTACIÓN" />
-                                    <asp:BoundField DataField="Fecha" HeaderText="FECHA" DataFormatString="{0:dd/MM/yyyy}" ItemStyle-CssClass="text-center" />
-                                    <asp:BoundField DataField="Comprobante" HeaderText="COMPROBANTE" ItemStyle-CssClass="text-center" />
-                                    <asp:BoundField DataField="Soles" HeaderText="SOLES (S/)" DataFormatString="{0:N2}" ItemStyle-CssClass="text-right" />
-                                    <asp:BoundField DataField="Dolares" HeaderText="DÓLARES ($)" DataFormatString="{0:N2}" ItemStyle-CssClass="text-right" />
-                                    <asp:BoundField DataField="Observaciones" HeaderText="OBSERVACIONES" />
-                                </Columns>
-                            </asp:GridView>
-                        </div>
-                    </div>
-                </div>
+            <asp:Panel ID="pnlPorConformar" runat="server" Visible="false" CssClass="dc-conformar">
+                <div class="dc-conformar-tit"><i class="fas fa-file-signature mr-1"></i>Falta tu conformidad</div>
+                <p class="dc-conformar-txt">La administración ya revisó esta liquidación. Revísala y firma tu conformidad, o avisa si no estás de acuerdo.</p>
+                <asp:HyperLink ID="lnkConformar" runat="server" CssClass="dc-btn dc-btn-primario dc-btn-bloque mt-2">Revisar y firmar</asp:HyperLink>
             </asp:Panel>
 
-            <!-- Detalle de Reparaciones -->
-            <asp:Panel ID="pnlDetalleReparaciones" runat="server" Visible="false">
-                <div class="section-card mb-4">
-                    <div class="section-header">
-                        <h5 class="section-title"><i class="fas fa-wrench mr-2"></i>Detalle de reparaciones</h5>
-                    </div>
-                    <div class="section-body p-0">
-                        <div class="table-responsive">
-                            <asp:GridView ID="gvReparaciones" runat="server"
-                                CssClass="table table-conductor mb-0"
-                                AutoGenerateColumns="false"
-                                EmptyDataText="Sin reparaciones registradas">
-                                <Columns>
-                                    <asp:BoundField DataField="Tipo" HeaderText="TIPO" />
-                                    <asp:BoundField DataField="Fecha" HeaderText="FECHA" DataFormatString="{0:dd/MM/yyyy}" ItemStyle-CssClass="text-center" />
-                                    <asp:BoundField DataField="Comprobante" HeaderText="COMPROBANTE" ItemStyle-CssClass="text-center" />
-                                    <asp:BoundField DataField="Soles" HeaderText="SOLES (S/)" DataFormatString="{0:N2}" ItemStyle-CssClass="text-right" />
-                                    <asp:BoundField DataField="Dolares" HeaderText="DÓLARES ($)" DataFormatString="{0:N2}" ItemStyle-CssClass="text-right" />
-                                    <asp:BoundField DataField="Observaciones" HeaderText="OBSERVACIONES" />
-                                </Columns>
-                            </asp:GridView>
-                        </div>
-                    </div>
-                </div>
+            <section class="dc-card">
+                <div class="dc-card-tit">Viaje</div>
+                <dl class="dc-datos">
+                    <div><dt>Conductor</dt><dd><asp:Literal ID="litConductor" runat="server" Mode="Encode" /></dd></div>
+                    <div><dt>Tracto / carreta</dt><dd><asp:Literal ID="litUnidades" runat="server" Mode="Encode" /></dd></div>
+                    <div><dt>Salida de base</dt><dd><asp:Literal ID="litSalida" runat="server" Mode="Encode" /></dd></div>
+                    <div><dt>Llegada a base</dt><dd><asp:Literal ID="litLlegada" runat="server" Mode="Encode" /></dd></div>
+                </dl>
+            </section>
+
+            <section class="dc-card">
+                <div class="dc-card-tit">Gastos que declaraste</div>
+                <ul class="dc-resumen">
+                    <asp:Repeater ID="rptGastos" runat="server">
+                        <ItemTemplate>
+                            <li>
+                                <span><%#: Eval("Concepto") %><small class="dv-sub"><%#: Eval("Detalle") %></small></span>
+                                <strong><%#: Eval("Monto") %></strong>
+                            </li>
+                        </ItemTemplate>
+                    </asp:Repeater>
+                    <asp:PlaceHolder ID="phSinGastos" runat="server" Visible="false">
+                        <li class="dc-resumen-vacio">No registraste gastos.</li>
+                    </asp:PlaceHolder>
+                    <li class="dc-resumen-total"><span>Total de gastos</span><strong><asp:Literal ID="litTotalGastos" runat="server" Mode="Encode" /></strong></li>
+                </ul>
+            </section>
+
+            <%-- Antes de la revisión solo existe lo declarado: lo entregado y los ajustes los pone la administración. --%>
+            <asp:Panel ID="pnlSinRevision" runat="server" Visible="false" CssClass="dc-card">
+                <div class="dc-card-tit">Liquidación</div>
+                <p class="dc-ayuda mb-0">La administración todavía no revisa esta liquidación. Cuando registre el dinero que te entregaron y los descuentos o reintegros, la verás aquí y podrás firmar tu conformidad.</p>
             </asp:Panel>
 
-            <!-- Detalle de Hospedaje -->
-            <asp:Panel ID="pnlDetalleHospedaje" runat="server" Visible="false">
-                <div class="section-card mb-4">
-                    <div class="section-header">
-                        <h5 class="section-title"><i class="fas fa-bed mr-2"></i>Detalle de hospedaje</h5>
-                    </div>
-                    <div class="section-body p-0">
-                        <div class="table-responsive">
-                            <asp:GridView ID="gvHospedaje" runat="server"
-                                CssClass="table table-conductor mb-0"
-                                AutoGenerateColumns="false"
-                                EmptyDataText="Sin hospedajes registrados">
-                                <Columns>
-                                    <asp:BoundField DataField="Lugar" HeaderText="LUGAR" />
-                                    <asp:BoundField DataField="Fecha" HeaderText="FECHA" DataFormatString="{0:dd/MM/yyyy}" ItemStyle-CssClass="text-center" />
-                                    <asp:BoundField DataField="Comprobante" HeaderText="COMPROBANTE" ItemStyle-CssClass="text-center" />
-                                    <asp:BoundField DataField="Soles" HeaderText="SOLES (S/)" DataFormatString="{0:N2}" ItemStyle-CssClass="text-right" />
-                                    <asp:BoundField DataField="Dolares" HeaderText="DÓLARES ($)" DataFormatString="{0:N2}" ItemStyle-CssClass="text-right" />
-                                    <asp:BoundField DataField="Observaciones" HeaderText="OBSERVACIONES" />
-                                </Columns>
-                            </asp:GridView>
-                        </div>
-                    </div>
-                </div>
+            <asp:Panel ID="pnlLiquidacion" runat="server" Visible="false" CssClass="dc-card">
+                <div class="dc-card-tit">Cómo queda tu liquidación</div>
+                <ul class="dc-resumen">
+                    <asp:Repeater ID="rptLiquidacion" runat="server">
+                        <ItemTemplate>
+                            <li class='<%#: Eval("Clase") %>'>
+                                <span><%#: Eval("Concepto") %><small class="dv-sub"><%#: Eval("Detalle") %></small></span>
+                                <strong><%#: Eval("Monto") %></strong>
+                            </li>
+                        </ItemTemplate>
+                    </asp:Repeater>
+                </ul>
+                <p class="dv-saldo"><asp:Literal ID="litSaldoTexto" runat="server" Mode="Encode" /></p>
             </asp:Panel>
 
-            <!-- Detalle de Combustible -->
-            <asp:Panel ID="pnlDetalleCombustible" runat="server" Visible="false">
-                <div class="section-card mb-4">
-                    <div class="section-header">
-                        <h5 class="section-title"><i class="fas fa-gas-pump mr-2"></i>Detalle de combustible</h5>
-                    </div>
-                    <div class="section-body p-0">
-                        <div class="table-responsive">
-                            <asp:GridView ID="gvCombustible" runat="server"
-                                CssClass="table table-conductor mb-0"
-                                AutoGenerateColumns="false"
-                                EmptyDataText="Sin combustibles registrados">
-                                <Columns>
-                                    <asp:BoundField DataField="Lugar" HeaderText="LUGAR/GRIFO" />
-                                    <asp:BoundField DataField="Fecha" HeaderText="FECHA" DataFormatString="{0:dd/MM/yyyy}" ItemStyle-CssClass="text-center" />
-                                    <asp:BoundField DataField="Comprobante" HeaderText="COMPROBANTE" ItemStyle-CssClass="text-center" />
-                                    <asp:BoundField DataField="Soles" HeaderText="SOLES (S/)" DataFormatString="{0:N2}" ItemStyle-CssClass="text-right" />
-                                    <asp:BoundField DataField="Dolares" HeaderText="DÓLARES ($)" DataFormatString="{0:N2}" ItemStyle-CssClass="text-right" />
-                                    <asp:BoundField DataField="Observaciones" HeaderText="OBSERVACIONES" />
-                                </Columns>
-                            </asp:GridView>
-                        </div>
-                    </div>
-                </div>
+            <asp:Panel ID="pnlEntregas" runat="server" Visible="false" CssClass="dc-card">
+                <div class="dc-card-tit">Cómo te entregaron el dinero</div>
+                <ul class="dc-resumen mb-0">
+                    <asp:Repeater ID="rptEntregas" runat="server">
+                        <ItemTemplate>
+                            <li>
+                                <span><%#: Eval("Concepto") %><small class="dv-sub"><%#: Eval("Detalle") %></small></span>
+                                <strong><%#: Eval("Monto") %></strong>
+                            </li>
+                        </ItemTemplate>
+                    </asp:Repeater>
+                </ul>
             </asp:Panel>
 
-            <!-- Balance Final -->
-            <div class="section-card mb-4">
-                <div class="section-header section-header-neutral">
-                    <h5 class="section-title">
-                        <i class="fas fa-balance-scale mr-2"></i>Balance Final del Viaje
-                    </h5>
-                </div>
-                <div class="section-body">
-                    <div class="balance-final">
-                        <div class="row">
-                            <div class="col-12 col-md-6 mb-3 mb-md-0">
-                                <div class="balance-item">
-                                    <span class="balance-label">Balance en soles:</span>
-                                    <span class="balance-amount" id="spanBalanceSoles">
-                                        <asp:Label ID="lblBalanceSoles" runat="server"></asp:Label>
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <div class="balance-item">
-                                    <span class="balance-label">Balance en dólares:</span>
-                                    <span class="balance-amount" id="spanBalanceDolares">
-                                        <asp:Label ID="lblBalanceDolares" runat="server"></asp:Label>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <asp:Panel ID="pnlPagosDirectos" runat="server" Visible="false" CssClass="dc-card">
+                <div class="dc-card-tit">Pagado por la empresa directamente</div>
+                <p class="dc-ayuda">La empresa le pagó al proveedor: no pasó por ti y no cambia tu saldo.</p>
+                <ul class="dc-resumen mb-0">
+                    <asp:Repeater ID="rptPagosDirectos" runat="server">
+                        <ItemTemplate>
+                            <li>
+                                <span><%#: Eval("Concepto") %><small class="dv-sub"><%#: Eval("Detalle") %></small></span>
+                                <strong><%#: Eval("Monto") %></strong>
+                            </li>
+                        </ItemTemplate>
+                    </asp:Repeater>
+                </ul>
+            </asp:Panel>
 
-            <!-- Botón volver -->
-            <div class="text-center mb-5">
-                <a href="DashboardConductor.aspx" class="btn btn-primary-conductor btn-lg px-5">
-                    <i class="fas fa-arrow-left mr-2"></i>Volver al Dashboard
-                </a>
+            <asp:Panel ID="pnlNota" runat="server" Visible="false" CssClass="dc-card">
+                <div class="dc-card-tit">Nota de la administración</div>
+                <p class="dv-texto"><asp:Literal ID="litNota" runat="server" Mode="Encode" /></p>
+            </asp:Panel>
+
+            <asp:Panel ID="pnlObservaciones" runat="server" Visible="false" CssClass="dc-card">
+                <div class="dc-card-tit">Tus observaciones</div>
+                <p class="dv-texto"><asp:Literal ID="litObservaciones" runat="server" Mode="Encode" /></p>
+            </asp:Panel>
+
+            <div class="dv-acciones">
+                <asp:HyperLink ID="lnkPdf" runat="server" Visible="false" Target="_blank" CssClass="dc-btn dc-btn-linea dc-btn-bloque">
+                    <i class="fas fa-file-pdf"></i>Ver el documento firmado (PDF)
+                </asp:HyperLink>
+                <a class="dc-btn dc-btn-primario dc-btn-bloque" href="DashboardConductor.aspx">Volver a mi panel</a>
             </div>
 
         </asp:Panel>
-
     </div>
 
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/DashboardConductor.css") %>" rel="stylesheet" />
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/DetalleOrdenViaje.css") %>" rel="stylesheet" />
 
 </asp:Content>

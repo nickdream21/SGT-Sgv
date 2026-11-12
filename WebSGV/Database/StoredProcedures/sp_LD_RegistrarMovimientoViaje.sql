@@ -8,6 +8,7 @@
 --              Las validaciones de forma (montos, medio, proveedor)
 --              las hace también el servicio; aquí van las que
 --              dependen de la BD. Devuelve Resultado/Mensaje/idMovimiento.
+--              El medio SOBRE no registra quién lo llevó (migración 43).
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_RegistrarMovimientoViaje
     @tipo                VARCHAR(15),
@@ -17,7 +18,7 @@ CREATE OR ALTER PROCEDURE sp_LD_RegistrarMovimientoViaje
     @montoSoles          DECIMAL(18,2),
     @montoDolares        DECIMAL(18,2),
     @medio               VARCHAR(20),
-    @idConductorPortador INT          = NULL,
+    @idConductorPortador INT          = NULL,   -- ya no se usa: se acepta y se ignora (lo envía el código publicado antes de la migración 43)
     @numeroOperacion     VARCHAR(50)  = NULL,
     @rucProveedor        VARCHAR(11)  = NULL,
     @nombreProveedor     VARCHAR(150) = NULL,
@@ -35,13 +36,6 @@ BEGIN
         RETURN;
     END
 
-    IF @medio = 'SOBRE' AND (@idConductorPortador IS NULL OR @idConductorPortador = @idConductor
-                             OR NOT EXISTS (SELECT 1 FROM Conductor WHERE idConductor = @idConductorPortador))
-    BEGIN
-        SELECT 0 AS Resultado, 'Indique el conductor que lleva el sobre (otro distinto del que lo recibe).' AS Mensaje, 0 AS idMovimiento;
-        RETURN;
-    END
-
     IF @fecha > DATEADD(HOUR, 1, dbo.fn_AhoraPeru())
     BEGIN
         SELECT 0 AS Resultado, 'La fecha no puede estar en el futuro.' AS Mensaje, 0 AS idMovimiento;
@@ -55,11 +49,11 @@ BEGIN
 
     INSERT INTO MovimientoDineroViaje
         (tipo, idConductor, idViajeProgreso, fecha, concepto, montoSoles, montoDolares, medio,
-         idConductorPortador, numeroOperacion, rucProveedor, nombreProveedor, comprobante,
+         numeroOperacion, rucProveedor, nombreProveedor, comprobante,
          descripcion, rutaAdjunto, idUsuarioRegistro)
     VALUES
         (@tipo, @idConductor, @idViaje, @fecha, @concepto, @montoSoles, @montoDolares, @medio,
-         CASE WHEN @medio = 'SOBRE' THEN @idConductorPortador END, NULLIF(LTRIM(RTRIM(@numeroOperacion)), ''),
+         NULLIF(LTRIM(RTRIM(@numeroOperacion)), ''),
          NULLIF(LTRIM(RTRIM(@rucProveedor)), ''), NULLIF(LTRIM(RTRIM(@nombreProveedor)), ''),
          NULLIF(LTRIM(RTRIM(@comprobante)), ''), NULLIF(LTRIM(RTRIM(@descripcion)), ''), @rutaAdjunto,
          @idUsuarioRegistro);

@@ -125,7 +125,7 @@ namespace WebSGV.Tests
                 new MovimientoViaje { IdMovimiento = 1, Tipo = MovimientosViajeService.Entrega, Concepto = "ADELANTO", Medio = "EFECTIVO",
                                       MontoSoles = 1000m, Fecha = new DateTime(2026, 7, 17, 7, 30, 0) },
                 new MovimientoViaje { IdMovimiento = 2, Tipo = MovimientosViajeService.Entrega, Concepto = "SEGUNDO_DESPACHO", Medio = "SOBRE",
-                                      NombrePortador = "JUAN PEREZ LOPEZ", MontoSoles = 200m, Fecha = new DateTime(2026, 7, 19, 15, 0, 0) }
+                                      MontoSoles = 200m, Fecha = new DateTime(2026, 7, 19, 15, 0, 0) }
             };
             d.PagosDirectos = new List<MovimientoViaje>
             {
