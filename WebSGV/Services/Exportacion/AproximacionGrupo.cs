@@ -52,6 +52,12 @@ namespace WebSGV.Services.Exportacion
             bool ConSenal(string tracto) =>
                 !string.IsNullOrWhiteSpace(tracto) && ultimaSenal(tracto.Trim().ToUpperInvariant()) is DateTime t && ahora - t < SinSenalDesde;
 
+            // Solo se aproxima la unidad que no tiene GPS: la que no mandó ni una posición desde que empezó el viaje
+            // (programación menos un día: la carga puede salir la víspera). Una que reportó durante el viaje y
+            // luego quedó estacionada sin mandar posición tiene GPS: lo que no midió no se inventa.
+            bool TieneGpsEnElViaje(string tracto, ViajeResumen v) =>
+                ultimaSenal(tracto.Trim().ToUpperInvariant()) is DateTime t && t >= v.FhProgramacion.Value.Date.AddDays(-1);
+
             var res = new List<Aproximado>();
             var abiertos = viajes.Where(v => v.Fase != null && v.Fase.Grupo != "cerrado" && Grupo(v) != null).ToList();
             foreach (var grupo in abiertos.GroupBy(Grupo))
@@ -63,9 +69,11 @@ namespace WebSGV.Services.Exportacion
                     var companeras = lista.Where(c => c != v && ConSenal(TractoActivo(c))).ToList();
                     if (companeras.Count < CompanerasMinimas) continue;
 
-                    // Hitos de su ruta que más de la mitad de las compañeras ya tiene y este viaje no.
+                    // Hitos de su ruta que más de la mitad de las compañeras ya tiene y este viaje no. Si el viaje ya
+                    // tiene un hito posterior del mismo tramo, ese GPS sí midió el recorrido y el hueco no es falta de
+                    // señal (p. ej. un tracto que ya estaba en Trujillo no tiene salida de base): no se rellena.
                     var faltan = v.Hitos
-                        .Where(d => !Hay(v, d.Columna))
+                        .Where(d => !Hay(v, d.Columna) && !HayDespues(v, d))
                         .Select(d => new { Def = d, Horas = companeras.Select(c => Hora(c, d.Columna)).Where(h => h.HasValue).Select(h => h.Value).OrderBy(h => h).ToList() })
                         .Where(x => x.Horas.Count * 2 > companeras.Count)
                         .ToList();
@@ -73,7 +81,7 @@ namespace WebSGV.Services.Exportacion
                     string tracto = faltan.Any(x => x.Def.Tramo == TramoViaje.Descarga) ? Limpio(v.Tracto2) ?? Limpio(v.Tracto1)
                                   : faltan.Count > 0 ? Limpio(v.Tracto1) ?? Limpio(v.Tracto2)
                                   : TractoActivo(v);
-                    if (tracto == null || ConSenal(tracto)) continue;   // su propio GPS lo sigue
+                    if (tracto == null || ConSenal(tracto) || TieneGpsEnElViaje(tracto, v)) continue;   // su propio GPS lo sigue
 
                     var a = new Aproximado { Viaje = v, Tracto = tracto };
                     foreach (var x in faltan)
@@ -107,6 +115,10 @@ namespace WebSGV.Services.Exportacion
         private static string Limpio(string s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim().ToUpperInvariant();
         private static DateTime? Hora(ViajeResumen v, string c) => v.Horas != null && v.Horas.TryGetValue(c, out var h) ? h : null;
         private static bool Hay(ViajeResumen v, string c) => Hora(v, c).HasValue;
+
+        /// <summary>El viaje ya tiene algún hito del mismo tramo que va después de <paramref name="d"/>.</summary>
+        private static bool HayDespues(ViajeResumen v, DefinicionHito d) =>
+            v.Hitos.SkipWhile(h => h != d).Skip(1).Any(h => h.Tramo == d.Tramo && Hay(v, h.Columna));
 
         private static double Mediana(IEnumerable<double> valores)
         {

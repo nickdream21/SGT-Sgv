@@ -127,13 +127,25 @@ namespace WebSGV.Services.GpsIntegracion
                 return ruta;
             }
 
-            // Carga: desde la salida de base (o 14 h antes del ingreso a planta) hasta la llegada a base.
+            // Carga: desde la salida de base hasta la llegada a base. Sin salida de base, el tracto pudo venir directo
+            // de su viaje anterior (pedido 4400134752: BNH-865 entregó Polinplast en Chao y siguió a Vitapro Trujillo):
+            // el recorrido empieza donde terminó ese viaje, como en los terceros; si no hay, 14 h antes de llegar.
             DateTime? anclaCarga = H("fhIngresoPlanta") ?? H("fhLlegadaTrujillo") ?? v.FhProgramacion;
-            DateTime? desdeCarga = H("fhSalidaBase1") ?? anclaCarga?.AddHours(-14);
+            DateTime? desdeCarga = H("fhSalidaBase1");
+            Func<List<double[]>, Tuple<List<double[]>, string>> recorte = null;
+            if (desdeCarga == null && anclaCarga.HasValue)
+            {
+                DateTime llegada = H("fhLlegadaTrujillo") ?? anclaCarga.Value;
+                var anterior = ViajeAnterior(idSeguimiento, v.Tracto1, llegada);
+                if (anterior != null && anterior.Item1 <= llegada.AddDays(-DiasAntesDeCargar)) anterior = null;
+                desdeCarga = anterior?.Item1 ?? anclaCarga.Value.AddHours(-14);
+                if (anterior != null)
+                    recorte = p => RecortarInicio(p, Ms(FechaHelper.ConvertirAUtc(llegada)), anterior.Item2);
+            }
             DateTime? hastaCarga = H("fhLlegadaBase2");
             ruta.Tramos.Add(Tramo(cliente, "carga", "Carga: Base → Trujillo → Base", v.Tracto1, v.Chofer1, idSeguimiento,
                 desdeCarga, hastaCarga, (H("fhSalidaPlanta") ?? desdeCarga)?.AddHours(20), ahora,
-                HitosSeguimiento.Carga.Select(x => hitos[x.Columna])));
+                HitosSeguimiento.Carga.Select(x => hitos[x.Columna]), recorte));
 
             // Descarga: recién cuando el tracto 2 sale de base después de la carga.
             ruta.Tramos.Add(Tramo(cliente, "descarga", "Descarga: Base → Ecuador → Base", v.Tracto2, v.Chofer2, idSeguimiento,

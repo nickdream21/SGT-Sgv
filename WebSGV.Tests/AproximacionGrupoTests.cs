@@ -69,6 +69,51 @@ namespace WebSGV.Tests
             Assert.Equal("BSD-716", u.Posicion.DeTracto);
         }
 
+        /// <summary>
+        /// Pedido 4400134752 (12/11/2026): BNH-865 ya estaba en Trujillo, su GPS midió llegada, planta y vuelta a la
+        /// base, pero no hubo salida de base; estacionado, dejó de mandar señal y el grupo le puso la salida de las demás.
+        /// </summary>
+        [Fact]
+        public void HuecoAntesDeHitosMedidos_NoSeRellena()
+        {
+            ViajeResumen Vitapro(int id, string tracto1, string tracto2, DateTime? salidaBase1) => new ViajeResumen
+            {
+                Id = id, Tracto1 = tracto1, Tracto2 = tracto2, Estado = "EN_CURSO", FhProgramacion = new DateTime(2026, 11, 10),
+                Hitos = HitosSeguimiento.Todos,
+                Horas = new Dictionary<string, DateTime?>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["fhSalidaBase1"] = salidaBase1,
+                    ["fhLlegadaTrujillo"] = new DateTime(2026, 11, 9, 16, 31, 0),
+                    ["fhIngresoPlanta"] = new DateTime(2026, 11, 10, 5, 54, 0),
+                    ["fhSalidaPlanta"] = new DateTime(2026, 11, 10, 10, 20, 0),
+                    ["fhLlegadaBase2"] = new DateTime(2026, 11, 10, 21, 37, 0),
+                },
+                Fase = new FaseCalculada { Nombre = "Retorno de Ecuador", Grupo = "ecuador" },
+            };
+            var g = new List<ViajeResumen>
+            {
+                Vitapro(1, "AAA-111", "BBB-111", new DateTime(2026, 11, 9, 8, 0, 0)),
+                Vitapro(2, "AAA-222", "BBB-222", new DateTime(2026, 11, 9, 9, 0, 0)),
+                Vitapro(3, "AAA-333", "BBB-333", new DateTime(2026, 11, 9, 10, 0, 0)),
+                Vitapro(4, "BNH-865", "CBU-930", null),
+            };
+            Assert.DoesNotContain(AproximacionGrupo.Calcular(g, Senal("BNH-865"), new DateTime(2026, 11, 12, 17, 0, 0)),
+                a => a.Hitos.ContainsKey("fhSalidaBase1"));
+        }
+
+        /// <summary>Unidad con GPS que reportó durante el viaje y quedó estacionada más de 6 h: no se aproxima.</summary>
+        [Fact]
+        public void EstacionadaConGpsDuranteElViaje_NoSeAproxima()
+        {
+            var g = Grupo();
+            g[3].Horas.Remove("fhLlegadaTrujillo");
+            g[3].Horas.Remove("fhSalidaPlanta");
+            g[3].Horas.Remove("fhLlegadaBase2");
+            // BFR-730 mandó su última posición el 20/10 (ya en el viaje, programado el 19/10) y desde ahí nada.
+            Func<string, DateTime?> senal = t => t == "BFR-730" ? new DateTime(2026, 10, 20, 15, 0, 0) : Ahora.AddMinutes(-5);
+            Assert.Empty(AproximacionGrupo.Calcular(g, senal, Ahora));
+        }
+
         [Fact]
         public void SinGrupoSuficiente_NoSeAproxima()
         {
