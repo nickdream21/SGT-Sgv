@@ -246,3 +246,27 @@ function validarFechaEmisionCliente(source, args) {
         });
     });
 })();
+
+// Vista previa del Word: menos ruido.
+//  - "Word: ABC-123" sobre el tracto o la carreta solo se deja cuando difiere de la placa elegida en la lista.
+//  - La tabla de descargas y entregas se pliega cuando todas sus filas ya están registradas.
+function ordenarVistaPreviaWord() {
+    document.querySelectorAll('td.rd-col-placa small.rd-doc-dato').forEach(function (s) {
+        var lista = s.parentNode.querySelector('select');
+        if (!lista || lista.selectedIndex < 0) return;
+        var delWord = s.textContent.replace(/^\s*Word:\s*/, '').trim().toUpperCase();
+        var elegido = lista.options[lista.selectedIndex].text.trim().toUpperCase();
+        s.style.display = delWord && delWord === elegido ? 'none' : '';
+    });
+    document.querySelectorAll('details.rd-entregas-detalle').forEach(function (d) {
+        var chips = d.querySelectorAll('tbody .rd-chip');
+        var hechas = Array.prototype.filter.call(chips, function (c) { return /ya registrad/i.test(c.textContent); }).length;
+        var cuenta = d.querySelector('.rd-entregas-cuenta');
+        if (cuenta) cuenta.textContent = chips.length ? '· ' + hechas + ' de ' + chips.length + ' ya registradas' : '';
+        if (chips.length && hechas === chips.length && !d.dataset.visto) d.open = false;
+        d.dataset.visto = '1';
+    });
+}
+$(ordenarVistaPreviaWord);
+$(document).on('change', 'td.rd-col-placa select', ordenarVistaPreviaWord);
+if (window.Sys && Sys.WebForms) Sys.WebForms.PageRequestManager.getInstance().add_endRequest(ordenarVistaPreviaWord);

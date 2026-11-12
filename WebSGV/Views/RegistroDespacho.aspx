@@ -106,7 +106,9 @@
 
                                             <%-- Secciones de descarga (GUAYAQUIL-VITAPRO con su pedido, Crisar, Novopan, Polinplast, afrecho): completan el viaje del seguimiento de su carga. --%>
                                             <asp:Panel ID="pnlEntregasTerceros" runat="server" CssClass="rd-entregas mb-3" Visible="false">
-                                                <div class="rd-section-label"><i class="fas fa-flag-checkered mr-1"></i> Descargas, entregas y retornos con carga en este Word</div>
+                                                <%-- Plegado por el script cuando todas las filas ya están registradas (no hay nada que hacer). --%>
+                                                <details class="rd-entregas-detalle" open>
+                                                <summary class="rd-section-label"><i class="fas fa-flag-checkered mr-1"></i> Descargas, entregas y retornos con carga en este Word <span class="rd-entregas-cuenta"></span></summary>
                                                 <p class="small text-muted mb-2">
                                                     Cada fila completa el viaje del seguimiento de su carga (misma carreta): en GUAYAQUIL-VITAPRO, el pedido y el tracto y chofer de descarga (el GPS sigue a ese tracto desde la base, sin esperar el ZIP); en las de clientes terceros, el lugar de entrega y, si descarga otro tracto, el tracto y el chofer.
                                                     "IMPORTACION-TRUJILLO" son unidades que cargaron en Ecuador y descargan en Trujillo: se anotan como retorno con carga en su viaje de ida de Vitapro.
@@ -135,6 +137,7 @@
                                                     <asp:Button ID="btnRegistrarEntregas" runat="server" Text="Registrar descargas y entregas" CssClass="btn btn-outline-primary btn-sm"
                                                         CausesValidation="false" OnClick="btnRegistrarEntregas_Click" />
                                                 </div>
+                                                </details>
                                             </asp:Panel>
 
                                             <asp:Panel ID="pnlCargaProg" runat="server">
@@ -977,7 +980,7 @@
                                                     <div class="d-flex justify-content-end gap-2">
                                                         <asp:Button ID="btnIniciarLote" runat="server" 
                                                             Text="Iniciar lote de despachos" 
-                                                            CssClass="btn btn-primary btn-lg"
+                                                            CssClass="btn btn-primary rd-btn-leer"
                                                             OnClick="btnIniciarLote_Click"
                                                             ValidationGroup="ConfiguracionBase" />
                                                     </div>

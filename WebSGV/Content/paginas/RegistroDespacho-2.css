@@ -253,3 +253,14 @@ select.is-invalid + .select2-container .select2-selection--single {
 .rd-zona-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .rd-zona-pie { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem .75rem; margin-top: .75rem; }
 .rd-btn-leer { min-width: 170px; font-weight: 600; }
+
+/* ===== Lote a mano: campos en rejilla pareja, etiquetas discretas (2026-11-12) ===== */
+#rdManualCuerpo > .row:first-child { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: .25rem 1.25rem; margin: 0; }
+#rdManualCuerpo > .row:first-child > [class*="col-"] { display: contents; }
+#rdManualCuerpo .form-group { margin-bottom: .75rem !important; }
+#rdManualCuerpo .form-label { margin-bottom: .25rem; font-size: .8125rem; color: #475569; }
+#rdManualCuerpo .form-label strong { font-weight: 600; }
+#rdManualCuerpo input[type=radio] + label { margin: 0 1.25rem 0 .35rem; }
+.rd-entregas-detalle > summary { cursor: pointer; list-style-position: inside; }
+.rd-entregas-detalle:not([open]) > summary { margin-bottom: 0; }
+.rd-entregas-cuenta { font-weight: 400; color: #64748b; margin-left: .25rem; }

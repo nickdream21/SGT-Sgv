@@ -294,3 +294,4 @@
 .sx-fila .sx-copiar { position: static; display: inline-block; vertical-align: baseline; margin-left: 0.25rem; }
 .sx-fila .sx-ultimo .sx-mono { white-space: nowrap; }
 .sx-fila .sx-sub:empty { display: none; }
+.sx-ruta-control .sx-ruta-select { height: 2.25rem; padding: 0 0.5rem !important; line-height: 1.2; }

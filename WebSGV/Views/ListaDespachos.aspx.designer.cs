@@ -299,6 +299,15 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.DropDownList ddlFiltroPlantaLotes;
 
         /// <summary>
+        /// Control pnlFiltrosViajes.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlFiltrosViajes;
+
+        /// <summary>
         /// Control pnlFiltrosLotes.
         /// </summary>
         /// <remarks>
@@ -894,23 +903,7 @@ namespace WebSGV.Views
         /// </remarks>
         protected global::System.Web.UI.WebControls.Label lblMensajeManifiesto;
 
-        /// <summary>
-        /// Control lblEstadoDocumentalLote.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblEstadoDocumentalLote;
 
-        /// <summary>
-        /// Control litAvanceDocs.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Literal litAvanceDocs;
 
         /// <summary>
         /// Control pnlEsperaZip.
@@ -921,14 +914,6 @@ namespace WebSGV.Views
         /// </remarks>
         protected global::System.Web.UI.WebControls.Panel pnlEsperaZip;
 
-        /// <summary>
-        /// Control lnkCompletarConZip.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.HyperLink lnkCompletarConZip;
 
         /// <summary>
         /// Control lblNumeroFacturaDocs.

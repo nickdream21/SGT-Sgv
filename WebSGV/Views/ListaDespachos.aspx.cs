@@ -1266,6 +1266,7 @@ namespace WebSGV.Views
 
                 lblClienteManifiestos.Text = lote.NombreCliente;
                 lblPedidoManifiestos.Text = string.IsNullOrEmpty(lote.NumeroPedido) ? "Sin especificar" : lote.NumeroPedido;
+                hlVolverBandejaDocs.NavigateUrl = ResolveUrl("~/Views/BandejaDocumentos.aspx") + "?lote=" + HttpUtility.UrlEncode(idLoteVirtual);
 
                 CargarDocumentosBase(lote);
 
@@ -1324,11 +1325,6 @@ namespace WebSGV.Views
 
             var documentos = EstadoDocumental.DeLote(lote);
             bool anulado = lote.EstadoLote == "ANULADO";
-            lblEstadoDocumentalLote.Text = HttpUtility.HtmlEncode(anulado ? "Lote anulado."
-                : documentos.Completo ? "Documentación completa" : "Falta: " + documentos.Resumen);
-            lblEstadoDocumentalLote.CssClass = anulado ? "ld-docs-titular ld-docs-titular-anulado"
-                : documentos.Completo ? "ld-docs-titular ld-docs-titular-ok" : "ld-docs-titular ld-docs-titular-falta";
-            litAvanceDocs.Text = anulado ? "" : ArmarAvanceDocumentos(lote, documentos);
             pnlEsperaZip.Visible = !anulado && documentos.SinNingunDocumento;
 
             // Lo que falta registrar se anota aquí mismo (la factura de una carga; el CPIC de un lote internacional).
@@ -1398,55 +1394,6 @@ namespace WebSGV.Views
         private static string InsigniaDocumento(bool listo, string texto) =>
             "<span class=\"ld-estado " + (listo ? "ld-estado-ok" : "ld-estado-falta") + "\"><i class=\"fas "
             + (listo ? "fa-check-circle" : "fa-clock") + "\"></i> " + HttpUtility.HtmlEncode(texto) + "</span>";
-
-        /// <summary>
-        /// Barra de avance y una pastilla por documento que aplica al lote (verde = listo,
-        /// ámbar = falta, con cuántos despachos). Solo cuenta lo que EstadoDocumental ya calcula.
-        /// </summary>
-        private static string ArmarAvanceDocumentos(LoteRegistrado lote, EstadoDocumental d)
-        {
-            var items = new List<KeyValuePair<string, int>>();
-            bool esCarga = lote.TipoOperacion == "CARGA";
-            // Sin el documento no hay PDF que adjuntar: ese paso queda pendiente (nunca "listo" por defecto).
-            int pdfFactura = d.SinFactura > 0 ? Math.Max(1, d.SinPdfFactura) : d.SinPdfFactura;
-            int pdfCpic = d.SinCPIC > 0 ? Math.Max(1, d.SinPdfCPIC) : d.SinPdfCPIC;
-            if (esCarga)
-            {
-                items.Add(new KeyValuePair<string, int>("Pedido", d.SinPedido));
-                items.Add(new KeyValuePair<string, int>("Factura", d.SinFactura));
-            }
-            if (esCarga || d.SinPdfFactura > 0 || !string.IsNullOrEmpty(lote.NumeroFactura))
-                items.Add(new KeyValuePair<string, int>("PDF factura", pdfFactura));
-            if (esCarga)
-                items.Add(new KeyValuePair<string, int>("Guías", d.SinGuia));
-            if (lote.EsInternacional || !string.IsNullOrEmpty(lote.NumeroCPIC))
-            {
-                items.Add(new KeyValuePair<string, int>("CPIC", d.SinCPIC));
-                items.Add(new KeyValuePair<string, int>("PDF CPIC", pdfCpic));
-            }
-            // Mismos despachos a los que el SP les exige el MCI; en una carga nacional con CPIC queda en su descarga.
-            if (lote.EsInternacional || (esCarga && d.Perfil == "CPIC"))
-                items.Add(new KeyValuePair<string, int>("Manifiesto (MCI)", d.SinManifiesto));
-            if (items.Count == 0) return "";
-
-            int listos = items.Count(i => i.Value == 0);
-            int pct = (int)Math.Round(100.0 * listos / items.Count);
-            var sb = new System.Text.StringBuilder();
-            sb.Append("<div class=\"ld-avance\"><div class=\"ld-avance-barra\"><div class=\"ld-avance-relleno")
-              .Append(listos == items.Count ? " ld-avance-completo" : "").Append("\" style=\"width:").Append(pct).Append("%\"></div></div>")
-              .Append("<span class=\"ld-avance-texto\">").Append(listos).Append(" de ").Append(items.Count).Append(" listos</span></div>")
-              .Append("<div class=\"ld-checklist\">");
-            foreach (var it in items)
-            {
-                bool ok = it.Value == 0;
-                string detalle = ok ? "" : (it.Value >= d.Despachos ? "" : " (" + it.Value + " de " + d.Despachos + ")");
-                sb.Append("<span class=\"ld-check ").Append(ok ? "ld-check-ok" : "ld-check-falta").Append("\"><i class=\"fas ")
-                  .Append(ok ? "fa-check-circle" : "fa-exclamation-circle").Append("\"></i> ")
-                  .Append(HttpUtility.HtmlEncode(it.Key + detalle)).Append("</span>");
-            }
-            sb.Append("</div>");
-            return sb.ToString();
-        }
 
         /// <summary>Guías de cada despacho del lote, editables ("N/A" del lector = vacío).</summary>
         private void CargarGuiasLote(List<DespachoViaje> despachos)

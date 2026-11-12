@@ -228,7 +228,7 @@
         deslizador.setAttribute('aria-valuetext', horaLima.format(new Date(t)));
         if (cursor) cursor.style.left = pct(t) + '%';
         if (reproduciendo && seguir.checked && foco && !mapa.getBounds().pad(-0.2).contains(foco.getLatLng()))
-            mapa.panTo(foco.getLatLng(), { animate: true, duration: 0.4 });
+            mapa.panTo(foco.getLatLng(), { animate: false }); // sin animación: una por cuadro frenaba la reproducción
     }
 
     // ----- Línea de tiempo: un carril por tramo con sus hitos y paradas, y el cursor del momento actual -----
@@ -292,7 +292,7 @@
         pintar(tMin + (tMax - tMin) * f);
     }
     pista.addEventListener('pointerdown', function (e) {
-        pista.setPointerCapture(e.pointerId);
+        try { pista.setPointerCapture(e.pointerId); } catch (x) { /* puntero sintético o ya liberado */ }
         buscarEnPista(e);
         pista.onpointermove = buscarEnPista;
     });

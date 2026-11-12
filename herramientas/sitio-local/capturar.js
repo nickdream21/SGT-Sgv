@@ -2,11 +2,13 @@
 // captura de la extensión no funciona. Inicia sesión con admin.transporte; la contraseña se lee de
 // privado/CREDENCIALES_USUARIOS.txt y nunca se imprime.
 //
-//   node herramientas/sitio-local/capturar.js <salida.png> <ruta> [ancho=1366] [esperaMs=1500] [js]
+//   node herramientas/sitio-local/capturar.js <salida.png> <ruta> [ancho=1366] [esperaMs=1500] [js] [archivos]
 //   node herramientas/sitio-local/capturar.js lista.png /Views/ListaDespachos.aspx 1366 2000
 //   varias a la vez: ... a.png /Views/A.aspx -- b.png /Views/B.aspx 390   (SGV_ALTO=1200 limita el alto de la imagen)
 //
 // [js] se ejecuta en la página antes de capturar (p. ej. un clic); su resultado se imprime.
+// [archivos] = "selectorCss|ruta1|ruta2": pone esos archivos en el <input type=file> antes de ejecutar [js]
+// (para probar una subida: el [js] pulsa el botón).
 const fs = require('fs'), path = require('path'), os = require('os'), { spawn } = require('child_process');
 
 const BASE = process.env.SGV_SITIO || 'http://localhost:50291';
@@ -66,11 +68,19 @@ function clave() {
         await esperar(2500);
         if (await evaluar('!!document.querySelector("[id$=txtPassword]")')) throw new Error('No se pudo iniciar sesión.');
 
-        for (const [salida, ruta, ancho = '1366', espera = '1500', js] of trabajos) {
+        for (const [salida, ruta, ancho = '1366', espera = '1500', js, archivos] of trabajos) {
             errores.length = 0;
             await cdp('Emulation.setDeviceMetricsOverride', { width: +ancho, height: 900, deviceScaleFactor: 1, mobile: +ancho < 600 });
             await ir(BASE + ruta);
             await esperar(+espera);
+            if (archivos) {
+                const [selector, ...rutas] = archivos.split('|');
+                const raiz = (await cdp('DOM.getDocument')).root.nodeId;
+                const nodo = (await cdp('DOM.querySelector', { nodeId: raiz, selector })).nodeId;
+                if (!nodo) throw new Error('No hay ' + selector + ' en ' + ruta);
+                await cdp('DOM.setFileInputFiles', { nodeId: nodo, files: rutas.map(r => path.resolve(r)) });
+                await esperar(300);
+            }
             if (js) { console.log('js →', JSON.stringify(await evaluar(js))); await esperar(+espera); }
             const alto = Math.min(+process.env.SGV_ALTO || 6000, await evaluar('Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)'));
             await cdp('Emulation.setDeviceMetricsOverride', { width: +ancho, height: alto, deviceScaleFactor: 1, mobile: +ancho < 600 });

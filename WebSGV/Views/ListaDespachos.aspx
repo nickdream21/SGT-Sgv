@@ -122,58 +122,43 @@
                                         </div>
                                         <div class="section-content">
                                             
-                                            <!-- Filtros para Viajes -->
-                                            <div class="filters-container">
-                                                <div class="filters-heading"><i class="fas fa-filter"></i>Filtros de búsqueda</div>
-                                                <div class="row">
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-id-card"></i>Conductor</label>
-                                                            <asp:DropDownList ID="ddlFiltroConductorViajes" runat="server" 
-                                                                CssClass="form-select"
-                                                                AutoPostBack="true"
-                                                                OnSelectedIndexChanged="ddlFiltroConductorViajes_SelectedIndexChanged">
-                                                                <asp:ListItem Value="" Text="-- Todos los conductores --"></asp:ListItem>
-                                                            </asp:DropDownList>
-                                                        </div>
+                                            <!-- Filtros para Viajes: misma barra que la pestaña de lotes -->
+                                            <asp:Panel ID="pnlFiltrosViajes" runat="server" CssClass="ld-filtros" DefaultButton="btnBuscarViaje">
+                                                <div class="ld-filtros-fila">
+                                                    <div class="ld-filtro ld-filtro-buscar">
+                                                        <label for="<%= txtBuscarViaje.ClientID %>">N° de viaje</label>
+                                                        <asp:TextBox ID="txtBuscarViaje" runat="server" CssClass="form-control form-control-sm"
+                                                            placeholder="Ej: VP-2026-001" MaxLength="20"></asp:TextBox>
                                                     </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-globe-americas"></i>Ámbito</label>
-                                                            <asp:DropDownList ID="ddlFiltroTipoViajes" runat="server" 
-                                                                CssClass="form-select"
-                                                                AutoPostBack="true"
-                                                                OnSelectedIndexChanged="ddlFiltroTipoViajes_SelectedIndexChanged">
-                                                                <asp:ListItem Value="" Text="-- Todos los tipos --"></asp:ListItem>
-                                                                <asp:ListItem Value="1" Text="Internacional"></asp:ListItem>
-                                                                <asp:ListItem Value="0" Text="Nacional"></asp:ListItem>
-                                                            </asp:DropDownList>
-                                                        </div>
+                                                    <div class="ld-filtro ld-filtro-buscar">
+                                                        <label for="<%= ddlFiltroConductorViajes.ClientID %>">Conductor</label>
+                                                        <asp:DropDownList ID="ddlFiltroConductorViajes" runat="server"
+                                                            CssClass="form-control form-control-sm" AutoPostBack="true"
+                                                            OnSelectedIndexChanged="ddlFiltroConductorViajes_SelectedIndexChanged">
+                                                            <asp:ListItem Value="" Text="-- Todos los conductores --"></asp:ListItem>
+                                                        </asp:DropDownList>
                                                     </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-search"></i>N° de Viaje</label>
-                                                            <div class="input-group">
-                                                                <asp:TextBox ID="txtBuscarViaje" runat="server" 
-                                                                    CssClass="form-control" 
-                                                                    placeholder="Ej: VP-2025-001"
-                                                                    MaxLength="20">
-                                                                </asp:TextBox>
-                                                                <asp:Button ID="btnBuscarViaje" runat="server" 
-                                                                    Text="Buscar" 
-                                                                    CssClass="btn btn-outline-secondary"
-                                                                    OnClick="btnBuscarViaje_Click"
-                                                                    CausesValidation="false" />
-                                                            </div>
-                                                        </div>
+                                                    <div class="ld-filtro">
+                                                        <label for="<%= ddlFiltroTipoViajes.ClientID %>">Ámbito</label>
+                                                        <asp:DropDownList ID="ddlFiltroTipoViajes" runat="server"
+                                                            CssClass="form-control form-control-sm" AutoPostBack="true"
+                                                            OnSelectedIndexChanged="ddlFiltroTipoViajes_SelectedIndexChanged">
+                                                            <asp:ListItem Value="" Text="Todos"></asp:ListItem>
+                                                            <asp:ListItem Value="1" Text="Internacional"></asp:ListItem>
+                                                            <asp:ListItem Value="0" Text="Nacional"></asp:ListItem>
+                                                        </asp:DropDownList>
+                                                    </div>
+                                                    <div class="ld-filtro ld-filtro-botones">
+                                                        <asp:Button ID="btnBuscarViaje" runat="server" Text="Buscar"
+                                                            CssClass="btn btn-primary btn-sm" OnClick="btnBuscarViaje_Click" CausesValidation="false" />
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </asp:Panel>
 
                                             <!-- Grid de Viajes -->
                                             <div class="data-grid-container">
                                                 <asp:GridView ID="gvViajesActivos" runat="server" 
-                                                    CssClass="table data-table"
+                                                    CssClass="table data-table ld-tabla-lotes"
                                                     AutoGenerateColumns="false"
                                                     EmptyDataText="No se encontraron viajes activos"
                                                     OnRowCommand="gvViajesActivos_RowCommand"
@@ -211,11 +196,11 @@
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
                                                         
-                                                        <asp:TemplateField HeaderText="Acciones" ItemStyle-Width="200px">
+                                                        <asp:TemplateField HeaderText="" ItemStyle-CssClass="ld-col-acciones">
                                                             <ItemTemplate>
                                                                 <div class="action-buttons">
                                                                     <asp:Button runat="server" 
-                                                                       Text="Ver" 
+                                                                       Text="Ver despachos" 
                                                                        CssClass="btn btn-sm btn-outline-primary"
                                                                        CommandName="VerDespachos"
                                                                        CommandArgument='<%# Eval("IdViajeProgreso") %>' />
@@ -356,7 +341,6 @@
                                                             </asp:DropDownList>
                                                         </div>
                                                     </div>
-                                                </details>
                                             </asp:Panel>
 
                                             <!-- Grid de Lotes -->
@@ -994,21 +978,25 @@
                                     </div>
                                 </asp:Panel>
 
-                                <!-- ====== DOCUMENTOS DEL LOTE ====== -->
+                                <!-- ====== REGISTRO MANUAL DE DOCUMENTOS ======
+                                     Se abre solo desde el expediente de la Bandeja ("Registro manual", ?manual=1&lote=).
+                                     Ver los documentos y subirlos es trabajo del expediente; aquí queda lo que
+                                     solo se puede hacer a mano: escribir un número sin tener el documento, adjuntar
+                                     el PDF de la factura o del CPIC y los manifiestos de cruce y retorno. -->
                                 <asp:Panel ID="pnlManifiestosLote" runat="server" Visible="false">
                                     <div class="section-card detalle-section ld-docs-page">
                                         <div class="ld-docs-top">
                                             <div>
-                                                <h5 class="section-title mb-1"><i class="fas fa-folder-open"></i> Documentos del lote</h5>
+                                                <h5 class="section-title mb-1"><i class="fas fa-keyboard"></i> Registro manual de documentos</h5>
                                                 <div class="ld-docs-chips">
                                                     <span class="ld-chip"><i class="fas fa-building"></i> <asp:Label ID="lblClienteManifiestos" runat="server"></asp:Label></span>
                                                     <span class="ld-chip"><i class="fas fa-hashtag"></i> Pedido <asp:Label ID="lblPedidoManifiestos" runat="server"></asp:Label></span>
                                                 </div>
                                             </div>
                                             <div class="ld-docs-volver">
-                                                <asp:HyperLink ID="hlVolverBandejaDocs" runat="server" Visible="false"
+                                                <asp:HyperLink ID="hlVolverBandejaDocs" runat="server"
                                                     NavigateUrl="~/Views/BandejaDocumentos.aspx"
-                                                    CssClass="btn btn-primary btn-action">← Volver a la bandeja</asp:HyperLink>
+                                                    CssClass="btn btn-primary btn-action">← Volver al expediente</asp:HyperLink>
                                                 <asp:Button ID="btnVolverManifiestos" runat="server" Text="Ver el lote"
                                                     CssClass="btn btn-outline-secondary btn-action"
                                                     OnClick="btnVolverManifiestos_Click" CausesValidation="false" />
@@ -1020,29 +1008,16 @@
                                                 <asp:Label ID="lblMensajeManifiesto" runat="server" CssClass="alert d-block"></asp:Label>
                                             </asp:Panel>
 
-                                            <%-- Avance: barra + una pastilla por documento (verde = listo, ámbar = falta).
-                                                 Lo arma CargarDocumentosBase con EstadoDocumental. --%>
-                                            <div class="ld-docs-resumen">
-                                                <asp:Label ID="lblEstadoDocumentalLote" runat="server" CssClass="ld-docs-titular"></asp:Label>
-                                                <asp:Literal ID="litAvanceDocs" runat="server"></asp:Literal>
-                                            </div>
-
-                                            <%-- Lo recomendado: subir los documentos del correo; la bandeja los lee y los une solos. --%>
-                                            <div class="ld-subir-docs">
-                                                <i class="fas fa-inbox"></i>
-                                                <div class="ld-subir-docs-texto">
-                                                    <strong>Suba los documentos del correo</strong>
-                                                    <span>El ZIP del cliente (factura, packing list y guías) o sus PDF: el sistema completa pedido, factura,
-                                                        guías y carga de cada unidad, y adjunta el PDF de la factura. Sin escribir a mano.</span>
-                                                </div>
-                                                <asp:HyperLink ID="lnkCompletarConZip" runat="server" NavigateUrl="~/Views/BandejaDocumentos.aspx"
-                                                    CssClass="btn btn-primary ld-subir-docs-btn"><i class="fas fa-cloud-upload-alt mr-1"></i>Subir documentos</asp:HyperLink>
+                                            <div class="ld-aviso ld-aviso-neutro">
+                                                <i class="fas fa-info-circle"></i>
+                                                <div>Use esta pantalla solo cuando no tenga el documento. Lo normal es soltar el ZIP del correo, la CPIC o los MCI
+                                                    en el expediente del pedido: el sistema lee los números y adjunta los PDF.</div>
                                             </div>
                                             <asp:Panel ID="pnlEsperaZip" runat="server" Visible="false" CssClass="ld-aviso ld-aviso-info">
                                                 <i class="fas fa-envelope-open-text"></i>
                                                 <div>
-                                                    <strong>Esperando el correo con los documentos.</strong>
-                                                    Si escribe la guía o la factura a mano aquí, el ZIP ya no reconoce esa carga: use la bandeja.
+                                                    <strong>Este lote todavía espera el correo con sus documentos.</strong>
+                                                    Si escribe aquí la guía o la factura, el ZIP ya no reconocerá esa carga.
                                                 </div>
                                             </asp:Panel>
 
@@ -1061,8 +1036,6 @@
                                                     </div>
                                                     <%-- Factura aún sin registrar: se anota aquí mismo, sin pasar por "Editar". --%>
                                                     <asp:Panel ID="pnlRegistrarFactura" runat="server" CssClass="ld-doc-manual-envoltura" Visible="false" DefaultButton="btnRegistrarFactura">
-                                                    <details class="ld-manual">
-                                                        <summary><i class="fas fa-keyboard"></i> Escribir la factura a mano <small>(solo si no tiene el documento)</small></summary>
                                                     <div class="ld-doc-registrar">
                                                         <div class="ld-doc-registrar-titulo">Registrar factura</div>
                                                         <div class="ld-doc-campos">
@@ -1089,7 +1062,6 @@
                                                         <asp:Button ID="btnRegistrarFactura" runat="server" Text="Registrar factura"
                                                             CssClass="btn btn-primary btn-sm" OnClick="btnRegistrarFactura_Click" CausesValidation="false" />
                                                     </div>
-                                                    </details>
                                                     </asp:Panel>
                                                     <asp:Panel ID="pnlSubirPdfFactura" runat="server" CssClass="ld-doc-subir" Visible="false">
                                                         <label class="ld-doc-elegir">
@@ -1145,17 +1117,15 @@
                                             </div>
                                             <p class="ld-nota">
                                                 <i class="fas fa-info-circle"></i>
-                                                La factura, su PDF y las guías se registran solos al subir el ZIP del correo. El CPIC se registra aquí con su número y su archivo. Para corregir un número ya registrado use <strong>Editar</strong>.
+                                                Para corregir un número ya registrado use <strong>Editar</strong> en la lista de lotes.
                                             </p>
 
                                             <%-- 2. Guías por despacho --%>
                                             <asp:Panel ID="pnlGuiasLote" runat="server" CssClass="ld-bloque">
                                                 <div class="ld-bloque-head">
                                                     <h6><i class="fas fa-truck-loading"></i> Guías por despacho</h6>
-                                                    <span class="ld-bloque-ayuda">Las guías llegan en el ZIP del correo: súbalo con <strong>Subir documentos</strong>.</span>
+                                                    <span class="ld-bloque-ayuda">Escriba la guía de cada unidad y pulse <strong>Guardar guías</strong>.</span>
                                                 </div>
-                                                <details class="ld-manual">
-                                                    <summary><i class="fas fa-keyboard"></i> Ver o escribir las guías a mano <small>(solo si no tiene el documento)</small></summary>
                                                 <div class="data-grid-container">
                                                     <asp:GridView ID="gvGuiasLote" runat="server"
                                                         CssClass="table data-table detail-table ld-tabla-guias"
