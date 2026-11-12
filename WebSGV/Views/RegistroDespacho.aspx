@@ -32,8 +32,8 @@
                                 <!-- "1" con el formulario manual abierto: sobrevive a los postbacks parciales -->
                                 <asp:HiddenField ID="hfManualAbierto" runat="server" Value="0" />
 
-                                <!-- Indicador de progreso de pasos -->
-                                <div class="rd-stepper mb-4">
+                                <!-- Indicador de progreso: solo para el lote a mano (lo muestra actualizarStepper) -->
+                                <div class="rd-stepper mb-4" id="rdStepper" style="display:none">
                                     <div class="rd-stepper-inner">
                                         <div id="rdStep1" class="rd-stepper-item">
                                             <div class="rd-stepper-circle">1</div>
@@ -62,24 +62,31 @@
                                      el FileUpload no viaja en un postback parcial. -->
                                 <asp:Panel ID="pnlImportarDocumentos" runat="server" CssClass="card mb-4 rd-import-card">
                                     <div class="rd-step-header">
-                                        <h5><i class="fas fa-file-import mr-1"></i> Importar desde los documentos del pedido <span class="rd-chip rd-chip-wait ml-2">Opcional</span></h5>
-                                        <div class="rd-subtitle">Suba el ZIP del correo o los PDF (factura, packing list y guías de remisión) junto con el Word de la programación del día. El chofer, el tracto y la carreta salen de la programación; la carga, de los documentos. Usted lo revisa antes de guardar.
-                                            Si el correo todavía no llega, suba <strong>solo el Word</strong> para programar los despachos (el seguimiento GPS empieza ya); cuando llegue, suba el ZIP y cada guía completará su despacho.</div>
+                                        <h5><i class="fas fa-file-import mr-1"></i> Programar o completar con los archivos del día</h5>
+                                        <div class="rd-subtitle">El chofer, el tracto y la carreta salen del Word de la programación; la carga, de los documentos del cliente. Usted revisa todo antes de guardar.</div>
+                                        <ul class="rd-casos">
+                                            <li><strong>Solo el Word</strong><span>Programa los despachos del día. El seguimiento GPS empieza ya, sin esperar el correo.</span></li>
+                                            <li><strong>Word + ZIP o PDF del correo</strong><span>Registra los despachos completos, con pedido, factura, guías y carga.</span></li>
+                                            <li><strong>Solo el ZIP o los PDF</strong><span>Completa los despachos ya programados: cada guía se une a su unidad.</span></li>
+                                        </ul>
                                     </div>
                                     <div class="card-body">
                                         <asp:Panel ID="pnlSubirDocumentos" runat="server">
-                                            <div class="row align-items-end">
-                                                <div class="col-md-8 mb-2 mb-md-0">
-                                                    <asp:FileUpload ID="fileDocumentosPedido" runat="server" CssClass="form-control" AllowMultiple="true" accept=".pdf,.zip,.docx" />
-                                                    <small class="form-text text-muted">PDF generados por el sistema del cliente (no escaneos), sueltos o en un ZIP, y la programación en Word (.docx) que manda la jefa de flota. Seleccione todos a la vez.</small>
-                                                </div>
-                                                <div class="col-md-4 text-md-right">
-                                                    <asp:Button ID="btnLeerDocumentos" runat="server"
-                                                        Text="Leer documentos"
-                                                        CssClass="btn btn-outline-primary"
-                                                        CausesValidation="false"
-                                                        OnClick="btnLeerDocumentos_Click" />
-                                                </div>
+                                            <label class="rd-zona">
+                                                <i class="fas fa-cloud-upload-alt rd-zona-icono"></i>
+                                                <span class="rd-zona-titulo">Arrastre aquí los archivos o haga clic para elegirlos</span>
+                                                <span class="rd-zona-ayuda">Word de la programación (.docx) que manda la jefa de flota, ZIP del correo o PDF generados por el sistema del cliente (no escaneos). Seleccione todos a la vez.</span>
+                                                <span class="rd-zona-archivos"></span>
+                                                <asp:FileUpload ID="fileDocumentosPedido" runat="server" CssClass="rd-zona-input" AllowMultiple="true" accept=".pdf,.zip,.docx" />
+                                            </label>
+                                            <div class="rd-zona-pie">
+                                                <span class="small text-muted">¿Solo CPIC, manifiestos o facturas de flete? Van por la
+                                                    <a href="BandejaDocumentos.aspx">Bandeja de documentos</a>.</span>
+                                                <asp:Button ID="btnLeerDocumentos" runat="server"
+                                                    Text="Leer documentos"
+                                                    CssClass="btn btn-primary rd-btn-leer"
+                                                    CausesValidation="false"
+                                                    OnClick="btnLeerDocumentos_Click" />
                                             </div>
                                         </asp:Panel>
 
@@ -418,7 +425,7 @@
                                      el lote de DESCARGA con su carga, proponiendo el mismo conductor/tracto. -->
                                 <asp:Panel ID="pnlDescargaPedido" runat="server" CssClass="card mb-4 rd-import-card">
                                     <div class="rd-step-header">
-                                        <h5><i class="fas fa-dolly mr-1"></i> Registrar la descarga de un pedido ya cargado <span class="rd-chip rd-chip-wait ml-2">Opcional</span></h5>
+                                        <h5><i class="fas fa-dolly mr-1"></i> Registrar la descarga de un pedido ya cargado</h5>
                                         <div class="rd-subtitle">Elija el pedido: aparecen sus tractos cargados que faltan descargar, con su carga. Cambie solo los que hicieron relevo en la base.</div>
                                     </div>
                                     <div class="card-body">

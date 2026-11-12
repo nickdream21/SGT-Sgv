@@ -638,3 +638,31 @@
 .ms-2 { margin-left: 0.5rem; }
 .ms-3 { margin-left: 1rem; }
 .fw-bold { font-weight: 600; }
+
+/* ===== Lotes: barra de filtros compacta y tabla de una línea por lote (2026-11-12) ===== */
+.ld-filtros { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: .75rem 1rem; margin-bottom: 1rem; }
+.ld-filtros-fila { display: flex; flex-wrap: wrap; gap: .625rem .75rem; align-items: flex-end; }
+.ld-filtro { display: flex; flex-direction: column; flex: 1 1 9.5rem; min-width: 8.5rem; }
+.ld-filtro label { margin: 0 0 .2rem; font-size: .75rem; font-weight: 600; color: #475569; }
+.ld-filtro-buscar { flex: 1.4 1 11rem; }
+.ld-filtro-fecha { flex: 0 1 9.25rem; }
+.ld-filtro-botones { flex: 0 0 auto; min-width: 0; flex-direction: row; gap: .375rem; }
+.ld-filtro-botones .btn { height: calc(1.5em + .5rem + 2px); padding: 0 .9rem; font-weight: 600; }
+.ld-filtros-mas { margin-top: .625rem; padding-top: .5rem; border-top: 1px dashed #e2e8f0; }
+.ld-filtros-mas > summary { font-size: .8125rem; color: #1d4ed8; cursor: pointer; width: fit-content; }
+.ld-filtros-mas[open] > summary { margin-bottom: .5rem; }
+
+.ld-tabla-lotes > tbody > tr > td { vertical-align: middle; padding: .5rem .75rem; }
+.ld-tabla-lotes .ld-sub { display: block; font-size: .75rem; color: #64748b; font-weight: 400; }
+.ld-tabla-lotes .pedido-number { font-weight: 700; font-variant-numeric: tabular-nums; }
+.ld-tabla-lotes .ld-op { font-weight: 500; }
+.ld-tabla-lotes .ld-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ld-tabla-lotes .ld-col-fecha { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ld-tabla-lotes .ld-anulado { margin-left: .375rem; padding: .05rem .4rem; border-radius: 4px; background: #fee2e2; color: #991b1b; font-size: .6875rem; font-weight: 700; text-transform: uppercase; }
+.ld-tabla-lotes .ld-docs-cell .badge { margin-right: .25rem; }
+.ld-tabla-lotes .ld-col-acciones { width: 1%; white-space: nowrap; }
+.ld-tabla-lotes .action-buttons { flex-wrap: nowrap; justify-content: flex-end; }
+.ld-filtros .form-control { height: 2.125rem; padding: .25rem .5rem; font-size: .875rem; line-height: 1.4; }
+.ld-filtro { flex-basis: 8rem; min-width: 7.5rem; }
+.ld-filtro-fecha { flex: 0 1 8.75rem; }
+.ld-filtro-botones .btn { height: 2.125rem; }

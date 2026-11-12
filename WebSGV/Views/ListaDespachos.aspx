@@ -266,175 +266,98 @@
                                         </div>
                                         <div class="section-content">
                                             
-                                            <!-- Filtros para Lotes -->
-                                            <div class="filters-container">
-                                                <div class="filters-heading"><i class="fas fa-filter"></i>Filtros de búsqueda</div>
-                                                <div class="row mb-3">
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-building"></i>Cliente</label>
-                                                            <asp:DropDownList ID="ddlFiltroClienteLotes" runat="server" 
-                                                                CssClass="form-select"
-                                                                AutoPostBack="true"
-                                                                OnSelectedIndexChanged="ddlFiltroClienteLotes_SelectedIndexChanged">
-                                                                <asp:ListItem Value="" Text="-- Todos los clientes --"></asp:ListItem>
-                                                            </asp:DropDownList>
-                                                        </div>
+                                            <!-- Filtros para Lotes: una sola barra y un solo botón; lo poco usado queda en "Más filtros". -->
+                                            <asp:Panel ID="pnlFiltrosLotes" runat="server" CssClass="ld-filtros" DefaultButton="btnFiltrarFecha">
+                                                <div class="ld-filtros-fila">
+                                                    <div class="ld-filtro ld-filtro-buscar">
+                                                        <label for="<%= txtBuscarLote.ClientID %>">N° de pedido</label>
+                                                        <asp:TextBox ID="txtBuscarLote" runat="server" CssClass="form-control form-control-sm"
+                                                            placeholder="Ej: 4400134786" MaxLength="20"></asp:TextBox>
                                                     </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-exchange-alt"></i>Tipo operación</label>
-                                                            <asp:DropDownList ID="ddlFiltroOperacionLotes" runat="server" 
-                                                                CssClass="form-select"
-                                                                AutoPostBack="true"
+                                                    <div class="ld-filtro">
+                                                        <label for="<%= ddlFiltroClienteLotes.ClientID %>">Cliente</label>
+                                                        <asp:DropDownList ID="ddlFiltroClienteLotes" runat="server"
+                                                            CssClass="form-control form-control-sm" AutoPostBack="true"
+                                                            OnSelectedIndexChanged="ddlFiltroClienteLotes_SelectedIndexChanged">
+                                                            <asp:ListItem Value="" Text="Todos"></asp:ListItem>
+                                                        </asp:DropDownList>
+                                                    </div>
+                                                    <div class="ld-filtro">
+                                                        <label for="<%= ddlFiltroPlantaLotes.ClientID %>">Planta</label>
+                                                        <%-- Opciones cargadas desde el catálogo Planta en CargarPlantasFiltro(). --%>
+                                                        <asp:DropDownList ID="ddlFiltroPlantaLotes" runat="server"
+                                                            CssClass="form-control form-control-sm" AutoPostBack="true"
+                                                            OnSelectedIndexChanged="ddlFiltroPlantaLotes_SelectedIndexChanged">
+                                                        </asp:DropDownList>
+                                                    </div>
+                                                    <div class="ld-filtro ld-filtro-fecha">
+                                                        <label for="<%= txtFechaDesde.ClientID %>">Desde</label>
+                                                        <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control form-control-sm" TextMode="Date"></asp:TextBox>
+                                                    </div>
+                                                    <div class="ld-filtro ld-filtro-fecha">
+                                                        <label for="<%= txtFechaHasta.ClientID %>">Hasta</label>
+                                                        <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control form-control-sm" TextMode="Date"></asp:TextBox>
+                                                    </div>
+                                                    <div class="ld-filtro">
+                                                        <label for="<%= ddlFiltroDocumentosLotes.ClientID %>">Documentos</label>
+                                                        <%-- Valores = ListaDespachosService.DOCUMENTOS_PENDIENTES / DOCUMENTOS_COMPLETOS. --%>
+                                                        <asp:DropDownList ID="ddlFiltroDocumentosLotes" runat="server"
+                                                            CssClass="form-control form-control-sm" AutoPostBack="true"
+                                                            OnSelectedIndexChanged="ddlFiltroDocumentosLotes_SelectedIndexChanged">
+                                                            <asp:ListItem Value="" Text="Todos"></asp:ListItem>
+                                                            <asp:ListItem Value="PENDIENTES" Text="Con pendientes"></asp:ListItem>
+                                                            <asp:ListItem Value="COMPLETOS" Text="Completos"></asp:ListItem>
+                                                        </asp:DropDownList>
+                                                    </div>
+                                                    <div class="ld-filtro ld-filtro-botones">
+                                                        <asp:Button ID="btnFiltrarFecha" runat="server" Text="Buscar"
+                                                            CssClass="btn btn-primary btn-sm" OnClick="btnFiltrarFecha_Click" CausesValidation="false" />
+                                                        <asp:Button ID="btnLimpiarFiltros" runat="server" Text="Limpiar"
+                                                            CssClass="btn btn-outline-secondary btn-sm" OnClick="btnLimpiarFiltros_Click" CausesValidation="false" />
+                                                    </div>
+                                                </div>
+                                                <%-- Para encontrar un lote por su factura, su CPIC o su conductor sin saber la fecha ni el cliente. --%>
+                                                <details class="ld-filtros-mas" id="ldFiltrosMas">
+                                                    <summary>Más filtros: factura, CPIC, conductor, operación y anulados</summary>
+                                                    <div class="ld-filtros-fila">
+                                                        <div class="ld-filtro">
+                                                            <label for="<%= txtBuscarFacturaLotes.ClientID %>">N° de factura</label>
+                                                            <asp:TextBox ID="txtBuscarFacturaLotes" runat="server" CssClass="form-control form-control-sm"
+                                                                placeholder="Ej: F222-00004267" MaxLength="30"></asp:TextBox>
+                                                        </div>
+                                                        <div class="ld-filtro">
+                                                            <label for="<%= txtBuscarCPICLotes.ClientID %>">N° de CPIC</label>
+                                                            <asp:TextBox ID="txtBuscarCPICLotes" runat="server" CssClass="form-control form-control-sm"
+                                                                placeholder="Ej: 0003958" MaxLength="20"></asp:TextBox>
+                                                        </div>
+                                                        <div class="ld-filtro ld-filtro-buscar">
+                                                            <label for="<%= txtBuscarConductorLotes.ClientID %>">Conductor</label>
+                                                            <asp:TextBox ID="txtBuscarConductorLotes" runat="server" CssClass="form-control form-control-sm"
+                                                                placeholder="Nombre o apellido"></asp:TextBox>
+                                                        </div>
+                                                        <div class="ld-filtro">
+                                                            <label for="<%= ddlFiltroOperacionLotes.ClientID %>">Operación</label>
+                                                            <asp:DropDownList ID="ddlFiltroOperacionLotes" runat="server"
+                                                                CssClass="form-control form-control-sm" AutoPostBack="true"
                                                                 OnSelectedIndexChanged="ddlFiltroOperacionLotes_SelectedIndexChanged">
-                                                                <asp:ListItem Value="" Text="-- Todas las operaciones --"></asp:ListItem>
+                                                                <asp:ListItem Value="" Text="Todas"></asp:ListItem>
                                                                 <asp:ListItem Value="CARGA" Text="Carga"></asp:ListItem>
                                                                 <asp:ListItem Value="DESCARGA" Text="Descarga"></asp:ListItem>
                                                             </asp:DropDownList>
                                                         </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-industry"></i>Planta</label>
-                                                            <%-- Opciones cargadas desde el catálogo Planta en CargarPlantasFiltro(). --%>
-                                                            <asp:DropDownList ID="ddlFiltroPlantaLotes" runat="server"
-                                                                CssClass="form-select"
-                                                                AutoPostBack="true"
-                                                                OnSelectedIndexChanged="ddlFiltroPlantaLotes_SelectedIndexChanged">
-                                                            </asp:DropDownList>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-hashtag"></i>N° de Pedido</label>
-                                                            <div class="input-group">
-                                                                <asp:TextBox ID="txtBuscarLote" runat="server" 
-                                                                    CssClass="form-control" 
-                                                                    placeholder="N° Pedido"
-                                                                    MaxLength="20">
-                                                                </asp:TextBox>
-                                                                <asp:Button ID="btnBuscarLote" runat="server" 
-                                                                    Text="Buscar" 
-                                                                    CssClass="btn btn-outline-secondary"
-                                                                    OnClick="btnBuscarLote_Click"
-                                                                    CausesValidation="false" />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Búsqueda de documentos: encuentra el/los lote(s) asociados a un
-                                                     número de Factura, CPIC o a un conductor, aunque no sepas la
-                                                     fecha ni el cliente. -->
-                                                <div class="row ld-filter-row-dates">
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-receipt"></i>N° de Factura</label>
-                                                            <asp:TextBox ID="txtBuscarFacturaLotes" runat="server"
-                                                                CssClass="form-control"
-                                                                placeholder="Ej: F222-00004267"
-                                                                MaxLength="30">
-                                                            </asp:TextBox>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-shipping-fast"></i>N° de CPIC</label>
-                                                            <asp:TextBox ID="txtBuscarCPICLotes" runat="server"
-                                                                CssClass="form-control"
-                                                                placeholder="Ej: 1234567"
-                                                                MaxLength="20">
-                                                            </asp:TextBox>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-id-card"></i>Conductor</label>
-                                                            <asp:TextBox ID="txtBuscarConductorLotes" runat="server"
-                                                                CssClass="form-control"
-                                                                placeholder="Nombre o apellido">
-                                                            </asp:TextBox>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 d-flex align-items-end">
-                                                        <div class="form-group w-100">
-                                                            <div class="filter-buttons">
-                                                                <asp:Button ID="btnBuscarDocumento" runat="server"
-                                                                    Text="Buscar documento"
-                                                                    CssClass="btn btn-primary btn-action flex-fill"
-                                                                    OnClick="btnBuscarDocumento_Click"
-                                                                    CausesValidation="false" />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Filtro por Fechas y Estado -->
-                                                <div class="row ld-filter-row-dates">
-                                                    <div class="col-md-2">
-                                                        <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-calendar-alt"></i>Fecha desde</label>
-                                                            <asp:TextBox ID="txtFechaDesde" runat="server"
-                                                                CssClass="form-control"
-                                                                TextMode="Date">
-                                                            </asp:TextBox>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-calendar-alt"></i>Fecha hasta</label>
-                                                            <asp:TextBox ID="txtFechaHasta" runat="server"
-                                                                CssClass="form-control"
-                                                                TextMode="Date">
-                                                            </asp:TextBox>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-flag"></i>Estado del lote</label>
+                                                        <div class="ld-filtro">
+                                                            <label for="<%= ddlFiltroEstadoLotes.ClientID %>">Estado del lote</label>
                                                             <asp:DropDownList ID="ddlFiltroEstadoLotes" runat="server"
-                                                                CssClass="form-select"
-                                                                AutoPostBack="true"
+                                                                CssClass="form-control form-control-sm" AutoPostBack="true"
                                                                 OnSelectedIndexChanged="ddlFiltroEstadoLotes_SelectedIndexChanged">
-                                                                <asp:ListItem Value="" Text="-- Todos --"></asp:ListItem>
+                                                                <asp:ListItem Value="" Text="Todos"></asp:ListItem>
                                                                 <asp:ListItem Value="ACTIVO" Text="Activos" Selected="True"></asp:ListItem>
                                                                 <asp:ListItem Value="ANULADO" Text="Anulados"></asp:ListItem>
                                                             </asp:DropDownList>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="form-label"><i class="fas fa-file-invoice"></i>Documentos</label>
-                                                            <%-- Valores = ListaDespachosService.DOCUMENTOS_PENDIENTES / DOCUMENTOS_COMPLETOS. --%>
-                                                            <asp:DropDownList ID="ddlFiltroDocumentosLotes" runat="server"
-                                                                CssClass="form-select"
-                                                                AutoPostBack="true"
-                                                                OnSelectedIndexChanged="ddlFiltroDocumentosLotes_SelectedIndexChanged">
-                                                                <asp:ListItem Value="" Text="-- Todos --"></asp:ListItem>
-                                                                <asp:ListItem Value="PENDIENTES" Text="Con documentos pendientes"></asp:ListItem>
-                                                                <asp:ListItem Value="COMPLETOS" Text="Completos"></asp:ListItem>
-                                                            </asp:DropDownList>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 d-flex align-items-end">
-                                                        <div class="form-group w-100">
-                                                            <div class="filter-buttons">
-                                                                <asp:Button ID="btnFiltrarFecha" runat="server"
-                                                                    Text="Filtrar"
-                                                                    CssClass="btn btn-primary btn-action flex-fill"
-                                                                    OnClick="btnFiltrarFecha_Click"
-                                                                    CausesValidation="false" />
-                                                                <asp:Button ID="btnLimpiarFiltros" runat="server"
-                                                                    Text="Limpiar"
-                                                                    CssClass="btn btn-outline-secondary btn-action"
-                                                                    OnClick="btnLimpiarFiltros_Click"
-                                                                    CausesValidation="false" />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                                </details>
+                                            </asp:Panel>
 
                                             <!-- Grid de Lotes -->
                                             <div class="data-grid-container">
@@ -448,39 +371,38 @@
                                                     <PagerStyle CssClass="ld-pager" HorizontalAlign="Center" />
                                                     <PagerSettings Mode="NumericFirstLast" FirstPageText="«" LastPageText="»" PageButtonCount="7" Position="TopAndBottom" />
                                                     <Columns>
-                                                        <asp:BoundField DataField="FechaProgramacion" HeaderText="Fecha prog." 
-                                                            DataFormatString="{0:dd/MM/yyyy}" />
-                                                        
-                                                        <asp:BoundField DataField="NombreCliente" HeaderText="Cliente" />
-                                                        
-                                                        <asp:BoundField DataField="PedidoMostrado" HeaderText="N° Pedido"
-                                                            ItemStyle-CssClass="pedido-number" />
-                                                        
-                                                        <asp:BoundField DataField="TipoOperacion" HeaderText="Operación" />
-                                                        
-                                                        <asp:TemplateField HeaderText="Ámbito">
+                                                        <asp:BoundField DataField="FechaProgramacion" HeaderText="Fecha prog."
+                                                            DataFormatString="{0:dd/MM/yyyy}" ItemStyle-CssClass="ld-col-fecha" />
+
+                                                        <asp:TemplateField HeaderText="Pedido">
                                                             <ItemTemplate>
-                                                                <asp:Label runat="server" 
-                                                                    Text='<%# Convert.ToBoolean(Eval("EsInternacional")) ? "Internacional" : "Nacional" %>'
-                                                                    CssClass='<%# Convert.ToBoolean(Eval("EsInternacional")) ? "badge tipo-internacional" : "badge tipo-nacional" %>'>
-                                                                </asp:Label>
+                                                                <span class="pedido-number"><%#: Eval("PedidoMostrado") %></span>
+                                                                <asp:Label runat="server" Text="Anulado" CssClass="ld-anulado"
+                                                                    Visible='<%# (string)Eval("EstadoLote") == "ANULADO" %>'></asp:Label>
+                                                                <span class="ld-sub"><%#: Eval("NombreCliente") %></span>
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
-                                                        
-                                                        <asp:TemplateField HeaderText="Manifiesto" ItemStyle-CssClass="text-center">
+
+                                                        <asp:TemplateField HeaderText="Operación">
                                                             <ItemTemplate>
-                                                                <asp:Label runat="server"
-                                                                    Text='<%# Eval("ManifiestoEstado") %>'
-                                                                    CssClass='<%# GetManifiestoBadgeClass(Eval("ManifiestoEstado").ToString()) %>'>
-                                                                </asp:Label>
+                                                                <span class="ld-op"><%#: Eval("TipoOperacion") %> · <%#: Eval("PlantaOperacion") %></span>
+                                                                <span class="ld-sub"><%# Convert.ToBoolean(Eval("EsInternacional")) ? "Internacional" : "Nacional" %></span>
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
+
+                                                        <asp:BoundField DataField="CantidadDespachos" HeaderText="Unid."
+                                                            ItemStyle-CssClass="text-center despachos-count" HeaderStyle-CssClass="text-center" />
 
                                                         <asp:TemplateField HeaderText="Documentos" ItemStyle-CssClass="ld-docs-cell">
                                                             <ItemTemplate>
                                                                 <asp:Label runat="server"
                                                                     Text='<%# Eval("DocumentosResumen") %>'
                                                                     CssClass='<%# (string)Eval("DocumentosClase") %>'>
+                                                                </asp:Label>
+                                                                <asp:Label runat="server"
+                                                                    Text='<%# "Manifiesto: " + Eval("ManifiestoEstado") %>'
+                                                                    CssClass='<%# GetManifiestoBadgeClass(Eval("ManifiestoEstado").ToString()) %>'
+                                                                    Visible='<%# Convert.ToBoolean(Eval("EsInternacional")) && Eval("ManifiestoEstado").ToString() != "N/A" %>'>
                                                                 </asp:Label>
                                                                 <asp:Label runat="server"
                                                                     Text='<%# Eval("DocumentosAntiguedad") %>'
@@ -490,38 +412,27 @@
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
 
-                                                        <asp:BoundField DataField="PlantaOperacion" HeaderText="Planta" />
-
-                                                        <asp:BoundField DataField="CantidadDespachos" HeaderText="Despachos"
-                                                            ItemStyle-CssClass="text-center despachos-count" />
-
-                                                        <asp:BoundField DataField="NumeroFactura" HeaderText="N° Factura" />
-                                                        
-                                                        <asp:BoundField DataField="NumeroCPIC" HeaderText="N° CPIC" />
-                                                        
-                                                        <asp:BoundField DataField="FechaCreacion" HeaderText="Creado" 
-                                                            DataFormatString="{0:dd/MM/yyyy HH:mm}" />
-
-                                                        <asp:TemplateField HeaderText="Estado" ItemStyle-CssClass="text-center">
+                                                        <asp:TemplateField HeaderText="Factura / CPIC">
                                                             <ItemTemplate>
-                                                                <asp:Label runat="server"
-                                                                    Text='<%# Eval("EstadoLote") %>'
-                                                                    CssClass='<%# (string)Eval("EstadoLote") == "ANULADO" ? "badge bg-danger text-white" : "badge bg-success text-white" %>'>
-                                                                </asp:Label>
+                                                                <span class="ld-num"><%#: Eval("NumeroFactura") %></span>
+                                                                <asp:Label runat="server" CssClass="ld-sub ld-num"
+                                                                    Text='<%# "CPIC " + Eval("NumeroCPIC") %>'
+                                                                    Visible='<%# (string)Eval("NumeroCPIC") != "—" %>'></asp:Label>
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
 
-                                                        <asp:TemplateField HeaderText="Acciones" ItemStyle-Width="200px">
+                                                        <asp:TemplateField HeaderText="" ItemStyle-CssClass="ld-col-acciones">
                                                             <ItemTemplate>
                                                                 <div class="action-buttons">
                                                                     <asp:Button runat="server"
-                                                                        Text="Ver"
+                                                                        Text="Ver unidades"
                                                                         CssClass="btn btn-sm btn-outline-primary"
                                                                         CommandName="VerDetallesLote"
                                                                         CommandArgument='<%# Eval("IdLoteVirtual") %>' />
 
                                                                     <asp:Button runat="server"
                                                                         Text="Documentos"
+                                                                        ToolTip="Abre el expediente del pedido en la Bandeja de documentos"
                                                                         CssClass='<%# ((string)Eval("DocumentosClase")).Contains("pendiente") ? "btn btn-sm btn-warning ld-btn-docs" : "btn btn-sm btn-outline-secondary ld-btn-docs" %>'
                                                                         CommandName="VerManifiestosLote"
                                                                         CommandArgument='<%# Eval("IdLoteVirtual") %>' />
@@ -1363,8 +1274,6 @@
                                 <asp:AsyncPostBackTrigger ControlID="ddlFiltroClienteLotes" EventName="SelectedIndexChanged" />
                                 <asp:AsyncPostBackTrigger ControlID="ddlFiltroOperacionLotes" EventName="SelectedIndexChanged" />
                                 <asp:AsyncPostBackTrigger ControlID="ddlFiltroPlantaLotes" EventName="SelectedIndexChanged" />
-                                <asp:AsyncPostBackTrigger ControlID="btnBuscarLote" EventName="Click" />
-                                <asp:AsyncPostBackTrigger ControlID="btnBuscarDocumento" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnFiltrarFecha" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnLimpiarFiltros" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="gvLotesRegistrados" EventName="RowCommand" />

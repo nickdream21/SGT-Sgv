@@ -30,8 +30,11 @@
     if (SGV.autoActualizarGps) {
         var boton = document.getElementById(SGV.btnActualizarGps);
         if (boton) {
-            SGV.avisar('La última consulta al GPS tiene más de 15 minutos: se actualiza sola ahora.');
-            setTimeout(function () { boton.click(); }, 600);
+            // Al cargar este script SiteMaster.js todavía no definió SGV.avisar: se espera a que la página termine.
+            $(function () {
+                SGV.avisar('La última consulta al GPS tiene más de 15 minutos: se actualiza sola ahora.');
+                setTimeout(function () { boton.click(); }, 600);
+            });
         }
     }
 
@@ -59,6 +62,56 @@
         });
     }
 
+    // Las unidades de un mismo pedido van juntas bajo una cabecera (pedido, programación y cuántas son),
+    // y lo que se escribe en "Buscar" filtra la tabla al instante, sin esperar al servidor.
+    (function () {
+        var filas = Array.prototype.slice.call(document.querySelectorAll('tr.sx-fila'));
+        if (!filas.length) return;
+        var columnas = filas[0].children.length, grupos = [], actual = null;
+        filas.forEach(function (tr) {
+            var clave = tr.dataset.pedido + '|' + tr.dataset.prog;
+            if (!actual || actual.clave !== clave) {
+                var cab = document.createElement('tr');
+                cab.className = 'sx-grupo';
+                var td = document.createElement('td');
+                td.colSpan = columnas;
+                cab.appendChild(td);
+                tr.parentNode.insertBefore(cab, tr);
+                actual = { clave: clave, cab: cab, td: td, filas: [], pedido: tr.dataset.pedido, prog: tr.dataset.prog };
+                grupos.push(actual);
+            }
+            actual.filas.push(tr);
+            tr.classList.add('sx-fila-agrupada');
+        });
+
+        function plano(t) { return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+        filas.forEach(function (tr) { tr._texto = plano(tr.textContent); });
+
+        var caja = document.getElementById(SGV.txtBuscar), cuenta = document.getElementById('sxFiltroCuenta');
+        function aplicar() {
+            var palabras = caja ? plano(caja.value).split(/\s+/).filter(Boolean) : [], visibles = 0;
+            grupos.forEach(function (g) {
+                var n = 0;
+                g.filas.forEach(function (tr) {
+                    var ok = palabras.every(function (p) { return tr._texto.indexOf(p) >= 0; });
+                    tr.hidden = !ok;
+                    if (ok) n++;
+                });
+                g.cab.hidden = n === 0;
+                g.td.innerHTML = '';
+                var b = document.createElement('strong');
+                b.className = 'sx-mono'; b.textContent = g.pedido || 'Sin pedido';
+                g.td.appendChild(b);
+                g.td.appendChild(document.createTextNode('  ·  Prog. ' + g.prog + '  ·  ' +
+                    (n === g.filas.length ? n : n + ' de ' + g.filas.length) + (g.filas.length === 1 ? ' unidad' : ' unidades')));
+                visibles += n;
+            });
+            if (cuenta) cuenta.textContent = palabras.length ? visibles + ' de ' + filas.length + ' viajes en esta pestaña' : '';
+        }
+        aplicar();
+        if (caja) caja.addEventListener('input', aplicar);
+    })();
+
     document.addEventListener('click', function (e) {
         var uno = e.target.closest('[data-copiar]');
         if (uno) {
@@ -68,7 +121,8 @@
             return;
         }
         if (e.target.closest('#btnCopiarStatus')) {
-            var filas = Array.prototype.map.call(document.querySelectorAll('.sx-status-texto'), function (s) { return s.textContent.trim(); });
+            // Solo las filas a la vista (el filtro al escribir oculta las demás).
+            var filas = Array.prototype.map.call(document.querySelectorAll('tr.sx-fila:not([hidden]) .sx-status-texto'), function (s) { return s.textContent.trim(); });
             if (!filas.length) { SGV.avisar('No hay filas para copiar.'); return; }
             // Una fila por línea, en el orden de la tabla: se pega directo en la columna STATUS del Excel.
             copiar(filas.join('\r\n'), 'STATUS de ' + filas.length + ' unidad(es) copiado, en el orden de la tabla.');

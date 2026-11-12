@@ -68,6 +68,7 @@ function showHistorialModal() {
 $(document).on('shown.bs.collapse hidden.bs.collapse', '#rdManualCuerpo', function (e) {
     if (e.target.id !== 'rdManualCuerpo') return;
     $('#' + SGV.hfManualAbierto).val(e.type === 'shown' ? '1' : '0');
+    actualizarStepper();
     if (e.type === 'shown') initializeSelect2();
 });
 
@@ -141,6 +142,10 @@ function actualizarStepper() {
     var step1 = document.getElementById('rdStep1');
     var step2 = document.getElementById('rdStep2');
     if (!step1 || !step2) return;
+    // Los dos pasos son del lote a mano: sin ese formulario abierto ni un lote en curso no se muestran.
+    var caja = document.getElementById('rdStepper');
+    var manual = document.getElementById(SGV.hfManualAbierto);
+    if (caja) caja.style.display = (loteActivo || (manual && manual.value === '1')) ? '' : 'none';
     step1.className = 'rd-stepper-item' + (loteActivo ? ' done' : ' active');
     step2.className = 'rd-stepper-item' + (loteActivo ? ' active' : '');
 }
@@ -214,3 +219,30 @@ function validarFechaEmisionCliente(source, args) {
     hoy.setHours(0, 0, 0, 0);
     args.IsValid = fecha <= hoy;
 }
+
+// Zona para soltar el Word, el ZIP o los PDF: muestra los archivos elegidos. Delegado en el documento
+// porque el UpdatePanel vuelve a dibujar la zona en cada postback parcial.
+(function () {
+    function mostrar(input) {
+        var zona = input.closest('.rd-zona');
+        var lista = zona && zona.querySelector('.rd-zona-archivos');
+        if (!lista) return;
+        lista.innerHTML = '';
+        Array.prototype.forEach.call(input.files || [], function (f) {
+            var s = document.createElement('span');
+            s.textContent = f.name;
+            lista.appendChild(s);
+        });
+    }
+    document.addEventListener('change', function (e) {
+        if (e.target.classList && e.target.classList.contains('rd-zona-input')) mostrar(e.target);
+    });
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function (ev) {
+        document.addEventListener(ev, function (e) {
+            var zona = e.target.closest && e.target.closest('.rd-zona');
+            if (!zona) return;
+            zona.classList.toggle('rd-zona-activa', ev === 'dragenter' || ev === 'dragover');
+            if (ev === 'drop') setTimeout(function () { mostrar(zona.querySelector('.rd-zona-input')); }, 0);
+        });
+    });
+})();

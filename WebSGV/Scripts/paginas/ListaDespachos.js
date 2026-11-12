@@ -105,3 +105,22 @@ Sys.WebForms.PageRequestManager.getInstance().add_endRequest(function () {
     var panel = document.querySelector('.ld-docs-page');
     if (panel && panel.getBoundingClientRect().top < 0) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
+
+// "Más filtros" de los lotes: el UpdatePanel vuelve a dibujar la barra en cada búsqueda, así que se
+// reabre solo si estaba abierto o si alguno de sus campos tiene un valor que está filtrando la lista.
+(function () {
+    var abierto = false;
+    function ajustar() {
+        var d = document.getElementById('ldFiltrosMas');
+        if (!d) return;
+        var conValor = Array.prototype.some.call(d.querySelectorAll('input[type=text]'), function (i) { return i.value.trim() !== ''; }) ||
+            Array.prototype.some.call(d.querySelectorAll('select'), function (s) {
+                var porDefecto = Array.prototype.filter.call(s.options, function (o) { return o.defaultSelected; })[0] || s.options[0];
+                return s.value !== porDefecto.value;
+            });
+        if (abierto || conValor) d.open = true;
+        d.addEventListener('toggle', function () { abierto = d.open; });
+    }
+    ajustar();
+    if (window.Sys && Sys.WebForms) Sys.WebForms.PageRequestManager.getInstance().add_endRequest(ajustar);
+})();

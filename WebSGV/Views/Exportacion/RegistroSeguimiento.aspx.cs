@@ -67,6 +67,13 @@ namespace WebSGV.Views.Exportacion
                 txtHasta.Text = FechaHelper.Hoy().AddDays(DiasProgramadosAdelante).ToString("yyyy-MM-dd");
                 if (!string.IsNullOrEmpty(Request.QueryString["msg"]))
                     MostrarMensaje(Request.QueryString["msg"], "ok");
+                // Llegada desde el dashboard: ?fase= abre esa pestaña y ?buscar= deja el pedido o la placa ya filtrados.
+                string fase = Request.QueryString["fase"];
+                if (Pestanas.Any(p => p.Grupo == fase))
+                    hdnFase.Value = fase;
+                string buscar = (Request.QueryString["buscar"] ?? "").Trim();
+                if (buscar.Length > 0)
+                    txtBuscar.Text = buscar.Length > 60 ? buscar.Substring(0, 60) : buscar;
                 Cargar();
             }
         }

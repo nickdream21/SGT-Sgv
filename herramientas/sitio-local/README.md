@@ -28,3 +28,17 @@ Si Claude dice que no puede usar el navegador, es que la extensión no está con
 5. En la extensión, dar permiso al sitio `localhost` cuando lo pida.
 
 Para saber si está conectado: pedirle a Claude "lista los navegadores conectados".
+
+## Ver las pantallas sin ventana (capturas)
+
+Si la captura de la extensión falla (ventana minimizada), `capturar.js` abre Edge sin ventana, inicia
+sesión con `admin.transporte` (lee la clave de `privado/CREDENCIALES_USUARIOS.txt`, no la imprime) y
+guarda la pantalla completa. También avisa de los errores de JavaScript de la página.
+
+```bash
+export MSYS_NO_PATHCONV=1   # solo en Git Bash: evita que convierta /Views/... en una ruta de Windows
+node herramientas/sitio-local/capturar.js lista.png /Views/ListaDespachos.aspx 1366 2000
+node herramientas/sitio-local/capturar.js a.png /Views/A.aspx -- b.png /Views/B.aspx 390   # varias; 390 = celular
+```
+
+El quinto argumento es JavaScript que se ejecuta antes de capturar (un clic, escribir en un filtro).

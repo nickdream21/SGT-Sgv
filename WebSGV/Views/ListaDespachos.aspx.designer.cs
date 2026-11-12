@@ -299,6 +299,15 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.DropDownList ddlFiltroPlantaLotes;
 
         /// <summary>
+        /// Control pnlFiltrosLotes.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlFiltrosLotes;
+
+        /// <summary>
         /// Control txtBuscarLote.
         /// </summary>
         /// <remarks>
@@ -334,23 +343,7 @@ namespace WebSGV.Views
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtBuscarConductorLotes;
 
-        /// <summary>
-        /// Control btnBuscarDocumento.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnBuscarDocumento;
 
-        /// <summary>
-        /// Control btnBuscarLote.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnBuscarLote;
 
         /// <summary>
         /// Control txtFechaDesde.

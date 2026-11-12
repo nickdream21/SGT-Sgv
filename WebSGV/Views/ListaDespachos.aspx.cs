@@ -645,16 +645,6 @@ namespace WebSGV.Views
             CargarLotesDesdeInicio();
         }
 
-        protected void btnBuscarLote_Click(object sender, EventArgs e)
-        {
-            CargarLotesDesdeInicio();
-        }
-
-        protected void btnBuscarDocumento_Click(object sender, EventArgs e)
-        {
-            CargarLotesDesdeInicio();
-        }
-
         protected void btnFiltrarFecha_Click(object sender, EventArgs e)
         {
             CargarLotesDesdeInicio();

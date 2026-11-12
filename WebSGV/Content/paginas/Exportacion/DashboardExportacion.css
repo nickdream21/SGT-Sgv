@@ -231,3 +231,4 @@
     .de-filters-note { margin-left: 0; width: 100%; }
     .de-canvas { height: 240px; }
 }
+.de-pedido-link { color: inherit; } .de-pedido-link:hover { color: #1d4ed8; }

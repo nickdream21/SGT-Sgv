@@ -134,7 +134,9 @@
         ruta.innerHTML = op.fases.map(function (f, i) {
             var tam = f.unidades ? Math.round(30 + 26 * Math.sqrt(f.unidades / max)) : 14;
             var grupoNuevo = i === 0 || op.fases[i - 1].grupo !== f.grupo;
-            return '<a class="de-estacion' + (f.unidades ? '' : ' vacia') + '" href="RegistroSeguimiento.aspx"' +
+            // Cada estación abre el tablero en la pestaña de su fase (la frontera va con "Rumbo a Ecuador").
+            var pestana = { carga: 'carga', base: 'base', frontera: 'ecuador', ecuador: 'ecuador', retorno: 'retorno' }[f.grupo];
+            return '<a class="de-estacion' + (f.unidades ? '' : ' vacia') + '" href="RegistroSeguimiento.aspx' + (pestana ? '?fase=' + pestana : '') + '"' +
                 ' style="--fase:' + colorFase(f.grupo) + ';--tam:' + tam + 'px" title="' + esc(f.nombre) + ': ' + f.unidades + ' unidad(es)">' +
                 '<span class="grupo">' + (grupoNuevo ? esc(nombreFase(f.grupo)) : '&nbsp;') + '</span>' +
                 '<span class="punto"><span class="burbuja">' + (f.unidades || '') + '</span></span>' +
@@ -597,7 +599,8 @@
         tbody.innerHTML = p.pedidos.map(function (x) {
             var pct = x.viajes ? 100 * x.descargados / x.viajes : 0;
             var rango = fecha(x.desde) === fecha(x.hasta) ? fecha(x.desde) : fecha(x.desde) + ' – ' + fecha(x.hasta);
-            return '<tr><td><b>' + esc(x.pedido) + '</b></td>' +
+            return '<tr><td><a class="de-pedido-link" title="Ver las unidades de este pedido en el tablero" href="RegistroSeguimiento.aspx?fase=todos&amp;buscar=' +
+                encodeURIComponent(x.pedido) + '"><b>' + esc(x.pedido) + '</b></a></td>' +
                 '<td>' + esc(x.planta || '—') + '</td>' +
                 '<td class="muted">' + rango + '</td>' +
                 '<td class="num">' + x.viajes + '</td>' +

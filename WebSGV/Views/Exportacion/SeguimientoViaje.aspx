@@ -61,6 +61,7 @@
                     <div class="sx-ruta-capas" role="group" aria-label="Capas del mapa">
                         <label class="sx-capa sx-capa-carga"><input type="checkbox" data-capa="carga" checked /> Carga <span class="sx-mono" id="rutaKmcarga"></span></label>
                         <label class="sx-capa sx-capa-descarga"><input type="checkbox" data-capa="descarga" checked /> Descarga <span class="sx-mono" id="rutaKmdescarga"></span></label>
+                        <label class="sx-capa sx-capa-paradas"><input type="checkbox" data-capa="paradas" checked /> Paradas</label>
                         <label class="sx-capa"><input type="checkbox" data-capa="zonas" checked /> Zonas</label>
                     </div>
                 </div>
@@ -70,6 +71,17 @@
                     <div class="sx-ruta-reloj" id="rutaReloj" hidden>
                         <span class="sx-mono" id="rutaHora"></span>
                         <span id="rutaDetalle"></span>
+                    </div>
+                </div>
+                <%-- Resumen del recorrido (km, tiempo en marcha y detenido) y línea de tiempo con hitos y paradas. --%>
+                <div class="sx-ruta-resumen" id="rutaResumen" hidden></div>
+                <div class="sx-ruta-linea" id="rutaLinea" hidden>
+                    <div class="sx-ruta-linea-pista" id="rutaPista" title="Haz clic o arrastra para ir a ese momento del viaje"></div>
+                    <div class="sx-ruta-linea-dias" id="rutaDias" aria-hidden="true"></div>
+                    <div class="sx-ruta-linea-leyenda">
+                        <span><i class="sx-ley sx-ley-hito"></i> Hito</span>
+                        <span><i class="sx-ley sx-ley-parada"></i> Parada de 30 min o más</span>
+                        <span><i class="sx-ley sx-ley-cursor"></i> Momento que muestra el mapa</span>
                     </div>
                 </div>
                 <div class="sx-ruta-control" id="rutaControl" hidden>
@@ -82,6 +94,7 @@
                         <option value="3600" selected>1 h por segundo</option>
                         <option value="10800">3 h por segundo</option>
                     </select>
+                    <label class="sx-ruta-seguir"><input type="checkbox" id="rutaSeguir" /> Seguir al camión</label>
                     <button type="button" class="sx-btn sx-btn-chico" id="rutaAjustar">Ver todo</button>
                 </div>
                 <ul class="sx-ruta-avisos" id="rutaAvisos"></ul>
