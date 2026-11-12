@@ -131,6 +131,43 @@ namespace WebSGV.Services.Exportacion
         public int Aproximados { get; set; }
 
         public List<string> Errores { get; } = new List<string>();
+
+        private const string SinEquipo = "no tiene equipo GPS en Onway";
+
+        /// <summary>
+        /// Errores de la consulta. Una unidad sin equipo GPS no es una falla: salía en cada actualización
+        /// como "Sin respuesta del GPS", una vez por viaje, y tapaba los errores de verdad.
+        /// </summary>
+        public List<string> Fallas => Errores.Where(x => x.IndexOf(SinEquipo, StringComparison.OrdinalIgnoreCase) < 0).ToList();
+
+        /// <summary>Placas sin equipo GPS, una vez cada una.</summary>
+        public List<string> UnidadesSinEquipo => Errores
+            .Where(x => x.IndexOf(SinEquipo, StringComparison.OrdinalIgnoreCase) >= 0)
+            .Select(x =>
+            {
+                string antes = x.Substring(0, x.IndexOf(SinEquipo, StringComparison.OrdinalIgnoreCase)).TrimEnd();
+                int i = antes.LastIndexOf("): ", StringComparison.Ordinal);
+                return i >= 0 ? antes.Substring(i + 3).Trim() : antes;
+            })
+            .Where(x => x.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+        /// <summary>El resultado en palabras, para el tablero (el botón y la actualización en segundo plano).</summary>
+        public string MensajeParaUsuario(bool conBotonParaSeguir = true)
+        {
+            if (Consultados == 0 && SinMovimiento == 0 && Errores.Count == 0)
+                return "No hay viajes abiertos con tracto asignado en este rango.";
+            string texto = $"Se consultó el GPS de {Consultados} viaje(s): {CamposNuevos} hora(s) nueva(s)." +
+                (SinMovimiento > 0 ? $" {SinMovimiento} sin movimiento desde la última consulta (solo se actualizó su hora)." : "") +
+                (Aproximados > 0 ? $" {Aproximados} sin señal del GPS, aproximado(s) con su grupo." : "") +
+                (Pendientes > 0 ? $" Faltan {Pendientes}" + (conBotonParaSeguir ? ": vuelve a presionar el botón para seguir." : ": siguen en la próxima consulta.") : "");
+            var sinEquipo = UnidadesSinEquipo;
+            if (sinEquipo.Count > 0)
+                texto += $" Sin equipo GPS en Onway (sus horas se llenan a mano): {string.Join(", ", sinEquipo)}.";
+            var fallas = Fallas;
+            if (fallas.Count > 0)
+                texto += " Sin respuesta del GPS: " + string.Join("; ", fallas.Take(3)) + (fallas.Count > 3 ? $" y {fallas.Count - 3} más" : "") + ".";
+            return texto;
+        }
     }
 
     /// <summary>

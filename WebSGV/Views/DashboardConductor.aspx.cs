@@ -147,6 +147,15 @@ namespace WebSGV.Views
                     return false;
                 }
 
+                if ((Session["IdConductor"] == null || IdConductorActual == 0) && !RolesHelper.EsConductor())
+                {
+                    // Un administrador que abre el panel del conductor (un enlace viejo, la dirección escrita a mano)
+                    // no tiene conductor vinculado: antes caía en el caso de abajo y se le cerraba la sesión.
+                    RolesHelper.RedirigirSegunRol();
+                    Context.ApplicationInstance.CompleteRequest();
+                    return false;
+                }
+
                 if (Session["IdConductor"] == null || IdConductorActual == 0)
                 {
                     // Usuario CONDUCTOR sin idConductor vinculado en BD.

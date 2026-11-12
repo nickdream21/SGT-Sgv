@@ -92,29 +92,7 @@ namespace WebSGV.Views.Exportacion
             try
             {
                 var r = SeguimientoViajesService.ActualizarGpsAbiertos(SeguimientoViajesService.ListarTablero(Filtro()), ViajesGpsPorClic, PresupuestoGps);
-                string texto = r.Consultados == 0 && r.SinMovimiento == 0
-                    ? "No hay viajes abiertos con tracto asignado en este rango."
-                    : $"Se consultó el GPS de {r.Consultados} viaje(s): {r.CamposNuevos} hora(s) nueva(s)." +
-                      (r.SinMovimiento > 0 ? $" {r.SinMovimiento} sin movimiento desde la última consulta (solo se actualizó su hora)." : "") +
-                      (r.Aproximados > 0 ? $" {r.Aproximados} sin señal del GPS, aproximado(s) con su grupo." : "") +
-                      (r.Pendientes > 0 ? $" Faltan {r.Pendientes}: vuelve a presionar el botón para seguir." : "");
-                // Una unidad sin equipo GPS no es una falla de la consulta: salía en cada actualización como
-                // "Sin respuesta del GPS", una vez por viaje, y tapaba los errores de verdad.
-                const string sinEquipo = "no tiene equipo GPS en Onway";
-                var fallas = r.Errores.Where(x => x.IndexOf(sinEquipo, StringComparison.OrdinalIgnoreCase) < 0).ToList();
-                var unidadesSinEquipo = r.Errores.Where(x => x.IndexOf(sinEquipo, StringComparison.OrdinalIgnoreCase) >= 0)
-                    .Select(x =>
-                    {
-                        string fin = x.Substring(0, x.IndexOf(sinEquipo, StringComparison.OrdinalIgnoreCase)).TrimEnd();
-                        int i = fin.LastIndexOf("): ", StringComparison.Ordinal);
-                        return i >= 0 ? fin.Substring(i + 3).Trim() : fin;
-                    })
-                    .Where(x => x.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-                if (unidadesSinEquipo.Count > 0)
-                    texto += $" Sin equipo GPS en Onway (sus horas se llenan a mano): {string.Join(", ", unidadesSinEquipo)}.";
-                if (fallas.Count > 0)
-                    texto += " Sin respuesta del GPS: " + string.Join("; ", fallas.Take(3)) + (fallas.Count > 3 ? $" y {fallas.Count - 3} más" : "") + ".";
-                MostrarMensaje(texto, fallas.Count > 0 ? "alerta" : "ok");
+                MostrarMensaje(r.MensajeParaUsuario(), r.Fallas.Count > 0 ? "alerta" : "ok");
             }
             catch (Exception ex)
             {

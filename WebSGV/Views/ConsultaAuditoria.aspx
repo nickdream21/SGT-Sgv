@@ -126,7 +126,7 @@
                     <asp:Repeater ID="rptPager" runat="server" OnItemCommand="rptPager_ItemCommand">
                         <ItemTemplate>
                             <asp:LinkButton ID="lnkPage" runat="server" Text='<%#Eval("Text") %>' CommandArgument='<%#Eval("Value") %>'
-                                Enabled='<%#Eval("Enabled") %>' CssClass='<%# Convert.ToBoolean(Eval("Active")) ? "active-page" : "page-item" %>'></asp:LinkButton>
+                                Enabled='<%#Eval("Enabled") %>' CssClass='<%# Convert.ToBoolean(Eval("Selected")) ? "active-page" : "page-item" %>'></asp:LinkButton>
                         </ItemTemplate>
                     </asp:Repeater>
                 </div>

@@ -158,4 +158,7 @@ table[border="1"] td .btn { white-space: nowrap; }
     .navbar-nav .nav-link { padding-left: 0.45rem; padding-right: 0.45rem; font-size: 0.92rem; white-space: nowrap; }
     .user-info { white-space: nowrap; }
     .user-info .badge-rol { display: none; }
+    /* Con siete menús (administrador de sistema) tampoco cabe el nombre: queda el ícono y "Cerrar sesión";
+       el nombre y el rol siguen en el pie de página. */
+    .navbar-collapse:has(> .navbar-nav > .nav-item:nth-child(7)) .user-nombre { display: none; }
 }

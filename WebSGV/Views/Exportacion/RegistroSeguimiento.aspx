@@ -54,7 +54,7 @@
                 <textarea id="txtReporteLlegadas" hidden readonly><asp:Literal ID="litReporteLlegadas" runat="server" /></textarea>
                 <textarea id="txtReporteGrifo" hidden readonly><asp:Literal ID="litReporteGrifo" runat="server" /></textarea>
                 <asp:Button ID="btnActualizarGps" runat="server" Text="Actualizar GPS de viajes abiertos" CssClass="sx-btn sx-btn-primario" CausesValidation="false"
-                    OnClick="btnActualizarGps_Click" OnClientClick="this.value='Consultando el GPS…';" UseSubmitBehavior="false" />
+                    OnClick="btnActualizarGps_Click" OnClientClick="if (window.SGV && SGV.actualizarGps) { SGV.actualizarGps(this); return false; } this.value='Consultando el GPS…';" UseSubmitBehavior="false" />
             </div>
         </div>
 
@@ -166,6 +166,7 @@
         <p class="sx-nota" style="margin-top: 0.75rem;"><asp:Literal ID="litResumen" runat="server" /></p>
     </div>
     <script>var SGV = Object.assign(window.SGV || {}, { autoActualizarGps: <%= AutoActualizarGps ? "true" : "false" %>, btnActualizarGps: '<%= btnActualizarGps.ClientID %>',
-        btnFiltrar: '<%= btnFiltrar.ClientID %>', txtBuscar: '<%= txtBuscar.ClientID %>', ultimaConsultaGps: '<%= UltimaConsultaGps %>', urlEstadoGps: '<%= ResolveUrl("~/Views/Exportacion/GpsAutomatico.ashx?estado=1") %>' });</script>
+        btnFiltrar: '<%= btnFiltrar.ClientID %>', txtBuscar: '<%= txtBuscar.ClientID %>', ultimaConsultaGps: '<%= UltimaConsultaGps %>', urlEstadoGps: '<%= ResolveUrl("~/Views/Exportacion/GpsAutomatico.ashx?estado=1") %>',
+        urlIniciarGps: '<%= ResolveUrl("~/Views/Exportacion/GpsAutomatico.ashx?iniciar=1") %>' });</script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/Exportacion/RegistroSeguimiento.js") %>"></script>
 </asp:Content>

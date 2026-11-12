@@ -332,7 +332,7 @@
                     <li class="nav-item">
                         <span class="navbar-text user-info">
                             <i class="fas fa-user-circle"></i>
-                            <%: NombreUsuario %>
+                            <span class="user-nombre"><%: NombreUsuario %></span>
                             <span class="badge badge-primary badge-rol"><%: RolUsuario %></span>
                         </span>
                     </li>

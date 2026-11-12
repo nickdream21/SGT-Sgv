@@ -37,7 +37,27 @@ namespace WebSGV.Views.Exportacion
                 {
                     ultima = ultima == null || ultima == DBNull.Value ? null : Convert.ToDateTime(ultima).ToString("yyyy-MM-ddTHH:mm:ss"),
                     enCurso = ActualizacionGpsAutomatica.EnCurso,
+                    ultimoFin = ActualizacionGpsAutomatica.UltimoFin?.ToString("yyyy-MM-ddTHH:mm:ss"),
+                    mensaje = ActualizacionGpsAutomatica.UltimoMensaje,
+                    conFallas = ActualizacionGpsAutomatica.UltimoConFallas,
                 });
+                return;
+            }
+
+            // El botón "Actualizar GPS" del tablero: la consulta corre en segundo plano y esta llamada responde
+            // al instante. Como postback tardaba hasta 80 s con la sesión tomada, y ASP.NET atiende de a una
+            // petición por sesión: cualquier otra pantalla que se abriera mientras tanto (entrar a un viaje)
+            // quedaba esperando a que terminara.
+            if (ctx.Request.QueryString["iniciar"] == "1")
+            {
+                if (ctx.Request.HttpMethod != "POST") { Responder(ctx, 405, new { error = "Solo POST" }); return; }
+                if (ctx.Session?["UsuarioID"] == null || !RolesHelper.TienePermiso("SEGUIMIENTO_EXPORTACION"))
+                {
+                    Responder(ctx, 403, new { error = "Sesión vencida" });
+                    return;
+                }
+                bool pedida = ActualizacionGpsAutomatica.Iniciar(aPedido: true);
+                Responder(ctx, 200, new { iniciada = pedida, enCurso = ActualizacionGpsAutomatica.EnCurso });
                 return;
             }
 

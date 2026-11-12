@@ -25,6 +25,47 @@
         }
     }
 
+    // "Actualizar GPS": la consulta corre en el servidor en segundo plano y aquí solo se espera a que termine.
+    // Como postback tardaba hasta 80 s con la sesión tomada y cualquier otra pantalla abierta mientras tanto
+    // (entrar a un viaje, otra pestaña) quedaba esperando. Si el servicio no responde, se hace como antes.
+    var consultandoGps = false, ESPERA_MAXIMA_GPS = 6 * 60000;
+    SGV.actualizarGps = function (boton) {
+        if (consultandoGps) return;
+        consultandoGps = true;
+        var texto = boton.value, inicio = Date.now();
+        boton.value = 'Consultando el GPS…';
+        boton.disabled = true;
+
+        function pedir(url, metodo) {
+            return fetch(url, { method: metodo, credentials: 'same-origin', cache: 'no-store' })
+                .then(function (r) { if (!r.ok) throw new Error('GPS ' + r.status); return r.json(); });
+        }
+        function terminar(d) {
+            consultandoGps = false;
+            boton.value = texto;
+            boton.disabled = false;
+            if (d && d.mensaje) SGV.avisar(d.mensaje, { tipo: d.conFallas ? 'warning' : 'success', trasRecargar: true });
+            var filtrar = document.getElementById(SGV.btnFiltrar);
+            if (filtrar) filtrar.click(); else location.reload();
+        }
+        function comoAntes() {
+            consultandoGps = false;
+            boton.disabled = false;
+            window.__doPostBack(boton.name, '');
+        }
+        function esperar() {
+            pedir(SGV.urlEstadoGps, 'GET').then(function (d) {
+                if (!d.enCurso || Date.now() - inicio > ESPERA_MAXIMA_GPS) terminar(d);
+                else setTimeout(esperar, 3000);
+            }).catch(function () {
+                if (Date.now() - inicio > ESPERA_MAXIMA_GPS) terminar(null); else setTimeout(esperar, 5000);
+            });
+        }
+        pedir(SGV.urlIniciarGps, 'POST')
+            .then(function (d) { if (d.iniciada || d.enCurso) setTimeout(esperar, 2000); else comoAntes(); })
+            .catch(comoAntes);
+    };
+
     // La última consulta al GPS tiene más de 15 minutos: se consulta sola al abrir (el servidor decide;
     // tras el postback ya no se repite). Con ?auto=0 en la dirección no se lanza.
     if (SGV.autoActualizarGps) {
@@ -32,8 +73,8 @@
         if (boton) {
             // Al cargar este script SiteMaster.js todavía no definió SGV.avisar: se espera a que la página termine.
             $(function () {
-                SGV.avisar('La última consulta al GPS tiene más de 15 minutos: se actualiza sola ahora.');
-                setTimeout(function () { boton.click(); }, 600);
+                SGV.avisar('La última consulta al GPS tiene más de 15 minutos: se actualiza sola ahora. Puede seguir trabajando.');
+                setTimeout(function () { SGV.actualizarGps(boton); }, 600);
             });
         }
     }

@@ -30,12 +30,21 @@ namespace WebSGV.Services.Exportacion
         public static DateTime? UltimoInicio => _ultimoInicioUtc == DateTime.MinValue ? (DateTime?)null : FechaHelper.ConvertirDeUtc(_ultimoInicioUtc);
         public static DateTime? UltimoFin { get; private set; }
         public static string UltimoResumen { get; private set; }
+
+        /// <summary>El resultado de la última corrida en palabras, para mostrarlo en el tablero.</summary>
+        public static string UltimoMensaje { get; private set; }
+
+        /// <summary>La última corrida tuvo fallas de consulta (no cuentan las unidades sin equipo GPS).</summary>
+        public static bool UltimoConFallas { get; private set; }
         public static bool EnCurso => _enCurso == 1;
 
         /// <summary>Inicia una corrida en segundo plano. False si ya hay una en curso o la anterior fue hace poco.</summary>
-        public static bool Iniciar()
+        /// <param name="aPedido">
+        /// La pide una persona desde el tablero: no espera el <see cref="Intervalo"/> (sí respeta que no corran dos a la vez).
+        /// </param>
+        public static bool Iniciar(bool aPedido = false)
         {
-            if (DateTime.UtcNow - _ultimoInicioUtc < Intervalo) return false;
+            if (!aPedido && DateTime.UtcNow - _ultimoInicioUtc < Intervalo) return false;
             if (Interlocked.CompareExchange(ref _enCurso, 1, 0) != 0) return false;
             _ultimoInicioUtc = DateTime.UtcNow;
             try
@@ -43,7 +52,13 @@ namespace WebSGV.Services.Exportacion
                 HostingEnvironment.QueueBackgroundWorkItem(_ =>
                 {
                     try { Correr(); }
-                    catch (Exception ex) { LogSGV.Error(ex, "Actualización automática del GPS"); UltimoResumen = "Error: " + ex.Message; }
+                    catch (Exception ex)
+                    {
+                        LogSGV.Error(ex, "Actualización automática del GPS");
+                        UltimoResumen = "Error: " + ex.Message;
+                        UltimoMensaje = "No se pudo consultar el GPS. " + MensajeErrorHelper.ParaUsuario(ex);
+                        UltimoConFallas = true;
+                    }
                     finally { UltimoFin = FechaHelper.Ahora(); Interlocked.Exchange(ref _enCurso, 0); }
                 });
             }
@@ -65,6 +80,8 @@ namespace WebSGV.Services.Exportacion
             var r = SeguimientoViajesService.ActualizarGpsAbiertos(viajes, MaximoViajes, Presupuesto);
             UltimoResumen = $"{r.Consultados} consultados, {r.SinMovimiento} sin movimiento, {r.CamposNuevos} horas nuevas, {r.Aproximados} aproximados con su grupo, " +
                             $"{r.Pendientes} pendientes, {r.Errores.Count} con error, {reloj.Elapsed.TotalSeconds:0} s";
+            UltimoMensaje = r.MensajeParaUsuario(conBotonParaSeguir: false);
+            UltimoConFallas = r.Fallas.Count > 0;
             LogSGV.Info("Actualización automática del GPS: {Resumen}", UltimoResumen);
             // Sin esto el resumen dice "3 con error" y no hay cómo saber cuáles.
             foreach (var error in r.Errores)
