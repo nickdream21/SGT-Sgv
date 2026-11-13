@@ -295,3 +295,10 @@
 .sx-fila .sx-ultimo .sx-mono { white-space: nowrap; }
 .sx-fila .sx-sub:empty { display: none; }
 .sx-ruta-control .sx-ruta-select { height: 2.25rem; padding: 0 0.5rem !important; line-height: 1.2; }
+
+/* Inicio y término de carga sin registrar: estimados desde la salida de planta (CargaEstimada). */
+.sx-estimado {
+    font-style: italic;
+    color: #6b7280;
+    background-color: #f9fafb;
+}

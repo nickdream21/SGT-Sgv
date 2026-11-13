@@ -143,6 +143,15 @@ namespace WebSGV.Views.Exportacion
             txtRegistro.Text = FechaInput(f, "fhRegistro");
             txtInicioCarga.Text = FechaInput(f, "fhInicioCarga");
             txtTerminoCarga.Text = FechaInput(f, "fhTerminoCarga");
+            // Sin hora registrada: la estimada desde la salida de planta (al guardar, queda registrada).
+            foreach (var (txt, columna) in new[] { (txtInicioCarga, "fhInicioCarga"), (txtTerminoCarga, "fhTerminoCarga") })
+            {
+                if (!v.HorasEstimadas.Contains(columna) || !v.Horas.TryGetValue(columna, out var estimada) || !estimada.HasValue) continue;
+                txt.Text = estimada.Value.ToString("yyyy-MM-ddTHH:mm");
+                ViewState["estimada_" + txt.ID] = txt.Text;
+                txt.CssClass = (txt.CssClass + " sx-estimado").Trim();
+                txt.ToolTip = "Estimada: término = salida de planta − 10 min; inicio = término − 12 min (nunca antes del ingreso a planta). Escribe la real si la tienes.";
+            }
             txtAutorizacion.Text = FechaInput(f, "fhAutorizacionNacionalizacion");
             txtInicioDescarga.Text = FechaInput(f, "fhInicioDescarga");
             txtTerminoDescarga.Text = FechaInput(f, "fhTerminoDescarga");
@@ -239,8 +248,8 @@ namespace WebSGV.Views.Exportacion
             {
                 SeguimientoViajesService.GuardarDatosManuales(IdSeguimiento,
                     LeerFechaObligatoria(txtRegistro, "F.H. Registro"),
-                    LeerFechaObligatoria(txtInicioCarga, "Inicio de carga"),
-                    LeerFechaObligatoria(txtTerminoCarga, "Término de carga"),
+                    LeerHoraCarga(txtInicioCarga, "Inicio de carga"),
+                    LeerHoraCarga(txtTerminoCarga, "Término de carga"),
                     LeerFechaObligatoria(txtAutorizacion, "Autorización de nacionalización"),
                     LeerFechaObligatoria(txtInicioDescarga, "Inicio de descarga"),
                     LeerFechaObligatoria(txtTerminoDescarga, "Término de descarga"),
@@ -313,6 +322,10 @@ namespace WebSGV.Views.Exportacion
             string[] formatos = { "yyyy-MM-ddTHH:mm:ss", "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss.fff" };
             return DateTime.TryParseExact(s.Trim(), formatos, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : (DateTime?)null;
         }
+
+        /// <summary>La hora de carga escrita; si quedó igual a la estimada que se mostró, no se guarda (sigue estimándose).</summary>
+        private DateTime? LeerHoraCarga(TextBox t, string etiqueta) =>
+            string.Equals(ViewState["estimada_" + t.ID] as string, t.Text, StringComparison.Ordinal) ? null : LeerFechaObligatoria(t, etiqueta);
 
         private static DateTime? LeerFechaObligatoria(TextBox t, string etiqueta)
         {

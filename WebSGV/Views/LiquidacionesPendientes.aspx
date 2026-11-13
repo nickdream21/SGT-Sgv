@@ -403,6 +403,10 @@
                             <span class="vi-obs-label">Obs. Conductor:</span>
                             <span class="vi-obs-text" id="detalleObservaciones"></span>
                         </div>
+                        <div id="detalleNotasInternasRow" style="display:none;" class="vi-obs-row vi-obs-internas">
+                            <span class="vi-obs-label">Notas internas (rechazos, reversiones, retiros):</span>
+                            <span class="vi-obs-text" id="detalleNotasInternas"></span>
+                        </div>
                     </div>
 
                     <!-- Salida registrada por el conductor + corrección (solo administradora) -->

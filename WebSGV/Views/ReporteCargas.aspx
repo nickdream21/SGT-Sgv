@@ -1,7 +1,7 @@
 <%@ Page Title="Reporte de cargas" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="ReporteCargas.aspx.cs" Inherits="WebSGV.Views.ReporteCargas" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/chart-4.4.0.umd.min.js") %>"></script>
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/ReporteCargas.css") %>" rel="stylesheet" />
 
     <asp:Panel ID="pnlMensaje" runat="server" Visible="false">

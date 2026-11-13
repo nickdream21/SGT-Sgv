@@ -64,6 +64,43 @@ namespace WebSGV.Tests
             }, avisos);
         }
 
+        // ---- Inicio y término de carga estimados desde la salida de planta ----
+
+        [Fact]
+        public void CargaEstimada_TerminoDiezMinutosAntesDeSalirEInicioDoceAntes()
+        {
+            var h = Horas(("fhIngresoPlanta", "2026-11-10 08:00"), ("fhSalidaPlanta", "2026-11-10 14:30"));
+            var estimadas = CargaEstimada.Completar(h);
+            Assert.Equal(new[] { "fhInicioCarga", "fhTerminoCarga" }, estimadas);
+            Assert.Equal(DateTime.Parse("2026-11-10 14:20"), h["fhTerminoCarga"]);
+            Assert.Equal(DateTime.Parse("2026-11-10 14:08"), h["fhInicioCarga"]);
+            Assert.DoesNotContain(FaseViaje.Avisos(h, "BPT-788", null, false), a => a.Texto.StartsWith("Falta"));
+        }
+
+        [Fact]
+        public void CargaEstimada_EstadiaCorta_NuncaAntesDelIngreso()
+        {
+            // 11 min dentro de la planta: no caben los 22; se reparte sin salir del intervalo.
+            var h = Horas(("fhIngresoPlanta", "2026-11-10 14:19"), ("fhSalidaPlanta", "2026-11-10 14:30"));
+            CargaEstimada.Completar(h);
+            Assert.Equal(DateTime.Parse("2026-11-10 14:19"), h["fhInicioCarga"]);
+            Assert.Equal(DateTime.Parse("2026-11-10 14:25"), h["fhTerminoCarga"]);
+            Assert.True(h["fhInicioCarga"] <= h["fhTerminoCarga"] && h["fhTerminoCarga"] <= h["fhSalidaPlanta"]);
+        }
+
+        [Fact]
+        public void CargaEstimada_RespetaLaHoraRegistradaYSinSalidaNoEstima()
+        {
+            var h = Horas(("fhIngresoPlanta", "2026-11-10 08:00"), ("fhInicioCarga", "2026-11-10 09:00"), ("fhSalidaPlanta", "2026-11-10 14:30"));
+            Assert.Equal(new[] { "fhTerminoCarga" }, CargaEstimada.Completar(h));
+            Assert.Equal(DateTime.Parse("2026-11-10 09:00"), h["fhInicioCarga"]);
+            Assert.Equal(DateTime.Parse("2026-11-10 14:20"), h["fhTerminoCarga"]);
+
+            var sinSalida = Horas(("fhIngresoPlanta", "2026-11-10 08:00"));
+            Assert.Empty(CargaEstimada.Completar(sinSalida));
+            Assert.False(sinSalida.ContainsKey("fhInicioCarga"));
+        }
+
         [Fact]
         public void Avisos_SinTractoDeDescargaDespuesDeCargar()
         {

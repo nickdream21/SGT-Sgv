@@ -1,0 +1,60 @@
+/* Descuentos y reintegros a conductores (cuenta corriente). Base: Content/sgv-base.css */
+
+.sc-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem 1rem;
+}
+
+.sc-filtros label {
+    font-size: 0.8125rem;
+    margin-bottom: 0.25rem;
+}
+
+.sc-filtros select {
+    min-width: 14rem;
+}
+
+.sc-checks {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.sc-resumen {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 0.75rem;
+}
+
+.sc-resumen .sgv-panel-cuerpo {
+    display: flex;
+    flex-direction: column;
+    padding: 0.625rem 1rem;
+}
+
+.sc-resumen span {
+    font-size: 0.8125rem;
+    color: var(--sgv-texto-suave);
+}
+
+.sc-resumen strong {
+    font-size: 1.25rem;
+}
+
+.sc-total {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.sc-col-check {
+    width: 2rem;
+}
+
+tr.sc-saldada td {
+    color: var(--sgv-texto-suave);
+}

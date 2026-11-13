@@ -83,7 +83,10 @@ namespace WebSGV.Models.Liquidaciones
         public string HoraLlegadaDeclarada { get; set; }   // HH:mm - autoreportada por el conductor
         public string HoraLlegadaGps { get; set; }         // HH:mm - verificada por GPS (Onway), null si no se consultó
         public string EstadoAprobacion { get; set; }   // PENDIENTE / POR_CONFORMAR / APROBADO / REABIERTO
+        /// <summary>Solo lo que escribió el conductor (sin las notas que agrega el sistema).</summary>
         public string Observaciones { get; set; }
+        /// <summary>Notas internas que el sistema agregó a las observaciones (rechazo, reversión, retiro...).</summary>
+        public string NotasInternas { get; set; }
         /// <summary>Nota de la administración al revisar (OrdenViaje.observacionesAprobacion).</summary>
         public string NotaAprobacion { get; set; }
         /// <summary>Último desacuerdo del conductor con una revisión (vuelve a pendientes).</summary>

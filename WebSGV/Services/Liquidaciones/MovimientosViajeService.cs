@@ -56,6 +56,15 @@ namespace WebSGV.Services.Liquidaciones
             { "OTRO", "Otro" }
         };
 
+        /// <summary>
+        /// Interruptor de la funcionalidad (appSetting <c>MovimientosViaje.Habilitado</c>; apagada si falta).
+        /// Apagada (decisión del 2026-11-13): sin menú ni pantalla, la revisión no lista ni une movimientos
+        /// y el panel del conductor no muestra "Dinero recibido". Lo ya unido a una liquidación se sigue
+        /// mostrando en su detalle, conformidad y PDF (es parte de lo firmado).
+        /// </summary>
+        public static bool Habilitado =>
+            bool.TryParse(System.Configuration.ConfigurationManager.AppSettings["MovimientosViaje.Habilitado"], out bool h) && h;
+
         public static bool PuedeRegistrar() => SecurityHelper.TieneSesionActiva() && SecurityHelper.EsAdminOSupervisor();
 
         public static string NombreConcepto(string tipo, string concepto)

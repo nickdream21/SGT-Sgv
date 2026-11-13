@@ -61,7 +61,7 @@ namespace WebSGV.Views
             if (!SecurityHelper.EsConductor())
                 return "Solo el conductor puede dar su conformidad.";
             if (idOrdenViaje <= 0 || !EstaPorConformar(idOrdenViaje, SecurityHelper.ObtenerIdUsuario()))
-                return "La liquidación no está esperando su conformidad.";
+                return "La liquidación no está esperando tu conformidad.";
             return null;
         }
 
@@ -227,7 +227,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al registrar la conformidad (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "No se pudo registrar su conformidad: " + MensajeErrorHelper.ParaUsuario(ex) };
+                return new { success = false, message = "No se pudo registrar tu conformidad: " + MensajeErrorHelper.ParaUsuario(ex) };
             }
         }
 
@@ -260,7 +260,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al registrar la observación del conductor (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "No se pudo enviar su observación: " + MensajeErrorHelper.ParaUsuario(ex) };
+                return new { success = false, message = "No se pudo enviar tu observación: " + MensajeErrorHelper.ParaUsuario(ex) };
             }
         }
     }

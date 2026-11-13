@@ -1,7 +1,7 @@
 ﻿<%@ Page Title="Dashboard de Exportacion" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="DashboardExportacion.aspx.cs" Inherits="WebSGV.Views.Exportacion.DashboardExportacion" %>
 
 <asp:Content ID="ContentDE" ContentPlaceHolderID="MainContent" runat="server">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/chart-4.4.0.umd.min.js") %>"></script>
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/Exportacion/DashboardExportacion.css") %>" rel="stylesheet" />
 
     <div class="de-wrap">

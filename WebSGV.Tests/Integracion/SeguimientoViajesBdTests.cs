@@ -190,7 +190,9 @@ namespace WebSGV.Tests.Integracion
                     "COMPLEX", 1, 0, 2, "lluvia", null);
                 var tablero = SeguimientoViajesService.ListarTablero(new FiltroTablero { Desde = DateTime.Today, Hasta = DateTime.Today, Texto = Pedido });
                 var v = Assert.Single(tablero);
-                Assert.Contains(v.Avisos, a => a.Texto == "Falta término de carga");
+                // El término de carga que nadie registró sale estimado desde la salida de planta (CargaEstimada).
+                Assert.DoesNotContain(v.Avisos, a => a.Texto.StartsWith("Falta") && a.Texto.EndsWith("de carga"));
+                Assert.Contains("fhTerminoCarga", v.HorasEstimadas);
                 Assert.Contains(v.Avisos, a => a.Texto == "Descarga sin tracto asignado");
 
                 SeguimientoViajesService.CambiarEstado(id, "FINALIZADO", null);

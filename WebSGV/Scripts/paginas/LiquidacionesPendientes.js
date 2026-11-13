@@ -191,6 +191,8 @@ function mostrarDetalle(datos) {
     } else {
         $('#detalleObservacionesRow').hide();
     }
+    $('#detalleNotasInternas').text(datos.NotasInternas || '');
+    $('#detalleNotasInternasRow').toggle(!!datos.NotasInternas);
 
     $('#detalleIngresosSoles').text(parseFloat(datos.TotalIngresosSoles).toFixed(2));
     $('#detalleIngresosDolares').text(parseFloat(datos.TotalIngresosDolares).toFixed(2));

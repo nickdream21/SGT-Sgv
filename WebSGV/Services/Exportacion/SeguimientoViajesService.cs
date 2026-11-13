@@ -72,6 +72,9 @@ namespace WebSGV.Services.Exportacion
         public bool GpsSinReportar => UbicacionHora != null && UltimaConsultaGps.HasValue
             && UltimaConsultaGps.Value - UltimaPosicion.Value > StatusUnidad.SenalAntigua;
         public Dictionary<string, DateTime?> Horas { get; set; }
+
+        /// <summary>Columnas de <see cref="Horas"/> que no se registraron y salen estimadas (inicio y término de carga, <see cref="CargaEstimada"/>).</summary>
+        public List<string> HorasEstimadas { get; set; } = new List<string>();
         public FaseCalculada Fase { get; set; }
         public List<AvisoViaje> Avisos { get; set; }
         public int AvanceCarga { get; set; }
@@ -535,6 +538,7 @@ namespace WebSGV.Services.Exportacion
             string tracto1 = Texto(r, "tracto1"), tracto2 = Texto(r, "tracto2");
             string tipoRuta = Texto(r, "tipoRuta");
             if (RutaTercero.Es(tipoRuta)) return ConGrupo(ResumirTercero(r, horas, estado, tipoRuta, tracto1, tracto2), r);
+            var cargaEstimada = CargaEstimada.Completar(horas);
             var ultimo = FaseViaje.UltimoHito(horas);
             return ConRetornoConCarga(ConGrupo(new ViajeResumen
             {
@@ -567,6 +571,7 @@ namespace WebSGV.Services.Exportacion
                 Llegada = LlegadaEstimada.ParaViaje(horas, estado, Texto(r, "bodegaDescarga") ?? Texto(r, "bodegaEcuatoriana"),
                     Texto(r, "ultimaPlacaGps"), tracto1, tracto2, Numero(r, "ultimaLatitud"), Numero(r, "ultimaLongitud"), Fecha(r, "fhUltimaPosicion")),
                 Fila = r,
+                HorasEstimadas = cargaEstimada,
             }, r), r);
         }
 

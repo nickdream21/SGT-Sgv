@@ -219,7 +219,8 @@ namespace WebSGV.Views
                 }
 
                 CargarHistorialLiquidaciones();
-                CargarDineroRecibido();
+                if (Services.Liquidaciones.MovimientosViajeService.Habilitado)
+                    CargarDineroRecibido();
 
                 Log("✅ Dashboard inicializado correctamente");
             }
@@ -762,7 +763,7 @@ namespace WebSGV.Views
                 LogSGV.Error(ex, "Error general al enviar la liquidación del conductor");
                 MostrarMensaje(ex is ErrorNegocioException
                     ? System.Web.HttpUtility.HtmlEncode(ex.Message)
-                    : "Error al enviar la liquidación. Por favor, intente nuevamente o contacte al administrador.", "danger");
+                    : "Error al enviar la liquidación. Inténtalo de nuevo o avisa a la administración.", "danger");
                 MantenerPestanaLiquidar();
             }
         }
@@ -1355,7 +1356,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al retirar la liquidación (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "Error al retirar la liquidación. Intente nuevamente." };
+                return new { success = false, message = "Error al retirar la liquidación. Inténtalo de nuevo." };
             }
         }
 

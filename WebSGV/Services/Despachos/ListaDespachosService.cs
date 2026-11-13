@@ -342,6 +342,17 @@ namespace WebSGV.Services.Despachos
         /// <c>sp_LD_DesvincularDocumentoLote</c>). SQL/SP movido verbatim; los valores de los controles
         /// ya vienen leídos/parseados en <paramref name="input"/>. Rollback + re-propagación ante excepción.
         /// </summary>
+        /// <summary>
+        /// Deja el despacho en el viaje de liquidación de su conductor (<c>sp_LD_ReubicarDespachoEnViajeDelConductor</c>).
+        /// Se llama dentro de la transacción que cambió el conductor; si el viaje anterior ya tiene liquidación, el SP
+        /// lanza el error y la edición se revierte.
+        /// </summary>
+        public static void ReubicarEnViajeDelConductor(SqlConnection conn, SqlTransaction tx, int idDespacho, string usuario, DateTime fechaActual) =>
+            DbHelper.EjecutarNonQuerySp(conn, tx, "sp_LD_ReubicarDespachoEnViajeDelConductor",
+                DbHelper.Param("@idDespacho", idDespacho),
+                DbHelper.Param("@usuario", usuario),
+                DbHelper.Param("@fechaActual", fechaActual));
+
         public static void GuardarCambiosLote(GuardarCambiosLoteInput input)
         {
             string idsStr = string.Join(",", input.IdsDespachos);
@@ -374,17 +385,11 @@ namespace WebSGV.Services.Despachos
                             }
                         }
 
-                        // 2. Recalcular conductor dominante de viajes afectados
-                        if (input.CambiosConductores.Count > 0)
-                        {
-                            using (SqlCommand cmd = new SqlCommand("sp_LD_ActualizarConductorDominanteViajes", conn, transaction))
-                            {
-                                cmd.CommandType = CommandType.StoredProcedure;
-                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
-                                cmd.Parameters.AddWithValue("@fechaActual", input.FechaActual);
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
+                        // 2. Cada despacho con conductor nuevo pasa al viaje de liquidación de ese conductor
+                        //    (antes el viaje entero pasaba al conductor con más despachos y el resto quedaba
+                        //    en el viaje de otro: despacho 873 en el viaje 624).
+                        foreach (int idDespacho in input.CambiosConductores.Keys)
+                            ReubicarEnViajeDelConductor(conn, transaction, idDespacho, input.UsuarioModificacion, input.FechaActual);
 
                         // 3. Gestionar Factura
                         if (input.GestionarFactura)

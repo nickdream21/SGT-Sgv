@@ -59,6 +59,65 @@ namespace WebSGV.Services.Exportacion
             Todos.FirstOrDefault(h => string.Equals(h.Columna, columna, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Inicio y término de carga en la planta de Trujillo, que ni el GPS ni nadie registra: se estiman desde la
+    /// salida de planta (regla del usuario 2026-11-13): término = salida − 10 min; inicio = término − 12 min.
+    /// Nunca antes del ingreso a planta: si la unidad estuvo menos de 22 min dentro, el inicio queda en el
+    /// ingreso y el término entre el inicio y la salida. Se calculan al leer (no se guardan): si se corrige la
+    /// salida, cambian solas; si alguien escribe la hora real, manda la escrita.
+    /// </summary>
+    public static class CargaEstimada
+    {
+        public static readonly TimeSpan AntesDeSalida = TimeSpan.FromMinutes(10);
+        public static readonly TimeSpan DuracionCarga = TimeSpan.FromMinutes(12);
+
+        /// <summary>(inicio, término) estimados, o null sin salida de planta.</summary>
+        public static Tuple<DateTime, DateTime> Calcular(DateTime? ingresoPlanta, DateTime? salidaPlanta)
+        {
+            if (!salidaPlanta.HasValue) return null;
+            DateTime salida = salidaPlanta.Value;
+            DateTime termino = salida - AntesDeSalida;
+            DateTime inicio = termino - DuracionCarga;
+            if (ingresoPlanta.HasValue && ingresoPlanta.Value <= salida && inicio < ingresoPlanta.Value)
+            {
+                // Estadía corta: se reparte proporcional (12 de cada 22 min cargando, el resto hasta salir).
+                DateTime ingreso = ingresoPlanta.Value;
+                inicio = ingreso;
+                double proporcion = DuracionCarga.TotalMinutes / (DuracionCarga + AntesDeSalida).TotalMinutes;
+                termino = ingreso + TimeSpan.FromSeconds(Math.Round((salida - ingreso).TotalSeconds * proporcion));
+            }
+            return Tuple.Create(inicio, termino);
+        }
+
+        /// <summary>
+        /// Llena en <paramref name="horas"/> el inicio y el término de carga que falten. Devuelve las columnas
+        /// que se estimaron (vacío si las dos ya tenían hora o no hay salida de planta).
+        /// </summary>
+        public static List<string> Completar(IDictionary<string, DateTime?> horas)
+        {
+            var estimadas = new List<string>();
+            DateTime? V(string c) => horas.TryGetValue(c, out var v) ? v : null;
+            if (V("fhInicioCarga").HasValue && V("fhTerminoCarga").HasValue) return estimadas;
+            var e = Calcular(V("fhIngresoPlanta"), V("fhSalidaPlanta"));
+            if (e == null) return estimadas;
+            DateTime? inicioReal = V("fhInicioCarga"), terminoReal = V("fhTerminoCarga");
+            if (!inicioReal.HasValue)
+            {
+                // Con un término real, el inicio estimado no puede quedar después de él.
+                horas["fhInicioCarga"] = terminoReal.HasValue && terminoReal.Value < e.Item1
+                    ? (V("fhIngresoPlanta") is DateTime ing && ing <= terminoReal.Value ? ing : terminoReal.Value)
+                    : e.Item1;
+                estimadas.Add("fhInicioCarga");
+            }
+            if (!terminoReal.HasValue)
+            {
+                horas["fhTerminoCarga"] = inicioReal.HasValue && inicioReal.Value > e.Item2 ? inicioReal.Value : e.Item2;
+                estimadas.Add("fhTerminoCarga");
+            }
+            return estimadas;
+        }
+    }
+
     public enum TipoAviso { Manual, Alerta, Info }
 
     public sealed class AvisoViaje

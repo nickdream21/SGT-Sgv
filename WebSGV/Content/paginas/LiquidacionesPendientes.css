@@ -510,6 +510,22 @@
     white-space: normal;
 }
 
+/* Notas que agrega el sistema (rechazos, reversiones, retiros): aparte de lo que escribió el conductor. */
+.vi-obs-internas {
+    flex-wrap: wrap;
+}
+
+.vi-obs-internas .vi-obs-label {
+    white-space: normal;
+}
+
+.vi-obs-internas .vi-obs-text {
+    color: var(--neutral-color);
+    font-size: 0.8125rem;
+    white-space: pre-line;
+    flex-basis: 100%;
+}
+
 /* Entregas y pagos directos registrados durante el viaje */
 .mov-titulo { font-weight: 600; font-size: 0.85rem; margin: 0.5rem 0 0.25rem; }
 .tabla-movimientos { font-size: 0.8rem; }

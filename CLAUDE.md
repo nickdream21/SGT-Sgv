@@ -110,18 +110,6 @@ Signatures are electronic signatures (Ley 27269), not certificate-based: a handw
 
 PDFs use **QuestPDF 2026.5.0** (Community license, set in `Global.asax.cs` and in the services' static constructors — do NOT reintroduce iTextSharp/iText). QuestPDF ships native Skia binaries that MSBuild copies to `bin\runtimes\win-x86|x64\native\` via the package's `build\net4\QuestPDF.targets` import in the csproj — they must be deployed along with the app. Excel import/export uses **ClosedXML 0.105** only (EPPlus was removed for licensing reasons).
 
-### Helper inventory
-
-| File | Purpose |
-|---|---|
-| `Helpers/AuditoriaHelper.cs` | Write audit events to `AuditoriaLog` table (auto-created on first run) |
-| `Helpers/EmpresaConfigHelper.cs` | Read company data from `Web.config` appSettings |
-| `Helpers/FechaHelper.cs` | Date formatting for es-PE locale |
-| `Helpers/NumeroALetrasHelper.cs` | Number-to-words conversion (Peruvian Spanish) |
-| `Helpers/PasswordHelper.cs` | PBKDF2 hash + verify; handles legacy plaintext migration |
-| `Helpers/HashHelper.cs` | SHA-256 hashing utilities |
-| `WebSGV/Helpers/SecurityHelper.cs` | Session guards, role checks, HTTP security headers |
-
 ### Database
 
 SQL Server hosted on somee.com. Schema and stored procedures are tracked as `.sql` files in `WebSGV/Database/` but **are not auto-applied**:
@@ -142,32 +130,9 @@ Page-specific CSS/JS lives in files, not inline: `Content/paginas/<Pagina>.css` 
 
 `Site.Master` loads jQuery 3.6.4 → Popper → Bootstrap **4.6.2** → jQuery UI once, in `<head>`. Pages must NOT load jQuery/Bootstrap again (a second jQuery replaces `$` and drops `.modal()`, `.datepicker()`, `.dropdown()`), and must use Bootstrap 4 syntax (`data-toggle`, `data-dismiss`, `class="close"`), not Bootstrap 5 (`data-bs-*`, `btn-close`). The ScriptManager `"jquery"` resource (unobtrusive validation) maps to `Scripts/jquery-si-falta.js`, which only loads jQuery if missing.
 
-## Adding a New Page
+## Adding pages and stored procedures
 
-Every new page requires **exactly three files** AND **registration in `WebSGV.csproj`**:
-
-1. `WebSGV/Views/NombrePagina.aspx` — markup with `MasterPageFile="~/Site.Master"` and `Inherits="WebSGV.Views.NombrePagina"`.
-2. `WebSGV/Views/NombrePagina.aspx.cs` — code-behind; verify session and role in `Page_Load` before `!IsPostBack` logic.
-3. `WebSGV/Views/NombrePagina.aspx.designer.cs` — auto-generated partial class (can start empty).
-
-In `WebSGV.csproj`, add both a `<Content>` entry and two `<Compile>` entries (`.aspx.cs` with `<SubType>ASPXCodeBehind</SubType>` and `.aspx.designer.cs`). Without `.csproj` registration the page does not deploy.
-
-Page_Load template:
-```csharp
-protected void Page_Load(object sender, EventArgs e)
-{
-    SecurityHelper.ExigirRolAdmin(); // or appropriate guard
-    SecurityHelper.AgregarHeadersSeguridad();
-    if (!IsPostBack)
-        CargarDatos();
-}
-```
-
-## Adding a Stored Procedure
-
-1. Create `WebSGV/Database/StoredProcedures/sp_MODULO_Nombre.sql` using the idempotent pattern (`IF OBJECT_ID ... DROP` before `CREATE`). Include `SET NOCOUNT ON`.
-2. Execute the file manually against the somee.com database.
-3. Call from C# using `CommandType.StoredProcedure`; pass nullable parameters as `(object)value ?? DBNull.Value`.
+Step-by-step in the skills `nueva-pagina` and `nuevo-sp` (`.claude/skills/`). Never skip: a page or file not registered in `WebSGV.csproj` does not deploy, and a new SP does nothing until it is applied to the DB.
 
 ## Conventions
 
@@ -184,6 +149,9 @@ protected void Page_Load(object sender, EventArgs e)
 Functional/process documentation (Spanish) in `docs/`:
 
 - `docs/PLAN_MEJORAS_SGV.md` — **current improvement plan**: status, pending tasks, home-machine setup and the ordered production checklist. Read it first when resuming work.
+- `docs/FLUJO_DE_TRABAJO_SGV.md` — end-to-end business flow and role permission matrix.
+- `docs/GUIA_CREACION_ROLES.md` — step-by-step guide for adding a new role.
+- `docs/MEJORAS_UI_ABASTECIMIENTO.md` — UI conventions for the fuel supply module.
 
 ## Keeping the plan up to date (mandatory)
 
@@ -193,8 +161,5 @@ The plan is the only shared context between machines and sessions — never let 
 - **Every loose end becomes its own `[ ]` under "Abiertas"** in section 4 (business decisions, follow-ups, "pendiente: …"). Never leave a pending item buried inside the text of a finished task or only in a chat reply.
 - Also update the Claude memory `pendientes_paso_a_produccion.md` when something is applied only to the test DB.
 - Before finishing a task, check `git status` for untracked files: commit them, gitignore them, or say why they stay.
-- `docs/FLUJO_DE_TRABAJO_SGV.md` — end-to-end business flow and role permission matrix.
-- `docs/GUIA_CREACION_ROLES.md` — step-by-step guide for adding a new role.
-- `docs/MEJORAS_UI_ABASTECIMIENTO.md` — UI conventions for the fuel supply module.
 
 Also see `AGENTS.md` at the repo root for additional architecture notes and the multi-agent coordination system under `.opencode/`.

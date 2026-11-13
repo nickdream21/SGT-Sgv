@@ -45,7 +45,12 @@ $(document).ready(function () {
     $form.on('input change', 'input, textarea, select', function () {
         liquidacionModificada = true;
         if ($(this).is('[type=number]')) calcularTotales();
+        guardarBorradorLuego();
     });
+
+    // El borrador se aplica después de los $(function) del servidor (orden rechazada o envío fallido),
+    // que mandan sobre lo guardado en el celular.
+    setTimeout(function () { Borrador.alAbrir($form); }, 0);
 
     $('form').on('submit', function () { formularioEnviandose = true; });
 
@@ -129,7 +134,7 @@ function agregarGasto(datos) {
 function eliminarGasto(id) {
     const $fila = $('#gastoAdicional_' + id);
     const vacio = !$fila.find('.dc-concepto').val() && !num($fila.find('.gasto-soles').val()) && !num($fila.find('.gasto-dolares').val());
-    const quitar = function () { $fila.remove(); calcularTotales(); };
+    const quitar = function () { $fila.remove(); calcularTotales(); guardarBorradorLuego(); };
     if (vacio) { quitar(); return; }
     SGV.confirmar('¿Quitar este gasto?', quitar, { peligro: true, textoAceptar: 'Quitar' });
 }
@@ -148,8 +153,110 @@ function calcularTotales() {
     return { soles: soles, dolares: dolares };
 }
 
+// === Borrador en el celular ===
+// Lo que el conductor va escribiendo se guarda en el navegador (por conductor y viaje), así no lo pierde
+// si se le cierra el navegador, se queda sin batería o sin señal. Se borra cuando el viaje ya no se está
+// liquidando (se envió) y se puede descartar a mano.
+const Borrador = (function () {
+    const PREFIJO = 'sgv-borrador-liquidacion-';
+    const DIAS_MAXIMO = 45;
+    let restauradoPorServidor = false;
+
+    function prefijoConductor() { return PREFIJO + ($('#hfIdConductor').val() || '0') + '-'; }
+    function clave() {
+        const viaje = $('#hfIdViajeActivo').val();
+        return viaje ? prefijoConductor() + viaje : null;
+    }
+    function leer(k) {
+        try { const t = window.localStorage.getItem(k); return t ? JSON.parse(t) : null; } catch (e) { return null; }
+    }
+    function quitar(k) { try { window.localStorage.removeItem(k); } catch (e) { /* sin almacenamiento */ } }
+    function claves() {
+        const lista = [];
+        try {
+            for (let i = 0; i < window.localStorage.length; i++) {
+                const k = window.localStorage.key(i);
+                if (k && k.indexOf(PREFIJO) === 0) lista.push(k);
+            }
+        } catch (e) { /* sin almacenamiento */ }
+        return lista;
+    }
+
+    function recoger($form) {
+        const campos = {};
+        $form.find('input[name], textarea[name], select[name]').each(function () {
+            const $c = $(this);
+            if ($c.is('[type=hidden],[type=submit],[type=button],[type=password]') || $c.closest('.dc-gasto-extra').length) return;
+            if (this.name.indexOf('__') === 0) return;
+            const v = $c.val();
+            if (v) campos[this.name] = v;
+        });
+        const gastosAdicionales = [];
+        $('#gastosAdicionalesBody .dc-gasto-extra').each(function () {
+            const g = {
+                concepto: ($(this).find('.dc-concepto').val() || '').trim(),
+                soles: num($(this).find('.gasto-soles').val()),
+                dolares: num($(this).find('.gasto-dolares').val()),
+                descripcion: ($(this).find('.dc-nota').val() || '').trim()
+            };
+            if (g.concepto || g.soles || g.dolares || g.descripcion) gastosAdicionales.push(g);
+        });
+        return { campos: campos, gastosAdicionales: gastosAdicionales };
+    }
+
+    return {
+        marcarRestauradoPorServidor: function () { restauradoPorServidor = true; },
+
+        guardar: function () {
+            const k = clave();
+            const $form = $('#' + SGV.pnlFormularioLiquidacion);
+            if (!k || !$form.length || formularioEnviandose) return;
+            const datos = recoger($form);
+            try {
+                if ($.isEmptyObject(datos.campos) && !datos.gastosAdicionales.length) window.localStorage.removeItem(k);
+                else window.localStorage.setItem(k, JSON.stringify($.extend(datos, { guardado: Date.now() })));
+            } catch (e) { /* almacenamiento lleno o bloqueado: el formulario sigue funcionando */ }
+        },
+
+        descartar: function () { const k = clave(); if (k) quitar(k); },
+
+        alAbrir: function ($form) {
+            const actual = $form.length ? clave() : null;
+            const limite = Date.now() - DIAS_MAXIMO * 24 * 3600 * 1000;
+            // Borradores de otros viajes de este conductor (ya enviados) o muy antiguos: fuera.
+            claves().forEach(function (k) {
+                const d = leer(k);
+                if (k === actual && d && (d.guardado || 0) > limite) return;
+                if (k.indexOf(prefijoConductor()) === 0 || !d || (d.guardado || 0) < limite) quitar(k);
+            });
+            if (!actual || restauradoPorServidor) return;
+            const datos = leer(actual);
+            if (!datos) return;
+            aplicarDatos(datos);
+            liquidacionModificada = true;
+            const hora = new Date(datos.guardado || Date.now());
+            SGV.avisar('Recuperamos lo que habías escrito en tu liquidación (guardado el ' +
+                hora.toLocaleDateString('es-PE') + ' a las ' + hora.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) +
+                '). Revísalo y envíalo cuando termines.', { tipo: 'info' });
+        }
+    };
+})();
+
+let temporizadorBorrador = null;
+function guardarBorradorLuego() {
+    clearTimeout(temporizadorBorrador);
+    temporizadorBorrador = setTimeout(Borrador.guardar, 600);
+}
+window.addEventListener('pagehide', function () { Borrador.guardar(); });
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') Borrador.guardar(); });
+
 // Gastos que el formulario restaura por nombre de campo: orden rechazada o envío fallido.
 function restaurarLiquidacion(datos) {
+    Borrador.marcarRestauradoPorServidor();
+    aplicarDatos(datos);
+}
+
+function aplicarDatos(datos) {
     if (!datos) return;
     $.each(datos.campos || {}, function (nombre, valor) {
         const $c = $('[name="' + nombre + '"]');

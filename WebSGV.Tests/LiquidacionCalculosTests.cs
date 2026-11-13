@@ -229,6 +229,17 @@ namespace WebSGV.Tests
             Assert.Equal(esperado, LiquidacionCalculos.ObservacionesDelConductor(entrada));
         }
 
+        [Theory]
+        [InlineData("Viaje sin novedad\r\n**RECHAZADO 2026-10-09 11:56:29**: Falta comprobante", "**RECHAZADO 2026-10-09 11:56:29**: Falta comprobante")]
+        [InlineData("Llanta baja  \r\n[REVERSION 2026-10-09] motivo\r\n[RECHAZO 2026-10-09] otro", "[REVERSION 2026-10-09] motivo\r\n[RECHAZO 2026-10-09] otro")]
+        [InlineData("**RECHAZADO 2026-10-09**: al inicio", "**RECHAZADO 2026-10-09**: al inicio")]
+        [InlineData("Solo texto del conductor", "")]
+        [InlineData(null, "")]
+        public void NotasDelSistema_DejaSoloLasNotasInternas(string entrada, string esperado)
+        {
+            Assert.Equal(esperado, LiquidacionCalculos.NotasDelSistema(entrada));
+        }
+
         // ---------- Saldo final (negativo = la empresa paga al conductor) ----------
 
         [Theory]

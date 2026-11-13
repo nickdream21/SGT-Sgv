@@ -9,8 +9,8 @@
     <title>Conformidad de la liquidación · SGV</title>
 
     <%-- Mismas librerías y versiones que Site.Master (Bootstrap 4.6.2, Font Awesome 5.15.4). --%>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/bootstrap-4.6.2/bootstrap.min.css") %>" rel="stylesheet" />
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/fontawesome-5.15.4/css/all.min.css") %>" rel="stylesheet" />
 
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/FirmarLiquidacion.css") %>" rel="stylesheet" />
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/ConformarLiquidacion.css") %>" rel="stylesheet" />
@@ -23,7 +23,7 @@
         <div class="logo">SGV</div>
         <div>
             <h1>Liquidación final</h1>
-            <div class="sub">Revise y firme su conformidad</div>
+            <div class="sub">Revisa y firma tu conformidad</div>
         </div>
         <div class="fl-format-chip">SGV-CDF-F-05 v01</div>
     </header>
@@ -46,7 +46,7 @@
                 </section>
 
                 <section class="fl-card">
-                    <h2><i class="fas fa-calculator mr-2"></i>Cómo queda su liquidación</h2>
+                    <h2><i class="fas fa-calculator mr-2"></i>Cómo queda tu liquidación</h2>
                     <table class="cl-tabla">
                         <thead><tr><th>Concepto</th><th class="num">S/</th><th class="num">US$</th></tr></thead>
                         <tbody id="tbLiquidacion"></tbody>
@@ -56,13 +56,13 @@
                 </section>
 
                 <section class="fl-card" id="secEntregas" style="display:none;">
-                    <h2><i class="fas fa-hand-holding-usd mr-2"></i>Cómo le entregaron el dinero</h2>
+                    <h2><i class="fas fa-hand-holding-usd mr-2"></i>Cómo te entregaron el dinero</h2>
                     <table class="cl-tabla"><tbody id="tbEntregas"></tbody></table>
                 </section>
 
                 <section class="fl-card" id="secPagosDirectos" style="display:none;">
                     <h2><i class="fas fa-store mr-2"></i>Pagado por la empresa directamente</h2>
-                    <p class="fl-nota mt-0 mb-2">La empresa le pagó al proveedor: no pasó por usted y no cambia su saldo.</p>
+                    <p class="fl-nota mt-0 mb-2">La empresa le pagó al proveedor: no pasó por ti y no cambia tu saldo.</p>
                     <table class="cl-tabla"><tbody id="tbPagosDirectos"></tbody></table>
                 </section>
 
@@ -89,12 +89,12 @@
                 </label>
 
                 <div class="fl-canvas-label">
-                    <i class="fas fa-signature mr-1"></i>Firme con el dedo o mouse dentro del recuadro:
+                    <i class="fas fa-signature mr-1"></i>Firma con el dedo o el mouse dentro del recuadro:
                 </div>
                 <div id="canvasBox" class="fl-canvas-box">
                     <div class="fl-canvas-hint">
                         <i class="fas fa-pen-nib"></i>
-                        <span>Dibuje aquí su firma</span>
+                        <span>Dibuja aquí tu firma</span>
                     </div>
                     <div class="fl-canvas-baseline"></div>
                     <div class="fl-canvas-x">&times;</div>
@@ -106,7 +106,7 @@
                 </div>
 
                 <div class="fl-clave">
-                    <label for="txtContrasena"><i class="fas fa-lock mr-1"></i>Su contraseña, para confirmar que es usted quien firma</label>
+                    <label for="txtContrasena"><i class="fas fa-lock mr-1"></i>Tu contraseña, para confirmar que eres tú quien firma</label>
                     <input type="password" id="txtContrasena" class="form-control" autocomplete="current-password" maxlength="100" />
                 </div>
 
@@ -120,7 +120,7 @@
                         <i class="fas fa-comment-dots"></i>No estoy de acuerdo
                     </button>
                     <div id="panelObservar" style="display:none;">
-                        <label for="txtObservacion">Explique con qué no está de acuerdo. La liquidación volverá a la administración para revisarla.</label>
+                        <label for="txtObservacion">Explica con qué no estás de acuerdo. La liquidación volverá a la administración para revisarla.</label>
                         <textarea id="txtObservacion" class="form-control" rows="3" maxlength="500"
                             placeholder="Ej.: El adelanto que recibí fue S/ 800, no S/ 900."></textarea>
                         <button type="button" class="fl-btn cl-btn-observar" id="btnObservar">
@@ -140,7 +140,7 @@
         <div id="pantallaExito" class="fl-success-screen">
             <div class="icon"><i class="fas fa-check" id="okIcono"></i></div>
             <h3 id="okTitulo">Conformidad registrada</h3>
-            <p id="okTexto">Su liquidación quedó aprobada y el viaje, completado.</p>
+            <p id="okTexto">Tu liquidación quedó aprobada y el viaje, completado.</p>
             <div id="okCodigoBloque" style="margin: 18px 0;">
                 <div style="font-size: 11px; color: var(--gris-600); text-transform: uppercase; margin-bottom: 6px;">
                     Código de verificación del documento
@@ -160,7 +160,7 @@
         </div>
     </main>
 
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/jquery-3.6.4.min.js") %>"></script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/FirmaCanvas.js") %>"></script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/ConformarLiquidacion.js") %>"></script>
 </form>

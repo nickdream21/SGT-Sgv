@@ -227,7 +227,7 @@
         });
     </script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/Exportacion/SeguimientoViaje.js") %>"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/leaflet-1.9.4/leaflet.css") %>" rel="stylesheet" />
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/leaflet-1.9.4.min.js") %>"></script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/Exportacion/SeguimientoViajeMapa.js") %>"></script>
 </asp:Content>

@@ -74,6 +74,9 @@ namespace WebSGV.Services.Exportacion
         {
             var reloj = System.Diagnostics.Stopwatch.StartNew();
             DateTime hoy = FechaHelper.Hoy();
+            // Mientras los conductores liquidan en papel, sus viajes de liquidación se cierran solos (no afecta al GPS).
+            try { Liquidaciones.CierreViajesSinLiquidacion.CerrarSiCorresponde(); }
+            catch (Exception ex) { LogSGV.Error(ex, "Cierre automático de viajes sin liquidación"); }
             // Como al abrir el tablero: los despachos nuevos pasan a ser viajes antes de consultar el GPS.
             SeguimientoViajesService.SincronizarDespachos(hoy.AddDays(-DiasSincronizacion));
             var viajes = SeguimientoViajesService.ListarTablero(new FiltroTablero { Desde = hoy.AddDays(-DiasViajes), Hasta = hoy.AddDays(1) });

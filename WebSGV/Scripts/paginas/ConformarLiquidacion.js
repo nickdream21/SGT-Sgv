@@ -77,11 +77,11 @@
 
             var tb = document.getElementById('tbLiquidacion');
             tb.innerHTML = '';
-            fila(tb, 'Dinero que le entregaron', d.EntregadoSoles, d.EntregadoDolares, 'total');
+            fila(tb, 'Dinero que te entregaron', d.EntregadoSoles, d.EntregadoDolares, 'total');
             (d.Entregado || []).forEach(function (c) {
                 fila(tb, c.Concepto + (c.Detalle ? ' (' + c.Detalle + ')' : ''), c.Soles, c.Dolares, 'sub');
             });
-            fila(tb, '(−) Sus gastos declarados', d.GastosSoles, d.GastosDolares, 'total');
+            fila(tb, '(−) Tus gastos declarados', d.GastosSoles, d.GastosDolares, 'total');
             var hayDesc = d.DescuentoSoles !== 0 || d.DescuentoDolares !== 0;
             var hayReint = d.ReintegroSoles !== 0 || d.ReintegroDolares !== 0;
             if (hayDesc || hayReint) {
@@ -169,7 +169,7 @@
         if (btnFirmar.disabled) return;
         btnFirmar.disabled = true;
         btnFirmar.classList.add('loading');
-        btnFirmar.innerHTML = '<i class="fas fa-spinner"></i>Registrando su conformidad...';
+        btnFirmar.innerHTML = '<i class="fas fa-spinner"></i>Registrando tu conformidad...';
 
         llamar('RegistrarConformidad', {
             idOrdenViaje: idOrden, firmaPngBase64: firma.png(), contrasena: txtClave.value, huella: huella
@@ -177,14 +177,14 @@
             var r = resp && resp.d;
             if (r && r.success) {
                 txtClave.value = '';
-                mostrarResultado('Conformidad registrada', 'Su liquidación quedó aprobada y el viaje, completado.', r.codigo, true);
+                mostrarResultado('Conformidad registrada', 'Tu liquidación quedó aprobada y el viaje, completado.', r.codigo, true);
             } else {
                 if (r && r.contrasenaIncorrecta) { txtClave.value = ''; txtClave.focus(); }
-                mostrarAlerta('error', (r && r.message) || 'No se pudo registrar su conformidad.');
+                mostrarAlerta('error', (r && r.message) || 'No se pudo registrar tu conformidad.');
                 restaurarBoton();
             }
         }).fail(function () {
-            mostrarAlerta('error', 'Error de comunicación. Intente nuevamente.');
+            mostrarAlerta('error', 'Error de comunicación. Inténtalo de nuevo.');
             restaurarBoton();
         });
     });
@@ -199,18 +199,18 @@
     document.getElementById('btnObservar').addEventListener('click', function () {
         var btn = this;
         var texto = document.getElementById('txtObservacion').value.trim();
-        if (texto.length < 10) { mostrarAlerta('error', 'Explique con qué no está de acuerdo (al menos 10 caracteres).'); return; }
+        if (texto.length < 10) { mostrarAlerta('error', 'Explica con qué no estás de acuerdo (al menos 10 caracteres).'); return; }
         btn.disabled = true;
         llamar('ObservarLiquidacion', { idOrdenViaje: idOrden, observacion: texto }).done(function (resp) {
             var r = resp && resp.d;
             if (r && r.success) {
-                mostrarResultado('Observación enviada', 'La administración revisará su liquidación y le enviará una nueva versión para su conformidad.', null, false);
+                mostrarResultado('Observación enviada', 'La administración revisará tu liquidación y te enviará una nueva versión para tu conformidad.', null, false);
             } else {
-                mostrarAlerta('error', (r && r.message) || 'No se pudo enviar su observación.');
+                mostrarAlerta('error', (r && r.message) || 'No se pudo enviar tu observación.');
                 btn.disabled = false;
             }
         }).fail(function () {
-            mostrarAlerta('error', 'Error de comunicación. Intente nuevamente.');
+            mostrarAlerta('error', 'Error de comunicación. Inténtalo de nuevo.');
             btn.disabled = false;
         });
     });

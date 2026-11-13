@@ -9,8 +9,8 @@
     <title>Firmar Liquidación · SGV</title>
 
     <%-- Mismas librerías y versiones que Site.Master (Bootstrap 4.6.2, Font Awesome 5.15.4). --%>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/bootstrap-4.6.2/bootstrap.min.css") %>" rel="stylesheet" />
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/fontawesome-5.15.4/css/all.min.css") %>" rel="stylesheet" />
 
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/FirmarLiquidacion.css") %>" rel="stylesheet" />
 </head>
@@ -81,12 +81,12 @@
 
             <!-- Canvas de firma -->
             <div class="fl-canvas-label">
-                <i class="fas fa-signature mr-1"></i>Firme con el dedo o mouse dentro del recuadro:
+                <i class="fas fa-signature mr-1"></i>Firma con el dedo o el mouse dentro del recuadro:
             </div>
             <div id="canvasBox" class="fl-canvas-box">
                 <div class="fl-canvas-hint">
                     <i class="fas fa-pen-nib"></i>
-                    <span>Dibuje aquí su firma</span>
+                    <span>Dibuja aquí tu firma</span>
                 </div>
                 <div class="fl-canvas-baseline"></div>
                 <div class="fl-canvas-x">&times;</div>
@@ -104,7 +104,7 @@
 
             <!-- Confirmación de identidad -->
             <div class="fl-clave">
-                <label for="txtContrasena"><i class="fas fa-lock mr-1"></i>Su contraseña, para confirmar que es usted quien firma</label>
+                <label for="txtContrasena"><i class="fas fa-lock mr-1"></i>Tu contraseña, para confirmar que eres tú quien firma</label>
                 <input type="password" id="txtContrasena" class="form-control" autocomplete="current-password" maxlength="100" />
             </div>
 
@@ -123,8 +123,8 @@
         <div id="pantallaExito" class="fl-success-screen">
             <div class="icon"><i class="fas fa-check"></i></div>
             <h3>Firma registrada correctamente</h3>
-            <p>Su declaración fue firmada y enviada a la administración. Cuando la revise, recibirá la
-               liquidación final para dar su conformidad.</p>
+            <p>Tu declaración fue firmada y enviada a la administración. Cuando la revise, recibirás la
+               liquidación final para dar tu conformidad.</p>
             <div style="margin: 18px 0 8px;">
                 <div style="font-size: 11px; color: var(--gris-600); text-transform: uppercase; margin-bottom: 6px;">
                     Código de verificación del documento
@@ -151,7 +151,7 @@
 
     </main>
 
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/jquery-3.6.4.min.js") %>"></script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/FirmaCanvas.js") %>"></script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/FirmarLiquidacion.js") %>"></script>
 </form>

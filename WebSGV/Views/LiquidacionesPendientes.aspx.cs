@@ -970,6 +970,9 @@ namespace WebSGV.Views
             {
                 if (!PuedeGestionarLiquidaciones())
                     return new { success = false, message = "No tiene permisos." };
+                // Apagada: la revisión no muestra la tabla ni envía ids, así que no se tocan los ya unidos.
+                if (!MovimientosViajeService.Habilitado)
+                    return new { success = false, message = "Funcionalidad desactivada." };
                 var lista = MovimientosViajeService.ObtenerParaRevision(idOrdenViaje).Select(m => new
                 {
                     m.IdMovimiento,

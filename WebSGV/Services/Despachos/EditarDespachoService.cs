@@ -76,7 +76,11 @@ namespace WebSGV.Services.Despachos
             int idCliente, int idTracto, int idCarreta, int idPlanta,
             string tipoOperacion, string usuario)
         {
-            return DbHelper.EjecutarNonQuery(
+            int filas = 0;
+            DateTime ahora = FechaHelper.Ahora();
+            DbHelper.EnTransaccion((conn, tx) =>
+            {
+                filas = DbHelper.EjecutarNonQuery(conn, tx,
                 @"UPDATE Despachos SET
                     fechaDespacho = @fechaDespacho,
                     idConductor = @idConductor,
@@ -90,7 +94,7 @@ namespace WebSGV.Services.Despachos
                     usuarioModificacion = @usuario
                   WHERE idDespacho = @idDespacho
                     AND EXISTS (SELECT 1 FROM Planta WHERE idPlanta = @idPlanta)",
-                DbHelper.Param("@fechaActual",    FechaHelper.Ahora()),
+                DbHelper.Param("@fechaActual",    ahora),
                 DbHelper.Param("@fechaDespacho",  fechaDespacho),
                 DbHelper.Param("@idConductor",    idConductor),
                 DbHelper.Param("@idCliente",      idCliente),
@@ -100,6 +104,11 @@ namespace WebSGV.Services.Despachos
                 DbHelper.Param("@tipoOperacion",  tipoOperacion),
                 DbHelper.Param("@usuario",        usuario),
                 DbHelper.Param("@idDespacho",     idDespacho));
+                // Si cambió el conductor, el despacho pasa a su viaje de liquidación (no se queda en el del anterior).
+                if (filas > 0)
+                    ListaDespachosService.ReubicarEnViajeDelConductor(conn, tx, idDespacho, usuario, ahora);
+            });
+            return filas;
         }
     }
 }

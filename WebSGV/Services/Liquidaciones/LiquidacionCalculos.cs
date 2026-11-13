@@ -138,6 +138,17 @@ namespace WebSGV.Services.Liquidaciones
         }
 
         /// <summary>
+        /// Lo contrario de <see cref="ObservacionesDelConductor"/>: solo las notas que el sistema agregó
+        /// (rechazo, reversión, retiro, observación...), para mostrarlas aparte en la revisión.
+        /// </summary>
+        public static string NotasDelSistema(string observaciones)
+        {
+            if (string.IsNullOrEmpty(observaciones)) return string.Empty;
+            string delConductor = ObservacionesDelConductor(observaciones);
+            return observaciones.Substring(delConductor.Length).Trim();
+        }
+
+        /// <summary>
         /// Decodifica un PNG en base64 (admite prefijo data URI "data:image/png;base64,").
         /// Devuelve <c>null</c> si la cadena es vacía o no es base64 válido.
         /// </summary>

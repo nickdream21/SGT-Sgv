@@ -2,8 +2,8 @@
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <!-- jQuery y jQuery UI los carga Site.Master; aquí solo Select2 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/js/select2.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css" />
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/select2-4.1.0-rc.0.min.js") %>"></script>
+    <link rel="stylesheet" href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/select2-4.1.0-rc.0/select2.min.css") %>" />
 
     <div class="container">
         <h2 class="mt-4 mb-4">Búsqueda de orden de viaje</h2>

@@ -8,9 +8,9 @@
     <title><%: Page.Title %> - Sistema SGV</title>
 
     <!-- CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
-    <link href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" rel="stylesheet" />
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/bootstrap-4.6.2/bootstrap.min.css") %>" rel="stylesheet" />
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/fontawesome-5.15.4/css/all.min.css") %>" rel="stylesheet" />
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/jquery-ui-1.13.2/jquery-ui.min.css") %>" rel="stylesheet" />
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/App.css") %>" rel="stylesheet" />
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/responsive-mobile.css") %>" rel="stylesheet" />
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/sgv-base.css") %>" rel="stylesheet" />
@@ -19,10 +19,10 @@
          Deben cargarse antes de MainContent porque las páginas usan $.datepicker / .modal() en
          scripts en línea. Las páginas NO deben volver a cargar jQuery ni Bootstrap: una segunda
          copia de jQuery reemplaza $ y desconecta los plugins ya registrados. -->
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/jquery-3.6.4.min.js") %>"></script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/popper-1.16.1.min.js") %>"></script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/bootstrap-4.6.2.min.js") %>"></script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/jquery-ui-1.13.2.min.js") %>"></script>
 
     <!-- Estilos para corregir problemas de transparencia -->
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/SiteMaster.css") %>" rel="stylesheet" />
@@ -100,9 +100,14 @@
                             <a class="dropdown-item" href='<%= ResolveUrl("~/Views/LiquidacionesPendientes.aspx") %>'>
                                 <i class="fas fa-clock"></i>Liquidaciones pendientes
                             </a>
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/SaldosConductores.aspx") %>'>
+                                <i class="fas fa-balance-scale"></i>Descuentos y reintegros (quincena)
+                            </a>
+                            <% if (WebSGV.Services.Liquidaciones.MovimientosViajeService.Habilitado) { %>
                             <a class="dropdown-item" href='<%= ResolveUrl("~/Views/MovimientosViaje.aspx") %>'>
                                 <i class="fas fa-hand-holding-usd"></i>Dinero y pagos del viaje
                             </a>
+                            <% } %>
 
                         </div>
                     </li>

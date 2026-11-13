@@ -286,6 +286,47 @@
     <Content Include="Scripts\OrdenViaje.js" />
     <Content Include="Scripts\responsive-mobile.js" />
     <Content Include="Scripts\jquery-si-falta.js" />
+    <Content Include="Content\lib\bootstrap-4.6.2\bootstrap.min.css" />
+    <Content Include="Content\lib\fontawesome-5.15.4\css\all.min.css" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-brands-400.eot" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-brands-400.svg" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-brands-400.ttf" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-brands-400.woff" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-brands-400.woff2" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-regular-400.eot" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-regular-400.svg" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-regular-400.ttf" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-regular-400.woff" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-regular-400.woff2" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-solid-900.eot" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-solid-900.svg" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-solid-900.ttf" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-solid-900.woff" />
+    <Content Include="Content\lib\fontawesome-5.15.4\webfonts\fa-solid-900.woff2" />
+    <Content Include="Content\lib\jquery-ui-1.13.2\images\ui-icons_444444_256x240.png" />
+    <Content Include="Content\lib\jquery-ui-1.13.2\images\ui-icons_555555_256x240.png" />
+    <Content Include="Content\lib\jquery-ui-1.13.2\images\ui-icons_777620_256x240.png" />
+    <Content Include="Content\lib\jquery-ui-1.13.2\images\ui-icons_777777_256x240.png" />
+    <Content Include="Content\lib\jquery-ui-1.13.2\images\ui-icons_cc0000_256x240.png" />
+    <Content Include="Content\lib\jquery-ui-1.13.2\images\ui-icons_ffffff_256x240.png" />
+    <Content Include="Content\lib\jquery-ui-1.13.2\jquery-ui.min.css" />
+    <Content Include="Content\lib\leaflet-1.9.4\images\layers-2x.png" />
+    <Content Include="Content\lib\leaflet-1.9.4\images\layers.png" />
+    <Content Include="Content\lib\leaflet-1.9.4\images\marker-icon-2x.png" />
+    <Content Include="Content\lib\leaflet-1.9.4\images\marker-icon.png" />
+    <Content Include="Content\lib\leaflet-1.9.4\images\marker-shadow.png" />
+    <Content Include="Content\lib\leaflet-1.9.4\leaflet.css" />
+    <Content Include="Content\lib\select2-4.0.13\select2-bootstrap-5-theme-1.3.0.min.css" />
+    <Content Include="Content\lib\select2-4.0.13\select2.min.css" />
+    <Content Include="Content\lib\select2-4.1.0-rc.0\select2.min.css" />
+    <Content Include="Scripts\lib\bootstrap-4.6.2.min.js" />
+    <Content Include="Scripts\lib\chart-4.4.0.umd.min.js" />
+    <Content Include="Scripts\lib\jquery-3.6.4.min.js" />
+    <Content Include="Scripts\lib\jquery-ui-1.13.2.min.js" />
+    <Content Include="Scripts\lib\leaflet-1.9.4.min.js" />
+    <Content Include="Scripts\lib\popper-1.16.1.min.js" />
+    <Content Include="Scripts\lib\select2-4.0.13.min.js" />
+    <Content Include="Scripts\lib\select2-4.1.0-rc.0.min.js" />
     <Content Include="Scripts\SGVScripts.js" />
     <Content Include="Scripts\SQL\AgregarColumnaActivo.sql" />
     <Content Include="Scripts\WebForms\DetailsView.js" />
@@ -336,6 +377,7 @@
     <Content Include="Content\paginas\ConformarLiquidacion.css" />
     <Content Include="Content\paginas\VerificarDocumento.css" />
     <Content Include="Content\paginas\MovimientosViaje.css" />
+    <Content Include="Content\paginas\SaldosConductores.css" />
     <Content Include="Content\paginas\Inicio.css" />
     <Content Include="Content\paginas\LiquidacionesAprobadasContabilidad.css" />
     <Content Include="Content\paginas\LiquidacionesPendientes.css" />
@@ -378,6 +420,7 @@
     <Content Include="Scripts\paginas\ConformarLiquidacion.js" />
     <Content Include="Scripts\paginas\VerificarDocumento.js" />
     <Content Include="Scripts\paginas\MovimientosViaje.js" />
+    <Content Include="Scripts\paginas\SaldosConductores.js" />
     <Content Include="Scripts\paginas\LiquidacionesAprobadasContabilidad.js" />
     <Content Include="Scripts\paginas\LiquidacionesPendientes.js" />
     <Content Include="Scripts\paginas\ListaDespachos.js" />
@@ -434,6 +477,7 @@
     <Content Include="Views\ConformarLiquidacion.aspx" />
     <Content Include="Views\VerificarDocumento.aspx" />
     <Content Include="Views\MovimientosViaje.aspx" />
+    <Content Include="Views\SaldosConductores.aspx" />
     <Content Include="Views\Inicio.aspx" />
     <Content Include="Views\LiquidacionesAprobadasContabilidad.aspx">
       <SubType>Designer</SubType>
@@ -564,7 +608,9 @@
     <Compile Include="Services\Liquidaciones\LiquidacionCalculos.cs" />
     <Compile Include="Services\Liquidaciones\FirmaLiquidacion.cs" />
     <Compile Include="Services\Liquidaciones\ArchivoOrdenViajeService.cs" />
+    <Compile Include="Services\Liquidaciones\CierreViajesSinLiquidacion.cs" />
     <Compile Include="Services\Liquidaciones\MovimientosViajeService.cs" />
+    <Compile Include="Services\Liquidaciones\SaldosConductorService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionesContabilidadService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionesPendientesService.cs" />
     <Compile Include="Services\NotificacionService.cs" />
@@ -812,6 +858,13 @@
     </Compile>
     <Compile Include="Views\MovimientosViaje.aspx.designer.cs">
       <DependentUpon>MovimientosViaje.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SaldosConductores.aspx.cs">
+      <DependentUpon>SaldosConductores.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\SaldosConductores.aspx.designer.cs">
+      <DependentUpon>SaldosConductores.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\VerificarDocumento.aspx.cs">
       <DependentUpon>VerificarDocumento.aspx</DependentUpon>

@@ -34,7 +34,7 @@ namespace WebSGV.Helpers
             if (idUsuario <= 0)
                 return "Sesión no válida. Inicie sesión nuevamente.";
             if (string.IsNullOrEmpty(contrasena))
-                return "Escriba su contraseña para confirmar que es usted quien firma.";
+                return "Escribe tu contraseña para confirmar que eres tú quien firma.";
 
             var ahora = DateTime.UtcNow;
             if (_intentos.TryGetValue(idUsuario, out var previo))
@@ -59,7 +59,7 @@ namespace WebSGV.Helpers
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "No se pudo verificar la contraseña al firmar (usuario {IdUsuario})", idUsuario);
-                return "No se pudo verificar su contraseña en este momento. Intente nuevamente en unos minutos.";
+                return "No se pudo verificar tu contraseña en este momento. Inténtalo de nuevo en unos minutos.";
             }
 
             if (hash != null && hash != DBNull.Value && PasswordHelper.VerifyPassword(contrasena, hash.ToString()))

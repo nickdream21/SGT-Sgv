@@ -66,11 +66,11 @@ namespace WebSGV.Services.Exportacion
             foreach (var h in Hitos)
             {
                 string columna = h.Columna;
-                r.Columnas.Add(new ColumnaReporte { Titulo = h.Encabezado, Tipo = TipoColumnaReporte.Fecha, Ancho = 1.3f, Valor = f => Valor(f, columna) });
+                r.Columnas.Add(new ColumnaReporte { Titulo = h.Encabezado, Tipo = TipoColumnaReporte.Fecha, Ancho = 1.3f, Valor = f => ValorHito(f, columna) });
                 r.Columnas.Add(new ColumnaReporte
                 {
                     Titulo = "HORA", Tipo = TipoColumnaReporte.Codigo, Ancho = 0.9f,
-                    Valor = f => Valor(f, columna) is DateTime d ? d.ToString("HH:mm:ss") : null
+                    Valor = f => ValorHito(f, columna) is DateTime d ? d.ToString("HH:mm:ss") : null
                 });
             }
             Texto("BODEGA", "bodegaNacional");
@@ -84,6 +84,18 @@ namespace WebSGV.Services.Exportacion
                     Valor = f => status.TryGetValue(Convert.ToInt32(f["idSeguimiento"]), out var s) ? s : null
                 });
             return r;
+        }
+
+        /// <summary>La hora del hito; el inicio y el término de carga que nadie registró salen estimados (<see cref="CargaEstimada"/>).</summary>
+        private static object ValorHito(DataRow f, string columna)
+        {
+            object v = Valor(f, columna);
+            if (v != null || (columna != "fhInicioCarga" && columna != "fhTerminoCarga") || Valor(f, "tipoRuta") != null) return v;
+            var horas = new Dictionary<string, DateTime?>(StringComparer.OrdinalIgnoreCase);
+            foreach (string c in new[] { "fhIngresoPlanta", "fhSalidaPlanta", "fhInicioCarga", "fhTerminoCarga" })
+                horas[c] = Valor(f, c) as DateTime?;
+            CargaEstimada.Completar(horas);
+            return horas[columna];
         }
 
         private static object Valor(DataRow f, string columna) =>

@@ -79,9 +79,9 @@
 
     btnFirmar.addEventListener('click', function () {
         if (btnFirmar.disabled) return;
-        if (!chkAcepto.checked) { mostrarAlerta('error', 'Debe aceptar la declaración jurada.'); return; }
-        if (!firma.estaFirmado()) { mostrarAlerta('error', 'Debe dibujar su firma antes de continuar.'); return; }
-        if (!txtClave.value) { mostrarAlerta('error', 'Escriba su contraseña para confirmar que es usted quien firma.'); return; }
+        if (!chkAcepto.checked) { mostrarAlerta('error', 'Marca que aceptas la declaración jurada.'); return; }
+        if (!firma.estaFirmado()) { mostrarAlerta('error', 'Dibuja tu firma antes de continuar.'); return; }
+        if (!txtClave.value) { mostrarAlerta('error', 'Escribe tu contraseña para confirmar que eres tú quien firma.'); return; }
 
         btnFirmar.disabled = true;
         btnFirmar.classList.add('loading');

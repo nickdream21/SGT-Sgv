@@ -535,7 +535,8 @@ namespace WebSGV.Services.Liquidaciones
                                 EstadoAprobacion = reader["estadoAprobacion"]?.ToString() ?? "",
                                 FechaLlegada = reader["fechaLlegada"] != DBNull.Value
                                     ? Convert.ToDateTime(reader["fechaLlegada"]).ToString("dd/MM/yyyy") : "—",
-                                Observaciones = reader["observaciones"]?.ToString() ?? "",
+                                Observaciones = LiquidacionCalculos.ObservacionesDelConductor(reader["observaciones"]?.ToString()),
+                                NotasInternas = LiquidacionCalculos.NotasDelSistema(reader["observaciones"]?.ToString()),
                                 NotaAprobacion = reader["observacionesAprobacion"] != DBNull.Value
                                     ? reader["observacionesAprobacion"].ToString() : "",
                                 ObservacionConductor = reader["observacionConductor"] != DBNull.Value
