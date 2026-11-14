@@ -17,6 +17,18 @@ namespace WebSGV.Tests.Integracion
         public ExpedienteDocumentosBdTests() => BaseDePruebas.Preparar();
 
         [FactBD]
+        public void Cada_lote_trae_solo_sus_despachos()
+        {
+            // Un lote sin pedido ("NOPEDIDO") traía también los despachos con pedido del mismo día y planta:
+            // el expediente de 3 cargas de prueba sin pedido del 03/11 mostraba el pedido 4400134478 y su factura.
+            var lotes = ListaDespachosService.ObtenerLotesRegistrados(null, null, null, null, null, null, null);
+            Assert.NotEmpty(lotes);
+            foreach (var lote in lotes)
+                Assert.True(lote.CantidadDespachos == ListaDespachosService.ObtenerIdsDespachosDeLote(lote.IdLoteVirtual).Count,
+                    "El lote " + lote.IdLoteVirtual + " no trae los mismos despachos que la bandeja.");
+        }
+
+        [FactBD]
         public void Expediente_junta_la_carga_con_el_mci_de_su_descarga()
         {
             // Pedido real de Vitapro (21/10): 6 cargas con factura, CPIC y guías; los 6 MCI están en las descargas.
@@ -39,6 +51,22 @@ namespace WebSGV.Tests.Integracion
                 FROM Despachos WHERE activo = 1 AND numeroPedido = '4400133952' AND tipoOperacion = 'DESCARGA'").ToString();
             var desdeDescarga = ExpedienteDocumentosService.Obtener(loteDescarga);
             Assert.Equal(e.Filas.Select(f => f.IdCarga), desdeDescarga.Filas.Select(f => f.IdCarga));
+        }
+
+        [FactBD]
+        public void Factura_de_flete_y_expediente_se_enlazan_en_ambos_sentidos()
+        {
+            // Pedido 4400134386 (Vitapro): factura comercial F222-00008581, cobrada en la factura de flete E001-18724.
+            var lotes = WebSGV.Services.Facturas.FacturaFleteService.LotesPorReferencia(new[] { "F222-00008581", "NO-EXISTE-1" });
+            if (!lotes.TryGetValue("F222-00008581", out string lote)) return;   // la BD de pruebas se reconstruyó sin ese pedido
+            Assert.False(lotes.ContainsKey("NO-EXISTE-1"));
+            Assert.Contains("_4400134386_", lote);
+            Assert.Contains("_CARGA_", lote);
+
+            var e = ExpedienteDocumentosService.Obtener(lote);
+            Assert.NotNull(e);
+            Assert.Equal("4400134386", e.NumeroPedido);
+            Assert.Contains(e.FacturasFlete, f => f.Numero == "E001-18724" && f.RutaPdf != null);
         }
 
         [FactBD]

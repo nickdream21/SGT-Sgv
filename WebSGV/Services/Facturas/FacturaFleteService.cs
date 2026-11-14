@@ -192,6 +192,48 @@ namespace WebSGV.Services.Facturas
             return lista;
         }
 
+        /// <summary>
+        /// Lote (id virtual de sp_LD_ObtenerLotesRegistrados) de la primera carga de cada referencia —factura
+        /// comercial o guía del remitente—, para abrir el expediente del pedido desde la conciliación
+        /// (BandejaDocumentos.aspx?lote=). Las referencias sin carga en el sistema no vienen.
+        /// </summary>
+        public static Dictionary<string, string> LotesPorReferencia(IEnumerable<string> referencias)
+        {
+            var lista = (referencias ?? Enumerable.Empty<string>())
+                .Where(r => !string.IsNullOrWhiteSpace(r)).Select(r => r.Trim().Replace("|", ""))
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            var lotes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (lista.Count == 0) return lotes;
+
+            DataTable dt = DbHelper.ConsultarTabla(@"
+                ;WITH refs AS (SELECT DISTINCT LTRIM(RTRIM(value)) AS ref FROM STRING_SPLIT(@refs, '|')),
+                cargas AS (
+                    SELECT f.numeroFactura AS ref, d.idDespacho, d.fechaDespacho, d.idCliente, d.numeroPedido,
+                           d.tipoOperacion, d.esInternacional, d.idPlanta
+                    FROM dbo.Despachos d JOIN dbo.Factura f ON f.idFactura = d.idFactura
+                    WHERE f.numeroFactura IN (SELECT ref FROM refs)
+                    UNION ALL
+                    SELECT LTRIM(RTRIM(d.guiaRemitente)), d.idDespacho, d.fechaDespacho, d.idCliente, d.numeroPedido,
+                           d.tipoOperacion, d.esInternacional, d.idPlanta
+                    FROM dbo.Despachos d
+                    WHERE d.idFactura IS NULL AND LTRIM(RTRIM(d.guiaRemitente)) IN (SELECT ref FROM refs)
+                ),
+                validas AS (
+                    SELECT c.*, ROW_NUMBER() OVER (PARTITION BY c.ref ORDER BY c.fechaDespacho, c.idDespacho) AS n
+                    FROM cargas c JOIN dbo.Despachos d ON d.idDespacho = c.idDespacho
+                    WHERE d.activo = 1 AND c.tipoOperacion = 'CARGA' AND ISNULL(d.estadoDespacho, '') <> 'ANULADO'
+                      AND c.idPlanta IS NOT NULL
+                )
+                SELECT ref, CONCAT(CAST(idCliente AS VARCHAR(10)), '_', ISNULL(numeroPedido, 'NOPEDIDO'), '_',
+                                   CONVERT(VARCHAR(10), fechaDespacho, 120), '_', tipoOperacion, '_',
+                                   CAST(esInternacional AS VARCHAR(1)), '_', CAST(idPlanta AS VARCHAR(10))) AS idLote
+                FROM validas WHERE n = 1",
+                DbHelper.Param("@refs", string.Join("|", lista)));
+            foreach (DataRow r in dt.Rows)
+                lotes[Convert.ToString(r["ref"])] = Convert.ToString(r["idLote"]);
+            return lotes;
+        }
+
         public static List<FacturaFleteRegistrada> ObtenerFacturas(DateTime desde, DateTime hasta, int? idCliente,
                                                                    out Dictionary<string, DateTime?> cargaDeComercial)
         {

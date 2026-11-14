@@ -33,7 +33,9 @@ namespace WebSGV.Views
             if (!IsPostBack)
             {
                 CargarClientes();
-                PonerMes(FechaHelper.Hoy());
+                // ?mes=yyyy-MM: llega desde el expediente del pedido (Bandeja) con el mes de emisión de su factura.
+                PonerMes(DateTime.TryParseExact(Request.QueryString["mes"], "yyyy-MM", CultureInfo.InvariantCulture,
+                                                DateTimeStyles.None, out DateTime mes) ? mes : FechaHelper.Hoy());
                 Buscar();
             }
         }
@@ -196,6 +198,9 @@ namespace WebSGV.Views
                 var datos = Consultar(desde, hasta, idCliente);
                 var emitidas = datos.Facturas.Where(f => f.FechaEmision.Date >= desde.Date && f.FechaEmision.Date <= hasta.Date).ToList();
                 DateTime hoy = FechaHelper.Hoy();
+                _lotes = FacturaFleteService.LotesPorReferencia(
+                    datos.Filas.SelectMany(x => new[] { x.Referencia, x.Pedido?.Referencia })
+                         .Concat(emitidas.SelectMany(FacturaFleteService.Referencias)));
 
                 litTarjetas.Text = HtmlTarjetas(datos.Filas, emitidas, hoy);
                 litConciliacion.Text = HtmlConciliacion(datos.Filas.Where(x => x.Estado != EstadoConciliacion.PorFacturar
@@ -309,7 +314,7 @@ namespace WebSGV.Views
                   .Append($"<td>{Chip(x.Estado)}</td>")
                   .Append($"<td class=\"ff-cod\">{(x.Pedido != null ? x.Pedido.FechaCarga.ToString("dd/MM/yyyy") : "—")}</td>")
                   .Append(Cliente(x.Pedido?.Cliente ?? x.Facturas.FirstOrDefault()?.Cliente))
-                  .Append($"<td class=\"ff-cod\">{H(x.Pedido?.NumeroPedido ?? "—")}</td>")
+                  .Append($"<td class=\"ff-cod\">{EnlaceExpediente(x.Pedido?.NumeroPedido ?? "—", x.Referencia ?? x.Pedido?.Referencia)}</td>")
                   .Append($"<td class=\"ff-cod\">{H(x.Referencia ?? "—")}</td>")
                   .Append($"<td class=\"ff-num\">{(x.Pedido != null ? x.Pedido.Unidades.ToString() : "")}</td>")
                   .Append($"<td class=\"ff-cod\">{string.Join("<br>", x.Facturas.Select(EnlaceFactura))}</td>")
@@ -323,7 +328,7 @@ namespace WebSGV.Views
             return sb.Append("</tbody></table>").ToString();
         }
 
-        private static string HtmlPorFacturar(List<FilaConciliacion> filas, Dictionary<string, int> clientesSinFacturas)
+        private string HtmlPorFacturar(List<FilaConciliacion> filas, Dictionary<string, int> clientesSinFacturas)
         {
             var sb = new StringBuilder();
             if (filas.Count == 0)
@@ -339,7 +344,7 @@ namespace WebSGV.Views
                       .Append($"<td>{Chip(x.Estado)}</td>")
                       .Append($"<td class=\"ff-cod\">{x.Pedido.FechaCarga:dd/MM/yyyy}</td>")
                       .Append(Cliente(x.Pedido.Cliente))
-                      .Append($"<td class=\"ff-cod\">{H(x.Pedido.NumeroPedido ?? "—")}</td>")
+                      .Append($"<td class=\"ff-cod\">{EnlaceExpediente(x.Pedido.NumeroPedido ?? "—", x.Pedido.Referencia)}</td>")
                       .Append($"<td class=\"ff-cod\">{H(x.Pedido.Referencia ?? "—")}</td>")
                       .Append($"<td class=\"ff-num\">{x.Pedido.Unidades}</td>")
                       .Append($"<td class=\"ff-num\">{x.Pedido.ViajesSeguimiento}</td>")
@@ -379,7 +384,7 @@ namespace WebSGV.Views
                   .Append($"<td class=\"ff-cod\">{f.FechaEmision:dd/MM/yyyy}</td>")
                   .Append(Cliente(f.Cliente))
                   .Append($"<td class=\"ff-cod\">{H(f.OrdenServicio)}</td>")
-                  .Append($"<td class=\"ff-cod\">{string.Join("<br>", FacturaFleteService.Referencias(f).Select(H))}</td>")
+                  .Append($"<td class=\"ff-cod\">{string.Join("<br>", FacturaFleteService.Referencias(f).Select(r => EnlaceExpediente(r, r)))}</td>")
                   .Append($"<td class=\"ff-cod\">{string.Join("<br>", FacturaFleteService.Cpics(f).Select(H))}</td>")
                   .Append($"<td class=\"ff-num\">{(f.Cantidad.HasValue ? H(f.Cantidad.Value.ToString("N2", Pe) + " " + Abreviar(f.UnidadMedida)) : "")}</td>")
                   .Append($"<td class=\"ff-num\">{H(Monto(f.Moneda, f.ImporteTotal))}</td>")
@@ -390,6 +395,23 @@ namespace WebSGV.Views
                   .Append("</tr>");
             }
             return sb.Append("</tbody></table>").ToString();
+        }
+
+        /// <summary>Lote de la primera carga de cada referencia (factura comercial o guía), para abrir su expediente.</summary>
+        private Dictionary<string, string> _lotes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// El texto como enlace al expediente del pedido en la Bandeja (todos sus documentos: guías, GRE, CPIC, MCI).
+        /// Sin carga en el sistema queda como texto.
+        /// </summary>
+        private string EnlaceExpediente(string texto, string referencia)
+        {
+            if (string.IsNullOrWhiteSpace(referencia) || !_lotes.TryGetValue(referencia.Trim(), out string lote))
+                return H(texto);
+            if (texto == "—") texto = "Expediente";   // carga sin número de pedido (cliente que factura por guía)
+            string url = ResolveUrl("~/Views/BandejaDocumentos.aspx") + "?lote=" + HttpUtility.UrlEncode(lote);
+            return $"<a href=\"{H(url)}\" title=\"Ver el expediente: todos los documentos del pedido\">" +
+                   $"<i class=\"far fa-folder-open mr-1\"></i>{H(texto)}</a>";
         }
 
         private string EnlaceFactura(FacturaFleteRegistrada f)

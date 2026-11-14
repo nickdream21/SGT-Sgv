@@ -757,6 +757,7 @@ namespace WebSGV.Views
             sb.Append("<div class='bd-exp-docs'>");
             if (e.Factura.Requerido || e.Factura.Numero != null) sb.Append(Tarjeta(e.Perfil == "CPIC" ? "Factura comercial" : "Factura", e.Factura));
             foreach (var c in e.Cpics) sb.Append(Tarjeta("CPIC", c));
+            if (SecurityHelper.EsAdmin() && e.TieneCargas) sb.Append(TarjetaFlete(e));
             sb.Append("</div>");
 
             // Un renglón por camión: carga (guías) → descarga (MCI)
@@ -798,6 +799,32 @@ namespace WebSGV.Views
             string icono = d.Falta ? "fa-times bd-txt-mal" : d.SinPdf ? "fa-exclamation bd-txt-aviso" : "fa-check bd-txt-ok";
             return $"<div class='bd-exp-doc {(d.Falta ? "bd-exp-doc-falta" : "")}'><div class='bd-exp-doc-titulo'><i class='fas {icono} mr-1'></i>{H(titulo)}</div>"
                  + $"<div class='bd-cod bd-exp-doc-numero'>{H(d.Numero ?? "Falta")}</div>{EnlacePdf(d)}</div>";
+        }
+
+        /// <summary>
+        /// Factura de flete del pedido (solo administración, como la pantalla Facturas de flete): número, importe,
+        /// PDF y enlace a su mes en la conciliación. Es facturación: no cuenta en el avance del expediente.
+        /// </summary>
+        private string TarjetaFlete(ExpedienteDocumentos e)
+        {
+            string url = ResolveUrl("~/Views/FacturasFlete.aspx");
+            var sb = new StringBuilder("<div class='bd-exp-doc bd-exp-doc-flete'><div class='bd-exp-doc-titulo'>");
+            if (e.FacturasFlete.Count == 0)
+                return sb.Append("<i class='fas fa-hourglass-half mr-1 text-muted'></i>Factura de flete</div>")
+                         .Append("<div class='bd-exp-doc-numero text-muted'>Sin facturar</div>")
+                         .Append($"<a class='small' href='{H(url)}'>Ir a Facturas de flete</a></div>").ToString();
+
+            sb.Append("<i class='fas fa-file-invoice-dollar mr-1 bd-txt-ok'></i>Factura de flete</div>");
+            foreach (var f in e.FacturasFlete)
+            {
+                string monto = (f.Moneda == "PEN" ? "S/ " : "US$ ") + f.ImporteTotal.ToString("N2", Pe);
+                sb.Append($"<div class='bd-cod bd-exp-doc-numero'>{H(f.Numero)}</div>")
+                  .Append($"<div class='small text-muted'>{f.FechaEmision:dd/MM/yyyy} &#xB7; {H(monto)}</div>");
+                if (f.RutaPdf != null)
+                    sb.Append($"<a class='bd-exp-pdf' target='_blank' rel='noopener' href='{H(DocumentoHelper.UrlDescarga(f.RutaPdf))}'><i class='fas fa-file-pdf mr-1'></i>PDF</a> ");
+                sb.Append($"<a class='small ml-2' href='{H(url + "?mes=" + f.FechaEmision.ToString("yyyy-MM"))}' title='Conciliación del mes de emisión'>Ver en Facturas de flete</a>");
+            }
+            return sb.Append("</div>").ToString();
         }
 
         /// <summary>Celda de un documento por camión: número con su PDF, "sin PDF" o "falta".</summary>

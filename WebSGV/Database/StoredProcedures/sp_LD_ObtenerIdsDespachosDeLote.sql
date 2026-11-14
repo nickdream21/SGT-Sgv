@@ -1,6 +1,7 @@
 -- ============================================================
 -- Obtiene los IDs de despachos que componen un lote virtual,
--- identificado por sus criterios de agrupacion.
+-- identificado por sus criterios de agrupacion (los mismos de
+-- sp_LD_ObtenerLotesRegistrados, incluido ISNULL(numeroPedido, 'NOPEDIDO')).
 --
 -- Fase 0 / paso 3: el lote se identifica por @idPlanta (entero) en vez del
 -- texto del lugar. @planta queda como parametro legado y opcional para tolerar
@@ -33,5 +34,8 @@ BEGIN
       AND d.tipoOperacion   = @tipoOperacion
       AND d.esInternacional = @esInternacional
       AND d.idPlanta        = @idPlanta
-      AND (@numeroPedido IS NULL OR d.numeroPedido = @numeroPedido);
+      -- @numeroPedido NULL = lote SIN pedido ("NOPEDIDO" en el id del lote), no "cualquier pedido":
+      -- antes un lote sin pedido traia tambien los despachos de los pedidos del mismo dia y planta
+      -- (2026-11-13: el expediente de 3 cargas sin pedido del 03/11 mostraba el pedido 4400134478).
+      AND ISNULL(d.numeroPedido, 'NOPEDIDO') = ISNULL(@numeroPedido, 'NOPEDIDO');
 END

@@ -288,9 +288,8 @@ namespace WebSGV.Services.Despachos
                     cmd.Parameters.AddWithValue("@tipoOperacion", criterios.TipoOperacion);
                     cmd.Parameters.AddWithValue("@esInternacional", criterios.EsInternacional);
                     cmd.Parameters.AddWithValue("@idPlanta", criterios.IdPlanta);
-                    cmd.Parameters.AddWithValue("@numeroPedido",
-                        string.IsNullOrEmpty(criterios.NumeroPedido) || criterios.NumeroPedido == "NOPEDIDO"
-                            ? (object)DBNull.Value : criterios.NumeroPedido);
+                    // NULL = lote sin pedido (el SP ya no lo toma como "cualquier pedido").
+                    cmd.Parameters.AddWithValue("@numeroPedido", (object)criterios.NumeroPedido ?? DBNull.Value);
 
                     conn.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())

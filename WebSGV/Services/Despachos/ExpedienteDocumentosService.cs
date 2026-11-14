@@ -17,6 +17,16 @@ namespace WebSGV.Services.Despachos
         public bool SinPdf => !string.IsNullOrWhiteSpace(Numero) && RutaPdf == null;
     }
 
+    /// <summary>Factura de flete (nuestra E001) que cobra el pedido; solo de consulta en el expediente.</summary>
+    public class FacturaFleteExpediente
+    {
+        public string Numero { get; set; }
+        public DateTime FechaEmision { get; set; }
+        public string Moneda { get; set; }
+        public decimal ImporteTotal { get; set; }
+        public string RutaPdf { get; set; }
+    }
+
     /// <summary>Un camión del pedido: su carga y, si cruza la frontera, su descarga con el MCI.</summary>
     public class FilaExpediente
     {
@@ -50,6 +60,13 @@ namespace WebSGV.Services.Despachos
         public string Perfil { get; set; }   // PEDIDO | CPIC | GUIA (igual que sp_LD_ObtenerLotesRegistrados)
         public DocumentoExpediente Factura { get; set; } = new DocumentoExpediente();
         public List<DocumentoExpediente> Cpics { get; set; } = new List<DocumentoExpediente>();
+        /// <summary>
+        /// Facturas de flete del pedido (por su factura comercial o, sin ella, por la guía del remitente).
+        /// No cuentan en el avance: son facturación, no documentos del transporte.
+        /// </summary>
+        public List<FacturaFleteExpediente> FacturasFlete { get; set; } = new List<FacturaFleteExpediente>();
+        /// <summary>True si el pedido tiene alguna carga (sin cargas no hay nada que facturar).</summary>
+        public bool TieneCargas => Filas.Count > 0;
         public List<FilaExpediente> Filas { get; set; } = new List<FilaExpediente>();
         /// <summary>Descargas sin una carga del pedido con la misma carreta (se listan aparte).</summary>
         public List<FilaExpediente> DescargasSueltas { get; set; } = new List<FilaExpediente>();
@@ -128,6 +145,15 @@ namespace WebSGV.Services.Despachos
                 PonerPdf(doc, "DocumentosCPIC", "idCPIC", g.Key);
                 e.Cpics.Add(doc);
             }
+            // Referencias con que la factura de flete nombra el pedido: la factura comercial o la guía del remitente
+            // (la guía entera, como en sp_FF_ObtenerFacturasFlete, y cada número si trae varios separados por "/").
+            var referencias = filas.Where(r => r["tipoOperacion"].ToString() == "CARGA")
+                .SelectMany(r => new[] { r["numeroFactura"] as string, (r["guiaRemitente"] as string)?.Trim() }
+                    .Concat((r["guiaRemitente"] as string ?? "").Split('/').Select(x => x.Trim())))
+                .Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Replace("|", ""))
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            e.FacturasFlete = FacturasFleteDe(referencias);
+
             bool esperaCpic = e.Perfil == "CPIC" || filas.Any(r => Convert.ToBoolean(r["esInternacional"]));
             if (e.Cpics.Count == 0 && esperaCpic) e.Cpics.Add(new DocumentoExpediente { Requerido = true });
 
@@ -204,6 +230,35 @@ namespace WebSGV.Services.Despachos
                     RutaPdf = m.RutaArchivo, NombrePdf = m.NombreOriginal, Requerido = cruza
                 });
             if (suyos.Count == 0 && cruza) f.Manifiestos.Add(new DocumentoExpediente { Requerido = true });
+        }
+
+        /// <summary>Facturas de flete activas que nombran alguna de las referencias (cabecera o líneas).</summary>
+        public static List<FacturaFleteExpediente> FacturasFleteDe(List<string> referencias)
+        {
+            var lista = new List<FacturaFleteExpediente>();
+            if (referencias == null || referencias.Count == 0) return lista;
+            DataTable t = DbHelper.ConsultarTabla(@"
+                ;WITH refs AS (SELECT DISTINCT LTRIM(RTRIM(value)) AS ref FROM STRING_SPLIT(@refs, '|'))
+                SELECT ff.numeroFactura, ff.fechaEmision, ff.moneda, ff.importeTotal, ff.rutaArchivo
+                FROM dbo.FacturaFlete ff
+                WHERE ff.activo = 1
+                  AND (ff.numeroFacturaComercial IN (SELECT ref FROM refs)
+                       OR EXISTS (SELECT 1 FROM dbo.FacturaFleteItem i
+                                  WHERE i.idFacturaFlete = ff.idFacturaFlete
+                                    AND (i.numeroFacturaComercial IN (SELECT ref FROM refs)
+                                         OR i.guiaRemitente IN (SELECT ref FROM refs))))
+                ORDER BY ff.fechaEmision, ff.numeroFactura",
+                DbHelper.Param("@refs", string.Join("|", referencias)));
+            foreach (DataRow r in t.Rows)
+                lista.Add(new FacturaFleteExpediente
+                {
+                    Numero = Convert.ToString(r["numeroFactura"]),
+                    FechaEmision = Convert.ToDateTime(r["fechaEmision"]),
+                    Moneda = Convert.ToString(r["moneda"]),
+                    ImporteTotal = Convert.ToDecimal(r["importeTotal"]),
+                    RutaPdf = r["rutaArchivo"] == DBNull.Value ? null : Convert.ToString(r["rutaArchivo"])
+                });
+            return lista;
         }
 
         private static void PonerPdf(DocumentoExpediente doc, string tabla, string columna, int id)
