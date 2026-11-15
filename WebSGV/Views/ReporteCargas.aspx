@@ -26,7 +26,7 @@
             <div class="card-header bg-light">
                 <h5 class="mb-0"><i class="fas fa-filter mr-2"></i>Filtros</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body" data-enter="<%= btnBuscar.ClientID %>">
                 <div class="row align-items-end">
                     <div class="col-sm-6 col-lg-2 form-group">
                         <label class="font-weight-bold" for="<%= txtDesde.ClientID %>">Desde</label>

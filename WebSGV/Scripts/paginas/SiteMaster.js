@@ -1,15 +1,36 @@
-﻿// ── Escudo anti-autocompletado ──────────────────────────────────────
-// El formulario único de WebForms envuelve TODA la página, incluido el
-// modal "Cambiar Contraseña" (con campos type=password reales). Eso hace
-// que Chrome/Edge traten la página entera como un formulario de login y
-// autocompleten campos de negocio (N° Pedido, Conductor, etc.) con
-// usuario/contraseña guardados, sin que el usuario haga clic.
-//
-// Truco: los campos de texto quedan [readonly] hasta el primer focus, con
-// lo que el navegador no tiene nada editable que autocompletar. Al hacer
-// clic o tabular hasta el campo, se libera al instante (ver CSS .af-shield
-// en <head> para que no se vea "deshabilitado" mientras tanto).
-// No se aplica en Login.aspx: ahí SÍ queremos el autocompletado normal.
+﻿// ── Campos del modal "Cambiar contraseña" ──────────────────────────
+// El formulario único de WebForms envuelve toda la página. Si los campos type=password del
+// modal estuvieran siempre en el DOM, Edge/Chrome tratarían la página entera como un login y
+// ofrecerían "Contraseñas guardadas" en cualquier buscador. Por eso viven en
+// <template id="tplCamposContrasena"> (Site.Master) y solo se clonan dentro del modal mientras
+// está abierto. El handler es delegado y este script carga antes que los startup scripts que
+// abren el modal (AbrirModalContrasena / cambio obligatorio), así que el clon siempre ocurre.
+(function () {
+    function llenar() {
+        var destino = document.getElementById('camposContrasena');
+        var plantilla = document.getElementById('tplCamposContrasena');
+        if (!destino || !plantilla || destino.children.length) return;
+        destino.appendChild(document.importNode(plantilla.content, true));
+    }
+    function vaciar() {
+        var destino = document.getElementById('camposContrasena');
+        if (destino) destino.innerHTML = '';
+    }
+    window.SGV = window.SGV || {};
+    SGV.llenarCamposContrasena = llenar;
+    if (window.jQuery) {
+        jQuery(document)
+            .on('show.bs.modal', '#modalCambiarContrasena', llenar)
+            .on('hidden.bs.modal', '#modalCambiarContrasena', vaciar);
+    }
+})();
+
+// ── Escudo anti-autocompletado (solo páginas con contraseñas a la vista) ──
+// En las páginas que sí tienen campos type=password en el formulario (p. ej. los modales de
+// Gestión de usuarios), los campos de texto quedan [readonly] hasta el primer focus, para que el
+// navegador no los rellene con usuario/contraseña guardados. Las demás páginas ya no lo necesitan:
+// las contraseñas del modal del Site.Master solo existen mientras está abierto.
+// No se aplica en Login.aspx: ahí sí queremos el autocompletado normal.
 (function () {
     if (/Login\.aspx/i.test(window.location.pathname)) return;
 
@@ -26,8 +47,8 @@
 
     function protegerFormulario() {
         var form = document.forms[0];
-        if (!form) return;
-        var campos = form.querySelectorAll('input[type="text"]:not([readonly]), input:not([type]):not([readonly])');
+        if (!form || !form.querySelector('input[type="password"]')) return;
+        var campos = form.querySelectorAll('input[type="text"]:not([readonly]):not([autocomplete="username"]), input:not([type]):not([readonly])');
         for (var i = 0; i < campos.length; i++) protegerCampo(campos[i]);
     }
 
@@ -41,6 +62,39 @@
     if (window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager) {
         Sys.WebForms.PageRequestManager.getInstance().add_endRequest(protegerFormulario);
     }
+})();
+
+// ── Enter en los campos ─────────────────────────────────────────────
+// En WebForms todo está en un solo <form>: Enter en cualquier campo enviaba el formulario con el
+// PRIMER botón submit de la página (descargaba el Excel en vez de filtrar, o enviaba la
+// liquidación del conductor sin revisión). Ahora Enter nunca envía el formulario por su cuenta:
+//   - dentro de un contenedor con data-enter="<id de botón>" hace clic en ese botón (corren su
+//     OnClientClick, los validadores, __doPostBack y el UpdatePanel como con el mouse);
+//   - data-enter="" o fuera de toda zona, no hace nada (los formularios de alta se guardan
+//     solo con su botón);
+//   - los asp:Panel con DefaultButton (onkeypress="WebForm_FireDefaultButton") siguen igual;
+//   - si un script de la página ya atendió el Enter (sugerencias, autocompletar) y llamó a
+//     preventDefault, no se toca.
+(function () {
+    var TIPOS = /^(text|search|number|date|time|datetime-local|month|week|email|tel|url|password|checkbox|radio)$/;
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' || e.defaultPrevented || e.isComposing) return;
+        var el = e.target;
+        if (!el || el.tagName !== 'INPUT') return;
+        if (!TIPOS.test((el.getAttribute('type') || 'text').toLowerCase())) return;
+        if (el.closest('[onkeypress*="WebForm_FireDefaultButton"]')) return;
+
+        e.preventDefault();
+        // Enter sostenido: una sola acción (si no, cada repetición hace otro postback).
+        if (e.repeat) return;
+        var zona = el.closest('[data-enter]');
+        var id = zona ? zona.getAttribute('data-enter') : '';
+        if (!id) return;
+        var boton = document.getElementById(id);
+        if (!boton || boton.disabled || boton.classList.contains('disabled')) return;
+        boton.click();
+    });
 })();
 
 // ── Avisos no bloqueantes ───────────────────────────────────────────

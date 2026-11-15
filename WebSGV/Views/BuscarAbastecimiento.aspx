@@ -10,7 +10,7 @@
         </div>
 
         <!-- Sección de Búsqueda -->
-        <div class="search-section">
+        <div class="search-section" data-enter="<%= btnBuscar.ClientID %>">
             <div class="row">
                 <div class="col-md-8">
                     <label for="txtBuscarAbastecimiento" class="form-label">N° de Abastecimiento:</label>

@@ -82,7 +82,7 @@
                     <i class="fas fa-filter mr-2"></i>Filtros de Búsqueda
                 </h5>
             </div>
-            <div class="aud-section-body">
+            <div class="aud-section-body" data-enter="<%= btnBuscar.ClientID %>">
                 <div class="row">
                     <div class="col-12 col-md-2">
                         <div class="form-group">

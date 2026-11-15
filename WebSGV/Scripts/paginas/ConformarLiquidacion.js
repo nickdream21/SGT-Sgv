@@ -165,6 +165,14 @@
         actualizarEstadoBotones();
     }
 
+    // Enter en la contraseña: firmar (si el botón ya está habilitado) sin enviar el formulario,
+    // que recargaría la página y borraría el trazo.
+    txtClave.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' || e.isComposing) return;
+        e.preventDefault();
+        if (!btnFirmar.disabled) btnFirmar.click();
+    });
+
     btnFirmar.addEventListener('click', function () {
         if (btnFirmar.disabled) return;
         btnFirmar.disabled = true;

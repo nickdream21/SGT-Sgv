@@ -86,7 +86,7 @@
                                 </div>
                                 <div class="col-md-8 form-group" id="grupoDNI">
                                     <label class="font-weight-bold">DNI:</label>
-                                    <div class="input-group">
+                                    <div class="input-group" data-enter="<%= btnBuscarDNI.ClientID %>">
                                         <asp:TextBox ID="txtDNI" runat="server" CssClass="form-control" MaxLength="8" placeholder="8 dígitos"></asp:TextBox>
                                         <div class="input-group-append">
                                             <asp:Button ID="btnBuscarDNI" runat="server" CssClass="btn btn-secondary" Text="Buscar" OnClientClick="buscarPorDNI(); return false;" />
@@ -211,7 +211,7 @@
     <!-- Modal Editar Conductor -->
     <div class="modal fade" id="modalEditar" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
+            <div class="modal-content" data-enter="<%= btnActualizarConductor.ClientID %>">
                 <div class="modal-header" style="background:#0ea5e9;color:#fff;">
                     <h5 class="modal-title"><i class="fas fa-user-edit mr-2"></i>Editar conductor</h5>
                     <button type="button" class="close" style="color:#fff;" data-dismiss="modal">&times;</button>

@@ -103,7 +103,7 @@
 }
 
 /* af-shield: campos protegidos contra autocompletado agresivo del navegador
-   (ver script antiAutofillGuard antes de </form>). Sin esto, Bootstrap pinta
+   (escudo de SiteMaster.js, solo en páginas con campos de contraseña). Sin esto, Bootstrap pinta
    [readonly] como si estuviera deshabilitado (fondo gris) todo el tiempo. */
 input.af-shield[readonly] {
     background-color: #fff !important;

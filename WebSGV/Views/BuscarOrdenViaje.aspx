@@ -9,7 +9,7 @@
         <h2 class="mt-4 mb-4">Búsqueda de orden de viaje</h2>
 
         <!-- Sección de búsqueda -->
-        <div class="row mb-4">
+        <div class="row mb-4" data-enter="<%= btnBuscar.ClientID %>">
             <div class="col-md-8">
                 <label for="txtBuscarOrdenViaje">N° Orden Viaje:</label>
                 <asp:TextBox ID="txtBuscarOrdenViaje" runat="server" CssClass="form-control" placeholder="Ingrese el N° de Orden de Viaje a buscar"></asp:TextBox>

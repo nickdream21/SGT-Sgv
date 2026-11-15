@@ -2,7 +2,7 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/RestablecerContrasena.css") %>" rel="stylesheet" />
 
-    <div class="reset-container">
+    <div class="reset-container" data-enter="<%= btnRestablecer.ClientID %>">
         <h2 class="reset-title">Restablecer contraseña</h2>
         <p class="reset-subtitle">Ingrese su nueva contraseña.</p>
 
@@ -13,13 +13,13 @@
         <asp:Panel ID="pnlFormulario" runat="server">
             <div class="form-group">
                 <label>Nueva contraseña:</label>
-                <asp:TextBox ID="txtNuevaContrasena" runat="server" TextMode="Password" CssClass="form-control" placeholder="Ingrese su nueva contraseña"></asp:TextBox>
+                <asp:TextBox ID="txtNuevaContrasena" runat="server" TextMode="Password" CssClass="form-control" placeholder="Ingrese su nueva contraseña" autocomplete="new-password"></asp:TextBox>
                 <p class="password-requirements">Mínimo 6 caracteres.</p>
             </div>
 
             <div class="form-group">
                 <label>Confirmar contraseña:</label>
-                <asp:TextBox ID="txtConfirmarContrasena" runat="server" TextMode="Password" CssClass="form-control" placeholder="Confirme su nueva contraseña"></asp:TextBox>
+                <asp:TextBox ID="txtConfirmarContrasena" runat="server" TextMode="Password" CssClass="form-control" placeholder="Confirme su nueva contraseña" autocomplete="new-password"></asp:TextBox>
             </div>
 
             <asp:Button ID="btnRestablecer" runat="server" CssClass="btn btn-primary" Text="Restablecer contraseña" OnClick="btnRestablecer_Click" />

@@ -609,7 +609,7 @@
                                                 Verifique cuidadosamente antes de guardar.
                                             </div>
 
-                                            <div class="edit-form">
+                                            <div class="edit-form" data-enter="<%= btnGuardarCambios.ClientID %>">
 
                                                 <!-- Fila 1: Campos básicos en 4 columnas -->
                                                 <div class="row mb-3">
@@ -1126,7 +1126,7 @@
                                                     <h6><i class="fas fa-truck-loading"></i> Guías por despacho</h6>
                                                     <span class="ld-bloque-ayuda">Escriba la guía de cada unidad y pulse <strong>Guardar guías</strong>.</span>
                                                 </div>
-                                                <div class="data-grid-container">
+                                                <div class="data-grid-container" data-enter="<%= btnGuardarGuias.ClientID %>">
                                                     <asp:GridView ID="gvGuiasLote" runat="server"
                                                         CssClass="table data-table detail-table ld-tabla-guias"
                                                         AutoGenerateColumns="false"

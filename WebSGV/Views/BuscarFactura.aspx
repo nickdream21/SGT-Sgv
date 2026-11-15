@@ -5,7 +5,7 @@
             <h1 class="header">Búsqueda de factura</h1>
 
             <!-- Sección de Búsqueda -->
-            <div class="row search-section">
+            <div class="row search-section" data-enter="<%= btnBuscar.ClientID %>">
                 <div class="col-md-8 form-group">
                     <label for="txtBuscarFactura">N° Factura:</label>
                     <asp:TextBox ID="txtBuscarFactura" runat="server" CssClass="form-control" placeholder="Ingrese el N° de Factura a buscar"></asp:TextBox>

@@ -2,7 +2,7 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/RecuperarContrasena.css") %>" rel="stylesheet" />
 
-    <div class="recovery-container">
+    <div class="recovery-container" data-enter="<%= btnEnviar.ClientID %>">
         <h2 class="recovery-title">Recuperar contraseña</h2>
         <p class="recovery-subtitle">Ingrese su usuario o correo electrónico y le enviaremos un enlace para restablecer su contraseña.</p>
 

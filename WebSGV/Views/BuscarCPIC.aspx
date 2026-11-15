@@ -6,7 +6,7 @@
             <h1 class="header">Búsqueda de CPIC</h1>
 
             <!-- Sección de Búsqueda -->
-            <div class="row search-section">
+            <div class="row search-section" data-enter="<%= btnBuscar.ClientID %>">
                 <div class="col-md-8 form-group">
                     <label for="txtBuscarCPIC">N° CPIC:</label>
                     <asp:TextBox ID="txtBuscarCPIC" runat="server" CssClass="form-control" placeholder="Ingrese el N° CPIC a buscar" MaxLength="7"></asp:TextBox>

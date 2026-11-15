@@ -344,7 +344,7 @@
             <!-- ============ HISTORIAL ============ -->
             <div class="tab-pane fade" id="historial" role="tabpanel">
 
-                <details class="dc-filtros">
+                <details class="dc-filtros" data-enter="<%= btnBuscarHistorial.ClientID %>">
                     <summary>Filtrar <asp:Label ID="lblTotalHistorial" runat="server" CssClass="dc-filtros-num" Text="0 liquidaciones"></asp:Label></summary>
                     <div class="dc-filtros-cuerpo">
                         <div class="dc-par">

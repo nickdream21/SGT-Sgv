@@ -9,7 +9,7 @@
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros de búsqueda</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body" data-enter="<%= btnBuscar.ClientID %>">
                 <div class="row">
                     <div class="col-md-3">
                         <div class="form-group mb-3">

@@ -24,6 +24,26 @@ namespace WebSGV
         public string UrlInicio { get; set; }
 
         /// <summary>
+        /// Nombre de usuario con el que se inicia sesión (no el nombre para mostrar). Va en el campo
+        /// oculto autocomplete="username" del modal "Cambiar contraseña", para que el gestor de
+        /// contraseñas del navegador asocie el cambio a la cuenta correcta. Vacío sin sesión.
+        /// </summary>
+        public string UsuarioLogin
+        {
+            get
+            {
+                try
+                {
+                    return Convert.ToString(Session?["Usuario"] ?? Session?["NombreUsuario"]) ?? "";
+                }
+                catch
+                {
+                    return "";
+                }
+            }
+        }
+
+        /// <summary>
         /// Page_Init: Vincula el ViewState a la sesión del usuario.
         /// Solo se aplica a páginas protegidas (no públicas) para evitar
         /// HttpException cuando el SessionID cambia entre GET y POST.

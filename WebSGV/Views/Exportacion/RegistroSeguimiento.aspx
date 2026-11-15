@@ -69,7 +69,7 @@
 
         <asp:HiddenField ID="hdnFase" runat="server" Value="activos" />
 
-        <div class="sx-filtros">
+        <div class="sx-filtros" data-enter="<%= btnFiltrar.ClientID %>">
             <label class="sx-campo">Buscar
                 <asp:TextBox ID="txtBuscar" runat="server" placeholder="Pedido, carreta, placa o chofer" style="width: 16rem; max-width: 70vw;" />
             </label>

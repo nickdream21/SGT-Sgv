@@ -30,6 +30,11 @@
 
 <body>
     <form runat="server" autocomplete="off">
+        <!-- Botón por defecto deshabilitado: el navegador no envía el formulario con Enter aunque
+             SiteMaster.js no cargue o el teclado del celular no avise (si no, Enter usaría el primer
+             botón de la página: en el panel del conductor, "Enviar y firmar"). Enter lo maneja
+             SiteMaster.js con las zonas data-enter; los DefaultButton van por keypress y siguen igual. -->
+        <button type="submit" disabled hidden aria-hidden="true" tabindex="-1"></button>
         <!-- ScriptManager básico sin scripts personalizados -->
         <asp:ScriptManager ID="ScriptManager1" runat="server" EnablePageMethods="true" />
 
@@ -370,7 +375,7 @@
         <!-- Modal Cambiar Contraseña (disponible para todos los roles) -->
         <div class="modal fade" id="modalCambiarContrasena" tabindex="-1" role="dialog" aria-labelledby="modalCambiarContrasenaLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content">
+                <div class="modal-content" data-enter="<%= btnCambiarContrasena.ClientID %>">
                     <div class="modal-header" style="background:#1e40af;color:white;">
                         <h5 class="modal-title" id="modalCambiarContrasenaLabel">
                             <i class="fas fa-key mr-2"></i>Cambiar Contraseña
@@ -383,21 +388,31 @@
                         <asp:Panel ID="pnlMensajeContrasena" runat="server" Visible="false" CssClass="mb-3">
                             <asp:Label ID="lblMensajeContrasena" runat="server"></asp:Label>
                         </asp:Panel>
-                        <div class="form-group">
-                            <label class="form-label">Contraseña actual <span class="text-danger">*</span></label>
-                            <asp:TextBox ID="txtContrasenaActual" runat="server" CssClass="form-control"
-                                TextMode="Password" placeholder="Ingresa tu contraseña actual" autocomplete="current-password"></asp:TextBox>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Nueva contraseña <span class="text-danger">*</span></label>
-                            <asp:TextBox ID="txtNuevaContrasena" runat="server" CssClass="form-control"
-                                TextMode="Password" placeholder="Mínimo 6 caracteres" autocomplete="new-password"></asp:TextBox>
-                        </div>
-                        <div class="form-group mb-0">
-                            <label class="form-label">Confirmar nueva contraseña <span class="text-danger">*</span></label>
-                            <asp:TextBox ID="txtConfirmarContrasena" runat="server" CssClass="form-control"
-                                TextMode="Password" placeholder="Repite la nueva contraseña" autocomplete="new-password"></asp:TextBox>
-                        </div>
+                        <div id="camposContrasena"></div>
+                        <%-- Los campos de contraseña solo existen en la página mientras el modal está abierto
+                             (SiteMaster.js clona esta plantilla al abrirlo y la vacía al cerrarlo): con
+                             type=password en el formulario único, Edge ofrecía "Contraseñas guardadas" en
+                             cualquier buscador. El campo oculto "username" le dice al gestor de contraseñas
+                             a qué cuenta pertenece el cambio. Al clonarse conservan su name, así que
+                             btnCambiarContrasena_Click los lee igual. --%>
+                        <template id="tplCamposContrasena">
+                            <input type="text" autocomplete="username" value="<%: UsuarioLogin %>" hidden readonly tabindex="-1" aria-hidden="true" />
+                            <div class="form-group">
+                                <label class="form-label">Contraseña actual <span class="text-danger">*</span></label>
+                                <asp:TextBox ID="txtContrasenaActual" runat="server" CssClass="form-control"
+                                    TextMode="Password" placeholder="Ingresa tu contraseña actual" autocomplete="current-password"></asp:TextBox>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nueva contraseña <span class="text-danger">*</span></label>
+                                <asp:TextBox ID="txtNuevaContrasena" runat="server" CssClass="form-control"
+                                    TextMode="Password" placeholder="Mínimo 6 caracteres" autocomplete="new-password"></asp:TextBox>
+                            </div>
+                            <div class="form-group mb-0">
+                                <label class="form-label">Confirmar nueva contraseña <span class="text-danger">*</span></label>
+                                <asp:TextBox ID="txtConfirmarContrasena" runat="server" CssClass="form-control"
+                                    TextMode="Password" placeholder="Repite la nueva contraseña" autocomplete="new-password"></asp:TextBox>
+                            </div>
+                        </template>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary js-cerrar-contrasena" data-dismiss="modal">Cancelar</button>

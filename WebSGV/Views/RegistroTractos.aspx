@@ -135,7 +135,7 @@
     <!-- Modal Editar Tracto -->
     <div class="modal fade" id="modalEditar" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
-            <div class="modal-content">
+            <div class="modal-content" data-enter="<%= btnActualizarTracto.ClientID %>">
                 <div class="modal-header" style="background:#0ea5e9;color:#fff;">
                     <h5 class="modal-title"><i class="fas fa-truck mr-2"></i>Editar tracto</h5>
                     <button type="button" class="close" style="color:#fff;" data-dismiss="modal">&times;</button>

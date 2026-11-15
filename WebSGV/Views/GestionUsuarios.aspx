@@ -17,7 +17,7 @@
     <!-- Filtros -->
     <div class="card shadow-sm mb-3">
         <div class="card-body py-2">
-            <div class="row align-items-end">
+            <div class="row align-items-end" data-enter="<%= btnBuscar.ClientID %>">
                 <div class="col-md-4 mb-2 mb-md-0">
                     <asp:TextBox ID="txtBuscar" runat="server" CssClass="form-control form-control-sm"
                         placeholder="Buscar por usuario o nombre..." />
@@ -99,7 +99,7 @@
          ====================================================== -->
     <div class="modal fade" id="modalUsuario" tabindex="-1" role="dialog" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-            <div class="modal-content">
+            <div class="modal-content" data-enter="<%= btnGuardarUsuario.ClientID %>">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalUsuarioLabel">
                         <i class="fas fa-user-edit mr-2"></i>
@@ -121,7 +121,7 @@
                             <div class="form-group">
                                 <label>Nombre de usuario <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtNombreUsuario" runat="server" CssClass="form-control"
-                                    placeholder="Sin espacios, ej: jperez" MaxLength="100" />
+                                    placeholder="Sin espacios, ej: jperez" MaxLength="100" autocomplete="off" />
                                 <small class="text-muted">3 a 50 caracteres: letras, números, punto y guion bajo.</small>
                             </div>
                         </div>
@@ -144,7 +144,7 @@
                             <div class="form-group">
                                 <label>Contraseña <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtContrasena" runat="server" CssClass="form-control"
-                                    TextMode="Password" placeholder="Mínimo 6 caracteres" />
+                                    TextMode="Password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
                             </div>
                         </asp:Panel>
                     </div>
@@ -174,7 +174,7 @@
          ====================================================== -->
     <div class="modal fade" id="modalResetPass" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
+            <div class="modal-content" data-enter="<%= btnResetPass.ClientID %>">
                 <div class="modal-header sgv-modal-alerta">
                     <h5 class="modal-title">
                         <i class="fas fa-key mr-2"></i>Restablecer Contraseña
@@ -197,12 +197,12 @@
                     <div class="form-group">
                         <label>Nueva contraseña <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtNuevaPass" runat="server" CssClass="form-control"
-                            TextMode="Password" placeholder="Mínimo 6 caracteres" />
+                            TextMode="Password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
                     </div>
                     <div class="form-group mb-0">
                         <label>Confirmar contraseña <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtConfirmarPass" runat="server" CssClass="form-control"
-                            TextMode="Password" placeholder="Repite la nueva contraseña" />
+                            TextMode="Password" placeholder="Repite la nueva contraseña" autocomplete="new-password" />
                     </div>
                 </div>
                 <div class="modal-footer">

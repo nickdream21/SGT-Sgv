@@ -55,7 +55,7 @@
                         <i class="fas fa-filter mr-2"></i>Filtros de Búsqueda
                     </h5>
                 </div>
-                <div class="section-body">
+                <div class="section-body" data-enter="<%= btnBuscarLiquidaciones.ClientID %>">
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
@@ -247,7 +247,7 @@
                         <i class="fas fa-search mr-2"></i>Búsqueda de Viajes Activos
                     </h5>
                 </div>
-                <div class="section-body">
+                <div class="section-body" data-enter="<%= btnBuscarViajesActivos.ClientID %>">
                     <div class="row">
                         <div class="col-md-5">
                             <div class="form-group">

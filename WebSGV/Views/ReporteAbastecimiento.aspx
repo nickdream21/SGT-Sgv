@@ -17,7 +17,7 @@
         </div>
 
         <!-- Filtros -->
-        <div class="rpt-filter-card">
+        <div class="rpt-filter-card" data-enter="<%= btnBuscar.ClientID %>">
             <div class="filter-title"><i class="fas fa-filter mr-1"></i>Filtros de búsqueda</div>
             <div class="rpt-filter-row">
                 <div class="filter-group">

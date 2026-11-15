@@ -40,7 +40,7 @@
         <div id="seccionPendientes">
 
         <div class="sgv-panel mb-3">
-            <div class="sgv-panel-cuerpo pb-0">
+            <div class="sgv-panel-cuerpo pb-0" data-enter="<%= btnFiltrar.ClientID %>">
                 <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
@@ -242,7 +242,7 @@
         <div id="seccionAprobadas" style="display:none;">
 
             <div class="sgv-panel mb-3">
-                <div class="sgv-panel-cuerpo pb-0">
+                <div class="sgv-panel-cuerpo pb-0" data-enter="btnBuscarAprobadas">
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
@@ -277,7 +277,7 @@
                             <div class="form-group">
                                 <label class="form-label">&nbsp;</label>
                                 <div class="d-flex">
-                                    <button type="button" class="btn btn-primary-custom btn-block mr-2" onclick="cargarLiquidacionesAprobadas()">Buscar</button>
+                                    <button type="button" id="btnBuscarAprobadas" class="btn btn-primary-custom btn-block mr-2" onclick="cargarLiquidacionesAprobadas()">Buscar</button>
                                     <button type="button" class="btn btn-secondary-custom btn-block" onclick="limpiarFiltrosAprobadas()">Limpiar</button>
                                 </div>
                             </div>

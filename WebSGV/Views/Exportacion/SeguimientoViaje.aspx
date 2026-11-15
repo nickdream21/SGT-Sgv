@@ -26,7 +26,7 @@
 
         <%-- Datos de cabecera: abierto al crear un viaje, plegado al editar. --%>
         <div class="sgv-panel" style="margin-bottom: 1rem;">
-            <div id="seccionDatos" class='<%= ModoNuevo ? "sx-cabecera-datos sx-abierto" : "sx-cabecera-datos" %>' style="border-top: 0;">
+            <div id="seccionDatos" data-enter="<%= btnGuardarDatos.ClientID %>" class='<%= ModoNuevo ? "sx-cabecera-datos sx-abierto" : "sx-cabecera-datos" %>' style="border-top: 0;">
                 <div class="sx-rejilla" style="grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));">
                     <label class="sx-campo">Pedido <asp:TextBox ID="txtPedido" runat="server" MaxLength="150" /></label>
                     <label class="sx-campo">Carreta <asp:TextBox ID="txtCarreta" runat="server" MaxLength="20" /></label>

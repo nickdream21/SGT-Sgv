@@ -51,7 +51,7 @@
 
             <!-- Filtro -->
             <div class="gf-filter">
-                <div class="gf-filter-row">
+                <div class="gf-filter-row" data-enter="<%= btnFiltrar.ClientID %>">
                     <div class="gf-filter-input">
                         <i class="fas fa-search"></i>
                         <asp:TextBox ID="txtBuscarConductor" runat="server" CssClass="form-control"
@@ -156,7 +156,7 @@
 
             <!-- Filtros -->
             <div class="gf-filter">
-                <div class="gf-filter-row">
+                <div class="gf-filter-row" data-enter="<%= btnFiltrarHistorial.ClientID %>">
                     <div style="flex:1;">
                         <div class="gf-filter-label">Desde</div>
                         <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>

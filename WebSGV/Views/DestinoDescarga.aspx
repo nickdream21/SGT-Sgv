@@ -64,7 +64,7 @@
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Registrar o cambiar una unidad</h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body" data-enter="<%= btnGuardarManual.ClientID %>">
                         <p class="text-muted small">Para un desv&#xED;o o una unidad suelta. Si la carreta ya ten&#xED;a destino en ese pedido, se cambia y el anterior queda en el historial.</p>
                         <div class="form-group">
                             <label class="font-weight-bold" for="<%= txtPedido.ClientID %>">Pedido</label>
@@ -91,7 +91,7 @@
                 <div class="card shadow-sm">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap">
                         <h5 class="mb-0"><i class="fas fa-list-ul mr-2"></i>Destinos registrados</h5>
-                        <div class="form-inline">
+                        <div class="form-inline" data-enter="<%= btnBuscar.ClientID %>">
                             <asp:TextBox ID="txtBuscarPedido" runat="server" CssClass="form-control form-control-sm mr-2" MaxLength="12" placeholder="Filtrar por pedido"></asp:TextBox>
                             <asp:Button ID="btnBuscar" runat="server" CssClass="btn btn-outline-primary btn-sm" Text="Buscar" OnClick="btnBuscar_Click" />
                         </div>

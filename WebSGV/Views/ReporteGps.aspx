@@ -30,7 +30,7 @@
                 <div class="row">
                     <div class="col-lg-5 form-group">
                         <label class="font-weight-bold" for="<%= txtPedidos.ClientID %>">Pedidos <span class="text-muted font-weight-normal">(opcional)</span></label>
-                        <div class="input-group">
+                        <div class="input-group" data-enter="<%= btnTraerPlacas.ClientID %>">
                             <asp:TextBox ID="txtPedidos" runat="server" CssClass="form-control" placeholder="4400133751, 4400133813"></asp:TextBox>
                             <div class="input-group-append">
                                 <asp:Button ID="btnTraerPlacas" runat="server" CssClass="btn btn-outline-primary" Text="Traer tractos" OnClick="btnTraerPlacas_Click" />
