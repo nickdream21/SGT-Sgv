@@ -121,5 +121,40 @@ namespace WebSGV.Tests
         {
             Assert.True(PasswordHelper.NeedsMigration(""));
         }
+
+        [Fact]
+        public void VerificarIngresada_GuardadaConEspacioFinal_EntraEscribiendolaIgual()
+        {
+            // Así quedaron las creadas antes de que el cambio de contraseña y Gestión de usuarios recortaran.
+            string hash = PasswordHelper.HashPassword("clave123 ");
+            Assert.True(PasswordHelper.VerificarIngresada("clave123 ", hash));
+        }
+
+        [Fact]
+        public void VerificarIngresada_GuardadaRecortada_EntraAunqueEscribaUnEspacio()
+        {
+            // Restablecer contraseña la guarda recortada; el celular agrega el espacio al escribir.
+            string hash = PasswordHelper.HashPassword("clave123");
+            Assert.True(PasswordHelper.VerificarIngresada("clave123 ", hash));
+            Assert.True(PasswordHelper.VerificarIngresada(" clave123", hash));
+        }
+
+        [Fact]
+        public void VerificarIngresada_ContrasenaDistinta_NoEntra()
+        {
+            string hash = PasswordHelper.HashPassword("clave123");
+            Assert.False(PasswordHelper.VerificarIngresada("clave124", hash));
+            Assert.False(PasswordHelper.VerificarIngresada("   ", hash));
+            Assert.False(PasswordHelper.VerificarIngresada(null, hash));
+        }
+
+        [Fact]
+        public void VerificarIngresada_GuardadaConEspacioFinal_EscritaSinEl_NoEntra()
+        {
+            // Límite conocido: solo se prueba la escrita y la recortada, nunca se agrega un espacio.
+            // Ya no se crean así: todas las pantallas guardan la contraseña recortada.
+            string hash = PasswordHelper.HashPassword("clave123 ");
+            Assert.False(PasswordHelper.VerificarIngresada("clave123", hash));
+        }
     }
 }

@@ -168,8 +168,10 @@ namespace WebSGV
             try
             {
                 string contrasenaActual = txtContrasenaActual.Text;
-                string nuevaContrasena = txtNuevaContrasena.Text;
-                string confirmarContrasena = txtConfirmarContrasena.Text;
+                // La nueva se guarda recortada, como en Restablecer contraseña: el autocompletado del
+                // celular agrega un espacio al final y después la persona no podía entrar sin él.
+                string nuevaContrasena = (txtNuevaContrasena.Text ?? "").Trim();
+                string confirmarContrasena = (txtConfirmarContrasena.Text ?? "").Trim();
 
                 if (string.IsNullOrEmpty(contrasenaActual) || string.IsNullOrEmpty(nuevaContrasena) || string.IsNullOrEmpty(confirmarContrasena))
                 {
@@ -221,7 +223,7 @@ namespace WebSGV
                         return;
                     }
 
-                    if (!PasswordHelper.VerifyPassword(contrasenaActual, storedHash))
+                    if (!PasswordHelper.VerificarIngresada(contrasenaActual, storedHash))
                     {
                         MostrarMensajeContrasena("La contraseña actual es incorrecta.", "danger");
                         AbrirModalContrasena();
@@ -247,7 +249,7 @@ namespace WebSGV
                 AuditoriaHelper.Registrar("UPDATE", "Usuarios", IdUsuarioActual, "Contrasena cambiada por el usuario");
 
                 ScriptManager.RegisterStartupScript(this, GetType(), "SuccessContrasena",
-                    "$('#modalCambiarContrasena').modal('hide'); alert('✅ Contraseña cambiada exitosamente.');", true);
+                    "$('#modalCambiarContrasena').modal('hide'); SGV.avisar('Contraseña cambiada correctamente.', { tipo: 'success' });", true);
             }
             catch
             {
@@ -307,15 +309,8 @@ namespace WebSGV
                 };
                 Response.Cookies.Add(sessionCookie);
 
-                // Limpiar cookie de recordarme
-                if (Request.Cookies["SGVUserInfo"] != null)
-                {
-                    var cookie = new HttpCookie("SGVUserInfo")
-                    {
-                        Expires = DateTime.Now.AddDays(-1)
-                    };
-                    Response.Cookies.Add(cookie);
-                }
+                // La cookie "Recordarme" (SGVUserInfo) NO se borra al cerrar sesión: si no, nunca
+                // recordaría el usuario. Se borra en Login cuando entra con la casilla desmarcada.
             }
             catch (Exception ex)
             {

@@ -91,6 +91,21 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
+        /// Verifica la contraseña tal como se escribió y, si no coincide y tiene espacios al inicio
+        /// o al final, también recortada. Hoy todas las pantallas la guardan recortada, pero antes el
+        /// cambio de contraseña y Gestión de usuarios no, así que quien la creó con un espacio al
+        /// final (el autocompletado del celular lo agrega) no podía volver a entrar.
+        /// Límite conocido: una guardada CON espacio final no entra si se escribe sin él.
+        /// </summary>
+        public static bool VerificarIngresada(string password, string storedHash)
+        {
+            if (VerifyPassword(password, storedHash))
+                return true;
+            string recortada = password?.Trim();
+            return !string.IsNullOrEmpty(recortada) && recortada != password && VerifyPassword(recortada, storedHash);
+        }
+
+        /// <summary>
         /// Determina si un hash almacenado necesita ser migrado al formato nuevo.
         /// </summary>
         public static bool NeedsMigration(string storedHash)

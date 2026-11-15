@@ -205,7 +205,8 @@ namespace WebSGV.Views
             string nombreUsuario = txtNombreUsuario.Text.Trim();
             string nombre        = txtNombre.Text.Trim();
             string rol           = (ddlRol.SelectedValue ?? "").Trim().ToUpperInvariant();
-            string contrasena    = txtContrasena.Text;
+            // Recortada, como en Restablecer contraseña (el celular agrega un espacio al final).
+            string contrasena    = (txtContrasena.Text ?? "").Trim();
             int idConductor;
             bool tieneConductor = int.TryParse(ddlConductor.SelectedValue, out idConductor) && idConductor > 0;
             bool esRolConductor = string.Equals(rol?.Trim(), RolesHelper.ROL_CONDUCTOR, StringComparison.OrdinalIgnoreCase)
@@ -324,8 +325,9 @@ namespace WebSGV.Views
         protected void btnResetPass_Click(object sender, EventArgs e)
         {
             int    idUsuario     = Convert.ToInt32(hfIdUsuarioReset.Value);
-            string nuevaPass     = txtNuevaPass.Text;
-            string confirmarPass = txtConfirmarPass.Text;
+            // Recortadas las dos (se guarda recortada): una de solo espacios queda vacía y se rechaza.
+            string nuevaPass     = (txtNuevaPass.Text ?? "").Trim();
+            string confirmarPass = (txtConfirmarPass.Text ?? "").Trim();
 
             if (string.IsNullOrEmpty(nuevaPass) || nuevaPass.Length < 6)
             {

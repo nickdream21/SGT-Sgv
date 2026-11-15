@@ -43,7 +43,10 @@ namespace WebSGV.Views
             // significa que una página protegida nos rebotó. Limpiar sesión y mostrar el form
             // en lugar de reenviar al usuario al destino que ya falló.
             string errParam = Request.QueryString["error"];
-            if (!string.IsNullOrEmpty(errParam) && errParam.ToLowerInvariant() == "sesion")
+            // Igual con ?error=sin_operador: un OPERADOR sin operador vinculado tiene sesión válida, y
+            // reenviarlo a su inicio (DashboardOperador) volvería a rebotarlo aquí.
+            string errNormalizado = (errParam ?? "").ToLowerInvariant();
+            if (errNormalizado == "sesion" || errNormalizado == "sin_operador")
             {
                 if (Session["UsuarioID"] != null)
                 {
@@ -94,6 +97,10 @@ namespace WebSGV.Views
                             MostrarMensaje("Tu cuenta de usuario no está vinculada a un registro de conductor. " +
                                            "Contacta al administrador del sistema para que configure el vínculo correspondiente.");
                             break;
+                        case "sin_operador":
+                            MostrarMensaje("Tu cuenta de usuario no está vinculada a un registro de operador. " +
+                                           "Contacta al administrador del sistema para que configure el vínculo correspondiente.");
+                            break;
                         case "sesion":
                             MostrarMensaje("Tu sesión ha expirado o no es válida. Por favor, inicia sesión nuevamente.");
                             break;
@@ -111,10 +118,11 @@ namespace WebSGV.Views
             Response.Cache.SetNoStore();
 
             string usuario = txtUsername.Text.Trim();
-            string contrasena = txtPassword.Text.Trim();
+            // Sin Trim: se verifica tal cual y, si no coincide, recortada (PasswordHelper.VerificarIngresada).
+            string contrasena = txtPassword.Text;
 
             // Validar longitud máxima para prevenir ataques de buffer
-            if (string.IsNullOrEmpty(usuario) || string.IsNullOrEmpty(contrasena))
+            if (string.IsNullOrEmpty(usuario) || string.IsNullOrWhiteSpace(contrasena))
             {
                 MostrarMensaje("Por favor, ingrese usuario y contraseña.");
                 return;
@@ -126,21 +134,18 @@ namespace WebSGV.Views
                 return;
             }
 
-            // Anti-fuerza-bruta en dos niveles (Application state):
-            //  - por IP: 5 fallos → 5 min (frena a un atacante que prueba muchas cuentas);
-            //  - por cuenta: 5 fallos → 15 min (frena a quien rota IPs contra la misma cuenta).
-            //    Cuenta aunque el usuario no exista, para no revelar qué cuentas existen.
-            string claveIp     = "IP_" + (Request.UserHostAddress ?? "unknown");
-            string claveCuenta = "USR_" + usuario.ToLowerInvariant();
-
-            if (EstaBloqueado(claveIp, out int segundosIp) || EstaBloqueado(claveCuenta, out segundosIp))
+            // Anti-fuerza-bruta por IP y por cuenta (ControlIntentosLogin): el intento se reserva
+            // como fallo ANTES de ir a la BD, para que peticiones en paralelo no se salten el bloqueo.
+            var control = ControlIntentosLogin.Sitio;
+            var reserva = control.Reservar(ControlIntentosLogin.ClaveIp(Request.UserHostAddress),
+                                           ControlIntentosLogin.ClaveCuenta(usuario));
+            if (reserva.Rechazado)
             {
-                int minutos = Math.Max(1, (int)Math.Ceiling(segundosIp / 60.0));
+                int minutos = Math.Max(1, (int)Math.Ceiling(reserva.SegundosRestantes / 60.0));
                 MostrarMensaje($"Demasiados intentos fallidos. Intente nuevamente en {minutos} minuto(s).");
                 return;
             }
 
-            // Verificar credenciales en la base de datos (fuera del lock para no retenerlo durante I/O)
             (bool EsValido, string Rol, string Nombre, string NombreUsuario,
              int IdUsuario, int? IdConductor, int? IdOperador, bool RequiereCambioContrasena) resultado;
             try
@@ -151,17 +156,17 @@ namespace WebSGV.Views
             {
                 // El detalle ya quedó logueado en ValidarUsuario. Una caída de BD NO debe
                 // mostrarse como "credenciales incorrectas" ni contar como intento fallido
-                // (no toca el contador anti-fuerza-bruta): se avisa que el servicio no está
-                // disponible.
+                // (se devuelve el intento reservado): se avisa que el servicio no está disponible.
+                control.ErrorAlValidar(reserva);
                 MostrarMensaje("El servicio no está disponible en este momento. Por favor, intente nuevamente en unos minutos.");
                 return;
             }
 
             if (resultado.EsValido)
             {
-                // Login correcto: se limpia el contador de la cuenta (el de la IP se mantiene,
-                // para que una cuenta válida no sirva para "resetear" los intentos de esa IP).
-                LimpiarIntentos(claveCuenta);
+                // Login correcto: se limpia el contador de la cuenta y se devuelve a la IP solo el
+                // intento reservado (una cuenta válida no sirve para "resetear" los de esa IP).
+                control.LoginCorrecto(reserva);
 
                 // Si la opción "Recordarme" está marcada, guardar solo el usuario (no el rol ni ID)
                 if (chkRemember.Checked)
@@ -172,6 +177,11 @@ namespace WebSGV.Views
                     cookie.HttpOnly = true;
                     cookie.Secure = Request.IsSecureConnection;
                     Response.Cookies.Add(cookie);
+                }
+                else if (Request.Cookies["SGVUserInfo"] != null)
+                {
+                    // Desmarcó "Recordarme": dejar de recordar el usuario en este equipo.
+                    Response.Cookies.Add(new HttpCookie("SGVUserInfo", "") { Expires = DateTime.Now.AddDays(-1), HttpOnly = true });
                 }
 
                 // Paso 1 de la regeneración de sesión: ticket de un solo uso + sesión nueva.
@@ -192,11 +202,13 @@ namespace WebSGV.Views
                 Session.Clear();
                 Session.Abandon();
                 Response.Cookies.Add(new HttpCookie("SGV_SessionId", "") { Expires = DateTime.Now.AddDays(-1), HttpOnly = true });
+                // Cookie de sesión (sin Expires): el vencimiento de 60 s lo controla la caché del
+                // servidor. Con Expires, un celular con la hora adelantada la descartaba al llegar
+                // y el login terminaba en "Tu sesión ha expirado".
                 Response.Cookies.Add(new HttpCookie(CookieTicketLogin, token)
                 {
                     HttpOnly = true,
-                    Secure = Request.IsSecureConnection,
-                    Expires = DateTime.Now.AddMinutes(1)
+                    Secure = Request.IsSecureConnection
                 });
 
                 Response.Redirect("~/Views/Login.aspx?completar=1", false);
@@ -204,74 +216,17 @@ namespace WebSGV.Views
             }
             else
             {
-                bool bloqueadaIp     = RegistrarFallo(claveIp, TimeSpan.FromMinutes(5));
-                bool bloqueadaCuenta = RegistrarFallo(claveCuenta, TimeSpan.FromMinutes(15));
-
-                if (bloqueadaIp || bloqueadaCuenta)
+                // El fallo ya quedó contado en la reserva.
+                if (reserva.BloqueoIp || reserva.BloqueoCuenta)
                     MostrarMensaje("Demasiados intentos fallidos. El acceso quedó bloqueado temporalmente; intente más tarde.");
                 else
                     MostrarMensaje("Usuario o contraseña incorrectos. Por favor, intente nuevamente.");
             }
         }
 
-        // ── Control de intentos fallidos (Application state, por IP y por cuenta) ──────────
-
-        private const int MaxIntentosFallidos = 5;
-        private static readonly TimeSpan VentanaIntentos = TimeSpan.FromMinutes(15);
-
-        private class IntentosLogin
-        {
-            public int Fallidos;
-            public DateTime PrimerFalloUtc;
-            public DateTime BloqueadoHastaUtc;
-        }
-
-        private bool EstaBloqueado(string clave, out int segundosRestantes)
-        {
-            segundosRestantes = 0;
-            Application.Lock();
-            try
-            {
-                if (Application["Login_" + clave] is IntentosLogin i && i.BloqueadoHastaUtc > DateTime.UtcNow)
-                {
-                    segundosRestantes = (int)(i.BloqueadoHastaUtc - DateTime.UtcNow).TotalSeconds;
-                    return true;
-                }
-                return false;
-            }
-            finally { Application.UnLock(); }
-        }
-
-        /// <summary>Suma un fallo; si llega al máximo dentro de la ventana, bloquea por <paramref name="duracionBloqueo"/>. Devuelve true si quedó bloqueado.</summary>
-        private bool RegistrarFallo(string clave, TimeSpan duracionBloqueo)
-        {
-            DateTime ahora = DateTime.UtcNow;
-            Application.Lock();
-            try
-            {
-                var i = Application["Login_" + clave] as IntentosLogin;
-                if (i == null || ahora - i.PrimerFalloUtc > VentanaIntentos)
-                    i = new IntentosLogin { PrimerFalloUtc = ahora };
-
-                i.Fallidos++;
-                if (i.Fallidos >= MaxIntentosFallidos)
-                {
-                    i.BloqueadoHastaUtc = ahora.Add(duracionBloqueo);
-                    i.Fallidos = 0;
-                    i.PrimerFalloUtc = ahora;
-                }
-                Application["Login_" + clave] = i;
-                return i.BloqueadoHastaUtc > ahora;
-            }
-            finally { Application.UnLock(); }
-        }
-
-        private void LimpiarIntentos(string clave)
-        {
-            Application.Lock();
-            try { Application.Remove("Login_" + clave); }
-            finally { Application.UnLock(); }
-        }
+        /// <summary>Hash de una contraseña que nadie tiene: si el usuario no existe se verifica igual,
+        /// para que el tiempo de respuesta no revele qué usuarios existen.</summary>
+        private static readonly string HashFicticio = PasswordHelper.HashPassword(Guid.NewGuid().ToString("N"));
 
         private (bool EsValido, string Rol, string Nombre, string NombreUsuario,
                  int IdUsuario, int? IdConductor, int? IdOperador, bool RequiereCambioContrasena) ValidarUsuario(string usuario, string contrasena)
@@ -299,7 +254,7 @@ namespace WebSGV.Views
                     string storedHash = reader["contrasena"].ToString();
                     idUsuario = Convert.ToInt32(reader["idUsuario"]);
 
-                    if (PasswordHelper.VerifyPassword(contrasena, storedHash))
+                    if (PasswordHelper.VerificarIngresada(contrasena, storedHash))
                     {
                         nombreUsuario = reader["nombreUsuario"].ToString().Trim();
                         nombre        = reader["nombre"].ToString().Trim();
@@ -313,6 +268,12 @@ namespace WebSGV.Views
                         esValido = true;
                         requiereCambioContrasena = Convert.ToBoolean(reader["requiereCambioContrasena"]);
                     }
+                }
+                else
+                {
+                    // VerificarIngresada, igual que con un usuario existente: con espacios al inicio o al
+                    // final hace dos PBKDF2, y el tiempo no debe delatar que el usuario no existe.
+                    PasswordHelper.VerificarIngresada(contrasena, HashFicticio);
                 }
             }
             catch (Exception ex)
@@ -380,11 +341,6 @@ namespace WebSGV.Views
         {
             lblError.Text = mensaje;
             pnlError.Visible = true;
-        }
-
-        protected void lnkForgotPassword_Click(object sender, EventArgs e)
-        {
-            Response.Redirect("~/Views/RecuperarContrasena.aspx");
         }
     }
 }

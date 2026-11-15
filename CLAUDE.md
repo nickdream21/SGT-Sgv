@@ -134,6 +134,25 @@ Page-specific CSS/JS lives in files, not inline: `Content/paginas/<Pagina>.css` 
 
 Step-by-step in the skills `nueva-pagina` and `nuevo-sp` (`.claude/skills/`). Never skip: a page or file not registered in `WebSGV.csproj` does not deploy, and a new SP does nothing until it is applied to the DB.
 
+## Working with subagents (mandatory since 2026-11-14)
+
+The main session is the **orchestrator**: it talks to the user, decides, delegates, checks evidence and closes. It does not delegate the conversation, decisions about the business or the final word on quality. Subagents live in `.claude/agents/` (Claude Code cannot nest them, so only the main session launches them):
+
+| Agent | Does | Never |
+|---|---|---|
+| `analista` | Reads code/DB (SELECT only), root cause, one recommended plan with exact files | edits files or writes to the DB |
+| `desarrollador` | Implements the plan, tests, build, full test suite | commits, publishes, touches the plan doc |
+| `revisor` | Reviews `git diff`: bugs, security, real data, deploy, conventions; verified findings + verdict | edits |
+| `probador` | Runs the local site, tests end to end by role and at 1366/390 px, with evidence | edits repo code, writes on the published site |
+
+Flow, scaled to the task (use only the agents that add value):
+
+1. **Small and obvious** (a typo, one-line fix, a question): the orchestrator does it directly.
+2. **Bug or feature**: `analista` → orchestrator approves the plan (asks the user only for business decisions) → `desarrollador` → `revisor` and `probador` **in parallel** → if there are findings, back to `desarrollador` with the exact list (max. 2 rounds, then report to the user) → orchestrator updates `docs/PLAN_MEJORAS_SGV.md`, checks `git status` and reports.
+3. **Review/audit**: `revisor` and/or `probador` in parallel, plus `analista` for an area.
+
+Orchestrator rules: give each subagent a self-contained brief (goal, context already known, files, acceptance criteria, what *not* to do); never trust a report without its evidence (build/test output, file:line, test table); launch independent agents in the same message; commit and publish only when the user says so. Report to the user in Spanish, short: what changed, evidence, what is pending.
+
 ## Conventions
 
 - **Language**: all identifiers, UI text, and SQL are in Spanish (es-PE). Match existing naming: `Agregar`, `Buscar`, `Registrar`, `Despacho`, `Liquidacion`.

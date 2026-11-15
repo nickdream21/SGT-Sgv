@@ -66,6 +66,10 @@ Role comparisons are uppercase and trimmed — keep new roles consistent.
 
 ## Sistema multi-agente
 
+> **Claude Code** no usa este sistema: trabaja con orquestador + 4 subagentes en
+> `.claude/agents/` (ver `CLAUDE.md`, "Working with subagents"). Lo de `.opencode/`
+> es solo para sesiones de OpenCode.
+
 Este repo tiene un sistema de coordinación multi-agente bajo `.opencode/`:
 
 - **`.opencode/agents/`** — 7 prompts: `orchestrator` (único que habla con el

@@ -34,11 +34,7 @@ namespace WebSGV.Views
             }
             else
             {
-                if (Session["IdOperador"] == null || IdOperadorActual == 0)
-                {
-                    Response.Redirect("~/Views/Login.aspx?error=sesion", true);
-                    return;
-                }
+                VerificarSesion();
             }
         }
 
@@ -50,8 +46,12 @@ namespace WebSGV.Views
         {
             if (Session["IdOperador"] == null || IdOperadorActual == 0)
             {
-                System.Diagnostics.Debug.WriteLine("No hay sesion de operador");
-                Response.Redirect("~/Views/Login.aspx?error=sesion", true);
+                // Con sesión pero sin operador vinculado no es una sesión vencida: Login muestra
+                // "no está vinculada a un registro de operador" y limpia la sesión (sin bucle).
+                bool haySesion = Session["UsuarioID"] != null;
+                if (haySesion)
+                    LogSGV.Advertencia("Usuario {IdUsuario} con rol OPERADOR sin operador vinculado", Session["UsuarioID"]);
+                Response.Redirect(haySesion ? "~/Views/Login.aspx?error=sin_operador" : "~/Views/Login.aspx?error=sesion", true);
                 return;
             }
         }

@@ -62,7 +62,7 @@ namespace WebSGV.Helpers
                 return "No se pudo verificar tu contraseña en este momento. Inténtalo de nuevo en unos minutos.";
             }
 
-            if (hash != null && hash != DBNull.Value && PasswordHelper.VerifyPassword(contrasena, hash.ToString()))
+            if (hash != null && hash != DBNull.Value && PasswordHelper.VerificarIngresada(contrasena, hash.ToString()))
             {
                 _intentos.TryRemove(idUsuario, out _);
                 return null;
