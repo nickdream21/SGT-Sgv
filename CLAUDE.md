@@ -151,7 +151,7 @@ Flow, scaled to the task (use only the agents that add value):
 2. **Bug or feature**: `analista` → orchestrator approves the plan (asks the user only for business decisions) → `desarrollador` → `revisor` and `probador` **in parallel** → if there are findings, back to `desarrollador` with the exact list (max. 2 rounds, then report to the user) → orchestrator updates `docs/PLAN_MEJORAS_SGV.md`, checks `git status` and reports.
 3. **Review/audit**: `revisor` and/or `probador` in parallel, plus `analista` for an area.
 
-Orchestrator rules: give each subagent a self-contained brief (goal, context already known, files, acceptance criteria, what *not* to do); never trust a report without its evidence (build/test output, file:line, test table); launch independent agents in the same message; commit and publish only when the user says so. Report to the user in Spanish, short: what changed, evidence, what is pending.
+Orchestrator rules: give each subagent a self-contained brief (goal, context already known, files, acceptance criteria, what *not* to do); never trust a report without its evidence (build/test output, file:line, test table); launch independent agents in the same message. **One commit per finished task** (standing user instruction, 2026-11-14): as soon as a task is approved by `revisor`/`probador` and the plan is updated, commit only that task's files (never mix tasks; stage by path, never `git add -A`); work on several tasks in sequence, not interleaved in the working tree. Push and publish only when the user says so. Report to the user in Spanish, short: what changed, evidence, what is pending.
 
 ## Conventions
 
