@@ -33,3 +33,7 @@ using System.Runtime.InteropServices;
 // mediante el carácter '*', como se muestra a continuación:
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
+
+// Las pruebas usan las sobrecargas internas con dependencias inyectables (p. ej.
+// ReautenticacionHelper.Verificar con su propio control de intentos), que el sitio no debe exponer.
+[assembly: InternalsVisibleTo("WebSGV.Tests")]

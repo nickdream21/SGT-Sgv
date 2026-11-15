@@ -183,6 +183,58 @@ namespace WebSGV.Tests
             Assert.False(_control.Reservar(Ip, Cuenta(1)).Rechazado);
         }
 
+        [Fact]
+        public void LimitesPorDefecto_SonLosDelLogin()
+        {
+            Assert.Equal(20, ControlIntentosLogin.MaxFallosPorIp);
+            Assert.Equal(5, ControlIntentosLogin.MaxFallosPorCuenta);
+            Assert.Equal(TimeSpan.FromMinutes(5), ControlIntentosLogin.BloqueoIp);
+            Assert.Equal(TimeSpan.FromMinutes(15), ControlIntentosLogin.BloqueoCuenta);
+            Assert.Equal(TimeSpan.FromMinutes(15), ControlIntentosLogin.VentanaIntentos);
+        }
+
+        [Fact]
+        public void SinNivelIp_BloqueaSoloLaCuentaYNoGuardaNadaDeLaIp()
+        {
+            var almacen = new AlmacenEnMemoria(() => _ahora);
+            var control = new ControlIntentosLogin(almacen, () => _ahora, null,
+                new ControlIntentosLogin.Limite(5, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15)));
+
+            for (int i = 1; i <= 4; i++)
+                Assert.False(control.Reservar(Ip, "FIRMA_7").BloqueoCuenta);
+            var quinto = control.Reservar(Ip, "FIRMA_7");
+            Assert.True(quinto.BloqueoCuenta);
+            Assert.False(quinto.BloqueoIp);
+
+            var sexto = control.Reservar(Ip, "FIRMA_7");
+            Assert.True(sexto.Rechazado);
+            Assert.Equal(15 * 60, sexto.SegundosRestantes);
+            Assert.Equal(new[] { "FIRMA_7" }, almacen.Claves);
+
+            // Devolver una reserva sin IP tampoco crea nada de la IP.
+            control.ErrorAlValidar(control.Reservar(Ip, "FIRMA_8"));
+            Assert.DoesNotContain(Ip, almacen.Claves);
+
+            _ahora = _ahora.AddMinutes(15).AddSeconds(1);
+            Assert.False(control.Reservar(Ip, "FIRMA_7").Rechazado);
+        }
+
+        [Fact]
+        public void LimitePropio_UsaSuVentana()
+        {
+            var control = new ControlIntentosLogin(new AlmacenEnMemoria(() => _ahora), () => _ahora, null,
+                new ControlIntentosLogin.Limite(3, TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(2)));
+
+            control.Reservar(null, "FIRMA_1");
+            control.Reservar(null, "FIRMA_1");
+            _ahora = _ahora.AddMinutes(3);
+            Assert.False(control.Reservar(null, "FIRMA_1").BloqueoCuenta);   // los 2 primeros vencieron
+            control.Reservar(null, "FIRMA_1");
+            var tercero = control.Reservar(null, "FIRMA_1");
+            Assert.True(tercero.BloqueoCuenta);
+            Assert.Equal(10 * 60, control.Reservar(null, "FIRMA_1").SegundosRestantes);
+        }
+
         private class AlmacenEnMemoria : IAlmacenIntentosLogin
         {
             private readonly Dictionary<string, (IntentosLogin Intentos, DateTime Vence)> _datos =
@@ -190,6 +242,8 @@ namespace WebSGV.Tests
             private readonly Func<DateTime> _reloj;
 
             public AlmacenEnMemoria(Func<DateTime> reloj) { _reloj = reloj; }
+
+            public IEnumerable<string> Claves => _datos.Keys;
 
             public IntentosLogin Leer(string clave)
             {
