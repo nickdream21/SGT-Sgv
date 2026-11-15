@@ -4,12 +4,18 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Views
 {
+    /// <summary>
+    /// Destino del enlace del correo de recuperación (<c>?token=</c> en claro). En la BD solo está
+    /// el SHA-256 del token (<see cref="TokenRecuperacion"/>): se busca y se consume por el hash.
+    /// Los tokens inválidos por IP tienen límite (<see cref="SolicitudRecuperacion.ControlTokens"/>).
+    /// </summary>
     public partial class RestablecerContrasena : PaginaBase
     {
-        private string TokenActual
+        /// <summary>Hash del token ya validado (no el token en claro).</summary>
+        private string HashTokenActual
         {
-            get { return ViewState["TokenActual"]?.ToString() ?? ""; }
-            set { ViewState["TokenActual"] = value; }
+            get { return ViewState["HashTokenActual"]?.ToString() ?? ""; }
+            set { ViewState["HashTokenActual"] = value; }
         }
 
         protected void Page_Load(object sender, EventArgs e)
@@ -24,13 +30,37 @@ namespace WebSGV.Views
                     return;
                 }
 
-                if (!ValidarToken(token))
+                // Se reserva antes de validar (bajo candado: peticiones en paralelo no se saltan el
+                // límite) y se devuelve si el token era válido o si la BD falló.
+                string ip = IpClienteHelper.Obtener(Request);
+                var control = SolicitudRecuperacion.ControlTokens;
+                var reserva = control.Reservar(null, SolicitudRecuperacion.ClaveTokenInvalido(ip));
+                if (reserva.Rechazado)
+                {
+                    LogSGV.Advertencia("Restablecer contraseña: IP {Ip} bloqueada por tokens inválidos", ip);
+                    int minutos = (int)Math.Ceiling(reserva.SegundosRestantes / 60.0);
+                    MostrarError("Demasiados enlaces no válidos. Intente nuevamente en " + minutos + " minuto(s).");
+                    return;
+                }
+
+                string hash = TokenRecuperacion.Hash(token);
+                bool? valido = ValidarToken(hash);
+                if (valido != false)
+                    control.ErrorAlValidar(reserva); // devuelve la reserva: no fue un token inválido
+
+                if (valido == null)
+                {
+                    MostrarError("No se pudo verificar el enlace. Intente nuevamente en unos minutos.");
+                    return;
+                }
+
+                if (valido == false)
                 {
                     MostrarError("El enlace ha expirado o no es válido. Solicite uno nuevo desde la página de recuperación.");
                     return;
                 }
 
-                TokenActual = token;
+                HashTokenActual = hash;
             }
         }
 
@@ -57,18 +87,20 @@ namespace WebSGV.Views
                 return;
             }
 
-            if (string.IsNullOrEmpty(TokenActual))
+            if (string.IsNullOrEmpty(HashTokenActual))
             {
                 MostrarError("Sesión expirada. Solicite un nuevo enlace de recuperación.");
                 return;
             }
 
-            if (ActualizarContrasena(TokenActual, nuevaContrasena))
+            int? idUsuario = ActualizarContrasena(HashTokenActual, nuevaContrasena);
+            if (idUsuario.HasValue)
             {
-                AuditoriaHelper.Registrar("UPDATE", "Usuarios", descripcion:
+                AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario.Value,
                     "Contraseña restablecida mediante enlace de recuperación");
                 MostrarMensaje("¡Contraseña restablecida exitosamente! Ahora puede iniciar sesión.", true);
                 pnlFormulario.Visible = false;
+                HashTokenActual = "";
             }
             else
             {
@@ -81,50 +113,60 @@ namespace WebSGV.Views
             Response.Redirect("~/Views/Login.aspx");
         }
 
-        private bool ValidarToken(string token)
+        /// <summary>true: vigente; false: no existe o venció; null: error de BD.</summary>
+        private bool? ValidarToken(string hashToken)
         {
             try
             {
                 int count = Convert.ToInt32(DbHelper.EjecutarEscalar(
                     @"SELECT COUNT(*) FROM Usuarios
-                      WHERE resetToken = @Token
+                      WHERE resetToken = @Hash
                       AND resetTokenExpira > @FechaActual
                       AND activo = 1",
-                    DbHelper.Param("@Token", token),
+                    DbHelper.Param("@Hash", hashToken),
                     DbHelper.Param("@FechaActual", FechaHelper.Ahora())));
                 return count > 0;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error al validar token: {ex.Message}");
-                return false;
+                LogSGV.Error(ex, "Restablecer contraseña: error al validar el token");
+                return null;
             }
         }
 
-        private bool ActualizarContrasena(string token, string nuevaContrasena)
+        /// <summary>
+        /// Cambia la contraseña y consume el token en un único UPDATE (uso único y atómico: dos
+        /// envíos con el mismo enlace no pueden ganar ambos). Devuelve el idUsuario o null.
+        /// </summary>
+        private int? ActualizarContrasena(string hashToken, string nuevaContrasena)
         {
             try
             {
                 string hashedPassword = PasswordHelper.HashPassword(nuevaContrasena);
 
-                int filasAfectadas = DbHelper.EjecutarNonQuery(
-                    @"UPDATE Usuarios
+                // OUTPUT ... INTO una variable de tabla: funciona aunque la tabla tenga triggers.
+                object id = DbHelper.EjecutarEscalar(
+                    @"DECLARE @Actualizado TABLE (idUsuario INT);
+                      UPDATE Usuarios
                       SET contrasena = @NuevaContrasena,
                           resetToken = NULL,
                           resetTokenExpira = NULL
-                      WHERE resetToken = @Token
+                      OUTPUT inserted.idUsuario INTO @Actualizado
+                      WHERE resetToken = @Hash
                       AND resetTokenExpira > @FechaActual
-                      AND activo = 1",
+                      AND activo = 1;
+                      SELECT TOP 1 idUsuario FROM @Actualizado;",
                     DbHelper.Param("@NuevaContrasena", hashedPassword),
-                    DbHelper.Param("@Token", token),
+                    DbHelper.Param("@Hash", hashToken),
                     DbHelper.Param("@FechaActual", FechaHelper.Ahora()));
 
-                return filasAfectadas > 0;
+                if (id == null || id == DBNull.Value) return null;
+                return Convert.ToInt32(id);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error al actualizar contraseña: {ex.Message}");
-                return false;
+                LogSGV.Error(ex, "Restablecer contraseña: error al actualizar la contraseña");
+                return null;
             }
         }
 

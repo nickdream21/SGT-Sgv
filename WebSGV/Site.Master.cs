@@ -252,7 +252,7 @@ namespace WebSGV
 
                     string nuevoHash = PasswordHelper.HashPassword(nuevaContrasena);
                     using (SqlCommand cmd = new SqlCommand(
-                        "UPDATE Usuarios SET contrasena = @contrasena, requiereCambioContrasena = 0 WHERE idUsuario = @idUsuario", conn))
+                        "UPDATE Usuarios SET contrasena = @contrasena, requiereCambioContrasena = 0, resetToken = NULL, resetTokenExpira = NULL WHERE idUsuario = @idUsuario", conn))
                     {
                         cmd.Parameters.AddWithValue("@contrasena", nuevoHash);
                         cmd.Parameters.AddWithValue("@idUsuario", IdUsuarioActual);

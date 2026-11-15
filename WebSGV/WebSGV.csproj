@@ -530,6 +530,8 @@
     <Compile Include="Helpers\HashHelper.cs" />
     <Compile Include="Helpers\SesionHelper.cs" />
     <Compile Include="Helpers\ControlIntentosLogin.cs" />
+    <Compile Include="Helpers\TokenRecuperacion.cs" />
+    <Compile Include="Helpers\SolicitudRecuperacion.cs" />
     <Compile Include="Helpers\LogSGV.cs" />
     <Compile Include="Helpers\NumeroALetrasHelper.cs" />
     <Compile Include="Helpers\PaginaBase.cs">

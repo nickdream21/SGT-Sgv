@@ -345,7 +345,7 @@ namespace WebSGV.Views
 
             string hash = PasswordHelper.HashPassword(nuevaPass);
             DbHelper.EjecutarNonQuery(
-                "UPDATE Usuarios SET contrasena = @hash, requiereCambioContrasena = 1 WHERE idUsuario = @id",
+                "UPDATE Usuarios SET contrasena = @hash, requiereCambioContrasena = 1, resetToken = NULL, resetTokenExpira = NULL WHERE idUsuario = @id",
                 DbHelper.Param("@hash", hash),
                 DbHelper.Param("@id",   idUsuario));
 
