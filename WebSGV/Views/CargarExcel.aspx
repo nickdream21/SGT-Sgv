@@ -131,6 +131,7 @@
         </div>
 
         <div class="records-table">
+            <div class="table-responsive">
             <asp:GridView ID="gvHistorial" runat="server" CssClass="table table-striped table-bordered table-hover" 
                 AutoGenerateColumns="false" AllowPaging="true" PageSize="10" OnPageIndexChanging="gvHistorial_PageIndexChanging"
                 EmptyDataText="No hay registros de cargas para mostrar">
@@ -160,6 +161,7 @@
                     </asp:TemplateField>
                 </Columns>
             </asp:GridView>
+            </div>
         </div>
 
         <!-- Descargar Plantilla -->

@@ -123,6 +123,23 @@ input[type="password"]::-ms-clear {
     line-height: 1;
 }
 
+/* Celular: el ojo y el enlace de recuperación con un área táctil de al menos 40 px. */
+@media (max-width: 768px) {
+    .btn-toggle-pass {
+        right: 2px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .forgot-password a {
+        display: inline-block;
+        padding: 10px 8px;
+    }
+}
+
 .btn-toggle-pass:hover {
     color: #343a40;
 }

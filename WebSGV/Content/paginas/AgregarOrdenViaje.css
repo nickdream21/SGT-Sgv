@@ -598,3 +598,11 @@
     padding-left: 1.25rem;
     padding-right: 1.25rem;
 }
+
+/* Celular: las tablas de ingresos y gastos conservan un ancho mínimo y se desplazan dentro de su
+   .table-responsive; así los campos de montos no quedan de 20-30 px. */
+@media (max-width: 575.98px) {
+    .table-financial {
+        min-width: 680px;
+    }
+}

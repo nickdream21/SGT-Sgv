@@ -118,6 +118,7 @@
                         <div id="formLiquidacion">
                             <!-- Tabla de ingresos -->
                             <h5>Ingresos</h5>
+                            <div class="table-responsive">
                             <table class="table table-bordered liquidacion-tabla-ingresos">
                                 <thead class="liquidacion-tabla-cabecera">
                                     <tr>
@@ -204,9 +205,11 @@
                                     </ItemTemplate>
                                 </asp:Repeater>
                             </table>
+                            </div>
 
                             <!-- Tabla de Gastos -->
                             <h5 class="mt-4">Gastos</h5>
+                            <div class="table-responsive">
                             <table class="table table-bordered liquidacion-tabla-gastos">
                                 <thead class="liquidacion-tabla-cabecera">
                                     <tr>
@@ -345,6 +348,7 @@
                                     </ItemTemplate>
                                 </asp:Repeater>
                             </table>
+                            </div>
 
                             <!-- Observaciones de Liquidación -->
                             <div class="form-group mt-3">
@@ -396,6 +400,7 @@
 
                             <h5 class="mt-4">Productos asociados</h5>
                             <!-- Tabla Productos -->
+                            <div class="table-responsive">
                             <asp:GridView ID="gvProductos" runat="server" AutoGenerateColumns="false" CssClass="table table-bordered guias-tabla-productos">
                                 <Columns>
                                     <asp:BoundField DataField="idProducto" HeaderText="ID" Visible="false" />
@@ -403,6 +408,7 @@
                                     <asp:BoundField DataField="CantidadBolsas" HeaderText="Cantidad de bolsas" />
                                 </Columns>
                             </asp:GridView>
+                            </div>
                         </div>
                     </div>
                 </div>

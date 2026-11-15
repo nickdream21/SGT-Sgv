@@ -162,3 +162,18 @@ table[border="1"] td .btn { white-space: nowrap; }
        el nombre y el rol siguen en el pie de página. */
     .navbar-collapse:has(> .navbar-nav > .nav-item:nth-child(7)) .user-nombre { display: none; }
 }
+
+/* Celular (< 576 px): se aprovecha todo el ancho, los encabezados con botón bajan de línea en vez
+   de salirse y los avisos ocupan el ancho bajo la barra de menú (abajo tapaban la barra fija del
+   conductor y los pies de los modales). */
+@media (max-width: 575.98px) {
+    /* Se deja el relleno de Bootstrap (15 px): con menos, las .row (margen -15 px) se salen de la pantalla.
+       !important para ganar también a los anchos propios de página (.container:has(...) con 97vw). */
+    body > .container, form > .container, .container.mt-4 { max-width: 100% !important; }
+    /* Solo encabezados: el de página (título + botón: Registro*, CatalogoCliente, GestionUsuarios,
+       DashboardAdminSistema) y los .card-header. Las filas "etiqueta + valor" no se tocan. */
+    .container .d-flex.justify-content-between.border-bottom.pb-3,
+    .container .d-flex.justify-content-between:has(> div > h2),
+    .card-header.d-flex.justify-content-between { flex-wrap: wrap; row-gap: .5rem; column-gap: .5rem; }
+    .sgv-avisos { top: 70px; left: 12px; right: 12px; width: auto; max-width: none; }
+}

@@ -430,9 +430,6 @@
 
     </form>
 
-    <!-- jQuery, Popper, Bootstrap y jQuery UI ya se cargaron en el head -->
-    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/responsive-mobile.js") %>"></script>
-
     <script>
         // Valores del servidor que usa el script de la página (ids de controles ASP.NET).
         var SGV = Object.assign(window.SGV || {}, {

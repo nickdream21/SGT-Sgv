@@ -36,11 +36,11 @@
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group col-6">
+                            <div class="form-group col-12 col-sm-6">
                                 <label class="form-label" for="<%= txtFecha.ClientID %>">Fecha y hora <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtFecha" runat="server" CssClass="form-control" TextMode="DateTimeLocal" />
                             </div>
-                            <div class="form-group col-6">
+                            <div class="form-group col-12 col-sm-6">
                                 <label class="form-label">Concepto <span class="text-danger">*</span></label>
                                 <asp:DropDownList ID="ddlConceptoEntrega" runat="server" CssClass="form-control mv-solo-entrega" />
                                 <asp:DropDownList ID="ddlConceptoPago" runat="server" CssClass="form-control mv-solo-pago" style="display:none;" />
@@ -48,22 +48,22 @@
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group col-6">
+                            <div class="form-group col-12 col-sm-6">
                                 <label class="form-label" for="<%= txtSoles.ClientID %>">Soles (S/)</label>
-                                <asp:TextBox ID="txtSoles" runat="server" CssClass="form-control" TextMode="Number" step="0.01" min="0" placeholder="0.00" />
+                                <asp:TextBox ID="txtSoles" runat="server" CssClass="form-control" TextMode="Number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" />
                             </div>
-                            <div class="form-group col-6">
+                            <div class="form-group col-12 col-sm-6">
                                 <label class="form-label" for="<%= txtDolares.ClientID %>">Dólares (US$)</label>
-                                <asp:TextBox ID="txtDolares" runat="server" CssClass="form-control" TextMode="Number" step="0.01" min="0" placeholder="0.00" />
+                                <asp:TextBox ID="txtDolares" runat="server" CssClass="form-control" TextMode="Number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" />
                             </div>
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group col-6">
+                            <div class="form-group col-12 col-sm-6">
                                 <label class="form-label" for="<%= ddlMedio.ClientID %>">Medio <span class="text-danger">*</span></label>
                                 <asp:DropDownList ID="ddlMedio" runat="server" CssClass="form-control" />
                             </div>
-                            <div class="form-group col-6">
+                            <div class="form-group col-12 col-sm-6">
                                 <label class="form-label" for="<%= txtOperacion.ClientID %>">N.° de operación</label>
                                 <asp:TextBox ID="txtOperacion" runat="server" CssClass="form-control" MaxLength="50" placeholder="Yape / transferencia" />
                             </div>
@@ -71,13 +71,13 @@
 
                         <div class="mv-solo-pago" style="display:none;">
                             <div class="form-row">
-                                <div class="form-group col-7">
+                                <div class="form-group col-12 col-sm-7">
                                     <label class="form-label" for="<%= txtProveedor.ClientID %>">Proveedor <span class="text-danger">*</span></label>
                                     <asp:TextBox ID="txtProveedor" runat="server" CssClass="form-control" MaxLength="150" placeholder="Ej.: Llantería El Rápido" />
                                 </div>
-                                <div class="form-group col-5">
+                                <div class="form-group col-12 col-sm-5">
                                     <label class="form-label" for="<%= txtRuc.ClientID %>">RUC</label>
-                                    <asp:TextBox ID="txtRuc" runat="server" CssClass="form-control" MaxLength="11" placeholder="11 dígitos" />
+                                    <asp:TextBox ID="txtRuc" runat="server" CssClass="form-control" inputmode="numeric" MaxLength="11" placeholder="11 dígitos" />
                                 </div>
                             </div>
                             <div class="form-group">

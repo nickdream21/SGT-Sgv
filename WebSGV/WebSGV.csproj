@@ -284,7 +284,6 @@
     <Content Include="Scripts\Custom\JavaScript.js" />
     <Content Include="Scripts\JavaScript.js" />
     <Content Include="Scripts\OrdenViaje.js" />
-    <Content Include="Scripts\responsive-mobile.js" />
     <Content Include="Scripts\jquery-si-falta.js" />
     <Content Include="Content\lib\bootstrap-4.6.2\bootstrap.min.css" />
     <Content Include="Content\lib\fontawesome-5.15.4\css\all.min.css" />

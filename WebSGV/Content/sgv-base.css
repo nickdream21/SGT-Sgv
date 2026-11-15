@@ -51,6 +51,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.75rem;
     padding: 0.625rem 1rem;
     background: var(--sgv-fondo);
@@ -139,6 +140,13 @@
 }
 
 .sgv-tab-alerta:empty { display: none; }
+
+/* Celular: las pestañas se desplazan en horizontal en vez de partir sus textos y ensanchar la página. */
+@media (max-width: 575.98px) {
+    .sgv-tabs { overflow-x: auto; overflow-y: hidden; gap: 1rem; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+    .sgv-tab { flex-shrink: 0; white-space: nowrap; margin-bottom: 0; }
+    .sgv-tab-contador, .sgv-tab-alerta { white-space: nowrap; }
+}
 
 /* === Estados: píldora con tinte suave, sin borde ni animación === */
 .sgv-estado {

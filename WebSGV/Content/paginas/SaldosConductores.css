@@ -55,6 +55,25 @@
     width: 2rem;
 }
 
+/* Celular: el total y su botón bajan debajo del nombre (antes ensanchaban la página) y las
+   casillas se agrandan para poder marcarlas con el dedo. */
+@media (max-width: 575.98px) {
+    .sc-total {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .sc-sel {
+        width: 20px;
+        height: 20px;
+        margin: 10px 4px;
+    }
+
+    .sc-col-check {
+        width: 2.75rem;
+    }
+}
+
 tr.sc-saldada td {
     color: var(--sgv-texto-suave);
 }

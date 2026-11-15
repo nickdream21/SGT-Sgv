@@ -60,6 +60,7 @@
 
             <section class="vd-card">
                 <h2>Firmas de la orden</h2>
+                <div class="table-responsive">
                 <table class="table table-sm vd-tabla mb-0">
                     <thead><tr><th>Etapa</th><th>Firmante</th><th>Fecha</th><th>Estado</th><th>Código</th></tr></thead>
                     <tbody>
@@ -76,6 +77,7 @@
                         </asp:Repeater>
                     </tbody>
                 </table>
+                </div>
             </section>
         </asp:Panel>
 

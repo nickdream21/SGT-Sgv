@@ -2,6 +2,10 @@
 
 .cl-cargando { text-align: center; color: var(--gris-600); padding: 40px 0; }
 
+/* Regresar al panel sin firmar (antes solo existía en la pantalla de éxito). */
+.cl-volver { display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px; margin-bottom: 4px; font-size: 15px; font-weight: 600; color: var(--azul); text-decoration: none; }
+.cl-volver:hover, .cl-volver:focus { color: var(--azul); text-decoration: underline; }
+
 .cl-tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
 .cl-tabla th { font-size: 11px; text-transform: uppercase; color: var(--gris-600); font-weight: 600; padding: 6px 4px; border-bottom: 2px solid var(--gris-300); }
 .cl-tabla td { padding: 7px 4px; border-bottom: 1px solid var(--gris-300); vertical-align: top; }

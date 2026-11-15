@@ -30,6 +30,7 @@
 
     <main class="fl-wrap">
         <div id="pantallaConformidad">
+            <a href="<%= ResolveUrl("~/Views/DashboardConductor.aspx") %>" class="cl-volver"><i class="fas fa-arrow-left mr-2"></i>Volver</a>
             <div id="alertBox" class="fl-alert"></div>
 
             <div id="cargando" class="cl-cargando"><i class="fas fa-spinner fa-spin mr-2"></i>Cargando la liquidación...</div>

@@ -170,7 +170,8 @@
 }
 .dc-hito-manual .dc-ayuda { margin-bottom: 8px; color: var(--dc-alerta); }
 
-.dc-par { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dc-par { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.dc-par > *, .dc-par .form-control { min-width: 0; }
 .dc .form-control { min-height: 44px; font-size: 16px; border-radius: 8px; } /* 16 px: iOS no hace zoom */
 .dc textarea.form-control { min-height: 0; }
 .dc-lbl { display: block; font-size: 0.8rem; font-weight: 500; color: var(--dc-suave); margin: 10px 0 4px; }
@@ -260,7 +261,7 @@ body.dc-nacional .solo-intl { display: none !important; }
 .dc-btn:hover { text-decoration: none; }
 .dc-btn:disabled { opacity: .65; cursor: default; }
 .dc-btn-bloque { width: 100%; }
-.dc-btn-chico { min-height: 36px; padding: 0 14px; font-size: 0.85rem; }
+.dc-btn-chico { min-height: 40px; padding: 0 14px; font-size: 0.85rem; }
 .dc-btn-primario { background: var(--dc-primario); color: #fff; }
 .dc-btn-primario:hover, .dc-btn-primario:focus { background: var(--dc-primario-osc); color: #fff; }
 .dc-btn-linea { background: #fff; color: var(--dc-primario); border-color: #bfdbfe; }

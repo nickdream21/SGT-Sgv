@@ -1469,6 +1469,7 @@
                 <div class="modal-body">
                     <asp:UpdatePanel ID="UpdatePanelModal" runat="server" UpdateMode="Conditional">
                         <ContentTemplate>
+                            <div class="table-responsive">
                             <asp:GridView ID="gvHistorialViajes" runat="server" 
                                 CssClass="table table-striped table-hover"
                                 AutoGenerateColumns="false"
@@ -1494,6 +1495,7 @@
                                     </asp:TemplateField>
                                 </Columns>
                             </asp:GridView>
+                            </div>
                         </ContentTemplate>
                         <Triggers>
                             <asp:AsyncPostBackTrigger ControlID="gvHistorialViajes" EventName="RowCommand" />

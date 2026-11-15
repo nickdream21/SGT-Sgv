@@ -39,7 +39,7 @@
                             <div class="form-group">
                                 <label class="font-weight-bold">RUC (Opcional):</label>
                                 <div class="input-group">
-                                    <asp:TextBox ID="txtRUC" runat="server" CssClass="form-control" MaxLength="11"></asp:TextBox>
+                                    <asp:TextBox ID="txtRUC" runat="server" CssClass="form-control" inputmode="numeric" MaxLength="11"></asp:TextBox>
                                     <div class="input-group-append">
                                         <asp:Button ID="btnBuscarRUC" runat="server" CssClass="btn btn-secondary" Text="Verificar" OnClientClick="verificarRUC(); return false;" />
                                     </div>
@@ -75,7 +75,7 @@
                             <div class="form-row">
                                 <div class="form-group col-6">
                                     <label class="font-weight-bold">Tel&#xE9;fono:</label>
-                                    <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control" MaxLength="50"></asp:TextBox>
+                                    <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control" inputmode="tel" MaxLength="50"></asp:TextBox>
                                 </div>
                                 <div class="form-group col-6">
                                     <label class="font-weight-bold">Moneda:</label>
@@ -207,7 +207,7 @@
                     <div class="form-row">
                         <div class="form-group col-md-4">
                             <label class="font-weight-bold">RUC (Opcional):</label>
-                            <asp:TextBox ID="txtEditarRUC" runat="server" CssClass="form-control" MaxLength="11"></asp:TextBox>
+                            <asp:TextBox ID="txtEditarRUC" runat="server" CssClass="form-control" inputmode="numeric" MaxLength="11"></asp:TextBox>
                             <small class="form-text text-muted">11 d&#xED;gitos. Dejar en blanco si no aplica.</small>
                         </div>
                         <div class="form-group col-md-8">
@@ -226,7 +226,7 @@
                         </div>
                         <div class="form-group col-md-3">
                             <label class="font-weight-bold">Tel&#xE9;fono:</label>
-                            <asp:TextBox ID="txtEditarTelefono" runat="server" CssClass="form-control" MaxLength="50"></asp:TextBox>
+                            <asp:TextBox ID="txtEditarTelefono" runat="server" CssClass="form-control" inputmode="tel" MaxLength="50"></asp:TextBox>
                         </div>
                         <div class="form-group col-md-4">
                             <label class="font-weight-bold">Correo:</label>

@@ -1,67 +1,12 @@
-/* =============================================
-   ESTILOS RESPONSIVE PARA M”VIL - OPCI”N 1: CARDS
+Ôªø/* =============================================
+   AJUSTES GENERALES PARA CELULAR
+   (se carga antes que sgv-base.css, SiteMaster.css y el CSS de cada p√°gina)
    ============================================= */
 
-/* Estilos base para todas las tablas financieras */
-.tabla-financiera {
-    width: 100%;
-    margin-bottom: 1rem;
-}
-
-/* Contenedor responsive para las secciones de ingresos y gastos */
-.seccion-financiera {
-    background: #fff;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.seccion-financiera-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #e9ecef;
-}
-
-    .seccion-financiera-header h5 {
-        margin: 0;
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-
-/* ===== DESKTOP: Tablas normales ===== */
-@media (min-width: 769px) {
-    .mobile-card-view {
-        display: none;
-    }
-
-    .desktop-table-view {
-        display: block;
-    }
-
-    .tabla-financiera input.form-control {
-        font-size: 0.9rem;
-        padding: 0.5rem;
-    }
-}
-
-/* ===== M”VIL: Cards apiladas ===== */
+/* ===== M√ìVIL (‚â§ 768 px) ===== */
 @media (max-width: 768px) {
 
-    /* Ocultar tabla en mÛvil */
-    .desktop-table-view {
-        display: none !important;
-    }
-
-    /* Mostrar cards en mÛvil */
-    .mobile-card-view {
-        display: block;
-    }
-
-    /* Estilos para cada card */
+    /* Tarjeta de montos de LiquidacionesPendientes (.financial-card) */
     .financial-card {
         background: #f8f9fa;
         border: 1px solid #dee2e6;
@@ -71,207 +16,29 @@
         position: relative;
     }
 
-    .financial-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 2px solid #e9ecef;
-    }
-
-    .financial-card-title {
-        font-weight: 600;
-        color: #495057;
-        font-size: 0.85rem;
-    }
-
-    .financial-card-body {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .card-field {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-
-    .card-field-label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #6c757d;
-    }
-
-    .card-field-input input,
-    .card-field-input textarea {
-        width: 100%;
-        font-size: 1rem !important;
-        padding: 0.75rem !important;
-        border: 1px solid #ced4da;
-        border-radius: 6px;
-        -webkit-appearance: none;
-        appearance: none;
-    }
-
-        .card-field-input input:focus,
-        .card-field-input textarea:focus {
-            border-color: #80bdff;
-            outline: 0;
-            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
-        }
-
-    /* Campos de moneda con icono */
-    .currency-input-group {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .currency-input {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        background: white;
-        border: 1px solid #ced4da;
-        border-radius: 6px;
-        padding: 0.5rem;
-    }
-
-    .currency-symbol {
-        font-weight: 600;
-        color: #6c757d;
-        margin-right: 0.5rem;
-        font-size: 0.95rem;
-    }
-
-    .currency-input input {
-        border: none !important;
-        padding: 0.25rem !important;
-        flex: 1;
-        font-size: 1rem !important;
-    }
-
-        .currency-input input:focus {
-            outline: none;
-            box-shadow: none !important;
-        }
-
-    .currency-input:focus-within {
-        border-color: #80bdff;
-        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
-    }
-
-    /* BotÛn de eliminar en card */
-    .card-delete-btn {
-        position: absolute;
-        top: 0.75rem;
-        right: 0.75rem;
-        padding: 0.4rem 0.6rem;
-        font-size: 0.85rem;
-        border-radius: 6px;
-    }
-
-    /* BotÛn de agregar */
-    .btn-add-mobile {
-        width: 100%;
-        padding: 0.875rem;
-        font-size: 1rem;
-        font-weight: 600;
-        border-radius: 8px;
-        margin-top: 1rem;
-    }
-
-    /* Totales en mÛvil */
-    .totales-mobile {
-        background: #e7f3ff;
-        border: 2px solid #0066cc;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-top: 1rem;
-    }
-
-    .totales-mobile-title {
-        font-weight: 700;
-        color: #0066cc;
-        margin-bottom: 0.75rem;
-        font-size: 1rem;
-    }
-
-    .total-row {
+    /* Filas de totales en contenedores <div> (AgregarAbastecimiento). Nunca en <tr>: en la tabla
+       de AgregarOrdenViaje un display:flex en el tfoot desarmaba los anchos de las columnas.
+       :where(div) no suma especificidad: el CSS de la p√°gina sigue mandando como antes. */
+    :where(div).total-row {
         display: flex;
         justify-content: space-between;
         padding: 0.5rem 0;
         border-bottom: 1px solid #b3d9ff;
     }
 
-        .total-row:last-child {
+        :where(div).total-row:last-child {
             border-bottom: none;
             font-weight: 700;
             font-size: 1.1rem;
             padding-top: 0.75rem;
         }
 
-    .total-label {
-        color: #495057;
-    }
-
-    .total-value {
-        font-weight: 600;
-        color: #0066cc;
-    }
-
-    /* Instrucciones en mÛvil */
-    .instruccion-mobile {
-        background: #fff3cd;
-        border-left: 4px solid #ffc107;
-        padding: 0.875rem;
-        margin-bottom: 1rem;
-        border-radius: 4px;
-        font-size: 0.9rem;
-    }
-
-        .instruccion-mobile i {
-            color: #ffc107;
-            margin-right: 0.5rem;
-        }
-
-    /* SecciÛn de datos generales en mÛvil */
-    .datos-generales-mobile {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .dato-general-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-
-    .dato-general-label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #6c757d;
-    }
-
-    .dato-general-input {
-        width: 100%;
-        font-size: 1rem !important;
-        padding: 0.75rem !important;
-    }
-
-    /* Mejorar contraste de textos en pantallas pequeÒas */
+    /* Mejorar contraste de textos en pantallas peque√±as */
     .text-muted {
         color: #495057 !important;
     }
 
-    /* Espaciado de secciones */
-    .seccion-financiera {
-        padding: 1.25rem;
-    }
-
-    /* Headers m·s grandes en mÛvil */
+    /* Headers m√°s grandes en m√≥vil */
     .page-title {
         font-size: 1.5rem !important;
     }
@@ -281,13 +48,8 @@
     }
 }
 
-/* ===== AJUSTES ADICIONALES PARA PANTALLAS MUY PEQUE—AS ===== */
+/* ===== PANTALLAS MUY PEQUE√ëAS ===== */
 @media (max-width: 480px) {
-    .seccion-financiera {
-        padding: 1rem;
-        margin-bottom: 1rem;
-    }
-
     .financial-card {
         padding: 0.875rem;
     }
@@ -295,29 +57,32 @@
     .page-title {
         font-size: 1.25rem !important;
     }
-
-    .btn-add-mobile {
-        padding: 0.75rem;
-        font-size: 0.95rem;
-    }
 }
 
-/* ===== MEJORAS GENERALES PARA INPUTS EN M”VIL ===== */
+/* ===== MEJORAS GENERALES PARA INPUTS EN M√ìVIL ===== */
 @media (max-width: 768px) {
 
-    /* Hacer todos los inputs m·s grandes y f·ciles de tocar */
-    input[type="text"],
-    input[type="number"],
-    input[type="date"],
-    input[type="time"],
+    /* 16px evita el zoom autom√°tico de iOS al enfocar (incluye date/datetime-local/select2).
+       Los botones <input type=submit|button> (asp:Button) quedan fuera: no reciben teclado. */
+    input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=submit]):not([type=button]):not([type=reset]):not([type=image]):not([type=hidden]),
+    select,
     textarea,
-    select {
-        font-size: 16px !important; /* Evita el zoom autom·tico en iOS */
-        padding: 0.75rem !important;
-        min-height: 44px; /* TamaÒo mÌnimo recomendado para touch */
+    .select2-selection,
+    .select2-search__field {
+        font-size: 16px !important;
     }
 
-    /* Botones m·s grandes */
+    /* √Årea t√°ctil c√≥moda sin recortar el texto: el alto crece con el contenido.
+       Sin !important: la especificidad (0,3,1) ya le gana a .form-control y .form-control-sm de
+       Bootstrap, y los estilos inline compactos de una p√°gina (DashboardOperador) siguen mandando. */
+    .form-control:not(textarea):not([multiple]):not([size]) {
+        height: auto;
+        min-height: 44px;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    /* Botones m√°s grandes */
     .btn {
         padding: 0.75rem 1rem;
         font-size: 1rem;
@@ -330,16 +95,11 @@
         min-height: 38px;
     }
 
-    /* Modales responsive */
-    .modal-dialog {
-        margin: 0.5rem;
-    }
-
     .modal-body {
         padding: 1.25rem;
     }
 
-    /* Tabs m·s accesibles en mÛvil */
+    /* Tabs m√°s accesibles en m√≥vil */
     .nav-tabs-custom .nav-link {
         padding: 0.875rem 1rem;
         font-size: 0.9rem;

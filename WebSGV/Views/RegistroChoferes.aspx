@@ -87,7 +87,7 @@
                                 <div class="col-md-8 form-group" id="grupoDNI">
                                     <label class="font-weight-bold">DNI:</label>
                                     <div class="input-group" data-enter="<%= btnBuscarDNI.ClientID %>">
-                                        <asp:TextBox ID="txtDNI" runat="server" CssClass="form-control" MaxLength="8" placeholder="8 dígitos"></asp:TextBox>
+                                        <asp:TextBox ID="txtDNI" runat="server" CssClass="form-control" inputmode="numeric" MaxLength="8" placeholder="8 dígitos"></asp:TextBox>
                                         <div class="input-group-append">
                                             <asp:Button ID="btnBuscarDNI" runat="server" CssClass="btn btn-secondary" Text="Buscar" OnClientClick="buscarPorDNI(); return false;" />
                                         </div>
@@ -133,7 +133,7 @@
                                 </div>
                                 <div class="col-md-6 form-group">
                                     <label class="font-weight-bold">Tel&#xE9;fono:</label>
-                                    <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control"></asp:TextBox>
+                                    <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control" inputmode="tel"></asp:TextBox>
                                     <asp:RegularExpressionValidator ID="revTelefono" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtTelefono" ValidationExpression="^$|^\d{7,9}$" ErrorMessage="Teléfono: ingrese entre 7 y 9 dígitos numéricos." CssClass="text-danger small" Display="Dynamic" />
                                 </div>
                             </div>
@@ -234,7 +234,7 @@
                         </div>
                         <div class="col-md-6 form-group mb-0">
                             <label class="font-weight-bold">Tel&#xE9;fono</label>
-                            <asp:TextBox ID="txtEditarTelefono" runat="server" CssClass="form-control"></asp:TextBox>
+                            <asp:TextBox ID="txtEditarTelefono" runat="server" CssClass="form-control" inputmode="tel"></asp:TextBox>
                         </div>
                     </div>
                 </div>

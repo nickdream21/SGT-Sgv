@@ -249,6 +249,17 @@
 .ld-tabla-lotes tbody tr:nth-child(even) td:last-child { background: #f8fafc; }
 .ld-tabla-lotes tbody tr:hover td:last-child { background: #eff6ff; }
 
+/* Celular: la columna fija de acciones tapaba media tabla y las tarjetas anidadas restaban ancho.
+   Se quita lo fijo (la tabla se desplaza entera) y se reduce el relleno de las tarjetas. */
+@media (max-width: 575.98px) {
+    .ld-tabla-lotes th:last-child,
+    .ld-tabla-lotes td:last-child { position: static; box-shadow: none; }
+    .section-header { padding: .75rem; }
+    .section-content { padding: .75rem; }
+    .section-content .section-card .section-header { padding: .6rem .5rem; }
+    .section-content .section-card .section-content { padding: .5rem; }
+}
+
 /* Paginado de la lista de lotes */
 .ld-pager td { padding: .6rem !important; background: #f8fafc !important; border: 0 !important; }
 .ld-pager table { margin: 0 auto; }

@@ -50,6 +50,7 @@
     <!-- Tabla de usuarios -->
     <div class="card shadow-sm">
         <div class="card-body p-0">
+            <div class="table-responsive">
             <asp:GridView ID="gvUsuarios" runat="server"
                 AutoGenerateColumns="false"
                 CssClass="table table-hover mb-0"
@@ -91,6 +92,7 @@
                     </div>
                 </EmptyDataTemplate>
             </asp:GridView>
+            </div>
         </div>
     </div>
 

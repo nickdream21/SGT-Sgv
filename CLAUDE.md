@@ -48,7 +48,7 @@ Non-sensitive `appSettings` (company name, RUC, PDF archive path) live inline in
 ### Request flow
 
 1. User hits a `.aspx` URL directly. Pure WebForms: no MVC, Razor, bundling, FriendlyUrls or AjaxControlToolkit (removed 2026-10-07; don't re-add). `App_Start/BundleConfig.cs` only maps the ScriptManager `"jquery"` resource.
-2. `Site.Master` / `Site.Mobile.Master` renders the shell; all view pages extend it.
+2. `Site.Master` renders the shell (one responsive master; there is no mobile master); all view pages extend it.
 3. Code-behind (`Page_Load`) verifies session, checks role, loads data on `!IsPostBack`.
 4. Data access goes directly to SQL Server via `SqlCommand` (no ORM, no repository abstraction) using the `ConexionSGV` connection string.
 5. Writes invoke stored procedures (named `sp_*`); reads may use inline SQL or SPs.

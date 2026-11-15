@@ -43,7 +43,7 @@
                             </div>
                             <div class="form-group">
                                 <label class="font-weight-bold">RUC</label>
-                                <asp:TextBox ID="txtRuc" runat="server" CssClass="form-control" MaxLength="20" placeholder="Ej: 20123456789"></asp:TextBox>
+                                <asp:TextBox ID="txtRuc" runat="server" CssClass="form-control" inputmode="numeric" MaxLength="20" placeholder="Ej: 20123456789"></asp:TextBox>
                             </div>
                             <div class="form-group">
                                 <label class="font-weight-bold">Contacto</label>
@@ -51,7 +51,7 @@
                             </div>
                             <div class="form-group">
                                 <label class="font-weight-bold">Tel&#xE9;fono</label>
-                                <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control" MaxLength="20" placeholder="Ej: 987654321"></asp:TextBox>
+                                <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control" inputmode="tel" MaxLength="20" placeholder="Ej: 987654321"></asp:TextBox>
                             </div>
                             <asp:Button ID="btnRegistrar" runat="server" CssClass="btn btn-block text-white"
                                 style="background-color:#2d6a4f;" Text="Registrar cliente" OnClick="btnRegistrar_Click" />

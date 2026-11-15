@@ -49,7 +49,7 @@
                             </div>
                             <div class="form-group">
                                 <label class="font-weight-bold">Tel&#xE9;fono</label>
-                                <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control" MaxLength="20" placeholder="Ej: 987654321"></asp:TextBox>
+                                <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control" inputmode="tel" MaxLength="20" placeholder="Ej: 987654321"></asp:TextBox>
                             </div>
                             <asp:Button ID="btnRegistrar" runat="server" CssClass="btn btn-block text-white" 
                                 style="background-color:#2d6a4f;" Text="Registrar operador" OnClick="btnRegistrar_Click" />
