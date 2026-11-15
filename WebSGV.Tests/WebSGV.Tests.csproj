@@ -23,6 +23,8 @@
 
   <ItemGroup>
     <Reference Include="System.Transactions" />
+    <!-- HttpRequestBase falso (IpClienteHelperTests) -->
+    <Reference Include="System.Web" />
     <!-- Para armar un .docx de prueba en memoria (LectorProgramacionWord) -->
     <Reference Include="System.IO.Compression" />
     <Reference Include="WebSGV">

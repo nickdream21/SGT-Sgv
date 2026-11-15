@@ -64,7 +64,7 @@ namespace WebSGV.Views.Exportacion
             string clave = ConfigurationManager.AppSettings["GpsAutomaticoClave"];
             if (string.IsNullOrWhiteSpace(clave) || !IgualSeguro(clave, ctx.Request.Headers["X-SGV-Clave"]))
             {
-                LogSGV.Advertencia("GPS automático: llamada sin clave válida desde {Ip}", ctx.Request.UserHostAddress);
+                LogSGV.Advertencia("GPS automático: llamada sin clave válida desde {Ip}", IpClienteHelper.Obtener(ctx.Request));
                 Responder(ctx, 403, new { error = "Clave inválida" });
                 return;
             }

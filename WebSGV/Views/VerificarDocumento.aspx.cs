@@ -53,7 +53,7 @@ namespace WebSGV.Views
                 return;
             }
 
-            if (!PermitirConsulta(Request.UserHostAddress ?? ""))
+            if (!PermitirConsulta(IpClienteHelper.Obtener(Request)))
             {
                 MostrarNoEncontrado("Se hicieron demasiadas consultas desde su conexión. Intente nuevamente en unos minutos.");
                 return;

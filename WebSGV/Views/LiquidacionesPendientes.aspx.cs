@@ -999,11 +999,15 @@ namespace WebSGV.Views
             }
         }
 
-        /// <summary>Usuario, IP y navegador del request actual para registrar una firma.</summary>
+        /// <summary>
+        /// Usuario, IP y navegador del request actual para registrar una firma. La IP es REMOTE_ADDR
+        /// (IpClienteHelper: nunca X-Forwarded-For, que el cliente puede falsificar), recortada al
+        /// largo de FirmaDigital.ipOrigen.
+        /// </summary>
         internal static ContextoFirma ContextoFirmaActual(System.Web.HttpContext ctx) => new ContextoFirma
         {
             IdUsuario = SesionHelper.ObtenerUsuarioId(ctx.Session),
-            Ip = ObtenerIpCliente(ctx),
+            Ip = IpClienteHelper.Obtener(ctx.Request, IpClienteHelper.LargoMaximoFirma),
             UserAgent = ctx.Request.UserAgent ?? ""
         };
 
@@ -1057,7 +1061,7 @@ namespace WebSGV.Views
                 int idRevocacion = 0;
                 if (revocarFirmaConductor && idFirmaConductor.HasValue)
                 {
-                    string ip = ObtenerIpCliente(ctx);
+                    string ip = IpClienteHelper.Obtener(ctx.Request, IpClienteHelper.LargoMaximoFirma);
                     string ua = ctx.Request.UserAgent ?? "";
                     var svc = new WebSGV.Services.FirmaService();
                     var rev = svc.RevocarFirma(
@@ -1092,19 +1096,6 @@ namespace WebSGV.Views
         /// <summary>Decodifica un PNG en Base64 (con o sin prefijo data URI).</summary>
         private static byte[] DecodificarPngBase64(string s) =>
             LiquidacionCalculos.DecodificarPngBase64(s);
-
-        /// <summary>Obtiene la IP del cliente respetando X-Forwarded-For si existe.</summary>
-        private static string ObtenerIpCliente(System.Web.HttpContext ctx)
-        {
-            if (ctx == null || ctx.Request == null) return null;
-            string fwd = ctx.Request.Headers["X-Forwarded-For"];
-            if (!string.IsNullOrEmpty(fwd))
-            {
-                int c = fwd.IndexOf(',');
-                return (c > 0 ? fwd.Substring(0, c) : fwd).Trim();
-            }
-            return ctx.Request.UserHostAddress;
-        }
 
         private bool TryObtenerFiltrosPendientes(out int? idConductor, out DateTime? fechaDesde, out DateTime? fechaHasta, out string prioridad, out string mensaje)
         {

@@ -105,37 +105,50 @@ namespace WebSGV.Helpers
             Registrar(accion, tablaAfectada, idRegistroAfectado.ToString(), descripcion, valoresAnteriores, valoresNuevos);
         }
 
+        /// <summary>Largo de la columna AuditoriaLog.DireccionIP (NVARCHAR(50)).</summary>
+        internal const int LargoMaximoDireccionIP = 50;
+
         /// <summary>
-        /// Obtiene la IP del cliente.
-        /// REMOTE_ADDR es la IP confiable (la del socket TCP).
-        /// X-Forwarded-For se registra solo como referencia adicional, ya que puede
-        /// ser manipulada por el cliente y no debe usarse como IP principal.
+        /// Obtiene la IP del cliente para la auditoría: la de <see cref="IpClienteHelper"/>
+        /// (REMOTE_ADDR) y, si viene, la primera entrada de X-Forwarded-For solo como referencia
+        /// (puede ser falsa; no decide nada).
         /// </summary>
         private static string ObtenerIPCliente(HttpRequest request)
         {
             try
             {
-                // IP confiable: la del socket TCP directo (no manipulable por el cliente)
-                string ipConfiable = request.ServerVariables["REMOTE_ADDR"]
-                                  ?? request.UserHostAddress
-                                  ?? "Desconocida";
-
-                // X-Forwarded-For puede estar presente si hay un proxy/balanceador legítimo,
-                // pero NO la usamos como IP principal porque puede ser falsificada.
-                string xForwardedFor = request.ServerVariables["HTTP_X_FORWARDED_FOR"];
-                if (!string.IsNullOrEmpty(xForwardedFor))
-                {
-                    // Registrar solo la primera entrada como referencia (puede ser falsa)
-                    string xffPrimera = xForwardedFor.Split(',')[0].Trim();
-                    return $"{ipConfiable} (XFF: {xffPrimera})";
-                }
-
-                return ipConfiable;
+                return ComponerDireccionIP(IpClienteHelper.Obtener(request),
+                                           request.ServerVariables["HTTP_X_FORWARDED_FOR"]);
             }
             catch
             {
-                return "Desconocida";
+                return IpClienteHelper.Desconocida;
             }
+        }
+
+        /// <summary>
+        /// "ip" o "ip (XFF: primera)" sin pasar de <see cref="LargoMaximoDireccionIP"/> caracteres:
+        /// con una IPv6 y un X-Forwarded-For largo el INSERT fallaba por truncamiento y la auditoría
+        /// se perdía en silencio. La IP real se conserva entera; lo que se recorta es la referencia XFF.
+        /// </summary>
+        internal static string ComponerDireccionIP(string ipConfiable, string xForwardedFor)
+        {
+            string ip = string.IsNullOrWhiteSpace(ipConfiable) ? IpClienteHelper.Desconocida : ipConfiable.Trim();
+            if (ip.Length >= LargoMaximoDireccionIP)
+                return ip.Substring(0, LargoMaximoDireccionIP);
+
+            string xffPrimera = string.IsNullOrWhiteSpace(xForwardedFor) ? null : xForwardedFor.Split(',')[0].Trim();
+            if (string.IsNullOrEmpty(xffPrimera))
+                return ip;
+
+            const string prefijo = " (XFF: ";
+            const string sufijo = ")";
+            int espacio = LargoMaximoDireccionIP - ip.Length - prefijo.Length - sufijo.Length;
+            if (espacio <= 0)
+                return ip;
+            if (xffPrimera.Length > espacio)
+                xffPrimera = xffPrimera.Substring(0, espacio);
+            return ip + prefijo + xffPrimera + sufijo;
         }
 
         /// <summary>

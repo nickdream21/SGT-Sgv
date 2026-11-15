@@ -137,7 +137,7 @@ namespace WebSGV.Views
             // Anti-fuerza-bruta por IP y por cuenta (ControlIntentosLogin): el intento se reserva
             // como fallo ANTES de ir a la BD, para que peticiones en paralelo no se salten el bloqueo.
             var control = ControlIntentosLogin.Sitio;
-            var reserva = control.Reservar(ControlIntentosLogin.ClaveIp(Request.UserHostAddress),
+            var reserva = control.Reservar(ControlIntentosLogin.ClaveIp(IpClienteHelper.Obtener(Request)),
                                            ControlIntentosLogin.ClaveCuenta(usuario));
             if (reserva.Rechazado)
             {
