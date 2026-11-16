@@ -25,6 +25,20 @@ function num(v) {
     return isFinite(n) && n > 0 ? n : 0;
 }
 
+// Tope de cada monto: lo escribe la página desde MontoHelper.MontoMaximo (el servidor valida igual).
+function montoMaximo() {
+    return SGV.montoMaximo || 9999999;
+}
+
+// Viaje nacional: los campos .solo-intl (peajes y dólares) están ocultos y deben ir vacíos. Se llama al
+// abrir la página y al final de aplicarDatos (orden rechazada, envío fallido o borrador del celular),
+// que si no volverían a llenar esos campos ocultos y se enviarían.
+function vaciarSoloIntlSiNacional() {
+    if (!esInternacional()) {
+        $('.solo-intl input').val('');
+    }
+}
+
 function dinero(n, sim) {
     return sim + ' ' + n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -38,9 +52,8 @@ $(document).ready(function () {
 
     // Viajes nacionales: sin dólares ni peajes (la empresa paga los peajes a la concesionaria).
     $('body').toggleClass('dc-nacional', !esInternacional());
-    if (!esInternacional()) {
-        $('.solo-intl input').val('');
-    }
+    vaciarSoloIntlSiNacional();
+    $form.find('input[type=number]').attr('max', montoMaximo());
 
     $form.on('input change', 'input, textarea, select', function () {
         liquidacionModificada = true;
@@ -115,9 +128,9 @@ function agregarGasto(datos) {
                 </button>
             </div>
             <div class="dc-montos">
-                <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00"
+                <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" max="${montoMaximo()}" placeholder="0.00"
                      class="gasto-soles" name="gastoSoles_${n}" aria-label="Monto en soles"></div>
-                <div class="dc-monto solo-intl"><span>$</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00"
+                <div class="dc-monto solo-intl"><span>$</span><input type="number" inputmode="decimal" step="0.01" min="0" max="${montoMaximo()}" placeholder="0.00"
                      class="gasto-dolares" name="gastoDolares_${n}" aria-label="Monto en dólares"></div>
             </div>
             <input type="text" class="form-control dc-nota" name="descGasto_${n}" maxlength="250" placeholder="Detalle (opcional)">
@@ -269,6 +282,7 @@ function aplicarDatos(datos) {
     });
     $('#gastosAdicionalesBody').empty();
     (datos.gastosAdicionales || []).forEach(function (g) { agregarGasto(g); });
+    vaciarSoloIntlSiNacional();
     calcularTotales();
 }
 
@@ -323,6 +337,21 @@ function abrirRevision() {
         }
     });
     if (sinConcepto) { SGV.avisar('Escribe en qué fue el gasto que agregaste.'); return; }
+
+    // Montos fuera de rango (negativos, sobre el tope o texto que no es número): se avisa antes de enviar.
+    let $malo = null;
+    $('#' + SGV.pnlFormularioLiquidacion).find('input[type=number]').each(function () {
+        const v = this.validity;
+        if ($(this).is(':visible') && v && (v.rangeOverflow || v.rangeUnderflow || v.badInput)) { $malo = $(this); return false; }
+    });
+    if ($malo) {
+        const $g = $malo.closest('.dc-gasto');
+        const nombre = $g.hasClass('dc-gasto-extra') ? ($g.find('.dc-concepto').val() || 'otro gasto') : $g.find('.dc-gasto-cab label').text();
+        SGV.avisar('Revisa el monto de ' + nombre + ': debe estar entre 0 y ' +
+            montoMaximo().toLocaleString('es-PE') + '.');
+        $malo.trigger('focus');
+        return;
+    }
 
     const salida = $fs.length ? formatoLocal($fs.val(), $hs.val()) : $('#' + SGV.lblSalidaGps).text() + ' (GPS)';
     const llegada = $fl.length ? formatoLocal($fl.val(), $hl.val()) : $('#' + SGV.lblLlegadaGps).text() + ' (GPS)';

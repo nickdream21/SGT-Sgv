@@ -177,6 +177,10 @@ namespace WebSGV.Models.Conductor
         public decimal DescuentoDolares { get; set; }
         public decimal ReintegroSoles { get; set; }
         public decimal ReintegroDolares { get; set; }
+        /// <summary>Motivo del descuento que registró la administración (se conserva al reenviar).</summary>
+        public string MotivoDescuento { get; set; }
+        /// <summary>Motivo del reintegro que registró la administración (se conserva al reenviar).</summary>
+        public string MotivoReintegro { get; set; }
 
         // --- Listas dinámicas / detalladas ---
         public List<IngresoAdicionalData> IngresosAdicionales { get; set; } = new List<IngresoAdicionalData>();

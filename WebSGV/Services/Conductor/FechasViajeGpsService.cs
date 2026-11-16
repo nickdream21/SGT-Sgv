@@ -31,6 +31,11 @@ namespace WebSGV.Services.Conductor
         public bool CruzaFrontera { get; set; }
         /// <summary>Hay seguimiento GPS del viaje (aunque falten la salida o la llegada a la base).</summary>
         public bool TieneSeguimiento { get; set; }
+        /// <summary>
+        /// La consulta al seguimiento falló (error de BD): los demás datos quedan vacíos y no significan
+        /// "sin GPS" ni "no cruza a Ecuador". Lo marca quien atrapa la excepción; por defecto es false.
+        /// </summary>
+        public bool ConsultaFallida { get; set; }
 
         public bool SalidaPorGps => Salida.HasValue;
         public bool LlegadaPorGps => Llegada.HasValue;

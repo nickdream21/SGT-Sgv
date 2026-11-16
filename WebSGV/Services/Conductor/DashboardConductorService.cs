@@ -273,6 +273,10 @@ namespace WebSGV.Services.Conductor
                         o.DescuentoDolares = Dec(r, "descuentoDolares");
                         o.ReintegroSoles = Dec(r, "reintegroSoles");
                         o.ReintegroDolares = Dec(r, "reintegroDolares");
+                        // Los motivos (sp_DC_ObtenerDatosFinancierosOrden los devuelve desde 2026-11-15):
+                        // sin ellos, al reenviar la orden el ajuste quedaba sin su motivo.
+                        if (Tiene(r, "observacionesDescuento")) o.MotivoDescuento = Txt(r, "observacionesDescuento");
+                        if (Tiene(r, "observacionesReintegro")) o.MotivoReintegro = Txt(r, "observacionesReintegro");
                     }
                 }
             }
@@ -307,5 +311,7 @@ namespace WebSGV.Services.Conductor
         public decimal DescuentoDolares { get; set; }
         public decimal ReintegroSoles { get; set; }
         public decimal ReintegroDolares { get; set; }
+        public string MotivoDescuento { get; set; }
+        public string MotivoReintegro { get; set; }
     }
 }

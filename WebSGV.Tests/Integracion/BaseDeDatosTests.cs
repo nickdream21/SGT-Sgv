@@ -80,6 +80,25 @@ namespace WebSGV.Tests.Integracion
         }
 
         [FactBD]
+        public void ColumnasDeTextosDeLaLiquidacion_AlcanzanLoQueValidaElServidor()
+        {
+            // Si una columna es más corta que lo que deja pasar ReglasLiquidacionConductor, el texto se
+            // corta (o falla) al guardar y el PDF firmado queda incompleto (migración 45).
+            int Largo(string tabla, string columna) => Convert.ToInt32(DbHelper.EjecutarEscalar(
+                "SELECT CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @t AND COLUMN_NAME = @c",
+                DbHelper.Param("@t", tabla), DbHelper.Param("@c", columna)));
+
+            Assert.True(Largo("CategoriasAdicionales", "nombreCategoria") >= Services.Conductor.ReglasLiquidacionConductor.LargoConcepto);
+            Assert.True(Largo("CategoriasAdicionales", "descripcion") >= Services.Conductor.ReglasLiquidacionConductor.LargoDetalle);
+            Assert.True(Largo("IngresosAdicionales", "nombreCategoria") >= Services.Conductor.ReglasLiquidacionConductor.LargoConcepto);
+            Assert.True(Largo("IngresosAdicionales", "descripcion") >= Services.Conductor.ReglasLiquidacionConductor.LargoDetalle);
+            Assert.True(Largo("DetallePeajes", "estacion") >= Services.Conductor.ReglasLiquidacionConductor.LargoEstacion);
+            Assert.True(Largo("DetallePeajes", "numeroComprobante") >= Services.Conductor.ReglasLiquidacionConductor.LargoComprobante);
+            Assert.True(Largo("Egresos", "descPeajes") >= Services.Conductor.ReglasLiquidacionConductor.LargoDescPeajes);
+            Assert.True(Largo("Egresos", "descAlimentacion") >= Services.Conductor.ReglasLiquidacionConductor.LargoDetalle);
+        }
+
+        [FactBD]
         public void NingunUsuarioTieneContrasenaEnTextoPlano()
         {
             var sinHash = DbHelper.ConsultarTabla("SELECT idUsuario, contrasena FROM Usuarios").Rows.Cast<DataRow>()

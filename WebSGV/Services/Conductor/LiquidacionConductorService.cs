@@ -98,6 +98,9 @@ namespace WebSGV.Services.Conductor
 
         private static LoteSql ConstruirLote(LiquidacionConductorInput input)
         {
+            // Un texto más largo que su columna se cortaba sin avisar (y el PDF firmado quedaba incompleto).
+            ReglasLiquidacionConductor.ValidarTextos(input);
+
             var lote = new LoteSql();
 
             if (input.EsReliquidacion)
@@ -254,7 +257,10 @@ namespace WebSGV.Services.Conductor
                     "@descuentoSoles", input.DescuentoSoles,
                     "@descuentoDolares", input.DescuentoDolares,
                     "@reintegroSoles", input.ReintegroSoles,
-                    "@reintegroDolares", input.ReintegroDolares);
+                    "@reintegroDolares", input.ReintegroDolares,
+                    // Motivos de la administración: al reenviar una orden rechazada se conservan.
+                    "@observacionesDescuento", Nulo(input.MotivoDescuento),
+                    "@observacionesReintegro", Nulo(input.MotivoReintegro));
             }
         }
 

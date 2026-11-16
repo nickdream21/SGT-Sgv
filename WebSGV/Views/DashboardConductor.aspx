@@ -443,7 +443,8 @@
             txtHoraLlegada: '<%= txtHoraLlegadaDeclarada.ClientID %>',
             lblSalidaGps: '<%= lblSalidaGps.ClientID %>',
             lblLlegadaGps: '<%= lblLlegadaGps.ClientID %>',
-            lblNumeroViaje: '<%= lblNumeroViajeResumen.ClientID %>'
+            lblNumeroViaje: '<%= lblNumeroViajeResumen.ClientID %>',
+            montoMaximo: Number('<%= HttpUtility.JavaScriptStringEncode(WebSGV.Services.Common.MontoHelper.MontoMaximo.ToString(System.Globalization.CultureInfo.InvariantCulture)) %>')
         });
     </script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/DashboardConductor.js") %>"></script>

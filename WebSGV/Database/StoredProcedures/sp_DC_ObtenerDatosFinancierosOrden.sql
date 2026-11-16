@@ -113,12 +113,14 @@ BEGIN
     WHERE numeroOrdenViaje = @numeroOrdenViaje
     ORDER BY idCategoriaAdicional;
 
-    -- ResultSet 9: DescuentosReintegros
+    -- ResultSet 9: DescuentosReintegros (con sus motivos, que se conservan al reenviar la orden)
     SELECT 
         ISNULL(descuentoSoles, 0) AS descuentoSoles, 
         ISNULL(descuentoDolares, 0) AS descuentoDolares, 
         ISNULL(reintegroSoles, 0) AS reintegroSoles, 
-        ISNULL(reintegroDolares, 0) AS reintegroDolares
+        ISNULL(reintegroDolares, 0) AS reintegroDolares,
+        observacionesDescuento,
+        observacionesReintegro
     FROM DescuentosReintegros
     WHERE numeroOrdenViaje = @numeroOrdenViaje;
 END

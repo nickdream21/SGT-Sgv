@@ -56,17 +56,72 @@ namespace WebSGV.Tests
         }
 
         [Fact]
-        public void ValidarMonto_Negativo_Lanza()
+        public void ValidarMonto_Negativo_LanzaErrorDeNegocioConElCampo()
         {
-            var ex = Assert.Throws<InvalidOperationException>(() => MontoHelper.ValidarMonto(-1m, "descuento"));
+            var ex = Assert.Throws<ErrorNegocioException>(() => MontoHelper.ValidarMonto(-1m, "descuento"));
             Assert.Contains("descuento", ex.Message);
+            // Mensaje pensado para el usuario: MensajeErrorHelper lo muestra tal cual.
+            Assert.Equal(ex.Message, MensajeError.ExtraerMensajeDeNegocio(ex));
         }
 
         [Fact]
-        public void ValidarMonto_ExcedeMaximo_Lanza()
+        public void ValidarMonto_ExcedeMaximo_LanzaErrorDeNegocioConElCampo()
         {
-            Assert.Throws<InvalidOperationException>(
+            var ex = Assert.Throws<ErrorNegocioException>(
                 () => MontoHelper.ValidarMonto(MontoHelper.MontoMaximo + 1m, "reintegro"));
+            Assert.Contains("reintegro", ex.Message);
+            Assert.Contains("máximo", ex.Message);
+        }
+
+        [Fact]
+        public void ValidarMonto_SigueSiendoInvalidOperation_ParaLosCatchExistentes()
+        {
+            Assert.IsAssignableFrom<InvalidOperationException>(
+                Assert.ThrowsAny<Exception>(() => MontoHelper.ValidarMonto(-1m, "x")));
+        }
+
+        // ---- LeerMonto (campos del formulario con tope) ----
+
+        [Theory]
+        [InlineData(null, "0")]
+        [InlineData("", "0")]
+        [InlineData("  ", "0")]
+        [InlineData("10.50", "10.50")]
+        [InlineData(" 250 ", "250")]
+        [InlineData("1e3", "1000")]
+        [InlineData("9999999", "9999999")]
+        public void LeerMonto_Validos(string entrada, string esperado)
+        {
+            Assert.Equal(decimal.Parse(esperado, System.Globalization.CultureInfo.InvariantCulture),
+                MontoHelper.LeerMonto(entrada, "Alimentación (S/)"));
+        }
+
+        [Theory]
+        [InlineData("2000000000")]
+        [InlineData("1e15")]
+        [InlineData("10000000")]
+        public void LeerMonto_SobreElTope_LanzaConElNombreDelCampo(string entrada)
+        {
+            var ex = Assert.Throws<ErrorNegocioException>(() => MontoHelper.LeerMonto(entrada, "Combustible (S/)"));
+            Assert.Contains("Combustible (S/)", ex.Message);
+            Assert.Contains("máximo", ex.Message);
+        }
+
+        [Fact]
+        public void LeerMonto_Negativo_Lanza()
+        {
+            var ex = Assert.Throws<ErrorNegocioException>(() => MontoHelper.LeerMonto("-5", "Movilidad (S/)"));
+            Assert.Contains("negativo", ex.Message);
+        }
+
+        [Theory]
+        [InlineData("abc")]
+        [InlineData("1e400")]
+        [InlineData("12,50")]
+        public void LeerMonto_NoNumerico_Lanza(string entrada)
+        {
+            var ex = Assert.Throws<ErrorNegocioException>(() => MontoHelper.LeerMonto(entrada, "Hospedaje ($)"));
+            Assert.Contains("Hospedaje ($)", ex.Message);
         }
 
         // ---- EsMontoNoNegativo (cultura actual) ----

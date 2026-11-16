@@ -712,6 +712,18 @@ namespace WebSGV.Views
                     esReliquidacion, numeroOrdenViaje, fechaSalida, fechaLlegada,
                     horaSalida, horaLlegada, horaLlegadaDeclarada, observaciones, datosViaje,
                     idViajeProgreso, idsViajesActivos, admin);
+
+                // Nacional o internacional lo decide la BD (ámbito de los viajes) y el GPS (cruce a
+                // Ecuador), no el campo oculto hfEsInternacional. Si el servidor dice nacional pero el
+                // GPS no respondió o la página mostraba un viaje internacional, no se borra nada en
+                // silencio: se avisa al conductor (ver ReglasLiquidacionConductor.DecidirAmbito).
+                var ambito = ReglasLiquidacionConductor.DecidirAmbito(
+                    viajesActivos.Select(v => v.EsInternacional), gps.CruzaFrontera, gps.ConsultaFallida,
+                    hfEsInternacional.Value == "1", ReglasLiquidacionConductor.TienePeajesODolares(input));
+                if (ambito.Resultado == ResultadoAmbito.Rechazar)
+                    throw new ErrorNegocioException(ambito.Mensaje);
+                if (ambito.Resultado == ResultadoAmbito.NacionalAplicarCeros)
+                    ReglasLiquidacionConductor.AplicarViajeNacional(input);
                 input.HoraLlegadaGps = gps.LlegadaPorGps ? horaLlegadaDeclarada : null;
 
                 Log("Iniciando transacción de base de datos...");
@@ -787,13 +799,16 @@ namespace WebSGV.Views
             OrdenRechazadaConductor admin)
         {
             var ing = admin.Ingresos;
-            // Peajes simplificados: Nacionales solo en Soles (Perú), Extranjeros solo en Dólares (Ecuador)
-            decimal peajesSoles   = ParseMonto(Request.Form["peajesNacSoles"]);
-            decimal peajesDolares = ParseMonto(Request.Form["peajesExtDolares"]);
+            // Peajes simplificados: Nacionales solo en Soles (Perú), Extranjeros solo en Dólares (Ecuador).
+            // En un viaje nacional se ponen en 0 después (ReglasLiquidacionConductor.DecidirAmbito).
+            decimal peajesSoles   = Monto("peajesNacSoles", "Peajes nacionales (S/)");
+            decimal peajesDolares = Monto("peajesExtDolares", "Peajes de Ecuador ($)");
 
             // Descripción de peajes: combinar nacionales (S/) y extranjeros ($)
-            string descPeajesNac = Request.Form["descPeajesNacionales"] ?? "";
-            string descPeajesExt = Request.Form["descPeajesExtranjeros"] ?? "";
+            string descPeajesNac = ReglasLiquidacionConductor.ValidarLargo(Request.Form["descPeajesNacionales"] ?? "",
+                ReglasLiquidacionConductor.LargoDetalle, "Detalle de peajes nacionales");
+            string descPeajesExt = ReglasLiquidacionConductor.ValidarLargo(Request.Form["descPeajesExtranjeros"] ?? "",
+                ReglasLiquidacionConductor.LargoDetalle, "Detalle de peajes de Ecuador");
             var partesPeajes = new List<string>();
             if (peajesSoles > 0)
                 partesPeajes.Add("Nac: S/" + peajesSoles.ToString("F2") + (!string.IsNullOrEmpty(descPeajesNac) ? " - " + descPeajesNac : ""));
@@ -801,7 +816,7 @@ namespace WebSGV.Views
                 partesPeajes.Add("Ext: $" + peajesDolares.ToString("F2") + (!string.IsNullOrEmpty(descPeajesExt) ? " - " + descPeajesExt : ""));
             string descPeajes = partesPeajes.Count > 0 ? string.Join(" | ", partesPeajes) : "";
 
-            return new LiquidacionConductorInput
+            var input = new LiquidacionConductorInput
             {
                 EsReliquidacion = esReliquidacion,
                 NumeroOrdenViaje = numeroOrdenViaje,
@@ -837,26 +852,26 @@ namespace WebSGV.Views
                 PeajesSoles           = peajesSoles,
                 PeajesDolares         = peajesDolares,
                 DescPeajes            = descPeajes,
-                AlimentacionSoles     = ParseMonto(Request.Form["alimentacionSoles"]),
-                AlimentacionDolares   = ParseMonto(Request.Form["alimentacionDolares"]),
+                AlimentacionSoles     = Monto("alimentacionSoles", "Alimentación (S/)"),
+                AlimentacionDolares   = Monto("alimentacionDolares", "Alimentación ($)"),
                 DescAlimentacion      = Request.Form["descAlimentacion"] ?? "",
-                ApoyoSeguridadSoles   = ParseMonto(Request.Form["apoyoSeguridadSoles"]),
-                ApoyoSeguridadDolares = ParseMonto(Request.Form["apoyoSeguridadDolares"]),
+                ApoyoSeguridadSoles   = Monto("apoyoSeguridadSoles", "Apoyo de seguridad (S/)"),
+                ApoyoSeguridadDolares = Monto("apoyoSeguridadDolares", "Apoyo de seguridad ($)"),
                 DescApoyoSeguridad    = Request.Form["descApoyoSeguridad"] ?? "",
-                ReparacionesSoles     = ParseMonto(Request.Form["reparacionesSoles"]),
-                ReparacionesDolares   = ParseMonto(Request.Form["reparacionesDolares"]),
+                ReparacionesSoles     = Monto("reparacionesSoles", "Reparaciones (S/)"),
+                ReparacionesDolares   = Monto("reparacionesDolares", "Reparaciones ($)"),
                 DescReparaciones      = Request.Form["descReparaciones"] ?? "",
-                MovilidadSoles        = ParseMonto(Request.Form["movilidadSoles"]),
-                MovilidadDolares      = ParseMonto(Request.Form["movilidadDolares"]),
+                MovilidadSoles        = Monto("movilidadSoles", "Movilidad (S/)"),
+                MovilidadDolares      = Monto("movilidadDolares", "Movilidad ($)"),
                 DescMovilidad         = Request.Form["descMovilidad"] ?? "",
-                EncapadaSoles         = ParseMonto(Request.Form["encapadaSoles"]),
-                EncapadaDolares       = ParseMonto(Request.Form["encapadaDolares"]),
+                EncapadaSoles         = Monto("encapadaSoles", "Encarpada (S/)"),
+                EncapadaDolares       = Monto("encapadaDolares", "Encarpada ($)"),
                 DescEncapada          = Request.Form["descEncapada"] ?? "",
-                HospedajeSoles        = ParseMonto(Request.Form["hospedajeSoles"]),
-                HospedajeDolares      = ParseMonto(Request.Form["hospedajeDolares"]),
+                HospedajeSoles        = Monto("hospedajeSoles", "Hospedaje (S/)"),
+                HospedajeDolares      = Monto("hospedajeDolares", "Hospedaje ($)"),
                 DescHospedaje         = Request.Form["descHospedaje"] ?? "",
-                CombustibleSoles      = ParseMonto(Request.Form["combustibleSoles"]),
-                CombustibleDolares    = ParseMonto(Request.Form["combustibleDolares"]),
+                CombustibleSoles      = Monto("combustibleSoles", "Combustible (S/)"),
+                CombustibleDolares    = Monto("combustibleDolares", "Combustible ($)"),
                 DescCombustible       = Request.Form["descCombustible"] ?? "",
 
                 // Descuentos / reintegros: también de la administración (se conservan al reenviar).
@@ -864,13 +879,24 @@ namespace WebSGV.Views
                 DescuentoDolares = admin.DescuentoDolares,
                 ReintegroSoles   = admin.ReintegroSoles,
                 ReintegroDolares = admin.ReintegroDolares,
+                MotivoDescuento  = admin.MotivoDescuento,
+                MotivoReintegro  = admin.MotivoReintegro,
 
                 // Listas dinámicas / detalladas
                 IngresosAdicionales = admin.IngresosAdicionales,
                 GastosAdicionales   = DeserializarGastosAdicionales(),
                 GastosFinancieros   = ObtenerGastosFinancierosDeSession()
             };
+
+            return input;
         }
+
+        /// <summary>
+        /// Monto de un campo del formulario, validado con el tope de <see cref="MontoHelper"/>: un valor
+        /// no numérico, negativo o excesivo lanza <see cref="ErrorNegocioException"/> con el nombre del gasto.
+        /// </summary>
+        private decimal Monto(string nombreCampo, string etiqueta) =>
+            MontoHelper.LeerMonto(Request.Form[nombreCampo], etiqueta);
 
         private List<GastoAdicionalData> DeserializarGastosAdicionales()
         {
@@ -935,9 +961,10 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                // Sin GPS el conductor registra las fechas a mano; no debe impedir liquidar.
+                // Sin GPS el conductor registra las fechas a mano; no debe impedir liquidar. Se marca la
+                // falla para no tomar "sin datos" como "no cruza a Ecuador" al decidir el ámbito.
                 LogSGV.Error(ex, "No se pudieron leer las fechas del GPS para los viajes {Viajes}", string.Join(",", idsViajes));
-                return new FechasViajeGps();
+                return new FechasViajeGps { ConsultaFallida = true };
             }
         }
 
@@ -1188,14 +1215,6 @@ namespace WebSGV.Views
         [System.Diagnostics.Conditional("DEBUG")]
         private static void Log(string mensaje)
             => System.Diagnostics.Debug.WriteLine(mensaje);
-
-        /// <summary>
-        /// Parsea un monto proveniente de Request.Form con cultura invariante.
-        /// HTML type="number" siempre usa punto como separador decimal,
-        /// independientemente de la cultura del servidor (es-PE usa coma).
-        /// Valores negativos se clampean a 0 ya que los campos tienen min="0".
-        /// </summary>
-        private static decimal ParseMonto(string valor) => MontoHelper.ParseMonto(valor);
 
         private void MostrarMensaje(string mensaje, string tipo)
         {

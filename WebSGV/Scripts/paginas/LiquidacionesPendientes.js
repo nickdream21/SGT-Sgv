@@ -177,14 +177,16 @@ function mostrarDetalle(datos) {
     $('#panelCorregirSalida').hide();
     $('#corregirSalidaMotivo').val('');
     $('#errorCorregirSalidaMotivo').hide();
-    if (datos.EstadoAprobacion === 'PENDIENTE') {
+    // Se limpia siempre: si no, al abrir una orden aprobada quedaban la fecha y la hora de la anterior.
+    $('#detalleSalidaValor').text('');
+    $('#corregirSalidaFecha').val('');
+    $('#corregirSalidaHora').val('');
+    var puedeCorregirSalida = datos.EstadoAprobacion === 'PENDIENTE';
+    if (puedeCorregirSalida) {
         var horaTxt = datos.HoraSalida ? datos.HoraSalida + ' h' : 'sin hora';
         $('#detalleSalidaValor').text(datos.FechaSalida + '  ·  ' + horaTxt);
         $('#corregirSalidaFecha').val(datos.FechaSalidaISO || '');
         $('#corregirSalidaHora').val(datos.HoraSalida || '');
-        $('#seccionCorregirSalida').show();
-    } else {
-        $('#seccionCorregirSalida').hide();
     }
 
     if (datos.Observaciones) {
@@ -331,6 +333,8 @@ function mostrarDetalle(datos) {
 
     $('#detalleLoading').hide();
     $('#modalDetalleLiquidacion .detail-section').show();
+    // Va después de mostrar todas las secciones (que también la mostraba en órdenes no pendientes).
+    $('#seccionCorregirSalida').toggle(puedeCorregirSalida);
     $('#sectionAjustes').toggle(modoAprobacion);
     $('#approvalBanner').toggle(modoAprobacion);
     $('#modalModeBadge').toggle(modoAprobacion);

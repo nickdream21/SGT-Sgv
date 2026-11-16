@@ -28,20 +28,37 @@ namespace WebSGV.Services.Common
         }
 
         /// <summary>
+        /// Lee un monto que escribió el usuario en un campo HTML <c>type="number"</c> (punto
+        /// decimal, cultura invariante; acepta notación exponencial como <c>1e15</c>, que el
+        /// navegador también deja pasar) y lo valida con <see cref="ValidarMonto(decimal?, string)"/>.
+        /// Vacío = 0. Un texto que no es número, un negativo o un monto sobre el tope lanzan
+        /// <see cref="ErrorNegocioException"/> con el nombre del campo, para que el usuario sepa
+        /// qué corregir (antes se convertía en 0 o pasaba sin tope).
+        /// </summary>
+        public static decimal LeerMonto(string valor, string campo)
+        {
+            if (string.IsNullOrWhiteSpace(valor)) return 0m;
+            if (!decimal.TryParse(valor.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out decimal d))
+                throw new ErrorNegocioException($"El monto de «{campo}» no es un número válido.");
+            return ValidarMonto(d, campo);
+        }
+
+        /// <summary>
         /// Valida un monto deserializado desde un campo controlado por el cliente.
-        /// A diferencia de <see cref="ParseMonto"/>, lanza <see cref="InvalidOperationException"/>
-        /// en lugar de clampar, porque un valor negativo o excesivo indica manipulación
-        /// del payload (la excepción propaga el rollback de la transacción en curso).
+        /// A diferencia de <see cref="ParseMonto"/>, lanza <see cref="ErrorNegocioException"/>
+        /// (que hereda de <see cref="InvalidOperationException"/>) en lugar de clampar: el mensaje
+        /// dice qué campo falla y se puede mostrar al usuario. La excepción también deshace la
+        /// transacción en curso.
         /// </summary>
         public static decimal ValidarMonto(decimal? monto, string campo)
         {
             decimal valor = monto ?? 0m;
             if (valor < 0m)
-                throw new InvalidOperationException(
-                    $"Monto inválido en '{campo}': los valores negativos no están permitidos.");
+                throw new ErrorNegocioException(
+                    $"El monto de «{campo}» no puede ser negativo.");
             if (valor > MontoMaximo)
-                throw new InvalidOperationException(
-                    $"Monto inválido en '{campo}': excede el límite máximo de S/ 9,999,999.");
+                throw new ErrorNegocioException(
+                    $"El monto de «{campo}» supera el máximo permitido ({MontoMaximo.ToString("N0", CultureInfo.InvariantCulture)}).");
             return valor;
         }
 

@@ -455,6 +455,14 @@ namespace WebSGV.Tests.Integracion
                 var input = NuevaLiquidacion(datos, idViaje);
                 int idOrden = LiquidacionConductorService.EnviarLiquidacion(input);
                 FirmarComoConductor(idOrden, datos.IdUsuarioConductor);
+                // Ajustes de la administración con su motivo (como los guarda LiquidacionesPendientesService).
+                DbHelper.EjecutarNonQuery(@"
+                    INSERT INTO DescuentosReintegros (numeroOrdenViaje, descuentoSoles, descuentoDolares, reintegroSoles, reintegroDolares,
+                                                      observacionesDescuento, observacionesReintegro, fechaCreacion, activo)
+                    VALUES (@n, 40, 0, 15, 5, @md, @mr, dbo.fn_AhoraPeru(), 1)",
+                    DbHelper.Param("@n", input.NumeroOrdenViaje),
+                    DbHelper.Param("@md", "Alimentación del 18/07 sin comprobante"),
+                    DbHelper.Param("@mr", "Peaje de Chullqui no declarado"));
                 LiquidacionesPendientesService.Rechazar(input.NumeroOrdenViaje, datos.IdUsuarioAdmin, "Corregir alimentación");
 
                 // Lo que la página lee de la orden rechazada: gastos para el formulario y lo de la administración.
@@ -466,14 +474,50 @@ namespace WebSGV.Tests.Integracion
                 Assert.Equal(DespachoSoles, rechazada.Ingresos.DespachoSoles);
 
                 var admin = DashboardConductorService.ObtenerDatosAdministracion(input.NumeroOrdenViaje);
+                Assert.Equal("Alimentación del 18/07 sin comprobante", admin.MotivoDescuento);
+                Assert.Equal("Peaje de Chullqui no declarado", admin.MotivoReintegro);
+
+                // Reenvío como lo arma DashboardConductor.ConstruirInputLiquidacion: lo de la administración se conserva.
                 input.EsReliquidacion = true;
                 input.AlimentacionSoles = 120m;
                 input.DespachoSoles = admin.Ingresos.DespachoSoles;
+                input.DescuentoSoles = admin.DescuentoSoles;
+                input.DescuentoDolares = admin.DescuentoDolares;
+                input.ReintegroSoles = admin.ReintegroSoles;
+                input.ReintegroDolares = admin.ReintegroDolares;
+                input.MotivoDescuento = admin.MotivoDescuento;
+                input.MotivoReintegro = admin.MotivoReintegro;
+                // Concepto de 100 y detalle de 200 caracteres: antes la columna (VARCHAR(50)) los cortaba.
+                string concepto = "Lavado " + new string('c', 93);
+                string detalleLargo = "Lavado completo del tracto y la carreta " + new string('d', 160);
+                input.GastosAdicionales[0].Categoria = concepto;
+                input.GastosAdicionales[0].Descripcion = detalleLargo;
                 Assert.Equal(idOrden, LiquidacionConductorService.EnviarLiquidacion(input));
 
                 var detalle = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrden);
                 Assert.Equal(120m, detalle.GastosAlimentacionSoles);
                 Assert.Equal(DespachoSoles, detalle.DespachoSoles);
+                Assert.Equal(40m, detalle.DescuentoSoles);
+                Assert.Equal("Alimentación del 18/07 sin comprobante", detalle.DescuentoMotivo);
+                Assert.Equal("Peaje de Chullqui no declarado", detalle.ReintegroMotivo);
+
+                DataTable dr = DbHelper.ConsultarTabla(
+                    "SELECT reintegroSoles, reintegroDolares, observacionesDescuento, observacionesReintegro FROM DescuentosReintegros WHERE numeroOrdenViaje = @n",
+                    DbHelper.Param("@n", input.NumeroOrdenViaje));
+                Assert.Equal(1, dr.Rows.Count);
+                Assert.Equal(15m, Convert.ToDecimal(dr.Rows[0]["reintegroSoles"]));
+                Assert.Equal(5m, Convert.ToDecimal(dr.Rows[0]["reintegroDolares"]));
+                Assert.Equal("Alimentación del 18/07 sin comprobante", dr.Rows[0]["observacionesDescuento"]);
+                Assert.Equal("Peaje de Chullqui no declarado", dr.Rows[0]["observacionesReintegro"]);
+
+                DataTable adicional = DbHelper.ConsultarTabla(
+                    "SELECT nombreCategoria, descripcion FROM CategoriasAdicionales WHERE numeroOrdenViaje = @n",
+                    DbHelper.Param("@n", input.NumeroOrdenViaje));
+                Assert.Equal(1, adicional.Rows.Count);
+                Assert.Equal(100, concepto.Length);
+                Assert.Equal(200, detalleLargo.Length);
+                Assert.Equal(concepto, adicional.Rows[0]["nombreCategoria"]);
+                Assert.Equal(detalleLargo, adicional.Rows[0]["descripcion"]);
             }
         }
 
@@ -580,6 +624,32 @@ namespace WebSGV.Tests.Integracion
                 // Último paso: el SP hace RAISERROR y el servicio, rollback.
                 var ex = Assert.Throws<SqlException>(() => LiquidacionConductorService.EnviarLiquidacion(input));
                 Assert.Contains("no pertenecen al conductor", MensajeError.ExtraerMensajeDeNegocio(ex));
+            }
+        }
+
+        [FactBD]
+        public void EnviarLiquidacion_TextoOMontoExcesivo_SeRechazaSinGuardarNada()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var datos = DatosBase.Cargar();
+                int idViaje = CrearDespacho(datos, NuevoLote(datos), out _);
+
+                // Detalle de 251 caracteres: antes se cortaba sin avisar; ahora se avisa qué campo es.
+                var input = NuevaLiquidacion(datos, idViaje);
+                input.GastosAdicionales[0].Descripcion = new string('x', 251);
+                var exTexto = Assert.Throws<ErrorNegocioException>(() => LiquidacionConductorService.EnviarLiquidacion(input));
+                Assert.Contains("Detalle de otro gasto", exTexto.Message);
+
+                // Monto sobre el tope en un otro gasto (llega en JSON desde el navegador).
+                input = NuevaLiquidacion(datos, idViaje);
+                input.GastosAdicionales[0].Soles = 1e15m;
+                var exMonto = Assert.Throws<ErrorNegocioException>(() => LiquidacionConductorService.EnviarLiquidacion(input));
+                Assert.Contains("gasto adicional", exMonto.Message);
+
+                Assert.Equal(0, Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT COUNT(*) FROM OrdenViaje WHERE numeroOrdenViaje = @n", DbHelper.Param("@n", input.NumeroOrdenViaje))));
+                Assert.Equal("ABIERTO", RegistroDespachoService.ObtenerInfoViaje(idViaje).EstadoViaje);
             }
         }
 

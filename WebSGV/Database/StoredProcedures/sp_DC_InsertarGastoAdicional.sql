@@ -1,9 +1,11 @@
+-- Concepto hasta 100 y detalle hasta 250 caracteres, como el formulario del conductor y las
+-- columnas (migración 45). Antes eran VARCHAR(50) y el texto se cortaba sin avisar.
 CREATE OR ALTER PROCEDURE sp_DC_InsertarGastoAdicional
     @numeroOrdenViaje VARCHAR(50),
-    @nombreCategoria  VARCHAR(50),
+    @nombreCategoria  VARCHAR(100),
     @soles            FLOAT = 0,
     @dolares          FLOAT = 0,
-    @descripcion      VARCHAR(50) = NULL
+    @descripcion      VARCHAR(250) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
