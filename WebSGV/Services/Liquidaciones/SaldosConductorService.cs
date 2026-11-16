@@ -86,7 +86,7 @@ namespace WebSGV.Services.Liquidaciones
                     LEFT JOIN Egresos e ON e.numeroOrdenViaje = ov.numeroOrdenViaje
                     LEFT JOIN PagoSaldoConductorDetalle pd ON pd.idOrdenViaje = ov.idOrdenViaje AND pd.activo = 1
                     LEFT JOIN PagoSaldoConductor p ON p.idPagoSaldo = pd.idPagoSaldo
-                    WHERE ov.estadoAprobacion = 'APROBADO'
+                    WHERE ov.estadoAprobacion = @aprobado
                       AND (@idConductor <= 0 OR ov.idConductor = @idConductor)
                 ) t
                 WHERE (@ids IS NOT NULL AND t.idOrdenViaje IN (SELECT CAST(value AS INT) FROM STRING_SPLIT(@ids, ',')))
@@ -95,6 +95,7 @@ namespace WebSGV.Services.Liquidaciones
                             OR (@conPendientes = 1 AND t.FechaAprobacion < @desde AND t.idPagoSaldo IS NULL))
                        AND (@soloPendientes = 0 OR t.idPagoSaldo IS NULL))
                 ORDER BY t.Conductor, t.FechaAprobacion, t.numeroOrdenViaje",
+                DbHelper.Param("@aprobado", EstadosOrden.Aprobado),
                 DbHelper.Param("@desde", desde.Date),
                 DbHelper.Param("@hasta", hasta.Date),
                 DbHelper.Param("@idConductor", idConductor),
@@ -243,7 +244,8 @@ namespace WebSGV.Services.Liquidaciones
                 GeneradoPor = generadoPor,
                 Seccion = f => Convert.ToString(f["Conductor"]),
                 Nota = "Saldo de cada liquidación aprobada = entregado − gastos + descuentos − reintegros. " +
-                       "Positivo: el conductor devuelve (se le descuenta). Negativo: la empresa le reintegra.",
+                       "Positivo: el conductor devuelve (se le descuenta). Negativo: la empresa le reintegra. " +
+                       "Los totales cuentan solo lo pendiente y, en el resumen, el neto de cada conductor.",
             };
             r.Filtros.AddRange(filtros);
             void Col(string t, TipoColumnaReporte tipo, float ancho, Func<DataRow, object> v) =>
@@ -259,18 +261,58 @@ namespace WebSGV.Services.Liquidaciones
             Col("RESULTADO", TipoColumnaReporte.Codigo, 1.1f, f => f["Sentido"]);
             Col("ESTADO", TipoColumnaReporte.Texto, 1.8f, f => f["Estado"]);
 
-            var filas = dt.Rows.Cast<DataRow>().ToList();
-            decimal descontarS = filas.Where(f => D(f, "SaldoSoles") > 0).Sum(f => D(f, "SaldoSoles"));
-            decimal reintegrarS = -filas.Where(f => D(f, "SaldoSoles") < 0).Sum(f => D(f, "SaldoSoles"));
-            r.Resumen.Add(new LineaResumen { Etiqueta = "A descontar a conductores (S/)", Valor = descontarS, Tipo = TipoColumnaReporte.Soles });
-            r.Resumen.Add(new LineaResumen { Etiqueta = "A reintegrar a conductores (S/)", Valor = reintegrarS, Tipo = TipoColumnaReporte.Soles });
-            decimal netoD = filas.Sum(f => D(f, "SaldoDolares"));
-            if (netoD != 0)
-                r.Resumen.Add(new LineaResumen { Etiqueta = "Neto en dólares (+ descontar / − reintegrar)", Valor = netoD, Tipo = TipoColumnaReporte.Dolares });
-            r.Resumen.Add(new LineaResumen { Etiqueta = "Liquidaciones pendientes de saldar", Valor = filas.Count(f => f.IsNull("idPagoSaldo")), Tipo = TipoColumnaReporte.Entero, Destacada = true });
+            // La fila de totales suma solo lo pendiente: lo ya saldado no se vuelve a cobrar ni pagar.
+            r.FilaEnTotales = EsPendiente;
+            r.EtiquetaTotales = "Total pendiente";
+
+            var tot = Totales(dt);
+            r.Resumen.Add(new LineaResumen { Etiqueta = "A descontar a conductores (S/)", Valor = tot.DescontarSoles, Tipo = TipoColumnaReporte.Soles });
+            r.Resumen.Add(new LineaResumen { Etiqueta = "A reintegrar a conductores (S/)", Valor = tot.ReintegrarSoles, Tipo = TipoColumnaReporte.Soles });
+            if (tot.HayDolares)
+            {
+                r.Resumen.Add(new LineaResumen { Etiqueta = "A descontar a conductores (US$)", Valor = tot.DescontarDolares, Tipo = TipoColumnaReporte.Dolares });
+                r.Resumen.Add(new LineaResumen { Etiqueta = "A reintegrar a conductores (US$)", Valor = tot.ReintegrarDolares, Tipo = TipoColumnaReporte.Dolares });
+            }
+            r.Resumen.Add(new LineaResumen { Etiqueta = "Liquidaciones pendientes de saldar", Valor = tot.Pendientes, Tipo = TipoColumnaReporte.Entero, Destacada = true });
             return r;
         }
 
+        /// <summary>Sin pago o descuento vigente registrado (<c>idPagoSaldo</c> nulo).</summary>
+        public static bool EsPendiente(DataRow r) => r.IsNull("idPagoSaldo");
+
+        /// <summary>
+        /// Totales "A descontar" / "A reintegrar" de la pantalla y del reporte (la misma cuenta en los dos). Solo
+        /// cuentan las liquidaciones pendientes y se netea por conductor y por moneda: un conductor con +100 y −40
+        /// pendientes aporta 60 a descontar y nada a reintegrar.
+        /// </summary>
+        public static TotalesSaldos Totales(DataTable dt)
+        {
+            var pendientes = (dt == null ? Enumerable.Empty<DataRow>() : dt.Rows.Cast<DataRow>()).Where(EsPendiente).ToList();
+            var netos = pendientes.GroupBy(f => Convert.ToInt32(f["idConductor"]))
+                .Select(g => new { Sol = g.Sum(f => D(f, "SaldoSoles")), Dol = g.Sum(f => D(f, "SaldoDolares")) })
+                .ToList();
+            return new TotalesSaldos
+            {
+                DescontarSoles = netos.Where(n => n.Sol > 0).Sum(n => n.Sol),
+                ReintegrarSoles = -netos.Where(n => n.Sol < 0).Sum(n => n.Sol),
+                DescontarDolares = netos.Where(n => n.Dol > 0).Sum(n => n.Dol),
+                ReintegrarDolares = -netos.Where(n => n.Dol < 0).Sum(n => n.Dol),
+                Pendientes = pendientes.Count,
+            };
+        }
+
         private static decimal D(DataRow r, string c) => r.IsNull(c) ? 0m : Convert.ToDecimal(r[c]);
+    }
+
+    /// <summary>Resultado de <see cref="SaldosConductorService.Totales"/> (montos siempre positivos).</summary>
+    public sealed class TotalesSaldos
+    {
+        public decimal DescontarSoles { get; set; }
+        public decimal ReintegrarSoles { get; set; }
+        public decimal DescontarDolares { get; set; }
+        public decimal ReintegrarDolares { get; set; }
+        /// <summary>Liquidaciones pendientes de saldar.</summary>
+        public int Pendientes { get; set; }
+        public bool HayDolares => DescontarDolares != 0 || ReintegrarDolares != 0;
     }
 }

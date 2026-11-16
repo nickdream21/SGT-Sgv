@@ -170,6 +170,7 @@
     <Content Include="Database\Schema\10_SeguimientoExportacion_Gps.sql" />
     <Content Include="Database\Schema\11_SeguimientoExportacion_VinculoDespacho.sql" />
     <Content Include="Database\Schema\12_DocumentosManifiesto.sql" />
+    <Content Include="Database\Scripts\borrar_sp_AprobarLiquidacion.sql" />
     <Content Include="Database\Scripts\diagnostico_OnwayAuthCache_TokenActivoUnico.sql" />
     <Content Include="Database\Scripts\diagnostico_PdfAbastecimiento.sql" />
     <Content Include="Database\Scripts\fix_EstadoSeguimientoExportacion.sql" />
@@ -185,6 +186,7 @@
     <Content Include="Database\Schema\15_CatalogosPorCliente.sql" />
     <Content Include="Database\Schema\46_SelloSesion.sql" />
     <Content Include="Database\Schema\47_AuditoriaSoloInsercion.sql" />
+    <Content Include="Database\Schema\48_UnicidadFinancieroPorOrden.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminMaquinaria.sql" />
@@ -598,6 +600,7 @@
     <Compile Include="Services\Liquidaciones\MovimientosViajeService.cs" />
     <Compile Include="Services\Liquidaciones\SaldosConductorService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionesContabilidadService.cs" />
+    <Compile Include="Services\Liquidaciones\EstadosOrden.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionesPendientesService.cs" />
     <Compile Include="Services\NotificacionService.cs" />
     <Compile Include="Services\OrdenViaje\OrdenViajeValidaciones.cs" />

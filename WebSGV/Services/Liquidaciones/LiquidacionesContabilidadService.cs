@@ -12,7 +12,7 @@ namespace WebSGV.Services.Liquidaciones
     public static class LiquidacionesContabilidadService
     {
         /// <summary>
-        /// Liquidaciones de viajes COMPLETADO con sus totales de ingresos, gastos,
+        /// Liquidaciones aprobadas (conformidad del conductor firmada, <see cref="EstadosOrden.Aprobado"/>) con sus totales de ingresos, gastos,
         /// descuentos y reintegros, filtradas por conductor / número de orden / nombre.
         /// Los parámetros LIKE se derivan internamente de los valores ya saneados.
         /// </summary>
@@ -42,11 +42,12 @@ namespace WebSGV.Services.Liquidaciones
                 LEFT JOIN DescuentosReintegros dr ON dr.numeroOrdenViaje = ov.numeroOrdenViaje AND dr.activo = 1
                 LEFT JOIN Ingresos i ON i.numeroOrdenViaje = ov.numeroOrdenViaje
                 LEFT JOIN Egresos e ON e.numeroOrdenViaje = ov.numeroOrdenViaje
-                WHERE ov.estadoViaje = 'COMPLETADO'
+                WHERE ov.estadoAprobacion = @Aprobado
                   AND (@IdConductor <= 0 OR ov.idConductor = @IdConductor)
                   AND (@NumeroOrden = '' OR ov.numeroOrdenViaje LIKE @NumeroOrdenLike)
                   AND (@NombreConductor = '' OR (c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '')) LIKE @NombreConductorLike)
                 ORDER BY ov.fechaSalida DESC",
+                DbHelper.Param("@Aprobado",            EstadosOrden.Aprobado),
                 DbHelper.Param("@IdConductor",        idConductor),
                 DbHelper.Param("@NumeroOrden",         numeroOrden),
                 DbHelper.Param("@NumeroOrdenLike",     "%" + numeroOrden + "%"),

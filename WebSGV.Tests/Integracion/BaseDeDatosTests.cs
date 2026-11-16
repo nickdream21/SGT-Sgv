@@ -115,6 +115,21 @@ namespace WebSGV.Tests.Integracion
         }
 
         [FactBD]
+        public void DatosFinancieros_TienenUnaSolaFilaPorOrden()
+        {
+            // Migración 48: una segunda fila de Ingresos/Egresos/DescuentosReintegros duplicaría los montos en los LEFT JOIN.
+            var unicos = new HashSet<string>(
+                DbHelper.ConsultarTabla(@"SELECT name FROM sys.indexes
+                                          WHERE is_unique = 1 AND object_id IN (OBJECT_ID('dbo.Ingresos'), OBJECT_ID('dbo.Egresos'), OBJECT_ID('dbo.DescuentosReintegros'))")
+                       .Rows.Cast<DataRow>().Select(r => (string)r["name"]),
+                StringComparer.OrdinalIgnoreCase);
+
+            var esperados = new[] { "UX_Ingresos_Orden", "UX_Egresos_Orden", "UX_DescuentosReintegros_Orden" };
+            var faltan = esperados.Where(i => !unicos.Contains(i)).ToList();
+            Assert.True(faltan.Count == 0, "Índices únicos por orden ausentes: " + string.Join(", ", faltan));
+        }
+
+        [FactBD]
         public void NingunUsuarioTieneContrasenaEnTextoPlano()
         {
             var sinHash = DbHelper.ConsultarTabla("SELECT idUsuario, contrasena FROM Usuarios").Rows.Cast<DataRow>()

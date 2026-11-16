@@ -49,8 +49,8 @@ namespace WebSGV.Views
                 SELECT DISTINCT c.idConductor,
                        LTRIM(RTRIM(c.nombre)) + ' ' + LTRIM(RTRIM(ISNULL(c.apPaterno, ''))) AS Nombre
                 FROM Conductor c JOIN OrdenViaje ov ON ov.idConductor = c.idConductor
-                WHERE ov.estadoAprobacion = 'APROBADO'
-                ORDER BY Nombre").Rows)
+                WHERE ov.estadoAprobacion = @aprobado
+                ORDER BY Nombre", DbHelper.Param("@aprobado", EstadosOrden.Aprobado)).Rows)
                 ddlConductor.Items.Add(new ListItem(Convert.ToString(r["Nombre"]), Convert.ToString(r["idConductor"])));
 
             foreach (var m in SaldosConductorService.Medios)
@@ -115,10 +115,11 @@ namespace WebSGV.Views
             rptConductores.DataBind();
             pnlVacio.Visible = grupos.Count == 0;
 
-            var pend = filas.Where(r => r.IsNull("idPagoSaldo")).ToList();
-            litDescontar.Text = "S/ " + N(pend.Where(r => D(r, "SaldoSoles") > 0).Sum(r => D(r, "SaldoSoles")));
-            litReintegrar.Text = "S/ " + N(-pend.Where(r => D(r, "SaldoSoles") < 0).Sum(r => D(r, "SaldoSoles")));
-            litPendientes.Text = pend.Count.ToString();
+            // Misma cuenta que el Excel: solo pendientes, neto por conductor y por moneda.
+            var tot = SaldosConductorService.Totales(dt);
+            litDescontar.Text = Montos(tot.DescontarSoles, tot.DescontarDolares);
+            litReintegrar.Text = Montos(tot.ReintegrarSoles, tot.ReintegrarDolares);
+            litPendientes.Text = tot.Pendientes.ToString();
             litConductores.Text = grupos.Count.ToString();
         }
 

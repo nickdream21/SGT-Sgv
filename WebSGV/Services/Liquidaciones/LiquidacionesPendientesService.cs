@@ -120,15 +120,15 @@ namespace WebSGV.Services.Liquidaciones
                         ";
 
         /// <summary>
-        /// Liquidaciones aprobadas (viajes COMPLETADO) con filtros opcionales. El SQL se
-        /// arma dinámicamente igual que en el code-behind original; el cálculo de balance
-        /// y el mapeo se hacen fuera.
+        /// Liquidaciones aprobadas (conformidad del conductor firmada, <see cref="EstadosOrden.Aprobado"/>) con
+        /// filtros opcionales. El SQL se arma dinámicamente igual que en el code-behind original; el cálculo de
+        /// balance y el mapeo se hacen fuera.
         /// </summary>
         public static DataTable ObtenerAprobadas(int idConductor, string fechaDesde, string fechaHasta,
             string numeroOrden, DateTime? fd, DateTime? fh)
         {
             string query = SelectResumenLiquidacion + @"
-                        WHERE ov.estadoViaje = 'COMPLETADO'";
+                        WHERE ov.estadoAprobacion = @aprobado";
 
             if (idConductor > 0)
                 query += " AND ov.idConductor = @idConductor";
@@ -141,7 +141,7 @@ namespace WebSGV.Services.Liquidaciones
 
             query += " ORDER BY ov.fechaSalida DESC";
 
-            var pars = new List<SqlParameter>();
+            var pars = new List<SqlParameter> { DbHelper.Param("@aprobado", EstadosOrden.Aprobado) };
             if (idConductor > 0)
                 pars.Add(DbHelper.Param("@idConductor", idConductor));
             if (fd.HasValue)

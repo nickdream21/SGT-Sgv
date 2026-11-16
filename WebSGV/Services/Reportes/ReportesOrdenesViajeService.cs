@@ -48,8 +48,9 @@ namespace WebSGV.Services.Reportes
                 FROM OrdenViaje ov
                 INNER JOIN Conductor c ON ov.idConductor = c.idConductor
                 WHERE ov.fechaSalida BETWEEN @FechaDesde AND @FechaHasta
-                AND ov.estadoViaje = 'COMPLETADO'
+                AND ov.estadoAprobacion = @Aprobado
                 ORDER BY ov.fechaSalida DESC, c.nombre",
+                DbHelper.Param("@Aprobado", Liquidaciones.EstadosOrden.Aprobado),
                 DbHelper.Param("@FechaDesde", fechaDesde),
                 DbHelper.Param("@FechaHasta", fechaHasta));
 

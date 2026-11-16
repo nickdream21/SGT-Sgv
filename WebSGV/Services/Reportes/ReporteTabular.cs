@@ -70,6 +70,13 @@ namespace WebSGV.Services.Reportes
         public IList<DataRow> Filas { get; set; } = new List<DataRow>();
         /// <summary>Fila final con la suma de cada columna de monto.</summary>
         public bool IncluirTotales { get; set; } = true;
+        /// <summary>
+        /// Filas que entran en la fila de totales (p. ej. solo las pendientes). Null = todas, y en Excel el total es
+        /// una fórmula SUBTOTAL que respeta el autofiltro; con filtro, el Excel lleva el total ya calculado.
+        /// </summary>
+        public Func<DataRow, bool> FilaEnTotales { get; set; }
+        /// <summary>Texto de la fila de totales.</summary>
+        public string EtiquetaTotales { get; set; } = "Total";
         public string TituloResumen { get; set; } = "Resumen";
         public List<LineaResumen> Resumen { get; } = new List<LineaResumen>();
         /// <summary>Aclaración al pie (cómo se calcula un monto, qué significan los colores, etc.).</summary>
@@ -121,7 +128,8 @@ namespace WebSGV.Services.Reportes
         }
 
         private static decimal Total(ReporteTabular r, ColumnaReporte c) =>
-            r.Filas.Sum(f => { object v = ValorCelda(c, f); return v == null ? 0m : Convert.ToDecimal(v); });
+            r.Filas.Where(f => r.FilaEnTotales == null || r.FilaEnTotales(f))
+                .Sum(f => { object v = ValorCelda(c, f); return v == null ? 0m : Convert.ToDecimal(v); });
 
         // ============================================================================
         // EXCEL
@@ -235,14 +243,17 @@ namespace WebSGV.Services.Reportes
             if (r.IncluirTotales && hayMontos && r.Filas.Count > 0)
             {
                 int columnasEtiqueta = Math.Max(1, r.Columnas.TakeWhile(c => !c.EsMonto).Count());
-                ws.Cell(fila, 1).Value = "Total";
+                ws.Cell(fila, 1).Value = r.EtiquetaTotales;
                 if (columnasEtiqueta > 1) ws.Range(fila, 1, fila, columnasEtiqueta).Merge();
                 for (int i = 0; i < r.Columnas.Count; i++)
                 {
                     if (!r.Columnas[i].EsMonto) continue;
                     var celda = ws.Cell(fila, i + 1);
                     string col = celda.Address.ColumnLetter;
-                    celda.FormulaA1 = $"SUBTOTAL(109,{col}{filaCabecera + 1}:{col}{ultimaFilaDatos})";
+                    if (r.FilaEnTotales != null)
+                        celda.Value = Total(r, r.Columnas[i]);
+                    else
+                        celda.FormulaA1 = $"SUBTOTAL(109,{col}{filaCabecera + 1}:{col}{ultimaFilaDatos})";
                     celda.Style.NumberFormat.Format = FormatoMontoExcel(r.Columnas[i]);
                     celda.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
                 }
@@ -637,7 +648,7 @@ namespace WebSGV.Services.Reportes
                 {
                     int etiqueta = Math.Max(1, cols.TakeWhile(c => !c.EsMonto).Count());
                     table.Cell().ColumnSpan((uint)etiqueta).Background(FondoTitulo).BorderTop(0.8f).BorderColor(Azul)
-                        .PaddingVertical(3).PaddingHorizontal(3).Text("Total").Bold();
+                        .PaddingVertical(3).PaddingHorizontal(3).Text(_r.EtiquetaTotales).Bold();
                     foreach (var col in cols.Skip(etiqueta))
                     {
                         var celda = table.Cell().Background(FondoTitulo).BorderTop(0.8f).BorderColor(Azul).PaddingVertical(3).PaddingHorizontal(3);
