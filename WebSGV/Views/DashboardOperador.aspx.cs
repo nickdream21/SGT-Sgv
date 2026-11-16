@@ -99,8 +99,8 @@ namespace WebSGV.Views
             if (dt.Rows.Count > 0)
             {
                 DataRow reader = dt.Rows[0];
-                lblNombreOperador.Text = reader["nombreCompleto"].ToString();
-                lblDNIOperador.Text = reader["dni"].ToString();
+                lblNombreOperador.Text = System.Web.HttpUtility.HtmlEncode(reader["nombreCompleto"].ToString());
+                lblDNIOperador.Text = System.Web.HttpUtility.HtmlEncode(reader["dni"].ToString());
                 hfIdOperador.Value = IdOperadorActual.ToString();
             }
         }
@@ -114,10 +114,10 @@ namespace WebSGV.Views
             {
                 DataRow reader = dt.Rows[0];
                 hfIdAsignacion.Value = reader["idAsignacion"].ToString();
-                lblPlacaEquipo.Text = reader["placa"].ToString();
-                lblTipoEquipo.Text = reader["tipoEquipo"] != DBNull.Value ? reader["tipoEquipo"].ToString() : "—";
-                lblClienteObra.Text = reader["nombreCliente"].ToString();
-                lblNombreObra.Text = reader["nombreObra"].ToString();
+                lblPlacaEquipo.Text = System.Web.HttpUtility.HtmlEncode(reader["placa"].ToString());
+                lblTipoEquipo.Text = reader["tipoEquipo"] != DBNull.Value ? System.Web.HttpUtility.HtmlEncode(reader["tipoEquipo"].ToString()) : "—";
+                lblClienteObra.Text = System.Web.HttpUtility.HtmlEncode(reader["nombreCliente"].ToString());
+                lblNombreObra.Text = System.Web.HttpUtility.HtmlEncode(reader["nombreObra"].ToString());
                 return true;
             }
 
@@ -234,7 +234,7 @@ namespace WebSGV.Views
                 if (dtResult.Rows.Count > 0)
                 {
                     string numeroParte = dtResult.Rows[0]["numeroParte"].ToString();
-                    MostrarMensaje("Parte Diario <strong>" + numeroParte + "</strong> registrado exitosamente.", "success");
+                    MostrarMensaje("Parte Diario " + numeroParte + " registrado exitosamente.", "success");
 
                     AuditoriaHelper.Registrar("INSERT", "PartesDiariosTrabajo",
                         Convert.ToInt32(dtResult.Rows[0]["idParte"]),
@@ -287,7 +287,7 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            lblMensaje.Text = mensaje;
+            lblMensaje.Text = MensajeHtml.Texto(mensaje);
             lblMensaje.CssClass = "op-msg alert alert-" + tipo + " d-block";
         }
 

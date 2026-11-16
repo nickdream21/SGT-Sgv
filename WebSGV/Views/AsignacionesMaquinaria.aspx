@@ -111,8 +111,8 @@
                                     <asp:BoundField DataField="fechaAsignacion" HeaderText="FECHA" DataFormatString="{0:dd/MM/yyyy}" ItemStyle-CssClass="text-center" />
                                     <asp:TemplateField HeaderText="ESTADO" ItemStyle-CssClass="text-center" ItemStyle-Width="110">
                                         <ItemTemplate>
-                                            <span class='badge <%# ObtenerClaseEstado(Eval("estado")) %>'>
-                                                <%# Eval("estado") %>
+                                            <span class='badge <%#: ObtenerClaseEstado(Eval("estado")) %>'>
+                                                <%#: Eval("estado") %>
                                             </span>
                                         </ItemTemplate>
                                     </asp:TemplateField>

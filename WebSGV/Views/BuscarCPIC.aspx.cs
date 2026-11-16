@@ -914,7 +914,7 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            lblMensaje.Text = mensaje;
+            lblMensaje.Text = MensajeHtml.Texto(mensaje);
             lblMensaje.CssClass = $"alert alert-{tipo}";
             lblMensaje.Visible = true;
         }

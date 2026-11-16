@@ -19,6 +19,9 @@
             </div>
         </div>
 
+        <%-- Fuera de pnlResultados: si no, el aviso "no existe" nunca se veía (el panel está oculto). --%>
+        <asp:Label ID="lblMensaje" runat="server" CssClass="alert alert-info d-block" Visible="false"></asp:Label>
+
         <!-- Panel de resultados (inicialmente oculto) -->
         <asp:Panel ID="pnlResultados" runat="server" Visible="false">
             <h3>Información de la orden de viaje</h3>
@@ -187,7 +190,7 @@
                                 <asp:Repeater ID="rptIngresosAdicionales" runat="server">
                                     <ItemTemplate>
                                         <tr>
-                                            <td><%# Container.ItemIndex + 5 %></td>
+                                            <td><%#: Container.ItemIndex + 5 %></td>
                                             <td>
                                                 <asp:HiddenField ID="hfIdIngresoAdicional" runat="server" Value='<%# Eval("IdIngresoAdicional") %>' />
                                                 <asp:TextBox runat="server" ID="txtNombreIngreso" CssClass="form-control" Text='<%# Eval("NombreCategoria") %>' Enabled="false"></asp:TextBox>
@@ -330,7 +333,7 @@
                                 <asp:Repeater ID="rptGastosAdicionales" runat="server">
                                     <ItemTemplate>
                                         <tr>
-                                            <td><%# Container.ItemIndex + 9 %></td>
+                                            <td><%#: Container.ItemIndex + 9 %></td>
                                             <td>
                                                 <asp:HiddenField ID="hfIdGastoAdicional" runat="server" Value='<%# Eval("idCategoriaAdicional") %>' />
                                                 <asp:TextBox runat="server" ID="txtNombreGasto" CssClass="form-control" Text='<%# Eval("NombreCategoria") %>' Enabled="false"></asp:TextBox>
@@ -422,8 +425,6 @@
                     <asp:Button ID="btnCancelar" runat="server" Text="Cancelar" CssClass="btn btn-danger" OnClick="btnCancelar_Click" />
                 </div>
             </div>
-
-            <asp:Label ID="lblMensaje" runat="server" CssClass="alert alert-info d-block" Visible="false"></asp:Label>
         </asp:Panel>
     </div>
 

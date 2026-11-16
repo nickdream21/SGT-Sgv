@@ -62,13 +62,13 @@
                     <asp:BoundField DataField="nombre" HeaderText="Nombre completo" />
                     <asp:TemplateField HeaderText="Rol">
                         <ItemTemplate>
-                            <span class="badge badge-info"><%# Eval("rol") %></span>
+                            <span class="badge badge-info"><%#: Eval("rol") %></span>
                         </ItemTemplate>
                     </asp:TemplateField>
                     <asp:TemplateField HeaderText="Estado" ItemStyle-Width="90px">
                         <ItemTemplate>
-                            <span class='badge <%# (bool)Eval("activo") ? "badge-success" : "badge-danger" %>'>
-                                <%# (bool)Eval("activo") ? "Activo" : "Inactivo" %>
+                            <span class='badge <%#: (bool)Eval("activo") ? "badge-success" : "badge-danger" %>'>
+                                <%#: (bool)Eval("activo") ? "Activo" : "Inactivo" %>
                             </span>
                         </ItemTemplate>
                     </asp:TemplateField>

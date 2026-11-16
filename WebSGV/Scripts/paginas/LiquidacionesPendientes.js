@@ -50,12 +50,12 @@ function buildSubTablePeajes(items) {
         '<th class="text-right">S/</th><th class="text-right">$</th><th>Observaciones</th></tr></thead><tbody>';
     items.forEach(function (item) {
         html += '<tr>' +
-            '<td>' + (item.Estacion || '-') + '</td>' +
-            '<td>' + (item.Fecha || '-') + '</td>' +
-            '<td>' + (item.Comprobante || '-') + '</td>' +
+            '<td>' + htmlEncode(item.Estacion || '-') + '</td>' +
+            '<td>' + htmlEncode(item.Fecha || '-') + '</td>' +
+            '<td>' + htmlEncode(item.Comprobante || '-') + '</td>' +
             '<td class="text-right">' + parseFloat(item.Soles || 0).toFixed(2) + '</td>' +
             '<td class="text-right">' + parseFloat(item.Dolares || 0).toFixed(2) + '</td>' +
-            '<td>' + (item.Observaciones || '-') + '</td>' +
+            '<td>' + htmlEncode(item.Observaciones || '-') + '</td>' +
             '</tr>';
     });
     html += '</tbody></table>';
@@ -69,17 +69,19 @@ function buildSubTableGenerica(items) {
         '<th class="text-right">S/</th><th class="text-right">$</th><th>Observaciones</th></tr></thead><tbody>';
     items.forEach(function (item) {
         html += '<tr>' +
-            '<td>' + (item.Fecha || '-') + '</td>' +
-            '<td>' + (item.Comprobante || '-') + '</td>' +
+            '<td>' + htmlEncode(item.Fecha || '-') + '</td>' +
+            '<td>' + htmlEncode(item.Comprobante || '-') + '</td>' +
             '<td class="text-right">' + parseFloat(item.Soles || 0).toFixed(2) + '</td>' +
             '<td class="text-right">' + parseFloat(item.Dolares || 0).toFixed(2) + '</td>' +
-            '<td>' + (item.Observaciones || '-') + '</td>' +
+            '<td>' + htmlEncode(item.Observaciones || '-') + '</td>' +
             '</tr>';
     });
     html += '</tbody></table>';
     return html;
 }
 
+// label es HTML: los textos fijos traen entidades (Pr&eacute;stamo); los nombres que vienen de
+// la BD se pasan ya por htmlEncode. subTable también llega armado y codificado.
 function makeRow(icon, iconClass, label, soles, dolares, desc, subTable) {
     var hasDetail = (desc && desc.trim()) || (subTable && subTable.trim());
     var expandBtn = hasDetail
@@ -98,7 +100,7 @@ function makeRow(icon, iconClass, label, soles, dolares, desc, subTable) {
     var subContent = '';
     if (desc && desc.trim()) {
         subContent += '<div class="detail-desc"><strong>Descripci&oacute;n:</strong> ' +
-            $('<span>').text(desc).html() + '</div>';
+            htmlEncode(desc) + '</div>';
     }
     if (subTable && subTable.trim()) {
         subContent += '<div class="detail-sub-content">' + subTable + '</div>';
@@ -232,7 +234,7 @@ function mostrarDetalle(datos) {
 
     if (datos.DetallesIngresosAdicionales && datos.DetallesIngresosAdicionales.length > 0) {
         datos.DetallesIngresosAdicionales.forEach(function (item) {
-            var nombre = item.Nombre || 'Ingreso Adicional';
+            var nombre = htmlEncode(item.Nombre || 'Ingreso Adicional');
             ingresosHtml += makeRow('fa-plus-circle', 'text-success', nombre,
                 item.Soles, item.Dolares, item.Descripcion || '', '');
         });
@@ -273,7 +275,7 @@ function mostrarDetalle(datos) {
 
     if (datos.DetallesGastosAdicionales && datos.DetallesGastosAdicionales.length > 0) {
         datos.DetallesGastosAdicionales.forEach(function (item) {
-            var nombre = item.Nombre || 'Gasto Adicional';
+            var nombre = htmlEncode(item.Nombre || 'Gasto Adicional');
             gastosHtml += makeRow('fa-minus-circle', 'text-danger', nombre,
                 item.Soles, item.Dolares, item.Descripcion || '', '');
         });
@@ -986,11 +988,13 @@ function celdaMontos(soles, dolares, claseFija) {
     return '<td class="sgv-num">' + monto('S/', soles) + monto('$', dolares) + '</td>';
 }
 
+// Texto de la BD (escrito por el conductor o el admin) dentro de HTML armado con cadenas.
+// Escapa también comillas: sirve dentro de atributos.
 function htmlEncode(text) {
-    if (!text) return '';
-    var div = document.createElement('div');
-    div.appendChild(document.createTextNode(text));
-    return div.innerHTML;
+    if (text === null || text === undefined) return '';
+    return String(text).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
 }
 
 // --- Descargar PDF SGV-CDF-F-05 ---

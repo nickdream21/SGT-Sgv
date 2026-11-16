@@ -172,7 +172,7 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, bool esExito)
         {
-            lblMensaje.Text = mensaje;
+            lblMensaje.Text = MensajeHtml.Texto(mensaje);
             pnlMensaje.Visible = true;
             pnlMensaje.CssClass = esExito ? "alert alert-success" : "alert alert-danger";
         }

@@ -127,13 +127,13 @@
                                                 data-hora='<%#: Eval("HoraTxt") %>' data-hora-input='<%#: Eval("HoraInput") %>' data-origen='<%#: Eval("OrigenLargo") %>'
                                                 data-regla='<%#: Eval("Regla") %>' data-coords='<%#: Eval("Coords") %>' data-mapa='<%#: Eval("Mapa") %>'
                                                 data-gps='<%#: Eval("GpsTxt") %>' data-motivo='<%#: Eval("Motivo") %>'>
-                                                <span class='<%# "sx-punto sx-punto-" + Eval("Css") %>' aria-hidden="true"></span>
+                                                <span class='<%#: "sx-punto sx-punto-" + Eval("Css") %>' aria-hidden="true"></span>
                                                 <div class="sx-hito-texto">
                                                     <span><%#: Eval("Nombre") %></span>
                                                     <div class="sx-hito-linea2">
-                                                        <span class='<%# (bool)Eval("Vacio") ? "sx-mono sx-hito-vacio" : "sx-mono" %>'><%#: Eval("HoraMostrada") %></span>
-                                                        <span class='<%# "sx-fuente sx-fuente-" + Eval("Css") %>' style='<%# (bool)Eval("Vacio") ? "display:none" : "" %>'><%#: Eval("OrigenCorto") %></span>
-                                                        <span class="sx-nota" style='<%# string.IsNullOrEmpty((string)Eval("AltTxt")) ? "display:none" : "" %>'>GPS: <span class="sx-mono"><%#: Eval("AltTxt") %></span></span>
+                                                        <span class='<%#: (bool)Eval("Vacio") ? "sx-mono sx-hito-vacio" : "sx-mono" %>'><%#: Eval("HoraMostrada") %></span>
+                                                        <span class='<%#: "sx-fuente sx-fuente-" + Eval("Css") %>' style='<%#: (bool)Eval("Vacio") ? "display:none" : "" %>'><%#: Eval("OrigenCorto") %></span>
+                                                        <span class="sx-nota" style='<%#: string.IsNullOrEmpty((string)Eval("AltTxt")) ? "display:none" : "" %>'>GPS: <span class="sx-mono"><%#: Eval("AltTxt") %></span></span>
                                                     </div>
                                                 </div>
                                                 <div class="sx-hito-acciones">
@@ -222,7 +222,7 @@
             txtNuevaHora: '<%= txtNuevaHora.ClientID %>',
             txtMotivo: '<%= txtMotivo.ClientID %>',
             hdnColumna: '<%= hdnColumna.ClientID %>',
-            columnaInicial: '<%= ColumnaInicial %>',
+            columnaInicial: '<%= HttpUtility.JavaScriptStringEncode(ColumnaInicial) %>',
             idSeguimiento: <%= ModoNuevo ? 0 : IdSeguimientoPublico %>
         });
     </script>

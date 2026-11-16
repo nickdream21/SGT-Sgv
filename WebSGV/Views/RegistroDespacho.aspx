@@ -126,7 +126,7 @@
                                                                         <td><%#: Eval("Chofer") %><small class="d-block text-muted"><%#: Eval("CambioTexto") %></small></td>
                                                                         <td class="text-monospace"><%#: Eval("Tracto") %></td>
                                                                         <td class="text-monospace"><%#: Eval("Carreta") %></td>
-                                                                        <td><span class='<%# "rd-chip " + Eval("ChipCss") %>'><%#: Eval("Estado") %></span><small class="d-block text-muted"><%#: Eval("Viaje") %></small></td>
+                                                                        <td><span class='<%#: "rd-chip " + Eval("ChipCss") %>'><%#: Eval("Estado") %></span><small class="d-block text-muted"><%#: Eval("Viaje") %></small></td>
                                                                     </tr>
                                                                 </ItemTemplate>
                                                             </asp:Repeater>
@@ -298,7 +298,7 @@
                                                     <tbody>
                                                         <asp:Repeater ID="rptTractosImportados" runat="server" OnItemDataBound="rptTractosImportados_ItemDataBound">
                                                             <ItemTemplate>
-                                                                <tr class="<%# (bool)Eval("YaRegistrado") ? "rd-fila-registrada" : "" %>">
+                                                                <tr class="<%#: (bool)Eval("YaRegistrado") ? "rd-fila-registrada" : "" %>">
                                                                     <td><asp:CheckBox ID="chkIncluir" runat="server" /></td>
                                                                     <td>
                                                                         <div class="rd-placa"><%# HttpUtility.HtmlEncode(Eval("NumeroTransporte")) %></div>
@@ -311,7 +311,7 @@
                                                                         </asp:Panel>
                                                                     </td>
                                                                     <td class="rd-col-conductor">
-                                                                        <small class="rd-doc-dato">Documento: <%# HttpUtility.HtmlEncode(Eval("NombreChofer")) %><%# Eval("Licencia") == null ? "" : " · Lic. " + HttpUtility.HtmlEncode(Eval("Licencia")) %></small>
+                                                                        <small class="rd-doc-dato">Documento: <%# HttpUtility.HtmlEncode(Eval("NombreChofer")) %><%#: Eval("Licencia") == null ? "" : " · Lic. " + Eval("Licencia") %></small>
                                                                         <asp:DropDownList ID="ddlConductorImp" runat="server" CssClass="form-select form-select-sm select2-searchable" />
                                                                     </td>
                                                                     <td class="rd-col-placa">
@@ -518,7 +518,7 @@
                                                                     <td>
                                                                         <div class="rd-placa"><%# HttpUtility.HtmlEncode(Eval("NumeroTransporte") ?? "—") %></div>
                                                                         <small class="text-muted"><%# HttpUtility.HtmlEncode(Eval("GuiaRemitente") ?? "") %></small>
-                                                                        <small class="d-block text-muted">Cargó el <%# Eval("FechaDespacho", "{0:dd/MM/yyyy}") %></small>
+                                                                        <small class="d-block text-muted">Cargó el <%#: Eval("FechaDespacho", "{0:dd/MM/yyyy}") %></small>
                                                                     </td>
                                                                     <td class="rd-col-conductor">
                                                                         <small class="rd-doc-dato">Cargó: <%# HttpUtility.HtmlEncode(Eval("NombreConductor")) %></small>
@@ -1373,20 +1373,20 @@
                                                 OnRowDataBound="gvConductoresLote_RowDataBound">
                                                 <Columns>
                                                     <asp:TemplateField HeaderText="#" ItemStyle-CssClass="text-muted" ItemStyle-Width="34px">
-                                                        <ItemTemplate><%# Container.DataItemIndex + 1 %></ItemTemplate>
+                                                        <ItemTemplate><%#: Container.DataItemIndex + 1 %></ItemTemplate>
                                                     </asp:TemplateField>
                                                     <asp:BoundField DataField="NombreConductor" HeaderText="Conductor" />
                                                     <asp:TemplateField HeaderText="Tracto">
-                                                        <ItemTemplate><span class="rd-placa"><%# Eval("PlacaTracto") %></span></ItemTemplate>
+                                                        <ItemTemplate><span class="rd-placa"><%#: Eval("PlacaTracto") %></span></ItemTemplate>
                                                     </asp:TemplateField>
                                                     <asp:TemplateField HeaderText="Carreta">
-                                                        <ItemTemplate><span class="rd-placa"><%# Eval("PlacaCarreta") %></span></ItemTemplate>
+                                                        <ItemTemplate><span class="rd-placa"><%#: Eval("PlacaCarreta") %></span></ItemTemplate>
                                                     </asp:TemplateField>
                                                     <asp:TemplateField HeaderText="Guía remitente">
                                                         <ItemTemplate><%# MostrarDato(Eval("GuiaRemitente")) %></ItemTemplate>
                                                     </asp:TemplateField>
                                                     <asp:TemplateField HeaderText="Carga">
-                                                        <ItemTemplate><%# Eval("Carga") %></ItemTemplate>
+                                                        <ItemTemplate><%#: Eval("Carga") %></ItemTemplate>
                                                     </asp:TemplateField>
                                                     <asp:TemplateField HeaderText="Guía transportista">
                                                         <ItemTemplate><%# MostrarDato(Eval("GuiaTransportista")) %></ItemTemplate>

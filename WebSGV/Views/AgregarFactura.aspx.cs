@@ -383,7 +383,7 @@ namespace WebSGV.Views
         /// </summary>
         private void MostrarError(string mensaje)
         {
-            lblMensaje.Text = mensaje;
+            lblMensaje.Text = MensajeHtml.Texto(mensaje);
             lblMensaje.CssClass = "text-danger";
         }
 
@@ -392,7 +392,7 @@ namespace WebSGV.Views
         /// </summary>
         private void MostrarExito(string mensaje)
         {
-            lblMensaje.Text = mensaje;
+            lblMensaje.Text = MensajeHtml.Texto(mensaje);
             lblMensaje.CssClass = "text-success";
         }
 

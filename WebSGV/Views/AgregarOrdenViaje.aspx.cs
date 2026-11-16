@@ -258,7 +258,7 @@ namespace WebSGV.Views
                     CargarDatosModalesEdicion(numeroOrdenViaje);
 
                     System.Diagnostics.Debug.WriteLine($"✅ Datos de orden {idOrdenViaje} cargados completamente");
-                    MostrarMensaje($"Orden <strong>{numeroOrdenViaje}</strong> cargada para edición. Modifica los datos necesarios y guarda los cambios.", "info");
+                    MostrarMensaje($"Orden {numeroOrdenViaje} cargada para edición. Modifica los datos necesarios y guarda los cambios.", "info");
                 }
                 else
                 {
@@ -290,8 +290,8 @@ namespace WebSGV.Views
                 {
                     string json = JsonConvert.SerializeObject(ingresosAdicionales);
 
-                    // ✅ Escapar comillas para JavaScript
-                    json = json.Replace("\"", "\\\"");
+                    // Cadena JS segura: escapa comillas, \ y < > & (un "</script>" no cierra el bloque)
+                    json = System.Web.HttpUtility.JavaScriptStringEncode(json);
 
                     // ✅ Inyectar JavaScript para cargar los datos
                     string script = $@"
@@ -314,22 +314,22 @@ namespace WebSGV.Views
                                     <td>
                                         <input type='text' class='form-control form-control-sm' 
                                                name='conceptoIngreso_${{contadorIngresosAdicionales}}' 
-                                               value='${{ingreso.nombreCategoria || ingreso.categoria}}' required>
+                                               value='${{SGV.escaparHtml(ingreso.nombreCategoria || ingreso.categoria)}}' required>
                                     </td>
                                     <td>
                                         <input type='text' class='form-control form-control-sm' 
                                                name='descIngreso_${{contadorIngresosAdicionales}}' 
-                                               value='${{ingreso.descripcion}}'>
+                                               value='${{SGV.escaparHtml(ingreso.descripcion)}}'>
                                     </td>
                                     <td>
                                         <input type='number' class='form-control form-control-sm ingreso-soles' 
                                                name='ingresoSoles_${{contadorIngresosAdicionales}}' 
-                                               value='${{ingreso.soles}}' step='0.01' onchange='calcularTotales()'>
+                                               value='${{SGV.escaparHtml(ingreso.soles)}}' step='0.01' onchange='calcularTotales()'>
                                     </td>
                                     <td>
                                         <input type='number' class='form-control form-control-sm ingreso-dolares' 
                                                name='ingresoDolares_${{contadorIngresosAdicionales}}' 
-                                               value='${{ingreso.dolares}}' step='0.01' onchange='calcularTotales()'>
+                                               value='${{SGV.escaparHtml(ingreso.dolares)}}' step='0.01' onchange='calcularTotales()'>
                                     </td>
                                     <td class='text-center'>
                                         <button type='button' class='btn btn-danger btn-sm' 
@@ -373,8 +373,8 @@ namespace WebSGV.Views
                 {
                     string json = JsonConvert.SerializeObject(gastosAdicionales);
 
-                    // ✅ Escapar comillas para JavaScript
-                    json = json.Replace("\"", "\\\"");
+                    // Cadena JS segura: escapa comillas, \ y < > & (un "</script>" no cierra el bloque)
+                    json = System.Web.HttpUtility.JavaScriptStringEncode(json);
 
                     // ✅ Inyectar JavaScript para cargar los datos
                     string script = $@"
@@ -397,22 +397,22 @@ namespace WebSGV.Views
                                     <td>
                                         <input type='text' class='form-control form-control-sm' 
                                                name='conceptoGasto_${{contadorGastosAdicionales}}' 
-                                               value='${{gasto.nombreCategoria || gasto.categoria}}' required>
+                                               value='${{SGV.escaparHtml(gasto.nombreCategoria || gasto.categoria)}}' required>
                                     </td>
                                     <td>
                                         <input type='text' class='form-control form-control-sm' 
                                                name='descGasto_${{contadorGastosAdicionales}}' 
-                                               value='${{gasto.descripcion}}'>
+                                               value='${{SGV.escaparHtml(gasto.descripcion)}}'>
                                     </td>
                                     <td>
                                         <input type='number' class='form-control form-control-sm gasto-soles' 
                                                name='gastoSoles_${{contadorGastosAdicionales}}' 
-                                               value='${{gasto.soles}}' step='0.01' onchange='calcularTotales()'>
+                                               value='${{SGV.escaparHtml(gasto.soles)}}' step='0.01' onchange='calcularTotales()'>
                                     </td>
                                     <td>
                                         <input type='number' class='form-control form-control-sm gasto-dolares' 
                                                name='gastoDolares_${{contadorGastosAdicionales}}' 
-                                               value='${{gasto.dolares}}' step='0.01' onchange='calcularTotales()'>
+                                               value='${{SGV.escaparHtml(gasto.dolares)}}' step='0.01' onchange='calcularTotales()'>
                                     </td>
                                     <td class='text-center'>
                                         <button type='button' class='btn btn-danger btn-sm' 
@@ -461,8 +461,8 @@ namespace WebSGV.Views
                     // ✅ Guardar en HiddenField
                     hfGastosFinancieros.Value = json;
 
-                    // ✅ Escapar comillas para JavaScript
-                    json = json.Replace("\"", "\\\"");
+                    // Cadena JS segura: escapa comillas, \ y < > & (un "</script>" no cierra el bloque)
+                    json = System.Web.HttpUtility.JavaScriptStringEncode(json);
 
                     // ✅ Inyectar JavaScript para reconstruir los modales
                     string script = $@"
@@ -582,7 +582,7 @@ namespace WebSGV.Views
         {
             pnlInfoViajeOrigen.Visible = true;
             lblCantidadDespachosOrigen.Text = datos.CantidadDespachos.ToString();
-            lblConductorOrigen.Text = datos.Conductor;
+            lblConductorOrigen.Text = System.Web.HttpUtility.HtmlEncode(datos.Conductor);
 
             pnlDetallesViajeOrigen.Visible = true;
 
@@ -728,7 +728,7 @@ namespace WebSGV.Views
                 if (!string.IsNullOrEmpty(errores))
                 {
                     System.Diagnostics.Debug.WriteLine($"Errores en datos generales: {errores}");
-                    MostrarMensaje(errores.Replace("\n", "<br/>"), "danger");
+                    MostrarMensaje(errores, "danger");
                     return;
                 }
 
@@ -1000,9 +1000,13 @@ namespace WebSGV.Views
                 return "Sistema";
         }
 
-        private void MostrarMensaje(string mensaje, string tipo)
+        // Texto plano: se codifica (MensajeHtml); los saltos de línea se respetan.
+        private void MostrarMensaje(string mensaje, string tipo) => MostrarMensajeHtml(MensajeHtml.Texto(mensaje), tipo);
+
+        // Solo para HTML armado aquí mismo con los datos ya codificados (MostrarResultadoExitoso).
+        private void MostrarMensajeHtml(string htmlDeConfianza, string tipo)
         {
-            lblMensaje.Text = mensaje;
+            lblMensaje.Text = htmlDeConfianza;
             lblMensaje.CssClass = $"alert alert-{tipo} alert-dismissible fade show";
             pnlMensajes.Visible = true;
         }
@@ -1012,7 +1016,7 @@ namespace WebSGV.Views
             try
             {
                 string mensajeCompleto = $@"¡Orden de viaje {accion} exitosamente!<br/>
-            <strong>Número de orden:</strong> {numeroOrdenViaje}<br/>
+            <strong>Número de orden:</strong> {System.Web.HttpUtility.HtmlEncode(numeroOrdenViaje)}<br/>
             <div class='mt-3'>
                 <a href='ListaDespachos.aspx' class='btn btn-primary btn-sm me-2'>
                     <i class='fas fa-list'></i> Ver Lista de Despachos
@@ -1022,7 +1026,7 @@ namespace WebSGV.Views
                 </button>
             </div>";
 
-                MostrarMensaje(mensajeCompleto, "success");
+                MostrarMensajeHtml(mensajeCompleto, "success");
                 System.Diagnostics.Debug.WriteLine($"Orden {numeroOrdenViaje} {accion} exitosamente");
             }
             catch (Exception ex)

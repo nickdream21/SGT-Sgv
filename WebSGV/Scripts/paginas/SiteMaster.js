@@ -268,3 +268,16 @@
         }, { peligro: esPeligro, textoAceptar: esPeligro ? 'Continuar' : 'Aceptar' });
     }, true);
 })();
+
+// ── Texto seguro dentro de HTML ─────────────────────────────────────
+// SGV.escaparHtml(valor): para interpolar datos (nombres, observaciones, comprobantes que
+// escribe el usuario) en HTML armado con cadenas (.html(), .append(), innerHTML, plantillas
+// `...${x}...`). Escapa también las comillas, así sirve dentro de atributos value='...'.
+(function () {
+    var SGV = window.SGV = window.SGV || {};
+    var TABLA = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    SGV.escaparHtml = function (valor) {
+        if (valor === null || valor === undefined) return '';
+        return String(valor).replace(/[&<>"']/g, function (c) { return TABLA[c]; });
+    };
+})();

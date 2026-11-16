@@ -521,6 +521,8 @@
     <Compile Include="Helpers\AuditoriaHelper.cs" />
     <Compile Include="Helpers\DbHelper.cs" />
     <Compile Include="Helpers\IpClienteHelper.cs" />
+    <Compile Include="Helpers\JsonSeguro.cs" />
+    <Compile Include="Helpers\MensajeHtml.cs" />
     <Compile Include="Helpers\DocumentoHelper.cs" />
     <Compile Include="Helpers\MensajeErrorHelper.cs" />
     <Compile Include="Helpers\EmpresaConfigHelper.cs" />

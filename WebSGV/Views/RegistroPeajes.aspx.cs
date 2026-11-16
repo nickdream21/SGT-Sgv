@@ -172,7 +172,7 @@ namespace WebSGV.Views
         {
             pnlMensaje.Visible = true;
             string css = esExito ? "alert alert-success" : "alert alert-danger";
-            lblMensaje.Text = $"<div class='{css}'>{mensaje}</div>";
+            lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(mensaje)}</div>";
         }
     }
 }

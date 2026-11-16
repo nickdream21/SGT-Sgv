@@ -111,7 +111,8 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, bool esExito = false)
         {
-            string script = $"alert('{mensaje}');";
+            // Aviso no bloqueante (SGV.avisar); el texto va como cadena JS segura.
+            string script = $"SGV.avisar('{System.Web.HttpUtility.JavaScriptStringEncode((esExito ? "✅ " : "") + mensaje)}');";
 
             // Si es un mensaje de éxito, podemos agregar redireccionamiento o acciones adicionales
             if (esExito)

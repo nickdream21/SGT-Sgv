@@ -95,15 +95,15 @@
                                     <asp:BoundField DataField="modelo" HeaderText="MODELO" />
                                     <asp:TemplateField HeaderText="ESTADO" ItemStyle-CssClass="text-center" ItemStyle-Width="90">
                                         <ItemTemplate>
-                                            <span class='badge <%# ObtenerClaseEstado(Eval("activo")) %>'>
-                                                <%# ObtenerTextoEstado(Eval("activo")) %>
+                                            <span class='badge <%#: ObtenerClaseEstado(Eval("activo")) %>'>
+                                                <%#: ObtenerTextoEstado(Eval("activo")) %>
                                             </span>
                                         </ItemTemplate>
                                     </asp:TemplateField>
                                     <asp:TemplateField HeaderText="" ItemStyle-CssClass="text-center" ItemStyle-Width="40">
                                         <ItemTemplate>
                                             <button type="button" class="btn btn-outline-info btn-sm btn-editar" title="Editar"
-                                                data-id='<%# Eval("idCarreta") %>'
+                                                data-id='<%#: Eval("idCarreta") %>'
                                                 data-placa='<%# AttrEncode(Eval("placaCarreta")) %>'
                                                 data-marca='<%# AttrEncode(Eval("marca")) %>'
                                                 data-modelo='<%# AttrEncode(Eval("modelo")) %>'>
@@ -118,7 +118,7 @@
                                                 CommandArgument='<%# Eval("idCarreta") %>'
                                                 CssClass='<%# ObtenerClaseBoton(Eval("activo")) %>'
                                                 OnClientClick="return confirm('&#xBF;Cambiar el estado de este semiremolque?');">
-                                                <%# ObtenerTextoBoton(Eval("activo")) %>
+                                                <%#: ObtenerTextoBoton(Eval("activo")) %>
                                             </asp:LinkButton>
                                         </ItemTemplate>
                                     </asp:TemplateField>

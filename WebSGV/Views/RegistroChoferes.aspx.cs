@@ -205,7 +205,7 @@ namespace WebSGV.Views
         {
             pnlMensaje.Visible = true;
             string css = esExito ? "alert alert-success" : "alert alert-danger";
-            lblMensaje.Text = $"<div class='{css}'>{mensaje}</div>";
+            lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(mensaje)}</div>";
         }
 
         protected string AttrEncode(object val) =>
@@ -329,7 +329,7 @@ namespace WebSGV.Views
                 txtListaChoferes.Text = string.Empty;
                 var resumen = elegidos.GroupBy(c => c.Tipo)
                     .Select(g => $"{ListaChoferesService.TextoTipo(g.Key).ToLowerInvariant()}: {g.Count()}");
-                MostrarMensaje(HttpUtility.HtmlEncode("Lista aplicada (" + string.Join(", ", resumen) + ")."), true);
+                MostrarMensaje("Lista aplicada (" + string.Join(", ", resumen) + ").", true);
                 CargarConductores();
             }
             catch (Exception ex)

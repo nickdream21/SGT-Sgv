@@ -95,35 +95,35 @@
                                     <div class="hist-card">
                                         <div class="hist-card-top">
                                             <div>
-                                                <div class="hist-card-num"><%# Eval("numeroParte") %></div>
+                                                <div class="hist-card-num"><%#: Eval("numeroParte") %></div>
                                                 <div class="hist-card-fecha">
-                                                    <i class="fas fa-calendar-alt mr-1"></i><%# Eval("fecha", "{0:dd/MM/yyyy}") %>
+                                                    <i class="fas fa-calendar-alt mr-1"></i><%#: Eval("fecha", "{0:dd/MM/yyyy}") %>
                                                 </div>
                                             </div>
-                                            <span class='hist-card-badge <%# GetBadgeClass(Eval("estado").ToString()) %>'>
-                                                <%# Eval("estado") %>
+                                            <span class='hist-card-badge <%#: GetBadgeClass(Eval("estado").ToString()) %>'>
+                                                <%#: Eval("estado") %>
                                             </span>
                                         </div>
                                         <div class="hist-card-body">
                                             <div class="hc-item">
                                                 <div class="hc-label">Placa</div>
-                                                <div class="hc-val"><%# Eval("placa") %></div>
+                                                <div class="hc-val"><%#: Eval("placa") %></div>
                                             </div>
                                             <div class="hc-item">
                                                 <div class="hc-label">Cliente</div>
-                                                <div class="hc-val"><%# Eval("nombreCliente") %></div>
+                                                <div class="hc-val"><%#: Eval("nombreCliente") %></div>
                                             </div>
                                             <div class="hc-item">
                                                 <div class="hc-label">Obra</div>
-                                                <div class="hc-val"><%# Eval("nombreObra") %></div>
+                                                <div class="hc-val"><%#: Eval("nombreObra") %></div>
                                             </div>
                                             <div class="hc-item">
                                                 <div class="hc-label">Horas</div>
-                                                <div class="hc-val"><%# Eval("horometroHoras") != DBNull.Value ? string.Format("{0:N1}h", Eval("horometroHoras")) : "--" %></div>
+                                                <div class="hc-val"><%#: Eval("horometroHoras") != DBNull.Value ? string.Format("{0:N1}h", Eval("horometroHoras")) : "--" %></div>
                                             </div>
                                         </div>
-                                        <div class="hist-card-labor" style='<%# string.IsNullOrEmpty(Eval("labor").ToString()) ? "display:none" : "" %>'>
-                                            <i class="fas fa-wrench"></i><%# Eval("labor") %>
+                                        <div class="hist-card-labor" style='<%#: string.IsNullOrEmpty(Eval("labor").ToString()) ? "display:none" : "" %>'>
+                                            <i class="fas fa-wrench"></i><%#: Eval("labor") %>
                                         </div>
                                     </div>
                                 </ItemTemplate>
@@ -382,35 +382,35 @@
                                     <div class="hist-card">
                                         <div class="hist-card-top">
                                             <div>
-                                                <div class="hist-card-num"><%# Eval("numeroParte") %></div>
+                                                <div class="hist-card-num"><%#: Eval("numeroParte") %></div>
                                                 <div class="hist-card-fecha">
-                                                    <i class="fas fa-calendar-alt mr-1"></i><%# Eval("fecha", "{0:dd/MM/yyyy}") %>
+                                                    <i class="fas fa-calendar-alt mr-1"></i><%#: Eval("fecha", "{0:dd/MM/yyyy}") %>
                                                 </div>
                                             </div>
-                                            <span class='hist-card-badge <%# GetBadgeClass(Eval("estado").ToString()) %>'>
-                                                <%# Eval("estado") %>
+                                            <span class='hist-card-badge <%#: GetBadgeClass(Eval("estado").ToString()) %>'>
+                                                <%#: Eval("estado") %>
                                             </span>
                                         </div>
                                         <div class="hist-card-body">
                                             <div class="hc-item">
                                                 <div class="hc-label">Placa</div>
-                                                <div class="hc-val"><%# Eval("placa") %></div>
+                                                <div class="hc-val"><%#: Eval("placa") %></div>
                                             </div>
                                             <div class="hc-item">
                                                 <div class="hc-label">Cliente</div>
-                                                <div class="hc-val"><%# Eval("nombreCliente") %></div>
+                                                <div class="hc-val"><%#: Eval("nombreCliente") %></div>
                                             </div>
                                             <div class="hc-item">
                                                 <div class="hc-label">Obra</div>
-                                                <div class="hc-val"><%# Eval("nombreObra") %></div>
+                                                <div class="hc-val"><%#: Eval("nombreObra") %></div>
                                             </div>
                                             <div class="hc-item">
                                                 <div class="hc-label">Horas</div>
-                                                <div class="hc-val"><%# Eval("horometroHoras") != DBNull.Value ? string.Format("{0:N1}h", Eval("horometroHoras")) : "--" %></div>
+                                                <div class="hc-val"><%#: Eval("horometroHoras") != DBNull.Value ? string.Format("{0:N1}h", Eval("horometroHoras")) : "--" %></div>
                                             </div>
                                         </div>
-                                        <div class="hist-card-labor" style='<%# string.IsNullOrEmpty(Eval("labor").ToString()) ? "display:none" : "" %>'>
-                                            <i class="fas fa-wrench"></i><%# Eval("labor") %>
+                                        <div class="hist-card-labor" style='<%#: string.IsNullOrEmpty(Eval("labor").ToString()) ? "display:none" : "" %>'>
+                                            <i class="fas fa-wrench"></i><%#: Eval("labor") %>
                                         </div>
                                     </div>
                                 </ItemTemplate>

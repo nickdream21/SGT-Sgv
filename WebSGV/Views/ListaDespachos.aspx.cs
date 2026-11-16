@@ -304,11 +304,11 @@ namespace WebSGV.Views
             if (dt.Rows.Count == 0) return;
             DataRow fila = dt.Rows[0];
 
-            lblNumeroViajeDetalle.Text = GetSafeValue<string>(fila, "numeroViajeProgreso");
-            lblConductorDetalle.Text = GetSafeValue<string>(fila, "NombreConductor");
+            lblNumeroViajeDetalle.Text = System.Web.HttpUtility.HtmlEncode(GetSafeValue<string>(fila, "numeroViajeProgreso"));
+            lblConductorDetalle.Text = System.Web.HttpUtility.HtmlEncode(GetSafeValue<string>(fila, "NombreConductor"));
             lblFechaInicioDetalle.Text = GetSafeValue<DateTime>(fila, "fechaInicio").ToString("dd/MM/yyyy HH:mm");
             lblTotalDespachos.Text = GetSafeValue<int>(fila, "cantidadDespachos").ToString();
-            lblEstadoViajeDetalle.Text = GetSafeValue<string>(fila, "estadoViaje");
+            lblEstadoViajeDetalle.Text = System.Web.HttpUtility.HtmlEncode(GetSafeValue<string>(fila, "estadoViaje"));
             lblUltimaActividadDetalle.Text = GetSafeValue<DateTime>(fila, "fechaUltimaActividad").ToString("dd/MM/yyyy HH:mm");
 
             int internacionales = GetSafeValue<int>(fila, "DespachosInternacionales");
@@ -501,11 +501,11 @@ namespace WebSGV.Views
             var lote = ObtenerLotePorId(idLoteVirtual);
             if (lote != null)
             {
-                lblClienteDetalleLote.Text = lote.NombreCliente;
-                lblPedidoDetalleLote.Text = string.IsNullOrEmpty(lote.NumeroPedido) ? "Sin especificar" : lote.NumeroPedido;
+                lblClienteDetalleLote.Text = System.Web.HttpUtility.HtmlEncode(lote.NombreCliente);
+                lblPedidoDetalleLote.Text = string.IsNullOrEmpty(lote.NumeroPedido) ? "Sin especificar" : System.Web.HttpUtility.HtmlEncode(lote.NumeroPedido);
                 lblTotalDespachosLote.Text = lote.CantidadDespachos.ToString();
-                lblOperacionDetalleLote.Text = lote.TipoOperacion;
-                lblPlantaDetalleLote.Text = lote.PlantaOperacion;
+                lblOperacionDetalleLote.Text = System.Web.HttpUtility.HtmlEncode(lote.TipoOperacion);
+                lblPlantaDetalleLote.Text = System.Web.HttpUtility.HtmlEncode(lote.PlantaOperacion);
                 lblFechaCreacionDetalle.Text = lote.FechaCreacion.ToString("dd/MM/yyyy");
                 // "Documentos" siempre visible: Factura/CPIC aplican también a lotes nacionales.
                 // El Manifiesto (solo internacional) se oculta dentro de esa vista si no aplica.
@@ -1184,7 +1184,7 @@ namespace WebSGV.Views
             var lote = ObtenerLotePorId(idLoteVirtual);
             if (lote == null) return;
 
-            lblIdentificadorLote.Text = $"{lote.NombreCliente} - {lote.FechaProgramacion:dd/MM/yyyy}";
+            lblIdentificadorLote.Text = System.Web.HttpUtility.HtmlEncode($"{lote.NombreCliente} - {lote.FechaProgramacion:dd/MM/yyyy}");
             lblDespachosSAfectados.Text = lote.CantidadDespachos.ToString();
 
             txtFechaProgramacionEdit.Text = lote.FechaProgramacion.ToString("yyyy-MM-dd");
@@ -1264,8 +1264,8 @@ namespace WebSGV.Views
                 var lote = ObtenerLotePorId(idLoteVirtual);
                 if (lote == null) return;
 
-                lblClienteManifiestos.Text = lote.NombreCliente;
-                lblPedidoManifiestos.Text = string.IsNullOrEmpty(lote.NumeroPedido) ? "Sin especificar" : lote.NumeroPedido;
+                lblClienteManifiestos.Text = System.Web.HttpUtility.HtmlEncode(lote.NombreCliente);
+                lblPedidoManifiestos.Text = string.IsNullOrEmpty(lote.NumeroPedido) ? "Sin especificar" : System.Web.HttpUtility.HtmlEncode(lote.NumeroPedido);
                 hlVolverBandejaDocs.NavigateUrl = ResolveUrl("~/Views/BandejaDocumentos.aspx") + "?lote=" + HttpUtility.UrlEncode(idLoteVirtual);
 
                 CargarDocumentosBase(lote);
@@ -1349,7 +1349,7 @@ namespace WebSGV.Views
                     if (docs.Rows.Count > 0)
                     {
                         ViewState["RutaDocFacturaManifiesto"] = docs.Rows[0]["rutaArchivo"].ToString();
-                        lnkVerDocFactura.Text = docs.Rows[0]["nombreOriginal"].ToString() + AvisoSiNoEstaEnServidor(docs.Rows[0]["rutaArchivo"].ToString());
+                        lnkVerDocFactura.Text = System.Web.HttpUtility.HtmlEncode(docs.Rows[0]["nombreOriginal"].ToString() + AvisoSiNoEstaEnServidor(docs.Rows[0]["rutaArchivo"].ToString()));
                         lnkVerDocFactura.Visible = true;
                     }
                     else
@@ -1376,7 +1376,7 @@ namespace WebSGV.Views
                     if (docs.Rows.Count > 0)
                     {
                         ViewState["RutaDocCpicManifiesto"] = docs.Rows[0]["rutaArchivo"].ToString();
-                        lnkVerDocCpic.Text = docs.Rows[0]["nombreOriginal"].ToString() + AvisoSiNoEstaEnServidor(docs.Rows[0]["rutaArchivo"].ToString());
+                        lnkVerDocCpic.Text = System.Web.HttpUtility.HtmlEncode(docs.Rows[0]["nombreOriginal"].ToString() + AvisoSiNoEstaEnServidor(docs.Rows[0]["rutaArchivo"].ToString()));
                         lnkVerDocCpic.Visible = true;
                     }
                     else

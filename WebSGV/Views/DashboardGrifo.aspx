@@ -85,7 +85,7 @@
                             <div class="vj-card">
                                 <div class="vj-card-header">
                                     <span class="vj-num">
-                                        <i class="fas fa-route mr-1"></i><%# Eval("NumeroViajeProgreso") %>
+                                        <i class="fas fa-route mr-1"></i><%#: Eval("NumeroViajeProgreso") %>
                                     </span>
                                     <%# FormatFaseBadge(Eval("FaseCarga"), Eval("EsInternacional"), Eval("CargasRealizadas")) %>
                                 </div>
@@ -93,23 +93,23 @@
                                     <div class="vj-grid">
                                         <div class="vj-item">
                                             <div class="vj-label">Conductor</div>
-                                            <div class="vj-value"><%# Eval("Conductor") %></div>
+                                            <div class="vj-value"><%#: Eval("Conductor") %></div>
                                         </div>
                                         <div class="vj-item">
                                             <div class="vj-label">DNI</div>
-                                            <div class="vj-value"><%# Eval("DNI") %></div>
+                                            <div class="vj-value"><%#: Eval("DNI") %></div>
                                         </div>
                                         <div class="vj-item">
                                             <div class="vj-label">Tracto</div>
-                                            <div class="vj-value"><%# Eval("PlacaTracto") %></div>
+                                            <div class="vj-value"><%#: Eval("PlacaTracto") %></div>
                                         </div>
                                         <div class="vj-item">
                                             <div class="vj-label">Carreta</div>
-                                            <div class="vj-value"><%# Eval("PlacaCarreta") %></div>
+                                            <div class="vj-value"><%#: Eval("PlacaCarreta") %></div>
                                         </div>
                                         <div class="vj-item">
                                             <div class="vj-label">Cliente</div>
-                                            <div class="vj-value"><%# Eval("Cliente") %></div>
+                                            <div class="vj-value"><%#: Eval("Cliente") %></div>
                                         </div>
                                         <div class="vj-item">
                                             <div class="vj-label">Destino</div>
@@ -120,13 +120,13 @@
                                 <div class="vj-card-footer">
                                     <div class="vj-dias-info">
                                         <i class="fas fa-calendar-alt"></i>
-                                        <%# Eval("FechaInicio", "{0:dd/MM/yyyy}") %>
+                                        <%#: Eval("FechaInicio", "{0:dd/MM/yyyy}") %>
                                         <span>&#183;</span>
                                         <%# FormatDiasBadge(Eval("DiasEnViaje")) %> d&#237;as
                                     </div>
-                                    <a href='<%# "AgregarAbastecimiento.aspx?idViaje=" + Eval("IdViaje") + "&amp;idConductor=" + Eval("IdConductor") + "&amp;idTracto=" + Eval("IdTracto") + "&amp;idCarreta=" + Eval("IdCarreta") %>'
+                                    <a href='<%#: "AgregarAbastecimiento.aspx?idViaje=" + Eval("IdViaje") + "&idConductor=" + Eval("IdConductor") + "&idTracto=" + Eval("IdTracto") + "&idCarreta=" + Eval("IdCarreta") %>'
                                        class="btn-abastecer-card"
-                                       style='<%# PuedeAbastecer(Eval("FaseCarga")) ? "" : "display:none;" %>'>
+                                       style='<%#: PuedeAbastecer(Eval("FaseCarga")) ? "" : "display:none;" %>'>
                                         <i class="fas fa-gas-pump"></i> Abastecer
                                     </a>
                                 </div>
@@ -187,54 +187,54 @@
                             <div class="ab-card">
                                 <div class="ab-card-header">
                                     <span class="ab-num">
-                                        <i class="fas fa-file-alt mr-1"></i><%# Eval("NumeroAbastecimiento") %>
+                                        <i class="fas fa-file-alt mr-1"></i><%#: Eval("NumeroAbastecimiento") %>
                                     </span>
                                     <span class="ab-fecha">
-                                        <i class="fas fa-clock mr-1"></i><%# Eval("FechaHora", "{0:dd/MM/yyyy HH:mm}") %>
+                                        <i class="fas fa-clock mr-1"></i><%#: Eval("FechaHora", "{0:dd/MM/yyyy HH:mm}") %>
                                     </span>
                                 </div>
                                 <div class="ab-card-body">
                                     <div class="ab-grid">
                                         <div class="ab-item">
                                             <div class="ab-label">Conductor</div>
-                                            <div class="ab-value"><%# Eval("Conductor") %></div>
+                                            <div class="ab-value"><%#: Eval("Conductor") %></div>
                                         </div>
                                         <div class="ab-item">
                                             <div class="ab-label">Tracto</div>
-                                            <div class="ab-value"><%# Eval("PlacaTracto") %></div>
+                                            <div class="ab-value"><%#: Eval("PlacaTracto") %></div>
                                         </div>
                                         <div class="ab-item">
                                             <div class="ab-label">Carreta</div>
-                                            <div class="ab-value"><%# Eval("PlacaCarreta") %></div>
+                                            <div class="ab-value"><%#: Eval("PlacaCarreta") %></div>
                                         </div>
                                         <div class="ab-item">
                                             <div class="ab-label">Lugar</div>
-                                            <div class="ab-value"><%# Eval("Lugar") %></div>
+                                            <div class="ab-value"><%#: Eval("Lugar") %></div>
                                         </div>
                                         <div class="ab-item">
                                             <div class="ab-label">GL abastecidos</div>
-                                            <div class="ab-value ab-highlight"><%# Eval("GLAbastecidos", "{0:N2}") %></div>
+                                            <div class="ab-value ab-highlight"><%#: Eval("GLAbastecidos", "{0:N2}") %></div>
                                         </div>
                                         <div class="ab-item">
                                             <div class="ab-label">GL consumidos</div>
-                                            <div class="ab-value"><%# Eval("GLConsumidos", "{0:N2}") %></div>
+                                            <div class="ab-value"><%#: Eval("GLConsumidos", "{0:N2}") %></div>
                                         </div>
                                         <div class="ab-item">
                                             <div class="ab-label">Monto USD</div>
-                                            <div class="ab-value">$<%# Eval("MontoTotal", "{0:N2}") %></div>
+                                            <div class="ab-value">$<%#: Eval("MontoTotal", "{0:N2}") %></div>
                                         </div>
                                         <div class="ab-item">
                                             <div class="ab-label">Rendimiento</div>
-                                            <div class="ab-value"><%# Eval("Rendimiento", "{0:N2}") %> KM/GL</div>
+                                            <div class="ab-value"><%#: Eval("Rendimiento", "{0:N2}") %> KM/GL</div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="ab-card-footer">
-                                    <a href='<%# "BuscarAbastecimiento.aspx?numero=" + HttpUtility.UrlEncode(Eval("NumeroAbastecimiento").ToString()) %>'
+                                    <a href='<%#: "BuscarAbastecimiento.aspx?numero=" + HttpUtility.UrlEncode(Eval("NumeroAbastecimiento").ToString()) %>'
                                        class="btn-ver-card">
                                         <i class="fas fa-eye"></i> Ver / Editar
                                     </a>
-                                    <a href='<%# "DescargarPdfAbastecimiento.aspx?num=" + HttpUtility.UrlEncode(Eval("NumeroAbastecimiento").ToString()) %>'
+                                    <a href='<%#: "DescargarPdfAbastecimiento.aspx?num=" + HttpUtility.UrlEncode(Eval("NumeroAbastecimiento").ToString()) %>'
                                        target="_blank" class="btn-ver-card" style="background:#28a745; margin-left:6px;">
                                         <i class="fas fa-file-pdf"></i> PDF
                                     </a>
@@ -280,37 +280,37 @@
                             <div class="ab-card">
                                 <div class="ab-card-header">
                                     <span class="ab-num">
-                                        <i class="fas fa-route mr-1"></i><%# Eval("NumeroViajeProgreso") %>
+                                        <i class="fas fa-route mr-1"></i><%#: Eval("NumeroViajeProgreso") %>
                                     </span>
                                     <span class="ab-fecha">
-                                        <i class="fas fa-clock mr-1"></i><%# Eval("FechaRecepcion", "{0:dd/MM/yyyy HH:mm}") %>
+                                        <i class="fas fa-clock mr-1"></i><%#: Eval("FechaRecepcion", "{0:dd/MM/yyyy HH:mm}") %>
                                     </span>
                                 </div>
                                 <div class="ab-card-body">
                                     <div class="ab-grid">
                                         <div class="ab-item">
                                             <div class="ab-label">Conductor</div>
-                                            <div class="ab-value"><%# Eval("Conductor") %></div>
+                                            <div class="ab-value"><%#: Eval("Conductor") %></div>
                                         </div>
                                         <div class="ab-item">
                                             <div class="ab-label">Tracto</div>
-                                            <div class="ab-value"><%# Eval("PlacaTracto") %></div>
+                                            <div class="ab-value"><%#: Eval("PlacaTracto") %></div>
                                         </div>
                                         <div class="ab-item">
                                             <div class="ab-label">Tickets</div>
-                                            <div class="ab-value"><%# Eval("CantidadTickets") %></div>
+                                            <div class="ab-value"><%#: Eval("CantidadTickets") %></div>
                                         </div>
                                         <div class="ab-item">
                                             <div class="ab-label">Galones</div>
-                                            <div class="ab-value ab-highlight"><%# Eval("TotalGalones", "{0:N2}") %></div>
+                                            <div class="ab-value ab-highlight"><%#: Eval("TotalGalones", "{0:N2}") %></div>
                                         </div>
                                         <div class="ab-item">
                                             <div class="ab-label">Monto USD</div>
-                                            <div class="ab-value">$<%# Eval("TotalUSD", "{0:N2}") %></div>
+                                            <div class="ab-value">$<%#: Eval("TotalUSD", "{0:N2}") %></div>
                                         </div>
                                         <div class="ab-item">
                                             <div class="ab-label">Observaciones</div>
-                                            <div class="ab-value"><%# Eval("Observaciones") %></div>
+                                            <div class="ab-value"><%#: Eval("Observaciones") %></div>
                                         </div>
                                     </div>
                                 </div>

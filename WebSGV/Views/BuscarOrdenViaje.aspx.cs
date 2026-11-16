@@ -567,87 +567,87 @@ namespace WebSGV.Views
 
             if (string.IsNullOrEmpty(txtFechaSalida.Text))
             {
-                mensajeError += "La Fecha de Salida es obligatoria.<br/>";
+                mensajeError += "La Fecha de Salida es obligatoria.\n";
             }
             else if (!DateTime.TryParse(txtFechaSalida.Text, out fechaSalida))
             {
-                mensajeError += "El formato de la Fecha de Salida es inválido.<br/>";
+                mensajeError += "El formato de la Fecha de Salida es inválido.\n";
             }
 
             if (string.IsNullOrEmpty(txtFechaLlegada.Text))
             {
-                mensajeError += "La Fecha de Llegada es obligatoria.<br/>";
+                mensajeError += "La Fecha de Llegada es obligatoria.\n";
             }
             else if (!DateTime.TryParse(txtFechaLlegada.Text, out fechaLlegada))
             {
-                mensajeError += "El formato de la Fecha de Llegada es inválido.<br/>";
+                mensajeError += "El formato de la Fecha de Llegada es inválido.\n";
             }
 
             if (string.IsNullOrEmpty(txtHoraSalida.Text))
-                mensajeError += "La Hora de Salida es obligatoria.<br/>";
+                mensajeError += "La Hora de Salida es obligatoria.\n";
 
             if (string.IsNullOrEmpty(txtHoraLlegada.Text))
-                mensajeError += "La Hora de Llegada es obligatoria.<br/>";
+                mensajeError += "La Hora de Llegada es obligatoria.\n";
 
             if (ddlCliente.SelectedValue == "")
-                mensajeError += "Debe seleccionar un Cliente.<br/>";
+                mensajeError += "Debe seleccionar un Cliente.\n";
 
             if (ddlPlacaTracto.SelectedValue == "")
-                mensajeError += "Debe seleccionar una Placa Tracto.<br/>";
+                mensajeError += "Debe seleccionar una Placa Tracto.\n";
 
             if (ddlPlacaCarreta.SelectedValue == "")
-                mensajeError += "Debe seleccionar una Placa Carreta.<br/>";
+                mensajeError += "Debe seleccionar una Placa Carreta.\n";
 
             if (ddlConductor.SelectedValue == "")
-                mensajeError += "Debe seleccionar un Conductor.<br/>";
+                mensajeError += "Debe seleccionar un Conductor.\n";
 
             if (string.IsNullOrEmpty(txtGuiaTransportista.Text))
-                mensajeError += "El N° Guía Transportista es obligatorio.<br/>";
+                mensajeError += "El N° Guía Transportista es obligatorio.\n";
 
             if (string.IsNullOrEmpty(txtGuiaCliente.Text))
-                mensajeError += "El N° Guía Cliente es obligatorio.<br/>";
+                mensajeError += "El N° Guía Cliente es obligatorio.\n";
 
             if (ddlRuta.SelectedValue == "")
-                mensajeError += "Debe seleccionar una Ruta.<br/>";
+                mensajeError += "Debe seleccionar una Ruta.\n";
 
             if (ddlRuta.SelectedValue == "2")
             {
                 if (ddlPlantaDescarga.SelectedValue == "")
-                    mensajeError += "Debe seleccionar una Planta de Descarga para la ruta Sullana-Guayaquil-Sullana.<br/>";
+                    mensajeError += "Debe seleccionar una Planta de Descarga para la ruta Sullana-Guayaquil-Sullana.\n";
 
                 if (string.IsNullOrEmpty(txtManifiesto.Text))
-                    mensajeError += "El N° Manifiesto es obligatorio para la ruta Sullana-Guayaquil-Sullana.<br/>";
+                    mensajeError += "El N° Manifiesto es obligatorio para la ruta Sullana-Guayaquil-Sullana.\n";
             }
 
             if (!ValidarMontoNoNegativo(txtDespachoSoles.Text))
-                mensajeError += "El valor de Despacho en Soles no puede ser negativo.<br/>";
+                mensajeError += "El valor de Despacho en Soles no puede ser negativo.\n";
 
             if (!ValidarMontoNoNegativo(txtDespachoDolares.Text))
-                mensajeError += "El valor de Despacho en Dólares no puede ser negativo.<br/>";
+                mensajeError += "El valor de Despacho en Dólares no puede ser negativo.\n";
 
             if (!ValidarMontoNoNegativo(txtMensualidadSoles.Text))
-                mensajeError += "El valor de Mensualidad en Soles no puede ser negativo.<br/>";
+                mensajeError += "El valor de Mensualidad en Soles no puede ser negativo.\n";
 
             if (!ValidarMontoNoNegativo(txtMensualidadDolares.Text))
-                mensajeError += "El valor de Mensualidad en Dólares no puede ser negativo.<br/>";
+                mensajeError += "El valor de Mensualidad en Dólares no puede ser negativo.\n";
 
             if (!ValidarMontoNoNegativo(txtOtrosSoles.Text))
-                mensajeError += "El valor de Otros Autorizados en Soles no puede ser negativo.<br/>";
+                mensajeError += "El valor de Otros Autorizados en Soles no puede ser negativo.\n";
 
             if (!ValidarMontoNoNegativo(txtOtrosDolares.Text))
-                mensajeError += "El valor de Otros Autorizados en Dólares no puede ser negativo.<br/>";
+                mensajeError += "El valor de Otros Autorizados en Dólares no puede ser negativo.\n";
 
             if (!ValidarMontoNoNegativo(txtPrestamoSoles.Text))
-                mensajeError += "El valor de Préstamo en Soles no puede ser negativo.<br/>";
+                mensajeError += "El valor de Préstamo en Soles no puede ser negativo.\n";
 
             if (!ValidarMontoNoNegativo(txtPrestamoDolares.Text))
-                mensajeError += "El valor de Préstamo en Dólares no puede ser negativo.<br/>";
+                mensajeError += "El valor de Préstamo en Dólares no puede ser negativo.\n";
 
             if (!ValidarMontoNoNegativo(txtPeajesSoles.Text))
-                mensajeError += "El valor de Peajes en Soles no puede ser negativo.<br/>";
+                mensajeError += "El valor de Peajes en Soles no puede ser negativo.\n";
 
             if (!ValidarMontoNoNegativo(txtPeajesDolares.Text))
-                mensajeError += "El valor de Peajes en Dólares no puede ser negativo.<br/>";
+                mensajeError += "El valor de Peajes en Dólares no puede ser negativo.\n";
 
             return mensajeError;
         }
@@ -783,7 +783,7 @@ namespace WebSGV.Views
         #region Métodos auxiliares
         private void MostrarMensaje(string mensaje, bool esError)
         {
-            lblMensaje.Text = mensaje;
+            lblMensaje.Text = MensajeHtml.Texto(mensaje);
             lblMensaje.CssClass = esError ? "alert alert-danger d-block" : "alert alert-info d-block";
             lblMensaje.Visible = true;
         }

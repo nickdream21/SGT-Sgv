@@ -1,7 +1,11 @@
 ﻿var _urlPdfActual = '';
 
+// Escapa también comillas: se usa dentro de atributos (data-text="...").
 function htmlEncode(value) {
-    return $('<div/>').text(value == null ? '' : value).html();
+    if (value === null || value === undefined) return '';
+    return String(value).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
 }
 
 function valorTexto(value) {

@@ -115,29 +115,29 @@
                             
                             <asp:TemplateField HeaderText="N° orden">
                                 <ItemTemplate>
-                                    <div class="orden-numero"><%# Eval("NumeroOrdenViaje") %></div>
-                                    <div class="sgv-suave"><%# Eval("FechaRegistro", "{0:dd/MM/yyyy HH:mm}") %></div>
+                                    <div class="orden-numero"><%#: Eval("NumeroOrdenViaje") %></div>
+                                    <div class="sgv-suave"><%#: Eval("FechaRegistro", "{0:dd/MM/yyyy HH:mm}") %></div>
                                     <%# EtiquetaObservada(Eval("ObservacionConductor")) %>
                                 </ItemTemplate>
                             </asp:TemplateField>
 
                             <asp:TemplateField HeaderText="Conductor">
                                 <ItemTemplate>
-                                    <div><%# Eval("NombreConductor") %></div>
-                                    <div class="sgv-suave"><%# Eval("PlacaTracto") %> / <%# Eval("PlacaCarreta") %></div>
+                                    <div><%#: Eval("NombreConductor") %></div>
+                                    <div class="sgv-suave"><%#: Eval("PlacaTracto") %> / <%#: Eval("PlacaCarreta") %></div>
                                 </ItemTemplate>
                             </asp:TemplateField>
 
                             <asp:TemplateField HeaderText="Periodo">
                                 <ItemTemplate>
-                                    <span class="text-nowrap"><%# Eval("FechaSalida", "{0:dd/MM/yyyy}") %> – <%# Eval("FechaLlegada", "{0:dd/MM/yyyy}") %></span>
+                                    <span class="text-nowrap"><%#: Eval("FechaSalida", "{0:dd/MM/yyyy}") %> – <%#: Eval("FechaLlegada", "{0:dd/MM/yyyy}") %></span>
                                 </ItemTemplate>
                             </asp:TemplateField>
 
                             <asp:TemplateField HeaderText="Balance S/">
                                 <HeaderStyle CssClass="text-right" />
                                 <ItemTemplate>
-                                    <span class="<%# ClaseMonto(Eval("BalanceSoles")) %>"><%# Eval("BalanceSoles", "{0:N2}") %></span>
+                                    <span class="<%#: ClaseMonto(Eval("BalanceSoles")) %>"><%#: Eval("BalanceSoles", "{0:N2}") %></span>
                                 </ItemTemplate>
                                 <ItemStyle CssClass="sgv-num" />
                             </asp:TemplateField>
@@ -145,23 +145,23 @@
                             <asp:TemplateField HeaderText="Balance $">
                                 <HeaderStyle CssClass="text-right" />
                                 <ItemTemplate>
-                                    <span class="<%# ClaseMonto(Eval("BalanceDolares")) %>"><%# Eval("BalanceDolares", "{0:N2}") %></span>
+                                    <span class="<%#: ClaseMonto(Eval("BalanceDolares")) %>"><%#: Eval("BalanceDolares", "{0:N2}") %></span>
                                 </ItemTemplate>
                                 <ItemStyle CssClass="sgv-num" />
                             </asp:TemplateField>
 
                             <asp:TemplateField HeaderText="Espera">
                                 <ItemTemplate>
-                                    <span class="sgv-estado <%# ClaseEstadoPrioridad(Eval("HorasPendientes")) %>"
-                                        title="Prioridad <%# ObtenerPrioridad(Eval("HorasPendientes")) %> (normal &lt; 12 h, alta 12–24 h, urgente &gt; 24 h)">
-                                        <%# FormatearTiempo(Eval("HorasPendientes")) %>
+                                    <span class="sgv-estado <%#: ClaseEstadoPrioridad(Eval("HorasPendientes")) %>"
+                                        title="Prioridad <%#: ObtenerPrioridad(Eval("HorasPendientes")) %> (normal &lt; 12 h, alta 12–24 h, urgente &gt; 24 h)">
+                                        <%#: FormatearTiempo(Eval("HorasPendientes")) %>
                                     </span>
                                 </ItemTemplate>
                             </asp:TemplateField>
 
                             <asp:TemplateField HeaderText="Registrado por">
                                 <ItemTemplate>
-                                    <span class="sgv-suave"><%# Eval("RegistradoPor") %></span>
+                                    <span class="sgv-suave"><%#: Eval("RegistradoPor") %></span>
                                 </ItemTemplate>
                             </asp:TemplateField>
 
@@ -169,19 +169,19 @@
                                 <ItemTemplate>
                                     <div class="sgv-acciones">
                                         <button type="button" class="sgv-btn-icono info"
-                                            onclick="verDetalleLiquidacion(<%# Eval("IdOrdenViaje") %>)"
+                                            onclick="verDetalleLiquidacion(<%#: Eval("IdOrdenViaje") %>)"
                                             title="Ver detalle">
                                             <i class="fas fa-eye"></i>
                                         </button>
 
                                         <button type="button" class="sgv-btn-icono ok"
-                                            onclick="abrirModalAprobar(<%# Eval("IdOrdenViaje") %>)"
+                                            onclick="abrirModalAprobar(<%#: Eval("IdOrdenViaje") %>)"
                                             title="Aprobar liquidación">
                                             <i class="fas fa-check"></i>
                                         </button>
 
                                         <button type="button" class="sgv-btn-icono peligro"
-                                            onclick="abrirModalRechazar(<%# Eval("IdOrdenViaje") %>, '<%# Eval("NumeroOrdenViaje") %>')"
+                                            onclick="abrirModalRechazar(<%#: Eval("IdOrdenViaje") %>, '<%#: HttpUtility.JavaScriptStringEncode(Convert.ToString(Eval("NumeroOrdenViaje"))) %>')"
                                             title="Rechazar liquidación">
                                             <i class="fas fa-times"></i>
                                         </button>

@@ -1355,7 +1355,7 @@ namespace WebSGV.Views
         private void MostrarMensaje(string mensaje, string tipo)
         {
             pnlMensajes.Visible = true;
-            lblMensaje.Text = $"<div class='alert alert-{tipo} alert-dismissible fade show' role='alert'>{mensaje}<button type='button' class='close' data-dismiss='alert'>&times;</button></div>";
+            lblMensaje.Text = $"<div class='alert alert-{tipo} alert-dismissible fade show' role='alert'>{MensajeHtml.Texto(mensaje)}<button type='button' class='close' data-dismiss='alert'>&times;</button></div>";
         }
 
         #endregion

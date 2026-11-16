@@ -92,8 +92,8 @@
                                     <asp:BoundField DataField="ubicacion" HeaderText="UBICACI&#xD3;N" />
                                     <asp:TemplateField HeaderText="ESTADO" ItemStyle-CssClass="text-center" ItemStyle-Width="110">
                                         <ItemTemplate>
-                                            <span class='badge <%# ObtenerClaseEstadoObra(Eval("estado")) %>'>
-                                                <%# Eval("estado") %>
+                                            <span class='badge <%#: ObtenerClaseEstadoObra(Eval("estado")) %>'>
+                                                <%#: Eval("estado") %>
                                             </span>
                                         </ItemTemplate>
                                     </asp:TemplateField>
@@ -105,7 +105,7 @@
                                                 CssClass='<%# ObtenerClaseBotonObra(Eval("estado")) %>'
                                                 OnClientClick="return confirm('&#xBF;Cambiar el estado de esta obra?');"
                                                 Visible='<%# Eval("estado").ToString() != "FINALIZADA" %>'>
-                                                <%# ObtenerTextoBotonObra(Eval("estado")) %>
+                                                <%#: ObtenerTextoBotonObra(Eval("estado")) %>
                                             </asp:LinkButton>
                                         </ItemTemplate>
                                     </asp:TemplateField>

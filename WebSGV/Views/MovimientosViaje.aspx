@@ -115,8 +115,8 @@
                                     <tbody>
                             </HeaderTemplate>
                             <ItemTemplate>
-                                <tr class='<%# (bool)Eval("Activo") ? "" : "mv-anulado" %>'>
-                                    <td class="text-nowrap"><%# Eval("Fecha", "{0:dd/MM/yyyy HH:mm}") %></td>
+                                <tr class='<%#: (bool)Eval("Activo") ? "" : "mv-anulado" %>'>
+                                    <td class="text-nowrap"><%#: Eval("Fecha", "{0:dd/MM/yyyy HH:mm}") %></td>
                                     <td>
                                         <strong><%#: (string)Eval("Tipo") == "PAGO_DIRECTO" ? "Pago directo" : "Entrega" %></strong> · <%#: NombreConcepto(Eval("Tipo"), Eval("Concepto")) %>
                                         <div class="sgv-suave mv-sub"><%#: Detalle(Container.DataItem) %></div>
@@ -125,13 +125,13 @@
                                         </asp:PlaceHolder>
                                     </td>
                                     <td><%#: NombreMedio(Eval("Medio")) %></td>
-                                    <td class="sgv-num"><%# Monto(Eval("MontoSoles")) %></td>
-                                    <td class="sgv-num"><%# Monto(Eval("MontoDolares")) %></td>
+                                    <td class="sgv-num"><%#: Monto(Eval("MontoSoles")) %></td>
+                                    <td class="sgv-num"><%#: Monto(Eval("MontoDolares")) %></td>
                                     <td class="text-right text-nowrap">
                                         <asp:HyperLink runat="server" CssClass="sgv-btn-icono" Target="_blank" ToolTip="Ver adjunto"
                                             NavigateUrl='<%# UrlAdjunto(Eval("RutaAdjunto")) %>' Visible='<%# Eval("RutaAdjunto") != null %>'><i class="fas fa-paperclip"></i></asp:HyperLink>
                                         <button type="button" class="sgv-btn-icono peligro" title="Anular"
-                                            onclick='abrirAnular(<%# Eval("IdMovimiento") %>)' style='<%# (bool)Eval("Activo") ? "" : "display:none" %>'><i class="fas fa-ban"></i></button>
+                                            onclick='abrirAnular(<%#: Eval("IdMovimiento") %>)' style='<%#: (bool)Eval("Activo") ? "" : "display:none" %>'><i class="fas fa-ban"></i></button>
                                     </td>
                                 </tr>
                             </ItemTemplate>

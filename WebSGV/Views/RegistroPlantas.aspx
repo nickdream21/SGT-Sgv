@@ -90,24 +90,24 @@
                                     <asp:BoundField DataField="nombre" HeaderText="NOMBRE DE LA PLANTA" />
                                     <asp:TemplateField HeaderText="&#xC1;MBITO" ItemStyle-CssClass="text-center" ItemStyle-Width="120">
                                         <ItemTemplate>
-                                            <span class='badge <%# ObtenerClaseAmbito(Eval("esInternacional")) %>'>
-                                                <%# ObtenerTextoAmbito(Eval("esInternacional")) %>
+                                            <span class='badge <%#: ObtenerClaseAmbito(Eval("esInternacional")) %>'>
+                                                <%#: ObtenerTextoAmbito(Eval("esInternacional")) %>
                                             </span>
                                         </ItemTemplate>
                                     </asp:TemplateField>
                                     <asp:TemplateField HeaderText="ESTADO" ItemStyle-CssClass="text-center" ItemStyle-Width="90">
                                         <ItemTemplate>
-                                            <span class='badge <%# ObtenerClaseEstado(Eval("activo")) %>'>
-                                                <%# ObtenerTextoEstado(Eval("activo")) %>
+                                            <span class='badge <%#: ObtenerClaseEstado(Eval("activo")) %>'>
+                                                <%#: ObtenerTextoEstado(Eval("activo")) %>
                                             </span>
                                         </ItemTemplate>
                                     </asp:TemplateField>
                                     <asp:TemplateField HeaderText="" ItemStyle-CssClass="text-center" ItemStyle-Width="40">
                                         <ItemTemplate>
                                             <button type="button" class="btn btn-outline-info btn-sm btn-editar" title="Editar"
-                                                data-id='<%# Eval("idPlanta") %>'
+                                                data-id='<%#: Eval("idPlanta") %>'
                                                 data-nombre='<%# AttrEncode(Eval("nombre")) %>'
-                                                data-internacional='<%# Eval("esInternacional") %>'>
+                                                data-internacional='<%#: Eval("esInternacional") %>'>
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                         </ItemTemplate>
@@ -119,7 +119,7 @@
                                                 CommandArgument='<%# Eval("idPlanta") %>'
                                                 CssClass='<%# ObtenerClaseBoton(Eval("activo")) %>'
                                                 OnClientClick="return confirm('&#xBF;Cambiar el estado de esta planta?');">
-                                                <%# ObtenerTextoBoton(Eval("activo")) %>
+                                                <%#: ObtenerTextoBoton(Eval("activo")) %>
                                             </asp:LinkButton>
                                         </ItemTemplate>
                                     </asp:TemplateField>

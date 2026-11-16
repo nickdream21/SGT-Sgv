@@ -117,27 +117,27 @@
                                     <Columns>
                                         <asp:TemplateField HeaderText="NOMBRE">
                                             <ItemTemplate>
-                                                <span class="font-weight-bold"><%# Eval("nombre") %></span>
+                                                <span class="font-weight-bold"><%#: Eval("nombre") %></span>
                                                 <asp:Literal ID="litGeneral" runat="server"
                                                     Text='<%# Convert.ToInt32(Eval("esGeneral")) == 1 ? " <span class=\"badge badge-secondary ml-1\">General</span>" : "" %>' />
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                         <asp:TemplateField HeaderText="DETALLE">
                                             <ItemTemplate>
-                                                <small class="text-muted"><%# Eval("detalle") %></small>
+                                                <small class="text-muted"><%#: Eval("detalle") %></small>
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                         <asp:TemplateField HeaderText="ESTADO" ItemStyle-CssClass="text-center" ItemStyle-Width="90">
                                             <ItemTemplate>
-                                                <span class='badge <%# ObtenerClaseEstado(Eval("activo")) %>'>
-                                                    <%# ObtenerTextoEstado(Eval("activo")) %>
+                                                <span class='badge <%#: ObtenerClaseEstado(Eval("activo")) %>'>
+                                                    <%#: ObtenerTextoEstado(Eval("activo")) %>
                                                 </span>
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                         <asp:TemplateField HeaderText="" ItemStyle-CssClass="text-center" ItemStyle-Width="40">
                                             <ItemTemplate>
                                                 <button type="button" class="btn btn-outline-info btn-sm btn-editar" title="Editar"
-                                                    data-id='<%# Eval("idItem") %>'
+                                                    data-id='<%#: Eval("idItem") %>'
                                                     data-nombre='<%# AttrEncode(Eval("nombre")) %>'
                                                     data-detalle='<%# AttrEncode(Eval("detalle")) %>'>
                                                     <i class="fas fa-edit"></i>
@@ -151,7 +151,7 @@
                                                     CommandArgument='<%# Eval("idItem") %>'
                                                     CssClass='<%# ObtenerClaseBoton(Eval("activo")) %>'
                                                     OnClientClick="return confirm('&#xBF;Cambiar el estado de este elemento?');">
-                                                    <%# ObtenerTextoBoton(Eval("activo")) %>
+                                                    <%#: ObtenerTextoBoton(Eval("activo")) %>
                                                 </asp:LinkButton>
                                             </ItemTemplate>
                                         </asp:TemplateField>

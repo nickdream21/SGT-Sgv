@@ -247,8 +247,8 @@ namespace WebSGV.Views
                         {
                             if (reader.Read())
                             {
-                                lblNombreConductor.Text = reader["nombreCompleto"].ToString();
-                                lblDNIConductor.Text = reader["DNI"].ToString();
+                                lblNombreConductor.Text = System.Web.HttpUtility.HtmlEncode(reader["nombreCompleto"].ToString());
+                                lblDNIConductor.Text = System.Web.HttpUtility.HtmlEncode(reader["DNI"].ToString());
                                 hfIdConductor.Value = IdConductorActual.ToString();
 
                                 Log($"✅ Conductor cargado: {lblNombreConductor.Text}");
@@ -366,7 +366,7 @@ namespace WebSGV.Views
                 txtObservaciones.Text = orden.Observaciones;
 
                 // Gastos: el formulario los toma por nombre de campo (restaurarLiquidacion en el JS).
-                string json = JsonConvert.SerializeObject(new
+                string json = JsonSeguro.Serializar(new
                 {
                     campos = orden.Gastos,
                     gastosAdicionales = orden.GastosAdicionales.Select(g => new { concepto = g.Categoria, descripcion = g.Descripcion, soles = g.Soles, dolares = g.Dolares })
@@ -440,7 +440,7 @@ namespace WebSGV.Views
                 pnlDespachos.Visible = true;
 
                 string numerosViaje = string.Join(", ", viajes.Select(v => v.NumeroViajeProgreso));
-                lblNumeroViaje.Text = numerosViaje;
+                lblNumeroViaje.Text = System.Web.HttpUtility.HtmlEncode(numerosViaje);
                 lblFechaInicio.Text = viajePrimario.FechaInicio.ToString("dd/MM/yyyy HH:mm");
                 lblCantidadDespachos.Text = totalDespachos.ToString();
 
@@ -544,7 +544,7 @@ namespace WebSGV.Views
                 pnlFormularioLiquidacion.Visible = true;
 
                 string numerosViaje = string.Join(", ", viajes.Select(v => v.NumeroViajeProgreso));
-                lblNumeroViajeResumen.Text = numerosViaje;
+                lblNumeroViajeResumen.Text = System.Web.HttpUtility.HtmlEncode(numerosViaje);
                 lblDespachosResumen.Text = totalDespachos.ToString();
 
                 // Salida y llegada a base: las da el GPS del seguimiento; lo que falte lo escribe el conductor.
@@ -686,7 +686,7 @@ namespace WebSGV.Views
                     errores = OrdenViajeValidaciones.ValidarSalidaLlegada(fechaSalida, horaSalida, fechaLlegada, horaLlegadaDeclarada, ahora);
                 if (!string.IsNullOrEmpty(errores))
                 {
-                    MostrarMensaje(System.Web.HttpUtility.HtmlEncode(errores).Replace("\n", "<br/>"), "danger");
+                    MostrarMensaje(errores, "danger");
                     MantenerPestanaLiquidar();
                     return;
                 }
@@ -727,7 +727,7 @@ namespace WebSGV.Views
                 catch (Exception ex)
                 {
                     LogSGV.Error(ex, "Error en la transacción de liquidación del conductor (orden {Numero})", numeroOrdenViaje);
-                    MostrarMensaje($"Error al enviar la liquidación: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
+                    MostrarMensaje($"Error al enviar la liquidación: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
                     MantenerPestanaLiquidar();
                 }
 
@@ -762,7 +762,7 @@ namespace WebSGV.Views
             {
                 LogSGV.Error(ex, "Error general al enviar la liquidación del conductor");
                 MostrarMensaje(ex is ErrorNegocioException
-                    ? System.Web.HttpUtility.HtmlEncode(ex.Message)
+                    ? ex.Message
                     : "Error al enviar la liquidación. Inténtalo de nuevo o avisa a la administración.", "danger");
                 MantenerPestanaLiquidar();
             }
@@ -918,7 +918,7 @@ namespace WebSGV.Views
             try { adicionales = DeserializarGastosAdicionales(); }
             catch (ErrorNegocioException) { adicionales = new List<GastoAdicionalData>(); }
 
-            string json = JsonConvert.SerializeObject(new
+            string json = JsonSeguro.Serializar(new
             {
                 campos,
                 gastosAdicionales = adicionales.Select(g => new { concepto = g.Categoria ?? g.NombreCategoria, descripcion = g.Descripcion, soles = g.Soles, dolares = g.Dolares })
@@ -1021,7 +1021,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar el historial en DashboardConductor");
-                MostrarMensaje($"Error al cargar el historial: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
+                MostrarMensaje($"Error al cargar el historial: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
             }
         }
 
@@ -1201,7 +1201,13 @@ namespace WebSGV.Views
                 { "success", "danger", "warning", "info", "primary", "secondary" };
             string tipoSeguro = tiposPermitidos.Contains(tipo) ? tipo : "info";
 
-            lblMensaje.Text = mensaje;
+            MostrarMensajeHtml(MensajeHtml.Texto(mensaje), tipoSeguro);
+        }
+
+        // Solo para HTML armado aquí mismo con los datos ya codificados (MostrarResultadoExitoso).
+        private void MostrarMensajeHtml(string htmlDeConfianza, string tipoSeguro)
+        {
+            lblMensaje.Text = htmlDeConfianza;
             lblMensaje.CssClass = $"alert alert-{tipoSeguro} alert-dismissible fade show";
             pnlMensajes.Visible = true;
         }
@@ -1219,7 +1225,7 @@ namespace WebSGV.Views
                         Tu liquidación ha sido enviada a la administración para su revisión.
                     </div>";
 
-                MostrarMensaje(mensajeCompleto, "success");
+                MostrarMensajeHtml(mensajeCompleto, "success");
             }
             catch (Exception ex)
             {

@@ -16,9 +16,9 @@
         <asp:Panel ID="pnlError" runat="server" Visible="false" CssClass="alert alert-danger" />
 
         <div class="re-banner">
-            <div><div class="label">Viaje</div><div class="val"><asp:Literal ID="litNumeroViaje" runat="server" Text="-" /></div></div>
-            <div><div class="label">Conductor</div><div class="val"><asp:Literal ID="litConductor" runat="server" Text="-" /></div></div>
-            <div><div class="label">Tracto</div><div class="val"><asp:Literal ID="litTracto" runat="server" Text="-" /></div></div>
+            <div><div class="label">Viaje</div><div class="val"><asp:Literal ID="litNumeroViaje" runat="server" Text="-" Mode="Encode" /></div></div>
+            <div><div class="label">Conductor</div><div class="val"><asp:Literal ID="litConductor" runat="server" Text="-" Mode="Encode" /></div></div>
+            <div><div class="label">Tracto</div><div class="val"><asp:Literal ID="litTracto" runat="server" Text="-" Mode="Encode" /></div></div>
             <div><div class="label">Fecha recepción</div><div class="val"><asp:TextBox ID="txtFecha" runat="server" TextMode="DateTimeLocal" CssClass="form-control" /></div></div>
         </div>
 

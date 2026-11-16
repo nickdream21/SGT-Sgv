@@ -132,7 +132,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al inicializar la página en LiquidacionesPendientes");
-                MostrarMensaje($"Error al cargar la página: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
+                MostrarMensaje($"Error al cargar la página: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
             }
         }
 
@@ -206,7 +206,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar liquidaciones en LiquidacionesPendientes");
-                MostrarMensaje($"Error al cargar las liquidaciones: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
+                MostrarMensaje($"Error al cargar las liquidaciones: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
             }
         }
 
@@ -287,7 +287,7 @@ namespace WebSGV.Views
                 Services.NotificacionService.NotificarLiquidacionRechazada(idOrdenViaje, numeroOrdenViaje, observaciones);
 
                 MostrarMensaje(
-                    $"Liquidación <strong>{System.Web.HttpUtility.HtmlEncode(numeroOrdenViaje)}</strong> rechazada exitosamente. El viaje ha sido reabierto para correcciones del conductor.",
+                    $"Liquidación {numeroOrdenViaje} rechazada exitosamente. El viaje ha sido reabierto para correcciones del conductor.",
                     "warning"
                 );
 
@@ -301,7 +301,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al rechazar la liquidación");
-                MostrarMensaje($"Error al rechazar la liquidación: {System.Web.HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex))}", "danger");
+                MostrarMensaje($"Error al rechazar la liquidación: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
             }
         }
 
@@ -431,7 +431,7 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            lblMensaje.Text = mensaje;
+            lblMensaje.Text = MensajeHtml.Texto(mensaje);
             lblMensaje.CssClass = $"alert alert-{tipo} alert-dismissible fade show";
             pnlMensajes.Visible = true;
 

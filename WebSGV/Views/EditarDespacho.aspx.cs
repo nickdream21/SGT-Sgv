@@ -256,7 +256,7 @@ namespace WebSGV.Views
             if (string.IsNullOrWhiteSpace(txtFechaDespacho.Text))
             {
                 esValido = false;
-                mensajes += "La fecha de despacho es obligatoria.<br/>";
+                mensajes += "La fecha de despacho es obligatoria.\n";
             }
             else
             {
@@ -264,30 +264,30 @@ namespace WebSGV.Views
                 if (!DateTime.TryParse(txtFechaDespacho.Text, out fecha))
                 {
                     esValido = false;
-                    mensajes += "La fecha de despacho no es válida.<br/>";
+                    mensajes += "La fecha de despacho no es válida.\n";
                 }
             }
 
             if (string.IsNullOrWhiteSpace(ddlConductor.SelectedValue))
-            { esValido = false; mensajes += "Debe seleccionar un conductor.<br/>"; }
+            { esValido = false; mensajes += "Debe seleccionar un conductor.\n"; }
 
             if (string.IsNullOrWhiteSpace(ddlCliente.SelectedValue))
-            { esValido = false; mensajes += "Debe seleccionar un cliente.<br/>"; }
+            { esValido = false; mensajes += "Debe seleccionar un cliente.\n"; }
 
             if (string.IsNullOrWhiteSpace(ddlTracto.SelectedValue))
-            { esValido = false; mensajes += "Debe seleccionar un tracto.<br/>"; }
+            { esValido = false; mensajes += "Debe seleccionar un tracto.\n"; }
 
             if (string.IsNullOrWhiteSpace(ddlCarreta.SelectedValue))
-            { esValido = false; mensajes += "Debe seleccionar una carreta.<br/>"; }
+            { esValido = false; mensajes += "Debe seleccionar una carreta.\n"; }
 
             if (string.IsNullOrWhiteSpace(ddlLugar.SelectedValue))
-            { esValido = false; mensajes += "Debe seleccionar un lugar de operación.<br/>"; }
+            { esValido = false; mensajes += "Debe seleccionar un lugar de operación.\n"; }
 
             if (string.IsNullOrWhiteSpace(ddlTipoOperacion.SelectedValue))
-            { esValido = false; mensajes += "Debe seleccionar un tipo de operación.<br/>"; }
+            { esValido = false; mensajes += "Debe seleccionar un tipo de operación.\n"; }
 
             if (!esValido)
-                MostrarMensaje("Por favor, corrija los siguientes errores:<br/>" + mensajes, "danger");
+                MostrarMensaje("Por favor, corrija los siguientes errores:\n" + mensajes, "danger");
 
             return esValido;
         }
@@ -333,7 +333,7 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            litMensaje.Text = mensaje;
+            litMensaje.Text = MensajeHtml.Texto(mensaje);
             divMensaje.Attributes["class"] = $"alert alert-{tipo} alert-dismissible fade show";
             pnlMensaje.Visible = true;
         }

@@ -361,13 +361,13 @@ namespace WebSGV.Views
             var lote = LoteActual;
 
             lblResumenFecha.Text = DateTime.Parse(lote.FechaProgramacion).ToString("dd/MM/yyyy");
-            lblResumenCliente.Text = lote.NombreCliente;
-            lblResumenPedido.Text = string.IsNullOrEmpty(lote.NumeroPedido) ? "Sin especificar" : lote.NumeroPedido;
-            lblResumenOperacion.Text = lote.TipoOperacion;
+            lblResumenCliente.Text = System.Web.HttpUtility.HtmlEncode(lote.NombreCliente);
+            lblResumenPedido.Text = string.IsNullOrEmpty(lote.NumeroPedido) ? "Sin especificar" : System.Web.HttpUtility.HtmlEncode(lote.NumeroPedido);
+            lblResumenOperacion.Text = System.Web.HttpUtility.HtmlEncode(lote.TipoOperacion);
             lblResumenAmbito.Text = lote.EsInternacional ? "Internacional" : "Nacional";
-            lblResumenPlanta.Text = PlantasDelLote(lote);
+            lblResumenPlanta.Text = System.Web.HttpUtility.HtmlEncode(PlantasDelLote(lote));
             pnlResumenDestino.Visible = !string.IsNullOrEmpty(lote.DestinoCarga);
-            lblResumenDestino.Text = (lote.DestinoCarga ?? string.Empty) + (lote.EsExportacion ? " (exportación)" : "");
+            lblResumenDestino.Text = System.Web.HttpUtility.HtmlEncode((lote.DestinoCarga ?? string.Empty) + (lote.EsExportacion ? " (exportación)" : ""));
             lblResumenCantidad.Text = lote.CantidadConductores.ToString();
             lblEstadoLote.Text = $"LOTE ACTIVO - {lote.CantidadConductores} conductores";
 
@@ -3254,7 +3254,7 @@ namespace WebSGV.Views
                 var viaje = viajesAbiertos[0];
                 pnlConViajes.Visible = true;
 
-                lblNumeroViaje.Text = viaje.NumeroViajeProgreso;
+                lblNumeroViaje.Text = System.Web.HttpUtility.HtmlEncode(viaje.NumeroViajeProgreso);
                 lblFechaInicio.Text = viaje.FechaInicio.ToString("dd/MM/yyyy HH:mm");
                 lblCantidadDespachos.Text = viaje.CantidadDespachos.ToString();
                 lblTipoViaje.Text = viaje.EsInternacional.HasValue

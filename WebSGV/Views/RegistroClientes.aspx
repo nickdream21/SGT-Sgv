@@ -137,30 +137,31 @@
                                     <asp:BoundField DataField="nombre" HeaderText="NOMBRE / RAZ&#xD3;N SOCIAL" />
                                     <asp:TemplateField HeaderText="CONTACTO">
                                         <ItemTemplate>
-                                            <%# Eval("contacto") %>
-                                            <asp:Literal ID="litTel" runat="server"
-                                                Text='<%# string.IsNullOrWhiteSpace(Eval("telefono") as string) ? "" : "<br /><small class=\"text-muted\">" + System.Web.HttpUtility.HtmlEncode(Eval("telefono")) + "</small>" %>' />
+                                            <%#: Eval("contacto") %>
+                                            <asp:PlaceHolder runat="server" Visible='<%# !string.IsNullOrWhiteSpace(Eval("telefono") as string) %>'>
+                                                <br /><small class="text-muted"><%#: Eval("telefono") %></small>
+                                            </asp:PlaceHolder>
                                         </ItemTemplate>
                                     </asp:TemplateField>
                                     <asp:TemplateField HeaderText="OPERACI&#xD3;N" ItemStyle-CssClass="text-center" ItemStyle-Width="110">
                                         <ItemTemplate>
-                                            <span class='badge <%# Convert.ToBoolean(Eval("esExportador")) ? "badge-info" : "badge-secondary" %>'>
-                                                <%# Convert.ToBoolean(Eval("esExportador")) ? "Exportador" : "Nacional" %>
+                                            <span class='badge <%#: Convert.ToBoolean(Eval("esExportador")) ? "badge-info" : "badge-secondary" %>'>
+                                                <%#: Convert.ToBoolean(Eval("esExportador")) ? "Exportador" : "Nacional" %>
                                             </span>
-                                            <br /><small class="text-muted"><%# Eval("monedaFacturacion") %></small>
+                                            <br /><small class="text-muted"><%#: Eval("monedaFacturacion") %></small>
                                         </ItemTemplate>
                                     </asp:TemplateField>
                                     <asp:TemplateField HeaderText="ESTADO" ItemStyle-CssClass="text-center" ItemStyle-Width="90">
                                         <ItemTemplate>
-                                            <span class='badge <%# ObtenerClaseEstado(Eval("activo")) %>'>
-                                                <%# ObtenerTextoEstado(Eval("activo")) %>
+                                            <span class='badge <%#: ObtenerClaseEstado(Eval("activo")) %>'>
+                                                <%#: ObtenerTextoEstado(Eval("activo")) %>
                                             </span>
                                         </ItemTemplate>
                                     </asp:TemplateField>
                                     <asp:TemplateField HeaderText="" ItemStyle-CssClass="text-center" ItemStyle-Width="40">
                                         <ItemTemplate>
                                             <button type="button" class="btn btn-outline-info btn-sm btn-editar" title="Editar"
-                                                data-id='<%# Eval("idCliente") %>'
+                                                data-id='<%#: Eval("idCliente") %>'
                                                 data-ruc='<%# AttrEncode(Eval("ruc")) %>'
                                                 data-nombre='<%# AttrEncode(Eval("nombre")) %>'
                                                 data-direccion='<%# AttrEncode(Eval("direccion")) %>'
@@ -168,7 +169,7 @@
                                                 data-telefono='<%# AttrEncode(Eval("telefono")) %>'
                                                 data-correo='<%# AttrEncode(Eval("correo")) %>'
                                                 data-moneda='<%# AttrEncode(Eval("monedaFacturacion")) %>'
-                                                data-exportador='<%# Convert.ToBoolean(Eval("esExportador")) ? "1" : "0" %>'
+                                                data-exportador='<%#: Convert.ToBoolean(Eval("esExportador")) ? "1" : "0" %>'
                                                 data-observaciones='<%# AttrEncode(Eval("observaciones")) %>'>
                                                 <i class="fas fa-edit"></i>
                                             </button>
@@ -181,7 +182,7 @@
                                                 CommandArgument='<%# Eval("idCliente") %>'
                                                 CssClass='<%# ObtenerClaseBoton(Eval("activo")) %>'
                                                 OnClientClick="return confirm('&#xBF;Cambiar el estado de este cliente?');">
-                                                <%# ObtenerTextoBoton(Eval("activo")) %>
+                                                <%#: ObtenerTextoBoton(Eval("activo")) %>
                                             </asp:LinkButton>
                                         </ItemTemplate>
                                     </asp:TemplateField>

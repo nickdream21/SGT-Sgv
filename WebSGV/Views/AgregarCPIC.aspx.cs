@@ -44,9 +44,8 @@ namespace WebSGV.Views
 
                 if (!string.IsNullOrEmpty(numeroFactura) && !string.IsNullOrEmpty(valorTotalStr))
                 {
-                    // Decodificar el número de factura (por si tiene caracteres especiales)
-                    numeroFactura = HttpUtility.UrlDecode(numeroFactura);
-
+                    // Request.QueryString ya viene decodificado: decodificar otra vez convertía
+                    // %253C en "<" después de la validación de ASP.NET.
                     // Asignar número de factura
                     txtNumFactura.Text = numeroFactura;
 
@@ -538,7 +537,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al obtener el total de flete de la factura en AgregarCPIC");
-                lblErrorFactura.Text = "Error: " + MensajeErrorHelper.ParaUsuario(ex);
+                lblErrorFactura.Text = "Error: " + HttpUtility.HtmlEncode(MensajeErrorHelper.ParaUsuario(ex));
                 txtTotalFlete.Text = string.Empty;
             }
         }
@@ -546,7 +545,7 @@ namespace WebSGV.Views
         // Mostrar mensaje
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            lblMensaje.Text = mensaje;
+            lblMensaje.Text = MensajeHtml.Texto(mensaje);
             lblMensaje.CssClass = tipo == "success" ? "alert alert-success" : "alert alert-danger";
             lblMensaje.Visible = true;
         }

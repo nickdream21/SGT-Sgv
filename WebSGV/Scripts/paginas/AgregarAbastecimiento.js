@@ -206,7 +206,7 @@ function mostrarMensaje(mensaje, tipo) {
     var alertDiv = document.getElementById('alertMessage');
     alertDiv.classList.remove('alert-success', 'alert-danger');
     alertDiv.classList.add(tipo === 'success' ? 'alert-success' : 'alert-danger');
-    alertDiv.innerHTML = mensaje;
+    alertDiv.textContent = mensaje;   // texto plano: nunca interpretar HTML del mensaje
     alertDiv.style.display = 'block';
     setTimeout(function () { alertDiv.style.display = 'none'; }, 5000);
 }

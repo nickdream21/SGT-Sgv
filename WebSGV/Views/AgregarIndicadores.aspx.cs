@@ -241,7 +241,7 @@ namespace WebSGV.Views
         private void MostrarAlerta(string mensaje, string tipo)
         {
             alertPanel.Visible = true;
-            alertMessage.Text = mensaje;
+            alertMessage.Text = MensajeHtml.Texto(mensaje);
             alertPanel.CssClass = $"alert alert-{tipo}";
         }
     }

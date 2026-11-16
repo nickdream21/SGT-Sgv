@@ -34,7 +34,7 @@
             <p class="dc-conformar-txt">La administración registró el dinero que te entregaron y los descuentos o reintegros. Revisa la liquidación final y firma tu conformidad, o avisa si no estás de acuerdo.</p>
             <asp:Repeater ID="rptPorConformar" runat="server">
                 <ItemTemplate>
-                    <a class="dc-btn dc-btn-primario dc-btn-bloque mt-2" href='ConformarLiquidacion.aspx?id=<%# Eval("IdOrdenViaje") %>'>
+                    <a class="dc-btn dc-btn-primario dc-btn-bloque mt-2" href='ConformarLiquidacion.aspx?id=<%#: Eval("IdOrdenViaje") %>'>
                         Revisar y firmar <%#: Eval("NumeroViaje") %>
                     </a>
                 </ItemTemplate>
@@ -107,11 +107,11 @@
                             <article class="dc-item">
                                 <div class="dc-item-fila">
                                     <strong><%#: Eval("NumeroDespacho") %></strong>
-                                    <span class='dc-pill dc-pill-<%# ObtenerClaseEstado(Eval("EstadoDespacho")) %>'><%#: Eval("EstadoDespacho") %></span>
+                                    <span class='dc-pill dc-pill-<%#: ObtenerClaseEstado(Eval("EstadoDespacho")) %>'><%#: Eval("EstadoDespacho") %></span>
                                 </div>
                                 <div class="dc-item-cliente"><%#: Eval("Cliente") %></div>
                                 <div class="dc-item-meta">
-                                    <span><%# Eval("FechaDespacho", "{0:dd/MM/yyyy}") %></span>
+                                    <span><%#: Eval("FechaDespacho", "{0:dd/MM/yyyy}") %></span>
                                     <span><%#: Eval("TipoOperacion") %></span>
                                     <span><%#: Eval("LugarOperacion") %></span>
                                 </div>
@@ -375,27 +375,27 @@
                         <article class="dc-item">
                             <div class="dc-item-fila">
                                 <strong><%#: Eval("NumeroViaje") %></strong>
-                                <span class='dc-pill dc-pill-<%# ObtenerClaseEstado(Eval("Estado")) %>'><%#: TextoEstado(Eval("Estado")) %></span>
+                                <span class='dc-pill dc-pill-<%#: ObtenerClaseEstado(Eval("Estado")) %>'><%#: TextoEstado(Eval("Estado")) %></span>
                             </div>
                             <div class="dc-item-meta">
-                                <span><%# Eval("FechaSalida", "{0:dd/MM/yyyy}") %> → <%# Eval("FechaLlegada", "{0:dd/MM/yyyy}") %></span>
+                                <span><%#: Eval("FechaSalida", "{0:dd/MM/yyyy}") %> → <%#: Eval("FechaLlegada", "{0:dd/MM/yyyy}") %></span>
                             </div>
                             <div class="dc-item-fila dc-item-montos">
-                                <span>Gastos <strong>S/ <%# Eval("GastosSoles", "{0:N2}") %></strong><%# Convert.ToDecimal(Eval("GastosDolares")) > 0 ? " · $ " + Eval("GastosDolares", "{0:N2}") : "" %></span>
+                                <span>Gastos <strong>S/ <%#: Eval("GastosSoles", "{0:N2}") %></strong><%#: Convert.ToDecimal(Eval("GastosDolares")) > 0 ? " · $ " + Eval("GastosDolares", "{0:N2}") : "" %></span>
                             </div>
                             <div class="dc-item-acciones">
                                 <asp:PlaceHolder runat="server" Visible='<%# !(bool)Eval("Firmada") && (string)Eval("Estado") == "PENDIENTE" %>'>
-                                    <a class="dc-btn dc-btn-primario dc-btn-chico" href='FirmarLiquidacion.aspx?id=<%# Eval("IdOrdenViaje") %>'>Firmar</a>
+                                    <a class="dc-btn dc-btn-primario dc-btn-chico" href='FirmarLiquidacion.aspx?id=<%#: Eval("IdOrdenViaje") %>'>Firmar</a>
                                 </asp:PlaceHolder>
                                 <asp:PlaceHolder runat="server" Visible='<%# (string)Eval("Estado") == "POR_CONFORMAR" %>'>
-                                    <a class="dc-btn dc-btn-primario dc-btn-chico" href='ConformarLiquidacion.aspx?id=<%# Eval("IdOrdenViaje") %>'>Revisar y firmar</a>
+                                    <a class="dc-btn dc-btn-primario dc-btn-chico" href='ConformarLiquidacion.aspx?id=<%#: Eval("IdOrdenViaje") %>'>Revisar y firmar</a>
                                 </asp:PlaceHolder>
-                                <button type="button" class="dc-btn dc-btn-linea dc-btn-chico" onclick='verDetalleLiquidacion(<%# Eval("IdOrdenViaje") %>)'>Ver</button>
+                                <button type="button" class="dc-btn dc-btn-linea dc-btn-chico" onclick='verDetalleLiquidacion(<%#: Eval("IdOrdenViaje") %>)'>Ver</button>
                                 <asp:PlaceHolder runat="server" Visible='<%# (bool)Eval("Firmada") %>'>
-                                    <a class="dc-btn dc-btn-linea dc-btn-chico" target="_blank" href='DescargarPdfOrdenViaje.aspx?id=<%# Eval("IdOrdenViaje") %>' title="Documento firmado vigente">PDF</a>
+                                    <a class="dc-btn dc-btn-linea dc-btn-chico" target="_blank" href='DescargarPdfOrdenViaje.aspx?id=<%#: Eval("IdOrdenViaje") %>' title="Documento firmado vigente">PDF</a>
                                 </asp:PlaceHolder>
                                 <asp:PlaceHolder runat="server" Visible='<%# (string)Eval("Estado") == "PENDIENTE" && !(bool)Eval("Revisada") %>'>
-                                    <button type="button" class="dc-btn dc-btn-alerta dc-btn-chico" onclick='abrirModalRetirar(<%# Eval("IdOrdenViaje") %>)'>Retirar</button>
+                                    <button type="button" class="dc-btn dc-btn-alerta dc-btn-chico" onclick='abrirModalRetirar(<%#: Eval("IdOrdenViaje") %>)'>Retirar</button>
                                 </asp:PlaceHolder>
                             </div>
                         </article>

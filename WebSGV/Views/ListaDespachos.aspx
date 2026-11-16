@@ -178,7 +178,7 @@
                                                         <asp:TemplateField HeaderText="Tipo">
                                                             <ItemTemplate>
                                                                 <asp:Label runat="server" 
-                                                                    Text='<%# Convert.ToBoolean(Eval("EsInternacional")) ? "Internacional" : "Nacional" %>'
+                                                                    Text='<%#: Convert.ToBoolean(Eval("EsInternacional")) ? "Internacional" : "Nacional" %>'
                                                                     CssClass='<%# Convert.ToBoolean(Eval("EsInternacional")) ? "badge tipo-internacional" : "badge tipo-nacional" %>'>
                                                                 </asp:Label>
                                                             </ItemTemplate>
@@ -190,7 +190,7 @@
                                                         <asp:TemplateField HeaderText="Estado">
                                                             <ItemTemplate>
                                                                 <asp:Label runat="server" 
-                                                                    Text='<%# Eval("EstadoViaje") %>'
+                                                                    Text='<%#: Eval("EstadoViaje") %>'
                                                                     CssClass="badge estado-abierto">
                                                                 </asp:Label>
                                                             </ItemTemplate>
@@ -370,7 +370,7 @@
                                                         <asp:TemplateField HeaderText="Operación">
                                                             <ItemTemplate>
                                                                 <span class="ld-op"><%#: Eval("TipoOperacion") %> · <%#: Eval("PlantaOperacion") %></span>
-                                                                <span class="ld-sub"><%# Convert.ToBoolean(Eval("EsInternacional")) ? "Internacional" : "Nacional" %></span>
+                                                                <span class="ld-sub"><%#: Convert.ToBoolean(Eval("EsInternacional")) ? "Internacional" : "Nacional" %></span>
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
 
@@ -380,16 +380,16 @@
                                                         <asp:TemplateField HeaderText="Documentos" ItemStyle-CssClass="ld-docs-cell">
                                                             <ItemTemplate>
                                                                 <asp:Label runat="server"
-                                                                    Text='<%# Eval("DocumentosResumen") %>'
+                                                                    Text='<%#: Eval("DocumentosResumen") %>'
                                                                     CssClass='<%# (string)Eval("DocumentosClase") %>'>
                                                                 </asp:Label>
                                                                 <asp:Label runat="server"
-                                                                    Text='<%# "Manifiesto: " + Eval("ManifiestoEstado") %>'
+                                                                    Text='<%#: "Manifiesto: " + Eval("ManifiestoEstado") %>'
                                                                     CssClass='<%# GetManifiestoBadgeClass(Eval("ManifiestoEstado").ToString()) %>'
                                                                     Visible='<%# Convert.ToBoolean(Eval("EsInternacional")) && Eval("ManifiestoEstado").ToString() != "N/A" %>'>
                                                                 </asp:Label>
                                                                 <asp:Label runat="server"
-                                                                    Text='<%# Eval("DocumentosAntiguedad") %>'
+                                                                    Text='<%#: Eval("DocumentosAntiguedad") %>'
                                                                     CssClass='<%# (bool)Eval("DocumentosAtrasado") ? "ld-docs-edad ld-docs-edad-atrasado" : "ld-docs-edad" %>'
                                                                     Visible='<%# !string.IsNullOrEmpty((string)Eval("DocumentosAntiguedad")) %>'>
                                                                 </asp:Label>
@@ -400,7 +400,7 @@
                                                             <ItemTemplate>
                                                                 <span class="ld-num"><%#: Eval("NumeroFactura") %></span>
                                                                 <asp:Label runat="server" CssClass="ld-sub ld-num"
-                                                                    Text='<%# "CPIC " + Eval("NumeroCPIC") %>'
+                                                                    Text='<%#: "CPIC " + Eval("NumeroCPIC") %>'
                                                                     Visible='<%# (string)Eval("NumeroCPIC") != "—" %>'></asp:Label>
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
@@ -546,7 +546,7 @@
                                                             <asp:TemplateField HeaderText="Estado">
                                                                 <ItemTemplate>
                                                                     <asp:Label runat="server" 
-                                                                        Text='<%# Eval("EstadoDespacho") %>'
+                                                                        Text='<%#: Eval("EstadoDespacho") %>'
                                                                         CssClass='<%# GetEstadoDespachoClass(Eval("EstadoDespacho").ToString()) %>'>
                                                                     </asp:Label>
                                                                 </ItemTemplate>
@@ -797,7 +797,7 @@
                                                                             <asp:TemplateField HeaderText="Conductor actual">
                                                                                 <ItemTemplate>
                                                                                     <span class="conductor-badge-actual">
-                                                                                        <%# Eval("NombreConductorActual") %>
+                                                                                        <%#: Eval("NombreConductorActual") %>
                                                                                     </span>
                                                                                 </ItemTemplate>
                                                                             </asp:TemplateField>
@@ -953,7 +953,7 @@
                                                             <asp:TemplateField HeaderText="Estado">
                                                                 <ItemTemplate>
                                                                     <asp:Label runat="server" 
-                                                                        Text='<%# Eval("EstadoDespacho") %>'
+                                                                        Text='<%#: Eval("EstadoDespacho") %>'
                                                                         CssClass='<%# GetEstadoDespachoClass(Eval("EstadoDespacho").ToString()) %>'>
                                                                     </asp:Label>
                                                                 </ItemTemplate>
@@ -1184,9 +1184,9 @@
                                                                 <ItemTemplate>
                                                                     <asp:LinkButton runat="server" CommandName="VerManifiesto" CommandArgument='<%# Eval("CruceIdDocumento") %>'
                                                                         Visible='<%# Eval("CruceIdDocumento") != null %>' CausesValidation="false" CssClass="ld-doc-ver">
-                                                                        <i class="fas fa-file-pdf"></i> <%# Eval("CruceNombreOriginal") %>
+                                                                        <i class="fas fa-file-pdf"></i> <%#: Eval("CruceNombreOriginal") %>
                                                                     </asp:LinkButton>
-                                                                    <span class="ld-sin-adjuntar" style='<%# Eval("CruceIdDocumento") != null ? "display:none" : "" %>'><i class="fas fa-circle"></i> Sin adjuntar</span>
+                                                                    <span class="ld-sin-adjuntar" style='<%#: Eval("CruceIdDocumento") != null ? "display:none" : "" %>'><i class="fas fa-circle"></i> Sin adjuntar</span>
                                                                     <asp:FileUpload runat="server" ID="fileCruceFila" CssClass="form-control form-control-sm mt-1" accept=".pdf,.jpg,.jpeg,.png" />
                                                                 </ItemTemplate>
                                                             </asp:TemplateField>
@@ -1195,9 +1195,9 @@
                                                                 <ItemTemplate>
                                                                     <asp:LinkButton runat="server" CommandName="VerManifiesto" CommandArgument='<%# Eval("RetornoIdDocumento") %>'
                                                                         Visible='<%# Eval("RetornoIdDocumento") != null %>' CausesValidation="false" CssClass="ld-doc-ver">
-                                                                        <i class="fas fa-file-pdf"></i> <%# Eval("RetornoNombreOriginal") %>
+                                                                        <i class="fas fa-file-pdf"></i> <%#: Eval("RetornoNombreOriginal") %>
                                                                     </asp:LinkButton>
-                                                                    <span class="ld-sin-adjuntar" style='<%# Eval("RetornoIdDocumento") != null ? "display:none" : "" %>'><i class="fas fa-circle"></i> Sin adjuntar</span>
+                                                                    <span class="ld-sin-adjuntar" style='<%#: Eval("RetornoIdDocumento") != null ? "display:none" : "" %>'><i class="fas fa-circle"></i> Sin adjuntar</span>
                                                                     <asp:FileUpload runat="server" ID="fileRetornoFila" CssClass="form-control form-control-sm mt-1" accept=".pdf,.jpg,.jpeg,.png" />
                                                                 </ItemTemplate>
                                                             </asp:TemplateField>

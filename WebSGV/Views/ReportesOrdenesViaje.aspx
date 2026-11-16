@@ -199,8 +199,8 @@
                                 <asp:BoundField DataField="NumeroLiquidacion" HeaderText="N° DE LIQ" />
                                 <asp:TemplateField HeaderText="MONTO S/ (Reintegro-Descuento)">
                                     <ItemTemplate>
-                                        <span class='<%# ObtenerClaseMontoSoles(Eval("MontoSoles")) %>'>
-                                            <%# FormatearMontoSoles(Eval("MontoSoles")) %>
+                                        <span class='<%#: ObtenerClaseMontoSoles(Eval("MontoSoles")) %>'>
+                                            <%#: FormatearMontoSoles(Eval("MontoSoles")) %>
                                         </span>
                                     </ItemTemplate>
                                     <FooterTemplate>
@@ -211,8 +211,8 @@
                                 </asp:TemplateField>
                                 <asp:TemplateField HeaderText="MONTO $ (Reintegro-Descuento)">
                                     <ItemTemplate>
-                                        <span class='<%# ObtenerClaseMontoDolares(Eval("MontoDolares")) %>'>
-                                            <%# FormatearMontoDolares(Eval("MontoDolares")) %>
+                                        <span class='<%#: ObtenerClaseMontoDolares(Eval("MontoDolares")) %>'>
+                                            <%#: FormatearMontoDolares(Eval("MontoDolares")) %>
                                         </span>
                                     </ItemTemplate>
                                     <FooterTemplate>
@@ -223,7 +223,7 @@
                                 </asp:TemplateField>
                                 <asp:TemplateField HeaderText="ACCIONES">
                                     <ItemTemplate>
-                                        <button type="button" class="btn btn-info-action" onclick='verDetalleOrden(<%# Eval("IdOrdenViaje") %>)' title="Ver detalle">
+                                        <button type="button" class="btn btn-info-action" onclick='verDetalleOrden(<%#: Eval("IdOrdenViaje") %>)' title="Ver detalle">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                     </ItemTemplate>
@@ -333,22 +333,22 @@
                                 </asp:BoundField>
                                 <asp:TemplateField HeaderText="FECHA PROGRAMACIÓN">
                                     <ItemTemplate>
-                                        <%# Eval("FechaProgramacion") != DBNull.Value ? Convert.ToDateTime(Eval("FechaProgramacion")).ToString("dd/MM/yyyy") : "N/A" %>
+                                        <%#: Eval("FechaProgramacion") != DBNull.Value ? Convert.ToDateTime(Eval("FechaProgramacion")).ToString("dd/MM/yyyy") : "N/A" %>
                                     </ItemTemplate>
                                     <ItemStyle CssClass="text-center" />
                                 </asp:TemplateField>
                                 <asp:TemplateField HeaderText="DÍAS EN VIAJE">
                                     <ItemTemplate>
-                                        <span class='<%# Convert.ToInt32(Eval("DiasEnViaje")) > 7 ? "badge-dias-alerta" : "badge-dias-normal" %>'>
-                                            <%# Eval("DiasEnViaje") %> días
+                                        <span class='<%#: Convert.ToInt32(Eval("DiasEnViaje")) > 7 ? "badge-dias-alerta" : "badge-dias-normal" %>'>
+                                            <%#: Eval("DiasEnViaje") %> días
                                         </span>
                                     </ItemTemplate>
                                     <ItemStyle CssClass="text-center" />
                                 </asp:TemplateField>
                                 <asp:TemplateField HeaderText="ESTADO">
                                     <ItemTemplate>
-                                        <span class='<%# "badge-estado badge-estado-" + Eval("Estado").ToString().ToLower() %>'>
-                                            <%# Eval("Estado") %>
+                                        <span class='<%#: "badge-estado badge-estado-" + Eval("Estado").ToString().ToLower() %>'>
+                                            <%#: Eval("Estado") %>
                                         </span>
                                     </ItemTemplate>
                                     <ItemStyle CssClass="text-center" />

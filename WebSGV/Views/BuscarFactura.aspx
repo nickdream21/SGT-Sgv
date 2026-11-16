@@ -38,26 +38,26 @@
                                     <asp:TemplateField HeaderText="Cliente">
                                         <ItemTemplate>
                                             <div class="cliente-info">
-                                                <strong><%# Eval("nombreCliente") %></strong>
-                                                <%# !string.IsNullOrEmpty(Eval("rucCliente").ToString()) ? 
-                                                    "<br/><small class='text-muted'>RUC: " + Eval("rucCliente") + "</small>" : "" %>
+                                                <strong><%#: Eval("nombreCliente") %></strong>
+                                                <asp:PlaceHolder runat="server" Visible='<%# !string.IsNullOrEmpty(Eval("rucCliente").ToString()) %>'>
+                                                    <br/><small class="text-muted">RUC: <%#: Eval("rucCliente") %></small>
+                                                </asp:PlaceHolder>
                                             </div>
                                         </ItemTemplate>
                                     </asp:TemplateField>
                                     <asp:TemplateField HeaderText="Fecha emisión">
                                         <ItemTemplate>
-                                            <span><%# Convert.ToDateTime(Eval("fechaEmision")).ToString("dd/MM/yyyy") %></span>
+                                            <span><%#: Convert.ToDateTime(Eval("fechaEmision")).ToString("dd/MM/yyyy") %></span>
                                         </ItemTemplate>
                                     </asp:TemplateField>
                                     <asp:TemplateField HeaderText="N° Pedido">
                                         <ItemTemplate>
-                                            <span><%# string.IsNullOrEmpty(Eval("numeroPedido").ToString()) ? 
-                                                "<em class='text-muted'>Sin pedido</em>" : Eval("numeroPedido").ToString() %></span>
+                                            <span><%#: Eval("numeroPedido") %><asp:PlaceHolder runat="server" Visible='<%# string.IsNullOrEmpty(Eval("numeroPedido").ToString()) %>'><em class="text-muted">Sin pedido</em></asp:PlaceHolder></span>
                                         </ItemTemplate>
                                     </asp:TemplateField>
                                     <asp:TemplateField HeaderText="Importe total">
                                         <ItemTemplate>
-                                            <span class="importe-total">S/ <%# Convert.ToDecimal(Eval("valorTotal")).ToString("N2") %></span>
+                                            <span class="importe-total">S/ <%#: Convert.ToDecimal(Eval("valorTotal")).ToString("N2") %></span>
                                         </ItemTemplate>
                                     </asp:TemplateField>
                                     <asp:TemplateField HeaderText="CPIC">
@@ -72,7 +72,7 @@
                                                 <asp:Panel ID="pnlConCPIC" runat="server" Visible='<%# !string.IsNullOrEmpty(Eval("numeroCPIC").ToString()) %>'>
                                                     <span class="cpic-numero">
                                                         <i class="fa fa-check-circle text-success"></i> 
-                                                        <%# Eval("numeroCPIC") %>
+                                                        <%#: Eval("numeroCPIC") %>
                                                     </span>
                                                 </asp:Panel>
                                             </div>
@@ -208,30 +208,30 @@
                                         <asp:TemplateField HeaderText="Archivo">
                                             <ItemTemplate>
                                                 <div class="documento-info">
-                                                    <i class="fa <%# ObtenerIconoArchivo(Eval("tipoArchivo").ToString()) %>"></i>
-                                                    <span class="nombre-archivo"><%# Eval("nombreOriginal") %></span>
-                                                    <small class="text-muted"><%# Eval("tipoArchivo") %></small>
+                                                    <i class="fa <%#: ObtenerIconoArchivo(Eval("tipoArchivo").ToString()) %>"></i>
+                                                    <span class="nombre-archivo"><%#: Eval("nombreOriginal") %></span>
+                                                    <small class="text-muted"><%#: Eval("tipoArchivo") %></small>
                                                 </div>
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                         <asp:TemplateField HeaderText="Tamaño">
                                             <ItemTemplate>
-                                                <span class="tamano-archivo"><%# FormatearTamano(Convert.ToInt64(Eval("tamanoBytes"))) %></span>
+                                                <span class="tamano-archivo"><%#: FormatearTamano(Convert.ToInt64(Eval("tamanoBytes"))) %></span>
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                         <asp:TemplateField HeaderText="Fecha subida">
                                             <ItemTemplate>
-                                                <span><%# Convert.ToDateTime(Eval("fechaSubida")).ToString("dd/MM/yyyy HH:mm") %></span>
+                                                <span><%#: Convert.ToDateTime(Eval("fechaSubida")).ToString("dd/MM/yyyy HH:mm") %></span>
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                         <asp:TemplateField HeaderText="Usuario">
                                             <ItemTemplate>
-                                                <span><%# Eval("usuarioSubida") %></span>
+                                                <span><%#: Eval("usuarioSubida") %></span>
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                         <asp:TemplateField HeaderText="Descripción">
                                             <ItemTemplate>
-                                                <span class="descripcion-doc"><%# Eval("descripcion") ?? "Sin descripción" %></span>
+                                                <span class="descripcion-doc"><%#: Eval("descripcion") ?? "Sin descripción" %></span>
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                         <asp:TemplateField HeaderText="Acciones">

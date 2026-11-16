@@ -144,8 +144,8 @@
                     <asp:BoundField DataField="RowsProcessed" HeaderText="Registros procesados" />
                     <asp:TemplateField HeaderText="Estado">
                         <ItemTemplate>
-                            <span class='status-pill <%# GetStatusClass(Eval("Status").ToString()) %>'>
-                                <%# Eval("Status") %>
+                            <span class='status-pill <%#: GetStatusClass(Eval("Status").ToString()) %>'>
+                                <%#: Eval("Status") %>
                             </span>
                         </ItemTemplate>
                     </asp:TemplateField>

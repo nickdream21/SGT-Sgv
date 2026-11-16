@@ -339,7 +339,7 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje)
         {
-            lblError.Text = mensaje;
+            lblError.Text = MensajeHtml.Texto(mensaje);
             pnlError.Visible = true;
         }
     }

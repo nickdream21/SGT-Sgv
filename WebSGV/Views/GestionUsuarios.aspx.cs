@@ -189,7 +189,7 @@ namespace WebSGV.Views
             object result = DbHelper.EjecutarEscalar(
                 "SELECT nombreUsuario FROM Usuarios WHERE idUsuario = @id",
                 DbHelper.Param("@id", idUsuario));
-            lblUsuarioReset.Text = result?.ToString() ?? "";
+            lblUsuarioReset.Text = System.Web.HttpUtility.HtmlEncode(result?.ToString() ?? "");
 
             hfIdUsuarioReset.Value   = idUsuario.ToString();
             txtNuevaPass.Text        = "";
@@ -367,7 +367,7 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            lblMensaje.Text     = mensaje;
+            lblMensaje.Text     = MensajeHtml.Texto(mensaje);
             lblMensaje.CssClass = $"alert alert-{tipo} d-block mb-0";
             pnlMensaje.Visible  = true;
         }
@@ -388,14 +388,14 @@ namespace WebSGV.Views
 
         private void MostrarMensajeModal(string mensaje, string tipo)
         {
-            lblMensajeModal.Text     = mensaje;
+            lblMensajeModal.Text     = MensajeHtml.Texto(mensaje);
             lblMensajeModal.CssClass = $"alert alert-{tipo} d-block mb-0";
             pnlMensajeModal.Visible  = true;
         }
 
         private void MostrarMensajeReset(string mensaje, string tipo)
         {
-            lblMensajeReset.Text     = mensaje;
+            lblMensajeReset.Text     = MensajeHtml.Texto(mensaje);
             lblMensajeReset.CssClass = $"alert alert-{tipo} d-block mb-0";
             pnlMensajeReset.Visible  = true;
         }

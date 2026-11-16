@@ -560,7 +560,7 @@ namespace WebSGV.Views
 
         private void ShowAlert(string message, string type)
         {
-            alertMessage.Text = message;
+            alertMessage.Text = MensajeHtml.Texto(message);
             alertPanel.Visible = true;
 
             switch (type.ToLower())

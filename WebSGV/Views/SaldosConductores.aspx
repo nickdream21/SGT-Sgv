@@ -54,13 +54,13 @@
 
         <asp:Repeater ID="rptConductores" runat="server">
             <ItemTemplate>
-                <div class="sgv-panel mb-3 sc-conductor" data-conductor='<%# Eval("IdConductor") %>'>
+                <div class="sgv-panel mb-3 sc-conductor" data-conductor='<%#: Eval("IdConductor") %>'>
                     <div class="sgv-panel-cab">
                         <h5 class="mb-0"><%#: Eval("Conductor") %> <small class="sgv-suave">DNI <%#: Eval("Dni") %></small></h5>
                         <div class="sc-total">
-                            <span class='sgv-estado <%# Eval("CssSentido") %>'><%#: Eval("TextoTotal") %></span>
-                            <button type="button" class="btn btn-sm btn-outline-primary sc-btn-saldar" <%# (bool)Eval("HayPendientes") ? "" : "disabled" %>
-                                data-conductor='<%# Eval("IdConductor") %>' data-nombre='<%#: Eval("Conductor") %>'>
+                            <span class='sgv-estado <%#: Eval("CssSentido") %>'><%#: Eval("TextoTotal") %></span>
+                            <button type="button" class="btn btn-sm btn-outline-primary sc-btn-saldar" <%#: (bool)Eval("HayPendientes") ? "" : "disabled" %>
+                                data-conductor='<%#: Eval("IdConductor") %>' data-nombre='<%#: Eval("Conductor") %>'>
                                 <i class="fas fa-check-double mr-1"></i>Registrar pago o descuento
                             </button>
                         </div>
@@ -84,21 +84,25 @@
                             <tbody>
                                 <asp:Repeater ID="rptFilas" runat="server" DataSource='<%# Eval("Filas") %>'>
                                     <ItemTemplate>
-                                        <tr class='<%# (bool)Eval("Pendiente") ? "" : "sc-saldada" %>'>
+                                        <tr class='<%#: (bool)Eval("Pendiente") ? "" : "sc-saldada" %>'>
                                             <td class="sc-col-check">
-                                                <%# (bool)Eval("Pendiente") ? "<input type=\"checkbox\" class=\"sc-sel\" checked value=\"" + Eval("IdOrdenViaje") + "\" aria-label=\"Incluir\" />" : "" %>
+                                                <asp:PlaceHolder runat="server" Visible='<%# (bool)Eval("Pendiente") %>'>
+                                                    <input type="checkbox" class="sc-sel" checked value="<%#: Eval("IdOrdenViaje") %>" aria-label="Incluir" />
+                                                </asp:PlaceHolder>
                                             </td>
-                                            <td><a href='<%# ResolveUrl("~/Views/DetalleOrdenViaje.aspx?id=" + Eval("IdOrdenViaje")) %>' target="_blank"><%#: Eval("Numero") %></a></td>
+                                            <td><a href='<%#: ResolveUrl("~/Views/DetalleOrdenViaje.aspx?id=" + Eval("IdOrdenViaje")) %>' target="_blank"><%#: Eval("Numero") %></a></td>
                                             <td><%#: Eval("Aprobada") %></td>
                                             <td class="sgv-num"><%#: Eval("Entregado") %></td>
                                             <td class="sgv-num"><%#: Eval("Gastos") %></td>
                                             <td class="sgv-num"><%#: Eval("Ajustes") %></td>
                                             <td class="sgv-num"><strong><%#: Eval("SaldoSoles") %></strong></td>
                                             <td class="sgv-num"><%#: Eval("SaldoDolares") %></td>
-                                            <td><span class='sgv-estado <%# Eval("CssSentido") %>'><%#: Eval("Sentido") %></span></td>
+                                            <td><span class='sgv-estado <%#: Eval("CssSentido") %>'><%#: Eval("Sentido") %></span></td>
                                             <td>
                                                 <%#: Eval("Estado") %>
-                                                <%# (bool)Eval("Pendiente") ? "" : "<button type=\"button\" class=\"btn btn-link btn-sm p-0 ml-1 sc-btn-anular\" data-pago=\"" + Eval("IdPagoSaldo") + "\">Anular</button>" %>
+                                                <asp:PlaceHolder runat="server" Visible='<%# !(bool)Eval("Pendiente") %>'>
+                                                    <button type="button" class="btn btn-link btn-sm p-0 ml-1 sc-btn-anular" data-pago="<%#: Eval("IdPagoSaldo") %>">Anular</button>
+                                                </asp:PlaceHolder>
                                             </td>
                                         </tr>
                                     </ItemTemplate>

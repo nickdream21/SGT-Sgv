@@ -172,24 +172,24 @@
                             <asp:TemplateField HeaderText="FECHA / HORA" HeaderStyle-Width="140">
                                 <ItemTemplate>
                                     <div class="aud-fecha">
-                                        <span class="aud-fecha-date"><%# Eval("FechaHora", "{0:dd/MM/yyyy}") %></span>
-                                        <span class="aud-fecha-time"><%# Eval("FechaHora", "{0:HH:mm:ss}") %></span>
+                                        <span class="aud-fecha-date"><%#: Eval("FechaHora", "{0:dd/MM/yyyy}") %></span>
+                                        <span class="aud-fecha-time"><%#: Eval("FechaHora", "{0:HH:mm:ss}") %></span>
                                     </div>
                                 </ItemTemplate>
                             </asp:TemplateField>
                             <asp:TemplateField HeaderText="USUARIO">
                                 <ItemTemplate>
                                     <div>
-                                        <strong><%# Eval("NombreUsuario") %></strong>
+                                        <strong><%#: Eval("NombreUsuario") %></strong>
                                         <br />
-                                        <small class="text-muted"><%# Eval("RolUsuario") %></small>
+                                        <small class="text-muted"><%#: Eval("RolUsuario") %></small>
                                     </div>
                                 </ItemTemplate>
                             </asp:TemplateField>
                             <asp:TemplateField HeaderText="ACCIÓN" HeaderStyle-Width="110">
                                 <ItemTemplate>
-                                    <span class='aud-badge-accion aud-badge-<%# ObtenerClaseAccion(Eval("Accion")) %>'>
-                                        <i class='<%# ObtenerIconoAccion(Eval("Accion")) %> mr-1'></i><%# Eval("Accion") %>
+                                    <span class='aud-badge-accion aud-badge-<%#: ObtenerClaseAccion(Eval("Accion")) %>'>
+                                        <i class='<%#: ObtenerIconoAccion(Eval("Accion")) %> mr-1'></i><%#: Eval("Accion") %>
                                     </span>
                                 </ItemTemplate>
                                 <ItemStyle CssClass="text-center" />
@@ -197,7 +197,7 @@
                             <asp:TemplateField HeaderText="TABLA" HeaderStyle-Width="130">
                                 <ItemTemplate>
                                     <span class="aud-badge-tabla">
-                                        <i class="fas fa-table mr-1"></i><%# Eval("TablaAfectada") %>
+                                        <i class="fas fa-table mr-1"></i><%#: Eval("TablaAfectada") %>
                                     </span>
                                 </ItemTemplate>
                             </asp:TemplateField>
@@ -205,19 +205,19 @@
                                 ItemStyle-CssClass="text-center" HeaderStyle-Width="70" />
                             <asp:TemplateField HeaderText="DESCRIPCIÓN">
                                 <ItemTemplate>
-                                    <div class="aud-descripcion" title='<%# Eval("Descripcion") %>'>
-                                        <%# TruncateText(Eval("Descripcion"), 100) %>
+                                    <div class="aud-descripcion" title='<%#: Eval("Descripcion") %>'>
+                                        <%#: TruncateText(Eval("Descripcion"), 100) %>
                                     </div>
                                 </ItemTemplate>
                             </asp:TemplateField>
                             <asp:TemplateField HeaderText="DETALLE" HeaderStyle-Width="80">
                                 <ItemTemplate>
                                     <button type="button" class="btn btn-outline-info btn-sm aud-btn-detalle"
-                                        onclick='mostrarDetalle(<%# Eval("IdAuditoria") %>)'
+                                        onclick='mostrarDetalle(<%#: Eval("IdAuditoria") %>)'
                                         data-anterior='<%# Server.HtmlEncode(Eval("ValoresAnteriores")?.ToString() ?? "") %>'
                                         data-nuevo='<%# Server.HtmlEncode(Eval("ValoresNuevos")?.ToString() ?? "") %>'
                                         data-desc='<%# Server.HtmlEncode(Eval("Descripcion")?.ToString() ?? "") %>'
-                                        data-ip='<%# Eval("DireccionIP") %>'
+                                        data-ip='<%#: Eval("DireccionIP") %>'
                                         data-nav='<%# Server.HtmlEncode(TruncateText(Eval("Navegador"), 80)) %>'>
                                         <i class="fas fa-search-plus"></i>
                                     </button>

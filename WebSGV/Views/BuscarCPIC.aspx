@@ -111,30 +111,30 @@
                                         <asp:TemplateField HeaderText="Archivo">
                                             <ItemTemplate>
                                                 <div class="documento-info">
-                                                    <i class="fa <%# ObtenerIconoArchivo(Eval("tipoArchivo").ToString()) %>"></i>
-                                                    <span class="nombre-archivo"><%# Eval("nombreOriginal") %></span>
-                                                    <small class="text-muted"><%# Eval("tipoArchivo") %></small>
+                                                    <i class="fa <%#: ObtenerIconoArchivo(Eval("tipoArchivo").ToString()) %>"></i>
+                                                    <span class="nombre-archivo"><%#: Eval("nombreOriginal") %></span>
+                                                    <small class="text-muted"><%#: Eval("tipoArchivo") %></small>
                                                 </div>
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                         <asp:TemplateField HeaderText="Tamaño">
                                             <ItemTemplate>
-                                                <span class="tamano-archivo"><%# FormatearTamano(Convert.ToInt64(Eval("tamanoBytes"))) %></span>
+                                                <span class="tamano-archivo"><%#: FormatearTamano(Convert.ToInt64(Eval("tamanoBytes"))) %></span>
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                         <asp:TemplateField HeaderText="Fecha subida">
                                             <ItemTemplate>
-                                                <span><%# Convert.ToDateTime(Eval("fechaSubida")).ToString("dd/MM/yyyy HH:mm") %></span>
+                                                <span><%#: Convert.ToDateTime(Eval("fechaSubida")).ToString("dd/MM/yyyy HH:mm") %></span>
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                         <asp:TemplateField HeaderText="Usuario">
                                             <ItemTemplate>
-                                                <span><%# Eval("usuarioSubida") %></span>
+                                                <span><%#: Eval("usuarioSubida") %></span>
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                         <asp:TemplateField HeaderText="Descripción">
                                             <ItemTemplate>
-                                                <span class="descripcion-doc"><%# Eval("descripcion") ?? "Sin descripción" %></span>
+                                                <span class="descripcion-doc"><%#: Eval("descripcion") ?? "Sin descripción" %></span>
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                         <asp:TemplateField HeaderText="Acciones">
@@ -183,7 +183,7 @@
                                 <Columns>
                                     <asp:TemplateField HeaderText="Producto">
                                         <ItemTemplate>
-                                            <asp:Label ID="lblProducto" runat="server" Text='<%# Eval("NombreProducto") %>'></asp:Label>
+                                            <asp:Label ID="lblProducto" runat="server" Text='<%#: Eval("NombreProducto") %>'></asp:Label>
                                         </ItemTemplate>
                                         <EditItemTemplate>
                                             <asp:DropDownList ID="ddlProductos" runat="server" CssClass="form-control producto-dropdown" DataTextField="Nombre" DataValueField="IdProducto">
@@ -192,7 +192,7 @@
                                     </asp:TemplateField>
                                     <asp:TemplateField HeaderText="Cantidad de bolsas">
                                         <ItemTemplate>
-                                            <asp:Label ID="lblCantidad" runat="server" Text='<%# Eval("Cantidad") %>'></asp:Label>
+                                            <asp:Label ID="lblCantidad" runat="server" Text='<%#: Eval("Cantidad") %>'></asp:Label>
                                         </ItemTemplate>
                                         <EditItemTemplate>
                                             <asp:TextBox ID="txtCantidad" runat="server" CssClass="form-control" Text='<%# Bind("Cantidad") %>' TextMode="Number" min="1"></asp:TextBox>

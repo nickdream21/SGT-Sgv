@@ -1054,7 +1054,7 @@
         var SGV = Object.assign(window.SGV || {}, {
             txtFechaSalida: '<%= txtFechaSalida.ClientID %>',
             txtFechaLlegada: '<%= txtFechaLlegada.ClientID %>',
-            ObtenerEstacionesPeajeJSON: '<%= ObtenerEstacionesPeajeJSON() %>'
+            ObtenerEstacionesPeajeJSON: '<%= HttpUtility.JavaScriptStringEncode(ObtenerEstacionesPeajeJSON()) %>'
         });
     </script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/AgregarOrdenViaje.js") %>"></script>

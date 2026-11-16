@@ -157,7 +157,7 @@ function llenarDatalistEstaciones() {
     const datalist = $('#listaEstaciones');
     datalist.empty();
     estacionesPeaje.forEach(est => {
-        datalist.append(`<option value="${est.nombre}">`);
+        datalist.append(`<option value="${SGV.escaparHtml(est.nombre)}">`);
     });
 }
 
@@ -206,9 +206,9 @@ function actualizarTablaPeajes() {
     peajesData.forEach(p => {
         tbody.append(`
             <tr>
-                <td>${p.estacion}</td>
-                <td>${p.fecha}</td>
-                <td>${p.comprobante || 'N/A'}</td>
+                <td>${SGV.escaparHtml(p.estacion)}</td>
+                <td>${SGV.escaparHtml(p.fecha)}</td>
+                <td>${SGV.escaparHtml(p.comprobante || 'N/A')}</td>
                 <td>S/ ${p.soles.toFixed(2)}</td>
                 <td>$ ${p.dolares.toFixed(2)}</td>
                 <td class="text-center"><button type="button" class="btn btn-danger btn-sm" onclick="eliminarPeaje(${p.id})"><i class="fas fa-trash"></i></button></td>
@@ -280,9 +280,9 @@ function actualizarTablaReparaciones() {
     reparacionesData.forEach(r => {
         tbody.append(`
             <tr>
-                <td>${r.tipo}</td>
-                <td>${r.fecha}</td>
-                <td>${r.comprobante || 'N/A'}</td>
+                <td>${SGV.escaparHtml(r.tipo)}</td>
+                <td>${SGV.escaparHtml(r.fecha)}</td>
+                <td>${SGV.escaparHtml(r.comprobante || 'N/A')}</td>
                 <td>S/ ${r.soles.toFixed(2)}</td>
                 <td>$ ${r.dolares.toFixed(2)}</td>
                 <td class="text-center"><button type="button" class="btn btn-danger btn-sm" onclick="eliminarReparacion(${r.id})"><i class="fas fa-trash"></i></button></td>
@@ -354,9 +354,9 @@ function actualizarTablaHospedajes() {
     hospedajesData.forEach(h => {
         tbody.append(`
             <tr>
-                <td>${h.lugar}</td>
-                <td>${h.fecha}</td>
-                <td>${h.comprobante || 'N/A'}</td>
+                <td>${SGV.escaparHtml(h.lugar)}</td>
+                <td>${SGV.escaparHtml(h.fecha)}</td>
+                <td>${SGV.escaparHtml(h.comprobante || 'N/A')}</td>
                 <td>S/ ${h.soles.toFixed(2)}</td>
                 <td>$ ${h.dolares.toFixed(2)}</td>
                 <td class="text-center"><button type="button" class="btn btn-danger btn-sm" onclick="eliminarHospedaje(${h.id})"><i class="fas fa-trash"></i></button></td>
@@ -428,9 +428,9 @@ function actualizarTablaCombustibles() {
     combustiblesData.forEach(c => {
         tbody.append(`
             <tr>
-                <td>${c.lugar}</td>
-                <td>${c.fecha}</td>
-                <td>${c.comprobante || 'N/A'}</td>
+                <td>${SGV.escaparHtml(c.lugar)}</td>
+                <td>${SGV.escaparHtml(c.fecha)}</td>
+                <td>${SGV.escaparHtml(c.comprobante || 'N/A')}</td>
                 <td>S/ ${c.soles.toFixed(2)}</td>
                 <td>$ ${c.dolares.toFixed(2)}</td>
                 <td class="text-center"><button type="button" class="btn btn-danger btn-sm" onclick="eliminarCombustible(${c.id})"><i class="fas fa-trash"></i></button></td>

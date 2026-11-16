@@ -4,7 +4,7 @@
 
     if (input.files && input.files[0]) {
         const fileName = input.files[0].name;
-        fileInfo.innerHTML = 'Archivo seleccionado: <strong>' + fileName + '</strong>';
+        fileInfo.innerHTML = 'Archivo seleccionado: <strong>' + SGV.escaparHtml(fileName) + '</strong>';
         btnProcesar.disabled = false;
     } else {
         fileInfo.innerHTML = 'Ningún archivo seleccionado';

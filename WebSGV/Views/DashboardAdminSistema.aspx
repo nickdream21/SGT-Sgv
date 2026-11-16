@@ -106,8 +106,8 @@
                     <asp:Repeater ID="rptRoles" runat="server">
                         <ItemTemplate>
                             <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
-                                <span class="small"><i class="fas fa-circle text-muted mr-2" style="font-size:.5rem;vertical-align:middle;"></i><%# Eval("rol") %></span>
-                                <span class="badge badge-primary badge-pill"><%# Eval("total") %></span>
+                                <span class="small"><i class="fas fa-circle text-muted mr-2" style="font-size:.5rem;vertical-align:middle;"></i><%#: Eval("rol") %></span>
+                                <span class="badge badge-primary badge-pill"><%#: Eval("total") %></span>
                             </div>
                         </ItemTemplate>
                     </asp:Repeater>
@@ -128,12 +128,12 @@
                         <ItemTemplate>
                             <div class="px-3 py-2 border-bottom">
                                 <div class="d-flex justify-content-between">
-                                    <span class="small font-weight-bold"><%# Eval("NombreUsuario") %></span>
-                                    <small class="text-muted"><%# Eval("FechaHora", "{0:dd/MM HH:mm}") %></small>
+                                    <span class="small font-weight-bold"><%#: Eval("NombreUsuario") %></span>
+                                    <small class="text-muted"><%#: Eval("FechaHora", "{0:dd/MM HH:mm}") %></small>
                                 </div>
                                 <small>
-                                    <span class="badge badge-secondary"><%# Eval("Accion") %></span>
-                                    <span class="text-muted"><%# Eval("TablaAfectada") %></span>
+                                    <span class="badge badge-secondary"><%#: Eval("Accion") %></span>
+                                    <span class="text-muted"><%#: Eval("TablaAfectada") %></span>
                                 </small>
                             </div>
                         </ItemTemplate>

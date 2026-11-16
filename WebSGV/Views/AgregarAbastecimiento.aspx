@@ -26,27 +26,27 @@
                     <div class="trip-info-item">
                         <span class="info-icon"><i class="fas fa-user"></i></span>
                         <span class="info-label">Conductor:</span>
-                        <span class="info-value"><asp:Literal ID="litConductor" runat="server" /></span>
+                        <span class="info-value"><asp:Literal ID="litConductor" runat="server" Mode="Encode" /></span>
                     </div>
                     <div class="trip-info-item">
                         <span class="info-icon"><i class="fas fa-truck-moving"></i></span>
                         <span class="info-label">Tracto:</span>
-                        <span class="info-value"><asp:Literal ID="litPlacaTracto" runat="server" /></span>
+                        <span class="info-value"><asp:Literal ID="litPlacaTracto" runat="server" Mode="Encode" /></span>
                     </div>
                     <div class="trip-info-item">
                         <span class="info-icon"><i class="fas fa-trailer"></i></span>
                         <span class="info-label">Carreta:</span>
-                        <span class="info-value"><asp:Literal ID="litPlacaCarreta" runat="server" /></span>
+                        <span class="info-value"><asp:Literal ID="litPlacaCarreta" runat="server" Mode="Encode" /></span>
                     </div>
                     <div class="trip-info-item">
                         <span class="info-icon"><i class="fas fa-route"></i></span>
                         <span class="info-label">Ruta:</span>
-                        <span class="trip-ruta-badge"><asp:Literal ID="litRutaViaje" runat="server" /></span>
+                        <span class="trip-ruta-badge"><asp:Literal ID="litRutaViaje" runat="server" Mode="Encode" /></span>
                     </div>
                     <div class="trip-info-item">
                         <span class="info-icon"><i class="fas fa-tint"></i></span>
                         <span class="info-label">GL asignados:</span>
-                        <span class="trip-gl-badge"><asp:Literal ID="litGLAsignados" runat="server" /></span>
+                        <span class="trip-gl-badge"><asp:Literal ID="litGLAsignados" runat="server" Mode="Encode" /></span>
                     </div>
                 </div>
             </div>
@@ -307,7 +307,7 @@
     <script>
         // Valores del servidor que usa el script de la página (ids de controles ASP.NET).
         var SGV = Object.assign(window.SGV || {}, {
-            hdnModoViajeValue: '<%= hdnModoViaje.Value %>',
+            hdnModoViajeValue: '<%= HttpUtility.JavaScriptStringEncode(hdnModoViaje.Value) %>',
             txtGLComprados: '<%= txtGLComprados.ClientID %>',
             txtMontoTotal: '<%= txtMontoTotal.ClientID %>',
             hdnTicketsData: '<%= hdnTicketsData.ClientID %>',
