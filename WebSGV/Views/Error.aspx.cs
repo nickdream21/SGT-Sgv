@@ -11,56 +11,23 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            Exception lastError = null;
-
-            // 1) Buscar primero en HttpContext.Items (mismo request)
-            if (Context.Items["LastErrorReal"] is Exception fromItems)
-                lastError = fromItems;
-
-            // 2) Server.GetLastError (puede ser null en sub-request de IIS httpErrors)
-            if (lastError == null)
-                lastError = Server.GetLastError();
-
-            // 3) Application state (guardado por Global.asax cuando IIS hace sub-request).
-            //    Solo el error de ESTA sesión, nunca el de otro usuario.
-            if (lastError == null)
-            {
-                try
-                {
-                    string sessionId = Context.Session?.SessionID;
-                    if (!string.IsNullOrEmpty(sessionId))
-                    {
-                        string key = "LastError_" + sessionId;
-                        lastError = Application[key] as Exception;
-                        if (lastError != null)
-                            Application.Remove(key); // no mostrar el mismo error en navegaciones futuras
-                    }
-                }
-                catch
-                {
-                    // Recuperación best-effort del último error guardado: si falla, se traga
-                    // a propósito (esta ES la página de error; no debe lanzar ni encadenar logging).
-                }
-            }
+            // Solo hay excepción si Error.aspx se ejecuta en la misma petición que falló; si llega
+            // por el 302 de customErrors (Release) o por httpErrors de IIS es null y se muestra
+            // el mensaje genérico. El registro en el log lo hace Global.asax.
+            Exception lastError = Server.GetLastError();
 
             if (lastError != null)
             {
-                // Desenvolver capas
-                Exception real = lastError;
-                while ((real is System.Web.HttpUnhandledException) && real.InnerException != null)
-                    real = real.InnerException;
+                Exception real = WebSGV.Helpers.ErrorAplicacionHelper.Desenvolver(lastError);
 
                 // El detalle técnico (tipo, mensaje SQL, stack) solo se muestra con
-                // compilation debug="true" (desarrollo). En Release se registra en el log.
+                // compilation debug="true" (desarrollo). El registro en el log lo hace
+                // Global.asax (Application_Error), una sola vez.
                 if (Context.IsDebuggingEnabled)
                 {
                     ErrorTipo = System.Web.HttpUtility.HtmlEncode(real.GetType().FullName);
                     ErrorDetalle = System.Web.HttpUtility.HtmlEncode(real.Message ?? "");
                     ErrorStack = System.Web.HttpUtility.HtmlEncode(real.StackTrace ?? "");
-                }
-                else
-                {
-                    WebSGV.Helpers.LogSGV.Error(real, "Error no controlado mostrado en Error.aspx");
                 }
 
                 System.Diagnostics.Debug.WriteLine($"❌ ERROR 500 mostrado en Error.aspx: {real.Message}");

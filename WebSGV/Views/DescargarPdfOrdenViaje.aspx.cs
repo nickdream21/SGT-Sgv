@@ -75,7 +75,6 @@ namespace WebSGV.Views
                 Response.AddHeader("Content-Disposition", disposicion);
                 Response.AddHeader("Content-Length", pdf.Bytes.Length.ToString());
                 Response.AddHeader("X-PDF-SHA256", pdf.Hash);
-                Response.AddHeader("X-Content-Type-Options", "nosniff");
                 Response.Cache.SetCacheability(HttpCacheability.Private);
 
                 Response.BinaryWrite(pdf.Bytes);

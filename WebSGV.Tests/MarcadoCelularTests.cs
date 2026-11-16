@@ -116,7 +116,8 @@ namespace WebSGV.Tests
                 }
             }
 
-            Assert.True(revisadas > 50, "El análisis no encontró tablas: revise la expresión.");
+            // Solo comprueba que la expresión encuentra tablas (había 51; 50 tras retirar ConsultaAuditoria.aspx).
+            Assert.True(revisadas > 40, "El análisis no encontró tablas: revise la expresión.");
             Assert.True(fallas.Count == 0,
                 "Tablas sin contenedor que se desplace (envuélvalas en <div class=\"table-responsive\">):\n" + string.Join("\n", fallas));
         }

@@ -353,7 +353,6 @@ Tiene **todos los permisos del Administrador de Transporte** más acceso exclusi
 | Página | Función |
 |--------|---------|
 | `Auditoria.aspx` | Log principal de auditoría con estadísticas, filtros y exportación |
-| `ConsultaAuditoria.aspx` | Segunda vista de consulta de auditoría (filtros alternativos) |
 
 | Función | Descripción |
 |---------|-------------|
@@ -557,9 +556,8 @@ El sistema usa detección dinámica de columnas via `ColumnaExisteEnTabla()` (co
 
 ## ⚠️ Notas de Infraestructura
 
-- **`Application_Error` (`Global.asax.cs`)**: Errores de ViewState redirigen silenciosamente a `Login.aspx?error=sesion`. Otros errores solo se loguean en Debug (no van a `Error.aspx`).
+- **`Application_Error` (`Global.asax.cs`)**: todo error se registra una vez con `LogSGV` (`App_Data/logs`). ViewState inválido o vencido → advertencia y redirección a `Login.aspx?error=sesion`; 404 → info; el resto → error con ruta y usuario. En Release (`customErrors` RemoteOnly) el usuario remoto va a `Error.aspx` con un mensaje genérico; en desarrollo se ve la pantalla de error de ASP.NET.
 - **Routing**: `RouteConfig.cs` está vacío. No hay routing real — las páginas se acceden por URL física `.aspx`.
-- **Páginas de artefacto** (no usar en producción): `TestGenerarPdfOrdenViaje.aspx`, `WebForm2.aspx`.
 - **PDFs archivados**: En `~/App_Data/OrdenesViaje` — **no commit** de esta carpeta.
 - **Secretos**: `connectionStrings.config` y `appSettings.Secrets.config` están **gitignoreados**. Nunca commitear.
 

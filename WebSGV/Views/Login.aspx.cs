@@ -115,9 +115,7 @@ namespace WebSGV.Views
 
         protected void btnLogin_Click(object sender, EventArgs e)
         {
-            // Agregar cabeceras de seguridad en la respuesta del login
-            Response.Headers.Add("X-Frame-Options", "SAMEORIGIN");
-            Response.Headers.Add("X-Content-Type-Options", "nosniff");
+            // Las cabeceras de seguridad vienen de Web.config; aquí solo se evita la caché.
             Response.Cache.SetCacheability(HttpCacheability.NoCache);
             Response.Cache.SetNoStore();
 

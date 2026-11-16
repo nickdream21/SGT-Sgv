@@ -95,8 +95,6 @@
     </Reference>
     <Reference Include="System.Security" />
     <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Web.DataVisualization" />
-    <Reference Include="System.Web.DataVisualization.Design" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Drawing" />
@@ -393,7 +391,6 @@
     <Content Include="Scripts\paginas\BuscarAbastecimiento.js" />
     <Content Include="Scripts\paginas\CargarExcel.js" />
     <Content Include="Scripts\paginas\CatalogoCliente.js" />
-    <Content Include="Scripts\paginas\ConsultaAuditoria.js" />
     <Content Include="Scripts\paginas\Dashboard.js" />
     <Content Include="Scripts\paginas\DashboardConductor.js" />
     <Content Include="Scripts\paginas\DashboardGrifo.js" />
@@ -437,7 +434,6 @@
     <Content Include="Views\Auditoria.aspx" />
     <Content Include="Views\BuscarAbastecimiento.aspx" />
     <Content Include="Views\CargarExcel.aspx" />
-    <Content Include="Views\ConsultaAuditoria.aspx" />
     <Content Include="Views\Dashboard.aspx" />
     <Content Include="Views\DashboardAdminSistema.aspx" />
     <Content Include="Views\GestionUsuarios.aspx" />
@@ -493,7 +489,6 @@
     <Content Include="Views\ReporteAbastecimiento.aspx" />
     <Content Include="Views\ReportesOrdenesViaje.aspx" />
     <Content Include="Views\RestablecerContrasena.aspx" />
-    <Content Include="Views\TestGenerarPdfOrdenViaje.aspx" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
@@ -504,6 +499,7 @@
     <Compile Include="Helpers\AuditoriaHelper.cs" />
     <Compile Include="Helpers\DbHelper.cs" />
     <Compile Include="Helpers\SesionVigenteHelper.cs" />
+    <Compile Include="Helpers\ErrorAplicacionHelper.cs" />
     <Compile Include="Helpers\IpClienteHelper.cs" />
     <Compile Include="Helpers\JsonSeguro.cs" />
     <Compile Include="Helpers\MensajeHtml.cs" />
@@ -670,13 +666,6 @@
     </Compile>
     <Compile Include="Views\CargarExcel.aspx.designer.cs">
       <DependentUpon>CargarExcel.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\ConsultaAuditoria.aspx.cs">
-      <DependentUpon>ConsultaAuditoria.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\ConsultaAuditoria.aspx.designer.cs">
-      <DependentUpon>ConsultaAuditoria.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\Exportacion\DashboardExportacion.aspx.cs">
       <DependentUpon>DashboardExportacion.aspx</DependentUpon>
@@ -1028,10 +1017,6 @@
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Views\RolesHelper.cs" />
-    <Compile Include="Views\TestGenerarPdfOrdenViaje.aspx.cs">
-      <DependentUpon>TestGenerarPdfOrdenViaje.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
     <Compile Include="Helpers\SecurityHelper.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Web;
 using System.Web.UI;
 
@@ -153,25 +152,15 @@ namespace WebSGV.Helpers
         // ── Headers de seguridad HTTP ──────────────────────────────────────
 
         /// <summary>
-        /// Agrega cabeceras HTTP de seguridad a la respuesta actual.
-        /// Llamar desde Page_Load de cada página protegida.
+        /// Evita que el navegador o un proxy guarden en caché la página protegida actual.
+        /// Llamar desde Page_Load de cada página protegida. Las cabeceras de seguridad
+        /// (anti-clickjacking, nosniff, Referrer-Policy, HSTS) se envían a todo el sitio
+        /// desde Web.config / Web.Release.config (system.webServer/httpProtocol), no desde aquí.
         /// </summary>
         public static void AgregarHeadersSeguridad()
         {
             var response = HttpContext.Current?.Response;
             if (response == null) return;
-
-            // Anti-clickjacking
-            if (!response.Headers.AllKeys.Contains("X-Frame-Options"))
-                response.Headers.Add("X-Frame-Options", "SAMEORIGIN");
-
-            // Prevenir MIME sniffing
-            if (!response.Headers.AllKeys.Contains("X-Content-Type-Options"))
-                response.Headers.Add("X-Content-Type-Options", "nosniff");
-
-            // XSS básico (IE legacy)
-            if (!response.Headers.AllKeys.Contains("X-XSS-Protection"))
-                response.Headers.Add("X-XSS-Protection", "1; mode=block");
 
             // No cachear páginas protegidas
             response.Cache.SetCacheability(HttpCacheability.NoCache);

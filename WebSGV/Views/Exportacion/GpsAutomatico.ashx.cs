@@ -26,7 +26,6 @@ namespace WebSGV.Views.Exportacion
             ctx.Response.ContentType = "application/json";
             ctx.Response.Cache.SetCacheability(HttpCacheability.NoCache);
             ctx.Response.Cache.SetNoStore();
-            ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
 
             if (ctx.Request.QueryString["estado"] == "1")
             {

@@ -517,7 +517,10 @@ namespace WebSGV.Views
         {
             // Los WebMethods no pasan por Page_Load: validar sesión y rol aquí.
             if (!SecurityHelper.TieneSesionActiva() || !SecurityHelper.EsAdminOSupervisor())
-                throw new UnauthorizedAccessException("Acceso no autorizado.");
+            {
+                LogSGV.Advertencia("ObtenerDetalleOrden sin sesión o sin permiso (orden {IdOrden})", idOrden);
+                return "<div class='alert alert-warning'>La sesión ya no está activa o no tiene permiso. Vuelva a ingresar.</div>";
+            }
 
             try
             {

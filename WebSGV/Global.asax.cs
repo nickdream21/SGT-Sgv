@@ -169,39 +169,55 @@ namespace WebSGV
             CompleteRequest();
         }
 
+        /// <summary>
+        /// Errores no controlados (auditoría de seguridad, tarea 6). Cada error se registra una sola
+        /// vez, aquí: ViewState → advertencia y al Login; 404 → info; el resto → error con la ruta y
+        /// el usuario. En Release (customErrors RemoteOnly) el usuario remoto llega a Error.aspx por
+        /// un 302 (petición nueva, sin la excepción) y ve solo el mensaje genérico; el detalle queda
+        /// en el log. En desarrollo (customErrors Off) se ve la pantalla de error de ASP.NET.
+        /// </summary>
         void Application_Error(object sender, EventArgs e)
         {
-            Exception ex = Server.GetLastError();
-            if (ex != null)
+            try
             {
-                // Desenvolver para tener la excepción real (HttpUnhandledException la envuelve)
-                Exception real = ex;
-                while ((real is HttpUnhandledException) && real.InnerException != null)
-                    real = real.InnerException;
+                Exception real = ErrorAplicacionHelper.Desenvolver(Server.GetLastError());
+                if (real == null)
+                    return;
 
-                // Si es un error de ViewState, redirigir al login
-                if (real is HttpException &&
-                    (real.Message.Contains("ViewState") || real.Message.Contains("viewstate")))
+                string ruta = Request.RawUrl;
+
+                if (ErrorAplicacionHelper.EsErrorViewState(real))
                 {
+                    LogSGV.Advertencia("ViewState inválido o vencido en {Ruta}; se envía al Login. {Error}", ruta, real.Message);
                     Server.ClearError();
                     Response.Redirect("~/Views/Login.aspx?error=sesion", false);
-                    HttpContext.Current.ApplicationInstance.CompleteRequest();
+                    CompleteRequest();
                     return;
                 }
 
-                // Guardar la excepción REAL en Application para que Error.aspx pueda recuperarla
-                // incluso cuando IIS ejecute Error.aspx en un sub-request donde
-                // Server.GetLastError() retornaría null. La clave es por sesión: antes existía
-                // una clave global "LastError_LastKey" y cualquier visitante veía el último
-                // error de otro usuario.
-                try
+                if (ErrorAplicacionHelper.EsNoEncontrado(real))
                 {
-                    string sessionId = HttpContext.Current?.Session?.SessionID;
-                    if (!string.IsNullOrEmpty(sessionId))
-                        Application["LastError_" + sessionId] = real;
+                    LogSGV.Info("Recurso no encontrado: {Ruta}", ruta);
+                    return;
                 }
-                catch { /* nunca dejar reventar Application_Error */ }
+
+                object idUsuario = null;
+                try { idUsuario = Context.Session?["UsuarioID"]; }
+                catch { /* sin sesión en este punto del pipeline */ }
+
+                LogSGV.Error(real, "Error no controlado en {Ruta} (usuario {IdUsuario})", ruta, idUsuario);
             }
+            catch
+            {
+                // Application_Error nunca debe lanzar: dejaría al usuario con la pantalla de IIS.
+            }
+        }
+
+        /// <summary>Quita la cabecera "Server" (versión de IIS) de todas las respuestas.</summary>
+        void Application_PreSendRequestHeaders(object sender, EventArgs e)
+        {
+            try { Response.Headers.Remove("Server"); }
+            catch { /* modo clásico o cabeceras ya enviadas: no hay nada que hacer */ }
         }
     }
 }
