@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Configuration;
-using System.Data;
 using System.Data.SqlClient;
 using System.Web;
 
@@ -193,12 +192,10 @@ namespace WebSGV.Helpers
                         cmd.ExecuteNonQuery();
                     }
                 }
-
-                System.Diagnostics.Debug.WriteLine("✅ Tabla AuditoriaLog verificada/creada correctamente");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error al crear tabla AuditoriaLog: {ex.Message}");
+                LogSGV.Error(ex, "No se pudo verificar/crear la tabla AuditoriaLog");
             }
         }
     }

@@ -62,7 +62,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error cargando datos viaje: {ex.Message}");
+                LogSGV.Error(ex, "RegistrarRetornoEcuador: error cargando datos del viaje");
             }
         }
 

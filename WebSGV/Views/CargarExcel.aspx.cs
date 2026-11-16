@@ -214,8 +214,8 @@ namespace WebSGV.Views
                                 }
                                 catch (Exception ex)
                                 {
-                                    // Log del error pero continuar con la siguiente fila
-                                    System.Diagnostics.Debug.WriteLine($"Error procesando fila {row}: {ex.Message}");
+                                    // Registrar el error pero continuar con la siguiente fila
+                                    LogSGV.Error(ex, "CargarExcel: fila {Fila} no se pudo procesar", row);
                                 }
                             }
 

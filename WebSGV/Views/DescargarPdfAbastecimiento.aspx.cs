@@ -139,21 +139,7 @@ namespace WebSGV.Views
 
         private static void LogError(Exception ex)
         {
-            try
-            {
-                System.Diagnostics.Debug.WriteLine("DescargarPdfAbastecimiento: " + ex);
-                string dir = HostingEnvironment.MapPath("~/App_Data/logs");
-                if (string.IsNullOrEmpty(dir)) return;
-                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-                string linea = "[" + FechaHelper.Ahora().ToString("yyyy-MM-dd HH:mm:ss") + "] " + ex + Environment.NewLine +
-                               new string('-', 80) + Environment.NewLine;
-                File.AppendAllText(Path.Combine(dir, "pdf-abastecimiento.log"), linea);
-            }
-            catch
-            {
-                // Logger de último recurso: si la escritura del propio log falla, se traga
-                // a propósito (no hay dónde registrarlo sin recursión).
-            }
+            LogSGV.Error(ex, "DescargarPdfAbastecimiento: error generando el PDF");
         }
 
         private static void CargarDto(

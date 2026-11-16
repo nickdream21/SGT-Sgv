@@ -60,12 +60,6 @@ namespace WebSGV.Views
                     lugarAbastecimiento.DataTextField = "nombreAbastecimiento";
                     lugarAbastecimiento.DataValueField = "idLugarAbastecimiento";
                     lugarAbastecimiento.DataBind();
-
-                    // Registrar los valores disponibles para depuración
-                    foreach (DataRow row in dt.Rows)
-                    {
-                        RegistrarInfo($"LugarAbastecimiento disponible: ID={row["idLugarAbastecimiento"]}, Nombre={row["nombreAbastecimiento"]}");
-                    }
                 }
                 else
                 {
@@ -82,7 +76,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("Error al cargar lugares de abastecimiento: " + ex.Message);
+                RegistrarError(ex, "error al cargar lugares de abastecimiento");
             }
         }
         private void CargarPlacasTracto()
@@ -102,7 +96,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("Error al cargar placas tracto: " + ex.Message);
+                RegistrarError(ex, "error al cargar placas tracto");
             }
         }
 
@@ -119,7 +113,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("Error al cargar placas volquete: " + ex.Message);
+                RegistrarError(ex, "error al cargar placas volquete");
             }
         }
 
@@ -136,7 +130,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("Error al cargar placas camioneta: " + ex.Message);
+                RegistrarError(ex, "error al cargar placas camioneta");
             }
         }
 
@@ -155,8 +149,6 @@ namespace WebSGV.Views
 
                 if (string.IsNullOrEmpty(idViaje))
                     return;
-
-                RegistrarInfo($"Pre-poblando desde viaje: idViaje={idViaje}, idConductor={idConductor}, idTracto={idTracto}, idCarreta={idCarreta}");
 
                 // Activar modo viaje
                 hdnModoViaje.Value = "1";
@@ -186,7 +178,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("Error al pre-poblar desde viaje: " + ex.Message);
+                RegistrarError(ex, "error al pre-poblar desde viaje");
             }
         }
 
@@ -231,8 +223,6 @@ namespace WebSGV.Views
                     : "Sin definir";
                 litRutaViaje.Text = rutaDesc;
 
-                RegistrarInfo($"Ruta viaje: {rutaDesc}");
-
                 // Aplicar reglas de galones según destino final
                 string glSugeridos = "—";
                 if (ultimoDestino.Contains("FRONTERA"))
@@ -257,7 +247,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("Error al obtener info del viaje: " + ex.Message);
+                RegistrarError(ex, "error al obtener info del viaje");
             }
         }
         private void CargarTiposCarro()
@@ -277,12 +267,6 @@ namespace WebSGV.Views
                     tipoVehiculo.DataValueField = "idTipoCarro";
                     tipoVehiculo.DataBind();
 
-                    // Registrar los valores disponibles para depuración
-                    foreach (DataRow row in dt.Rows)
-                    {
-                        RegistrarInfo($"TipoCarro disponible: ID={row["idTipoCarro"]}, Nombre={row["nombre"]}");
-                    }
-
                     // Seleccionar "Camión" por defecto (valor 2)
                     if (tipoVehiculo.Items.FindByValue("2") != null)
                     {
@@ -298,7 +282,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("Error al cargar tipos de carro: " + ex.Message);
+                RegistrarError(ex, "error al cargar tipos de carro");
             }
         }
 
@@ -319,7 +303,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("Error al cargar placas carreta: " + ex.Message);
+                RegistrarError(ex, "error al cargar placas carreta");
             }
         }
 
@@ -340,7 +324,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("Error al cargar conductores: " + ex.Message);
+                RegistrarError(ex, "error al cargar conductores");
             }
         }
 
@@ -352,7 +336,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("Error al ejecutar consulta: " + ex.Message);
+                RegistrarError(ex, "error al ejecutar consulta");
                 throw;
             }
         }
@@ -365,8 +349,6 @@ namespace WebSGV.Views
         {
             try
             {
-                RegistrarInfo("Botón Guardar presionado - Iniciando proceso de guardado");
-
                 if (ValidarDatos())
                 {
                     GuardarAbastecimiento();
@@ -418,10 +400,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                // Registro detallado de errores
-                RegistrarError("ERROR EN GUARDAR: " + ex.ToString());
-
-                // Mensaje para el usuario
+                // Mensaje para el usuario (ParaUsuario ya registra el error con su stack)
                 string errorMsg = HttpUtility.JavaScriptStringEncode("Error al guardar: " + MensajeErrorHelper.ParaUsuario(ex));
                 ScriptManager.RegisterStartupScript(this, this.GetType(), "mensajeError",
                     $"mostrarMensaje('{errorMsg}', 'error');", true);
@@ -573,7 +552,6 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("Error en ValidarDatos: " + ex.Message);
                 MostrarMensaje("Error de validación: " + MensajeErrorHelper.ParaUsuario(ex), "error");
                 return false;
             }
@@ -797,7 +775,7 @@ namespace WebSGV.Views
                             }
                             catch (Exception ex)
                             {
-                                RegistrarError("Error al convertir hora retorno: " + ex.Message);
+                                RegistrarError(ex, "error al convertir hora retorno");
                             }
                         }
                         cmd.Parameters.Add("@horaRetorno", SqlDbType.Time).Value = horaRetornoValue;
@@ -823,8 +801,7 @@ namespace WebSGV.Views
                         cmd.Parameters.Add("@idCamioneta", SqlDbType.Int).Value = camionetaValue;
 
                         // Ejecutar el procedimiento almacenado
-                        int filasAfectadas = cmd.ExecuteNonQuery();
-                        RegistrarInfo($"Filas afectadas: {filasAfectadas}");
+                        cmd.ExecuteNonQuery();
                     }
 
                     tx.Commit();
@@ -841,21 +818,17 @@ namespace WebSGV.Views
                     }
                     catch (Exception exPdf)
                     {
-                        RegistrarError("No se pudo generar el PDF del abastecimiento: " + exPdf.Message);
+                        RegistrarError(exPdf, "no se pudo generar el PDF del abastecimiento");
                     }
                 }
                 catch (SqlException sqlEx)
                 {
                     try { tx?.Rollback(); } catch { /* la conexión pudo haberse roto */ }
-                    RegistrarError($"ERROR SQL (Número: {sqlEx.Number}): {sqlEx.Message}");
                     throw new Exception($"Error de base de datos: {sqlEx.Message}", sqlEx);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     try { tx?.Rollback(); } catch { /* la conexión pudo haberse roto */ }
-                    RegistrarError($"ERROR GUARDAR: {ex.Message}");
-                    if (ex.InnerException != null)
-                        RegistrarError($"INNER EXCEPTION: {ex.InnerException.Message}");
                     throw;
                 }
                 finally
@@ -886,7 +859,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("Error al buscar orden viaje relacionada: " + ex.Message);
+                RegistrarError(ex, "error al buscar orden viaje relacionada");
             }
             return null;
         }
@@ -902,14 +875,13 @@ namespace WebSGV.Views
                     return;
                 }
 
-                int rows = DbHelper.EjecutarNonQuery(
+                DbHelper.EjecutarNonQuery(
                     "UPDATE ViajesEnProgreso SET estadoViaje = 'ABASTECIDO' WHERE idViajeProgreso = @idViaje",
                     DbHelper.Param("@idViaje", idViaje));
-                RegistrarInfo($"ViajesEnProgreso actualizado a ABASTECIDO para idViaje={idViaje}, filas={rows}");
             }
             catch (Exception ex)
             {
-                RegistrarError("Error al actualizar estado del viaje: " + ex.Message);
+                RegistrarError(ex, "error al actualizar estado del viaje");
             }
         }
 
@@ -919,31 +891,25 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            RegistrarInfo($"Mostrando mensaje ({tipo}): {mensaje}");
-
             ScriptManager.RegisterStartupScript(this, this.GetType(), "mensajeAlerta",
                 $"mostrarMensaje('{HttpUtility.JavaScriptStringEncode(mensaje)}', '{tipo}');", true);
         }
 
         private void LimpiarFormulario()
         {
-            RegistrarInfo("Limpiando formulario");
-
             // Usar la función JavaScript existente
             ScriptManager.RegisterStartupScript(this, this.GetType(), "limpiarForm",
                 "limpiarFormulario();", true);
         }
 
-        private void RegistrarInfo(string mensaje)
+        private static void RegistrarError(string mensaje)
         {
-            // Log para información
-            System.Diagnostics.Debug.WriteLine($"INFO [{FechaHelper.Ahora().ToString("HH:mm:ss")}]: {mensaje}");
+            LogSGV.Error("AgregarAbastecimiento: {Mensaje}", mensaje);
         }
 
-        private void RegistrarError(string mensaje)
+        private static void RegistrarError(Exception ex, string contexto)
         {
-            // Log para errores
-            System.Diagnostics.Debug.WriteLine($"ERROR [{FechaHelper.Ahora().ToString("HH:mm:ss")}]: {mensaje}");
+            LogSGV.Error(ex, "AgregarAbastecimiento: {Contexto}", contexto);
         }
 
         #endregion
@@ -1054,8 +1020,8 @@ namespace WebSGV.Views
 
             if (!tieneRuta && !tieneHash && !tieneFecha)
             {
-                RegistrarInfo("PDF generado pero las columnas de persistencia no existen aún. " +
-                              "Ejecute script_AgregarPdfAbastecimiento.sql.");
+                LogSGV.Advertencia("AgregarAbastecimiento: PDF generado pero las columnas de persistencia no existen aún. " +
+                                   "Ejecute script_AgregarPdfAbastecimiento.sql.");
                 return;
             }
 
@@ -1076,8 +1042,6 @@ namespace WebSGV.Views
                 cmdU.Parameters.AddWithValue("@id", dto.IdAbastecimientoCombustible);
                 cmdU.ExecuteNonQuery();
             }
-
-            RegistrarInfo($"PDF SGV-CDF-F-06 archivado: {resultado.RutaRelativa}");
         }
 
         private static decimal LeerDec(System.Data.IDataRecord rd, string col)

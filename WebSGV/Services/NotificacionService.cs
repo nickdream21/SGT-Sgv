@@ -10,8 +10,8 @@ namespace WebSGV.Services
 {
     /// <summary>
     /// Envía notificaciones por email para eventos clave del flujo de liquidaciones.
-    /// Todas las llamadas son fire-and-forget: si el envío falla, se registra en Debug
-    /// pero nunca interrumpe la operación principal.
+    /// Todas las llamadas son fire-and-forget: si el envío falla (o el SMTP no está
+    /// configurado), se registra con <see cref="LogSGV"/> pero nunca interrumpe la operación principal.
     /// </summary>
     public static class NotificacionService
     {
@@ -26,7 +26,10 @@ namespace WebSGV.Services
                 string pass = ConfigurationManager.AppSettings["SmtpPass"];
 
                 if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(user))
-                    return; // SMTP no configurado
+                {
+                    LogSGV.Advertencia("SMTP no configurado: no se envió el correo '{Asunto}'", asunto);
+                    return;
+                }
 
                 int  port = int.TryParse(ConfigurationManager.AppSettings["SmtpPort"], out int p) ? p : 587;
                 bool ssl  = bool.TryParse(ConfigurationManager.AppSettings["SmtpSSL"],  out bool s) && s;
@@ -47,7 +50,7 @@ namespace WebSGV.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NotificacionService] Error enviando a {para}: {ex.Message}");
+                LogSGV.Error(ex, "No se pudo enviar el correo '{Asunto}' a {Destinatario}", asunto, para);
             }
         }
 
@@ -95,7 +98,7 @@ namespace WebSGV.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NotificacionService] NotificarLiquidacionRechazada: {ex.Message}");
+                LogSGV.Error(ex, "NotificacionService.NotificarLiquidacionRechazada: no se pudo preparar la notificación");
             }
         }
 
@@ -140,7 +143,7 @@ namespace WebSGV.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NotificacionService] NotificarLiquidacionPendiente: {ex.Message}");
+                LogSGV.Error(ex, "NotificacionService.NotificarLiquidacionPendiente: no se pudo preparar la notificación");
             }
         }
 
@@ -183,7 +186,7 @@ namespace WebSGV.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NotificacionService] NotificarLiquidacionPorConformar: {ex.Message}");
+                LogSGV.Error(ex, "NotificacionService.NotificarLiquidacionPorConformar: no se pudo preparar la notificación");
             }
         }
 
@@ -222,7 +225,7 @@ namespace WebSGV.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NotificacionService] NotificarObservacionConductor: {ex.Message}");
+                LogSGV.Error(ex, "NotificacionService.NotificarObservacionConductor: no se pudo preparar la notificación");
             }
         }
 

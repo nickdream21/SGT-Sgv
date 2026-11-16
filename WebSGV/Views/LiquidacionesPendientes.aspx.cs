@@ -97,7 +97,6 @@ namespace WebSGV.Views
                 // Verificar que el usuario tenga sesión
                 if (Session["UsuarioID"] == null || IdUsuarioActual == 0)
                 {
-                    System.Diagnostics.Debug.WriteLine("❌ Usuario sin sesión - Redirigiendo al login");
                     Response.Redirect("~/Views/Login.aspx?error=sesion");
                     return;
                 }
@@ -105,12 +104,9 @@ namespace WebSGV.Views
                 // Solo ADMIN y SUPERVISOR pueden gestionar liquidaciones (whitelist)
                 if (!RolesHelper.TienePermiso("ORDEN_VIAJE"))
                 {
-                    System.Diagnostics.Debug.WriteLine($"⚠️ Acceso denegado a LiquidacionesPendientes - Rol: {Session["Rol"]}");
                     RolesHelper.RedirigirSegunRol();
                     return;
                 }
-
-                System.Diagnostics.Debug.WriteLine($"✅ Acceso permitido - Usuario: {NombreUsuarioActual}");
             }
             catch (Exception ex)
             {
@@ -123,11 +119,7 @@ namespace WebSGV.Views
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("=== INICIALIZANDO LIQUIDACIONES PENDIENTES ===");
-
                 CargarLiquidacionesPendientes();
-
-                System.Diagnostics.Debug.WriteLine("✅ Página inicializada correctamente");
             }
             catch (Exception ex)
             {
@@ -144,8 +136,6 @@ namespace WebSGV.Views
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("--- Cargando liquidaciones pendientes ---");
-
                 if (!TryObtenerFiltrosPendientes(out int? idConductor, out DateTime? fechaDesde, out DateTime? fechaHasta, out string prioridad, out string mensajeValidacion))
                 {
                     MostrarMensaje(mensajeValidacion, "warning");
@@ -198,10 +188,6 @@ namespace WebSGV.Views
                         // Vincular al GridView
                         gvLiquidacionesPendientes.DataSource = dt;
                         gvLiquidacionesPendientes.DataBind();
-
-                        System.Diagnostics.Debug.WriteLine($"✅ {dt.Rows.Count} liquidaciones cargadas en GridView");
-                        System.Diagnostics.Debug.WriteLine($"   - Total pendientes: {totalPendientes}");
-                System.Diagnostics.Debug.WriteLine($"   - Total urgentes: {totalUrgentes}");
             }
             catch (Exception ex)
             {
@@ -218,8 +204,6 @@ namespace WebSGV.Views
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("=== RECHAZANDO LIQUIDACIÓN ===");
-
                 // Obtener valores del formulario
                 int idOrdenViaje = int.TryParse(hfIdOrdenSeleccionada.Value, out int id) ? id : 0;
                 string observaciones = Request.Form["observacionesRechazo"] ?? "";
@@ -259,10 +243,6 @@ namespace WebSGV.Views
                     return;
                 }
 
-                System.Diagnostics.Debug.WriteLine($"Número Orden: {numeroOrdenViaje}");
-                System.Diagnostics.Debug.WriteLine($"Usuario: {NombreUsuarioActual} (ID: {IdUsuarioActual})");
-                System.Diagnostics.Debug.WriteLine($"Observaciones: {observaciones}");
-
                 // Llamar al stored procedure
                 DataTable dt = LiquidacionesPendientesService.Rechazar(numeroOrdenViaje, IdUsuarioActual, observaciones);
 
@@ -271,14 +251,8 @@ namespace WebSGV.Views
                     int resultado = Convert.ToInt32(dt.Rows[0]["Resultado"]);
                     string mensaje = dt.Rows[0]["Mensaje"].ToString();
 
-                    if (resultado == 1)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"✅ {mensaje}");
-                    }
-                    else
-                    {
+                    if (resultado != 1)
                         throw new ErrorNegocioException(mensaje);
-                    }
                 }
 
                 AuditoriaHelper.Registrar("RECHAZAR", "OrdenViaje", idOrdenViaje,
@@ -379,21 +353,15 @@ namespace WebSGV.Views
                 if (!PuedeConsultarOrden(idOrdenViaje))
                     return null;
 
-                System.Diagnostics.Debug.WriteLine($"=== OBTENIENDO DETALLE LIQUIDACIÓN: {idOrdenViaje} ===");
-
                 // SQL movido a LiquidacionesPendientesService (sólo lectura); la sesión se
                 // valida arriba en el WebMethod.
                 DetalleLiquidacion detalle = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrdenViaje);
-
-                if (detalle == null)
-                    System.Diagnostics.Debug.WriteLine($"⚠️ No se encontró la liquidación {idOrdenViaje}");
 
                 return detalle;
             }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al obtener el detalle de la liquidación en LiquidacionesPendientes");
-                System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
                 throw;
             }
         }
@@ -539,8 +507,6 @@ namespace WebSGV.Views
                 if (!string.IsNullOrEmpty(numeroOrden) && !Regex.IsMatch(numeroOrden, "^[A-Za-z0-9_/-]+$"))
                     return new List<LiquidacionAprobadaItem>();
 
-                System.Diagnostics.Debug.WriteLine("=== OBTENIENDO LIQUIDACIONES APROBADAS ===");
-
                 var lista = new List<LiquidacionAprobadaItem>();
 
                     DataTable dt = LiquidacionesPendientesService.ObtenerAprobadas(
@@ -577,8 +543,6 @@ namespace WebSGV.Views
                                     Pagada = Convert.ToInt32(reader["Pagada"]) == 1
                                 });
                     }
-
-                System.Diagnostics.Debug.WriteLine($"✅ {lista.Count} liquidaciones aprobadas encontradas");
                 return lista;
             }
             catch (Exception ex)

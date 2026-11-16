@@ -187,10 +187,6 @@ namespace WebSGV.Views
                 // Ocultar el loader
                 loader.Visible = false;
 
-                // Registrar el error para depuración
-                string errorMsg = $"Error: {ex.Message}, StackTrace: {ex.StackTrace}";
-                System.Diagnostics.Debug.WriteLine(errorMsg);
-
                 // Mostrar mensaje de error
                 ScriptManager.RegisterStartupScript(this, GetType(), "ErrorAlert",
                     $"alert('Error al cargar datos: {System.Web.HttpUtility.JavaScriptStringEncode(MensajeErrorHelper.ParaUsuario(ex))}');", true);
@@ -214,8 +210,6 @@ namespace WebSGV.Views
                     WHERE MONTH(fechaHoraSalidaBase) = @Mes AND YEAR(fechaHoraSalidaBase) = @Anio",
                     DbHelper.Param("@Mes", mes), DbHelper.Param("@Anio", anio)));
 
-                System.Diagnostics.Debug.WriteLine($"Total de registros para {ddlMes.SelectedItem.Text} {ddlAnio.SelectedValue}: {totalRegistros}");
-
                 if (totalRegistros == 0)
                 {
                     ScriptManager.RegisterStartupScript(this, GetType(), "AlertNoData",
@@ -223,32 +217,7 @@ namespace WebSGV.Views
                     return;
                 }
 
-                // PASO 2: Analizar los registros específicos
-                DataTable dtDetalles = DbHelper.ConsultarTabla(@"
-                    SELECT TOP 10 numeroPedido, fechaHoraSalidaBase, fechaHoraProgramacion,
-                        ABS(DATEDIFF(MINUTE, fechaHoraSalidaBase, fechaHoraProgramacion)) AS DiferenciaMinutos,
-                        CASE WHEN ABS(DATEDIFF(MINUTE, fechaHoraSalidaBase, fechaHoraProgramacion)) <= 30
-                             THEN 'CUMPLE' ELSE 'NO CUMPLE' END AS Estado
-                    FROM Indicadores
-                    WHERE MONTH(fechaHoraSalidaBase) = @Mes AND YEAR(fechaHoraSalidaBase) = @Anio
-                    ORDER BY fechaHoraSalidaBase",
-                    DbHelper.Param("@Mes", mes), DbHelper.Param("@Anio", anio));
-
-                System.Diagnostics.Debug.WriteLine("=== DETALLE DE REGISTROS ===");
-                int analizados = 0, cumpleDetalle = 0;
-                foreach (DataRow reader in dtDetalles.Rows)
-                {
-                    analizados++;
-                    if (reader["Estado"].ToString() == "CUMPLE") cumpleDetalle++;
-                    System.Diagnostics.Debug.WriteLine(
-                        $"Pedido: {reader["numeroPedido"]}, Salida: {reader["fechaHoraSalidaBase"]}, " +
-                        $"Programado: {reader["fechaHoraProgramacion"]}, " +
-                        $"Diferencia: {reader["DiferenciaMinutos"]} min, Estado: {reader["Estado"]}");
-                }
-                double porcentajeDetalle = analizados > 0 ? Math.Round(((double)cumpleDetalle / analizados) * 100) : 0;
-                System.Diagnostics.Debug.WriteLine($"De {analizados} registros analizados, {cumpleDetalle} cumplen el criterio ({porcentajeDetalle}% cumplimiento)");
-
-                // PASO 3: Calcular el porcentaje correcto
+                // PASO 2: Calcular el porcentaje correcto
                 DataTable dtTotal = DbHelper.ConsultarTabla(@"
                     SELECT COUNT(*) AS Total,
                         SUM(CASE WHEN ABS(DATEDIFF(MINUTE, fechaHoraSalidaBase, fechaHoraProgramacion)) <= 30 THEN 1 ELSE 0 END) AS Cumplen
@@ -262,7 +231,6 @@ namespace WebSGV.Views
                     int total   = Convert.ToInt32(reader["Total"]);
                     int cumplen = Convert.ToInt32(reader["Cumplen"]);
                     double porcentaje = total > 0 ? Math.Round(((double)cumplen / total) * 100) : 0;
-                    System.Diagnostics.Debug.WriteLine($"RESULTADO FINAL: {cumplen} de {total} cumplen = {porcentaje}%");
                     litCumplimiento.Text = porcentaje.ToString();
                     ScriptManager.RegisterStartupScript(this, GetType(), "AlertDiagnostico",
                         $"alert('Diagnóstico completado: {porcentaje}% de cumplimiento');", true);
@@ -270,7 +238,6 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"ERROR DIAGNÓSTICO: {ex.Message}");
                 ScriptManager.RegisterStartupScript(this, GetType(), "AlertError",
                     $"alert('Error en diagnóstico: {System.Web.HttpUtility.JavaScriptStringEncode(MensajeErrorHelper.ParaUsuario(ex))}');", true);
             }
@@ -1091,9 +1058,6 @@ ORDER BY DAY(fechaHoraLlegadaTCI)";
                                 dias.Add(reader["Dia"].ToString());
                                 tiemposEspera.Add(reader["EsperaNacionalizacion"] != DBNull.Value ?
                                     Convert.ToDouble(reader["EsperaNacionalizacion"]) : 0);
-
-                                // Registrar para depuración
-                                System.Diagnostics.Debug.WriteLine($"Dia {reader["Dia"]}: EsperaNacionalizacion = {reader["EsperaNacionalizacion"]}, NumRegistros = {reader["NumRegistros"]}");
                             }
 
                             datos["DiasEsperaNacionalizacion"] = dias;
@@ -1102,7 +1066,7 @@ ORDER BY DAY(fechaHoraLlegadaTCI)";
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine("Error en consulta Espera Nacionalización: " + ex.Message);
+                        LogSGV.Error(ex, "Dashboard: error en consulta Espera Nacionalización");
                     }
                 }
 
@@ -1141,9 +1105,6 @@ ORDER BY DAY(fechaHoraSalidaDepsa)";
                                 dias.Add(reader["Dia"].ToString());
                                 tiempos.Add(reader["TiempoPromedio"] != DBNull.Value ?
                                     Convert.ToDouble(reader["TiempoPromedio"]) : 0);
-
-                                // Registrar para depuración
-                                System.Diagnostics.Debug.WriteLine($"Dia {reader["Dia"]}: TiempoBodegaInbalnor = {reader["TiempoPromedio"]}");
                             }
 
                             datos["DiasBodegaInbalnor"] = dias;
@@ -1152,7 +1113,7 @@ ORDER BY DAY(fechaHoraSalidaDepsa)";
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine("Error en consulta Tiempo Bodega a Inbalnor: " + ex.Message);
+                        LogSGV.Error(ex, "Dashboard: error en consulta Tiempo Bodega a Inbalnor");
                     }
                 }
 
@@ -1191,9 +1152,6 @@ ORDER BY DAY(fechaHoraSalidaDepsa)";
                                 dias.Add(reader["Dia"].ToString());
                                 tiempos.Add(reader["TiempoPromedio"] != DBNull.Value ?
                                     Convert.ToDouble(reader["TiempoPromedio"]) : 0);
-
-                                // Registrar para depuración
-                                System.Diagnostics.Debug.WriteLine($"Dia {reader["Dia"]}: TiempoBodegaJave = {reader["TiempoPromedio"]}");
                             }
 
                             datos["DiasBodegaJave"] = dias;
@@ -1202,7 +1160,7 @@ ORDER BY DAY(fechaHoraSalidaDepsa)";
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine("Error en consulta Tiempo Bodega a Jave: " + ex.Message);
+                        LogSGV.Error(ex, "Dashboard: error en consulta Tiempo Bodega a Jave");
                     }
                 }
 
@@ -1243,9 +1201,6 @@ ORDER BY DAY(fechaHoraSalidaTCI)";
                                 dias.Add(reader["Dia"].ToString());
                                 tiempos.Add(reader["TiempoPromedio"] != DBNull.Value ?
                                     Convert.ToDouble(reader["TiempoPromedio"]) : 0);
-
-                                // Registrar para depuración
-                                System.Diagnostics.Debug.WriteLine($"Dia {reader["Dia"]}: TiempoEcuatorianaInbalnor = {reader["TiempoPromedio"]}");
                             }
 
                             datos["DiasEcuatorianaInbalnor"] = dias;
@@ -1254,7 +1209,7 @@ ORDER BY DAY(fechaHoraSalidaTCI)";
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine("Error en consulta Tiempo Ecuatoriana a Inbalnor: " + ex.Message);
+                        LogSGV.Error(ex, "Dashboard: error en consulta Tiempo Ecuatoriana a Inbalnor");
                     }
                 }
 
@@ -1294,9 +1249,6 @@ ORDER BY DAY(fechaHoraSalidaTCI)";
                                 dias.Add(reader["Dia"].ToString());
                                 tiempos.Add(reader["TiempoPromedio"] != DBNull.Value ?
                                     Convert.ToDouble(reader["TiempoPromedio"]) : 0);
-
-                                // Registrar para depuración
-                                System.Diagnostics.Debug.WriteLine($"Dia {reader["Dia"]}: TiempoEcuatorianaJave = {reader["TiempoPromedio"]}");
                             }
 
                             datos["DiasEcuatorianaJave"] = dias;
@@ -1305,7 +1257,7 @@ ORDER BY DAY(fechaHoraSalidaTCI)";
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine("Error en consulta Tiempo Ecuatoriana a Jave: " + ex.Message);
+                        LogSGV.Error(ex, "Dashboard: error en consulta Tiempo Ecuatoriana a Jave");
                     }
                 }
 

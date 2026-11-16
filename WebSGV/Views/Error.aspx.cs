@@ -30,8 +30,6 @@ namespace WebSGV.Views
                     ErrorStack = System.Web.HttpUtility.HtmlEncode(real.StackTrace ?? "");
                 }
 
-                System.Diagnostics.Debug.WriteLine($"❌ ERROR 500 mostrado en Error.aspx: {real.Message}");
-                System.Diagnostics.Debug.WriteLine($"   Stack: {real.StackTrace}");
                 Server.ClearError();
             }
 

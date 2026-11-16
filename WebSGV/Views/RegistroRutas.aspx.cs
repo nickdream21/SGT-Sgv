@@ -40,8 +40,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                // Manejar el error apropiadamente
-                System.Diagnostics.Debug.WriteLine("Error al cargar clientes: " + ex.Message);
+                LogSGV.Error(ex, "RegistroRutas: error al cargar clientes");
                 MostrarMensaje("Error al cargar la lista de clientes. Por favor, intente nuevamente.");
             }
         }
@@ -97,8 +96,6 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 MostrarMensaje("Error al registrar la ruta: " + MensajeErrorHelper.ParaUsuario(ex));
-                // Registrar el error para debugging
-                System.Diagnostics.Debug.WriteLine("Error en RegistroRutas: " + ex.ToString());
             }
         }
 

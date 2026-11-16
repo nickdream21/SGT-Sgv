@@ -127,7 +127,6 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("Error en btnRegistrar_Click: " + ex.Message);
                 MostrarMensaje("Ocurrió un error al registrar el conductor: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }

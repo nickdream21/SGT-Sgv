@@ -4,7 +4,6 @@ using System.Web;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
@@ -14,7 +13,6 @@ using WebSGV.Helpers;
 using WebSGV.Models.Conductor;
 using WebSGV.Services.Common;
 using WebSGV.Services.Conductor;
-using WebSGV.Services.Liquidaciones;
 using WebSGV.Services.OrdenViaje;
 
 namespace WebSGV.Views
@@ -162,7 +160,6 @@ namespace WebSGV.Views
                     // Limpiamos la sesión para evitar loop con Login.aspx (que auto-redirige al
                     // dashboard si encuentra Session["UsuarioID"] con rol CONDUCTOR) y enviamos
                     // un código de error que el Login mostrará al usuario.
-                    Log("❌ Usuario logueado sin idConductor vinculado — limpiando sesión y redirigiendo al login");
                     Session.Clear();
                     Session.Abandon();
                     Response.Redirect("~/Views/Login.aspx?error=sin_conductor", false);
@@ -170,7 +167,6 @@ namespace WebSGV.Views
                     return false;
                 }
 
-                Log($"✅ Sesión válida: IdConductor={IdConductorActual}");
                 return true;
             }
             catch (System.Threading.ThreadAbortException)
@@ -190,8 +186,6 @@ namespace WebSGV.Views
         {
             try
             {
-                Log("=== INICIALIZANDO DASHBOARD CONDUCTOR ===");
-
                 CargarDatosConductor();
                 List<ViajeActivo> viajesActivos = ObtenerViajesActivos();
 
@@ -201,7 +195,6 @@ namespace WebSGV.Views
                     List<int> idsViajes = viajesActivos.Select(v => v.IdViajeProgreso).ToList();
                     int totalDespachos = viajesActivos.Sum(v => v.CantidadDespachos);
 
-                    Log($"✅ {viajesActivos.Count} viaje(s) activo(s) encontrado(s): {string.Join(", ", viajesActivos.Select(v => v.NumeroViajeProgreso))}");
                     MostrarViajesActivos(viajesActivos, totalDespachos);
                     CargarDespachosViajesActivos(idsViajes);
                     HabilitarLiquidacion(viajesActivos, totalDespachos);
@@ -214,15 +207,12 @@ namespace WebSGV.Views
                 }
                 else
                 {
-                    Log("ℹ️ No hay viajes activos");
                     MostrarSinViajes();
                 }
 
                 CargarHistorialLiquidaciones();
                 if (Services.Liquidaciones.MovimientosViajeService.Habilitado)
                     CargarDineroRecibido();
-
-                Log("✅ Dashboard inicializado correctamente");
             }
             catch (Exception ex)
             {
@@ -250,8 +240,6 @@ namespace WebSGV.Views
                                 lblNombreConductor.Text = System.Web.HttpUtility.HtmlEncode(reader["nombreCompleto"].ToString());
                                 lblDNIConductor.Text = System.Web.HttpUtility.HtmlEncode(reader["DNI"].ToString());
                                 hfIdConductor.Value = IdConductorActual.ToString();
-
-                                Log($"✅ Conductor cargado: {lblNombreConductor.Text}");
                             }
                         }
                     }
@@ -272,8 +260,6 @@ namespace WebSGV.Views
         {
             try
             {
-                Log($"Verificando observaciones de rechazo para {idsViajes.Count} viaje(s)");
-
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     using (SqlCommand cmd = new SqlCommand("sp_DC_VerificarObservacionesRechazo", conn))
@@ -292,8 +278,6 @@ namespace WebSGV.Views
                                     ? Convert.ToDateTime(reader["fechaRechazo"])
                                     : FechaHelper.Ahora();
                                 string rechazadoPor = reader["rechazadoPor"]?.ToString() ?? "Administrador";
-
-                                Log($"⚠️ LIQUIDACIÓN RECHAZADA ENCONTRADA: {numeroOrden}");
 
                                 MostrarAlertaRechazo(numeroOrden, observaciones, fechaRechazo, rechazadoPor);
                             }
@@ -349,7 +333,6 @@ namespace WebSGV.Views
                 OrdenRechazadaConductor orden = DashboardConductorService.ObtenerOrdenRechazada(idsViajes);
                 if (orden == null) return;
 
-                Log($"✅ Orden rechazada encontrada: {orden.NumeroOrdenViaje}");
                 hfNumeroOrdenExistente.Value = orden.NumeroOrdenViaje;
 
                 // Fechas: solo cuentan si el GPS no las da (los paneles manuales están visibles).
@@ -461,8 +444,6 @@ namespace WebSGV.Views
                 pnlBadgeLiquidar.Visible = true;
                 pnlBadgeActivos.Visible = true;
                 lblCantidadActivos.Text = totalDespachos.ToString();
-
-                Log($"✅ {viajes.Count} viaje(s) activo(s) mostrado(s): {numerosViaje}");
             }
             catch (Exception ex)
             {
@@ -524,8 +505,6 @@ namespace WebSGV.Views
 
                 rptDespachosActivos.DataSource = despachos;
                 rptDespachosActivos.DataBind();
-
-                Log($"✅ {despachos.Count} despachos cargados de {idsViajes.Count} viaje(s)");
             }
             catch (Exception ex)
             {
@@ -567,8 +546,6 @@ namespace WebSGV.Views
                 txtHoraSalida.Text = string.Empty;
                 txtFechaLlegada.Text = ahoraServidor.ToString("yyyy-MM-dd");
                 txtHoraLlegadaDeclarada.Text = ahoraServidor.ToString("HH:mm");
-
-                Log("✅ Formulario de liquidación habilitado");
             }
             catch (Exception ex)
             {
@@ -585,8 +562,6 @@ namespace WebSGV.Views
         {
             try
             {
-                Log("=== INICIANDO ENVÍO DE LIQUIDACIÓN (CONDUCTOR) ===");
-
                 // Verificar sesión activa antes de proceder
                 if (Session["IdConductor"] == null || IdConductorActual == 0)
                 {
@@ -604,7 +579,6 @@ namespace WebSGV.Views
                 }
                 int idViajeProgreso = viajesActivos[0].IdViajeProgreso;
                 List<int> idsViajesActivos = viajesActivos.Select(v => v.IdViajeProgreso).ToList();
-                Log($"Viajes a cerrar: {string.Join(", ", idsViajesActivos)}");
 
                 // Si desde que se abrió la página cambió el conjunto de viajes (otro despacho, un
                 // viaje cerrado), no se liquida lo que el conductor no vio.
@@ -621,7 +595,8 @@ namespace WebSGV.Views
                 // Verificar que todos los IDs de viajes pertenecen al conductor actual (C-3)
                 if (!ValidarOwnershipViajes(idsViajesActivos, IdConductorActual))
                 {
-                    Log($"❌ Ownership inválido: los viajes {string.Join(", ", idsViajesActivos)} no pertenecen al conductor {IdConductorActual}");
+                    LogSGV.Advertencia("DashboardConductor: los viajes {IdsViajes} no pertenecen al conductor {IdConductor}; envío de liquidación rechazado",
+                        string.Join(", ", idsViajesActivos), IdConductorActual);
                     MostrarMensaje("Acceso no autorizado", "danger");
                     return;
                 }
@@ -632,14 +607,11 @@ namespace WebSGV.Views
                     ? hfNumeroOrdenExistente.Value
                     : GenerarNumeroOrden();
 
-                Log(esReliquidacion
-                    ? $"♻️ Re-liquidación sobre orden existente: {numeroOrdenViaje}"
-                    : $"Número de orden generado: {numeroOrdenViaje}");
-
                 // Verificar que la orden rechazada pertenece al conductor actual (C-4)
                 if (esReliquidacion && !ValidarOwnershipOrden(numeroOrdenViaje, IdConductorActual))
                 {
-                    Log($"❌ Ownership inválido: la orden {numeroOrdenViaje} no pertenece al conductor {IdConductorActual}");
+                    LogSGV.Advertencia("DashboardConductor: la orden {NumeroOrden} no pertenece al conductor {IdConductor}; re-liquidación rechazada",
+                        numeroOrdenViaje, IdConductorActual);
                     MostrarMensaje("Acceso no autorizado", "danger");
                     return;
                 }
@@ -698,8 +670,6 @@ namespace WebSGV.Views
                     return;
                 }
 
-                Log($"Datos del viaje: Conductor={datosViaje.IdConductor}, Tracto={datosViaje.IdTracto}, Carreta={datosViaje.IdCarreta}");
-
                 // Armar el DTO de entrada leyendo Request.Form/hidden fields (el parseo
                 // queda en el code-behind; el Service sólo ejecuta el SQL/SPs).
                 // Lo que registró la administración (dinero entregado, descuentos) no viene del
@@ -726,7 +696,6 @@ namespace WebSGV.Views
                     ReglasLiquidacionConductor.AplicarViajeNacional(input);
                 input.HoraLlegadaGps = gps.LlegadaPorGps ? horaLlegadaDeclarada : null;
 
-                Log("Iniciando transacción de base de datos...");
                 bool transaccionExitosa = false;
                 int idOrdenGuardada = 0;
 
@@ -734,7 +703,6 @@ namespace WebSGV.Views
                 {
                     idOrdenGuardada = LiquidacionConductorService.EnviarLiquidacion(input);
                     transaccionExitosa = true;
-                    Log("✅ Commit exitoso");
                 }
                 catch (Exception ex)
                 {
@@ -748,8 +716,6 @@ namespace WebSGV.Views
                 {
                     AuditoriaHelper.Registrar("GUARDAR_LIQUIDACION", "OrdenViaje", numeroOrdenViaje,
                         $"Conductor guardó la liquidación pendiente de firma - Orden: {numeroOrdenViaje}, Viajes: {string.Join(", ", idsViajesActivos)}");
-
-                    Log($"=== LIQUIDACIÓN ENVIADA EXITOSAMENTE (idOrdenViaje={idOrdenGuardada}) ===");
 
                     // ✅ Fase 3.A: redirigir al conductor a la vista de firma digital
                     if (idOrdenGuardada > 0)
@@ -1126,7 +1092,6 @@ namespace WebSGV.Views
                 }
 
                 string json = JsonConvert.SerializeObject(estaciones);
-                Log($"✅ JSON generado con {estaciones.Count} peajes: {json}");
                 return json;
             }
             catch (Exception ex)
@@ -1159,7 +1124,6 @@ namespace WebSGV.Views
                 throw new ErrorNegocioException("No se pudo generar el número de la orden. Inténtalo de nuevo en unos segundos.");
             }
 
-            Log($"✅ Número de orden generado: {nuevoNumero}");
             return nuevoNumero;
         }
 
@@ -1167,8 +1131,6 @@ namespace WebSGV.Views
         {
             try
             {
-                Log($"Obteniendo datos del viaje para idViajeProgreso={idViajeProgreso}");
-
                 DataTable dtViaje = DashboardConductorService.ObtenerDatosViajeParaLiquidacion(idViajeProgreso, IdConductorActual);
                 if (dtViaje.Rows.Count > 0)
                 {
@@ -1177,16 +1139,6 @@ namespace WebSGV.Views
                     int idConductor = IdConductorActual;
                     int idTracto = reader["idTracto"] != DBNull.Value ? Convert.ToInt32(reader["idTracto"]) : 0;
                     int idCarreta = reader["idCarreta"] != DBNull.Value ? Convert.ToInt32(reader["idCarreta"]) : 0;
-                    string origen = reader["origen"]?.ToString() ?? "";
-
-                    if (idConductor == 0 || idTracto == 0 || idCarreta == 0)
-                    {
-                        Log($"⚠️ Datos incompletos ({origen}): Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
-                    }
-                    else
-                    {
-                        Log($"✅ Datos obtenidos desde {origen}: Conductor={idConductor}, Tracto={idTracto}, Carreta={idCarreta}");
-                    }
 
                     return new DatosViajeParaLiquidacion
                     {
@@ -1207,14 +1159,6 @@ namespace WebSGV.Views
 
         private string ValidarDatosGenerales(DateTime fechaSalida, DateTime fechaLlegada, string horaSalida, string horaLlegada, string horaLlegadaDeclarada) =>
             OrdenViajeValidaciones.ValidarDatosGeneralesLiquidacion(fechaSalida, fechaLlegada, horaSalida, horaLlegada, horaLlegadaDeclarada);
-
-        /// <summary>
-        /// Logging condicional: solo activo en compilaciones DEBUG.
-        /// En Release el compilador elimina todos los call-sites sin overhead.
-        /// </summary>
-        [System.Diagnostics.Conditional("DEBUG")]
-        private static void Log(string mensaje)
-            => System.Diagnostics.Debug.WriteLine(mensaje);
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
@@ -1348,14 +1292,15 @@ namespace WebSGV.Views
                 var session = HttpContext.Current.Session;
                 if (session["IdConductor"] == null)
                 {
-                    Log("❌ RetirarLiquidacion: sesión no válida (IdConductor nulo)");
+                    LogSGV.Advertencia("DashboardConductor.RetirarLiquidacion: llamada sin sesión de conductor (orden {IdOrdenViaje})", idOrdenViaje);
                     return new { success = false, message = "Sesión no válida" };
                 }
 
                 // Validar rol: solo CONDUCTOR / CHOFER pueden retirar liquidaciones propias
                 if (!RolesHelper.EsConductor())
                 {
-                    Log("❌ RetirarLiquidacion: rol no autorizado");
+                    LogSGV.Advertencia("DashboardConductor.RetirarLiquidacion: rol no autorizado (usuario {IdUsuario}, orden {IdOrdenViaje})",
+                        session["UsuarioID"], idOrdenViaje);
                     return new { success = false, message = "Sesión no válida" };
                 }
 
@@ -1371,12 +1316,6 @@ namespace WebSGV.Views
                 {
                     AuditoriaHelper.Registrar("RETIRAR", "OrdenViaje", idOrdenViaje,
                         $"Conductor retiró liquidación - OrdenViaje ID: {idOrdenViaje}, Número: {numeroOrdenViaje}, Viaje reabierto: {idViajeProgreso}");
-
-                    Log($"✅ Liquidación retirada: OrdenViaje {idOrdenViaje}, Viaje {idViajeProgreso} reabierto");
-                }
-                else
-                {
-                    Log($"⚠️ RetirarLiquidacion falló: {mensaje}");
                 }
 
                 return new { success = resultado == 1, message = mensaje };

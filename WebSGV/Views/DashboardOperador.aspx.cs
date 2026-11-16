@@ -86,7 +86,6 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error inicializando dashboard operador: {ex.Message}");
                 MostrarMensaje($"Error al cargar el dashboard: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
             }
         }
@@ -246,7 +245,6 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error guardando parte diario: {ex.Message}");
                 MostrarMensaje("Error al guardar: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }

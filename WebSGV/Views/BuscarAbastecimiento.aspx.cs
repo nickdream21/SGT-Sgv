@@ -128,25 +128,22 @@ namespace WebSGV.Views
                 LEFT JOIN LugarAbastecimiento la ON a.idLugarAbastecimiento = la.idLugarAbastecimiento
                 LEFT JOIN TipoCarro tc ON a.idTipoCarro = tc.idTipoCarro";
 
-                System.Diagnostics.Debug.WriteLine($"Buscando abastecimiento con número: '{numeroAbastecimiento}'");
                 DataTable dt = DbHelper.ConsultarTabla(
                     baseSelect + " WHERE RTRIM(a.numeroAbastecimientoCombustible) = @numeroAbastecimiento",
                     DbHelper.Param("@numeroAbastecimiento", numeroAbastecimiento));
 
                 if (dt.Rows.Count > 0)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Encontrado abastecimiento: '{dt.Rows[0]["numeroAbastecimientoCombustible"]}'");
                     return BuildAbastecimientoModel(dt.Rows[0], tieneTipoAbast, tieneRutaDesc);
                 }
 
-                System.Diagnostics.Debug.WriteLine("No se encontró con búsqueda exacta, intentando con LIKE");
+                // Sin coincidencia exacta: se intenta por prefijo.
                 DataTable dtLike = DbHelper.ConsultarTabla(
                     baseSelect + " WHERE a.numeroAbastecimientoCombustible LIKE @numeroAbastecimientoLike",
                     DbHelper.Param("@numeroAbastecimientoLike", numeroAbastecimiento + "%"));
 
                 if (dtLike.Rows.Count > 0)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Encontrado con LIKE: '{dtLike.Rows[0]["numeroAbastecimientoCombustible"]}'");
                     return BuildAbastecimientoModel(dtLike.Rows[0], tieneTipoAbast, tieneRutaDesc);
                 }
 
@@ -154,7 +151,6 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error en ObtenerAbastecimiento: {ex.Message}");
                 throw new Exception("Error al obtener los datos del abastecimiento: " + ex.Message, ex);
             }
         }

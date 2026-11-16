@@ -127,7 +127,6 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 MostrarMensaje("Error al registrar el cliente: " + MensajeErrorHelper.ParaUsuario(ex));
-                System.Diagnostics.Debug.WriteLine("Error en RegistroClientes: " + ex.ToString());
             }
         }
 

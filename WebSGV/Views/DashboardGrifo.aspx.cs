@@ -87,7 +87,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error al cargar viajes activos: {ex.Message}");
+                LogSGV.Error(ex, "DashboardGrifo: error al cargar viajes activos");
                 pnlViajes.Visible = false;
                 pnlSinViajes.Visible = true;
             }
@@ -231,7 +231,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error al cargar historial abastecimientos: {ex.Message}");
+                LogSGV.Error(ex, "DashboardGrifo: error al cargar historial de abastecimientos");
                 pnlAbastecimientos.Visible = false;
                 pnlSinAbastecimientos.Visible = true;
             }
@@ -360,7 +360,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error al cargar retornos ecuador: {ex.Message}");
+                LogSGV.Error(ex, "DashboardGrifo: error al cargar retornos de Ecuador");
                 pnlRetornos.Visible = false;
                 pnlSinRetornos.Visible = true;
             }

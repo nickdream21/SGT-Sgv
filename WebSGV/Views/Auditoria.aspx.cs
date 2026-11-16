@@ -45,7 +45,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error cargando filtro tablas: {ex.Message}");
+                LogSGV.Error(ex, "Auditoria: error cargando el filtro de tablas");
             }
         }
 
@@ -70,7 +70,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error cargando estadísticas: {ex.Message}");
+                LogSGV.Error(ex, "Auditoria: error cargando estadísticas");
             }
         }
 
@@ -157,7 +157,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error cargando datos auditoría: {ex.Message}");
+                LogSGV.Error(ex, "Auditoria: error cargando datos de auditoría");
                 lblCantidadResultados.Text = "Error al cargar datos";
             }
         }
@@ -217,7 +217,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error exportando: {ex.Message}");
+                LogSGV.Error(ex, "Auditoria: error exportando a Excel");
             }
             finally
             {
