@@ -20,6 +20,12 @@ namespace WebSGV
         public bool EsAdminMaquinaria { get; set; }
         public bool EsOperador { get; set; }
         public bool EsContabilidad { get; set; }
+        /// <summary>
+        /// Rol SUPERVISOR. Calculada desde <see cref="RolUsuario"/> (igual que la comparación que
+        /// había en el markup), así queda en sintonía con InicializarPropiedadesVacias y
+        /// CargarInformacionUsuario sin tener que asignarla en cada uno.
+        /// </summary>
+        public bool EsSupervisor => RolUsuario == RolesHelper.ROL_SUPERVISOR;
         /// <summary>Página de inicio del rol actual (logo y enlace "Inicio" del menú).</summary>
         public string UrlInicio { get; set; }
 

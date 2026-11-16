@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Data;
 using System.Web;
-using System.Web.UI;
 using WebSGV.Helpers;
 
 namespace WebSGV.Views
@@ -290,7 +289,7 @@ namespace WebSGV.Views
 
                         if (RolesHelper.EsRolConductor(rol) && reader["idConductor"] != DBNull.Value)
                             idConductor = Convert.ToInt32(reader["idConductor"]);
-                        else if (rol.ToUpper() == "OPERADOR" && reader["idOperador"] != DBNull.Value)
+                        else if (rol.ToUpper() == RolesHelper.ROL_OPERADOR && reader["idOperador"] != DBNull.Value)
                             idOperador = Convert.ToInt32(reader["idOperador"]);
 
                         esValido = true;
@@ -351,7 +350,7 @@ namespace WebSGV.Views
             string rol = (datos.Rol ?? "").ToUpper();
             if (RolesHelper.EsRolConductor(rol) && datos.IdConductor.HasValue)
                 Session["IdConductor"] = datos.IdConductor.Value;
-            if (rol == "OPERADOR" && datos.IdOperador.HasValue)
+            if (rol == RolesHelper.ROL_OPERADOR && datos.IdOperador.HasValue)
                 Session["IdOperador"] = datos.IdOperador.Value;
 
             AuditoriaHelper.Registrar("LOGIN", "Usuarios", datos.IdUsuario.ToString(),

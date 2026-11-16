@@ -247,8 +247,7 @@ namespace WebSGV.Views
             string contrasena    = (txtContrasena.Text ?? "").Trim();
             int idConductor;
             bool tieneConductor = int.TryParse(ddlConductor.SelectedValue, out idConductor) && idConductor > 0;
-            bool esRolConductor = string.Equals(rol?.Trim(), RolesHelper.ROL_CONDUCTOR, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(rol?.Trim(), "CHOFER", StringComparison.OrdinalIgnoreCase);
+            bool esRolConductor = RolesHelper.EsRolConductor(rol);
 
             if (string.IsNullOrEmpty(nombreUsuario) || string.IsNullOrEmpty(nombre) || string.IsNullOrEmpty(rol))
             {

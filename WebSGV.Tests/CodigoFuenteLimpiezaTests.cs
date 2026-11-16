@@ -124,6 +124,148 @@ namespace WebSGV.Tests
                 Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
         }
 
+        /// <summary>
+        /// Comparación de un nombre de rol escrito a mano (sin importar mayúsculas):
+        /// <c>rol == "ADMIN"</c>, <c>"CHOFER" != rol</c>, <c>string.Equals(rol?.Trim(), "CHOFER", ..)</c>,
+        /// <c>case "OPERADOR":</c>, patrones (<c>rol is "ADMIN" or "ADMINISTRADOR"</c>, <c>rol is not "CHOFER"</c>,
+        /// brazos de switch <c>"SUPERVISOR" =&gt; ..</c>) y constantes propias (<c>const string X = "SUPERVISOR"</c>).
+        /// Los nombres de rol viven solo en <c>RolesHelper</c> (ROL_*, EsRolAdmin, EsRolConductor).
+        /// </summary>
+        private const string LiteralRol =
+            @"""(ADMIN|ADMINISTRADOR|CHOFER|CONDUCTOR|SUPERVISOR|OPERADOR|CONTABILIDAD|ADMINISTRADOR DE (SISTEMA|GRIFO|MAQUINARIA|TRANSPORTE))""";
+
+        private static readonly Regex ComparacionLiteralRol = new Regex(
+            @"(==|!=)\s*" + LiteralRol +
+            "|" + LiteralRol + @"\s*(==|!=|=>)" +                                 // también brazo de switch: "ADMIN" => ..
+            @"|\bEquals\s*\((?:[^()]|\([^()]*\))*" + LiteralRol +              // admite un nivel de paréntesis: rol?.Trim()
+            @"|\bcase\s+" + LiteralRol + @"\s*:" +
+            @"|\bis\s+(not\s+)?" + LiteralRol +                                 // rol is "ADMIN", rol is not "CHOFER"
+            @"|\bor\s+" + LiteralRol +                                          // rol is X or "ADMINISTRADOR"
+            @"|\b(const|static\s+readonly|readonly)\s+string\s+\w+\s*=\s*" + LiteralRol,
+            RegexOptions.IgnoreCase);
+
+        /// <summary>
+        /// Archivos (ruta relativa a WebSGV, con '/') con coincidencias que no son el rol del usuario.
+        /// <c>Permitido</c> es el texto exacto que se tolera: se quita de la línea antes de evaluarla, así que
+        /// cualquier otra comparación de rol en ese archivo sí se detecta. null = archivo exento completo.
+        /// </summary>
+        private static readonly Dictionary<string, (string Motivo, Regex Permitido)> ExcepcionesLiteralesRol =
+            new Dictionary<string, (string Motivo, Regex Permitido)>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Views/RolesHelper.cs", ("única definición de los nombres de rol", null) },
+                { "Views/VerificarDocumento.aspx.cs", ("rolFirmante de FirmaDigital (ADMIN/CONDUCTOR), no el rol del usuario",
+                    new Regex(@"\[""rolFirmante""\]\)\s*==\s*""ADMIN""")) },
+                { "Views/ReportesOrdenesViaje.aspx.cs", ("\"conductor\" es la clave de orden/columna del reporte, no un rol",
+                    new Regex(@"(==\s*""conductor""|\bcase\s+""conductor""\s*:)")) },
+                { "Services/Reportes/ReportesOrdenesViajeService.cs", ("\"conductor\" es la clave de orden del reporte, no un rol",
+                    new Regex(@"(==\s*""conductor""|\bcase\s+""conductor""\s*:)")) }
+            };
+
+        /// <summary>Líneas de código (sin comentarios //) de cada archivo fuente, con su ruta relativa a WebSGV.</summary>
+        private static IEnumerable<(string Relativo, int Numero, string Linea)> LineasDeCodigo(string raiz)
+        {
+            foreach (string archivo in ArchivosFuente(raiz))
+            {
+                string relativo = archivo.Substring(raiz.Length).TrimStart('\\', '/').Replace('\\', '/');
+                string[] lineas = File.ReadAllLines(archivo);
+                for (int i = 0; i < lineas.Length; i++)
+                {
+                    string linea = lineas[i].TrimStart();
+                    if (linea.StartsWith("//", StringComparison.Ordinal)) continue; // también ///
+                    yield return (relativo, i + 1, linea.Trim());
+                }
+            }
+        }
+
+        private static List<string> BuscarLiteralesRol(string raiz)
+        {
+            var hallazgos = new List<string>();
+            foreach (var l in LineasDeCodigo(raiz))
+            {
+                string evaluada = l.Linea;
+                if (ExcepcionesLiteralesRol.TryGetValue(l.Relativo, out var excepcion))
+                {
+                    if (excepcion.Permitido == null) continue;
+                    evaluada = excepcion.Permitido.Replace(evaluada, "");
+                }
+                if (ComparacionLiteralRol.IsMatch(evaluada))
+                    hallazgos.Add($"{l.Relativo}:{l.Numero}: {l.Linea}");
+            }
+            return hallazgos;
+        }
+
+        [Fact]
+        public void LiteralesDeRol_SoloEnRolesHelper()
+        {
+            string raiz = RaizWeb();
+            Assert.Matches(ComparacionLiteralRol, "<% if (EsAdmin || RolUsuario == \"SUPERVISOR\")");
+            Assert.Matches(ComparacionLiteralRol, "else if (rol.ToUpper() == \"OPERADOR\" && x)");
+            Assert.Matches(ComparacionLiteralRol, "return rol == ROL_CONDUCTOR || rol == \"CHOFER\";");
+            Assert.Matches(ComparacionLiteralRol, "if (\"ADMIN\" != rol)");
+            Assert.Matches(ComparacionLiteralRol, "if (rol.ToLower() == \"admin\")");
+            Assert.Matches(ComparacionLiteralRol, "|| string.Equals(rol?.Trim(), \"CHOFER\", StringComparison.OrdinalIgnoreCase);");
+            Assert.Matches(ComparacionLiteralRol, "if (rol.Equals(\"ADMINISTRADOR DE GRIFO\"))");
+            Assert.Matches(ComparacionLiteralRol, "case \"CONTABILIDAD\":");
+            Assert.Matches(ComparacionLiteralRol, "private const string ROL_ADMIN_SISTEMA  = \"ADMINISTRADOR DE SISTEMA\";");
+            Assert.Matches(ComparacionLiteralRol, "private static readonly string RolX = \"ADMINISTRADOR DE TRANSPORTE\";");
+            // No son comparaciones de rol.
+            Assert.DoesNotMatch(ComparacionLiteralRol, "if (rol == RolesHelper.ROL_OPERADOR)");
+            Assert.DoesNotMatch(ComparacionLiteralRol, "Col(\"CONDUCTOR\", TipoColumnaReporte.Texto, 2.2f, f => f[\"Conductor\"]);");
+            Assert.DoesNotMatch(ComparacionLiteralRol, "int chofer = Columna(\"CHOFER\", \"CONDUCTOR\");");
+            Assert.DoesNotMatch(ComparacionLiteralRol, "WHERE rol IN ('ADMIN', 'SUPERVISOR')");
+            Assert.DoesNotMatch(ComparacionLiteralRol, "if (x == \"ADMINISTRADORA\")");
+            Assert.Matches(ComparacionLiteralRol, "if (rol is \"ADMIN\")");
+            Assert.Matches(ComparacionLiteralRol, "if (rol is not \"CHOFER\") return;");
+            Assert.Matches(ComparacionLiteralRol, "bool a = rol is RolesHelper.ROL_ADMIN or \"ADMINISTRADOR\";");
+            Assert.Matches(ComparacionLiteralRol, "\"SUPERVISOR\" => \"~/Views/Inicio.aspx\",");
+            Assert.Matches(ComparacionLiteralRol, "return rol switch { \"operador\"=> 1, _ => 0 };");
+            Assert.DoesNotMatch(ComparacionLiteralRol, "if (x is string s && s.Length > 0)");
+            Assert.DoesNotMatch(ComparacionLiteralRol, "if (x is \"ADMINISTRADORA\" or \"CHOFERES\")");
+            Assert.DoesNotMatch(ComparacionLiteralRol, "string t = \"Conductor or\" + \" chofer\";");
+            Assert.DoesNotMatch(ComparacionLiteralRol, "Func<string> f = () => \"CONDUCTOR\";");
+            Assert.DoesNotMatch(ComparacionLiteralRol, "{ \"ADMIN\", \"Administrador\" },");
+
+            // Las excepciones toleran solo su texto exacto: otra comparación en el mismo archivo sí se detecta.
+            Regex permitidoReporte = ExcepcionesLiteralesRol["Views/ReportesOrdenesViaje.aspx.cs"].Permitido;
+            Assert.DoesNotMatch(ComparacionLiteralRol, permitidoReporte.Replace("case \"conductor\": return \"Conductor\";", ""));
+            Assert.DoesNotMatch(ComparacionLiteralRol, permitidoReporte.Replace(".Where(c => c.Item1 == \"conductor\" || c.Item1 == \"numero\")", ""));
+            Assert.Matches(ComparacionLiteralRol, permitidoReporte.Replace("if (rol == \"ADMIN\")", ""));
+            Assert.Matches(ComparacionLiteralRol, permitidoReporte.Replace("if (rol == \"CONDUCTOR\")", ""));
+            Regex permitidoFirma = ExcepcionesLiteralesRol["Views/VerificarDocumento.aspx.cs"].Permitido;
+            Assert.DoesNotMatch(ComparacionLiteralRol, permitidoFirma.Replace("(Convert.ToString(r[\"rolFirmante\"]) == \"ADMIN\" ? \" (administración)\" : \" (conductor)\"));", ""));
+            Assert.Matches(ComparacionLiteralRol, permitidoFirma.Replace("if (rol == \"ADMIN\")", ""));
+
+            List<string> hallazgos = BuscarLiteralesRol(raiz);
+
+            Assert.True(hallazgos.Count == 0,
+                "Compara roles con RolesHelper (ROL_*, EsRolAdmin, EsRolConductor), no con el nombre escrito " +
+                "a mano (auditoría de seguridad, 8D-3):" +
+                Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
+        }
+
+        [Fact]
+        public void LiteralesDeRol_CadaExcepcionSigueSiendoNecesaria()
+        {
+            string raiz = RaizWeb();
+            List<(string Relativo, int Numero, string Linea)> lineas = LineasDeCodigo(raiz).ToList();
+
+            // Exento completo: el archivo debe seguir teniendo coincidencias. Con Permitido: ese texto
+            // exacto debe seguir apareciendo en una línea que la búsqueda marcaría.
+            var sobrantes = new List<string>();
+            foreach (var e in ExcepcionesLiteralesRol)
+            {
+                bool necesaria = lineas
+                    .Where(l => string.Equals(l.Relativo, e.Key, StringComparison.OrdinalIgnoreCase))
+                    .Any(l => ComparacionLiteralRol.IsMatch(l.Linea)
+                              && (e.Value.Permitido == null || e.Value.Permitido.IsMatch(l.Linea)));
+                if (!necesaria) sobrantes.Add(e.Key);
+            }
+
+            Assert.True(sobrantes.Count == 0,
+                "Estas excepciones ya no tienen coincidencias; quítalas de ExcepcionesLiteralesRol:" +
+                Environment.NewLine + string.Join(Environment.NewLine, sobrantes));
+        }
+
         [Fact]
         public void CodigoFuente_NoUsaDebugTraceNiConsole()
         {

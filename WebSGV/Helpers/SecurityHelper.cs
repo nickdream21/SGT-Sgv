@@ -1,6 +1,5 @@
 using System;
 using System.Web;
-using System.Web.UI;
 
 namespace WebSGV.Helpers
 {
@@ -11,14 +10,7 @@ namespace WebSGV.Helpers
     /// </summary>
     public static class SecurityHelper
     {
-        // ── Roles reconocidos (administradores: RolesHelper.EsRolAdmin) ──────
-        private const string ROL_ADMIN_SISTEMA  = "ADMINISTRADOR DE SISTEMA";
-        private const string ROL_SUPERVISOR     = "SUPERVISOR";
-        private const string ROL_ADMIN_GRIFO    = "ADMINISTRADOR DE GRIFO";
-        private const string ROL_ADMIN_MAQ      = "ADMINISTRADOR DE MAQUINARIA";
-        private const string ROL_CONDUCTOR      = "CONDUCTOR";
-        private const string ROL_OPERADOR       = "OPERADOR";
-        private const string ROL_CONTABILIDAD   = "CONTABILIDAD";
+        // Los nombres de rol viven solo en RolesHelper (ROL_*, EsRolAdmin, EsRolConductor).
 
         // ── Acceso a sesión ────────────────────────────────────────────────
 
@@ -39,18 +31,15 @@ namespace WebSGV.Helpers
         /// </summary>
         public static bool EsAdmin() => RolesHelper.EsRolAdmin(ObtenerRol());
 
-        public static bool EsAdminOSupervisor() => EsAdmin() || ObtenerRol() == ROL_SUPERVISOR;
+        public static bool EsAdminOSupervisor() => EsAdmin() || ObtenerRol() == RolesHelper.ROL_SUPERVISOR;
 
-        public static bool EsAdminSistema()    => ObtenerRol() == ROL_ADMIN_SISTEMA;
-        public static bool EsAdminGrifo()      => ObtenerRol() == ROL_ADMIN_GRIFO;
-        public static bool EsAdminMaquinaria() => ObtenerRol() == ROL_ADMIN_MAQ;
-        public static bool EsConductor()
-        {
-            string rol = ObtenerRol();
-            return rol == ROL_CONDUCTOR || rol == "CHOFER";
-        }
-        public static bool EsOperador()        => ObtenerRol() == ROL_OPERADOR;
-        public static bool EsContabilidad()    => ObtenerRol() == ROL_CONTABILIDAD;
+        public static bool EsAdminSistema()    => ObtenerRol() == RolesHelper.ROL_ADMIN_SISTEMA;
+        public static bool EsAdminGrifo()      => ObtenerRol() == RolesHelper.ROL_ADMIN_GRIFO;
+        public static bool EsAdminMaquinaria() => ObtenerRol() == RolesHelper.ROL_ADMIN_MAQUINARIA;
+        /// <summary>CONDUCTOR o CHOFER (<see cref="RolesHelper.EsRolConductor"/>).</summary>
+        public static bool EsConductor()       => RolesHelper.EsRolConductor(ObtenerRol());
+        public static bool EsOperador()        => ObtenerRol() == RolesHelper.ROL_OPERADOR;
+        public static bool EsContabilidad()    => ObtenerRol() == RolesHelper.ROL_CONTABILIDAD;
 
         /// <summary>Roles autorizados para aprobar, rechazar o corregir liquidaciones.</summary>
         public static bool PuedeGestionarLiquidaciones() => EsAdminOSupervisor();
