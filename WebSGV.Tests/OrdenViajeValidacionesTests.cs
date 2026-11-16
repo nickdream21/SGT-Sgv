@@ -6,47 +6,6 @@ namespace WebSGV.Tests
 {
     public class OrdenViajeValidacionesTests
     {
-        // ---- ValidarFormatoNumeroOrden ----
-
-        [Fact]
-        public void ValidarFormatoNumeroOrden_Valido_RetornaVacio()
-        {
-            Assert.Equal(string.Empty, OrdenViajeValidaciones.ValidarFormatoNumeroOrden("123456"));
-        }
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public void ValidarFormatoNumeroOrden_VacioONulo_Obligatorio(string entrada)
-        {
-            Assert.Equal("El número de orden es obligatorio.",
-                OrdenViajeValidaciones.ValidarFormatoNumeroOrden(entrada));
-        }
-
-        [Theory]
-        [InlineData("123")]
-        [InlineData("1234567")]
-        public void ValidarFormatoNumeroOrden_LongitudIncorrecta_MensajeLongitud(string entrada)
-        {
-            Assert.Contains("exactamente 6 dígitos",
-                OrdenViajeValidaciones.ValidarFormatoNumeroOrden(entrada));
-        }
-
-        [Fact]
-        public void ValidarFormatoNumeroOrden_ConLetras_MensajeSoloNumeros()
-        {
-            Assert.Equal("El número de orden debe contener solo números (0-9).",
-                OrdenViajeValidaciones.ValidarFormatoNumeroOrden("12345a"));
-        }
-
-        [Fact]
-        public void ValidarFormatoNumeroOrden_TodoCeros_NoPermitido()
-        {
-            Assert.Equal("El número de orden no puede ser '000000'.",
-                OrdenViajeValidaciones.ValidarFormatoNumeroOrden("000000"));
-        }
-
         // ---- ValidarFormatoHora ----
 
         [Theory]
@@ -96,44 +55,6 @@ namespace WebSGV.Tests
         public void EsFechaValidaSQL_AntesDe1753_NoValida()
         {
             Assert.False(OrdenViajeValidaciones.EsFechaValidaSQL(new DateTime(1752, 12, 31)));
-        }
-
-        // ---- ValidarDatosGeneralesOrdenViaje ----
-
-        [Fact]
-        public void ValidarDatosGeneralesOrdenViaje_TodoValido_RetornaVacio()
-        {
-            string r = OrdenViajeValidaciones.ValidarDatosGeneralesOrdenViaje(
-                new DateTime(2026, 6, 10), new DateTime(2026, 6, 11), "08:30", "18:00");
-            Assert.Equal(string.Empty, r);
-        }
-
-        [Fact]
-        public void ValidarDatosGeneralesOrdenViaje_FaltanCampos_AcumulaCuatroErrores()
-        {
-            string r = OrdenViajeValidaciones.ValidarDatosGeneralesOrdenViaje(
-                DateTime.MinValue, DateTime.MinValue, "", "");
-            Assert.Contains("'Fecha de Salida'", r);
-            Assert.Contains("'Hora de Salida'", r);
-            Assert.Contains("'Fecha de Llegada'", r);
-            Assert.Contains("'Hora de Llegada'", r);
-        }
-
-        [Fact]
-        public void ValidarDatosGeneralesOrdenViaje_SalidaPosteriorALlegada_Error()
-        {
-            string r = OrdenViajeValidaciones.ValidarDatosGeneralesOrdenViaje(
-                new DateTime(2026, 6, 12), new DateTime(2026, 6, 10), "08:30", "18:00");
-            Assert.Contains("no puede ser mayor a la 'Fecha de Llegada'", r);
-        }
-
-        [Fact]
-        public void ValidarDatosGeneralesOrdenViaje_NoValidaFormatoHora()
-        {
-            // A diferencia de la variante de liquidación, esta NO valida el formato de hora.
-            string r = OrdenViajeValidaciones.ValidarDatosGeneralesOrdenViaje(
-                new DateTime(2026, 6, 10), new DateTime(2026, 6, 11), "25:99", "xx:yy");
-            Assert.Equal(string.Empty, r);
         }
 
         // ---- ValidarDatosGeneralesLiquidacion ----

@@ -49,5 +49,47 @@ namespace WebSGV.Tests
         {
             Assert.Null(RolesHelper.UrlInicioSegunRol(rol));
         }
+
+        [Theory]
+        [InlineData("ADMIN", true)]
+        [InlineData("ADMINISTRADOR", true)]
+        [InlineData("ADMINISTRADOR DE TRANSPORTE", true)]
+        [InlineData(" administrador de transporte ", true)]          // sin distinguir mayúsculas/espacios
+        [InlineData("ADMINISTRADOR DE SISTEMA", false)]              // separación de funciones: solo usuarios y auditoría
+        [InlineData("Administrador de Sistema", false)]
+        [InlineData("SUPERVISOR", false)]
+        [InlineData("ADMINISTRADOR DE GRIFO", false)]
+        [InlineData("ADMINISTRADOR DE MAQUINARIA", false)]
+        [InlineData("CONTABILIDAD", false)]
+        [InlineData("OPERADOR", false)]
+        [InlineData("CONDUCTOR", false)]
+        [InlineData("CHOFER", false)]
+        [InlineData("", false)]
+        [InlineData(null, false)]
+        public void EsRolAdmin_SoloAdministradoresDeLaOperacion(string rol, bool esperado)
+        {
+            Assert.Equal(esperado, RolesHelper.EsRolAdmin(rol));
+        }
+
+        [Theory]
+        [InlineData("ADMIN", true)]
+        [InlineData("ADMINISTRADOR", true)]
+        [InlineData("ADMINISTRADOR DE TRANSPORTE", true)]          // la administradora real (antes recibía 403)
+        [InlineData(" Administrador de Grifo ", true)]
+        [InlineData("ADMINISTRADOR DE SISTEMA", false)]
+        [InlineData("SUPERVISOR", false)]
+        [InlineData("CONDUCTOR", false)]
+        [InlineData(null, false)]
+        public void PdfAbastecimiento_SoloAdministradoresYGrifo(string rol, bool esperado)
+        {
+            Assert.Equal(esperado, WebSGV.Views.DescargarPdfAbastecimiento.RolPuedeDescargar(rol));
+        }
+
+        [Fact]
+        public void AdminSistema_NoEsAdmin_YSuInicioEsSuPanel()
+        {
+            Assert.False(RolesHelper.EsRolAdmin(RolesHelper.ROL_ADMIN_SISTEMA));
+            Assert.Equal("~/Views/DashboardAdminSistema.aspx", RolesHelper.UrlInicioSegunRol(RolesHelper.ROL_ADMIN_SISTEMA));
+        }
     }
 }

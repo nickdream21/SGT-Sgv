@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using Newtonsoft.Json;
 using WebSGV.Helpers;
 using WebSGV.Models.Liquidaciones;
 
@@ -194,6 +195,28 @@ namespace WebSGV.Services.Liquidaciones
                 Mensaje = dt.Rows[0]["Mensaje"].ToString(),
                 IdMovimiento = idMovimiento
             };
+        }
+
+        /// <summary>
+        /// JSON del movimiento tal como está en la BD (montos, medio, orden a la que está unido, estado),
+        /// para la auditoría. <c>null</c> si no existe o si la lectura falla: la auditoría nunca rompe la operación.
+        /// </summary>
+        public static string InstantaneaMovimiento(int idMovimiento)
+        {
+            try
+            {
+                DataTable dt = DbHelper.ConsultarTabla(SelectMovimientos + " WHERE m.idMovimiento = @id",
+                    DbHelper.Param("@id", idMovimiento));
+                if (dt.Rows.Count == 0) return null;
+                DataRow r = dt.Rows[0];
+                return JsonConvert.SerializeObject(dt.Columns.Cast<DataColumn>()
+                    .ToDictionary(c => c.ColumnName, c => r.IsNull(c) ? null : r[c]));
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "No se pudo leer el movimiento {IdMovimiento} para la auditoría", idMovimiento);
+                return null;
+            }
         }
 
         private const string SelectMovimientos = @"

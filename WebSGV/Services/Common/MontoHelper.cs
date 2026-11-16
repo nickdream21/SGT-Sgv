@@ -5,7 +5,7 @@ namespace WebSGV.Services.Common
 {
     /// <summary>
     /// Lógica pura (sin System.Web ni BD) para parsear y validar montos de dinero.
-    /// Extraída de <c>DashboardConductor.aspx.cs</c> y <c>BuscarOrdenViaje.aspx.cs</c>.
+    /// Extraída de <c>DashboardConductor.aspx.cs</c>.
     /// Crítica para el flujo de liquidaciones: un error aquí cuesta dinero.
     /// </summary>
     public static class MontoHelper

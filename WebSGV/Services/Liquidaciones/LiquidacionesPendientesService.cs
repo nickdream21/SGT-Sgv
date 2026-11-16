@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using Newtonsoft.Json;
 using WebSGV.Helpers;
 using WebSGV.Models.Liquidaciones;
 
@@ -103,7 +104,12 @@ namespace WebSGV.Services.Liquidaciones
                             ISNULL((SELECT SUM(soles) FROM IngresosAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IngresosAdSoles,
                             ISNULL((SELECT SUM(dolares) FROM IngresosAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS IngresosAdDolares,
                             ISNULL((SELECT SUM(soles) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GastosAdSoles,
-                            ISNULL((SELECT SUM(dolares) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GastosAdDolares
+                            ISNULL((SELECT SUM(dolares) FROM CategoriasAdicionales WHERE numeroOrdenViaje = ov.numeroOrdenViaje), 0) AS GastosAdDolares,
+                            -- 1 si la liquidación ya tiene su pago o descuento vigente en Saldos de conductores.
+                            CASE WHEN EXISTS (SELECT 1 FROM PagoSaldoConductorDetalle psd
+                                              INNER JOIN PagoSaldoConductor ps ON ps.idPagoSaldo = psd.idPagoSaldo
+                                              WHERE psd.idOrdenViaje = ov.idOrdenViaje AND psd.activo = 1 AND ps.anulado = 0)
+                                 THEN 1 ELSE 0 END AS Pagada
                         FROM OrdenViaje ov
                         INNER JOIN Conductor c ON ov.idConductor = c.idConductor
                         INNER JOIN Tracto t ON ov.idTracto = t.idTracto
@@ -182,6 +188,10 @@ namespace WebSGV.Services.Liquidaciones
             public string Mensaje { get; set; }
             /// <summary>Número de orden de viaje resuelto (disponible en éxito).</summary>
             public string NumeroOrdenViaje { get; set; }
+            /// <summary>Montos de la orden antes de esta revisión (JSON de <see cref="InstantaneaMontos(int)"/>), para la auditoría.</summary>
+            public string MontosAntes { get; set; }
+            /// <summary>Montos de la orden tras confirmar la revisión (JSON), para la auditoría.</summary>
+            public string MontosDespues { get; set; }
         }
 
         /// <summary>
@@ -204,6 +214,7 @@ namespace WebSGV.Services.Liquidaciones
                 return new ResultadoEnvioConformidad { Exito = false, Mensaje = error };
 
             string numeroOrdenViaje = null;
+            string montosAntes = null;
 
             using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
             {
@@ -223,6 +234,8 @@ namespace WebSGV.Services.Liquidaciones
                         if (result == null || result == DBNull.Value)
                             return new ResultadoEnvioConformidad { Exito = false, Mensaje = "La liquidación no está pendiente o aún no tiene firma del conductor." };
                         numeroOrdenViaje = result.ToString();
+                        // Lo que había antes de pisarlo (ajustes, dinero entregado, entregas unidas), para la auditoría.
+                        montosAntes = InstantaneaMontos(conn, tran, idOrdenViaje);
 
                         // 2. Ajustes con su motivo. Sin ajustes se desactiva la fila que hubiera de una
                         //    revisión anterior (si no, un descuento ya retirado seguiría sumando).
@@ -325,7 +338,13 @@ namespace WebSGV.Services.Liquidaciones
                 }
             }
 
-            return new ResultadoEnvioConformidad { Exito = true, NumeroOrdenViaje = numeroOrdenViaje };
+            return new ResultadoEnvioConformidad
+            {
+                Exito = true,
+                NumeroOrdenViaje = numeroOrdenViaje,
+                MontosAntes = montosAntes,
+                MontosDespues = InstantaneaMontos(idOrdenViaje)
+            };
         }
 
         /// <summary>
@@ -339,22 +358,114 @@ namespace WebSGV.Services.Liquidaciones
                         ORDER BY ov.fechaEnvioConformidad",
                 DbHelper.Param("@idConductor", idConductor));
 
-        public const string MensajeOrdenFirmadaNoEditable =
-            "Esta liquidación tiene firmas electrónicas: el conductor firmó sus gastos y no se pueden modificar sin su firma. " +
-            "Para corregirla, recházala (el conductor la corrige y la vuelve a firmar) o registra un descuento o reintegro con su motivo al aprobarla.";
+        /// <summary>
+        /// Instantánea JSON de los montos de una orden para la auditoría (ValoresAnteriores /
+        /// ValoresNuevos de <c>AuditoriaLog</c>): estado, descuento y reintegro con sus motivos, dinero
+        /// entregado al conductor, ids de las entregas y pagos directos unidos y saldo final. Devuelve
+        /// <c>null</c> si la orden no existe o si la lectura falla: la auditoría nunca rompe la operación.
+        /// </summary>
+        public static string InstantaneaMontos(int idOrdenViaje) => InstantaneaMontos(null, null, idOrdenViaje);
+
+        /// <inheritdoc cref="InstantaneaMontos(int)"/>
+        /// <remarks>Con <paramref name="conn"/> lee dentro de la transacción del llamador.</remarks>
+        public static string InstantaneaMontos(SqlConnection conn, SqlTransaction tran, int idOrdenViaje)
+        {
+            try
+            {
+                DataTable Leer(string sql) => conn == null
+                    ? DbHelper.ConsultarTabla(sql, DbHelper.Param("@id", idOrdenViaje))
+                    : DbHelper.ConsultarTabla(conn, tran, sql, DbHelper.Param("@id", idOrdenViaje));
+
+                DataTable resumen = Leer(SelectResumenLiquidacion + " WHERE ov.idOrdenViaje = @id");
+                DataTable detalle = Leer(SqlDetalleInstantanea);
+                if (detalle.Rows.Count == 0)
+                    return null;
+                var ids = Leer(@"
+                        SELECT m.idMovimiento FROM MovimientoDineroViaje m
+                        INNER JOIN OrdenViaje ov ON ov.numeroOrdenViaje = m.numeroOrdenViaje
+                        WHERE ov.idOrdenViaje = @id AND m.activo = 1
+                        ORDER BY m.idMovimiento").Rows.Cast<DataRow>().Select(f => Convert.ToInt32(f["idMovimiento"]));
+
+                return ArmarInstantaneaMontos(detalle.Rows[0], resumen.Rows.Count > 0 ? resumen.Rows[0] : null, ids);
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "No se pudo leer la instantánea de montos de la orden {IdOrden} para la auditoría", idOrdenViaje);
+                return null;
+            }
+        }
+
+        private const string SqlDetalleInstantanea = @"
+                        SELECT ov.numeroOrdenViaje, ov.estadoAprobacion,
+                               dr.activo AS ajusteActivo,
+                               dr.descuentoSoles, dr.descuentoDolares, dr.observacionesDescuento,
+                               dr.reintegroSoles, dr.reintegroDolares, dr.observacionesReintegro,
+                               i.despachoSoles, i.despachoDolares, i.descDespacho,
+                               i.mensualidadSoles, i.mensualidadDolares, i.descMensualidad,
+                               i.prestamoSoles, i.prestamosDolares, i.descPrestamo,
+                               i.otrosSoles, i.otrosDolares, i.descOtrosAutorizados
+                        FROM OrdenViaje ov
+                        LEFT JOIN DescuentosReintegros dr ON dr.numeroOrdenViaje = ov.numeroOrdenViaje
+                        LEFT JOIN Ingresos i ON i.numeroOrdenViaje = ov.numeroOrdenViaje
+                        WHERE ov.idOrdenViaje = @id";
 
         /// <summary>
-        /// La orden tiene alguna firma (declaración, revisión o conformidad): sus montos no se
-        /// editan a mano desde AgregarOrdenViaje, porque cambiarían lo que alguien ya firmó.
+        /// Arma el JSON de <see cref="InstantaneaMontos(int)"/> (sin BD, para las pruebas).
+        /// <paramref name="detalle"/> trae las columnas de <c>SqlDetalleInstantanea</c>;
+        /// <paramref name="resumen"/> (opcional) las de <c>SelectResumenLiquidacion</c> para el saldo.
+        /// Los nulos de la BD salen como <c>null</c>; los montos, con punto decimal.
         /// </summary>
-        public static bool OrdenTieneFirmas(int idOrdenViaje)
+        internal static string ArmarInstantaneaMontos(DataRow detalle, DataRow resumen, IEnumerable<int> idsMovimientos)
         {
-            object r = DbHelper.EjecutarEscalar(@"
-                SELECT COUNT(1) FROM OrdenViaje
-                WHERE idOrdenViaje = @id
-                  AND (idFirmaConductor IS NOT NULL OR idFirmaAdmin IS NOT NULL OR idFirmaConformidad IS NOT NULL)",
-                DbHelper.Param("@id", idOrdenViaje));
-            return r != null && r != DBNull.Value && Convert.ToInt32(r) > 0;
+            object V(DataRow f, string c) => f == null || !f.Table.Columns.Contains(c) || f.IsNull(c) ? null : f[c];
+            decimal D(DataRow f, string c) => V(f, c) == null ? 0m : Convert.ToDecimal(f[c]);
+
+            object saldo = null;
+            if (resumen != null)
+            {
+                saldo = new
+                {
+                    soles = LiquidacionCalculos.SaldoFinal(D(resumen, "IngresosSoles") + D(resumen, "IngresosAdSoles"),
+                        D(resumen, "GastosSoles") + D(resumen, "GastosAdSoles"), D(resumen, "DescuentoSoles"), D(resumen, "ReintegroSoles")),
+                    dolares = LiquidacionCalculos.SaldoFinal(D(resumen, "IngresosDolares") + D(resumen, "IngresosAdDolares"),
+                        D(resumen, "GastosDolares") + D(resumen, "GastosAdDolares"), D(resumen, "DescuentoDolares"), D(resumen, "ReintegroDolares")),
+                    pagada = V(resumen, "Pagada") != null && Convert.ToInt32(resumen["Pagada"]) == 1
+                };
+            }
+
+            var instantanea = new
+            {
+                numeroOrdenViaje = V(detalle, "numeroOrdenViaje"),
+                estadoAprobacion = V(detalle, "estadoAprobacion"),
+                ajustes = V(detalle, "ajusteActivo") == null ? null : new
+                {
+                    activo = Convert.ToBoolean(detalle["ajusteActivo"]),
+                    descuentoSoles = V(detalle, "descuentoSoles"),
+                    descuentoDolares = V(detalle, "descuentoDolares"),
+                    motivoDescuento = V(detalle, "observacionesDescuento"),
+                    reintegroSoles = V(detalle, "reintegroSoles"),
+                    reintegroDolares = V(detalle, "reintegroDolares"),
+                    motivoReintegro = V(detalle, "observacionesReintegro")
+                },
+                entregado = new
+                {
+                    despachoSoles = V(detalle, "despachoSoles"),
+                    despachoDolares = V(detalle, "despachoDolares"),
+                    descDespacho = V(detalle, "descDespacho"),
+                    mensualidadSoles = V(detalle, "mensualidadSoles"),
+                    mensualidadDolares = V(detalle, "mensualidadDolares"),
+                    descMensualidad = V(detalle, "descMensualidad"),
+                    prestamoSoles = V(detalle, "prestamoSoles"),
+                    prestamoDolares = V(detalle, "prestamosDolares"),
+                    descPrestamo = V(detalle, "descPrestamo"),
+                    otrosSoles = V(detalle, "otrosSoles"),
+                    otrosDolares = V(detalle, "otrosDolares"),
+                    descOtros = V(detalle, "descOtrosAutorizados")
+                },
+                idsMovimientos = (idsMovimientos ?? Enumerable.Empty<int>()).ToArray(),
+                saldo
+            };
+            return JsonConvert.SerializeObject(instantanea);
         }
 
         /// <summary>"DNI 12345678" o "CE 001234567" (vacío si no tiene ninguno registrado).</summary>

@@ -302,6 +302,19 @@ namespace WebSGV.Views
                 }
                 else
                 {
+                    DataTable previo = DbHelper.ConsultarTabla(
+                        "SELECT nombre, rol, idConductor FROM Usuarios WHERE idUsuario = @id",
+                        DbHelper.Param("@id", idUsuario));
+                    if (previo.Rows.Count == 0)
+                        throw new Services.Common.ErrorNegocioException("El usuario ya no existe. Actualice la lista.");
+                    DataRow anterior = previo.Rows[0];
+                    string rolAnterior = Convert.ToString(anterior["rol"]).Trim();
+
+                    // Nadie se cambia su propio rol (ni se quita ni se da permisos): lo hace otro administrador de sistema.
+                    if (idUsuario == SecurityHelper.ObtenerIdUsuario()
+                        && !string.Equals(rolAnterior, rol.Trim(), StringComparison.OrdinalIgnoreCase))
+                        throw new Services.Common.ErrorNegocioException("No puede cambiar su propio rol. Pídaselo a otro administrador de sistema.");
+
                     DbHelper.EjecutarNonQuery(
                         "UPDATE Usuarios SET nombre = @nombre, rol = @rol, idConductor = @idConductor WHERE idUsuario = @id",
                         DbHelper.Param("@nombre", nombre),
@@ -309,7 +322,18 @@ namespace WebSGV.Views
                         DbHelper.Param("@idConductor", tieneConductor ? (object)idConductor : DBNull.Value),
                         DbHelper.Param("@id",     idUsuario));
 
-                    AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario, $"Usuario actualizado: nombre={nombre}, rol={rol}");
+                    string Json(string n, string r, object idC) => Newtonsoft.Json.JsonConvert.SerializeObject(new
+                    {
+                        nombre = n,
+                        rol = r,
+                        idConductor = idC == null || idC == DBNull.Value ? (int?)null : Convert.ToInt32(idC)
+                    });
+                    AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario,
+                        string.Equals(rolAnterior, rol.Trim(), StringComparison.OrdinalIgnoreCase)
+                            ? $"Usuario actualizado: nombre={nombre}, rol={rol}"
+                            : $"Usuario actualizado: nombre={nombre}, rol {rolAnterior} -> {rol}",
+                        Json(Convert.ToString(anterior["nombre"]), rolAnterior, anterior["idConductor"]),
+                        Json(nombre, rol, tieneConductor ? (object)idConductor : null));
                     MostrarMensaje("Usuario actualizado exitosamente.", "success");
                 }
 

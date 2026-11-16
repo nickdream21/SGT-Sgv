@@ -311,7 +311,7 @@ namespace WebSGV.Views
             Session["Rol"] = datos.Rol;
             Session["Nombre"] = datos.Nombre;
             Session["NombreUsuario"] = datos.NombreUsuario;
-            // Leído por varias páginas (AgregarCPIC, BuscarFactura, EditarDespacho...) para
+            // Leído por varias páginas (EditarDespacho, RegistroDespacho...) para
             // registrar quién sube o edita.
             Session["Usuario"] = datos.NombreUsuario;
             Session["RequiereCambioContrasena"] = datos.RequiereCambioContrasena;

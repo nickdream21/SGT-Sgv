@@ -751,3 +751,7 @@
     #modalDetalleLiquidacion .modal-footer > * { margin: 0; flex: 1 1 auto; }
     #modalDetalleLiquidacion .btn-corregir-salida { min-height: 40px; padding-left: 1rem; padding-right: 1rem; }
 }
+
+/* Revertir desactivado en una liquidación ya pagada: el span muestra el aviso (title). */
+.lp-revertir-bloqueado { display: inline-block; cursor: not-allowed; }
+.lp-revertir-bloqueado .sgv-btn-icono:disabled { opacity: .45; pointer-events: none; }

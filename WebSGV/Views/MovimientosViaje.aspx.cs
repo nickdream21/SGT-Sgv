@@ -7,6 +7,7 @@ using System.Web;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 using WebSGV.Models.Liquidaciones;
+using WebSGV.Services.Common;
 using WebSGV.Services.Liquidaciones;
 
 namespace WebSGV.Views
@@ -125,8 +126,8 @@ namespace WebSGV.Views
                     IdConductor = IdConductorSeleccionado,
                     Fecha = fecha,
                     Concepto = tipo == MovimientosViajeService.PagoDirecto ? ddlConceptoPago.SelectedValue : ddlConceptoEntrega.SelectedValue,
-                    MontoSoles = Decimal(txtSoles.Text),
-                    MontoDolares = Decimal(txtDolares.Text),
+                    MontoSoles = Math.Round(MontoHelper.LeerMonto(txtSoles.Text, "Soles (S/)"), 2),
+                    MontoDolares = Math.Round(MontoHelper.LeerMonto(txtDolares.Text, "Dólares (US$)"), 2),
                     Medio = ddlMedio.SelectedValue,
                     NumeroOperacion = Texto(txtOperacion.Text, 50),
                     NombreProveedor = Texto(txtProveedor.Text, 150),
@@ -174,9 +175,11 @@ namespace WebSGV.Views
             {
                 if (!int.TryParse(hfIdAnular.Value, out int id) || id <= 0) return;
                 string motivo = Texto(txtMotivoAnular.Text, 250);
+                string antes = MovimientosViajeService.InstantaneaMovimiento(id);
                 var r = MovimientosViajeService.Anular(id, SecurityHelper.ObtenerIdUsuario(), motivo);
                 if (r.Exito)
-                    AuditoriaHelper.Registrar("ANULAR_MOVIMIENTO_VIAJE", "MovimientoDineroViaje", id, "Anulado: " + motivo);
+                    AuditoriaHelper.Registrar("ANULAR_MOVIMIENTO_VIAJE", "MovimientoDineroViaje", id, "Anulado: " + motivo,
+                        antes, MovimientosViajeService.InstantaneaMovimiento(id));
                 MostrarMensaje(r.Mensaje, r.Exito ? "success" : "warning");
                 txtMotivoAnular.Text = "";
                 CargarMovimientos();
@@ -227,9 +230,6 @@ namespace WebSGV.Views
 
         protected string UrlAdjunto(object ruta) =>
             string.IsNullOrEmpty(ruta as string) ? null : DocumentoHelper.UrlDescarga((string)ruta);
-
-        private static decimal Decimal(string s) =>
-            decimal.TryParse((s ?? "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal d) ? Math.Round(d, 2) : 0m;
 
         private static string Texto(string s, int max)
         {

@@ -110,8 +110,7 @@ namespace WebSGV.Services
             {
                 DataTable dt = DbHelper.ConsultarTabla(@"
                     SELECT email, nombre FROM Usuarios
-                    WHERE  rol IN ('ADMIN','ADMINISTRADOR','SUPERVISOR',
-                                   'ADMINISTRADOR DE TRANSPORTE','ADMINISTRADOR DE SISTEMA')
+                    WHERE  rol IN ('ADMIN','ADMINISTRADOR','SUPERVISOR','ADMINISTRADOR DE TRANSPORTE')
                       AND  activo = 1
                       AND  email  IS NOT NULL
                       AND  LTRIM(RTRIM(email)) <> ''");
@@ -195,8 +194,7 @@ namespace WebSGV.Services
             {
                 DataTable dt = DbHelper.ConsultarTabla(@"
                     SELECT email FROM Usuarios
-                    WHERE  rol IN ('ADMIN','ADMINISTRADOR','SUPERVISOR',
-                                   'ADMINISTRADOR DE TRANSPORTE','ADMINISTRADOR DE SISTEMA')
+                    WHERE  rol IN ('ADMIN','ADMINISTRADOR','SUPERVISOR','ADMINISTRADOR DE TRANSPORTE')
                       AND  activo = 1
                       AND  email  IS NOT NULL
                       AND  LTRIM(RTRIM(email)) <> ''");

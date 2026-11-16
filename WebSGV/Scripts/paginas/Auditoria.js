@@ -1,7 +1,8 @@
 ﻿function mostrarDetalle(id) {
     var btn = $('[onclick="mostrarDetalle(' + id + ')"]');
-    var anterior = btn.data('anterior') || '';
-    var nuevo = btn.data('nuevo') || '';
+    // attr y no data(): jQuery convierte en objeto el texto que empieza por { o [ (los JSON de antes/después).
+    var anterior = btn.attr('data-anterior') || '';
+    var nuevo = btn.attr('data-nuevo') || '';
     var desc = btn.data('desc') || 'Sin descripción';
     var ip = btn.data('ip') || 'N/A';
     var nav = btn.data('nav') || 'N/A';

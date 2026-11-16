@@ -5,8 +5,8 @@ using WebSGV.Helpers;
 namespace WebSGV.Services.Facturas
 {
     /// <summary>
-    /// Escrituras (SQL) del módulo de Facturas (<c>AgregarFactura.aspx</c> y
-    /// <c>BuscarFactura.aspx</c>). Cada método recibe la <see cref="SqlConnection"/> y la
+    /// Escrituras (SQL) del módulo de Facturas (las usan <c>ListaDespachos</c>,
+    /// <c>RegistroDespacho</c> y la Bandeja de documentos). Cada método recibe la <see cref="SqlConnection"/> y la
     /// <see cref="SqlTransaction"/> abiertas por el code-behind, porque la escritura del
     /// archivo en disco (<c>ProcesarArchivo</c>/<c>SaveAs</c>) se intercala entre las
     /// operaciones de BD dentro de la misma transacción; esa orquestación (disco + upload +

@@ -6,8 +6,7 @@ namespace WebSGV.Services.Despachos
     /// <summary>
     /// Inserta el registro del documento (PDF/imagen escaneada) asociado a un CPIC. Usado
     /// desde <c>RegistroDespacho.aspx.cs</c>, donde <c>idCPIC</c> recién existe al finalizar
-    /// el lote. La tabla <c>DocumentosCPIC</c> ya existe en BD (usada también por
-    /// <c>AgregarCPIC.aspx.cs</c>, que inserta con SQL inline propio).
+    /// el lote. La tabla <c>DocumentosCPIC</c> ya existe en BD.
     /// </summary>
     public static class DocumentoCpicService
     {

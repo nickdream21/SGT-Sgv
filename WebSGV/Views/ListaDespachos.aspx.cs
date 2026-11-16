@@ -696,12 +696,6 @@ namespace WebSGV.Views
                 {
                     MostrarDetallesViaje(idViajeProgreso);
                 }
-                else if (e.CommandName == "FinalizarViaje")
-                {
-                    FinalizarViaje(idViajeProgreso);
-                    CargarViajesActivos();
-                    MostrarMensaje("Viaje finalizado exitosamente.", "success");
-                }
             }
             catch (Exception ex)
             {
@@ -783,25 +777,6 @@ namespace WebSGV.Views
         {
             MostrarListaViajes();
             CargarViajesActivos();
-        }
-
-        protected void btnFinalizarViajeDetalle_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                if (ViajeSeleccionadoId.HasValue)
-                {
-                    FinalizarViaje(ViajeSeleccionadoId.Value);
-                    MostrarListaViajes();
-                    CargarViajesActivos();
-                    MostrarMensaje("Viaje finalizado exitosamente.", "success");
-                }
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "Error al finalizar viaje en ListaDespachos");
-                MostrarMensaje("Error al finalizar viaje: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
-            }
         }
 
         #endregion
@@ -1791,142 +1766,6 @@ namespace WebSGV.Views
             lblMensajeManifiesto.Text = HttpUtility.HtmlEncode(mensaje ?? string.Empty);
             lblMensajeManifiesto.CssClass = $"alert alert-{tipo}";
             pnlMensajeManifiesto.Visible = true;
-        }
-
-        #endregion
-
-        #region Métodos de Gestión de Viajes (Original)
-
-        private void FinalizarViaje(int idViajeProgreso)
-        {
-            var despachosViaje = ObtenerDespachosDelViaje(idViajeProgreso);
-
-            // ❌ ELIMINAR TODA LA TRANSACCIÓN SQL - YA NO SE CIERRA AQUÍ
-
-            // ✅ SOLO transferir datos
-            TransferirDatosAOrdenViaje(idViajeProgreso, despachosViaje);
-        }
-
-        private void TransferirDatosAOrdenViaje(int idViajeProgreso, List<DespachoViaje> despachos)
-        {
-            var datosTransferencia = PrepararDatosParaTransferencia(idViajeProgreso, despachos);
-
-            string datosJson = JsonConvert.SerializeObject(datosTransferencia);
-            string datosEncoded = Server.UrlEncode(datosJson);
-
-            Response.Redirect($"AgregarOrdenViaje.aspx?origen=viajeFinalizado&datos={datosEncoded}");
-        }
-
-        private DatosTransferencia PrepararDatosParaTransferencia(int idViajeProgreso, List<DespachoViaje> despachos)
-        {
-            if (despachos == null || despachos.Count == 0)
-            {
-                throw new ErrorNegocioException("No hay despachos para transferir");
-            }
-
-            var datos = new DatosTransferencia
-            {
-                IdViajeProgreso = idViajeProgreso,
-                CantidadDespachos = despachos.Count
-            };
-
-            var primerDespacho = despachos.First();
-
-            // ✅ Asignar IDs
-            datos.IdConductor = primerDespacho.IdConductor;
-            datos.IdTracto = primerDespacho.IdTracto;
-            datos.IdCarreta = primerDespacho.IdCarreta;
-            datos.IdCliente = primerDespacho.IdCliente;
-
-            // ✅ Asignar ID del CPIC (ya existe en BD)
-            datos.IdCPIC = primerDespacho.IdCPIC;  // Puede ser NULL
-
-            // ✅ Información para MOSTRAR solamente
-            datos.EsInternacional = primerDespacho.EsInternacional;
-            datos.NumeroCPIC = primerDespacho.NumeroCPIC;  // Solo para mostrar
-
-            // Información visible
-            datos.Conductor = primerDespacho.NombreConductor;
-            datos.PlacaTracto = primerDespacho.PlacaTracto;
-            datos.PlacaCarreta = primerDespacho.PlacaCarreta;
-
-            if (despachos.Count == 1)
-            {
-                datos.Cliente = primerDespacho.NombreCliente;
-                datos.Planta = primerDespacho.LugarOperacion;
-                datos.Operacion = primerDespacho.TipoOperacion;
-                datos.TieneVariaciones = false;
-            }
-            else
-            {
-                datos.TieneVariaciones = VerificarVariacionesEnDatos(despachos);
-
-                if (!datos.TieneVariaciones)
-                {
-                    datos.Cliente = primerDespacho.NombreCliente;
-                    datos.Planta = primerDespacho.LugarOperacion;
-                    datos.Operacion = primerDespacho.TipoOperacion;
-                }
-                else
-                {
-                    datos.Cliente = $"{primerDespacho.NombreCliente} (+{despachos.Count - 1} más)";
-                    datos.Planta = $"{primerDespacho.LugarOperacion} (varía)";
-                    datos.Operacion = primerDespacho.TipoOperacion;
-                    datos.DespachosDetalle = despachos;
-                }
-            }
-
-            return datos;
-        }
-
-        private bool VerificarVariacionesEnDatos(List<DespachoViaje> despachos)
-        {
-            if (despachos.Count <= 1) return false;
-
-            var primero = despachos.First();
-
-            return despachos.Skip(1).Any(d =>
-                d.NombreCliente != primero.NombreCliente ||
-                d.PlacaTracto != primero.PlacaTracto ||
-                d.PlacaCarreta != primero.PlacaCarreta ||
-                d.LugarOperacion != primero.LugarOperacion ||
-                d.TipoOperacion != primero.TipoOperacion
-            );
-        }
-
-        [Serializable]
-        public class DatosTransferencia
-        {
-            public int IdViajeProgreso { get; set; }
-
-            // IDs necesarios
-            public int IdConductor { get; set; }
-            public int IdTracto { get; set; }
-            public int IdCarreta { get; set; }
-            public int IdCliente { get; set; }
-
-            // ✅ NUEVO: ID del CPIC (NO el número, el ID de la tabla)
-            public int? IdCPIC { get; set; }  // Puede ser NULL si es nacional
-
-            // Información visible
-            public string Conductor { get; set; }
-            public string Cliente { get; set; }
-            public string PlacaTracto { get; set; }
-            public string PlacaCarreta { get; set; }
-            public string Planta { get; set; }
-            public string Operacion { get; set; }
-            public int CantidadDespachos { get; set; }
-            public bool TieneVariaciones { get; set; }
-            public List<DespachoViaje> DespachosDetalle { get; set; }
-
-            // ✅ Para mostrar solamente
-            public bool EsInternacional { get; set; }
-            public string NumeroCPIC { get; set; }  // Solo para mostrar
-
-            public DatosTransferencia()
-            {
-                DespachosDetalle = new List<DespachoViaje>();
-            }
         }
 
         #endregion

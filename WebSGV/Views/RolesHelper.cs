@@ -55,14 +55,23 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
-        /// Verifica si el usuario actual es Admin
-        /// Acepta tanto "ADMIN" como "ADMINISTRADOR" o "ADMINISTRADOR DE SISTEMA"
+        /// Verifica si el usuario actual es administrador de la operación (ver <see cref="EsRolAdmin"/>).
         /// </summary>
         public static bool EsAdmin()
         {
-            string rolActual = ObtenerRolActual();
-            return rolActual == ROL_ADMIN || rolActual == "ADMINISTRADOR"
-                || rolActual == ROL_ADMIN_SISTEMA || rolActual == ROL_ADMIN_TRANSPORTE;
+            return EsRolAdmin(ObtenerRolActual());
+        }
+
+        /// <summary>
+        /// True si el rol es de administrador de la operación: ADMIN, ADMINISTRADOR (legado) o
+        /// ADMINISTRADOR DE TRANSPORTE, sin importar mayúsculas ni espacios. No lee la sesión.
+        /// ADMINISTRADOR DE SISTEMA no cuenta (separación de funciones, 2026-11): solo gestiona
+        /// usuarios y consulta la auditoría; no opera despachos, liquidaciones, saldos ni reportes.
+        /// </summary>
+        public static bool EsRolAdmin(string rol)
+        {
+            string r = (rol ?? "").Trim().ToUpper();
+            return r == ROL_ADMIN || r == "ADMINISTRADOR" || r == ROL_ADMIN_TRANSPORTE;
         }
 
         public static bool EsAdminTransporte()
@@ -201,10 +210,10 @@ namespace WebSGV.Helpers
                 case "AUDITORIA":
                     return EsAdminSistema();
 
-                // Seguimiento de Exportación: ADMIN, ADMIN DE SISTEMA y SUPERVISOR
+                // Seguimiento de Exportación: ADMIN y SUPERVISOR
                 case "SEGUIMIENTO_EXPORTACION":
                 case "DASHBOARD_EXPORTACION":
-                    return EsAdmin() || EsAdminSistema() || rol == ROL_SUPERVISOR;
+                    return EsAdmin() || rol == ROL_SUPERVISOR;
 
                 // Páginas accesibles para CONDUCTOR
                 case "DASHBOARD_CONDUCTOR":

@@ -204,13 +204,6 @@
                                                                        CssClass="btn btn-sm btn-outline-primary"
                                                                        CommandName="VerDespachos"
                                                                        CommandArgument='<%# Eval("IdViajeProgreso") %>' />
-
-                                                                    <asp:Button runat="server" 
-                                                                       Text="Finalizar" 
-                                                                       CssClass="btn btn-sm btn-outline-danger"
-                                                                       CommandName="FinalizarViaje"
-                                                                       CommandArgument='<%# Eval("IdViajeProgreso") %>'
-                                                                       OnClientClick="return confirm('¿Está seguro de finalizar este viaje? No podrá agregar más despachos.');" />
                                                                 </div>
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
@@ -459,13 +452,6 @@
                                                 </div>
                                                 <div class="col-md-4">
                                                     <div class="section-actions">
-                                                        <asp:Button ID="btnFinalizarViajeDetalle" runat="server" 
-                                                            Text="Finalizar viaje" 
-                                                            CssClass="btn btn-outline-danger btn-action"
-                                                            OnClick="btnFinalizarViajeDetalle_Click"
-                                                            OnClientClick="return confirm('¿Finalizar este viaje?');"
-                                                            CausesValidation="false" />
-                                                        
                                                         <asp:Button ID="btnVolverViajes" runat="server" 
                                                             Text="Volver a viajes" 
                                                             CssClass="btn btn-secondary btn-action"
@@ -1237,7 +1223,6 @@
                                 <asp:AsyncPostBackTrigger ControlID="btnBuscarViaje" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="gvViajesActivos" EventName="RowCommand" />
                                 <asp:AsyncPostBackTrigger ControlID="btnVolverViajes" EventName="Click" />
-                                <asp:AsyncPostBackTrigger ControlID="btnFinalizarViajeDetalle" EventName="Click" />
                                 
                                 <asp:AsyncPostBackTrigger ControlID="btnMostrarLotes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnRefrescarLotes" EventName="Click" />

@@ -11,7 +11,7 @@ namespace WebSGV.Tests
     /// Reglas del marcado para que las páginas se usen en celular (390/360 px) sin que la página
     /// entera se desplace en horizontal:
     /// - Site.Master declara el viewport y ya no carga Scripts/responsive-mobile.js (duplicaba las
-    ///   filas de ingresos/gastos de AgregarOrdenViaje como tarjetas y sus valores se perdían).
+    ///   filas de ingresos/gastos de las tablas como tarjetas y sus valores se perdían).
     /// - Toda tabla (&lt;table&gt; o &lt;asp:GridView&gt;) de Views queda dentro de un contenedor
     ///   que se desplaza solo: .table-responsive o uno de los envoltorios propios con overflow-x
     ///   conocido. Sin eso una tabla ancha ensancha toda la página (GestionUsuarios, VerificarDocumento).
@@ -142,7 +142,7 @@ namespace WebSGV.Tests
             Assert.DoesNotMatch(new Regex(@"select\s*\{[^}]*padding:\s*0\.75rem\s*!important", RegexOptions.IgnoreCase), css);
             Assert.Contains("font-size: 16px !important", css);
             Assert.Contains("Ó", css);   // guardado en UTF-8 (antes estaba en Windows-1252)
-            // .total-row también es un <tr> en el tfoot de AgregarOrdenViaje: un display:flex sin acotar
+            // .total-row también puede ser un <tr> en un tfoot: un display:flex sin acotar
             // a <div> desarmaba los anchos de la tabla de ingresos y gastos.
             Assert.DoesNotMatch(new Regex(@"(^|[\s,}])\.total-row[^{,]*\{", RegexOptions.Multiline), css);
             Assert.Contains(":where(div).total-row", css);

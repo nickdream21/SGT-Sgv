@@ -454,15 +454,6 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Label lblFechaInicioDetalle;
 
         /// <summary>
-        /// Control btnFinalizarViajeDetalle.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnFinalizarViajeDetalle;
-
-        /// <summary>
         /// Control btnVolverViajes.
         /// </summary>
         /// <remarks>

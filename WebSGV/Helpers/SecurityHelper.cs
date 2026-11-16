@@ -12,11 +12,8 @@ namespace WebSGV.Helpers
     /// </summary>
     public static class SecurityHelper
     {
-        // ── Roles reconocidos ──────────────────────────────────────────────
-        private const string ROL_ADMIN          = "ADMIN";
-        private const string ROL_ADMIN_LEGADO   = "ADMINISTRADOR";
+        // ── Roles reconocidos (administradores: RolesHelper.EsRolAdmin) ──────
         private const string ROL_ADMIN_SISTEMA  = "ADMINISTRADOR DE SISTEMA";
-        private const string ROL_ADMIN_TRANSPORTE = "ADMINISTRADOR DE TRANSPORTE";
         private const string ROL_SUPERVISOR     = "SUPERVISOR";
         private const string ROL_ADMIN_GRIFO    = "ADMINISTRADOR DE GRIFO";
         private const string ROL_ADMIN_MAQ      = "ADMINISTRADOR DE MAQUINARIA";
@@ -51,17 +48,13 @@ namespace WebSGV.Helpers
 
         // ── Comprobadores de rol ───────────────────────────────────────────
 
-        public static bool EsAdmin()
-        {
-            string rol = ObtenerRol();
-            return rol == ROL_ADMIN || rol == ROL_ADMIN_LEGADO || rol == ROL_ADMIN_SISTEMA || rol == ROL_ADMIN_TRANSPORTE;
-        }
+        /// <summary>
+        /// Administrador de la operación (<see cref="RolesHelper.EsRolAdmin"/>). ADMINISTRADOR DE
+        /// SISTEMA no cuenta: solo gestiona usuarios y auditoría (<see cref="EsAdminSistema"/>).
+        /// </summary>
+        public static bool EsAdmin() => RolesHelper.EsRolAdmin(ObtenerRol());
 
-        public static bool EsAdminOSupervisor()
-        {
-            string rol = ObtenerRol();
-            return rol == ROL_ADMIN || rol == ROL_ADMIN_LEGADO || rol == ROL_ADMIN_SISTEMA || rol == ROL_ADMIN_TRANSPORTE || rol == ROL_SUPERVISOR;
-        }
+        public static bool EsAdminOSupervisor() => EsAdmin() || ObtenerRol() == ROL_SUPERVISOR;
 
         public static bool EsAdminSistema()    => ObtenerRol() == ROL_ADMIN_SISTEMA;
         public static bool EsAdminGrifo()      => ObtenerRol() == ROL_ADMIN_GRIFO;
@@ -95,7 +88,7 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
-        /// Exige que el usuario sea ADMIN o ADMIN DE SISTEMA.
+        /// Exige un administrador de la operación (no ADMINISTRADOR DE SISTEMA).
         /// Primero valida sesión, luego valida rol.
         /// </summary>
         public static void ExigirRolAdmin()
@@ -106,7 +99,7 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
-        /// Exige ADMIN, ADMIN_SISTEMA o SUPERVISOR.
+        /// Exige un administrador de la operación o SUPERVISOR.
         /// </summary>
         public static void ExigirRolAdminOSupervisor()
         {
@@ -147,16 +140,13 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
-        /// Exige ADMIN, ADMIN_SISTEMA, SUPERVISOR o ADMIN_GRIFO.
+        /// Exige un administrador de la operación, SUPERVISOR o ADMIN_GRIFO.
         /// (Usado en secciones de conductores y abastecimiento)
         /// </summary>
         public static void ExigirRolAdminOGrifo()
         {
             ExigirSesion();
-            string rol = ObtenerRol();
-            bool permitido = rol == ROL_ADMIN || rol == ROL_ADMIN_LEGADO || rol == ROL_ADMIN_SISTEMA || rol == ROL_ADMIN_TRANSPORTE
-                          || rol == ROL_SUPERVISOR || rol == ROL_ADMIN_GRIFO;
-            if (!permitido)
+            if (!(EsAdminOSupervisor() || EsAdminGrifo()))
                 RedirigirSinPermiso();
         }
 

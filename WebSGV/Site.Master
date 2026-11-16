@@ -76,8 +76,8 @@
                     </li>
                     <% } %>
 
-                    <!-- ==================== SEGUIMIENTO (ADMIN, ADMIN SISTEMA, SUPERVISOR) ==================== -->
-                    <% if (EsAdmin || EsAdminSistema || RolUsuario == "SUPERVISOR")
+                    <!-- ==================== SEGUIMIENTO (ADMIN, SUPERVISOR) ==================== -->
+                    <% if (EsAdmin || RolUsuario == "SUPERVISOR")
                         { %>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownExportacion" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">

@@ -4,8 +4,8 @@ using WebSGV.Helpers;
 namespace WebSGV.Services.Facturas
 {
     /// <summary>
-    /// Consultas (SQL) del módulo de Facturas (<c>AgregarFactura.aspx</c> y
-    /// <c>BuscarFactura.aspx</c>). Extraídas del code-behind: el mapeo a
+    /// Consultas (SQL) del módulo de Facturas (las usan <c>ListaDespachos</c>,
+    /// <c>RegistroDespacho</c> y la Bandeja de documentos). Extraídas del code-behind: el mapeo a
     /// <c>FacturaModel</c>, el enlace a controles y el manejo de excepciones permanecen
     /// en el code-behind; este servicio sólo ejecuta el SQL. No se modifica ninguna
     /// consulta.

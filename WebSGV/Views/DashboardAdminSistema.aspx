@@ -81,18 +81,6 @@
                         <i class="fas fa-shield-alt text-secondary mr-2"></i>Auditoría del sistema
                         <small class="text-muted d-block">Historial completo de actividades</small>
                     </a>
-                    <a href="Inicio.aspx" class="list-group-item list-group-item-action quick-link">
-                        <i class="fas fa-tachometer-alt text-info mr-2"></i>Inicio operativo
-                        <small class="text-muted d-block">Vista de despachos y operaciones</small>
-                    </a>
-                    <a href="RegistroDespacho.aspx" class="list-group-item list-group-item-action quick-link">
-                        <i class="fas fa-box-open text-warning mr-2"></i>Nuevo despacho
-                        <small class="text-muted d-block">Registrar un despacho</small>
-                    </a>
-                    <a href="LiquidacionesPendientes.aspx" class="list-group-item list-group-item-action quick-link">
-                        <i class="fas fa-clock text-danger mr-2"></i>Liquidaciones pendientes
-                        <small class="text-muted d-block">Revisión y aprobación</small>
-                    </a>
                 </div>
             </div>
         </div>

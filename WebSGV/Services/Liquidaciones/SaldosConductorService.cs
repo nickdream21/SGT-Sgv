@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.Linq;
+using Newtonsoft.Json;
 using WebSGV.Helpers;
 using WebSGV.Services.Common;
 using WebSGV.Services.Reportes;
@@ -157,17 +158,78 @@ namespace WebSGV.Services.Liquidaciones
             decimal totD = dt.Rows.Cast<DataRow>().Sum(r => D(r, "SaldoDolares"));
             AuditoriaHelper.Registrar("INSERT", "PagoSaldoConductor", id.ToString(),
                 $"{NombreMedio(medio)} del {fechaPago:dd/MM/yyyy}: {string.Join(", ", dt.Rows.Cast<DataRow>().Select(r => r["numeroOrdenViaje"]))}. " +
-                LiquidacionCalculos.DescribirSaldo(totS, totD));
+                LiquidacionCalculos.DescribirSaldo(totS, totD),
+                valoresNuevos: InstantaneaPago(id));
             return id;
         }
 
         public static void AnularPago(int idPagoSaldo, string motivo, string usuario)
         {
+            // El registro tal como estaba (con sus liquidaciones y saldos), para la auditoría.
+            string antes = InstantaneaPago(idPagoSaldo);
             DbHelper.EjecutarNonQuerySp("sp_LD_AnularPagoSaldo",
                 DbHelper.Param("@idPagoSaldo", idPagoSaldo),
                 DbHelper.Param("@motivo", motivo ?? ""),
                 DbHelper.Param("@usuario", usuario));
-            AuditoriaHelper.Registrar("ANULAR", "PagoSaldoConductor", idPagoSaldo.ToString(), "Pago o descuento anulado. Motivo: " + motivo);
+            AuditoriaHelper.Registrar("ANULAR", "PagoSaldoConductor", idPagoSaldo.ToString(), "Pago o descuento anulado. Motivo: " + motivo,
+                antes, InstantaneaPago(idPagoSaldo));
+        }
+
+        /// <summary>
+        /// JSON de un pago o descuento con su detalle (liquidaciones y saldos) para la auditoría.
+        /// <c>null</c> si no existe o si la lectura falla: la auditoría nunca rompe la operación.
+        /// </summary>
+        public static string InstantaneaPago(int idPagoSaldo)
+        {
+            try
+            {
+                DataTable pago = DbHelper.ConsultarTabla(@"
+                    SELECT idPagoSaldo, idConductor, fechaPago, medio, numeroOperacion, observacion,
+                           montoSoles, montoDolares, usuarioRegistro, anulado, motivoAnulacion, usuarioAnulacion
+                    FROM PagoSaldoConductor WHERE idPagoSaldo = @p", DbHelper.Param("@p", idPagoSaldo));
+                if (pago.Rows.Count == 0) return null;
+                DataTable detalle = DbHelper.ConsultarTabla(@"
+                    SELECT d.idOrdenViaje, ov.numeroOrdenViaje, d.saldoSoles, d.saldoDolares, d.activo
+                    FROM PagoSaldoConductorDetalle d
+                    INNER JOIN OrdenViaje ov ON ov.idOrdenViaje = d.idOrdenViaje
+                    WHERE d.idPagoSaldo = @p ORDER BY d.idOrdenViaje", DbHelper.Param("@p", idPagoSaldo));
+                return ArmarInstantaneaPago(pago.Rows[0], detalle);
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "No se pudo leer el pago {IdPago} para la auditoría", idPagoSaldo);
+                return null;
+            }
+        }
+
+        /// <summary>Arma el JSON de <see cref="InstantaneaPago"/> (sin BD, para las pruebas).</summary>
+        internal static string ArmarInstantaneaPago(DataRow pago, DataTable detalle)
+        {
+            object V(DataRow f, string c) => !f.Table.Columns.Contains(c) || f.IsNull(c) ? null : f[c];
+            var fecha = V(pago, "fechaPago");
+            return JsonConvert.SerializeObject(new
+            {
+                idPagoSaldo = V(pago, "idPagoSaldo"),
+                idConductor = V(pago, "idConductor"),
+                fechaPago = fecha == null ? null : Convert.ToDateTime(fecha).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                medio = V(pago, "medio"),
+                numeroOperacion = V(pago, "numeroOperacion"),
+                observacion = V(pago, "observacion"),
+                montoSoles = V(pago, "montoSoles"),
+                montoDolares = V(pago, "montoDolares"),
+                usuarioRegistro = V(pago, "usuarioRegistro"),
+                anulado = V(pago, "anulado") != null && Convert.ToBoolean(pago["anulado"]),
+                motivoAnulacion = V(pago, "motivoAnulacion"),
+                usuarioAnulacion = V(pago, "usuarioAnulacion"),
+                detalle = (detalle == null ? Enumerable.Empty<DataRow>() : detalle.Rows.Cast<DataRow>()).Select(d => new
+                {
+                    idOrdenViaje = V(d, "idOrdenViaje"),
+                    numeroOrdenViaje = V(d, "numeroOrdenViaje"),
+                    saldoSoles = V(d, "saldoSoles"),
+                    saldoDolares = V(d, "saldoDolares"),
+                    activo = V(d, "activo") != null && Convert.ToBoolean(d["activo"])
+                }).ToArray()
+            });
         }
 
         /// <summary>Excel / PDF de la quincena: una sección por conductor con el neto a descontar o reintegrar.</summary>

@@ -941,8 +941,10 @@ function cargarLiquidacionesAprobadas() {
 
                 // N° Orden
                 html += '<td><div class="orden-numero">' + htmlEncode(item.NumeroOrdenViaje) + '</div>';
-                html += '<div class="sgv-suave">' + htmlEncode(item.FechaSalida) + '</div></td>';
+                html += '<div class="sgv-suave">' + htmlEncode(item.FechaSalida) + '</div>';
                 if (item.FechaConformidad) html += '<div class="sgv-suave" title="Conformidad firmada por el conductor"><i class="fas fa-signature mr-1"></i>' + htmlEncode(item.FechaConformidad) + '</div>';
+                if (item.Pagada) html += '<span class="sgv-estado sgv-estado-ok" title="Su pago o descuento está registrado en Saldos de conductores">Pagada</span>';
+                html += '</td>';
 
                 // Conductor
                 html += '<td><div>' + htmlEncode(item.NombreConductor) + '</div>';
@@ -960,7 +962,13 @@ function cargarLiquidacionesAprobadas() {
                 html += '<td class="text-right"><div class="sgv-acciones">';
                 html += '<button type="button" class="sgv-btn-icono info" onclick="verDetalleLiquidacion(' + item.IdOrdenViaje + ')" title="Ver detalle"><i class="fas fa-eye"></i></button>';
                 html += '<button type="button" class="sgv-btn-icono" onclick="descargarPdfOrdenViaje(' + item.IdOrdenViaje + ')" title="Descargar PDF SGV-CDF-F-05"><i class="fas fa-file-pdf"></i></button>';
-                html += '<button type="button" class="sgv-btn-icono peligro" onclick="abrirModalRevertir(' + item.IdOrdenViaje + ')" title="Revertir aprobación"><i class="fas fa-undo"></i></button>';
+                if (item.Pagada) {
+                    // Un botón desactivado no muestra su title: el aviso va en el contenedor.
+                    html += '<span class="lp-revertir-bloqueado" tabindex="0" title="Ya tiene su pago o descuento registrado: anúlelo primero en Saldos de conductores para poder revertir.">' +
+                        '<button type="button" class="sgv-btn-icono peligro" disabled aria-label="Revertir aprobación (anule primero el pago en Saldos de conductores)"><i class="fas fa-undo"></i></button></span>';
+                } else {
+                    html += '<button type="button" class="sgv-btn-icono peligro" onclick="abrirModalRevertir(' + item.IdOrdenViaje + ')" title="Revertir aprobación"><i class="fas fa-undo"></i></button>';
+                }
                 html += '</div></td>';
 
                 html += '</tr>';

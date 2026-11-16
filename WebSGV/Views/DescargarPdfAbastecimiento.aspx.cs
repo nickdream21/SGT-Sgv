@@ -14,8 +14,9 @@ namespace WebSGV.Views
     /// <summary>
     /// Handler de descarga del PDF oficial del Parte de Abastecimiento de
     /// Combustible (SGV-CDF-F-06). Reemplaza al talonario pre-impreso.
-    /// Requiere sesión. Accesible para roles ADMIN / ADMINISTRADOR DE GRIFO /
-    /// ADMINISTRADOR DE SISTEMA.
+    /// Requiere sesión. Accesible para los administradores de la operación (RolesHelper.EsRolAdmin:
+    /// ADMIN, ADMINISTRADOR, ADMINISTRADOR DE TRANSPORTE) y ADMINISTRADOR DE GRIFO
+    /// (ADMINISTRADOR DE SISTEMA no: solo gestiona usuarios y auditoría).
     ///
     /// Uso:  /Views/DescargarPdfAbastecimiento.aspx?id=[idAbastecimiento]
     ///       /Views/DescargarPdfAbastecimiento.aspx?num=[numeroAbastecimiento]
@@ -23,6 +24,13 @@ namespace WebSGV.Views
     /// </summary>
     public partial class DescargarPdfAbastecimiento : Page
     {
+        /// <summary>Administradores de la operación y ADMINISTRADOR DE GRIFO (sin importar mayúsculas ni espacios).</summary>
+        internal static bool RolPuedeDescargar(string rol)
+        {
+            string r = (rol ?? "").ToUpper().Trim();
+            return RolesHelper.EsRolAdmin(r) || r == RolesHelper.ROL_ADMIN_GRIFO;
+        }
+
         protected void Page_Load(object sender, EventArgs e)
         {
             Response.Clear();
@@ -39,9 +47,7 @@ namespace WebSGV.Views
                 return;
             }
 
-            string rol = (Session["Rol"] as string ?? "").ToUpperInvariant();
-            if (!(rol == "ADMIN" || rol == "ADMINISTRADOR" ||
-                  rol == "ADMINISTRADOR DE GRIFO" || rol == "ADMINISTRADOR DE SISTEMA"))
+            if (!RolPuedeDescargar(Session["Rol"] as string))
             {
                 EscribirError(403, "No tiene permisos para descargar este documento.");
                 return;

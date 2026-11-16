@@ -280,7 +280,6 @@
     <Content Include="appSettings.Secrets.config" />
     <Content Include="dashboard\PLAN_MODERNIZACION.md" />
     <Content Include="connectionStrings.config.example" />
-    <Content Include="Scripts\BuscarOrdenViaje.js" />
     <Content Include="Scripts\Custom\JavaScript.js" />
     <Content Include="Scripts\JavaScript.js" />
     <Content Include="Scripts\OrdenViaje.js" />
@@ -352,17 +351,12 @@
     <Content Include="Site.Master" />
     <Content Include="Content\App.css" />
     <Content Include="Content\paginas\AgregarAbastecimiento.css" />
-    <Content Include="Content\paginas\AgregarCPIC.css" />
-    <Content Include="Content\paginas\AgregarFactura.css" />
     <Content Include="Content\paginas\AgregarIndicadores.css" />
-    <Content Include="Content\paginas\AgregarOrdenViaje.css" />
     <Content Include="Content\paginas\Auditoria.css" />
     <Content Include="Content\paginas\ReporteCargas.css" />
     <Content Include="Content\paginas\FacturasFlete.css" />
     <Content Include="Content\paginas\BandejaDocumentos.css" />
     <Content Include="Content\paginas\BuscarAbastecimiento.css" />
-    <Content Include="Content\paginas\BuscarCPIC.css" />
-    <Content Include="Content\paginas\BuscarFactura.css" />
     <Content Include="Content\paginas\CargarExcel.css" />
     <Content Include="Content\paginas\Dashboard.css" />
     <Content Include="Content\paginas\DashboardConductor.css" />
@@ -393,14 +387,8 @@
     <Content Include="Content\paginas\RestablecerContrasena.css" />
     <Content Include="Content\paginas\SiteMaster.css" />
     <Content Include="Scripts\paginas\AgregarAbastecimiento.js" />
-    <Content Include="Scripts\paginas\AgregarCPIC.js" />
-    <Content Include="Scripts\paginas\AgregarFactura.js" />
-    <Content Include="Scripts\paginas\AgregarOrdenViaje.js" />
     <Content Include="Scripts\paginas\Auditoria.js" />
     <Content Include="Scripts\paginas\BuscarAbastecimiento.js" />
-    <Content Include="Scripts\paginas\BuscarCPIC.js" />
-    <Content Include="Scripts\paginas\BuscarFactura.js" />
-    <Content Include="Scripts\paginas\BuscarOrdenViaje.js" />
     <Content Include="Scripts\paginas\CargarExcel.js" />
     <Content Include="Scripts\paginas\CatalogoCliente.js" />
     <Content Include="Scripts\paginas\ConsultaAuditoria.js" />
@@ -442,16 +430,10 @@
     <Content Include="Scripts\paginas\SiteMaster-2.js" />
     <Content Include="Scripts\paginas\SiteMaster.js" />
     <Content Include="Views\AgregarAbastecimiento.aspx" />
-    <Content Include="Views\AgregarCPIC.aspx" />
-    <Content Include="Views\AgregarFactura.aspx" />
     <Content Include="Views\AgregarIndicadores.aspx" />
-    <Content Include="Views\AgregarOrdenViaje.aspx" />
     <Content Include="Views\AsignacionesMaquinaria.aspx" />
     <Content Include="Views\Auditoria.aspx" />
     <Content Include="Views\BuscarAbastecimiento.aspx" />
-    <Content Include="Views\BuscarCPIC.aspx" />
-    <Content Include="Views\BuscarFactura.aspx" />
-    <Content Include="Views\BuscarOrdenViaje.aspx" />
     <Content Include="Views\CargarExcel.aspx" />
     <Content Include="Views\ConsultaAuditoria.aspx" />
     <Content Include="Views\Dashboard.aspx" />
@@ -517,7 +499,6 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="Helpers\ArchivoHelper.cs" />
     <Compile Include="Helpers\AuditoriaHelper.cs" />
     <Compile Include="Helpers\DbHelper.cs" />
     <Compile Include="Helpers\IpClienteHelper.cs" />
@@ -590,7 +571,6 @@
     <Compile Include="Services\Despachos\Importacion\LectorProgramacionWord.cs" />
     <Compile Include="Services\Facturas\FacturaConsultasService.cs" />
     <Compile Include="Services\Facturas\FacturaEscrituraService.cs" />
-    <Compile Include="Services\Facturas\FacturaValidaciones.cs" />
     <Compile Include="Services\Facturas\FacturaFleteService.cs" />
     <Compile Include="Services\Facturas\LectorFacturaFlete.cs" />
     <Compile Include="Services\FirmaService.cs" />
@@ -620,8 +600,6 @@
     <Compile Include="Services\Liquidaciones\LiquidacionesContabilidadService.cs" />
     <Compile Include="Services\Liquidaciones\LiquidacionesPendientesService.cs" />
     <Compile Include="Services\NotificacionService.cs" />
-    <Compile Include="Services\OrdenViaje\AgregarOrdenViajeService.cs" />
-    <Compile Include="Services\OrdenViaje\BuscarOrdenViajeService.cs" />
     <Compile Include="Services\OrdenViaje\OrdenViajeValidaciones.cs" />
     <Compile Include="Services\PdfAbastecimientoService.cs" />
     <Compile Include="Services\PdfOrdenViajeService.cs" />
@@ -640,33 +618,12 @@
     <Compile Include="Views\AgregarAbastecimiento.aspx.designer.cs">
       <DependentUpon>AgregarAbastecimiento.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Views\AgregarCPIC.aspx.cs">
-      <DependentUpon>AgregarCPIC.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\AgregarCPIC.aspx.designer.cs">
-      <DependentUpon>AgregarCPIC.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\AgregarFactura.aspx.cs">
-      <DependentUpon>AgregarFactura.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\AgregarFactura.aspx.designer.cs">
-      <DependentUpon>AgregarFactura.aspx</DependentUpon>
-    </Compile>
     <Compile Include="Views\AgregarIndicadores.aspx.cs">
       <DependentUpon>AgregarIndicadores.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Views\AgregarIndicadores.aspx.designer.cs">
       <DependentUpon>AgregarIndicadores.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\AgregarOrdenViaje.aspx.cs">
-      <DependentUpon>AgregarOrdenViaje.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\AgregarOrdenViaje.aspx.designer.cs">
-      <DependentUpon>AgregarOrdenViaje.aspx</DependentUpon>
     </Compile>
     <Compile Include="Models\Conductor\LiquidacionConductorModels.cs" />
     <Compile Include="Models\GpsIntegracion\OnwayModels.cs" />
@@ -681,8 +638,6 @@
     <Compile Include="Services\Despachos\Importacion\LectorDocumentosAduana.cs" />
     <Compile Include="Services\Despachos\Importacion\LectorGreTransportista.cs" />
     <Compile Include="Models\Liquidaciones\DetalleLiquidacionModels.cs" />
-    <Compile Include="Models\OrdenViaje\AgregarOrdenViajeModels.cs" />
-    <Compile Include="Models\OrdenViaje\EditarOrdenViajeModels.cs" />
     <Compile Include="Models\DniResponse.cs" />
     <Compile Include="Models\DniService.cs" />
     <Compile Include="Views\AsignacionesMaquinaria.aspx.cs">
@@ -705,27 +660,6 @@
     </Compile>
     <Compile Include="Views\BuscarAbastecimiento.aspx.designer.cs">
       <DependentUpon>BuscarAbastecimiento.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\BuscarCPIC.aspx.cs">
-      <DependentUpon>BuscarCPIC.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\BuscarCPIC.aspx.designer.cs">
-      <DependentUpon>BuscarCPIC.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\BuscarFactura.aspx.cs">
-      <DependentUpon>BuscarFactura.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\BuscarFactura.aspx.designer.cs">
-      <DependentUpon>BuscarFactura.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\BuscarOrdenViaje.aspx.cs">
-      <DependentUpon>BuscarOrdenViaje.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\BuscarOrdenViaje.aspx.designer.cs">
-      <DependentUpon>BuscarOrdenViaje.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\CargarExcel.aspx.cs">
       <DependentUpon>CargarExcel.aspx</DependentUpon>

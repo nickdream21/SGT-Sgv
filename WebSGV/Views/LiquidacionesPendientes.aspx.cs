@@ -514,6 +514,8 @@ namespace WebSGV.Views
             public decimal BalanceDolares { get; set; }
             /// <summary>Fecha de la conformidad del conductor (vacía en órdenes registradas por la administración).</summary>
             public string FechaConformidad { get; set; }
+            /// <summary>Ya tiene su pago o descuento vigente en Saldos de conductores: no se puede revertir.</summary>
+            public bool Pagada { get; set; }
         }
 
         [WebMethod(EnableSession = true)]
@@ -571,7 +573,8 @@ namespace WebSGV.Views
                                     BalanceSoles = LiquidacionCalculos.SaldoFinal(ingresosSoles, gastosSoles, descS, reintS),
                                     BalanceDolares = LiquidacionCalculos.SaldoFinal(ingresosDolares, gastosDolares, descD, reintD),
                                     FechaConformidad = reader["fechaConformidad"] != DBNull.Value
-                                        ? Convert.ToDateTime(reader["fechaConformidad"]).ToString("dd/MM/yyyy HH:mm") : ""
+                                        ? Convert.ToDateTime(reader["fechaConformidad"]).ToString("dd/MM/yyyy HH:mm") : "",
+                                    Pagada = Convert.ToInt32(reader["Pagada"]) == 1
                                 });
                     }
 
@@ -620,11 +623,14 @@ namespace WebSGV.Views
                 if (contexto.IdUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
 
+                // Montos y estado que tenía la orden (aprobada o por conformar), para la auditoría.
+                string montosAntes = LiquidacionesPendientesService.InstantaneaMontos(idOrdenViaje);
                 var r = FirmaService.DevolverARevision(idOrdenViaje, origen, contexto,
                     SesionHelper.ObtenerNombre(ctx.Session), motivo);
                 if (r.Exito)
                     AuditoriaHelper.Registrar(origen == "REVERSION" ? "REVERTIR" : "RETIRAR_ENVIO_CONFORMIDAD",
-                        "OrdenViaje", idOrdenViaje, r.Mensaje + " Motivo: " + motivo);
+                        "OrdenViaje", idOrdenViaje, r.Mensaje + " Motivo: " + motivo,
+                        montosAntes, LiquidacionesPendientesService.InstantaneaMontos(idOrdenViaje));
 
                 return new { success = r.Exito, message = r.Mensaje };
             }
@@ -919,8 +925,18 @@ namespace WebSGV.Views
 
                 if (!r.Exito)
                 {
-                    var devuelta = FirmaService.DevolverARevision(idOrdenViaje, "RETIRO", contexto, nombre,
-                        "Retiro automático: no se pudo registrar la firma de revisión. " + r.Mensaje);
+                    // Compensación: si el retiro también falla (el SP lanza su error), se avisa que use "Retirar envío".
+                    ResultadoFirma devuelta;
+                    try
+                    {
+                        devuelta = FirmaService.DevolverARevision(idOrdenViaje, "RETIRO", contexto, nombre,
+                            "Retiro automático: no se pudo registrar la firma de revisión. " + r.Mensaje);
+                    }
+                    catch (Exception exRetiro)
+                    {
+                        LogSGV.Error(exRetiro, "Falló el retiro automático tras la firma de revisión fallida (orden {IdOrden})", idOrdenViaje);
+                        devuelta = new ResultadoFirma { Exito = false };
+                    }
                     LogSGV.Advertencia("Falló la firma de revisión de la orden {IdOrden}. Devuelta a pendientes: {Devuelta}. Motivo: {Mensaje}",
                         idOrdenViaje, devuelta.Exito, r.Mensaje);
                     return new
@@ -941,7 +957,8 @@ namespace WebSGV.Views
                     (ingresos != null
                         ? $"; Entregado al conductor S/ {ingresos.DespachoSoles + ingresos.MensualidadSoles + ingresos.PrestamoSoles + ingresos.OtrosSoles:0.00} " +
                           $"$ {ingresos.DespachoDolares + ingresos.MensualidadDolares + ingresos.PrestamoDolares + ingresos.OtrosDolares:0.00}"
-                        : ""));
+                        : ""),
+                    envio.MontosAntes, envio.MontosDespues);
 
                 NotificacionService.NotificarLiquidacionPorConformar(idOrdenViaje, envio.NumeroOrdenViaje);
 

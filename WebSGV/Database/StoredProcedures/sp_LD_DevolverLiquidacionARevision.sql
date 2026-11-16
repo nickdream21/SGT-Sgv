@@ -9,6 +9,8 @@
 --             'RETIRO'      -> la administración retira el envío antes de la conformidad (POR_CONFORMAR).
 --             'REVERSION'   -> la administración revierte una liquidación aprobada (APROBADO):
 --                              al aprobarla de nuevo el conductor vuelve a firmar su conformidad.
+--                              No se permite si la liquidación ya tiene su pago o descuento vigente
+--                              en Saldos de conductores (primero se anula ese registro).
 -- =============================================================================
 CREATE OR ALTER PROCEDURE sp_LD_DevolverLiquidacionARevision
     @idOrdenViaje  INT,
@@ -86,6 +88,18 @@ BEGIN
         RETURN;
     END
 
+    -- Una liquidación aprobada cuyo saldo ya se pagó o descontó no se revierte: el pago quedaría
+    -- calculado sobre montos que pueden cambiar. Se anula primero en Saldos de conductores.
+    IF @origen = 'REVERSION' AND EXISTS (
+        SELECT 1
+        FROM PagoSaldoConductorDetalle d
+        INNER JOIN PagoSaldoConductor p ON p.idPagoSaldo = d.idPagoSaldo
+        WHERE d.idOrdenViaje = @idOrdenViaje AND d.activo = 1 AND p.anulado = 0)
+    BEGIN
+        SET @mensaje = 'La liquidación ya tiene registrado su pago o descuento. Anúlelo primero en Saldos de conductores y luego revierta.';
+        RETURN;
+    END
+
     SET @etiqueta = CASE @origen
         WHEN 'OBSERVACION' THEN 'OBSERVACION DEL CONDUCTOR'
         WHEN 'RETIRO'      THEN 'RETIRO DEL ENVIO AL CONDUCTOR'
@@ -131,7 +145,13 @@ BEGIN
         FROM OrdenViaje ov
         INNER JOIN FirmaDigital fd ON fd.idFirma = ov.idFirmaConductor
         WHERE ov.idOrdenViaje = @idOrdenViaje
-          AND ov.estadoAprobacion = @estado;
+          AND ov.estadoAprobacion = @estado
+          -- Concurrencia: alguien pudo registrar el pago entre la validación y este UPDATE.
+          AND (@origen <> 'REVERSION' OR NOT EXISTS (
+                SELECT 1
+                FROM PagoSaldoConductorDetalle d
+                INNER JOIN PagoSaldoConductor p ON p.idPagoSaldo = d.idPagoSaldo
+                WHERE d.idOrdenViaje = ov.idOrdenViaje AND d.activo = 1 AND p.anulado = 0));
 
         IF @@ROWCOUNT = 0
         BEGIN
@@ -150,8 +170,9 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        SET @resultado = 0;
-        SET @mensaje   = 'Error al devolver la liquidación: ' + ERROR_MESSAGE();
+        -- Sin ERROR_MESSAGE() hacia el usuario: el error sube al C#, que lo registra (LogSGV)
+        -- y muestra un texto genérico (MensajeErrorHelper).
+        THROW;
     END CATCH
 END
 GO

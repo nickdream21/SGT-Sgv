@@ -142,8 +142,6 @@
 |---|---|
 | `LiquidacionesPendientes.aspx` | Ver liquidaciones firmadas por conductores pendientes de revisión |
 | `DetalleOrdenViaje.aspx` | Ver detalle completo: ingresos, gastos, peajes, alimentación, reparaciones, estado de firma |
-| `AgregarOrdenViaje.aspx` | Crear orden manualmente a partir del despacho |
-| `BuscarOrdenViaje.aspx` | Búsqueda avanzada por múltiples criterios |
 
 **Acciones sobre liquidaciones:**
 - ✅ **Aprobar** — Registra firma admin + ajustes en `DescuentosReintegros` + genera PDF firmado archivado en `~/App_Data/OrdenesViaje`
@@ -175,8 +173,7 @@
 
 | Página | Función |
 |---|---|
-| `AgregarCPIC.aspx` / `BuscarCPIC.aspx` | Documentos CPIC para operaciones internacionales |
-| `AgregarFactura.aspx` / `BuscarFactura.aspx` | Gestión de facturas |
+| `BandejaDocumentos.aspx` | CPIC y facturas: se crean al procesar los documentos de la bandeja (las páginas manuales de órdenes, CPIC y facturas se retiraron en 2026-11) |
 
 ---
 
