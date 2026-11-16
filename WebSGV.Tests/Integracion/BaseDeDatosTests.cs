@@ -99,6 +99,22 @@ namespace WebSGV.Tests.Integracion
         }
 
         [FactBD]
+        public void TablasDeAuditoria_TienenSusTriggersDeSoloInsercionHabilitados()
+        {
+            // Migración 47: si alguien los deshabilita o borra, esta prueba lo delata.
+            var habilitados = new HashSet<string>(
+                DbHelper.ConsultarTabla(@"SELECT name FROM sys.triggers
+                                          WHERE parent_id IN (OBJECT_ID('dbo.AuditoriaLog'), OBJECT_ID('dbo.Auditoria'))
+                                            AND is_instead_of_trigger = 1 AND is_disabled = 0")
+                       .Rows.Cast<DataRow>().Select(r => (string)r["name"]),
+                StringComparer.OrdinalIgnoreCase);
+
+            var esperados = new[] { "trg_AuditoriaLog_NoUpdate", "trg_AuditoriaLog_NoDelete", "trg_Auditoria_NoUpdate", "trg_Auditoria_NoDelete" };
+            var faltan = esperados.Where(t => !habilitados.Contains(t)).ToList();
+            Assert.True(faltan.Count == 0, "Triggers de auditoría ausentes o deshabilitados: " + string.Join(", ", faltan));
+        }
+
+        [FactBD]
         public void NingunUsuarioTieneContrasenaEnTextoPlano()
         {
             var sinHash = DbHelper.ConsultarTabla("SELECT idUsuario, contrasena FROM Usuarios").Rows.Cast<DataRow>()

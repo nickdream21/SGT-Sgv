@@ -14,11 +14,8 @@ namespace WebSGV.Views
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (!RolesHelper.EsAdminSistema())
-            {
-                Response.Redirect("~/Views/Inicio.aspx", true);
-                return;
-            }
+            SecurityHelper.ExigirRolAdminSistema();
+            SecurityHelper.AgregarHeadersSeguridad();
 
             if (!IsPostBack)
             {
@@ -77,54 +74,86 @@ namespace WebSGV.Views
             }
         }
 
-        private void CargarDatos()
+        /// <summary>Máximo de registros que se cargan para la grilla.</summary>
+        internal const int MaximoEnPantalla = 1000;
+        /// <summary>Máximo de registros que se exportan a Excel.</summary>
+        internal const int MaximoAlExportar = 10000;
+
+        /// <summary>
+        /// Consulta de AuditoriaLog con los filtros dados, limitada a los <paramref name="maximo"/> registros
+        /// más recientes (TOP (@max), FechaHora descendente). Agrega los parámetros a <paramref name="parametros"/>.
+        /// </summary>
+        internal static string ConstruirConsulta(DateTime? fechaDesde, DateTime? fechaHasta, string accion,
+            string tabla, string usuario, int maximo, List<SqlParameter> parametros)
         {
-            try
-            {
-                var parametros = new List<SqlParameter>();
-                StringBuilder sb = new StringBuilder(@"
-                    SELECT IdAuditoria, FechaHora, IdUsuario, NombreUsuario, RolUsuario, Accion,
+            StringBuilder sb = new StringBuilder(@"
+                    SELECT TOP (@max) IdAuditoria, FechaHora, IdUsuario, NombreUsuario, RolUsuario, Accion,
                            TablaAfectada, IdRegistroAfectado, Descripcion,
                            ValoresAnteriores, ValoresNuevos, DireccionIP, Navegador
                     FROM AuditoriaLog
                     WHERE 1=1");
+            parametros.Add(DbHelper.Param("@max", maximo));
 
-                if (!string.IsNullOrEmpty(txtFechaDesde.Text))
-                {
-                    sb.Append(" AND FechaHora >= @FechaDesde");
-                    parametros.Add(DbHelper.Param("@FechaDesde", DateTime.Parse(txtFechaDesde.Text)));
-                }
+            if (fechaDesde.HasValue)
+            {
+                sb.Append(" AND FechaHora >= @FechaDesde");
+                parametros.Add(DbHelper.Param("@FechaDesde", fechaDesde.Value));
+            }
 
-                if (!string.IsNullOrEmpty(txtFechaHasta.Text))
-                {
-                    sb.Append(" AND FechaHora < DATEADD(DAY, 1, @FechaHasta)");
-                    parametros.Add(DbHelper.Param("@FechaHasta", DateTime.Parse(txtFechaHasta.Text)));
-                }
+            if (fechaHasta.HasValue)
+            {
+                sb.Append(" AND FechaHora < DATEADD(DAY, 1, @FechaHasta)");
+                parametros.Add(DbHelper.Param("@FechaHasta", fechaHasta.Value));
+            }
 
-                if (!string.IsNullOrEmpty(ddlAccion.SelectedValue))
-                {
-                    sb.Append(" AND Accion = @Accion");
-                    parametros.Add(DbHelper.Param("@Accion", ddlAccion.SelectedValue));
-                }
+            if (!string.IsNullOrEmpty(accion))
+            {
+                sb.Append(" AND Accion = @Accion");
+                parametros.Add(DbHelper.Param("@Accion", accion));
+            }
 
-                if (!string.IsNullOrEmpty(ddlTabla.SelectedValue))
-                {
-                    sb.Append(" AND TablaAfectada = @Tabla");
-                    parametros.Add(DbHelper.Param("@Tabla", ddlTabla.SelectedValue));
-                }
+            if (!string.IsNullOrEmpty(tabla))
+            {
+                sb.Append(" AND TablaAfectada = @Tabla");
+                parametros.Add(DbHelper.Param("@Tabla", tabla));
+            }
 
-                if (!string.IsNullOrEmpty(txtUsuario.Text.Trim()))
-                {
-                    sb.Append(" AND NombreUsuario LIKE @Usuario");
-                    parametros.Add(DbHelper.Param("@Usuario", "%" + txtUsuario.Text.Trim() + "%"));
-                }
+            if (!string.IsNullOrEmpty(usuario))
+            {
+                sb.Append(" AND NombreUsuario LIKE @Usuario");
+                parametros.Add(DbHelper.Param("@Usuario", "%" + usuario + "%"));
+            }
 
-                sb.Append(" ORDER BY FechaHora DESC");
+            sb.Append(" ORDER BY FechaHora DESC, IdAuditoria DESC");
+            return sb.ToString();
+        }
 
-                DataTable dt = DbHelper.ConsultarTabla(sb.ToString(), parametros.ToArray());
+        /// <summary>Aviso cuando la consulta llegó al tope; null si no llegó.</summary>
+        internal static string AvisoTope(int filas, int maximo) =>
+            filas >= maximo ? $"Se muestran los {maximo} registros más recientes; acote las fechas." : null;
+
+        private void CargarDatos(int maximo = MaximoEnPantalla)
+        {
+            lblAvisoTope.Visible = false;
+            try
+            {
+                var parametros = new List<SqlParameter>();
+                string sql = ConstruirConsulta(
+                    string.IsNullOrEmpty(txtFechaDesde.Text) ? (DateTime?)null : DateTime.Parse(txtFechaDesde.Text),
+                    string.IsNullOrEmpty(txtFechaHasta.Text) ? (DateTime?)null : DateTime.Parse(txtFechaHasta.Text),
+                    ddlAccion.SelectedValue, ddlTabla.SelectedValue, txtUsuario.Text.Trim(), maximo, parametros);
+
+                DataTable dt = DbHelper.ConsultarTabla(sql, parametros.ToArray());
                 gvAuditoria.DataSource = dt;
                 gvAuditoria.DataBind();
                 lblCantidadResultados.Text = dt.Rows.Count + " registros";
+
+                string aviso = AvisoTope(dt.Rows.Count, maximo);
+                if (aviso != null)
+                {
+                    lblAvisoTope.Text = MensajeHtml.Texto(aviso);
+                    lblAvisoTope.Visible = true;
+                }
             }
             catch (Exception ex)
             {
@@ -155,7 +184,7 @@ namespace WebSGV.Views
             try
             {
                 gvAuditoria.AllowPaging = false;
-                CargarDatos();
+                CargarDatos(MaximoAlExportar);
 
                 Response.Clear();
                 Response.Buffer = true;
@@ -164,6 +193,11 @@ namespace WebSGV.Views
                 Response.ContentType = "application/vnd.ms-excel";
                 Response.ContentEncoding = Encoding.UTF8;
                 Response.Write("﻿");
+
+                // Sin esto, un rango con más filas que el tope se exportaría cortado sin avisar.
+                string avisoTope = AvisoTope(gvAuditoria.Rows.Count, MaximoAlExportar);
+                if (avisoTope != null)
+                    Response.Write("<p><b>" + System.Web.HttpUtility.HtmlEncode(avisoTope) + "</b></p>");
 
                 using (StringWriter sw = new StringWriter())
                 {

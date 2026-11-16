@@ -20,6 +20,7 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Button btnBuscar;
         protected global::System.Web.UI.WebControls.Button btnExportarExcel;
         protected global::System.Web.UI.WebControls.Label lblCantidadResultados;
+        protected global::System.Web.UI.WebControls.Label lblAvisoTope;
         protected global::System.Web.UI.WebControls.GridView gvAuditoria;
     }
 }

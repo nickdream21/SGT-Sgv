@@ -184,6 +184,7 @@
     <Content Include="Database\Schema\14_Cliente_DatosComerciales.sql" />
     <Content Include="Database\Schema\15_CatalogosPorCliente.sql" />
     <Content Include="Database\Schema\46_SelloSesion.sql" />
+    <Content Include="Database\Schema\47_AuditoriaSoloInsercion.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminMaquinaria.sql" />

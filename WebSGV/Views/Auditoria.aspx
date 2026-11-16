@@ -154,6 +154,7 @@
                     </span>
                 </div>
             </div>
+            <asp:Label ID="lblAvisoTope" runat="server" CssClass="alert alert-warning d-block mb-0 rounded-0" Visible="false"></asp:Label>
             <div class="aud-section-body p-0">
                 <div class="table-responsive">
                     <asp:GridView ID="gvAuditoria" runat="server"

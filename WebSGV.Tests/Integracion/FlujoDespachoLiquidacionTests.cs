@@ -50,9 +50,8 @@ namespace WebSGV.Tests.Integracion
                 Assert.Equal(1, Convert.ToInt32(DbHelper.EjecutarEscalar(contar, DbHelper.Param("@m", marca))));
             }
 
+            // AuditoriaLog es de solo inserción (migración 47): si el rollback fallara no se puede limpiar.
             int quedaron = Convert.ToInt32(DbHelper.EjecutarEscalar(contar, DbHelper.Param("@m", marca)));
-            if (quedaron > 0) // no debería pasar; limpiar para no ensuciar la BD de pruebas
-                DbHelper.EjecutarNonQuery("DELETE FROM AuditoriaLog WHERE Descripcion = @m", DbHelper.Param("@m", marca));
             Assert.Equal(0, quedaron);
         }
 

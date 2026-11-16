@@ -19,6 +19,14 @@
 -- ██                                                       ██
 -- ███████████████████████████████████████████████████████████
 --
+-- REQUISITO (desde la migración 47_AuditoriaSoloInsercion, 2026-11-16):
+--   AuditoriaLog y Auditoria son de solo inserción: los triggers
+--   trg_AuditoriaLog_NoUpdate/NoDelete y trg_Auditoria_NoUpdate/NoDelete
+--   rechazan el DELETE de este script. Antes de ejecutarlo, deshabilítelos:
+--     DISABLE TRIGGER trg_AuditoriaLog_NoDelete ON dbo.AuditoriaLog;
+--     DISABLE TRIGGER trg_Auditoria_NoDelete    ON dbo.Auditoria;
+--   y vuelva a habilitarlos al terminar (ENABLE TRIGGER ...).
+--
 -- PROPÓSITO:
 --   Limpiar datos transaccionales de prueba en la nueva BD
 --   respetando el orden correcto de FKs.

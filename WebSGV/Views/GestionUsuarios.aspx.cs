@@ -178,16 +178,49 @@ namespace WebSGV.Views
                 return;
             }
 
-            DbHelper.EjecutarNonQuery(
-                "UPDATE Usuarios SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END, selloSesion = NEWID() WHERE idUsuario = @id",
+            DataTable cambio = DbHelper.ConsultarTabla(
+                // OUTPUT ... INTO: un OUTPUT sin INTO falla (error 334) si Usuarios llega a tener triggers.
+                @"DECLARE @cambio TABLE (activoAntes BIT, activoDespues BIT);
+                  UPDATE Usuarios SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END, selloSesion = NEWID()
+                  OUTPUT deleted.activo, inserted.activo INTO @cambio (activoAntes, activoDespues)
+                  WHERE idUsuario = @id;
+                  SELECT activoAntes, activoDespues FROM @cambio;",
                 DbHelper.Param("@id", idUsuario));
             // Nuevo sello: las sesiones abiertas del usuario se cierran en su próxima petición.
             SesionVigenteHelper.InvalidarCache(idUsuario);
 
-            AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario, "Cambio de estado activo/inactivo por Admin Sistema");
+            if (cambio.Rows.Count == 0)
+            {
+                MostrarMensaje("El usuario ya no existe. Actualice la lista.", "warning");
+                CargarUsuarios();
+                return;
+            }
+
+            bool activoAntes   = cambio.Rows[0]["activoAntes"] != DBNull.Value && Convert.ToBoolean(cambio.Rows[0]["activoAntes"]);
+            bool activoDespues = cambio.Rows[0]["activoDespues"] != DBNull.Value && Convert.ToBoolean(cambio.Rows[0]["activoDespues"]);
+            AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario,
+                activoDespues ? "Usuario activado" : "Usuario desactivado",
+                JsonEstadoActivo(activoAntes), JsonEstadoActivo(activoDespues));
             MostrarMensaje("Estado del usuario actualizado correctamente.", "success");
             CargarUsuarios();
         }
+
+        /// <summary>Valores de auditoría del estado activo: <c>{"activo":1}</c> / <c>{"activo":0}</c>.</summary>
+        internal static string JsonEstadoActivo(bool activo) =>
+            Newtonsoft.Json.JsonConvert.SerializeObject(new { activo = activo ? 1 : 0 });
+
+        /// <summary>
+        /// Valores nuevos que se auditan al crear un usuario. Nunca incluye la contraseña ni su hash.
+        /// </summary>
+        internal static string JsonUsuarioNuevo(string nombreUsuario, string nombre, string rol, int? idConductor) =>
+            Newtonsoft.Json.JsonConvert.SerializeObject(new
+            {
+                nombreUsuario,
+                nombre,
+                rol,
+                idConductor,
+                requiereCambioContrasena = 1
+            });
 
         private void PrepararResetPassword(int idUsuario)
         {
@@ -303,7 +336,8 @@ namespace WebSGV.Views
                         DbHelper.Param("@rol",    rol),
                         DbHelper.Param("@idConductor", tieneConductor ? (object)idConductor : DBNull.Value)));
 
-                    AuditoriaHelper.Registrar("INSERT", "Usuarios", idNuevo, $"Nuevo usuario creado: {nombreUsuario}, rol: {rol}");
+                    AuditoriaHelper.Registrar("INSERT", "Usuarios", idNuevo, $"Nuevo usuario creado: {nombreUsuario}, rol: {rol}",
+                        null, JsonUsuarioNuevo(nombreUsuario, nombre, rol, tieneConductor ? (int?)idConductor : null));
                     MostrarMensaje($"Usuario '{nombreUsuario}' creado exitosamente.", "success");
                 }
                 else

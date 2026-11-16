@@ -91,8 +91,9 @@ namespace WebSGV.Helpers
             }
             catch (Exception ex)
             {
-                // La auditoría nunca debe romper la operación principal
-                System.Diagnostics.Debug.WriteLine($"⚠️ Error al registrar auditoría: {ex.Message}");
+                // La auditoría nunca debe romper la operación principal: se registra en el log y sigue.
+                try { LogSGV.Error(ex, "No se pudo registrar la auditoría {Accion} en {Tabla} (id {Id})", accion, tablaAfectada, idRegistroAfectado); }
+                catch { /* ni el log puede romper la operación */ }
             }
         }
 
