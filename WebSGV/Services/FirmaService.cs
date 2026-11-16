@@ -54,7 +54,8 @@ namespace WebSGV.Services
         // ---------------------------------------------------------------------
         public ResultadoFirma RegistrarDeclaracionConductor(int idOrdenViaje, ContextoFirma ctx, byte[] imagenTrazoPng)
         {
-            if (imagenTrazoPng == null || imagenTrazoPng.Length < 100)
+            // Vacío, no PNG, más de 256 KB o más de 2000 px: no se firma.
+            if (imagenTrazoPng == null || imagenTrazoPng.Length < 100 || !LiquidacionCalculos.EsTrazoPngValido(imagenTrazoPng))
                 return Error("La imagen de la firma es inválida o está vacía.");
 
             var detalle = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrdenViaje);
@@ -148,7 +149,8 @@ namespace WebSGV.Services
         /// <param name="huellaVista">Huella de la liquidación que el conductor tenía en pantalla al firmar.</param>
         public ResultadoFirma RegistrarConformidadConductor(int idOrdenViaje, ContextoFirma ctx, byte[] imagenTrazoPng, string huellaVista)
         {
-            if (imagenTrazoPng == null || imagenTrazoPng.Length < 100)
+            // Vacío, no PNG, más de 256 KB o más de 2000 px: no se firma.
+            if (imagenTrazoPng == null || imagenTrazoPng.Length < 100 || !LiquidacionCalculos.EsTrazoPngValido(imagenTrazoPng))
                 return Error("La imagen de la firma es inválida o está vacía.");
 
             var detalle = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrdenViaje);

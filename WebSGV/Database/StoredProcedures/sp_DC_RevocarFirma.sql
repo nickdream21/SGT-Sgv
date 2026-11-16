@@ -4,6 +4,9 @@
 --            append-only con estadoFirma='A' y referencia a la firma original.
 --            La tabla FirmaDigital tiene triggers que bloquean UPDATE/DELETE,
 --            por lo que la "anulación" se materializa como un INSERT nuevo.
+-- 2026-11-15: una firma ya anulada (por esta u otra vía, idFirmaAnulada) no se vuelve a
+--   revocar. Sin uso desde la misma fecha (se quitó el WebMethod RechazarLiquidacion);
+--   se conserva por si se retoma la revocación manual.
 -- =============================================================================
 CREATE OR ALTER PROCEDURE sp_DC_RevocarFirma
     @idFirmaOriginal    INT,
@@ -39,7 +42,7 @@ BEGIN
         RETURN;
     END
 
-    IF @estadoOrig = 'A'
+    IF @estadoOrig = 'A' OR EXISTS (SELECT 1 FROM FirmaDigital WHERE idFirmaAnulada = @idFirmaOriginal)
     BEGIN
         SET @resultado        = 0;
         SET @mensaje          = 'La firma ya está anulada.';
@@ -56,24 +59,30 @@ BEGIN
             fechaHoraFirma, ipOrigen, userAgent,
             estadoFirma, idFirmaAnulada, motivoAnulacion
         )
-        VALUES
-        (
+        SELECT
             @tipoDocumento, @idDocumento, 'C',
             @idUsuarioRevocador, NULL, @nombreRevocador, 'ADMIN',
             NULL, @hashDoc,
             'Revocación de firma id=' + CAST(@idFirmaOriginal AS VARCHAR(20)),
             SYSUTCDATETIME(), @ipOrigen, @userAgent,
             'A', @idFirmaOriginal, @motivoAnulacion
-        );
+        WHERE NOT EXISTS (SELECT 1 FROM FirmaDigital WITH (UPDLOCK, HOLDLOCK) WHERE idFirmaAnulada = @idFirmaOriginal);
+
+        IF @@ROWCOUNT = 0
+        BEGIN
+            SET @resultado         = 0;
+            SET @idFirmaRevocacion = 0;
+            SET @mensaje           = 'La firma ya está anulada.';
+            RETURN;
+        END
 
         SET @idFirmaRevocacion = SCOPE_IDENTITY();
         SET @resultado         = 1;
         SET @mensaje           = 'Firma revocada correctamente (append-only).';
     END TRY
     BEGIN CATCH
-        SET @resultado         = 0;
-        SET @idFirmaRevocacion = 0;
-        SET @mensaje           = 'Error al revocar la firma: ' + ERROR_MESSAGE();
+        -- Sin ERROR_MESSAGE() hacia el usuario: el error sube al C# (LogSGV + texto genérico).
+        THROW;
     END CATCH
 END
 GO

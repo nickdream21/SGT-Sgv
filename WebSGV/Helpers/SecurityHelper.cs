@@ -137,6 +137,16 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
+        /// Exige rol CONDUCTOR (o CHOFER). Con otro rol va al inicio de ese rol (no cierra la sesión).
+        /// </summary>
+        public static void ExigirRolConductor()
+        {
+            ExigirSesion();
+            if (!EsConductor())
+                RedirigirSinPermiso();
+        }
+
+        /// <summary>
         /// Exige ADMIN, ADMIN_SISTEMA, SUPERVISOR o ADMIN_GRIFO.
         /// (Usado en secciones de conductores y abastecimiento)
         /// </summary>

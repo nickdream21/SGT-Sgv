@@ -218,5 +218,96 @@ namespace WebSGV.Tests
             Assert.Equal("Orden de Viaje OV-2026-000123", meta.Title);
             Assert.Equal(Empresa.RazonSocial, meta.Author);
         }
+
+        // ---- Trazo de la firma: sin trazo válido no se emite el documento firmado ----
+
+        private static FirmasOrdenViaje DeclaracionConTrazo(byte[] trazo) => new FirmasOrdenViaje
+        {
+            Etapa = EtapaDocumento.Declaracion,
+            TrazoConductor = trazo,
+            CodigoVerificacion = "JKLM-NPQR-6789",
+            Eventos = new List<EventoFirma> { Evento(EtapaFirma.Declaracion, "Esteban Castro", new DateTime(2026, 7, 21, 19, 2, 5), "JKLM-NPQR-6789", null) }
+        };
+
+        private static void AssertTrazoInvalido(byte[] trazo)
+        {
+            var ex = Record.Exception(() => Paginas(LiquidacionTipica(), DeclaracionConTrazo(trazo)));
+            Assert.NotNull(ex);
+            // Puede llegar envuelto por QuestPDF: se busca en la cadena de excepciones internas.
+            Assert.Equal(OrdenViajeDocumento.TrazoInvalido, WebSGV.Services.Common.MensajeError.ExtraerMensajeDeNegocio(ex));
+        }
+
+        [Fact]
+        public void Declaracion_ConTrazoQueNoEsPng_LanzaYNoSeFirma()
+        {
+            // Antes salía el PDF con "[Firma no disponible]" y la firma se registraba igual.
+            var basura = new byte[300];
+            new Random(7).NextBytes(basura);
+            AssertTrazoInvalido(basura);
+        }
+
+        [Fact]
+        public void Declaracion_ConCabeceraPngPeroDatosCorruptos_LanzaYNoSeFirma()
+        {
+            // Pasa la validación de cabecera e IHDR, pero la imagen no se puede pintar.
+            byte[] corrupto = Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==");
+            for (int i = 33; i < corrupto.Length; i++) corrupto[i] = 0x5A;
+            AssertTrazoInvalido(corrupto);
+        }
+
+        [Fact]
+        public void Declaracion_ConTrazoValido_SeGenera()
+        {
+            Assert.Equal(2, Paginas(LiquidacionTipica(), DeclaracionConTrazo(Trazo)));
+        }
+
+        // ---- Archivado: nunca se pisa un PDF ajeno ----
+
+        private static string CarpetaTemporal()
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "sgv-pdf-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+
+        [Fact]
+        public void Archivar_DosVecesMismoNumeroYMismoSegundo_DaRutasDistintas()
+        {
+            string dir = CarpetaTemporal();
+            try
+            {
+                var ahora = new DateTime(2026, 11, 15, 10, 30, 45);
+                string r1 = PdfOrdenViajeService.GuardarSinSobrescribir(dir, "OV-2026-000123_DECLARACION", ahora, new byte[] { 1 });
+                string r2 = PdfOrdenViajeService.GuardarSinSobrescribir(dir, "OV-2026-000123_DECLARACION", ahora, new byte[] { 2 });
+                string r3 = PdfOrdenViajeService.GuardarSinSobrescribir(dir, "OV-2026-000123_DECLARACION", ahora, new byte[] { 3 });
+
+                Assert.Equal(3, new[] { r1, r2, r3 }.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+                Assert.Equal(new byte[] { 1 }, File.ReadAllBytes(r1));
+                Assert.Equal(new byte[] { 2 }, File.ReadAllBytes(r2));
+                Assert.Equal(new byte[] { 3 }, File.ReadAllBytes(r3));
+                Assert.EndsWith("OV-2026-000123_DECLARACION.pdf", r1);
+                Assert.EndsWith("OV-2026-000123_DECLARACION_20261115103045.pdf", r2);
+            }
+            finally { Directory.Delete(dir, true); }
+        }
+
+        [Fact]
+        public void Archivar_EnParaleloMismoNumero_NingunoPisaAOtro()
+        {
+            string dir = CarpetaTemporal();
+            try
+            {
+                var ahora = new DateTime(2026, 11, 15, 10, 30, 45);
+                var rutas = new System.Collections.Concurrent.ConcurrentBag<string>();
+                System.Threading.Tasks.Parallel.For(0, 16, i =>
+                    rutas.Add(PdfOrdenViajeService.GuardarSinSobrescribir(dir, "OV-2026-000999_FINAL", ahora, new[] { (byte)i })));
+
+                Assert.Equal(16, rutas.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+                // Cada archivo conserva el contenido de quien lo creó (16 valores distintos).
+                Assert.Equal(16, rutas.Select(r => File.ReadAllBytes(r)[0]).Distinct().Count());
+            }
+            finally { Directory.Delete(dir, true); }
+        }
     }
 }

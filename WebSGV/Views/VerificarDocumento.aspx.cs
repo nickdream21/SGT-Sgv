@@ -83,7 +83,13 @@ namespace WebSGV.Views
             string etapa = r["etapa"] as string;
 
             lblCodigo.Text = HttpUtility.HtmlEncode(codigo);
-            lblDocumento.Text = HttpUtility.HtmlEncode("Orden de viaje N.° " + r["numeroOrdenViaje"] + " — " + EtapaFirma.Nombre(etapa));
+            // Sin número: la orden ya no existe. Desde 2026-11-15 eso pasa cuando el conductor la
+            // retira (sp_DC_RetirarLiquidacion anula antes su firma); las firmas huérfanas
+            // anteriores (sin anulación ni código de verificación) no llegan a esta página.
+            string orden = r["numeroOrdenViaje"] == DBNull.Value
+                ? "Orden de viaje retirada por el conductor"
+                : "Orden de viaje N.° " + r["numeroOrdenViaje"];
+            lblDocumento.Text = HttpUtility.HtmlEncode(orden + " — " + EtapaFirma.Nombre(etapa));
             lblFirmante.Text = HttpUtility.HtmlEncode(System.Text.RegularExpressions.Regex.Replace(Convert.ToString(r["nombreFirmante"]).Trim(), @"\s+", " ") +
                 (Convert.ToString(r["rolFirmante"]) == "ADMIN" ? " (administración)" : " (conductor)"));
             lblFecha.Text = HttpUtility.HtmlEncode(FechaHelper.ConvertirDeUtc(Convert.ToDateTime(r["fechaHoraFirma"]))
@@ -94,7 +100,7 @@ namespace WebSGV.Views
 
             if (anulada)
             {
-                lblEstado.Text = "Documento auténtico, pero ANULADO: la firma fue anulada en una revisión posterior y este documento ya no tiene efecto.";
+                lblEstado.Text = "Documento auténtico, pero ANULADO: la firma fue anulada (ver el motivo en las firmas de la orden) y este documento ya no tiene efecto.";
                 pnlEstado.CssClass = "vd-estado vd-estado-alerta";
             }
             else if (reemplazado)

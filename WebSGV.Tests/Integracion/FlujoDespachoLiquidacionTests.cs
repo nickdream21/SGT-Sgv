@@ -764,7 +764,16 @@ namespace WebSGV.Tests.Integracion
             return Convert.ToInt32(pResultado.Value);
         }
 
-        private static int FirmarComoConductor(int idOrden, int idUsuarioConductor)
+        private static int FirmarComoConductor(int idOrden, int idUsuarioConductor, string codigoVerificacion = null)
+        {
+            int resultado = IntentarFirmarComoConductor(idOrden, idUsuarioConductor, codigoVerificacion, out int idFirma, out string mensaje);
+            Assert.True(resultado == 1, mensaje);
+            return idFirma;
+        }
+
+        /// <summary>Firma de la declaración por su SP; devuelve el resultado (1 = registrada) sin exigirlo.</summary>
+        private static int IntentarFirmarComoConductor(int idOrden, int idUsuarioConductor, string codigoVerificacion,
+            out int idFirma, out string mensaje)
         {
             var pIdFirma = new SqlParameter("@idFirmaSalida", SqlDbType.Int) { Direction = ParameterDirection.Output };
             var pResultado = new SqlParameter("@resultado", SqlDbType.Int) { Direction = ParameterDirection.Output };
@@ -781,10 +790,12 @@ namespace WebSGV.Tests.Integracion
                 DbHelper.Param("@ipOrigen", "127.0.0.1"),
                 DbHelper.Param("@userAgent", "xunit"),
                 DbHelper.Param("@rutaPdfFirmado", null),
+                DbHelper.Param("@codigoVerificacion", codigoVerificacion),
                 pIdFirma, pResultado, pMensaje);
 
-            Assert.True(Convert.ToInt32(pResultado.Value) == 1, pMensaje.Value as string);
-            return Convert.ToInt32(pIdFirma.Value);
+            idFirma = pIdFirma.Value == DBNull.Value ? 0 : Convert.ToInt32(pIdFirma.Value);
+            mensaje = pMensaje.Value as string;
+            return Convert.ToInt32(pResultado.Value);
         }
 
         private static DataRow Fila(string sql, int id)

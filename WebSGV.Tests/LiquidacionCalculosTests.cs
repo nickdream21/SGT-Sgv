@@ -135,20 +135,68 @@ namespace WebSGV.Tests
             Assert.Null(LiquidacionCalculos.DecodificarPngBase64("no-es-base64!!!"));
         }
 
-        [Fact]
-        public void DecodificarPngBase64_Base64Simple_Decodifica()
+        // PNG real de 1×1 px.
+        private const string PngValidoBase64 =
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+        /// <summary>Cabecera PNG + IHDR con las medidas dadas, rellenado hasta <paramref name="largo"/> bytes.</summary>
+        private static byte[] PngSintetico(int ancho, int alto, int largo = 100)
         {
-            string b64 = Convert.ToBase64String(new byte[] { 1, 2, 3, 4 });
-            byte[] resultado = LiquidacionCalculos.DecodificarPngBase64(b64);
-            Assert.Equal(new byte[] { 1, 2, 3, 4 }, resultado);
+            var b = new byte[Math.Max(largo, 33)];
+            new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, (byte)'I', (byte)'H', (byte)'D', (byte)'R' }.CopyTo(b, 0);
+            b[16] = (byte)(ancho >> 24); b[17] = (byte)(ancho >> 16); b[18] = (byte)(ancho >> 8); b[19] = (byte)ancho;
+            b[20] = (byte)(alto >> 24); b[21] = (byte)(alto >> 16); b[22] = (byte)(alto >> 8); b[23] = (byte)alto;
+            return b;
+        }
+
+        [Fact]
+        public void DecodificarPngBase64_PngValido_DevuelveLosBytes()
+        {
+            byte[] esperado = Convert.FromBase64String(PngValidoBase64);
+            Assert.Equal(esperado, LiquidacionCalculos.DecodificarPngBase64(PngValidoBase64));
         }
 
         [Fact]
         public void DecodificarPngBase64_ConPrefijoDataUri_DecodificaCuerpo()
         {
-            string b64 = Convert.ToBase64String(new byte[] { 9, 8, 7 });
-            byte[] resultado = LiquidacionCalculos.DecodificarPngBase64("data:image/png;base64," + b64);
-            Assert.Equal(new byte[] { 9, 8, 7 }, resultado);
+            byte[] esperado = Convert.FromBase64String(PngValidoBase64);
+            Assert.Equal(esperado, LiquidacionCalculos.DecodificarPngBase64("data:image/png;base64," + PngValidoBase64));
+        }
+
+        [Fact]
+        public void DecodificarPngBase64_Base64QueNoEsPng_RetornaNull()
+        {
+            // Base64 válido de 200 bytes, pero no es un PNG (antes bastaba con que decodificara).
+            Assert.Null(LiquidacionCalculos.DecodificarPngBase64(Convert.ToBase64String(new byte[200])));
+            Assert.Null(LiquidacionCalculos.DecodificarPngBase64(Convert.ToBase64String(new byte[] { 1, 2, 3, 4 })));
+            // Cabecera JPEG
+            Assert.Null(LiquidacionCalculos.DecodificarPngBase64(Convert.ToBase64String(new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 0, 0x10, 0x4A, 0x46, 0x49, 0x46, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 })));
+        }
+
+        [Fact]
+        public void DecodificarPngBase64_MasDe256KB_RetornaNull()
+        {
+            byte[] grande = PngSintetico(500, 200, LiquidacionCalculos.MaximoBytesTrazoPng + 1);
+            Assert.Null(LiquidacionCalculos.DecodificarPngBase64(Convert.ToBase64String(grande)));
+
+            byte[] alLimite = PngSintetico(500, 200, LiquidacionCalculos.MaximoBytesTrazoPng);
+            Assert.NotNull(LiquidacionCalculos.DecodificarPngBase64(Convert.ToBase64String(alLimite)));
+        }
+
+        [Fact]
+        public void DecodificarPngBase64_IhdrDe10000x10000_RetornaNull()
+        {
+            Assert.Null(LiquidacionCalculos.DecodificarPngBase64(Convert.ToBase64String(PngSintetico(10000, 10000))));
+            Assert.Null(LiquidacionCalculos.DecodificarPngBase64(Convert.ToBase64String(PngSintetico(4097, 300))));
+            Assert.Null(LiquidacionCalculos.DecodificarPngBase64(Convert.ToBase64String(PngSintetico(300, 4097))));
+            Assert.Null(LiquidacionCalculos.DecodificarPngBase64(Convert.ToBase64String(PngSintetico(0, 300))));
+        }
+
+        [Fact]
+        public void DecodificarPngBase64_HastaElTopeDe4096Px_Pasa()
+        {
+            Assert.NotNull(LiquidacionCalculos.DecodificarPngBase64(Convert.ToBase64String(PngSintetico(2001, 300))));
+            Assert.NotNull(LiquidacionCalculos.DecodificarPngBase64(Convert.ToBase64String(PngSintetico(4096, 4096))));
         }
 
         // ---- TryParseFechaFiltro ----

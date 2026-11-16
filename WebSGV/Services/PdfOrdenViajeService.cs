@@ -10,6 +10,7 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using WebSGV.Helpers;
 using WebSGV.Models.Liquidaciones;
+using WebSGV.Services.Common;
 using WebSGV.Services.Liquidaciones;
 
 namespace WebSGV.Services
@@ -215,16 +216,54 @@ namespace WebSGV.Services
 
             string sufijo = etapa == EtapaDocumento.SinFirmas ? "" : "_" + etapa.ToString().ToUpperInvariant();
             string baseNombre = SanitizarNombreArchivo(numeroOrden) + sufijo;
-            string ruta = Path.Combine(subDir, baseNombre + ".pdf");
+            return GuardarSinSobrescribir(subDir, baseNombre, ahora, bytes);
+        }
 
-            // Nunca se sobrescribe un documento firmado: cada versión queda con su fecha y hora.
-            if (File.Exists(ruta))
-                ruta = Path.Combine(subDir, baseNombre + ahora.ToString("_yyyyMMddHHmmss") + ".pdf");
-            for (int i = 2; File.Exists(ruta); i++)
-                ruta = Path.Combine(subDir, baseNombre + ahora.ToString("_yyyyMMddHHmmss") + "_" + i + ".pdf");
+        /// <summary>
+        /// Guarda <paramref name="bytes"/> en <c>carpetaaseNombre.pdf</c> o, si ya existe, en
+        /// <c>baseNombre_AAAAMMDDhhmmss.pdf</c>, <c>..._2.pdf</c>, <c>..._3.pdf</c>... Nunca sobrescribe:
+        /// el archivo se crea con <see cref="FileMode.CreateNew"/>, que falla si otro proceso lo creó
+        /// primero (antes File.Exists + WriteAllBytes dejaba que dos firmas del mismo segundo
+        /// escribieran la misma ruta, y el descarte de una borraba el PDF de la otra). Devuelve la
+        /// ruta física, que pertenece solo a esta llamada.
+        /// </summary>
+        internal static string GuardarSinSobrescribir(string carpeta, string baseNombre, DateTime ahora, byte[] bytes)
+        {
+            const int MaximoIntentos = 1000;
+            string marca = ahora.ToString("_yyyyMMddHHmmss");
 
-            File.WriteAllBytes(ruta, bytes);
-            return ruta;
+            for (int intento = 1; intento <= MaximoIntentos; intento++)
+            {
+                string nombre = intento == 1 ? baseNombre
+                              : intento == 2 ? baseNombre + marca
+                              : baseNombre + marca + "_" + (intento - 1);
+                string ruta = Path.Combine(carpeta, nombre + ".pdf");
+
+                FileStream fs;
+                try
+                {
+                    fs = new FileStream(ruta, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                }
+                catch (IOException) when (File.Exists(ruta))
+                {
+                    continue;   // ya existe (otro documento u otra firma simultánea): siguiente nombre
+                }
+
+                try
+                {
+                    using (fs)
+                        fs.Write(bytes, 0, bytes.Length);
+                }
+                catch
+                {
+                    // El archivo lo creó esta llamada: no queda un PDF a medio escribir.
+                    try { File.Delete(ruta); } catch { }
+                    throw;
+                }
+                return ruta;
+            }
+
+            throw new IOException("No se encontró un nombre libre para archivar el PDF " + baseNombre + ".");
         }
 
         private static string ConvertirARelativa(string rutaFisica)
@@ -1030,6 +1069,9 @@ namespace WebSGV.Services
             });
         }
 
+        internal const string TrazoInvalido =
+            "La imagen de la firma no se pudo incluir en el documento. Vuelva a firmar.";
+
         private void BloqueFirmaConductor(IContainer cont)
         {
             // El trazo solo se imprime en el documento que el conductor firmó con él.
@@ -1043,8 +1085,12 @@ namespace WebSGV.Services
                 {
                     if (firmaEsteDocumento)
                     {
+                        // Un documento firmado sin el trazo de su firma no se emite (antes salía con
+                        // "[Firma no disponible]" y la firma se registraba igual).
+                        if (!LiquidacionCalculos.EsTrazoPngValido(_firmas.TrazoConductor))
+                            throw new ErrorNegocioException(TrazoInvalido);
                         try { area.PaddingBottom(2).Image(_firmas.TrazoConductor).FitArea(); }
-                        catch { area.Text("[Firma no disponible]").FontSize(7.5f).FontColor(TextoSuave); }
+                        catch (Exception ex) { throw new ErrorNegocioException(TrazoInvalido, ex); }
                     }
                     else if (Etapa == EtapaDocumento.Revision)
                     {

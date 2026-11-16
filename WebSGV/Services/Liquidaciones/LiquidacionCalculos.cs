@@ -148,9 +148,21 @@ namespace WebSGV.Services.Liquidaciones
             return observaciones.Substring(delConductor.Length).Trim();
         }
 
+        /// <summary>Tamaño máximo del PNG del trazo de una firma (el más grande registrado pesa ~23 KB).</summary>
+        public const int MaximoBytesTrazoPng = 256 * 1024;
+
         /// <summary>
-        /// Decodifica un PNG en base64 (admite prefijo data URI "data:image/png;base64,").
-        /// Devuelve <c>null</c> si la cadena es vacía o no es base64 válido.
+        /// Ancho y alto máximos del trazo (el lienzo de firma mide bastante menos; con pantallas de
+        /// alta densidad puede crecer). El límite de <see cref="MaximoBytesTrazoPng"/> también protege.
+        /// </summary>
+        public const int MaximoPixelesTrazoPng = 4096;
+
+        private static readonly byte[] FirmaPng = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+
+        /// <summary>
+        /// Decodifica el PNG del trazo de una firma en base64 (admite prefijo data URI
+        /// "data:image/png;base64,"). Devuelve <c>null</c> si la cadena es vacía, no es base64
+        /// válido o no es un trazo aceptable (<see cref="EsTrazoPngValido"/>).
         /// </summary>
         public static byte[] DecodificarPngBase64(string s)
         {
@@ -161,13 +173,41 @@ namespace WebSGV.Services.Liquidaciones
                 string body = (comma >= 0 && s.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
                     ? s.Substring(comma + 1)
                     : s;
-                return Convert.FromBase64String(body);
+                // Antes de decodificar: base64 ocupa 4 caracteres por cada 3 bytes.
+                if (body.Length > (MaximoBytesTrazoPng / 3 + 1) * 4 + 64) return null;
+                byte[] bytes = Convert.FromBase64String(body);
+                return EsTrazoPngValido(bytes) ? bytes : null;
             }
             catch
             {
                 return null;
             }
         }
+
+        /// <summary>
+        /// El trazo es un PNG (cabecera 89 50 4E 47 0D 0A 1A 0A seguida del bloque IHDR), pesa como
+        /// máximo <see cref="MaximoBytesTrazoPng"/> y mide como máximo
+        /// <see cref="MaximoPixelesTrazoPng"/> de ancho y de alto. Las medidas se leen del IHDR sin
+        /// decodificar la imagen (un PNG pequeño puede declarar millones de píxeles).
+        /// </summary>
+        public static bool EsTrazoPngValido(byte[] png)
+        {
+            // 8 (firma) + 4 (largo) + 4 ("IHDR") + 13 (datos) + 4 (CRC)
+            if (png == null || png.Length < 33 || png.Length > MaximoBytesTrazoPng) return false;
+            for (int i = 0; i < FirmaPng.Length; i++)
+                if (png[i] != FirmaPng[i]) return false;
+
+            if (LeerEnteroBigEndian(png, 8) != 13 || png[12] != (byte)'I' || png[13] != (byte)'H' ||
+                png[14] != (byte)'D' || png[15] != (byte)'R')
+                return false;
+
+            long ancho = LeerEnteroBigEndian(png, 16);
+            long alto = LeerEnteroBigEndian(png, 20);
+            return ancho > 0 && alto > 0 && ancho <= MaximoPixelesTrazoPng && alto <= MaximoPixelesTrazoPng;
+        }
+
+        private static long LeerEnteroBigEndian(byte[] b, int i) =>
+            ((long)b[i] << 24) | ((long)b[i + 1] << 16) | ((long)b[i + 2] << 8) | b[i + 3];
 
         /// <summary>
         /// Intenta parsear una fecha de filtro en formato ISO estricto (yyyy-MM-dd).

@@ -38,6 +38,7 @@ namespace WebSGV.Services.Conductor
         public static int EnviarLiquidacion(LiquidacionConductorInput input)
         {
             if (input == null) throw new ArgumentNullException(nameof(input));
+            ValidarConductorYViajes(input);
 
             // Se arma todo antes de tocar la BD: una validación de montos que falle no abre
             // conexión ni transacción.
@@ -73,6 +74,22 @@ namespace WebSGV.Services.Conductor
             }
 
             return idOrdenGuardada;
+        }
+
+        /// <summary>
+        /// La orden siempre queda a nombre del conductor de la sesión y su viaje principal debe ser
+        /// uno de los viajes activos que se van a cerrar (que sp_DC_CerrarViajesProgreso valida
+        /// contra ese mismo conductor). Antes el viaje principal no se validaba y el conductor de la
+        /// orden salía de un despacho cualquiera de ese viaje: se podía liquidar a nombre de otro.
+        /// </summary>
+        internal static void ValidarConductorYViajes(LiquidacionConductorInput input)
+        {
+            if (input.IdConductorActual <= 0 || input.IdConductor != input.IdConductorActual)
+                throw new ErrorNegocioException("La liquidación no corresponde al conductor de la sesión.");
+
+            if (input.IdsViajesActivos == null || input.IdsViajesActivos.Count == 0 ||
+                !input.IdsViajesActivos.Contains(input.IdViajeProgreso))
+                throw new ErrorNegocioException("El viaje que se liquida no está entre sus viajes activos. Recargue la página.");
         }
 
         // ------------------------------------------------------------------

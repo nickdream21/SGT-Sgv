@@ -48,11 +48,14 @@ namespace WebSGV.Services.Conductor
             }
         }
 
-        /// <summary>Datos del viaje para la liquidación (<c>sp_DC_ObtenerDatosViajeParaLiquidacion</c>).</summary>
-        public static DataTable ObtenerDatosViajeParaLiquidacion(int idViajeProgreso, int idConductorFallback) =>
+        /// <summary>
+        /// Tracto y carreta del viaje para la liquidación (<c>sp_DC_ObtenerDatosViajeParaLiquidacion</c>).
+        /// Solo devuelve una fila si el viaje es de <paramref name="idConductor"/> (el de la sesión).
+        /// </summary>
+        public static DataTable ObtenerDatosViajeParaLiquidacion(int idViajeProgreso, int idConductor) =>
             DbHelper.ConsultarTablaSp("sp_DC_ObtenerDatosViajeParaLiquidacion",
                 DbHelper.Param("@idViajeProgreso", idViajeProgreso),
-                DbHelper.Param("@idConductorFallback", idConductorFallback));
+                DbHelper.Param("@idConductor", idConductor));
 
         /// <summary>
         /// Cuenta cuántos de <paramref name="idsViajes"/> pertenecen a

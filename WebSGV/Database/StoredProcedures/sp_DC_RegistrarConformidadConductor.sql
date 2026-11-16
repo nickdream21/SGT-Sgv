@@ -80,6 +80,19 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
+        -- Releer con bloqueo antes de insertar: si otra conformidad, una observación o un
+        -- retiro llegó primero, se sale con COMMIT sin haber escrito nada (nunca ROLLBACK de
+        -- la transacción de quien llama).
+        IF NOT EXISTS (SELECT 1 FROM OrdenViaje WITH (UPDLOCK, HOLDLOCK)
+                       WHERE idOrdenViaje = @idOrdenViaje
+                         AND estadoAprobacion = 'POR_CONFORMAR'
+                         AND idFirmaAdmin = @idFirmaAdmin)   -- la misma revisión cuya huella se comparó
+        BEGIN
+            COMMIT TRANSACTION;
+            SET @mensaje = 'La liquidación ya no está esperando su conformidad.';
+            RETURN;
+        END
+
         INSERT INTO FirmaDigital
         (
             tipoDocumento, idDocumento, nivelFirma,
@@ -108,15 +121,8 @@ BEGIN
             rutaPdfFirmado     = @rutaPdfFirmado,
             hashPdfFirmado     = @hashDocumento
         WHERE idOrdenViaje = @idOrdenViaje
-          AND estadoAprobacion = 'POR_CONFORMAR';
-
-        IF @@ROWCOUNT = 0
-        BEGIN
-            ROLLBACK TRANSACTION;
-            SET @idFirmaSalida = 0;
-            SET @mensaje = 'La liquidación ya no está esperando su conformidad.';
-            RETURN;
-        END
+          AND estadoAprobacion = 'POR_CONFORMAR'
+          AND idFirmaAdmin = @idFirmaAdmin;   -- fila bloqueada y verificada arriba
 
         COMMIT TRANSACTION;
 
@@ -125,9 +131,9 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        SET @resultado     = 0;
-        SET @idFirmaSalida = 0;
-        SET @mensaje       = 'Error al registrar la conformidad: ' + ERROR_MESSAGE();
+        -- Sin ERROR_MESSAGE() hacia el usuario: el error sube al C#, que borra el PDF, lo
+        -- registra (LogSGV) y muestra un texto genérico (MensajeErrorHelper).
+        THROW;
     END CATCH
 END
 GO

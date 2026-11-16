@@ -14,21 +14,12 @@ namespace WebSGV.Views
     {
         protected void Page_Load(object sender, EventArgs e)
         {
+            // Guardia fuera de cualquier try: termina la respuesta si no pasa.
+            SecurityHelper.ExigirRolConductor();
+
             if (IsPostBack) return;
 
             SecurityHelper.AgregarHeadersSeguridad();
-
-            var session = Session;
-            int idUsuario = 0;
-            if (session["IdUsuario"] != null)
-                int.TryParse(session["IdUsuario"].ToString(), out idUsuario);
-
-            if (idUsuario == 0 || !RolesHelper.EsConductor())
-            {
-                Response.Redirect(ResolveUrl("~/Views/Login.aspx?returnUrl=" +
-                    Server.UrlEncode(Request.RawUrl)), true);
-                return;
-            }
 
             int idOrdenViaje;
             if (!int.TryParse(Request.QueryString["id"], out idOrdenViaje) || idOrdenViaje <= 0)
@@ -38,14 +29,12 @@ namespace WebSGV.Views
             }
 
             int idConductorActual = 0;
-            if (session["IdConductor"] != null)
-                int.TryParse(session["IdConductor"].ToString(), out idConductorActual);
+            if (Session["IdConductor"] != null)
+                int.TryParse(Session["IdConductor"].ToString(), out idConductorActual);
 
-            if (idConductorActual == 0 || !OrdenPerteneceAlConductor(idOrdenViaje, idConductorActual))
+            if (idConductorActual == 0 || !OrdenPendienteDeFirma(idOrdenViaje, idConductorActual))
             {
-                System.Diagnostics.Debug.WriteLine(
-                    $"⚠️ Intento de acceso IDOR bloqueado: " +
-                    $"idOrdenViaje={idOrdenViaje}, idConductor={idConductorActual}");
+                // Ajena, ya firmada o fuera de estado: vuelve a su panel.
                 Response.Redirect(ResolveUrl("~/Views/DashboardConductor.aspx"), true);
                 return;
             }
@@ -54,26 +43,28 @@ namespace WebSGV.Views
         }
 
         /// <summary>
-        /// Devuelve true si la orden de viaje indicada pertenece al conductor
-        /// y está en un estado que permite firmar (PENDIENTE).
+        /// Devuelve true si la orden pertenece al conductor y espera la firma de su declaración:
+        /// PENDIENTE y sin firma vigente (la misma condición que sp_DC_RegistrarFirmaConductor).
         /// </summary>
-        private bool OrdenPerteneceAlConductor(int idOrdenViaje, int idConductor)
+        private bool OrdenPendienteDeFirma(int idOrdenViaje, int idConductor)
         {
             try
             {
                 int count = Convert.ToInt32(DbHelper.EjecutarEscalar(@"
                     SELECT COUNT(1)
                     FROM   OrdenViaje
-                    WHERE  idOrdenViaje   = @idOrdenViaje
-                      AND  idConductor    = @idConductor
-                      AND  estadoAprobacion IN ('PENDIENTE', 'REABIERTO')",
+                    WHERE  idOrdenViaje     = @idOrdenViaje
+                      AND  idConductor      = @idConductor
+                      AND  estadoAprobacion = 'PENDIENTE'
+                      AND  idFirmaConductor IS NULL
+                      AND  idFirmaAdmin     IS NULL",
                     DbHelper.Param("@idOrdenViaje", idOrdenViaje),
                     DbHelper.Param("@idConductor",  idConductor)));
                 return count > 0;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error en OrdenPerteneceAlConductor: {ex.Message}");
+                LogSGV.Error(ex, "Error al validar la orden {IdOrden} para la firma del conductor", idOrdenViaje);
                 return false;
             }
         }

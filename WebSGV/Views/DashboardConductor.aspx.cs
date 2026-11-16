@@ -594,29 +594,29 @@ namespace WebSGV.Views
                     return;
                 }
 
-                int idViajeProgreso = int.TryParse(hfIdViajeActivo.Value, out int ivp) ? ivp : 0;
-                Log($"idViajeProgreso del HiddenField: {idViajeProgreso} (raw: '{hfIdViajeActivo.Value}')");
-
-                if (idViajeProgreso == 0)
+                // Los viajes se leen de la BD con el conductor de la sesión, no de los campos ocultos
+                // (que el navegador puede cambiar): el principal es el mismo que muestra la página.
+                List<ViajeActivo> viajesActivos = ObtenerViajesActivos();
+                if (viajesActivos.Count == 0)
                 {
                     MostrarMensaje("No se encontró un viaje activo para liquidar. Recarga la página e intenta nuevamente.", "warning");
                     return;
                 }
-
-                // Obtener todos los IDs de viajes activos para cerrarlos todos
-                List<int> idsViajesActivos = new List<int>();
-                string idsStr = hfIdsViajesActivos.Value;
-                if (!string.IsNullOrEmpty(idsStr))
-                {
-                    foreach (string s in idsStr.Split(','))
-                    {
-                        if (int.TryParse(s.Trim(), out int id) && id > 0)
-                            idsViajesActivos.Add(id);
-                    }
-                }
-                if (idsViajesActivos.Count == 0)
-                    idsViajesActivos.Add(idViajeProgreso);
+                int idViajeProgreso = viajesActivos[0].IdViajeProgreso;
+                List<int> idsViajesActivos = viajesActivos.Select(v => v.IdViajeProgreso).ToList();
                 Log($"Viajes a cerrar: {string.Join(", ", idsViajesActivos)}");
+
+                // Si desde que se abrió la página cambió el conjunto de viajes (otro despacho, un
+                // viaje cerrado), no se liquida lo que el conductor no vio.
+                var idsMostrados = new HashSet<int>();
+                foreach (string s in (hfIdsViajesActivos.Value ?? "").Split(','))
+                    if (int.TryParse(s.Trim(), out int id) && id > 0)
+                        idsMostrados.Add(id);
+                if (idsMostrados.Count > 0 && !idsMostrados.SetEquals(idsViajesActivos))
+                {
+                    MostrarMensaje("Tus viajes activos cambiaron desde que abriste la página. Recarga la página y revisa la liquidación antes de enviarla.", "warning");
+                    return;
+                }
 
                 // Verificar que todos los IDs de viajes pertenecen al conductor actual (C-3)
                 if (!ValidarOwnershipViajes(idsViajesActivos, IdConductorActual))
@@ -811,7 +811,7 @@ namespace WebSGV.Views
                 HoraLlegada = horaLlegada,
                 HoraLlegadaDeclarada = horaLlegadaDeclarada,
                 Observaciones = observaciones,
-                IdConductor = datosViaje.IdConductor,
+                IdConductor = IdConductorActual,   // siempre el de la sesión
                 IdTracto = datosViaje.IdTracto,
                 IdCarreta = datosViaje.IdCarreta,
                 IdViajeProgreso = idViajeProgreso,
@@ -1109,29 +1109,31 @@ namespace WebSGV.Views
             }
         }
 
+        /// <summary>
+        /// Número correlativo de la orden (sp_DC_GenerarNumeroOrden). Si el SP falla, el envío
+        /// falla: antes se inventaba un número fuera del correlativo (OV-fechahora-conductor).
+        /// </summary>
         private string GenerarNumeroOrden()
         {
+            string nuevoNumero;
             try
             {
-                string nuevoNumero = DashboardConductorService.GenerarNumeroOrden();
-
-                if (!string.IsNullOrEmpty(nuevoNumero))
-                {
-                    Log($"✅ Número de orden generado: {nuevoNumero}");
-                    return nuevoNumero;
-                }
-
-                throw new Exception("El SP no retornó un número de orden");
+                nuevoNumero = DashboardConductorService.GenerarNumeroOrden();
             }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al generar el número de orden en DashboardConductor");
-                // Fallback: un solo snapshot de FechaHelper.Ahora() garantiza consistencia del timestamp
-                var ahora = FechaHelper.Ahora();
-                string fallbackNumero = $"OV-{ahora:yyyyMMddHHmmss}-{IdConductorActual:D4}-{ahora.Ticks % 1000:D3}";
-                Log($"⚠️ Usando número de orden fallback (SP falló): {fallbackNumero}");
-                return fallbackNumero;
+                throw new ErrorNegocioException("No se pudo generar el número de la orden. Inténtalo de nuevo en unos segundos.", ex);
             }
+
+            if (string.IsNullOrEmpty(nuevoNumero))
+            {
+                LogSGV.Advertencia("sp_DC_GenerarNumeroOrden no devolvió un número de orden");
+                throw new ErrorNegocioException("No se pudo generar el número de la orden. Inténtalo de nuevo en unos segundos.");
+            }
+
+            Log($"✅ Número de orden generado: {nuevoNumero}");
+            return nuevoNumero;
         }
 
         private DatosViajeParaLiquidacion ObtenerDatosViajeParaLiquidacion(int idViajeProgreso)
@@ -1144,7 +1146,8 @@ namespace WebSGV.Views
                 if (dtViaje.Rows.Count > 0)
                 {
                     DataRow reader = dtViaje.Rows[0];
-                    int idConductor = reader["idConductor"] != DBNull.Value ? Convert.ToInt32(reader["idConductor"]) : IdConductorActual;
+                    // El SP solo devuelve el viaje si es del conductor de la sesión; la orden va a su nombre.
+                    int idConductor = IdConductorActual;
                     int idTracto = reader["idTracto"] != DBNull.Value ? Convert.ToInt32(reader["idTracto"]) : 0;
                     int idCarreta = reader["idCarreta"] != DBNull.Value ? Convert.ToInt32(reader["idCarreta"]) : 0;
                     string origen = reader["origen"]?.ToString() ?? "";
@@ -1160,7 +1163,7 @@ namespace WebSGV.Views
 
                     return new DatosViajeParaLiquidacion
                     {
-                        IdConductor = idConductor > 0 ? idConductor : IdConductorActual,
+                        IdConductor = idConductor,
                         IdTracto = idTracto,
                         IdCarreta = idCarreta
                     };

@@ -148,23 +148,6 @@ namespace WebSGV.Services.Liquidaciones
             return DbHelper.ConsultarTabla(query, pars.ToArray());
         }
 
-        /// <summary>Datos de la orden pendiente (número y firma) para el flujo de rechazo.</summary>
-        public static DataTable ObtenerOrdenParaRechazo(int idOrdenViaje) =>
-            DbHelper.ConsultarTabla(
-                "SELECT numeroOrdenViaje, idFirmaConductor FROM OrdenViaje WHERE idOrdenViaje = @id AND estadoAprobacion = 'PENDIENTE'",
-                DbHelper.Param("@id", idOrdenViaje));
-
-        /// <summary>Marca la orden como RECHAZADO (habilita re-envío). Filas afectadas.</summary>
-        public static int MarcarRechazada(int idOrdenViaje, string motivo) =>
-            DbHelper.EjecutarNonQuery(@"
-                        UPDATE OrdenViaje
-                        SET estadoAprobacion = 'RECHAZADO',
-                            observaciones = ISNULL(observaciones, '') + CHAR(13) + CHAR(10) +
-                                '[RECHAZO ' + CONVERT(varchar, dbo.fn_AhoraPeru(), 120) + '] ' + @motivo
-                        WHERE idOrdenViaje = @id AND estadoAprobacion = 'PENDIENTE'",
-                DbHelper.Param("@id", idOrdenViaje),
-                DbHelper.Param("@motivo", motivo));
-
         /// <summary>
         /// Salida/llegada actuales de una orden aún PENDIENTE de aprobación (para que la
         /// administradora corrija la salida). Devuelve fila vacía si ya fue aprobada/rechazada.

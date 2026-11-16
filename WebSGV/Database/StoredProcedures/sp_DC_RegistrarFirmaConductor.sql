@@ -7,6 +7,11 @@
 --            (sp_DC_RegistrarConformidadConductor).
 -- El DNI se toma de la tabla Conductor (no del cliente); @dniFirmante solo se usa
 -- si el conductor no tiene DNI ni carné de extranjería registrado.
+-- 2026-11-15: la declaración se firma una sola vez, con la orden PENDIENTE y sin firma
+--   vigente (una reliquidación anula la anterior en sp_DC_ActualizarOrdenViajeConductor).
+--   Dentro de la transacción la orden se vuelve a leer con UPDLOCK/HOLDLOCK antes de
+--   insertar: de dos firmas simultáneas solo vale una, y la que llega tarde sale con
+--   COMMIT sin haber escrito nada (nunca hace ROLLBACK de la transacción de quien llama).
 -- =============================================================================
 CREATE OR ALTER PROCEDURE sp_DC_RegistrarFirmaConductor
     @idOrdenViaje        INT,
@@ -34,13 +39,17 @@ BEGIN
     DECLARE @estadoAprobacion VARCHAR(20);
     DECLARE @dniConductor     VARCHAR(15);
     DECLARE @usuario          VARCHAR(50);
+    DECLARE @idFirmaVigente   INT;
+    DECLARE @idFirmaAdmin     INT;
 
     -- Validar que la orden pertenece al conductor autenticado.
     -- La validación se repite aquí para que no pueda omitirse llamando al SP directamente.
     SELECT @numeroOrdenViaje = ov.numeroOrdenViaje,
            @estadoAprobacion = ov.estadoAprobacion,
            @dniConductor     = COALESCE(NULLIF(LTRIM(RTRIM(c.DNI)), ''), NULLIF(LTRIM(RTRIM(c.carnetExtranjeria)), '')),
-           @usuario          = u.nombreUsuario
+           @usuario          = u.nombreUsuario,
+           @idFirmaVigente   = ov.idFirmaConductor,
+           @idFirmaAdmin     = ov.idFirmaAdmin
     FROM OrdenViaje ov
     INNER JOIN Usuarios u ON u.idConductor = ov.idConductor
     LEFT  JOIN Conductor c ON c.idConductor = ov.idConductor
@@ -57,15 +66,25 @@ BEGIN
         RETURN;
     END
 
-    IF @estadoAprobacion NOT IN ('PENDIENTE', 'REABIERTO')
+    IF @estadoAprobacion <> 'PENDIENTE'
     BEGIN
         SET @resultado = 0;
-        SET @mensaje   = 'La Orden de Viaje no está en un estado válido para firmar (debe ser PENDIENTE o REABIERTO).';
+        SET @mensaje   = CASE WHEN @estadoAprobacion = 'REABIERTO'
+                              THEN 'La liquidación fue rechazada: corríjala y vuelva a enviarla antes de firmar.'
+                              ELSE 'La Orden de Viaje no está pendiente de firma.' END;
         SET @idFirmaSalida = 0;
         RETURN;
     END
 
-    IF EXISTS (SELECT 1 FROM OrdenViaje WHERE idOrdenViaje = @idOrdenViaje AND idFirmaAdmin IS NOT NULL)
+    IF @idFirmaVigente IS NOT NULL
+    BEGIN
+        SET @resultado = 0;
+        SET @mensaje   = 'La declaración de esta liquidación ya está firmada.';
+        SET @idFirmaSalida = 0;
+        RETURN;
+    END
+
+    IF @idFirmaAdmin IS NOT NULL
     BEGIN
         SET @resultado = 0;
         SET @mensaje   = 'La liquidación ya fue revisada por la administración; no se puede volver a firmar la declaración.';
@@ -83,6 +102,21 @@ BEGIN
 
     BEGIN TRY
         BEGIN TRANSACTION;
+
+        IF NOT EXISTS (SELECT 1 FROM OrdenViaje WITH (UPDLOCK, HOLDLOCK)
+                       WHERE idOrdenViaje = @idOrdenViaje
+                         AND estadoAprobacion = 'PENDIENTE'
+                         AND idFirmaConductor IS NULL
+                         AND idFirmaAdmin IS NULL)
+        BEGIN
+            -- Otra firma (u otro cambio de estado) llegó primero. No se escribió nada:
+            -- COMMIT solo libera el bloqueo.
+            COMMIT TRANSACTION;
+            SET @resultado     = 0;
+            SET @idFirmaSalida = 0;
+            SET @mensaje       = 'La declaración ya fue firmada o la liquidación cambió de estado. Actualice la pantalla.';
+            RETURN;
+        END
 
         INSERT INTO FirmaDigital
         (
@@ -112,7 +146,7 @@ BEGIN
             fechaEnvioFirmado         = ISNULL(@fechaHoraFirmaUtc, SYSUTCDATETIME()),
             observacionConductor      = NULL,
             fechaObservacionConductor = NULL
-        WHERE idOrdenViaje = @idOrdenViaje;
+        WHERE idOrdenViaje = @idOrdenViaje;   -- fila bloqueada y verificada arriba
 
         COMMIT TRANSACTION;
 
@@ -121,9 +155,9 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        SET @resultado     = 0;
-        SET @idFirmaSalida = 0;
-        SET @mensaje       = 'Error al registrar la firma: ' + ERROR_MESSAGE();
+        -- Sin ERROR_MESSAGE() hacia el usuario: el error sube al C#, que borra el PDF, lo
+        -- registra (LogSGV) y muestra un texto genérico (MensajeErrorHelper).
+        THROW;
     END CATCH
 END
 GO
