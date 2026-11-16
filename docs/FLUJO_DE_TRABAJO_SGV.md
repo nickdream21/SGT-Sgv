@@ -8,12 +8,12 @@
 
 ## 👥 Roles del Sistema
 
-El sistema maneja **7 roles** definidos en `WebSGV/Views/RolesHelper.cs`:
+El sistema maneja **8 roles** (9 constantes `ROL_*`: `ADMIN` y `ADMINISTRADOR DE TRANSPORTE` tienen los mismos permisos) definidos en `WebSGV/Views/RolesHelper.cs`; los alias `ADMINISTRADOR` y `CHOFER` se aceptan como `ADMIN` y `CONDUCTOR`:
 
 | Rol | Constante | Valor en BD | Redirección Login | Descripción |
 |-----|-----------|-------------|-------------------|-------------|
-| **Administrador de Transporte** | `ROL_ADMIN` | `ADMINISTRADOR DE TRANSPORTE` (también `ADMIN`, `ADMINISTRADOR`) | `Inicio.aspx` | Gestión operativa completa: despachos, viajes, liquidaciones, registros y reportes |
-| **Administrador de Sistema** | `ROL_ADMIN_SISTEMA` | `ADMINISTRADOR DE SISTEMA` | `DashboardAdminSistema.aspx` | Todo lo del Admin + módulo de auditoría exclusivo |
+| **Administrador de Transporte** | `ROL_ADMIN_TRANSPORTE` (y `ROL_ADMIN` para `ADMIN` / `ADMINISTRADOR`) | `ADMINISTRADOR DE TRANSPORTE` (también `ADMIN`, `ADMINISTRADOR`) | `Inicio.aspx` | Gestión operativa completa: despachos, viajes, liquidaciones, registros y reportes |
+| **Administrador de Sistema** | `ROL_ADMIN_SISTEMA` | `ADMINISTRADOR DE SISTEMA` | `DashboardAdminSistema.aspx` | Gestión de usuarios y auditoría; no opera despachos, liquidaciones ni reportes |
 | **Conductor** | `ROL_CONDUCTOR` | `CONDUCTOR` (también `CHOFER`) | `DashboardConductor.aspx` | Liquidación firmada de viajes asignados y consulta de historial |
 | **Administrador de Grifo** | `ROL_ADMIN_GRIFO` | `ADMINISTRADOR DE GRIFO` | `DashboardGrifo.aspx` | Gestión integral de abastecimiento de combustible |
 | **Administrador de Maquinaria** | `ROL_ADMIN_MAQUINARIA` | `ADMINISTRADOR DE MAQUINARIA` | `AsignacionesMaquinaria.aspx` | Gestión de equipos, obras, operadores y asignaciones |
@@ -29,20 +29,21 @@ El sistema maneja **7 roles** definidos en `WebSGV/Views/RolesHelper.cs`:
 
 ## 🔑 Matriz de Permisos por Sección
 
-| Sección (`TienePermiso`) | ADMIN | ADMIN_SISTEMA | CONDUCTOR | ADMIN_GRIFO | ADMIN_MAQUINARIA | OPERADOR | SUPERVISOR |
-|--------------------------|:-----:|:-------------:|:---------:|:-----------:|:----------------:|:--------:|:----------:|
-| `DESPACHO` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| `FACTURA` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| `CPIC` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| `ORDEN_VIAJE` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| `REGISTRO` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| `CONSULTAS` / `INDICADORES` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| `REGISTRO_CONDUCTORES` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ |
-| `ABASTECIMIENTO` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ |
-| `DASHBOARD_GRIFO` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| `AUDITORIA` | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `DASHBOARD_CONDUCTOR` / `MIS_VIAJES` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `DASHBOARD_OPERADOR` / `PARTE_DIARIO` | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ |
+ADMIN\* = `ADMIN`, `ADMINISTRADOR` y `ADMINISTRADOR DE TRANSPORTE` (`RolesHelper.EsRolAdmin`); CONDUCTOR incluye `CHOFER`; GRIFO y MAQUINARIA son los administradores de cada módulo.
+
+| Sección (`TienePermiso(seccion, rol)`) | ADMIN\* | SUPERVISOR | CONDUCTOR | CONTABILIDAD | ADMIN_SISTEMA | GRIFO | MAQUINARIA | OPERADOR |
+|----------------------------------------|:------:|:----------:|:---------:|:------------:|:-------------:|:-----:|:----------:|:--------:|
+| `DESPACHO` / `FACTURA` / `CPIC` / `ORDEN_VIAJE` / `REGISTRO` / `CONSULTAS` / `INDICADORES` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `REGISTRO_CONDUCTORES` / `ABASTECIMIENTO` | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `DASHBOARD_GRIFO` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `AUDITORIA` | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `SEGUIMIENTO_EXPORTACION` / `DASHBOARD_EXPORTACION` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `DASHBOARD_CONDUCTOR` / `MIS_VIAJES` / `MI_PERFIL` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `DASHBOARD_OPERADOR` / `PARTE_DIARIO` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| `LIQUIDACIONES_CONTABILIDAD` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Cualquier otra sección | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+> Matriz verificada por `RolesHelperTests` (tabla literal; además comprueba que toda sección usada en el código existe en ella).
 
 ---
 

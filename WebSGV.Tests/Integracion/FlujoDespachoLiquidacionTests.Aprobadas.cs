@@ -47,6 +47,18 @@ namespace WebSGV.Tests.Integracion
                 Assert.True(EnContabilidad(datos.IdConductor, numero, idOrden), "APROBADO falta en Contabilidad");
                 Assert.True(EnReporteDeLiquidaciones(idOrden), "APROBADO falta en Reportes");
                 Assert.True(EnSaldos(datos.IdConductor, idOrden), "APROBADO falta en Saldos de conductores");
+
+                // Autocompletado de Contabilidad: encuentra al conductor por "nombre apellido" aunque las
+                // columnas char traigan espacios de relleno, y lo sugiere sin espacios de más.
+                DataRow c = Fila("SELECT RTRIM(nombre) AS nombre, RTRIM(apPaterno) AS apPaterno FROM Conductor WHERE idConductor = @id", datos.IdConductor);
+                string ultimoNombre = Convert.ToString(c["nombre"]).Split(' ').Last();
+                string termino = ultimoNombre + " " + Convert.ToString(c["apPaterno"]);
+                DataRow sugerido = LiquidacionesContabilidadService.BuscarConductoresConAprobadas(termino).Rows.Cast<DataRow>()
+                    .FirstOrDefault(r => Convert.ToInt32(r["idConductor"]) == datos.IdConductor);
+                Assert.True(sugerido != null, "El autocompletado no encontró al conductor con '" + termino + "'");
+                string nombreCompleto = Convert.ToString(sugerido["nombreCompleto"]);
+                Assert.Equal(nombreCompleto.Trim(), nombreCompleto);
+                Assert.DoesNotContain("  ", nombreCompleto);
             }
         }
 

@@ -72,8 +72,9 @@ CHECKLIST DE REVISIÓN (aplicar en orden)
     (paths con `\`, DependentUpon sin path, SubType=ASPXCodeBehind solo
      en .aspx.cs).
 [ ] Roles comparados con .Trim().ToUpper() — siempre vía helper.
-[ ] No usar la firma inválida RolesHelper.TienePermiso(rol, seccion). La
-    firma real es TienePermiso(seccion).
+[ ] No usar la firma inválida RolesHelper.TienePermiso(rol, seccion). Las
+    firmas reales son TienePermiso(seccion) (rol de la sesión) y
+    TienePermiso(seccion, rol) (pura: primero la sección, luego el rol).
 
 == CALIDAD ==
 [ ] Try/catch alrededor de I/O y SQL cuando aplique.

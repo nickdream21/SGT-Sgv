@@ -280,7 +280,7 @@ $('#txtConductor').on('input', function () {
     _timerConductor = setTimeout(function () {
         $.ajax({
             type: 'POST',
-            url: 'LiquidacionesPendientes.aspx/BuscarConductores',
+            url: 'LiquidacionesAprobadasContabilidad.aspx/BuscarConductores',
             contentType: 'application/json; charset=utf-8',
             dataType: 'json',
             data: JSON.stringify({ termino: terminoSolicitud }),

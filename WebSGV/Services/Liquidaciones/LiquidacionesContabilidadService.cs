@@ -54,5 +54,29 @@ namespace WebSGV.Services.Liquidaciones
                 DbHelper.Param("@NombreConductor",     nombreConductor),
                 DbHelper.Param("@NombreConductorLike", "%" + nombreConductor + "%"));
         }
+
+        /// <summary>
+        /// Autocompletado del filtro de conductor: hasta 15 conductores cuyo nombre contiene el término
+        /// y que tienen al menos una liquidación aprobada. Sin filtrar por activo ni exigir usuario:
+        /// contabilidad consulta también liquidaciones de conductores que ya no trabajan.
+        /// </summary>
+        public static DataTable BuscarConductoresConAprobadas(string termino)
+        {
+            // RTRIM en cada parte: las columnas son char y traen espacios de relleno; sin esto
+            // "DENNY AGURTO" no encontraba a "WILLIAM DENNY      AGURTO ..." y la sugerencia salía con huecos.
+            return DbHelper.ConsultarTabla(@"
+                SELECT TOP 15 idConductor, nombreCompleto
+                FROM (
+                    SELECT c.idConductor,
+                           LTRIM(RTRIM(RTRIM(c.nombre) + ' ' + RTRIM(c.apPaterno) + ' ' + RTRIM(ISNULL(c.apMaterno, '')))) AS nombreCompleto
+                    FROM Conductor c
+                    WHERE EXISTS (SELECT 1 FROM OrdenViaje ov
+                                  WHERE ov.idConductor = c.idConductor AND ov.estadoAprobacion = @Aprobado)
+                ) t
+                WHERE nombreCompleto LIKE @Termino
+                ORDER BY nombreCompleto",
+                DbHelper.Param("@Aprobado", EstadosOrden.Aprobado),
+                DbHelper.Param("@Termino",  "%" + (termino ?? "").Trim() + "%"));
+        }
     }
 }

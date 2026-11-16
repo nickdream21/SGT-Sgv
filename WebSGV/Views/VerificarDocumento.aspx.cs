@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Web;
@@ -17,10 +16,9 @@ namespace WebSGV.Views
     /// </summary>
     public partial class VerificarDocumento : System.Web.UI.Page
     {
-        private const int MaxConsultas = 30;
-        private static readonly TimeSpan VentanaConsultas = TimeSpan.FromMinutes(10);
-        private static readonly ConcurrentDictionary<string, Queue<DateTime>> _consultasPorIp =
-            new ConcurrentDictionary<string, Queue<DateTime>>();
+        /// <summary>Límite de consultas por IP (la página es pública): evita barrer códigos.</summary>
+        private static readonly LimiteConsultas _limite =
+            new LimiteConsultas(30, TimeSpan.FromMinutes(10), () => DateTime.UtcNow);
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -53,7 +51,7 @@ namespace WebSGV.Views
                 return;
             }
 
-            if (!PermitirConsulta(IpClienteHelper.Obtener(Request)))
+            if (!_limite.Permitir(IpClienteHelper.Obtener(Request)))
             {
                 MostrarNoEncontrado("Se hicieron demasiadas consultas desde su conexión. Intente nuevamente en unos minutos.");
                 return;
@@ -155,20 +153,6 @@ namespace WebSGV.Views
         {
             lblNoEncontrado.Text = HttpUtility.HtmlEncode(mensaje);
             pnlNoEncontrado.Visible = true;
-        }
-
-        /// <summary>Límite de consultas por IP (la página es pública): evita barrer códigos.</summary>
-        private static bool PermitirConsulta(string ip)
-        {
-            var ahora = DateTime.UtcNow;
-            var cola = _consultasPorIp.GetOrAdd(ip, _ => new Queue<DateTime>());
-            lock (cola)
-            {
-                while (cola.Count > 0 && ahora - cola.Peek() > VentanaConsultas) cola.Dequeue();
-                if (cola.Count >= MaxConsultas) return false;
-                cola.Enqueue(ahora);
-                return true;
-            }
         }
     }
 }

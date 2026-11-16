@@ -130,7 +130,8 @@ NUNCA HAGAS
 - No modifiques connectionStrings.config / appSettings.Secrets.config / .env
   / Web.config (RISK-004).
 - No declares completed sin evidence.build_exit_code=0.
-- No uses RolesHelper.TienePermiso(rol, seccion) — esa firma NO existe.
+- No uses RolesHelper.TienePermiso(rol, seccion) — ese orden NO existe. Usa
+  TienePermiso(seccion) (rol de la sesión) o TienePermiso(seccion, rol) (pura).
 - No metas DataTables grandes en ViewState.
 - No copies-pegues lógica de roles inline; siempre via RolesHelper.
 - No mezcles emojis en UI.

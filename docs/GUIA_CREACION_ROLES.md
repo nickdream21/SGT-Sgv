@@ -44,8 +44,21 @@ Ejemplo: sha256.310000.{salt de 16 bytes en base64, 24 caracteres}.{hash de 32 b
 
 ## Roles Existentes
 
-| Rol                        | Constante en `RolesHelper.cs` | Redirección Login         | Menú en `Site.Master`       |
-|----------------------------|-------------------------------|---------------------------|-----------------------------|
+| Rol                        | Constante en `RolesHelper.cs` | Página de inicio (`UrlInicioSegunRol`) | Alcance |
+|----------------------------|-------------------------------|----------------------------------------|---------|
+| `ADMIN` (también `ADMINISTRADOR`) | `ROL_ADMIN`            | `Inicio.aspx`                          | Operación completa (Despacho, OV, Registro, liquidaciones, reportes) |
+| `ADMINISTRADOR DE TRANSPORTE` | `ROL_ADMIN_TRANSPORTE`     | `Inicio.aspx`                          | Igual que `ADMIN` (`EsRolAdmin`) |
+| `ADMINISTRADOR DE SISTEMA` | `ROL_ADMIN_SISTEMA`           | `DashboardAdminSistema.aspx`           | Solo gestión de usuarios y auditoría; no opera |
+| `SUPERVISOR`               | `ROL_SUPERVISOR`              | `Inicio.aspx`                          | Similar a Admin (sin dashboards de conductor/grifo/operador) |
+| `CONDUCTOR` (también `CHOFER`) | `ROL_CONDUCTOR`           | `DashboardConductor.aspx`              | Dashboard Conductor |
+| `CONTABILIDAD`             | `ROL_CONTABILIDAD`            | `LiquidacionesAprobadasContabilidad.aspx` | Consulta de liquidaciones aprobadas |
+| `ADMINISTRADOR DE GRIFO`   | `ROL_ADMIN_GRIFO`             | `DashboardGrifo.aspx`                  | Abastecimiento + Conductores |
+| `ADMINISTRADOR DE MAQUINARIA` | `ROL_ADMIN_MAQUINARIA`     | `AsignacionesMaquinaria.aspx`          | Maquinaria |
+| `OPERADOR`                 | `ROL_OPERADOR`                | `DashboardOperador.aspx`               | Dashboard Operador (Parte Diario) |
+
+La matriz completa de permisos por sección está en `docs/FLUJO_DE_TRABAJO_SGV.md`.
+
+----------------------------|-------------------------------|---------------------------|-----------------------------|
 | `ADMIN`                    | `ROL_ADMIN`                   | `Inicio.aspx`            | Menú completo (Despacho, OV, Registro) |
 | `ADMINISTRADOR DE SISTEMA` | `ROL_ADMIN_SISTEMA`           | `Inicio.aspx`            | Menú Admin + Auditoría      |
 | `CONDUCTOR`                | `ROL_CONDUCTOR`               | `DashboardConductor.aspx`| Dashboard Conductor         |
@@ -78,12 +91,14 @@ public static bool EsNuevoRol()
 
 ### Paso 3: Configurar permisos en `TienePermiso()` de `RolesHelper.cs`
 
-Agregar el nuevo rol a los `case` que correspondan dentro del método `TienePermiso()`:
+Agregar el nuevo rol a los `case` que correspondan dentro de `TienePermiso(seccion, rol)` (la matriz pura; `TienePermiso(seccion)` solo le pasa el rol de la sesión):
 
 ```csharp
 case "SECCION_X":
-    return EsAdmin() || EsNuevoRol();
+    return admin || r == ROL_NUEVO;
 ```
+
+Luego agregar el rol en `WebSGV.Tests/RolesHelperTests.cs`: a `RolesProbados` y a las secciones de `MatrizEsperada` que le correspondan, y actualizar la matriz de `docs/FLUJO_DE_TRABAJO_SGV.md`. La prueba `ConstantesDeRol_EstanEnRolesProbados` falla si una constante `ROL_*` no está en `RolesProbados`.
 
 ### Paso 4: Agregar propiedad en `Site.Master.cs`
 
@@ -122,27 +137,19 @@ Agregar un bloque condicional entre los bloques de menú existentes:
 <% } %>
 ```
 
-### Paso 6: Configurar redirección en `Login.aspx.cs`
+### Paso 6: Configurar la página de inicio en `RolesHelper.UrlInicioSegunRol()`
 
-Archivo: `WebSGV/Views/Login.aspx.cs`
-
-Agregar condición en `btnLogin_Click` (antes del `else` final) y en `Page_Load`:
+Es la única fuente de la página de inicio por rol (login, `RedirigirSegunRol()`, guardias de `SecurityHelper` y logo del menú). Agregar el `case`:
 
 ```csharp
-else if (resultado.Rol.ToUpper() == "NOMBRE DEL ROL")
-{
-    Response.Redirect("~/Views/PaginaDestino.aspx");
-}
+case ROL_NUEVO: return "~/Views/PaginaDestino.aspx";
 ```
 
-### Paso 7: Actualizar redirección en `RolesHelper.RedirigirSegunRol()`
+Y agregar el caso a `UrlInicioSegunRol_RolConocido_SuPagina` en `RolesHelperTests`.
 
-```csharp
-else if (EsNuevoRol())
-{
-    HttpContext.Current.Response.Redirect("~/Views/PaginaDestino.aspx");
-}
-```
+### Paso 7: (ya no aplica)
+
+`Login.aspx.cs` y `RolesHelper.RedirigirSegunRol()` usan `UrlInicioSegunRol`: no se agregan `else if` por rol.
 
 ### Paso 8: Crear script SQL para insertar usuario
 
@@ -160,7 +167,7 @@ VALUES ('login_usuario', 'Nombre Completo', '<hash_pbkdf2>', 'NOMBRE DEL ROL', 1
 | `WebSGV/Views/RolesHelper.cs`   | Constantes de rol, verificadores, permisos     |
 | `WebSGV/Site.Master.cs`         | Propiedades booleanas del rol para la vista     |
 | `WebSGV/Site.Master`            | Menú de navegación condicional por rol          |
-| `WebSGV/Views/Login.aspx.cs`    | Redirección post-login según rol                |
+| `WebSGV.Tests/RolesHelperTests.cs` | Matriz de permisos y páginas de inicio (pruebas) |
 | `WebSGV/Helpers/PasswordHelper.cs` | Hashing PBKDF2 de contraseñas               |
 | `WebSGV/Database/Scripts/`      | Scripts SQL para insertar usuarios con el rol   |
 
@@ -173,7 +180,7 @@ VALUES ('login_usuario', 'Nombre Completo', '<hash_pbkdf2>', 'NOMBRE DEL ROL', 1
 1. **`RolesHelper.cs`** → Agregar `ROL_ADMIN_MAQUINARIA` + `EsAdminMaquinaria()`
 2. **`Site.Master.cs`** → Agregar propiedad `EsAdminMaquinaria`
 3. **`Site.Master`** → Agregar bloque de menú condicional
-4. **`Login.aspx.cs`** → Agregar `else if` para redirigir a `Inicio.aspx`
+4. **`RolesHelper.UrlInicioSegunRol`** → Agregar el `case` (hoy redirige a `AsignacionesMaquinaria.aspx`)
 5. **SQL** → `INSERT INTO Usuarios ... VALUES (..., 'ADMINISTRADOR DE MAQUINARIA', 1)`
 
 ---

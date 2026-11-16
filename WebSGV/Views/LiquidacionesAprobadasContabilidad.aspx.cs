@@ -21,6 +21,12 @@ namespace WebSGV.Views
             public decimal BalanceDolares { get; set; }
         }
 
+        public class ConductorItem
+        {
+            public int IdConductor { get; set; }
+            public string NombreCompleto { get; set; }
+        }
+
         protected void Page_Load(object sender, EventArgs e)
         {
             RolesHelper.ValidarAccesoSeccion("LIQUIDACIONES_CONTABILIDAD");
@@ -81,6 +87,47 @@ namespace WebSGV.Views
             }
 
             return lista;
+        }
+
+        /// <summary>
+        /// Autocompletado del filtro "Conductor": solo conductores con liquidaciones aprobadas.
+        /// Antes el JS llamaba a LiquidacionesPendientes.BuscarConductores, que espera otro parámetro
+        /// (term), devuelve otro formato y exige admin/supervisor: a contabilidad nunca le sugería nada.
+        /// </summary>
+        [WebMethod(EnableSession = true)]
+        public static List<ConductorItem> BuscarConductores(string termino)
+        {
+            var vacia = new List<ConductorItem>();
+            var contexto = System.Web.HttpContext.Current;
+            if (contexto == null || contexto.Session == null || contexto.Session["UsuarioID"] == null)
+                return vacia;
+            if (!RolesHelper.TienePermiso("LIQUIDACIONES_CONTABILIDAD"))
+                return vacia;
+
+            termino = (termino ?? string.Empty).Trim();
+            if (termino.Length < 2)
+                return vacia;
+            if (termino.Length > 120)
+                termino = termino.Substring(0, 120);
+
+            try
+            {
+                foreach (DataRow fila in LiquidacionesContabilidadService.BuscarConductoresConAprobadas(termino).Rows)
+                {
+                    vacia.Add(new ConductorItem
+                    {
+                        IdConductor    = Convert.ToInt32(fila["idConductor"]),
+                        NombreCompleto = Convert.ToString(fila["nombreCompleto"]).Trim()
+                    });
+                }
+                return vacia;
+            }
+            catch (Exception ex)
+            {
+                // Autocompletado: sin sugerencias no se bloquea la búsqueda; el error queda en el log.
+                LogSGV.Error(ex, "Error en BuscarConductores de LiquidacionesAprobadasContabilidad");
+                return new List<ConductorItem>();
+            }
         }
     }
 }

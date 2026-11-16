@@ -176,15 +176,25 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
-        /// Verifica si el usuario tiene permiso para acceder a una página
+        /// Verifica si el usuario actual (rol de la sesión) tiene permiso para una sección.
         /// </summary>
-        public static bool TienePermiso(string seccion)
-        {
-            string rol = ObtenerRolActual();
+        public static bool TienePermiso(string seccion) => TienePermiso(seccion, ObtenerRolActual());
 
-            switch (seccion.ToUpper())
+        /// <summary>
+        /// Matriz de permisos por sección: true si el rol indicado puede entrar a la sección.
+        /// Pura (no lee la sesión), sin importar mayúsculas ni espacios; sección vacía o desconocida → false.
+        /// La matriz está fijada en RolesHelperTests: cualquier cambio de permisos debe cambiar también la prueba.
+        /// </summary>
+        public static bool TienePermiso(string seccion, string rol)
+        {
+            if (string.IsNullOrWhiteSpace(seccion)) return false;
+            string r = (rol ?? "").Trim().ToUpperInvariant();
+            bool admin = EsRolAdmin(r);
+            bool supervisor = r == ROL_SUPERVISOR;
+
+            switch (seccion.Trim().ToUpperInvariant())
             {
-                // Páginas accesibles solo para ADMIN
+                // Operación del transporte: administración y supervisión
                 case "DESPACHO":
                 case "FACTURA":
                 case "CPIC":
@@ -192,43 +202,40 @@ namespace WebSGV.Helpers
                 case "REGISTRO":
                 case "CONSULTAS":
                 case "INDICADORES":
-                    return EsAdmin() || rol == ROL_SUPERVISOR;
+                    return admin || supervisor;
 
-                // Registro de Conductores: ADMIN y ADMIN DE GRIFO
+                // Registro de Conductores y Abastecimiento: también el administrador de grifo
                 case "REGISTRO_CONDUCTORES":
-                    return EsAdmin() || EsAdminGrifo() || rol == ROL_SUPERVISOR;
-
-                // Abastecimiento: ADMIN y ADMIN DE GRIFO
                 case "ABASTECIMIENTO":
-                    return EsAdmin() || EsAdminGrifo() || rol == ROL_SUPERVISOR;
+                    return admin || r == ROL_ADMIN_GRIFO || supervisor;
 
                 // Dashboard del Grifo
                 case "DASHBOARD_GRIFO":
-                    return EsAdminGrifo() || EsAdmin();
+                    return r == ROL_ADMIN_GRIFO || admin;
 
                 // Auditoría: solo ADMINISTRADOR DE SISTEMA
                 case "AUDITORIA":
-                    return EsAdminSistema();
+                    return r == ROL_ADMIN_SISTEMA;
 
                 // Seguimiento de Exportación: ADMIN y SUPERVISOR
                 case "SEGUIMIENTO_EXPORTACION":
                 case "DASHBOARD_EXPORTACION":
-                    return EsAdmin() || rol == ROL_SUPERVISOR;
+                    return admin || supervisor;
 
-                // Páginas accesibles para CONDUCTOR
+                // Páginas del CONDUCTOR
                 case "DASHBOARD_CONDUCTOR":
                 case "MIS_VIAJES":
                 case "MI_PERFIL":
-                    return EsConductor() || EsAdmin();
+                    return EsRolConductor(r) || admin;
 
-                // Páginas accesibles para OPERADOR de Maquinaria
+                // Páginas del OPERADOR de Maquinaria
                 case "DASHBOARD_OPERADOR":
                 case "PARTE_DIARIO":
-                    return EsOperador() || EsAdminMaquinaria() || EsAdmin();
+                    return r == ROL_OPERADOR || r == ROL_ADMIN_MAQUINARIA || admin;
 
-                // Páginas de consulta para Contabilidad (solo lectura)
+                // Consulta para Contabilidad (solo lectura)
                 case "LIQUIDACIONES_CONTABILIDAD":
-                    return EsContabilidad() || EsAdmin() || rol == ROL_SUPERVISOR;
+                    return r == ROL_CONTABILIDAD || admin || supervisor;
 
                 default:
                     return false;

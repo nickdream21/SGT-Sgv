@@ -89,7 +89,8 @@ protected void Page_Load(object sender, EventArgs e)
 // RolesHelper - todas son estáticas
 RolesHelper.ObtenerRolActual()           : string
 RolesHelper.TieneSesionActiva()          : bool
-RolesHelper.TienePermiso(seccion)        : bool                  // ← UN parámetro
+RolesHelper.TienePermiso(seccion)        : bool                  // ← rol de la sesión
+RolesHelper.TienePermiso(seccion, rol)   : bool                  // ← pura: sección PRIMERO, luego rol
 RolesHelper.ValidarAccesoSeccion(seccion): void  (redirige)      // ← UN parámetro
 RolesHelper.RedirigirSegunRol()          : void
 RolesHelper.ObtenerNombreUsuario()       : string
@@ -97,19 +98,23 @@ RolesHelper.EsAdmin() / EsConductor() / EsAdminGrifo()
         / EsAdminMaquinaria() / EsOperador() / EsAdminSistema()
 ```
 
-> ⚠️ **No existe `RolesHelper.TienePermiso(rol, seccion)` con dos parámetros.** El helper lee el rol de la sesión internamente. Si ves esa firma en código antiguo o sugerencias de Copilot, está mal.
+> ⚠️ **No existe `RolesHelper.TienePermiso(rol, seccion)` (rol primero).** Existen `TienePermiso(seccion)`, que lee el rol de la sesión, y `TienePermiso(seccion, rol)`, pura (sección primero), fijada por `RolesHelperTests`. Si ves el orden (rol, seccion) en código antiguo o sugerencias de Copilot, está mal: compila (son dos string) pero niega todo.
 
 ## Secciones reconocidas (tabla del switch en `RolesHelper.TienePermiso`)
 
+ADMIN\* = `ADMIN`, `ADMINISTRADOR` y `ADMINISTRADOR DE TRANSPORTE` (`EsRolAdmin`); **no** incluye `ADMINISTRADOR DE SISTEMA`. Fuente: `docs/FLUJO_DE_TRABAJO_SGV.md` (matriz verificada por `RolesHelperTests`).
+
 | Sección | Roles permitidos |
 |---|---|
-| `DESPACHO`, `FACTURA`, `CPIC`, `ORDEN_VIAJE`, `REGISTRO`, `CONSULTAS`, `INDICADORES` | ADMIN, SUPERVISOR |
-| `REGISTRO_CONDUCTORES` | ADMIN, ADMIN DE GRIFO, SUPERVISOR |
-| `ABASTECIMIENTO` | ADMIN, ADMIN DE GRIFO, SUPERVISOR |
-| `DASHBOARD_GRIFO` | ADMIN DE GRIFO, ADMIN |
+| `DESPACHO`, `FACTURA`, `CPIC`, `ORDEN_VIAJE`, `REGISTRO`, `CONSULTAS`, `INDICADORES` | ADMIN\*, SUPERVISOR |
+| `REGISTRO_CONDUCTORES`, `ABASTECIMIENTO` | ADMIN\*, ADMINISTRADOR DE GRIFO, SUPERVISOR |
+| `DASHBOARD_GRIFO` | ADMINISTRADOR DE GRIFO, ADMIN\* |
 | `AUDITORIA` | ADMINISTRADOR DE SISTEMA (solo) |
-| `DASHBOARD_CONDUCTOR`, `MIS_VIAJES`, `MI_PERFIL` | CONDUCTOR, ADMIN |
-| `DASHBOARD_OPERADOR`, `PARTE_DIARIO` | OPERADOR, ADMIN DE MAQUINARIA, ADMIN |
+| `SEGUIMIENTO_EXPORTACION`, `DASHBOARD_EXPORTACION` | ADMIN\*, SUPERVISOR |
+| `DASHBOARD_CONDUCTOR`, `MIS_VIAJES`, `MI_PERFIL` | CONDUCTOR, CHOFER, ADMIN\* |
+| `DASHBOARD_OPERADOR`, `PARTE_DIARIO` | OPERADOR, ADMINISTRADOR DE MAQUINARIA, ADMIN\* |
+| `LIQUIDACIONES_CONTABILIDAD` | CONTABILIDAD, ADMIN\*, SUPERVISOR |
+| cualquier otra | nadie |
 
 Si tu nueva página no encaja en una sección existente, agrega un nuevo `case` en `RolesHelper.cs` antes de codear el Page_Load. **Nunca** dupliques la lógica con `if (rol == "ADMIN" || rol == "SUPERVISOR")` inline.
 

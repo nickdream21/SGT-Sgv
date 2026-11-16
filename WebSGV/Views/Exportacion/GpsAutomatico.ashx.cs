@@ -14,7 +14,7 @@ namespace WebSGV.Views.Exportacion
     /// Actualización automática del GPS del seguimiento.
     /// - Con el encabezado <c>X-SGV-Clave</c> igual a <c>GpsAutomaticoClave</c> (appSettings.Secrets.config): inicia
     ///   una corrida en segundo plano y responde al instante (lo llama cron-job.org o el Programador de tareas).
-    /// - Con <c>?estado=1</c> y sesión iniciada: la hora de la última consulta al GPS de los viajes abiertos, para que
+    /// - Con <c>?estado=1</c>, sesión iniciada y permiso del seguimiento: la hora de la última consulta al GPS de los viajes abiertos, para que
     ///   el tablero abierto avise que hay datos nuevos.
     /// </summary>
     public class GpsAutomatico : IHttpHandler, IReadOnlySessionState
@@ -29,7 +29,7 @@ namespace WebSGV.Views.Exportacion
 
             if (ctx.Request.QueryString["estado"] == "1")
             {
-                if (ctx.Session?["UsuarioID"] == null) { Responder(ctx, 403, new { error = "Sesión vencida" }); return; }
+                if (!ExigirTablero(ctx)) return;
                 object ultima = DbHelper.EjecutarEscalar(
                     "SELECT MAX(fhUltimaConsultaGps) FROM SeguimientoExportacion WHERE activo = 1 AND ISNULL(estado, '') NOT IN ('FINALIZADO', 'CANCELADO')");
                 Responder(ctx, 200, new
@@ -50,11 +50,7 @@ namespace WebSGV.Views.Exportacion
             if (ctx.Request.QueryString["iniciar"] == "1")
             {
                 if (ctx.Request.HttpMethod != "POST") { Responder(ctx, 405, new { error = "Solo POST" }); return; }
-                if (ctx.Session?["UsuarioID"] == null || !RolesHelper.TienePermiso("SEGUIMIENTO_EXPORTACION"))
-                {
-                    Responder(ctx, 403, new { error = "Sesión vencida" });
-                    return;
-                }
+                if (!ExigirTablero(ctx)) return;
                 bool pedida = ActualizacionGpsAutomatica.Iniciar(aPedido: true);
                 Responder(ctx, 200, new { iniciada = pedida, enCurso = ActualizacionGpsAutomatica.EnCurso });
                 return;
@@ -77,6 +73,22 @@ namespace WebSGV.Views.Exportacion
                 ultimoFin = ActualizacionGpsAutomatica.UltimoFin?.ToString("yyyy-MM-ddTHH:mm:ss"),
                 ultimoResumen = ActualizacionGpsAutomatica.UltimoResumen,
             });
+        }
+
+        /// <summary>
+        /// Quién puede usar el tablero de seguimiento (estado e "Actualizar GPS"): sesión iniciada y la
+        /// misma regla que la página (sección SEGUIMIENTO_EXPORTACION). Pura, para probarla sin HttpContext.
+        /// </summary>
+        public static bool PuedeUsarTablero(bool conSesion, string rol) =>
+            conSesion && RolesHelper.TienePermiso("SEGUIMIENTO_EXPORTACION", rol);
+
+        /// <summary>Responde 403 y devuelve false si la sesión venció o el rol no tiene permiso.</summary>
+        private static bool ExigirTablero(HttpContext ctx)
+        {
+            bool conSesion = ctx.Session?["UsuarioID"] != null;
+            if (PuedeUsarTablero(conSesion, Convert.ToString(ctx.Session?["Rol"]))) return true;
+            Responder(ctx, 403, new { error = conSesion ? "Sin permiso" : "Sesión vencida" });
+            return false;
         }
 
         private static void Responder(HttpContext ctx, int codigo, object cuerpo)
