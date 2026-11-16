@@ -281,3 +281,27 @@
         return String(valor).replace(/[&<>"']/g, function (c) { return TABLA[c]; });
     };
 })();
+
+// ── Sesión cerrada o cambio de contraseña pendiente en llamadas AJAX ──
+// Global.asax responde 401 { sesionCerrada } cuando cambiaron los datos de acceso del usuario
+// (desactivado, otro rol, otra contraseña) y 403 { requiereCambioContrasena } si aún debe cambiar
+// la contraseña. Se corre después de los .fail() de cada página, así este aviso es el que queda.
+(function () {
+    if (!window.jQuery) return;
+    function leer(xhr) {
+        try { return JSON.parse(xhr.responseText) || {}; } catch (e) { return {}; }
+    }
+    $(document).ajaxError(function (evento, xhr) {
+        if (!xhr || (xhr.status !== 401 && xhr.status !== 403)) return;
+        var r = leer(xhr);
+        var SGV = window.SGV || {};
+        if (xhr.status === 401 && r.sesionCerrada) {
+            if (SGV.avisar) SGV.avisar(r.Message, { tipo: 'danger' });
+            setTimeout(function () {
+                window.location.href = (SGV.urlLogin || '/Views/Login.aspx') + '?error=sesion_cerrada';
+            }, 2500);
+        } else if (xhr.status === 403 && r.requiereCambioContrasena) {
+            if (SGV.avisar) SGV.avisar(r.Message, { tipo: 'warning' });
+        }
+    });
+})();

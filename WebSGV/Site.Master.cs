@@ -115,14 +115,8 @@ namespace WebSGV
         /// </summary>
         private bool EsPaginaPublica()
         {
-            string nombreArchivo = System.IO.Path.GetFileName(Request.Url.AbsolutePath).ToLower();
-
-            return nombreArchivo == "login.aspx" ||
-                   nombreArchivo == "recuperarcontrasena.aspx" ||
-                   nombreArchivo == "restablecercontrasena.aspx" ||
-                   nombreArchivo == "error.aspx" ||
-                   nombreArchivo == "error404.aspx" ||
-                   string.IsNullOrEmpty(nombreArchivo);
+            // Misma lista que el control de sesión de Global.asax (SesionVigenteHelper).
+            return SesionVigenteHelper.EsRutaPublica(System.IO.Path.GetFileName(Request.Url.AbsolutePath));
         }
 
 
@@ -251,13 +245,19 @@ namespace WebSGV
                     }
 
                     string nuevoHash = PasswordHelper.HashPassword(nuevaContrasena);
+                    // Nuevo sello: se cierran las demás sesiones del usuario; esta sigue abierta
+                    // porque guarda el sello nuevo (decisión del usuario, auditoría tarea 5).
+                    Guid nuevoSello = Guid.NewGuid();
                     using (SqlCommand cmd = new SqlCommand(
-                        "UPDATE Usuarios SET contrasena = @contrasena, requiereCambioContrasena = 0, resetToken = NULL, resetTokenExpira = NULL WHERE idUsuario = @idUsuario", conn))
+                        "UPDATE Usuarios SET contrasena = @contrasena, requiereCambioContrasena = 0, resetToken = NULL, resetTokenExpira = NULL, selloSesion = @sello WHERE idUsuario = @idUsuario", conn))
                     {
                         cmd.Parameters.AddWithValue("@contrasena", nuevoHash);
+                        cmd.Parameters.AddWithValue("@sello", nuevoSello);
                         cmd.Parameters.AddWithValue("@idUsuario", IdUsuarioActual);
                         cmd.ExecuteNonQuery();
                     }
+                    Session[SesionVigenteHelper.ClaveSello] = nuevoSello;
+                    SesionVigenteHelper.InvalidarCache(IdUsuarioActual);
                 }
 
                 txtContrasenaActual.Text = "";

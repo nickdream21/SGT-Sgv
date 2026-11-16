@@ -29,6 +29,7 @@ namespace WebSGV.Views
             public int? IdConductor;
             public int? IdOperador;
             public bool RequiereCambioContrasena;
+            public Guid SelloSesion;
         }
 
         protected void Page_Load(object sender, EventArgs e)
@@ -46,7 +47,7 @@ namespace WebSGV.Views
             // Igual con ?error=sin_operador: un OPERADOR sin operador vinculado tiene sesión válida, y
             // reenviarlo a su inicio (DashboardOperador) volvería a rebotarlo aquí.
             string errNormalizado = (errParam ?? "").ToLowerInvariant();
-            if (errNormalizado == "sesion" || errNormalizado == "sin_operador")
+            if (errNormalizado == "sesion" || errNormalizado == "sin_operador" || errNormalizado == "sesion_cerrada")
             {
                 if (Session["UsuarioID"] != null)
                 {
@@ -104,6 +105,9 @@ namespace WebSGV.Views
                         case "sesion":
                             MostrarMensaje("Tu sesión ha expirado o no es válida. Por favor, inicia sesión nuevamente.");
                             break;
+                        case "sesion_cerrada":
+                            MostrarMensaje(SesionVigenteHelper.MensajeSesionCerrada);
+                            break;
                     }
                 }
             }
@@ -147,7 +151,7 @@ namespace WebSGV.Views
             }
 
             (bool EsValido, string Rol, string Nombre, string NombreUsuario,
-             int IdUsuario, int? IdConductor, int? IdOperador, bool RequiereCambioContrasena) resultado;
+             int IdUsuario, int? IdConductor, int? IdOperador, bool RequiereCambioContrasena, Guid SelloSesion) resultado;
             try
             {
                 resultado = ValidarUsuario(usuario, contrasena);
@@ -193,7 +197,8 @@ namespace WebSGV.Views
                     NombreUsuario = resultado.NombreUsuario,
                     IdConductor = resultado.IdConductor,
                     IdOperador = resultado.IdOperador,
-                    RequiereCambioContrasena = resultado.RequiereCambioContrasena
+                    RequiereCambioContrasena = resultado.RequiereCambioContrasena,
+                    SelloSesion = resultado.SelloSesion
                 };
                 string token = GenerarTokenAleatorio();
                 HttpRuntime.Cache.Insert(PrefijoCacheTicket + token, datos, null,
@@ -229,7 +234,7 @@ namespace WebSGV.Views
         private static readonly string HashFicticio = PasswordHelper.HashPassword(Guid.NewGuid().ToString("N"));
 
         private (bool EsValido, string Rol, string Nombre, string NombreUsuario,
-                 int IdUsuario, int? IdConductor, int? IdOperador, bool RequiereCambioContrasena) ValidarUsuario(string usuario, string contrasena)
+                 int IdUsuario, int? IdConductor, int? IdOperador, bool RequiereCambioContrasena, Guid SelloSesion) ValidarUsuario(string usuario, string contrasena)
         {
             bool esValido = false;
             string rol = "", nombre = "", nombreUsuario = "";
@@ -237,13 +242,15 @@ namespace WebSGV.Views
             int? idConductor = null;
             int? idOperador = null;
             bool requiereCambioContrasena = false;
+            Guid selloSesion = Guid.Empty;
 
             try
             {
                 DataTable dt = DbHelper.ConsultarTabla(@"
                     SELECT u.idUsuario, u.nombreUsuario, u.nombre, u.rol,
                            u.idConductor, u.idOperador, u.contrasena,
-                           ISNULL(u.requiereCambioContrasena, 0) AS requiereCambioContrasena
+                           ISNULL(u.requiereCambioContrasena, 0) AS requiereCambioContrasena,
+                           u.selloSesion
                     FROM Usuarios u
                     WHERE u.nombreUsuario = @Usuario AND u.activo = 1",
                     DbHelper.Param("@Usuario", usuario));
@@ -267,6 +274,7 @@ namespace WebSGV.Views
 
                         esValido = true;
                         requiereCambioContrasena = Convert.ToBoolean(reader["requiereCambioContrasena"]);
+                        selloSesion = (Guid)reader["selloSesion"];
                     }
                 }
                 else
@@ -284,7 +292,7 @@ namespace WebSGV.Views
                 throw;
             }
 
-            return (esValido, rol, nombre, nombreUsuario, idUsuario, idConductor, idOperador, requiereCambioContrasena);
+            return (esValido, rol, nombre, nombreUsuario, idUsuario, idConductor, idOperador, requiereCambioContrasena, selloSesion);
         }
 
         /// <summary>
@@ -315,6 +323,12 @@ namespace WebSGV.Views
             // registrar quién sube o edita.
             Session["Usuario"] = datos.NombreUsuario;
             Session["RequiereCambioContrasena"] = datos.RequiereCambioContrasena;
+            // Sello de sesión: si cambian los datos de acceso del usuario, deja de coincidir con
+            // el de la BD y Global.asax cierra esta sesión (SesionVigenteHelper).
+            Session[SesionVigenteHelper.ClaveSello] = datos.SelloSesion;
+            // Estado recién leído en el login: sin esto, un valor en caché de antes podía, por ejemplo,
+            // apagar el cambio de contraseña obligatorio recién activado hasta que venciera la caché.
+            SesionVigenteHelper.InvalidarCache(datos.IdUsuario);
 
             string rol = (datos.Rol ?? "").ToUpper();
             if (RolesHelper.EsRolConductor(rol) && datos.IdConductor.HasValue)

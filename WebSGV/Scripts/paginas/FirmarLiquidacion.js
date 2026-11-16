@@ -29,6 +29,22 @@
         return sym + ' ' + v.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
+    // Sesión cerrada (401) o cambio de contraseña pendiente (403) que responde Global.asax: se
+    // muestra su mensaje (corre después de los .fail() de abajo) y se sale de esta pantalla.
+    $(document).ajaxError(function (evento, xhr) {
+        if (!xhr || (xhr.status !== 401 && xhr.status !== 403)) return;
+        var r = {};
+        try { r = JSON.parse(xhr.responseText) || {}; } catch (e) { }
+        if (xhr.status === 401 && r.sesionCerrada) {
+            mostrarAlerta('error', r.Message);
+            setTimeout(function () { window.location.href = 'Login.aspx?error=sesion_cerrada'; }, 2500);
+        } else if (xhr.status === 403 && r.requiereCambioContrasena) {
+            mostrarAlerta('error', r.Message);
+            // Al recargar, el servidor lleva al inicio, que pide cambiar la contraseña.
+            setTimeout(function () { window.location.reload(); }, 2500);
+        }
+    });
+
     function mostrarAlerta(tipo, msg) {
         var box = document.getElementById('alertBox');
         box.className = 'fl-alert show ' + tipo;

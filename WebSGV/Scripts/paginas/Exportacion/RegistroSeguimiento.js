@@ -38,7 +38,13 @@
 
         function pedir(url, metodo) {
             return fetch(url, { method: metodo, credentials: 'same-origin', cache: 'no-store' })
-                .then(function (r) { if (!r.ok) throw new Error('GPS ' + r.status); return r.json(); });
+                .then(function (r) {
+                    if (r.ok) return r.json();
+                    var error = new Error('GPS ' + r.status);
+                    error.estado = r.status;
+                    // 401/403 de Global.asax (sesión cerrada o cambio de contraseña pendiente): el JSON trae el motivo.
+                    return r.json().catch(function () { return {}; }).then(function (j) { error.respuesta = j; throw error; });
+                });
         }
         function terminar(d) {
             consultandoGps = false;
@@ -48,17 +54,32 @@
             var filtrar = document.getElementById(SGV.btnFiltrar);
             if (filtrar) filtrar.click(); else location.reload();
         }
-        function comoAntes() {
+        function comoAntes(error) {
             consultandoGps = false;
             boton.disabled = false;
+            // 401/403 de Global.asax: no volver al postback. Con el cambio de contraseña pendiente, el postback se descarta
+            // recargando la página, que volvía a lanzar la consulta automática: recargas en bucle.
+            var r = (error && error.respuesta) || {};
+            if (r.sesionCerrada || r.requiereCambioContrasena) {
+                boton.value = texto;
+                if (r.sesionCerrada) {
+                    SGV.avisar(r.Message, { tipo: 'danger' });
+                    setTimeout(function () {
+                        window.location.href = (SGV.urlLogin || '/Views/Login.aspx') + '?error=sesion_cerrada';
+                    }, 2500);
+                }
+                return;
+            }
             window.__doPostBack(boton.name, '');
         }
         function esperar() {
             pedir(SGV.urlEstadoGps, 'GET').then(function (d) {
                 if (!d.enCurso || Date.now() - inicio > ESPERA_MAXIMA_GPS) terminar(d);
                 else setTimeout(esperar, 3000);
-            }).catch(function () {
-                if (Date.now() - inicio > ESPERA_MAXIMA_GPS) terminar(null); else setTimeout(esperar, 5000);
+            }).catch(function (error) {
+                var r = (error && error.respuesta) || {};
+                if (r.sesionCerrada || r.requiereCambioContrasena) comoAntes(error);
+                else if (Date.now() - inicio > ESPERA_MAXIMA_GPS) terminar(null); else setTimeout(esperar, 5000);
             });
         }
         pedir(SGV.urlIniciarGps, 'POST')

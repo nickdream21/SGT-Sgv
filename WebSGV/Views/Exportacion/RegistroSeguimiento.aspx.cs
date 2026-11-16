@@ -297,7 +297,10 @@ namespace WebSGV.Views.Exportacion
             pnlVacio.Visible = visibles.Count == 0;
 
             var consultas = todos.Where(v => v.UltimaConsultaGps.HasValue).Select(v => v.UltimaConsultaGps.Value).ToList();
-            if (!IsPostBack && Request.QueryString["auto"] != "0")
+            // Con el cambio de contraseña pendiente no se lanza: Global.asax rechaza la consulta (403) y
+            // la página solo debe mostrar el modal obligatorio.
+            bool debeCambiarContrasena = Session["RequiereCambioContrasena"] is bool pendiente && pendiente;
+            if (!IsPostBack && Request.QueryString["auto"] != "0" && !debeCambiarContrasena)
             {
                 bool hayAbiertos = todos.Any(v => v.Fase.Grupo != "cerrado" && (!string.IsNullOrWhiteSpace(v.Tracto1) || !string.IsNullOrWhiteSpace(v.Tracto2)));
                 AutoActualizarGps = hayAbiertos && (consultas.Count == 0 || FechaHelper.Ahora() - consultas.Max() > EdadMaximaGps);

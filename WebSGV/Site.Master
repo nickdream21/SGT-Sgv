@@ -434,6 +434,7 @@
         // Valores del servidor que usa el script de la página (ids de controles ASP.NET).
         var SGV = Object.assign(window.SGV || {}, {
             esRespuestaPost: <%= Request.HttpMethod == "POST" ? "true" : "false" %>,
+            urlLogin: '<%= ResolveUrl("~/Views/Login.aspx") %>',
             txtContrasenaActual: '<%= txtContrasenaActual.ClientID %>',
             txtNuevaContrasena: '<%= txtNuevaContrasena.ClientID %>',
             txtConfirmarContrasena: '<%= txtConfirmarContrasena.ClientID %>'

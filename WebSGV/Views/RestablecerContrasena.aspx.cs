@@ -96,6 +96,7 @@ namespace WebSGV.Views
             int? idUsuario = ActualizarContrasena(HashTokenActual, nuevaContrasena);
             if (idUsuario.HasValue)
             {
+                SesionVigenteHelper.InvalidarCache(idUsuario.Value);
                 AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario.Value,
                     "Contraseña restablecida mediante enlace de recuperación");
                 MostrarMensaje("¡Contraseña restablecida exitosamente! Ahora puede iniciar sesión.", true);
@@ -150,7 +151,11 @@ namespace WebSGV.Views
                       UPDATE Usuarios
                       SET contrasena = @NuevaContrasena,
                           resetToken = NULL,
-                          resetTokenExpira = NULL
+                          resetTokenExpira = NULL,
+                          -- Quien recupera por correo eligió su contraseña: ya no debe cambiarla.
+                          requiereCambioContrasena = 0,
+                          -- Nuevo sello: se cierran las sesiones abiertas con la contraseña anterior.
+                          selloSesion = NEWID()
                       OUTPUT inserted.idUsuario INTO @Actualizado
                       WHERE resetToken = @Hash
                       AND resetTokenExpira > @FechaActual

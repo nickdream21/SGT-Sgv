@@ -185,6 +185,7 @@
     <Content Include="Database\Schema\13_Despachos_IdPlanta.sql" />
     <Content Include="Database\Schema\14_Cliente_DatosComerciales.sql" />
     <Content Include="Database\Schema\15_CatalogosPorCliente.sql" />
+    <Content Include="Database\Schema\46_SelloSesion.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminMaquinaria.sql" />
@@ -195,6 +196,7 @@
     <Content Include="Database\Scripts\script_TrazabilidadVolqueteCamioneta.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearCPIC.sql" />
     <Content Include="Database\StoredProcedures\sp_ActualizarLicenciaConductor.sql" />
+    <Content Include="Database\StoredProcedures\sp_US_ObtenerEstadoSesion.sql" />
     <Content Include="Database\StoredProcedures\sp_CompletarDespachoProgramado.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearDespacho.sql" />
     <Content Include="Database\StoredProcedures\sp_DD_QuitarDestino.sql" />
@@ -501,6 +503,7 @@
     </Compile>
     <Compile Include="Helpers\AuditoriaHelper.cs" />
     <Compile Include="Helpers\DbHelper.cs" />
+    <Compile Include="Helpers\SesionVigenteHelper.cs" />
     <Compile Include="Helpers\IpClienteHelper.cs" />
     <Compile Include="Helpers\JsonSeguro.cs" />
     <Compile Include="Helpers\MensajeHtml.cs" />

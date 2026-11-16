@@ -176,8 +176,10 @@ namespace WebSGV.Views
             }
 
             DbHelper.EjecutarNonQuery(
-                "UPDATE Usuarios SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END WHERE idUsuario = @id",
+                "UPDATE Usuarios SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END, selloSesion = NEWID() WHERE idUsuario = @id",
                 DbHelper.Param("@id", idUsuario));
+            // Nuevo sello: las sesiones abiertas del usuario se cierran en su próxima petición.
+            SesionVigenteHelper.InvalidarCache(idUsuario);
 
             AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario, "Cambio de estado activo/inactivo por Admin Sistema");
             MostrarMensaje("Estado del usuario actualizado correctamente.", "success");
@@ -316,11 +318,18 @@ namespace WebSGV.Views
                         throw new Services.Common.ErrorNegocioException("No puede cambiar su propio rol. Pídaselo a otro administrador de sistema.");
 
                     DbHelper.EjecutarNonQuery(
-                        "UPDATE Usuarios SET nombre = @nombre, rol = @rol, idConductor = @idConductor WHERE idUsuario = @id",
+                        // Cambiar el rol o el conductor vinculado renueva el sello: cierra sus sesiones abiertas.
+                        @"UPDATE Usuarios
+                          SET selloSesion = CASE WHEN ISNULL(rol, '') <> @rol
+                                                   OR ISNULL(idConductor, -1) <> ISNULL(@idConductor, -1)
+                                                 THEN NEWID() ELSE selloSesion END,
+                              nombre = @nombre, rol = @rol, idConductor = @idConductor
+                          WHERE idUsuario = @id",
                         DbHelper.Param("@nombre", nombre),
                         DbHelper.Param("@rol",    rol),
                         DbHelper.Param("@idConductor", tieneConductor ? (object)idConductor : DBNull.Value),
                         DbHelper.Param("@id",     idUsuario));
+                    SesionVigenteHelper.InvalidarCache(idUsuario);
 
                     string Json(string n, string r, object idC) => Newtonsoft.Json.JsonConvert.SerializeObject(new
                     {
@@ -369,9 +378,11 @@ namespace WebSGV.Views
 
             string hash = PasswordHelper.HashPassword(nuevaPass);
             DbHelper.EjecutarNonQuery(
-                "UPDATE Usuarios SET contrasena = @hash, requiereCambioContrasena = 1, resetToken = NULL, resetTokenExpira = NULL WHERE idUsuario = @id",
+                "UPDATE Usuarios SET contrasena = @hash, requiereCambioContrasena = 1, resetToken = NULL, resetTokenExpira = NULL, selloSesion = NEWID() WHERE idUsuario = @id",
                 DbHelper.Param("@hash", hash),
                 DbHelper.Param("@id",   idUsuario));
+            // Nuevo sello: las sesiones abiertas con la contraseña anterior se cierran.
+            SesionVigenteHelper.InvalidarCache(idUsuario);
 
             AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario, "Contraseña restablecida por Admin Sistema");
             MostrarMensaje("Contraseña restablecida exitosamente.", "success");
