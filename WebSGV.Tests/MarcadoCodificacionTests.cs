@@ -259,7 +259,8 @@ namespace WebSGV.Tests
             // Numéricos: no pueden traer comillas ni etiquetas.
             var numericos = new HashSet<string>
             {
-                "ModoNuevo ? 0 : IdSeguimientoPublico"   // Exportacion/SeguimientoViaje.aspx: int
+                "ModoNuevo ? 0 : IdSeguimientoPublico",  // Exportacion/SeguimientoViaje.aspx: int
+                "WebSGV.Helpers.PasswordHelper.LargoMinimoNueva"   // Site.Master: const int
             };
 
             var fallas = new List<string>();

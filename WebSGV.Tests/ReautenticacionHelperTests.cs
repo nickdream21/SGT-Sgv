@@ -17,7 +17,7 @@ namespace WebSGV.Tests
     {
         private const int IdUsuario = 42;
         private const string Correcta = "Clave-Firma-123";
-        private static readonly string Hash = PasswordHelper.HashPassword(Correcta);
+        private static readonly string Hash = PasswordHelper.HashPassword(Correcta, 1000); // pocas iteraciones: pruebas rápidas
 
         private const string MsjIncorrecta = "La contraseña no es correcta.";
         private const string MsjQuedoBloqueada = "Demasiadas contraseñas incorrectas. La firma quedó bloqueada por 15 minutos.";
@@ -158,6 +158,73 @@ namespace WebSGV.Tests
                 Assert.Equal(1, mensajes.Count(m => m == MsjQuedoBloqueada));
                 Assert.Equal(5, mensajes.Count(m => m.StartsWith("Demasiadas contraseñas incorrectas. Podrá volver a firmar en ")));
             }
+        }
+
+        // ── Cambio de contraseña (mismo contador que la firma) ──────────────────
+
+        private string VerificarCambio(string contrasena, Func<int, string> leerHash = null) =>
+            ReautenticacionHelper.Verificar(IdUsuario, contrasena, PropositoReautenticacion.CambioContrasena,
+                leerHash ?? (_ => Hash), _control);
+
+        [Fact]
+        public void Clave_EsUnaSolaParaFirmaYCambio()
+        {
+            Assert.Equal("REAUT_42", ReautenticacionHelper.ClaveReautenticacion(42));
+        }
+
+        [Fact]
+        public void CambioContrasena_MensajesPropios()
+        {
+            Assert.Null(VerificarCambio(Correcta));
+            Assert.Equal("Escribe tu contraseña actual.", VerificarCambio(""));
+            Assert.Equal("La contraseña actual es incorrecta.", VerificarCambio("mala"));
+            Assert.Equal("Sesión no válida. Inicie sesión nuevamente.",
+                ReautenticacionHelper.Verificar(0, Correcta, PropositoReautenticacion.CambioContrasena, _ => Hash, _control));
+            Assert.Equal(MsjBdCaida, VerificarCambio(Correcta, _ => throw new InvalidOperationException("BD caída")));
+        }
+
+        [Fact]
+        public void CambioContrasena_CincoIncorrectas_Bloquean()
+        {
+            for (int i = 1; i <= 4; i++)
+                Assert.Equal("La contraseña actual es incorrecta.", VerificarCambio("mala" + i));
+            Assert.Equal("Demasiadas contraseñas incorrectas. El cambio de contraseña y la firma quedaron bloqueados por 15 minutos.",
+                VerificarCambio("mala5"));
+            Assert.Equal("Demasiadas contraseñas incorrectas. Podrá volver a intentarlo en 15 minuto(s).", VerificarCambio(Correcta));
+        }
+
+        [Fact]
+        public void ContadorCompartido_AlternarFirmaYCambioNoDaMasIntentos()
+        {
+            Assert.Equal(MsjIncorrecta, Verificar("mala1"));
+            Assert.Equal("La contraseña actual es incorrecta.", VerificarCambio("mala2"));
+            Assert.Equal(MsjIncorrecta, Verificar("mala3"));
+            Assert.Equal("La contraseña actual es incorrecta.", VerificarCambio("mala4"));
+            Assert.Equal(MsjQuedoBloqueada, Verificar("mala5"));
+
+            // Bloqueado por la firma: el cambio de contraseña también, aun con la correcta.
+            Assert.Equal("Demasiadas contraseñas incorrectas. Podrá volver a intentarlo en 15 minuto(s).", VerificarCambio(Correcta));
+            Assert.Equal("Demasiadas contraseñas incorrectas. Podrá volver a firmar en 15 minuto(s).", Verificar(Correcta));
+        }
+
+        [Fact]
+        public void AciertoEnElCambio_LimpiaElContadorDeLaFirma()
+        {
+            for (int i = 0; i < 4; i++) Verificar("mala");
+            Assert.Null(VerificarCambio(Correcta));
+            for (int i = 1; i <= 4; i++)
+                Assert.Equal(MsjIncorrecta, Verificar("mala"));
+        }
+
+        [Fact]
+        public void ContrasenaDeMasDe200_EsIncorrectaSinGastarIntentoNiLeerLaBd()
+        {
+            bool consulto = false;
+            string larga = new string('a', ReautenticacionHelper.LargoMaximoIngresada + 1);
+            for (int i = 0; i < 10; i++)
+                Assert.Equal(MsjIncorrecta, Verificar(larga, _ => { consulto = true; return Hash; }));
+            Assert.False(consulto);
+            Assert.Null(Verificar(Correcta));
         }
 
         /// <summary>Sin vencimiento: el reloj de la prueba solo lo usa el control.</summary>

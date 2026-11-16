@@ -86,7 +86,7 @@ Role constants (always compare `.ToUpper().Trim()`):
 | `ROL_ADMIN_MAQUINARIA` | `ADMINISTRADOR DE MAQUINARIA` | — |
 | `ROL_OPERADOR` | `OPERADOR` | — |
 
-Roles are stored as plain text in the `Usuarios.rol` column — there is no separate roles table. The `Usuarios` table also stores PBKDF2 password hashes in format `{iterations}.{salt_base64}.{hash_base64}`.
+Roles are stored as plain text in the `Usuarios.rol` column — there is no separate roles table. The `Usuarios` table also stores PBKDF2 password hashes in format `sha256.{iterations}.{salt_base64}.{hash_base64}` (PBKDF2-HMAC-SHA256); the older `{iterations}.{salt_base64}.{hash_base64}` (SHA1, 10000) still verifies and is converted on the next login.
 
 ### Business modules and page layout
 

@@ -75,9 +75,10 @@ namespace WebSGV.Views
                 return;
             }
 
-            if (nuevaContrasena.Length < 6)
+            string errorNueva = PasswordHelper.ValidarNueva(nuevaContrasena);
+            if (errorNueva != null)
             {
-                MostrarMensaje("La contraseña debe tener al menos 6 caracteres.", false);
+                MostrarMensaje(errorNueva, false);
                 return;
             }
 

@@ -19,7 +19,7 @@
 | `idUsuario`     | `INT (PK, AI)` | Identificador único auto-incremental             |
 | `nombreUsuario` | `VARCHAR`       | Login del usuario (único)                        |
 | `nombre`        | `VARCHAR`       | Nombre completo para mostrar en la interfaz      |
-| `contrasena`    | `VARCHAR`       | Hash PBKDF2 en formato `{iter}.{salt}.{hash}`    |
+| `contrasena`    | `VARCHAR`       | Hash PBKDF2 en formato `sha256.{iter}.{salt}.{hash}` |
 | `rol`           | `VARCHAR`       | Nombre del rol (texto libre, se compara en UPPER) |
 | `activo`        | `BIT`           | 1 = activo, 0 = inactivo                        |
 | `idConductor`   | `INT (FK, NULL)`| Solo para rol CONDUCTOR, referencia a tabla Conductores |
@@ -29,14 +29,16 @@
 ### Formato de Contraseña (PBKDF2)
 
 ```
-{iteraciones}.{salt_base64}.{hash_base64}
-Ejemplo: 10000.VKBVqQUdtJXeuB9LCfs3kw==.xTgbab/WEiGQBTxCOVnE6krT39E5bKsLRfYGENexoPk=
+sha256.{iteraciones}.{salt_base64}.{hash_base64}
+Ejemplo: sha256.310000.{salt de 16 bytes en base64, 24 caracteres}.{hash de 32 bytes en base64, 44 caracteres}
 ```
 
-- **Iteraciones:** 10,000 (constante en `PasswordHelper.cs`)
+- **Algoritmo:** PBKDF2-HMAC-SHA256.
+- **Iteraciones:** 310,000 por defecto (appSettings `Seguridad.IteracionesContrasena` en `Web.config`, mínimo 100,000).
 - **Salt:** 16 bytes aleatorios (128 bits)
 - **Hash:** 32 bytes (256 bits)
-- **Soporte legacy:** Si la contraseña está en texto plano, el sistema la migra automáticamente al primer login exitoso.
+- **Formato anterior:** `{iteraciones}.{salt}.{hash}` (PBKDF2-HMAC-SHA1, 10,000 iteraciones). Se sigue aceptando y se convierte al formato nuevo en el siguiente inicio de sesión correcto (`Seguridad.ConvertirHashAlIngresar`).
+- **Texto plano:** ya no se acepta.
 
 ---
 
@@ -189,10 +191,10 @@ VALUES ('login_usuario', 'Nombre Completo', '<hash_pbkdf2>', 'NOMBRE DEL ROL', 1
 
 ```powershell
 $password = "MiContrasena123"
-$saltSize = 16; $hashSize = 32; $iterations = 10000
+$saltSize = 16; $hashSize = 32; $iterations = 310000
 $salt = New-Object byte[] $saltSize
-[System.Security.Cryptography.RNGCryptoServiceProvider]::Create().GetBytes($salt)
-$pbkdf2 = New-Object System.Security.Cryptography.Rfc2898DeriveBytes($password, $salt, $iterations)
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($salt)
+$pbkdf2 = New-Object System.Security.Cryptography.Rfc2898DeriveBytes($password, $salt, $iterations, [System.Security.Cryptography.HashAlgorithmName]::SHA256)
 $hash = $pbkdf2.GetBytes($hashSize)
-"$iterations.$([Convert]::ToBase64String($salt)).$([Convert]::ToBase64String($hash))"
+"sha256.$iterations.$([Convert]::ToBase64String($salt)).$([Convert]::ToBase64String($hash))"
 ```

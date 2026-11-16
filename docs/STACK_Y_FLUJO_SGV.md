@@ -58,7 +58,7 @@
 
 - **Firma digital** de documentos (BouncyCastle + Cryptography.Xml)
 - **Sesiones** con timeout de 30 min y cookie segura
-- **Contraseñas** con hash PBKDF2 — formato `{iter}.{salt}.{hash}` (`PasswordHelper.cs`, `HashHelper.cs`)
+- **Contraseñas** con hash PBKDF2-HMAC-SHA256 (310,000 iteraciones) — formato `sha256.{iter}.{salt}.{hash}`; el formato anterior `{iter}.{salt}.{hash}` (SHA1, 10,000) se convierte al iniciar sesión (`PasswordHelper.cs`)
 - Configuración de secretos en archivos externos (`appSettings.Secrets.config`)
 
 ---
@@ -86,7 +86,7 @@
 | `idUsuario` | `INT (PK, AI)` | Identificador único auto-incremental |
 | `nombreUsuario` | `VARCHAR` | Login del usuario (único) |
 | `nombre` | `VARCHAR` | Nombre completo para mostrar en la interfaz |
-| `contrasena` | `VARCHAR` | Hash PBKDF2 en formato `{iter}.{salt}.{hash}` |
+| `contrasena` | `VARCHAR(100)` | Hash PBKDF2 en formato `sha256.{iter}.{salt}.{hash}` |
 | `rol` | `VARCHAR` | Nombre del rol (texto libre, se compara en UPPER) |
 | `activo` | `BIT` | 1 = activo, 0 = inactivo |
 | `idConductor` | `INT (FK, NULL)` | Solo para rol CONDUCTOR, referencia a tabla `Conductores` |

@@ -228,8 +228,8 @@ namespace WebSGV.Helpers
         /// <summary>
         /// HttpRuntime.Cache con vencimiento absoluto (antes iban en Application state y nunca se
         /// borraban) y prioridad NotRemovable: la presión de memoria no debe borrar un bloqueo antes
-        /// de tiempo; las entradas vencen solas. Lo comparten el login (claves IP_/USR_) y la firma
-        /// (FIRMA_): las claves no chocan.
+        /// de tiempo; las entradas vencen solas. Lo comparten el login (claves IP_/USR_) y la firma o
+        /// el cambio de contraseña (REAUT_): las claves no chocan.
         /// </summary>
         internal sealed class AlmacenCacheAspNet : IAlmacenIntentosLogin
         {

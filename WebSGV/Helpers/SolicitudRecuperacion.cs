@@ -12,7 +12,7 @@ namespace WebSGV.Helpers
     /// SMTP caído, límite alcanzado) para no revelar qué cuentas existen.
     ///
     /// Límite (<see cref="ControlIntentosLogin"/>, mismo almacén que el login con claves
-    /// <c>RECUP_IP_</c> / <c>RECUP_USR_</c>, que no chocan con <c>IP_</c>, <c>USR_</c> ni <c>FIRMA_</c>):
+    /// <c>RECUP_IP_</c> / <c>RECUP_USR_</c>, que no chocan con <c>IP_</c>, <c>USR_</c> ni <c>REAUT_</c>):
     /// cada solicitud se reserva y nunca se devuelve (es un límite de pedidos, no de fallos) y
     /// cuenta aunque el usuario no exista. Semántica exacta:
     ///  - por cuenta (texto escrito, en minúsculas): las solicitudes 1.ª a 3.ª dentro de 60 min se

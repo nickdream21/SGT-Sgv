@@ -97,6 +97,28 @@ namespace WebSGV.Tests
             Assert.Equal("Insert", (string)hsts.Attribute(Xdt + "Transform"));
         }
 
+        /// <summary>
+        /// Tarea 7: la BD de pruebas la comparte el sitio publicado (DLL que solo lee el formato de 3
+        /// partes), así que local/Debug NO convierte hashes al iniciar sesión; Release sí.
+        /// </summary>
+        [Fact]
+        public void ConversionDeHashAlIngresar_FalseEnWebConfig_TrueEnRelease()
+        {
+            XElement baseAdd = Cargar("Web.config").Root.Element("appSettings").Elements("add")
+                .Single(a => (string)a.Attribute("key") == "Seguridad.ConvertirHashAlIngresar");
+            Assert.Equal("false", (string)baseAdd.Attribute("value"));
+
+            XElement releaseAdd = Cargar("Web.Release.config").Root.Element("appSettings").Elements("add")
+                .Single(a => (string)a.Attribute("key") == "Seguridad.ConvertirHashAlIngresar");
+            Assert.Equal("true", (string)releaseAdd.Attribute("value"));
+            Assert.Equal("SetAttributes(value)", (string)releaseAdd.Attribute(Xdt + "Transform"));
+            Assert.Equal("Match(key)", (string)releaseAdd.Attribute(Xdt + "Locator"));
+
+            XElement iteraciones = Cargar("Web.config").Root.Element("appSettings").Elements("add")
+                .Single(a => (string)a.Attribute("key") == "Seguridad.IteracionesContrasena");
+            Assert.Equal("310000", (string)iteraciones.Attribute("value"));
+        }
+
         [Theory]
         [InlineData("TestGenerarPdfOrdenViaje")]
         [InlineData("ConsultaAuditoria")]

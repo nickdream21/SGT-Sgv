@@ -259,7 +259,30 @@ namespace WebSGV.Views
                     string storedHash = reader["contrasena"].ToString();
                     idUsuario = Convert.ToInt32(reader["idUsuario"]);
 
-                    if (PasswordHelper.VerificarIngresada(contrasena, storedHash))
+                    string coincidente;
+                    bool coincide = PasswordHelper.VerificarIngresada(contrasena, storedHash, out coincidente);
+
+                    // Hash del formato anterior (PBKDF2-SHA1) → PBKDF2-SHA256. Si falla, el login sigue.
+                    bool convertido = false;
+                    if (coincide)
+                    {
+                        try
+                        {
+                            convertido = PasswordHelper.ActualizarHashSiCorresponde(idUsuario, storedHash, coincidente);
+                        }
+                        catch (Exception exConv)
+                        {
+                            LogSGV.Error(exConv, "No se pudo convertir el hash de contraseña del usuario {IdUsuario}", idUsuario);
+                        }
+                    }
+
+                    // Un hash del formato anterior se verifica mucho más rápido que HashFicticio: sin
+                    // esto, el tiempo de respuesta delataría qué usuarios existen. La conversión ya pagó
+                    // una derivación con las iteraciones objetivo.
+                    if (!convertido)
+                        PasswordHelper.IgualarCostoVerificacion(contrasena, storedHash, HashFicticio);
+
+                    if (coincide)
                     {
                         nombreUsuario = reader["nombreUsuario"].ToString().Trim();
                         nombre        = reader["nombre"].ToString().Trim();

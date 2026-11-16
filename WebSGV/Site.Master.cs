@@ -83,6 +83,8 @@ namespace WebSGV
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            txtNuevaContrasena.Attributes["placeholder"] = PasswordHelper.TextoMinimoNueva;
+
             bool esPaginaPublica = EsPaginaPublica();
 
             // Si es página pública: ocultar navbar y salir
@@ -194,9 +196,10 @@ namespace WebSGV
                     return;
                 }
 
-                if (nuevaContrasena.Length < 6)
+                string errorNueva = PasswordHelper.ValidarNueva(nuevaContrasena);
+                if (errorNueva != null)
                 {
-                    MostrarMensajeContrasena("La nueva contraseña debe tener al menos 6 caracteres.", "danger");
+                    MostrarMensajeContrasena(errorNueva, "danger");
                     AbrirModalContrasena();
                     return;
                 }
@@ -208,9 +211,26 @@ namespace WebSGV
                     return;
                 }
 
+                if (nuevaContrasena == contrasenaActual || nuevaContrasena == contrasenaActual.Trim())
+                {
+                    MostrarMensajeContrasena("La nueva contraseña debe ser distinta de la actual.", "danger");
+                    AbrirModalContrasena();
+                    return;
+                }
+
                 if (IdUsuarioActual == 0)
                 {
                     MostrarMensajeContrasena("No se encontró la cuenta de usuario activa.", "danger");
+                    AbrirModalContrasena();
+                    return;
+                }
+
+                // Mismo contador de intentos que la firma: 5 incorrectas en 15 min bloquean ambas.
+                string errorActual = ReautenticacionHelper.Verificar(IdUsuarioActual, contrasenaActual,
+                    PropositoReautenticacion.CambioContrasena);
+                if (errorActual != null)
+                {
+                    MostrarMensajeContrasena(errorActual, "danger");
                     AbrirModalContrasena();
                     return;
                 }
@@ -220,29 +240,6 @@ namespace WebSGV
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     conn.Open();
-
-                    string storedHash = null;
-                    using (SqlCommand cmd = new SqlCommand("SELECT contrasena FROM Usuarios WHERE idUsuario = @idUsuario AND activo = 1", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@idUsuario", IdUsuarioActual);
-                        object result = cmd.ExecuteScalar();
-                        if (result != null && result != DBNull.Value)
-                            storedHash = result.ToString();
-                    }
-
-                    if (storedHash == null)
-                    {
-                        MostrarMensajeContrasena("No se encontró la cuenta de usuario.", "danger");
-                        AbrirModalContrasena();
-                        return;
-                    }
-
-                    if (!PasswordHelper.VerificarIngresada(contrasenaActual, storedHash))
-                    {
-                        MostrarMensajeContrasena("La contraseña actual es incorrecta.", "danger");
-                        AbrirModalContrasena();
-                        return;
-                    }
 
                     string nuevoHash = PasswordHelper.HashPassword(nuevaContrasena);
                     // Nuevo sello: se cierran las demás sesiones del usuario; esta sigue abierta

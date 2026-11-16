@@ -146,7 +146,7 @@
                             <div class="form-group">
                                 <label>Contraseña <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtContrasena" runat="server" CssClass="form-control"
-                                    TextMode="Password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+                                    TextMode="Password" autocomplete="new-password" /><%-- placeholder: Page_Load (PasswordHelper.TextoMinimoNueva) --%>
                             </div>
                         </asp:Panel>
                     </div>
@@ -199,7 +199,7 @@
                     <div class="form-group">
                         <label>Nueva contraseña <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtNuevaPass" runat="server" CssClass="form-control"
-                            TextMode="Password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+                            TextMode="Password" autocomplete="new-password" /><%-- placeholder: Page_Load (PasswordHelper.TextoMinimoNueva) --%>
                     </div>
                     <div class="form-group mb-0">
                         <label>Confirmar contraseña <span class="text-danger">*</span></label>

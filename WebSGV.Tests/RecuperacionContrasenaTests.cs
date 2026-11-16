@@ -135,7 +135,7 @@ namespace WebSGV.Tests
             Assert.Equal("RESET_IP_10.0.0.1", SolicitudRecuperacion.ClaveTokenInvalido("10.0.0.1"));
             Assert.Equal("RECUP_IP_unknown", SolicitudRecuperacion.ClaveIp(null));
 
-            var otras = new[] { ControlIntentosLogin.ClaveIp("x"), ControlIntentosLogin.ClaveCuenta("x"), ReautenticacionHelper.ClaveFirma(1) };
+            var otras = new[] { ControlIntentosLogin.ClaveIp("x"), ControlIntentosLogin.ClaveCuenta("x"), ReautenticacionHelper.ClaveReautenticacion(1) };
             foreach (var c in new[] { SolicitudRecuperacion.ClaveIp("x"), SolicitudRecuperacion.ClaveCuenta("x"), SolicitudRecuperacion.ClaveTokenInvalido("x") })
                 Assert.DoesNotContain(otras, o => c.StartsWith(o.Substring(0, o.IndexOf('_') + 1), StringComparison.Ordinal));
 

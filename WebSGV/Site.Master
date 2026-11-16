@@ -405,7 +405,7 @@
                             <div class="form-group">
                                 <label class="form-label">Nueva contraseña <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtNuevaContrasena" runat="server" CssClass="form-control"
-                                    TextMode="Password" placeholder="Mínimo 6 caracteres" autocomplete="new-password"></asp:TextBox>
+                                    TextMode="Password" autocomplete="new-password"></asp:TextBox><%-- placeholder: Page_Load (PasswordHelper.TextoMinimoNueva) --%>
                             </div>
                             <div class="form-group mb-0">
                                 <label class="form-label">Confirmar nueva contraseña <span class="text-danger">*</span></label>
@@ -437,7 +437,8 @@
             urlLogin: '<%= ResolveUrl("~/Views/Login.aspx") %>',
             txtContrasenaActual: '<%= txtContrasenaActual.ClientID %>',
             txtNuevaContrasena: '<%= txtNuevaContrasena.ClientID %>',
-            txtConfirmarContrasena: '<%= txtConfirmarContrasena.ClientID %>'
+            txtConfirmarContrasena: '<%= txtConfirmarContrasena.ClientID %>',
+            largoMinimoContrasena: <%= WebSGV.Helpers.PasswordHelper.LargoMinimoNueva %>
         });
     </script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/SiteMaster-2.js") %>"></script>

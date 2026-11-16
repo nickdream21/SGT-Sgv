@@ -13,8 +13,10 @@ function validarFormContrasena() {
         SGV.avisar('Por favor ingresa tu contraseña actual.');
         return false;
     }
-    if (!nueva || nueva.length < 6) {
-        SGV.avisar('La nueva contraseña debe tener al menos 6 caracteres.');
+    // Mismo mínimo que el servidor (PasswordHelper.LargoMinimoNueva), que la guarda recortada.
+    var minimo = SGV.largoMinimoContrasena || 8;
+    if (!nueva || nueva.trim().length < minimo) {
+        SGV.avisar('La nueva contraseña debe tener al menos ' + minimo + ' caracteres.');
         return false;
     }
     if (nueva !== confirmar) {

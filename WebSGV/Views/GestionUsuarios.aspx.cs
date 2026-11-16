@@ -15,6 +15,9 @@ namespace WebSGV.Views
             SecurityHelper.ExigirRolAdminSistema();
             SecurityHelper.AgregarHeadersSeguridad();
 
+            txtContrasena.Attributes["placeholder"] = PasswordHelper.TextoMinimoNueva;
+            txtNuevaPass.Attributes["placeholder"] = PasswordHelper.TextoMinimoNueva;
+
             if (!IsPostBack)
             {
                 CargarRoles();
@@ -245,9 +248,10 @@ namespace WebSGV.Views
                     AbrirModal("modalUsuario");
                     return;
                 }
-                if (contrasena.Length < 6)
+                string errorContrasena = PasswordHelper.ValidarNueva(contrasena);
+                if (errorContrasena != null)
                 {
-                    MostrarMensajeModal("La contraseña debe tener al menos 6 caracteres.", "danger");
+                    MostrarMensajeModal(errorContrasena, "danger");
                     AbrirModal("modalUsuario");
                     return;
                 }
@@ -362,9 +366,10 @@ namespace WebSGV.Views
             string nuevaPass     = (txtNuevaPass.Text ?? "").Trim();
             string confirmarPass = (txtConfirmarPass.Text ?? "").Trim();
 
-            if (string.IsNullOrEmpty(nuevaPass) || nuevaPass.Length < 6)
+            string errorNueva = PasswordHelper.ValidarNueva(nuevaPass);
+            if (errorNueva != null)
             {
-                MostrarMensajeReset("La contraseña debe tener al menos 6 caracteres.", "danger");
+                MostrarMensajeReset(errorNueva, "danger");
                 AbrirModal("modalResetPass");
                 return;
             }
