@@ -2151,36 +2151,6 @@
                                                                         }
                                                                     ]
                                                 },
-                     "sp_AprobarLiquidacion":  {
-                                                   "source":  {
-                                                                  "object":  "sp_AprobarLiquidacion",
-                                                                  "type":  "stored-procedure"
-                                                              },
-                                                   "graphql":  {
-                                                                   "enabled":  true,
-                                                                   "operation":  "mutation",
-                                                                   "type":  {
-                                                                                "singular":  "sp_AprobarLiquidacion",
-                                                                                "plural":  "sp_AprobarLiquidacions"
-                                                                            }
-                                                               },
-                                                   "rest":  {
-                                                                "enabled":  true,
-                                                                "methods":  [
-                                                                                "post"
-                                                                            ]
-                                                            },
-                                                   "permissions":  [
-                                                                       {
-                                                                           "role":  "authenticated",
-                                                                           "actions":  [
-                                                                                           {
-                                                                                               "action":  "execute"
-                                                                                           }
-                                                                                       ]
-                                                                       }
-                                                                   ]
-                                               },
                      "sp_BuscarIndicadorPorNumeroPedido":  {
                                                                "source":  {
                                                                               "object":  "sp_BuscarIndicadorPorNumeroPedido",
