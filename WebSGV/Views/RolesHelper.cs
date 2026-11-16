@@ -45,14 +45,7 @@ namespace WebSGV.Helpers
         /// <summary>
         /// Obtiene el rol del usuario actual desde la sesión
         /// </summary>
-        public static string ObtenerRolActual()
-        {
-            if (HttpContext.Current.Session["Rol"] != null)
-            {
-                return HttpContext.Current.Session["Rol"].ToString().Trim().ToUpper();
-            }
-            return string.Empty;
-        }
+        public static string ObtenerRolActual() => SesionHelper.RolActual;
 
         /// <summary>
         /// Verifica si el usuario actual es administrador de la operación (ver <see cref="EsRolAdmin"/>).
@@ -170,10 +163,7 @@ namespace WebSGV.Helpers
         /// <summary>
         /// Verifica si el usuario tiene sesión activa
         /// </summary>
-        public static bool TieneSesionActiva()
-        {
-            return HttpContext.Current.Session["UsuarioID"] != null;
-        }
+        public static bool TieneSesionActiva() => SesionHelper.HaySesionActual;
 
         /// <summary>
         /// Verifica si el usuario actual (rol de la sesión) tiene permiso para una sección.
@@ -284,11 +274,8 @@ namespace WebSGV.Helpers
         /// </summary>
         public static string ObtenerNombreUsuario()
         {
-            if (HttpContext.Current.Session["Nombre"] != null)
-            {
-                return HttpContext.Current.Session["Nombre"].ToString();
-            }
-            return "Usuario";
+            string nombre = SesionHelper.NombreActual;
+            return nombre.Length > 0 ? nombre : "Usuario";
         }
 
         /// <summary>

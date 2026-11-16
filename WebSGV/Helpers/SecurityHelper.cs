@@ -23,27 +23,13 @@ namespace WebSGV.Helpers
         // ── Acceso a sesión ────────────────────────────────────────────────
 
         /// <summary>Devuelve true si existe una sesión autenticada válida.</summary>
-        public static bool TieneSesionActiva()
-        {
-            var session = HttpContext.Current?.Session;
-            return session != null && session["UsuarioID"] != null;
-        }
+        public static bool TieneSesionActiva() => SesionHelper.HaySesionActual;
 
         /// <summary>Obtiene el rol del usuario actual en mayúsculas.</summary>
-        public static string ObtenerRol()
-        {
-            var session = HttpContext.Current?.Session;
-            return session?["Rol"]?.ToString().Trim().ToUpperInvariant() ?? string.Empty;
-        }
+        public static string ObtenerRol() => SesionHelper.RolActual;
 
         /// <summary>Obtiene el ID de usuario como entero (0 si no hay sesión).</summary>
-        public static int ObtenerIdUsuario()
-        {
-            var session = HttpContext.Current?.Session;
-            if (session?["IdUsuario"] != null && int.TryParse(session["IdUsuario"].ToString(), out int id))
-                return id;
-            return 0;
-        }
+        public static int ObtenerIdUsuario() => SesionHelper.IdUsuarioActual ?? 0;
 
         // ── Comprobadores de rol ───────────────────────────────────────────
 

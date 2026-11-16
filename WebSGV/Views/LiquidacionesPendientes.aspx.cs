@@ -51,23 +51,13 @@ namespace WebSGV.Views
 
         #region Variables de Sesión
 
-        private int IdUsuarioActual
-        {
-            get
-            {
-                if (Session["UsuarioID"] != null)
-                {
-                    return Convert.ToInt32(Session["UsuarioID"]);
-                }
-                return 0;
-            }
-        }
+        private int IdUsuarioActual => SesionHelper.IdUsuario(Session) ?? 0;
 
         private string NombreUsuarioActual
         {
             get
             {
-                return Session["Nombre"]?.ToString() ?? "";
+                return SesionHelper.Nombre(Session);
             }
         }
 
@@ -95,7 +85,7 @@ namespace WebSGV.Views
             try
             {
                 // Verificar que el usuario tenga sesión
-                if (Session["UsuarioID"] == null || IdUsuarioActual == 0)
+                if (IdUsuarioActual == 0)
                 {
                     Response.Redirect("~/Views/Login.aspx?error=sesion");
                     return;
@@ -679,9 +669,7 @@ namespace WebSGV.Views
                 if (!PuedeGestionarLiquidaciones())
                     return new { success = false, message = "No tiene permisos para corregir liquidaciones." };
 
-                int idUsuario = 0;
-                if (System.Web.HttpContext.Current.Session["UsuarioID"] != null)
-                    idUsuario = Convert.ToInt32(System.Web.HttpContext.Current.Session["UsuarioID"]);
+                int idUsuario = SesionHelper.IdUsuarioActual ?? 0;
                 if (idUsuario == 0)
                     return new { success = false, message = "Sesión no válida. Por favor inicie sesión nuevamente." };
 

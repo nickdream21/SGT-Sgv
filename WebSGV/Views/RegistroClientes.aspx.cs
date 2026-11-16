@@ -272,8 +272,11 @@ namespace WebSGV.Views
         private static object TextoONull(string valor) =>
             string.IsNullOrWhiteSpace(valor) ? (object)DBNull.Value : valor.Trim();
 
-        private string ObtenerUsuarioActual() =>
-            Session["Nombre"]?.ToString() ?? "SISTEMA";
+        private string ObtenerUsuarioActual()
+        {
+            string nombre = SesionHelper.Nombre(Session);
+            return nombre.Length > 0 ? nombre : "SISTEMA";
+        }
 
         private void MostrarMensaje(string mensaje, bool esExito = false)
         {

@@ -161,7 +161,7 @@ namespace WebSGV.Views
             if (!LeerFiltros(out filtro)) return;
             try
             {
-                var reporte = ReporteCargasService.Reporte(filtro, Convert.ToString(Session["Nombre"]), conDetalle: !pdf);
+                var reporte = ReporteCargasService.Reporte(filtro, SesionHelper.Nombre(Session), conDetalle: !pdf);
                 string logo = Server.MapPath("~/Content/favicon.png");
                 var empresa = EmpresaConfigHelper.ObtenerEmpresa();
                 byte[] contenido = pdf

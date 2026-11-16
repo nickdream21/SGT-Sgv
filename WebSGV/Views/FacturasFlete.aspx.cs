@@ -85,7 +85,7 @@ namespace WebSGV.Views
             var resultados = new List<ResultadoFacturaSubida>();
             string raiz = DocumentoHelper.RaizFisicaUploads(Server);
             string ruc = EmpresaConfigHelper.ObtenerEmpresa().Ruc;
-            string usuario = Convert.ToString(Session["Nombre"]);
+            string usuario = SesionHelper.Nombre(Session);
 
             foreach (var a in archivos)
             {
@@ -229,7 +229,7 @@ namespace WebSGV.Views
                 var datos = Consultar(desde, hasta, idCliente);
                 string cliente = string.IsNullOrEmpty(ddlCliente.SelectedValue) ? null : ddlCliente.SelectedItem.Text;
                 var reporte = FacturaFleteService.Reporte(datos.Filas, datos.Facturas, desde, hasta, cliente,
-                                                          Convert.ToString(Session["Nombre"]), FechaHelper.Hoy());
+                                                          SesionHelper.Nombre(Session), FechaHelper.Hoy());
                 byte[] contenido = ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(),
                                                                          Server.MapPath("~/Content/favicon.png"));
                 string nombre = $"FacturasFlete_{desde:yyyyMMdd}_{hasta:yyyyMMdd}.xlsx";

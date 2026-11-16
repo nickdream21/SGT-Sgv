@@ -290,7 +290,7 @@ namespace WebSGV.Views.Exportacion
         {
             var d = SeguimientoViajesService.ObtenerDetalle(IdSeguimiento);
             if (d == null) return;
-            var reporte = ExportacionStatusGeneral.Construir(new[] { d.Fila }, new[] { "Pedido: " + d.Resumen.Pedido }, Convert.ToString(Session["Nombre"]));
+            var reporte = ExportacionStatusGeneral.Construir(new[] { d.Fila }, new[] { "Pedido: " + d.Resumen.Pedido }, SesionHelper.Nombre(Session));
             byte[] archivo = ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(), Server.MapPath("~/Content/favicon.png"));
             var resp = HttpContext.Current.Response;
             resp.Clear();

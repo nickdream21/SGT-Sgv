@@ -49,7 +49,7 @@ namespace WebSGV.Views
             string errNormalizado = (errParam ?? "").ToLowerInvariant();
             if (errNormalizado == "sesion" || errNormalizado == "sin_operador" || errNormalizado == "sesion_cerrada")
             {
-                if (Session["UsuarioID"] != null)
+                if (SesionHelper.HaySesion(Session))
                 {
                     Session.Clear();
                     Session.Abandon();
@@ -61,9 +61,9 @@ namespace WebSGV.Views
                 }
             }
             // Si el usuario ya ha iniciado sesión, redireccionar según su rol
-            else if (Session["UsuarioID"] != null)
+            else if (SesionHelper.HaySesion(Session))
             {
-                string urlInicio = RolesHelper.UrlInicioSegunRol(Session["Rol"]?.ToString());
+                string urlInicio = RolesHelper.UrlInicioSegunRol(SesionHelper.Rol(Session));
 
                 if (urlInicio != null)
                 {
@@ -335,10 +335,7 @@ namespace WebSGV.Views
                 return;
             }
 
-            Session["UsuarioID"] = datos.IdUsuario.ToString();
-            Session["IdUsuario"] = datos.IdUsuario;
-            Session["Rol"] = datos.Rol;
-            Session["Nombre"] = datos.Nombre;
+            SesionHelper.Iniciar(Session, datos.IdUsuario, datos.Rol, datos.Nombre);
             Session["NombreUsuario"] = datos.NombreUsuario;
             // Leído por varias páginas (EditarDespacho, RegistroDespacho...) para
             // registrar quién sube o edita.

@@ -56,7 +56,7 @@ namespace WebSGV
             if (sesion == null)
                 return;
 
-            int? idUsuario = SesionVigenteHelper.EnteroDeSesion(sesion["UsuarioID"]);
+            int? idUsuario = SesionHelper.IdUsuario(sesion);
             if (!idUsuario.HasValue)
                 return;
 
@@ -70,7 +70,7 @@ namespace WebSGV
             {
                 ResultadoSesion resultado = SesionVigenteHelper.EvaluarSesion(
                     selloSesion,
-                    sesion["Rol"] as string,
+                    SesionHelper.Rol(sesion),
                     SesionVigenteHelper.EnteroDeSesion(sesion["IdConductor"]),
                     estado);
 
@@ -112,7 +112,7 @@ namespace WebSGV
             // Páginas sin master (firma, conformidad, descargas de PDF): a su inicio, que abre el modal.
             if (ctx.Handler is System.Web.UI.Page pagina)
             {
-                string rol = sesion["Rol"] as string;
+                string rol = SesionHelper.Rol(sesion);
                 pagina.InitComplete += (s, a) =>
                 {
                     if (pagina.Master == null)
@@ -201,8 +201,8 @@ namespace WebSGV
                     return;
                 }
 
-                object idUsuario = null;
-                try { idUsuario = Context.Session?["UsuarioID"]; }
+                int? idUsuario = null;
+                try { idUsuario = SesionHelper.IdUsuario(Context.Session); }
                 catch { /* sin sesión en este punto del pipeline */ }
 
                 LogSGV.Error(real, "Error no controlado en {Ruta} (usuario {IdUsuario})", ruta, idUsuario);

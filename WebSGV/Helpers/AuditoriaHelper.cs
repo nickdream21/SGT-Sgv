@@ -41,12 +41,11 @@ namespace WebSGV.Helpers
                     var session = HttpContext.Current.Session;
                     if (session != null)
                     {
-                        if (session["IdUsuario"] != null)
-                            idUsuario = Convert.ToInt32(session["IdUsuario"]);
-                        if (session["Nombre"] != null)
-                            nombreUsuario = session["Nombre"].ToString();
-                        if (session["Rol"] != null)
-                            rolUsuario = session["Rol"].ToString();
+                        idUsuario = SesionHelper.IdUsuario(session);
+                        string nombreSesion = SesionHelper.Nombre(session);
+                        if (nombreSesion.Length > 0)
+                            nombreUsuario = nombreSesion;
+                        rolUsuario = SesionHelper.Rol(session);
                     }
 
                     var request = HttpContext.Current.Request;

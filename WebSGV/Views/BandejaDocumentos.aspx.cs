@@ -181,7 +181,7 @@ namespace WebSGV.Views
                     return;
                 }
 
-                var r = BandejaDocumentosService.Registrar(lectura, Convert.ToString(Session["Nombre"]),
+                var r = BandejaDocumentosService.Registrar(lectura, SesionHelper.Nombre(Session),
                     DocumentoHelper.RaizFisicaUploads(Server), EmpresaConfigHelper.ObtenerEmpresa().Ruc);
                 bool algo = r.DespachosCompletados + r.DespachosCreados + r.FacturasFleteRegistradas + r.PdfAdjuntados
                             + r.CpicsRegistradas + r.ManifiestosAdjuntados + r.GresRegistradas + r.PdfGuiasGuardados > 0;

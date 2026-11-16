@@ -142,7 +142,7 @@ namespace WebSGV.Views.Exportacion
                 return;
             }
 
-            string usuario = Convert.ToString(Session["Nombre"]);
+            string usuario = SesionHelper.Nombre(Session);
             var reporte =
                 tipo == TipoExcel.Status ? ExportacionStatusUnidades.Construir(viajes, DescribirFiltros(), usuario)
                 : tipo == TipoExcel.StatusExtra ? ExportacionStatusExtra.Construir(viajes, DescribirFiltros(), usuario)
@@ -195,7 +195,7 @@ namespace WebSGV.Views.Exportacion
                 Cargar();
                 return;
             }
-            var reporte = ExportacionLlegadas.Construir(enCamino, DescribirFiltros(), Convert.ToString(Session["Nombre"]), FechaHelper.Ahora());
+            var reporte = ExportacionLlegadas.Construir(enCamino, DescribirFiltros(), SesionHelper.Nombre(Session), FechaHelper.Ahora());
             Enviar(reporte, "LLEGADAS_", imagen);
         }
 
@@ -222,7 +222,7 @@ namespace WebSGV.Views.Exportacion
                 Cargar();
                 return;
             }
-            var reporte = ExportacionGrifoSantaRosa.Construir(unidades, Convert.ToString(Session["Nombre"]), FechaHelper.Ahora());
+            var reporte = ExportacionGrifoSantaRosa.Construir(unidades, SesionHelper.Nombre(Session), FechaHelper.Ahora());
             Enviar(reporte, "GRIFO_SANTA_ROSA_", imagen);
         }
 

@@ -2560,7 +2560,7 @@ namespace WebSGV.Views
             }
             try
             {
-                int n = ProgramacionDespachoService.RegistrarEntregas(p.Entregas.Where(x => !x.YaRegistrada), Session["UsuarioID"] as int?);
+                int n = ProgramacionDespachoService.RegistrarEntregas(p.Entregas.Where(x => !x.YaRegistrada), SesionHelper.IdUsuario(Session));
                 if (p.Programacion != null) p.Entregas = ProgramacionDespachoService.ProponerEntregas(p.Programacion);
                 ProgramacionNuevaActual = p;
                 MostrarVistaPreviaProgramacion(p);
@@ -3413,10 +3413,11 @@ namespace WebSGV.Views
 
         private string ObtenerUsuarioActual()
         {
-            // MAJ-004: Usar Session["Nombre"] consistente con el resto del proyecto
-            if (Session["Nombre"] != null)
+            // MAJ-004: nombre de sesión (SesionHelper) consistente con el resto del proyecto
+            string nombre = SesionHelper.Nombre(Session);
+            if (nombre.Length > 0)
             {
-                return Session["Nombre"].ToString();
+                return nombre;
             }
             else if (User.Identity.IsAuthenticated)
             {

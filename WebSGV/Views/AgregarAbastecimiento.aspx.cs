@@ -1007,7 +1007,7 @@ namespace WebSGV.Views
                 }
             }
 
-            dto.UsuarioRegistra = (Session["Nombre"] as string) ?? "";
+            dto.UsuarioRegistra = SesionHelper.Nombre(Session);
 
             // 2) Generar y archivar
             var svc = new PdfAbastecimientoService();

@@ -126,7 +126,7 @@ namespace WebSGV
         {
             try
             {
-                return Session["UsuarioID"] != null && !string.IsNullOrEmpty(Session["UsuarioID"].ToString());
+                return SesionHelper.HaySesion(Session);
             }
             catch
             {
@@ -169,15 +169,7 @@ namespace WebSGV
             }
         }
 
-        private int IdUsuarioActual
-        {
-            get
-            {
-                if (Session["IdUsuario"] != null)
-                    return Convert.ToInt32(Session["IdUsuario"]);
-                return 0;
-            }
-        }
+        private int IdUsuarioActual => SesionHelper.IdUsuario(Session) ?? 0;
 
         protected void btnCambiarContrasena_Click(object sender, EventArgs e)
         {

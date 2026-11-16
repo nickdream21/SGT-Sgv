@@ -85,8 +85,8 @@ namespace WebSGV.Views.Exportacion
         /// <summary>Responde 403 y devuelve false si la sesión venció o el rol no tiene permiso.</summary>
         private static bool ExigirTablero(HttpContext ctx)
         {
-            bool conSesion = ctx.Session?["UsuarioID"] != null;
-            if (PuedeUsarTablero(conSesion, Convert.ToString(ctx.Session?["Rol"]))) return true;
+            bool conSesion = SesionHelper.HaySesion(ctx.Session);
+            if (PuedeUsarTablero(conSesion, SesionHelper.Rol(ctx.Session))) return true;
             Responder(ctx, 403, new { error = conSesion ? "Sin permiso" : "Sesión vencida" });
             return false;
         }

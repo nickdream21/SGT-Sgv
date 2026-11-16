@@ -84,17 +84,7 @@ namespace WebSGV.Views
             }
         }
 
-        private int IdUsuarioActual
-        {
-            get
-            {
-                if (Session["IdUsuario"] != null)
-                {
-                    return Convert.ToInt32(Session["IdUsuario"]);
-                }
-                return 0;
-            }
-        }
+        private int IdUsuarioActual => SesionHelper.IdUsuario(Session) ?? 0;
 
         #endregion
 
@@ -1300,7 +1290,7 @@ namespace WebSGV.Views
                 if (!RolesHelper.EsConductor())
                 {
                     LogSGV.Advertencia("DashboardConductor.RetirarLiquidacion: rol no autorizado (usuario {IdUsuario}, orden {IdOrdenViaje})",
-                        session["UsuarioID"], idOrdenViaje);
+                        SesionHelper.IdUsuario(session), idOrdenViaje);
                     return new { success = false, message = "Sesión no válida" };
                 }
 

@@ -36,8 +36,7 @@ namespace WebSGV.Views
         [WebMethod(EnableSession = true)]
         public static List<LiquidacionAprobadaItem> ObtenerLiquidacionesAprobadasContabilidad(int idConductor, string numeroOrden, string nombreConductor)
         {
-            var contexto = System.Web.HttpContext.Current;
-            if (contexto == null || contexto.Session == null || contexto.Session["UsuarioID"] == null)
+            if (!SesionHelper.HaySesionActual)
                 return new List<LiquidacionAprobadaItem>();
 
             // Misma regla que la página: sin esto cualquier rol logueado (p. ej. CONDUCTOR)
@@ -98,8 +97,7 @@ namespace WebSGV.Views
         public static List<ConductorItem> BuscarConductores(string termino)
         {
             var vacia = new List<ConductorItem>();
-            var contexto = System.Web.HttpContext.Current;
-            if (contexto == null || contexto.Session == null || contexto.Session["UsuarioID"] == null)
+            if (!SesionHelper.HaySesionActual)
                 return vacia;
             if (!RolesHelper.TienePermiso("LIQUIDACIONES_CONTABILIDAD"))
                 return vacia;

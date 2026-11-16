@@ -134,7 +134,7 @@ namespace WebSGV.Views
                 if (!DateTime.TryParseExact(txtFechaPago.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime fecha))
                     throw new Services.Common.ErrorNegocioException("Indica la fecha en que se pagó o descontó.");
                 SaldosConductorService.RegistrarPago(idConductor, ids, fecha, ddlMedio.SelectedValue, txtOperacion.Text, txtNota.Text,
-                    Convert.ToString(Session["Nombre"]));
+                    SesionHelper.Nombre(Session));
                 txtOperacion.Text = txtNota.Text = "";
                 Mostrar($"Registrado: {ids.Count} liquidación(es) saldada(s).", "success");
             }
@@ -149,7 +149,7 @@ namespace WebSGV.Views
         {
             try
             {
-                SaldosConductorService.AnularPago(int.Parse(hfPagoAnular.Value), txtMotivoAnular.Text, Convert.ToString(Session["Nombre"]));
+                SaldosConductorService.AnularPago(int.Parse(hfPagoAnular.Value), txtMotivoAnular.Text, SesionHelper.Nombre(Session));
                 txtMotivoAnular.Text = "";
                 Mostrar("Registro anulado: sus liquidaciones vuelven a estar pendientes.", "success");
             }
@@ -171,7 +171,7 @@ namespace WebSGV.Views
             if (chkPendientesAnteriores.Checked) filtros.Add("Incluye pendientes de quincenas anteriores");
             if (chkSoloPendientes.Checked) filtros.Add("Solo pendientes");
 
-            var reporte = SaldosConductorService.Reporte(Datos(), filtros, Convert.ToString(Session["Nombre"]));
+            var reporte = SaldosConductorService.Reporte(Datos(), filtros, SesionHelper.Nombre(Session));
             var empresa = EmpresaConfigHelper.ObtenerEmpresa();
             string logo = Server.MapPath("~/Content/favicon.png");
             string nombre = $"DESCUENTOS_REINTEGROS_{q.Item1:yyyyMMdd}";

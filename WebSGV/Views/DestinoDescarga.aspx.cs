@@ -52,7 +52,11 @@ namespace WebSGV.Views
             }
         }
 
-        private static string Usuario() => HttpContext.Current?.Session?["Nombre"]?.ToString() ?? "Sistema";
+        private static string Usuario()
+        {
+            string nombre = SesionHelper.NombreActual;
+            return nombre.Length > 0 ? nombre : "Sistema";
+        }
 
         /// <summary>"TBE995" → "TBE-995" (la forma en que se escriben las placas).</summary>
         protected string PlacaVisible(object placa)

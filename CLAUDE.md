@@ -55,11 +55,11 @@ Non-sensitive `appSettings` (company name, RUC, PDF archive path) live inline in
 
 ### Authentication and session
 
-Session-based only (no ASP.NET Forms Auth). After login, three session keys are set:
+Session-based only (no ASP.NET Forms Auth). After login, three session keys are set (`SesionHelper.Iniciar`); read and write all three always via `SesionHelper` (`IdUsuario`, `Rol`, `Nombre`, `HaySesion`, `*Actual`), never `Session["..."]` directly (enforced by `CodigoFuenteLimpiezaTests`):
 
 | Key | Content |
 |---|---|
-| `Session["UsuarioID"]` | Integer user ID (presence = authenticated) |
+| `Session["UsuarioID"]` | Integer user ID (`int`; a valid value = authenticated) |
 | `Session["Rol"]` | Role string, compared UPPERCASED |
 | `Session["Nombre"]` | Display name |
 

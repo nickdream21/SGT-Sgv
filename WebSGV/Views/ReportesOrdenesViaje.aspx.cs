@@ -476,7 +476,7 @@ namespace WebSGV.Views
         private static string Legible(string valor) =>
             string.IsNullOrWhiteSpace(valor) ? "" : char.ToUpperInvariant(valor.Trim()[0]) + valor.Trim().Substring(1).ToLowerInvariant();
 
-        private string UsuarioActual() => Convert.ToString(Session["Nombre"]);
+        private string UsuarioActual() => SesionHelper.Nombre(Session);
 
         private void EnviarExcel(ReporteTabular reporte, string prefijo) =>
             EnviarArchivo(ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(),

@@ -37,9 +37,7 @@ namespace WebSGV.Views
             Response.ContentEncoding = System.Text.Encoding.UTF8;
 
             // 1) Auth
-            int idUsuario = 0;
-            if (Session["IdUsuario"] != null)
-                int.TryParse(Session["IdUsuario"].ToString(), out idUsuario);
+            int idUsuario = SesionHelper.IdUsuario(Session) ?? 0;
             if (idUsuario == 0)
             {
                 Response.Redirect(ResolveUrl("~/Views/Login.aspx?returnUrl=" +
@@ -47,7 +45,7 @@ namespace WebSGV.Views
                 return;
             }
 
-            if (!RolPuedeDescargar(Session["Rol"] as string))
+            if (!RolPuedeDescargar(SesionHelper.Rol(Session)))
             {
                 EscribirError(403, "No tiene permisos para descargar este documento.");
                 return;
@@ -90,7 +88,9 @@ namespace WebSGV.Views
                 else
                 {
                     // 4) Regenerar y archivar
-                    dto.UsuarioRegistra = (Session["Nombre"] as string) ?? dto.UsuarioRegistra;
+                    string nombreSesion = SesionHelper.Nombre(Session);
+                    if (nombreSesion.Length > 0)
+                        dto.UsuarioRegistra = nombreSesion;
                     var svc = new PdfAbastecimientoService();
                     var resultado = svc.GenerarYArchivar(dto, archivar: true);
                     pdfBytes = resultado.Bytes;

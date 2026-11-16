@@ -48,9 +48,10 @@ namespace WebSGV.Views
             {
                 // Con sesión pero sin operador vinculado no es una sesión vencida: Login muestra
                 // "no está vinculada a un registro de operador" y limpia la sesión (sin bucle).
-                bool haySesion = Session["UsuarioID"] != null;
+                int? idUsuario = SesionHelper.IdUsuario(Session);
+                bool haySesion = idUsuario.HasValue;
                 if (haySesion)
-                    LogSGV.Advertencia("Usuario {IdUsuario} con rol OPERADOR sin operador vinculado", Session["UsuarioID"]);
+                    LogSGV.Advertencia("Usuario {IdUsuario} con rol OPERADOR sin operador vinculado", idUsuario.Value);
                 Response.Redirect(haySesion ? "~/Views/Login.aspx?error=sin_operador" : "~/Views/Login.aspx?error=sesion", true);
                 return;
             }

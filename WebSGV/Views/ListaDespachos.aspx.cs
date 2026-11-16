@@ -1886,9 +1886,10 @@ namespace WebSGV.Views
 
         private string ObtenerUsuarioActual()
         {
-            if (Session["Nombre"] != null)
+            string nombre = SesionHelper.Nombre(Session);
+            if (nombre.Length > 0)
             {
-                return Session["Nombre"].ToString();
+                return nombre;
             }
             else if (User.Identity.IsAuthenticated)
             {
