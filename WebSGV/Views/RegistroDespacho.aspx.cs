@@ -3168,14 +3168,6 @@ namespace WebSGV.Views
             }
         }
 
-        protected void btnFinalizarViajeUnico_Click(object sender, EventArgs e)
-        {
-            // MAJ-002: Funcionalidad de finalizar viaje único
-            // El SP sp_CerrarViajeProgreso no está confirmado como desplegado.
-            // Se muestra mensaje orientativo hasta que el SP esté disponible.
-            MostrarMensaje("Para cerrar un viaje, use la pantalla de Gestión de Viajes. Esta acción estará disponible próximamente.", "warning");
-        }
-
         protected void btnVerHistorialViajes_Click(object sender, EventArgs e)
         {
             // MAJ-002: Implementación real del historial de viajes

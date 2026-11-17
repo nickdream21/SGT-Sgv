@@ -1095,16 +1095,6 @@
                                                                         </div>
                                                                     </div>
                                                                 </div>
-                                                                <!-- BLK-003: Botón para finalizar el viaje único activo -->
-                                                                <div class="mt-2">
-                                                                    <asp:Button ID="btnFinalizarViajeUnico" runat="server"
-                                                                        Text="Finalizar viaje"
-                                                                        CssClass="btn btn-outline-warning btn-sm"
-                                                                        OnClick="btnFinalizarViajeUnico_Click"
-                                                                        CausesValidation="false"
-                                                                        ToolTip="Cierra el viaje activo del conductor"
-                                                                        OnClientClick="return confirm('¿Desea finalizar este viaje en progreso?');" />
-                                                                </div>
                                                             </asp:Panel>
                                                             
                                                             <asp:Panel ID="pnlMultiplesViajes" runat="server" Visible="false">
@@ -1445,7 +1435,6 @@
                                 <asp:AsyncPostBackTrigger ControlID="ddlTipoOperacionBase" EventName="SelectedIndexChanged" />
                                 <asp:AsyncPostBackTrigger ControlID="rblAmbitoOperacionBase" EventName="SelectedIndexChanged" />
                                 <asp:AsyncPostBackTrigger ControlID="btnCrearNuevoViaje" EventName="Click" />
-                                <asp:AsyncPostBackTrigger ControlID="btnFinalizarViajeUnico" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnVerHistorialViajes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="gvConductoresLote" EventName="RowCommand" />
                             </Triggers>

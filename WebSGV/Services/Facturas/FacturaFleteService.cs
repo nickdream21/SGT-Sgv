@@ -64,21 +64,121 @@ namespace WebSGV.Services.Facturas
                 return r;
             }
 
-            string rutaVirtual = null;
+            // El PDF nunca pisa uno anterior (el de la misma factura u otro con el mismo nombre): si el nombre ya
+            // existe se guarda con sufijo de fecha y hora. Si el registro no lo usa (SIN CAMBIOS con PDF ya guardado,
+            // o error), se borra solo el archivo recién creado.
+            string rutaVirtual = null, fisicaNueva = null;
             if (!string.IsNullOrEmpty(raizFisicaUploads))
             {
                 string anio = f.FechaEmision.Value.Year.ToString(CultureInfo.InvariantCulture);
-                string nombre = DocumentoHelper.NombreSeguro(f.NumeroFactura) + ".pdf";
+                string nombreBase = DocumentoHelper.NombreSeguro(f.NumeroFactura);
                 string carpeta = Path.Combine(raizFisicaUploads, CarpetaUploads, anio);
-                string fisica = Path.Combine(carpeta, nombre);
-                if (!DocumentoHelper.EstaDentroDe(fisica, raizFisicaUploads))
+                if (!DocumentoHelper.EstaDentroDe(Path.Combine(carpeta, nombreBase + ".pdf"), raizFisicaUploads))
                     throw new ErrorNegocioException("Nombre de archivo no permitido.");
-                Directory.CreateDirectory(carpeta);
-                File.WriteAllBytes(fisica, pdf);
+                string nombre = GuardarSinSobrescribir(carpeta, nombreBase, ".pdf", pdf, FechaHelper.Ahora());
+                fisicaNueva = Path.Combine(carpeta, nombre);
                 rutaVirtual = $"~/Uploads/{CarpetaUploads}/{anio}/{nombre}";
             }
 
-            DataTable dt = DbHelper.ConsultarTablaSp("sp_FF_RegistrarFacturaFlete",
+            DataTable dt;
+            try
+            {
+                dt = RegistrarEnBd(f, rutaVirtual, usuario);
+            }
+            catch
+            {
+                BorrarArchivoNuevo(fisicaNueva);
+                throw;
+            }
+
+            string accion = dt.Rows.Count > 0 ? Convert.ToString(dt.Rows[0]["accion"]) : "";
+            int id = dt.Rows.Count > 0 ? Convert.ToInt32(dt.Rows[0]["idFacturaFlete"]) : 0;
+            if (fisicaNueva != null && (dt.Rows.Count == 0 || (accion == "SIN CAMBIOS" && !UsaElArchivo(id, rutaVirtual))))
+                BorrarArchivoNuevo(fisicaNueva);
+            r.Ok = true;
+            r.Estado = accion == "CREADA" ? "Registrada" : accion == "ACTUALIZADA" ? "Actualizada" : "Sin cambios";
+            r.Detalle = string.Join(" ", f.Observaciones);
+            if (accion != "SIN CAMBIOS")
+                AuditoriaHelper.Registrar(accion == "CREADA" ? "INSERT" : "UPDATE", "FacturaFlete", id,
+                    $"Factura de flete {f.NumeroFactura} ({f.Moneda} {f.ImporteTotal.Value.ToString("N2", CultureInfo.InvariantCulture)}, " +
+                    $"factura comercial {f.NumeroFacturaComercial ?? "-"}) leída de {nombreArchivo}");
+            return r;
+        }
+
+        /// <summary>
+        /// Nombres que se prueban, en orden, para guardar un archivo sin pisar otro: el nombre tal cual; luego con
+        /// sufijo de fecha y hora (<c>_yyyyMMddHHmmss</c>); y si también existe, con un contador (<c>_2</c>, <c>_3</c>…).
+        /// </summary>
+        public static IEnumerable<string> NombresCandidatos(string nombreBase, string extension, DateTime ahora)
+        {
+            yield return nombreBase + extension;
+            string sello = nombreBase + "_" + ahora.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
+            yield return sello + extension;
+            for (int i = 2; i <= 999; i++)
+                yield return sello + "_" + i.ToString(CultureInfo.InvariantCulture) + extension;
+        }
+
+        /// <summary>
+        /// Guarda <paramref name="contenido"/> en la carpeta con el primer nombre libre de <see cref="NombresCandidatos"/>
+        /// (<see cref="FileMode.CreateNew"/>: nunca sobrescribe un archivo existente) y devuelve el nombre usado.
+        /// </summary>
+        public static string GuardarSinSobrescribir(string carpeta, string nombreBase, string extension, byte[] contenido, DateTime ahora)
+        {
+            Directory.CreateDirectory(carpeta);
+            foreach (string nombre in NombresCandidatos(nombreBase, extension, ahora))
+            {
+                string fisica = Path.Combine(carpeta, nombre);
+                if (File.Exists(fisica)) continue;
+                FileStream fs;
+                try
+                {
+                    fs = new FileStream(fisica, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                }
+                catch (IOException) when (File.Exists(fisica))
+                {
+                    continue;                                   // lo creó otro entre la comprobación y la apertura
+                }
+                try
+                {
+                    using (fs) fs.Write(contenido, 0, contenido.Length);
+                }
+                catch
+                {
+                    BorrarArchivoNuevo(fisica);                 // lo creamos nosotros: no dejar un PDF a medias
+                    throw;
+                }
+                return nombre;
+            }
+            throw new ErrorNegocioException("No se pudo guardar el PDF: ya existen demasiados archivos con ese nombre.");
+        }
+
+        private static void BorrarArchivoNuevo(string fisica)
+        {
+            if (fisica == null) return;
+            try { File.Delete(fisica); }
+            catch (Exception ex) { LogSGV.Advertencia("No se pudo borrar el PDF recién guardado {Archivo}: {Error}", fisica, ex.Message); }
+        }
+
+        /// <summary>SIN CAMBIOS solo guarda la ruta del PDF si la factura no tenía ninguno: ¿quedó la del archivo nuevo?</summary>
+        /// Si la consulta falla, se responde "sí" para conservar el archivo: la factura ya quedó registrada
+        /// y un error aquí no debe mostrarse como fallo del registro.
+        private static bool UsaElArchivo(int idFacturaFlete, string rutaVirtual)
+        {
+            try
+            {
+                return string.Equals(Convert.ToString(DbHelper.EjecutarEscalar(
+                    "SELECT rutaArchivo FROM dbo.FacturaFlete WHERE idFacturaFlete = @id",
+                    DbHelper.Param("@id", idFacturaFlete))), rutaVirtual, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "No se pudo comprobar la ruta del PDF de la factura de flete {Id}; se conserva el archivo nuevo.", idFacturaFlete);
+                return true;
+            }
+        }
+
+        private static DataTable RegistrarEnBd(FacturaFleteLeida f, string rutaVirtual, string usuario) =>
+            DbHelper.ConsultarTablaSp("sp_FF_RegistrarFacturaFlete",
                 DbHelper.Param("@numeroFactura", f.NumeroFactura),
                 DbHelper.Param("@fechaEmision", f.FechaEmision.Value),
                 DbHelper.Param("@fechaVencimiento", f.FechaVencimiento),
@@ -101,18 +201,6 @@ namespace WebSGV.Services.Facturas
                 DbHelper.Param("@rutaArchivo", rutaVirtual),
                 DbHelper.Param("@usuario", usuario),
                 DbHelper.Param("@items", ItemsJson(f.Items)));
-
-            string accion = dt.Rows.Count > 0 ? Convert.ToString(dt.Rows[0]["accion"]) : "";
-            int id = dt.Rows.Count > 0 ? Convert.ToInt32(dt.Rows[0]["idFacturaFlete"]) : 0;
-            r.Ok = true;
-            r.Estado = accion == "CREADA" ? "Registrada" : accion == "ACTUALIZADA" ? "Actualizada" : "Sin cambios";
-            r.Detalle = string.Join(" ", f.Observaciones);
-            if (accion != "SIN CAMBIOS")
-                AuditoriaHelper.Registrar(accion == "CREADA" ? "INSERT" : "UPDATE", "FacturaFlete", id,
-                    $"Factura de flete {f.NumeroFactura} ({f.Moneda} {f.ImporteTotal.Value.ToString("N2", CultureInfo.InvariantCulture)}, " +
-                    $"factura comercial {f.NumeroFacturaComercial ?? "-"}) leída de {nombreArchivo}");
-            return r;
-        }
 
         private static string Recortar(string s, int max) =>
             s == null ? null : (s.Length <= max ? s : s.Substring(0, max));

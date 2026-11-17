@@ -128,6 +128,12 @@ namespace WebSGV.Models.Despachos
         public int DespachosSinManifiesto { get; set; }
 
         /// <summary>
+        /// Despachos del lote con manifiesto de cruce y de retorno (sp_LD_ObtenerLotesRegistrados): el estado del
+        /// manifiesto de ListaDespachos (<c>ListaDespachosService.EstadoManifiesto</c>).
+        /// </summary>
+        public int DespachosManifiestoCompleto { get; set; }
+
+        /// <summary>
         /// Qué documentos se esperan del cliente (sp_LD_ObtenerLotesRegistrados): PEDIDO (ZIP del correo: pedido, factura
         /// con PDF y guías), CPIC (tercero que cruza: factura comercial de la CPIC y la CPIC) o GUIA (tercero nacional:
         /// guía del remitente).

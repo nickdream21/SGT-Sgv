@@ -372,7 +372,6 @@ namespace WebSGV.Views
                 List<LoteRegistrado> lotes = ObtenerLotesRegistrados()
                     .OrderBy(l => l.EstadoLote == "ANULADO" || EstadoDocumental.DeLote(l).Completo ? 1 : 0)
                     .ToList();
-                var estadosManifiesto = CalcularEstadosManifiestoPorLote(lotes);
                 DateTime hoy = FechaHelper.Hoy();
 
                 var filas = lotes.Select(l =>
@@ -393,7 +392,7 @@ namespace WebSGV.Views
                     NumeroCPIC = string.IsNullOrEmpty(l.NumeroCPIC) ? "—" : l.NumeroCPIC,
                     l.FechaCreacion,
                     l.EstadoLote,
-                    ManifiestoEstado = estadosManifiesto[l.IdLoteVirtual],
+                    ManifiestoEstado = ListaDespachosService.EstadoManifiesto(l),
                     DocumentosResumen = l.EstadoLote == "ANULADO" ? "—" : documentos.Resumen,
                     DocumentosClase = l.EstadoLote == "ANULADO" ? "ld-docs-badge"
                         : documentos.Completo ? "ld-docs-badge ld-docs-completo" : "ld-docs-badge ld-docs-pendiente",
@@ -413,54 +412,6 @@ namespace WebSGV.Views
                 LogSGV.Error(ex, "Error al cargar lotes registrados en ListaDespachos");
                 MostrarMensaje("Error al cargar lotes registrados: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
-        }
-
-        /// <summary>
-        /// Estado del manifiesto por lote ("N/A" si es nacional, "Completo"/"Pendiente"/"Parcial N/M"
-        /// si es internacional). Resuelve los despachos de cada lote internacional (una consulta por
-        /// lote, vía <c>ObtenerIdsDespachosDeLote</c> — no hay una sola SP que traiga ids por lista de
-        /// lotes) y luego trae TODOS los documentos de manifiesto en una sola consulta combinada.
-        /// </summary>
-        private Dictionary<string, string> CalcularEstadosManifiestoPorLote(List<LoteRegistrado> lotes)
-        {
-            var resultado = new Dictionary<string, string>();
-            var idsPorLote = new Dictionary<string, List<int>>();
-            var idsTodos = new List<int>();
-
-            // Un lote anulado no espera manifiesto (y sus despachos ya no están activos).
-            foreach (var lote in lotes.Where(l => l.EsInternacional && l.EstadoLote != "ANULADO"))
-            {
-                var ids = ListaDespachosService.ObtenerIdsDespachosDeLote(lote.IdLoteVirtual);
-                idsPorLote[lote.IdLoteVirtual] = ids;
-                idsTodos.AddRange(ids);
-            }
-
-            Dictionary<int, HashSet<string>> tiposPorDespacho = new Dictionary<int, HashSet<string>>();
-            if (idsTodos.Count > 0)
-            {
-                var docs = ManifiestoService.ObtenerDocumentosPorDespachos(idsTodos.Distinct().ToList());
-                tiposPorDespacho = docs.GroupBy(d => d.IdDespacho)
-                    .ToDictionary(g => g.Key, g => new HashSet<string>(g.Select(x => x.TipoManifiesto)));
-            }
-
-            foreach (var lote in lotes)
-            {
-                if (!lote.EsInternacional || !idsPorLote.TryGetValue(lote.IdLoteVirtual, out var ids) || ids.Count == 0)
-                {
-                    resultado[lote.IdLoteVirtual] = "N/A";
-                    continue;
-                }
-
-                int completos = ids.Count(id =>
-                    tiposPorDespacho.TryGetValue(id, out var tipos) &&
-                    tipos.Contains(ManifiestoService.TIPO_CRUCE) && tipos.Contains(ManifiestoService.TIPO_RETORNO));
-
-                resultado[lote.IdLoteVirtual] = completos == ids.Count ? "Completo"
-                    : completos == 0 ? "Pendiente"
-                    : $"Parcial {completos}/{ids.Count}";
-            }
-
-            return resultado;
         }
 
         private List<LoteRegistrado> ObtenerLotesRegistrados()
@@ -2103,8 +2054,8 @@ namespace WebSGV.Views
                 var lotesActivos = ListaDespachosService.ObtenerLotesRegistrados(null, null, null, null, null, null, "ACTIVO");
                 lblStatLotesActivos.Text = lotesActivos.Count.ToString();
 
-                var estadosManifiesto = CalcularEstadosManifiestoPorLote(lotesActivos);
-                int pendientes = estadosManifiesto.Values.Count(v => v == "Pendiente" || v.StartsWith("Parcial"));
+                int pendientes = lotesActivos.Select(ListaDespachosService.EstadoManifiesto)
+                    .Count(v => v == "Pendiente" || v.StartsWith("Parcial"));
                 lblStatManifiestosPendientes.Text = pendientes.ToString();
                 divStatManifiestos.Attributes["class"] = pendientes > 0 ? "ld-stat-wrap ld-stat-alerta" : "ld-stat-wrap";
 
@@ -2258,7 +2209,7 @@ namespace WebSGV.Views
             }
         }
 
-        /// <summary>Clase del badge de estado de manifiesto (ver CalcularEstadosManifiestoPorLote).</summary>
+        /// <summary>Clase del badge de estado de manifiesto (ver ListaDespachosService.EstadoManifiesto).</summary>
         public string GetManifiestoBadgeClass(string estado)
         {
             if (estado == "Completo") return "badge estado-completado";

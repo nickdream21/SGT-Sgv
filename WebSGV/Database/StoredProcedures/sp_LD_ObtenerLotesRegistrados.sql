@@ -34,6 +34,11 @@
 -- CantidadFacturas / CantidadCPIC (2026-11-17): cuántas facturas y CPIC
 -- distintas lleva el lote. Con mas de una, NumeroFactura/NumeroCPIC (el MAX)
 -- es solo una de ellas: la pantalla lista cada documento por su id.
+-- DespachosManifiestoCompleto (2026-11-17, ultima columna): cuantos despachos del
+-- lote tienen manifiesto de cruce Y de retorno (estado del manifiesto de
+-- ListaDespachos sin una consulta por lote).
+-- Busquedas (2026-11-17): los textos de @numeroPedido, @numeroFactura, @numeroCPIC
+-- y @nombreConductor se buscan literales: '%', '_' y '[' se escapan antes del LIKE.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_ObtenerLotesRegistrados
     @idCliente       INT          = NULL,
@@ -65,6 +70,12 @@ BEGIN
     -- ANULADO con activo = 0. Por defecto y con cualquier otro filtro solo se ven los activos;
     -- con @estadoFiltro = 'ANULADO' se ven solo los lotes anulados (activo = 0 y ANULADO).
     DECLARE @verAnulados BIT = CASE WHEN @estadoFiltro = 'ANULADO' THEN 1 ELSE 0 END;
+
+    -- Textos de busqueda literales: escapar los comodines del LIKE.
+    DECLARE @pedidoLike    VARCHAR(100) = '%' + REPLACE(REPLACE(REPLACE(@numeroPedido, '[', '[[]'), '%', '[%]'), '_', '[_]') + '%';
+    DECLARE @facturaLike   VARCHAR(100) = '%' + REPLACE(REPLACE(REPLACE(@numeroFactura, '[', '[[]'), '%', '[%]'), '_', '[_]') + '%';
+    DECLARE @cpicLike      VARCHAR(100) = '%' + REPLACE(REPLACE(REPLACE(@numeroCPIC, '[', '[[]'), '%', '[%]'), '_', '[_]') + '%';
+    DECLARE @conductorLike VARCHAR(700) = '%' + REPLACE(REPLACE(REPLACE(@nombreConductor, '[', '[[]'), '%', '[%]'), '_', '[_]') + '%';
 
     -- Ajustar fechaHasta para incluir todo el dia
     DECLARE @fechaHastaFin DATETIME = NULL;
@@ -121,7 +132,11 @@ BEGIN
             CASE WHEN d.estadoDespacho <> 'ANULADO'
                       AND (d.esInternacional = 1 OR (d.perfil = 'CPIC' AND d.tipoOperacion = 'CARGA'))
                       AND NOT EXISTS (SELECT 1 FROM DocumentosManifiesto dm
-                                      WHERE dm.idDespacho = d.idDespacho) THEN 1 ELSE 0 END AS SinManifiesto
+                                      WHERE dm.idDespacho = d.idDespacho) THEN 1 ELSE 0 END AS SinManifiesto,
+            -- Manifiesto completo: el de cruce y el de retorno (estado del manifiesto en ListaDespachos).
+            CASE WHEN EXISTS (SELECT 1 FROM DocumentosManifiesto dm WHERE dm.idDespacho = d.idDespacho AND dm.tipoManifiesto = 'CRUCE')
+                      AND EXISTS (SELECT 1 FROM DocumentosManifiesto dm WHERE dm.idDespacho = d.idDespacho AND dm.tipoManifiesto = 'RETORNO')
+                 THEN 1 ELSE 0 END AS ManifiestoCompleto
         FROM DespachosPerfil d
     ),
     LotesAgrupados AS (
@@ -171,7 +186,10 @@ BEGIN
                 WHEN SUM(CASE WHEN d.estadoDespacho = 'ANULADO' THEN 1 ELSE 0 END) = COUNT(*)
                 THEN 'ANULADO'
                 ELSE 'ACTIVO'
-            END AS EstadoLote
+            END AS EstadoLote,
+
+            -- Al final del resultset: la version anterior de la aplicacion lee las columnas por nombre.
+            SUM(dd.ManifiestoCompleto) AS DespachosManifiestoCompleto
 
         FROM Despachos d
         INNER JOIN DespachosDocumentos dd ON dd.idDespacho = d.idDespacho
@@ -183,11 +201,11 @@ BEGIN
           AND (@idCliente      IS NULL OR d.idCliente      = @idCliente)
           AND (@tipoOperacion  IS NULL OR d.tipoOperacion  = @tipoOperacion)
           AND (@idPlanta       IS NULL OR d.idPlanta        = @idPlanta)
-          AND (@numeroPedido   IS NULL OR d.numeroPedido LIKE '%' + @numeroPedido + '%')
+          AND (@numeroPedido   IS NULL OR d.numeroPedido LIKE @pedidoLike)
           AND (@fechaDesde     IS NULL OR d.fechaDespacho  >= @fechaDesde)
           AND (@fechaHastaFin  IS NULL OR d.fechaDespacho  <= @fechaHastaFin)
-          AND (@numeroFactura  IS NULL OR f.numeroFactura LIKE '%' + @numeroFactura + '%')
-          AND (@numeroCPIC     IS NULL OR cp.numeroCPIC LIKE '%' + @numeroCPIC + '%')
+          AND (@numeroFactura  IS NULL OR f.numeroFactura LIKE @facturaLike)
+          AND (@numeroCPIC     IS NULL OR cp.numeroCPIC LIKE @cpicLike)
         GROUP BY
             d.idCliente, cl.nombre, d.numeroPedido, d.fechaDespacho,
             d.tipoOperacion, d.esInternacional, d.idPlanta, pl.nombre
@@ -213,7 +231,7 @@ BEGIN
               AND d2.esInternacional = la.esInternacional
               AND d2.idPlanta = la.idPlanta
               AND CONCAT(c2.nombre, ' ', ISNULL(c2.apPaterno, ''), ' ', ISNULL(c2.apMaterno, ''))
-                    LIKE '%' + @nombreConductor + '%'
+                    LIKE @conductorLike
       ))
     ORDER BY la.FechaCreacion DESC;
 END

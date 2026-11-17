@@ -1,6 +1,7 @@
 -- ============================================================
 -- Obtiene viajes en progreso (ABIERTOS) con filtros opcionales.
 -- Solo incluye viajes que tengan al menos un despacho activo.
+-- @numeroViaje se busca literal (2026-11-17): '%', '_' y '[' se escapan antes del LIKE.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_ObtenerViajesActivos
     @idConductor    INT          = NULL,
@@ -9,6 +10,8 @@ CREATE OR ALTER PROCEDURE sp_LD_ObtenerViajesActivos
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    DECLARE @viajeLike VARCHAR(80) = '%' + REPLACE(REPLACE(REPLACE(@numeroViaje, '[', '[[]'), '%', '[%]'), '_', '[_]') + '%';
 
     SELECT
         vp.idViajeProgreso,
@@ -33,6 +36,6 @@ BEGIN
       )
       AND (@idConductor IS NULL OR vp.idConductor = @idConductor)
       AND (@esInternacional IS NULL OR vp.esInternacional = @esInternacional)
-      AND (@numeroViaje IS NULL OR vp.numeroViajeProgreso LIKE '%' + @numeroViaje + '%')
+      AND (@numeroViaje IS NULL OR vp.numeroViajeProgreso LIKE @viajeLike)
     ORDER BY vp.fechaUltimaActividad DESC;
 END

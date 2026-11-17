@@ -702,9 +702,30 @@ namespace WebSGV.Services.Despachos
                 DespachosSinCPIC = GetSafeValue<int>(reader, "DespachosSinCPIC"),
                 DespachosSinPdfCPIC = GetSafeValue<int>(reader, "DespachosSinPdfCPIC"),
                 DespachosSinManifiesto = GetSafeValue<int>(reader, "DespachosSinManifiesto"),
-                PerfilDocumentos = GetSafeValue<string>(reader, "PerfilDocumentos", "PEDIDO")
+                PerfilDocumentos = GetSafeValue<string>(reader, "PerfilDocumentos", "PEDIDO"),
+                DespachosManifiestoCompleto = GetSafeValue<int>(reader, "DespachosManifiestoCompleto")
             };
         }
+
+        /// <summary>
+        /// Estado del manifiesto de un lote: "N/A" si es nacional, está anulado o no tiene despachos; si no,
+        /// "Completo" / "Pendiente" / "Parcial N/M" según cuántos despachos tienen manifiesto de cruce y de retorno.
+        /// </summary>
+        public static string EstadoManifiesto(int totalDespachos, int despachosCompletos, bool esInternacional, bool anulado)
+        {
+            if (!esInternacional || anulado || totalDespachos <= 0) return "N/A";
+            if (despachosCompletos >= totalDespachos) return "Completo";
+            if (despachosCompletos <= 0) return "Pendiente";
+            return $"Parcial {despachosCompletos}/{totalDespachos}";
+        }
+
+        /// <summary>
+        /// <see cref="EstadoManifiesto(int, int, bool, bool)"/> de un lote de <c>sp_LD_ObtenerLotesRegistrados</c>. Un lote
+        /// sin planta no tiene id virtual válido (no se pueden resolver sus despachos): "N/A", como antes.
+        /// </summary>
+        public static string EstadoManifiesto(LoteRegistrado lote) =>
+            EstadoManifiesto(lote.IdPlanta > 0 ? lote.CantidadDespachos : 0, lote.DespachosManifiestoCompleto,
+                             lote.EsInternacional, lote.EstadoLote == "ANULADO");
 
         /// <summary>
         /// Guarda las guías de un despacho registrado sin ellas (<c>sp_LD_ActualizarGuiaDespacho</c>;
