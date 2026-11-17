@@ -64,7 +64,32 @@ namespace WebSGV.Helpers
         public static bool EsRolAdmin(string rol)
         {
             string r = (rol ?? "").Trim().ToUpper();
-            return r == ROL_ADMIN || r == "ADMINISTRADOR" || r == ROL_ADMIN_TRANSPORTE;
+            return RolesAdmin.Contains(r);
+        }
+
+        /// <summary>
+        /// Valores de <c>Usuarios.rol</c> que <see cref="EsRolAdmin"/> acepta. Única fuente para las
+        /// consultas SQL que buscan administradores (p. ej. a quién avisar por correo).
+        /// </summary>
+        public static readonly IReadOnlyList<string> RolesAdmin =
+            new[] { ROL_ADMIN, "ADMINISTRADOR", ROL_ADMIN_TRANSPORTE };
+
+        /// <summary>
+        /// Roles que reciben los avisos por correo de la operación: los administradores
+        /// (<see cref="RolesAdmin"/>) más SUPERVISOR.
+        /// </summary>
+        public static IReadOnlyList<string> RolesAvisosOperacion()
+        {
+            return RolesAdmin.Concat(new[] { ROL_SUPERVISOR }).ToList();
+        }
+
+        /// <summary>
+        /// True si el rol indicado es OPERADOR, sin importar mayúsculas ni espacios. No lee la
+        /// sesión: sirve antes de guardarla (login).
+        /// </summary>
+        public static bool EsRolOperador(string rol)
+        {
+            return (rol ?? "").Trim().ToUpper() == ROL_OPERADOR;
         }
 
         public static bool EsAdminTransporte()

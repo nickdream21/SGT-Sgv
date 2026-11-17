@@ -37,6 +37,10 @@
 -- DespachosManifiestoCompleto (2026-11-17, ultima columna): cuantos despachos del
 -- lote tienen manifiesto de cruce Y de retorno (estado del manifiesto de
 -- ListaDespachos sin una consulta por lote).
+-- NumerosFactura / NumerosCPIC (2026-11-17, tarea 17, al final del resultset): los numeros
+-- de factura y CPIC de los despachos del lote separados por '|' (con repetidos: uno por
+-- despacho, sin orden; la aplicacion quita los repetidos y ordena). La columna "Factura / CPIC" de
+-- ListaDespachos muestra todas, no solo el MAX.
 -- Busquedas (2026-11-17): los textos de @numeroPedido, @numeroFactura, @numeroCPIC
 -- y @nombreConductor se buscan literales: '%', '_' y '[' se escapan antes del LIKE.
 -- ============================================================
@@ -189,7 +193,9 @@ BEGIN
             END AS EstadoLote,
 
             -- Al final del resultset: la version anterior de la aplicacion lee las columnas por nombre.
-            SUM(dd.ManifiestoCompleto) AS DespachosManifiestoCompleto
+            SUM(dd.ManifiestoCompleto) AS DespachosManifiestoCompleto,
+            STRING_AGG(CAST(f.numeroFactura AS NVARCHAR(MAX)), '|') AS NumerosFactura,
+            STRING_AGG(CAST(cp.numeroCPIC AS NVARCHAR(MAX)), '|') AS NumerosCPIC
 
         FROM Despachos d
         INNER JOIN DespachosDocumentos dd ON dd.idDespacho = d.idDespacho

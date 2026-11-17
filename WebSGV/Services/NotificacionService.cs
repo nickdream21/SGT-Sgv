@@ -15,6 +15,42 @@ namespace WebSGV.Services
     /// </summary>
     public static class NotificacionService
     {
+        // ─── Destinatarios de la operación ───────────────────────────────────────
+
+        /// <summary>
+        /// Usuarios activos con correo cuyo rol está en <see cref="RolesHelper.RolesAvisosOperacion"/>
+        /// (administradores según <see cref="RolesHelper.EsRolAdmin"/> + SUPERVISOR). Los roles van
+        /// como parámetros: una sola fuente de verdad, sin copiar la lista en SQL.
+        /// </summary>
+        private static DataTable ConsultarCorreosAvisosOperacion(string columnas)
+        {
+            var parametros = ParametrosRoles(RolesHelper.RolesAvisosOperacion(), out string lista);
+            return DbHelper.ConsultarTabla($@"
+                    SELECT {columnas} FROM Usuarios
+                    WHERE  UPPER(LTRIM(RTRIM(rol))) IN ({lista})
+                      AND  activo = 1
+                      AND  email  IS NOT NULL
+                      AND  LTRIM(RTRIM(email)) <> ''", parametros);
+        }
+
+        /// <summary>
+        /// Arma los parámetros @rol0, @rol1, ... (un valor por rol) y la lista "@rol0, @rol1" para
+        /// un <c>IN (...)</c>. Solo los nombres de parámetro entran en el texto SQL.
+        /// </summary>
+        internal static System.Data.SqlClient.SqlParameter[] ParametrosRoles(
+            System.Collections.Generic.IReadOnlyList<string> roles, out string lista)
+        {
+            var ps = new System.Data.SqlClient.SqlParameter[roles.Count];
+            var nombres = new string[roles.Count];
+            for (int i = 0; i < roles.Count; i++)
+            {
+                nombres[i] = "@rol" + i;
+                ps[i] = DbHelper.Param(nombres[i], roles[i]);
+            }
+            lista = string.Join(", ", nombres);
+            return ps;
+        }
+
         // ─── Punto de envío central ──────────────────────────────────────────────
 
         private static void Enviar(string para, string asunto, string cuerpoHtml)
@@ -111,12 +147,7 @@ namespace WebSGV.Services
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(@"
-                    SELECT email, nombre FROM Usuarios
-                    WHERE  rol IN ('ADMIN','ADMINISTRADOR','SUPERVISOR','ADMINISTRADOR DE TRANSPORTE')
-                      AND  activo = 1
-                      AND  email  IS NOT NULL
-                      AND  LTRIM(RTRIM(email)) <> ''");
+                DataTable dt = ConsultarCorreosAvisosOperacion("email, nombre");
 
                 if (dt.Rows.Count == 0) return;
 
@@ -195,12 +226,7 @@ namespace WebSGV.Services
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(@"
-                    SELECT email FROM Usuarios
-                    WHERE  rol IN ('ADMIN','ADMINISTRADOR','SUPERVISOR','ADMINISTRADOR DE TRANSPORTE')
-                      AND  activo = 1
-                      AND  email  IS NOT NULL
-                      AND  LTRIM(RTRIM(email)) <> ''");
+                DataTable dt = ConsultarCorreosAvisosOperacion("email");
                 if (dt.Rows.Count == 0) return;
 
                 string asunto = $"Liquidación observada por el conductor – Orden {numeroOrden}";

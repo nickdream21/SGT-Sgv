@@ -95,7 +95,13 @@
 .filters-heading i { color: #94a3b8; }
 .form-label { font-weight: 600; color: #475569; font-size: .74rem; margin-bottom: .4rem; display: flex; align-items: center; gap: .35rem; }
 .form-label i { color: #94a3b8; font-size: .75rem; }
-.form-control, .form-select { border: 1px solid #cbd5e1; border-radius: 6px; padding: .5rem .75rem; font-size: .85rem; background: #fff; }
+.form-control, .form-select { border: 1px solid #cbd5e1; border-radius: 6px; padding: .5rem .75rem; font-size: .85rem; background-color: #fff; }
+/* Bootstrap 4 fija el alto de .form-control(-sm) y .form-select para su propio padding; con el de arriba, el texto de
+   los desplegables (Tipo de operación, Moneda) y el botón "Elegir archivo" quedaban cortados arriba y abajo. El alto
+   sigue al contenido. background-color (no background) para no borrar la flecha de .form-select (sgv-base.css). */
+.form-control:not(textarea):not([multiple]):not([size]), .form-select { height: auto; line-height: 1.5; }
+.form-control-sm { padding: .3rem .6rem; }
+.form-select { padding-right: 1.75rem; }
 .form-control:focus, .form-select:focus { border-color: #1e40af; box-shadow: 0 0 0 3px rgba(30,64,175,.12); }
 .filter-buttons { display: flex; gap: .5rem; }
 .filter-buttons .btn { border-radius: 6px; font-weight: 600; font-size: .82rem; padding: .5rem 1rem; white-space: nowrap; margin-left: 0 !important; }

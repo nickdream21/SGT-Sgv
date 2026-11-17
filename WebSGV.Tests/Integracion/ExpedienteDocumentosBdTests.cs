@@ -33,7 +33,8 @@ namespace WebSGV.Tests.Integracion
         {
             // Pedido real de Vitapro (21/10): 6 cargas con factura, CPIC y guías; los 6 MCI están en las descargas.
             var e = ExpedienteDocumentosService.Obtener("1_4400133952_2026-10-21_CARGA_0_2");
-            if (e == null) return;   // la BD de pruebas se reconstruyó sin ese pedido
+            Assert.True(e != null, "La BD de pruebas ya no tiene el pedido 4400133952 de Vitapro del 21/10 " +
+                "(lote 1_4400133952_2026-10-21_CARGA_0_2); elegir otro pedido completo para esta prueba.");
 
             Assert.Equal("PEDIDO", e.Perfil);
             Assert.Equal(6, e.Filas.Count);
@@ -58,7 +59,9 @@ namespace WebSGV.Tests.Integracion
         {
             // Pedido 4400134386 (Vitapro): factura comercial F222-00008581, cobrada en la factura de flete E001-18724.
             var lotes = WebSGV.Services.Facturas.FacturaFleteService.LotesPorReferencia(new[] { "F222-00008581", "NO-EXISTE-1" });
-            if (!lotes.TryGetValue("F222-00008581", out string lote)) return;   // la BD de pruebas se reconstruyó sin ese pedido
+            Assert.True(lotes.TryGetValue("F222-00008581", out string lote),
+                "La BD de pruebas ya no tiene la factura F222-00008581 (pedido 4400134386) cobrada en un flete; " +
+                "elegir otra factura comercial con factura de flete para esta prueba.");
             Assert.False(lotes.ContainsKey("NO-EXISTE-1"));
             Assert.Contains("_4400134386_", lote);
             Assert.Contains("_CARGA_", lote);
@@ -72,7 +75,7 @@ namespace WebSGV.Tests.Integracion
         [FactBD]
         public void Guarda_el_pdf_de_la_guia_y_no_lo_duplica()
         {
-            if (!GuiaDocumentoService.TablaExiste) return;
+            Assert.True(GuiaDocumentoService.TablaExiste, "Falta la tabla DocumentosGuia: aplicar la migración 40 en la BD de pruebas.");
             string raiz = Path.Combine(Path.GetTempPath(), "sgv-guias-" + Guid.NewGuid().ToString("N")) + Path.DirectorySeparatorChar;
             try
             {
@@ -81,7 +84,8 @@ namespace WebSGV.Tests.Integracion
                     object fila = DbHelper.EjecutarEscalar(@"
                         SELECT TOP 1 idDespacho FROM Despachos
                         WHERE activo = 1 AND guiaRemitente LIKE '%/%' ORDER BY idDespacho DESC");
-                    if (fila == null) return;
+                    if (fila == null)
+                        Assert.Fail("La BD de pruebas no tiene un despacho activo con dos guías de remitente (\"A / B\").");
                     int id = Convert.ToInt32(fila);
                     string guia = DbHelper.EjecutarEscalar("SELECT guiaRemitente FROM Despachos WHERE idDespacho = @d", DbHelper.Param("@d", id))
                                           .ToString().Split('/').Last().Trim();

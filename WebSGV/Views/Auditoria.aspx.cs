@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.IO;
+using System.Linq;
 using System.Text;
-using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Reportes;
 
 namespace WebSGV.Views
 {
@@ -181,55 +181,96 @@ namespace WebSGV.Views
 
         protected void btnExportarExcel_Click(object sender, EventArgs e)
         {
+            byte[] contenido;
             try
             {
-                gvAuditoria.AllowPaging = false;
-                CargarDatos(MaximoAlExportar);
+                var parametros = new List<SqlParameter>();
+                DateTime? desde = FechaFiltro(txtFechaDesde.Text), hasta = FechaFiltro(txtFechaHasta.Text);
+                string sql = ConstruirConsulta(desde, hasta, ddlAccion.SelectedValue, ddlTabla.SelectedValue,
+                    txtUsuario.Text.Trim(), MaximoAlExportar, parametros);
+                DataTable dt = DbHelper.ConsultarTabla(sql, parametros.ToArray());
 
-                Response.Clear();
-                Response.Buffer = true;
-                Response.AddHeader("content-disposition", $"attachment;filename=Auditoria_{FechaHelper.Ahora():yyyyMMdd_HHmmss}.xls");
-                Response.Charset = "";
-                Response.ContentType = "application/vnd.ms-excel";
-                Response.ContentEncoding = Encoding.UTF8;
-                Response.Write("﻿");
-
-                // Sin esto, un rango con más filas que el tope se exportaría cortado sin avisar.
-                string avisoTope = AvisoTope(gvAuditoria.Rows.Count, MaximoAlExportar);
-                if (avisoTope != null)
-                    Response.Write("<p><b>" + System.Web.HttpUtility.HtmlEncode(avisoTope) + "</b></p>");
-
-                using (StringWriter sw = new StringWriter())
-                {
-                    using (HtmlTextWriter htw = new HtmlTextWriter(sw))
-                    {
-                        gvAuditoria.RenderControl(htw);
-                        Response.Write(sw.ToString());
-                    }
-                }
-
-                Response.Flush();
-                Response.End();
-            }
-            catch (System.Threading.ThreadAbortException)
-            {
-                // Normal en Response.End()
+                ReporteTabular reporte = ConstruirReporte(dt, desde, hasta,
+                    ddlAccion.SelectedValue, ddlAccion.SelectedItem?.Text, ddlTabla.SelectedValue,
+                    txtUsuario.Text.Trim(), MaximoAlExportar, SesionHelper.Nombre(Session));
+                contenido = ReporteTabularExportador.GenerarExcel(reporte, EmpresaConfigHelper.ObtenerEmpresa(),
+                    Server.MapPath("~/Content/favicon.png"));
             }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Auditoria: error exportando a Excel");
-            }
-            finally
-            {
-                gvAuditoria.AllowPaging = true;
+                lblCantidadResultados.Text = "No se pudo exportar a Excel";
                 CargarDatos();
+                return;
             }
+
+            // Fuera del try: Response.End() corta el hilo a propósito.
+            Response.Clear();
+            Response.ClearHeaders();
+            Response.Buffer = true;
+            Response.Charset = "";
+            Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            Response.AddHeader("Content-Disposition", $"attachment; filename=Auditoria_{FechaHelper.Ahora():yyyyMMdd_HHmmss}.xlsx");
+            Response.AddHeader("Content-Length", contenido.Length.ToString());
+            Response.Cache.SetCacheability(System.Web.HttpCacheability.NoCache);
+            Response.BinaryWrite(contenido);
+            Response.Flush();
+            Response.End();
         }
 
-        public override void VerifyRenderingInServerForm(Control control)
+        private static DateTime? FechaFiltro(string texto) =>
+            string.IsNullOrEmpty(texto) ? (DateTime?)null : DateTime.Parse(texto);
+
+        /// <summary>
+        /// Reporte de Excel (.xlsx real, <see cref="ReporteTabular"/>) con las columnas de la grilla y los
+        /// filtros aplicados. Si se llegó al tope, la nota lo avisa. Puro: sin BD ni sesión.
+        /// </summary>
+        internal static ReporteTabular ConstruirReporte(DataTable dt, DateTime? desde, DateTime? hasta,
+            string accion, string textoAccion, string tabla, string usuario, int maximo, string generadoPor)
         {
-            // Requerido para exportar GridView a Excel
+            var r = new ReporteTabular
+            {
+                Titulo = "Auditoría del sistema",
+                NombreHoja = "Auditoría",
+                Filas = dt.Rows.Cast<DataRow>().ToList(),
+                IncluirTotales = false,
+                GeneradoPor = generadoPor,
+                Nota = AvisoTope(dt.Rows.Count, maximo)
+            };
+
+            r.Filtros.Add("Período: " + (desde.HasValue ? desde.Value.ToString("dd/MM/yyyy") : "inicio") +
+                " al " + (hasta.HasValue ? hasta.Value.ToString("dd/MM/yyyy") : "hoy"));
+            r.Filtros.Add("Acción: " + (string.IsNullOrEmpty(accion) ? "todas" : (textoAccion ?? accion)) +
+                "  ·  Tabla: " + (string.IsNullOrEmpty(tabla) ? "todas" : tabla) +
+                (string.IsNullOrEmpty(usuario) ? "" : "  ·  Usuario: " + usuario));
+
+            r.Columnas.Add(Columna("ID", TipoColumnaReporte.Entero, 0.6f, d => d["IdAuditoria"]));
+            r.Columnas.Add(Columna("Fecha / hora", TipoColumnaReporte.Codigo, 1.3f,
+                d => d["FechaHora"] == DBNull.Value ? null : Convert.ToDateTime(d["FechaHora"]).ToString("dd/MM/yyyy HH:mm:ss")));
+            r.Columnas.Add(Columna("Usuario", TipoColumnaReporte.Texto, 1.5f, d => d["NombreUsuario"]));
+            r.Columnas.Add(Columna("Rol", TipoColumnaReporte.Texto, 1.2f, d => d["RolUsuario"]));
+            r.Columnas.Add(Columna("Acción", TipoColumnaReporte.Codigo, 1f, d => d["Accion"]));
+            r.Columnas.Add(Columna("Tabla", TipoColumnaReporte.Texto, 1.2f, d => d["TablaAfectada"]));
+            r.Columnas.Add(Columna("ID reg.", TipoColumnaReporte.Codigo, 0.7f, d => d["IdRegistroAfectado"]));
+            r.Columnas.Add(Columna("Descripción", TipoColumnaReporte.Texto, 3f, d => TextoCelda(d["Descripcion"])));
+            r.Columnas.Add(Columna("IP", TipoColumnaReporte.Codigo, 1f, d => d["DireccionIP"]));
+
+            r.Resumen.Add(new LineaResumen { Etiqueta = "Registros exportados", Valor = dt.Rows.Count, Tipo = TipoColumnaReporte.Entero });
+            return r;
         }
+
+        /// <summary>Una celda de Excel admite hasta 32 767 caracteres; Descripcion es NVARCHAR(MAX).</summary>
+        internal const int MaximoCaracteresCelda = 32000;
+
+        internal static string TextoCelda(object valor)
+        {
+            if (valor == null || valor == DBNull.Value) return null;
+            string s = valor.ToString();
+            return s.Length <= MaximoCaracteresCelda ? s : s.Substring(0, MaximoCaracteresCelda) + "…";
+        }
+
+        private static ColumnaReporte Columna(string titulo, TipoColumnaReporte tipo, float ancho, Func<DataRow, object> valor) =>
+            new ColumnaReporte { Titulo = titulo, Tipo = tipo, Ancho = ancho, Valor = valor };
 
         #endregion
 

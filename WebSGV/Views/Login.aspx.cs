@@ -289,7 +289,7 @@ namespace WebSGV.Views
 
                         if (RolesHelper.EsRolConductor(rol) && reader["idConductor"] != DBNull.Value)
                             idConductor = Convert.ToInt32(reader["idConductor"]);
-                        else if (rol.ToUpper() == RolesHelper.ROL_OPERADOR && reader["idOperador"] != DBNull.Value)
+                        else if (RolesHelper.EsRolOperador(rol) && reader["idOperador"] != DBNull.Value)
                             idOperador = Convert.ToInt32(reader["idOperador"]);
 
                         esValido = true;
@@ -347,10 +347,10 @@ namespace WebSGV.Views
             // apagar el cambio de contraseña obligatorio recién activado hasta que venciera la caché.
             SesionVigenteHelper.InvalidarCache(datos.IdUsuario);
 
-            string rol = (datos.Rol ?? "").ToUpper();
+            string rol = (datos.Rol ?? "").Trim().ToUpper();
             if (RolesHelper.EsRolConductor(rol) && datos.IdConductor.HasValue)
                 Session["IdConductor"] = datos.IdConductor.Value;
-            if (rol == RolesHelper.ROL_OPERADOR && datos.IdOperador.HasValue)
+            if (RolesHelper.EsRolOperador(rol) && datos.IdOperador.HasValue)
                 Session["IdOperador"] = datos.IdOperador.Value;
 
             AuditoriaHelper.Registrar("LOGIN", "Usuarios", datos.IdUsuario.ToString(),

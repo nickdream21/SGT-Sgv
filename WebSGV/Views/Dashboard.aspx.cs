@@ -960,13 +960,13 @@ WHERE MONTH(fechaHoraLlegadaPlantaDescarga) = @Mes
                 WHEN DATEADD(MINUTE, DATEPART(MINUTE, horaLlegadaTCI), 
                      DATEADD(HOUR, DATEPART(HOUR, horaLlegadaTCI), CAST(fechaLlegadaTCI AS DATETIME))) 
                      < 
-                     DATEADD(MINUTE, DATEPART(MINUTE, horaNacionalizacion), 
-                     DATEADD(HOUR, DATEPART(HOUR, horaNacionalizacion), CAST(fechaNacionalizacion AS DATETIME)))
+                     DATEADD(MINUTE, DATEPART(MINUTE, horaAutorizacionNacionalizacion), 
+                     DATEADD(HOUR, DATEPART(HOUR, horaAutorizacionNacionalizacion), CAST(fechaAutorizacionNacionalizacion AS DATETIME)))
                 THEN 
-                    -- Si llegada TCI es menor que nacionalización
+                    -- Si llegada TCI es menor que la autorización de nacionalización
                     DATEDIFF(MINUTE, 
-                        DATEADD(MINUTE, DATEPART(MINUTE, horaNacionalizacion), 
-                        DATEADD(HOUR, DATEPART(HOUR, horaNacionalizacion), CAST(fechaNacionalizacion AS DATETIME))),
+                        DATEADD(MINUTE, DATEPART(MINUTE, horaAutorizacionNacionalizacion), 
+                        DATEADD(HOUR, DATEPART(HOUR, horaAutorizacionNacionalizacion), CAST(fechaAutorizacionNacionalizacion AS DATETIME))),
                         DATEADD(MINUTE, DATEPART(MINUTE, horaSalidaTCI), 
                         DATEADD(HOUR, DATEPART(HOUR, horaSalidaTCI), CAST(fechaSalidaTCI AS DATETIME)))
                     ) / 60.0

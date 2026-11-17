@@ -201,7 +201,7 @@ Historial de partes accesible en Dashboard
 | `AgregarFactura.aspx` / `BuscarFactura.aspx` | Gestión de facturas |
 | `AgregarIndicadores.aspx` | Registro de indicadores de tiempo operativo (horas de salida, llegada, carga, descarga) |
 | `CargarExcel.aspx` | Carga masiva de datos desde archivo Excel |
-| `DescargarPdfOrdenViaje.aspx` | Endpoint que genera y sirve el PDF de una orden de viaje (iTextSharp) |
+| `DescargarPdfOrdenViaje.aspx` | Endpoint que sirve el PDF de una orden de viaje (QuestPDF; un PDF firmado se sirve archivado, nunca se regenera) |
 | `DescargarPdfAbastecimiento.aspx` | Endpoint que genera y sirve el PDF de un abastecimiento |
 
 ---
@@ -535,8 +535,8 @@ Admin revisa liquidación pendiente:
 | Base de datos | SQL Server (somee.com) |
 | Acceso a datos | ADO.NET (SqlConnection, SqlCommand, DataTable) |
 | Frontend | Bootstrap 4.6, jQuery 3.6, Font Awesome 5, Select2 4.1 |
-| Exportación PDF | iTextSharp 5.5.13.4 (**NO** iText 7 — versión AGPL legacy) |
-| Exportación Excel | EPPlus 8, ClosedXML |
+| Exportación PDF | QuestPDF 2026.5.0 (licencia Community; PDF/A-2B en las órdenes firmadas). iTextSharp se retiró |
+| Exportación Excel | ClosedXML 0.105 (`ReporteTabular` para los reportes tabulares). EPPlus se retiró por licencia |
 | Serialización | Newtonsoft.Json |
 | Autenticación | Sesión ASP.NET (`SGV_SessionId`, 30 min, anti-fijación) |
 | Auditoría | Tabla `AuditoriaLog` auto-creada en `Application_Start` via `AuditoriaHelper.cs` |

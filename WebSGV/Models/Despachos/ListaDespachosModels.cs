@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace WebSGV.Models.Despachos
 {
@@ -94,6 +95,49 @@ namespace WebSGV.Models.Despachos
         public int CantidadFacturas { get; set; }
         /// <summary>CPIC distintas de los despachos del lote.</summary>
         public int CantidadCPIC { get; set; }
+
+        /// <summary>
+        /// Números de factura de los despachos del lote separados por '|', con repetidos (columna NumerosFactura de
+        /// sp_LD_ObtenerLotesRegistrados). Ver <see cref="Facturas"/>.
+        /// </summary>
+        public string NumerosFactura { get; set; }
+        /// <summary>Números de CPIC de los despachos del lote separados por '|', con repetidos. Ver <see cref="Cpics"/>.</summary>
+        public string NumerosCPIC { get; set; }
+
+        /// <summary>Todas las facturas distintas del lote, ordenadas (sin la columna nueva, la del MAX).</summary>
+        public IReadOnlyList<string> Facturas => NumerosDistintos(NumerosFactura, NumeroFactura);
+        /// <summary>Todas las CPIC distintas del lote, ordenadas.</summary>
+        public IReadOnlyList<string> Cpics => NumerosDistintos(NumerosCPIC, NumeroCPIC);
+
+        /// <summary>
+        /// Números distintos y ordenados de una lista "A|B|A". Si viene vacía (BD con la versión anterior del SP), usa
+        /// <paramref name="respaldo"/> (el MAX).
+        /// </summary>
+        public static IReadOnlyList<string> NumerosDistintos(string agregados, string respaldo)
+        {
+            var lista = (agregados ?? "").Split('|')
+                .Select(n => n.Trim()).Where(n => n.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (lista.Count == 0 && !string.IsNullOrWhiteSpace(respaldo))
+                lista.Add(respaldo.Trim());
+            return lista;
+        }
+
+        /// <summary>
+        /// Texto corto para la grilla: "—" sin documentos, el número si hay uno y "A + N más" si hay varios
+        /// (el title de la celda lleva la lista completa: <see cref="ListaCompleta"/>).
+        /// </summary>
+        public static string TextoCorto(IReadOnlyList<string> numeros)
+        {
+            if (numeros == null || numeros.Count == 0) return "—";
+            return numeros.Count == 1 ? numeros[0] : $"{numeros[0]} + {numeros.Count - 1} más";
+        }
+
+        /// <summary>Todos los números separados por coma (title de la celda); vacío si no hay.</summary>
+        public static string ListaCompleta(IReadOnlyList<string> numeros) =>
+            numeros == null ? "" : string.Join(", ", numeros);
 
         /// <summary>
         /// N° de pedido para la grilla. Una carga sin pedido ni factura es la programada con

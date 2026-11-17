@@ -391,8 +391,9 @@
 
                                                         <asp:TemplateField HeaderText="Factura / CPIC">
                                                             <ItemTemplate>
-                                                                <span class="ld-num"><%#: Eval("NumeroFactura") %></span>
+                                                                <span class="ld-num" title='<%#: Eval("FacturasTitulo") %>'><%#: Eval("NumeroFactura") %></span>
                                                                 <asp:Label runat="server" CssClass="ld-sub ld-num"
+                                                                    ToolTip='<%#: "CPIC " + Eval("CpicsTitulo") %>'
                                                                     Text='<%#: "CPIC " + Eval("NumeroCPIC") %>'
                                                                     Visible='<%# (string)Eval("NumeroCPIC") != "—" %>'></asp:Label>
                                                             </ItemTemplate>

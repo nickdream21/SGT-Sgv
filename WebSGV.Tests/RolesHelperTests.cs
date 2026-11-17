@@ -10,6 +10,74 @@ namespace WebSGV.Tests
 {
     public class RolesHelperTests
     {
+        // ─── Tarea 17: una sola fuente para la lista de roles en SQL y para OPERADOR ───
+
+        private static readonly string[] TodosLosRolesConocidos =
+        {
+            RolesHelper.ROL_ADMIN, "ADMINISTRADOR", RolesHelper.ROL_ADMIN_TRANSPORTE, RolesHelper.ROL_ADMIN_SISTEMA,
+            RolesHelper.ROL_CONDUCTOR, "CHOFER", RolesHelper.ROL_SUPERVISOR, RolesHelper.ROL_ADMIN_GRIFO,
+            RolesHelper.ROL_ADMIN_MAQUINARIA, RolesHelper.ROL_OPERADOR, RolesHelper.ROL_CONTABILIDAD
+        };
+
+        [Fact]
+        public void RolesAdmin_CoincideConEsRolAdmin()
+        {
+            var segunEsRolAdmin = TodosLosRolesConocidos.Where(RolesHelper.EsRolAdmin).OrderBy(r => r);
+            Assert.Equal(segunEsRolAdmin, RolesHelper.RolesAdmin.OrderBy(r => r));
+            Assert.All(RolesHelper.RolesAdmin, r => Assert.Equal(r.Trim().ToUpper(), r)); // la consulta compara UPPER(TRIM(rol))
+        }
+
+        [Fact]
+        public void RolesAvisosOperacion_SonAdminsMasSupervisor()
+        {
+            var esperado = TodosLosRolesConocidos
+                .Where(r => RolesHelper.EsRolAdmin(r) || r == RolesHelper.ROL_SUPERVISOR)
+                .OrderBy(r => r);
+            Assert.Equal(esperado, RolesHelper.RolesAvisosOperacion().OrderBy(r => r));
+            Assert.DoesNotContain(RolesHelper.ROL_ADMIN_SISTEMA, RolesHelper.RolesAvisosOperacion());
+        }
+
+        [Fact]
+        public void ParametrosRoles_UnParametroPorRolYSoloNombresEnLaLista()
+        {
+            var roles = RolesHelper.RolesAvisosOperacion();
+            var ps = WebSGV.Services.NotificacionService.ParametrosRoles(roles, out string lista);
+
+            Assert.Equal(roles.Count, ps.Length);
+            Assert.Equal(roles, ps.Select(p => (string)p.Value));
+            Assert.Equal(string.Join(", ", ps.Select(p => p.ParameterName)), lista);
+            Assert.DoesNotContain("'", lista);
+        }
+
+        [Fact]
+        public void NotificacionService_NoTieneRolesEscritosEnSql()
+        {
+            string fuente = File.ReadAllText(Path.Combine(RaizRepo(), "WebSGV", "Services", "NotificacionService.cs"));
+            Assert.DoesNotContain("'ADMINISTRADOR DE TRANSPORTE'", fuente);
+            Assert.DoesNotContain("'SUPERVISOR'", fuente);
+        }
+
+        private static string RaizRepo()
+        {
+            var dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
+            while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, "WebSGV", "Views")))
+                dir = dir.Parent;
+            Assert.NotNull(dir);
+            return dir.FullName;
+        }
+
+        [Theory]
+        [InlineData("OPERADOR", true)]
+        [InlineData("OPERADOR ", true)]                             // espacio de más en la BD
+        [InlineData(" operador", true)]
+        [InlineData("CONDUCTOR", false)]
+        [InlineData("", false)]
+        [InlineData(null, false)]
+        public void EsRolOperador_SinImportarMayusculasNiEspacios(string rol, bool esperado)
+        {
+            Assert.Equal(esperado, RolesHelper.EsRolOperador(rol));
+        }
+
         [Theory]
         [InlineData("CONDUCTOR")]
         [InlineData("CHOFER")]

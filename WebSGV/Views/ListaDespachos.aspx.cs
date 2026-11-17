@@ -388,8 +388,11 @@ namespace WebSGV.Views
                     l.EsInternacional,
                     l.PlantaOperacion,
                     l.CantidadDespachos,
-                    NumeroFactura = string.IsNullOrEmpty(l.NumeroFactura) ? "—" : l.NumeroFactura,
-                    NumeroCPIC = string.IsNullOrEmpty(l.NumeroCPIC) ? "—" : l.NumeroCPIC,
+                    // Un lote puede llevar varias facturas/CPIC (Novopan): "A + 1 más" y la lista completa en el title.
+                    NumeroFactura = LoteRegistrado.TextoCorto(l.Facturas),
+                    FacturasTitulo = LoteRegistrado.ListaCompleta(l.Facturas),
+                    NumeroCPIC = LoteRegistrado.TextoCorto(l.Cpics),
+                    CpicsTitulo = LoteRegistrado.ListaCompleta(l.Cpics),
                     l.FechaCreacion,
                     l.EstadoLote,
                     ManifiestoEstado = ListaDespachosService.EstadoManifiesto(l),

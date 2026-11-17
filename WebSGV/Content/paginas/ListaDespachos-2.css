@@ -98,10 +98,10 @@
     font-size: .74rem;
 }
 
+/* El padding de .form-control/.form-select lo fija ListaDespachos.css (con el de -sm y el hueco de la flecha). */
 .form-control, .form-select {
     border: 1px solid #cbd5e1;
     border-radius: 6px;
-    padding: 0.5rem 0.75rem;
     font-size: 0.85rem;
 }
 
