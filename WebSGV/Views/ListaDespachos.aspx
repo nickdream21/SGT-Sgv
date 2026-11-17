@@ -767,6 +767,18 @@
                                                     </div>
                                                 </div>
 
+                                                <%-- Lote con más de una factura o CPIC: aquí no se editan (escribir un número las juntaría en una). --%>
+                                                <asp:Panel ID="pnlAvisoVariosDocumentosEdit" runat="server" Visible="false" CssClass="ld-aviso ld-aviso-info mb-3">
+                                                    <i class="fas fa-layer-group"></i>
+                                                    <div>
+                                                        <strong>Este lote lleva más de una factura o CPIC.</strong>
+                                                        Sus números no se cambian aquí: corríjalos en
+                                                        <asp:LinkButton ID="lnkIrDocsPorDespacho" runat="server" OnClick="lnkIrDocsPorDespacho_Click"
+                                                            CausesValidation="false">Documentos del lote → Factura y CPIC por despacho</asp:LinkButton>.
+                                                        Los demás cambios de esta pantalla sí se guardan.
+                                                    </div>
+                                                </asp:Panel>
+
                                                 <!-- Fila 3: Conductores (ancho completo) -->
                                                 <div class="row mb-3">
                                                     <div class="col-12">
@@ -1018,7 +1030,8 @@
                                                 </div>
                                             </asp:Panel>
 
-                                            <%-- 1. Factura y CPIC: una tarjeta por documento --%>
+                                            <%-- 1. Factura y CPIC: una tarjeta por documento (lote con una sola factura y CPIC) --%>
+                                            <asp:Panel ID="pnlDocsUnicos" runat="server">
                                             <div class="ld-docs-grid">
                                                 <div class="ld-doc-card">
                                                     <div class="ld-doc-card-head">
@@ -1116,6 +1129,136 @@
                                                 <i class="fas fa-info-circle"></i>
                                                 Para corregir un número ya registrado use <strong>Editar</strong> en la lista de lotes.
                                             </p>
+                                            </asp:Panel>
+
+                                            <%-- 1b. Factura y CPIC por despacho: separar un lote que lleva más de una factura o CPIC
+                                                 (p. ej. dos facturas de Novopan el mismo día). Abierta si el lote ya tiene más de una. --%>
+                                            <asp:Panel ID="pnlDocsPorDespacho" runat="server" CssClass="ld-bloque ld-docs-despacho">
+                                                <asp:Panel ID="pnlEnlaceDocsPorDespacho" runat="server" CssClass="ld-docs-despacho-enlace">
+                                                    <%-- El panel plegable tiene id fijo (ClientIDMode Static) para el data-toggle de Bootstrap 4. --%>
+                                                    <asp:HyperLink ID="lnkPlegarDocsPorDespacho" runat="server" NavigateUrl="#pnlCuerpoDocsPorDespacho"
+                                                        data-toggle="collapse" aria-controls="pnlCuerpoDocsPorDespacho" role="button">
+                                                        <i class="fas fa-layer-group"></i> Esta carga lleva más de una factura
+                                                    </asp:HyperLink>
+                                                </asp:Panel>
+                                                <asp:Panel ID="pnlCuerpoDocsPorDespacho" runat="server" ClientIDMode="Static" CssClass="collapse">
+                                                    <div class="ld-bloque-head">
+                                                        <h6><i class="fas fa-layer-group"></i> Factura y CPIC por despacho</h6>
+                                                        <span class="ld-bloque-ayuda">Marque los despachos que van con otra factura o CPIC, escriba sus números y pulse
+                                                            <strong>Asignar a los marcados</strong>. Los demás quedan como están.</span>
+                                                    </div>
+                                                    <asp:Panel ID="pnlAvisoVariosDocs" runat="server" Visible="false" CssClass="ld-aviso ld-aviso-info">
+                                                        <i class="fas fa-info-circle"></i>
+                                                        <div>Este lote lleva más de una factura o CPIC: cada documento se corrige y se adjunta aquí, no en Editar.</div>
+                                                    </asp:Panel>
+
+                                                    <div class="table-responsive ld-docs-despacho-tabla">
+                                                        <table class="table data-table detail-table ld-tabla-docs-despacho">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th class="ld-col-marca"><span class="sr-only">Marcar</span></th>
+                                                                    <th>Chofer</th>
+                                                                    <th>Tracto / carreta</th>
+                                                                    <th>Guía / MCI</th>
+                                                                    <th>Factura</th>
+                                                                    <th>CPIC</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <asp:Repeater ID="rptDespachosDocs" runat="server">
+                                                                    <ItemTemplate>
+                                                                        <tr>
+                                                                            <td class="ld-col-marca">
+                                                                                <asp:CheckBox ID="chkDespachoDoc" runat="server" CssClass="ld-marca-despacho" />
+                                                                                <asp:HiddenField ID="hidIdDespachoDoc" runat="server" Value='<%# Eval("IdDespacho") %>' />
+                                                                            </td>
+                                                                            <td data-label="Chofer"><%#: Eval("Chofer") %><div class="text-muted small"><%#: Eval("NumeroDespacho") %></div></td>
+                                                                            <td data-label="Tracto / carreta"><%#: Eval("PlacaTracto") %> / <%#: Eval("PlacaCarreta") %></td>
+                                                                            <td data-label="Guía / MCI"><%# CeldaGuiaMci(Eval("Guia"), Eval("Manifiestos")) %></td>
+                                                                            <td data-label="Factura"><%# CeldaDocumento(Eval("NumeroFactura"), Eval("FacturaConPdf")) %></td>
+                                                                            <td data-label="CPIC"><%# CeldaDocumento(Eval("NumeroCPIC"), Eval("CpicConPdf")) %></td>
+                                                                        </tr>
+                                                                    </ItemTemplate>
+                                                                </asp:Repeater>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+
+                                                    <div class="ld-doc-registrar ld-asignar-docs">
+                                                        <div class="ld-doc-registrar-titulo">Asignar a los marcados</div>
+                                                        <p class="ld-bloque-ayuda mb-2">Si el número ya existe se usa ese documento (la factura, del mismo cliente);
+                                                            si no, se crea. Deje vacío lo que no cambia.</p>
+                                                        <div class="ld-doc-campos">
+                                                            <div class="ld-campo ld-campo-ancho">
+                                                                <label for="<%= txtAsigFactura.ClientID %>">N° de factura</label>
+                                                                <asp:TextBox ID="txtAsigFactura" runat="server" CssClass="form-control form-control-sm" MaxLength="30" placeholder="Ej: 001-098-000012345"></asp:TextBox>
+                                                            </div>
+                                                            <div class="ld-campo">
+                                                                <label for="<%= txtAsigFacturaFecha.ClientID %>">Fecha de emisión</label>
+                                                                <asp:TextBox ID="txtAsigFacturaFecha" runat="server" CssClass="form-control form-control-sm" TextMode="Date"></asp:TextBox>
+                                                            </div>
+                                                            <div class="ld-campo">
+                                                                <label for="<%= txtAsigFacturaValor.ClientID %>">Valor total</label>
+                                                                <asp:TextBox ID="txtAsigFacturaValor" runat="server" CssClass="form-control form-control-sm" TextMode="Number" step="0.01" placeholder="0.00"></asp:TextBox>
+                                                            </div>
+                                                            <div class="ld-campo">
+                                                                <label for="<%= ddlAsigFacturaMoneda.ClientID %>">Moneda</label>
+                                                                <asp:DropDownList ID="ddlAsigFacturaMoneda" runat="server" CssClass="form-control form-control-sm">
+                                                                    <asp:ListItem Value="USD" Text="Dólares (USD)"></asp:ListItem>
+                                                                    <asp:ListItem Value="PEN" Text="Soles (PEN)"></asp:ListItem>
+                                                                </asp:DropDownList>
+                                                            </div>
+                                                        </div>
+                                                        <div class="ld-doc-campos">
+                                                            <div class="ld-campo ld-campo-ancho">
+                                                                <label for="<%= txtAsigCpic.ClientID %>">N° de CPIC (7 dígitos)</label>
+                                                                <asp:TextBox ID="txtAsigCpic" runat="server" CssClass="form-control form-control-sm" MaxLength="7" placeholder="Ej: 1234567"></asp:TextBox>
+                                                            </div>
+                                                            <div class="ld-campo">
+                                                                <label for="<%= txtAsigCpicFecha.ClientID %>">Fecha de emisión</label>
+                                                                <asp:TextBox ID="txtAsigCpicFecha" runat="server" CssClass="form-control form-control-sm" TextMode="Date"></asp:TextBox>
+                                                            </div>
+                                                            <div class="ld-campo">
+                                                                <label for="<%= txtAsigCpicFlete.ClientID %>">Valor del flete</label>
+                                                                <asp:TextBox ID="txtAsigCpicFlete" runat="server" CssClass="form-control form-control-sm" TextMode="Number" step="0.01" placeholder="0.00"></asp:TextBox>
+                                                            </div>
+                                                        </div>
+                                                        <asp:Button ID="btnAsignarDocumentos" runat="server" Text="Asignar a los marcados"
+                                                            CssClass="btn btn-primary btn-sm" OnClick="btnAsignarDocumentos_Click" CausesValidation="false" />
+                                                    </div>
+
+                                                    <div class="ld-docs-lista">
+                                                        <div class="ld-doc-registrar-titulo">Documentos del lote</div>
+                                                        <asp:Panel ID="pnlSinDocumentosLote" runat="server" CssClass="text-muted small">Todavía no tiene factura ni CPIC.</asp:Panel>
+                                                        <asp:Repeater ID="rptDocumentosLote" runat="server" OnItemCommand="rptDocumentosLote_ItemCommand">
+                                                            <ItemTemplate>
+                                                                <div class="ld-docs-lista-fila">
+                                                                    <div class="ld-docs-lista-doc">
+                                                                        <span class="ld-docs-lista-tipo"><%#: Eval("TipoTexto") %></span>
+                                                                        <span class="ld-docs-num"><%#: Eval("Numero") %></span>
+                                                                        <span class="text-muted small"><%#: Eval("Despachos") %> despacho(s)</span>
+                                                                        <%# InsigniaDocumento((bool)Eval("ConPdf"), (bool)Eval("ConPdf") ? "PDF" : "sin PDF") %>
+                                                                    </div>
+                                                                    <div class="ld-docs-lista-acciones">
+                                                                        <asp:PlaceHolder runat="server" Visible='<%# (bool)Eval("ConPdf") %>'>
+                                                                            <a href="<%#: Eval("UrlPdf") %>" target="_blank" rel="noopener" class="ld-doc-ver"><i class="fas fa-file-pdf"></i> Ver PDF<%#: Eval("AvisoPdf") %></a>
+                                                                        </asp:PlaceHolder>
+                                                                        <asp:Panel runat="server" CssClass="ld-doc-subir" Visible='<%# (bool)Eval("PuedeSubir") %>'>
+                                                                            <label class="ld-doc-elegir">
+                                                                                <i class="fas fa-cloud-upload-alt"></i>
+                                                                                <span class="ld-doc-elegir-texto">Elegir PDF o foto</span>
+                                                                                <asp:FileUpload ID="fuPdfDocumentoLote" runat="server" CssClass="ld-doc-input" accept=".pdf,.jpg,.jpeg,.png" />
+                                                                            </label>
+                                                                            <asp:Button runat="server" Text="Subir PDF" CssClass="btn btn-primary btn-sm ld-doc-btn"
+                                                                                CommandName="SubirPdf" CommandArgument='<%# Eval("Clave") %>' CausesValidation="false" />
+                                                                        </asp:Panel>
+                                                                    </div>
+                                                                </div>
+                                                            </ItemTemplate>
+                                                        </asp:Repeater>
+                                                    </div>
+                                                </asp:Panel>
+                                            </asp:Panel>
 
                                             <%-- 2. Guías por despacho --%>
                                             <asp:Panel ID="pnlGuiasLote" runat="server" CssClass="ld-bloque">
@@ -1263,6 +1406,9 @@
                                 <%-- FileUpload: postback completo, en uno parcial el archivo no llega. --%>
                                 <asp:PostBackTrigger ControlID="btnSubirPdfFactura" />
                                 <asp:PostBackTrigger ControlID="btnSubirPdfCpic" />
+                                <asp:PostBackTrigger ControlID="rptDocumentosLote" />
+                                <asp:AsyncPostBackTrigger ControlID="btnAsignarDocumentos" EventName="Click" />
+                                <asp:AsyncPostBackTrigger ControlID="lnkIrDocsPorDespacho" EventName="Click" />
 
                                 <asp:PostBackTrigger ControlID="btnVolver" />
                             </Triggers>

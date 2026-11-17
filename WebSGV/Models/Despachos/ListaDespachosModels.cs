@@ -81,8 +81,19 @@ namespace WebSGV.Models.Despachos
         public string PlantaOperacion { get; set; }
 
         public int CantidadDespachos { get; set; }
+
+        /// <summary>
+        /// Una de las facturas del lote (el MAX de sp_LD_ObtenerLotesRegistrados). Si <see cref="CantidadFacturas"/> &gt; 1
+        /// no representa al lote: los documentos se listan por id (Documentos del lote → "Factura y CPIC por despacho").
+        /// </summary>
         public string NumeroFactura { get; set; }
+        /// <summary>Una de las CPIC del lote (ver <see cref="NumeroFactura"/>).</summary>
         public string NumeroCPIC { get; set; }
+
+        /// <summary>Facturas distintas de los despachos del lote (0, 1 o más: p. ej. Novopan con dos facturas el mismo día).</summary>
+        public int CantidadFacturas { get; set; }
+        /// <summary>CPIC distintas de los despachos del lote.</summary>
+        public int CantidadCPIC { get; set; }
 
         /// <summary>
         /// N° de pedido para la grilla. Una carga sin pedido ni factura es la programada con
@@ -135,6 +146,51 @@ namespace WebSGV.Models.Despachos
     }
 
     /// <summary>
+    /// Un despacho del lote con su factura y su CPIC (Documentos del lote → "Factura y CPIC por despacho";
+    /// <c>ListaDespachosService.ObtenerDocumentosPorDespacho</c>).
+    /// </summary>
+    [Serializable]
+    public class DocumentoDespachoLote
+    {
+        public int IdDespacho { get; set; }
+        public string NumeroDespacho { get; set; }
+        public string Chofer { get; set; }
+        public string PlacaTracto { get; set; }
+        public string PlacaCarreta { get; set; }
+        /// <summary>Guía del remitente o, si no tiene, la GRE transportista (vacío si ninguna).</summary>
+        public string Guia { get; set; }
+        /// <summary>Cuántos manifiestos (MCI de cruce o retorno) tiene adjuntos.</summary>
+        public int Manifiestos { get; set; }
+
+        public int? IdFactura { get; set; }
+        public string NumeroFactura { get; set; }
+        public bool FacturaConPdf { get; set; }
+
+        public int? IdCPIC { get; set; }
+        public string NumeroCPIC { get; set; }
+        public bool CpicConPdf { get; set; }
+    }
+
+    /// <summary>Una factura o CPIC distinta del lote, con su PDF y cuántos despachos la llevan.</summary>
+    [Serializable]
+    public class DocumentoDelLote
+    {
+        public const string FACTURA = "FACTURA";
+        public const string CPIC = "CPIC";
+
+        /// <summary><see cref="FACTURA"/> o <see cref="CPIC"/>.</summary>
+        public string Tipo { get; set; }
+        public int Id { get; set; }
+        public string Numero { get; set; }
+        public bool ConPdf { get; set; }
+        public int Despachos { get; set; }
+
+        public string TipoTexto => Tipo == FACTURA ? "Factura" : "CPIC";
+        /// <summary>Argumento de los botones Ver/Subir PDF: "FACTURA:12" o "CPIC:34".</summary>
+        public string Clave => Tipo + ":" + Id;
+    }
+
+    /// <summary>
     /// Entrada para la transacción de edición de lote
     /// (<c>ListaDespachosService.GuardarCambiosLote</c>). El code-behind lee y parsea los
     /// controles del formulario de edición; el servicio sólo ejecuta el SQL/SPs.
@@ -155,7 +211,8 @@ namespace WebSGV.Models.Despachos
         /// <summary>idDespacho → nuevo idConductor (sólo los que cambiaron en la grilla).</summary>
         public Dictionary<int, int> CambiosConductores { get; set; } = new Dictionary<int, int>();
 
-        // Factura: gestionar (panel visible y con número) o desvincular (panel oculto).
+        // Factura: gestionar (panel visible y con número). Desvincular solo con una orden explícita del usuario
+        // (2026-11-17: Editar lote ya no desvincula porque el panel esté oculto; borraba la CPIC de las cargas nacionales).
         public bool GestionarFactura { get; set; }
         public bool DesvincularFactura { get; set; }
         public string NumeroFactura { get; set; }
@@ -170,5 +227,29 @@ namespace WebSGV.Models.Despachos
         public string NumeroCPIC { get; set; }
         public DateTime FechaEmisionCPIC { get; set; }
         public decimal ValorFlete { get; set; }
+    }
+
+    /// <summary>Documento que tocó una escritura de lote: su id y qué se hizo (CREADA, ENLAZADA, RENOMBRADA…).</summary>
+    public class DocumentoGestionado
+    {
+        public int Id { get; set; }
+        public string Accion { get; set; }
+    }
+
+    /// <summary>Lo que hizo <c>ListaDespachosService.GuardarCambiosLote</c> con la factura y la CPIC (null = no se tocó).</summary>
+    public class ResultadoEdicionLote
+    {
+        public DocumentoGestionado Factura { get; set; }
+        public DocumentoGestionado Cpic { get; set; }
+    }
+
+    /// <summary>Resultado de <c>sp_LD_AsignarDocumentosDespachos</c> (ids null si no se indicó ese documento).</summary>
+    public class ResultadoAsignacionDocumentos
+    {
+        public int? IdFactura { get; set; }
+        public string AccionFactura { get; set; }
+        public int? IdCpic { get; set; }
+        public string AccionCpic { get; set; }
+        public int Despachos { get; set; }
     }
 }

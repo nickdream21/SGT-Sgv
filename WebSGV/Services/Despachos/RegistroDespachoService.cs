@@ -93,10 +93,11 @@ namespace WebSGV.Services.Despachos
 
         /// <summary>
         /// Comprueba si la factura o el CPIC indicados ya existen
-        /// (<c>sp_ValidarDocumentosDuplicados</c>, parámetros de salida). El armado de los
-        /// mensajes de error y los guardas de null quedan en el code-behind.
+        /// (<c>sp_ValidarDocumentosDuplicados</c>, parámetros de salida). La CPIC es única por número; la
+        /// factura por número y cliente: con <paramref name="idCliente"/> solo cuenta la de ese cliente
+        /// (sin él, cualquier cliente). El armado de los mensajes de error queda en quien llama.
         /// </summary>
-        public static DocumentosDuplicadosResultado ValidarDocumentosDuplicados(string numeroFactura, string numeroCPIC)
+        public static DocumentosDuplicadosResultado ValidarDocumentosDuplicados(string numeroFactura, string numeroCPIC, int? idCliente = null)
         {
             using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
             using (SqlCommand cmd = new SqlCommand("sp_ValidarDocumentosDuplicados", conn))
@@ -105,6 +106,7 @@ namespace WebSGV.Services.Despachos
 
                 cmd.Parameters.AddWithValue("@numeroFactura", (object)numeroFactura ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@numeroCPIC", (object)numeroCPIC ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@idCliente", (object)idCliente ?? DBNull.Value);
 
                 SqlParameter pFacturaExiste = cmd.Parameters.Add("@facturaExiste", SqlDbType.Bit);
                 pFacturaExiste.Direction = ParameterDirection.Output;

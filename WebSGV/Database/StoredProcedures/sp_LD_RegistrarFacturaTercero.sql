@@ -9,7 +9,8 @@
 --     factura. Si alguno ya tiene otra factura, no toca nada.
 --   * valorTotal = precio de las mercancías de la CPIC (casilla 16), o 0.
 -- Devuelve idFactura y accion (CREADA / REUTILIZADA) y cuántos despachos
--- se unieron.
+-- se unieron. Las búsquedas van dentro de la transacción (2026-11-17); transacción
+-- propia solo si el llamador no trae una; nunca hace ROLLBACK de la del llamador.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_RegistrarFacturaTercero
     @idsDespachos   VARCHAR(MAX),
@@ -21,7 +22,6 @@ CREATE OR ALTER PROCEDURE sp_LD_RegistrarFacturaTercero
 AS
 BEGIN
     SET NOCOUNT ON;
-    SET XACT_ABORT ON;
 
     SET @numeroFactura = UPPER(LTRIM(RTRIM(@numeroFactura)));
     IF @numeroFactura IS NULL OR @numeroFactura = '' OR @idsDespachos IS NULL OR LEN(@idsDespachos) = 0 OR @idCliente IS NULL
@@ -40,38 +40,48 @@ BEGIN
         RETURN;
     END;
 
-    DECLARE @otra VARCHAR(50) = (
-        SELECT TOP 1 f.numeroFactura
-        FROM Despachos d
-        JOIN @ids i ON i.idDespacho = d.idDespacho
-        JOIN Factura f ON f.idFactura = d.idFactura
-        WHERE f.numeroFactura <> @numeroFactura);
-    IF @otra IS NOT NULL
-    BEGIN
-        RAISERROR('Un despacho ya tiene la factura %s: corríjalo en Editar del lote si corresponde otra.', 16, 1, @otra);
-        RETURN;
-    END;
+    DECLARE @propia BIT = CASE WHEN @@TRANCOUNT = 0 THEN 1 ELSE 0 END;
+    DECLARE @otra VARCHAR(50), @idFactura INT, @accion VARCHAR(20) = 'REUTILIZADA', @unidos INT, @msg NVARCHAR(400);
 
-    DECLARE @idFactura INT = (SELECT TOP 1 idFactura FROM Factura
-                              WHERE numeroFactura = @numeroFactura AND idCliente = @idCliente ORDER BY idFactura);
-    DECLARE @accion VARCHAR(20) = 'REUTILIZADA';
+    BEGIN TRY
+        IF @propia = 1 BEGIN TRANSACTION;
 
-    BEGIN TRANSACTION;
+        -- Dentro de la transacción (UPDLOCK, HOLDLOCK): dos registros a la vez no crean la misma factura dos veces.
+        SET @otra = (
+            SELECT TOP 1 f.numeroFactura
+            FROM Despachos d
+            JOIN @ids i ON i.idDespacho = d.idDespacho
+            JOIN Factura f ON f.idFactura = d.idFactura
+            WHERE f.numeroFactura <> @numeroFactura OR f.idCliente <> @idCliente);
+        IF @otra IS NOT NULL
+        BEGIN
+            SET @msg = CONCAT(N'Un despacho ya tiene la factura ', @otra, N': corríjalo en Editar del lote si corresponde otra.');
+            THROW 50000, @msg, 1;
+        END;
 
-    IF @idFactura IS NULL
-    BEGIN
-        INSERT INTO Factura (numeroFactura, valorTotal, fechaEmision, numeroPedido, idCliente, moneda)
-        VALUES (@numeroFactura, ISNULL(@valorTotal, 0), ISNULL(@fechaEmision, CAST(dbo.fn_AhoraPeru() AS DATE)), NULL, @idCliente,
-                ISNULL(@moneda, 'USD'));
-        SET @idFactura = SCOPE_IDENTITY();
-        SET @accion = 'CREADA';
-    END;
+        SELECT @idFactura = idFactura FROM Factura WITH (UPDLOCK, HOLDLOCK)
+        WHERE numeroFactura = @numeroFactura AND idCliente = @idCliente;
 
-    UPDATE d SET d.idFactura = @idFactura
-    FROM Despachos d JOIN @ids i ON i.idDespacho = d.idDespacho
-    WHERE d.idFactura IS NULL;
-    DECLARE @unidos INT = @@ROWCOUNT;
+        IF @idFactura IS NULL
+        BEGIN
+            INSERT INTO Factura (numeroFactura, valorTotal, fechaEmision, numeroPedido, idCliente, moneda)
+            VALUES (@numeroFactura, ISNULL(@valorTotal, 0), ISNULL(@fechaEmision, CAST(dbo.fn_AhoraPeru() AS DATE)), NULL, @idCliente,
+                    ISNULL(@moneda, 'USD'));
+            SET @idFactura = SCOPE_IDENTITY();
+            SET @accion = 'CREADA';
+        END;
 
-    COMMIT;
+        UPDATE d SET d.idFactura = @idFactura
+        FROM Despachos d JOIN @ids i ON i.idDespacho = d.idDespacho
+        WHERE d.idFactura IS NULL;
+        SET @unidos = @@ROWCOUNT;
+
+        IF @propia = 1 COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @propia = 1 AND @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+
     SELECT @idFactura AS idFactura, @accion AS accion, @unidos AS despachos;
 END

@@ -83,7 +83,10 @@ namespace WebSGV.Tests
             "HttpUtility.HtmlEncode(",
             "System.Web.HttpUtility.HtmlEncode(",
             "Server.HtmlEncode(",
-            "UrlAdjunto(",                // MovimientosViaje: URL de DocumentoHelper (NavigateUrl la codifica el HyperLink)
+            "CeldaDocumento(",            // ListaDespachos: HtmlEncode del número + insignia de textos fijos
+            "CeldaGuiaMci(",              // ListaDespachos: HtmlEncode de la guía + insignia de textos fijos
+            "InsigniaDocumento(",         // ListaDespachos: HtmlEncode del texto
+            "UrlAdjunto(",             // MovimientosViaje: URL de DocumentoHelper (NavigateUrl la codifica el HyperLink)
             "ConfirmarCambioEstado("      // GestionUsuarios: JavaScriptStringEncode (OnClientClick lo codifica el Button)
         };
 

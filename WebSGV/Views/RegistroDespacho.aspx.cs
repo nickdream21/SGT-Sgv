@@ -1227,10 +1227,12 @@ namespace WebSGV.Views
             string numeroCPIC = (pnlCPICBase.Visible && !string.IsNullOrEmpty(txtNumeroCPICBase.Text))
                 ? txtNumeroCPICBase.Text.Trim() : null;
 
-            var dup = RegistroDespachoService.ValidarDocumentosDuplicados(numeroFactura, numeroCPIC);
+            // La factura es única por número y cliente (otro cliente puede usar el mismo número).
+            int? idCliente = int.TryParse(ddlClienteBase.SelectedValue, out int cli) && cli > 0 ? cli : (int?)null;
+            var dup = RegistroDespachoService.ValidarDocumentosDuplicados(numeroFactura, numeroCPIC, idCliente);
 
             if (numeroFactura != null && dup.FacturaExiste)
-                errores.Add($"El número de factura '{numeroFactura}' ya está registrado en el sistema");
+                errores.Add($"El número de factura '{numeroFactura}' ya está registrado en el sistema para este cliente");
 
             if (numeroCPIC != null && dup.CpicExiste)
                 errores.Add($"El número de CPIC '{numeroCPIC}' ya está registrado en el sistema");
@@ -1776,7 +1778,7 @@ namespace WebSGV.Views
                     errores.Add($"La fecha de emisión de la factura {f.NumeroFactura} no es válida.");
                 if (!f.ValorTotal.HasValue || f.ValorTotal.Value <= 0)
                     errores.Add($"No se leyó el importe total de la factura {f.NumeroFactura}.");
-                if (RegistroDespachoService.ValidarDocumentosDuplicados(f.NumeroFactura, null).FacturaExiste)
+                if (RegistroDespachoService.ValidarDocumentosDuplicados(f.NumeroFactura, null, imp.IdCliente).FacturaExiste)
                     errores.Add($"La factura {f.NumeroFactura} ya está registrada. Si es otra parte del mismo pedido, use \"Corregir datos a mano\".");
             }
             return errores;

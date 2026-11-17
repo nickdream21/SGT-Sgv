@@ -359,9 +359,10 @@ namespace WebSGV.Services.Despachos
                 DbHelper.Param("@usuario", usuario),
                 DbHelper.Param("@fechaActual", fechaActual));
 
-        public static void GuardarCambiosLote(GuardarCambiosLoteInput input)
+        public static ResultadoEdicionLote GuardarCambiosLote(GuardarCambiosLoteInput input)
         {
             string idsStr = string.Join(",", input.IdsDespachos);
+            var resultado = new ResultadoEdicionLote();
 
             using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
             {
@@ -397,20 +398,16 @@ namespace WebSGV.Services.Despachos
                         foreach (int idDespacho in input.CambiosConductores.Keys)
                             ReubicarEnViajeDelConductor(conn, transaction, idDespacho, input.UsuarioModificacion, input.FechaActual);
 
-                        // 3. Gestionar Factura
+                        // 3. Gestionar Factura (sp_LD_GestionarFacturaLote: enlaza, renombra o crea; nunca junta dos)
                         if (input.GestionarFactura)
                         {
-                            using (SqlCommand cmd = new SqlCommand("sp_LD_GestionarFacturaLote", conn, transaction))
-                            {
-                                cmd.CommandType = CommandType.StoredProcedure;
-                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
-                                cmd.Parameters.AddWithValue("@numeroFactura", input.NumeroFactura);
-                                cmd.Parameters.AddWithValue("@fechaEmision", input.FechaEmisionFactura);
-                                cmd.Parameters.AddWithValue("@valorTotal", input.ValorTotalFactura);
-                                cmd.Parameters.AddWithValue("@moneda",
-                                    string.IsNullOrEmpty(input.MonedaFactura) ? (object)DBNull.Value : input.MonedaFactura);
-                                cmd.ExecuteNonQuery();
-                            }
+                            resultado.Factura = Gestionado(DbHelper.ConsultarTablaSp(conn, transaction, "sp_LD_GestionarFacturaLote",
+                                DbHelper.Param("@idsDespachos", idsStr),
+                                DbHelper.Param("@numeroFactura", input.NumeroFactura),
+                                DbHelper.Param("@fechaEmision", input.FechaEmisionFactura),
+                                DbHelper.Param("@valorTotal", input.ValorTotalFactura),
+                                DbHelper.Param("@moneda", string.IsNullOrEmpty(input.MonedaFactura) ? (object)DBNull.Value : input.MonedaFactura),
+                                DbHelper.Param("@usuario", (object)input.UsuarioModificacion ?? DBNull.Value)), "idFactura");
                         }
                         else if (input.DesvincularFactura)
                         {
@@ -423,18 +420,15 @@ namespace WebSGV.Services.Despachos
                             }
                         }
 
-                        // 4. Gestionar CPIC
+                        // 4. Gestionar CPIC (sp_LD_GestionarCPICLote: igual que la factura)
                         if (input.GestionarCpic)
                         {
-                            using (SqlCommand cmd = new SqlCommand("sp_LD_GestionarCPICLote", conn, transaction))
-                            {
-                                cmd.CommandType = CommandType.StoredProcedure;
-                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
-                                cmd.Parameters.AddWithValue("@numeroCPIC", input.NumeroCPIC);
-                                cmd.Parameters.AddWithValue("@fechaEmision", input.FechaEmisionCPIC);
-                                cmd.Parameters.AddWithValue("@valorTotalFlete", input.ValorFlete);
-                                cmd.ExecuteNonQuery();
-                            }
+                            resultado.Cpic = Gestionado(DbHelper.ConsultarTablaSp(conn, transaction, "sp_LD_GestionarCPICLote",
+                                DbHelper.Param("@idsDespachos", idsStr),
+                                DbHelper.Param("@numeroCPIC", input.NumeroCPIC),
+                                DbHelper.Param("@fechaEmision", input.FechaEmisionCPIC),
+                                DbHelper.Param("@valorTotalFlete", input.ValorFlete),
+                                DbHelper.Param("@usuario", (object)input.UsuarioModificacion ?? DBNull.Value)), "idCPIC");
                         }
                         else if (input.DesvincularCpic)
                         {
@@ -456,42 +450,122 @@ namespace WebSGV.Services.Despachos
                     }
                 }
             }
+            return resultado;
+        }
+
+        /// <summary>Lee el id y la acción que devuelven sp_LD_GestionarFacturaLote / sp_LD_GestionarCPICLote (null si no escribió).</summary>
+        private static DocumentoGestionado Gestionado(DataTable t, string columnaId)
+        {
+            if (t == null || t.Columns.Count == 0 || t.Rows.Count == 0 || t.Rows[0][columnaId] == DBNull.Value) return null;
+            return new DocumentoGestionado { Id = Convert.ToInt32(t.Rows[0][columnaId]), Accion = Convert.ToString(t.Rows[0]["accion"]) };
         }
 
         /// <summary>
         /// Registra (o corrige) solo la factura del lote, sin tocar el resto de sus datos:
         /// lo que "Editar" hace junto con todo lo demás, para completar la documentación después.
+        /// Devuelve la factura y lo que se hizo (para la auditoría).
         /// </summary>
-        public static void RegistrarFacturaLote(List<int> idsDespachos, string numeroFactura, DateTime fechaEmision, decimal valorTotal, string moneda)
-        {
-            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
-            using (SqlCommand cmd = new SqlCommand("sp_LD_GestionarFacturaLote", conn))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@idsDespachos", string.Join(",", idsDespachos));
-                cmd.Parameters.AddWithValue("@numeroFactura", numeroFactura);
-                cmd.Parameters.AddWithValue("@fechaEmision", fechaEmision);
-                cmd.Parameters.AddWithValue("@valorTotal", valorTotal);
-                cmd.Parameters.AddWithValue("@moneda", string.IsNullOrEmpty(moneda) ? (object)DBNull.Value : moneda);
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
-        }
+        public static DocumentoGestionado RegistrarFacturaLote(List<int> idsDespachos, string numeroFactura, DateTime fechaEmision,
+            decimal valorTotal, string moneda, string usuario = null) =>
+            Gestionado(DbHelper.ConsultarTablaSp("sp_LD_GestionarFacturaLote",
+                DbHelper.Param("@idsDespachos", string.Join(",", idsDespachos)),
+                DbHelper.Param("@numeroFactura", numeroFactura),
+                DbHelper.Param("@fechaEmision", fechaEmision),
+                DbHelper.Param("@valorTotal", valorTotal),
+                DbHelper.Param("@moneda", string.IsNullOrEmpty(moneda) ? (object)DBNull.Value : moneda),
+                DbHelper.Param("@usuario", (object)usuario ?? DBNull.Value)), "idFactura");
 
         /// <summary>Registra (o corrige) solo el CPIC del lote (ver <see cref="RegistrarFacturaLote"/>).</summary>
-        public static void RegistrarCpicLote(List<int> idsDespachos, string numeroCpic, DateTime fechaEmision, decimal valorFlete)
+        public static DocumentoGestionado RegistrarCpicLote(List<int> idsDespachos, string numeroCpic, DateTime fechaEmision,
+            decimal valorFlete, string usuario = null) =>
+            Gestionado(DbHelper.ConsultarTablaSp("sp_LD_GestionarCPICLote",
+                DbHelper.Param("@idsDespachos", string.Join(",", idsDespachos)),
+                DbHelper.Param("@numeroCPIC", numeroCpic),
+                DbHelper.Param("@fechaEmision", fechaEmision),
+                DbHelper.Param("@valorTotalFlete", valorFlete),
+                DbHelper.Param("@usuario", (object)usuario ?? DBNull.Value)), "idCPIC");
+
+        /// <summary>
+        /// Cada despacho del lote con su factura y su CPIC (y si tienen PDF), para "Factura y CPIC por despacho" y para
+        /// ver/subir el PDF de cada documento por su id (no por el número que muestra la lista de lotes).
+        /// </summary>
+        public static List<DocumentoDespachoLote> ObtenerDocumentosPorDespacho(List<int> idsDespachos)
         {
-            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
-            using (SqlCommand cmd = new SqlCommand("sp_LD_GestionarCPICLote", conn))
+            var lista = new List<DocumentoDespachoLote>();
+            if (idsDespachos == null || idsDespachos.Count == 0) return lista;
+
+            DataTable t = DbHelper.ConsultarTabla(@"
+                SELECT d.idDespacho, d.numeroDespacho,
+                       LTRIM(RTRIM(CONCAT(co.nombre, ' ', co.apPaterno))) AS chofer,
+                       t.placaTracto, ca.placaCarreta,
+                       COALESCE(NULLIF(LTRIM(RTRIM(d.guiaRemitente)), ''), NULLIF(LTRIM(RTRIM(d.guiaTransportista)), '')) AS guia,
+                       (SELECT COUNT(*) FROM DocumentosManifiesto dm WHERE dm.idDespacho = d.idDespacho) AS manifiestos,
+                       d.idFactura, f.numeroFactura,
+                       CASE WHEN EXISTS (SELECT 1 FROM DocumentosFactura df WHERE df.idFactura = d.idFactura AND df.activo = 1) THEN 1 ELSE 0 END AS facturaConPdf,
+                       d.idCPIC, c.numeroCPIC,
+                       CASE WHEN EXISTS (SELECT 1 FROM DocumentosCPIC dc WHERE dc.idCPIC = d.idCPIC AND dc.activo = 1) THEN 1 ELSE 0 END AS cpicConPdf
+                FROM Despachos d
+                LEFT JOIN Conductor co ON co.idConductor = d.idConductor
+                LEFT JOIN Tracto t ON t.idTracto = d.idTracto
+                LEFT JOIN Carreta ca ON ca.idCarreta = d.idCarreta
+                LEFT JOIN Factura f ON f.idFactura = d.idFactura
+                LEFT JOIN CPIC c ON c.idCPIC = d.idCPIC
+                WHERE d.idDespacho IN (SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@ids, ','))
+                ORDER BY d.idDespacho",
+                DbHelper.Param("@ids", string.Join(",", idsDespachos)));
+
+            foreach (DataRow r in t.Rows)
+                lista.Add(new DocumentoDespachoLote
+                {
+                    IdDespacho = Convert.ToInt32(r["idDespacho"]),
+                    NumeroDespacho = Convert.ToString(r["numeroDespacho"]),
+                    Chofer = Convert.ToString(r["chofer"]),
+                    PlacaTracto = Convert.ToString(r["placaTracto"]),
+                    PlacaCarreta = Convert.ToString(r["placaCarreta"]),
+                    Guia = Convert.ToString(r["guia"]),
+                    Manifiestos = Convert.ToInt32(r["manifiestos"]),
+                    IdFactura = r["idFactura"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["idFactura"]),
+                    NumeroFactura = Convert.ToString(r["numeroFactura"]).Trim(),
+                    FacturaConPdf = Convert.ToInt32(r["facturaConPdf"]) == 1,
+                    IdCPIC = r["idCPIC"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["idCPIC"]),
+                    NumeroCPIC = Convert.ToString(r["numeroCPIC"]).Trim(),
+                    CpicConPdf = Convert.ToInt32(r["cpicConPdf"]) == 1
+                });
+            return lista;
+        }
+
+        /// <summary>
+        /// "Factura y CPIC por despacho" (<c>sp_LD_AsignarDocumentosDespachos</c>): pone la factura y/o la CPIC indicadas
+        /// solo a esos despachos (las busca por número —la factura, además, por cliente— o las crea; nunca renombra).
+        /// Un número vacío deja ese documento como está.
+        /// </summary>
+        public static ResultadoAsignacionDocumentos AsignarDocumentosDespachos(List<int> idsDespachos,
+            string numeroFactura, DateTime? fechaEmisionFactura, decimal? valorTotalFactura, string monedaFactura,
+            string numeroCpic, DateTime? fechaEmisionCpic, decimal? valorFlete, string usuario)
+        {
+            object Valor(object v) => v ?? DBNull.Value;
+            object Texto(string v) => string.IsNullOrWhiteSpace(v) ? (object)DBNull.Value : v.Trim();
+
+            DataTable t = DbHelper.ConsultarTablaSp("sp_LD_AsignarDocumentosDespachos",
+                DbHelper.Param("@idsDespachos", string.Join(",", idsDespachos ?? new List<int>())),
+                DbHelper.Param("@numeroFactura", Texto(numeroFactura)),
+                DbHelper.Param("@fechaEmisionFactura", Valor(fechaEmisionFactura?.Date)),
+                DbHelper.Param("@valorTotalFactura", Valor(valorTotalFactura)),
+                DbHelper.Param("@monedaFactura", Texto(monedaFactura)),
+                DbHelper.Param("@numeroCPIC", Texto(numeroCpic)),
+                DbHelper.Param("@fechaEmisionCPIC", Valor(fechaEmisionCpic?.Date)),
+                DbHelper.Param("@valorTotalFlete", Valor(valorFlete)),
+                DbHelper.Param("@usuario", Texto(usuario)));
+
+            DataRow r = t.Rows[0];
+            return new ResultadoAsignacionDocumentos
             {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@idsDespachos", string.Join(",", idsDespachos));
-                cmd.Parameters.AddWithValue("@numeroCPIC", numeroCpic);
-                cmd.Parameters.AddWithValue("@fechaEmision", fechaEmision);
-                cmd.Parameters.AddWithValue("@valorTotalFlete", valorFlete);
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
+                IdFactura = r["idFactura"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["idFactura"]),
+                AccionFactura = r["accionFactura"] as string,
+                IdCpic = r["idCPIC"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["idCPIC"]),
+                AccionCpic = r["accionCPIC"] as string,
+                Despachos = Convert.ToInt32(r["despachos"])
+            };
         }
 
         // ------------------------------------------------------------------
@@ -541,6 +615,8 @@ namespace WebSGV.Services.Despachos
                 CantidadDespachos = GetSafeValue<int>(reader, "CantidadDespachos"),
                 NumeroFactura = GetSafeValue<string>(reader, "NumeroFactura"),
                 NumeroCPIC = GetSafeValue<string>(reader, "NumeroCPIC"),
+                CantidadFacturas = GetSafeValue<int>(reader, "CantidadFacturas"),
+                CantidadCPIC = GetSafeValue<int>(reader, "CantidadCPIC"),
                 FechaCreacion = GetSafeValue<DateTime>(reader, "FechaCreacion"),
                 UsuarioCreacion = GetSafeValue<string>(reader, "UsuarioCreacion"),
                 FechaEmisionFactura = GetSafeValue<DateTime?>(reader, "FechaEmisionFactura"),

@@ -755,7 +755,8 @@ namespace WebSGV.Views
 
             // Documentos del pedido
             sb.Append("<div class='bd-exp-docs'>");
-            if (e.Factura.Requerido || e.Factura.Numero != null) sb.Append(Tarjeta(e.Perfil == "CPIC" ? "Factura comercial" : "Factura", e.Factura));
+            foreach (var f in e.Facturas.Where(x => x.Requerido || x.Numero != null))
+                sb.Append(Tarjeta(e.Perfil == "CPIC" ? "Factura comercial" : "Factura", f));
             foreach (var c in e.Cpics) sb.Append(Tarjeta("CPIC", c));
             if (SecurityHelper.EsAdmin() && e.TieneCargas) sb.Append(TarjetaFlete(e));
             sb.Append("</div>");

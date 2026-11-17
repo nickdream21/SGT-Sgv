@@ -299,3 +299,35 @@
 .data-table { border: 0 !important; border-collapse: collapse; }
 .data-table th, .data-table td { border-left: 0 !important; border-right: 0 !important; border-top: 0 !important; }
 .data-table thead th { border-bottom: 2px solid #cbd5e1 !important; }
+
+/* Factura y CPIC por despacho (2026-11-17): separar un lote que lleva más de una factura o CPIC. */
+.ld-docs-despacho-enlace { padding: .7rem 1.1rem; }
+.ld-docs-despacho-enlace a { font-size: .85rem; font-weight: 600; color: #1d4ed8; }
+.ld-docs-despacho-enlace a i { margin-right: .3rem; }
+.ld-docs-despacho .ld-aviso { margin: .8rem 1.1rem 0; }
+.ld-docs-despacho-tabla { overflow-x: auto; }
+.ld-tabla-docs-despacho { margin: 0; font-size: .85rem; }
+.ld-tabla-docs-despacho td, .ld-tabla-docs-despacho th { vertical-align: middle; }
+.ld-col-marca { width: 2.5rem; text-align: center; }
+.ld-col-marca input[type=checkbox] { width: 1.1rem; height: 1.1rem; cursor: pointer; }
+.ld-docs-num { font-weight: 700; color: #1e293b; word-break: break-word; }
+.ld-tabla-docs-despacho .ld-estado { margin-left: .25rem; }
+.ld-asignar-docs { margin: 1rem 1.1rem; }
+.ld-docs-lista { margin: 0 1.1rem 1rem; display: flex; flex-direction: column; gap: .5rem; }
+.ld-docs-lista-fila { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; border: 1px solid #e2e8f0; border-radius: 8px; padding: .6rem .8rem; }
+.ld-docs-lista-doc { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .6rem; min-width: 0; }
+.ld-docs-lista-tipo { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #64748b; }
+.ld-docs-lista-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; flex: 1 1 320px; justify-content: flex-end; }
+.ld-docs-lista-acciones .ld-doc-subir { margin-top: 0; flex: 1 1 260px; }
+
+/* Celular (390 px): cada despacho es una tarjeta con sus datos en filas (etiqueta: valor). */
+@media (max-width: 576px) {
+    .ld-tabla-docs-despacho thead { display: none; }
+    .ld-tabla-docs-despacho, .ld-tabla-docs-despacho tbody, .ld-tabla-docs-despacho tr, .ld-tabla-docs-despacho td { display: block; width: 100%; }
+    .ld-tabla-docs-despacho tr { position: relative; border-bottom: 1px solid #e2e8f0; padding: .6rem .75rem .6rem 2.75rem; }
+    .ld-tabla-docs-despacho td { border: 0 !important; padding: .15rem 0; }
+    .ld-tabla-docs-despacho td[data-label]::before { content: attr(data-label); display: block; font-size: .7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .03em; }
+    .ld-tabla-docs-despacho td.ld-col-marca { position: absolute; left: .75rem; top: .75rem; width: auto; padding: 0; }
+    .ld-asignar-docs, .ld-docs-lista { margin-left: .75rem; margin-right: .75rem; }
+    .ld-docs-lista-acciones { justify-content: flex-start; }
+}

@@ -177,6 +177,31 @@ namespace WebSGV.Tests.Integracion
             }
         }
 
+        /// <summary>
+        /// La factura es única por número y cliente (migración 49): el mismo número de otro cliente no bloquea el lote;
+        /// el del mismo cliente sí (<see cref="Factura_ya_registrada_no_guarda_nada"/>).
+        /// </summary>
+        [FactBD]
+        public void Factura_con_el_mismo_numero_de_otro_cliente_no_bloquea()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var lote = LoteNacional(FechaHelper.Hoy().AddDays(22), 1);
+                var deOtro = new LoteDespachos
+                {
+                    IdCliente = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                        "SELECT TOP 1 idCliente FROM Cliente WHERE activo = 1 AND idCliente <> @c ORDER BY idCliente", DbHelper.Param("@c", lote.IdCliente)))
+                };
+                deOtro.Documentacion.NumeroFactura = lote.Documentacion.NumeroFactura;
+                RegistroDespachoService.CrearDocumentoBaseSeparado("FACTURA", deOtro);
+
+                var r = FinalizarLoteService.Finalizar(lote, null);
+
+                Assert.True(r.Ok, string.Join(" ", r.Errores));
+                Assert.Equal(2, Contar("SELECT COUNT(*) FROM Factura WHERE numeroFactura = @id", lote.Documentacion.NumeroFactura));
+            }
+        }
+
         /// <summary>Al final (el error aborta la transacción): falla el 2.º conductor y no queda nada, ni en BD ni en disco.</summary>
         [FactBD]
         public void Error_en_el_segundo_conductor_no_guarda_nada()

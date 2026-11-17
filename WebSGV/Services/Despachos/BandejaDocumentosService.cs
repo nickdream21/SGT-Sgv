@@ -245,11 +245,13 @@ namespace WebSGV.Services.Despachos
                     ? "No hay un despacho programado (Word) para esta carga: se propone uno nuevo con lo que dice la guía. Revise chofer, tracto, carreta y fecha."
                     : "No hay un despacho programado (Word) para esta carga. Elija uno o cree un despacho nuevo.");
 
-            foreach (var p in l.Pedidos.Where(x => x.Pedido.Factura?.NumeroFactura != null))
+            // La factura es única por número y cliente (2026-11-17): sin cliente reconocido no se busca (no se podría registrar).
+            foreach (var p in l.Pedidos.Where(x => x.Pedido.Factura?.NumeroFactura != null && x.Pedido.IdCliente.HasValue))
             {
                 DataTable f = DbHelper.ConsultarTabla(@"
                     SELECT f.idFactura, (SELECT COUNT(*) FROM DocumentosFactura df WHERE df.idFactura = f.idFactura AND df.activo = 1) AS pdfs
-                    FROM Factura f WHERE f.numeroFactura = @n", DbHelper.Param("@n", p.Pedido.Factura.NumeroFactura));
+                    FROM Factura f WHERE f.numeroFactura = @n AND f.idCliente = @c",
+                    DbHelper.Param("@n", p.Pedido.Factura.NumeroFactura), DbHelper.Param("@c", p.Pedido.IdCliente.Value));
                 if (f.Rows.Count == 0) continue;
                 p.IdFacturaExistente = Convert.ToInt32(f.Rows[0]["idFactura"]);
                 p.FacturaConPdf = Convert.ToInt32(f.Rows[0]["pdfs"]) > 0;
@@ -310,6 +312,14 @@ namespace WebSGV.Services.Despachos
             {
                 c.Estado = EstadoAduanaBandeja.NoSeRegistra;
                 c.Detalle = cp.Numero == null ? "No se leyó el número de la CPIC." : "No se leyó la factura comercial (casilla 18).";
+                return;
+            }
+            // La factura es única por número y cliente: si ese número es de dos clientes no se sabe cuál es la carga.
+            if (ClientesConFactura(cp.FacturaComercial) > 1)
+            {
+                c.Estado = EstadoAduanaBandeja.NoSeRegistra;
+                c.Detalle = $"La factura comercial {cp.FacturaComercial} está registrada para más de un cliente: no se sabe a qué carga va la CPIC. " +
+                            "Asígnela a mano en la lista de despachos → Documentos del lote → \"Factura y CPIC por despacho\".";
                 return;
             }
             // Las cargas de su factura comercial y sus descargas en destino (lote internacional, idDespachoCarga).
@@ -517,6 +527,8 @@ namespace WebSGV.Services.Despachos
         {
             string factura = l.Cpics.Where(c => c.Cpic.Numero == cartaPorte && c.Cpic.FacturaComercial != null)
                 .Select(c => c.Cpic.FacturaComercial).FirstOrDefault();
+            // Un número de factura de dos clientes no identifica la carga: solo valen los despachos que ya tienen la carta.
+            if (factura != null && ClientesConFactura(factura) > 1) factura = null;
             // CPIC de un cliente tercero que se registra en esta bandeja: sus despachos todavía no tienen la factura.
             string deTercero = string.Join(",", l.Cpics.Where(c => c.Cpic.Numero == cartaPorte && c.IdClienteTercero.HasValue
                                                                    && c.Estado == EstadoAduanaBandeja.Registrar)
@@ -545,6 +557,18 @@ namespace WebSGV.Services.Despachos
                 DbHelper.Param("@carta", cartaPorte), DbHelper.Param("@factura", factura), DbHelper.Param("@tercero", deTercero))
                 .Rows.Cast<DataRow>().ToList();
         }
+
+        /// <summary>
+        /// Clientes distintos con cargas vigentes que llevan una factura con ese número. La factura es única por número
+        /// y cliente (migración 49): si son más de uno, el número solo no dice de qué carga es la CPIC.
+        /// </summary>
+        private static int ClientesConFactura(string numeroFactura) => Convert.ToInt32(DbHelper.EjecutarEscalar(@"
+                SELECT COUNT(DISTINCT f.idCliente)
+                FROM Factura f
+                WHERE f.numeroFactura = @f
+                  AND EXISTS (SELECT 1 FROM Despachos d WHERE d.idFactura = f.idFactura AND d.activo = 1
+                              AND ISNULL(d.estadoDespacho, '') <> 'ANULADO')",
+                DbHelper.Param("@f", numeroFactura)));
 
         private static string P(object placa) => (Convert.ToString(placa) ?? "").Replace("-", "").Trim().ToUpperInvariant();
 
@@ -1186,6 +1210,37 @@ namespace WebSGV.Services.Despachos
             NumeroEntrega = g.Tracto.NumeroEntrega, NumeroTransporte = g.Tracto.NumeroTransporte, Carga = g.Tracto.Lineas
         };
 
+        /// <summary>
+        /// Une la CPIC leída a los despachos y, si es de un tercero, antes registra su factura comercial. Las dos cosas
+        /// van en una sola transacción: si la CPIC no se puede unir (50017/50018/50019), la factura del tercero tampoco
+        /// queda creada ni enlazada. Una sola conexión (no escala a MSDTC); los SP respetan la transacción de quien los
+        /// llama. Devuelve las filas de cada SP (la de la factura es null si no hay tercero).
+        /// </summary>
+        internal static (DataTable factura, DataTable cpic) UnirCpicConFacturaTercero(List<int> idsDespachos, CpicLeido cpic, int? idClienteTercero)
+        {
+            DataTable ft = null, dt = null;
+            string ids = string.Join(",", idsDespachos);
+            DbHelper.EnTransaccion((conn, tx) =>
+            {
+                if (idClienteTercero.HasValue)
+                    ft = DbHelper.ConsultarTablaSp(conn, tx, "sp_LD_RegistrarFacturaTercero",
+                        DbHelper.Param("@idsDespachos", ids),
+                        DbHelper.Param("@numeroFactura", cpic.FacturaComercial),
+                        DbHelper.Param("@idCliente", idClienteTercero.Value),
+                        DbHelper.Param("@fechaEmision", cpic.FechaRecepcion ?? cpic.FechaEmision),
+                        DbHelper.Param("@valorTotal", cpic.ValorMercancias),
+                        DbHelper.Param("@moneda", "USD"));
+                dt = DbHelper.ConsultarTablaSp(conn, tx, "sp_LD_VincularCPIC",
+                    DbHelper.Param("@idsDespachos", ids),
+                    DbHelper.Param("@numeroCPIC", cpic.Numero),
+                    DbHelper.Param("@fechaEmision", cpic.FechaEmision),
+                    DbHelper.Param("@valorTotalFlete", cpic.ValorFlete),
+                    DbHelper.Param("@pesoNeto", cpic.PesoNetoKg),
+                    DbHelper.Param("@pesoBruto", cpic.PesoBrutoKg));
+            });
+            return (ft, dt);
+        }
+
         private static void RegistrarCpics(LecturaBandeja l, string usuario, string raiz, ResultadoBandeja r)
         {
             foreach (var c in l.Cpics.Where(x => x.Estado == EstadoAduanaBandeja.Registrar))
@@ -1198,27 +1253,14 @@ namespace WebSGV.Services.Despachos
                         r.Errores.Add($"CPIC {c.Cpic.Numero}: {c.Detalle}");
                         continue;
                     }
-                    if (c.IdClienteTercero.HasValue)
+                    var (ft, dt) = UnirCpicConFacturaTercero(c.IdsDespachos, c.Cpic, c.IdClienteTercero);
+                    if (ft != null)
                     {
-                        DataTable ft = DbHelper.ConsultarTablaSp("sp_LD_RegistrarFacturaTercero",
-                            DbHelper.Param("@idsDespachos", string.Join(",", c.IdsDespachos)),
-                            DbHelper.Param("@numeroFactura", c.Cpic.FacturaComercial),
-                            DbHelper.Param("@idCliente", c.IdClienteTercero.Value),
-                            DbHelper.Param("@fechaEmision", c.Cpic.FechaRecepcion ?? c.Cpic.FechaEmision),
-                            DbHelper.Param("@valorTotal", c.Cpic.ValorMercancias),
-                            DbHelper.Param("@moneda", "USD"));
                         int idFactura = Convert.ToInt32(ft.Rows[0]["idFactura"]);
                         AuditoriaHelper.Registrar(Convert.ToString(ft.Rows[0]["accion"]) == "CREADA" ? "INSERT" : "UPDATE", "Factura", idFactura,
                             $"Bandeja de documentos: factura comercial {c.Cpic.FacturaComercial} de {c.ClienteTercero} (de la CPIC {c.Cpic.Numero}) " +
                             $"unida a los despachos [{string.Join(", ", c.IdsDespachos)}]");
                     }
-                    DataTable dt = DbHelper.ConsultarTablaSp("sp_LD_VincularCPIC",
-                        DbHelper.Param("@idsDespachos", string.Join(",", c.IdsDespachos)),
-                        DbHelper.Param("@numeroCPIC", c.Cpic.Numero),
-                        DbHelper.Param("@fechaEmision", c.Cpic.FechaEmision),
-                        DbHelper.Param("@valorTotalFlete", c.Cpic.ValorFlete),
-                        DbHelper.Param("@pesoNeto", c.Cpic.PesoNetoKg),
-                        DbHelper.Param("@pesoBruto", c.Cpic.PesoBrutoKg));
                     int idCpic = Convert.ToInt32(dt.Rows[0]["idCPIC"]);
                     bool adjunta = !c.TienePdf && !c.EsBorrador && !string.IsNullOrEmpty(raiz);
                     if (adjunta)

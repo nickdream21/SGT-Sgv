@@ -57,6 +57,16 @@ namespace WebSGV.Views
             set { ViewState["LoteSeleccionadoAnulado"] = value; }
         }
 
+        /// <summary>
+        /// "Factura y CPIC por despacho" desplegada aunque el lote tenga un solo documento (el usuario la abrió o
+        /// acaba de usarla): se conserva entre postbacks para no plegarla bajo sus propios mensajes.
+        /// </summary>
+        private bool DocsPorDespachoAbierto
+        {
+            get { return ViewState["DocsPorDespachoAbierto"] as bool? ?? false; }
+            set { ViewState["DocsPorDespachoAbierto"] = value; }
+        }
+
         /// <summary>Si el lote abierto está anulado, avisa y devuelve true (la acción que escribe no sigue).</summary>
         private bool RechazarSiLoteAnulado()
         {
@@ -959,21 +969,29 @@ namespace WebSGV.Views
                 FechaActual = FechaHelper.Ahora(),
                 CambiosConductores = ObtenerCambiosConductoresDesdeGrid(),
 
-                GestionarFactura = pnlFacturaEdit.Visible && !string.IsNullOrEmpty(txtNumeroFacturaEdit.Text),
-                DesvincularFactura = !pnlFacturaEdit.Visible,
+                // Un panel oculto no desvincula nada (antes borraba la CPIC de las cargas nacionales al guardar);
+                // con más de una factura o CPIC los paneles se ocultan y estos documentos no se tocan.
+                GestionarFactura = EdicionDocumentosLote.Gestionar(pnlFacturaEdit.Visible, txtNumeroFacturaEdit.Text),
+                DesvincularFactura = false,
                 NumeroFactura = txtNumeroFacturaEdit.Text,
                 FechaEmisionFactura = fechaEmisionFactura,
                 ValorTotalFactura = valorTotalFactura,
                 MonedaFactura = ddlMonedaFacturaEdit.SelectedValue,
 
-                GestionarCpic = pnlCPICEdit.Visible && !string.IsNullOrEmpty(txtNumeroCPICEdit.Text),
-                DesvincularCpic = !pnlCPICEdit.Visible,
+                GestionarCpic = EdicionDocumentosLote.Gestionar(pnlCPICEdit.Visible, txtNumeroCPICEdit.Text),
+                DesvincularCpic = false,
                 NumeroCPIC = txtNumeroCPICEdit.Text,
                 FechaEmisionCPIC = fechaEmisionCPIC,
                 ValorFlete = valorFlete
             };
 
-            ListaDespachosService.GuardarCambiosLote(input);
+            var resultado = ListaDespachosService.GuardarCambiosLote(input);
+
+            string documentos = "";
+            if (resultado.Factura != null) documentos += $"; factura {input.NumeroFactura?.Trim()} (id {resultado.Factura.Id}, {resultado.Factura.Accion})";
+            if (resultado.Cpic != null) documentos += $"; CPIC {input.NumeroCPIC?.Trim()} (id {resultado.Cpic.Id}, {resultado.Cpic.Accion})";
+            AuditoriaHelper.Registrar("UPDATE", "Despachos", LoteSeleccionadoId,
+                $"Lote editado - despachos {IdsACsv(lote.IdsDespachos)}{documentos}");
         }
 
         private Dictionary<int, int> ObtenerCambiosConductoresDesdeGrid()
@@ -1154,6 +1172,7 @@ namespace WebSGV.Views
 
         private void MostrarManifiestosLote(string idLoteVirtual)
         {
+            if (LoteSeleccionadoId != idLoteVirtual) DocsPorDespachoAbierto = false;
             LoteSeleccionadoAnulado = false;
             ViajeSeleccionadoId = null;
             LoteSeleccionadoId = idLoteVirtual;
@@ -1188,67 +1207,70 @@ namespace WebSGV.Views
 
             rblAmbitoEdit.SelectedValue = lote.EsInternacional ? "1" : "0";
 
+            // Lo que decide qué documentos se editan (se conserva para los postbacks de tipo y ámbito).
+            ViewState["EdicionLoteTieneCpic"] = lote.CantidadCPIC > 0;
+            ViewState["EdicionLotePerfil"] = lote.PerfilDocumentos;
+            ViewState["EdicionLoteFacturas"] = lote.CantidadFacturas;
+            ViewState["EdicionLoteCpics"] = lote.CantidadCPIC;
+
             ConfigurarPanelesDocumentosEdicion();
 
-            if (pnlFacturaEdit.Visible)
-            {
-                txtNumeroFacturaEdit.Text = lote.NumeroFactura ?? "";
-                txtFechaEmisionFacturaEdit.Text = lote.FechaEmisionFactura?.ToString("yyyy-MM-dd") ?? "";
-                txtValorTotalFacturaEdit.Text = lote.ValorTotalFactura?.ToString("F2") ?? "";
-                ddlMonedaFacturaEdit.ClearSelection();
-                ListItem moneda = ddlMonedaFacturaEdit.Items.FindByValue((lote.MonedaFactura ?? "PEN").Trim());
-                if (moneda != null) moneda.Selected = true;
-            }
+            // Siempre (aunque el panel esté oculto): si el tipo o el ámbito lo muestran después, no debe quedar el
+            // número de otro lote editado antes. Con más de un documento los paneles no se muestran.
+            bool unDocumento = !EdicionDocumentosLote.TieneVariosDocumentos(lote.CantidadFacturas, lote.CantidadCPIC);
+            txtNumeroFacturaEdit.Text = unDocumento ? lote.NumeroFactura ?? "" : "";
+            txtFechaEmisionFacturaEdit.Text = unDocumento ? lote.FechaEmisionFactura?.ToString("yyyy-MM-dd") ?? "" : "";
+            txtValorTotalFacturaEdit.Text = unDocumento ? lote.ValorTotalFactura?.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) ?? "" : "";
+            ddlMonedaFacturaEdit.ClearSelection();
+            ListItem moneda = ddlMonedaFacturaEdit.Items.FindByValue((lote.MonedaFactura ?? "PEN").Trim());
+            if (moneda != null) moneda.Selected = true;
 
-            if (pnlCPICEdit.Visible)
-            {
-                txtNumeroCPICEdit.Text = lote.NumeroCPIC ?? "";
-                txtFechaEmisionCPICEdit.Text = lote.FechaEmisionCPIC?.ToString("yyyy-MM-dd") ?? "";
-                txtValorFleteEdit.Text = lote.ValorFlete?.ToString("F2") ?? "";
-            }
+            txtNumeroCPICEdit.Text = unDocumento ? lote.NumeroCPIC ?? "" : "";
+            txtFechaEmisionCPICEdit.Text = unDocumento ? lote.FechaEmisionCPIC?.ToString("yyyy-MM-dd") ?? "" : "";
+            txtValorFleteEdit.Text = unDocumento ? lote.ValorFlete?.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) ?? "" : "";
 
             CargarGridConductoresLote(lote.IdsDespachos);
 
 
         }
 
+        /// <summary>
+        /// Paneles de factura y CPIC de Editar lote (<see cref="EdicionDocumentosLote.Paneles"/>): la CPIC también en la
+        /// carga nacional si el lote la tiene; con más de una factura o CPIC no se muestran y sale el aviso que lleva a
+        /// "Factura y CPIC por despacho".
+        /// </summary>
         private void ConfigurarPanelesDocumentosEdicion()
         {
-            pnlFacturaEdit.Visible = false;
-            pnlCPICEdit.Visible = false;
+            var paneles = EdicionDocumentosLote.Paneles(
+                ddlTipoOperacionEdit.SelectedValue,
+                rblAmbitoEdit.SelectedValue == "1",
+                ViewState["EdicionLoteTieneCpic"] as bool? ?? false,
+                ViewState["EdicionLotePerfil"] as string,
+                ViewState["EdicionLoteFacturas"] as int? ?? 0,
+                ViewState["EdicionLoteCpics"] as int? ?? 0);
 
-            string tipoOp = ddlTipoOperacionEdit.SelectedValue;
-            bool esInternacional = rblAmbitoEdit.SelectedValue == "1";
+            pnlFacturaEdit.Visible = paneles.MostrarFactura;
+            pnlCPICEdit.Visible = paneles.MostrarCpic;
+            pnlAvisoVariosDocumentosEdit.Visible = paneles.VariosDocumentos;
+        }
 
-            if (string.IsNullOrEmpty(tipoOp)) return;
-
-            if (esInternacional)
-            {
-                if (tipoOp == "CARGA")
-                {
-                    pnlFacturaEdit.Visible = true;
-                    pnlCPICEdit.Visible = true;
-                }
-                else if (tipoOp == "DESCARGA")
-                {
-                    pnlCPICEdit.Visible = true;
-                }
-            }
-            else
-            {
-                if (tipoOp == "CARGA")
-                {
-                    pnlFacturaEdit.Visible = true;
-                }
-            }
+        /// <summary>Del aviso de Editar lote (más de una factura o CPIC) a Documentos del lote.</summary>
+        protected void lnkIrDocsPorDespacho_Click(object sender, EventArgs e)
+        {
+            if (RechazarSiLoteAnulado()) return;
+            if (string.IsNullOrEmpty(LoteSeleccionadoId)) return;
+            DocsPorDespachoAbierto = true;
+            MostrarManifiestosLote(LoteSeleccionadoId);
         }
 
         #endregion
 
         #region Gestión de Manifiestos (viajes internacionales)
 
-        private void CargarManifiestosLote(string idLoteVirtual)
+        /// <param name="conservarMarcas">Tras un error en "Asignar a los marcados", vuelve a marcar los mismos despachos.</param>
+        private void CargarManifiestosLote(string idLoteVirtual, bool conservarMarcas = false)
         {
+            _marcasDocsPorDespacho = conservarMarcas ? MarcasDocsPorDespacho() : null;
             try
             {
                 var lote = ObtenerLotePorId(idLoteVirtual);
@@ -1317,71 +1339,267 @@ namespace WebSGV.Views
             bool anulado = lote.EstadoLote == "ANULADO";
             pnlEsperaZip.Visible = !anulado && documentos.SinNingunDocumento;
 
+            // Factura y CPIC de cada despacho, por id (el número de la lista de lotes es solo uno de ellos).
+            var porDespacho = ListaDespachosService.ObtenerDocumentosPorDespacho(lote.IdsDespachos);
+            var distintos = EdicionDocumentosLote.DocumentosDistintos(porDespacho);
+            bool varios = EdicionDocumentosLote.TieneVariosDocumentos(
+                distintos.Count(d => d.Tipo == DocumentoDelLote.FACTURA), distintos.Count(d => d.Tipo == DocumentoDelLote.CPIC));
+            CargarDocsPorDespacho(porDespacho, distintos, varios, anulado);
+
+            // Con más de una factura o CPIC, las tarjetas de un solo documento no representan al lote: se trabaja
+            // en "Factura y CPIC por despacho" (cada documento con su PDF).
+            pnlDocsUnicos.Visible = !varios;
+            int? idFacturaUnica = varios ? null : distintos.Where(d => d.Tipo == DocumentoDelLote.FACTURA).Select(d => (int?)d.Id).FirstOrDefault();
+            int? idCpicUnica = varios ? null : distintos.Where(d => d.Tipo == DocumentoDelLote.CPIC).Select(d => (int?)d.Id).FirstOrDefault();
+            string numeroFactura = varios ? null : distintos.Where(d => d.Tipo == DocumentoDelLote.FACTURA).Select(d => d.Numero).FirstOrDefault();
+            string numeroCpic = varios ? null : distintos.Where(d => d.Tipo == DocumentoDelLote.CPIC).Select(d => d.Numero).FirstOrDefault();
+
             // Lo que falta registrar se anota aquí mismo (la factura de una carga; el CPIC de un lote internacional).
-            pnlRegistrarFactura.Visible = !anulado && lote.TipoOperacion == "CARGA" && string.IsNullOrEmpty(lote.NumeroFactura);
-            pnlRegistrarCpic.Visible = !anulado && lote.EsInternacional && string.IsNullOrEmpty(lote.NumeroCPIC);
+            pnlRegistrarFactura.Visible = !anulado && !varios && lote.TipoOperacion == "CARGA" && string.IsNullOrEmpty(numeroFactura);
+            pnlRegistrarCpic.Visible = !anulado && !varios && lote.EsInternacional && string.IsNullOrEmpty(numeroCpic);
             if (string.IsNullOrEmpty(txtFacturaFecha.Text)) txtFacturaFecha.Text = FechaHelper.Hoy().ToString("yyyy-MM-dd");
             if (string.IsNullOrEmpty(txtCpicFecha.Text)) txtCpicFecha.Text = FechaHelper.Hoy().ToString("yyyy-MM-dd");
 
             // Factura: el número viene del ZIP o de "Editar"; aquí solo su PDF.
             lnkVerDocFactura.Visible = false;
             pnlSubirPdfFactura.Visible = false;
-            lblNumeroFacturaDocs.Text = string.IsNullOrEmpty(lote.NumeroFactura)
-                ? (lote.TipoOperacion == "CARGA" ? "sin registrar" : "no aplica") : HttpUtility.HtmlEncode(lote.NumeroFactura);
-            if (!string.IsNullOrEmpty(lote.NumeroFactura))
+            lblNumeroFacturaDocs.Text = string.IsNullOrEmpty(numeroFactura)
+                ? (lote.TipoOperacion == "CARGA" ? "sin registrar" : "no aplica") : HttpUtility.HtmlEncode(numeroFactura);
+            if (idFacturaUnica.HasValue)
             {
-                DataTable dtFactura = FacturaConsultasService.ObtenerPorNumero(lote.NumeroFactura);
-                if (dtFactura.Rows.Count > 0)
+                int idFactura = idFacturaUnica.Value;
+                ViewState["IdFacturaDocs"] = idFactura;
+                DataTable docs = FacturaConsultasService.ObtenerDocumentos(idFactura);
+                if (docs.Rows.Count > 0)
                 {
-                    int idFactura = Convert.ToInt32(dtFactura.Rows[0]["idFactura"]);
-                    ViewState["IdFacturaDocs"] = idFactura;
-                    DataTable docs = FacturaConsultasService.ObtenerDocumentos(idFactura);
-                    if (docs.Rows.Count > 0)
-                    {
-                        ViewState["RutaDocFacturaManifiesto"] = docs.Rows[0]["rutaArchivo"].ToString();
-                        lnkVerDocFactura.Text = System.Web.HttpUtility.HtmlEncode(docs.Rows[0]["nombreOriginal"].ToString() + AvisoSiNoEstaEnServidor(docs.Rows[0]["rutaArchivo"].ToString()));
-                        lnkVerDocFactura.Visible = true;
-                    }
-                    else
-                    {
-                        lblNumeroFacturaDocs.Text += InsigniaDocumento(false, "PDF pendiente");
-                    }
-                    pnlSubirPdfFactura.Visible = !anulado;
+                    ViewState["RutaDocFacturaManifiesto"] = docs.Rows[0]["rutaArchivo"].ToString();
+                    lnkVerDocFactura.Text = System.Web.HttpUtility.HtmlEncode(docs.Rows[0]["nombreOriginal"].ToString() + AvisoSiNoEstaEnServidor(docs.Rows[0]["rutaArchivo"].ToString()));
+                    lnkVerDocFactura.Visible = true;
                 }
+                else
+                {
+                    lblNumeroFacturaDocs.Text += InsigniaDocumento(false, "PDF pendiente");
+                }
+                pnlSubirPdfFactura.Visible = !anulado;
             }
 
             // CPIC: solo internacional (o si el lote ya tiene uno).
-            pnlFilaCpicDocs.Visible = lote.EsInternacional || !string.IsNullOrEmpty(lote.NumeroCPIC);
+            pnlFilaCpicDocs.Visible = lote.EsInternacional || !string.IsNullOrEmpty(numeroCpic);
             lnkVerDocCpic.Visible = false;
             pnlSubirPdfCpic.Visible = false;
-            lblNumeroCpicDocs.Text = string.IsNullOrEmpty(lote.NumeroCPIC) ? "sin registrar" : HttpUtility.HtmlEncode(lote.NumeroCPIC);
-            if (!string.IsNullOrEmpty(lote.NumeroCPIC))
+            lblNumeroCpicDocs.Text = string.IsNullOrEmpty(numeroCpic) ? "sin registrar" : HttpUtility.HtmlEncode(numeroCpic);
+            if (idCpicUnica.HasValue)
             {
-                DataTable dtCpic = DocumentoCpicService.ObtenerPorNumero(lote.NumeroCPIC);
-                if (dtCpic.Rows.Count > 0)
+                int idCpic = idCpicUnica.Value;
+                ViewState["IdCpicDocs"] = idCpic;
+                DataTable docs = DocumentoCpicService.ObtenerDocumentos(idCpic);
+                if (docs.Rows.Count > 0)
                 {
-                    int idCpic = Convert.ToInt32(dtCpic.Rows[0]["idCPIC"]);
-                    ViewState["IdCpicDocs"] = idCpic;
-                    DataTable docs = DocumentoCpicService.ObtenerDocumentos(idCpic);
-                    if (docs.Rows.Count > 0)
-                    {
-                        ViewState["RutaDocCpicManifiesto"] = docs.Rows[0]["rutaArchivo"].ToString();
-                        lnkVerDocCpic.Text = System.Web.HttpUtility.HtmlEncode(docs.Rows[0]["nombreOriginal"].ToString() + AvisoSiNoEstaEnServidor(docs.Rows[0]["rutaArchivo"].ToString()));
-                        lnkVerDocCpic.Visible = true;
-                    }
-                    else
-                    {
-                        lblNumeroCpicDocs.Text += InsigniaDocumento(false, "PDF pendiente");
-                    }
-                    pnlSubirPdfCpic.Visible = !anulado;
+                    ViewState["RutaDocCpicManifiesto"] = docs.Rows[0]["rutaArchivo"].ToString();
+                    lnkVerDocCpic.Text = System.Web.HttpUtility.HtmlEncode(docs.Rows[0]["nombreOriginal"].ToString() + AvisoSiNoEstaEnServidor(docs.Rows[0]["rutaArchivo"].ToString()));
+                    lnkVerDocCpic.Visible = true;
                 }
+                else
+                {
+                    lblNumeroCpicDocs.Text += InsigniaDocumento(false, "PDF pendiente");
+                }
+                pnlSubirPdfCpic.Visible = !anulado;
             }
 
             pnlGuiasLote.Visible = !anulado;
         }
 
+        // ── Factura y CPIC por despacho (lote con más de un documento) ─────────
+
+        /// <summary>
+        /// Tarjeta "Factura y CPIC por despacho": la tabla de despachos con su factura y su CPIC, el formulario para
+        /// asignar documentos a los marcados y un renglón por documento distinto con su PDF. Abierta si el lote lleva
+        /// más de un documento; si no, plegada tras el enlace "Esta carga lleva más de una factura".
+        /// </summary>
+        private void CargarDocsPorDespacho(List<DocumentoDespachoLote> porDespacho, List<DocumentoDelLote> distintos, bool varios, bool anulado)
+        {
+            pnlDocsPorDespacho.Visible = !anulado && porDespacho.Count > 0;
+            bool abierta = varios || DocsPorDespachoAbierto;
+            pnlEnlaceDocsPorDespacho.Visible = !varios;
+            pnlCuerpoDocsPorDespacho.CssClass = abierta ? "collapse show" : "collapse";
+            lnkPlegarDocsPorDespacho.Attributes["aria-expanded"] = abierta ? "true" : "false";
+            pnlAvisoVariosDocs.Visible = varios;
+
+            rptDespachosDocs.DataSource = porDespacho;
+            rptDespachosDocs.DataBind();
+            if (_marcasDocsPorDespacho != null)
+                foreach (RepeaterItem item in rptDespachosDocs.Items)
+                {
+                    var chk = item.FindControl("chkDespachoDoc") as CheckBox;
+                    var hid = item.FindControl("hidIdDespachoDoc") as HiddenField;
+                    if (chk != null && hid != null && int.TryParse(hid.Value, out int id)) chk.Checked = _marcasDocsPorDespacho.Contains(id);
+                }
+
+            // El PDF de cada documento se abre con un enlace directo (descarga controlada por sesión): sin postback.
+            var filas = distintos.Select(d =>
+            {
+                DataTable docs = d.Tipo == DocumentoDelLote.FACTURA ? FacturaConsultasService.ObtenerDocumentos(d.Id) : DocumentoCpicService.ObtenerDocumentos(d.Id);
+                string ruta = docs.Rows.Count > 0 ? Convert.ToString(docs.Rows[0]["rutaArchivo"]) : null;
+                return new
+                {
+                    d.Clave, d.TipoTexto, d.Numero, d.Despachos,
+                    ConPdf = ruta != null,
+                    UrlPdf = ruta == null ? null : DocumentoHelper.UrlDescarga(ruta),
+                    AvisoPdf = ruta == null ? "" : AvisoSiNoEstaEnServidor(ruta),
+                    PuedeSubir = !anulado
+                };
+            }).ToList();
+            rptDocumentosLote.DataSource = filas;
+            rptDocumentosLote.DataBind();
+            pnlSinDocumentosLote.Visible = distintos.Count == 0;
+
+            if (string.IsNullOrEmpty(txtAsigFacturaFecha.Text)) txtAsigFacturaFecha.Text = FechaHelper.Hoy().ToString("yyyy-MM-dd");
+            if (string.IsNullOrEmpty(txtAsigCpicFecha.Text)) txtAsigCpicFecha.Text = FechaHelper.Hoy().ToString("yyyy-MM-dd");
+        }
+
+        /// <summary>Despachos marcados antes de recargar la tabla (solo para conservarlos tras un error).</summary>
+        private HashSet<int> _marcasDocsPorDespacho;
+
+        private HashSet<int> MarcasDocsPorDespacho()
+        {
+            var marcas = new HashSet<int>();
+            foreach (RepeaterItem item in rptDespachosDocs.Items)
+            {
+                var chk = item.FindControl("chkDespachoDoc") as CheckBox;
+                var hid = item.FindControl("hidIdDespachoDoc") as HiddenField;
+                if (chk != null && chk.Checked && hid != null && int.TryParse(hid.Value, out int id)) marcas.Add(id);
+            }
+            return marcas;
+        }
+
+        /// <summary>Número del documento con su insignia de PDF (para la tabla por despacho); "—" si no tiene.</summary>
+        protected string CeldaDocumento(object numero, object conPdf)
+        {
+            string n = Convert.ToString(numero)?.Trim();
+            if (string.IsNullOrEmpty(n)) return "<span class=\"text-muted\">—</span>";
+            bool pdf = conPdf is bool b && b;
+            return "<span class=\"ld-docs-num\">" + HttpUtility.HtmlEncode(n) + "</span> " + InsigniaDocumento(pdf, pdf ? "PDF" : "sin PDF");
+        }
+
+        /// <summary>Guía y MCI de un despacho, para la tabla por despacho.</summary>
+        protected string CeldaGuiaMci(object guia, object manifiestos)
+        {
+            string g = Convert.ToString(guia)?.Trim();
+            int mci = manifiestos is int m ? m : 0;
+            return (string.IsNullOrEmpty(g) ? "<span class=\"text-muted\">sin guía</span>" : HttpUtility.HtmlEncode(g))
+                   + "<br />" + (mci > 0 ? InsigniaDocumento(true, mci == 1 ? "MCI" : $"{mci} MCI") : "<span class=\"text-muted small\">sin MCI</span>");
+        }
+
+        protected void btnAsignarDocumentos_Click(object sender, EventArgs e)
+        {
+            if (RechazarSiLoteAnulado()) return;
+            if (string.IsNullOrEmpty(LoteSeleccionadoId)) return;
+            DocsPorDespachoAbierto = true;
+            try
+            {
+                var lote = ObtenerLotePorId(LoteSeleccionadoId);
+                if (lote == null || lote.IdsDespachos.Count == 0 || lote.EstadoLote == "ANULADO") return;
+
+                // Las casillas llegan del navegador: solo cuentan los despachos que de verdad son de este lote.
+                var marcados = EdicionDocumentosLote.MarcadosDelLote(MarcasDocsPorDespacho(), lote.IdsDespachos);
+                if (marcados.Count == 0)
+                {
+                    MostrarMensajeManifiesto("Marque los despachos que llevan esa factura o CPIC.", "warning");
+                    CargarManifiestosLote(LoteSeleccionadoId);
+                    return;
+                }
+
+                string factura = txtAsigFactura.Text.Trim().ToUpperInvariant();
+                string cpic = txtAsigCpic.Text.Trim();
+                var errores = new List<string>();
+                if (factura.Length == 0 && cpic.Length == 0)
+                    errores.Add("Escriba el número de la factura, de la CPIC o de ambas.");
+                if (cpic.Length > 0 && !Regex.IsMatch(cpic, @"^\d{7}$"))
+                    errores.Add("El número de CPIC debe tener 7 dígitos.");
+                DateTime? fechaFactura = DateTime.TryParse(txtAsigFacturaFecha.Text, out DateTime ff) ? ff : (DateTime?)null;
+                DateTime? fechaCpic = DateTime.TryParse(txtAsigCpicFecha.Text, out DateTime fc) ? fc : (DateTime?)null;
+                decimal? valorFactura = LeerMontoOpcional(txtAsigFacturaValor.Text, "El valor de la factura no es válido.", errores);
+                decimal? flete = LeerMontoOpcional(txtAsigCpicFlete.Text, "El valor del flete no es válido.", errores);
+                if (errores.Count > 0)
+                {
+                    MostrarMensajeManifiesto(string.Join(" ", errores), "warning");
+                    CargarManifiestosLote(LoteSeleccionadoId, conservarMarcas: true);
+                    return;
+                }
+
+                var r = ListaDespachosService.AsignarDocumentosDespachos(marcados,
+                    factura, fechaFactura, valorFactura, ddlAsigFacturaMoneda.SelectedValue,
+                    cpic, fechaCpic, flete, ObtenerUsuarioActual());
+
+                string ids = IdsACsv(marcados);
+                if (r.IdFactura.HasValue)
+                    AuditoriaHelper.Registrar(r.AccionFactura == "CREADA" ? "INSERT" : "UPDATE", "Factura", r.IdFactura.Value,
+                        $"Factura y CPIC por despacho (lote {LoteSeleccionadoId}): factura {factura} ({r.AccionFactura}) asignada a los despachos [{ids}]");
+                if (r.IdCpic.HasValue)
+                    AuditoriaHelper.Registrar(r.AccionCpic == "CREADA" ? "INSERT" : "UPDATE", "CPIC", r.IdCpic.Value,
+                        $"Factura y CPIC por despacho (lote {LoteSeleccionadoId}): CPIC {cpic} ({r.AccionCpic}) asignada a los despachos [{ids}]");
+
+                txtAsigFactura.Text = txtAsigFacturaValor.Text = txtAsigCpic.Text = txtAsigCpicFlete.Text = "";
+                CargarManifiestosLote(LoteSeleccionadoId);
+                EstablecerContadores();
+                var partes = new List<string>();
+                if (r.IdFactura.HasValue) partes.Add($"factura {factura}" + (r.AccionFactura == "CREADA" ? " (nueva)" : ""));
+                if (r.IdCpic.HasValue) partes.Add($"CPIC {cpic}" + (r.AccionCpic == "CREADA" ? " (nueva)" : ""));
+                MostrarMensajeManifiesto($"Listo: {string.Join(" y ", partes)} en {r.Despachos} despacho(s). Los demás quedaron como estaban.", "success");
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Error al asignar factura/CPIC por despacho en el lote {Lote}", LoteSeleccionadoId);
+                MostrarMensajeManifiesto("No se asignaron los documentos: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                CargarManifiestosLote(LoteSeleccionadoId, conservarMarcas: true);
+            }
+        }
+
+        /// <summary>Monto opcional del formulario (vacío = null); si no es un número, agrega <paramref name="error"/>.</summary>
+        private static decimal? LeerMontoOpcional(string texto, string error, List<string> errores)
+        {
+            if (string.IsNullOrWhiteSpace(texto)) return null;
+            if (decimal.TryParse(texto, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal v) && v >= 0)
+                return v;
+            errores.Add(error);
+            return null;
+        }
+
+        /// <summary>Subir el PDF de una factura o CPIC del lote, por su id (renglón de "Factura y CPIC por despacho").</summary>
+        protected void rptDocumentosLote_ItemCommand(object source, RepeaterCommandEventArgs e)
+        {
+            if (RechazarSiLoteAnulado()) return;
+            if (string.IsNullOrEmpty(LoteSeleccionadoId) || e.CommandName != "SubirPdf") return;
+            DocsPorDespachoAbierto = true;
+            try
+            {
+                // El id llega del navegador: tiene que ser una factura o CPIC de los despachos de este lote.
+                if (!EdicionDocumentosLote.LeerClave(Convert.ToString(e.CommandArgument), out string tipo, out int id))
+                    return;
+                var lote = ObtenerLotePorId(LoteSeleccionadoId);
+                bool delLote = lote != null && EdicionDocumentosLote
+                    .DocumentosDistintos(ListaDespachosService.ObtenerDocumentosPorDespacho(lote.IdsDespachos))
+                    .Any(d => d.Tipo == tipo && d.Id == id);
+                if (!delLote)
+                {
+                    MostrarMensajeManifiesto("Ese documento ya no es de este lote. Recargue la página.", "warning");
+                    CargarManifiestosLote(LoteSeleccionadoId);
+                    return;
+                }
+
+                var control = e.Item.FindControl("fuPdfDocumentoLote") as FileUpload;
+                if (control == null) return;
+                SubirPdfDocumentoBase(control, id, tipo == DocumentoDelLote.FACTURA);
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Error con el PDF de un documento del lote {Lote}", LoteSeleccionadoId);
+                MostrarMensajeManifiesto("Error al procesar el documento: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+            }
+        }
+
         /// <summary>Insignia verde/ámbar junto al número de un documento.</summary>
-        private static string InsigniaDocumento(bool listo, string texto) =>
+        protected static string InsigniaDocumento(bool listo, string texto) =>
             "<span class=\"ld-estado " + (listo ? "ld-estado-ok" : "ld-estado-falta") + "\"><i class=\"fas "
             + (listo ? "fa-check-circle" : "fa-clock") + "\"></i> " + HttpUtility.HtmlEncode(texto) + "</span>";
 
@@ -1486,8 +1704,9 @@ namespace WebSGV.Views
                     return;
                 }
 
-                ListaDespachosService.RegistrarFacturaLote(lote.IdsDespachos, numero, fecha, valor, ddlFacturaMoneda.SelectedValue);
-                AuditoriaHelper.Registrar("UPDATE", "Despachos", LoteSeleccionadoId, $"Factura {numero} registrada desde Documentos del lote");
+                var factura = ListaDespachosService.RegistrarFacturaLote(lote.IdsDespachos, numero, fecha, valor, ddlFacturaMoneda.SelectedValue, ObtenerUsuarioActual());
+                AuditoriaHelper.Registrar("UPDATE", "Despachos", LoteSeleccionadoId,
+                    $"Factura {numero} registrada desde Documentos del lote (id {factura?.Id}, {factura?.Accion}) - despachos {IdsACsv(lote.IdsDespachos)}");
 
                 txtFacturaNueva.Text = "";
                 txtFacturaValor.Text = "";
@@ -1530,8 +1749,9 @@ namespace WebSGV.Views
                     return;
                 }
 
-                ListaDespachosService.RegistrarCpicLote(lote.IdsDespachos, numero, fecha, flete);
-                AuditoriaHelper.Registrar("UPDATE", "Despachos", LoteSeleccionadoId, $"CPIC {numero} registrado desde Documentos del lote");
+                var cpic = ListaDespachosService.RegistrarCpicLote(lote.IdsDespachos, numero, fecha, flete, ObtenerUsuarioActual());
+                AuditoriaHelper.Registrar("UPDATE", "Despachos", LoteSeleccionadoId,
+                    $"CPIC {numero} registrado desde Documentos del lote (id {cpic?.Id}, {cpic?.Accion}) - despachos {IdsACsv(lote.IdsDespachos)}");
 
                 txtCpicNuevo.Text = "";
                 txtCpicFlete.Text = "";

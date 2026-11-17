@@ -58,7 +58,13 @@ namespace WebSGV.Services.Despachos
         public string Cliente { get; set; }
         public string NumeroPedido { get; set; }
         public string Perfil { get; set; }   // PEDIDO | CPIC | GUIA (igual que sp_LD_ObtenerLotesRegistrados)
-        public DocumentoExpediente Factura { get; set; } = new DocumentoExpediente();
+        /// <summary>
+        /// Facturas del pedido, una por factura distinta de sus despachos (2026-11-17: una carga de Novopan lleva dos
+        /// facturas y dos CPIC el mismo día; antes solo se veía la primera). Si no tiene ninguna, un renglón vacío.
+        /// </summary>
+        public List<DocumentoExpediente> Facturas { get; set; } = new List<DocumentoExpediente>();
+        /// <summary>La primera factura (o un documento vacío): para quien solo muestra una.</summary>
+        public DocumentoExpediente Factura => Facturas.FirstOrDefault() ?? new DocumentoExpediente();
         public List<DocumentoExpediente> Cpics { get; set; } = new List<DocumentoExpediente>();
         /// <summary>
         /// Facturas de flete del pedido (por su factura comercial o, sin ella, por la guía del remitente).
@@ -72,7 +78,7 @@ namespace WebSGV.Services.Despachos
         public List<FilaExpediente> DescargasSueltas { get; set; } = new List<FilaExpediente>();
 
         public IEnumerable<DocumentoExpediente> Todos =>
-            new[] { Factura }.Concat(Cpics)
+            Facturas.Concat(Cpics)
                 .Concat(Filas.Concat(DescargasSueltas).SelectMany(f => f.GuiasRemitente.Concat(new[] { f.GreTransportista }).Concat(f.Manifiestos)));
         public int Requeridos => Todos.Count(d => d.Requerido);
         public int Faltan => Todos.Count(d => d.Falta);
@@ -130,14 +136,14 @@ namespace WebSGV.Services.Despachos
             var guias = GuiaDocumentoService.PorDespachos(todosIds);
             var mcis = ManifiestoService.ObtenerDocumentosPorDespachos(todosIds);
 
-            // Factura y CPIC: una por pedido (si hubiera más de una, se listan todas las CPIC).
-            int? idFactura = filas.Select(r => r["idFactura"] as int?).FirstOrDefault(x => x.HasValue);
-            e.Factura = new DocumentoExpediente
+            // Factura y CPIC: normalmente una por pedido; si hay más de una, se listan todas (cada una con su PDF).
+            foreach (var g in filas.Where(r => r["idFactura"] != DBNull.Value).GroupBy(r => Convert.ToInt32(r["idFactura"])))
             {
-                Numero = filas.Select(r => r["numeroFactura"] as string).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)),
-                Requerido = e.Perfil != "GUIA"
-            };
-            if (idFactura.HasValue) PonerPdf(e.Factura, "DocumentosFactura", "idFactura", idFactura.Value);
+                var doc = new DocumentoExpediente { Numero = g.First()["numeroFactura"].ToString(), Requerido = e.Perfil != "GUIA" };
+                PonerPdf(doc, "DocumentosFactura", "idFactura", g.Key);
+                e.Facturas.Add(doc);
+            }
+            if (e.Facturas.Count == 0) e.Facturas.Add(new DocumentoExpediente { Requerido = e.Perfil != "GUIA" });
 
             foreach (var g in filas.Where(r => r["idCPIC"] != DBNull.Value).GroupBy(r => Convert.ToInt32(r["idCPIC"])))
             {

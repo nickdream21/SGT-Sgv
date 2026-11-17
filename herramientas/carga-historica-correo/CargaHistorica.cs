@@ -119,7 +119,10 @@ class CargaHistorica
                 int? idFactura = null;
                 if (imp.Factura?.NumeroFactura != null)
                 {
-                    var c = C("SELECT idFactura FROM Factura WHERE numeroFactura = @n"); c.Parameters.AddWithValue("@n", imp.Factura.NumeroFactura);
+                    // La factura es única por número y cliente (migración 49).
+                    var c = C("SELECT idFactura FROM Factura WHERE numeroFactura = @n AND idCliente = @c");
+                    c.Parameters.AddWithValue("@n", imp.Factura.NumeroFactura);
+                    c.Parameters.AddWithValue("@c", imp.IdCliente ?? 1);
                     idFactura = c.ExecuteScalar() as int?;
                     if (idFactura == null)
                     {

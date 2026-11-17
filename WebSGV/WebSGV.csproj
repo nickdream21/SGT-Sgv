@@ -187,6 +187,7 @@
     <Content Include="Database\Schema\46_SelloSesion.sql" />
     <Content Include="Database\Schema\47_AuditoriaSoloInsercion.sql" />
     <Content Include="Database\Schema\48_UnicidadFinancieroPorOrden.sql" />
+    <Content Include="Database\Schema\49_UnicidadFacturaCpic.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminMaquinaria.sql" />
@@ -248,6 +249,7 @@
     <Content Include="Database\StoredProcedures\sp_LD_ActualizarConductorDominanteViajes.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ActualizarDespachoEnLote.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_AnularLote.sql" />
+    <Content Include="Database\StoredProcedures\sp_LD_AsignarDocumentosDespachos.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ContarViajesActivos.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_DesvincularDocumentoLote.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_EliminarLote.sql" />
@@ -554,6 +556,7 @@
     <Compile Include="Services\Despachos\DespachoValidaciones.cs" />
     <Compile Include="Services\Despachos\DocumentoCpicService.cs" />
     <Compile Include="Services\Despachos\EditarDespachoService.cs" />
+    <Compile Include="Services\Despachos\EdicionDocumentosLote.cs" />
     <Compile Include="Services\Despachos\EstadoDocumental.cs" />
     <Compile Include="Services\Despachos\FinalizarLoteService.cs" />
     <Compile Include="Services\Despachos\ListaDespachosService.cs" />

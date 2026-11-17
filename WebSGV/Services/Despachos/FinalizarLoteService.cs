@@ -58,8 +58,8 @@ namespace WebSGV.Services.Despachos
         }
 
         /// <summary>
-        /// Factura y CPIC ya registradas. Mismo criterio que "Iniciar lote" (solo el número); si cambia (p. ej. número
-        /// más cliente), cambiar aquí.
+        /// Factura y CPIC ya registradas. Mismo criterio que "Iniciar lote": la CPIC por número y la factura por número
+        /// y cliente del lote (otro cliente puede tener el mismo número).
         /// </summary>
         private static IEnumerable<string> DocumentosDuplicados(LoteDespachos lote)
         {
@@ -67,9 +67,9 @@ namespace WebSGV.Services.Despachos
             string cpic = Limpio(lote.Documentacion?.NumeroCPIC);
             if (factura == null && cpic == null) yield break;
 
-            var dup = RegistroDespachoService.ValidarDocumentosDuplicados(factura, cpic);
+            var dup = RegistroDespachoService.ValidarDocumentosDuplicados(factura, cpic, lote.IdCliente);
             if (factura != null && dup.FacturaExiste)
-                yield return $"El número de factura '{factura}' ya está registrado en el sistema.";
+                yield return $"El número de factura '{factura}' ya está registrado en el sistema para este cliente.";
             if (cpic != null && dup.CpicExiste)
                 yield return $"El número de CPIC '{cpic}' ya está registrado en el sistema.";
         }

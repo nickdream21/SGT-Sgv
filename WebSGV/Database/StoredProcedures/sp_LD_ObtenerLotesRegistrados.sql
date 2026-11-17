@@ -31,6 +31,9 @@
 -- despachos que exigen CPIC. La carga nacional de Vitapro no: su MCI queda en su descarga.
 -- @documentos = 'PENDIENTES' deja los lotes con algo por completar y
 -- 'COMPLETOS' los que no; NULL no filtra.
+-- CantidadFacturas / CantidadCPIC (2026-11-17): cuántas facturas y CPIC
+-- distintas lleva el lote. Con mas de una, NumeroFactura/NumeroCPIC (el MAX)
+-- es solo una de ellas: la pantalla lista cada documento por su id.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_ObtenerLotesRegistrados
     @idCliente       INT          = NULL,
@@ -143,6 +146,8 @@ BEGIN
             COUNT(*)                 AS CantidadDespachos,
             MAX(ISNULL(f.numeroFactura, ''))   AS NumeroFactura,
             MAX(ISNULL(cp.numeroCPIC, ''))     AS NumeroCPIC,
+            COUNT(DISTINCT d.idFactura)        AS CantidadFacturas,
+            COUNT(DISTINCT d.idCPIC)           AS CantidadCPIC,
             MIN(d.fechaCreacion)               AS FechaCreacion,
             MAX(ISNULL(d.usuarioCreacion, 'Sistema')) AS UsuarioCreacion,
 
