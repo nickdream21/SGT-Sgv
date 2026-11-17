@@ -186,16 +186,22 @@ namespace WebSGV.Models.Despachos
 
         public string Clave => (Tracto?.NumeroGuia ?? Tracto?.NumeroTransporte ?? "").Trim().ToUpperInvariant();
 
-        /// <summary>Unida solo porque era la única opción: ni el tracto ni la carreta coinciden.</summary>
-        public bool PorDescarte => Estado == EstadoGuiaBandeja.Unida && Regla == WebSGV.Services.Despachos.BandejaDocumentosService.ReglaPorDescarte;
+        /// <summary>
+        /// Tiene despachos programados posibles pero ninguno coincide por tracto ni por carreta: el usuario debe
+        /// elegir a qué camión va (o crear uno nuevo, o no registrarla). Mientras siga así, no se registra.
+        /// </summary>
+        public bool PorElegir { get; set; }
 
-        /// <summary>El usuario debe mirarla antes de registrar: sin despacho, despacho nuevo o unida por descarte.</summary>
-        public bool PorRevisar => Estado == EstadoGuiaBandeja.Nueva || Estado == EstadoGuiaBandeja.SinProgramado || PorDescarte;
+        /// <summary>El usuario debe mirarla antes de registrar: sin despacho (o por elegir) o despacho nuevo.</summary>
+        public bool PorRevisar => Estado == EstadoGuiaBandeja.Nueva || Estado == EstadoGuiaBandeja.SinProgramado;
     }
 
     /// <summary>Lo que el usuario eligió para una guía en la vista previa.</summary>
     public class EleccionGuia
     {
+        /// <summary>Dejó "— Elija qué hacer —": la guía no se registra.</summary>
+        public bool PorElegir { get; set; }
+
         /// <summary>Despacho programado que completa (null = ninguno).</summary>
         public int? IdProgramado { get; set; }
         /// <summary>Crear un despacho nuevo con los datos de abajo.</summary>
@@ -205,7 +211,11 @@ namespace WebSGV.Models.Despachos
         public int? IdCarreta { get; set; }
         public DateTime? Fecha { get; set; }
 
+        /// <summary>Completar ese despacho programado (null = "No registrar ahora").</summary>
         public static EleccionGuia Programado(int? id) => new EleccionGuia { IdProgramado = id };
+
+        /// <summary>Sin elegir: ni despacho, ni nuevo, ni "No registrar ahora".</summary>
+        public static EleccionGuia SinElegir() => new EleccionGuia { PorElegir = true };
     }
 
     public enum EstadoAduanaBandeja
@@ -251,6 +261,12 @@ namespace WebSGV.Models.Despachos
 
         /// <summary>Carga de un tercero con algún MCI que no halló su despacho: se registra, pero queda algo por hacer.</summary>
         public bool ConMcisSinDespacho { get; set; }
+
+        /// <summary>
+        /// Su pedido llega en esta misma lectura, pero sus guías esperan que el usuario elija el camión: no se registra
+        /// hasta entonces; al registrar se vuelve a resolver (si el pedido entró, se une a sus despachos).
+        /// </summary>
+        public bool EsperaSuPedido { get; set; }
 
         public bool PorRevisar => Estado == EstadoAduanaBandeja.NoSeRegistra
             || (Estado == EstadoAduanaBandeja.Registrar && (EsBorrador || ConMcisSinDespacho));

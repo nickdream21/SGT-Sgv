@@ -56,15 +56,20 @@ namespace WebSGV.Tests
         }
 
         [Fact]
-        public void Una_guia_y_un_programado_libres_se_unen_por_descarte()
+        public void Una_guia_y_un_programado_libres_sin_coincidencia_no_se_unen_por_descarte()
         {
             var a = Guia("T660-1", 10, 20);
             var b = Guia("T660-2", 30, 40);   // ni tracto ni carreta coinciden
             BandejaDocumentosService.Unir(new[] { a, b }, new[] { Prog(1, 10, 20), Prog(2, 77, 78) });
 
             Assert.Equal(1, a.IdProgramado);
-            Assert.Equal(2, b.IdProgramado);
-            Assert.StartsWith("Única guía", b.Regla);
+            Assert.False(a.PorElegir);
+            // Aunque sea el único libre, no se preselecciona: el usuario elige el camión (H8).
+            Assert.Null(b.IdProgramado);
+            Assert.Null(b.Regla);
+            Assert.Equal(EstadoGuiaBandeja.SinProgramado, b.Estado);
+            Assert.True(b.PorElegir);
+            Assert.Equal(new List<int> { 1, 2 }, b.Candidatos);
         }
 
         [Fact]
@@ -75,6 +80,7 @@ namespace WebSGV.Tests
 
             Assert.Equal(EstadoGuiaBandeja.SinProgramado, a.Estado);
             Assert.Null(a.IdProgramado);
+            Assert.True(a.PorElegir);
             Assert.Equal(new List<int> { 1, 2 }, a.Candidatos);   // el usuario elige
         }
 
@@ -230,34 +236,151 @@ namespace WebSGV.Tests
         // ── Certeza de la unión ─────────────────────────────────────────────
 
         [Fact]
-        public void La_union_por_descarte_se_marca_por_revisar_y_la_del_tracto_no()
+        public void La_guia_sin_coincidencia_queda_por_elegir_y_por_revisar_y_la_del_tracto_no()
         {
             var porTracto = Guia("T660-1", 10, 20);
-            var porDescarte = Guia("T660-2", 30, 40);
-            BandejaDocumentosService.Unir(new[] { porTracto, porDescarte }, new[] { Prog(1, 10, 20), Prog(2, 77, 78) });
+            var sinCoincidencia = Guia("T660-2", 30, 40);
+            BandejaDocumentosService.Unir(new[] { porTracto, sinCoincidencia }, new[] { Prog(1, 10, 20), Prog(2, 77, 78) });
 
-            Assert.False(porTracto.PorDescarte);
+            Assert.False(porTracto.PorElegir);
             Assert.False(porTracto.PorRevisar);
-            Assert.True(porDescarte.PorDescarte);
-            Assert.True(porDescarte.PorRevisar);
+            Assert.True(sinCoincidencia.PorElegir);
+            Assert.True(sinCoincidencia.PorRevisar);
         }
 
         [Fact]
-        public void Al_elegir_otro_despacho_deja_de_ser_por_descarte()
+        public void Con_coincidencia_por_tracto_o_carreta_sigue_preseleccionada()
+        {
+            var porTracto = Guia("T660-1", 10, 20);
+            var porCarreta = Guia("T660-2", 30, 78);
+            BandejaDocumentosService.Unir(new[] { porTracto, porCarreta }, new[] { Prog(1, 10, 20), Prog(2, 77, 78) });
+
+            Assert.Equal(1, porTracto.IdProgramado);
+            Assert.Equal("Mismo tracto", porTracto.Regla);
+            Assert.Equal(2, porCarreta.IdProgramado);
+            Assert.StartsWith("Misma carreta", porCarreta.Regla);
+            Assert.False(porTracto.PorElegir);
+            Assert.False(porCarreta.PorElegir);
+        }
+
+        [Fact]
+        public void Al_elegir_un_despacho_la_guia_va_ahi()
         {
             var a = Guia("T660-1", 10, 20);
             var b = Guia("T660-2", 30, 40);
             var l = Lectura(a, b);
-            Assert.True(b.PorDescarte);
 
-            // Sin cambiarlo sigue siendo por descarte: registrar no lo vuelve una unión segura.
-            BandejaDocumentosService.AplicarEleccion(l, E(("T660-1", 1), ("T660-2", 2)));
-            Assert.True(b.PorDescarte);
+            Assert.Empty(BandejaDocumentosService.AplicarEleccion(l, E(("T660-1", 1), ("T660-2", 2))));
 
-            BandejaDocumentosService.AplicarEleccion(l, E(("T660-1", 2), ("T660-2", 1)));
+            Assert.Equal(EstadoGuiaBandeja.Unida, b.Estado);
+            Assert.Equal(2, b.IdProgramado);
             Assert.Equal("Elegido por el usuario", b.Regla);
-            Assert.False(b.PorDescarte);
+            Assert.False(b.PorElegir);
             Assert.False(b.PorRevisar);
+            Assert.Empty(BandejaDocumentosService.QuedoSinRegistrar(l));
+        }
+
+        [Fact]
+        public void Sin_elegir_no_se_registra_y_dice_por_que()
+        {
+            var a = Guia("T660-1", 10, 20);
+            var b = Guia("T660-2", 30, 40);
+            var l = Lectura(a, b);
+
+            // Dejó "— Elija qué hacer —": no bloquea lo demás, pero esa guía no va a ningún despacho.
+            var errores = BandejaDocumentosService.AplicarEleccion(l, new Dictionary<string, EleccionGuia>
+            {
+                ["T660-1"] = EleccionGuia.Programado(1),
+                ["T660-2"] = EleccionGuia.SinElegir()
+            });
+
+            Assert.Empty(errores);
+            Assert.Equal(EstadoGuiaBandeja.Unida, a.Estado);
+            Assert.Equal(EstadoGuiaBandeja.SinProgramado, b.Estado);
+            Assert.Null(b.IdProgramado);
+            Assert.True(b.PorElegir);
+            var quedo = Assert.Single(BandejaDocumentosService.QuedoSinRegistrar(l));
+            Assert.StartsWith("Guía T660-2: elija a qué camión va o márquela como no registrar.", quedo);
+        }
+
+        [Fact]
+        public void Si_el_selector_no_llega_la_guia_sigue_por_elegir()
+        {
+            var b = Guia("T660-2", 30, 40);
+            var l = Lectura(b);
+            Assert.Empty(BandejaDocumentosService.AplicarEleccion(l, new Dictionary<string, EleccionGuia>()));
+            Assert.Null(b.IdProgramado);
+            Assert.True(b.PorElegir);
+        }
+
+        [Fact]
+        public void Marcarla_como_no_registrar_es_una_eleccion()
+        {
+            var b = Guia("T660-2", 30, 40);
+            var l = Lectura(b);
+            Assert.Empty(BandejaDocumentosService.AplicarEleccion(l, new Dictionary<string, EleccionGuia>
+            {
+                ["T660-2"] = BandejaDocumentosService.EleccionDesdeSelector(BandejaDocumentosService.NoRegistrar)
+            }));
+            Assert.False(b.PorElegir);
+            Assert.Equal(EstadoGuiaBandeja.SinProgramado, b.Estado);
+            Assert.Contains(BandejaDocumentosService.QuedoSinRegistrar(l), x => x.Contains("T660-2") && x.Contains("no se eligió su despacho"));
+        }
+
+        [Fact]
+        public void Sin_candidatos_el_valor_vacio_es_no_registrar_y_no_por_elegir()
+        {
+            var nueva = Guia("T660-1", 10, 20, cliente: 9);   // de otro cliente: sin candidatos
+            nueva.Tracto.IdConductor = 5;
+            var l = Lectura(nueva);
+            Assert.Equal(EstadoGuiaBandeja.Nueva, nueva.Estado);
+
+            Assert.Empty(BandejaDocumentosService.AplicarEleccion(l, new Dictionary<string, EleccionGuia>
+            {
+                ["T660-1"] = BandejaDocumentosService.EleccionDesdeSelector("")   // valor vacío o manipulado
+            }));
+
+            Assert.Equal(EstadoGuiaBandeja.SinProgramado, nueva.Estado);
+            Assert.False(nueva.PorElegir);
+            Assert.Contains(BandejaDocumentosService.QuedoSinRegistrar(l), x => x.Contains("no tiene despacho programado"));
+        }
+
+        [Fact]
+        public void La_cpic_que_esperaba_el_camion_dice_por_que_no_se_registro()
+        {
+            var l = new LecturaBandeja();
+            l.Cpics.Add(new CpicBandeja
+            {
+                Archivo = "c.pdf", Estado = EstadoAduanaBandeja.NoSeRegistra, EsperaSuPedido = true, Pedido = "4400000001",
+                Detalle = BandejaDocumentosService.DetalleCpicEsperaCamion,
+                Cpic = new WebSGV.Services.Despachos.Importacion.CpicLeido { Numero = "0003900" }
+            });
+            var quedo = Assert.Single(BandejaDocumentosService.QuedoSinRegistrar(l));
+            Assert.StartsWith("CPIC 0003900: no se registró porque no se eligió el camión de las guías de su pedido 4400000001.", quedo);
+        }
+
+        [Fact]
+        public void Un_despacho_invalido_da_error_y_la_guia_sigue_por_elegir()
+        {
+            var b = Guia("T660-2", 30, 40);
+            var l = Lectura(b);
+            var errores = BandejaDocumentosService.AplicarEleccion(l, E(("T660-2", 999)));
+            Assert.Contains(errores, e => e.Contains("no corresponde"));
+            Assert.True(b.PorElegir);
+        }
+
+        [Theory]
+        [InlineData("", null, true)]
+        [InlineData(null, null, true)]
+        [InlineData("basura", null, true)]
+        [InlineData("no", null, false)]
+        [InlineData("2", 2, false)]
+        public void El_valor_del_selector_se_lee_asi(string valor, int? idProgramado, bool porElegir)
+        {
+            var e = BandejaDocumentosService.EleccionDesdeSelector(valor);
+            Assert.Equal(idProgramado, e.IdProgramado);
+            Assert.Equal(porElegir, e.PorElegir);
+            Assert.False(e.Nuevo);
         }
 
         // ── Lo que queda sin registrar ──────────────────────────────────────

@@ -173,6 +173,9 @@ namespace WebSGV.Tests
             Assert.Contains("MARIO QUISPE", p.Cambio);
             Assert.Contains("no se reemite", p.Cambio);
             Assert.Contains(p.Avisos, a => a.Contains("por descarte"));
+            // Con el Word se proponen sus datos, pero el despacho programado lo elige el usuario (H8).
+            Assert.True(p.PorElegir);
+            Assert.Null(p.IdDespachoProgramado);
         }
 
         [Fact]
@@ -199,6 +202,7 @@ namespace WebSGV.Tests
             Assert.Equal(30, propuestas[2].IdTracto);
             Assert.Equal(300, propuestas[2].IdCarreta);
             Assert.Contains(propuestas[2].Avisos, a => a.Contains("por el nombre del chofer"));
+            Assert.All(propuestas.Values, p => Assert.False(p.PorElegir));
             Assert.Empty(generales);
         }
 
@@ -342,9 +346,10 @@ namespace WebSGV.Tests
         }
 
         [Fact]
-        public void Proponer_ConProgramados_CambioDeChoferPorDescarte_QuedaLoProgramado()
+        public void Proponer_ConProgramados_SinCoincidencia_NoSeUnePorDescarte_QuedaPorElegir()
         {
-            // La guía se emitió con PEDRO RAMOS / AAA-111, pero salió LUIS PRADO con DDD-444 (cambio de chofer)
+            // La guía se emitió con PEDRO RAMOS / AAA-111 y el único programado es LUIS PRADO con DDD-444: puede ser un
+            // cambio de chofer u otro camión. No se completa solo (H8): el usuario elige.
             var seccion = WebSGV.Services.Despachos.ProgramacionDespachoService.ComoSeccion(new[]
             {
                 Programado(501, 4, "LUIS PRADO VEGA", 40, "DDD-444", 300, "TXC-001")
@@ -353,15 +358,73 @@ namespace WebSGV.Tests
 
             var p = Proponer(guias, seccion, out var generales)[0];
 
-            Assert.Equal(501, p.IdDespachoProgramado);
-            Assert.Equal(4, p.IdConductor);
-            Assert.Equal(40, p.IdTracto);
-            Assert.Equal(300, p.IdCarreta);
-            Assert.True(p.ChoferCambiado);
-            Assert.True(p.TractoCambiado);
-            Assert.Contains("cambio de chofer", p.Cambio);
-            Assert.Contains(p.Avisos, a => a.Contains("despacho programado") && a.Contains("por descarte"));
-            Assert.Empty(generales);
+            Assert.Null(p.IdDespachoProgramado);
+            Assert.True(p.PorElegir);
+            Assert.False(p.EnProgramacion);
+            Assert.Null(p.IdConductor);   // no toma el chofer ni las placas del programado
+            Assert.Null(p.IdTracto);
+            Assert.Equal(ProgramacionCarga.AvisoPorElegir, Assert.Single(p.Avisos));
+            Assert.Contains(generales, g => g.Contains("1 despacho(s) programado(s) quedaron sin guía") && g.Contains("DDD-444"));
+        }
+
+        [Fact]
+        public void Proponer_ConProgramados_SinNingunoLibre_NoQuedaPorElegir()
+        {
+            var seccion = WebSGV.Services.Despachos.ProgramacionDespachoService.ComoSeccion(new[]
+            {
+                Programado(501, 1, "PEDRO JOSE RAMOS LUNA", 10, "AAA-111", 100, "TXA-001")
+            });
+            var guias = new List<TractoImportado>
+            {
+                Guia("1", "RAMOS LUNA PEDRO JOSE", "AAA-111", 1),
+                Guia("2", "ALCANTARA ROQUE AUGUSTO EMILIO", "ZZZ-999", 6)
+            };
+
+            var propuestas = Proponer(guias, seccion, out _);
+
+            Assert.Equal(501, propuestas[0].IdDespachoProgramado);
+            Assert.False(propuestas[1].PorElegir);   // no queda ningún programado que elegir: despacho nuevo
+            Assert.Contains(propuestas[1].Avisos, a => a.Contains("no tiene un despacho programado"));
+        }
+
+        [Fact]
+        public void ConWord_LaFilaUnidaPorDescarteNoCompletaSolaElProgramadoDeSusPlacas()
+        {
+            // Con el Word: la guía 1 se unió con su fila por tracto; la 2, por descarte. Ambas filas tienen
+            // un despacho programado con sus mismas placas, pero solo la 1 lo completa sola.
+            var unida = new PropuestaCarga { EnProgramacion = true, IdConductor = 1, IdTracto = 10, IdCarreta = 100 };
+            var porDescarte = new PropuestaCarga { EnProgramacion = true, PorElegir = true, IdConductor = 2, IdTracto = 20, IdCarreta = 200 };
+            var pedido = new ImportacionPedido { Programacion = new ProgramacionAplicada() };
+            pedido.Tractos.Add(new TractoImportado { NumeroTransporte = "1", Programacion = unida });
+            pedido.Tractos.Add(new TractoImportado { NumeroTransporte = "2", Programacion = porDescarte });
+            pedido.Programados.Add(Programado(501, 1, "PEDRO JOSE RAMOS LUNA", 10, "AAA-111", 100, "TXA-001"));
+            pedido.Programados.Add(Programado(502, 2, "MARIO QUISPE ROJAS", 20, "BBB-222", 200, "TXA-002"));
+
+            typeof(ImportacionPedidoService).GetMethod("VincularConProgramados",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
+                .Invoke(null, new object[] { pedido });
+
+            Assert.Equal(501, unida.IdDespachoProgramado);
+            Assert.Null(porDescarte.IdDespachoProgramado);
+            Assert.Contains(ProgramacionCarga.AvisoPorElegir, porDescarte.Avisos);
+            Assert.Contains(pedido.Programacion.AvisosGenerales, a => a.Contains("BBB-222"));   // su programado sigue libre
+            Assert.NotNull(ProgramacionCarga.ErrorEleccionProgramado(true, "", pedido.Tractos[1]));
+        }
+
+        [Theory]
+        [InlineData(true, "", false)]
+        [InlineData(true, null, false)]
+        [InlineData(true, "abc", false)]
+        [InlineData(true, "-1", false)]
+        [InlineData(true, "0", true)]       // "Despacho nuevo", elegido a propósito
+        [InlineData(true, "501", true)]
+        [InlineData(false, "", true)]       // sin programados no hay selector
+        public void ErrorEleccionProgramado_ExigeElegirSiHayProgramados(bool hayProgramados, string valor, bool valido)
+        {
+            var t = Guia("1", "RAMOS LUNA PEDRO JOSE", "AAA-111", 1);
+            string error = ProgramacionCarga.ErrorEleccionProgramado(hayProgramados, valor, t);
+            if (valido) Assert.Null(error);
+            else Assert.Contains("elija cuál completa", error);
         }
 
         [Fact]
@@ -384,7 +447,9 @@ namespace WebSGV.Tests
 
             Assert.Equal(501, propuestas[0].IdDespachoProgramado);
             Assert.Null(propuestas[1].IdDespachoProgramado);
-            Assert.Contains(propuestas[1].Avisos, a => a.Contains("no tiene un despacho programado"));
+            // Quedan programados libres que podrían ser suyos (cambio de chofer): elige el usuario.
+            Assert.True(propuestas[1].PorElegir);
+            Assert.Contains(ProgramacionCarga.AvisoPorElegir, propuestas[1].Avisos);
             Assert.Contains(generales, g => g.Contains("2 despacho(s) programado(s) quedaron sin guía") && g.Contains("CCC-333"));
         }
     }

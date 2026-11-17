@@ -524,8 +524,9 @@ namespace WebSGV.Services.Despachos.Importacion
         /// <summary>
         /// Busca los despachos programados con el Word que esperan documentos (del cliente y
         /// de los días de las guías) para que cada guía complete el suyo. Sin Word subido, esos
-        /// despachos hacen de programación (se unen con las guías por carreta, tracto, chofer
-        /// y descarte); con Word, cada tracto se enlaza con el programado de sus mismas placas.
+        /// despachos hacen de programación (se unen con las guías por carreta, tracto o chofer;
+        /// nunca por descarte: esas quedan por elegir); con Word, cada tracto se enlaza con el
+        /// programado de sus mismas placas.
         /// Llamar después de <see cref="Asociar"/> y de <see cref="LeerProgramacion"/>.
         /// </summary>
         public static void UsarProgramados(ImportacionPedido pedido)
@@ -585,6 +586,12 @@ namespace WebSGV.Services.Despachos.Importacion
 
             foreach (var p in propuestas)
             {
+                // Fila del Word unida por descarte: no completa sola el programado de sus placas; el usuario elige.
+                if (p.PorElegir)
+                {
+                    if (!p.Avisos.Contains(ProgramacionCarga.AvisoPorElegir)) p.Avisos.Add(ProgramacionCarga.AvisoPorElegir);
+                    continue;
+                }
                 var prog = Unico(x => x.IdTracto == p.IdTracto && x.IdCarreta == p.IdCarreta)
                            ?? Unico(x => p.IdCarreta.HasValue && x.IdCarreta == p.IdCarreta)
                            ?? Unico(x => p.IdTracto.HasValue && x.IdTracto == p.IdTracto);

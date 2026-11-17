@@ -204,6 +204,12 @@ namespace WebSGV.Models.Despachos
         /// </summary>
         public int? IdDespachoProgramado { get; set; }
 
+        /// <summary>
+        /// Ni el tracto ni la carreta (ni el chofer) coinciden con un despacho programado: no se completa ninguno solo
+        /// ("por descarte"); el usuario debe elegir cuál completa la guía o "Despacho nuevo" antes de confirmar.
+        /// </summary>
+        public bool PorElegir { get; set; }
+
         public string ChoferProgramado { get; set; }
         public string TractoProgramado { get; set; }
         public string CarretaProgramada { get; set; }

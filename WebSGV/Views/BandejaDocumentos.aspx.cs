@@ -182,7 +182,7 @@ namespace WebSGV.Views
                             IdCarreta = Entero(Request.Form[PrefijoNuevo + "car_" + i]),
                             Fecha = DateTime.TryParse(Request.Form[PrefijoNuevo + "fec_" + i], out DateTime f) ? f : (DateTime?)null
                         }
-                        : EleccionGuia.Programado(Entero(valor));
+                        : BandejaDocumentosService.EleccionDesdeSelector(valor);
                 }
                 var mcis = new Dictionary<int, int?>();
                 for (int i = 0; i < lectura.Mcis.Count; i++)
@@ -259,17 +259,17 @@ namespace WebSGV.Views
         {
             pnlVistaPrevia.Visible = true;
             var guias = l.Guias.ToList();
-            int porDescarte = guias.Count(g => g.PorDescarte);
-            int unidas = guias.Count(g => g.Estado == EstadoGuiaBandeja.Unida) - porDescarte;
+            int porElegir = guias.Count(g => g.Estado == EstadoGuiaBandeja.SinProgramado && g.PorElegir);
+            int unidas = guias.Count(g => g.Estado == EstadoGuiaBandeja.Unida);
             int nuevas = guias.Count(g => g.Estado == EstadoGuiaBandeja.Nueva);
-            int sin = guias.Count(g => g.Estado == EstadoGuiaBandeja.SinProgramado);
+            int sin = guias.Count(g => g.Estado == EstadoGuiaBandeja.SinProgramado) - porElegir;
             int ya = guias.Count(g => g.Estado == EstadoGuiaBandeja.YaRegistrada);
             int fletes = l.FacturasFlete.Count;
 
             var resumen = new List<string>();
             if (l.Pedidos.Count > 0) resumen.Add($"{l.Pedidos.Count} pedido(s), {guias.Count} guía(s)");
             if (unidas > 0) resumen.Add($"<span class='bd-txt-ok'>{unidas} se completan</span>");
-            if (porDescarte > 0) resumen.Add($"<span class='bd-txt-aviso'>{porDescarte} por confirmar (unidas por descarte)</span>");
+            if (porElegir > 0) resumen.Add($"<span class='bd-txt-aviso'><strong>{porElegir} guía(s) por elegir</strong> (no se registran hasta que elija el camión)</span>");
             if (nuevas > 0) resumen.Add($"<span class='bd-txt-aviso'>{nuevas} despacho(s) nuevo(s) por revisar</span>");
             if (sin > 0) resumen.Add($"<span class='bd-txt-aviso'>{sin} sin despacho</span>");
             int cpics = l.Cpics.Count(c => c.Estado == EstadoAduanaBandeja.Registrar);
@@ -404,10 +404,10 @@ namespace WebSGV.Views
             if (!string.IsNullOrEmpty(imp.Destino)) sb.Append($" &#xB7; destino {H(imp.Destino)}");
             sb.Append("</div>")
               .Append(Conteos(
-                  (p.Guias.Count(g => g.PorDescarte), "por confirmar", "aviso"),
-                  (p.Guias.Count(g => g.Estado == EstadoGuiaBandeja.SinProgramado), "sin despacho", "aviso"),
+                  (p.Guias.Count(g => g.Estado == EstadoGuiaBandeja.SinProgramado && g.PorElegir), "por elegir", "aviso"),
+                  (p.Guias.Count(g => g.Estado == EstadoGuiaBandeja.SinProgramado && !g.PorElegir), "sin despacho", "aviso"),
                   (p.Guias.Count(g => g.Estado == EstadoGuiaBandeja.Nueva), "despacho(s) nuevo(s)", "aviso"),
-                  (p.Guias.Count(g => g.Estado == EstadoGuiaBandeja.Unida && !g.PorDescarte), "se completan", "ok"),
+                  (p.Guias.Count(g => g.Estado == EstadoGuiaBandeja.Unida), "se completan", "ok"),
                   (p.Guias.Count(g => g.Estado == EstadoGuiaBandeja.YaRegistrada), "ya registrada(s)", "gris")))
               .Append("</div><div class='bd-pedido-factura'>");
             if (f?.NumeroFactura != null)
@@ -431,7 +431,8 @@ namespace WebSGV.Views
             foreach (var g in GuiasEnOrden(p).OrderBy(Prioridad))
             {
                 var t = g.Tracto;
-                string clase = g.PorRevisar ? "bd-fila-aviso" : g.Estado == EstadoGuiaBandeja.YaRegistrada ? "bd-fila-gris" : "";
+                bool porElegir = g.Estado == EstadoGuiaBandeja.SinProgramado && g.PorElegir;
+                string clase = porElegir ? "bd-fila-aviso table-warning" : g.PorRevisar ? "bd-fila-aviso" : g.Estado == EstadoGuiaBandeja.YaRegistrada ? "bd-fila-gris" : "";
                 sb.Append($"<tr class='{clase}'>")
                   .Append($"<td class='bd-cod'>{H(t.NumeroGuia ?? "N° transp. " + t.NumeroTransporte)}</td>")
                   .Append($"<td class='bd-cod'>{(t.FechaTraslado.HasValue ? t.FechaTraslado.Value.ToString("dd/MM") : "")}</td>")
@@ -445,7 +446,7 @@ namespace WebSGV.Views
                 {
                     suIndice = indices[g];
                     sb.Append("<td>").Append(Selector(l, g, suIndice.Value)).Append("</td><td>");
-                    sb.Append(g.PorDescarte ? Chip("Confirme el despacho", "aviso") + $"<div class='bd-regla'>Ni el tracto ni la carreta coinciden: {H(g.Regla)}</div>"
+                    sb.Append(porElegir ? Chip("Elija el camión", "aviso") + "<div class='bd-regla'>Ni el tracto ni la carreta coinciden con un despacho programado</div>"
                             : g.Estado == EstadoGuiaBandeja.Unida ? Chip("Se completa", "ok") + $"<div class='bd-regla'>{H(g.Regla)}</div>"
                             : g.Estado == EstadoGuiaBandeja.Nueva ? Chip("Despacho nuevo", "aviso")
                             : Chip("Sin despacho", "aviso"));
@@ -464,8 +465,11 @@ namespace WebSGV.Views
         private static string Selector(LecturaBandeja l, GuiaBandeja g, int indice)
         {
             bool nuevo = g.Estado == EstadoGuiaBandeja.Nueva;
+            bool porElegir = g.Estado == EstadoGuiaBandeja.SinProgramado && g.PorElegir;
             var sb = new StringBuilder($"<select name='{PrefijoSeleccion}{indice}' class='form-control form-control-sm bd-selector' data-indice='{indice}'>");
-            sb.Append($"<option value=''{(g.IdProgramado.HasValue || nuevo ? "" : " selected")}>— No registrar ahora —</option>");
+            // Sin coincidencia por tracto ni carreta no se preselecciona nada: el usuario elige el camión (el vacío no se registra).
+            if (porElegir) sb.Append("<option value='' selected>— Elija qué hacer —</option>");
+            sb.Append($"<option value='{BandejaDocumentosService.NoRegistrar}'{(g.IdProgramado.HasValue || nuevo || porElegir ? "" : " selected")}>— No registrar ahora —</option>");
             if (g.Candidatos.Count > 0) sb.Append("<optgroup label='Completar el despacho programado'>");
             foreach (int id in g.Candidatos)
             {

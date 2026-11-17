@@ -1557,10 +1557,17 @@ namespace WebSGV.Views
             pnlProgramado.Visible = !t.YaRegistrado && _programadosImp.Count > 0;
             if (pnlProgramado.Visible)
             {
+                // Ni tracto ni carreta coinciden: no se preselecciona nada (ni "Despacho nuevo"); confirmar exige elegir.
+                bool porElegir = t.Programacion?.PorElegir == true && !t.Programacion.IdDespachoProgramado.HasValue;
+                if (porElegir)
+                {
+                    ddlProgramado.Items.Add(new ListItem("— Elija —", ""));
+                    ddlProgramado.CssClass += " is-invalid";
+                }
                 ddlProgramado.Items.Add(new ListItem("Despacho nuevo", "0"));
                 foreach (var p in _programadosImp)
                     ddlProgramado.Items.Add(new ListItem("Programado: " + p.Texto, p.IdDespacho.ToString()));
-                RestaurarSeleccion(ddlProgramado, t.Programacion?.IdDespachoProgramado?.ToString() ?? "0");
+                if (!porElegir) RestaurarSeleccion(ddlProgramado, t.Programacion?.IdDespachoProgramado?.ToString() ?? "0");
             }
 
             var chk = (CheckBox)e.Item.FindControl("chkIncluir");
@@ -1837,7 +1844,14 @@ namespace WebSGV.Views
 
                 // Completa un despacho programado: chofer, tracto y carreta son los del despacho
                 var ddlProgramado = (DropDownList)item.FindControl("ddlProgramadoImp");
-                var programado = ((Panel)item.FindControl("pnlProgramadoImp")).Visible && int.TryParse(ddlProgramado.SelectedValue, out int idProg) && idProg > 0
+                bool conProgramados = ((Panel)item.FindControl("pnlProgramadoImp")).Visible;
+                string eleccion = ProgramacionCarga.ErrorEleccionProgramado(conProgramados, ddlProgramado.SelectedValue, t);
+                if (eleccion != null)
+                {
+                    errores.Add(eleccion);
+                    continue;
+                }
+                var programado = conProgramados && int.TryParse(ddlProgramado.SelectedValue, out int idProg) && idProg > 0
                     ? imp.Programados?.FirstOrDefault(p => p.IdDespacho == idProg) : null;
                 if (programado != null)
                 {

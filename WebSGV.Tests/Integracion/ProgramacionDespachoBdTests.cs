@@ -71,7 +71,7 @@ namespace WebSGV.Tests.Integracion
                 Assert.Equal(2, programados.Count);
 
                 // 2) Llega el correo: una guía del mismo tracto y otra de un chofer cambiado
-                //    (la guía dice otro tracto: se une por descarte)
+                //    (la guía dice otro tracto: ya no se une por descarte; el usuario elige el programado, H8)
                 var pedido = new ImportacionPedido { RucRemitente = cliente["ruc"].ToString().Trim(), NumeroPedido = "4400999999" };
                 pedido.Tractos.Add(new TractoImportado
                 {
@@ -90,9 +90,12 @@ namespace WebSGV.Tests.Integracion
 
                 Assert.True(pedido.Programacion.DesdeDespachos);
                 Assert.Equal(r.Creados[0], pedido.Tractos[0].Programacion.IdDespachoProgramado);
-                Assert.Equal(r.Creados[1], pedido.Tractos[1].Programacion.IdDespachoProgramado);
-                Assert.Equal(conductores[1], pedido.Tractos[1].IdConductor);   // queda el chofer programado
-                Assert.Equal(Id(tractos[1]), pedido.Tractos[1].IdTracto);
+                Assert.Null(pedido.Tractos[1].Programacion.IdDespachoProgramado);   // sin preselección
+                Assert.True(pedido.Tractos[1].Programacion.PorElegir);
+                Assert.Contains(ProgramacionCarga.AvisoPorElegir, pedido.Tractos[1].Programacion.Avisos);
+                // Confirmar sin elegir ("— Elija —") no pasa la validación del servidor; elegido el programado, sí.
+                Assert.NotNull(ProgramacionCarga.ErrorEleccionProgramado(true, "", pedido.Tractos[1]));
+                Assert.Null(ProgramacionCarga.ErrorEleccionProgramado(true, r.Creados[1].ToString(), pedido.Tractos[1]));
 
                 // 3) Completar: documentos y carga al despacho programado, sin crear otro
                 var lote = new LoteDespachos

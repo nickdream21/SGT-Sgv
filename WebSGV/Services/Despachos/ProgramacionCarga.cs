@@ -16,13 +16,16 @@ namespace WebSGV.Services.Despachos
     /// la diferencia queda como dato informativo.
     ///
     /// Las guías solo traen la placa del tracto, así que cada guía se une con su fila por
-    /// la carreta (si la guía la trae), el tracto, el nombre del chofer y, al final, por
-    /// descarte (una guía y una fila sobrantes).
+    /// la carreta (si la guía la trae), el tracto y el nombre del chofer. Nunca se completa un
+    /// despacho programado "por descarte": la guía queda <see cref="PropuestaCarga.PorElegir"/>.
     ///
     /// Lógica pura (sin BD) para poder probarla; los catálogos llegan como listas.
     /// </summary>
     public static class ProgramacionCarga
     {
+        /// <summary>Aviso de una guía <see cref="PropuestaCarga.PorElegir"/> (no se une sola con un despacho programado).</summary>
+        public const string AvisoPorElegir = "Ni el tracto ni la carreta coinciden: elija el despacho programado.";
+
         /// <summary>
         /// Las secciones de carga dicen "CARGAN &lt;fecha&gt;" en el título; si no, se reconocen
         /// por la columna HORARIO sin N° de pedido (las de descarga traen pedido y CAMBIO).
@@ -148,25 +151,35 @@ namespace WebSGV.Services.Despachos
                            && ProgramacionDescarga.NombreCoincide(f.Chofer, t.NombreChofer, tolerante: false),
                 "por el nombre del chofer");
 
+            bool desdeDespachos = seccion.Filas.Any(f => f.Programado != null);
             var sinUnir = pendientes.Where(i => !unidas.ContainsKey(i)).ToList();
-            if (sinUnir.Count == 1 && libres.Count == 1)
+            // Ninguna guía se une con un despacho programado "por descarte" (H8): podría ser otro camión. Con los
+            // despachos programados, toda guía sin unir que aún tiene despachos libres queda por elegir. Con el Word,
+            // la única guía y la única fila sobrantes se proponen (los datos del Word), pero el despacho programado
+            // lo elige el usuario (VincularConProgramados no la completa sola).
+            var porElegir = new HashSet<int>();
+            if (desdeDespachos)
+            {
+                if (libres.Count > 0) porElegir.UnionWith(sinUnir);
+            }
+            else if (sinUnir.Count == 1 && libres.Count == 1)
             {
                 unidas[sinUnir[0]] = libres[0];
                 motivos[sinUnir[0]] = "por descarte (es la única guía y la única fila que quedaban)";
+                porElegir.Add(sinUnir[0]);
                 libres.Clear();
             }
 
-            bool desdeDespachos = seccion.Filas.Any(f => f.Programado != null);
             var propuestas = new Dictionary<int, PropuestaCarga>();
             foreach (int i in pendientes)
             {
                 var t = tractos[i];
-                var p = new PropuestaCarga();
+                var p = new PropuestaCarga { PorElegir = porElegir.Contains(i) };
                 propuestas[i] = p;
 
                 if (!unidas.TryGetValue(i, out var fila))
                 {
-                    p.Avisos.Add(desdeDespachos
+                    p.Avisos.Add(p.PorElegir ? AvisoPorElegir : desdeDespachos
                         ? $"El tracto {t.Placa ?? "(sin placa)"} de la guía {t.NumeroGuia ?? t.NumeroTransporte} no tiene un despacho programado: " +
                           "se registrará como despacho nuevo con los datos de la guía. Si es un cambio de chofer, elija su despacho programado."
                         : $"El tracto {t.Placa ?? "(sin placa)"} de la guía {t.NumeroGuia ?? t.NumeroTransporte} no figura en la programación: " +
@@ -247,6 +260,19 @@ namespace WebSGV.Services.Despachos
                                     ". Si alguna corresponde a una guía de arriba, elija sus datos a mano.");
 
             return propuestas;
+        }
+
+        /// <summary>
+        /// Validación en el servidor al confirmar la importación: con despachos programados a la vista, el selector de
+        /// la guía debe traer "Despacho nuevo" (0) o el id de un programado. Vacío ("— Elija —", la guía estaba
+        /// <see cref="PropuestaCarga.PorElegir"/>) o cualquier otro valor → mensaje de error; null si está bien.
+        /// </summary>
+        public static string ErrorEleccionProgramado(bool hayProgramados, string valor, TractoImportado t)
+        {
+            if (!hayProgramados) return null;
+            if (int.TryParse((valor ?? "").Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out _)) return null;
+            return $"Transporte {t.NumeroTransporte} (guía {t.NumeroGuia ?? "sin número"}): ni el tracto ni la carreta coinciden con un " +
+                   "despacho programado; elija cuál completa o «Despacho nuevo».";
         }
 
         /// <summary>"05:30AM", "5:30 a. m.", "17:45" → hora del día; null si no se puede leer.</summary>

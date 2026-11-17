@@ -36,7 +36,26 @@ namespace WebSGV.Services.Despachos
     {
         public const int DiasDespuesDeLaGuia = 2;
         public const int MaximoArchivos = 60;
-        public const string ReglaPorDescarte = "Única guía y único programado libre (cambio de tracto)";
+
+        /// <summary>Valor del selector de una guía para "No registrar ahora" (el vacío es "— Elija qué hacer —").</summary>
+        public const string NoRegistrar = "no";
+
+        /// <summary>Motivo de una guía que se dejó sin elegir (no se registra; las demás sí).</summary>
+        public static string MensajePorElegir(string guia) => $"Guía {guia}: elija a qué camión va o márquela como no registrar.";
+
+        /// <summary>Detalle de una CPIC cuyo pedido llega en la misma lectura con guías por elegir.</summary>
+        public const string DetalleCpicEsperaCamion = "Se registra si elige el camión de sus guías.";
+
+        /// <summary>
+        /// Elección de una guía según el valor de su selector (salvo "Crear despacho nuevo", que lleva más datos):
+        /// <see cref="NoRegistrar"/>, el id de un despacho programado, o vacío / cualquier otra cosa = sin elegir.
+        /// </summary>
+        public static EleccionGuia EleccionDesdeSelector(string valor)
+        {
+            string v = (valor ?? "").Trim();
+            if (v == NoRegistrar) return EleccionGuia.Programado(null);
+            return int.TryParse(v, out int id) ? EleccionGuia.Programado(id) : EleccionGuia.SinElegir();
+        }
 
         // ── Lectura ──────────────────────────────────────────────────────────
 
@@ -272,6 +291,8 @@ namespace WebSGV.Services.Despachos
             foreach (var g in guias.Where(x => x.Estado == EstadoGuiaBandeja.Nueva || x.Estado == EstadoGuiaBandeja.SinProgramado))
                 g.Avisos.Add(g.Estado == EstadoGuiaBandeja.Nueva
                     ? "No hay un despacho programado (Word) para esta carga: se propone uno nuevo con lo que dice la guía. Revise chofer, tracto, carreta y fecha."
+                    : g.PorElegir
+                    ? "Ningún despacho programado de esos días tiene su tracto ni su carreta: elija a qué camión va, cree un despacho nuevo o márquela como no registrar."
                     : "No hay un despacho programado (Word) para esta carga. Elija uno o cree un despacho nuevo.");
 
             // La factura es única por número y cliente (2026-11-17): sin cliente reconocido no se busca (no se podría registrar).
@@ -337,6 +358,7 @@ namespace WebSGV.Services.Despachos
         private static void ResolverCpic(LecturaBandeja l, CpicBandeja c)
         {
             var cp = c.Cpic;
+            c.EsperaSuPedido = false;
             if (cp.Numero == null || cp.FacturaComercial == null)
             {
                 c.Estado = EstadoAduanaBandeja.NoSeRegistra;
@@ -378,6 +400,16 @@ namespace WebSGV.Services.Despachos
             {
                 var pedido = l.Pedidos.FirstOrDefault(p => string.Equals(p.Pedido.Factura?.NumeroFactura, cp.FacturaComercial, StringComparison.OrdinalIgnoreCase));
                 bool seRegistraAhora = pedido != null && pedido.Guias.Any(g => g.Estado == EstadoGuiaBandeja.Unida || g.Estado == EstadoGuiaBandeja.Nueva);
+                // Su pedido viene en esta lectura con guías por elegir: entra si el usuario elige el camión (se vuelve a
+                // resolver en Registrar, ya con los despachos del pedido en la BD).
+                if (!seRegistraAhora && pedido != null && pedido.Guias.Any(g => g.Estado == EstadoGuiaBandeja.SinProgramado && g.Candidatos.Count > 0))
+                {
+                    c.Estado = EstadoAduanaBandeja.NoSeRegistra;
+                    c.EsperaSuPedido = true;
+                    c.Pedido = pedido.Pedido.NumeroPedido;
+                    c.Detalle = DetalleCpicEsperaCamion;
+                    return;
+                }
                 if (!seRegistraAhora && ResolverCpicTercero(l, c)) return;
                 c.Estado = seRegistraAhora ? EstadoAduanaBandeja.Registrar : EstadoAduanaBandeja.NoSeRegistra;
                 c.Pedido = pedido?.Pedido.NumeroPedido;
@@ -617,8 +649,12 @@ namespace WebSGV.Services.Despachos
             if (despachos.Count == 0)
             {
                 bool cpicEnBandeja = l.Cpics.Any(c => c.Cpic.Numero == mci.CartaPorte && c.Estado == EstadoAduanaBandeja.Registrar);
-                m.Estado = cpicEnBandeja ? EstadoAduanaBandeja.TrasSuCpic : EstadoAduanaBandeja.NoSeRegistra;
-                m.Detalle = cpicEnBandeja
+                // Su CPIC espera que se elija el camión de las guías de su pedido (misma lectura).
+                bool cpicEspera = !cpicEnBandeja && l.Cpics.Any(c => c.Cpic.Numero == mci.CartaPorte && c.EsperaSuPedido);
+                m.Estado = cpicEnBandeja || cpicEspera ? EstadoAduanaBandeja.TrasSuCpic : EstadoAduanaBandeja.NoSeRegistra;
+                m.Detalle = cpicEspera
+                    ? $"Se une a su despacho al registrar la CPIC {mci.CartaPorte} de esta misma bandeja, si elige el camión de las guías de su pedido."
+                    : cpicEnBandeja
                     ? $"Se une a su despacho al registrar la CPIC {mci.CartaPorte} de esta misma bandeja."
                     : $"La CPIC {mci.CartaPorte} no está en el sistema: súbala junto con el MCI.";
                 return;
@@ -907,8 +943,10 @@ namespace WebSGV.Services.Despachos
 
         /// <summary>
         /// Propone un despacho programado por guía (cada uno una sola vez) y deja en <see cref="GuiaBandeja.Candidatos"/>
-        /// todos los de su ventana, para que el usuario elija otro. Sin programado y sin candidatos, propone un despacho
-        /// nuevo con el chofer, tracto y carreta de la guía (si los reconoce todos). No toca las guías ya registradas.
+        /// todos los de su ventana, para que el usuario elija otro. Solo une por el mismo tracto o la misma carreta: si
+        /// tiene candidatos y ninguno coincide queda <see cref="GuiaBandeja.PorElegir"/> (nunca "por descarte": el usuario
+        /// elige el camión). Sin programado y sin candidatos, propone un despacho nuevo con el chofer, tracto y carreta de
+        /// la guía (si los reconoce todos). No toca las guías ya registradas.
         /// </summary>
         public static void Unir(IList<GuiaBandeja> guias, IList<DespachoProgramado> programados)
         {
@@ -917,7 +955,7 @@ namespace WebSGV.Services.Despachos
             var libres = programados.OrderBy(p => p.FechaDespacho).ThenBy(p => p.Hora ?? TimeSpan.Zero).ThenBy(p => p.IdDespacho).ToList();
             foreach (var g in orden)
             {
-                g.IdProgramado = null; g.Regla = null; g.Estado = EstadoGuiaBandeja.SinProgramado;
+                g.IdProgramado = null; g.Regla = null; g.Estado = EstadoGuiaBandeja.SinProgramado; g.PorElegir = false;
                 g.Candidatos = programados.Where(p => EnVentana(g, p)).OrderBy(p => p.FechaDespacho).ThenBy(p => p.Hora ?? TimeSpan.Zero)
                     .Select(p => p.IdDespacho).ToList();
                 g.NuevoIdConductor = g.Tracto.IdConductor;
@@ -942,12 +980,9 @@ namespace WebSGV.Services.Despachos
                 var p = libres.FirstOrDefault(x => EnVentana(g, x) && g.Tracto.IdCarreta.HasValue && x.IdCarreta == g.Tracto.IdCarreta);
                 if (p != null) Asignar(g, p, "Misma carreta (cambio de tracto)");
             }
-            foreach (var g in orden.Where(x => x.IdProgramado == null).ToList())
-            {
-                var cand = libres.Where(x => EnVentana(g, x)).ToList();
-                bool otras = orden.Any(x => x != g && x.IdProgramado == null && cand.Any(c => EnVentana(x, c)));
-                if (cand.Count == 1 && !otras) Asignar(g, cand[0], ReglaPorDescarte);
-            }
+            // Ni el tracto ni la carreta coinciden con ningún candidato: el usuario elige (no se adivina por descarte).
+            foreach (var g in orden.Where(x => x.IdProgramado == null && x.Candidatos.Count > 0))
+                g.PorElegir = true;
             foreach (var g in orden.Where(x => x.IdProgramado.HasValue))
             {
                 var p = programados.First(x => x.IdDespacho == g.IdProgramado.Value);
@@ -964,7 +999,9 @@ namespace WebSGV.Services.Despachos
 
         /// <summary>
         /// Aplica la elección del usuario (por guía: completar un programado, crear un despacho nuevo o nada; por MCI:
-        /// el despacho al que va) y devuelve los errores que impiden registrar.
+        /// el despacho al que va) y devuelve los errores que impiden registrar. Una guía que se deja en
+        /// "— Elija qué hacer —" (<see cref="EleccionGuia.SinElegir"/>) no impide registrar lo demás: queda
+        /// <see cref="GuiaBandeja.PorElegir"/>, no se registra y sale en <see cref="QuedoSinRegistrar"/> con su motivo.
         /// </summary>
         public static List<string> AplicarEleccion(LecturaBandeja l, IDictionary<string, EleccionGuia> eleccion,
                                                    IDictionary<int, int?> mcis = null, IDictionary<int, string> gres = null)
@@ -999,8 +1036,17 @@ namespace WebSGV.Services.Despachos
             {
                 if (!eleccion.TryGetValue(g.Clave, out var e) || e == null) continue;
                 string guia = g.Tracto.NumeroGuia ?? g.Tracto.NumeroTransporte;
+                if (e.PorElegir && g.Candidatos.Count == 0)
+                    e = EleccionGuia.Programado(null);   // sin candidatos (o despacho nuevo) no hay camión que elegir: vacío = no registrar
+                if (e.PorElegir)
+                {
+                    // Dejó "— Elija qué hacer —": esa guía no se registra (las demás sí) y queda en "sin registrar" con su motivo.
+                    g.IdProgramado = null; g.Estado = EstadoGuiaBandeja.SinProgramado; g.PorElegir = true;
+                    continue;
+                }
                 if (e.Nuevo)
                 {
+                    g.PorElegir = false;
                     g.IdProgramado = null;
                     g.Estado = EstadoGuiaBandeja.Nueva;
                     g.NuevoIdConductor = e.IdConductor; g.NuevoIdTracto = e.IdTracto; g.NuevoIdCarreta = e.IdCarreta; g.NuevaFecha = e.Fecha?.Date;
@@ -1014,6 +1060,7 @@ namespace WebSGV.Services.Despachos
                     continue;
                 }
                 if (e.IdProgramado.HasValue && e.IdProgramado != g.IdProgramado) g.Regla = "Elegido por el usuario";
+                g.PorElegir = false;   // eligió un despacho o "No registrar ahora"
                 g.IdProgramado = e.IdProgramado;
                 g.Estado = e.IdProgramado.HasValue ? EstadoGuiaBandeja.Unida : EstadoGuiaBandeja.SinProgramado;
             }
@@ -1155,6 +1202,7 @@ namespace WebSGV.Services.Despachos
             }
             if (r.FacturasFleteRegistradas > 0) r.Detalle.Add($"{r.FacturasFleteRegistradas} factura(s) de flete registrada(s) o actualizada(s).");
 
+            ReevaluarCpicsQueEsperabanSuPedido(l, r);
             RegistrarCpics(l, usuario, raizFisicaUploads, r);
             RegistrarMcis(l, usuario, raizFisicaUploads, r);
             RegistrarGres(l, usuario, r);
@@ -1178,7 +1226,12 @@ namespace WebSGV.Services.Despachos
         {
             var quedo = new List<string>();
             foreach (var p in l.Pedidos)
-                foreach (var grupo in p.Guias.Where(x => x.Estado == EstadoGuiaBandeja.SinProgramado).GroupBy(x => x.Candidatos.Count > 0))
+            {
+                // Una por una: el usuario debe saber exactamente cuáles dejó sin elegir.
+                foreach (var g in p.Guias.Where(x => x.Estado == EstadoGuiaBandeja.SinProgramado && x.PorElegir))
+                    quedo.Add(MensajePorElegir(g.Tracto.NumeroGuia ?? g.Tracto.NumeroTransporte) +
+                              $" No se registró: vuelva a subir el archivo del pedido {p.Pedido.NumeroPedido ?? "sin número"} para elegirlo.");
+                foreach (var grupo in p.Guias.Where(x => x.Estado == EstadoGuiaBandeja.SinProgramado && !x.PorElegir).GroupBy(x => x.Candidatos.Count > 0))
                 {
                     var numeros = grupo.Select(g => g.Tracto.NumeroGuia ?? g.Tracto.NumeroTransporte).ToList();
                     bool una = numeros.Count == 1;
@@ -1188,8 +1241,12 @@ namespace WebSGV.Services.Despachos
                     quedo.Add($"{(una ? "Guía" : "Guías")} {string.Join(", ", numeros)} (pedido {p.Pedido.NumeroPedido ?? "sin número"}): {motivo} " +
                               "Vuelva a subir su archivo cuando corresponda.");
                 }
+            }
             foreach (var c in l.Cpics.Where(x => x.Estado == EstadoAduanaBandeja.NoSeRegistra))
-                quedo.Add($"CPIC {c.Cpic.Numero ?? c.Archivo}: {c.Detalle}");
+                quedo.Add(c.EsperaSuPedido
+                    ? $"CPIC {c.Cpic.Numero ?? c.Archivo}: no se registró porque no se eligió el camión de las guías de su pedido {c.Pedido}. " +
+                      "Vuelva a subirla junto con el ZIP del pedido."
+                    : $"CPIC {c.Cpic.Numero ?? c.Archivo}: {c.Detalle}");
             foreach (var m in l.Mcis)
             {
                 string mci = m.Mci.Numero ?? m.Archivo;
@@ -1285,6 +1342,32 @@ namespace WebSGV.Services.Despachos
                     DbHelper.Param("@usuario", (object)usuario ?? DBNull.Value));
             });
             return (ft, dt);
+        }
+
+        /// <summary>
+        /// CPIC cuyo pedido venía en la lectura con guías por elegir (<see cref="CpicBandeja.EsperaSuPedido"/>): si el
+        /// usuario eligió el camión y el pedido se acaba de registrar, se vuelve a resolver (ya hay despachos con su
+        /// factura comercial) y sus MCI quedan tras ella. Si no eligió, sigue sin registrarse con su motivo.
+        /// </summary>
+        private static void ReevaluarCpicsQueEsperabanSuPedido(LecturaBandeja l, ResultadoBandeja r)
+        {
+            foreach (var c in l.Cpics.Where(x => x.EsperaSuPedido && x.Estado == EstadoAduanaBandeja.NoSeRegistra).ToList())
+            {
+                var pedido = l.Pedidos.FirstOrDefault(p => string.Equals(p.Pedido.Factura?.NumeroFactura, c.Cpic.FacturaComercial, StringComparison.OrdinalIgnoreCase));
+                if (pedido == null || !pedido.Guias.Any(g => g.Estado == EstadoGuiaBandeja.Unida || g.Estado == EstadoGuiaBandeja.Nueva)) continue;
+                try
+                {
+                    ResolverCpic(l, c);
+                    if (c.Estado != EstadoAduanaBandeja.Registrar) continue;
+                    foreach (var m in l.Mcis.Where(x => x.Mci.CartaPorte == c.Cpic.Numero && x.Estado == EstadoAduanaBandeja.NoSeRegistra && x.Mci.Numero != null))
+                        m.Estado = EstadoAduanaBandeja.TrasSuCpic;   // se resuelven en RegistrarMcis, tras su CPIC
+                }
+                catch (Exception ex)
+                {
+                    LogSGV.Error(ex, "Bandeja: no se pudo volver a resolver la CPIC {Numero}", c.Cpic.Numero);
+                    r.Errores.Add($"CPIC {c.Cpic.Numero}: {MensajeErrorHelper.ParaUsuario(ex)}");
+                }
+            }
         }
 
         private static void RegistrarCpics(LecturaBandeja l, string usuario, string raiz, ResultadoBandeja r)
