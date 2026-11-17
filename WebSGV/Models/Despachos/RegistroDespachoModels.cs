@@ -41,6 +41,12 @@ namespace WebSGV.Models.Despachos
         public DateTime FechaCreacion { get; set; }
         public string UsuarioCreacion { get; set; }
 
+        /// <summary>
+        /// El último "Finalizar lote" perdió la conexión al confirmar: no se sabe si se guardó. Mientras esté puesta,
+        /// no se vuelve a finalizar (duplicaría los despachos): el usuario revisa la lista y cancela el lote.
+        /// </summary>
+        public bool CommitEnDuda { get; set; }
+
         public LoteDespachos()
         {
             Conductores = new List<ConductorLote>();

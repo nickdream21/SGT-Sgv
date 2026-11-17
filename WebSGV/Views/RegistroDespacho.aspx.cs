@@ -385,7 +385,9 @@ namespace WebSGV.Views
                 PlacaCarreta = c.PlacaCarreta,
                 GuiaRemitente = c.GuiaRemitente ?? "N/A",
                 GuiaTransportista = c.GuiaTransportista ?? "N/A",
+                // Texto plano (sin HTML): la celda lo codifica en CeldaCarga
                 Carga = ResumenCarga(c.Carga),
+                LotesCarga = LotesDeCarga(c.Carga),
                 EstadoViaje = c.EstadoViaje ?? "Por asignar",
                 Manifiesto = !esInternacional ? "N/A" : (c.TieneManifiestos ? "✓ Completo" : (c.TieneAlgunManifiesto ? "Parcial" : "Pendiente"))
             }).ToList();
@@ -547,8 +549,7 @@ namespace WebSGV.Views
                         MostrarMensaje("Lote iniciado exitosamente. Ahora puede agregar conductores.", "success");
 
                     // Scroll a la sección de conductores
-                    ScriptManager.RegisterStartupScript(this, this.GetType(),
-                        "scrollToConductores", "scrollToConductores();", true);
+                    LlamarFuncionJsAlCargar("scrollToConductores", "scrollToConductores");
                 }
             }
             catch (Exception ex)
@@ -904,9 +905,7 @@ namespace WebSGV.Views
             // chocaría contra sí misma al guardar sin cambiar de placa.
             if (TieneLoteActivo)
             {
-                var otros = LoteActual.Conductores
-                    .Where((c, i) => i != IndiceEnEdicion)
-                    .ToList();
+                var otros = FinalizarLoteService.OtrosConductores(LoteActual.Conductores, IndiceEnEdicion);
 
                 int idConductor = Convert.ToInt32(ddlConductor.SelectedValue);
                 if (otros.Any(c => c.IdConductor == idConductor))
@@ -923,6 +922,11 @@ namespace WebSGV.Views
                 {
                     errores.Add("La placa de carreta seleccionada ya fue asignada a otro conductor en este lote");
                 }
+
+                // La misma guía en dos conductores bloquearía "Finalizar lote": se rechaza aquí
+                string guiaRepetida = FinalizarLoteService.GuiaRepetidaEnOtros(otros, txtGuiaRemitente.Text);
+                if (guiaRepetida != null)
+                    errores.Add(guiaRepetida);
             }
 
             if (errores.Count > 0)
@@ -1166,10 +1170,24 @@ namespace WebSGV.Views
 
                 // Todo o nada (FinalizarLoteService): si algo falla no se guarda nada y el lote sigue activo para reintentar.
                 var lote = LoteActual;
+
+                // Intento anterior sin confirmar: no se reintenta (duplicaría los despachos si sí se guardó)
+                string bloqueo = FinalizarLoteService.MotivoNoReintentar(lote);
+                if (bloqueo != null)
+                {
+                    MostrarMensaje(bloqueo, "danger");
+                    return;
+                }
+
                 var resultado = FinalizarLoteService.Finalizar(lote, DocumentoHelper.RaizFisicaUploads(Server));
 
                 if (!resultado.Ok)
                 {
+                    if (resultado.CommitEnDuda)
+                    {
+                        lote.CommitEnDuda = true;
+                        LoteActual = lote;   // la marca queda en el lote de sesión
+                    }
                     MostrarMensaje("No se pudo finalizar el lote:", resultado.Errores, "danger");
                     return;
                 }
@@ -2486,12 +2504,28 @@ namespace WebSGV.Views
             return sb.ToString();
         }
 
-        /// <summary>Resumen corto para la tabla de conductores del lote.</summary>
+        /// <summary>Resumen corto (texto plano) para la tabla de conductores del lote; null si no hay carga.</summary>
         private static string ResumenCarga(IList<LineaCarga> lineas)
         {
-            if (lineas == null || lineas.Count == 0) return "<span class=\"rd-sin-datos\">—</span>";
-            string lotes = string.Join(", ", lineas.Select(l => l.Lote).Where(l => l != null).Distinct());
-            return $"<span title=\"{Html(lotes)}\">{lineas.Sum(l => l.Cantidad):N0} bolsas · {lineas.Sum(l => l.PesoBrutoKg ?? 0):N1} kg</span>";
+            if (lineas == null || lineas.Count == 0) return null;
+            return $"{lineas.Sum(l => l.Cantidad):N0} bolsas · {lineas.Sum(l => l.PesoBrutoKg ?? 0):N1} kg";
+        }
+
+        /// <summary>Lotes de la carga (texto plano), para el título de la celda.</summary>
+        private static string LotesDeCarga(IList<LineaCarga> lineas) =>
+            lineas == null ? null : string.Join(", ", lineas.Select(l => l.Lote).Where(l => l != null).Distinct());
+
+        /// <summary>Celda "Carga" de la tabla de conductores: codifica el texto y pone "—" atenuado si no hay carga.</summary>
+        public static string CeldaCarga(object resumen, object lotes)
+        {
+            string texto = Convert.ToString(resumen);
+            if (string.IsNullOrWhiteSpace(texto))
+                return "<span class=\"rd-sin-datos\">—</span>";
+
+            string titulo = Convert.ToString(lotes);
+            return string.IsNullOrEmpty(titulo)
+                ? Html(texto)
+                : $"<span title=\"{Html(titulo)}\">{Html(texto)}</span>";
         }
 
         private static string Html(string texto) => HttpUtility.HtmlEncode(texto ?? string.Empty);
@@ -3163,12 +3197,13 @@ namespace WebSGV.Views
 
                 // Actualizar el span del modal con el nombre del conductor
                 spanConductorModal.InnerText = nombreConductor;
+                UpdatePanelTituloModal.Update();
 
                 // Cargar historial de viajes desde la BD
                 CargarHistorialViajes(idConductor);
 
                 // Abrir el modal Bootstrap via script
-                ScriptManager.RegisterStartupScript(this, this.GetType(), "showModal", "showHistorialModal();", true);
+                LlamarFuncionJsAlCargar("showModal", "showHistorialModal");
             }
             catch (Exception ex)
             {
@@ -3289,7 +3324,7 @@ namespace WebSGV.Views
         private void MostrarMensajeConductor(string mensaje, string tipo)
         {
             lblMensajeConductor.Text = HttpUtility.HtmlEncode(mensaje ?? string.Empty);
-            lblMensajeConductor.CssClass = $"alert alert-{tipo} alert-dismissible fade show d-block mb-0 pe-5";
+            lblMensajeConductor.CssClass = $"alert alert-{tipo} alert-dismissible fade show d-block mb-0 pr-5";
             pnlMensajeConductor.Visible = true;
             pnlMensajes.Visible = false;   // evitar el mismo aviso duplicado arriba
             UpdatePanelMain.Update();
@@ -3358,6 +3393,19 @@ namespace WebSGV.Views
                 ScriptManager.RegisterStartupScript(this, GetType(), "verMensaje",
                     $"(function(){{function ir(){{setTimeout(function(){{var m=document.getElementById('{lblMensaje.ClientID}');if(m)m.scrollIntoView({{behavior:'smooth',block:'center'}});}},100);}}" +
                     "if(document.readyState==='complete')ir();else window.addEventListener('load',ir);})();", true);
+        }
+
+        /// <summary>
+        /// Llama a una función de <c>Scripts/paginas/RegistroDespacho.js</c> desde el servidor. En un postback completo
+        /// el startup script se pinta dentro del form, antes de que cargue ese .js (va al final de la página): se
+        /// espera al "load" (también deja actuar antes a MaintainScrollPositionOnPostback). En un postback parcial
+        /// la página ya está cargada y se llama enseguida. <paramref name="funcion"/> es un nombre fijo, nunca dato.
+        /// </summary>
+        private void LlamarFuncionJsAlCargar(string clave, string funcion)
+        {
+            ScriptManager.RegisterStartupScript(this, GetType(), clave,
+                $"(function(){{function ir(){{if(typeof window['{funcion}']==='function')window['{funcion}']();}}" +
+                "if(document.readyState==='complete')ir();else window.addEventListener('load',ir);})();", true);
         }
 
         private void MostrarMensajeRecuperacion()

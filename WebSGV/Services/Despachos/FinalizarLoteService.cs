@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -17,6 +17,9 @@ namespace WebSGV.Services.Despachos
         public List<string> Errores { get; } = new List<string>();
         public int? IdFactura { get; set; }
         public int? IdCpic { get; set; }
+
+        /// <summary>Se perdió la conexión al confirmar: no se sabe si el lote quedó guardado.</summary>
+        public bool CommitEnDuda { get; set; }
 
         /// <summary>Despachos nuevos (<c>sp_CrearDespacho</c>).</summary>
         public List<int> IdsCreados { get; } = new List<int>();
@@ -138,6 +141,27 @@ namespace WebSGV.Services.Despachos
                 .Select(g => $"La guía de remitente {g.Key} está en más de un conductor del lote ({string.Join(", ", g.Select(c => c.NombreConductor))}).")
                 .ToList();
 
+        /// <summary>
+        /// Los conductores del lote contra los que se valida al agregar o editar: todos menos la fila en edición
+        /// (<paramref name="indiceEnEdicion"/>, -1 si se está agregando), que si no chocaría contra sí misma.
+        /// </summary>
+        public static List<ConductorLote> OtrosConductores(IEnumerable<ConductorLote> conductores, int indiceEnEdicion) =>
+            (conductores ?? Enumerable.Empty<ConductorLote>()).Where((c, i) => i != indiceEnEdicion).ToList();
+
+        /// <summary>
+        /// "Agregar conductor" / editar: mensaje si <paramref name="guia"/> ya está en otro conductor del lote (mismo
+        /// criterio que <see cref="GuiasRepetidasEnLote"/>: sin espacios en los extremos y sin distinguir mayúsculas);
+        /// null si no se repite. <paramref name="otros"/> excluye la fila que se está editando.
+        /// </summary>
+        public static string GuiaRepetidaEnOtros(IEnumerable<ConductorLote> otros, string guia)
+        {
+            string clave = Limpio(guia);
+            if (clave == null || otros == null) return null;
+            var repetido = otros.FirstOrDefault(c => string.Equals(Limpio(c.GuiaRemitente), clave, StringComparison.OrdinalIgnoreCase));
+            return repetido == null ? null
+                : $"La guía de remitente {clave} ya está en otro conductor del lote ({repetido.NombreConductor})";
+        }
+
         /// <summary>Guía de remitente ya usada en otro despacho activo del mismo cliente y la misma operación.</summary>
         private static IEnumerable<string> GuiasRepetidasEnBd(LoteDespachos lote)
         {
@@ -178,6 +202,15 @@ namespace WebSGV.Services.Despachos
             if (lote == null || lote.CantidadConductores == 0)
             {
                 r.Errores.Add("Debe agregar al menos un conductor antes de finalizar el lote.");
+                return r;
+            }
+
+            // Red de seguridad: la página ya no llama aquí con la marca puesta
+            string bloqueo = MotivoNoReintentar(lote);
+            if (bloqueo != null)
+            {
+                r.CommitEnDuda = true;
+                r.Errores.Add(bloqueo);
                 return r;
             }
 
@@ -257,12 +290,22 @@ namespace WebSGV.Services.Despachos
                     scope.Complete();
                 }   // el commit ocurre aquí; si falla, lanza y cae en el catch
             }
+            catch (TransactionInDoubtException ex)
+            {
+                // No se sabe si el commit llegó a la BD: si se guardó, las copias definitivas son los PDF de los
+                // documentos ya registrados. No se borran ni las copias ni los _temp.
+                LogSGV.Error(ex, "Finalizar lote: commit en duda (cliente {Cliente}, pedido {Pedido}); copias conservadas: {Copias}",
+                    lote.IdCliente, lote.NumeroPedido, string.Join("; ", copias));
+                r.CommitEnDuda = true;
+                r.Errores.Add(MensajeFallo(ex, paso));
+                return r;
+            }
             catch (Exception ex)
             {
                 BorrarCopias(copias);
                 LogSGV.Error(ex, "Finalizar lote: no se guardó nada (cliente {Cliente}, pedido {Pedido}, paso {Paso})",
                     lote.IdCliente, lote.NumeroPedido, paso);
-                r.Errores.Add($"No se guardó nada. {paso}: {MensajeErrorHelper.ParaUsuario(ex)}");
+                r.Errores.Add(MensajeFallo(ex, paso));
                 return r;
             }
 
@@ -287,6 +330,29 @@ namespace WebSGV.Services.Despachos
                     $"CPIC {doc.NumeroCPIC} registrada al finalizar el lote de despachos (pedido {lote.NumeroPedido})");
             AuditoriaHelper.Registrar("INSERT", "Despachos", null, DescripcionAuditoria(lote, creados, completados, idFactura, idCpic));
             return r;
+        }
+
+        /// <summary>Texto del commit en duda: no se sabe si el lote quedó guardado.</summary>
+        public const string MensajeCommitEnDuda =
+            "No se pudo confirmar si el lote se guardó (se perdió la conexión al confirmar). Revise Lista de despachos antes de seguir: si el lote no figura, cancélelo y vuelva a iniciarlo.";
+
+        /// <summary>Texto de "Finalizar lote" cuando el intento anterior quedó sin confirmar.</summary>
+        public const string MensajeNoReintentar =
+            "El último intento quedó sin confirmar. Revise Lista de despachos: si el lote ya figura, cancele este lote; si no figura, cancélelo y vuelva a iniciarlo.";
+
+        /// <summary>
+        /// Null si el lote se puede finalizar; si el último intento quedó en duda (<see cref="LoteDespachos.CommitEnDuda"/>),
+        /// el motivo: reintentar duplicaría los despachos si el commit sí había entrado (sin factura, CPIC ni guía nada lo
+        /// detecta en <see cref="Revalidar"/>).
+        /// </summary>
+        public static string MotivoNoReintentar(LoteDespachos lote) =>
+            lote != null && lote.CommitEnDuda ? MensajeNoReintentar : null;
+
+        /// <summary>Mensaje para el usuario cuando falla la transacción de <see cref="Finalizar"/>.</summary>
+        public static string MensajeFallo(Exception ex, string paso)
+        {
+            if (ex is TransactionInDoubtException) return MensajeCommitEnDuda;
+            return $"No se guardó nada. {paso}: {MensajeErrorHelper.ParaUsuario(ex)}";
         }
 
         /// <summary>Descripción de la auditoría del lote: cliente, operación, planta, documentos e ids creados/completados.</summary>

@@ -73,6 +73,7 @@ namespace WebSGV.Tests
             "MostrarDato(",               // RegistroDespacho: HtmlEncode
             "ChipManifiesto(",            // RegistroDespacho: solo textos fijos
             "ChipEstadoViaje(",           // RegistroDespacho: HtmlEncode
+            "CeldaCarga(",                // RegistroDespacho: HtmlEncode del resumen y del título (lotes)
             "EtiquetaObservada(",         // LiquidacionesPendientes: HtmlAttributeEncode
             "UltimaPosicion(",            // ReporteGps: HtmlEncode / HtmlAttributeEncode
             "FormatObservaciones(",       // ReporteAbastecimiento: HtmlEncode

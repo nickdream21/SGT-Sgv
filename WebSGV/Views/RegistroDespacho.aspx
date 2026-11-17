@@ -1016,7 +1016,7 @@
                                                     <div class="mt-2">
                                                         <asp:Button ID="btnCancelarLote" runat="server" 
                                                             Text="Cancelar lote" 
-                                                            CssClass="btn btn-outline-danger btn-sm me-2"
+                                                            CssClass="btn btn-outline-danger btn-sm mr-2"
                                                             OnClick="btnCancelarLote_Click"
                                                             CausesValidation="false"
                                                             OnClientClick="return confirm('¿Está seguro de cancelar este lote? Se perderán todos los datos.');" />
@@ -1054,7 +1054,7 @@
                                                  para que el usuario no tenga que subir a enterarse del error. -->
                                             <asp:Panel ID="pnlMensajeConductor" runat="server" Visible="false" CssClass="mb-3">
                                                 <div class="position-relative">
-                                                    <asp:Label ID="lblMensajeConductor" runat="server" CssClass="alert d-block mb-0 pe-5"></asp:Label>
+                                                    <asp:Label ID="lblMensajeConductor" runat="server" CssClass="alert d-block mb-0 pr-5"></asp:Label>
                                                     <button type="button" class="close position-absolute" style="top:.65rem;right:.75rem;"
                                                         onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                                                 </div>
@@ -1386,7 +1386,7 @@
                                                         <ItemTemplate><%# MostrarDato(Eval("GuiaRemitente")) %></ItemTemplate>
                                                     </asp:TemplateField>
                                                     <asp:TemplateField HeaderText="Carga">
-                                                        <ItemTemplate><%#: Eval("Carga") %></ItemTemplate>
+                                                        <ItemTemplate><%# CeldaCarga(Eval("Carga"), Eval("LotesCarga")) %></ItemTemplate>
                                                     </asp:TemplateField>
                                                     <asp:TemplateField HeaderText="Guía transportista">
                                                         <ItemTemplate><%# MostrarDato(Eval("GuiaTransportista")) %></ItemTemplate>
@@ -1462,7 +1462,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalHistorialViajesLabel">
-                        <i class="fas fa-history"></i> Historial de viajes - <span id="spanConductorModal" runat="server"></span>
+                        <i class="fas fa-history"></i> Historial de viajes - <%-- Dentro de su UpdatePanel: si no, el postback parcial no refresca el nombre --%><asp:UpdatePanel ID="UpdatePanelTituloModal" runat="server" UpdateMode="Conditional" RenderMode="Inline"><ContentTemplate><span id="spanConductorModal" runat="server"></span></ContentTemplate></asp:UpdatePanel>
                     </h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                 </div>
@@ -1515,7 +1515,7 @@
             <div class="loading-overlay">
                 <div class="loading-content">
                     <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Cargando...</span>
+                        <span class="sr-only">Cargando...</span>
                     </div>
                     <div class="mt-2">Procesando...</div>
                 </div>

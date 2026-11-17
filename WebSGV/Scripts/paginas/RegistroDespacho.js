@@ -59,8 +59,8 @@ function setDefaultDate() {
 
 // Función para mostrar el modal de historial
 function showHistorialModal() {
-    var modal = new bootstrap.Modal(document.getElementById('modalHistorialViajes'));
-    modal.show();
+    // Bootstrap 4 (Site.Master): API de jQuery, no `new bootstrap.Modal` (Bootstrap 5)
+    $('#modalHistorialViajes').modal('show');
 }
 
 // Formulario manual (Configuración base) plegable: se recuerda en un campo oculto para
