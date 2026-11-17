@@ -45,6 +45,26 @@ namespace WebSGV.Views
             set { ViewState["LoteSeleccionadoId"] = value; }
         }
 
+        /// <summary>
+        /// El lote abierto es un lote anulado (filtro "Anulados" -> "Ver unidades"): solo consulta.
+        /// Su id virtual puede coincidir con el de un lote activo registrado después con la misma
+        /// clave, y las escrituras resuelven los ids con lecturas de solo activos: por eso toda
+        /// acción que escribe se rechaza mientras este indicador está activo.
+        /// </summary>
+        private bool LoteSeleccionadoAnulado
+        {
+            get { return ViewState["LoteSeleccionadoAnulado"] as bool? ?? false; }
+            set { ViewState["LoteSeleccionadoAnulado"] = value; }
+        }
+
+        /// <summary>Si el lote abierto está anulado, avisa y devuelve true (la acción que escribe no sigue).</summary>
+        private bool RechazarSiLoteAnulado()
+        {
+            if (!LoteSeleccionadoAnulado) return false;
+            MostrarMensaje("El lote está anulado: solo se puede consultar.", "warning");
+            return true;
+        }
+
         #endregion
 
         #region Métodos Helper para DBNull
@@ -480,15 +500,15 @@ namespace WebSGV.Views
         private List<DespachoViaje> ObtenerDespachosDelLote(string idLoteVirtual)
             => ListaDespachosService.ObtenerDespachosDelLote(idLoteVirtual);
 
-        private void CargarDespachosLote(string idLoteVirtual)
+        private void CargarDespachosLote(string idLoteVirtual, bool anulado = false)
         {
             try
             {
-                List<DespachoViaje> despachos = ObtenerDespachosDelLote(idLoteVirtual);
+                List<DespachoViaje> despachos = ListaDespachosService.ObtenerDespachosDelLote(idLoteVirtual, anulado);
                 gvDespachosLote.DataSource = despachos;
                 gvDespachosLote.DataBind();
 
-                ActualizarInformacionLoteDetalle(idLoteVirtual);
+                ActualizarInformacionLoteDetalle(idLoteVirtual, anulado);
             }
             catch (Exception ex)
             {
@@ -497,9 +517,11 @@ namespace WebSGV.Views
             }
         }
 
-        private void ActualizarInformacionLoteDetalle(string idLoteVirtual)
+        private void ActualizarInformacionLoteDetalle(string idLoteVirtual, bool anulado = false)
         {
-            var lote = ObtenerLotePorId(idLoteVirtual);
+            var lote = ListaDespachosService.ObtenerLotePorId(idLoteVirtual, anulado);
+            if (lote == null && anulado)
+                MostrarMensaje("No se encontró el lote anulado. Recargue la lista e intente de nuevo.", "warning");
             if (lote != null)
             {
                 lblClienteDetalleLote.Text = System.Web.HttpUtility.HtmlEncode(lote.NombreCliente);
@@ -719,6 +741,10 @@ namespace WebSGV.Views
                 {
                     MostrarDetallesLote(idLoteVirtual);
                 }
+                else if (e.CommandName == "VerDetallesLoteAnulado")
+                {
+                    MostrarDetallesLote(idLoteVirtual, anulado: true);
+                }
                 else if (e.CommandName == "VerManifiestosLote")
                 {
                     IrAlExpediente(idLoteVirtual);
@@ -804,6 +830,7 @@ namespace WebSGV.Views
 
         protected void btnEditarDesdeDetal_Click(object sender, EventArgs e)
         {
+            if (RechazarSiLoteAnulado()) return;
             if (!string.IsNullOrEmpty(LoteSeleccionadoId))
             {
                 MostrarEdicionLote(LoteSeleccionadoId);
@@ -812,6 +839,7 @@ namespace WebSGV.Views
 
         protected void btnGestionarManifiestos_Click(object sender, EventArgs e)
         {
+            if (RechazarSiLoteAnulado()) return;
             if (!string.IsNullOrEmpty(LoteSeleccionadoId))
                 IrAlExpediente(LoteSeleccionadoId);
         }
@@ -850,6 +878,7 @@ namespace WebSGV.Views
 
         protected void btnGuardarCambios_Click(object sender, EventArgs e)
         {
+            if (RechazarSiLoteAnulado()) return;
             try
             {
                 if (Page.IsValid && ValidarEdicionLote())
@@ -971,6 +1000,7 @@ namespace WebSGV.Views
 
         protected void btnAnularLote_Click(object sender, EventArgs e)
         {
+            if (RechazarSiLoteAnulado()) return;
             try
             {
                 if (string.IsNullOrEmpty(LoteSeleccionadoId))
@@ -1033,6 +1063,7 @@ namespace WebSGV.Views
 
         private void MostrarListaViajes()
         {
+            LoteSeleccionadoAnulado = false;
             ViajeSeleccionadoId = null;
             LoteSeleccionadoId = null;
 
@@ -1049,6 +1080,7 @@ namespace WebSGV.Views
 
         private void MostrarListaLotes()
         {
+            LoteSeleccionadoAnulado = false;
             ViajeSeleccionadoId = null;
             LoteSeleccionadoId = null;
 
@@ -1065,6 +1097,7 @@ namespace WebSGV.Views
 
         private void MostrarDetallesViaje(int idViajeProgreso)
         {
+            LoteSeleccionadoAnulado = false;
             ViajeSeleccionadoId = idViajeProgreso;
             LoteSeleccionadoId = null;
 
@@ -1080,6 +1113,7 @@ namespace WebSGV.Views
 
         private void MostrarEdicionLote(string idLoteVirtual)
         {
+            LoteSeleccionadoAnulado = false;
             ViajeSeleccionadoId = null;
             LoteSeleccionadoId = idLoteVirtual;
 
@@ -1093,8 +1127,14 @@ namespace WebSGV.Views
             CargarDatosEdicionLote(idLoteVirtual);
         }
 
-        private void MostrarDetallesLote(string idLoteVirtual)
+        /// <summary>
+        /// Detalle del lote. Con <paramref name="anulado"/> = true abre el lote anulado en solo lectura:
+        /// lee sus despachos inactivos, oculta "Documentos" y "Editar lote" y muestra el aviso; las
+        /// acciones que escriben quedan bloqueadas por <see cref="RechazarSiLoteAnulado"/>.
+        /// </summary>
+        private void MostrarDetallesLote(string idLoteVirtual, bool anulado = false)
         {
+            LoteSeleccionadoAnulado = anulado;
             ViajeSeleccionadoId = null;
             LoteSeleccionadoId = idLoteVirtual;
 
@@ -1105,11 +1145,16 @@ namespace WebSGV.Views
             pnlDetallesLote.Visible = true;
             pnlManifiestosLote.Visible = false;
 
-            CargarDespachosLote(idLoteVirtual);
+            pnlAvisoLoteAnulado.Visible = anulado;
+            btnGestionarManifiestos.Visible = !anulado;
+            btnEditarDesdeDetal.Visible = !anulado;
+
+            CargarDespachosLote(idLoteVirtual, anulado);
         }
 
         private void MostrarManifiestosLote(string idLoteVirtual)
         {
+            LoteSeleccionadoAnulado = false;
             ViajeSeleccionadoId = null;
             LoteSeleccionadoId = idLoteVirtual;
 
@@ -1360,6 +1405,7 @@ namespace WebSGV.Views
 
         protected void btnGuardarGuias_Click(object sender, EventArgs e)
         {
+            if (RechazarSiLoteAnulado()) return;
             if (string.IsNullOrEmpty(LoteSeleccionadoId)) return;
             try
             {
@@ -1414,6 +1460,7 @@ namespace WebSGV.Views
 
         protected void btnRegistrarFactura_Click(object sender, EventArgs e)
         {
+            if (RechazarSiLoteAnulado()) return;
             if (string.IsNullOrEmpty(LoteSeleccionadoId)) return;
             try
             {
@@ -1457,6 +1504,7 @@ namespace WebSGV.Views
 
         protected void btnRegistrarCpic_Click(object sender, EventArgs e)
         {
+            if (RechazarSiLoteAnulado()) return;
             if (string.IsNullOrEmpty(LoteSeleccionadoId)) return;
             try
             {
@@ -1510,6 +1558,7 @@ namespace WebSGV.Views
         /// </summary>
         private void SubirPdfDocumentoBase(FileUpload control, int? idDocumentoBase, bool esFactura)
         {
+            if (RechazarSiLoteAnulado()) return;
             if (string.IsNullOrEmpty(LoteSeleccionadoId)) return;
             string documento = esFactura ? "la factura" : "el CPIC";
             string deDocumento = esFactura ? "de la factura" : "del CPIC";
@@ -1605,6 +1654,7 @@ namespace WebSGV.Views
 
         protected void gvManifiestosLote_RowCommand(object sender, GridViewCommandEventArgs e)
         {
+            if (RechazarSiLoteAnulado()) return;
             try
             {
                 if (e.CommandName == "GuardarManifiesto")
@@ -1638,6 +1688,13 @@ namespace WebSGV.Views
 
         private void GuardarManifiestoDesdeFila(int idDespacho, FileUpload fileCruce, FileUpload fileRetorno)
         {
+            // El despacho del botón tiene que ser de este lote y estar activo (el CommandArgument llega del cliente).
+            if (string.IsNullOrEmpty(LoteSeleccionadoId) || !ObtenerIdsDespachosDeLote(LoteSeleccionadoId).Contains(idDespacho))
+            {
+                MostrarMensajeManifiesto("El despacho no pertenece a este lote o ya no está activo. Recargue la página.", "warning");
+                return;
+            }
+
             int guardados = 0;
             List<string> errores = new List<string>();
 
@@ -1709,8 +1766,18 @@ namespace WebSGV.Views
             string rutaRelativa = $"~/Uploads/Manifiesto/{carpetaAno}/{carpetaMes}/{nombreArchivo}";
             long tamano = new FileInfo(rutaDestino).Length;
 
-            ManifiestoService.InsertarDocumentoManifiesto(idDespacho, tipo, nombreOriginal, nombreArchivo,
-                rutaRelativa, extension, tamano, ObtenerUsuarioActual());
+            try
+            {
+                ManifiestoService.InsertarDocumentoManifiesto(idDespacho, tipo, nombreOriginal, nombreArchivo,
+                    rutaRelativa, extension, tamano, ObtenerUsuarioActual());
+            }
+            catch
+            {
+                // Sin registro el archivo quedaría huérfano en disco; el error original sigue su curso.
+                try { File.Delete(rutaDestino); }
+                catch (Exception exBorrar) { LogSGV.Error(exBorrar, "No se pudo borrar el manifiesto huérfano {Ruta}", rutaRelativa); }
+                throw;
+            }
 
             AuditoriaHelper.Registrar("INSERT", "DocumentosManifiesto", idDespacho.ToString(),
                 $"Manifiesto {tipo} adjuntado - Despacho: {idDespacho}");

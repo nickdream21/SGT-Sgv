@@ -1348,10 +1348,20 @@ namespace WebSGV.Views
 
                 File.Move(rutaTemp, rutaDestino);
 
-                ManifiestoService.InsertarDocumentoManifiesto(
-                    idDespacho, tipo, nombreOriginal, nombreArchivo,
-                    $"~/Uploads/Manifiesto/{carpetaAno}/{carpetaMes}/{nombreArchivo}",
-                    extension, new FileInfo(rutaDestino).Length, usuario);
+                try
+                {
+                    ManifiestoService.InsertarDocumentoManifiesto(
+                        idDespacho, tipo, nombreOriginal, nombreArchivo,
+                        $"~/Uploads/Manifiesto/{carpetaAno}/{carpetaMes}/{nombreArchivo}",
+                        extension, new FileInfo(rutaDestino).Length, usuario);
+                }
+                catch
+                {
+                    // Sin registro el archivo quedaría huérfano en disco; el error original lo registra el catch de abajo.
+                    try { File.Delete(rutaDestino); }
+                    catch (Exception exBorrar) { RegistrarError($"MoverManifiestoADefinitivo.BorrarHuerfano.Despacho:{idDespacho}", exBorrar); }
+                    throw;
+                }
             }
             catch (Exception ex)
             {

@@ -1264,7 +1264,16 @@ namespace WebSGV.Services.Despachos
                     }
                     if (string.IsNullOrEmpty(raiz)) { r.ManifiestosAdjuntados++; continue; }   // prueba sin disco
                     string ruta = GuardarArchivo(raiz, "Manifiesto", $"MANIFIESTO_{m.Tipo}_{m.IdDespacho}", m.Pdf, out string nombre);
-                    ManifiestoService.InsertarDocumentoManifiesto(m.IdDespacho.Value, m.Tipo, m.Archivo, nombre, ruta, ".pdf", m.Pdf.LongLength, usuario);
+                    try
+                    {
+                        ManifiestoService.InsertarDocumentoManifiesto(m.IdDespacho.Value, m.Tipo, m.Archivo, nombre, ruta, ".pdf", m.Pdf.LongLength, usuario);
+                    }
+                    catch
+                    {
+                        // Sin registro el archivo quedaría huérfano en disco (p. ej. despacho anulado entre la vista previa y el guardado).
+                        BorrarArchivoSinError(raiz, ruta);
+                        throw;
+                    }
                     r.ManifiestosAdjuntados++;
                     AuditoriaHelper.Registrar("INSERT", "DocumentosManifiesto", m.IdDespacho.Value,
                         $"Bandeja de documentos: MCI {m.Mci.Numero} ({m.Tipo}) adjuntado al despacho {m.IdDespacho} desde {m.Archivo}");
@@ -1279,6 +1288,26 @@ namespace WebSGV.Services.Despachos
         }
 
         /// <summary>Guarda un PDF en ~/Uploads/{carpeta}/aaaa/mm/{prefijo}_fecha.pdf y devuelve su ruta virtual.</summary>
+        /// <summary>
+        /// Borra un archivo que <see cref="GuardarArchivo"/> acaba de escribir (ruta "~/Uploads/..."), cuando su
+        /// registro en la BD falló. Un fallo al borrar solo se registra: no debe ocultar el error original.
+        /// </summary>
+        private static void BorrarArchivoSinError(string raiz, string rutaVirtual)
+        {
+            try
+            {
+                const string prefijo = "~/Uploads/";
+                if (string.IsNullOrEmpty(rutaVirtual) || !rutaVirtual.StartsWith(prefijo, StringComparison.OrdinalIgnoreCase)) return;
+                string fisica = Path.Combine(raiz, rutaVirtual.Substring(prefijo.Length).Replace('/', Path.DirectorySeparatorChar));
+                if (DocumentoHelper.EstaDentroDe(fisica, raiz) && File.Exists(fisica))
+                    File.Delete(fisica);
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Bandeja: no se pudo borrar el archivo huérfano {Ruta}", rutaVirtual);
+            }
+        }
+
         private static string GuardarArchivo(string raiz, string carpeta, string prefijo, byte[] pdf, out string nombre)
         {
             DateTime ahora = FechaHelper.Ahora();

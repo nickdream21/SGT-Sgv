@@ -2,9 +2,14 @@
 -- Obtiene despachos por una lista de IDs (separados por coma).
 -- Usa STRING_SPLIT (SQL Server 2016+).
 -- Reemplaza concatenacion insegura de IDs en C#.
+--
+-- @incluirAnulados (2026-11-17, opcional): 0 (por defecto) = solo activos, como
+-- siempre; 1 = tambien los despachos de un lote anulado (activo = 0 y ANULADO),
+-- para el detalle en solo lectura de ListaDespachos.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_ObtenerDespachosPorIds
-    @idsDespachos VARCHAR(MAX)   -- Lista separada por comas: '1,2,3'
+    @idsDespachos    VARCHAR(MAX),   -- Lista separada por comas: '1,2,3'
+    @incluirAnulados BIT = 0
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -41,6 +46,6 @@ BEGIN
     LEFT  JOIN ViajesEnProgreso vp ON d.idViajeProgreso = vp.idViajeProgreso
     LEFT  JOIN CPIC           cp ON d.idCPIC      = cp.idCPIC
     WHERE d.idDespacho IN (SELECT CAST(value AS INT) FROM STRING_SPLIT(@idsDespachos, ','))
-      AND d.activo = 1
+      AND (d.activo = 1 OR (@incluirAnulados = 1 AND d.activo = 0 AND d.estadoDespacho = 'ANULADO'))
     ORDER BY d.fechaCreacion DESC;
 END

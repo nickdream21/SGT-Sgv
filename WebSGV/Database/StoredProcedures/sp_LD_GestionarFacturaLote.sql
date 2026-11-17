@@ -13,6 +13,8 @@
 --     lote. Antes, si un despacho ya tenia factura, solo se
 --     actualizaba y los demas quedaban sin ella; y la factura
 --     nueva se creaba sin cliente, pedido ni moneda (2026-11-02).
+--   * Un despacho anulado (activo = 0 o ANULADO) no se toca: si la
+--     lista trae alguno, THROW 50015 y no se escribe nada (2026-11-17).
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_GestionarFacturaLote
     @idsDespachos      VARCHAR(MAX),
@@ -26,6 +28,11 @@ BEGIN
 
     IF @idsDespachos IS NULL OR LEN(@idsDespachos) = 0
         RETURN;
+
+    IF EXISTS (SELECT 1 FROM Despachos d
+               WHERE d.idDespacho IN (SELECT TRY_CAST(LTRIM(RTRIM(value)) AS INT) FROM STRING_SPLIT(@idsDespachos, ','))
+                 AND (d.activo = 0 OR d.estadoDespacho = 'ANULADO'))
+        THROW 50015, N'El lote está anulado: solo se puede consultar.', 1;
 
     SET @numeroFactura = LTRIM(RTRIM(@numeroFactura));
     IF @numeroFactura IS NULL OR @numeroFactura = ''

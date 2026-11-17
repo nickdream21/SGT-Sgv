@@ -85,6 +85,32 @@ namespace WebSGV.Tests.Integracion
             Assert.Equal(0, Entero("SELECT CAST(activo AS INT) FROM Despachos WHERE idDespacho = @d", "@d", idDespacho));
         }
 
+        /// <summary>
+        /// Un lote activo (cliente, pedido, fecha, operación, ámbito, planta) sin despachos en viajes
+        /// liquidados: su id virtual y los ids de sus despachos activos.
+        /// </summary>
+        private static (string IdLote, System.Collections.Generic.List<int> Ids) LoteSinLiquidacion()
+        {
+            var clave = DbHelper.ConsultarTabla(@"
+                SELECT TOP 1 x.idCliente, x.fechaDespacho, MAX(x.idDespacho) AS idDespacho
+                FROM (
+                    SELECT d.*, CASE WHEN v.idViajeProgreso IS NOT NULL AND " + ViajeLiquidado + @" THEN 1 ELSE 0 END AS liquidado
+                    FROM Despachos d
+                    LEFT JOIN ViajesEnProgreso v ON v.idViajeProgreso = d.idViajeProgreso
+                    WHERE d.activo = 1 AND d.idPlanta IS NOT NULL
+                ) x
+                GROUP BY x.idCliente, ISNULL(x.numeroPedido, 'NOPEDIDO'), x.fechaDespacho, x.tipoOperacion, x.esInternacional, x.idPlanta
+                HAVING SUM(x.liquidado) = 0
+                ORDER BY MAX(x.idDespacho) DESC").Rows[0];
+            int idCliente = Convert.ToInt32(clave["idCliente"]);
+            DateTime fecha = Convert.ToDateTime(clave["fechaDespacho"]).Date;
+            int unDespacho = Convert.ToInt32(clave["idDespacho"]);
+
+            var lote = ListaDespachosService.ObtenerLotesRegistrados(idCliente, null, null, null, fecha, fecha, null)
+                .Single(l => ListaDespachosService.ObtenerIdsDespachosDeLote(l.IdLoteVirtual).Contains(unDespacho));
+            return (lote.IdLoteVirtual, ListaDespachosService.ObtenerIdsDespachosDeLote(lote.IdLoteVirtual));
+        }
+
         private static void AfirmarIntacto(int idDespacho)
         {
             Assert.Equal(1, Entero("SELECT CAST(activo AS INT) FROM Despachos WHERE idDespacho = @d", "@d", idDespacho));
@@ -222,6 +248,88 @@ namespace WebSGV.Tests.Integracion
             }
         }
 
+        [FactBD]
+        public void LoteAnulado_SeLeeSoloConElIndicadorAnulado()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var (idLote, ids) = LoteSinLiquidacion();
+                Assert.NotNull(ListaDespachosService.ObtenerLotePorId(idLote));
+
+                ListaDespachosService.AnularLote(string.Join(",", ids), "PRUEBA");
+
+                // Por defecto (lo que usan las escrituras de ListaDespachos) el lote ya no existe.
+                Assert.Null(ListaDespachosService.ObtenerLotePorId(idLote));
+                Assert.Empty(ListaDespachosService.ObtenerIdsDespachosDeLote(idLote));
+                Assert.Empty(ListaDespachosService.ObtenerDespachosDelLote(idLote));
+
+                // Con el indicador se abre el lote anulado, con todas sus unidades en ANULADO.
+                var anulado = ListaDespachosService.ObtenerLotePorId(idLote, anulado: true);
+                Assert.NotNull(anulado);
+                Assert.Equal("ANULADO", anulado.EstadoLote);
+                Assert.Subset(new System.Collections.Generic.HashSet<int>(anulado.IdsDespachos), new System.Collections.Generic.HashSet<int>(ids));
+                Assert.Equal(anulado.IdsDespachos.OrderBy(x => x), ListaDespachosService.ObtenerIdsDespachosDeLote(idLote, anulado: true).OrderBy(x => x));
+
+                var despachos = ListaDespachosService.ObtenerDespachosDelLote(idLote, anulado: true);
+                Assert.Equal(anulado.IdsDespachos.OrderBy(x => x), despachos.Select(d => d.IdDespacho).OrderBy(x => x));
+                Assert.All(despachos, d => Assert.Equal("ANULADO", d.EstadoDespacho));
+            }
+        }
+
+        /// <summary>
+        /// Compatibilidad con el C# publicado: llama a los SP de lectura SIN los parámetros nuevos
+        /// (@anulados, @incluirAnulados), como el sitio publicado, y no deben devolver los anulados.
+        /// </summary>
+        [FactBD]
+        public void LecturasSinParametrosNuevos_NoDevuelvenAnulados()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var (_, ids) = LoteSinLiquidacion();
+                var clave = DbHelper.ConsultarTabla(@"SELECT idCliente, fechaDespacho, tipoOperacion, esInternacional, idPlanta, numeroPedido
+                    FROM Despachos WHERE idDespacho = @d", DbHelper.Param("@d", ids[0])).Rows[0];
+
+                Func<System.Collections.Generic.List<int>> idsDelLote = () =>
+                    DbHelper.ConsultarTablaSp("sp_LD_ObtenerIdsDespachosDeLote",
+                            DbHelper.Param("@idCliente", clave["idCliente"]),
+                            DbHelper.Param("@fechaDespacho", clave["fechaDespacho"]),
+                            DbHelper.Param("@tipoOperacion", clave["tipoOperacion"]),
+                            DbHelper.Param("@esInternacional", clave["esInternacional"]),
+                            DbHelper.Param("@idPlanta", clave["idPlanta"]),
+                            DbHelper.Param("@numeroPedido", clave["numeroPedido"]))
+                        .Rows.Cast<DataRow>().Select(r => Convert.ToInt32(r["idDespacho"])).ToList();
+                Func<System.Collections.Generic.List<int>> despachosPorIds = () =>
+                    DbHelper.ConsultarTablaSp("sp_LD_ObtenerDespachosPorIds",
+                            DbHelper.Param("@idsDespachos", string.Join(",", ids)))
+                        .Rows.Cast<DataRow>().Select(r => Convert.ToInt32(r["idDespacho"])).ToList();
+
+                // Antes de anular, la llamada antigua ve el lote completo.
+                Assert.Equal(ids.OrderBy(x => x), idsDelLote().OrderBy(x => x));
+                Assert.Equal(ids.OrderBy(x => x), despachosPorIds().OrderBy(x => x));
+
+                ListaDespachosService.AnularLote(string.Join(",", ids), "PRUEBA");
+
+                Assert.Empty(idsDelLote());
+                Assert.Empty(despachosPorIds());
+            }
+        }
+
+        [FactBD]
+        public void Manifiesto_EnDespachoAnulado_NoSeInserta()
+        {
+            using (new TransaccionDePrueba())
+            {
+                int d = DespachosActivos(ViajeSinLiquidacion())[0];
+                ListaDespachosService.AnularLote(d.ToString(), "PRUEBA");
+
+                var ex = Assert.Throws<Services.Common.ErrorNegocioException>(() =>
+                    ManifiestoService.InsertarDocumentoManifiesto(d, ManifiestoService.TIPO_CRUCE, "prueba.pdf", "prueba.pdf",
+                        "~/Uploads/Manifiesto/prueba.pdf", ".pdf", 1, "PRUEBA"));
+                Assert.Contains("anulado", MensajeErrorHelper.ParaUsuario(ex));
+                Assert.Equal(0, Entero("SELECT COUNT(*) FROM DocumentosManifiesto WHERE idDespacho = @d AND nombreArchivo = 'prueba.pdf'", "@d", d));
+            }
+        }
+
         // ---------------- Casos de error: cada uno en su método y su transacción ----------------
 
         [FactBD]
@@ -259,6 +367,58 @@ namespace WebSGV.Tests.Integracion
                 Assert.Equal(0, Entero("SELECT COUNT(*) FROM Despachos WHERE idDespacho IN (@a, @b)", "@a", conLiquidacion, "@b", libre));
                 return 0;
             });
+        }
+
+        /// <summary>Despachos de un lote recién anulado dentro de la transacción de la prueba.</summary>
+        private static System.Collections.Generic.List<int> IdsDeLoteAnulado()
+        {
+            var (_, ids) = LoteSinLiquidacion();
+            ListaDespachosService.AnularLote(string.Join(",", ids), "PRUEBA");
+            return ids;
+        }
+
+        private static void AfirmarError50015(Exception ex)
+        {
+            Assert.Contains(((System.Data.SqlClient.SqlException)ex).Errors.Cast<System.Data.SqlClient.SqlError>(), e => e.Number == 50015);
+            Assert.Equal("El lote está anulado: solo se puede consultar.", MensajeErrorHelper.ParaUsuario(ex));
+        }
+
+        [FactBD]
+        public void FacturaEnLoteAnulado_Error50015()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var ids = IdsDeLoteAnulado();
+                var ex = Assert.ThrowsAny<Exception>(() =>
+                    ListaDespachosService.RegistrarFacturaLote(ids, "F999-PRUEBA", FechaHelper.Hoy(), 1m, "PEN"));
+                AfirmarError50015(ex);
+            }
+        }
+
+        [FactBD]
+        public void CpicEnLoteAnulado_Error50015()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var ids = IdsDeLoteAnulado();
+                var ex = Assert.ThrowsAny<Exception>(() =>
+                    ListaDespachosService.RegistrarCpicLote(ids, "CPIC-PRUEBA", FechaHelper.Hoy(), 1m));
+                AfirmarError50015(ex);
+            }
+        }
+
+        [FactBD]
+        public void DesvincularDocumentoEnLoteAnulado_Error50015()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var ids = IdsDeLoteAnulado();
+                var ex = Assert.ThrowsAny<Exception>(() =>
+                    DbHelper.EjecutarNonQuerySp("sp_LD_DesvincularDocumentoLote",
+                        DbHelper.Param("@idsDespachos", string.Join(",", ids)),
+                        DbHelper.Param("@tipoDocumento", "FACTURA")));
+                AfirmarError50015(ex);
+            }
         }
 
         [FactBD]

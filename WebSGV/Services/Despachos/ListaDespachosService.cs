@@ -227,8 +227,11 @@ namespace WebSGV.Services.Despachos
         /// <summary>
         /// Lote por su id virtual (ignora los filtros del usuario): reconstruye los criterios
         /// del id, consulta <c>sp_LD_ObtenerLotesRegistrados</c> y adjunta los ids de despacho.
+        /// Por defecto solo ve lotes activos; con <paramref name="anulado"/> = true solo el lote anulado
+        /// con ese id (filtro ANULADO), para abrir su detalle en solo lectura. El id virtual de un lote
+        /// anulado puede coincidir con el de un lote activo registrado después con la misma clave.
         /// </summary>
-        public static LoteRegistrado ObtenerLotePorId(string idLoteVirtual)
+        public static LoteRegistrado ObtenerLotePorId(string idLoteVirtual, bool anulado = false)
         {
             var criterios = ParsearIdLoteVirtual(idLoteVirtual);
             if (criterios == default) return null;
@@ -246,7 +249,8 @@ namespace WebSGV.Services.Despachos
                         string.IsNullOrEmpty(criterios.NumeroPedido) ? (object)DBNull.Value : criterios.NumeroPedido);
                     cmd.Parameters.AddWithValue("@fechaDesde", criterios.FechaDespacho.Date);
                     cmd.Parameters.AddWithValue("@fechaHasta", criterios.FechaDespacho.Date);
-                    cmd.Parameters.AddWithValue("@estadoFiltro", DBNull.Value); // sin filtro de estado
+                    // NULL = solo activos (sin filtro de estado); ANULADO = solo el lote anulado.
+                    cmd.Parameters.AddWithValue("@estadoFiltro", anulado ? (object)"ANULADO" : DBNull.Value);
                     conn.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
@@ -260,13 +264,16 @@ namespace WebSGV.Services.Despachos
 
             var lote = lotes.FirstOrDefault(l => l.IdLoteVirtual == idLoteVirtual);
             if (lote != null)
-                lote.IdsDespachos = ObtenerIdsDespachosDeLote(idLoteVirtual);
+                lote.IdsDespachos = ObtenerIdsDespachosDeLote(idLoteVirtual, anulado);
 
             return lote;
         }
 
-        /// <summary>Ids de despacho que componen un lote virtual (<c>sp_LD_ObtenerIdsDespachosDeLote</c>).</summary>
-        public static List<int> ObtenerIdsDespachosDeLote(string idLoteVirtual)
+        /// <summary>
+        /// Ids de despacho que componen un lote virtual (<c>sp_LD_ObtenerIdsDespachosDeLote</c>): solo activos,
+        /// o con <paramref name="anulado"/> = true solo los del lote anulado (activo = 0 y ANULADO).
+        /// </summary>
+        public static List<int> ObtenerIdsDespachosDeLote(string idLoteVirtual, bool anulado = false)
         {
             List<int> ids = new List<int>();
 
@@ -285,6 +292,7 @@ namespace WebSGV.Services.Despachos
                     cmd.Parameters.AddWithValue("@idPlanta", criterios.IdPlanta);
                     // NULL = lote sin pedido (el SP ya no lo toma como "cualquier pedido").
                     cmd.Parameters.AddWithValue("@numeroPedido", (object)criterios.NumeroPedido ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@anulados", anulado);
 
                     conn.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
@@ -300,10 +308,13 @@ namespace WebSGV.Services.Despachos
             return ids;
         }
 
-        /// <summary>Despachos de un lote por su id virtual (<c>sp_LD_ObtenerDespachosPorIds</c>).</summary>
-        public static List<DespachoViaje> ObtenerDespachosDelLote(string idLoteVirtual)
+        /// <summary>
+        /// Despachos de un lote por su id virtual (<c>sp_LD_ObtenerDespachosPorIds</c>): solo activos, o con
+        /// <paramref name="anulado"/> = true los del lote anulado (solo lectura).
+        /// </summary>
+        public static List<DespachoViaje> ObtenerDespachosDelLote(string idLoteVirtual, bool anulado = false)
         {
-            var idsDespachos = ObtenerIdsDespachosDeLote(idLoteVirtual);
+            var idsDespachos = ObtenerIdsDespachosDeLote(idLoteVirtual, anulado);
             List<DespachoViaje> despachos = new List<DespachoViaje>();
 
             if (idsDespachos.Count == 0) return despachos;
@@ -314,6 +325,7 @@ namespace WebSGV.Services.Despachos
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@idsDespachos", string.Join(",", idsDespachos));
+                    cmd.Parameters.AddWithValue("@incluirAnulados", anulado);
                     conn.Open();
 
                     using (SqlDataReader reader = cmd.ExecuteReader())

@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using WebSGV.Helpers;
 using WebSGV.Models.Despachos;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Services.Despachos
 {
@@ -20,16 +21,21 @@ namespace WebSGV.Services.Despachos
         public const string TIPO_CRUCE = "CRUCE";
         public const string TIPO_RETORNO = "RETORNO";
 
-        /// <summary>Inserta el registro de un documento de manifiesto ya guardado en disco.</summary>
+        /// <summary>
+        /// Inserta el registro de un documento de manifiesto ya guardado en disco. Solo si el despacho
+        /// está activo y no anulado: un lote anulado es de solo consulta (2026-11-17); si no se inserta
+        /// nada lanza <see cref="ErrorNegocioException"/>.
+        /// </summary>
         public static void InsertarDocumentoManifiesto(int idDespacho, string tipoManifiesto,
             string nombreOriginal, string nombreArchivo, string rutaArchivo, string tipoArchivo,
             long tamanoBytes, string usuarioSubida)
         {
-            DbHelper.EjecutarNonQuery(@"
+            int filas = DbHelper.EjecutarNonQuery(@"
                 INSERT INTO DocumentosManifiesto
                 (idDespacho, tipoManifiesto, nombreOriginal, nombreArchivo, rutaArchivo, tipoArchivo, tamanoBytes, fechaSubida, usuarioSubida)
-                VALUES
-                (@idDespacho, @tipoManifiesto, @nombreOriginal, @nombreArchivo, @rutaArchivo, @tipoArchivo, @tamanoBytes, @fechaSubida, @usuarioSubida)",
+                SELECT d.idDespacho, @tipoManifiesto, @nombreOriginal, @nombreArchivo, @rutaArchivo, @tipoArchivo, @tamanoBytes, @fechaSubida, @usuarioSubida
+                FROM Despachos d
+                WHERE d.idDespacho = @idDespacho AND d.activo = 1 AND ISNULL(d.estadoDespacho, '') <> 'ANULADO'",
                 DbHelper.Param("@idDespacho", idDespacho),
                 DbHelper.Param("@tipoManifiesto", tipoManifiesto),
                 DbHelper.Param("@nombreOriginal", nombreOriginal),
@@ -39,6 +45,9 @@ namespace WebSGV.Services.Despachos
                 DbHelper.Param("@tamanoBytes", tamanoBytes),
                 DbHelper.Param("@fechaSubida", FechaHelper.Ahora()),
                 DbHelper.Param("@usuarioSubida", usuarioSubida));
+
+            if (filas == 0)
+                throw new ErrorNegocioException("El despacho está anulado o ya no existe: no se puede adjuntar el manifiesto.");
         }
 
         /// <summary>

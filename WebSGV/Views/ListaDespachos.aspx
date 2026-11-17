@@ -400,10 +400,17 @@
 
                                                         <asp:TemplateField HeaderText="" ItemStyle-CssClass="ld-col-acciones">
                                                             <ItemTemplate>
-                                                                <%-- Un lote anulado (filtro "Anulados") es solo de consulta: sus despachos tienen activo = 0 y
-                                                                     el detalle, la edición y los documentos trabajan solo con despachos activos. --%>
-                                                                <asp:Label runat="server" CssClass="ld-sub" Text="Solo consulta"
-                                                                    Visible='<%# (string)Eval("EstadoLote") == "ANULADO" %>'></asp:Label>
+                                                                <%-- Un lote anulado (filtro "Anulados") es solo de consulta: sus despachos tienen activo = 0.
+                                                                     "Ver unidades" abre su detalle en solo lectura (sin editar ni documentos). --%>
+                                                                <asp:Panel runat="server" CssClass="action-buttons"
+                                                                    Visible='<%# (string)Eval("EstadoLote") == "ANULADO" %>'>
+                                                                    <span class="ld-sub">Solo consulta</span>
+                                                                    <asp:Button runat="server"
+                                                                        Text="Ver unidades"
+                                                                        CssClass="btn btn-sm btn-outline-secondary"
+                                                                        CommandName="VerDetallesLoteAnulado"
+                                                                        CommandArgument='<%# Eval("IdLoteVirtual") %>' />
+                                                                </asp:Panel>
                                                                 <asp:Panel runat="server" CssClass="action-buttons"
                                                                     Visible='<%# (string)Eval("EstadoLote") != "ANULADO" %>'>
                                                                     <asp:Button runat="server"
@@ -872,7 +879,12 @@
                                             </div>
                                         </div>
                                         <div class="section-content">
-                                            
+
+                                            <asp:Panel ID="pnlAvisoLoteAnulado" runat="server" Visible="false" CssClass="alert alert-secondary mb-3" role="status">
+                                                <i class="fas fa-ban"></i> <strong>Lote anulado: solo consulta.</strong>
+                                                Sus despachos ya no cuentan en la liquidación ni en el seguimiento; no se pueden editar ni agregar documentos.
+                                            </asp:Panel>
+
                                             <!-- Información General del Lote -->
                                             <div class="summary-cards">
                                                 <div class="row">
