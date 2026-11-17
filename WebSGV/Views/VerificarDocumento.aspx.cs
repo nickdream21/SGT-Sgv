@@ -81,11 +81,13 @@ namespace WebSGV.Views
             string etapa = r["etapa"] as string;
 
             lblCodigo.Text = HttpUtility.HtmlEncode(codigo);
-            // Sin número: la orden ya no existe. Desde 2026-11-15 eso pasa cuando el conductor la
-            // retira (sp_DC_RetirarLiquidacion anula antes su firma); las firmas huérfanas
+            // Sin número: la orden ya no existe. Pasa cuando el conductor la retira
+            // (sp_DC_RetirarLiquidacion, desde 2026-11-15) o cuando la administración retiró
+            // liquidaciones de prueba (script del 2026-11-16); en ambos casos su firma quedó
+            // anulada antes y el motivo se ve en la lista de firmas. Las firmas huérfanas
             // anteriores (sin anulación ni código de verificación) no llegan a esta página.
             string orden = r["numeroOrdenViaje"] == DBNull.Value
-                ? "Orden de viaje retirada por el conductor"
+                ? "Orden de viaje retirada (ver el motivo en las firmas)"
                 : "Orden de viaje N.° " + r["numeroOrdenViaje"];
             lblDocumento.Text = HttpUtility.HtmlEncode(orden + " — " + EtapaFirma.Nombre(etapa));
             lblFirmante.Text = HttpUtility.HtmlEncode(System.Text.RegularExpressions.Regex.Replace(Convert.ToString(r["nombreFirmante"]).Trim(), @"\s+", " ") +
