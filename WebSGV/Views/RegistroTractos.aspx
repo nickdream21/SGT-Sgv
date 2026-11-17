@@ -106,7 +106,8 @@
                                                 data-id='<%#: Eval("idTracto") %>'
                                                 data-placa='<%# AttrEncode(Eval("placaTracto")) %>'
                                                 data-marca='<%# AttrEncode(Eval("marca")) %>'
-                                                data-modelo='<%# AttrEncode(Eval("modelo")) %>'>
+                                                data-modelo='<%# AttrEncode(Eval("modelo")) %>'
+                                                data-con-historial='<%#: ConHistorial(Eval("conHistorial")) %>'>
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                         </ItemTemplate>
@@ -147,6 +148,10 @@
                     <div class="form-group">
                         <label class="font-weight-bold">N&#xBA; de Placa <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtEditarPlaca" runat="server" CssClass="form-control text-uppercase" MaxLength="10"></asp:TextBox>
+                        <small id="notaPlacaHistorial" class="form-text text-muted d-none">
+                            <i class="fas fa-lock mr-1"></i>Este tracto tiene despachos u otro historial: la placa no se puede cambiar.
+                            Si la placa est&#xE1; mal, registre el tracto correcto y desactive este.
+                        </small>
                     </div>
                     <div class="form-group">
                         <label class="font-weight-bold">Marca <span class="text-danger">*</span></label>

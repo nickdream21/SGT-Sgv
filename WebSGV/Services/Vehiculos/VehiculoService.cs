@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 using WebSGV.Helpers;
 using WebSGV.Services.Common;
@@ -20,6 +22,8 @@ namespace WebSGV.Services.Vehiculos
     /// misma. Se guarda en su forma <see cref="PlacaVehiculo.Canonica"/>, así los índices únicos de la BD
     /// (<c>UC_PlacaTracto</c>, <c>UX_Carreta_placaCarreta</c>, comparación exacta) también la protegen ante dos
     /// usuarios a la vez. Los errores para el usuario salen como <see cref="ErrorNegocioException"/>.
+    /// La placa de un vehículo con historial (despachos u otros registros, ver <c>ReferenciasTracto</c>) no se
+    /// puede cambiar, salvo de formato (B5-4, decisión D2).
     /// </summary>
     public static class VehiculoService
     {
@@ -39,12 +43,71 @@ namespace WebSGV.Services.Vehiculos
         private sealed class Tabla
         {
             public string Nombre, Id, Placa, Descripcion;
+            public Referencia[] Referencias;
         }
+
+        /// <summary>
+        /// Un registro histórico que apunta al vehículo: por id (<see cref="Columnas"/> = columna de id, se
+        /// compara con el id) o por el texto de la placa (se compara por <see cref="PlacaVehiculo.Clave"/>, en SQL
+        /// <c>REPLACE(REPLACE(UPPER(col),'-',''),' ','')</c>). Varias columnas cuentan cada fila una vez.
+        /// </summary>
+        private sealed class Referencia
+        {
+            public string Tabla, Descripcion;
+            public string[] Columnas;
+            public bool PorTexto;
+            public bool EsDespacho;
+        }
+
+        private static Referencia PorId(string tabla, string columna, string descripcion, bool esDespacho = false) =>
+            new Referencia { Tabla = tabla, Columnas = new[] { columna }, Descripcion = descripcion, EsDespacho = esDespacho };
+
+        private static Referencia PorTexto(string tabla, string descripcion, params string[] columnas) =>
+            new Referencia { Tabla = tabla, Columnas = columnas, Descripcion = descripcion, PorTexto = true };
+
+        // B5-4 (decisión D2): qué cuenta como "historial" de un vehículo. Si tiene alguno, su placa no se puede
+        // cambiar (sí la marca y el modelo). Revisado en la BD el 2026-11-17 (INFORMATION_SCHEMA y sys.sql_modules):
+        //   Por id (FK a Tracto/Carreta):
+        //     Despachos.idTracto/idCarreta, OrdenViaje.idTracto/idCarreta,
+        //     AbastecimientoCombustible.idTracto/idCarreta, DespachoCombustibleObra.idTracto,
+        //     IngresoCombustibleEcuador.idTracto.
+        //   Por texto de la placa (se desengancharían si la placa cambia):
+        //     SeguimientoExportacion.tracto1/tracto2/carreta (copia del despacho; sp_SE_SincronizarDespachos y el
+        //       GPS emparejan por placa), DestinoDescarga.placaTracto/placaCarreta (lista de plantas por pedido y
+        //       carreta, sin guion), Indicadores.tracto1/tracto2/carreta (histórico importado del Excel).
+        //   No cuentan: SeguimientoExportacion.ultimaPlacaGps (siempre es uno de tracto1/tracto2/carreta del mismo
+        //     viaje), camionetas/volquetes/EquiposMaquinaria (otras flotas). Las guías, órdenes de viaje y PDFs
+        //     firmados llevan la placa impresa, pero cuelgan de un despacho u orden de viaje, que ya cuenta.
+        //   Se cuentan también los registros anulados o inactivos: siguen siendo historial.
+        private static readonly Referencia[] ReferenciasTracto =
+        {
+            PorId("Despachos", "idTracto", "despacho(s)", esDespacho: true),
+            PorId("OrdenViaje", "idTracto", "orden(es) de viaje"),
+            PorId("AbastecimientoCombustible", "idTracto", "abastecimiento(s) de combustible"),
+            PorId("DespachoCombustibleObra", "idTracto", "despacho(s) de combustible a obra"),
+            PorId("IngresoCombustibleEcuador", "idTracto", "ingreso(s) de combustible en Ecuador"),
+            PorTexto("SeguimientoExportacion", "viaje(s) del seguimiento de exportación", "tracto1", "tracto2"),
+            PorTexto("DestinoDescarga", "destino(s) de descarga", "placaTracto"),
+            PorTexto("Indicadores", "registro(s) de indicadores", "tracto1", "tracto2")
+        };
+
+        private static readonly Referencia[] ReferenciasCarreta =
+        {
+            PorId("Despachos", "idCarreta", "despacho(s)", esDespacho: true),
+            PorId("OrdenViaje", "idCarreta", "orden(es) de viaje"),
+            PorId("AbastecimientoCombustible", "idCarreta", "abastecimiento(s) de combustible"),
+            PorTexto("SeguimientoExportacion", "viaje(s) del seguimiento de exportación", "carreta"),
+            PorTexto("DestinoDescarga", "destino(s) de descarga", "placaCarreta"),
+            PorTexto("Indicadores", "registro(s) de indicadores", "carreta")
+        };
 
         private static Tabla De(TipoVehiculo tipo) =>
             tipo == TipoVehiculo.Tracto
-                ? new Tabla { Nombre = "Tracto", Id = "idTracto", Placa = "placaTracto", Descripcion = "tracto" }
-                : new Tabla { Nombre = "Carreta", Id = "idCarreta", Placa = "placaCarreta", Descripcion = "semirremolque" };
+                ? new Tabla { Nombre = "Tracto", Id = "idTracto", Placa = "placaTracto", Descripcion = "tracto", Referencias = ReferenciasTracto }
+                : new Tabla { Nombre = "Carreta", Id = "idCarreta", Placa = "placaCarreta", Descripcion = "semirremolque", Referencias = ReferenciasCarreta };
+
+        /// <summary>Clave de una columna de placa en SQL (igual que <see cref="PlacaVehiculo.Clave"/> para placas válidas).</summary>
+        private static string ClaveSql(string columna) => $"REPLACE(REPLACE(UPPER({columna}), '-', ''), ' ', '')";
 
         /// <summary>Datos ya validados y normalizados (placa canónica, marca y modelo en mayúsculas).</summary>
         public sealed class DatosVehiculo
@@ -120,6 +183,109 @@ namespace WebSGV.Services.Vehiculos
             return id;
         }
 
+        /// <summary>
+        /// Cambio de placa rechazado por historial (B5-4). Lleva la placa guardada para que la página la vuelva a
+        /// poner en el modal en lugar de la rechazada.
+        /// </summary>
+        public sealed class PlacaBloqueadaException : ErrorNegocioException
+        {
+            public PlacaBloqueadaException(string mensaje, string placaGuardada) : base(mensaje) => PlacaGuardada = placaGuardada;
+
+            public string PlacaGuardada { get; }
+        }
+
+        /// <summary>Cuántos registros de una clase apuntan al vehículo (B5-4).</summary>
+        public sealed class ReferenciaContada
+        {
+            public string Descripcion { get; set; }
+            public int Cantidad { get; set; }
+            /// <summary>Es la cuenta de despachos: el mensaje habla de ellos si hay alguno.</summary>
+            public bool EsDespacho { get; set; }
+        }
+
+        /// <summary>Dos placas son la misma si tienen la misma <see cref="PlacaVehiculo.Clave"/> ("T4I-868 " = "T4I868").</summary>
+        public static bool MismaPlaca(string a, string b) =>
+            string.Equals(PlacaVehiculo.Clave(a), PlacaVehiculo.Clave(b), StringComparison.Ordinal);
+
+        /// <summary>
+        /// Regla B5-4 (decisión D2), lógica pura: null si la placa se puede cambiar; si no, el mensaje para el
+        /// usuario. Cambiar solo el formato (misma clave) siempre se permite. Con despachos el mensaje los cuenta;
+        /// sin despachos pero con otro historial, lista lo que hay.
+        /// </summary>
+        public static string MotivoPlacaBloqueada(string placaGuardada, string placaNueva, string descripcionVehiculo,
+            IEnumerable<ReferenciaContada> historial)
+        {
+            if (MismaPlaca(placaGuardada, placaNueva)) return null;
+
+            var conRegistros = (historial ?? Enumerable.Empty<ReferenciaContada>()).Where(r => r != null && r.Cantidad > 0).ToList();
+            if (conRegistros.Count == 0) return null;
+
+            string placa = (placaGuardada ?? "").Trim();
+            const string Sugerencia = "Si la placa está mal, registre el vehículo correcto y desactive este.";
+
+            int despachos = conRegistros.Where(r => r.EsDespacho).Sum(r => r.Cantidad);
+            if (despachos > 0)
+                return $"La placa de {placa} no se puede cambiar: tiene {despachos} despacho(s) registrados. {Sugerencia}";
+
+            string detalle = string.Join(", ", conRegistros.Select(r => $"{r.Cantidad} {r.Descripcion}"));
+            return $"La placa de {placa} no se puede cambiar: el {descripcionVehiculo} tiene historial registrado ({detalle}). {Sugerencia}";
+        }
+
+        /// <summary>
+        /// Cuenta, por cada <see cref="Referencia"/> del tipo, los registros que apuntan al vehículo (por id o por la
+        /// clave de su placa guardada). Una sola consulta. Si la placa guardada está vacía, las referencias por texto
+        /// no se consultan (cuentan 0): una celda vacía de otra tabla no es historial de este vehículo.
+        /// </summary>
+        private static List<ReferenciaContada> ContarHistorial(Tabla t, int id, string placaGuardada)
+        {
+            string clave = PlacaVehiculo.Clave(placaGuardada);
+            var columnas = new List<string>();
+            for (int i = 0; i < t.Referencias.Length; i++)
+            {
+                var r = t.Referencias[i];
+                if (r.PorTexto && clave == null)
+                {
+                    columnas.Add($"0 AS c{i}");
+                    continue;
+                }
+                string condicion = r.PorTexto
+                    ? string.Join(" OR ", r.Columnas.Select(c => $"{ClaveSql(c)} = @clave"))
+                    : $"{r.Columnas[0]} = @id";
+                columnas.Add($"(SELECT COUNT(*) FROM {r.Tabla} WHERE {condicion}) AS c{i}");
+            }
+
+            var fila = DbHelper.ConsultarTabla("SELECT " + string.Join(", ", columnas),
+                DbHelper.Param("@id", id),
+                DbHelper.Param("@clave", (object)clave ?? DBNull.Value));
+
+            return t.Referencias.Select((r, i) => new ReferenciaContada
+            {
+                Descripcion = r.Descripcion,
+                EsDespacho = r.EsDespacho,
+                Cantidad = Convert.ToInt32(fila.Rows[0]["c" + i], CultureInfo.InvariantCulture)
+            }).ToList();
+        }
+
+        /// <summary>
+        /// Consulta de la grilla de <c>RegistroTractos</c> / <c>RegistroSemiremolques</c>: idX, placaX, marca,
+        /// modelo, activo y <c>conHistorial</c> (bit, B5-4) para mostrar la placa como solo lectura en el modal.
+        /// Las referencias por texto se juntan una vez (UNION de claves) y se cruzan con un hash join.
+        /// </summary>
+        public static string ConsultaGrilla(TipoVehiculo tipo)
+        {
+            var t = De(tipo);
+            var porId = t.Referencias.Where(r => !r.PorTexto)
+                .Select(r => $"EXISTS (SELECT 1 FROM {r.Tabla} r WHERE r.{r.Columnas[0]} = v.{t.Id})");
+            var claves = t.Referencias.Where(r => r.PorTexto)
+                .SelectMany(r => r.Columnas.Select(c => $"SELECT {ClaveSql(c)} AS clave FROM {r.Tabla}"));
+
+            return $@"SELECT v.{t.Id}, v.{t.Placa}, v.marca, v.modelo, v.activo,
+       CAST(CASE WHEN {string.Join(" OR ", porId)} OR h.clave IS NOT NULL THEN 1 ELSE 0 END AS BIT) AS conHistorial
+FROM {t.Nombre} v
+LEFT JOIN ({string.Join(" UNION ", claves)}) h ON h.clave = {ClaveSql("v." + t.Placa)} AND {ClaveSql("v." + t.Placa)} <> ''
+ORDER BY v.{t.Placa}";
+        }
+
         /// <summary>Cambia placa, marca y modelo de un tracto o semirremolque.</summary>
         public static void Actualizar(TipoVehiculo tipo, int id, string placa, string marca, string modelo)
         {
@@ -137,6 +303,14 @@ namespace WebSGV.Services.Vehiculos
                 Modelo = actual.Rows[0]["modelo"] as string
             };
             var d = Validar(placa, marca, modelo, anterior);
+
+            // B5-4: la placa de un vehículo con historial no cambia (solo su formato: misma clave).
+            if (!MismaPlaca(anterior.Placa, d.Placa))
+            {
+                string motivo = MotivoPlacaBloqueada(anterior.Placa, d.Placa, t.Descripcion, ContarHistorial(t, id, anterior.Placa));
+                if (motivo != null)
+                    throw new PlacaBloqueadaException(motivo, (anterior.Placa ?? "").Trim());
+            }
 
             ExigirPlacaLibre(t, d.Placa, id);
 

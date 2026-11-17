@@ -25,8 +25,8 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    "SELECT idTracto, placaTracto, marca, modelo, activo FROM Tracto ORDER BY placaTracto");
+                // Incluye conHistorial (B5-4): con historial la placa sale de solo lectura en el modal.
+                DataTable dt = DbHelper.ConsultarTabla(VehiculoService.ConsultaGrilla(TipoVehiculo.Tracto));
                 gvTractos.DataSource = dt;
                 gvTractos.DataBind();
                 lblTotalTractos.Text = dt.Rows.Count + " registro(s)";
@@ -94,6 +94,9 @@ namespace WebSGV.Views
         protected string AttrEncode(object val) =>
             System.Web.HttpUtility.HtmlAttributeEncode(val?.ToString() ?? "");
 
+        /// <summary>"1" si el tracto tiene historial (placa de solo lectura en el modal, B5-4); el servidor valida igual.</summary>
+        protected string ConHistorial(object val) => val is bool b && b ? "1" : "0";
+
         protected void btnActualizarTracto_Click(object sender, EventArgs e)
         {
             if (!int.TryParse(hfIdTracto.Value, out int idTracto) || idTracto <= 0)
@@ -111,6 +114,9 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
+                // B5-4: el modal se reabre con la placa guardada, no con la rechazada
+                if (ex is VehiculoService.PlacaBloqueadaException bloqueada)
+                    txtEditarPlaca.Text = bloqueada.PlacaGuardada;
                 MostrarErrorModal("Error al actualizar el tracto: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }

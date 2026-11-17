@@ -8,14 +8,29 @@
     document.getElementById(SGV.txtEditarPlaca).value = btn.dataset.placa;
     document.getElementById(SGV.txtEditarMarca).value = btn.dataset.marca;
     document.getElementById(SGV.txtEditarModelo).value = btn.dataset.modelo;
+    aplicarPlacaConHistorial(btn);
     $('#modalEditar').modal('show');
 });
+
+// B5-4: con despachos u otro historial la placa no se puede cambiar (el servidor lo valida igual);
+// se muestra de solo lectura con una nota.
+function aplicarPlacaConHistorial(btn) {
+    var conHistorial = !!btn && btn.dataset.conHistorial === '1';
+    document.getElementById(SGV.txtEditarPlaca).readOnly = conHistorial;
+    var nota = document.getElementById('notaPlacaHistorial');
+    if (nota) nota.classList.toggle('d-none', !conHistorial);
+}
 
 document.addEventListener('DOMContentLoaded', function () {
     var msgPanel = document.getElementById(SGV.pnlMensaje);
     // Edición rechazada (B5-7): el error está dentro del modal, que se reabre con lo escrito
-    if (document.getElementById(SGV.pnlErrorModal))
+    if (document.getElementById(SGV.pnlErrorModal)) {
+        var id = document.getElementById(SGV.hfIdTracto).value;
+        var btn = Array.prototype.find.call(document.querySelectorAll('.btn-editar'),
+            function (b) { return b.dataset.id === id; });
+        aplicarPlacaConHistorial(btn);
         $('#modalEditar').modal('show');
+    }
     if (msgPanel && msgPanel.querySelector('.alert-success')) {
         var ok = msgPanel.querySelector('.alert-success');
         setTimeout(function () {

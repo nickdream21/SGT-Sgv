@@ -1,4 +1,4 @@
-<%@ Page Title="Registro de Semiremolques" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistroSemiremolques.aspx.cs" Inherits="WebSGV.Views.RegistroSemiremolques" %>
+<%@ Page Title="Registro de Semirremolques" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistroSemiremolques.aspx.cs" Inherits="WebSGV.Views.RegistroSemiremolques" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
     <asp:HiddenField ID="hfIdCarreta" runat="server" />
@@ -14,9 +14,9 @@
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-3">
                     <div>
                         <h2 class="mb-1" style="color:#1e293b;font-weight:600;">
-                            <i class="fas fa-trailer mr-2" style="color:#2563eb;"></i>Registro de Semiremolques
+                            <i class="fas fa-trailer mr-2" style="color:#2563eb;"></i>Registro de Semirremolques
                         </h2>
-                        <p class="text-muted mb-0">Administra los semiremolques disponibles para las operaciones</p>
+                        <p class="text-muted mb-0">Administra los semirremolques disponibles para las operaciones</p>
                     </div>
                     <span class="badge badge-primary px-3 py-2" style="font-size:0.9rem;">
                         <asp:Label ID="lblTotalSemiremolques" runat="server" Text="0 registro(s)"></asp:Label>
@@ -30,7 +30,7 @@
             <div class="col-12 col-md-4 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar semiremolque</h5>
+                        <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Agregar semirremolque</h5>
                     </div>
                     <div class="card-body">
                         <asp:ValidationSummary ID="vsRegistroSemi" runat="server" ValidationGroup="vgRegistroSemi" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
@@ -61,13 +61,13 @@
                             <asp:RegularExpressionValidator ID="revModelo" runat="server" ControlToValidate="txtModelo" ValidationGroup="vgRegistroSemi"
                                 ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.]{2,30}$" ErrorMessage="Modelo: use entre 2 y 30 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
                         </div>
-                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar semiremolque" ValidationGroup="vgRegistroSemi"
+                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar semirremolque" ValidationGroup="vgRegistroSemi"
                             CssClass="btn btn-primary btn-block" OnClick="btnRegistrar_Click" />
                     </div>
                 </div>
                 <div class="alert alert-info mt-3">
                     <i class="fas fa-lightbulb mr-2"></i>
-                    <strong>Informaci&#xF3;n:</strong> Los semiremolques <strong>activos</strong> aparecer&#xE1;n en los formularios de operaci&#xF3;n.
+                    <strong>Informaci&#xF3;n:</strong> Los semirremolques <strong>activos</strong> aparecer&#xE1;n en los formularios de operaci&#xF3;n.
                     Los inactivos quedan ocultos pero sus datos hist&#xF3;ricos se conservan.
                 </div>
             </div>
@@ -75,7 +75,7 @@
             <div class="col-12 col-md-8 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Semiremolques registrados</h5>
+                        <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Semirremolques registrados</h5>
                         <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
                             style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_semiremolques"
                             oninput="filtrarTabla(this.value,'contenedorSemi')">
@@ -85,7 +85,7 @@
                             <asp:GridView ID="gvSemiremolques" runat="server"
                                 CssClass="table table-hover mb-0"
                                 AutoGenerateColumns="false"
-                                EmptyDataText="No hay semiremolques registrados."
+                                EmptyDataText="No hay semirremolques registrados."
                                 OnRowCommand="gvSemiremolques_RowCommand">
                                 <Columns>
                                     <asp:BoundField DataField="idCarreta" HeaderText="ID"
@@ -106,7 +106,8 @@
                                                 data-id='<%#: Eval("idCarreta") %>'
                                                 data-placa='<%# AttrEncode(Eval("placaCarreta")) %>'
                                                 data-marca='<%# AttrEncode(Eval("marca")) %>'
-                                                data-modelo='<%# AttrEncode(Eval("modelo")) %>'>
+                                                data-modelo='<%# AttrEncode(Eval("modelo")) %>'
+                                                data-con-historial='<%#: ConHistorial(Eval("conHistorial")) %>'>
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                         </ItemTemplate>
@@ -117,7 +118,7 @@
                                                 CommandName="ToggleActivo"
                                                 CommandArgument='<%# ArgumentoEstado(Eval("idCarreta"), Eval("activo")) %>'
                                                 CssClass='<%# ObtenerClaseBoton(Eval("activo")) %>'
-                                                OnClientClick="return confirm('&#xBF;Cambiar el estado de este semiremolque?');">
+                                                OnClientClick="return confirm('&#xBF;Cambiar el estado de este semirremolque?');">
                                                 <%#: ObtenerTextoBoton(Eval("activo")) %>
                                             </asp:LinkButton>
                                         </ItemTemplate>
@@ -132,12 +133,12 @@
         </div>
     </div>
 
-    <!-- Modal Editar Semiremolque -->
+    <!-- Modal Editar Semirremolque -->
     <div class="modal fade" id="modalEditar" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content" data-enter="<%= btnActualizarSemiremolque.ClientID %>">
                 <div class="modal-header" style="background:#0ea5e9;color:#fff;">
-                    <h5 class="modal-title"><i class="fas fa-trailer mr-2"></i>Editar semiremolque</h5>
+                    <h5 class="modal-title"><i class="fas fa-trailer mr-2"></i>Editar semirremolque</h5>
                     <button type="button" class="close" style="color:#fff;" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
@@ -147,6 +148,10 @@
                     <div class="form-group">
                         <label class="font-weight-bold">N&#xBA; de Placa <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtEditarPlaca" runat="server" CssClass="form-control text-uppercase" MaxLength="10"></asp:TextBox>
+                        <small id="notaPlacaHistorial" class="form-text text-muted d-none">
+                            <i class="fas fa-lock mr-1"></i>Este semirremolque tiene despachos u otro historial: la placa no se puede cambiar.
+                            Si la placa est&#xE1; mal, registre el semirremolque correcto y desactive este.
+                        </small>
                     </div>
                     <div class="form-group">
                         <label class="font-weight-bold">Marca <span class="text-danger">*</span></label>
