@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -6,7 +6,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -14,7 +13,6 @@ using WebSGV.Helpers;
 using WebSGV.Models.Despachos;
 using WebSGV.Services.Despachos;
 using WebSGV.Services.Despachos.Importacion;
-using WebSGV.Services.Facturas;
 
 namespace WebSGV.Views
 {
@@ -347,13 +345,8 @@ namespace WebSGV.Views
         }
 
         /// <summary>Planta del lote; si sus unidades van a varias (descarga repartida entre plantas), todas.</summary>
-        private static string PlantasDelLote(LoteDespachos lote)
-        {
-            var propias = (lote.Conductores ?? new List<ConductorLote>())
-                .Where(c => c.IdPlanta.HasValue && !string.IsNullOrEmpty(c.PlantaOperacion))
-                .Select(c => c.PlantaOperacion).Distinct().ToList();
-            return propias.Count > 1 ? string.Join(" / ", propias) : lote.PlantaOperacion;
-        }
+        private static string PlantasDelLote(LoteDespachos lote) => FinalizarLoteService.PlantasDelLote(lote);
+
         private void ActualizarResumenLote()
         {
             if (!TieneLoteActivo) return;
@@ -1171,33 +1164,33 @@ namespace WebSGV.Views
                     return;
                 }
 
-                var resultado = ProcesarLoteCompleto();
+                // Todo o nada (FinalizarLoteService): si algo falla no se guarda nada y el lote sigue activo para reintentar.
+                var lote = LoteActual;
+                var resultado = FinalizarLoteService.Finalizar(lote, DocumentoHelper.RaizFisicaUploads(Server));
 
-                if (resultado.exitoso)
+                if (!resultado.Ok)
                 {
-                    var completados = LoteActual.Conductores.Where(c => c.IdDespachoProgramado.HasValue && c.IdDespachoGenerado > 0)
-                        .Select(c => c.IdDespachoGenerado).ToList();
-                    AuditoriaHelper.Registrar("INSERT", "Despachos", null,
-                        $"Lote de {resultado.despachosCreados} despacho(s) registrado - Cliente: {LoteActual?.NombreCliente}, Operación: {LoteActual?.TipoOperacion}, Planta: {(LoteActual == null ? null : PlantasDelLote(LoteActual))}" +
-                        (completados.Count == 0 ? "" : $". Completó con sus documentos los despachos programados {string.Join(", ", completados)}"));
-
-                    // Limpiar lote y resetear página (antes del mensaje: LimpiarFormularioCompleto
-                    // oculta el panel de mensajes y el aviso de éxito no llegaba a verse).
-                    LoteActual = null;
-                    MostrarFaseConfiguracionBase();
-                    LimpiarFormularioCompleto();
-                    CargarDatos();
-                    EstablecerFechaPorDefecto();
-
-                    MostrarMensaje(completados.Count == 0
-                        ? $"Lote finalizado exitosamente. Se crearon {resultado.despachosCreados} despachos."
-                        : $"Lote finalizado exitosamente. Se completaron {completados.Count} despacho(s) programado(s) con sus documentos" +
-                          (resultado.despachosCreados > completados.Count ? $" y se crearon {resultado.despachosCreados - completados.Count} nuevo(s)." : "."), "success");
+                    MostrarMensaje("No se pudo finalizar el lote:", resultado.Errores, "danger");
+                    return;
                 }
-                else
-                {
-                    MostrarMensaje($"Error al finalizar lote: {resultado.mensaje}", "danger");
-                }
+
+                for (int i = 0; i < lote.Conductores.Count && i < resultado.IdsPorConductor.Count; i++)
+                    lote.Conductores[i].IdDespachoGenerado = resultado.IdsPorConductor[i];
+                int creados = resultado.IdsCreados.Count;
+                int completados = resultado.IdsCompletados.Count;
+
+                // Limpiar lote y resetear página (antes del mensaje: LimpiarFormularioCompleto
+                // oculta el panel de mensajes y el aviso de éxito no llegaba a verse).
+                LoteActual = null;
+                MostrarFaseConfiguracionBase();
+                LimpiarFormularioCompleto();
+                CargarDatos();
+                EstablecerFechaPorDefecto();
+
+                MostrarMensaje(completados == 0
+                    ? $"Lote finalizado exitosamente. Se crearon {creados} despachos."
+                    : $"Lote finalizado exitosamente. Se completaron {completados} despacho(s) programado(s) con sus documentos" +
+                      (creados > 0 ? $" y se crearon {creados} nuevo(s)." : "."), "success");
             }
             catch (Exception ex)
             {
@@ -1205,84 +1198,6 @@ namespace WebSGV.Views
                 MostrarMensaje("Error al finalizar lote: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
-
-        private (bool exitoso, int despachosCreados, string mensaje) ProcesarLoteCompleto()
-        {
-            if (!TieneLoteActivo)
-                return (false, 0, "No hay lote activo");
-
-            var lote = LoteActual;
-            int despachosCreados = 0;
-            List<string> errores = new List<string>();
-
-            try
-            {
-                // PASO 1: Crear documentos base SEPARADAMENTE
-                int? idFactura = null;
-                int? idCPIC = null;
-
-                if (!string.IsNullOrEmpty(lote.Documentacion.NumeroFactura))
-                {
-                    idFactura = CrearDocumentoBaseSeparado("FACTURA", lote);
-                    if (idFactura.HasValue)
-                        MoverDocumentoBaseADefinitivo(lote.Documentacion.FacturaArchivoRutaTemp,
-                            lote.Documentacion.FacturaArchivoNombreOriginal, "Factura", idFactura.Value,
-                            lote.UsuarioCreacion, esFactura: true);
-                }
-
-                if (!string.IsNullOrEmpty(lote.Documentacion.NumeroCPIC))
-                {
-                    idCPIC = CrearDocumentoBaseSeparado("CPIC", lote, idFactura);
-                    if (idCPIC.HasValue)
-                        MoverDocumentoBaseADefinitivo(lote.Documentacion.CPICArchivoRutaTemp,
-                            lote.Documentacion.CPICArchivoNombreOriginal, "CPIC", idCPIC.Value,
-                            lote.UsuarioCreacion, esFactura: false);
-                }
-
-                // PASO 2: Procesar cada conductor INDIVIDUALMENTE
-                foreach (var conductor in lote.Conductores)
-                {
-                    try
-                    {
-                        int idDespacho = conductor.IdDespachoProgramado.HasValue
-                            ? RegistroDespachoService.CompletarDespachoProgramado(lote, conductor, idFactura, idCPIC)
-                            : CrearDespachoIndividual(lote, conductor, idFactura, idCPIC);
-                        conductor.IdDespachoGenerado = idDespacho;
-                        despachosCreados++;
-
-                        if (lote.EsInternacional)
-                            GuardarManifiestosDespacho(conductor, idDespacho, lote.UsuarioCreacion);
-                    }
-                    catch (Exception ex)
-                    {
-                        RegistrarError($"ProcesarLoteCompleto.Conductor:{conductor.NombreConductor}", ex);
-                        errores.Add($"Error al procesar conductor {conductor.NombreConductor}");
-                    }
-                }
-
-                if (errores.Count == 0)
-                {
-                    return (true, despachosCreados, "Lote procesado exitosamente");
-                }
-                else if (despachosCreados > 0)
-                {
-                    return (true, despachosCreados, $"Procesado parcialmente. {errores.Count} errores: {string.Join("; ", errores.Take(3))}");
-                }
-                else
-                {
-                    return (false, 0, $"Falló completamente: {string.Join("; ", errores.Take(3))}");
-                }
-            }
-            catch (Exception ex)
-            {
-                RegistrarError("ProcesarLoteCompleto", ex);
-                return (false, despachosCreados, "Se produjo un error interno al procesar el lote.");
-            }
-        }
-
-        private int? CrearDocumentoBaseSeparado(string tipo, LoteDespachos lote, int? idFactura = null)
-            => RegistroDespachoService.CrearDocumentoBaseSeparado(tipo, lote, idFactura);
-
 
         private bool ValidarDocumentosDuplicados(out string mensajeError)
         {
@@ -1309,105 +1224,6 @@ namespace WebSGV.Views
             }
 
             return true;
-        }
-
-        private int CrearDespachoIndividual(LoteDespachos lote, ConductorLote conductor, int? idFactura, int? idCPIC)
-            => RegistroDespachoService.CrearDespachoIndividual(lote, conductor, idFactura, idCPIC);
-
-        /// <summary>
-        /// Mueve los archivos temporales de manifiesto del conductor a su ubicación
-        /// definitiva y registra ambos documentos en BD, ahora que el despacho ya existe.
-        /// No lanza: una falla aquí no debe revertir el despacho ya creado, sólo queda
-        /// registrada en el log para revisión manual.
-        /// </summary>
-        private void GuardarManifiestosDespacho(ConductorLote conductor, int idDespacho, string usuario)
-        {
-            MoverManifiestoADefinitivo(conductor.ManifiestoCruceRutaTemp, conductor.ManifiestoCruceNombreOriginal,
-                idDespacho, ManifiestoService.TIPO_CRUCE, usuario);
-            MoverManifiestoADefinitivo(conductor.ManifiestoRegresoRutaTemp, conductor.ManifiestoRegresoNombreOriginal,
-                idDespacho, ManifiestoService.TIPO_RETORNO, usuario);
-        }
-
-        private void MoverManifiestoADefinitivo(string rutaTemp, string nombreOriginal, int idDespacho, string tipo, string usuario)
-        {
-            if (string.IsNullOrEmpty(rutaTemp) || !File.Exists(rutaTemp))
-                return;
-
-            try
-            {
-                string extension = Path.GetExtension(rutaTemp);
-                string carpetaAno = FechaHelper.Ahora().Year.ToString();
-                string carpetaMes = FechaHelper.Ahora().ToString("MM");
-                string carpetaDestino = Server.MapPath($"~/Uploads/Manifiesto/{carpetaAno}/{carpetaMes}/");
-
-                if (!Directory.Exists(carpetaDestino))
-                    Directory.CreateDirectory(carpetaDestino);
-
-                string nombreArchivo = $"MANIFIESTO_{tipo}_{idDespacho}_{FechaHelper.Ahora():yyyyMMdd_HHmmss}{extension}";
-                string rutaDestino = Path.Combine(carpetaDestino, nombreArchivo);
-
-                File.Move(rutaTemp, rutaDestino);
-
-                try
-                {
-                    ManifiestoService.InsertarDocumentoManifiesto(
-                        idDespacho, tipo, nombreOriginal, nombreArchivo,
-                        $"~/Uploads/Manifiesto/{carpetaAno}/{carpetaMes}/{nombreArchivo}",
-                        extension, new FileInfo(rutaDestino).Length, usuario);
-                }
-                catch
-                {
-                    // Sin registro el archivo quedaría huérfano en disco; el error original lo registra el catch de abajo.
-                    try { File.Delete(rutaDestino); }
-                    catch (Exception exBorrar) { RegistrarError($"MoverManifiestoADefinitivo.BorrarHuerfano.Despacho:{idDespacho}", exBorrar); }
-                    throw;
-                }
-            }
-            catch (Exception ex)
-            {
-                RegistrarError($"MoverManifiestoADefinitivo.Despacho:{idDespacho}.Tipo:{tipo}", ex);
-            }
-        }
-
-        /// <summary>
-        /// Mueve el archivo temporal de factura/CPIC (subido en Fase 1) a su ubicación
-        /// definitiva y registra el documento en BD, ahora que <c>idFactura</c>/<c>idCPIC</c>
-        /// ya existen. No lanza: una falla aquí no debe revertir el documento base ya creado.
-        /// </summary>
-        private void MoverDocumentoBaseADefinitivo(string rutaTemp, string nombreOriginal, string carpeta,
-            int idDocumentoBase, string usuario, bool esFactura)
-        {
-            if (string.IsNullOrEmpty(rutaTemp) || !File.Exists(rutaTemp))
-                return;
-
-            try
-            {
-                string extension = Path.GetExtension(rutaTemp);
-                string carpetaAno = FechaHelper.Ahora().Year.ToString();
-                string carpetaMes = FechaHelper.Ahora().ToString("MM");
-                string carpetaDestino = Server.MapPath($"~/Uploads/{carpeta}/{carpetaAno}/{carpetaMes}/");
-
-                if (!Directory.Exists(carpetaDestino))
-                    Directory.CreateDirectory(carpetaDestino);
-
-                string prefijo = esFactura ? "FACTURA" : "CPIC";
-                string nombreArchivo = $"{prefijo}_{idDocumentoBase}_{FechaHelper.Ahora():yyyyMMdd_HHmmss}{extension}";
-                string rutaDestino = Path.Combine(carpetaDestino, nombreArchivo);
-
-                File.Move(rutaTemp, rutaDestino);
-
-                string rutaRelativa = $"~/Uploads/{carpeta}/{carpetaAno}/{carpetaMes}/{nombreArchivo}";
-                long tamano = new FileInfo(rutaDestino).Length;
-
-                if (esFactura)
-                    FacturaEscrituraService.InsertarDocumentoStandalone(idDocumentoBase, nombreOriginal, nombreArchivo, rutaRelativa, extension, tamano, usuario);
-                else
-                    DocumentoCpicService.InsertarDocumento(idDocumentoBase, nombreOriginal, nombreArchivo, rutaRelativa, extension, tamano, usuario);
-            }
-            catch (Exception ex)
-            {
-                RegistrarError($"MoverDocumentoBaseADefinitivo.{carpeta}:{idDocumentoBase}", ex);
-            }
         }
 
         #endregion
@@ -3516,10 +3332,22 @@ namespace WebSGV.Views
             return $"<span class=\"{clase}\">{HttpUtility.HtmlEncode(estado)}</span>";
         }
 
-        private void MostrarMensaje(string mensaje, string tipo)
+        private void MostrarMensaje(string mensaje, string tipo) =>
+            MostrarMensajeHtml(HttpUtility.HtmlEncode(mensaje ?? string.Empty), tipo);
+
+        /// <summary>Un renglón por mensaje (cada uno codificado): Finalizar lote puede devolver varios errores.</summary>
+        private void MostrarMensaje(string titulo, IEnumerable<string> mensajes, string tipo) =>
+            MostrarMensajeHtml(HttpUtility.HtmlEncode(titulo ?? string.Empty) + "<br />" +
+                string.Join("<br />", (mensajes ?? Enumerable.Empty<string>()).Select(m => HttpUtility.HtmlEncode(m))), tipo);
+
+        /// <summary>
+        /// <paramref name="html"/> ya viene codificado. La caja es de bloque (lblMensaje es un span: con
+        /// "alert" en línea cada renglón pintaba su propio fondo) y deja sitio a la × de cierre.
+        /// </summary>
+        private void MostrarMensajeHtml(string html, string tipo)
         {
-            lblMensaje.Text = HttpUtility.HtmlEncode(mensaje ?? string.Empty);
-            lblMensaje.CssClass = $"alert alert-{tipo} alert-dismissible fade show";
+            lblMensaje.Text = html;
+            lblMensaje.CssClass = $"alert alert-{tipo} alert-dismissible d-block mb-0 pr-5";
             pnlMensajes.Visible = true;
             UpdatePanelMain.Update();
 
@@ -3549,7 +3377,7 @@ namespace WebSGV.Views
                 $"{conductores} · " +
                 $"Iniciado: {lote.FechaCreacion:dd/MM/yyyy HH:mm}. " +
                 $"Puede continuar desde donde lo dejó.";
-            lblMensaje.CssClass = "alert alert-info alert-dismissible fade show";
+            lblMensaje.CssClass = "alert alert-info alert-dismissible d-block mb-0 pr-5";
             pnlMensajes.Visible = true;
         }
 
