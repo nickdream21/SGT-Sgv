@@ -22,10 +22,6 @@ namespace WebSGV.Views
         // ejemplares (cruce y retorno). Opcional en este formulario: lo habitual es
         // adjuntarlo después, en el transcurso del viaje, desde ListaDespachos.aspx.
 
-        // Documento de Factura/CPIC adjunto directamente al armar el lote.
-        private const long MAX_TAMANO_DOCUMENTO_BASE = 50 * 1024 * 1024; // 50MB
-        private static readonly string[] EXTENSIONES_DOCUMENTO_BASE_PERMITIDAS = { ".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png" };
-
         // Los modelos LoteDespachos, DocumentacionBase, ConductorLote y ViajeEnProgreso
         // se movieron a WebSGV.Models.Despachos (los recibe/devuelve RegistroDespachoService).
 
@@ -647,7 +643,7 @@ namespace WebSGV.Views
 
             if (errores.Count > 0)
             {
-                MostrarMensaje("Errores de validación: " + string.Join(". ", errores), "danger");
+                MostrarMensaje("Errores de validación: " + string.Join(". ", errores) + ".", "danger");
                 return false;
             }
 
@@ -754,22 +750,13 @@ namespace WebSGV.Views
             return true;
         }
 
-        private string ValidarArchivoDocumentoBase(FileUpload control)
-        {
-            var archivo = control.PostedFile;
-
-            if (archivo.ContentLength == 0)
-                return "el archivo está vacío";
-
-            if (archivo.ContentLength > MAX_TAMANO_DOCUMENTO_BASE)
-                return "el archivo supera el tamaño máximo permitido (50MB)";
-
-            string extension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
-            if (!Array.Exists(EXTENSIONES_DOCUMENTO_BASE_PERMITIDAS, ext => ext == extension))
-                return "tipo de archivo no permitido. Use PDF, DOC, DOCX, JPG o PNG";
-
-            return string.Empty;
-        }
+        /// <summary>
+        /// Documento de Factura/CPIC adjunto al armar el lote: PDF, Word o foto de hasta 10 MB,
+        /// con el contenido que corresponde a su extensión (ArchivoSubidoHelper).
+        /// </summary>
+        private string ValidarArchivoDocumentoBase(FileUpload control) =>
+            ArchivoSubidoHelper.Validar(control.PostedFile, ArchivoSubidoHelper.MaxDocumento, ArchivoSubidoHelper.ExtensionesDocumento)
+            ?? string.Empty;
 
         /// <summary>
         /// Guarda el archivo subido en una carpeta temporal (fuera del árbol servido
@@ -1322,8 +1309,9 @@ namespace WebSGV.Views
                     importacion.ArchivosIgnorados.AddRange(words.Skip(1).Select(w => $"{w.Nombre}: se usa una sola programación ({words[0].Nombre})"));
                 if (words.Count > 0)
                 {
-                    if (words[0].Contenido.Length > ImportacionPedidoService.TamanoMaximoProgramacion)
-                        importacion.Advertencias.Add($"El Word {words[0].Nombre} pesa más de 5 MB: no parece una programación y no se usó.");
+                    string errorWord = ValidarWordProgramacion(words[0]);
+                    if (errorWord != null)
+                        importacion.Advertencias.Add($"El Word {words[0].Nombre} no se usó: {errorWord}.");
                     else
                     {
                         try { ImportacionPedidoService.LeerProgramacion(importacion, words[0]); }
@@ -2126,6 +2114,10 @@ namespace WebSGV.Views
         // → "Programar despachos" crea las cargas sin documentos y el viaje del seguimiento.
         // Cuando llega el correo, "Leer documentos" une cada guía con su despacho programado.
 
+        /// <summary>Word de la programación: .docx de hasta 5 MB que sea de verdad un .docx. Null si está bien.</summary>
+        private static string ValidarWordProgramacion(ImportacionPedidoService.ArchivoSubido word) =>
+            ArchivoSubidoHelper.Validar(word.Nombre, word.Contenido?.LongLength ?? 0, word.Contenido, ArchivoSubidoHelper.MaxWord, ".docx");
+
         private ProgramacionNueva ProgramacionNuevaActual
         {
             get { return Session["ProgramacionNueva"] as ProgramacionNueva; }
@@ -2134,9 +2126,10 @@ namespace WebSGV.Views
 
         private void LeerProgramacionNueva(ImportacionPedidoService.ArchivoSubido word)
         {
-            if (word.Contenido.Length > ImportacionPedidoService.TamanoMaximoProgramacion)
+            string errorWord = ValidarWordProgramacion(word);
+            if (errorWord != null)
             {
-                MostrarMensajeImportacion($"El Word {word.Nombre} pesa más de 5 MB: no parece una programación.", "warning");
+                MostrarMensajeImportacion($"El Word {word.Nombre} no se puede usar: {errorWord}.", "warning");
                 return;
             }
 
@@ -2786,9 +2779,10 @@ namespace WebSGV.Views
                     MostrarAvisoProgramacion("La programación debe ser un Word .docx. Si es un .doc antiguo, guárdelo como .docx.", "rd-notice-warn");
                     return;
                 }
-                if (fileProgramacionDescarga.PostedFile.ContentLength > 5 * 1024 * 1024)
+                string errorWord = ArchivoSubidoHelper.Validar(fileProgramacionDescarga.PostedFile, ArchivoSubidoHelper.MaxWord, ".docx");
+                if (errorWord != null)
                 {
-                    MostrarAvisoProgramacion("El Word pesa más de 5 MB: no parece una programación.", "rd-notice-warn");
+                    MostrarAvisoProgramacion($"Word de la programación: {errorWord}.", "rd-notice-warn");
                     return;
                 }
 

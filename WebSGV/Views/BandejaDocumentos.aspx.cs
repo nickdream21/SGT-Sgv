@@ -99,9 +99,12 @@ namespace WebSGV.Views
                 foreach (var a in archivos)
                 {
                     string nombre = Path.GetFileName(a.FileName);
-                    if (a.ContentLength > ImportacionPedidoService.TamanoMaximoArchivo)
+                    // Tamaño (20 MB por archivo), extensión y contenido real: un .pdf que no es PDF
+                    // o un .zip que no es ZIP se omite con su motivo.
+                    string error = ArchivoSubidoHelper.Validar(a, ArchivoSubidoHelper.MaxPdfImportacion, ".pdf", ".zip");
+                    if (error != null)
                     {
-                        omitidos.Add($"{nombre}: pesa más de {ImportacionPedidoService.TamanoMaximoArchivo / 1024 / 1024} MB.");
+                        omitidos.Add($"{nombre}: {error}.");
                         continue;
                     }
                     using (var ms = new MemoryStream())

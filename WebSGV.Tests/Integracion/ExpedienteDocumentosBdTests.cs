@@ -90,10 +90,10 @@ namespace WebSGV.Tests.Integracion
                     // La segunda guía de "A / B" también encuentra su despacho.
                     Assert.Contains(id, GuiaDocumentoService.DespachosDeGuia(guia, GuiaDocumentoService.REMITENTE));
 
-                    byte[] pdf = { 0x25, 0x50, 0x44, 0x46, 1, 2, 3 };
+                    byte[] pdf = { 0x25, 0x50, 0x44, 0x46, 0x2D, 1, 2, 3 };   // %PDF-
                     Assert.Equal("NUEVO", GuiaDocumentoService.Guardar(id, GuiaDocumentoService.REMITENTE, guia, "guia.pdf", pdf, "test", raiz));
                     Assert.Equal("SIN_CAMBIOS", GuiaDocumentoService.Guardar(id, GuiaDocumentoService.REMITENTE, guia, "guia.pdf", pdf, "test", raiz));
-                    Assert.Equal("REEMPLAZADO", GuiaDocumentoService.Guardar(id, GuiaDocumentoService.REMITENTE, guia, "guia2.pdf", new byte[] { 0x25, 9 }, "test", raiz));
+                    Assert.Equal("REEMPLAZADO", GuiaDocumentoService.Guardar(id, GuiaDocumentoService.REMITENTE, guia, "guia2.pdf", new byte[] { 0x25, 0x50, 0x44, 0x46, 0x2D, 9 }, "test", raiz));
 
                     var docs = GuiaDocumentoService.PorDespachos(new[] { id });
                     var suya = Assert.Single(docs, d => d.NumeroGuia == guia);

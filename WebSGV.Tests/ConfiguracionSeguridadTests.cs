@@ -143,5 +143,30 @@ namespace WebSGV.Tests
                 .ToList();
             Assert.Empty(conCabecera);
         }
+
+        // --- Límites de envío (tarea 14) ---
+
+        private static XElement Ubicacion(string ruta) =>
+            Cargar("Web.config").Root.Elements("location").SingleOrDefault(l => (string)l.Attribute("path") == ruta);
+
+        [Theory]
+        [InlineData("Views/RegistroDespacho.aspx", 25600)]
+        [InlineData("Views/ListaDespachos.aspx", 25600)]
+        [InlineData("Views/BandejaDocumentos.aspx", 51200)]
+        [InlineData("Views/FacturasFlete.aspx", 51200)]
+        public void WebConfig_LimiteDeEnvio_IisPorEncimaDeAspNet(string ruta, int kbEsperados)
+        {
+            XElement ubicacion = Ubicacion(ruta);
+            Assert.NotNull(ubicacion);
+
+            int kbAspNet = (int)ubicacion.Element("system.web").Element("httpRuntime").Attribute("maxRequestLength");
+            long bytesIis = (long)ubicacion.Element("system.webServer").Element("security").Element("requestFiltering")
+                .Element("requestLimits").Attribute("maxAllowedContentLength");
+
+            Assert.Equal(kbEsperados, kbAspNet);
+            // IIS debe dejar pasar más que ASP.NET: así el envío demasiado grande lo corta ASP.NET
+            // (Global.asax lo devuelve a la página con ?aviso=archivo_grande) y no IIS con un 404.13.
+            Assert.True(bytesIis > kbAspNet * 1024L, $"{ruta}: IIS ({bytesIis} bytes) debe ser mayor que ASP.NET ({kbAspNet} KB)");
+        }
     }
 }

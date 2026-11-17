@@ -22,7 +22,6 @@ namespace WebSGV.Views
     public partial class FacturasFlete : PaginaBase
     {
         private static readonly CultureInfo Pe = CultureInfo.GetCultureInfo("es-PE");
-        private const int MaximoBytesPdf = 10 * 1024 * 1024;
         private const int DiasAvisoVencimiento = 15;
 
         protected void Page_Load(object sender, EventArgs e)
@@ -90,14 +89,11 @@ namespace WebSGV.Views
             foreach (var a in archivos)
             {
                 string nombre = Path.GetFileName(a.FileName);
-                if (!nombre.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                // Extensión, tamaño (10 MB) y que el contenido sea de verdad un PDF.
+                string error = ArchivoSubidoHelper.Validar(a, ArchivoSubidoHelper.MaxDocumento, ".pdf");
+                if (error != null)
                 {
-                    resultados.Add(new ResultadoFacturaSubida { Archivo = nombre, Estado = "No se registró", Detalle = "No es un PDF." });
-                    continue;
-                }
-                if (a.ContentLength > MaximoBytesPdf)
-                {
-                    resultados.Add(new ResultadoFacturaSubida { Archivo = nombre, Estado = "No se registró", Detalle = "El PDF pesa más de 10 MB." });
+                    resultados.Add(new ResultadoFacturaSubida { Archivo = nombre, Estado = "No se registró", Detalle = char.ToUpper(error[0]) + error.Substring(1) + "." });
                     continue;
                 }
                 try

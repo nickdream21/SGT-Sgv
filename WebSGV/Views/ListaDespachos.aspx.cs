@@ -19,11 +19,6 @@ namespace WebSGV.Views
 {
     public partial class ListaDespachos : PaginaBase
     {
-        // Manifiesto: mismo criterio de validación que RegistroDespacho.aspx.cs (20MB,
-        // PDF/JPG/PNG) — se puede adjuntar/reemplazar aquí durante el transcurso del viaje.
-        private const long MAX_TAMANO_MANIFIESTO = 20 * 1024 * 1024;
-        private static readonly string[] EXTENSIONES_MANIFIESTO_PERMITIDAS = { ".pdf", ".jpg", ".jpeg", ".png" };
-
         #region Clases Auxiliares
 
         // Los modelos ViajeActivo, DespachoViaje, DespachoConConductor y LoteRegistrado
@@ -1987,7 +1982,7 @@ namespace WebSGV.Views
             {
                 string error = ValidarArchivoManifiesto(fileCruce);
                 if (!string.IsNullOrEmpty(error))
-                    errores.Add("Manifiesto de cruce: " + error);
+                    errores.Add("Manifiesto de cruce: " + error + ".");
                 else
                 {
                     GuardarUnManifiesto(fileCruce, idDespacho, ManifiestoService.TIPO_CRUCE);
@@ -1999,7 +1994,7 @@ namespace WebSGV.Views
             {
                 string error = ValidarArchivoManifiesto(fileRetorno);
                 if (!string.IsNullOrEmpty(error))
-                    errores.Add("Manifiesto de retorno: " + error);
+                    errores.Add("Manifiesto de retorno: " + error + ".");
                 else
                 {
                     GuardarUnManifiesto(fileRetorno, idDespacho, ManifiestoService.TIPO_RETORNO);
@@ -2015,22 +2010,13 @@ namespace WebSGV.Views
                 MostrarMensajeManifiesto("No se seleccionó ningún archivo para este conductor.", "warning");
         }
 
-        private string ValidarArchivoManifiesto(FileUpload control)
-        {
-            var archivo = control.PostedFile;
-
-            if (archivo.ContentLength == 0)
-                return "el archivo está vacío";
-
-            if (archivo.ContentLength > MAX_TAMANO_MANIFIESTO)
-                return "el archivo supera el tamaño máximo permitido (20MB)";
-
-            string extension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
-            if (!Array.Exists(EXTENSIONES_MANIFIESTO_PERMITIDAS, ext => ext == extension))
-                return "tipo de archivo no permitido. Use PDF, JPG o PNG";
-
-            return string.Empty;
-        }
+        /// <summary>
+        /// Manifiesto o PDF/foto de la factura o el CPIC del lote: PDF, JPG o PNG de hasta 10 MB,
+        /// con el contenido que corresponde a su extensión (ArchivoSubidoHelper).
+        /// </summary>
+        private static string ValidarArchivoManifiesto(FileUpload control) =>
+            ArchivoSubidoHelper.Validar(control.PostedFile, ArchivoSubidoHelper.MaxDocumento, ArchivoSubidoHelper.ExtensionesPdfOImagen)
+            ?? string.Empty;
 
         private void GuardarUnManifiesto(FileUpload control, int idDespacho, string tipo)
         {
@@ -2086,7 +2072,7 @@ namespace WebSGV.Views
         private void MostrarMensajeManifiesto(string mensaje, string tipo)
         {
             lblMensajeManifiesto.Text = HttpUtility.HtmlEncode(mensaje ?? string.Empty);
-            lblMensajeManifiesto.CssClass = $"alert alert-{tipo}";
+            lblMensajeManifiesto.CssClass = $"alert d-block alert-{tipo}";
             pnlMensajeManifiesto.Visible = true;
         }
 

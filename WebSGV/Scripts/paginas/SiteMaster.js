@@ -305,3 +305,81 @@
         }
     });
 })();
+
+// ── Tamaño de los archivos antes de enviarlos ───────────────────────
+// <input type=file data-max-mb="10" data-max-envio-mb="24">: al elegir archivos se suman sus
+// tamaños y, si pasan data-max-mb, se avisa y se vacía la selección; al enviar se revisa otra vez
+// y además que todos los archivos del formulario juntos no pasen el data-max-envio-mb más bajo
+// (el límite del servidor para la página). Solo ayuda al usuario: el servidor valida igual
+// (ArchivoSubidoHelper) y un envío demasiado grande vuelve a la página con un aviso.
+(function () {
+    var MB = 1024 * 1024;
+    function numero(el, atributo) {
+        var v = parseFloat(el.getAttribute(atributo));
+        return v > 0 ? v : 0;
+    }
+    function suma(input) {
+        var total = 0, archivos = input.files || [];
+        for (var i = 0; i < archivos.length; i++) total += archivos[i].size || 0;
+        return total;
+    }
+    function enMb(bytes) {
+        return (bytes / MB).toLocaleString('es-PE', { maximumFractionDigits: 1 }) + ' MB';
+    }
+    function avisar(texto) {
+        var SGV = window.SGV || {};
+        if (SGV.avisar) SGV.avisar(texto, { tipo: 'warning' });
+    }
+    function excede(input) {
+        var max = numero(input, 'data-max-mb'), total = suma(input);
+        if (!max || total <= max * MB) return null;
+        var archivos = input.files || [];
+        return archivos.length === 1
+            ? 'El archivo ' + archivos[0].name + ' pesa ' + enMb(total) + '; el máximo es ' + max + ' MB.'
+            : 'Los archivos elegidos suman ' + enMb(total) + '; el máximo es ' + max + ' MB. Súbalos por separado o más livianos.';
+    }
+
+    document.addEventListener('change', function (e) {
+        var input = e.target;
+        if (!input || input.tagName !== 'INPUT' || input.type !== 'file' || !input.hasAttribute('data-max-mb')) return;
+        var mensaje = excede(input);
+        if (!mensaje) return;
+        avisar(mensaje);
+        try { input.value = ''; } catch (err) { }
+    }, true);
+
+    // Postback parcial de un UpdatePanel: el PageRequestManager ya decidió (al hacer clic) que
+    // el envío es asíncrono, y esos envíos no llevan archivos. Sin MS Ajax en la página: false.
+    function esPostbackAsincrono() {
+        try {
+            var prm = window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager
+                ? Sys.WebForms.PageRequestManager.getInstance() : null;
+            return !!(prm && prm._postBackSettings && prm._postBackSettings.async);
+        } catch (err) { return false; }
+    }
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form || !form.querySelectorAll || esPostbackAsincrono()) return;
+        var inputs = form.querySelectorAll('input[type=file][data-max-mb]');
+        var total = 0, maxEnvio = 0;
+        for (var i = 0; i < inputs.length; i++) {
+            var mensaje = excede(inputs[i]);
+            if (mensaje) {
+                e.preventDefault();
+                avisar(mensaje);
+                return;
+            }
+            var bytes = suma(inputs[i]);
+            if (!bytes) continue;
+            total += bytes;
+            var envio = numero(inputs[i], 'data-max-envio-mb');
+            if (envio && (!maxEnvio || envio < maxEnvio)) maxEnvio = envio;
+        }
+        if (maxEnvio && total > maxEnvio * MB) {
+            e.preventDefault();
+            avisar('Los archivos elegidos en la página suman ' + enMb(total) + '; el máximo por envío es ' + maxEnvio +
+                ' MB. Súbalos por separado o más livianos.');
+        }
+    }, true);
+})();

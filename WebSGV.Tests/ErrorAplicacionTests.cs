@@ -163,11 +163,78 @@ namespace WebSGV.Tests
             Assert.Equal("~/Views/Login.aspx?error=sesion", ErrorAplicacionHelper.DestinoTrasErrorViewState("POST", true, "~//otro.sitio/x", ""));
         }
 
+        // --- Envío más grande que maxRequestLength (tarea 14) ---
+
+        /// <summary>HttpException con el WebEventCode que pone ASP.NET (su setter es interno).</summary>
+        private static HttpException ConCodigoDeEvento(string mensaje, int codigo)
+        {
+            var ex = new HttpException(mensaje);
+            var propiedad = typeof(HttpException).GetProperty("WebEventCode");
+            var setter = propiedad?.GetSetMethod(true);
+            if (setter != null)
+                setter.Invoke(ex, new object[] { codigo });
+            else
+                typeof(HttpException).GetField("_webEventCode", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .SetValue(ex, codigo);
+            Assert.Equal(codigo, ex.WebEventCode);
+            return ex;
+        }
+
+        [Fact]
+        public void EsEnvioDemasiadoGrande_PorCodigo3004_DirectaOEnvuelta()
+        {
+            HttpException grande = ConCodigoDeEvento("texto cualquiera", 3004);
+            Assert.True(ErrorAplicacionHelper.EsEnvioDemasiadoGrande(grande));
+            Assert.True(ErrorAplicacionHelper.EsEnvioDemasiadoGrande(new HttpUnhandledException("página", grande)));
+            Assert.True(ErrorAplicacionHelper.EsEnvioDemasiadoGrande(new HttpException("capa", grande)));
+            Assert.True(ErrorAplicacionHelper.EsEnvioDemasiadoGrande(
+                ErrorAplicacionHelper.Desenvolver(new HttpUnhandledException("página", grande))));
+        }
+
+        [Fact]
+        public void EsEnvioDemasiadoGrande_PorMensaje_EnInglesYEspanol()
+        {
+            Assert.True(ErrorAplicacionHelper.EsEnvioDemasiadoGrande(new HttpException("Maximum request length exceeded.")));
+            Assert.True(ErrorAplicacionHelper.EsEnvioDemasiadoGrande(new HttpException("Se superó la longitud máxima de la solicitud.")));
+        }
+
+        [Fact]
+        public void EsEnvioDemasiadoGrande_OtrosErrores_No()
+        {
+            Assert.False(ErrorAplicacionHelper.EsEnvioDemasiadoGrande(null));
+            Assert.False(ErrorAplicacionHelper.EsEnvioDemasiadoGrande(new HttpException(404, "No existe")));
+            Assert.False(ErrorAplicacionHelper.EsEnvioDemasiadoGrande(ConCodigoDeEvento("otro", 3005)));
+            // El texto solo cuenta en una HttpException: una excepción de negocio con esas palabras no.
+            Assert.False(ErrorAplicacionHelper.EsEnvioDemasiadoGrande(new InvalidOperationException("Maximum request length exceeded")));
+        }
+
+        [Theory]
+        [InlineData("", "~/Views/RegistroDespacho.aspx?aviso=archivo_grande")]
+        [InlineData("?id=5", "~/Views/RegistroDespacho.aspx?id=5&aviso=archivo_grande")]
+        [InlineData("?id=5&aviso=pagina_vencida", "~/Views/RegistroDespacho.aspx?id=5&aviso=archivo_grande")]
+        public void DestinoConAviso_ArchivoGrande_MismaPaginaPorGet(string query, string esperado)
+        {
+            Assert.Equal(esperado, ErrorAplicacionHelper.DestinoConAviso(
+                "POST", true, "~/Views/RegistroDespacho.aspx", query, ErrorAplicacionHelper.AvisoArchivoGrande));
+        }
+
+        [Fact]
+        public void DestinoConAviso_ArchivoGrande_SinSesionAlLogin_YGetSinBucle()
+        {
+            Assert.Equal("~/Views/Login.aspx?error=sesion", ErrorAplicacionHelper.DestinoConAviso(
+                "POST", false, "~/Views/ListaDespachos.aspx", "", ErrorAplicacionHelper.AvisoArchivoGrande));
+            Assert.Equal("~/Views/ListaDespachos.aspx", ErrorAplicacionHelper.DestinoConAviso(
+                "GET", true, "~/Views/ListaDespachos.aspx", "?a=1", ErrorAplicacionHelper.AvisoArchivoGrande));
+        }
+
         [Fact]
         public void TextoAviso_SoloValoresConocidos()
         {
             Assert.Equal("La página estaba desactualizada; su última acción no se guardó. Repítala.",
                 ErrorAplicacionHelper.TextoAviso("pagina_vencida"));
+            Assert.Equal("El envío supera el tamaño permitido. Suba los archivos por separado o más livianos.",
+                ErrorAplicacionHelper.TextoAviso("archivo_grande"));
+            Assert.Null(ErrorAplicacionHelper.TextoAviso("ARCHIVO_GRANDE"));
             Assert.Null(ErrorAplicacionHelper.TextoAviso("<script>alert(1)</script>"));
             Assert.Null(ErrorAplicacionHelper.TextoAviso("PAGINA_VENCIDA"));
             Assert.Null(ErrorAplicacionHelper.TextoAviso(""));

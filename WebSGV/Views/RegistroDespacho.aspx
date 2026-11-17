@@ -75,9 +75,9 @@
                                             <label class="rd-zona">
                                                 <i class="fas fa-cloud-upload-alt rd-zona-icono"></i>
                                                 <span class="rd-zona-titulo">Arrastre aquí los archivos o haga clic para elegirlos</span>
-                                                <span class="rd-zona-ayuda">Word de la programación (.docx) que manda la jefa de flota, ZIP del correo o PDF generados por el sistema del cliente (no escaneos). Seleccione todos a la vez.</span>
+                                                <span class="rd-zona-ayuda">Word de la programación (.docx) que manda la jefa de flota, ZIP del correo o PDF generados por el sistema del cliente (no escaneos). Seleccione todos a la vez (hasta 20 MB en total).</span>
                                                 <span class="rd-zona-archivos"></span>
-                                                <asp:FileUpload ID="fileDocumentosPedido" runat="server" CssClass="rd-zona-input" AllowMultiple="true" accept=".pdf,.zip,.docx" />
+                                                <asp:FileUpload ID="fileDocumentosPedido" runat="server" CssClass="rd-zona-input" AllowMultiple="true" accept=".pdf,.zip,.docx" data-max-mb="20" data-max-envio-mb="24" />
                                             </label>
                                             <div class="rd-zona-pie">
                                                 <span class="small text-muted">¿Solo CPIC, manifiestos o facturas de flete? Van por la
@@ -468,8 +468,8 @@
                                             <div class="rd-section-label"><i class="fas fa-file-word mr-1"></i> Programación del día <span class="rd-chip rd-chip-wait ml-1">Opcional</span></div>
                                             <div class="row align-items-end mb-2">
                                                 <div class="col-md-8 mb-2 mb-md-0">
-                                                    <asp:FileUpload ID="fileProgramacionDescarga" runat="server" CssClass="form-control" accept=".docx" />
-                                                    <small class="form-text text-muted">El Word que reparte transporte (.docx). Se busca la sección del pedido y, por la placa de la carreta, se completan el chofer y el tracto que descargan.</small>
+                                                    <asp:FileUpload ID="fileProgramacionDescarga" runat="server" CssClass="form-control" accept=".docx" data-max-mb="5" data-max-envio-mb="24" />
+                                                    <small class="form-text text-muted">El Word que reparte transporte (.docx, máx. 5 MB). Se busca la sección del pedido y, por la placa de la carreta, se completan el chofer y el tracto que descargan.</small>
                                                 </div>
                                                 <div class="col-md-4 text-md-right">
                                                     <asp:Button ID="btnLeerProgramacionDescarga" runat="server"
@@ -856,8 +856,8 @@
                                                                         <strong>Adjuntar documento:</strong>
                                                                         <span class="text-muted small">(Opcional)</span>
                                                                     </label>
-                                                                    <asp:FileUpload ID="fileFacturaBase" runat="server" CssClass="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
-                                                                    <small class="form-text text-muted">PDF, DOC, DOCX, JPG o PNG. Máx. 50MB.</small>
+                                                                    <asp:FileUpload ID="fileFacturaBase" runat="server" CssClass="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" data-max-mb="10" data-max-envio-mb="24" />
+                                                                    <small class="form-text text-muted">PDF, DOC, DOCX, JPG o PNG. Máx. 10 MB.</small>
                                                                 </div>
                                                             </asp:Panel>
                                                         </div>
@@ -965,8 +965,8 @@
                                                                         <strong>Adjuntar documento:</strong>
                                                                         <span class="text-muted small">(Opcional)</span>
                                                                     </label>
-                                                                    <asp:FileUpload ID="fileCPICBase" runat="server" CssClass="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
-                                                                    <small class="form-text text-muted">PDF, DOC, DOCX, JPG o PNG. Máx. 50MB.</small>
+                                                                    <asp:FileUpload ID="fileCPICBase" runat="server" CssClass="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" data-max-mb="10" data-max-envio-mb="24" />
+                                                                    <small class="form-text text-muted">PDF, DOC, DOCX, JPG o PNG. Máx. 10 MB.</small>
                                                                 </div>
                                                             </asp:Panel>
                                                         </div>

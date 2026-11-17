@@ -89,6 +89,7 @@ namespace WebSGV.Services.Despachos
                                      string usuario, string raizFisicaUploads)
         {
             if (pdf == null || pdf.Length == 0) throw new ErrorNegocioException("El PDF de la guía está vacío.");
+            if (!ArchivoSubidoHelper.EsPdf(pdf)) throw new ErrorNegocioException("El archivo de la guía no es un PDF.");
             if (string.IsNullOrEmpty(raizFisicaUploads)) throw new ErrorNegocioException("No hay carpeta de archivos configurada.");
             string hash = HashHelper.ComputeSha256(pdf);
             if (TieneMismoPdf(idDespacho, tipo, numero, hash)) return "SIN_CAMBIOS";

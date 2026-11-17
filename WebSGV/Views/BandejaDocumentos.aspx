@@ -27,10 +27,10 @@
                 <span class="bd-zona-ayuda">
                     ZIP del correo del cliente (factura, packing list y gu&#xED;as) &#xB7; PDF sueltos de un pedido &#xB7;
                     CPIC y manifiestos (MCI) &#xB7; facturas de flete de SUNAT (E001) &#xB7; nuestras gu&#xED;as transportista de SUNAT (GRE EG03),
-                    la base de los clientes que no mandan factura. Puede subir varios a la vez.
+                    la base de los clientes que no mandan factura. Puede subir varios a la vez (hasta 20 MB por archivo y 45 MB en total).
                 </span>
                 <span class="bd-zona-archivos" id="bdArchivos"></span>
-                <asp:FileUpload ID="fuArchivos" runat="server" AllowMultiple="true" accept=".zip,.pdf" CssClass="bd-zona-input" />
+                <asp:FileUpload ID="fuArchivos" runat="server" AllowMultiple="true" accept=".zip,.pdf" CssClass="bd-zona-input" data-max-mb="45" />
             </label>
             <div class="bd-subir-pie">
                 <asp:Button ID="btnLeer" runat="server" Text="Leer documentos" CssClass="btn btn-primary bd-btn-leer" OnClick="btnLeer_Click" />

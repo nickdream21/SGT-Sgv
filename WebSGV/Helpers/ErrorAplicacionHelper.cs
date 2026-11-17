@@ -42,6 +42,30 @@ namespace WebSGV.Helpers
                 || mensaje.IndexOf("estado de vista", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
+        /// <summary>Código de evento de ASP.NET para "Maximum request length exceeded" (WebEventCodes.RuntimeErrorPostTooLarge).</summary>
+        public const int CodigoEnvioDemasiadoGrande = 3004;
+
+        /// <summary>
+        /// El envío superó el <c>maxRequestLength</c> de la página (archivos demasiado grandes). Se
+        /// reconoce por el código de evento 3004 de la HttpException, en cualquier nivel de la cadena
+        /// de InnerException; el mensaje (en inglés o en español) queda de respaldo.
+        /// </summary>
+        public static bool EsEnvioDemasiadoGrande(Exception ex)
+        {
+            for (Exception e = ex; e != null; e = e.InnerException)
+            {
+                if (!(e is HttpException http))
+                    continue;
+                if (http.WebEventCode == CodigoEnvioDemasiadoGrande)
+                    return true;
+                string mensaje = http.Message ?? "";
+                if (mensaje.IndexOf("Maximum request length exceeded", StringComparison.OrdinalIgnoreCase) >= 0
+                    || mensaje.IndexOf("longitud máxima de la solicitud", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+            }
+            return false;
+        }
+
         /// <summary>Respuesta a un postback parcial cuando no hay sesión: el cliente va al Login.</summary>
         public const string CodigoSesionVencida = "SGV:SESION_VENCIDA";
 
@@ -86,6 +110,12 @@ namespace WebSGV.Helpers
         /// <summary>Texto que se muestra al usuario cuando su acción se perdió por ViewState vencido.</summary>
         public const string TextoPaginaVencida = "La página estaba desactualizada; su última acción no se guardó. Repítala.";
 
+        /// <summary>Valor del parámetro <c>?aviso=</c> tras rechazar un envío que superó el tamaño permitido.</summary>
+        public const string AvisoArchivoGrande = "archivo_grande";
+
+        /// <summary>Texto que se muestra al usuario cuando su envío superó el tamaño permitido.</summary>
+        public const string TextoArchivoGrande = "El envío supera el tamaño permitido. Suba los archivos por separado o más livianos.";
+
         /// <summary>
         /// Destino tras un error de ViewState en un postback completo (Application_Error).
         /// Sin sesión → Login. Con sesión y POST → la misma página por GET con la query original
@@ -93,7 +123,16 @@ namespace WebSGV.Helpers
         /// usuario sabe que debe repetir la acción. Con sesión y otro método (un GET con
         /// __VIEWSTATE en la query) → la ruta sin query: volver a la misma URL sería un bucle.
         /// </summary>
-        public static string DestinoTrasErrorViewState(string metodo, bool haySesion, string rutaAppRelativa, string query)
+        public static string DestinoTrasErrorViewState(string metodo, bool haySesion, string rutaAppRelativa, string query) =>
+            DestinoConAviso(metodo, haySesion, rutaAppRelativa, query, AvisoPaginaVencida);
+
+        /// <summary>
+        /// Destino tras un error de un postback completo que se avisa en la misma página: igual que
+        /// <see cref="DestinoTrasErrorViewState"/> pero con el código de aviso que se indique
+        /// (<see cref="AvisoPaginaVencida"/>, <see cref="AvisoArchivoGrande"/>). La vuelta es por GET,
+        /// así que no repite el error (un GET con la query original no lleva cuerpo).
+        /// </summary>
+        public static string DestinoConAviso(string metodo, bool haySesion, string rutaAppRelativa, string query, string aviso)
         {
             const string login = "~/Views/Login.aspx?error=sesion";
             if (!haySesion || string.IsNullOrEmpty(rutaAppRelativa) || !rutaAppRelativa.StartsWith("~/", StringComparison.Ordinal)
@@ -113,14 +152,16 @@ namespace WebSGV.Helpers
                     continue;
                 partes.Add(parte);
             }
-            partes.Add("aviso=" + AvisoPaginaVencida);
+            partes.Add("aviso=" + Uri.EscapeDataString(aviso ?? ""));
             return rutaAppRelativa + "?" + string.Join("&", partes);
         }
 
         /// <summary>Texto del aviso para el valor de <c>?aviso=</c>; null si es desconocido (no se muestra).</summary>
         public static string TextoAviso(string codigo)
         {
-            return string.Equals(codigo, AvisoPaginaVencida, StringComparison.Ordinal) ? TextoPaginaVencida : null;
+            if (string.Equals(codigo, AvisoPaginaVencida, StringComparison.Ordinal)) return TextoPaginaVencida;
+            if (string.Equals(codigo, AvisoArchivoGrande, StringComparison.Ordinal)) return TextoArchivoGrande;
+            return null;
         }
 
         /// <summary>Recurso inexistente (HttpException con código 404).</summary>

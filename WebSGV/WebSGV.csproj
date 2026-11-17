@@ -502,6 +502,7 @@
     <Compile Include="Helpers\AuditoriaHelper.cs" />
     <Compile Include="Helpers\DbHelper.cs" />
     <Compile Include="Helpers\SesionVigenteHelper.cs" />
+    <Compile Include="Helpers\ArchivoSubidoHelper.cs" />
     <Compile Include="Helpers\ErrorAplicacionHelper.cs" />
     <Compile Include="Helpers\IpClienteHelper.cs" />
     <Compile Include="Helpers\LimiteConsultas.cs" />

@@ -194,6 +194,28 @@ namespace WebSGV
 
                 string ruta = Request.RawUrl;
 
+                // Envío más grande que el maxRequestLength de la página (Web.config, tarea 14): se
+                // vuelve a la misma página por GET con ?aviso=archivo_grande (Site.Master lo muestra),
+                // en vez de la pantalla de error. El GET no lleva cuerpo, así que no hay bucle.
+                // Las llamadas AJAX (PageMethods, .ashx) siguen al registro de error normal.
+                if (ErrorAplicacionHelper.EsEnvioDemasiadoGrande(real)
+                    && !SesionVigenteHelper.EsLlamadaAjax(Request, Context.Handler))
+                {
+                    bool haySesion = false;
+                    try { haySesion = SesionHelper.HaySesion(Context.Session); }
+                    catch { /* sin sesión en este punto del pipeline */ }
+
+                    string destino = ErrorAplicacionHelper.DestinoConAviso(
+                        Request.HttpMethod, haySesion, Request.AppRelativeCurrentExecutionFilePath, Request.Url.Query,
+                        ErrorAplicacionHelper.AvisoArchivoGrande);
+
+                    LogSGV.Advertencia("Envío demasiado grande ({Bytes} bytes) en {Ruta}; se envía a {Destino}.",
+                        Request.ContentLength, ruta, destino);
+                    Server.ClearError();
+                    Redirigir(Context, destino);
+                    return;
+                }
+
                 if (ErrorAplicacionHelper.EsErrorViewState(real))
                 {
                     // Con sesión válida (otra pestaña volvió a iniciar sesión y cambió el SessionID,

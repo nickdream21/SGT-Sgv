@@ -1084,8 +1084,8 @@
                                                     <asp:Panel ID="pnlSubirPdfFactura" runat="server" CssClass="ld-doc-subir" Visible="false">
                                                         <label class="ld-doc-elegir">
                                                             <i class="fas fa-cloud-upload-alt"></i>
-                                                            <span class="ld-doc-elegir-texto">Elegir PDF o foto</span>
-                                                            <asp:FileUpload ID="fuPdfFactura" runat="server" CssClass="ld-doc-input" accept=".pdf,.jpg,.jpeg,.png" />
+                                                            <span class="ld-doc-elegir-texto">Elegir PDF o foto (máx. 10 MB)</span>
+                                                            <asp:FileUpload ID="fuPdfFactura" runat="server" CssClass="ld-doc-input" accept=".pdf,.jpg,.jpeg,.png" data-max-mb="10" data-max-envio-mb="24" />
                                                         </label>
                                                         <asp:Button ID="btnSubirPdfFactura" runat="server" Text="Adjuntar"
                                                             CssClass="btn btn-primary btn-sm ld-doc-btn" OnClick="btnSubirPdfFactura_Click" CausesValidation="false" />
@@ -1125,8 +1125,8 @@
                                                     <asp:Panel ID="pnlSubirPdfCpic" runat="server" CssClass="ld-doc-subir" Visible="false">
                                                         <label class="ld-doc-elegir">
                                                             <i class="fas fa-cloud-upload-alt"></i>
-                                                            <span class="ld-doc-elegir-texto">Elegir PDF o foto</span>
-                                                            <asp:FileUpload ID="fuPdfCpic" runat="server" CssClass="ld-doc-input" accept=".pdf,.jpg,.jpeg,.png" />
+                                                            <span class="ld-doc-elegir-texto">Elegir PDF o foto (máx. 10 MB)</span>
+                                                            <asp:FileUpload ID="fuPdfCpic" runat="server" CssClass="ld-doc-input" accept=".pdf,.jpg,.jpeg,.png" data-max-mb="10" data-max-envio-mb="24" />
                                                         </label>
                                                         <asp:Button ID="btnSubirPdfCpic" runat="server" Text="Adjuntar"
                                                             CssClass="btn btn-primary btn-sm ld-doc-btn" OnClick="btnSubirPdfCpic_Click" CausesValidation="false" />
@@ -1254,8 +1254,8 @@
                                                                         <asp:Panel runat="server" CssClass="ld-doc-subir" Visible='<%# (bool)Eval("PuedeSubir") %>'>
                                                                             <label class="ld-doc-elegir">
                                                                                 <i class="fas fa-cloud-upload-alt"></i>
-                                                                                <span class="ld-doc-elegir-texto">Elegir PDF o foto</span>
-                                                                                <asp:FileUpload ID="fuPdfDocumentoLote" runat="server" CssClass="ld-doc-input" accept=".pdf,.jpg,.jpeg,.png" />
+                                                                                <span class="ld-doc-elegir-texto">Elegir PDF o foto (máx. 10 MB)</span>
+                                                                                <asp:FileUpload ID="fuPdfDocumentoLote" runat="server" CssClass="ld-doc-input" accept=".pdf,.jpg,.jpeg,.png" data-max-mb="10" data-max-envio-mb="24" />
                                                                             </label>
                                                                             <asp:Button runat="server" Text="Subir PDF" CssClass="btn btn-primary btn-sm ld-doc-btn"
                                                                                 CommandName="SubirPdf" CommandArgument='<%# Eval("Clave") %>' CausesValidation="false" />
@@ -1335,7 +1335,7 @@
                                                                         <i class="fas fa-file-pdf"></i> <%#: Eval("CruceNombreOriginal") %>
                                                                     </asp:LinkButton>
                                                                     <span class="ld-sin-adjuntar" style='<%#: Eval("CruceIdDocumento") != null ? "display:none" : "" %>'><i class="fas fa-circle"></i> Sin adjuntar</span>
-                                                                    <asp:FileUpload runat="server" ID="fileCruceFila" CssClass="form-control form-control-sm mt-1" accept=".pdf,.jpg,.jpeg,.png" />
+                                                                    <asp:FileUpload runat="server" ID="fileCruceFila" CssClass="form-control form-control-sm mt-1" accept=".pdf,.jpg,.jpeg,.png" ToolTip="PDF, JPG o PNG. Máx. 10 MB." data-max-mb="10" data-max-envio-mb="24" />
                                                                 </ItemTemplate>
                                                             </asp:TemplateField>
 
@@ -1346,7 +1346,7 @@
                                                                         <i class="fas fa-file-pdf"></i> <%#: Eval("RetornoNombreOriginal") %>
                                                                     </asp:LinkButton>
                                                                     <span class="ld-sin-adjuntar" style='<%#: Eval("RetornoIdDocumento") != null ? "display:none" : "" %>'><i class="fas fa-circle"></i> Sin adjuntar</span>
-                                                                    <asp:FileUpload runat="server" ID="fileRetornoFila" CssClass="form-control form-control-sm mt-1" accept=".pdf,.jpg,.jpeg,.png" />
+                                                                    <asp:FileUpload runat="server" ID="fileRetornoFila" CssClass="form-control form-control-sm mt-1" accept=".pdf,.jpg,.jpeg,.png" ToolTip="PDF, JPG o PNG. Máx. 10 MB." data-max-mb="10" data-max-envio-mb="24" />
                                                                 </ItemTemplate>
                                                             </asp:TemplateField>
 

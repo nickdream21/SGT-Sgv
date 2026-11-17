@@ -29,10 +29,10 @@
                     <div class="card-body">
                         <p class="small text-muted">
                             Elija uno o varios PDF de SUNAT (la representaci&#xF3;n impresa que se descarga con la clave SOL).
-                            Volver a subir una factura no la duplica: se actualiza si cambi&#xF3; algo.
+                            Volver a subir una factura no la duplica: se actualiza si cambi&#xF3; algo. Hasta 10 MB por PDF y 45 MB en total.
                         </p>
                         <div class="form-group">
-                            <asp:FileUpload ID="fuFacturas" runat="server" AllowMultiple="true" accept=".pdf,application/pdf" CssClass="form-control-file" />
+                            <asp:FileUpload ID="fuFacturas" runat="server" AllowMultiple="true" accept=".pdf,application/pdf" CssClass="form-control-file" data-max-mb="45" />
                         </div>
                         <asp:Button ID="btnSubir" runat="server" CssClass="btn btn-primary" Text="Leer y registrar" OnClick="btnSubir_Click" />
                     </div>

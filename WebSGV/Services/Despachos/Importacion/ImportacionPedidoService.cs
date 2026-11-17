@@ -18,7 +18,7 @@ namespace WebSGV.Services.Despachos.Importacion
     /// </summary>
     public static class ImportacionPedidoService
     {
-        public const long TamanoMaximoArchivo = 20 * 1024 * 1024;   // por PDF
+        public const long TamanoMaximoArchivo = ArchivoSubidoHelper.MaxPdfImportacion;   // por PDF
         public const int MaximoDocumentos = 60;                      // un pedido trae ~12
 
         /// <summary>Archivo tal como llegó del formulario.</summary>
@@ -54,7 +54,13 @@ namespace WebSGV.Services.Despachos.Importacion
             {
                 string extension = Path.GetExtension(archivo.Nombre ?? string.Empty).ToLowerInvariant();
                 if (extension == ".zip")
-                    pdfs.AddRange(PdfsDelZip(archivo, ignorados));
+                {
+                    // Un .zip que no empieza con PK no es un ZIP (renombrado o dañado).
+                    if (ArchivoSubidoHelper.EsZip(archivo.Contenido))
+                        pdfs.AddRange(PdfsDelZip(archivo, ignorados));
+                    else
+                        ignorados.Add($"{archivo.Nombre}: no es un ZIP (está dañado o le cambiaron la extensión)");
+                }
                 else if (extension == ".pdf")
                     pdfs.Add(archivo);
                 else
@@ -69,6 +75,11 @@ namespace WebSGV.Services.Despachos.Importacion
                 if (pdf.Contenido.Length > TamanoMaximoArchivo)
                 {
                     ignorados.Add($"{pdf.Nombre}: supera los {TamanoMaximoArchivo / 1024 / 1024} MB");
+                    continue;
+                }
+                if (!ArchivoSubidoHelper.EsPdf(pdf.Contenido))
+                {
+                    ignorados.Add($"{pdf.Nombre}: no es un PDF (está dañado o le cambiaron la extensión)");
                     continue;
                 }
 
@@ -366,7 +377,7 @@ namespace WebSGV.Services.Despachos.Importacion
 
         // ── Programación en Word ──────────────────────────────────────────────
 
-        public const int TamanoMaximoProgramacion = 5 * 1024 * 1024;
+        public const int TamanoMaximoProgramacion = ArchivoSubidoHelper.MaxWord;
 
         /// <summary>
         /// Lee el Word de la programación del día y lo cruza con las guías: el chofer, el

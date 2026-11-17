@@ -40,7 +40,8 @@
         if (!b) return;
         b.form && b.form.addEventListener('submit', function (e) {
             if (e.submitter && e.submitter !== b) return;
-            setTimeout(function () { b.disabled = true; b.value = texto; }, 0);
+            // Si otro manejador canceló el envío (p. ej. SiteMaster.js por el tamaño), el botón queda usable.
+            setTimeout(function () { if (e.defaultPrevented) return; b.disabled = true; b.value = texto; }, 0);
         });
     }
     ocupado('.bd-btn-leer', 'Leyendo…');

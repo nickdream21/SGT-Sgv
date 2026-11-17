@@ -84,7 +84,7 @@ function iniciarDocumentosLote() {
         function actualizar() {
             var f = input[0].files && input[0].files[0];
             etiqueta.toggleClass('ld-con-archivo', !!f);
-            texto.text(f ? f.name : 'Elegir PDF o foto');
+            texto.text(f ? f.name : 'Elegir PDF o foto (máx. 10 MB)');
             boton.toggleClass('ld-desactivado', !f);
         }
         input.off('change.ld').on('change.ld', actualizar);

@@ -109,7 +109,10 @@ function scrollToConductores() {
 // que hacía postback completo).
 var _postbackEnCurso = false;
 
-document.addEventListener('submit', function () {
+document.addEventListener('submit', function (e) {
+    // Se mira después de que corran todos los manejadores: si alguno canceló el envío
+    // (SiteMaster.js por el tamaño de los archivos), la página no se va y el guard sigue armado.
+    setTimeout(function () { if (e.defaultPrevented) _postbackEnCurso = false; }, 0);
     _postbackEnCurso = true;
     // Si el postback no llega a navegar (validación de cliente que falla), se
     // rearma el guard para no dejar la página desprotegida.
