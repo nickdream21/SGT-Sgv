@@ -103,7 +103,7 @@ namespace WebSGV.Views
                     }
                 }
 
-                DbHelper.EjecutarNonQuery(
+                int idCliente = Convert.ToInt32(DbHelper.EjecutarEscalar(
                     @"INSERT INTO Cliente
                           (ruc, nombre, direccion, contacto, telefono, correo,
                            monedaFacturacion, esExportador, observaciones,
@@ -111,7 +111,8 @@ namespace WebSGV.Views
                       VALUES
                           (@ruc, @nombre, @direccion, @contacto, @telefono, @correo,
                            @moneda, @esExportador, @observaciones,
-                           @usuarioRegistro, 1)",
+                           @usuarioRegistro, 1);
+                      SELECT CAST(SCOPE_IDENTITY() AS INT);",
                     DbHelper.Param("@ruc",             TextoONull(ruc)),
                     DbHelper.Param("@nombre",          txtNombre.Text.Trim()),
                     DbHelper.Param("@direccion",       TextoONull(txtDireccion.Text)),
@@ -121,10 +122,10 @@ namespace WebSGV.Views
                     DbHelper.Param("@moneda",          ddlMoneda.SelectedValue),
                     DbHelper.Param("@esExportador",    chkEsExportador.Checked),
                     DbHelper.Param("@observaciones",   TextoONull(txtObservaciones.Text)),
-                    DbHelper.Param("@usuarioRegistro", ObtenerUsuarioActual()));
+                    DbHelper.Param("@usuarioRegistro", ObtenerUsuarioActual())));
 
-                AuditoriaHelper.Registrar("INSERT", "Cliente",
-                    descripcion: $"Cliente registrado - Nombre: {txtNombre.Text.Trim()}, " +
+                AuditoriaHelper.Registrar("INSERT", "Cliente", idCliente,
+                    $"Cliente registrado - Nombre: {txtNombre.Text.Trim()}, " +
                                  $"RUC: {(string.IsNullOrWhiteSpace(ruc) ? "Sin RUC" : ruc)}, " +
                                  $"Moneda: {ddlMoneda.SelectedValue}, " +
                                  $"Exportador: {(chkEsExportador.Checked ? "Si" : "No")}");
@@ -141,26 +142,23 @@ namespace WebSGV.Views
 
         protected void gvClientes_RowCommand(object sender, GridViewCommandEventArgs e)
         {
-            if (e.CommandName == "ToggleActivo")
+            if (e.CommandName != "ToggleActivo") return;
+
+            // Estado destino explícito "id|0" / "id|1" (B5-3): un F5 o una segunda pestaña ya no invierte el estado.
+            if (!EstadoActivoService.TryLeerArgumento(e.CommandArgument, out int id, out bool nuevoActivo))
             {
-                int idCliente = Convert.ToInt32(e.CommandArgument);
-                try
-                {
-                    DbHelper.EjecutarNonQuery(
-                        @"UPDATE Cliente
-                            SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
-                            WHERE idCliente = @id",
-                        DbHelper.Param("@id", idCliente));
+                MostrarMensaje("No se pudo leer la fila; recargue la página.");
+                return;
+            }
 
-                    AuditoriaHelper.Registrar("UPDATE", "Cliente", idCliente,
-                        "Estado de cliente actualizado (activar/desactivar)");
-
-                    CargarClientes();
-                }
-                catch (Exception ex)
-                {
-                    MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
-                }
+            try
+            {
+                MostrarResultadoEstado(MaestrosService.CambiarEstado(MaestroSimple.Cliente, id, nuevoActivo));
+                CargarClientes();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -179,7 +177,7 @@ namespace WebSGV.Views
         {
             if (!int.TryParse(hfIdCliente.Value, out int idCliente) || idCliente <= 0)
             {
-                MostrarMensaje("ID de cliente inválido.");
+                MostrarErrorModal("ID de cliente inválido.");
                 return;
             }
 
@@ -188,13 +186,13 @@ namespace WebSGV.Views
 
             if (string.IsNullOrWhiteSpace(nombre))
             {
-                MostrarMensaje("El nombre del cliente es obligatorio.");
+                MostrarErrorModal("El nombre del cliente es obligatorio.");
                 return;
             }
 
             if (!string.IsNullOrWhiteSpace(ruc) && (ruc.Length != 11 || !EsNumerico(ruc)))
             {
-                MostrarMensaje("El RUC debe contener 11 dígitos numéricos.");
+                MostrarErrorModal("El RUC debe contener 11 dígitos numéricos.");
                 return;
             }
 
@@ -205,7 +203,7 @@ namespace WebSGV.Views
                     "SELECT nombre FROM Cliente WHERE idCliente = @id", DbHelper.Param("@id", idCliente)) as string;
                 if (nombre != (nombreAnterior ?? "").Trim() && !RxNombre.IsMatch(nombre))
                 {
-                    MostrarMensaje(MensajeNombreInvalido);
+                    MostrarErrorModal(MensajeNombreInvalido);
                     return;
                 }
 
@@ -217,7 +215,7 @@ namespace WebSGV.Views
                         DbHelper.Param("@id", idCliente)));
                     if (dup > 0)
                     {
-                        MostrarMensaje("Ya existe otro cliente registrado con ese RUC.");
+                        MostrarErrorModal("Ya existe otro cliente registrado con ese RUC.");
                         return;
                     }
                 }
@@ -255,7 +253,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al actualizar el cliente: " + MensajeErrorHelper.ParaUsuario(ex));
+                MostrarErrorModal("Error al actualizar el cliente: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -301,6 +299,27 @@ namespace WebSGV.Views
             pnlMensaje.Visible = true;
             string css = esExito ? "alert alert-success" : "alert alert-danger";
             lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(mensaje)}</div>";
+        }
+
+        /// <summary>CommandArgument del botón Activar/Desactivar: "id|estadoDestino" (B5-3).</summary>
+        protected string ArgumentoEstado(object id, object activo) => EstadoActivoService.ArgumentoComando(id, activo);
+
+        /// <summary>Verde si cambió; amarillo si ya tenía ese estado (otra pestaña o F5).</summary>
+        private void MostrarResultadoEstado(ResultadoCambioEstado r)
+        {
+            pnlMensaje.Visible = true;
+            string css = r.Cambiado ? "alert alert-success" : "alert alert-warning";
+            lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(r.Mensaje)}</div>";
+        }
+
+        /// <summary>
+        /// Error de la edición dentro del modal (B5-7): el panel de arriba quedaba detrás del modal y a 390 px no
+        /// se veía. El panel no guarda ViewState: en el siguiente postback vuelve a estar oculto.
+        /// </summary>
+        private void MostrarErrorModal(string mensaje)
+        {
+            pnlErrorModal.Visible = true;
+            lblErrorModal.Text = MensajeHtml.Texto(mensaje);
         }
     }
 }

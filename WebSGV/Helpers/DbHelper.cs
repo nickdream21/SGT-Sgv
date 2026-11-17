@@ -50,6 +50,9 @@ namespace WebSGV.Helpers
         /// </summary>
         public static void FijarConexionParaPruebas(string cadena) => _conexionFijada = cadena;
 
+        /// <summary>true solo en los tests de integración (después de <see cref="FijarConexionParaPruebas"/>).</summary>
+        internal static bool HayConexionDePruebas => _conexionFijada != null;
+
         /// <summary>
         /// Crea un <see cref="SqlParameter"/> convirtiendo <c>null</c> a
         /// <see cref="DBNull.Value"/>. Equivale al patrón

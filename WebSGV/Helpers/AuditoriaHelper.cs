@@ -11,10 +11,9 @@ namespace WebSGV.Helpers
     /// </summary>
     public static class AuditoriaHelper
     {
-        private static string ConnectionString
-        {
-            get { return ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString; }
-        }
+        // La de DbHelper (ConexionSGV): así las pruebas de integración, que fijan la BD de pruebas en DbHelper,
+        // también pueden comprobar lo que se audita.
+        private static string ConnectionString => DbHelper.ConnectionString;
 
         /// <summary>
         /// Registra un evento de auditoría.
@@ -28,6 +27,11 @@ namespace WebSGV.Helpers
         public static void Registrar(string accion, string tablaAfectada, string idRegistroAfectado = null,
             string descripcion = null, string valoresAnteriores = null, string valoresNuevos = null)
         {
+            // En los tests de integración solo se audita dentro de una TransaccionDePrueba (se deshace):
+            // AuditoriaLog es de solo inserción y una prueba fuera de transacción dejaría filas para siempre.
+            if (DbHelper.HayConexionDePruebas && System.Transactions.Transaction.Current == null)
+                return;
+
             try
             {
                 int? idUsuario = null;

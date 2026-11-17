@@ -179,7 +179,7 @@
                                         <ItemTemplate>
                                             <asp:LinkButton ID="lbToggle" runat="server"
                                                 CommandName="ToggleActivo"
-                                                CommandArgument='<%# Eval("idCliente") %>'
+                                                CommandArgument='<%# ArgumentoEstado(Eval("idCliente"), Eval("activo")) %>'
                                                 CssClass='<%# ObtenerClaseBoton(Eval("activo")) %>'
                                                 OnClientClick="return confirm('&#xBF;Cambiar el estado de este cliente?');">
                                                 <%#: ObtenerTextoBoton(Eval("activo")) %>
@@ -205,6 +205,9 @@
                     <button type="button" class="close" style="color:#fff;" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
+                    <asp:Panel ID="pnlErrorModal" runat="server" Visible="false" EnableViewState="false" CssClass="alert alert-danger" role="alert">
+                        <asp:Label ID="lblErrorModal" runat="server" EnableViewState="false"></asp:Label>
+                    </asp:Panel>
                     <div class="form-row">
                         <div class="form-group col-md-4">
                             <label class="font-weight-bold">RUC (Opcional):</label>
@@ -276,6 +279,7 @@
             ddlEditarMoneda: '<%= ddlEditarMoneda.ClientID %>',
             chkEditarEsExportador: '<%= chkEditarEsExportador.ClientID %>',
             pnlMensaje: '<%= pnlMensaje.ClientID %>',
+            pnlErrorModal: '<%= pnlErrorModal.ClientID %>',
             txtRUC: '<%= txtRUC.ClientID %>',
             txtNombre: '<%= txtNombre.ClientID %>'
         });

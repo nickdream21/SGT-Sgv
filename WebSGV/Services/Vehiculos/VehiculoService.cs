@@ -160,6 +160,20 @@ namespace WebSGV.Services.Vehiculos
                 valoresNuevos: Describir(d));
         }
 
+        private static readonly TablaActivable TablaActivableTracto =
+            new TablaActivable("Tracto", "idTracto", "activo", "placaTracto", "tracto", femenino: false);
+
+        private static readonly TablaActivable TablaActivableCarreta =
+            new TablaActivable("Carreta", "idCarreta", "activo", "placaCarreta", "semirremolque", femenino: false);
+
+        /// <summary>
+        /// Activa o desactiva un tracto o semirremolque con estado destino explícito (B5-3): si ya lo estaba no
+        /// lo toca ni audita.
+        /// </summary>
+        public static ResultadoCambioEstado CambiarEstado(TipoVehiculo tipo, int id, bool nuevoActivo) =>
+            EstadoActivoService.Cambiar(tipo == TipoVehiculo.Tracto ? TablaActivableTracto : TablaActivableCarreta,
+                id, nuevoActivo);
+
         /// <summary>
         /// Rechaza la placa si otro vehículo del mismo tipo tiene la misma clave (sin guion ni espacios),
         /// aunque esté inactivo o escrito de otra forma.

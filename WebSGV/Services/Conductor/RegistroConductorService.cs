@@ -234,6 +234,19 @@ namespace WebSGV.Services.Conductor
                 valoresNuevos: Describir(d));
         }
 
+        private static readonly TablaActivable TablaActivableConductor = new TablaActivable(
+            "Conductor", "idConductor", "activo",
+            // Cada parte recortada: columnas CHAR con relleno ("ROBERTO   " + ' ' + "REMINTON  ")
+            "LTRIM(RTRIM(LTRIM(RTRIM(ISNULL(nombre, ''))) + ' ' + LTRIM(RTRIM(ISNULL(apPaterno, ''))) + ' ' + LTRIM(RTRIM(ISNULL(apMaterno, '')))))",
+            "conductor", femenino: false);
+
+        /// <summary>
+        /// Activa o desactiva un conductor con estado destino explícito (B5-3): si ya lo estaba no lo toca ni
+        /// audita.
+        /// </summary>
+        public static ResultadoCambioEstado CambiarEstado(int idConductor, bool nuevoActivo) =>
+            EstadoActivoService.Cambiar(TablaActivableConductor, idConductor, nuevoActivo);
+
         private static string Describir(DatosConductor c) =>
             $"Nombre: {c.Nombre ?? "(vacío)"}, Ap. paterno: {c.ApPaterno ?? "(vacío)"}, " +
             $"Ap. materno: {c.ApMaterno ?? "(vacío)"}, Teléfono: {c.Telefono ?? "(vacío)"}";

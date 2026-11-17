@@ -185,7 +185,7 @@
                                         <ItemTemplate>
                                             <asp:LinkButton ID="lbToggle" runat="server"
                                                 CommandName="ToggleActivo"
-                                                CommandArgument='<%# Eval("idConductor") %>'
+                                                CommandArgument='<%# ArgumentoEstado(Eval("idConductor"), Eval("activo")) %>'
                                                 CssClass='<%# ObtenerClaseBoton(Eval("activo")) %>'
                                                 OnClientClick="return confirm('&#xBF;Cambiar el estado de este conductor?');">
                                                 <%#: ObtenerTextoBoton(Eval("activo")) %>
@@ -211,6 +211,9 @@
                     <button type="button" class="close" style="color:#fff;" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
+                    <asp:Panel ID="pnlErrorModal" runat="server" Visible="false" EnableViewState="false" CssClass="alert alert-danger" role="alert">
+                        <asp:Label ID="lblErrorModal" runat="server" EnableViewState="false"></asp:Label>
+                    </asp:Panel>
                     <div class="row">
                         <div class="col-md-6 form-group">
                             <label class="font-weight-bold">Nombres <span class="text-danger">*</span></label>
@@ -250,6 +253,7 @@
             txtEditarApellidoMaterno: '<%= txtEditarApellidoMaterno.ClientID %>',
             txtEditarTelefono: '<%= txtEditarTelefono.ClientID %>',
             pnlMensaje: '<%= pnlMensaje.ClientID %>',
+            pnlErrorModal: '<%= pnlErrorModal.ClientID %>',
             txtDNI: '<%= txtDNI.ClientID %>',
             txtNombres: '<%= txtNombres.ClientID %>',
             txtApellidoPaterno: '<%= txtApellidoPaterno.ClientID %>',

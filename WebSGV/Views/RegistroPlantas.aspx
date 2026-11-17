@@ -116,7 +116,7 @@
                                         <ItemTemplate>
                                             <asp:LinkButton ID="lbToggle" runat="server"
                                                 CommandName="ToggleActivo"
-                                                CommandArgument='<%# Eval("idPlanta") %>'
+                                                CommandArgument='<%# ArgumentoEstado(Eval("idPlanta"), Eval("activo")) %>'
                                                 CssClass='<%# ObtenerClaseBoton(Eval("activo")) %>'
                                                 OnClientClick="return confirm('&#xBF;Cambiar el estado de esta planta?');">
                                                 <%#: ObtenerTextoBoton(Eval("activo")) %>
@@ -142,6 +142,9 @@
                     <button type="button" class="close" style="color:#fff;" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
+                    <asp:Panel ID="pnlErrorModal" runat="server" Visible="false" EnableViewState="false" CssClass="alert alert-danger" role="alert">
+                        <asp:Label ID="lblErrorModal" runat="server" EnableViewState="false"></asp:Label>
+                    </asp:Panel>
                     <div class="form-group">
                         <label class="font-weight-bold">Nombre de la planta <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control text-uppercase" MaxLength="200"></asp:TextBox>
@@ -169,7 +172,8 @@
             hfIdPlanta: '<%= hfIdPlanta.ClientID %>',
             txtEditarNombre: '<%= txtEditarNombre.ClientID %>',
             ddlEditarAmbito: '<%= ddlEditarAmbito.ClientID %>',
-            pnlMensaje: '<%= pnlMensaje.ClientID %>'
+            pnlMensaje: '<%= pnlMensaje.ClientID %>',
+            pnlErrorModal: '<%= pnlErrorModal.ClientID %>'
         });
     </script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/RegistroPlantas.js") %>"></script>

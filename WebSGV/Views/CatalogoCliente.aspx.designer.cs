@@ -28,6 +28,8 @@ namespace WebSGV.Views
         /// Control lblMensaje.
         /// </summary>
         protected global::System.Web.UI.WebControls.Label lblMensaje;
+        protected global::System.Web.UI.WebControls.Panel pnlErrorModal;
+        protected global::System.Web.UI.WebControls.Label lblErrorModal;
 
         /// <summary>
         /// Control lblResumen.

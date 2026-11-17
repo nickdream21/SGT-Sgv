@@ -9,9 +9,9 @@ using Xunit;
 namespace WebSGV.Tests
 {
     /// <summary>
-    /// Contraseña al firmar (ReautenticacionHelper) sin BD: el hash y el control de intentos se
-    /// inyectan. AuditoriaHelper.Registrar no tiene cadena de conexión en las pruebas y se traga
-    /// su error (nunca rompe la operación ni escribe en la BD).
+    /// Contraseña al firmar (ReautenticacionHelper) sin BD: el hash, el control de intentos y la
+    /// auditoría se inyectan. La auditoría va a una lista en memoria: la prueba nunca escribe en
+    /// AuditoriaLog (que es de solo inserción), corra sola o después de una prueba de integración.
     /// </summary>
     public class ReautenticacionHelperTests
     {
@@ -25,6 +25,12 @@ namespace WebSGV.Tests
 
         private DateTime _ahora = new DateTime(2026, 11, 14, 12, 0, 0, DateTimeKind.Utc);
         private readonly ControlIntentosLogin _control;
+        private readonly System.Collections.Concurrent.ConcurrentQueue<string> _auditorias =
+            new System.Collections.Concurrent.ConcurrentQueue<string>();
+
+        /// <summary>Registrador falso: guarda "ACCION|tabla|id".</summary>
+        private void Auditar(string accion, string tabla, int id, string descripcion) =>
+            _auditorias.Enqueue(accion + "|" + tabla + "|" + id);
 
         public ReautenticacionHelperTests()
         {
@@ -34,7 +40,7 @@ namespace WebSGV.Tests
         }
 
         private string Verificar(string contrasena, Func<int, string> leerHash = null) =>
-            ReautenticacionHelper.Verificar(IdUsuario, contrasena, leerHash ?? (_ => Hash), _control);
+            ReautenticacionHelper.Verificar(IdUsuario, contrasena, leerHash ?? (_ => Hash), _control, Auditar);
 
         [Fact]
         public void LimitesDeLaFirma_NoCambian()
@@ -54,7 +60,7 @@ namespace WebSGV.Tests
         public void ValidacionesDeEntrada_NoCuentanComoIntento()
         {
             Assert.Equal("Sesión no válida. Inicie sesión nuevamente.",
-                ReautenticacionHelper.Verificar(0, Correcta, _ => Hash, _control));
+                ReautenticacionHelper.Verificar(0, Correcta, _ => Hash, _control, Auditar));
             for (int i = 0; i < 10; i++)
                 Assert.Equal("Escribe tu contraseña para confirmar que eres tú quien firma.", Verificar(""));
             Assert.Null(Verificar(Correcta));
@@ -72,6 +78,7 @@ namespace WebSGV.Tests
             for (int i = 1; i <= 4; i++)
                 Assert.Equal(MsjIncorrecta, Verificar("mala" + i));
             Assert.Equal(MsjQuedoBloqueada, Verificar("mala5"));
+            Assert.Equal(Enumerable.Repeat("FIRMA_CONTRASENA_INCORRECTA|Usuarios|42", 5), _auditorias);
 
             // Bloqueada: ni la correcta pasa, y no se consulta la BD.
             bool consulto = false;
@@ -128,7 +135,7 @@ namespace WebSGV.Tests
         public void OtroUsuario_TieneSuPropioContador()
         {
             for (int i = 0; i < 5; i++) Verificar("mala");
-            Assert.Null(ReautenticacionHelper.Verificar(IdUsuario + 1, Correcta, _ => Hash, _control));
+            Assert.Null(ReautenticacionHelper.Verificar(IdUsuario + 1, Correcta, _ => Hash, _control, Auditar));
         }
 
         [Fact]
@@ -164,7 +171,7 @@ namespace WebSGV.Tests
 
         private string VerificarCambio(string contrasena, Func<int, string> leerHash = null) =>
             ReautenticacionHelper.Verificar(IdUsuario, contrasena, PropositoReautenticacion.CambioContrasena,
-                leerHash ?? (_ => Hash), _control);
+                leerHash ?? (_ => Hash), _control, Auditar);
 
         [Fact]
         public void Clave_EsUnaSolaParaFirmaYCambio()
@@ -179,7 +186,7 @@ namespace WebSGV.Tests
             Assert.Equal("Escribe tu contraseña actual.", VerificarCambio(""));
             Assert.Equal("La contraseña actual es incorrecta.", VerificarCambio("mala"));
             Assert.Equal("Sesión no válida. Inicie sesión nuevamente.",
-                ReautenticacionHelper.Verificar(0, Correcta, PropositoReautenticacion.CambioContrasena, _ => Hash, _control));
+                ReautenticacionHelper.Verificar(0, Correcta, PropositoReautenticacion.CambioContrasena, _ => Hash, _control, Auditar));
             Assert.Equal(MsjBdCaida, VerificarCambio(Correcta, _ => throw new InvalidOperationException("BD caída")));
         }
 
@@ -191,6 +198,7 @@ namespace WebSGV.Tests
             Assert.Equal("Demasiadas contraseñas incorrectas. El cambio de contraseña y la firma quedaron bloqueados por 15 minutos.",
                 VerificarCambio("mala5"));
             Assert.Equal("Demasiadas contraseñas incorrectas. Podrá volver a intentarlo en 15 minuto(s).", VerificarCambio(Correcta));
+            Assert.Equal(Enumerable.Repeat("CAMBIO_CONTRASENA_INCORRECTA|Usuarios|42", 5), _auditorias);
         }
 
         [Fact]

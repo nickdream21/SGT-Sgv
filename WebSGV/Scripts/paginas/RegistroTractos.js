@@ -1,6 +1,9 @@
 ﻿document.addEventListener('click', function (e) {
     var btn = e.target.closest('.btn-editar');
     if (!btn) return;
+    // Al abrir otra edición, el error anterior (B5-7) ya no corresponde
+    var errorModal = document.getElementById(SGV.pnlErrorModal);
+    if (errorModal) errorModal.style.display = 'none';
     document.getElementById(SGV.hfIdTracto).value = btn.dataset.id;
     document.getElementById(SGV.txtEditarPlaca).value = btn.dataset.placa;
     document.getElementById(SGV.txtEditarMarca).value = btn.dataset.marca;
@@ -9,9 +12,9 @@
 });
 
 document.addEventListener('DOMContentLoaded', function () {
-    var hf = document.getElementById(SGV.hfIdTracto);
     var msgPanel = document.getElementById(SGV.pnlMensaje);
-    if (hf && hf.value > 0 && msgPanel && msgPanel.querySelector('.alert-danger'))
+    // Edición rechazada (B5-7): el error está dentro del modal, que se reabre con lo escrito
+    if (document.getElementById(SGV.pnlErrorModal))
         $('#modalEditar').modal('show');
     if (msgPanel && msgPanel.querySelector('.alert-success')) {
         var ok = msgPanel.querySelector('.alert-success');

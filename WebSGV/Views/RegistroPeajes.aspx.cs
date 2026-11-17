@@ -79,12 +79,12 @@ namespace WebSGV.Views
                     return;
                 }
 
-                DbHelper.EjecutarNonQuery(
-                    "INSERT INTO EstacionesPeaje (nombre, activo) VALUES (@nombre, 1)",
-                    DbHelper.Param("@nombre", nombre));
+                int idEstacion = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "INSERT INTO EstacionesPeaje (nombre, activo) VALUES (@nombre, 1); SELECT CAST(SCOPE_IDENTITY() AS INT);",
+                    DbHelper.Param("@nombre", nombre)));
 
-                AuditoriaHelper.Registrar("INSERT", "EstacionesPeaje",
-                    descripcion: $"Estacion de peaje registrada - Nombre: {nombre}");
+                AuditoriaHelper.Registrar("INSERT", "EstacionesPeaje", idEstacion,
+                    $"Estacion de peaje registrada - Nombre: {nombre}");
 
                 txtNombre.Text = "";
                 MostrarMensaje("Estación de peaje registrada correctamente.", true);
@@ -98,26 +98,23 @@ namespace WebSGV.Views
 
         protected void gvPeajes_RowCommand(object sender, GridViewCommandEventArgs e)
         {
-            if (e.CommandName == "ToggleActivo")
+            if (e.CommandName != "ToggleActivo") return;
+
+            // Estado destino explícito "id|0" / "id|1" (B5-3): un F5 o una segunda pestaña ya no invierte el estado.
+            if (!EstadoActivoService.TryLeerArgumento(e.CommandArgument, out int id, out bool nuevoActivo))
             {
-                int idEstacion = Convert.ToInt32(e.CommandArgument);
-                try
-                {
-                    DbHelper.EjecutarNonQuery(
-                        @"UPDATE EstacionesPeaje
-                            SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
-                            WHERE idEstacion = @id",
-                        DbHelper.Param("@id", idEstacion));
+                MostrarMensaje("No se pudo leer la fila; recargue la página.");
+                return;
+            }
 
-                    AuditoriaHelper.Registrar("UPDATE", "EstacionesPeaje", idEstacion,
-                        "Estado de estacion de peaje actualizado (activar/desactivar)");
-
-                    CargarPeajes();
-                }
-                catch (Exception ex)
-                {
-                    MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
-                }
+            try
+            {
+                MostrarResultadoEstado(MaestrosService.CambiarEstado(MaestroSimple.EstacionPeaje, id, nuevoActivo));
+                CargarPeajes();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -136,7 +133,7 @@ namespace WebSGV.Views
         {
             if (!int.TryParse(hfIdEstacion.Value, out int idEstacion) || idEstacion <= 0)
             {
-                MostrarMensaje("ID de estación inválido.");
+                MostrarErrorModal("ID de estación inválido.");
                 return;
             }
 
@@ -144,7 +141,7 @@ namespace WebSGV.Views
 
             if (string.IsNullOrWhiteSpace(nombre))
             {
-                MostrarMensaje("Debe ingresar el nombre de la estación.");
+                MostrarErrorModal("Debe ingresar el nombre de la estación.");
                 return;
             }
 
@@ -155,12 +152,12 @@ namespace WebSGV.Views
                     "SELECT nombre FROM EstacionesPeaje WHERE idEstacion = @id", DbHelper.Param("@id", idEstacion)) as string;
                 if (anterior == null)
                 {
-                    MostrarMensaje("La estación ya no existe; recargue la página.");
+                    MostrarErrorModal("La estación ya no existe; recargue la página.");
                     return;
                 }
                 if (nombre != anterior.Trim().ToUpper() && !RxNombre.IsMatch(nombre))
                 {
-                    MostrarMensaje(MensajeNombreInvalido);
+                    MostrarErrorModal(MensajeNombreInvalido);
                     return;
                 }
 
@@ -170,7 +167,7 @@ namespace WebSGV.Views
                     DbHelper.Param("@id", idEstacion)));
                 if (dup > 0)
                 {
-                    MostrarMensaje("Ya existe otra estación de peaje con ese nombre.");
+                    MostrarErrorModal("Ya existe otra estación de peaje con ese nombre.");
                     return;
                 }
 
@@ -187,7 +184,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al actualizar la estación: " + MensajeErrorHelper.ParaUsuario(ex));
+                MostrarErrorModal("Error al actualizar la estación: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -196,6 +193,27 @@ namespace WebSGV.Views
             pnlMensaje.Visible = true;
             string css = esExito ? "alert alert-success" : "alert alert-danger";
             lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(mensaje)}</div>";
+        }
+
+        /// <summary>CommandArgument del botón Activar/Desactivar: "id|estadoDestino" (B5-3).</summary>
+        protected string ArgumentoEstado(object id, object activo) => EstadoActivoService.ArgumentoComando(id, activo);
+
+        /// <summary>Verde si cambió; amarillo si ya tenía ese estado (otra pestaña o F5).</summary>
+        private void MostrarResultadoEstado(ResultadoCambioEstado r)
+        {
+            pnlMensaje.Visible = true;
+            string css = r.Cambiado ? "alert alert-success" : "alert alert-warning";
+            lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(r.Mensaje)}</div>";
+        }
+
+        /// <summary>
+        /// Error de la edición dentro del modal (B5-7): el panel de arriba quedaba detrás del modal y a 390 px no
+        /// se veía. El panel no guarda ViewState: en el siguiente postback vuelve a estar oculto.
+        /// </summary>
+        private void MostrarErrorModal(string mensaje)
+        {
+            pnlErrorModal.Visible = true;
+            lblErrorModal.Text = MensajeHtml.Texto(mensaje);
         }
     }
 }

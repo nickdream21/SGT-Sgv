@@ -42,6 +42,8 @@ namespace WebSGV.Services.Clientes
             public string ColumnaFecha;
             public string Etiqueta;
             public string EtiquetaDetalle;
+            /// <summary>Género de <see cref="Etiqueta"/> para los mensajes ("la ruta", "el producto").</summary>
+            public bool Femenino;
             /// <summary>Rutas admiten idCliente nulo: valen para todos los clientes.</summary>
             public bool PermiteSinCliente;
             /// <summary>Largo de la columna <c>nombre</c> (lo comprueba una prueba contra la BD).</summary>
@@ -61,6 +63,7 @@ namespace WebSGV.Services.Clientes
                     ColumnaDetalle = "descripcion",
                     ColumnaFecha = "fechaRegistro",
                     Etiqueta = "producto",
+                    Femenino = false,
                     EtiquetaDetalle = "Descripción",
                     LargoNombre = 50,
                     LargoDetalle = 300
@@ -73,6 +76,7 @@ namespace WebSGV.Services.Clientes
                     ColumnaDetalle = "direccion",
                     ColumnaFecha = "fechaCreacion",
                     Etiqueta = "planta de carga",
+                    Femenino = true,
                     EtiquetaDetalle = "Dirección",
                     LargoNombre = 100,
                     LargoDetalle = 200
@@ -85,6 +89,7 @@ namespace WebSGV.Services.Clientes
                     ColumnaDetalle = "direccion",
                     ColumnaFecha = "fechaCreacion",
                     Etiqueta = "planta de descarga",
+                    Femenino = true,
                     EtiquetaDetalle = "Dirección",
                     LargoNombre = 100,
                     LargoDetalle = 200
@@ -97,6 +102,7 @@ namespace WebSGV.Services.Clientes
                     ColumnaDetalle = "descripcion",
                     ColumnaFecha = "fechaRegistro",
                     Etiqueta = "ruta",
+                    Femenino = true,
                     EtiquetaDetalle = "Descripción",
                     LargoNombre = 100,
                     LargoDetalle = 200,
@@ -113,6 +119,9 @@ namespace WebSGV.Services.Clientes
 
         /// <summary>Nombre del catálogo en singular, para mensajes al usuario.</summary>
         public static string Etiqueta(TipoCatalogo tipo) => Meta(tipo).Etiqueta;
+
+        /// <summary>Género de la etiqueta: "la ruta" / "el producto" (para los mensajes).</summary>
+        public static bool EsFemenino(TipoCatalogo tipo) => Meta(tipo).Femenino;
 
         /// <summary>Rótulo del campo secundario: "Descripción" o "Dirección" según el catálogo.</summary>
         public static string EtiquetaDetalle(TipoCatalogo tipo) => Meta(tipo).EtiquetaDetalle;
@@ -225,19 +234,21 @@ namespace WebSGV.Services.Clientes
             return Convert.ToInt32(valor) > 0;
         }
 
-        /// <summary>Agrega una fila al catálogo del cliente. Devuelve las filas afectadas.</summary>
+        /// <summary>Agrega una fila al catálogo del cliente. Devuelve su id (para la auditoría).</summary>
         public static int Crear(TipoCatalogo tipo, int idCliente, string nombre, string detalle)
         {
             MetaCatalogo m = Meta(tipo);
             Validar(tipo, nombre, detalle);
 
-            return DbHelper.EjecutarNonQuery(
+            // SCOPE_IDENTITY y no OUTPUT: si algún día la tabla tiene trigger, OUTPUT sin INTO falla
+            return Convert.ToInt32(DbHelper.EjecutarEscalar(
                 $@"INSERT INTO {m.Tabla} (nombre, {m.ColumnaDetalle}, idCliente, {m.ColumnaActivo}, {m.ColumnaFecha})
-                   VALUES (@nombre, @detalle, @idCliente, 1, @fecha)",
+                   VALUES (@nombre, @detalle, @idCliente, 1, @fecha);
+                   SELECT CAST(SCOPE_IDENTITY() AS INT);",
                 DbHelper.Param("@nombre", nombre.Trim()),
                 DbHelper.Param("@detalle", Opcional(detalle)),
                 DbHelper.Param("@idCliente", idCliente),
-                DbHelper.Param("@fecha", FechaHelper.Ahora()));
+                DbHelper.Param("@fecha", FechaHelper.Ahora())));
         }
 
         /// <summary>Actualiza nombre y detalle de una fila. Devuelve las filas afectadas.</summary>
@@ -257,31 +268,16 @@ namespace WebSGV.Services.Clientes
         }
 
         /// <summary>
-        /// Activa o desactiva una fila. Es baja lógica a propósito: un producto retirado
-        /// sigue referenciado por las órdenes de viaje históricas, así que borrarlo
-        /// rompería esos registros.
+        /// Activa o desactiva una fila con estado destino explícito (B5-3): si ya lo estaba no la toca ni
+        /// audita. Es baja lógica a propósito: un producto retirado sigue referenciado por las órdenes de
+        /// viaje históricas, así que borrarlo rompería esos registros.
         /// </summary>
-        public static int AlternarActivo(TipoCatalogo tipo, int idItem)
+        public static ResultadoCambioEstado CambiarActivo(TipoCatalogo tipo, int idItem, bool nuevoActivo)
         {
             MetaCatalogo m = Meta(tipo);
-
-            return DbHelper.EjecutarNonQuery(
-                $@"UPDATE {m.Tabla}
-                      SET {m.ColumnaActivo} = CASE WHEN {m.ColumnaActivo} = 1 THEN 0 ELSE 1 END
-                    WHERE {m.ColumnaId} = @idItem",
-                DbHelper.Param("@idItem", idItem));
-        }
-
-        /// <summary>Nombre de una fila, para el detalle de auditoría.</summary>
-        public static string ObtenerNombre(TipoCatalogo tipo, int idItem)
-        {
-            MetaCatalogo m = Meta(tipo);
-
-            object valor = DbHelper.EjecutarEscalar(
-                $"SELECT nombre FROM {m.Tabla} WHERE {m.ColumnaId} = @idItem",
-                DbHelper.Param("@idItem", idItem));
-
-            return valor?.ToString() ?? $"(#{idItem})";
+            return EstadoActivoService.Cambiar(
+                new TablaActivable(m.Tabla, m.ColumnaId, m.ColumnaActivo, "nombre", m.Etiqueta, m.Femenino),
+                idItem, nuevoActivo);
         }
 
         /// <summary>Nombre de la tabla del catálogo, para registrar la auditoría.</summary>

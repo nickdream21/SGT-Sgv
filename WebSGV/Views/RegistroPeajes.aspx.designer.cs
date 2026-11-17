@@ -10,6 +10,8 @@ namespace WebSGV.Views
     {
         protected global::System.Web.UI.WebControls.Panel pnlMensaje;
         protected global::System.Web.UI.WebControls.Label lblMensaje;
+        protected global::System.Web.UI.WebControls.Panel pnlErrorModal;
+        protected global::System.Web.UI.WebControls.Label lblErrorModal;
         protected global::System.Web.UI.WebControls.TextBox txtNombre;
         protected global::System.Web.UI.WebControls.Button btnRegistrar;
         protected global::System.Web.UI.WebControls.GridView gvPeajes;

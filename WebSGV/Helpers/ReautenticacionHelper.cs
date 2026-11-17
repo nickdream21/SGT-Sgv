@@ -60,23 +60,26 @@ namespace WebSGV.Helpers
             return Verificar(idUsuario, contrasena, proposito, LeerHashBd, Control);
         }
 
-        /// <summary>Firma, con la lectura del hash y el control inyectables (pruebas).</summary>
-        internal static string Verificar(int idUsuario, string contrasena, Func<int, string> leerHash, ControlIntentosLogin control)
+        /// <summary>Firma, con la lectura del hash, el control y la auditoría inyectables (pruebas).</summary>
+        internal static string Verificar(int idUsuario, string contrasena, Func<int, string> leerHash, ControlIntentosLogin control,
+            Action<string, string, int, string> auditar = null)
         {
-            return Verificar(idUsuario, contrasena, PropositoReautenticacion.Firma, leerHash, control);
+            return Verificar(idUsuario, contrasena, PropositoReautenticacion.Firma, leerHash, control, auditar);
         }
 
         /// <summary>
         /// Igual que <see cref="Verificar(int, string, PropositoReautenticacion)"/>, con la lectura del
         /// hash y el control de intentos inyectables (pruebas). <paramref name="leerHash"/> devuelve el
         /// hash guardado o null si el usuario no existe o está inactivo; si lanza, se trata como caída
-        /// de la BD.
+        /// de la BD. <paramref name="auditar"/> (accion, tabla, id, descripcion) registra el intento
+        /// fallido; por defecto <see cref="AuditoriaHelper.Registrar(string, string, int, string, string, string)"/>.
         /// </summary>
         internal static string Verificar(int idUsuario, string contrasena, PropositoReautenticacion proposito,
-            Func<int, string> leerHash, ControlIntentosLogin control)
+            Func<int, string> leerHash, ControlIntentosLogin control, Action<string, string, int, string> auditar = null)
         {
             if (leerHash == null) throw new ArgumentNullException(nameof(leerHash));
             if (control == null) throw new ArgumentNullException(nameof(control));
+            if (auditar == null) auditar = (accion, tabla, id, descripcion) => AuditoriaHelper.Registrar(accion, tabla, id, descripcion);
 
             bool esFirma = proposito == PropositoReautenticacion.Firma;
             string msjIncorrecta = esFirma ? "La contraseña no es correcta." : "La contraseña actual es incorrecta.";
@@ -121,10 +124,10 @@ namespace WebSGV.Helpers
 
             bool bloqueado = reserva.BloqueoCuenta;
             if (esFirma)
-                AuditoriaHelper.Registrar("FIRMA_CONTRASENA_INCORRECTA", "Usuarios", idUsuario,
+                auditar("FIRMA_CONTRASENA_INCORRECTA", "Usuarios", idUsuario,
                     bloqueado ? "Contraseña incorrecta al firmar: firma bloqueada temporalmente" : "Contraseña incorrecta al firmar");
             else
-                AuditoriaHelper.Registrar("CAMBIO_CONTRASENA_INCORRECTA", "Usuarios", idUsuario,
+                auditar("CAMBIO_CONTRASENA_INCORRECTA", "Usuarios", idUsuario,
                     bloqueado ? "Contraseña actual incorrecta al cambiarla: bloqueada temporalmente" : "Contraseña actual incorrecta al cambiarla");
 
             if (!bloqueado)

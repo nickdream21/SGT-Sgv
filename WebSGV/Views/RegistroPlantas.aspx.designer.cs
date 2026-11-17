@@ -10,6 +10,8 @@ namespace WebSGV.Views
     {
         protected global::System.Web.UI.WebControls.Panel pnlMensaje;
         protected global::System.Web.UI.WebControls.Label lblMensaje;
+        protected global::System.Web.UI.WebControls.Panel pnlErrorModal;
+        protected global::System.Web.UI.WebControls.Label lblErrorModal;
         protected global::System.Web.UI.WebControls.Label lblTotalPlantas;
         protected global::System.Web.UI.WebControls.TextBox txtNombre;
         protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvNombre;

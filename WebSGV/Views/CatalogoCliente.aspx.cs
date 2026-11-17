@@ -4,6 +4,7 @@ using System.Data;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Common;
 using WebSGV.Services.Clientes;
 
 namespace WebSGV.Views
@@ -168,17 +169,17 @@ namespace WebSGV.Views
             {
                 if (CatalogoClienteService.ExisteNombre(TabActual, idCliente, nombre))
                 {
-                    MostrarMensaje($"Este cliente ya tiene una {CatalogoClienteService.Etiqueta(TabActual)} con ese nombre.");
+                    MostrarMensaje($"Este cliente ya tiene {(CatalogoClienteService.EsFemenino(TabActual) ? "una" : "un")} {CatalogoClienteService.Etiqueta(TabActual)} con ese nombre.");
                     return;
                 }
 
-                CatalogoClienteService.Crear(TabActual, idCliente, nombre, txtDetalle.Text);
+                int idNuevo = CatalogoClienteService.Crear(TabActual, idCliente, nombre, txtDetalle.Text);
 
-                AuditoriaHelper.Registrar("INSERT", CatalogoClienteService.NombreTabla(TabActual),
-                    descripcion: $"{CatalogoClienteService.Etiqueta(TabActual)} '{nombre}' agregada al cliente {ddlCliente.SelectedItem.Text}");
+                AuditoriaHelper.Registrar("INSERT", CatalogoClienteService.NombreTabla(TabActual), idNuevo,
+                    $"{CatalogoClienteService.Etiqueta(TabActual)} '{nombre}' {(CatalogoClienteService.EsFemenino(TabActual) ? "agregada" : "agregado")} al cliente {ddlCliente.SelectedItem.Text}");
 
                 LimpiarFormulario();
-                MostrarMensaje($"Se agregó la {CatalogoClienteService.Etiqueta(TabActual)} correctamente.", true);
+                MostrarMensaje($"Se agregó {(CatalogoClienteService.EsFemenino(TabActual) ? "la" : "el")} {CatalogoClienteService.Etiqueta(TabActual)} correctamente.", true);
                 RefrescarPantalla();
             }
             catch (Exception ex)
@@ -192,14 +193,14 @@ namespace WebSGV.Views
         {
             if (!int.TryParse(hfIdItem.Value, out int idItem) || idItem <= 0)
             {
-                MostrarMensaje("Elemento inválido.");
+                MostrarErrorModal("Elemento inválido.");
                 return;
             }
 
             string nombre = txtEditarNombre.Text.Trim();
             if (string.IsNullOrWhiteSpace(nombre))
             {
-                MostrarMensaje("El nombre es obligatorio.");
+                MostrarErrorModal("El nombre es obligatorio.");
                 return;
             }
 
@@ -209,7 +210,7 @@ namespace WebSGV.Views
             {
                 if (CatalogoClienteService.ExisteNombre(TabActual, idCliente, nombre, idItem))
                 {
-                    MostrarMensaje($"Este cliente ya tiene otra {CatalogoClienteService.Etiqueta(TabActual)} con ese nombre.");
+                    MostrarErrorModal($"Este cliente ya tiene {(CatalogoClienteService.EsFemenino(TabActual) ? "otra" : "otro")} {CatalogoClienteService.Etiqueta(TabActual)} con ese nombre.");
                     return;
                 }
 
@@ -225,7 +226,7 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al actualizar el catálogo del cliente");
-                MostrarMensaje("Error al guardar los cambios: " + MensajeErrorHelper.ParaUsuario(ex));
+                MostrarErrorModal("Error al guardar los cambios: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -233,21 +234,20 @@ namespace WebSGV.Views
         {
             if (e.CommandName != "ToggleActivo") return;
 
-            if (!int.TryParse(e.CommandArgument?.ToString(), out int idItem)) return;
+            // Estado destino explícito "id|0" / "id|1" (B5-3): un F5 o una segunda pestaña ya no invierte el estado.
+            if (!EstadoActivoService.TryLeerArgumento(e.CommandArgument, out int id, out bool nuevoActivo))
+            {
+                MostrarMensaje("No se pudo leer la fila; recargue la página.");
+                return;
+            }
 
             try
             {
-                string nombre = CatalogoClienteService.ObtenerNombre(TabActual, idItem);
-                CatalogoClienteService.AlternarActivo(TabActual, idItem);
-
-                AuditoriaHelper.Registrar("UPDATE", CatalogoClienteService.NombreTabla(TabActual), idItem,
-                    $"Estado de {CatalogoClienteService.Etiqueta(TabActual)} '{nombre}' actualizado (activar/desactivar)");
-
+                MostrarResultadoEstado(CatalogoClienteService.CambiarActivo(TabActual, id, nuevoActivo));
                 RefrescarPantalla();
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al cambiar el estado en el catálogo del cliente");
                 MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
@@ -278,7 +278,28 @@ namespace WebSGV.Views
         {
             pnlMensaje.Visible = true;
             string css = esExito ? "alert alert-success" : "alert alert-danger";
-            lblMensaje.Text = $"<div class='{css}'>{System.Web.HttpUtility.HtmlEncode(mensaje)}</div>";
+            lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(mensaje)}</div>";
+        }
+
+        /// <summary>CommandArgument del botón Activar/Desactivar: "id|estadoDestino" (B5-3).</summary>
+        protected string ArgumentoEstado(object id, object activo) => EstadoActivoService.ArgumentoComando(id, activo);
+
+        /// <summary>Verde si cambió; amarillo si ya tenía ese estado (otra pestaña o F5).</summary>
+        private void MostrarResultadoEstado(ResultadoCambioEstado r)
+        {
+            pnlMensaje.Visible = true;
+            string css = r.Cambiado ? "alert alert-success" : "alert alert-warning";
+            lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(r.Mensaje)}</div>";
+        }
+
+        /// <summary>
+        /// Error de la edición dentro del modal (B5-7): el panel de arriba quedaba detrás del modal y a 390 px no
+        /// se veía. El panel no guarda ViewState: en el siguiente postback vuelve a estar oculto.
+        /// </summary>
+        private void MostrarErrorModal(string mensaje)
+        {
+            pnlErrorModal.Visible = true;
+            lblErrorModal.Text = MensajeHtml.Texto(mensaje);
         }
 
         #endregion

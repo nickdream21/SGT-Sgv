@@ -11,6 +11,7 @@ using System.Web.Services;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Common;
 using WebSGV.Models;
 using WebSGV.Services.Conductor;
 
@@ -82,24 +83,23 @@ namespace WebSGV.Views
 
         protected void gvConductores_RowCommand(object sender, GridViewCommandEventArgs e)
         {
-            if (e.CommandName == "ToggleActivo")
+            if (e.CommandName != "ToggleActivo") return;
+
+            // Estado destino explícito "id|0" / "id|1" (B5-3): un F5 o una segunda pestaña ya no invierte el estado.
+            if (!EstadoActivoService.TryLeerArgumento(e.CommandArgument, out int id, out bool nuevoActivo))
             {
-                int idConductor = Convert.ToInt32(e.CommandArgument);
-                try
-                {
-                    DbHelper.EjecutarNonQuery(
-                        @"UPDATE Conductor SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END WHERE idConductor = @id",
-                        DbHelper.Param("@id", idConductor));
+                MostrarMensaje("No se pudo leer la fila; recargue la página.");
+                return;
+            }
 
-                    AuditoriaHelper.Registrar("UPDATE", "Conductor", idConductor,
-                        "Estado de conductor actualizado (activar/desactivar)");
-
-                    CargarConductores();
-                }
-                catch (Exception ex)
-                {
-                    MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
-                }
+            try
+            {
+                MostrarResultadoEstado(RegistroConductorService.CambiarEstado(id, nuevoActivo));
+                CargarConductores();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -128,14 +128,36 @@ namespace WebSGV.Views
             lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(mensaje)}</div>";
         }
 
+        /// <summary>CommandArgument del botón Activar/Desactivar: "id|estadoDestino" (B5-3).</summary>
+        protected string ArgumentoEstado(object id, object activo) => EstadoActivoService.ArgumentoComando(id, activo);
+
+        /// <summary>Verde si cambió; amarillo si ya tenía ese estado (otra pestaña o F5).</summary>
+        private void MostrarResultadoEstado(ResultadoCambioEstado r)
+        {
+            pnlMensaje.Visible = true;
+            string css = r.Cambiado ? "alert alert-success" : "alert alert-warning";
+            lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(r.Mensaje)}</div>";
+        }
+
+        /// <summary>
+        /// Error de la edición dentro del modal (B5-7): el panel de arriba quedaba detrás del modal y a 390 px no
+        /// se veía. El panel no guarda ViewState: en el siguiente postback vuelve a estar oculto.
+        /// </summary>
+        private void MostrarErrorModal(string mensaje)
+        {
+            pnlErrorModal.Visible = true;
+            lblErrorModal.Text = MensajeHtml.Texto(mensaje);
+        }
+
+        // Recortado: nombre y apellidos son CHAR con relleno y el modal los mostraba con espacios al final
         protected string AttrEncode(object val) =>
-            System.Web.HttpUtility.HtmlAttributeEncode(val?.ToString() ?? "");
+            System.Web.HttpUtility.HtmlAttributeEncode((val?.ToString() ?? "").Trim());
 
         protected void btnActualizarConductor_Click(object sender, EventArgs e)
         {
             if (!int.TryParse(hfIdConductor.Value, out int idConductor) || idConductor <= 0)
             {
-                MostrarMensaje("ID de conductor inválido.");
+                MostrarErrorModal("ID de conductor inválido.");
                 return;
             }
 
@@ -150,7 +172,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al actualizar el conductor: " + MensajeErrorHelper.ParaUsuario(ex));
+                MostrarErrorModal("Error al actualizar el conductor: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 

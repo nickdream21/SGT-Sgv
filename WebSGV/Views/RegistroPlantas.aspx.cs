@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Views
 {
@@ -72,13 +73,14 @@ namespace WebSGV.Views
                     return;
                 }
 
-                DbHelper.EjecutarNonQuery(
-                    "INSERT INTO Planta (nombre, esInternacional, activo) VALUES (@nombre, @esInternacional, 1)",
+                int idPlanta = Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "INSERT INTO Planta (nombre, esInternacional, activo) VALUES (@nombre, @esInternacional, 1); " +
+                    "SELECT CAST(SCOPE_IDENTITY() AS INT);",
                     DbHelper.Param("@nombre", nombre),
-                    DbHelper.Param("@esInternacional", esInternacional));
+                    DbHelper.Param("@esInternacional", esInternacional)));
 
-                AuditoriaHelper.Registrar("INSERT", "Planta",
-                    descripcion: $"Planta registrada - Nombre: {nombre}, Ámbito: {(esInternacional ? "Internacional" : "Nacional")}");
+                AuditoriaHelper.Registrar("INSERT", "Planta", idPlanta,
+                    $"Planta registrada - Nombre: {nombre}, Ámbito: {(esInternacional ? "Internacional" : "Nacional")}");
 
                 txtNombre.Text = "";
                 ddlAmbito.SelectedIndex = 0;
@@ -93,26 +95,23 @@ namespace WebSGV.Views
 
         protected void gvPlantas_RowCommand(object sender, GridViewCommandEventArgs e)
         {
-            if (e.CommandName == "ToggleActivo")
+            if (e.CommandName != "ToggleActivo") return;
+
+            // Estado destino explícito "id|0" / "id|1" (B5-3): un F5 o una segunda pestaña ya no invierte el estado.
+            if (!EstadoActivoService.TryLeerArgumento(e.CommandArgument, out int id, out bool nuevoActivo))
             {
-                int idPlanta = Convert.ToInt32(e.CommandArgument);
-                try
-                {
-                    DbHelper.EjecutarNonQuery(
-                        @"UPDATE Planta
-                            SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END
-                            WHERE idPlanta = @id",
-                        DbHelper.Param("@id", idPlanta));
+                MostrarMensaje("No se pudo leer la fila; recargue la página.");
+                return;
+            }
 
-                    AuditoriaHelper.Registrar("UPDATE", "Planta", idPlanta,
-                        "Estado de planta actualizado (activar/desactivar)");
-
-                    CargarPlantas();
-                }
-                catch (Exception ex)
-                {
-                    MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
-                }
+            try
+            {
+                MostrarResultadoEstado(MaestrosService.CambiarEstado(MaestroSimple.Planta, id, nuevoActivo));
+                CargarPlantas();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Error al actualizar el estado: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -143,7 +142,7 @@ namespace WebSGV.Views
         {
             if (!int.TryParse(hfIdPlanta.Value, out int idPlanta) || idPlanta <= 0)
             {
-                MostrarMensaje("ID de planta inválido.");
+                MostrarErrorModal("ID de planta inválido.");
                 return;
             }
 
@@ -152,7 +151,7 @@ namespace WebSGV.Views
 
             if (string.IsNullOrWhiteSpace(nombre))
             {
-                MostrarMensaje("Debe ingresar el nombre de la planta.");
+                MostrarErrorModal("Debe ingresar el nombre de la planta.");
                 return;
             }
 
@@ -165,7 +164,7 @@ namespace WebSGV.Views
                     DbHelper.Param("@id", idPlanta)));
                 if (dup > 0)
                 {
-                    MostrarMensaje("Ya existe otra planta con ese nombre en el mismo ámbito.");
+                    MostrarErrorModal("Ya existe otra planta con ese nombre en el mismo ámbito.");
                     return;
                 }
 
@@ -183,7 +182,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al actualizar la planta: " + MensajeErrorHelper.ParaUsuario(ex));
+                MostrarErrorModal("Error al actualizar la planta: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -192,6 +191,27 @@ namespace WebSGV.Views
             pnlMensaje.Visible = true;
             string css = esExito ? "alert alert-success" : "alert alert-danger";
             lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(mensaje)}</div>";
+        }
+
+        /// <summary>CommandArgument del botón Activar/Desactivar: "id|estadoDestino" (B5-3).</summary>
+        protected string ArgumentoEstado(object id, object activo) => EstadoActivoService.ArgumentoComando(id, activo);
+
+        /// <summary>Verde si cambió; amarillo si ya tenía ese estado (otra pestaña o F5).</summary>
+        private void MostrarResultadoEstado(ResultadoCambioEstado r)
+        {
+            pnlMensaje.Visible = true;
+            string css = r.Cambiado ? "alert alert-success" : "alert alert-warning";
+            lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(r.Mensaje)}</div>";
+        }
+
+        /// <summary>
+        /// Error de la edición dentro del modal (B5-7): el panel de arriba quedaba detrás del modal y a 390 px no
+        /// se veía. El panel no guarda ViewState: en el siguiente postback vuelve a estar oculto.
+        /// </summary>
+        private void MostrarErrorModal(string mensaje)
+        {
+            pnlErrorModal.Visible = true;
+            lblErrorModal.Text = MensajeHtml.Texto(mensaje);
         }
     }
 }
