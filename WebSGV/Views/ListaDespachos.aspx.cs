@@ -778,7 +778,10 @@ namespace WebSGV.Views
             ddlConductor.Items.Clear();
             if (_conductoresLoteCache != null)
             {
-                ddlConductor.Items.AddRange(_conductoresLoteCache.ToArray());
+                // Un ListItem nuevo por fila: si se comparten las mismas instancias, marcar el conductor de una
+                // fila lo marca en todas y "Guardar cambios" asignaba el del último despacho a todo el lote.
+                ddlConductor.Items.AddRange(_conductoresLoteCache
+                    .Select(i => new ListItem(i.Text, i.Value)).ToArray());
             }
             else
             {
