@@ -40,7 +40,31 @@ namespace WebSGV.Services.Despachos
 
         // ── Lectura ──────────────────────────────────────────────────────────
 
-        public static LecturaBandeja Leer(IEnumerable<ImportacionPedidoService.ArchivoSubido> archivos, string rucEmpresa)
+        public static LecturaBandeja Leer(IEnumerable<ImportacionPedidoService.ArchivoSubido> archivos, string rucEmpresa) =>
+            Leer(archivos, rucEmpresa, null);
+
+        /// <summary>
+        /// Igual que el anterior con el presupuesto de descompresión del envío inyectable (pruebas);
+        /// null = uno nuevo (<see cref="ImportacionPedidoService.PresupuestoLectura"/>), compartido por todos los ZIP.
+        /// </summary>
+        public static LecturaBandeja Leer(IEnumerable<ImportacionPedidoService.ArchivoSubido> archivos, string rucEmpresa,
+                                          ImportacionPedidoService.PresupuestoLectura presupuesto)
+        {
+            var l = LeerArchivos(archivos, rucEmpresa, presupuesto ?? new ImportacionPedidoService.PresupuestoLectura());
+            AsociarGuias(l);
+            AsociarCpics(l);
+            AsociarMcis(l);
+            AsociarGres(l);
+            MarcarGuiasSinPdf(l);
+            return l;
+        }
+
+        /// <summary>
+        /// Lee y clasifica los archivos sin cruzarlos con lo registrado. Solo toca la BD si un pedido
+        /// trae guías o factura (<see cref="ImportacionPedidoService.Asociar"/>).
+        /// </summary>
+        internal static LecturaBandeja LeerArchivos(IEnumerable<ImportacionPedidoService.ArchivoSubido> archivos, string rucEmpresa,
+                                                    ImportacionPedidoService.PresupuestoLectura presupuesto)
         {
             var l = new LecturaBandeja();
             var sueltos = new List<ImportacionPedidoService.ArchivoSubido>();
@@ -51,7 +75,7 @@ namespace WebSGV.Services.Despachos
                 string ext = Path.GetExtension(a.Nombre ?? "").ToLowerInvariant();
                 if (ext == ".zip")
                 {
-                    LeerPedido(l, a.Nombre, new[] { a });
+                    LeerPedido(l, a.Nombre, new[] { a }, presupuesto);
                     continue;
                 }
                 if (ext != ".pdf")
@@ -66,13 +90,7 @@ namespace WebSGV.Services.Despachos
 
             // PDF sueltos (guías, packing list, factura comercial): se leen juntos como un pedido.
             if (sueltos.Count > 0)
-                LeerPedido(l, sueltos.Count == 1 ? sueltos[0].Nombre : $"{sueltos.Count} PDF sueltos", sueltos);
-
-            AsociarGuias(l);
-            AsociarCpics(l);
-            AsociarMcis(l);
-            AsociarGres(l);
-            MarcarGuiasSinPdf(l);
+                LeerPedido(l, sueltos.Count == 1 ? sueltos[0].Nombre : $"{sueltos.Count} PDF sueltos", sueltos, presupuesto);
             return l;
         }
 
@@ -175,12 +193,20 @@ namespace WebSGV.Services.Despachos
             return true;
         }
 
-        private static void LeerPedido(LecturaBandeja l, string nombre, IEnumerable<ImportacionPedidoService.ArchivoSubido> archivos)
+        private static void LeerPedido(LecturaBandeja l, string nombre, IEnumerable<ImportacionPedidoService.ArchivoSubido> archivos,
+                                       ImportacionPedidoService.PresupuestoLectura presupuesto)
         {
             ImportacionPedido imp;
             ImportacionPedidoService.ArchivoSubido facturaPdf;
             Dictionary<string, ImportacionPedidoService.ArchivoSubido> pdfGuias;
-            try { imp = ImportacionPedidoService.Leer(archivos, out facturaPdf, out pdfGuias); }
+            // Con el presupuesto del envío ya agotado, un ZIP no se abre: una sola línea, sin "no tiene guías".
+            if (presupuesto.Agotado && archivos.Any(a => Path.GetExtension(a.Nombre ?? "").Equals(".zip", StringComparison.OrdinalIgnoreCase)))
+            {
+                presupuesto.Avisar(l.NoReconocidos);   // el aviso general, si aún no salió en el envío
+                l.NoReconocidos.Add($"{nombre}: no se leyó (límite de lectura por envío)");
+                return;
+            }
+            try { imp = ImportacionPedidoService.Leer(archivos, out facturaPdf, out pdfGuias, presupuesto); }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Bandeja: no se pudo leer {Archivo}", nombre);

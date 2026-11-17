@@ -116,6 +116,52 @@ namespace WebSGV.Tests
             Assert.Throws<ErrorNegocioException>(() => LectorProgramacionWord.Leer(Encoding.ASCII.GetBytes("no es un docx")));
         }
 
+        private static byte[] Docx(Action<StreamWriter> escribir)
+        {
+            using (var ms = new MemoryStream())
+            {
+                using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, true))
+                using (var w = new StreamWriter(zip.CreateEntry("word/document.xml").Open(), new UTF8Encoding(false)))
+                    escribir(w);
+                return ms.ToArray();
+            }
+        }
+
+        private static void DocumentoGrande(StreamWriter w)
+        {
+            w.Write("<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body>");
+            string parrafo = "<w:p><w:r><w:t>" + new string('A', 1000) + "</w:t></w:r></w:p>";
+            for (long escrito = 0; escrito <= LectorProgramacionWord.MaxDocumentoXml; escrito += parrafo.Length)
+                w.Write(parrafo);
+            w.Write("</w:body></w:document>");
+        }
+
+        [Fact]
+        public void Leer_DocumentXmlDeMasDe10MB_ErrorParaElUsuario()
+        {
+            var ex = Assert.Throws<ErrorNegocioException>(() => LectorProgramacionWord.Leer(Docx(DocumentoGrande)));
+            Assert.Contains("demasiado grande", ex.Message);
+        }
+
+        [Fact]
+        public void Leer_DocumentXmlQueMienteSobreSuTamano_ElLectorXmlLoCorta()
+        {
+            // Declara 1 KB: pasa el primer control, pero el lector corta a los 10 millones de caracteres.
+            var docx = ImportacionZipBombTests.MentirTamano(Docx(DocumentoGrande), 1024);
+            Assert.Throws<ErrorNegocioException>(() => LectorProgramacionWord.Leer(docx));
+        }
+
+        [Fact]
+        public void Leer_DocumentXmlConDtd_ErrorParaElUsuario()
+        {
+            var docx = Docx(w => w.Write(
+                "<?xml version=\"1.0\"?><!DOCTYPE w:document [<!ENTITY a \"aaaaaaaaaa\"><!ENTITY b \"&a;&a;&a;&a;&a;\">]>" +
+                "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body>" +
+                "<w:p><w:r><w:t>&b;</w:t></w:r></w:p></w:body></w:document>"));
+
+            Assert.Throws<ErrorNegocioException>(() => LectorProgramacionWord.Leer(docx));
+        }
+
         [Theory]
         [InlineData("ROGER PAZ", "ROGEER DEL CARMEN PAZ LUNA - DNI: 12345678", true)]   // una letra de diferencia
         [InlineData("ANGELO CAMPOS", "EDWIN ANGELO CAMPOS VILCA", true)]                      // segundo nombre

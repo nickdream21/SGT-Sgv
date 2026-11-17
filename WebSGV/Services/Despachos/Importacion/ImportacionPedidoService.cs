@@ -28,6 +28,61 @@ namespace WebSGV.Services.Despachos.Importacion
             public byte[] Contenido { get; set; }
         }
 
+        /// <summary>
+        /// Cuánto se puede descomprimir de los ZIP en un mismo envío (tarea 14 B, zip bomb): sin esto,
+        /// la bandeja (60 ZIP × 60 PDF × 20 MB) podía llenar la memoria del servidor. Se comparte
+        /// entre todas las lecturas de un envío. Solo cuenta lo que sale de un ZIP: los PDF sueltos ya
+        /// llegaron enteros con el formulario y los limita el tamaño del envío.
+        /// </summary>
+        public class PresupuestoLectura
+        {
+            public const long BytesPorEnvio = 100L * 1024 * 1024;
+            public const int PdfPorEnvio = 300;
+
+            public PresupuestoLectura() : this(BytesPorEnvio, PdfPorEnvio) { }
+
+            public PresupuestoLectura(long bytes, int pdfs)
+            {
+                LimiteBytes = BytesRestantes = bytes;
+                LimitePdf = PdfRestantes = pdfs;
+            }
+
+            public long LimiteBytes { get; }
+            public int LimitePdf { get; }
+            public long BytesRestantes { get; private set; }
+            public int PdfRestantes { get; private set; }
+
+            /// <summary>True cuando ya no se puede leer nada más en este envío.</summary>
+            public bool Agotado { get; private set; }
+
+            public string Aviso =>
+                $"Se alcanzó el límite de lectura por envío ({ArchivoSubidoHelper.TextoTamano(LimiteBytes)} / {LimitePdf} PDF); suba el resto en otro envío.";
+
+            internal void Descontar(long bytes)
+            {
+                BytesRestantes = Math.Max(0, BytesRestantes - bytes);
+                if (BytesRestantes == 0) Agotado = true;
+            }
+
+            internal void ContarPdfs(int cantidad)
+            {
+                PdfRestantes = Math.Max(0, PdfRestantes - cantidad);
+                if (PdfRestantes == 0) Agotado = true;
+            }
+
+            /// <summary>True cuando el <see cref="Aviso"/> ya se dio en este envío (sale una sola vez).</summary>
+            internal bool AvisoDado { get; private set; }
+
+            /// <summary>Marca el presupuesto como agotado y agrega el aviso si aún no se dio en el envío.</summary>
+            internal void Avisar(List<string> ignorados)
+            {
+                Agotado = true;
+                if (AvisoDado) return;
+                AvisoDado = true;
+                ignorados.Add(Aviso);
+            }
+        }
+
         // ── Lectura ───────────────────────────────────────────────────────────
 
         /// <summary>
@@ -41,14 +96,19 @@ namespace WebSGV.Services.Despachos.Importacion
         /// <summary>
         /// Igual que el anterior y además devuelve el PDF de cada guía de remisión por su número
         /// (T660-00016565), para guardarlo con su despacho (bandeja, 2026-11-11).
+        /// <paramref name="presupuesto"/>: lo que aún se puede descomprimir en este envío (la bandeja
+        /// comparte uno entre todos sus ZIP); null = uno nuevo para esta llamada.
         /// </summary>
         public static ImportacionPedido Leer(IEnumerable<ArchivoSubido> archivos, out ArchivoSubido facturaPdf,
-                                             out Dictionary<string, ArchivoSubido> pdfGuias)
+                                             out Dictionary<string, ArchivoSubido> pdfGuias,
+                                             PresupuestoLectura presupuesto = null)
         {
             facturaPdf = null;
             pdfGuias = new Dictionary<string, ArchivoSubido>(StringComparer.OrdinalIgnoreCase);
+            presupuesto = presupuesto ?? new PresupuestoLectura();
             var ignorados = new List<string>();
             var pdfs = new List<ArchivoSubido>();
+            bool excedeCantidad = false;
 
             foreach (var archivo in archivos)
             {
@@ -57,7 +117,15 @@ namespace WebSGV.Services.Despachos.Importacion
                 {
                     // Un .zip que no empieza con PK no es un ZIP (renombrado o dañado).
                     if (ArchivoSubidoHelper.EsZip(archivo.Contenido))
-                        pdfs.AddRange(PdfsDelZip(archivo, ignorados));
+                    {
+                        if (presupuesto.Agotado)
+                        {
+                            presupuesto.Avisar(ignorados);
+                            ignorados.Add($"{archivo.Nombre}: no se leyó (límite de lectura por envío)");
+                        }
+                        else
+                            PdfsDelZip(archivo, pdfs, ignorados, presupuesto, ref excedeCantidad);
+                    }
                     else
                         ignorados.Add($"{archivo.Nombre}: no es un ZIP (está dañado o le cambiaron la extensión)");
                 }
@@ -100,7 +168,7 @@ namespace WebSGV.Services.Despachos.Importacion
                 }
             }
 
-            if (pdfs.Count > MaximoDocumentos)
+            if (excedeCantidad || pdfs.Count > MaximoDocumentos)
                 ignorados.Add($"Se leyeron solo los primeros {MaximoDocumentos} PDF.");
 
             var pedido = LectorDocumentosPedido.Leer(documentos);
@@ -121,9 +189,15 @@ namespace WebSGV.Services.Despachos.Importacion
             return pedido;
         }
 
-        private static IEnumerable<ArchivoSubido> PdfsDelZip(ArchivoSubido zip, List<string> ignorados)
+        /// <summary>
+        /// Agrega a <paramref name="pdfs"/> los PDF del ZIP, descontándolos del <paramref name="presupuesto"/>.
+        /// <paramref name="pdfs"/> trae los PDF ya leídos del envío: <see cref="MaximoDocumentos"/> es por
+        /// envío, no por ZIP. Si el ZIP está dañado no se agrega ninguno de sus PDF.
+        /// </summary>
+        private static void PdfsDelZip(ArchivoSubido zip, List<ArchivoSubido> pdfs, List<string> ignorados,
+                                       PresupuestoLectura presupuesto, ref bool excedeCantidad)
         {
-            var pdfs = new List<ArchivoSubido>();
+            var delZip = new List<ArchivoSubido>();
             try
             {
                 using (var stream = new MemoryStream(zip.Contenido))
@@ -134,36 +208,71 @@ namespace WebSGV.Services.Despachos.Importacion
                         if (string.IsNullOrEmpty(entrada.Name)) continue;   // carpeta
                         if (!entrada.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)) continue;
 
-                        // Se mira el tamaño declarado y además se corta la lectura: un ZIP
-                        // puede mentir sobre el tamaño descomprimido.
-                        if (entrada.Length > TamanoMaximoArchivo || pdfs.Count >= MaximoDocumentos)
+                        if (pdfs.Count + delZip.Count >= MaximoDocumentos)
                         {
-                            ignorados.Add($"{entrada.Name}: omitido (tamaño o cantidad de archivos)");
+                            excedeCantidad = true;
+                            break;
+                        }
+                        if (entrada.Length > TamanoMaximoArchivo)
+                        {
+                            ignorados.Add($"{entrada.Name}: supera los {TamanoMaximoArchivo / 1024 / 1024} MB");
                             continue;
                         }
-
-                        using (var origen = entrada.Open())
-                        using (var destino = new MemoryStream())
+                        // Los PDF de este ZIP se cuentan al final (si el ZIP está dañado no se usan).
+                        if (presupuesto.Agotado || delZip.Count >= presupuesto.PdfRestantes
+                            || entrada.Length > presupuesto.BytesRestantes)
                         {
-                            var buffer = new byte[81920];
-                            int leidos;
-                            while ((leidos = origen.Read(buffer, 0, buffer.Length)) > 0)
-                            {
-                                if (destino.Length + leidos > TamanoMaximoArchivo)
-                                    throw new InvalidDataException($"{entrada.Name} supera el tamaño permitido.");
-                                destino.Write(buffer, 0, leidos);
-                            }
-                            pdfs.Add(new ArchivoSubido { Nombre = entrada.Name, Contenido = destino.ToArray() });
+                            presupuesto.Avisar(ignorados);
+                            break;
                         }
+
+                        // El tamaño declarado puede mentir: la copia corta por bytes realmente leídos.
+                        long tope = Math.Min(TamanoMaximoArchivo, presupuesto.BytesRestantes);
+                        byte[] contenido = CopiarConTope(entrada, tope, out long leidos);
+                        presupuesto.Descontar(leidos);
+                        if (contenido == null)
+                        {
+                            if (tope < TamanoMaximoArchivo)
+                            {
+                                presupuesto.Avisar(ignorados);
+                                break;
+                            }
+                            ignorados.Add($"{entrada.Name}: supera los {TamanoMaximoArchivo / 1024 / 1024} MB");
+                            continue;
+                        }
+                        delZip.Add(new ArchivoSubido { Nombre = entrada.Name, Contenido = contenido });
                     }
                 }
+                pdfs.AddRange(delZip);
+                presupuesto.ContarPdfs(delZip.Count);
             }
             catch (InvalidDataException ex)
             {
                 LogSGV.Error(ex, "ZIP inválido en la importación: {Archivo}", zip.Nombre);
-                ignorados.Add($"{zip.Nombre}: el ZIP está dañado o tiene un archivo demasiado grande");
+                ignorados.Add($"{zip.Nombre}: el ZIP está dañado");
             }
-            return pdfs;
+        }
+
+        /// <summary>
+        /// Descomprime la entrada hasta <paramref name="tope"/> bytes. Devuelve null si tiene más
+        /// (se deja de leer en cuanto lo pasa). <paramref name="leidos"/>: bytes descomprimidos.
+        /// </summary>
+        internal static byte[] CopiarConTope(ZipArchiveEntry entrada, long tope, out long leidos)
+        {
+            leidos = 0;
+            using (var origen = entrada.Open())
+            using (var destino = new MemoryStream())
+            {
+                var buffer = new byte[81920];
+                int n;
+                while ((n = origen.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    leidos += n;
+                    if (leidos > tope) return null;
+                    destino.Write(buffer, 0, n);
+                }
+                return destino.ToArray();
+            }
         }
 
         // ── Asociación con la BD ──────────────────────────────────────────────

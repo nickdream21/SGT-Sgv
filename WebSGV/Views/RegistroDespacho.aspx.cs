@@ -1298,6 +1298,7 @@ namespace WebSGV.Views
                 {
                     string ignorados = importacion.ArchivosIgnorados.Count > 0
                         ? " " + string.Join(" · ", importacion.ArchivosIgnorados.Take(5))
+                          + (importacion.ArchivosIgnorados.Count > 5 ? $" … y {importacion.ArchivosIgnorados.Count - 5} más." : string.Empty)
                         : string.Empty;
                     MostrarMensajeImportacion("No se encontraron guías de remisión ni packing list legibles." + ignorados, "warning");
                     return;

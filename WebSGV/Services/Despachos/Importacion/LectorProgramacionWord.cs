@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Xml;
 using System.Xml.Linq;
 using WebSGV.Models.Despachos;
 using WebSGV.Services.Common;
@@ -37,6 +38,13 @@ namespace WebSGV.Services.Despachos.Importacion
             public static BloqueWord DeTabla(List<List<string>> filas) => new BloqueWord { Tabla = filas };
         }
 
+        /// <summary>
+        /// Tope del word/document.xml descomprimido (tarea 14 B, zip bomb): una programación real
+        /// pesa unos cientos de KB. Se mira el tamaño declarado y además el lector XML corta por
+        /// caracteres realmente leídos, porque un ZIP puede mentir sobre el tamaño.
+        /// </summary>
+        public const long MaxDocumentoXml = 10L * 1024 * 1024;
+
         public static ProgramacionTransporte Leer(byte[] docx) => Interpretar(ExtraerBloques(docx));
 
         /// <summary>Párrafos y tablas del cuerpo del .docx (word/document.xml).</summary>
@@ -50,13 +58,28 @@ namespace WebSGV.Services.Despachos.Importacion
                     var entrada = zip.GetEntry("word/document.xml");
                     if (entrada == null)
                         throw new ErrorNegocioException("El archivo no es un documento de Word (.docx).");
+                    if (entrada.Length > MaxDocumentoXml)
+                        throw new ErrorNegocioException("El Word es demasiado grande para ser una programación.");
+
+                    // Sin DTD ni resolución de entidades externas (XXE / billion laughs) y con tope de caracteres.
+                    var ajustes = new XmlReaderSettings
+                    {
+                        DtdProcessing = DtdProcessing.Prohibit,
+                        XmlResolver = null,
+                        MaxCharactersInDocument = MaxDocumentoXml
+                    };
                     using (var s = entrada.Open())
-                        xml = XDocument.Load(s);
+                    using (var lector = XmlReader.Create(s, ajustes))
+                        xml = XDocument.Load(lector);
                 }
             }
             catch (InvalidDataException ex)
             {
                 throw new ErrorNegocioException("El archivo no es un documento de Word (.docx). Si es un .doc antiguo, guárdelo como .docx.", ex);
+            }
+            catch (XmlException ex)
+            {
+                throw new ErrorNegocioException("El Word no es una programación válida (está dañado o es demasiado grande).", ex);
             }
 
             var cuerpo = xml.Root?.Element(W + "body");
