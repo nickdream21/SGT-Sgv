@@ -24,7 +24,7 @@
                                 <!-- Mensajes -->
                                 <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-3">
                                     <div class="position-relative">
-                                        <asp:Label ID="lblMensaje" runat="server" CssClass="alert d-block mb-0 pe-5"></asp:Label>
+                                        <asp:Label ID="lblMensaje" runat="server" CssClass="alert d-block mb-0 pr-5"></asp:Label>
                                         <button type="button" class="close position-absolute" style="top:.65rem;right:.75rem;"
                                             onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                                     </div>
@@ -400,7 +400,12 @@
 
                                                         <asp:TemplateField HeaderText="" ItemStyle-CssClass="ld-col-acciones">
                                                             <ItemTemplate>
-                                                                <div class="action-buttons">
+                                                                <%-- Un lote anulado (filtro "Anulados") es solo de consulta: sus despachos tienen activo = 0 y
+                                                                     el detalle, la edición y los documentos trabajan solo con despachos activos. --%>
+                                                                <asp:Label runat="server" CssClass="ld-sub" Text="Solo consulta"
+                                                                    Visible='<%# (string)Eval("EstadoLote") == "ANULADO" %>'></asp:Label>
+                                                                <asp:Panel runat="server" CssClass="action-buttons"
+                                                                    Visible='<%# (string)Eval("EstadoLote") != "ANULADO" %>'>
                                                                     <asp:Button runat="server"
                                                                         Text="Ver unidades"
                                                                         CssClass="btn btn-sm btn-outline-primary"
@@ -419,7 +424,7 @@
                                                                         CssClass="btn btn-sm btn-outline-secondary"
                                                                         CommandName="EditarLote"
                                                                         CommandArgument='<%# Eval("IdLoteVirtual") %>' />
-                                                                </div>
+                                                                </asp:Panel>
                                                             </ItemTemplate>
                                                         </asp:TemplateField>
                                                     </Columns>
@@ -807,18 +812,12 @@
                                                 <div class="form-actions">
                                                     <div class="row">
                                                         <div class="col-md-6 text-start">
-                                                            <asp:Button ID="btnEliminarLote" runat="server" 
-                                                                Text="Eliminar lote" 
-                                                                CssClass="btn btn-outline-danger"
-                                                                OnClick="btnEliminarLote_Click"
-                                                                CausesValidation="false"
-                                                                OnClientClick="return confirm('⚠️ ADVERTENCIA: Se eliminarán TODOS los despachos de este lote.\n\n¿Está COMPLETAMENTE seguro de eliminar este lote?');" />
                                                             <asp:Button ID="btnAnularLote" runat="server"
                                                                 Text="Anular lote"
-                                                                CssClass="btn btn-warning ml-2"
+                                                                CssClass="btn btn-warning"
                                                                 OnClick="btnAnularLote_Click"
                                                                 CausesValidation="false"
-                                                                OnClientClick="return confirm('⚠️ ¿Anular este lote?\n\nTodos sus despachos y viajes activos quedarán como ANULADO.\nLos registros se conservan para auditoría.');" />
+                                                                OnClientClick="return confirm('¿Anular este lote?\n\nTodos sus despachos quedarán como ANULADO y saldrán de la lista, de la liquidación del conductor y del seguimiento. Un viaje que quede sin despachos también se anula.\nNo se puede anular si algún viaje del lote ya tiene liquidación del conductor.\nLos registros se conservan para auditoría.');" />
                                                         </div>
                                                         <div class="col-md-6 text-end">
                                                             <asp:Button ID="btnGuardarCambios" runat="server" 
@@ -1236,7 +1235,6 @@
                                 <asp:AsyncPostBackTrigger ControlID="btnCancelarEdicion" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnVolverLotes" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnGuardarCambios" EventName="Click" />
-                                <asp:AsyncPostBackTrigger ControlID="btnEliminarLote" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="btnAnularLote" EventName="Click" />
                                 <asp:AsyncPostBackTrigger ControlID="ddlFiltroEstadoLotes" EventName="SelectedIndexChanged" />
                                 <asp:AsyncPostBackTrigger ControlID="ddlTipoOperacionEdit" EventName="SelectedIndexChanged" />

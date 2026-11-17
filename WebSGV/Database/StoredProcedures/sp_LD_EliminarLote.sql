@@ -1,7 +1,12 @@
 -- ============================================================
--- Eliminacion logica (activo = 0) de todos los despachos de un
--- lote. Recalcula contadores de los viajes afectados.
--- Recibe lista de IDs de despachos separados por coma.
+-- Retirado (auditoría bloque 4, tarea 9, 2026-11-16): en la lista de
+-- despachos solo existe "Anular lote". Antes este SP ponía activo = 0 sin
+-- marcar el despacho como ANULADO.
+--
+-- Se conserva por compatibilidad con la versión publicada de la aplicación,
+-- que todavía tiene el botón "Eliminar lote": delega en sp_LD_AnularLote
+-- (ANULADO + activo = 0, recalcula cantidadDespachos, anula el viaje vacío
+-- y no toca un lote con liquidación del conductor). Misma firma de antes.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_EliminarLote
     @idsDespachos VARCHAR(MAX),
@@ -11,51 +16,11 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    IF @idsDespachos IS NULL OR LEN(@idsDespachos) = 0
-        RETURN;
+    DECLARE @viajesAnulados INT;
 
-    BEGIN TRY
-        BEGIN TRANSACTION;
-
-        -- Parsear la lista de IDs una sola vez
-        DECLARE @ids TABLE (idDespacho INT);
-        INSERT INTO @ids (idDespacho)
-        SELECT CAST(value AS INT) FROM STRING_SPLIT(@idsDespachos, ',');
-
-        -- 1. Obtener viajes afectados ANTES de eliminar
-        DECLARE @viajesAfectados TABLE (idViajeProgreso INT);
-
-        INSERT INTO @viajesAfectados (idViajeProgreso)
-        SELECT DISTINCT idViajeProgreso
-        FROM Despachos
-        WHERE idDespacho IN (SELECT idDespacho FROM @ids)
-          AND idViajeProgreso IS NOT NULL;
-
-        -- 2. Eliminacion logica de los despachos
-        UPDATE Despachos
-        SET activo               = 0,
-            usuarioModificacion  = @usuario,
-            fechaModificacion    = @fechaActual
-        WHERE idDespacho IN (SELECT idDespacho FROM @ids);
-
-        -- 3. Recalcular contadores de viajes afectados
-        UPDATE vp
-        SET vp.cantidadDespachos    = ISNULL(sub.Total, 0),
-            vp.fechaUltimaActividad = @fechaActual
-        FROM ViajesEnProgreso vp
-        INNER JOIN @viajesAfectados va ON va.idViajeProgreso = vp.idViajeProgreso
-        LEFT JOIN (
-            SELECT idViajeProgreso, COUNT(*) AS Total
-            FROM Despachos
-            WHERE activo = 1
-            GROUP BY idViajeProgreso
-        ) sub ON sub.idViajeProgreso = vp.idViajeProgreso;
-
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH
+    EXEC dbo.sp_LD_AnularLote
+        @idsDespachos   = @idsDespachos,
+        @usuario        = @usuario,
+        @fechaActual    = @fechaActual,
+        @viajesAnulados = @viajesAnulados OUTPUT;
 END

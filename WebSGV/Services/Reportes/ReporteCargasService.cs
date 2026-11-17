@@ -28,8 +28,16 @@ namespace WebSGV.Services.Reportes
     {
         public const int MaxDias = 366;
 
+        /// <summary>
+        /// Cargas anuladas (auditoría bloque 4, tarea 9): sp_LD_AnularLote deja el despacho ANULADO con
+        /// activo = 0. <see cref="Despachos"/> las trae (columna Anulado = 1) para mostrarlas y contarlas,
+        /// pero no suman en ningún total (ver <see cref="Vigentes"/>). Las líneas de carga son solo de vigentes.
+        /// </summary>
+        private const string VigentesOAnulados = "(d.activo = 1 OR (d.activo = 0 AND d.estadoDespacho = 'ANULADO')) AND ";
+        private const string SoloVigentes = "d.activo = 1 AND d.estadoDespacho <> 'ANULADO' AND ";
+
         private const string Filtro = @"
-            d.activo = 1 AND d.tipoOperacion = 'CARGA'
+            d.tipoOperacion = 'CARGA'
             AND d.fechaDespacho >= @desde AND d.fechaDespacho <= @hasta
             AND (@idCliente IS NULL OR d.idCliente = @idCliente)
             AND (@pedido IS NULL OR d.numeroPedido LIKE @pedido + '%')
@@ -79,7 +87,7 @@ namespace WebSGV.Services.Reportes
                              FROM DespachoCarga dc WHERE dc.idDespacho = d.idDespacho) c
                 OUTER APPLY (SELECT TOP 1 se.idSeguimiento, se.estado, se.bodegaDescarga FROM SeguimientoExportacion se
                              WHERE se.idDespachoOrigen = d.idDespacho AND se.activo = 1 ORDER BY se.idSeguimiento) s
-                WHERE " + Filtro + @"
+                WHERE " + VigentesOAnulados + Filtro + @"
                 ORDER BY d.fechaDespacho, d.horaDespacho, d.idDespacho", Parametros(f));
 
         /// <summary>Una fila por línea de carga (producto y lote) de cada despacho.</summary>
@@ -91,7 +99,7 @@ namespace WebSGV.Services.Reportes
                        dc.fechaProduccion AS Produccion, dc.fechaVencimiento AS Vencimiento
                 " + Joins + @"
                 JOIN DespachoCarga dc ON dc.idDespacho = d.idDespacho
-                WHERE " + Filtro + @"
+                WHERE " + SoloVigentes + Filtro + @"
                 ORDER BY d.fechaDespacho, d.horaDespacho, d.idDespacho, dc.idDespachoCarga", Parametros(f));
 
         private static System.Data.SqlClient.SqlParameter[] Parametros(FiltroCargas f) => new[]
@@ -115,11 +123,20 @@ namespace WebSGV.Services.Reportes
             public decimal FacturadoPen { get; set; }
             public int SinDocumentos { get; set; }
             public int SinViajeChofer { get; set; }
+            /// <summary>Cargas anuladas del período (no suman en los demás totales).</summary>
+            public int Anulados { get; set; }
         }
+
+        /// <summary>Fila de una carga anulada (columna Anulado).</summary>
+        public static bool EsAnulado(DataRow r) =>
+            r.Table.Columns.Contains("Anulado") && r["Anulado"] != DBNull.Value && Convert.ToBoolean(r["Anulado"]);
+
+        /// <summary>Las filas que suman: todas menos las cargas anuladas.</summary>
+        public static List<DataRow> Vigentes(DataTable dt) => dt.Rows.Cast<DataRow>().Where(r => !EsAnulado(r)).ToList();
 
         public static Totales Calcular(DataTable dt)
         {
-            var filas = dt.Rows.Cast<DataRow>().ToList();
+            var filas = Vigentes(dt);
             // La factura es del pedido: se suma una vez aunque la compartan varios despachos.
             var facturas = filas.Where(r => r["idFactura"] != DBNull.Value)
                 .GroupBy(r => Convert.ToInt32(r["idFactura"])).Select(g => g.First()).ToList();
@@ -135,6 +152,7 @@ namespace WebSGV.Services.Reportes
                 // Solo exportación espera la guía del correo; los terceros (Crisar) no la reciben.
                 SinDocumentos = filas.Count(r => r["Guia"] == DBNull.Value && Convert.ToBoolean(r["EsExportacion"])),
                 SinViajeChofer = filas.Count(r => r["ViajeChofer"] == DBNull.Value),
+                Anulados = dt.Rows.Count - filas.Count,
             };
         }
 
@@ -153,6 +171,8 @@ namespace WebSGV.Services.Reportes
             /// <summary>"JAVE 3 · INBALNOR 2".</summary>
             public string Descargas { get; set; }
             public int SinViajeChofer { get; set; }
+            /// <summary>Unidades que suman (sin las anuladas, que sí van en <see cref="Filas"/>).</summary>
+            public int Unidades { get; set; }
             public List<DataRow> Filas { get; set; }
         }
 
@@ -163,16 +183,17 @@ namespace WebSGV.Services.Reportes
                     : $"{r["Cliente"]}|{Convert.ToDateTime(r["Fecha"]):yyyyMMdd}")
                 .Select(g =>
                 {
-                    var filas = g.ToList();
-                    var primera = filas[0];
+                    var todas = g.ToList();
+                    var filas = todas.Where(r => !EsAnulado(r)).ToList();
+                    var primera = todas[0];
                     return new GrupoPedido
                     {
                         Titulo = primera["Pedido"] != DBNull.Value ? Convert.ToString(primera["Pedido"]) : "Sin pedido",
                         Cliente = Convert.ToString(primera["Cliente"]),
-                        Desde = filas.Min(r => Convert.ToDateTime(r["Fecha"])),
-                        Hasta = filas.Max(r => Convert.ToDateTime(r["Fecha"])),
-                        Factura = filas.Select(r => Convert.ToString(r["Factura"])).FirstOrDefault(s => s != ""),
-                        Moneda = filas.Select(r => Convert.ToString(r["Moneda"])).FirstOrDefault(s => s != ""),
+                        Desde = todas.Min(r => Convert.ToDateTime(r["Fecha"])),
+                        Hasta = todas.Max(r => Convert.ToDateTime(r["Fecha"])),
+                        Factura = todas.Select(r => Convert.ToString(r["Factura"])).FirstOrDefault(s => s != ""),
+                        Moneda = todas.Select(r => Convert.ToString(r["Moneda"])).FirstOrDefault(s => s != ""),
                         ValorFactura = filas.Where(r => r["ValorFactura"] != DBNull.Value).Select(r => (decimal?)Dec(r["ValorFactura"])).FirstOrDefault(),
                         Bolsas = filas.Sum(r => Dec(r["Bolsas"])),
                         KgBruto = filas.Sum(r => Dec(r["KgBruto"])),
@@ -180,7 +201,8 @@ namespace WebSGV.Services.Reportes
                             .GroupBy(r => Convert.ToString(r["Descarga"])).OrderByDescending(x => x.Count())
                             .Select(x => $"{x.Key} {x.Count()}")),
                         SinViajeChofer = filas.Count(r => r["ViajeChofer"] == DBNull.Value),
-                        Filas = filas
+                        Unidades = filas.Count,
+                        Filas = todas
                     };
                 })
                 .OrderBy(x => x.Desde).ThenBy(x => x.Titulo)
@@ -207,7 +229,7 @@ namespace WebSGV.Services.Reportes
         {
             bool porMes = (hasta.Date - desde.Date).TotalDays + 1 > MaxDiasGraficoDiario;
             Func<DateTime, DateTime> clave = f => porMes ? new DateTime(f.Year, f.Month, 1) : f.Date;
-            var datos = dt.Rows.Cast<DataRow>()
+            var datos = Vigentes(dt)
                 .GroupBy(r => clave(Convert.ToDateTime(r["Fecha"])))
                 .ToDictionary(g => g.Key, g => g.ToList());
 
@@ -246,7 +268,7 @@ namespace WebSGV.Services.Reportes
         /// <summary>Una fila por cliente, de mayor a menor peso; cada factura se suma una vez.</summary>
         public static List<CargaCliente> ResumenPorCliente(DataTable dt)
         {
-            var filas = dt.Rows.Cast<DataRow>().ToList();
+            var filas = Vigentes(dt);
             decimal kgTotal = filas.Sum(r => Dec(r["KgBruto"]));
             return filas
                 .GroupBy(r => Convert.ToString(r["Cliente"]).Trim())
@@ -326,7 +348,7 @@ namespace WebSGV.Services.Reportes
 
         public static ResumenDocumentos ResumenDocumental(DataTable dt, DateTime hoy)
         {
-            var vigentes = dt.Rows.Cast<DataRow>().Where(r => !Convert.ToBoolean(r["Anulado"])).ToList();
+            var vigentes = Vigentes(dt);
             Func<DataRow, int> faltan = r => Int(r["SinPedido"]) + Int(r["SinGuia"]) + Int(r["SinFactura"])
                                            + Int(r["SinPdfFactura"]) + Int(r["SinCPIC"]) + Int(r["SinPdfCPIC"]);
             var pendientes = vigentes.Where(r => faltan(r) > 0).ToList();
@@ -402,6 +424,7 @@ namespace WebSGV.Services.Reportes
                 Titulo = "Reporte de cargas",
                 NombreHoja = "Cargas",
                 Filas = dt.Rows.Cast<DataRow>().ToList(),
+                FilaEnTotales = d => !EsAnulado(d),
                 GeneradoPor = usuario,
                 Nota = "Un despacho de carga por unidad. \"Sin viaje del chofer\": carga registrada con los documentos del correo " +
                        "que no entra a la liquidación del chofer. El valor facturado suma cada factura una sola vez."
@@ -424,6 +447,8 @@ namespace WebSGV.Services.Reportes
             r.Columnas.Add(Col("Kg bruto", TipoColumnaReporte.Entero, 0.9f, d => d["KgBruto"]));
             r.Columnas.Add(Col("Descarga", TipoColumnaReporte.Codigo, 0.9f, d => d["Descarga"]));
             r.Columnas.Add(Col("Viaje del chofer", TipoColumnaReporte.Codigo, 1.1f, ViajeChofer));
+            if (tot.Anulados > 0)
+                r.Columnas.Add(Col("Estado", TipoColumnaReporte.Codigo, 0.8f, d => EsAnulado(d) ? "ANULADO" : ""));
 
             r.Resumen.Add(Linea("Despachos de carga", tot.Despachos, TipoColumnaReporte.Entero));
             r.Resumen.Add(Linea("Pedidos", tot.Pedidos, TipoColumnaReporte.Entero));
@@ -432,6 +457,7 @@ namespace WebSGV.Services.Reportes
             if (tot.FacturadoUsd > 0) r.Resumen.Add(Linea("Facturado en dólares", tot.FacturadoUsd, TipoColumnaReporte.Dolares, destacada: true));
             if (tot.FacturadoPen > 0) r.Resumen.Add(Linea("Facturado en soles", tot.FacturadoPen, TipoColumnaReporte.Soles, destacada: tot.FacturadoUsd == 0));
             if (tot.SinDocumentos > 0) r.Resumen.Add(Linea("Despachos todavía sin guía", tot.SinDocumentos, TipoColumnaReporte.Entero));
+            if (tot.Anulados > 0) r.Resumen.Add(Linea("Despachos anulados (no suman en los totales)", tot.Anulados, TipoColumnaReporte.Entero));
 
             if (conDetalle)
             {

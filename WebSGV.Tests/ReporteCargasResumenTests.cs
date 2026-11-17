@@ -176,5 +176,32 @@ namespace WebSGV.Tests
         {
             Assert.Equal(2, ReporteCargasService.Calcular(Ejemplo()).Clientes);
         }
+
+        [Fact]
+        public void Anulados_SeCuentanPeroNoSumanEnLosTotales()
+        {
+            var t = Ejemplo();
+            // Carga anulada de otro cliente, con factura y peso: se cuenta aparte y no suma en nada.
+            Fila(t, 6, D1.AddDays(1), "NOVOPAN", "4400000009", 20, 5000m, 7000m, anulado: true);
+
+            var tot = ReporteCargasService.Calcular(t);
+            Assert.Equal(1, tot.Anulados);
+            Assert.Equal(4, tot.Despachos);
+            Assert.Equal(2, tot.Clientes);
+            Assert.Equal(1, tot.Pedidos);
+            Assert.Equal(100000m, tot.KgBruto);
+            Assert.Equal(30000m, tot.FacturadoUsd);
+
+            Assert.DoesNotContain(ReporteCargasService.ResumenPorCliente(t), c => c.Cliente == "NOVOPAN");
+            Assert.Equal(0m, ReporteCargasService.ResumenPorPeriodo(t, D1, D1.AddDays(2))[1].KgBruto);
+
+            // En la vista por pedido aparece (marcada) pero no suma unidades ni peso.
+            t.Columns.Add("Factura", typeof(string));
+            t.Columns.Add("Descarga", typeof(string));
+            var grupo = ReporteCargasService.AgruparPorPedido(t).Single(g => g.Titulo == "4400000009");
+            Assert.Single(grupo.Filas);
+            Assert.Equal(0, grupo.Unidades);
+            Assert.Equal(0m, grupo.KgBruto);
+        }
     }
 }

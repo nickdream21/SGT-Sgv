@@ -143,7 +143,8 @@ namespace WebSGV.Views
                 litDatosGraficos.Text = DatosGraficos(periodos, clientes);
 
                 litPie.Text = $"{tot.SinViajeChofer} de {tot.Despachos} despacho(s) sin viaje del chofer (cargas registradas con los documentos del correo, " +
-                              "fuera de la liquidación). Excel: incluye hojas por cliente, por producto y con cada lote.";
+                              "fuera de la liquidación). Excel: incluye hojas por cliente, por producto y con cada lote." +
+                              (tot.Anulados > 0 ? $" {tot.Anulados} carga(s) anulada(s): se listan marcadas y no suman en los totales." : "");
 
                 litGrupos.Text = HtmlGrupos(ReporteCargasService.AgruparPorPedido(dt));
                 pnlResultados.Visible = true;
@@ -213,7 +214,7 @@ namespace WebSGV.Views
                   .Append($"<span class=\"rc-c-fecha\">{fecha}</span>")
                   .Append($"<span class=\"rc-c-cliente\">{h(g.Cliente)}</span>")
                   .Append($"<span class=\"rc-c-factura\">{h(g.Factura)}</span>")
-                  .Append($"<span class=\"rc-c-num\"><span class=\"d-lg-none text-muted\">Unidades </span>{g.Filas.Count}</span>")
+                  .Append($"<span class=\"rc-c-num\"><span class=\"d-lg-none text-muted\">Unidades </span>{g.Unidades}</span>")
                   .Append($"<span class=\"rc-c-num\"><span class=\"d-lg-none text-muted\">Bolsas </span>{n0(g.Bolsas)}</span>")
                   .Append($"<span class=\"rc-c-num\"><span class=\"d-lg-none text-muted\">Kg </span>{n0(g.KgBruto)}</span>")
                   .Append($"<span class=\"rc-c-num rc-c-valor\">{h(valor)}</span>")
@@ -226,7 +227,7 @@ namespace WebSGV.Views
                     string viaje = h(ReporteCargasService.ViajeChofer(r));
                     if (r["ViajeChofer"] == DBNull.Value) viaje = $"<span class=\"rc-sin-viaje\">{viaje}</span>";
                     sb.Append("<tr>")
-                      .Append($"<td>{Convert.ToDateTime(r["Fecha"]):dd/MM/yyyy}</td>")
+                      .Append($"<td>{Convert.ToDateTime(r["Fecha"]):dd/MM/yyyy}{(ReporteCargasService.EsAnulado(r) ? " <span class=\"badge badge-secondary\">Anulado</span>" : "")}</td>")
                       .Append($"<td>{(r["Guia"] == DBNull.Value ? "<span class=\"text-muted\">sin guía</span>" : h(r["Guia"]))}</td>")
                       .Append($"<td>{h(r["Conductor"])}</td><td>{h(r["Tracto"])}</td><td>{h(r["Carreta"])}</td>")
                       .Append($"<td class=\"text-right\">{n0(r["Bolsas"])}</td>")

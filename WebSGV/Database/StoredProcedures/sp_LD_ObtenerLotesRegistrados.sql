@@ -58,6 +58,11 @@ BEGIN
         FROM Planta
         WHERE UPPER(LTRIM(RTRIM(nombre))) = UPPER(LTRIM(RTRIM(@planta)));
 
+    -- Anulados (auditoria bloque 4, tarea 9, 2026-11-16): sp_LD_AnularLote deja el despacho
+    -- ANULADO con activo = 0. Por defecto y con cualquier otro filtro solo se ven los activos;
+    -- con @estadoFiltro = 'ANULADO' se ven solo los lotes anulados (activo = 0 y ANULADO).
+    DECLARE @verAnulados BIT = CASE WHEN @estadoFiltro = 'ANULADO' THEN 1 ELSE 0 END;
+
     -- Ajustar fechaHasta para incluir todo el dia
     DECLARE @fechaHastaFin DATETIME = NULL;
     IF @fechaHasta IS NOT NULL
@@ -84,7 +89,7 @@ BEGIN
         FROM Despachos d
         LEFT JOIN ClientesConPedido cpe ON cpe.idCliente = d.idCliente
         LEFT JOIN ClientesConCPIC   ccp ON ccp.idCliente = d.idCliente
-        WHERE d.activo = 1
+        WHERE ((@verAnulados = 0 AND d.activo = 1) OR (@verAnulados = 1 AND d.activo = 0 AND d.estadoDespacho = 'ANULADO'))
     ),
     DespachosDocumentos AS (
         -- Un 1 por documento que le falta al despacho (0 si esta anulado:
@@ -169,7 +174,7 @@ BEGIN
         LEFT  JOIN Planta  pl ON d.idPlanta  = pl.idPlanta
         LEFT  JOIN Factura f  ON d.idFactura = f.idFactura
         LEFT  JOIN CPIC    cp ON d.idCPIC    = cp.idCPIC
-        WHERE d.activo = 1
+        WHERE ((@verAnulados = 0 AND d.activo = 1) OR (@verAnulados = 1 AND d.activo = 0 AND d.estadoDespacho = 'ANULADO'))
           AND (@idCliente      IS NULL OR d.idCliente      = @idCliente)
           AND (@tipoOperacion  IS NULL OR d.tipoOperacion  = @tipoOperacion)
           AND (@idPlanta       IS NULL OR d.idPlanta        = @idPlanta)
@@ -195,7 +200,7 @@ BEGIN
             SELECT 1
             FROM Despachos d2
             INNER JOIN Conductor c2 ON d2.idConductor = c2.idConductor
-            WHERE d2.activo = 1
+            WHERE ((@verAnulados = 0 AND d2.activo = 1) OR (@verAnulados = 1 AND d2.activo = 0 AND d2.estadoDespacho = 'ANULADO'))
               AND d2.idCliente = la.idCliente
               AND ISNULL(d2.numeroPedido, 'NOPEDIDO') = ISNULL(la.numeroPedido, 'NOPEDIDO')
               AND d2.fechaDespacho = la.FechaProgramacion

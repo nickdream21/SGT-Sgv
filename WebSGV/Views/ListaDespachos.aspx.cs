@@ -402,7 +402,8 @@ namespace WebSGV.Views
             var idsPorLote = new Dictionary<string, List<int>>();
             var idsTodos = new List<int>();
 
-            foreach (var lote in lotes.Where(l => l.EsInternacional))
+            // Un lote anulado no espera manifiesto (y sus despachos ya no están activos).
+            foreach (var lote in lotes.Where(l => l.EsInternacional && l.EstadoLote != "ANULADO"))
             {
                 var ids = ListaDespachosService.ObtenerIdsDespachosDeLote(lote.IdLoteVirtual);
                 idsPorLote[lote.IdLoteVirtual] = ids;
@@ -991,70 +992,39 @@ namespace WebSGV.Views
                     return;
                 }
 
-                int viajesAnulados = AnularLoteCompleto(lote.IdsDespachos);
+                string idsCsv = IdsACsv(lote.IdsDespachos);
+                // "Antes" para la auditoría: estado, activo y viaje de cada despacho del lote.
+                var antes = ListaDespachosService.ObtenerEstadoDespachos(idsCsv).AsEnumerable()
+                    .Select(r => new
+                    {
+                        idDespacho = r.Field<int>("idDespacho"),
+                        estadoDespacho = r["estadoDespacho"] as string,
+                        activo = r["activo"] != DBNull.Value && Convert.ToBoolean(r["activo"]),
+                        idViajeProgreso = r["idViajeProgreso"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["idViajeProgreso"])
+                    })
+                    .ToList();
 
-                AuditoriaHelper.Registrar("DELETE", "Despachos", LoteSeleccionadoId,
-                    $"Lote anulado - {lote.IdsDespachos.Count} despacho(s), {viajesAnulados} viaje(s) anulado(s)");
+                int viajesAnulados = ListaDespachosService.AnularLote(idsCsv, ObtenerUsuarioActual());
+
+                AuditoriaHelper.Registrar("UPDATE", "Despachos", LoteSeleccionadoId,
+                    $"Lote anulado (ANULADO, activo = 0) - despachos {idsCsv}; {viajesAnulados} viaje(s) anulado(s)",
+                    JsonConvert.SerializeObject(antes),
+                    JsonConvert.SerializeObject(new { estadoDespacho = "ANULADO", activo = false, idsDespachos = lote.IdsDespachos, viajesAnulados }));
 
                 MostrarListaLotes();
                 CargarLotesRegistrados();
-                string msgViajes = viajesAnulados > 0 ? $" Se anularon {viajesAnulados} viaje(s) activo(s) asociado(s)." : "";
-                MostrarMensaje($"✅ Lote anulado exitosamente. {lote.IdsDespachos.Count} despacho(s) marcado(s) como ANULADO.{msgViajes}", "success");
+                string msgViajes = viajesAnulados > 0 ? $" Se anularon {viajesAnulados} viaje(s) sin despachos." : "";
+                MostrarMensaje($"Lote anulado. {lote.IdsDespachos.Count} despacho(s) quedaron como ANULADO y salieron de la liquidación y del seguimiento.{msgViajes}", "success");
             }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al anular el lote {Lote}", LoteSeleccionadoId);
-                MostrarMensaje("❌ Error al anular lote: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                // El 50010/50011 del SP ya dice "No se puede anular el lote…": sin prefijo repetido.
+                string detalle = MensajeErrorHelper.ParaUsuario(ex);
+                MostrarMensaje(detalle.StartsWith("No se puede anular", StringComparison.OrdinalIgnoreCase)
+                    ? detalle : "No se pudo anular el lote: " + detalle, "danger");
             }
         }
-
-        private int AnularLoteCompleto(List<int> idsDespachos)
-        {
-            if (idsDespachos == null || idsDespachos.Count == 0) return 0;
-
-            return ListaDespachosService.AnularLote(IdsACsv(idsDespachos), ObtenerUsuarioActual());
-        }
-
-        protected void btnEliminarLote_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(LoteSeleccionadoId))
-                {
-                    MostrarMensaje("No se pudo identificar el lote a eliminar.", "danger");
-                    return;
-                }
-
-                var lote = ObtenerLotePorId(LoteSeleccionadoId);
-                if (lote == null || lote.IdsDespachos.Count == 0)
-                {
-                    MostrarMensaje("No se encontraron despachos para eliminar.", "warning");
-                    return;
-                }
-
-                EliminarLoteCompleto(lote.IdsDespachos);
-
-                AuditoriaHelper.Registrar("DELETE", "Despachos", LoteSeleccionadoId,
-                    $"Lote eliminado físicamente - {lote.IdsDespachos.Count} despacho(s) - Cliente: {lote.NombreCliente}");
-
-                MostrarListaLotes();
-                CargarLotesRegistrados();
-                MostrarMensaje($"Lote eliminado exitosamente. Se eliminaron {lote.IdsDespachos.Count} despacho(s).", "success");
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "Error al eliminar el lote {Lote}", LoteSeleccionadoId);
-                MostrarMensaje("❌ Error al eliminar lote: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
-            }
-        }
-
-        private void EliminarLoteCompleto(List<int> idsDespachos)
-        {
-            if (idsDespachos.Count == 0) return;
-
-            ListaDespachosService.EliminarLote(IdsACsv(idsDespachos), ObtenerUsuarioActual());
-        }
-
 
 
         #endregion
@@ -1904,8 +1874,15 @@ namespace WebSGV.Views
         private void MostrarMensaje(string mensaje, string tipo)
         {
             lblMensaje.Text = HttpUtility.HtmlEncode(mensaje ?? string.Empty);
-            lblMensaje.CssClass = $"alert alert-{tipo} alert-dismissible fade show";
+            // Conserva las clases base del marcado (bloque, sin margen, espacio para la ×).
+            lblMensaje.CssClass = $"alert alert-{tipo} d-block mb-0 pr-5";
             pnlMensajes.Visible = true;
+
+            // Tras un postback parcial el mensaje puede quedar arriba, fuera de la vista: llevarlo a la vista.
+            ScriptManager.RegisterStartupScript(this, GetType(), "ldVerMensaje",
+                "setTimeout(function(){var m=document.getElementById('" + pnlMensajes.ClientID + "');" +
+                "if(m){var r=m.getBoundingClientRect();if(r.top<0||r.bottom>window.innerHeight)m.scrollIntoView({behavior:'auto',block:'start'});}},60);",
+                true);
         }
 
         #endregion

@@ -84,21 +84,16 @@ namespace WebSGV.Services.Despachos
             }
         }
 
-        /// <summary>Elimina físicamente un lote completo (<c>sp_LD_EliminarLote</c>).</summary>
-        public static void EliminarLote(string idsDespachosCsv, string usuario)
-        {
-            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
-            using (SqlCommand cmd = new SqlCommand("sp_LD_EliminarLote", conn))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@idsDespachos", idsDespachosCsv);
-                cmd.Parameters.AddWithValue("@usuario", usuario);
-                cmd.Parameters.AddWithValue("@fechaActual", FechaHelper.Ahora());
-
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
-        }
+        /// <summary>
+        /// Estado de los despachos antes de anularlos (para la auditoría): id, estado, activo y viaje.
+        /// </summary>
+        public static DataTable ObtenerEstadoDespachos(string idsDespachosCsv) =>
+            DbHelper.ConsultarTabla(@"
+                SELECT d.idDespacho, d.estadoDespacho, d.activo, d.idViajeProgreso
+                FROM Despachos d
+                WHERE d.idDespacho IN (SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@ids, ','))
+                ORDER BY d.idDespacho",
+                DbHelper.Param("@ids", idsDespachosCsv ?? ""));
 
         // ------------------------------------------------------------------
         // Lecturas que arman los DTO (filtros ya leídos de los controles)
