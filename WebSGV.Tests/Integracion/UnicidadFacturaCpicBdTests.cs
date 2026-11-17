@@ -125,7 +125,7 @@ namespace WebSGV.Tests.Integracion
                     NumeroPedido = d["numeroPedido"] as string, IdPlanta = Convert.ToInt32(d["idPlanta"]),
                     TipoOperacion = d["tipoOperacion"].ToString(), EsInternacional = Convert.ToBoolean(d["esInternacional"]),
                     UsuarioModificacion = "test", FechaActual = FechaHelper.Ahora(),
-                    GestionarCpic = EdicionDocumentosLote.Gestionar(false, "1234567"), DesvincularCpic = false
+                    GestionarCpic = EdicionDocumentosLote.Gestionar(false, "1234567"), QuitarCpic = false
                 });
 
                 Assert.Null(res.Cpic);

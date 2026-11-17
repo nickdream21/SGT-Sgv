@@ -35,7 +35,24 @@ BEGIN
     IF @idConductor IS NULL OR @idViajeActual IS NULL OR @conductorViaje = @idConductor
         RETURN;
 
-    IF EXISTS (SELECT 1 FROM OrdenViaje WHERE idViajeProgreso = @idViajeActual)
+    -- Bloquea el viaje (una liquidación en curso espera o hace esperar) y revisa la liquidación
+    -- con el criterio de sp_LD_AnularLote (2026-11-17): idOrdenViajeGenerada, OrdenViaje del viaje
+    -- o viaje cerrado a la vez (mismo conductor y fechaCierre) que uno liquidado. READCOMMITTEDLOCK:
+    -- la BD usa READ_COMMITTED_SNAPSHOT y sin la pista no se vería una OrdenViaje recién insertada.
+    DECLARE @bloqueo INT;
+    SELECT @bloqueo = COUNT(*) FROM ViajesEnProgreso WITH (UPDLOCK, HOLDLOCK) WHERE idViajeProgreso = @idViajeActual;
+
+    IF EXISTS (SELECT 1
+               FROM ViajesEnProgreso v WITH (READCOMMITTEDLOCK)
+               WHERE v.idViajeProgreso = @idViajeActual
+                 AND (v.idOrdenViajeGenerada IS NOT NULL
+                      OR EXISTS (SELECT 1 FROM OrdenViaje o WITH (READCOMMITTEDLOCK) WHERE o.idViajeProgreso = v.idViajeProgreso)
+                      OR EXISTS (SELECT 1
+                                 FROM OrdenViaje o WITH (READCOMMITTEDLOCK)
+                                 JOIN ViajesEnProgreso p WITH (READCOMMITTEDLOCK) ON p.idViajeProgreso = o.idViajeProgreso
+                                 WHERE p.idConductor = v.idConductor
+                                   AND p.fechaCierre IS NOT NULL
+                                   AND p.fechaCierre = v.fechaCierre)))
     BEGIN
         RAISERROR('No se puede cambiar el conductor: el despacho ya está en una liquidación del conductor anterior. Retira o rechaza primero esa liquidación.', 16, 1);
         RETURN;

@@ -18,7 +18,8 @@ CREATE OR ALTER PROCEDURE sp_LD_RegistrarFacturaTercero
     @idCliente      INT,
     @fechaEmision   DATE,
     @valorTotal     DECIMAL(18,2) = NULL,
-    @moneda         CHAR(3)       = 'USD'
+    @moneda         CHAR(3)       = 'USD',
+    @usuario        VARCHAR(100)  = NULL   -- quién registra (usuarioModificacion del despacho; 2026-11-17)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -71,7 +72,9 @@ BEGIN
             SET @accion = 'CREADA';
         END;
 
-        UPDATE d SET d.idFactura = @idFactura
+        UPDATE d SET d.idFactura = @idFactura,
+               d.usuarioModificacion = COALESCE(LEFT(@usuario, 50), d.usuarioModificacion),
+               d.fechaModificacion   = CASE WHEN @usuario IS NULL THEN d.fechaModificacion ELSE dbo.fn_AhoraPeru() END
         FROM Despachos d JOIN @ids i ON i.idDespacho = d.idDespacho
         WHERE d.idFactura IS NULL;
         SET @unidos = @@ROWCOUNT;

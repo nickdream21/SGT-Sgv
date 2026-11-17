@@ -369,7 +369,6 @@
     <Content Include="Content\paginas\DashboardGrifo.css" />
     <Content Include="Content\paginas\DashboardOperador.css" />
     <Content Include="Content\paginas\DetalleOrdenViaje.css" />
-    <Content Include="Content\paginas\EditarDespacho.css" />
     <Content Include="Content\paginas\Exportacion\DashboardExportacion.css" />
     <Content Include="Content\paginas\Exportacion\SeguimientoExportacion.css" />
     <Content Include="Content\paginas\FirmarLiquidacion.css" />
@@ -401,7 +400,6 @@
     <Content Include="Scripts\paginas\DashboardConductor.js" />
     <Content Include="Scripts\paginas\DashboardGrifo.js" />
     <Content Include="Scripts\paginas\DashboardOperador.js" />
-    <Content Include="Scripts\paginas\EditarDespacho.js" />
     <Content Include="Scripts\paginas\Exportacion\DashboardExportacion.js" />
     <Content Include="Scripts\paginas\Exportacion\ImportarSeguimiento.js" />
     <Content Include="Scripts\paginas\Exportacion\RegistroSeguimiento.js" />
@@ -450,7 +448,6 @@
     <Content Include="Views\DescargarPdfAbastecimiento.aspx" />
     <Content Include="Views\DescargarPdfOrdenViaje.aspx" />
     <Content Include="Views\DetalleOrdenViaje.aspx" />
-    <Content Include="Views\EditarDespacho.aspx" />
     <Content Include="Views\Error.aspx" />
     <Content Include="Views\Error404.aspx" />
     <Content Include="Views\Exportacion\DashboardExportacion.aspx" />
@@ -555,7 +552,6 @@
     <Compile Include="Services\Reportes\ReporteTabular.cs" />
     <Compile Include="Services\Despachos\DespachoValidaciones.cs" />
     <Compile Include="Services\Despachos\DocumentoCpicService.cs" />
-    <Compile Include="Services\Despachos\EditarDespachoService.cs" />
     <Compile Include="Services\Despachos\EdicionDocumentosLote.cs" />
     <Compile Include="Services\Despachos\EstadoDocumental.cs" />
     <Compile Include="Services\Despachos\FinalizarLoteService.cs" />
@@ -771,13 +767,6 @@
     </Compile>
     <Compile Include="Views\DetalleOrdenViaje.aspx.designer.cs">
       <DependentUpon>DetalleOrdenViaje.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\EditarDespacho.aspx.cs">
-      <DependentUpon>EditarDespacho.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\EditarDespacho.aspx.designer.cs">
-      <DependentUpon>EditarDespacho.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\Error.aspx.cs">
       <DependentUpon>Error.aspx</DependentUpon>

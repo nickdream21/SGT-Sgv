@@ -147,7 +147,6 @@ Historial de partes accesible en Dashboard
 |--------|---------|
 | `RegistroDespacho.aspx` | **Agregar Despacho** — Programación de viajes. Crea lote con: fecha, cliente, número de pedido, tipo de operación (nacional/internacional), planta, documentación (factura, CPIC) y asignación de conductores con tractos y carretas. |
 | `ListaDespachos.aspx` | **Listar Despachos** — Vista general de todos los despachos. Permite ver detalles, filtrar y gestionar. Muestra viajes activos y despachos por viaje. |
-| `EditarDespacho.aspx` | **Editar Despacho** — Modificar un despacho existente (solo si no ha sido liquidado). |
 
 **Flujo de Despacho:**
 1. Admin crea un nuevo despacho (`RegistroDespacho.aspx`)

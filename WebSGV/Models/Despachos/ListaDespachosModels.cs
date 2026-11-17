@@ -192,8 +192,8 @@ namespace WebSGV.Models.Despachos
 
     /// <summary>
     /// Entrada para la transacción de edición de lote
-    /// (<c>ListaDespachosService.GuardarCambiosLote</c>). El code-behind lee y parsea los
-    /// controles del formulario de edición; el servicio sólo ejecuta el SQL/SPs.
+    /// (<c>ListaDespachosService.GuardarCambiosLote</c>). El code-behind lee y valida los
+    /// controles del formulario de edición; el servicio compara con lo guardado y solo escribe lo que cambia.
     /// </summary>
     public class GuardarCambiosLoteInput
     {
@@ -208,25 +208,29 @@ namespace WebSGV.Models.Despachos
         public bool EsInternacional { get; set; }
         public string UsuarioModificacion { get; set; }
         public DateTime FechaActual { get; set; }
-        /// <summary>idDespacho → nuevo idConductor (sólo los que cambiaron en la grilla).</summary>
+
+        /// <summary>
+        /// idDespacho → conductor elegido en la grilla (todas las filas). Solo se escriben y reubican los que
+        /// difieren del conductor guardado (2026-11-17, bloque 4, tarea 12).
+        /// </summary>
         public Dictionary<int, int> CambiosConductores { get; set; } = new Dictionary<int, int>();
 
-        // Factura: gestionar (panel visible y con número). Desvincular solo con una orden explícita del usuario
-        // (2026-11-17: Editar lote ya no desvincula porque el panel esté oculto; borraba la CPIC de las cargas nacionales).
+        // Factura: gestionar (panel visible y con número) o quitar (casilla "Quitar esta factura del lote").
+        // Un panel oculto no hace nada. Quitar gana a gestionar (EdicionDocumentosLote.Accion).
         public bool GestionarFactura { get; set; }
-        public bool DesvincularFactura { get; set; }
+        public bool QuitarFactura { get; set; }
         public string NumeroFactura { get; set; }
-        public DateTime FechaEmisionFactura { get; set; }
-        public decimal ValorTotalFactura { get; set; }
+        public DateTime? FechaEmisionFactura { get; set; }
+        public decimal? ValorTotalFactura { get; set; }
         /// <summary>PEN o USD; null deja la que tenía.</summary>
         public string MonedaFactura { get; set; }
 
-        // CPIC: gestionar o desvincular.
+        // CPIC: gestionar o quitar.
         public bool GestionarCpic { get; set; }
-        public bool DesvincularCpic { get; set; }
+        public bool QuitarCpic { get; set; }
         public string NumeroCPIC { get; set; }
-        public DateTime FechaEmisionCPIC { get; set; }
-        public decimal ValorFlete { get; set; }
+        public DateTime? FechaEmisionCPIC { get; set; }
+        public decimal? ValorFlete { get; set; }
     }
 
     /// <summary>Documento que tocó una escritura de lote: su id y qué se hizo (CREADA, ENLAZADA, RENOMBRADA…).</summary>
@@ -236,11 +240,57 @@ namespace WebSGV.Models.Despachos
         public string Accion { get; set; }
     }
 
-    /// <summary>Lo que hizo <c>ListaDespachosService.GuardarCambiosLote</c> con la factura y la CPIC (null = no se tocó).</summary>
+    /// <summary>Lo que hizo <c>ListaDespachosService.GuardarCambiosLote</c> (null / vacío = no se tocó).</summary>
     public class ResultadoEdicionLote
     {
         public DocumentoGestionado Factura { get; set; }
         public DocumentoGestionado Cpic { get; set; }
+
+        /// <summary>Ids de las facturas / CPIC quitadas de los despachos del lote (el documento no se borra).</summary>
+        public List<int> FacturasQuitadas { get; set; } = new List<int>();
+        public List<int> CpicsQuitadas { get; set; } = new List<int>();
+
+        /// <summary>idDespacho → nuevo conductor, solo los que de verdad cambiaron.</summary>
+        public Dictionary<int, int> ConductoresCambiados { get; set; } = new Dictionary<int, int>();
+
+        /// <summary>Nada difería de lo guardado: no se escribió nada (ni usuario ni fecha de modificación).</summary>
+        public bool SinCambios { get; set; }
+
+        /// <summary>Instantáneas del lote (JSON) antes y después, para la auditoría. Null si <see cref="SinCambios"/>.</summary>
+        public string AntesJson { get; set; }
+        public string DespuesJson { get; set; }
+    }
+
+    /// <summary>Foto de un lote en la BD (despachos y sus documentos), para comparar y auditar la edición.</summary>
+    public class InstantaneaLote
+    {
+        public List<InstantaneaDespacho> Despachos { get; set; } = new List<InstantaneaDespacho>();
+        public List<InstantaneaDocumento> Facturas { get; set; } = new List<InstantaneaDocumento>();
+        public List<InstantaneaDocumento> Cpics { get; set; } = new List<InstantaneaDocumento>();
+    }
+
+    public class InstantaneaDespacho
+    {
+        public int IdDespacho { get; set; }
+        public DateTime? FechaDespacho { get; set; }
+        public string NumeroPedido { get; set; }
+        public int? IdPlanta { get; set; }
+        public string TipoOperacion { get; set; }
+        public bool EsInternacional { get; set; }
+        public int? IdConductor { get; set; }
+        public int? IdViajeProgreso { get; set; }
+        public int? IdFactura { get; set; }
+        public int? IdCPIC { get; set; }
+    }
+
+    /// <summary>Factura (Valor = valor total, con Moneda) o CPIC (Valor = flete, Moneda null).</summary>
+    public class InstantaneaDocumento
+    {
+        public int Id { get; set; }
+        public string Numero { get; set; }
+        public DateTime? Fecha { get; set; }
+        public decimal? Valor { get; set; }
+        public string Moneda { get; set; }
     }
 
     /// <summary>Resultado de <c>sp_LD_AsignarDocumentosDespachos</c> (ids null si no se indicó ese documento).</summary>

@@ -331,3 +331,8 @@
     .ld-asignar-docs, .ld-docs-lista { margin-left: .75rem; margin-right: .75rem; }
     .ld-docs-lista-acciones { justify-content: flex-start; }
 }
+
+/* Editar lote: casillas "Quitar esta factura/CPIC del lote" (separación entre la casilla y su texto). */
+.ld-quitar-doc { display: inline-flex; align-items: center; }
+.ld-quitar-doc input[type=checkbox] { margin: 0 .45rem 0 0; }
+.ld-quitar-doc label { margin-bottom: 0; cursor: pointer; }

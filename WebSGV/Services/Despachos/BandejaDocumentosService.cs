@@ -1216,7 +1216,7 @@ namespace WebSGV.Services.Despachos
         /// queda creada ni enlazada. Una sola conexión (no escala a MSDTC); los SP respetan la transacción de quien los
         /// llama. Devuelve las filas de cada SP (la de la factura es null si no hay tercero).
         /// </summary>
-        internal static (DataTable factura, DataTable cpic) UnirCpicConFacturaTercero(List<int> idsDespachos, CpicLeido cpic, int? idClienteTercero)
+        internal static (DataTable factura, DataTable cpic) UnirCpicConFacturaTercero(List<int> idsDespachos, CpicLeido cpic, int? idClienteTercero, string usuario = null)
         {
             DataTable ft = null, dt = null;
             string ids = string.Join(",", idsDespachos);
@@ -1229,14 +1229,16 @@ namespace WebSGV.Services.Despachos
                         DbHelper.Param("@idCliente", idClienteTercero.Value),
                         DbHelper.Param("@fechaEmision", cpic.FechaRecepcion ?? cpic.FechaEmision),
                         DbHelper.Param("@valorTotal", cpic.ValorMercancias),
-                        DbHelper.Param("@moneda", "USD"));
+                        DbHelper.Param("@moneda", "USD"),
+                        DbHelper.Param("@usuario", (object)usuario ?? DBNull.Value));
                 dt = DbHelper.ConsultarTablaSp(conn, tx, "sp_LD_VincularCPIC",
                     DbHelper.Param("@idsDespachos", ids),
                     DbHelper.Param("@numeroCPIC", cpic.Numero),
                     DbHelper.Param("@fechaEmision", cpic.FechaEmision),
                     DbHelper.Param("@valorTotalFlete", cpic.ValorFlete),
                     DbHelper.Param("@pesoNeto", cpic.PesoNetoKg),
-                    DbHelper.Param("@pesoBruto", cpic.PesoBrutoKg));
+                    DbHelper.Param("@pesoBruto", cpic.PesoBrutoKg),
+                    DbHelper.Param("@usuario", (object)usuario ?? DBNull.Value));
             });
             return (ft, dt);
         }
@@ -1253,7 +1255,7 @@ namespace WebSGV.Services.Despachos
                         r.Errores.Add($"CPIC {c.Cpic.Numero}: {c.Detalle}");
                         continue;
                     }
-                    var (ft, dt) = UnirCpicConFacturaTercero(c.IdsDespachos, c.Cpic, c.IdClienteTercero);
+                    var (ft, dt) = UnirCpicConFacturaTercero(c.IdsDespachos, c.Cpic, c.IdClienteTercero, usuario);
                     if (ft != null)
                     {
                         int idFactura = Convert.ToInt32(ft.Rows[0]["idFactura"]);

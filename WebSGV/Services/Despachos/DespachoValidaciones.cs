@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Services.Despachos
 {
@@ -16,6 +17,17 @@ namespace WebSGV.Services.Despachos
         public static bool TryParseFechaIso(string valor, out DateTime fecha) =>
             DateTime.TryParseExact(valor, "yyyy-MM-dd",
                 CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha);
+
+        /// <summary>
+        /// Fecha ISO estricta (yyyy-MM-dd) que escribió el usuario; si no lo es, <see cref="ErrorNegocioException"/>
+        /// con el nombre del campo (antes un TryParse fallido guardaba 0001-01-01 o un Parse lanzaba un error genérico).
+        /// </summary>
+        public static DateTime LeerFechaIso(string valor, string campo)
+        {
+            if (!TryParseFechaIso((valor ?? "").Trim(), out DateTime fecha))
+                throw new ErrorNegocioException($"La fecha de «{campo}» no es válida.");
+            return fecha;
+        }
 
         /// <summary>El número de pedido debe ser exactamente 10 dígitos.</summary>
         public static bool ValidarNumeroPedido(string numeroPedido) =>

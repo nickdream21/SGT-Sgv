@@ -130,7 +130,9 @@ BEGIN
             END;
         END;
 
-        UPDATE d SET idCPIC = @idCPIC
+        UPDATE d SET idCPIC = @idCPIC,
+               usuarioModificacion = COALESCE(LEFT(@usuario, 50), d.usuarioModificacion),
+               fechaModificacion   = CASE WHEN @usuario IS NULL THEN d.fechaModificacion ELSE dbo.fn_AhoraPeru() END
         FROM Despachos d JOIN @ids i ON i.idDespacho = d.idDespacho
         WHERE d.idCPIC IS NULL OR d.idCPIC <> @idCPIC;
 

@@ -336,7 +336,7 @@ namespace WebSGV.Views
 
             SesionHelper.Iniciar(Session, datos.IdUsuario, datos.Rol, datos.Nombre);
             Session["NombreUsuario"] = datos.NombreUsuario;
-            // Leído por varias páginas (EditarDespacho, RegistroDespacho...) para
+            // Leído por varias páginas (RegistroDespacho...) para
             // registrar quién sube o edita.
             Session["Usuario"] = datos.NombreUsuario;
             Session["RequiereCambioContrasena"] = datos.RequiereCambioContrasena;

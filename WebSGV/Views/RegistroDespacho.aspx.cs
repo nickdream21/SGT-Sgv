@@ -3162,6 +3162,8 @@ namespace WebSGV.Views
 
                     // Crear nuevo viaje forzosamente
                     int nuevoViajeId = CrearNuevoViajeProgreso(idConductor, "Viaje creado manualmente por usuario");
+                    AuditoriaHelper.Registrar("INSERT", "ViajesEnProgreso", nuevoViajeId.ToString(),
+                        $"Viaje creado manualmente para {nombreConductor.Split('-')[0].Trim()} (idConductor {idConductor})");
 
                     MostrarMensaje($"Nuevo viaje creado exitosamente para {nombreConductor.Split('-')[0].Trim()}", "success");
 

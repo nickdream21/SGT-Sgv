@@ -896,10 +896,13 @@ namespace WebSGV.Views
             {
                 if (Page.IsValid && ValidarEdicionLote())
                 {
-                    GuardarCambiosLote();
+                    bool huboCambios = GuardarCambiosLote();
                     MostrarListaLotes();
                     CargarLotesRegistrados();
-                    MostrarMensaje("Cambios guardados exitosamente en todo el lote.", "success");
+                    if (huboCambios)
+                        MostrarMensaje("Cambios guardados exitosamente en el lote.", "success");
+                    else
+                        MostrarMensaje("No había cambios que guardar.", "info");
                 }
             }
             catch (Exception ex)
@@ -909,9 +912,18 @@ namespace WebSGV.Views
             }
         }
 
+        /// <summary>Qué hacer con la factura del formulario (panel, casilla Quitar y número).</summary>
+        private AccionDocumentoLote AccionFacturaEdit() =>
+            EdicionDocumentosLote.Accion(pnlFacturaEdit.Visible, chkQuitarFacturaEdit.Checked, txtNumeroFacturaEdit.Text);
+
+        /// <summary>Qué hacer con la CPIC del formulario (panel, casilla Quitar y número).</summary>
+        private AccionDocumentoLote AccionCpicEdit() =>
+            EdicionDocumentosLote.Accion(pnlCPICEdit.Visible, chkQuitarCpicEdit.Checked, txtNumeroCPICEdit.Text);
+
         private bool ValidarEdicionLote()
         {
             List<string> errores = new List<string>();
+            DateTime hoy = FechaHelper.Hoy();
 
             if (string.IsNullOrEmpty(ddlTipoOperacionEdit.SelectedValue))
                 errores.Add("Debe seleccionar el tipo de operación");
@@ -925,12 +937,25 @@ namespace WebSGV.Views
                 errores.Add("El número de pedido debe tener exactamente 10 dígitos");
             }
 
-            if (DateTime.TryParse(txtFechaProgramacionEdit.Text, out DateTime fechaProg))
+            // Fecha de programación estricta (yyyy-MM-dd); antes un texto raro llegaba a DateTime.Parse y daba un error genérico.
+            if (!DespachoValidaciones.TryParseFechaIso((txtFechaProgramacionEdit.Text ?? "").Trim(), out DateTime fechaProg))
+                errores.Add("La fecha de programación no es válida");
+            else if (fechaProg > hoy.AddDays(30))
+                errores.Add("La fecha de programación no puede ser mayor a 30 días en el futuro");
+
+            // Con número escrito, la fecha de emisión y el valor son obligatorios (antes un TryParse fallido guardaba
+            // 0001-01-01 o 0).
+            if (AccionFacturaEdit() == AccionDocumentoLote.GESTIONAR)
             {
-                if (fechaProg > FechaHelper.Hoy().AddDays(30))
-                {
-                    errores.Add("La fecha de programación no puede ser mayor a 30 días en el futuro");
-                }
+                if (!DespachoValidaciones.FechaEmisionEsValida((txtFechaEmisionFacturaEdit.Text ?? "").Trim(), hoy))
+                    errores.Add("La fecha de emisión de la factura es obligatoria y no puede ser futura");
+                ValidarMontoObligatorio(txtValorTotalFacturaEdit.Text, "Valor total de la factura", errores);
+            }
+            if (AccionCpicEdit() == AccionDocumentoLote.GESTIONAR)
+            {
+                if (!DespachoValidaciones.FechaEmisionEsValida((txtFechaEmisionCPICEdit.Text ?? "").Trim(), hoy))
+                    errores.Add("La fecha de emisión de la CPIC es obligatoria y no puede ser futura");
+                ValidarMontoObligatorio(txtValorFleteEdit.Text, "Valor del flete", errores);
             }
 
             if (errores.Count > 0)
@@ -942,62 +967,96 @@ namespace WebSGV.Views
             return true;
         }
 
-        private void GuardarCambiosLote()
+        /// <summary>Monto obligatorio del formulario: vacío, no numérico, negativo o sobre el tope agrega el error del campo.</summary>
+        private static void ValidarMontoObligatorio(string texto, string campo, List<string> errores)
         {
-            if (string.IsNullOrEmpty(LoteSeleccionadoId)) return;
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                errores.Add($"El campo «{campo}» es obligatorio");
+                return;
+            }
+            try { MontoHelper.LeerMonto(texto, campo); }
+            catch (ErrorNegocioException ex) { errores.Add(ex.Message.TrimEnd('.')); }
+        }
+
+        /// <summary>
+        /// Guarda la edición del lote. Devuelve false si nada difería de lo guardado (no se escribió ni se auditó).
+        /// Con cambios, audita el lote con la foto antes/después y una fila por factura o CPIC tocada.
+        /// </summary>
+        private bool GuardarCambiosLote()
+        {
+            if (string.IsNullOrEmpty(LoteSeleccionadoId)) return false;
 
             var lote = ObtenerLotePorId(LoteSeleccionadoId);
-            if (lote == null || lote.IdsDespachos.Count == 0) return;
+            if (lote == null || lote.IdsDespachos.Count == 0) return false;
 
-            // Leer/parsear los controles del formulario de edición; la transacción va al Service.
-            DateTime fechaEmisionFactura = FechaHelper.Hoy();
-            DateTime.TryParse(txtFechaEmisionFacturaEdit.Text, out fechaEmisionFactura);
-            decimal valorTotalFactura = 0;
-            decimal.TryParse(txtValorTotalFacturaEdit.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorTotalFactura);
-
-            DateTime fechaEmisionCPIC = FechaHelper.Hoy();
-            DateTime.TryParse(txtFechaEmisionCPICEdit.Text, out fechaEmisionCPIC);
-            decimal valorFlete = 0;
-            decimal.TryParse(txtValorFleteEdit.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorFlete);
+            var accionFactura = AccionFacturaEdit();
+            var accionCpic = AccionCpicEdit();
+            bool gestionarFactura = accionFactura == AccionDocumentoLote.GESTIONAR;
+            bool gestionarCpic = accionCpic == AccionDocumentoLote.GESTIONAR;
 
             var input = new GuardarCambiosLoteInput
             {
                 IdsDespachos = lote.IdsDespachos,
-                FechaDespacho = DateTime.Parse(txtFechaProgramacionEdit.Text),
+                FechaDespacho = DespachoValidaciones.LeerFechaIso(txtFechaProgramacionEdit.Text, "Fecha de programación"),
                 NumeroPedido = string.IsNullOrEmpty(txtNumeroPedidoEdit.Text) ? null : txtNumeroPedidoEdit.Text,
                 IdPlanta = Convert.ToInt32(ddlPlantaEdit.SelectedValue),
                 TipoOperacion = ddlTipoOperacionEdit.SelectedValue,
                 EsInternacional = rblAmbitoEdit.SelectedValue == "1",
                 UsuarioModificacion = ObtenerUsuarioActual(),
                 FechaActual = FechaHelper.Ahora(),
-                CambiosConductores = ObtenerCambiosConductoresDesdeGrid(),
+                CambiosConductores = ObtenerConductoresElegidosDesdeGrid(),
 
-                // Un panel oculto no desvincula nada (antes borraba la CPIC de las cargas nacionales al guardar);
-                // con más de una factura o CPIC los paneles se ocultan y estos documentos no se tocan.
-                GestionarFactura = EdicionDocumentosLote.Gestionar(pnlFacturaEdit.Visible, txtNumeroFacturaEdit.Text),
-                DesvincularFactura = false,
+                // Un panel oculto no hace nada; con más de una factura o CPIC los paneles se ocultan.
+                GestionarFactura = gestionarFactura,
+                QuitarFactura = accionFactura == AccionDocumentoLote.QUITAR,
                 NumeroFactura = txtNumeroFacturaEdit.Text,
-                FechaEmisionFactura = fechaEmisionFactura,
-                ValorTotalFactura = valorTotalFactura,
+                FechaEmisionFactura = gestionarFactura ? DespachoValidaciones.LeerFechaIso(txtFechaEmisionFacturaEdit.Text, "Fecha emisión de la factura") : (DateTime?)null,
+                ValorTotalFactura = gestionarFactura ? MontoHelper.LeerMonto(txtValorTotalFacturaEdit.Text, "Valor total de la factura") : (decimal?)null,
                 MonedaFactura = ddlMonedaFacturaEdit.SelectedValue,
 
-                GestionarCpic = EdicionDocumentosLote.Gestionar(pnlCPICEdit.Visible, txtNumeroCPICEdit.Text),
-                DesvincularCpic = false,
+                GestionarCpic = gestionarCpic,
+                QuitarCpic = accionCpic == AccionDocumentoLote.QUITAR,
                 NumeroCPIC = txtNumeroCPICEdit.Text,
-                FechaEmisionCPIC = fechaEmisionCPIC,
-                ValorFlete = valorFlete
+                FechaEmisionCPIC = gestionarCpic ? DespachoValidaciones.LeerFechaIso(txtFechaEmisionCPICEdit.Text, "Fecha emisión de la CPIC") : (DateTime?)null,
+                ValorFlete = gestionarCpic ? MontoHelper.LeerMonto(txtValorFleteEdit.Text, "Valor del flete") : (decimal?)null
             };
 
             var resultado = ListaDespachosService.GuardarCambiosLote(input);
+            if (resultado.SinCambios) return false;
 
+            string idsCsv = IdsACsv(lote.IdsDespachos);
             string documentos = "";
             if (resultado.Factura != null) documentos += $"; factura {input.NumeroFactura?.Trim()} (id {resultado.Factura.Id}, {resultado.Factura.Accion})";
             if (resultado.Cpic != null) documentos += $"; CPIC {input.NumeroCPIC?.Trim()} (id {resultado.Cpic.Id}, {resultado.Cpic.Accion})";
+            if (resultado.CpicsQuitadas.Count > 0) documentos += $"; CPIC quitada (id {string.Join(", ", resultado.CpicsQuitadas)})";
+            if (resultado.FacturasQuitadas.Count > 0) documentos += $"; factura quitada (id {string.Join(", ", resultado.FacturasQuitadas)})";
+            string conductores = resultado.ConductoresCambiados.Count == 0 ? "" :
+                "; conductor cambiado en " + string.Join(", ", resultado.ConductoresCambiados.Select(c => $"despacho {c.Key} → idConductor {c.Value}"));
+
             AuditoriaHelper.Registrar("UPDATE", "Despachos", LoteSeleccionadoId,
-                $"Lote editado - despachos {IdsACsv(lote.IdsDespachos)}{documentos}");
+                $"Lote editado - despachos {idsCsv}{conductores}{documentos}",
+                resultado.AntesJson, resultado.DespuesJson);
+
+            if (resultado.Factura != null)
+                AuditoriaHelper.Registrar(resultado.Factura.Accion == "CREADA" ? "INSERT" : "UPDATE", "Factura", resultado.Factura.Id,
+                    $"Factura {input.NumeroFactura?.Trim()} {resultado.Factura.Accion} al editar el lote (despachos {idsCsv})");
+            if (resultado.Cpic != null)
+                AuditoriaHelper.Registrar(resultado.Cpic.Accion == "CREADA" ? "INSERT" : "UPDATE", "CPIC", resultado.Cpic.Id,
+                    $"CPIC {input.NumeroCPIC?.Trim()} {resultado.Cpic.Accion} al editar el lote (despachos {idsCsv})");
+            foreach (int id in resultado.CpicsQuitadas)
+                AuditoriaHelper.Registrar("UPDATE", "CPIC", id, $"CPIC QUITADA de los despachos {idsCsv} al editar el lote (el documento no se borra)");
+            foreach (int id in resultado.FacturasQuitadas)
+                AuditoriaHelper.Registrar("UPDATE", "Factura", id, $"Factura QUITADA de los despachos {idsCsv} al editar el lote (el documento no se borra)");
+
+            return true;
         }
 
-        private Dictionary<int, int> ObtenerCambiosConductoresDesdeGrid()
+        /// <summary>
+        /// Conductor elegido en la grilla para cada despacho (todas las filas). El servicio compara con el guardado y
+        /// solo escribe y reubica los que cambian.
+        /// </summary>
+        private Dictionary<int, int> ObtenerConductoresElegidosDesdeGrid()
         {
             Dictionary<int, int> cambios = new Dictionary<int, int>();
 
@@ -1231,6 +1290,9 @@ namespace WebSGV.Views
             txtNumeroCPICEdit.Text = unDocumento ? lote.NumeroCPIC ?? "" : "";
             txtFechaEmisionCPICEdit.Text = unDocumento ? lote.FechaEmisionCPIC?.ToString("yyyy-MM-dd") ?? "" : "";
             txtValorFleteEdit.Text = unDocumento ? lote.ValorFlete?.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) ?? "" : "";
+            // Las casillas Quitar no se arrastran de un lote editado antes.
+            chkQuitarFacturaEdit.Checked = false;
+            chkQuitarCpicEdit.Checked = false;
 
             CargarGridConductoresLote(lote.IdsDespachos);
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using WebSGV.Models.Despachos;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Services.Despachos
 {
@@ -16,6 +17,35 @@ namespace WebSGV.Services.Despachos
         /// y remite a "Factura y CPIC por despacho".
         /// </summary>
         public bool VariosDocumentos { get; set; }
+    }
+
+    /// <summary>Qué hacer con la factura o la CPIC al guardar Editar lote.</summary>
+    public enum AccionDocumentoLote
+    {
+        /// <summary>No tocarlo (panel oculto o sin número).</summary>
+        NADA,
+        /// <summary>Enlazar, crear, renombrar o actualizar (sp_LD_GestionarFacturaLote / sp_LD_GestionarCPICLote).</summary>
+        GESTIONAR,
+        /// <summary>Quitarlo de los despachos del lote; el documento no se borra (sp_LD_DesvincularDocumentoLote).</summary>
+        QUITAR
+    }
+
+    /// <summary>Lo que de verdad cambia al guardar Editar lote (<see cref="EdicionDocumentosLote.CalcularCambios"/>).</summary>
+    public class CambiosEdicionLote
+    {
+        /// <summary>Despachos con algún dato del lote o el conductor distinto de lo guardado.</summary>
+        public List<int> DespachosAActualizar { get; set; } = new List<int>();
+        /// <summary>idDespacho → nuevo conductor, solo los que cambian.</summary>
+        public Dictionary<int, int> ConductoresCambiados { get; set; } = new Dictionary<int, int>();
+        public bool GestionarFactura { get; set; }
+        public bool GestionarCpic { get; set; }
+        /// <summary>Ids de las facturas / CPIC que se quitan (las que hoy llevan los despachos del lote).</summary>
+        public List<int> FacturasAQuitar { get; set; } = new List<int>();
+        public List<int> CpicsAQuitar { get; set; } = new List<int>();
+
+        public bool HayCambios =>
+            DespachosAActualizar.Count > 0 || ConductoresCambiados.Count > 0 || GestionarFactura || GestionarCpic
+            || FacturasAQuitar.Count > 0 || CpicsAQuitar.Count > 0;
     }
 
     /// <summary>
@@ -46,6 +76,86 @@ namespace WebSGV.Services.Despachos
 
         /// <summary>Se escribe la factura o la CPIC solo si su panel está a la vista y tiene número.</summary>
         public static bool Gestionar(bool panelVisible, string numero) => panelVisible && !string.IsNullOrWhiteSpace(numero);
+
+        /// <summary>
+        /// Qué hacer con un documento al guardar: nada si su panel está oculto; quitar si se marcó la casilla
+        /// (gana aunque haya número); gestionar si tiene número; si no, nada.
+        /// </summary>
+        public static AccionDocumentoLote Accion(bool panelVisible, bool quitar, string numero)
+        {
+            if (!panelVisible) return AccionDocumentoLote.NADA;
+            if (quitar) return AccionDocumentoLote.QUITAR;
+            return string.IsNullOrWhiteSpace(numero) ? AccionDocumentoLote.NADA : AccionDocumentoLote.GESTIONAR;
+        }
+
+        /// <summary>
+        /// Compara lo guardado (<paramref name="antes"/>) con lo que pide el formulario (<paramref name="input"/>) y
+        /// devuelve solo lo que cambia (2026-11-17, bloque 4, tarea 12): guardar sin tocar nada no escribe, y cambiar
+        /// el conductor de un despacho no reubica los demás. Un documento se gestiona si cambia su número, fecha, valor
+        /// o moneda, si el lote aún no lo tiene o si algún despacho del lote no lo lleva (lo enlaza).
+        /// </summary>
+        public static CambiosEdicionLote CalcularCambios(InstantaneaLote antes, GuardarCambiosLoteInput input)
+        {
+            var c = new CambiosEdicionLote();
+            if (antes == null || input == null) return c;
+            var conductores = input.CambiosConductores ?? new Dictionary<int, int>();
+
+            foreach (var d in antes.Despachos)
+            {
+                if (conductores.TryGetValue(d.IdDespacho, out int elegido) && elegido > 0 && d.IdConductor != elegido)
+                    c.ConductoresCambiados[d.IdDespacho] = elegido;
+
+                bool datoDistinto = d.FechaDespacho?.Date != input.FechaDespacho.Date
+                    || (d.NumeroPedido ?? "").Trim() != (input.NumeroPedido ?? "").Trim()
+                    || d.IdPlanta != input.IdPlanta
+                    || (d.TipoOperacion ?? "").Trim() != (input.TipoOperacion ?? "").Trim()
+                    || d.EsInternacional != input.EsInternacional;
+                if (datoDistinto || c.ConductoresCambiados.ContainsKey(d.IdDespacho))
+                    c.DespachosAActualizar.Add(d.IdDespacho);
+            }
+
+            // Otro usuario pudo asignar una 2.ª factura o CPIC mientras el formulario estaba abierto (el panel solo se
+            // muestra con una): quitar desde aquí las quitaría todas.
+            if (input.QuitarFactura && antes.Facturas.Count > 1)
+                throw new ErrorNegocioException("El lote ahora tiene más de una factura: quítelas por despacho en Documentos del lote → Factura y CPIC por despacho.");
+            if (input.QuitarCpic && antes.Cpics.Count > 1)
+                throw new ErrorNegocioException("El lote ahora tiene más de una CPIC: quítelas por despacho en Documentos del lote → Factura y CPIC por despacho.");
+
+            if (input.QuitarFactura)
+                c.FacturasAQuitar = antes.Despachos.Where(d => d.IdFactura.HasValue).Select(d => d.IdFactura.Value)
+                    .Distinct().OrderBy(x => x).ToList();
+            else if (input.GestionarFactura)
+                c.GestionarFactura = DocumentoDistinto(antes.Facturas, antes.Despachos.Select(d => d.IdFactura),
+                    input.NumeroFactura, input.FechaEmisionFactura, input.ValorTotalFactura, input.MonedaFactura);
+
+            if (input.QuitarCpic)
+                c.CpicsAQuitar = antes.Despachos.Where(d => d.IdCPIC.HasValue).Select(d => d.IdCPIC.Value)
+                    .Distinct().OrderBy(x => x).ToList();
+            else if (input.GestionarCpic)
+                c.GestionarCpic = DocumentoDistinto(antes.Cpics, antes.Despachos.Select(d => d.IdCPIC),
+                    input.NumeroCPIC, input.FechaEmisionCPIC, input.ValorFlete, null);
+
+            return c;
+        }
+
+        /// <summary>
+        /// ¿Hay que escribir el documento? Sí si el lote no lleva exactamente uno, si algún despacho no lo lleva o si
+        /// difiere el número, la fecha, el valor o la moneda (moneda null en el formulario = deja la que tenía; una
+        /// factura sin moneda se muestra como PEN).
+        /// </summary>
+        private static bool DocumentoDistinto(List<InstantaneaDocumento> documentos, IEnumerable<int?> idsEnDespachos,
+            string numero, DateTime? fecha, decimal? valor, string moneda)
+        {
+            if (documentos == null || documentos.Count != 1) return true;
+            var doc = documentos[0];
+            if (idsEnDespachos.Any(id => id != doc.Id)) return true;
+            if (!string.Equals((doc.Numero ?? "").Trim(), (numero ?? "").Trim(), StringComparison.Ordinal)) return true;
+            if (doc.Fecha?.Date != fecha?.Date) return true;
+            if (doc.Valor != valor) return true;
+            if (!string.IsNullOrEmpty(moneda)
+                && !string.Equals((doc.Moneda ?? "PEN").Trim(), moneda.Trim(), StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
+        }
 
         /// <summary>Facturas y CPIC distintas de los despachos del lote (las facturas primero), con cuántos despachos llevan cada una.</summary>
         public static List<DocumentoDelLote> DocumentosDistintos(IEnumerable<DocumentoDespachoLote> despachos)

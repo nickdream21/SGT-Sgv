@@ -87,5 +87,19 @@ namespace WebSGV.Tests
             Assert.Equal(tipo, t);
             if (ok) Assert.Equal(id, i);
         }
+
+        [Theory]
+        //          panel  quitar  numero     -> accion
+        [InlineData(false, false, "F001-1",   AccionDocumentoLote.NADA)]
+        [InlineData(false, true,  "F001-1",   AccionDocumentoLote.NADA)]      // panel oculto: nada, aunque llegue marcada
+        [InlineData(true,  false, "F001-1",   AccionDocumentoLote.GESTIONAR)]
+        [InlineData(true,  false, "  ",       AccionDocumentoLote.NADA)]
+        [InlineData(true,  false, null,       AccionDocumentoLote.NADA)]
+        [InlineData(true,  true,  "F001-1",   AccionDocumentoLote.QUITAR)]    // Quitar gana al número
+        [InlineData(true,  true,  "",         AccionDocumentoLote.QUITAR)]
+        public void Accion_segun_panel_casilla_y_numero(bool panel, bool quitar, string numero, AccionDocumentoLote esperada)
+        {
+            Assert.Equal(esperada, EdicionDocumentosLote.Accion(panel, quitar, numero));
+        }
     }
 }

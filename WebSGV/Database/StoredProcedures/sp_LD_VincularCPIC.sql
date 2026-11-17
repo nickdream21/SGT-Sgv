@@ -21,7 +21,8 @@ CREATE OR ALTER PROCEDURE sp_LD_VincularCPIC
     @fechaEmision     DATE          = NULL,
     @valorTotalFlete  DECIMAL(18,2) = NULL,
     @pesoNeto         DECIMAL(18,2) = NULL,
-    @pesoBruto        DECIMAL(18,2) = NULL
+    @pesoBruto        DECIMAL(18,2) = NULL,
+    @usuario          VARCHAR(100)  = NULL   -- quién vincula (usuarioModificacion del despacho; 2026-11-17)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -100,7 +101,9 @@ BEGIN
             SET @accion = 'ACTUALIZADA';
         END;
 
-        UPDATE d SET idCPIC = @idCPIC
+        UPDATE d SET idCPIC = @idCPIC,
+               usuarioModificacion = COALESCE(LEFT(@usuario, 50), d.usuarioModificacion),
+               fechaModificacion   = CASE WHEN @usuario IS NULL THEN d.fechaModificacion ELSE dbo.fn_AhoraPeru() END
         FROM Despachos d JOIN @ids i ON i.idDespacho = d.idDespacho
         WHERE d.idCPIC IS NULL OR d.idCPIC <> @idCPIC;
 

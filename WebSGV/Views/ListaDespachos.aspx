@@ -728,6 +728,10 @@
                                                                         <asp:ListItem Value="USD" Text="Dólares (USD)"></asp:ListItem>
                                                                     </asp:DropDownList>
                                                                 </div>
+                                                                <div class="form-group mb-0">
+                                                                    <asp:CheckBox ID="chkQuitarFacturaEdit" runat="server" CssClass="ld-quitar-doc" Text="Quitar esta factura del lote" />
+                                                                    <small class="form-text">La factura no se borra: solo deja de estar en estos despachos. Si el lote tiene una CPIC de esta factura, quítela también.</small>
+                                                                </div>
                                                             </div>
                                                         </asp:Panel>
                                                     </div>
@@ -755,12 +759,16 @@
                                                                 </div>
                                                                 <div class="form-group">
                                                                     <label class="form-label">Valor flete:</label>
-                                                                    <asp:TextBox ID="txtValorFleteEdit" runat="server" 
-                                                                        CssClass="form-control" 
+                                                                    <asp:TextBox ID="txtValorFleteEdit" runat="server"
+                                                                        CssClass="form-control"
                                                                         placeholder="0.00"
                                                                         TextMode="Number"
                                                                         step="0.01">
                                                                     </asp:TextBox>
+                                                                </div>
+                                                                <div class="form-group mb-0">
+                                                                    <asp:CheckBox ID="chkQuitarCpicEdit" runat="server" CssClass="ld-quitar-doc" Text="Quitar esta CPIC del lote" />
+                                                                    <small class="form-text">La CPIC no se borra: solo deja de estar en estos despachos.</small>
                                                                 </div>
                                                             </div>
                                                         </asp:Panel>

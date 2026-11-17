@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using Newtonsoft.Json;
 using WebSGV.Helpers;
 using WebSGV.Models.Despachos;
 
@@ -342,13 +343,6 @@ namespace WebSGV.Services.Despachos
         }
 
         /// <summary>
-        /// Transacción de edición de lote: actualiza cada despacho (<c>sp_LD_ActualizarDespachoEnLote</c>),
-        /// recalcula el conductor dominante si hubo cambios (<c>sp_LD_ActualizarConductorDominanteViajes</c>)
-        /// y gestiona/desvincula factura y CPIC (<c>sp_LD_GestionarFacturaLote</c>/<c>sp_LD_GestionarCPICLote</c>/
-        /// <c>sp_LD_DesvincularDocumentoLote</c>). SQL/SP movido verbatim; los valores de los controles
-        /// ya vienen leídos/parseados en <paramref name="input"/>. Rollback + re-propagación ante excepción.
-        /// </summary>
-        /// <summary>
         /// Deja el despacho en el viaje de liquidación de su conductor (<c>sp_LD_ReubicarDespachoEnViajeDelConductor</c>).
         /// Se llama dentro de la transacción que cambió el conductor; si el viaje anterior ya tiene liquidación, el SP
         /// lanza el error y la edición se revierte.
@@ -359,6 +353,73 @@ namespace WebSGV.Services.Despachos
                 DbHelper.Param("@usuario", usuario),
                 DbHelper.Param("@fechaActual", fechaActual));
 
+        /// <summary>
+        /// Foto de los despachos del lote con su factura y su CPIC, en una sola consulta (dentro de la transacción de
+        /// la edición si se pasa). Sirve para comparar con el formulario y para la auditoría antes/después.
+        /// </summary>
+        public static InstantaneaLote ObtenerInstantaneaLote(SqlConnection conn, SqlTransaction tx, IEnumerable<int> idsDespachos)
+        {
+            var foto = new InstantaneaLote();
+            DataTable t = DbHelper.ConsultarTabla(conn, tx, @"
+                SELECT d.idDespacho, d.fechaDespacho, d.numeroPedido, d.idPlanta, d.tipoOperacion, d.esInternacional,
+                       d.idConductor, d.idViajeProgreso,
+                       d.idFactura, f.numeroFactura, f.fechaEmision AS fechaFactura, f.valorTotal, f.moneda,
+                       d.idCPIC, c.numeroCPIC, c.fechaEmision AS fechaCpic, c.valorTotalFlete
+                FROM Despachos d
+                LEFT JOIN Factura f ON f.idFactura = d.idFactura
+                LEFT JOIN CPIC c ON c.idCPIC = d.idCPIC
+                WHERE d.idDespacho IN (SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@ids, ','))
+                ORDER BY d.idDespacho",
+                DbHelper.Param("@ids", string.Join(",", idsDespachos ?? Enumerable.Empty<int>())));
+
+            foreach (DataRow r in t.Rows)
+            {
+                var d = new InstantaneaDespacho
+                {
+                    IdDespacho = Convert.ToInt32(r["idDespacho"]),
+                    FechaDespacho = r["fechaDespacho"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(r["fechaDespacho"]).Date,
+                    NumeroPedido = r["numeroPedido"] as string,
+                    IdPlanta = r["idPlanta"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["idPlanta"]),
+                    TipoOperacion = r["tipoOperacion"] as string,
+                    EsInternacional = r["esInternacional"] != DBNull.Value && Convert.ToBoolean(r["esInternacional"]),
+                    IdConductor = r["idConductor"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["idConductor"]),
+                    IdViajeProgreso = r["idViajeProgreso"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["idViajeProgreso"]),
+                    IdFactura = r["idFactura"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["idFactura"]),
+                    IdCPIC = r["idCPIC"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["idCPIC"])
+                };
+                foto.Despachos.Add(d);
+
+                if (d.IdFactura.HasValue && !foto.Facturas.Any(x => x.Id == d.IdFactura.Value))
+                    foto.Facturas.Add(new InstantaneaDocumento
+                    {
+                        Id = d.IdFactura.Value,
+                        Numero = (r["numeroFactura"] as string)?.Trim(),
+                        Fecha = r["fechaFactura"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(r["fechaFactura"]).Date,
+                        Valor = r["valorTotal"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["valorTotal"]),
+                        Moneda = (r["moneda"] as string)?.Trim()
+                    });
+
+                if (d.IdCPIC.HasValue && !foto.Cpics.Any(x => x.Id == d.IdCPIC.Value))
+                    foto.Cpics.Add(new InstantaneaDocumento
+                    {
+                        Id = d.IdCPIC.Value,
+                        Numero = (r["numeroCPIC"] as string)?.Trim(),
+                        Fecha = r["fechaCpic"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(r["fechaCpic"]).Date,
+                        Valor = r["valorTotalFlete"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["valorTotalFlete"])
+                    });
+            }
+            return foto;
+        }
+
+        /// <summary>
+        /// Transacción de edición de lote (2026-11-17, bloque 4, tarea 12): toma la foto "antes", calcula lo que de verdad
+        /// cambia (<see cref="EdicionDocumentosLote.CalcularCambios"/>) y solo escribe eso: <c>sp_LD_ActualizarDespachoEnLote</c>
+        /// en los despachos que cambian, <c>sp_LD_ReubicarDespachoEnViajeDelConductor</c> en los de conductor nuevo, quita la
+        /// CPIC antes que la factura (<c>sp_LD_DesvincularDocumentoLote</c>) y gestiona factura y CPIC
+        /// (<c>sp_LD_GestionarFacturaLote</c>/<c>sp_LD_GestionarCPICLote</c>). Sin cambios no escribe nada y devuelve
+        /// <see cref="ResultadoEdicionLote.SinCambios"/>. Con cambios toma la foto "después" antes del commit y devuelve
+        /// ambas en JSON para la auditoría (la registra el code-behind tras el commit). Rollback + re-propagación ante excepción.
+        /// </summary>
         public static ResultadoEdicionLote GuardarCambiosLote(GuardarCambiosLoteInput input)
         {
             string idsStr = string.Join(",", input.IdsDespachos);
@@ -371,87 +432,95 @@ namespace WebSGV.Services.Despachos
                 {
                     try
                     {
-                        // 1. Actualizar cada despacho del lote
-                        foreach (int idDespacho in input.IdsDespachos)
+                        var antes = ObtenerInstantaneaLote(conn, transaction, input.IdsDespachos);
+                        var cambios = EdicionDocumentosLote.CalcularCambios(antes, input);
+                        if (!cambios.HayCambios)
                         {
-                            using (SqlCommand cmd = new SqlCommand("sp_LD_ActualizarDespachoEnLote", conn, transaction))
-                            {
-                                cmd.CommandType = CommandType.StoredProcedure;
-                                cmd.Parameters.AddWithValue("@idDespacho", idDespacho);
-                                cmd.Parameters.AddWithValue("@fechaDespacho", input.FechaDespacho);
-                                cmd.Parameters.AddWithValue("@numeroPedido",
-                                    string.IsNullOrEmpty(input.NumeroPedido) ? (object)DBNull.Value : input.NumeroPedido);
-                                cmd.Parameters.AddWithValue("@idPlanta", input.IdPlanta);
-                                cmd.Parameters.AddWithValue("@tipoOperacion", input.TipoOperacion);
-                                cmd.Parameters.AddWithValue("@esInternacional", input.EsInternacional);
-                                cmd.Parameters.AddWithValue("@idConductor",
-                                    input.CambiosConductores.ContainsKey(idDespacho) ? (object)input.CambiosConductores[idDespacho] : DBNull.Value);
-                                cmd.Parameters.AddWithValue("@usuarioModificacion", input.UsuarioModificacion);
-                                cmd.Parameters.AddWithValue("@fechaActual", input.FechaActual);
-                                cmd.ExecuteNonQuery();
-                            }
+                            // Nada escrito: se confirma la transacción vacía (un Rollback aquí desharía también la
+                            // transacción de quien llama si la conexión está enlistada, p. ej. en las pruebas).
+                            transaction.Commit();
+                            resultado.SinCambios = true;
+                            return resultado;
+                        }
+                        resultado.ConductoresCambiados = cambios.ConductoresCambiados;
+                        resultado.FacturasQuitadas = cambios.FacturasAQuitar;
+                        resultado.CpicsQuitadas = cambios.CpicsAQuitar;
+
+                        // 1. Solo los despachos que cambian (el conductor solo si cambió; NULL lo deja como está).
+                        foreach (int idDespacho in cambios.DespachosAActualizar)
+                        {
+                            DbHelper.EjecutarNonQuerySp(conn, transaction, "sp_LD_ActualizarDespachoEnLote",
+                                DbHelper.Param("@idDespacho", idDespacho),
+                                DbHelper.Param("@fechaDespacho", input.FechaDespacho),
+                                DbHelper.Param("@numeroPedido", string.IsNullOrEmpty(input.NumeroPedido) ? (object)DBNull.Value : input.NumeroPedido),
+                                DbHelper.Param("@idPlanta", input.IdPlanta),
+                                DbHelper.Param("@tipoOperacion", input.TipoOperacion),
+                                DbHelper.Param("@esInternacional", input.EsInternacional),
+                                DbHelper.Param("@idConductor", cambios.ConductoresCambiados.TryGetValue(idDespacho, out int conductor)
+                                    ? (object)conductor : DBNull.Value),
+                                DbHelper.Param("@usuarioModificacion", (object)input.UsuarioModificacion ?? DBNull.Value),
+                                DbHelper.Param("@fechaActual", input.FechaActual));
                         }
 
                         // 2. Cada despacho con conductor nuevo pasa al viaje de liquidación de ese conductor
                         //    (antes el viaje entero pasaba al conductor con más despachos y el resto quedaba
-                        //    en el viaje de otro: despacho 873 en el viaje 624).
-                        foreach (int idDespacho in input.CambiosConductores.Keys)
+                        //    en el viaje de otro: despacho 873 en el viaje 624). Solo los que cambiaron.
+                        foreach (int idDespacho in cambios.ConductoresCambiados.Keys)
                             ReubicarEnViajeDelConductor(conn, transaction, idDespacho, input.UsuarioModificacion, input.FechaActual);
 
-                        // 3. Gestionar Factura (sp_LD_GestionarFacturaLote: enlaza, renombra o crea; nunca junta dos)
-                        if (input.GestionarFactura)
+                        // 3. Quitar: primero la CPIC (una CPIC de la factura impide quitar la factura: THROW 50025).
+                        if (cambios.CpicsAQuitar.Count > 0)
+                            Desvincular(conn, transaction, idsStr, "CPIC", input.UsuarioModificacion);
+                        if (cambios.FacturasAQuitar.Count > 0)
+                            Desvincular(conn, transaction, idsStr, "FACTURA", input.UsuarioModificacion);
+
+                        // 4. Gestionar Factura (sp_LD_GestionarFacturaLote: enlaza, renombra o crea; nunca junta dos)
+                        if (cambios.GestionarFactura)
                         {
                             resultado.Factura = Gestionado(DbHelper.ConsultarTablaSp(conn, transaction, "sp_LD_GestionarFacturaLote",
                                 DbHelper.Param("@idsDespachos", idsStr),
                                 DbHelper.Param("@numeroFactura", input.NumeroFactura),
-                                DbHelper.Param("@fechaEmision", input.FechaEmisionFactura),
-                                DbHelper.Param("@valorTotal", input.ValorTotalFactura),
+                                DbHelper.Param("@fechaEmision", (object)input.FechaEmisionFactura ?? DBNull.Value),
+                                DbHelper.Param("@valorTotal", (object)input.ValorTotalFactura ?? DBNull.Value),
                                 DbHelper.Param("@moneda", string.IsNullOrEmpty(input.MonedaFactura) ? (object)DBNull.Value : input.MonedaFactura),
                                 DbHelper.Param("@usuario", (object)input.UsuarioModificacion ?? DBNull.Value)), "idFactura");
                         }
-                        else if (input.DesvincularFactura)
-                        {
-                            using (SqlCommand cmd = new SqlCommand("sp_LD_DesvincularDocumentoLote", conn, transaction))
-                            {
-                                cmd.CommandType = CommandType.StoredProcedure;
-                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
-                                cmd.Parameters.AddWithValue("@tipoDocumento", "FACTURA");
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
 
-                        // 4. Gestionar CPIC (sp_LD_GestionarCPICLote: igual que la factura)
-                        if (input.GestionarCpic)
+                        // 5. Gestionar CPIC (sp_LD_GestionarCPICLote: igual que la factura)
+                        if (cambios.GestionarCpic)
                         {
                             resultado.Cpic = Gestionado(DbHelper.ConsultarTablaSp(conn, transaction, "sp_LD_GestionarCPICLote",
                                 DbHelper.Param("@idsDespachos", idsStr),
                                 DbHelper.Param("@numeroCPIC", input.NumeroCPIC),
-                                DbHelper.Param("@fechaEmision", input.FechaEmisionCPIC),
-                                DbHelper.Param("@valorTotalFlete", input.ValorFlete),
+                                DbHelper.Param("@fechaEmision", (object)input.FechaEmisionCPIC ?? DBNull.Value),
+                                DbHelper.Param("@valorTotalFlete", (object)input.ValorFlete ?? DBNull.Value),
                                 DbHelper.Param("@usuario", (object)input.UsuarioModificacion ?? DBNull.Value)), "idCPIC");
                         }
-                        else if (input.DesvincularCpic)
-                        {
-                            using (SqlCommand cmd = new SqlCommand("sp_LD_DesvincularDocumentoLote", conn, transaction))
-                            {
-                                cmd.CommandType = CommandType.StoredProcedure;
-                                cmd.Parameters.AddWithValue("@idsDespachos", idsStr);
-                                cmd.Parameters.AddWithValue("@tipoDocumento", "CPIC");
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
+
+                        var despues = ObtenerInstantaneaLote(conn, transaction, input.IdsDespachos);
+                        resultado.AntesJson = JsonConvert.SerializeObject(antes);
+                        resultado.DespuesJson = JsonConvert.SerializeObject(despues);
 
                         transaction.Commit();
                     }
                     catch
                     {
-                        transaction.Rollback();
+                        // Un fallo del Rollback no debe tapar la excepción original.
+                        try { if (transaction.Connection != null) transaction.Rollback(); }
+                        catch (Exception exRollback) { LogSGV.Error(exRollback, "No se pudo deshacer la edición del lote"); }
                         throw;
                     }
                 }
             }
             return resultado;
         }
+
+        /// <summary>Quita la factura o la CPIC de los despachos del lote (<c>sp_LD_DesvincularDocumentoLote</c>); el documento no se borra.</summary>
+        private static void Desvincular(SqlConnection conn, SqlTransaction tx, string idsCsv, string tipoDocumento, string usuario) =>
+            DbHelper.EjecutarNonQuerySp(conn, tx, "sp_LD_DesvincularDocumentoLote",
+                DbHelper.Param("@idsDespachos", idsCsv),
+                DbHelper.Param("@tipoDocumento", tipoDocumento),
+                DbHelper.Param("@usuario", (object)usuario ?? DBNull.Value));
 
         /// <summary>Lee el id y la acción que devuelven sp_LD_GestionarFacturaLote / sp_LD_GestionarCPICLote (null si no escribió).</summary>
         private static DocumentoGestionado Gestionado(DataTable t, string columnaId)

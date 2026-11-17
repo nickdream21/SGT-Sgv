@@ -661,6 +661,24 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.DropDownList ddlMonedaFacturaEdit;
 
         /// <summary>
+        /// Control chkQuitarFacturaEdit.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox chkQuitarFacturaEdit;
+
+        /// <summary>
+        /// Control chkQuitarCpicEdit.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox chkQuitarCpicEdit;
+
+        /// <summary>
         /// Control pnlCPICEdit.
         /// </summary>
         /// <remarks>

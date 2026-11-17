@@ -141,7 +141,9 @@ BEGIN
         END;
 
         UPDATE d
-        SET idFactura = @idFactura
+        SET idFactura           = @idFactura,
+            usuarioModificacion = COALESCE(LEFT(@usuario, 50), d.usuarioModificacion),
+            fechaModificacion   = CASE WHEN @usuario IS NULL THEN d.fechaModificacion ELSE dbo.fn_AhoraPeru() END
         FROM Despachos d
         INNER JOIN @ids i ON i.idDespacho = d.idDespacho
         WHERE d.idFactura IS NULL OR d.idFactura <> @idFactura;

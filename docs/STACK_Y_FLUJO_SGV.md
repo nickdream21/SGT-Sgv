@@ -134,7 +134,6 @@
 |---|---|
 | `RegistroDespacho.aspx` | Crear despacho: cliente, operación, planta, factura, CPIC (internacional), asignar conductores + tracto + carreta → Genera `ViajesProgreso` |
 | `ListaDespachos.aspx` | Ver todos los despachos activos y viajes por despacho |
-| `EditarDespacho.aspx` | Editar despacho (solo si no fue liquidado) |
 
 ### Módulo 2 — Órdenes de Viaje y Liquidaciones
 
