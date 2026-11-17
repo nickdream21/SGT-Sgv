@@ -92,7 +92,7 @@
                                     CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                                 <div class="form-group">
                                     <label class="font-weight-bold">Nombre <span class="text-danger">*</span></label>
-                                    <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control" MaxLength="200"></asp:TextBox>
+                                    <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control" MaxLength="50"></asp:TextBox>
                                     <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ValidationGroup="vgAlta"
                                         ControlToValidate="txtNombre" ErrorMessage="El nombre es obligatorio."
                                         CssClass="text-danger small" Display="Dynamic" />
@@ -183,7 +183,7 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="font-weight-bold">Nombre <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control" MaxLength="200"></asp:TextBox>
+                        <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control" MaxLength="50"></asp:TextBox>
                     </div>
                     <div class="form-group mb-0">
                         <label class="font-weight-bold"><asp:Literal ID="litEtiquetaDetalleEditar" runat="server" Text="Descripción" />:</label>

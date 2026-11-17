@@ -63,63 +63,12 @@ namespace WebSGV.Views
                     return;
                 }
 
+                // Valida largos y documento, normaliza el carnet (ceros a la izquierda, como la Lista de
+                // choferes) y rechaza el duplicado; audita dentro del servicio.
                 string tipoDocumento = ddlTipoDocumento.SelectedValue;
-                string numeroDocumento = null;
-                string carnetExtranjeria = null;
-                string pasaporte = null;
-
-                switch (tipoDocumento)
-                {
-                    case "DNI":
-                        if (string.IsNullOrWhiteSpace(txtDNI.Text) || !Regex.IsMatch(txtDNI.Text.Trim(), "^\\d{8}$"))
-                        {
-                            MostrarMensaje("DNI inválido: debe contener exactamente 8 dígitos.");
-                            return;
-                        }
-                        numeroDocumento = txtDNI.Text.Trim();
-                        break;
-                    case "Carnet de Extranjería":
-                        if (string.IsNullOrWhiteSpace(txtCarnetExtranjeria.Text) || !Regex.IsMatch(txtCarnetExtranjeria.Text.Trim(), "^[A-Za-z0-9-]{6,12}$"))
-                        {
-                            MostrarMensaje("Carnet de extranjería inválido: use de 6 a 12 caracteres alfanuméricos.");
-                            return;
-                        }
-                        carnetExtranjeria = txtCarnetExtranjeria.Text.Trim();
-                        break;
-                    case "Pasaporte":
-                        if (string.IsNullOrWhiteSpace(txtPasaporte.Text) || !Regex.IsMatch(txtPasaporte.Text.Trim(), "^[A-Za-z0-9-]{6,12}$"))
-                        {
-                            MostrarMensaje("Pasaporte inválido: use de 6 a 12 caracteres alfanuméricos.");
-                            return;
-                        }
-                        pasaporte = txtPasaporte.Text.Trim();
-                        break;
-                    default:
-                        MostrarMensaje("Tipo de documento inválido.");
-                        return;
-                }
-
-                if (!Regex.IsMatch(txtNombres.Text.Trim(), "^[A-Za-zÁÉÍÓÚÑáéíóú\\s]{2,100}$")) { MostrarMensaje("Nombres inválidos: solo letras y espacios (2 a 100 caracteres)."); return; }
-                if (!Regex.IsMatch(txtApellidoPaterno.Text.Trim(), "^[A-Za-zÁÉÍÓÚÑáéíóú\\s]{2,100}$")) { MostrarMensaje("Apellido paterno inválido: solo letras y espacios (2 a 100 caracteres)."); return; }
-                if (!string.IsNullOrWhiteSpace(txtApellidoMaterno.Text) && !Regex.IsMatch(txtApellidoMaterno.Text.Trim(), "^[A-Za-zÁÉÍÓÚÑáéíóú\\s]{2,100}$")) { MostrarMensaje("Apellido materno inválido: solo letras y espacios (2 a 100 caracteres)."); return; }
-                if (!string.IsNullOrWhiteSpace(txtTelefono.Text) && !Regex.IsMatch(txtTelefono.Text.Trim(), "^\\d{7,9}$")) { MostrarMensaje("Teléfono inválido: ingrese entre 7 y 9 dígitos."); return; }
-
-                if (tipoDocumento == "DNI" && ConductorExiste("DNI", numeroDocumento))
-                {
-                    MostrarMensaje("Ya existe un conductor registrado con este DNI.");
-                    return;
-                }
-                else if (tipoDocumento == "Carnet de Extranjería" && ConductorExiste("carnetExtranjeria", carnetExtranjeria))
-                {
-                    MostrarMensaje("Ya existe un conductor registrado con este Carnet de Extranjería.");
-                    return;
-                }
-
-                GuardarConductor(numeroDocumento, txtNombres.Text.Trim(), txtApellidoPaterno.Text.Trim(),
-                                txtApellidoMaterno.Text.Trim(), txtTelefono.Text.Trim(), carnetExtranjeria);
-
-                AuditoriaHelper.Registrar("INSERT", "Conductor",
-                    descripcion: $"Conductor registrado - Nombre: {txtNombres.Text.Trim()} {txtApellidoPaterno.Text.Trim()}, Doc: {numeroDocumento ?? carnetExtranjeria ?? pasaporte}");
+                string numeroDocumento = tipoDocumento == RegistroConductorService.TipoDni ? txtDNI.Text : txtCarnetExtranjeria.Text;
+                RegistroConductorService.Registrar(tipoDocumento, numeroDocumento, txtNombres.Text,
+                    txtApellidoPaterno.Text, txtApellidoMaterno.Text, txtTelefono.Text);
 
                 LimpiarFormulario();
                 MostrarMensaje("Conductor registrado correctamente.", true);
@@ -127,7 +76,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Ocurrió un error al registrar el conductor: " + MensajeErrorHelper.ParaUsuario(ex));
+                MostrarMensaje("No se registró el conductor: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -162,38 +111,10 @@ namespace WebSGV.Views
 
         protected string ObtenerClaseBoton(object activo) => EstadoUiHelper.ObtenerClaseBoton(activo);
 
-        private bool ConductorExiste(string campo, string valor)
-        {
-            string columna = campo == "DNI" ? "DNI" : campo == "carnetExtranjeria" ? "carnetExtranjeria" : string.Empty;
-            if (string.IsNullOrEmpty(columna))
-                return false;
-
-            string query = $"SELECT COUNT(*) FROM Conductor WHERE {columna} = @valor";
-            return Convert.ToInt32(DbHelper.EjecutarEscalar(query, DbHelper.Param("@valor", valor))) > 0;
-        }
-
-        private void GuardarConductor(string dni, string nombre, string apPaterno, string apMaterno,
-                                    string telefono, string carnetExtranjeria)
-        {
-            DbHelper.EjecutarNonQuery(
-                @"INSERT INTO Conductor (DNI, nombre, apPaterno, apMaterno, fechaNacimiento, direccion, telefono, correo, carnetExtranjeria, activo)
-                  VALUES (@DNI, @nombre, @apPaterno, @apMaterno, @fechaNacimiento, @direccion, @telefono, @correo, @carnetExtranjeria, 1)",
-                DbHelper.Param("@DNI", string.IsNullOrEmpty(dni) ? null : (object)dni),
-                DbHelper.Param("@nombre", nombre),
-                DbHelper.Param("@apPaterno", apPaterno),
-                DbHelper.Param("@apMaterno", apMaterno),
-                DbHelper.Param("@fechaNacimiento", null),
-                DbHelper.Param("@direccion", null),
-                DbHelper.Param("@telefono", string.IsNullOrEmpty(telefono) ? null : (object)telefono),
-                DbHelper.Param("@correo", null),
-                DbHelper.Param("@carnetExtranjeria", string.IsNullOrEmpty(carnetExtranjeria) ? null : (object)carnetExtranjeria));
-        }
-
         private void LimpiarFormulario()
         {
             txtDNI.Text = string.Empty;
             txtCarnetExtranjeria.Text = string.Empty;
-            txtPasaporte.Text = string.Empty;
             txtNombres.Text = string.Empty;
             txtApellidoPaterno.Text = string.Empty;
             txtApellidoMaterno.Text = string.Empty;
@@ -218,29 +139,11 @@ namespace WebSGV.Views
                 return;
             }
 
-            string nombres = txtEditarNombres.Text.Trim();
-            string apPaterno = txtEditarApellidoPaterno.Text.Trim();
-            string apMaterno = txtEditarApellidoMaterno.Text.Trim();
-            string telefono = txtEditarTelefono.Text.Trim();
-
-            if (string.IsNullOrWhiteSpace(nombres) || string.IsNullOrWhiteSpace(apPaterno))
-            {
-                MostrarMensaje("Los nombres y el apellido paterno son obligatorios.");
-                return;
-            }
-
             try
             {
-                DbHelper.EjecutarNonQuery(
-                    @"UPDATE Conductor SET nombre=@nombres, apPaterno=@apPaterno, apMaterno=@apMaterno, telefono=@telefono WHERE idConductor=@id",
-                    DbHelper.Param("@nombres", nombres),
-                    DbHelper.Param("@apPaterno", apPaterno),
-                    DbHelper.Param("@apMaterno", string.IsNullOrWhiteSpace(apMaterno) ? null : (object)apMaterno),
-                    DbHelper.Param("@telefono", string.IsNullOrWhiteSpace(telefono) ? null : (object)telefono),
-                    DbHelper.Param("@id", idConductor));
-
-                AuditoriaHelper.Registrar("UPDATE", "Conductor", idConductor,
-                    $"Conductor editado — {nombres} {apPaterno} {apMaterno}");
+                // Mismas reglas de largo y formato que el alta (solo en los campos que cambian); audita.
+                RegistroConductorService.Actualizar(idConductor, txtEditarNombres.Text, txtEditarApellidoPaterno.Text,
+                    txtEditarApellidoMaterno.Text, txtEditarTelefono.Text);
                 hfIdConductor.Value = "";
                 MostrarMensaje("Conductor actualizado correctamente.", true);
                 CargarConductores();

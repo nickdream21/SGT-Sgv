@@ -50,7 +50,7 @@
                             </div>
                             <div class="form-group">
                                 <label class="font-weight-bold">Nombre / Raz&#xF3;n Social: <span class="text-danger">*</span></label>
-                                <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control"></asp:TextBox>
+                                <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control" MaxLength="100"></asp:TextBox>
                                 <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ValidationGroup="vgRegistroCliente"
                                     ControlToValidate="txtNombre"
                                     ErrorMessage="El nombre del cliente es obligatorio."
@@ -58,7 +58,7 @@
                                     Display="Dynamic">
                                 </asp:RequiredFieldValidator>
                                 <asp:RegularExpressionValidator ID="revNombre" runat="server" ControlToValidate="txtNombre" ValidationGroup="vgRegistroCliente"
-                                    ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.&]{3,200}$" ErrorMessage="Nombre/Razón Social: use entre 3 y 200 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
+                                    ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.&]{3,100}$" ErrorMessage="Nombre/Razón Social: use entre 3 y 100 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
                             </div>
 
                             <hr class="my-3" />
@@ -213,7 +213,7 @@
                         </div>
                         <div class="form-group col-md-8">
                             <label class="font-weight-bold">Nombre / Raz&#xF3;n Social <span class="text-danger">*</span></label>
-                            <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control"></asp:TextBox>
+                            <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control" MaxLength="100"></asp:TextBox>
                         </div>
                     </div>
                     <div class="form-group">

@@ -38,11 +38,11 @@
                         <div class="form-group">
                             <label class="font-weight-bold">Nombre de la Estaci&#xF3;n <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control"
-                                placeholder="Ej: ESTACION DE PEAJE CHICAMA" MaxLength="200"></asp:TextBox>
+                                placeholder="Ej: ESTACION DE PEAJE CHICAMA" MaxLength="100"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="rfvNombrePeaje" runat="server" ValidationGroup="vgRegistroPeaje"
                                 ControlToValidate="txtNombre" ErrorMessage="Nombre de estación: este campo es obligatorio." CssClass="text-danger small" Display="Dynamic" />
                             <asp:RegularExpressionValidator ID="revNombrePeaje" runat="server" ValidationGroup="vgRegistroPeaje"
-                                ControlToValidate="txtNombre" ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.,]{3,200}$" ErrorMessage="Nombre de estación: use entre 3 y 200 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
+                                ControlToValidate="txtNombre" ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.,]{3,100}$" ErrorMessage="Nombre de estación: use entre 3 y 100 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
                             <small class="form-text text-muted">
                                 <i class="fas fa-info-circle mr-1"></i>El nombre se guardar&#xE1; en may&#xFA;sculas.
                             </small>
@@ -125,7 +125,7 @@
                 <div class="modal-body">
                     <div class="form-group mb-0">
                         <label class="font-weight-bold">Nombre de la Estaci&#xF3;n <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control text-uppercase" MaxLength="200"></asp:TextBox>
+                        <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control text-uppercase" MaxLength="100"></asp:TextBox>
                     </div>
                 </div>
                 <div class="modal-footer">

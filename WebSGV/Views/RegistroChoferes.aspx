@@ -81,7 +81,6 @@
                                     <asp:DropDownList ID="ddlTipoDocumento" runat="server" CssClass="form-control" onchange="mostrarCampoDocumento()">
                                         <asp:ListItem>DNI</asp:ListItem>
                                         <asp:ListItem>Carnet de Extranjería</asp:ListItem>
-                                        <asp:ListItem>Pasaporte</asp:ListItem>
                                     </asp:DropDownList>
                                 </div>
                                 <div class="col-md-8 form-group" id="grupoDNI">
@@ -95,32 +94,27 @@
                                 </div>
                                 <div class="col-md-8 form-group" id="grupoCarnet" style="display:none;">
                                     <label class="font-weight-bold">Carnet Extranjer&#xED;a:</label>
-                                    <asp:TextBox ID="txtCarnetExtranjeria" runat="server" CssClass="form-control" MaxLength="11" placeholder="Núm. carnet"></asp:TextBox>
-                                </div>
-                                <div class="col-md-8 form-group" id="grupoPasaporte" style="display:none;">
-                                    <label class="font-weight-bold">Pasaporte:</label>
-                                    <asp:TextBox ID="txtPasaporte" runat="server" CssClass="form-control" placeholder="Núm. pasaporte"></asp:TextBox>
+                                    <asp:TextBox ID="txtCarnetExtranjeria" runat="server" CssClass="form-control" MaxLength="11" placeholder="Núm. carnet (9 dígitos)"></asp:TextBox>
                                 </div>
                                 <asp:RegularExpressionValidator ID="revDni" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtDNI" ValidationExpression="^$|^\d{8}$" ErrorMessage="DNI: debe tener exactamente 8 dígitos." CssClass="text-danger small" Display="Dynamic" />
-                                <asp:RegularExpressionValidator ID="revCarnet" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtCarnetExtranjeria" ValidationExpression="^$|^[A-Za-z0-9\-]{6,12}$" ErrorMessage="Carnet de extranjería: use de 6 a 12 caracteres alfanuméricos." CssClass="text-danger small" Display="Dynamic" />
-                                <asp:RegularExpressionValidator ID="revPasaporte" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtPasaporte" ValidationExpression="^$|^[A-Za-z0-9\-]{6,12}$" ErrorMessage="Pasaporte: use de 6 a 12 caracteres alfanuméricos." CssClass="text-danger small" Display="Dynamic" />
+                                <asp:RegularExpressionValidator ID="revCarnet" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtCarnetExtranjeria" ValidationExpression="^$|^[A-Za-z0-9\-]{6,11}$" ErrorMessage="Carnet de extranjería: use de 6 a 11 letras, dígitos o guion." CssClass="text-danger small" Display="Dynamic" />
                             </div>
 
                             <%-- Fila 2: Nombres + Apellido Paterno --%>
                             <div class="row">
                                 <div class="col-md-6 form-group">
                                     <label class="font-weight-bold">Nombres: <span class="text-danger">*</span></label>
-                                    <asp:TextBox ID="txtNombres" runat="server" CssClass="form-control"></asp:TextBox>
+                                    <asp:TextBox ID="txtNombres" runat="server" CssClass="form-control" MaxLength="50"></asp:TextBox>
                                     <asp:RequiredFieldValidator ID="rfvNombres" runat="server" ControlToValidate="txtNombres" ValidationGroup="vgRegistroConductor"
                                         ErrorMessage="El nombre es requerido" CssClass="text-danger small" Display="Dynamic"></asp:RequiredFieldValidator>
-                                    <asp:RegularExpressionValidator ID="revNombres" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtNombres" ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú\s]{2,100}$" ErrorMessage="Nombres: solo letras y espacios (2 a 100 caracteres)." CssClass="text-danger small" Display="Dynamic" />
+                                    <asp:RegularExpressionValidator ID="revNombres" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtNombres" ValidationExpression="^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s]{2,50}$" ErrorMessage="Nombres: solo letras y espacios (2 a 50 caracteres)." CssClass="text-danger small" Display="Dynamic" />
                                 </div>
                                 <div class="col-md-6 form-group">
                                     <label class="font-weight-bold">Apellido paterno: <span class="text-danger">*</span></label>
-                                    <asp:TextBox ID="txtApellidoPaterno" runat="server" CssClass="form-control"></asp:TextBox>
+                                    <asp:TextBox ID="txtApellidoPaterno" runat="server" CssClass="form-control" MaxLength="20"></asp:TextBox>
                                     <asp:RequiredFieldValidator ID="rfvApellidoPaterno" runat="server" ControlToValidate="txtApellidoPaterno" ValidationGroup="vgRegistroConductor"
                                         ErrorMessage="El apellido paterno es requerido" CssClass="text-danger small" Display="Dynamic"></asp:RequiredFieldValidator>
-                                    <asp:RegularExpressionValidator ID="revApellidoPaterno" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtApellidoPaterno" ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú\s]{2,100}$" ErrorMessage="Apellido paterno: solo letras y espacios (2 a 100 caracteres)." CssClass="text-danger small" Display="Dynamic" />
+                                    <asp:RegularExpressionValidator ID="revApellidoPaterno" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtApellidoPaterno" ValidationExpression="^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s]{2,20}$" ErrorMessage="Apellido paterno: solo letras y espacios (2 a 20 caracteres)." CssClass="text-danger small" Display="Dynamic" />
                                 </div>
                             </div>
 
@@ -128,12 +122,12 @@
                             <div class="row">
                                 <div class="col-md-6 form-group">
                                     <label class="font-weight-bold">Apellido materno:</label>
-                                    <asp:TextBox ID="txtApellidoMaterno" runat="server" CssClass="form-control"></asp:TextBox>
-                                    <asp:RegularExpressionValidator ID="revApellidoMaterno" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtApellidoMaterno" ValidationExpression="^$|^[A-Za-zÁÉÍÓÚÑáéíóú\s]{2,100}$" ErrorMessage="Apellido materno: solo letras y espacios (2 a 100 caracteres)." CssClass="text-danger small" Display="Dynamic" />
+                                    <asp:TextBox ID="txtApellidoMaterno" runat="server" CssClass="form-control" MaxLength="20"></asp:TextBox>
+                                    <asp:RegularExpressionValidator ID="revApellidoMaterno" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtApellidoMaterno" ValidationExpression="^$|^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s]{2,20}$" ErrorMessage="Apellido materno: solo letras y espacios (2 a 20 caracteres)." CssClass="text-danger small" Display="Dynamic" />
                                 </div>
                                 <div class="col-md-6 form-group">
                                     <label class="font-weight-bold">Tel&#xE9;fono:</label>
-                                    <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control" inputmode="tel"></asp:TextBox>
+                                    <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control" inputmode="tel" MaxLength="9"></asp:TextBox>
                                     <asp:RegularExpressionValidator ID="revTelefono" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtTelefono" ValidationExpression="^$|^\d{7,9}$" ErrorMessage="Teléfono: ingrese entre 7 y 9 dígitos numéricos." CssClass="text-danger small" Display="Dynamic" />
                                 </div>
                             </div>
@@ -220,21 +214,21 @@
                     <div class="row">
                         <div class="col-md-6 form-group">
                             <label class="font-weight-bold">Nombres <span class="text-danger">*</span></label>
-                            <asp:TextBox ID="txtEditarNombres" runat="server" CssClass="form-control"></asp:TextBox>
+                            <asp:TextBox ID="txtEditarNombres" runat="server" CssClass="form-control" MaxLength="50"></asp:TextBox>
                         </div>
                         <div class="col-md-6 form-group">
                             <label class="font-weight-bold">Apellido paterno <span class="text-danger">*</span></label>
-                            <asp:TextBox ID="txtEditarApellidoPaterno" runat="server" CssClass="form-control"></asp:TextBox>
+                            <asp:TextBox ID="txtEditarApellidoPaterno" runat="server" CssClass="form-control" MaxLength="20"></asp:TextBox>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 form-group">
                             <label class="font-weight-bold">Apellido materno</label>
-                            <asp:TextBox ID="txtEditarApellidoMaterno" runat="server" CssClass="form-control"></asp:TextBox>
+                            <asp:TextBox ID="txtEditarApellidoMaterno" runat="server" CssClass="form-control" MaxLength="20"></asp:TextBox>
                         </div>
                         <div class="col-md-6 form-group mb-0">
                             <label class="font-weight-bold">Tel&#xE9;fono</label>
-                            <asp:TextBox ID="txtEditarTelefono" runat="server" CssClass="form-control" inputmode="tel"></asp:TextBox>
+                            <asp:TextBox ID="txtEditarTelefono" runat="server" CssClass="form-control" inputmode="tel" MaxLength="12"></asp:TextBox>
                         </div>
                     </div>
                 </div>

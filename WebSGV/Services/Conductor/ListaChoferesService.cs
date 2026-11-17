@@ -220,16 +220,16 @@ namespace WebSGV.Services.Conductor
             else if (extranjero || dni.Length == 9)
             {
                 // Guardado como número en Excel, el carnet pierde los ceros iniciales
-                fila.Carnet = dni.Length < 9 ? dni.PadLeft(9, '0') : dni;
+                fila.Carnet = DocumentoConductor.NormalizarCarnet(dni);
                 if (!extranjero)
                     fila.Avisos.Add($"El documento {dni} tiene 9 dígitos: se tomó como carnet de extranjería (el DNI tiene 8).");
             }
-            else if (dni.Length == 7)
-                fila.Dni = "0" + dni;   // Excel lo guardó como número y perdió el cero
-            else if (dni.Length == 8)
-                fila.Dni = dni;
             else
-                fila.Avisos.Add($"El documento {dni} no es un DNI (8 dígitos) ni un carnet de extranjería (9).");
+            {
+                fila.Dni = DocumentoConductor.NormalizarDni(dni);   // con 7 dígitos recupera el cero
+                if (fila.Dni == null)
+                    fila.Avisos.Add($"El documento {dni} no es un DNI (8 dígitos) ni un carnet de extranjería (9).");
+            }
 
             if (licencia != null)
                 fila.Licencia = licencia.Substring(0, 1) + Regex.Replace(licencia, @"\D", "");   // como la guarda la importación de guías ("B03620726")

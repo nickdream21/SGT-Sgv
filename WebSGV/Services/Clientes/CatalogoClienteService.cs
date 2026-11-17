@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using WebSGV.Helpers;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Services.Clientes
 {
@@ -43,6 +44,10 @@ namespace WebSGV.Services.Clientes
             public string EtiquetaDetalle;
             /// <summary>Rutas admiten idCliente nulo: valen para todos los clientes.</summary>
             public bool PermiteSinCliente;
+            /// <summary>Largo de la columna <c>nombre</c> (lo comprueba una prueba contra la BD).</summary>
+            public int LargoNombre;
+            /// <summary>Largo de la columna del detalle (descripción o dirección).</summary>
+            public int LargoDetalle;
         }
 
         private static readonly Dictionary<TipoCatalogo, MetaCatalogo> Metadatos =
@@ -56,7 +61,9 @@ namespace WebSGV.Services.Clientes
                     ColumnaDetalle = "descripcion",
                     ColumnaFecha = "fechaRegistro",
                     Etiqueta = "producto",
-                    EtiquetaDetalle = "Descripción"
+                    EtiquetaDetalle = "Descripción",
+                    LargoNombre = 50,
+                    LargoDetalle = 300
                 },
                 [TipoCatalogo.PlantaCarga] = new MetaCatalogo
                 {
@@ -66,7 +73,9 @@ namespace WebSGV.Services.Clientes
                     ColumnaDetalle = "direccion",
                     ColumnaFecha = "fechaCreacion",
                     Etiqueta = "planta de carga",
-                    EtiquetaDetalle = "Dirección"
+                    EtiquetaDetalle = "Dirección",
+                    LargoNombre = 100,
+                    LargoDetalle = 200
                 },
                 [TipoCatalogo.PlantaDescarga] = new MetaCatalogo
                 {
@@ -76,7 +85,9 @@ namespace WebSGV.Services.Clientes
                     ColumnaDetalle = "direccion",
                     ColumnaFecha = "fechaCreacion",
                     Etiqueta = "planta de descarga",
-                    EtiquetaDetalle = "Dirección"
+                    EtiquetaDetalle = "Dirección",
+                    LargoNombre = 100,
+                    LargoDetalle = 200
                 },
                 [TipoCatalogo.Ruta] = new MetaCatalogo
                 {
@@ -87,6 +98,8 @@ namespace WebSGV.Services.Clientes
                     ColumnaFecha = "fechaRegistro",
                     Etiqueta = "ruta",
                     EtiquetaDetalle = "Descripción",
+                    LargoNombre = 100,
+                    LargoDetalle = 200,
                     PermiteSinCliente = true
                 }
             };
@@ -106,6 +119,35 @@ namespace WebSGV.Services.Clientes
 
         /// <summary>Indica si el catálogo admite filas sin cliente (sólo Ruta).</summary>
         public static bool PermiteSinCliente(TipoCatalogo tipo) => Meta(tipo).PermiteSinCliente;
+
+        /// <summary>Largo máximo del nombre (el de la columna; para el MaxLength de la pantalla).</summary>
+        public static int LargoNombre(TipoCatalogo tipo) => Meta(tipo).LargoNombre;
+
+        /// <summary>Largo máximo de la descripción o dirección (el de la columna).</summary>
+        public static int LargoDetalle(TipoCatalogo tipo) => Meta(tipo).LargoDetalle;
+
+        /// <summary>Columna del detalle (descripción o dirección), para comparar los largos con la BD en las pruebas.</summary>
+        public static string ColumnaDetalle(TipoCatalogo tipo) => Meta(tipo).ColumnaDetalle;
+
+        /// <summary>
+        /// Rechaza con <see cref="ErrorNegocioException"/> un nombre vacío o un nombre/detalle más largo que su
+        /// columna (sin esto la BD cortaba con un error técnico). Lógica pura.
+        /// </summary>
+        public static void Validar(TipoCatalogo tipo, string nombre, string detalle)
+        {
+            MetaCatalogo m = Meta(tipo);
+            string n = (nombre ?? "").Trim();
+            string d = (detalle ?? "").Trim();
+
+            if (n.Length == 0)
+                throw new ErrorNegocioException("El nombre es obligatorio.");
+            if (n.Length > m.LargoNombre)
+                throw new ErrorNegocioException(
+                    $"El nombre admite hasta {m.LargoNombre} caracteres (tiene {n.Length}).");
+            if (d.Length > m.LargoDetalle)
+                throw new ErrorNegocioException(
+                    $"La {m.EtiquetaDetalle.ToLowerInvariant()} admite hasta {m.LargoDetalle} caracteres (tiene {d.Length}).");
+        }
 
         /// <summary>Clientes activos para el selector de la pantalla.</summary>
         public static DataTable ObtenerClientes() =>
@@ -187,6 +229,7 @@ namespace WebSGV.Services.Clientes
         public static int Crear(TipoCatalogo tipo, int idCliente, string nombre, string detalle)
         {
             MetaCatalogo m = Meta(tipo);
+            Validar(tipo, nombre, detalle);
 
             return DbHelper.EjecutarNonQuery(
                 $@"INSERT INTO {m.Tabla} (nombre, {m.ColumnaDetalle}, idCliente, {m.ColumnaActivo}, {m.ColumnaFecha})
@@ -201,6 +244,7 @@ namespace WebSGV.Services.Clientes
         public static int Actualizar(TipoCatalogo tipo, int idItem, string nombre, string detalle)
         {
             MetaCatalogo m = Meta(tipo);
+            Validar(tipo, nombre, detalle);
 
             return DbHelper.EjecutarNonQuery(
                 $@"UPDATE {m.Tabla}

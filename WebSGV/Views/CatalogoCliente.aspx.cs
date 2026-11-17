@@ -77,6 +77,10 @@ namespace WebSGV.Views
 
             pnlCatalogo.Visible = idCliente > 0;
 
+            // Largos de las columnas del catálogo activo (producto 50; plantas y rutas 100 / 200)
+            txtNombre.MaxLength = txtEditarNombre.MaxLength = CatalogoClienteService.LargoNombre(TabActual);
+            txtDetalle.MaxLength = txtEditarDetalle.MaxLength = CatalogoClienteService.LargoDetalle(TabActual);
+
             if (idCliente <= 0)
             {
                 lblResumen.Text = "Seleccione un cliente";

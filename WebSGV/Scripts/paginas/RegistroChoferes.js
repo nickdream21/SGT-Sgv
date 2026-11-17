@@ -51,10 +51,8 @@ function mostrarCampoDocumento() {
     const tipo = document.getElementById(SGV.ddlTipoDocumento).value;
     document.getElementById('grupoDNI').style.display = 'none';
     document.getElementById('grupoCarnet').style.display = 'none';
-    document.getElementById('grupoPasaporte').style.display = 'none';
     if (tipo === 'DNI') document.getElementById('grupoDNI').style.display = 'block';
     else if (tipo === 'Carnet de Extranjería') document.getElementById('grupoCarnet').style.display = 'block';
-    else if (tipo === 'Pasaporte') document.getElementById('grupoPasaporte').style.display = 'block';
 }
 
 document.addEventListener('DOMContentLoaded', function () { mostrarCampoDocumento(); });

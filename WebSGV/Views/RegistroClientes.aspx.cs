@@ -6,11 +6,20 @@ using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Views
 {
     public partial class RegistroClientes : PaginaBase
     {
+        private const int LargoNombre = LargoColumnas.ClienteNombre;
+
+        private static readonly Regex RxNombre =
+            new Regex("^[A-Za-zÁÉÍÓÚÑáéíóú0-9\\s\\-\\.&]{3," + LargoNombre + "}$", RegexOptions.Compiled);
+
+        private static readonly string MensajeNombreInvalido =
+            $"Nombre/Razón Social inválido: use entre 3 y {LargoNombre} letras, números, espacios, guion, punto o &.";
+
         protected void Page_Load(object sender, EventArgs e)
         {
             RolesHelper.ValidarAccesoSeccion("REGISTRO");
@@ -69,14 +78,14 @@ namespace WebSGV.Views
             {
                 if (ruc.Length != 11 || !EsNumerico(ruc))
                 {
-                    MostrarMensaje("El RUC debe contener 11 d�gitos num�ricos.");
+                    MostrarMensaje("El RUC debe contener 11 dígitos numéricos.");
                     return;
                 }
             }
 
-            if (!Regex.IsMatch(txtNombre.Text.Trim(), "^[A-Za-zÁÉÍÓÚÑáéíóú0-9\\s\\-\\.&]{3,200}$"))
+            if (!RxNombre.IsMatch(txtNombre.Text.Trim()))
             {
-                MostrarMensaje("Nombre/Razón Social inválido: use entre 3 y 200 caracteres válidos.");
+                MostrarMensaje(MensajeNombreInvalido);
                 return;
             }
 
@@ -191,6 +200,15 @@ namespace WebSGV.Views
 
             try
             {
+                // Mismas reglas que el alta; un nombre antiguo que no cambia se conserva aunque no las cumpla.
+                string nombreAnterior = DbHelper.EjecutarEscalar(
+                    "SELECT nombre FROM Cliente WHERE idCliente = @id", DbHelper.Param("@id", idCliente)) as string;
+                if (nombre != (nombreAnterior ?? "").Trim() && !RxNombre.IsMatch(nombre))
+                {
+                    MostrarMensaje(MensajeNombreInvalido);
+                    return;
+                }
+
                 if (!string.IsNullOrWhiteSpace(ruc))
                 {
                     int dup = Convert.ToInt32(DbHelper.EjecutarEscalar(

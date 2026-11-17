@@ -6,11 +6,20 @@ using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Common;
 
 namespace WebSGV.Views
 {
     public partial class RegistroPeajes : PaginaBase
     {
+        private const int LargoNombre = LargoColumnas.EstacionPeajeNombre;
+
+        private static readonly Regex RxNombre =
+            new Regex("^[A-ZÁÉÍÓÚÑ0-9\\s\\-\\.,]{3," + LargoNombre + "}$", RegexOptions.Compiled);
+
+        private static readonly string MensajeNombreInvalido =
+            $"Nombre de estación inválido: use entre 3 y {LargoNombre} letras, números, espacios, guion, punto o coma.";
+
         protected void Page_Load(object sender, EventArgs e)
         {
             RolesHelper.ValidarAccesoSeccion("REGISTRO");
@@ -53,9 +62,9 @@ namespace WebSGV.Views
                 MostrarMensaje("Debe ingresar el nombre de la estación de peaje.");
                 return;
             }
-            if (!Regex.IsMatch(nombre, "^[A-ZÁÉÍÓÚÑ0-9\\s\\-\\.,]{3,200}$"))
+            if (!RxNombre.IsMatch(nombre))
             {
-                MostrarMensaje("Nombre de estación inválido: use entre 3 y 200 caracteres válidos.");
+                MostrarMensaje(MensajeNombreInvalido);
                 return;
             }
 
@@ -141,6 +150,20 @@ namespace WebSGV.Views
 
             try
             {
+                // Mismas reglas que el alta; un nombre antiguo que no cambia (p. ej. con "+") se conserva.
+                string anterior = DbHelper.EjecutarEscalar(
+                    "SELECT nombre FROM EstacionesPeaje WHERE idEstacion = @id", DbHelper.Param("@id", idEstacion)) as string;
+                if (anterior == null)
+                {
+                    MostrarMensaje("La estación ya no existe; recargue la página.");
+                    return;
+                }
+                if (nombre != anterior.Trim().ToUpper() && !RxNombre.IsMatch(nombre))
+                {
+                    MostrarMensaje(MensajeNombreInvalido);
+                    return;
+                }
+
                 int dup = Convert.ToInt32(DbHelper.EjecutarEscalar(
                     "SELECT COUNT(*) FROM EstacionesPeaje WHERE UPPER(nombre)=@nombre AND idEstacion<>@id",
                     DbHelper.Param("@nombre", nombre),
