@@ -1349,7 +1349,8 @@ namespace WebSGV.Views
                 var despachos = ObtenerDespachosDelLote(idLoteVirtual);
                 CargarGuiasLote(despachos);
 
-                var docs = ManifiestoService.ObtenerDocumentosPorDespachos(despachos.Select(d => d.IdDespacho).ToList());
+                // Solo el vigente de cada tipo: los reemplazados quedan en la tabla como historial.
+                var docs = ManifiestoService.Vigentes(ManifiestoService.ObtenerDocumentosPorDespachos(despachos.Select(d => d.IdDespacho).ToList()));
                 var docsPorDespacho = docs.GroupBy(d => d.IdDespacho).ToDictionary(g => g.Key, g => g.ToList());
 
                 var filas = despachos.Select(d =>
@@ -1357,10 +1358,8 @@ namespace WebSGV.Views
                     docsPorDespacho.TryGetValue(d.IdDespacho, out var docsDelDespacho);
                     docsDelDespacho = docsDelDespacho ?? new List<DocumentoManifiesto>();
 
-                    var cruce = docsDelDespacho.Where(x => x.TipoManifiesto == ManifiestoService.TIPO_CRUCE)
-                        .OrderByDescending(x => x.FechaSubida).FirstOrDefault();
-                    var retorno = docsDelDespacho.Where(x => x.TipoManifiesto == ManifiestoService.TIPO_RETORNO)
-                        .OrderByDescending(x => x.FechaSubida).FirstOrDefault();
+                    var cruce = docsDelDespacho.FirstOrDefault(x => x.TipoManifiesto == ManifiestoService.TIPO_CRUCE);
+                    var retorno = docsDelDespacho.FirstOrDefault(x => x.TipoManifiesto == ManifiestoService.TIPO_RETORNO);
 
                     return new ManifiestoDespachoRow
                     {
@@ -1977,6 +1976,7 @@ namespace WebSGV.Views
 
             int guardados = 0;
             List<string> errores = new List<string>();
+            List<string> reemplazos = new List<string>();
 
             if (fileCruce != null && fileCruce.HasFile)
             {
@@ -1985,7 +1985,8 @@ namespace WebSGV.Views
                     errores.Add("Manifiesto de cruce: " + error + ".");
                 else
                 {
-                    GuardarUnManifiesto(fileCruce, idDespacho, ManifiestoService.TIPO_CRUCE);
+                    int? anterior = GuardarUnManifiesto(fileCruce, idDespacho, ManifiestoService.TIPO_CRUCE);
+                    if (anterior.HasValue) reemplazos.Add($"El manifiesto de cruce fue reemplazado (id anterior {anterior.Value}, queda en el historial).");
                     guardados++;
                 }
             }
@@ -1997,15 +1998,16 @@ namespace WebSGV.Views
                     errores.Add("Manifiesto de retorno: " + error + ".");
                 else
                 {
-                    GuardarUnManifiesto(fileRetorno, idDespacho, ManifiestoService.TIPO_RETORNO);
+                    int? anterior = GuardarUnManifiesto(fileRetorno, idDespacho, ManifiestoService.TIPO_RETORNO);
+                    if (anterior.HasValue) reemplazos.Add($"El manifiesto de retorno fue reemplazado (id anterior {anterior.Value}, queda en el historial).");
                     guardados++;
                 }
             }
 
             if (errores.Count > 0)
-                MostrarMensajeManifiesto(string.Join(" ", errores), "danger");
+                MostrarMensajeManifiesto(string.Join(" ", reemplazos.Concat(errores)), "danger");
             else if (guardados > 0)
-                MostrarMensajeManifiesto("Manifiesto guardado correctamente.", "success");
+                MostrarMensajeManifiesto(string.Join(" ", new[] { "Manifiesto guardado correctamente." }.Concat(reemplazos)), "success");
             else
                 MostrarMensajeManifiesto("No se seleccionó ningún archivo para este conductor.", "warning");
         }
@@ -2018,8 +2020,15 @@ namespace WebSGV.Views
             ArchivoSubidoHelper.Validar(control.PostedFile, ArchivoSubidoHelper.MaxDocumento, ArchivoSubidoHelper.ExtensionesPdfOImagen)
             ?? string.Empty;
 
-        private void GuardarUnManifiesto(FileUpload control, int idDespacho, string tipo)
+        /// <summary>
+        /// Guarda el manifiesto y devuelve el id del que estaba vigente de ese tipo (null si no había): el anterior no
+        /// se borra, queda como historial y deja de mostrarse (<see cref="ManifiestoService.Vigentes"/>).
+        /// </summary>
+        private int? GuardarUnManifiesto(FileUpload control, int idDespacho, string tipo)
         {
+            int? idAnterior = ManifiestoService.Vigentes(ManifiestoService.ObtenerDocumentosPorDespacho(idDespacho))
+                .FirstOrDefault(d => d.TipoManifiesto == tipo)?.IdDocumentoManifiesto;
+
             string extension = Path.GetExtension(control.FileName).ToLowerInvariant();
             string carpetaAno = FechaHelper.Ahora().Year.ToString();
             string carpetaMes = FechaHelper.Ahora().ToString("MM");
@@ -2051,7 +2060,10 @@ namespace WebSGV.Views
             }
 
             AuditoriaHelper.Registrar("INSERT", "DocumentosManifiesto", idDespacho.ToString(),
-                $"Manifiesto {tipo} adjuntado - Despacho: {idDespacho}");
+                idAnterior.HasValue
+                    ? $"Manifiesto {tipo} reemplazado (id anterior {idAnterior.Value}, queda en el historial) - Despacho: {idDespacho}"
+                    : $"Manifiesto {tipo} adjuntado - Despacho: {idDespacho}");
+            return idAnterior;
         }
 
         private void AbrirDocumentoEnNuevaPestana(string rutaArchivoRelativa)

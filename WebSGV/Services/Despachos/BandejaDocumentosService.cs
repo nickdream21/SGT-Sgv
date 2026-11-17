@@ -106,7 +106,7 @@ namespace WebSGV.Services.Despachos
             foreach (var n in remitente.Where(n => !conPdf.Contains(n)))
                 l.GuiasSinPdf.Add(ClavePdf(GuiaDocumentoService.REMITENTE, n));
 
-            var gres = l.Gres.Where(g => g.Pdf != null && g.Gre?.Numero != null && g.Estado != EstadoGreBandeja.NoSeRegistra)
+            var gres = l.Gres.Where(g => g.HayPdf && g.Gre?.Numero != null && g.Estado != EstadoGreBandeja.NoSeRegistra)
                              .Select(g => g.Gre.Numero).ToList();
             var gresConPdf = GuiaDocumentoService.NumerosConPdf(gres, GuiaDocumentoService.TRANSPORTISTA);
             foreach (var n in gres.Where(n => !gresConPdf.Contains(n)))
@@ -120,9 +120,10 @@ namespace WebSGV.Services.Despachos
         private static void GuardarPdfsDeGuias(LecturaBandeja l, string usuario, string raiz, ResultadoBandeja r)
         {
             if (l.GuiasSinPdf.Count == 0 || string.IsNullOrEmpty(raiz) || !GuiaDocumentoService.TablaExiste) return;
-            var porGuardar = l.Pedidos.SelectMany(p => p.PdfGuias.Select(x => new { Tipo = GuiaDocumentoService.REMITENTE, Numero = x.Key, x.Value.Nombre, x.Value.Pdf }))
-                .Concat(l.Gres.Where(g => g.Pdf != null && g.Gre?.Numero != null)
-                    .Select(g => new { Tipo = GuiaDocumentoService.TRANSPORTISTA, Numero = g.Gre.Numero, Nombre = g.Archivo, g.Pdf }))
+            // El PDF se lee (del temporal) una sola vez, ya en el bucle: aquí solo se mira si está.
+            var porGuardar = l.Pedidos.SelectMany(p => p.PdfGuias.Select(x => new { Tipo = GuiaDocumentoService.REMITENTE, Numero = x.Key, x.Value.Nombre, Fuente = (ConPdfTemporal)x.Value }))
+                .Concat(l.Gres.Where(g => g.HayPdf && g.Gre?.Numero != null)
+                    .Select(g => new { Tipo = GuiaDocumentoService.TRANSPORTISTA, Numero = g.Gre.Numero, Nombre = g.Archivo, Fuente = (ConPdfTemporal)g }))
                 .Where(x => l.GuiasSinPdf.Contains(ClavePdf(x.Tipo, x.Numero)))
                 .GroupBy(x => ClavePdf(x.Tipo, x.Numero)).Select(x => x.First()).ToList();
 
@@ -131,7 +132,9 @@ namespace WebSGV.Services.Despachos
             {
                 try
                 {
-                    r.PdfGuiasGuardados += GuiaDocumentoService.GuardarEnSusDespachos(g.Tipo, g.Numero, g.Nombre, g.Pdf, usuario, raiz, out bool sin);
+                    byte[] pdf = g.Fuente.Pdf;
+                    if (pdf == null) continue;   // sin PDF (o ya no está su temporal): como una guía que no lo trae
+                    r.PdfGuiasGuardados += GuiaDocumentoService.GuardarEnSusDespachos(g.Tipo, g.Numero, g.Nombre, pdf, usuario, raiz, out bool sin);
                     if (sin) sinDespacho.Add(g.Numero);
                 }
                 catch (Exception ex)
@@ -1042,9 +1045,18 @@ namespace WebSGV.Services.Despachos
 
         // ── Registro ─────────────────────────────────────────────────────────
 
+        /// <summary>Se muestra si algún PDF temporal de la lectura ya no está (<see cref="LecturaBandeja.FaltanTemporales"/>).</summary>
+        public const string MensajeLecturaVencida = "La lectura venció; vuelva a leer los archivos.";
+
         public static ResultadoBandeja Registrar(LecturaBandeja l, string usuario, string raizFisicaUploads, string rucEmpresa)
         {
             var r = new ResultadoBandeja();
+            // Algún PDF de la lectura ya no está en su temporal (la limpieza lo borró): no se registra nada a medias.
+            if (l.FaltanTemporales())
+            {
+                r.Errores.Add(MensajeLecturaVencida);
+                return r;
+            }
             Revalidar(l, r);
             if (r.Errores.Count > 0) return r;
 
@@ -1125,7 +1137,13 @@ namespace WebSGV.Services.Despachos
             {
                 try
                 {
-                    var res = FacturaFleteService.Registrar(f.Archivo, f.Pdf, usuario, raizFisicaUploads, rucEmpresa);
+                    byte[] pdf = f.Pdf;
+                    if (pdf == null)
+                    {
+                        r.SinRegistrar.Add($"{f.Archivo}: su PDF ya no está; vuelva a leer el archivo.");
+                        continue;
+                    }
+                    var res = FacturaFleteService.Registrar(f.Archivo, pdf, usuario, raizFisicaUploads, rucEmpresa);
                     if (res.Ok && res.Estado != "Sin cambios") r.FacturasFleteRegistradas++;
                     if (!res.Ok) r.Errores.Add($"{f.Archivo}: {res.Detalle}");
                 }
@@ -1291,10 +1309,12 @@ namespace WebSGV.Services.Despachos
                     }
                     int idCpic = Convert.ToInt32(dt.Rows[0]["idCPIC"]);
                     bool adjunta = !c.TienePdf && !c.EsBorrador && !string.IsNullOrEmpty(raiz);
+                    byte[] pdf = adjunta ? c.Pdf : null;
+                    if (pdf == null) adjunta = false;   // sin PDF (o ya no está su temporal): se registra sin adjuntar
                     if (adjunta)
                     {
-                        string ruta = GuardarArchivo(raiz, "CPIC", $"CPIC_{idCpic}", c.Pdf, out string nombre);
-                        DocumentoCpicService.InsertarDocumento(idCpic, c.Archivo, nombre, ruta, ".pdf", c.Pdf.LongLength, usuario);
+                        string ruta = GuardarArchivo(raiz, "CPIC", $"CPIC_{idCpic}", pdf, out string nombre);
+                        DocumentoCpicService.InsertarDocumento(idCpic, c.Archivo, nombre, ruta, ".pdf", pdf.LongLength, usuario);
                     }
                     r.CpicsRegistradas++;
                     r.Detalle.Add($"CPIC {c.Cpic.Numero}: unida " + (c.ClienteTercero != null ? $"a la carga de {c.ClienteTercero}, factura comercial {c.Pedido}" : $"al pedido {c.Pedido}") + $" ({c.IdsDespachos.Count} despacho(s))" +
@@ -1333,10 +1353,16 @@ namespace WebSGV.Services.Despachos
                         continue;
                     }
                     if (string.IsNullOrEmpty(raiz)) { r.ManifiestosAdjuntados++; continue; }   // prueba sin disco
-                    string ruta = GuardarArchivo(raiz, "Manifiesto", $"MANIFIESTO_{m.Tipo}_{m.IdDespacho}", m.Pdf, out string nombre);
+                    byte[] pdf = m.Pdf;
+                    if (pdf == null)
+                    {
+                        r.SinRegistrar.Add($"MCI {m.Mci.Numero}: su PDF ya no está; vuelva a leer el archivo.");
+                        continue;
+                    }
+                    string ruta = GuardarArchivo(raiz, "Manifiesto", $"MANIFIESTO_{m.Tipo}_{m.IdDespacho}", pdf, out string nombre);
                     try
                     {
-                        ManifiestoService.InsertarDocumentoManifiesto(m.IdDespacho.Value, m.Tipo, m.Archivo, nombre, ruta, ".pdf", m.Pdf.LongLength, usuario);
+                        ManifiestoService.InsertarDocumentoManifiesto(m.IdDespacho.Value, m.Tipo, m.Archivo, nombre, ruta, ".pdf", pdf.LongLength, usuario);
                     }
                     catch
                     {
@@ -1393,15 +1419,17 @@ namespace WebSGV.Services.Despachos
 
         /// <summary>La factura del pedido existe (o se acaba de crear), no tiene PDF y el ZIP trae el suyo.</summary>
         public static bool AdjuntaPdf(PedidoBandeja p, int? idFactura, string raizFisicaUploads) =>
-            idFactura.HasValue && !p.FacturaConPdf && p.FacturaPdf != null && !string.IsNullOrEmpty(raizFisicaUploads);
+            idFactura.HasValue && !p.FacturaConPdf && p.HayFacturaPdf && !string.IsNullOrEmpty(raizFisicaUploads);
 
         private static void AdjuntarPdfDe(PedidoBandeja p, int idFactura, string usuario, string raizFisicaUploads, ResultadoBandeja r)
         {
             try
             {
-                string ruta = GuardarArchivo(raizFisicaUploads, "Factura", $"FACTURA_{idFactura}", p.FacturaPdf, out string nombre);
+                byte[] pdf = p.FacturaPdf;
+                if (pdf == null) return;   // su temporal ya no está: como una factura sin PDF
+                string ruta = GuardarArchivo(raizFisicaUploads, "Factura", $"FACTURA_{idFactura}", pdf, out string nombre);
                 FacturaEscrituraService.InsertarDocumentoStandalone(idFactura, Path.GetFileName(p.FacturaPdfNombre ?? nombre), nombre,
-                    ruta, ".pdf", p.FacturaPdf.LongLength, usuario);
+                    ruta, ".pdf", pdf.LongLength, usuario);
                 p.FacturaConPdf = true;
                 r.PdfAdjuntados++;
                 r.Detalle.Add($"Pedido {p.Pedido.NumeroPedido}: PDF de la factura {p.Pedido.Factura?.NumeroFactura} adjuntado.");

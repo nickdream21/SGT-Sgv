@@ -325,5 +325,110 @@ namespace WebSGV.Tests
 
             Assert.Empty(BandejaDocumentosService.QuedoSinRegistrar(l));
         }
+
+        // ── PDF de la lectura en disco, no en la sesión (tarea 14 C) ──
+
+        private static LecturaBandeja LecturaConPdfs()
+        {
+            var pedido = new PedidoBandeja { Archivo = "pedido.zip", FacturaPdf = new byte[] { 1, 1 } };
+            pedido.PdfGuias["T660-1"] = new PdfGuia { Nombre = "guia.pdf", Pdf = new byte[] { 2, 2 } };
+            var l = new LecturaBandeja();
+            l.Pedidos.Add(pedido);
+            l.Pedidos.Add(new PedidoBandeja { Archivo = "sin-factura.zip" });
+            l.Cpics.Add(new CpicBandeja { Archivo = "cpic.pdf", Pdf = new byte[] { 3 } });
+            l.Mcis.Add(new MciBandeja { Archivo = "mci.pdf", Pdf = new byte[] { 4 } });
+            l.Gres.Add(new GreBandeja { Archivo = "gre.pdf", Pdf = new byte[] { 5 } });
+            l.FacturasFlete.Add(new FacturaFleteBandeja { Archivo = "e001.pdf", Pdf = new byte[] { 6 } });
+            return l;
+        }
+
+        private static Func<byte[], string> GuardarEn(string carpeta) => b =>
+        {
+            string ruta = System.IO.Path.Combine(carpeta, Guid.NewGuid().ToString("N") + ".pdf");
+            System.IO.File.WriteAllBytes(ruta, b);
+            return ruta;
+        };
+
+        [Fact]
+        public void PasarPdfsADisco_deja_la_memoria_vacia_y_Pdf_relee_los_mismos_bytes()
+        {
+            string carpeta = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "sgv-bandeja-" + Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(carpeta);
+            try
+            {
+                var l = LecturaConPdfs();
+                l.PasarPdfsADisco(GuardarEn(carpeta));
+
+                // Cada PDF quedó en su archivo (6) y en memoria solo la ruta.
+                Assert.Equal(6, l.RutasTemporales().Count);
+                Assert.All(l.RutasTemporales(), r => Assert.True(System.IO.File.Exists(r)));
+                var campo = typeof(ConPdfTemporal).GetField("_pdf", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var conPdf = new ConPdfTemporal[] { l.Pedidos[0].FacturaPdfTemporal, l.Pedidos[0].PdfGuias["T660-1"], l.Cpics[0], l.Mcis[0], l.Gres[0], l.FacturasFlete[0] };
+                Assert.All(conPdf, x => Assert.Null(campo.GetValue(x)));
+                Assert.Null(l.Pedidos[1].RutaFacturaPdfTemp);
+
+                Assert.Equal(new byte[] { 1, 1 }, l.Pedidos[0].FacturaPdf);
+                Assert.Equal(new byte[] { 2, 2 }, l.Pedidos[0].PdfGuias["T660-1"].Pdf);
+                Assert.Equal(new byte[] { 3 }, l.Cpics[0].Pdf);
+                Assert.Equal(new byte[] { 4 }, l.Mcis[0].Pdf);
+                Assert.Equal(new byte[] { 5 }, l.Gres[0].Pdf);
+                Assert.Equal(new byte[] { 6 }, l.FacturasFlete[0].Pdf);
+                Assert.Null(l.Pedidos[1].FacturaPdf);
+                Assert.True(l.Pedidos[0].HayFacturaPdf);
+                Assert.False(l.Pedidos[1].HayFacturaPdf);
+                Assert.False(l.FaltanTemporales());
+            }
+            finally { System.IO.Directory.Delete(carpeta, true); }
+        }
+
+        [Fact]
+        public void FaltanTemporales_detecta_un_pdf_borrado_y_su_Pdf_queda_null()
+        {
+            string carpeta = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "sgv-bandeja-" + Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(carpeta);
+            try
+            {
+                var l = LecturaConPdfs();
+                l.PasarPdfsADisco(GuardarEn(carpeta));
+                System.IO.File.Delete(l.Mcis[0].RutaPdfTemp);
+
+                Assert.True(l.FaltanTemporales());
+                Assert.Null(l.Mcis[0].Pdf);
+                Assert.False(l.Mcis[0].HayPdf);
+                Assert.Equal(new byte[] { 3 }, l.Cpics[0].Pdf);
+            }
+            finally { System.IO.Directory.Delete(carpeta, true); }
+        }
+
+        [Fact]
+        public void Registrar_con_un_temporal_borrado_no_registra_nada()
+        {
+            string carpeta = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "sgv-bandeja-" + Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(carpeta);
+            try
+            {
+                var l = LecturaConPdfs();
+                l.PasarPdfsADisco(GuardarEn(carpeta));
+                System.IO.File.Delete(l.FacturasFlete[0].RutaPdfTemp);
+
+                // Corta antes de tocar la BD: un solo error, nada registrado.
+                var r = BandejaDocumentosService.Registrar(l, "prueba", carpeta, "20000000001");
+
+                Assert.Equal(BandejaDocumentosService.MensajeLecturaVencida, Assert.Single(r.Errores));
+                Assert.Equal(0, r.DespachosCompletados + r.DespachosCreados + r.CpicsRegistradas + r.ManifiestosAdjuntados
+                                + r.FacturasCreadas + r.PdfAdjuntados + r.FacturasFleteRegistradas + r.GresRegistradas + r.PdfGuiasGuardados);
+            }
+            finally { System.IO.Directory.Delete(carpeta, true); }
+        }
+
+        [Fact]
+        public void Sin_pasar_a_disco_el_Pdf_sigue_en_memoria()
+        {
+            var l = LecturaConPdfs();
+            Assert.Empty(l.RutasTemporales());
+            Assert.False(l.FaltanTemporales());
+            Assert.Equal(new byte[] { 3 }, l.Cpics[0].Pdf);
+            Assert.True(l.Pedidos[0].HayFacturaPdf);
+        }
     }
 }

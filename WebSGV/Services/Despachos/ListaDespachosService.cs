@@ -568,7 +568,7 @@ namespace WebSGV.Services.Despachos
                        LTRIM(RTRIM(CONCAT(co.nombre, ' ', co.apPaterno))) AS chofer,
                        t.placaTracto, ca.placaCarreta,
                        COALESCE(NULLIF(LTRIM(RTRIM(d.guiaRemitente)), ''), NULLIF(LTRIM(RTRIM(d.guiaTransportista)), '')) AS guia,
-                       (SELECT COUNT(*) FROM DocumentosManifiesto dm WHERE dm.idDespacho = d.idDespacho) AS manifiestos,
+                       (SELECT COUNT(DISTINCT dm.tipoManifiesto) FROM DocumentosManifiesto dm WHERE dm.idDespacho = d.idDespacho) AS manifiestos,   -- vigentes: uno por tipo (los reemplazados son historial)
                        d.idFactura, f.numeroFactura,
                        CASE WHEN EXISTS (SELECT 1 FROM DocumentosFactura df WHERE df.idFactura = d.idFactura AND df.activo = 1) THEN 1 ELSE 0 END AS facturaConPdf,
                        d.idCPIC, c.numeroCPIC,

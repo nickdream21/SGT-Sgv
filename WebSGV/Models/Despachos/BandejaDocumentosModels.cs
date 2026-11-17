@@ -37,14 +37,76 @@ namespace WebSGV.Models.Despachos
             || Mcis.Any(m => m.Estado == EstadoAduanaBandeja.Registrar || m.Estado == EstadoAduanaBandeja.Elegir)
             || Gres.Any(g => g.Estado == EstadoGreBandeja.Unida || g.Estado == EstadoGreBandeja.Nueva || g.Estado == EstadoGreBandeja.Elegir)
             || GuiasSinPdf.Count > 0;
+
+        /// <summary>Todo lo que lleva PDF (para pasarlos a disco y volver a encontrarlos).</summary>
+        private IEnumerable<ConPdfTemporal> ConPdf() =>
+            Pedidos.Select(p => (ConPdfTemporal)p.FacturaPdfTemporal)
+                .Concat(Pedidos.SelectMany(p => p.PdfGuias.Values))
+                .Concat(Cpics).Concat(Mcis).Concat(Gres).Concat(FacturasFlete)
+                .Where(x => x != null);
+
+        /// <summary>
+        /// Escribe cada PDF leído con <paramref name="guardar"/> (devuelve la ruta física) y deja en memoria solo esa
+        /// ruta: así la lectura que vive en la sesión no guarda megas de PDF (tarea 14 C). <c>Pdf</c> lo relee del disco.
+        /// </summary>
+        public void PasarPdfsADisco(Func<byte[], string> guardar)
+        {
+            if (guardar == null) throw new ArgumentNullException(nameof(guardar));
+            foreach (var x in ConPdf()) x.PasarADisco(guardar);
+        }
+
+        /// <summary>Rutas de los PDF pasados a disco (para borrarlos al descartar o registrar).</summary>
+        public List<string> RutasTemporales() =>
+            ConPdf().Select(x => x.RutaPdfTemp).Where(r => !string.IsNullOrEmpty(r)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+        /// <summary>Algún PDF pasado a disco ya no está (lo borró la limpieza de temporales): hay que volver a leer.</summary>
+        public bool FaltanTemporales() => RutasTemporales().Any(r => !System.IO.File.Exists(r));
     }
+
+    /// <summary>
+    /// Un PDF leído en la bandeja: en memoria (<see cref="Pdf"/>) recién leído, o en un archivo temporal
+    /// (<see cref="RutaPdfTemp"/>) mientras la lectura espera en la sesión. El getter de <see cref="Pdf"/> lee el
+    /// archivo cada vez (null si ya no existe); el setter lo deja en memoria.
+    /// </summary>
+    [Serializable]
+    public abstract class ConPdfTemporal
+    {
+        private byte[] _pdf;
+
+        public string RutaPdfTemp { get; set; }
+
+        public byte[] Pdf
+        {
+            get
+            {
+                if (_pdf != null || string.IsNullOrEmpty(RutaPdfTemp)) return _pdf;
+                try { return System.IO.File.Exists(RutaPdfTemp) ? System.IO.File.ReadAllBytes(RutaPdfTemp) : null; }
+                catch (System.IO.IOException) { return null; }
+                catch (UnauthorizedAccessException) { return null; }
+            }
+            set { _pdf = value; }
+        }
+
+        /// <summary>Hay PDF (en memoria o en su temporal), sin leerlo.</summary>
+        public bool HayPdf => _pdf != null || (!string.IsNullOrEmpty(RutaPdfTemp) && System.IO.File.Exists(RutaPdfTemp));
+
+        internal void PasarADisco(Func<byte[], string> guardar)
+        {
+            if (_pdf == null) return;
+            RutaPdfTemp = guardar(_pdf);
+            _pdf = null;
+        }
+    }
+
+    /// <summary>El PDF de la factura comercial que trae el pedido (ver <see cref="PedidoBandeja.FacturaPdf"/>).</summary>
+    [Serializable]
+    public class PdfFacturaPedido : ConPdfTemporal { }
 
     /// <summary>El PDF de una guía tal como llegó (en el ZIP o suelto).</summary>
     [Serializable]
-    public class PdfGuia
+    public class PdfGuia : ConPdfTemporal
     {
         public string Nombre { get; set; }
-        public byte[] Pdf { get; set; }
     }
 
     /// <summary>Un pedido del cliente: su factura comercial y sus guías.</summary>
@@ -56,13 +118,27 @@ namespace WebSGV.Models.Despachos
 
         /// <summary>PDF de la factura comercial que trae el ZIP, para adjuntarlo si la factura no tiene uno.</summary>
         public string FacturaPdfNombre { get; set; }
-        public byte[] FacturaPdf { get; set; }
+
+        /// <summary>El PDF de la factura y, mientras la lectura está en la sesión, su archivo temporal.</summary>
+        public PdfFacturaPedido FacturaPdfTemporal { get; set; } = new PdfFacturaPedido();
+
+        public byte[] FacturaPdf
+        {
+            get { return FacturaPdfTemporal?.Pdf; }
+            set { (FacturaPdfTemporal ?? (FacturaPdfTemporal = new PdfFacturaPedido())).Pdf = value; }
+        }
+
+        /// <summary>Ruta del temporal del PDF de la factura (null si sigue en memoria o no hay).</summary>
+        public string RutaFacturaPdfTemp => FacturaPdfTemporal?.RutaPdfTemp;
+
+        /// <summary>Trae el PDF de la factura (sin leerlo del disco).</summary>
+        public bool HayFacturaPdf => FacturaPdfTemporal != null && FacturaPdfTemporal.HayPdf;
 
         public int? IdFacturaExistente { get; set; }
         public bool FacturaConPdf { get; set; }
 
         /// <summary>La factura ya está registrada sin PDF y el ZIP trae el suyo: se adjunta al registrar.</summary>
-        public bool FaltaPdfQueTrae => IdFacturaExistente.HasValue && !FacturaConPdf && FacturaPdf != null;
+        public bool FaltaPdfQueTrae => IdFacturaExistente.HasValue && !FacturaConPdf && HayFacturaPdf;
 
         public List<GuiaBandeja> Guias { get; set; } = new List<GuiaBandeja>();
         public List<string> Avisos { get; set; } = new List<string>();
@@ -150,10 +226,9 @@ namespace WebSGV.Models.Despachos
 
     /// <summary>Una CPIC encontrada en la bandeja y el pedido (despachos) al que pertenece.</summary>
     [Serializable]
-    public class CpicBandeja
+    public class CpicBandeja : ConPdfTemporal
     {
         public string Archivo { get; set; }
-        public byte[] Pdf { get; set; }
         public WebSGV.Services.Despachos.Importacion.CpicLeido Cpic { get; set; }
         public EstadoAduanaBandeja Estado { get; set; }
         public string Detalle { get; set; }
@@ -183,10 +258,9 @@ namespace WebSGV.Models.Despachos
 
     /// <summary>Un MCI encontrado en la bandeja y el despacho al que se adjunta.</summary>
     [Serializable]
-    public class MciBandeja
+    public class MciBandeja : ConPdfTemporal
     {
         public string Archivo { get; set; }
-        public byte[] Pdf { get; set; }
         public WebSGV.Services.Despachos.Importacion.MciLeido Mci { get; set; }
         public EstadoAduanaBandeja Estado { get; set; }
         public string Detalle { get; set; }
@@ -218,10 +292,9 @@ namespace WebSGV.Models.Despachos
     /// se une. Es el documento base de los clientes que no mandan factura ni guías por correo.
     /// </summary>
     [Serializable]
-    public class GreBandeja
+    public class GreBandeja : ConPdfTemporal
     {
         public string Archivo { get; set; }
-        public byte[] Pdf { get; set; }
         public WebSGV.Services.Despachos.Importacion.GreTransportistaLeida Gre { get; set; }
         public EstadoGreBandeja Estado { get; set; }
         public string Detalle { get; set; }
@@ -254,10 +327,9 @@ namespace WebSGV.Models.Despachos
 
     /// <summary>Una factura de flete (E001) de SUNAT encontrada en la bandeja.</summary>
     [Serializable]
-    public class FacturaFleteBandeja
+    public class FacturaFleteBandeja : ConPdfTemporal
     {
         public string Archivo { get; set; }
-        public byte[] Pdf { get; set; }
         public FacturaFleteLeida Factura { get; set; }
         public EstadoFacturaFleteBandeja Estado { get; set; }
         public string Detalle { get; set; }

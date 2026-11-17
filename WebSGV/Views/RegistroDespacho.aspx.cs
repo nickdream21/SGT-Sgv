@@ -765,19 +765,9 @@ namespace WebSGV.Views
         /// idDespacho, según el caso) todavía no existe en el momento de la subida, así que
         /// no se puede archivar en su ubicación final todavía.
         /// </summary>
-        private string GuardarArchivoTemp(FileUpload control, string subcarpeta)
-        {
-            string carpetaTemp = Server.MapPath($"~/Uploads/{subcarpeta}/_temp/");
-            if (!Directory.Exists(carpetaTemp))
-                Directory.CreateDirectory(carpetaTemp);
-
-            string extension = Path.GetExtension(control.FileName).ToLowerInvariant();
-            string nombreTemp = $"{Guid.NewGuid():N}{extension}";
-            string rutaTemp = Path.Combine(carpetaTemp, nombreTemp);
-
-            control.SaveAs(rutaTemp);
-            return rutaTemp;
-        }
+        private string GuardarArchivoTemp(FileUpload control, string subcarpeta) =>
+            ArchivosTemporalesHelper.Guardar(DocumentoHelper.RaizFisicaUploads(Server), subcarpeta + "/_temp",
+                control.FileBytes, Path.GetExtension(control.FileName));
 
         #endregion
 
@@ -2464,16 +2454,8 @@ namespace WebSGV.Views
             }
         }
 
-        private string GuardarBytesTemp(byte[] contenido, string extension, string subcarpeta)
-        {
-            string carpetaTemp = Server.MapPath($"~/Uploads/{subcarpeta}/_temp/");
-            if (!Directory.Exists(carpetaTemp))
-                Directory.CreateDirectory(carpetaTemp);
-
-            string rutaTemp = Path.Combine(carpetaTemp, $"{Guid.NewGuid():N}{extension}");
-            File.WriteAllBytes(rutaTemp, contenido);
-            return rutaTemp;
-        }
+        private string GuardarBytesTemp(byte[] contenido, string extension, string subcarpeta) =>
+            ArchivosTemporalesHelper.Guardar(DocumentoHelper.RaizFisicaUploads(Server), subcarpeta + "/_temp", contenido, extension);
 
         private void MostrarMensajeImportacion(string mensaje, string tipo)
         {

@@ -228,7 +228,10 @@ namespace WebSGV.Services.Despachos
         private static void PonerManifiestos(FilaExpediente f, bool cruza, List<WebSGV.Models.Despachos.DocumentoManifiesto> mcis, int? idDespacho)
         {
             f.EsperaManifiesto = cruza;
-            var suyos = idDespacho.HasValue ? mcis.Where(m => m.IdDespacho == idDespacho.Value).ToList() : new List<WebSGV.Models.Despachos.DocumentoManifiesto>();
+            // Solo el vigente de cada tipo: los reemplazados quedan en la tabla como historial.
+            var suyos = idDespacho.HasValue
+                ? ManifiestoService.Vigentes(mcis.Where(m => m.IdDespacho == idDespacho.Value).ToList())
+                : new List<WebSGV.Models.Despachos.DocumentoManifiesto>();
             foreach (var m in suyos)
                 f.Manifiestos.Add(new DocumentoExpediente
                 {

@@ -32,10 +32,19 @@ namespace WebSGV.Views
         private static int? Entero(string s) => int.TryParse(s, out int v) ? v : (int?)null;
         private static readonly CultureInfo Pe = CultureInfo.GetCultureInfo("es-PE");
 
+        // La lectura vive en la sesión con sus PDF en archivos temporales (~/Uploads/_temp/Bandeja), no en memoria
+        // (tarea 14 C). Al quitarla o reemplazarla se borran sus temporales; los que queden huérfanos (sesión
+        // vencida) los borra ArchivosTemporalesHelper a las 24 h.
         private LecturaBandeja Lectura
         {
             get { return Session[SesionLectura] as LecturaBandeja; }
-            set { if (value == null) Session.Remove(SesionLectura); else Session[SesionLectura] = value; }
+            set
+            {
+                var anterior = Session[SesionLectura] as LecturaBandeja;
+                if (anterior != null && !ReferenceEquals(anterior, value))
+                    ArchivosTemporalesHelper.Borrar(DocumentoHelper.RaizFisicaUploads(Server), anterior.RutasTemporales());
+                if (value == null) Session.Remove(SesionLectura); else Session[SesionLectura] = value;
+            }
         }
 
         protected void Page_Load(object sender, EventArgs e)
@@ -115,6 +124,8 @@ namespace WebSGV.Views
                 }
                 var lectura = BandejaDocumentosService.Leer(subidos, EmpresaConfigHelper.ObtenerEmpresa().Ruc);
                 lectura.NoReconocidos.InsertRange(0, omitidos);
+                string raiz = DocumentoHelper.RaizFisicaUploads(Server);
+                lectura.PasarPdfsADisco(b => ArchivosTemporalesHelper.Guardar(raiz, ArchivosTemporalesHelper.Bandeja, b, ".pdf"));
                 Lectura = lectura;
                 MostrarVistaPrevia(lectura, null);
             }
@@ -142,6 +153,15 @@ namespace WebSGV.Views
             if (lectura == null)
             {
                 MostrarMensaje("La lectura expiró: vuelva a subir los archivos.", "warning");
+                CargarTablero();
+                return;
+            }
+            if (lectura.FaltanTemporales())
+            {
+                // La limpieza de temporales borró algún PDF: no se registra nada a medias.
+                Lectura = null;
+                pnlVistaPrevia.Visible = false;
+                MostrarMensaje(BandejaDocumentosService.MensajeLecturaVencida, "warning");
                 CargarTablero();
                 return;
             }
@@ -397,7 +417,7 @@ namespace WebSGV.Views
                   .Append($"<span class='bd-factura-det'>{(f.FechaEmision.HasValue ? f.FechaEmision.Value.ToString("dd/MM/yyyy") : "")}{monto}</span>")
                   .Append(p.IdFacturaExistente.HasValue ? Chip("Ya registrada", "gris") : Chip("Factura nueva", "ok"));
                 bool seCrea = !p.IdFacturaExistente.HasValue && p.Guias.Any(g => g.Estado == EstadoGuiaBandeja.Unida || g.Estado == EstadoGuiaBandeja.Nueva);
-                if (p.FacturaPdf != null && (p.FaltaPdfQueTrae || seCrea)) sb.Append(Chip("Se adjunta su PDF", "ok"));
+                if (p.HayFacturaPdf && (p.FaltaPdfQueTrae || seCrea)) sb.Append(Chip("Se adjunta su PDF", "ok"));
                 else if (p.IdFacturaExistente.HasValue && p.FacturaConPdf) sb.Append(Chip("Ya tiene PDF", "gris"));
             }
             else sb.Append(Chip("Sin factura del cliente", "aviso"));

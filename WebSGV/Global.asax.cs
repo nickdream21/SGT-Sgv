@@ -30,6 +30,22 @@ namespace WebSGV
 
             // Cargar QuestPDF en segundo plano para que el primer conductor que firme no espere.
             System.Threading.ThreadPool.QueueUserWorkItem(_ => WebSGV.Services.PdfOrdenViajeService.Precalentar());
+
+            // Temporales huérfanos de más de 24 h en ~/Uploads/*/_temp (sesiones vencidas, lotes abandonados).
+            // En segundo plano y sin lanzar: un fallo aquí no debe impedir que arranque el sitio.
+            try
+            {
+                string raizUploads = System.Web.Hosting.HostingEnvironment.MapPath("~/Uploads/");
+                System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+                {
+                    try { ArchivosTemporalesHelper.LimpiarSiCorresponde(raizUploads, DateTime.UtcNow); }
+                    catch (Exception ex) { LogSGV.Error(ex, "No se pudieron limpiar los temporales al iniciar"); }
+                });
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "No se pudo programar la limpieza de temporales al iniciar");
+            }
         }
 
         void Application_End(object sender, EventArgs e)

@@ -89,6 +89,21 @@ namespace WebSGV.Services.Despachos
             return resultado;
         }
 
+        /// <summary>
+        /// El manifiesto vigente de cada despacho y tipo: el más reciente (fecha de subida y, a igual fecha, el id
+        /// mayor). Al reemplazar un manifiesto la fila anterior queda en la tabla como historial (tarea 14 C).
+        /// </summary>
+        public static List<DocumentoManifiesto> Vigentes(List<DocumentoManifiesto> documentos)
+        {
+            if (documentos == null) return new List<DocumentoManifiesto>();
+            return documentos
+                .Where(d => d != null)
+                .GroupBy(d => new { d.IdDespacho, Tipo = (d.TipoManifiesto ?? "").Trim().ToUpperInvariant() })
+                .Select(g => g.OrderByDescending(d => d.FechaSubida).ThenByDescending(d => d.IdDocumentoManifiesto).First())
+                .OrderBy(d => d.IdDespacho).ThenBy(d => d.TipoManifiesto)
+                .ToList();
+        }
+
         /// <summary>Documentos de manifiesto de un único despacho.</summary>
         public static List<DocumentoManifiesto> ObtenerDocumentosPorDespacho(int idDespacho) =>
             ObtenerDocumentosPorDespachos(new List<int> { idDespacho });
