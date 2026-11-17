@@ -42,6 +42,87 @@ namespace WebSGV.Helpers
                 || mensaje.IndexOf("estado de vista", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
+        /// <summary>Respuesta a un postback parcial cuando no hay sesión: el cliente va al Login.</summary>
+        public const string CodigoSesionVencida = "SGV:SESION_VENCIDA";
+
+        /// <summary>Respuesta a un postback parcial con ViewState inválido y sesión válida: el cliente recarga la página.</summary>
+        public const string CodigoPaginaVencida = "SGV:PAGINA_VENCIDA";
+
+        /// <summary>
+        /// Texto que el ScriptManager manda al navegador cuando falla un postback parcial (UpdatePanel).
+        /// Sin sesión → <see cref="CodigoSesionVencida"/>; ViewState inválido con sesión (otra pestaña
+        /// volvió a iniciar sesión y cambió el SessionID) → <see cref="CodigoPaginaVencida"/>; el resto,
+        /// el mensaje de negocio o el genérico. Nunca el <c>Message</c> técnico de la excepción.
+        /// </summary>
+        public static string MensajePostbackParcial(Exception ex, bool haySesion)
+        {
+            if (!haySesion)
+                return CodigoSesionVencida;
+
+            Exception real = Desenvolver(ex);
+            if (EsErrorViewState(real))
+                return CodigoPaginaVencida;
+
+            return WebSGV.Services.Common.MensajeError.ExtraerMensajeDeNegocio(real)
+                   ?? WebSGV.Services.Common.MensajeError.Generico;
+        }
+
+        /// <summary>
+        /// Clave de <c>HttpContext.Items</c> con la que Site.Master marca un error de postback parcial
+        /// que ya registró y respondió (el ScriptManager armó la respuesta "error|..."). Application_Error
+        /// la mira para no registrarlo dos veces ni reemplazar esa respuesta.
+        /// </summary>
+        public const string ClaveErrorPostbackParcialManejado = "SGV.ErrorPostbackParcialManejado";
+
+        /// <summary>True si Site.Master ya manejó este error de postback parcial (ver <see cref="ClaveErrorPostbackParcialManejado"/>).</summary>
+        public static bool ErrorPostbackParcialYaManejado(System.Collections.IDictionary items)
+        {
+            return items != null && items[ClaveErrorPostbackParcialManejado] is bool manejado && manejado;
+        }
+
+        /// <summary>Valor del parámetro <c>?aviso=</c> tras recargar una página con ViewState vencido.</summary>
+        public const string AvisoPaginaVencida = "pagina_vencida";
+
+        /// <summary>Texto que se muestra al usuario cuando su acción se perdió por ViewState vencido.</summary>
+        public const string TextoPaginaVencida = "La página estaba desactualizada; su última acción no se guardó. Repítala.";
+
+        /// <summary>
+        /// Destino tras un error de ViewState en un postback completo (Application_Error).
+        /// Sin sesión → Login. Con sesión y POST → la misma página por GET con la query original
+        /// más <c>aviso=pagina_vencida</c> (sin duplicarlo), así no se cierra la sesión y el
+        /// usuario sabe que debe repetir la acción. Con sesión y otro método (un GET con
+        /// __VIEWSTATE en la query) → la ruta sin query: volver a la misma URL sería un bucle.
+        /// </summary>
+        public static string DestinoTrasErrorViewState(string metodo, bool haySesion, string rutaAppRelativa, string query)
+        {
+            const string login = "~/Views/Login.aspx?error=sesion";
+            if (!haySesion || string.IsNullOrEmpty(rutaAppRelativa) || !rutaAppRelativa.StartsWith("~/", StringComparison.Ordinal)
+                || rutaAppRelativa.StartsWith("~//", StringComparison.Ordinal) || rutaAppRelativa.Contains("\\"))
+                return login;
+
+            if (!string.Equals(metodo, "POST", StringComparison.OrdinalIgnoreCase))
+                return rutaAppRelativa;
+
+            var partes = new System.Collections.Generic.List<string>();
+            foreach (string parte in (query ?? "").TrimStart('?').Split('&'))
+            {
+                if (parte.Length == 0)
+                    continue;
+                string nombre = parte.Split('=')[0];
+                if (string.Equals(nombre, "aviso", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                partes.Add(parte);
+            }
+            partes.Add("aviso=" + AvisoPaginaVencida);
+            return rutaAppRelativa + "?" + string.Join("&", partes);
+        }
+
+        /// <summary>Texto del aviso para el valor de <c>?aviso=</c>; null si es desconocido (no se muestra).</summary>
+        public static string TextoAviso(string codigo)
+        {
+            return string.Equals(codigo, AvisoPaginaVencida, StringComparison.Ordinal) ? TextoPaginaVencida : null;
+        }
+
         /// <summary>Recurso inexistente (HttpException con código 404).</summary>
         public static bool EsNoEncontrado(Exception ex)
         {

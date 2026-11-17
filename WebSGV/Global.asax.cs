@@ -18,7 +18,7 @@ namespace WebSGV
             LogSGV.Inicializar(System.Web.Hosting.HostingEnvironment.MapPath("~/App_Data/logs"));
             LogSGV.Info("Aplicación SGV iniciada");
 
-            // Recurso "jquery" del ScriptManager (validación unobtrusive). Sin MVC ni bundling:
+            // Recurso "jquery" del ScriptManager (validación unobtrusive) y MS Ajax con sus textos. Sin MVC ni bundling:
             // el sitio es WebForms puro con URLs .aspx directas.
             BundleConfig.RegisterJQueryScriptManager();
 
@@ -171,7 +171,7 @@ namespace WebSGV
 
         /// <summary>
         /// Errores no controlados (auditoría de seguridad, tarea 6). Cada error se registra una sola
-        /// vez, aquí: ViewState → advertencia y al Login; 404 → info; el resto → error con la ruta y
+        /// vez, aquí: ViewState → advertencia y a la misma página por GET (con sesión) o al Login; 404 → info; el resto → error con la ruta y
         /// el usuario. En Release (customErrors RemoteOnly) el usuario remoto llega a Error.aspx por
         /// un 302 (petición nueva, sin la excepción) y ve solo el mensaje genérico; el detalle queda
         /// en el log. En desarrollo (customErrors Off) se ve la pantalla de error de ASP.NET.
@@ -184,14 +184,31 @@ namespace WebSGV
                 if (real == null)
                     return;
 
+                // Postback parcial que Site.Master ya registró y respondió (ScriptManager1_AsyncPostBackError):
+                // solo se limpia el error para que salga la respuesta "error|..." del ScriptManager.
+                if (ErrorAplicacionHelper.ErrorPostbackParcialYaManejado(Context.Items))
+                {
+                    Server.ClearError();
+                    return;
+                }
+
                 string ruta = Request.RawUrl;
 
                 if (ErrorAplicacionHelper.EsErrorViewState(real))
                 {
-                    LogSGV.Advertencia("ViewState inválido o vencido en {Ruta}; se envía al Login. {Error}", ruta, real.Message);
+                    // Con sesión válida (otra pestaña volvió a iniciar sesión y cambió el SessionID,
+                    // así que el ViewState de esta pestaña ya no valida): se recarga la misma página
+                    // por GET con un aviso, sin cerrar la sesión. Sin sesión: al Login.
+                    bool haySesion = false;
+                    try { haySesion = SesionHelper.HaySesion(Context.Session); }
+                    catch { /* sin sesión en este punto del pipeline */ }
+
+                    string destino = ErrorAplicacionHelper.DestinoTrasErrorViewState(
+                        Request.HttpMethod, haySesion, Request.AppRelativeCurrentExecutionFilePath, Request.Url.Query);
+
+                    LogSGV.Advertencia("ViewState inválido o vencido en {Ruta}; se envía a {Destino}. {Error}", ruta, destino, real.Message);
                     Server.ClearError();
-                    Response.Redirect("~/Views/Login.aspx?error=sesion", false);
-                    CompleteRequest();
+                    Redirigir(Context, destino);
                     return;
                 }
 

@@ -124,6 +124,19 @@ input.af-shield[readonly] {
     margin-bottom: .5rem;
     font-size: .9rem;
 }
+/* Algunas páginas redefinen .alert (padding) y la × quedaba sobre el texto: el aviso fija su
+   propio espacio a la derecha para el botón de cerrar. */
+.sgv-avisos .sgv-aviso.alert-dismissible {
+    position: relative;
+    padding: .75rem 2.75rem .75rem 1rem;
+}
+.sgv-avisos .sgv-aviso .close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: .7rem .9rem;
+    line-height: 1;
+}
 .sgv-aviso-texto {
     white-space: pre-line;
     word-break: break-word;

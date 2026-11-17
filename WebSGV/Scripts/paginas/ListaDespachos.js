@@ -29,7 +29,8 @@ prm.add_endRequest(function () {
 
 function autoHideMessages() {
     setTimeout(function () {
-        $('.alert').fadeOut('slow');
+        // Los avisos de SGV.avisar (.sgv-aviso) tienen su propio tiempo.
+        $('.alert').not('.sgv-aviso').fadeOut('slow');
     }, 5000);
 }
 

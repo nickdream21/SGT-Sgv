@@ -56,6 +56,15 @@ namespace WebSGV
         /// </summary>
         protected void Page_Init(object sender, EventArgs e)
         {
+            // Postback sin sesión en una página protegida: al Login antes de validar el ViewState
+            // (si no, la validación MAC falla primero y el usuario no ve nada). En un postback
+            // parcial el ScriptManager convierte el redirect en "pageRedirect".
+            if (Page.IsPostBack && !EsPaginaPublica() && !TieneSesionActivaLocal())
+            {
+                Response.Redirect("~/Views/Login.aspx?error=sesion", true);
+                return;
+            }
+
             // ✅ NO establecer ViewStateUserKey en páginas públicas
             // porque si el SessionID cambia (expiración, regeneración, cookie corrupta),
             // el ViewState firmado con el ID anterior será inválido → HttpException
@@ -63,6 +72,47 @@ namespace WebSGV
             {
                 Page.ViewStateUserKey = Session.SessionID;
                 BloquearAccionesSiDebeCambiarContrasena();
+            }
+        }
+
+        /// <summary>
+        /// Aviso que la página muestra al cargar (parámetro <c>?aviso=</c>, p. ej. tras recargarla por
+        /// ViewState vencido). Solo valores conocidos (un valor desconocido no se muestra); el markup
+        /// lo codifica con HttpUtility.JavaScriptStringEncode.
+        /// </summary>
+        public string AvisoInicial =>
+            (IsPostBack ? null : ErrorAplicacionHelper.TextoAviso(Request.QueryString["aviso"])) ?? "";
+
+        /// <summary>
+        /// Error en un postback parcial (UpdatePanel). Sin este manejador el navegador recibía
+        /// PageRequestManagerServerErrorException y el usuario no veía nada. El texto lo interpreta
+        /// SiteMaster-2.js (endRequest): SGV:SESION_VENCIDA → Login, SGV:PAGINA_VENCIDA → recarga,
+        /// otro → aviso. El ScriptManager NO limpia el error: después de este evento llega también a
+        /// Application_Error. Por eso se marca en HttpContext.Items
+        /// (ErrorAplicacionHelper.ClaveErrorPostbackParcialManejado) y Application_Error solo lo limpia,
+        /// sin registrarlo otra vez ni reemplazar la respuesta que armó el ScriptManager.
+        /// </summary>
+        protected void ScriptManager1_AsyncPostBackError(object sender, AsyncPostBackErrorEventArgs e)
+        {
+            Context.Items[ErrorAplicacionHelper.ClaveErrorPostbackParcialManejado] = true;
+            try
+            {
+                Exception real = ErrorAplicacionHelper.Desenvolver(e.Exception);
+                bool haySesion = TieneSesionActivaLocal();
+                ScriptManager1.AsyncPostBackErrorMessage = ErrorAplicacionHelper.MensajePostbackParcial(real, haySesion);
+
+                string ruta = Request.RawUrl;
+                if (ErrorAplicacionHelper.EsErrorViewState(real))
+                    LogSGV.Advertencia("ViewState inválido o vencido en postback parcial de {Ruta} (con sesión: {HaySesion}). {Error}",
+                        ruta, haySesion, real?.Message);
+                else if (real != null && WebSGV.Services.Common.MensajeError.ExtraerMensajeDeNegocio(real) == null)
+                    LogSGV.Error(real, "Error en postback parcial de {Ruta} (usuario {IdUsuario})",
+                        ruta, haySesion ? SesionHelper.IdUsuario(Session) : (int?)null);
+            }
+            catch
+            {
+                // Nunca lanzar aquí: el ScriptManager respondería con su propio error.
+                ScriptManager1.AsyncPostBackErrorMessage = WebSGV.Services.Common.MensajeError.Generico;
             }
         }
 

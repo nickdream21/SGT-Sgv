@@ -36,7 +36,8 @@
              SiteMaster.js con las zonas data-enter; los DefaultButton van por keypress y siguen igual. -->
         <button type="submit" disabled hidden aria-hidden="true" tabindex="-1"></button>
         <!-- ScriptManager básico sin scripts personalizados -->
-        <asp:ScriptManager ID="ScriptManager1" runat="server" EnablePageMethods="true" />
+        <asp:ScriptManager ID="ScriptManager1" runat="server" EnablePageMethods="true"
+            AllowCustomErrorsRedirect="false" OnAsyncPostBackError="ScriptManager1_AsyncPostBackError" />
 
         <!-- Navbar -->
         <nav class="navbar navbar-expand-lg navbar-light bg-light" runat="server" id="Navbar">
@@ -435,6 +436,8 @@
         var SGV = Object.assign(window.SGV || {}, {
             esRespuestaPost: <%= Request.HttpMethod == "POST" ? "true" : "false" %>,
             urlLogin: '<%= ResolveUrl("~/Views/Login.aspx") %>',
+            avisoInicial: '<%= System.Web.HttpUtility.JavaScriptStringEncode(AvisoInicial) %>',
+            textoPaginaVencida: '<%= System.Web.HttpUtility.JavaScriptStringEncode(WebSGV.Helpers.ErrorAplicacionHelper.TextoPaginaVencida) %>',
             txtContrasenaActual: '<%= txtContrasenaActual.ClientID %>',
             txtNuevaContrasena: '<%= txtNuevaContrasena.ClientID %>',
             txtConfirmarContrasena: '<%= txtConfirmarContrasena.ClientID %>',
