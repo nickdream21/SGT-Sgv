@@ -188,6 +188,7 @@
     <Content Include="Database\Schema\47_AuditoriaSoloInsercion.sql" />
     <Content Include="Database\Schema\48_UnicidadFinancieroPorOrden.sql" />
     <Content Include="Database\Schema\49_UnicidadFacturaCpic.sql" />
+    <Content Include="Database\Schema\50_UnicidadPlacaCarreta.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_AgregarRolAdminMaquinaria.sql" />
@@ -915,6 +916,8 @@
       <DependentUpon>CatalogoCliente.aspx</DependentUpon>
     </Compile>
     <Compile Include="Services\Clientes\CatalogoClienteService.cs" />
+    <Compile Include="Services\Vehiculos\PlacaVehiculo.cs" />
+    <Compile Include="Services\Vehiculos\VehiculoService.cs" />
     <Compile Include="Views\RegistroClientes.aspx.cs">
       <DependentUpon>RegistroClientes.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

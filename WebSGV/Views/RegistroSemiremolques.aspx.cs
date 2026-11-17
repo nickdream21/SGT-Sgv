@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
-using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Vehiculos;
 
 namespace WebSGV.Views
 {
@@ -34,7 +32,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al cargar los semiremolques: " + MensajeErrorHelper.ParaUsuario(ex));
+                MostrarMensaje("Error al cargar los semirremolques: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -42,53 +40,23 @@ namespace WebSGV.Views
         {
             if (!Page.IsValid)
             {
-                MostrarMensaje("Corrija los campos marcados del semiremolque.");
+                MostrarMensaje("Corrija los campos marcados del semirremolque.");
                 return;
             }
-
-            string placa = txtPlaca.Text.Trim().ToUpper();
-            string marca = txtMarca.Text.Trim().ToUpper();
-            string modelo = txtModelo.Text.Trim().ToUpper();
-
-            if (string.IsNullOrWhiteSpace(placa) || string.IsNullOrWhiteSpace(marca) || string.IsNullOrWhiteSpace(modelo))
-            {
-                MostrarMensaje("Debe completar todos los campos requeridos.");
-                return;
-            }
-
-            if (!ValidacionHelper.EsPlaca(placa)) { MostrarMensaje("Placa inválida: use 6 a 10 caracteres (letras, números o guion)."); return; }
-            if (!Regex.IsMatch(marca, "^[A-ZÁÉÍÓÚÑ0-9\\s\\-.]{2,100}$")) { MostrarMensaje("Marca inválida: use entre 2 y 100 caracteres válidos."); return; }
-            if (!Regex.IsMatch(modelo, "^[A-ZÁÉÍÓÚÑ0-9\\s\\-.]{2,100}$")) { MostrarMensaje("Modelo inválido: use entre 2 y 100 caracteres válidos."); return; }
 
             try
             {
-                int existe = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM Carreta WHERE UPPER(placaCarreta) = @placa",
-                    DbHelper.Param("@placa", placa)));
-                if (existe > 0)
-                {
-                    MostrarMensaje("Ya existe un semiremolque registrado con esa placa.");
-                    return;
-                }
-
-                DbHelper.EjecutarNonQuery(
-                    "INSERT INTO Carreta (placaCarreta, marca, modelo, activo) VALUES (@placa, @marca, @modelo, 1)",
-                    DbHelper.Param("@placa", placa),
-                    DbHelper.Param("@marca", marca),
-                    DbHelper.Param("@modelo", modelo));
-
-                AuditoriaHelper.Registrar("INSERT", "Carreta",
-                    descripcion: $"Semiremolque registrado - Placa: {placa}, Marca: {marca}, Modelo: {modelo}");
+                VehiculoService.Registrar(TipoVehiculo.Carreta, txtPlaca.Text, txtMarca.Text, txtModelo.Text);
 
                 txtPlaca.Text = "";
                 txtMarca.Text = "";
                 txtModelo.Text = "";
-                MostrarMensaje("Semiremolque registrado correctamente.", true);
+                MostrarMensaje("Semirremolque registrado correctamente.", true);
                 CargarSemiremolques();
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al registrar el semiremolque: " + MensajeErrorHelper.ParaUsuario(ex));
+                MostrarMensaje("Error al registrar el semirremolque: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 
@@ -106,7 +74,7 @@ namespace WebSGV.Views
                         DbHelper.Param("@id", idCarreta));
 
                     AuditoriaHelper.Registrar("UPDATE", "Carreta", idCarreta,
-                        "Estado de semiremolque actualizado (activar/desactivar)");
+                        "Estado de semirremolque actualizado (activar/desactivar)");
 
                     CargarSemiremolques();
                 }
@@ -132,48 +100,20 @@ namespace WebSGV.Views
         {
             if (!int.TryParse(hfIdCarreta.Value, out int idCarreta) || idCarreta <= 0)
             {
-                MostrarMensaje("ID de semiremolque inválido.");
-                return;
-            }
-
-            string placa = txtEditarPlaca.Text.Trim().ToUpper();
-            string marca = txtEditarMarca.Text.Trim().ToUpper();
-            string modelo = txtEditarModelo.Text.Trim().ToUpper();
-
-            if (string.IsNullOrWhiteSpace(placa) || string.IsNullOrWhiteSpace(marca) || string.IsNullOrWhiteSpace(modelo))
-            {
-                MostrarMensaje("Debe completar todos los campos del semiremolque.");
+                MostrarMensaje("ID de semirremolque inválido.");
                 return;
             }
 
             try
             {
-                int dup = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM Carreta WHERE UPPER(placaCarreta)=@placa AND idCarreta<>@id",
-                    DbHelper.Param("@placa", placa),
-                    DbHelper.Param("@id", idCarreta)));
-                if (dup > 0)
-                {
-                    MostrarMensaje("Ya existe otro semiremolque con esa placa.");
-                    return;
-                }
-
-                DbHelper.EjecutarNonQuery(
-                    "UPDATE Carreta SET placaCarreta=@placa, marca=@marca, modelo=@modelo WHERE idCarreta=@id",
-                    DbHelper.Param("@placa", placa),
-                    DbHelper.Param("@marca", marca),
-                    DbHelper.Param("@modelo", modelo),
-                    DbHelper.Param("@id", idCarreta));
-
-                AuditoriaHelper.Registrar("UPDATE", "Carreta", idCarreta,
-                    $"Semiremolque editado — Placa:{placa}, Marca:{marca}, Modelo:{modelo}");
+                VehiculoService.Actualizar(TipoVehiculo.Carreta, idCarreta, txtEditarPlaca.Text, txtEditarMarca.Text, txtEditarModelo.Text);
                 hfIdCarreta.Value = "";
-                MostrarMensaje("Semiremolque actualizado correctamente.", true);
+                MostrarMensaje("Semirremolque actualizado correctamente.", true);
                 CargarSemiremolques();
             }
             catch (Exception ex)
             {
-                MostrarMensaje("Error al actualizar el semiremolque: " + MensajeErrorHelper.ParaUsuario(ex));
+                MostrarMensaje("Error al actualizar el semirremolque: " + MensajeErrorHelper.ParaUsuario(ex));
             }
         }
 

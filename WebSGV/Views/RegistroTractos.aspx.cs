@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
-using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Vehiculos;
 
 namespace WebSGV.Views
 {
@@ -46,39 +44,9 @@ namespace WebSGV.Views
                 return;
             }
 
-            string placa = txtPlaca.Text.Trim().ToUpper();
-            string marca = txtMarca.Text.Trim().ToUpper();
-            string modelo = txtModelo.Text.Trim().ToUpper();
-
-            if (string.IsNullOrWhiteSpace(placa) || string.IsNullOrWhiteSpace(marca) || string.IsNullOrWhiteSpace(modelo))
-            {
-                MostrarMensaje("Debe completar todos los campos requeridos.");
-                return;
-            }
-
-            if (!ValidacionHelper.EsPlaca(placa)) { MostrarMensaje("Placa inválida: use 6 a 10 caracteres (letras, números o guion)."); return; }
-            if (!Regex.IsMatch(marca, "^[A-ZÁÉÍÓÚÑ0-9\\s\\-.]{2,100}$")) { MostrarMensaje("Marca inválida: use entre 2 y 100 caracteres válidos."); return; }
-            if (!Regex.IsMatch(modelo, "^[A-ZÁÉÍÓÚÑ0-9\\s\\-.]{2,100}$")) { MostrarMensaje("Modelo inválido: use entre 2 y 100 caracteres válidos."); return; }
-
             try
             {
-                int existe = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM Tracto WHERE UPPER(placaTracto) = @placa",
-                    DbHelper.Param("@placa", placa)));
-                if (existe > 0)
-                {
-                    MostrarMensaje("Ya existe un tracto registrado con esa placa.");
-                    return;
-                }
-
-                DbHelper.EjecutarNonQuery(
-                    "INSERT INTO Tracto (placaTracto, marca, modelo, activo) VALUES (@placa, @marca, @modelo, 1)",
-                    DbHelper.Param("@placa", placa),
-                    DbHelper.Param("@marca", marca),
-                    DbHelper.Param("@modelo", modelo));
-
-                AuditoriaHelper.Registrar("INSERT", "Tracto",
-                    descripcion: $"Tracto registrado - Placa: {placa}, Marca: {marca}, Modelo: {modelo}");
+                VehiculoService.Registrar(TipoVehiculo.Tracto, txtPlaca.Text, txtMarca.Text, txtModelo.Text);
 
                 txtPlaca.Text = "";
                 txtMarca.Text = "";
@@ -136,39 +104,9 @@ namespace WebSGV.Views
                 return;
             }
 
-            string placa = txtEditarPlaca.Text.Trim().ToUpper();
-            string marca = txtEditarMarca.Text.Trim().ToUpper();
-            string modelo = txtEditarModelo.Text.Trim().ToUpper();
-
-            if (string.IsNullOrWhiteSpace(placa) || string.IsNullOrWhiteSpace(marca) || string.IsNullOrWhiteSpace(modelo))
-            {
-                MostrarMensaje("Debe completar todos los campos del tracto.");
-                return;
-            }
-
-            if (!ValidacionHelper.EsPlaca(placa)) { MostrarMensaje("Placa inválida en edición."); return; }
-
             try
             {
-                int dup = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM Tracto WHERE UPPER(placaTracto)=@placa AND idTracto<>@id",
-                    DbHelper.Param("@placa", placa),
-                    DbHelper.Param("@id", idTracto)));
-                if (dup > 0)
-                {
-                    MostrarMensaje("Ya existe otro tracto con esa placa.");
-                    return;
-                }
-
-                DbHelper.EjecutarNonQuery(
-                    "UPDATE Tracto SET placaTracto=@placa, marca=@marca, modelo=@modelo WHERE idTracto=@id",
-                    DbHelper.Param("@placa", placa),
-                    DbHelper.Param("@marca", marca),
-                    DbHelper.Param("@modelo", modelo),
-                    DbHelper.Param("@id", idTracto));
-
-                AuditoriaHelper.Registrar("UPDATE", "Tracto", idTracto,
-                    $"Tracto editado — Placa:{placa}, Marca:{marca}, Modelo:{modelo}");
+                VehiculoService.Actualizar(TipoVehiculo.Tracto, idTracto, txtEditarPlaca.Text, txtEditarMarca.Text, txtEditarModelo.Text);
                 hfIdTracto.Value = "";
                 MostrarMensaje("Tracto actualizado correctamente.", true);
                 CargarTractos();

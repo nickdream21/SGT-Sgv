@@ -329,15 +329,13 @@ namespace WebSGV.Services.Despachos.Importacion
 
         private static void AsociarVehiculos(ImportacionPedido pedido)
         {
-            var tractos = DbHelper.ConsultarTabla("SELECT idTracto, placaTracto FROM Tracto WHERE activo = 1")
-                .Rows.Cast<DataRow>()
-                .GroupBy(r => LectorDocumentosPedido.NormalizarPlaca(r["placaTracto"].ToString()))
-                .ToDictionary(g => g.Key, g => g.First());
+            var tractos = IndicePorPlaca(
+                DbHelper.ConsultarTabla("SELECT idTracto, placaTracto, activo FROM Tracto"),
+                "placaTracto", "tractos", "Registro de tractos", pedido.Advertencias);
 
-            var carretas = DbHelper.ConsultarTabla("SELECT idCarreta, placaCarreta FROM Carreta WHERE activo = 1")
-                .Rows.Cast<DataRow>()
-                .GroupBy(r => LectorDocumentosPedido.NormalizarPlaca(r["placaCarreta"].ToString()))
-                .ToDictionary(g => g.Key, g => g.First());
+            var carretas = IndicePorPlaca(
+                DbHelper.ConsultarTabla("SELECT idCarreta, placaCarreta, activo FROM Carreta"),
+                "placaCarreta", "semirremolques", "Registro de semirremolques", pedido.Advertencias);
 
             foreach (var t in pedido.Tractos)
             {
@@ -360,6 +358,38 @@ namespace WebSGV.Services.Despachos.Importacion
             }
 
             SugerirCarretas(pedido);
+        }
+
+        /// <summary>
+        /// Vehículos ACTIVOS por clave de placa (sin guion ni espacios). Si una clave tiene más de un vehículo
+        /// (p. ej. "ABC-123" y "ABC123" registrados aparte) se usa el único activo; si hay varios activos no se
+        /// elige ninguno en silencio: la placa queda sin asociar y se agrega un aviso (una sola vez) para que el
+        /// usuario la elija y depure el registro.
+        /// </summary>
+        internal static Dictionary<string, DataRow> IndicePorPlaca(DataTable vehiculos, string columnaPlaca,
+            string nombrePlural, string pagina, List<string> avisos)
+        {
+            var indice = new Dictionary<string, DataRow>();
+            var grupos = vehiculos.Rows.Cast<DataRow>()
+                .GroupBy(r => LectorDocumentosPedido.NormalizarPlaca(r[columnaPlaca] as string))
+                .Where(g => g.Key != null);
+
+            foreach (var g in grupos)
+            {
+                var activos = g.Where(r => r["activo"] != DBNull.Value && Convert.ToBoolean(r["activo"])).ToList();
+                if (activos.Count == 1)
+                {
+                    indice[g.Key] = activos[0];
+                }
+                else if (activos.Count > 1)
+                {
+                    string aviso = $"Placa {g.Key}: hay {activos.Count} {nombrePlural} activos registrados con esa placa " +
+                                   $"({string.Join(", ", activos.Select(r => r[columnaPlaca].ToString().Trim()))}); " +
+                                   $"no se asoció ninguno. Elíjalo a mano y revise {pagina}.";
+                    if (!avisos.Contains(aviso)) avisos.Add(aviso);
+                }
+            }
+            return indice;
         }
 
         /// <summary>

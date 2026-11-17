@@ -37,7 +37,7 @@
                         <div class="form-group">
                             <label class="font-weight-bold">N&#xBA; de Placa <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtPlaca" runat="server" CssClass="form-control"
-                                placeholder="Ej: ABC-123" MaxLength="20"></asp:TextBox>
+                                placeholder="Ej: ABC-123" MaxLength="10"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="rfvPlaca" runat="server" ControlToValidate="txtPlaca" ValidationGroup="vgRegistroSemi"
                                 ErrorMessage="Placa: este campo es obligatorio." CssClass="text-danger small" Display="Dynamic" />
                             <asp:RegularExpressionValidator ID="revPlaca" runat="server" ControlToValidate="txtPlaca" ValidationGroup="vgRegistroSemi"
@@ -46,20 +46,20 @@
                         <div class="form-group">
                             <label class="font-weight-bold">Marca <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtMarca" runat="server" CssClass="form-control"
-                                placeholder="Ej: RANDON" MaxLength="100"></asp:TextBox>
+                                placeholder="Ej: RANDON" MaxLength="30"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="rfvMarca" runat="server" ControlToValidate="txtMarca" ValidationGroup="vgRegistroSemi"
                                 ErrorMessage="Marca: este campo es obligatorio." CssClass="text-danger small" Display="Dynamic" />
                             <asp:RegularExpressionValidator ID="revMarca" runat="server" ControlToValidate="txtMarca" ValidationGroup="vgRegistroSemi"
-                                ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.]{2,100}$" ErrorMessage="Marca: use entre 2 y 100 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
+                                ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.]{2,30}$" ErrorMessage="Marca: use entre 2 y 30 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
                         </div>
                         <div class="form-group">
                             <label class="font-weight-bold">Modelo <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtModelo" runat="server" CssClass="form-control"
-                                placeholder="Ej: SR GR 3E" MaxLength="100"></asp:TextBox>
+                                placeholder="Ej: SR GR 3E" MaxLength="30"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="rfvModelo" runat="server" ControlToValidate="txtModelo" ValidationGroup="vgRegistroSemi"
                                 ErrorMessage="Modelo: este campo es obligatorio." CssClass="text-danger small" Display="Dynamic" />
                             <asp:RegularExpressionValidator ID="revModelo" runat="server" ControlToValidate="txtModelo" ValidationGroup="vgRegistroSemi"
-                                ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.]{2,100}$" ErrorMessage="Modelo: use entre 2 y 100 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
+                                ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.]{2,30}$" ErrorMessage="Modelo: use entre 2 y 30 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
                         </div>
                         <asp:Button ID="btnRegistrar" runat="server" Text="Registrar semiremolque" ValidationGroup="vgRegistroSemi"
                             CssClass="btn btn-primary btn-block" OnClick="btnRegistrar_Click" />
@@ -143,15 +143,15 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="font-weight-bold">N&#xBA; de Placa <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtEditarPlaca" runat="server" CssClass="form-control text-uppercase" MaxLength="20"></asp:TextBox>
+                        <asp:TextBox ID="txtEditarPlaca" runat="server" CssClass="form-control text-uppercase" MaxLength="10"></asp:TextBox>
                     </div>
                     <div class="form-group">
                         <label class="font-weight-bold">Marca <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtEditarMarca" runat="server" CssClass="form-control text-uppercase" MaxLength="100"></asp:TextBox>
+                        <asp:TextBox ID="txtEditarMarca" runat="server" CssClass="form-control text-uppercase" MaxLength="30"></asp:TextBox>
                     </div>
                     <div class="form-group mb-0">
                         <label class="font-weight-bold">Modelo <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtEditarModelo" runat="server" CssClass="form-control text-uppercase" MaxLength="100"></asp:TextBox>
+                        <asp:TextBox ID="txtEditarModelo" runat="server" CssClass="form-control text-uppercase" MaxLength="30"></asp:TextBox>
                     </div>
                 </div>
                 <div class="modal-footer">

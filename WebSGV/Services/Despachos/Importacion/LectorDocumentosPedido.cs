@@ -1,10 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using WebSGV.Models.Despachos;
+using WebSGV.Services.Vehiculos;
 
 namespace WebSGV.Services.Despachos.Importacion
 {
@@ -462,9 +463,8 @@ namespace WebSGV.Services.Despachos.Importacion
             return Regex.Replace(sb.ToString().Normalize(NormalizationForm.FormC).ToUpperInvariant(), @"[ \t]+", " ").Trim();
         }
 
-        /// <summary>Placa sin guion ni espacios, en mayúsculas (la BD las guarda como C6K-799).</summary>
-        public static string NormalizarPlaca(string placa) =>
-            string.IsNullOrWhiteSpace(placa) ? null : Regex.Replace(placa, @"[^A-Za-z0-9]", "").ToUpperInvariant();
+        /// <summary>Placa sin guion ni espacios, en mayúsculas (la BD las guarda como C6K-799): <see cref="PlacaVehiculo.Clave"/>.</summary>
+        public static string NormalizarPlaca(string placa) => PlacaVehiculo.Clave(placa);
 
         private static string RucEnTexto(IList<IList<string>> paginas) =>
             Buscar(string.Join("\n", paginas.SelectMany(p => p)), @"R\.?U\.?C\.?\s*(?:N\S*\s*)?(\d{11})");
