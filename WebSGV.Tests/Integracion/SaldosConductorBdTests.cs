@@ -19,12 +19,10 @@ namespace WebSGV.Tests.Integracion
         {
             using (new TransaccionDePrueba())
             {
-                DataRow orden = DbHelper.ConsultarTabla(@"
-                    SELECT TOP 1 ov.idOrdenViaje, ov.idConductor FROM OrdenViaje ov
-                    WHERE ov.estadoAprobacion = 'APROBADO'
-                      AND NOT EXISTS (SELECT 1 FROM PagoSaldoConductorDetalle d WHERE d.idOrdenViaje = ov.idOrdenViaje AND d.activo = 1)
-                    ORDER BY ov.idOrdenViaje DESC").Rows[0];
-                int idOrden = Convert.ToInt32(orden["idOrdenViaje"]), idConductor = Convert.ToInt32(orden["idConductor"]);
+                // Liquidación APROBADA creada aquí (declaración, revisión y conformidad): no depende de que la BD
+                // ya tenga una.
+                var liquidacion = FlujoDespachoLiquidacionTests.CrearLiquidacionDePrueba(aprobada: true);
+                int idOrden = liquidacion.IdOrden, idConductor = liquidacion.IdConductor;
 
                 DataRow antes = SaldosConductorService.Listar(new DateTime(2000, 1, 1), new DateTime(2100, 1, 1), idConductor, false, false, new[] { idOrden }).Rows[0];
                 Assert.Equal("Pendiente", antes["Estado"]);

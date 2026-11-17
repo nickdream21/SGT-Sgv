@@ -13,7 +13,8 @@
 --     (OrdenViaje.idViajeProgreso, o ViajesEnProgreso.idOrdenViajeGenerada), no se
 --     anula nada: THROW 50010 con el mensaje para el usuario. También si el viaje
 --     cerró con esa liquidación (mismo conductor y fechaCierre que el viaje de la OrdenViaje).
---     La comprobación va dentro de la transacción, con los viajes bloqueados (UPDLOCK).
+--     La comprobación va dentro de la transacción, con los viajes bloqueados (UPDLOCK),
+--     y lee lo confirmado (READCOMMITTEDLOCK), no la versión de READ_COMMITTED_SNAPSHOT.
 --   * Recalcula ViajesEnProgreso.cantidadDespachos de los viajes afectados y anula
 --     el viaje ABIERTO que queda sin despachos activos.
 --   * Idempotente: los despachos ya anulados no se vuelven a tocar.
@@ -70,16 +71,28 @@ BEGIN
         -- La liquidación cubre su viaje principal (OrdenViaje.idViajeProgreso) y los demás
         -- viajes que cerró a la vez: mismo conductor y misma fechaCierre (el criterio de
         -- sp_DC_RetirarLiquidacion y sp_RechazarLiquidacion).
+        -- READCOMMITTEDLOCK (2026-11-17): la BD usa READ_COMMITTED_SNAPSHOT y sin la pista
+        -- estas lecturas veían la versión confirmada, no la OrdenViaje que una liquidación
+        -- en curso acababa de insertar: el lote se anulaba y sus despachos quedaban dentro
+        -- de la liquidación confirmada después.
+        -- Con el C# nuevo la pista no hace falta: la liquidación bloquea antes sus viajes
+        -- (sp_DC_BloquearViajesParaLiquidar, UPDLOCK) y este SP ya espera en el UPDLOCK de
+        -- arriba. La pista protege solo mientras siga publicado el C# viejo, que inserta la
+        -- OrdenViaje sin bloquear antes los viajes: aquí se espera a que esa liquidación
+        -- termine. Con el C# viejo puede darse un deadlock (1205) entre los dos (este SP
+        -- espera la OrdenViaje y la liquidación espera el viaje para cerrarlo): es inofensivo,
+        -- SQL Server deshace una de las dos operaciones entera y nunca quedan despachos
+        -- anulados dentro de una liquidación confirmada.
         SELECT @viajesConLiquidacion = STRING_AGG(CAST(x.numeroViaje AS VARCHAR(MAX)), ', ')
         FROM (
             SELECT DISTINCT ISNULL(v.numeroViajeProgreso, CAST(v.idViajeProgreso AS VARCHAR(20))) AS numeroViaje
-            FROM ViajesEnProgreso v
+            FROM ViajesEnProgreso v WITH (READCOMMITTEDLOCK)
             JOIN @viajesAfectados va ON va.idViajeProgreso = v.idViajeProgreso
             WHERE v.idOrdenViajeGenerada IS NOT NULL
-               OR EXISTS (SELECT 1 FROM OrdenViaje o WHERE o.idViajeProgreso = v.idViajeProgreso)
+               OR EXISTS (SELECT 1 FROM OrdenViaje o WITH (READCOMMITTEDLOCK) WHERE o.idViajeProgreso = v.idViajeProgreso)
                OR EXISTS (SELECT 1
-                          FROM OrdenViaje o
-                          JOIN ViajesEnProgreso p ON p.idViajeProgreso = o.idViajeProgreso
+                          FROM OrdenViaje o WITH (READCOMMITTEDLOCK)
+                          JOIN ViajesEnProgreso p WITH (READCOMMITTEDLOCK) ON p.idViajeProgreso = o.idViajeProgreso
                           WHERE p.idConductor = v.idConductor
                             AND p.fechaCierre IS NOT NULL
                             AND p.fechaCierre = v.fechaCierre)

@@ -244,17 +244,21 @@ namespace WebSGV.Tests.Integracion
             int conLiquidacion, libre;
             using (new TransaccionDePrueba())
             {
-                conLiquidacion = Entero(@"SELECT TOP 1 d.idDespacho FROM Despachos d
-                    JOIN OrdenViaje o ON o.idViajeProgreso = d.idViajeProgreso WHERE d.activo = 1 ORDER BY d.idDespacho DESC");
-                libre = DespachosActivos(ViajeSinLiquidacion())[0];
+                // Liquidación y despacho libre creados aquí: no depende de que la BD ya tenga una OrdenViaje.
+                conLiquidacion = FlujoDespachoLiquidacionTests.CrearLiquidacionDePrueba().Despachos[0];
+                libre = FlujoDespachoLiquidacionTests.CrearDespachoDePrueba().IdDespacho;
 
                 var ex = Assert.ThrowsAny<Exception>(() => ListaDespachosService.AnularLote(libre + "," + conLiquidacion, "PRUEBA"));
                 Assert.Contains(((System.Data.SqlClient.SqlException)ex).Errors.Cast<System.Data.SqlClient.SqlError>(), e => e.Number == 50010);
                 Assert.Contains("liquidación", MensajeErrorHelper.ParaUsuario(ex));
             }
 
-            // Nada cambió, ni siquiera el despacho del viaje sin liquidación.
-            FueraDeLaPrueba(() => { AfirmarIntacto(conLiquidacion); AfirmarIntacto(libre); return 0; });
+            // Comprueba que la prueba no dejó datos (el rollback se llevó la liquidación y los despachos).
+            FueraDeLaPrueba(() =>
+            {
+                Assert.Equal(0, Entero("SELECT COUNT(*) FROM Despachos WHERE idDespacho IN (@a, @b)", "@a", conLiquidacion, "@b", libre));
+                return 0;
+            });
         }
 
         [FactBD]
@@ -264,15 +268,14 @@ namespace WebSGV.Tests.Integracion
             string numeroViaje;
             using (new TransaccionDePrueba())
             {
-                // Viaje principal de una liquidación (la OrdenViaje apunta a él) y otro viaje del mismo conductor
-                // que la liquidación cerró a la vez: misma fechaCierre, sin OrdenViaje propia.
-                var principal = DbHelper.ConsultarTabla(@"SELECT TOP 1 p.idViajeProgreso, p.idConductor, p.fechaCierre
-                    FROM OrdenViaje o JOIN ViajesEnProgreso p ON p.idViajeProgreso = o.idViajeProgreso
-                    WHERE p.fechaCierre IS NOT NULL ORDER BY o.idOrdenViaje DESC").Rows[0];
-                int hermano = ViajeSinLiquidacion("CERRADO");
-                Ejecutar("UPDATE ViajesEnProgreso SET idConductor = @c, fechaCierre = @f WHERE idViajeProgreso = @v",
-                    "@c", principal["idConductor"], "@f", principal["fechaCierre"], "@v", hermano);
-                despacho = DespachosActivos(hermano)[0];
+                // Liquidación que cierra dos viajes: el principal (la OrdenViaje apunta a él) y otro del mismo
+                // conductor cerrado a la vez (misma fechaCierre, sin OrdenViaje propia).
+                var liquidacion = FlujoDespachoLiquidacionTests.CrearLiquidacionDePrueba(viajes: 2);
+                int hermano = liquidacion.Viajes[1];
+                Assert.Equal(0, Entero("SELECT COUNT(*) FROM OrdenViaje WHERE idViajeProgreso = @v", "@v", hermano));
+                Assert.Equal(1, Entero(@"SELECT COUNT(*) FROM ViajesEnProgreso h JOIN ViajesEnProgreso p ON p.idViajeProgreso = @p
+                    WHERE h.idViajeProgreso = @v AND h.fechaCierre IS NOT NULL AND h.fechaCierre = p.fechaCierre", "@p", liquidacion.Viajes[0], "@v", hermano));
+                despacho = liquidacion.Despachos[1];
                 numeroViaje = Texto("SELECT numeroViajeProgreso FROM ViajesEnProgreso WHERE idViajeProgreso = @v", "@v", hermano);
 
                 var ex = Assert.ThrowsAny<Exception>(() => ListaDespachosService.AnularLote(despacho.ToString(), "PRUEBA"));
@@ -282,7 +285,12 @@ namespace WebSGV.Tests.Integracion
                 Assert.Contains(numeroViaje, mensaje);
             }
 
-            FueraDeLaPrueba(() => { AfirmarIntacto(despacho); return 0; });
+            // Comprueba que la prueba no dejó datos (el rollback se llevó la liquidación y los despachos).
+            FueraDeLaPrueba(() =>
+            {
+                Assert.Equal(0, Entero("SELECT COUNT(*) FROM Despachos WHERE idDespacho = @d", "@d", despacho));
+                return 0;
+            });
         }
     }
 }

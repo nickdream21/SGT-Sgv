@@ -245,6 +245,10 @@ namespace WebSGV.Tests.Integracion
 
                 // Último paso: sp_DC_ActualizarOrdenViajeConductor hace THROW (orden PENDIENTE, no
                 // REABIERTO) y el servicio hace rollback del lote (y de la transacción de la prueba).
+                // El viaje se reabre a mano: con el viaje CERRADO el lote ya se detiene antes, en
+                // sp_DC_BloquearViajesParaLiquidar (50012), y aquí se prueba la guarda del SP de la orden.
+                DbHelper.EjecutarNonQuery("UPDATE ViajesEnProgreso SET estadoViaje = 'ABIERTO', fechaCierre = NULL WHERE idViajeProgreso = @v",
+                    DbHelper.Param("@v", idViaje));
                 input.EsReliquidacion = true;
                 input.AlimentacionSoles = 1m;
                 var ex = Assert.Throws<System.Data.SqlClient.SqlException>(() => LiquidacionConductorService.EnviarLiquidacion(input));

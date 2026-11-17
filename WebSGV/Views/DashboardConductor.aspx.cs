@@ -593,9 +593,10 @@ namespace WebSGV.Views
 
                 // ✅ Detectar si es una re-liquidación de orden rechazada
                 bool esReliquidacion = !string.IsNullOrEmpty(hfNumeroOrdenExistente.Value);
-                string numeroOrdenViaje = esReliquidacion
-                    ? hfNumeroOrdenExistente.Value
-                    : GenerarNumeroOrden();
+                // Orden nueva: el número lo genera LiquidacionConductorService dentro de su transacción
+                // (con los viajes ya bloqueados) y lo deja en input.NumeroOrdenViaje al confirmar.
+                // Antes se generaba aquí, en otra conexión, y dos envíos a la vez recibían el mismo OV.
+                string numeroOrdenViaje = esReliquidacion ? hfNumeroOrdenExistente.Value : null;
 
                 // Verificar que la orden rechazada pertenece al conductor actual (C-4)
                 if (esReliquidacion && !ValidarOwnershipOrden(numeroOrdenViaje, IdConductorActual))
@@ -692,6 +693,7 @@ namespace WebSGV.Views
                 try
                 {
                     idOrdenGuardada = LiquidacionConductorService.EnviarLiquidacion(input);
+                    numeroOrdenViaje = input.NumeroOrdenViaje;
                     transaccionExitosa = true;
                 }
                 catch (Exception ex)
@@ -1089,32 +1091,6 @@ namespace WebSGV.Views
                 LogSGV.Error(ex, "Error al obtener estaciones en DashboardConductor");
                 return "[]";
             }
-        }
-
-        /// <summary>
-        /// Número correlativo de la orden (sp_DC_GenerarNumeroOrden). Si el SP falla, el envío
-        /// falla: antes se inventaba un número fuera del correlativo (OV-fechahora-conductor).
-        /// </summary>
-        private string GenerarNumeroOrden()
-        {
-            string nuevoNumero;
-            try
-            {
-                nuevoNumero = DashboardConductorService.GenerarNumeroOrden();
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "Error al generar el número de orden en DashboardConductor");
-                throw new ErrorNegocioException("No se pudo generar el número de la orden. Inténtalo de nuevo en unos segundos.", ex);
-            }
-
-            if (string.IsNullOrEmpty(nuevoNumero))
-            {
-                LogSGV.Advertencia("sp_DC_GenerarNumeroOrden no devolvió un número de orden");
-                throw new ErrorNegocioException("No se pudo generar el número de la orden. Inténtalo de nuevo en unos segundos.");
-            }
-
-            return nuevoNumero;
         }
 
         private DatosViajeParaLiquidacion ObtenerDatosViajeParaLiquidacion(int idViajeProgreso)

@@ -59,10 +59,10 @@ namespace WebSGV.Tests.Integracion
         {
             using (new TransaccionDePrueba())
             {
-                int despacho = Entero(@"SELECT TOP 1 d.idDespacho FROM Despachos d
-                    JOIN OrdenViaje o ON o.idViajeProgreso = d.idViajeProgreso WHERE d.activo = 1 ORDER BY d.idDespacho DESC");
-                int conductor = Entero("SELECT idConductor FROM Despachos WHERE idDespacho = @d", "@d", despacho);
-                int otro = Entero("SELECT TOP 1 idConductor FROM Conductor WHERE idConductor <> @c ORDER BY idConductor DESC", "@c", conductor);
+                // Liquidación creada aquí: no depende de que la BD ya tenga una OrdenViaje.
+                var liquidacion = FlujoDespachoLiquidacionTests.CrearLiquidacionDePrueba();
+                int despacho = liquidacion.Despachos[0];
+                int otro = liquidacion.IdOtroConductor;
                 DbHelper.EjecutarNonQuery("UPDATE Despachos SET idConductor = @c WHERE idDespacho = @d", DbHelper.Param("@c", otro), DbHelper.Param("@d", despacho));
 
                 var ex = Assert.ThrowsAny<Exception>(() => Reubicar(despacho));

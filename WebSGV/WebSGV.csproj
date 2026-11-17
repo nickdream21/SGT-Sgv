@@ -208,6 +208,7 @@
     <Content Include="Database\StoredProcedures\sp_CrearViajeProgreso.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_ActualizarOrdenViajeConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_CerrarViajesProgreso.sql" />
+    <Content Include="Database\StoredProcedures\sp_DC_BloquearViajesParaLiquidar.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_EliminarDatosFinancierosOrden.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_GenerarNumeroOrden.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_InsertarDescuentosReintegros.sql" />

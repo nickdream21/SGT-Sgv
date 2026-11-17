@@ -620,9 +620,11 @@ namespace WebSGV.Tests.Integracion
                 var input = NuevaLiquidacion(datos, idViajePropio);
                 input.IdsViajesActivos = new List<int> { idViajePropio, idViajeAjeno };
 
-                // Último paso: el SP hace RAISERROR y el servicio, rollback.
+                // Último paso: sp_DC_BloquearViajesParaLiquidar (primera instrucción del lote, antes que
+                // sp_DC_CerrarViajesProgreso) lanza 50012 y el servicio hace rollback.
                 var ex = Assert.Throws<SqlException>(() => LiquidacionConductorService.EnviarLiquidacion(input));
-                Assert.Contains("no pertenecen al conductor", MensajeError.ExtraerMensajeDeNegocio(ex));
+                Assert.Contains(ex.Errors.Cast<SqlError>(), e => e.Number == 50012);
+                Assert.Contains(TextoViajeNoLiquidable, MensajeError.ExtraerMensajeDeNegocio(ex));
             }
         }
 
