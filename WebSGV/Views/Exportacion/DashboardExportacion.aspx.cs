@@ -74,7 +74,7 @@ namespace WebSGV.Views.Exportacion
             object periodo = null, operacion = null;
             try
             {
-                periodo = CargarPeriodo(anio, mes);
+                periodo = DashboardExportacionService.CargarPeriodo(anio, mes);
             }
             catch (Exception ex)
             {
@@ -100,67 +100,6 @@ namespace WebSGV.Views.Exportacion
                 Formatting = Formatting.None,
             });
         }
-
-        /// <summary>Viajes de Vitapro del período y del anterior en una consulta, con cuántas de sus horas puso el GPS.</summary>
-        private static ResumenPeriodo CargarPeriodo(int anio, int mes)
-        {
-            bool porMes = mes >= 1 && mes <= 12;
-            DateTime desde = porMes ? new DateTime(anio, mes, 1) : new DateTime(anio, 1, 1);
-            DateTime hasta = porMes ? desde.AddMonths(1) : desde.AddYears(1);
-            DateTime desdeAnt = porMes ? desde.AddMonths(-1) : desde.AddYears(-1);
-
-            string columnas = string.Join(", ", IndicadoresExportacion.ColumnasHito.Concat(new[] { "fhLlegadaAlmacen" })
-                .Distinct().Select(c => "se." + c));
-            string enLista = string.Join(", ", IndicadoresExportacion.ColumnasHito.Select(c => "'" + c + "'"));
-
-            DataTable dt = DbHelper.ConsultarTabla($@"
-                SELECT se.idSeguimiento, se.cliente, se.bodegaDescarga, se.bodegaEcuatoriana, se.carreta,
-                       se.tracto1, se.conductorOrigen, se.tracto2, se.fhProgramacion,
-                       se.sacosRobados, se.sacosRotos, se.sacosMojados, {columnas},
-                       (SELECT COUNT(*) FROM SeguimientoHito h
-                         WHERE h.idSeguimiento = se.idSeguimiento AND h.columna IN ({enLista})
-                           AND h.fuente IN ('GPS', 'ONWAY', 'GRUPO') AND h.idUsuarioCorreccion IS NULL) AS hitosGps
-                FROM SeguimientoExportacion se
-                WHERE se.activo = 1 AND se.tipoRuta IS NULL
-                  AND se.fhProgramacion >= @desdeAnt AND se.fhProgramacion < @hasta",
-                DbHelper.Param("@desdeAnt", desdeAnt),
-                DbHelper.Param("@hasta", hasta));
-
-            var viajes = dt.Rows.Cast<DataRow>().Select(Viaje).ToList();
-            return IndicadoresExportacion.Resumir(
-                viajes.Where(v => v.FhProgramacion >= desde).ToList(),
-                viajes.Where(v => v.FhProgramacion < desde).ToList(),
-                anio, mes);
-        }
-
-        private static ViajeIndicador Viaje(DataRow r)
-        {
-            var horas = IndicadoresExportacion.ColumnasHito.Concat(new[] { "fhLlegadaAlmacen" }).Distinct()
-                .ToDictionary(c => c, c => r.IsNull(c) ? (DateTime?)null : Convert.ToDateTime(r[c]), StringComparer.OrdinalIgnoreCase);
-            var v = new ViajeIndicador
-            {
-                Id = Convert.ToInt32(r["idSeguimiento"]),
-                Pedido = Texto(r, "cliente"),
-                Planta = Texto(r, "bodegaDescarga") ?? Texto(r, "bodegaEcuatoriana"),
-                Carreta = Texto(r, "carreta"),
-                Tracto1 = Texto(r, "tracto1"),
-                Chofer1 = Texto(r, "conductorOrigen"),
-                Tracto2 = Texto(r, "tracto2"),
-                FhProgramacion = Convert.ToDateTime(r["fhProgramacion"]),
-                Horas = horas,
-                SacosRobados = Entero(r, "sacosRobados"),
-                SacosRotos = Entero(r, "sacosRotos"),
-                SacosMojados = Entero(r, "sacosMojados"),
-            };
-            // Un hito del GPS sin la hora en el viaje (borrada a mano) no cuenta.
-            v.HitosGps = Math.Min(Entero(r, "hitosGps"), IndicadoresExportacion.ColumnasHito.Count(c => v.Hora(c).HasValue));
-            return v;
-        }
-
-        private static string Texto(DataRow r, string c) =>
-            r.IsNull(c) || string.IsNullOrWhiteSpace(r[c].ToString()) ? null : r[c].ToString().Trim();
-
-        private static int Entero(DataRow r, string c) => r.IsNull(c) ? 0 : Convert.ToInt32(r[c]);
 
         private void MostrarError(string mensaje)
         {

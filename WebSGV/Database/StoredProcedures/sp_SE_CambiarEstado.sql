@@ -1,5 +1,6 @@
 -- ============================================================
 -- Cierra (FINALIZADO), reabre (EN_CURSO) o anula (CANCELADO) un viaje de seguimiento.
+-- Un viaje ya CANCELADO no cambia a otro estado (B6-1).
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_SE_CambiarEstado
     @idSeguimiento INT,
@@ -15,10 +16,18 @@ BEGIN
         RETURN;
     END
 
+    -- Un viaje CANCELADO (su despacho de carga se anuló) no vuelve a EN_CURSO ni pasa a FINALIZADO: volvería a
+    -- contar en el Dashboard de exportación. La condición va en el mismo UPDATE para no depender de una lectura previa.
     UPDATE dbo.SeguimientoExportacion
     SET estado = @estado, fechaModificacion = dbo.fn_AhoraPeru(), idUsuarioModificacion = @idUsuario
-    WHERE idSeguimiento = @idSeguimiento AND activo = 1;
+    WHERE idSeguimiento = @idSeguimiento AND activo = 1
+      AND (ISNULL(estado, '') <> 'CANCELADO' OR @estado = 'CANCELADO');
 
     IF @@ROWCOUNT = 0
-        RAISERROR('El viaje ya no existe.', 16, 1);
+    BEGIN
+        IF EXISTS (SELECT 1 FROM dbo.SeguimientoExportacion WHERE idSeguimiento = @idSeguimiento AND activo = 1)
+            RAISERROR(N'Este viaje está anulado (su despacho se anuló); no se puede cerrar ni reabrir.', 16, 1);
+        ELSE
+            RAISERROR('El viaje ya no existe.', 16, 1);
+    END
 END

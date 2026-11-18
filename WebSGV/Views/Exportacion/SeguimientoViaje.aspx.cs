@@ -106,6 +106,8 @@ namespace WebSGV.Views.Exportacion
                 : "Si el tracto de carga y el de descarga son el mismo, escribe la misma placa en los dos.";
             bool cerrado = string.Equals(v.Estado, "FINALIZADO", StringComparison.OrdinalIgnoreCase);
             btnEstado.Text = cerrado ? "Reabrir viaje" : "Cerrar viaje";
+            // Un viaje anulado no se cierra ni se reabre (volvería a contar en el Dashboard de exportación).
+            btnEstado.Visible = !SeguimientoViajesService.EsAnulado(v.Estado);
 
             txtPedido.Text = v.Pedido;
             txtCarreta.Text = v.Carreta;
@@ -275,7 +277,14 @@ namespace WebSGV.Views.Exportacion
         {
             try
             {
+                // El estado de la BD, no el de la página (pudo quedar abierta antes de anularse el despacho).
                 var d = SeguimientoViajesService.ObtenerDetalle(IdSeguimiento);
+                if (d != null && SeguimientoViajesService.EsAnulado(d.Resumen.Estado))
+                {
+                    MostrarMensaje(SeguimientoViajesService.MensajeViajeAnulado, "alerta");
+                    btnEstado.Visible = false;
+                    return;
+                }
                 bool cerrado = d != null && string.Equals(d.Resumen.Estado, "FINALIZADO", StringComparison.OrdinalIgnoreCase);
                 SeguimientoViajesService.CambiarEstado(IdSeguimiento, cerrado ? "EN_CURSO" : "FINALIZADO", UsuarioActual());
                 Volver(IdSeguimiento, cerrado ? "Viaje reabierto." : "Viaje cerrado.");

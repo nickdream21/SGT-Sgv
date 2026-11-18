@@ -329,6 +329,14 @@ namespace WebSGV.Services.Exportacion
             AuditoriaHelper.Registrar("UPDATE", "SeguimientoExportacion", idSeguimiento, "Datos manuales del seguimiento (carga, descarga, sacos, retraso).");
         }
 
+        /// <summary>
+        /// Un viaje CANCELADO (su despacho de carga se anuló, sp_SE_SincronizarDespachos) no se cierra ni se reabre: si
+        /// pasara a FINALIZADO volvería a contar en el Dashboard de exportación. sp_SE_CambiarEstado lo rechaza con este texto.
+        /// </summary>
+        public const string MensajeViajeAnulado = "Este viaje está anulado (su despacho se anuló); no se puede cerrar ni reabrir.";
+
+        public static bool EsAnulado(string estado) => string.Equals((estado ?? "").Trim(), "CANCELADO", StringComparison.OrdinalIgnoreCase);
+
         public static void CambiarEstado(int idSeguimiento, string estado, int? idUsuario)
         {
             DbHelper.EjecutarNonQuerySp("sp_SE_CambiarEstado",
@@ -469,7 +477,8 @@ namespace WebSGV.Services.Exportacion
                     ('ESPERA', ISNULL(se.fhLlegadaPlantaEcuador, se.fhLlegadaAlmacen), se.fhIngreso),
                     ('DESCARGA', se.fhIngreso, se.fhSalida)
                 ) e(etapa, desde, hasta)
-                WHERE se.activo = 1 AND ISNULL(se.fhSalida, se.fhSalidaTCI) >= DATEADD(DAY, -60, dbo.fn_AhoraPeru())
+                WHERE se.activo = 1 AND ISNULL(se.estado, '') <> 'CANCELADO'
+                  AND ISNULL(se.fhSalida, se.fhSalidaTCI) >= DATEADD(DAY, -60, dbo.fn_AhoraPeru())
                   AND e.desde IS NOT NULL AND e.hasta IS NOT NULL AND DATEDIFF(MINUTE, e.desde, e.hasta) BETWEEN 0 AND 4320");
             var res = new Dictionary<string, List<double>>(StringComparer.OrdinalIgnoreCase);
             void Agregar(string k, double m)
