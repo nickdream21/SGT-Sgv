@@ -1035,6 +1035,14 @@
     <Folder Include="App_Data\" />
     <Folder Include="Controllers\" />
   </ItemGroup>
+  <!-- Candado de publicación (WPP: carpeta, FTP, Web Deploy): nunca subir los datos locales
+       (App_Data: PDFs firmados, Uploads: adjuntos) ni los .sql de Database\, que el sitio no lee.
+       Vale aunque un .pubxml local tenga ExcludeApp_Data=false. Lo fija ConfiguracionSeguridadTests. -->
+  <ItemGroup>
+    <ExcludeFromPackageFolders Include="App_Data;Uploads;Database">
+      <FromTarget>WebSGV.csproj</FromTarget>
+    </ExcludeFromPackageFolders>
+  </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="Web.Debug.config">

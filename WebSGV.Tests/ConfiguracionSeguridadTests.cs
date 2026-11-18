@@ -170,5 +170,31 @@ namespace WebSGV.Tests
             // (Global.asax lo devuelve a la página con ?aviso=archivo_grande) y no IIS con un 404.13.
             Assert.True(bytesIis > kbAspNet * 1024L, $"{ruta}: IIS ({bytesIis} bytes) debe ser mayor que ASP.NET ({kbAspNet} KB)");
         }
+
+        /// <summary>
+        /// La publicación (carpeta, FTP, Web Deploy) nunca sube los datos locales (App_Data: PDFs
+        /// firmados; Uploads: adjuntos) ni los .sql de Database\, aunque un .pubxml local diga
+        /// ExcludeApp_Data=false: el candado vive en el csproj versionado.
+        /// </summary>
+        [Fact]
+        public void PublicacionExcluyeAppDataUploadsYDatabase()
+        {
+            XDocument csproj = Cargar("WebSGV.csproj");
+            XNamespace ns = csproj.Root.Name.Namespace;
+
+            var excluidas = csproj.Descendants(ns + "ExcludeFromPackageFolders")
+                .SelectMany(e => ((string)e.Attribute("Include") ?? "").Split(';'))
+                .Select(c => c.Trim().TrimEnd('\\'))
+                .ToList();
+            foreach (string carpeta in new[] { "App_Data", "Uploads", "Database" })
+                Assert.Contains(carpeta, excluidas, StringComparer.OrdinalIgnoreCase);
+
+            var contenidoDeDatos = csproj.Descendants(ns + "Content")
+                .Select(e => (string)e.Attribute("Include") ?? "")
+                .Where(i => i.StartsWith("App_Data\\", StringComparison.OrdinalIgnoreCase)
+                         || i.StartsWith("Uploads\\", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            Assert.Empty(contenidoDeDatos);
+        }
     }
 }
