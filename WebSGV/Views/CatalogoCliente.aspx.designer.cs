@@ -57,19 +57,9 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.LinkButton lnkProductos;
 
         /// <summary>
-        /// Control litCntProductos.
-        /// </summary>
-        protected global::System.Web.UI.WebControls.Literal litCntProductos;
-
-        /// <summary>
         /// Control lnkPlantasCarga.
         /// </summary>
         protected global::System.Web.UI.WebControls.LinkButton lnkPlantasCarga;
-
-        /// <summary>
-        /// Control litCntCarga.
-        /// </summary>
-        protected global::System.Web.UI.WebControls.Literal litCntCarga;
 
         /// <summary>
         /// Control lnkPlantasDescarga.
@@ -77,19 +67,9 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.LinkButton lnkPlantasDescarga;
 
         /// <summary>
-        /// Control litCntDescarga.
-        /// </summary>
-        protected global::System.Web.UI.WebControls.Literal litCntDescarga;
-
-        /// <summary>
         /// Control lnkRutas.
         /// </summary>
         protected global::System.Web.UI.WebControls.LinkButton lnkRutas;
-
-        /// <summary>
-        /// Control litCntRutas.
-        /// </summary>
-        protected global::System.Web.UI.WebControls.Literal litCntRutas;
 
         /// <summary>
         /// Control litEtiquetaAlta.

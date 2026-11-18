@@ -45,35 +45,23 @@
 
         <asp:Panel ID="pnlCatalogo" runat="server" Visible="false">
 
-            <!-- Pestañas de catálogo -->
+            <!-- Pestañas de catálogo: icono, nombre y contador los arma el code-behind en LinkButton.Text (B5-9) -->
             <ul class="nav nav-tabs mb-0" role="tablist">
                 <li class="nav-item">
                     <asp:LinkButton ID="lnkProductos" runat="server" CssClass="nav-link"
-                        CommandArgument="Producto" OnCommand="CambiarTab_Command" CausesValidation="false">
-                        <i class="fas fa-box mr-1"></i>Productos
-                        <span class="badge badge-light ml-1"><asp:Literal ID="litCntProductos" runat="server" Text="0" /></span>
-                    </asp:LinkButton>
+                        CommandArgument="Producto" OnCommand="CambiarTab_Command" CausesValidation="false" />
                 </li>
                 <li class="nav-item">
                     <asp:LinkButton ID="lnkPlantasCarga" runat="server" CssClass="nav-link"
-                        CommandArgument="PlantaCarga" OnCommand="CambiarTab_Command" CausesValidation="false">
-                        <i class="fas fa-truck-loading mr-1"></i>Plantas de carga
-                        <span class="badge badge-light ml-1"><asp:Literal ID="litCntCarga" runat="server" Text="0" /></span>
-                    </asp:LinkButton>
+                        CommandArgument="PlantaCarga" OnCommand="CambiarTab_Command" CausesValidation="false" />
                 </li>
                 <li class="nav-item">
                     <asp:LinkButton ID="lnkPlantasDescarga" runat="server" CssClass="nav-link"
-                        CommandArgument="PlantaDescarga" OnCommand="CambiarTab_Command" CausesValidation="false">
-                        <i class="fas fa-dolly mr-1"></i>Plantas de descarga
-                        <span class="badge badge-light ml-1"><asp:Literal ID="litCntDescarga" runat="server" Text="0" /></span>
-                    </asp:LinkButton>
+                        CommandArgument="PlantaDescarga" OnCommand="CambiarTab_Command" CausesValidation="false" />
                 </li>
                 <li class="nav-item">
                     <asp:LinkButton ID="lnkRutas" runat="server" CssClass="nav-link"
-                        CommandArgument="Ruta" OnCommand="CambiarTab_Command" CausesValidation="false">
-                        <i class="fas fa-route mr-1"></i>Rutas
-                        <span class="badge badge-light ml-1"><asp:Literal ID="litCntRutas" runat="server" Text="0" /></span>
-                    </asp:LinkButton>
+                        CommandArgument="Ruta" OnCommand="CambiarTab_Command" CausesValidation="false" />
                 </li>
             </ul>
 

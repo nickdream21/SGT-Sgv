@@ -88,6 +88,13 @@ namespace WebSGV.Views
                 return;
             }
 
+            // Si la consulta de conteos falla, las pestañas siguen mostrando su nombre (contador 0) en vez de quedar vacías.
+            var sinConteos = new Dictionary<TipoCatalogo, int>();
+            PintarTab(lnkProductos, TipoCatalogo.Producto, sinConteos);
+            PintarTab(lnkPlantasCarga, TipoCatalogo.PlantaCarga, sinConteos);
+            PintarTab(lnkPlantasDescarga, TipoCatalogo.PlantaDescarga, sinConteos);
+            PintarTab(lnkRutas, TipoCatalogo.Ruta, sinConteos);
+
             try
             {
                 ActualizarEstadoTabs(idCliente);
@@ -104,15 +111,12 @@ namespace WebSGV.Views
         {
             Dictionary<TipoCatalogo, int> conteos = CatalogoClienteService.ContarActivos(idCliente);
 
-            litCntProductos.Text = conteos[TipoCatalogo.Producto].ToString();
-            litCntCarga.Text = conteos[TipoCatalogo.PlantaCarga].ToString();
-            litCntDescarga.Text = conteos[TipoCatalogo.PlantaDescarga].ToString();
-            litCntRutas.Text = conteos[TipoCatalogo.Ruta].ToString();
-
-            lnkProductos.CssClass = ClaseTab(TipoCatalogo.Producto);
-            lnkPlantasCarga.CssClass = ClaseTab(TipoCatalogo.PlantaCarga);
-            lnkPlantasDescarga.CssClass = ClaseTab(TipoCatalogo.PlantaDescarga);
-            lnkRutas.CssClass = ClaseTab(TipoCatalogo.Ruta);
+            // B5-9: el contenido de cada pestaña se arma aquí y va en LinkButton.Text (que guarda ViewState). Con
+            // controles hijos en el markup, el LoadViewState del LinkButton los borraba en el postback de cambio de pestaña.
+            PintarTab(lnkProductos, TipoCatalogo.Producto, conteos);
+            PintarTab(lnkPlantasCarga, TipoCatalogo.PlantaCarga, conteos);
+            PintarTab(lnkPlantasDescarga, TipoCatalogo.PlantaDescarga, conteos);
+            PintarTab(lnkRutas, TipoCatalogo.Ruta, conteos);
 
             int total = 0;
             foreach (int cantidad in conteos.Values) total += cantidad;
@@ -126,6 +130,12 @@ namespace WebSGV.Views
             // Las rutas generales (sin cliente) las ven todos los clientes: editarlas o desactivarlas aquí cambia
             // la ruta para todos (B5-5). Se avisa en la pestaña de Rutas en vez de cambiar el modelo.
             pnlNotaRutas.Visible = CatalogoClienteService.PermiteSinCliente(TabActual);
+        }
+
+        private void PintarTab(LinkButton tab, TipoCatalogo tipo, Dictionary<TipoCatalogo, int> conteos)
+        {
+            tab.Text = CatalogoClienteService.TextoPestana(tipo, conteos.TryGetValue(tipo, out int n) ? n : 0);
+            tab.CssClass = ClaseTab(tipo);
         }
 
         private string ClaseTab(TipoCatalogo tipo) =>
