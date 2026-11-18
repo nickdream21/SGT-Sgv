@@ -8,9 +8,16 @@
 --     sobrescriben y los vacíos NO borran lo que ya había.
 --   - Si no existe, se inserta.
 --   - Si la llave se repite dentro del mismo Excel, gana la última fila.
+-- Solo se emparejan viajes importados (origen IS NULL). Un viaje que viene de despachos
+-- (origen = 'DESPACHO') o que se creó a mano ('MANUAL') NO se toca (estado, hitos GPS):
+-- si una fila del Excel no tiene viaje importado y coincide con uno de esos (misma llave, o
+-- mismo tracto1 y mismo día de programación aunque cambie el pedido o la hora, o mismo pedido
+-- no vacío y misma programación exacta distinta de las 00:00 aunque cambie la placa), se omite
+-- (ni se actualiza ni se crea un duplicado) y se cuenta en "omitidos" (B6-3, decisión D2).
 -- Las fechas llegan ya validadas desde C# (FechaHoraExcel); aquí no se interpreta nada.
 --
--- Devuelve una fila: insertados, actualizados, duplicadosEnArchivo.
+-- Devuelve una fila: insertados, actualizados, duplicadosEnArchivo, omitidos
+-- (el C# las lee por nombre: agregar columnas al final no rompe una versión anterior).
 -- =============================================================================
 CREATE OR ALTER PROCEDURE dbo.sp_SE_ImportarLote
     @filas      dbo.TipoSeguimientoImportacion READONLY,
@@ -35,17 +42,46 @@ BEGIN
 
     DECLARE @duplicados INT = (SELECT COUNT(*) FROM @filas) - (SELECT COUNT(*) FROM #lote);
 
-    -- Emparejar con lo existente (si hubiera varios activos con la misma llave, el menor id)
-    ALTER TABLE #lote ADD idExistente INT NULL;
+    -- Emparejar con lo importado antes (si hubiera varios activos con la misma llave, el menor id)
+    ALTER TABLE #lote ADD idExistente INT NULL, omitido BIT NULL;
 
     UPDATE l SET idExistente = (
         SELECT MIN(se.idSeguimiento)
         FROM SeguimientoExportacion se
         WHERE se.activo = 1
+          AND se.origen IS NULL
           AND ISNULL(se.cliente, '') = ISNULL(l.cliente, '')
           AND ISNULL(se.tracto1, '') = ISNULL(l.tracto1, '')
           AND se.fhProgramacion = l.fhProgramacion)
     FROM #lote l;
+
+    -- Llave sin viaje importado pero con uno de despachos o creado a mano: no se toca ni se duplica.
+    -- Basta el mismo tracto y el mismo DÍA de programación: el Excel suele traer otro pedido (o
+    -- vacío) y otra hora que el viaje de despachos (que guarda la programación a las 00:00), y un
+    -- viaje de exportación dura días, así que el mismo tracto no programa dos viajes el mismo día.
+    UPDATE l SET omitido = 1
+    FROM #lote l
+    WHERE l.idExistente IS NULL
+      AND EXISTS (SELECT 1
+                  FROM SeguimientoExportacion se
+                  WHERE se.activo = 1
+                    AND se.origen IS NOT NULL
+                    AND (    (    ISNULL(se.cliente, '') = ISNULL(l.cliente, '')
+                              AND ISNULL(se.tracto1, '') = ISNULL(l.tracto1, '')
+                              AND se.fhProgramacion = l.fhProgramacion)
+                          OR (    ISNULL(l.tracto1, '') <> ''
+                              AND se.tracto1 = l.tracto1
+                              AND CAST(se.fhProgramacion AS DATE) = CAST(l.fhProgramacion AS DATE))
+                          -- Mismo pedido y misma hora exacta (los camiones de un pedido salen cada
+                          -- pocos minutos): cubre la placa mal tipeada en el Excel (F60-779 / F6O-779).
+                          -- No a las 00:00: en despachos todos los camiones del pedido llevan 00:00 y
+                          -- se omitiría un camión real distinto.
+                          OR (    ISNULL(l.cliente, '') <> ''
+                              AND CAST(l.fhProgramacion AS TIME) <> '00:00'
+                              AND se.cliente = l.cliente
+                              AND se.fhProgramacion = l.fhProgramacion)));
+
+    DECLARE @omitidos INT = (SELECT COUNT(*) FROM #lote WHERE omitido = 1);
 
     BEGIN TRAN;
 
@@ -116,12 +152,14 @@ BEGIN
         l.motivoRetraso, 0, 0, 0,
         ISNULL(l.estado, 'EN_CURSO'), @idUsuario, @ahora, 1
     FROM #lote l
-    WHERE l.idExistente IS NULL;
+    WHERE l.idExistente IS NULL
+      AND l.omitido IS NULL;
 
     DECLARE @insertados INT = @@ROWCOUNT;
 
     COMMIT;
 
-    SELECT @insertados AS insertados, @actualizados AS actualizados, @duplicados AS duplicadosEnArchivo;
+    SELECT @insertados AS insertados, @actualizados AS actualizados, @duplicados AS duplicadosEnArchivo,
+           @omitidos AS omitidos;
 END
 GO

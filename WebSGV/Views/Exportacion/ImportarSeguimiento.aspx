@@ -7,7 +7,7 @@
         <div class="sgv-encabezado">
             <div>
                 <h2>Importar seguimiento desde Excel</h2>
-                <p>Para cargar el STATUS GENERAL o la plantilla. Las filas que ya existen (pedido + tracto + programación) se actualizan, no se duplican.</p>
+                <p>Para cargar el STATUS GENERAL o la plantilla. Las filas que ya existen (pedido + tracto + programación) se actualizan, no se duplican. Los viajes que vienen de despachos o se crearon a mano no se modifican.</p>
             </div>
             <a href="RegistroSeguimiento.aspx" class="sx-btn">← Volver al tablero</a>
         </div>
@@ -25,8 +25,8 @@
                 <div id="zonaArchivo" class="sx-zona-archivo" role="button" tabindex="0">
                     <i class="fas fa-file-excel" aria-hidden="true" style="font-size: 1.75rem; color: #15803d;"></i>
                     <h4>Arrastra el archivo aquí o haz clic para elegirlo</h4>
-                    <span class="sx-nota">.xlsx o .xls, hasta 10 MB</span>
-                    <asp:FileUpload ID="fileExcel" runat="server" CssClass="d-none" accept=".xlsx,.xls" />
+                    <span class="sx-nota">Solo .xlsx, hasta 10 MB (un .xls antiguo: ábralo en Excel y guárdelo como .xlsx)</span>
+                    <asp:FileUpload ID="fileExcel" runat="server" CssClass="d-none" accept=".xlsx" />
                     <div id="infoArchivo" class="sx-nota" style="margin-top: 0.75rem;">Ningún archivo seleccionado</div>
                 </div>
                 <div class="sx-barra-acciones">

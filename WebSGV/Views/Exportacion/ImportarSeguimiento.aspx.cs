@@ -24,6 +24,7 @@ namespace WebSGV.Views.Exportacion
         // Contadores de la última importación masiva (se reinician en cada importación)
         private int _importInsertados   = 0;
         private int _importActualizados = 0;
+        private int _importOmitidos     = 0;   // viajes de despachos o creados a mano (no se tocan)
 
         // ── Mapa Excel → Columna lógica (case-insensitive, busca por contiene)
         // Clave = nombre lógico interno; Valor = lista de fragmentos que aceptamos.
@@ -83,25 +84,25 @@ namespace WebSGV.Views.Exportacion
                 return;
             }
 
-            string ext = Path.GetExtension(fileExcel.FileName).ToLowerInvariant();
-            if (ext != ".xlsx" && ext != ".xls")
+            // Solo .xlsx de verdad (firma ZIP "PK") y hasta 10 MB: ClosedXML no abre el .xls antiguo.
+            var archivo = fileExcel.PostedFile;
+            string errorArchivo = LimitesImportacionSeguimiento.ValidarArchivo(
+                archivo.FileName, archivo.ContentLength, ArchivoSubidoHelper.LeerCabecera(archivo.InputStream));
+            if (errorArchivo != null)
             {
-                MostrarAlerta("Solo se aceptan archivos .xlsx o .xls", "warning");
-                return;
-            }
-            if (fileExcel.PostedFile.ContentLength > 10 * 1024 * 1024)
-            {
-                MostrarAlerta("El archivo supera el límite de 10MB.", "warning");
+                MostrarAlerta(errorArchivo, "warning");
                 return;
             }
 
-            string tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ext);
+            string tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + LimitesImportacionSeguimiento.Extension);
             try
             {
                 fileExcel.SaveAs(tempPath);
                 int filas = ProcesarExcel(tempPath);
 
                 string resumen = $"Importación finalizada: {_importInsertados} nuevo(s) · {_importActualizados} actualizado(s) · {filas} fila(s) leída(s).";
+                if (_importOmitidos > 0)
+                    resumen += $" {_importOmitidos} fila(s) omitida(s): ese viaje ya viene de despachos o se creó a mano, y no se modificó.";
                 if (_duplicadosEnArchivo > 0)
                     resumen += $" {_duplicadosEnArchivo} fila(s) repetían pedido + tracto + programación: se tomó la última.";
                 if (_filasSinProgramacion > 0)
@@ -114,6 +115,11 @@ namespace WebSGV.Views.Exportacion
 
                 pnlReporteImportacion.Visible = _rechazadas.Count > 0;
                 litReporteImportacion.Text = _rechazadas.Count > 0 ? ReporteRechazadasHtml(40) : string.Empty;
+            }
+            catch (ErrorNegocioException ex)
+            {
+                // Rechazo con motivo (topes, columnas que faltan, archivo dañado): aviso, no error.
+                MostrarAlerta(MensajeErrorHelper.ParaUsuario(ex), "warning");
             }
             catch (Exception ex)
             {
@@ -346,10 +352,64 @@ namespace WebSGV.Views.Exportacion
         /// </summary>
         private int ProcesarExcel(string path)
         {
+            DataTable tabla = LeerExcel(path);
+
+            if (tabla.Rows.Count > 0)
+            {
+                using (var conn = new SqlConnection(ConnStr))
+                using (var cmd = new SqlCommand("sp_SE_ImportarLote", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandTimeout = 300;
+                    var p = cmd.Parameters.Add("@filas", SqlDbType.Structured);
+                    p.TypeName = "dbo.TipoSeguimientoImportacion";
+                    p.Value = tabla;
+                    cmd.Parameters.Add("@idUsuario", SqlDbType.Int).Value = (object)ObtenerIdUsuarioSesion() ?? DBNull.Value;
+
+                    conn.Open();
+                    using (var rd = cmd.ExecuteReader())
+                    {
+                        if (rd.Read())
+                        {
+                            _importInsertados    = Convert.ToInt32(rd["insertados"]);
+                            _importActualizados  = Convert.ToInt32(rd["actualizados"]);
+                            _duplicadosEnArchivo = Convert.ToInt32(rd["duplicadosEnArchivo"]);
+                            _importOmitidos      = Convert.ToInt32(rd["omitidos"]);
+                        }
+                    }
+                }
+            }
+
+            try
+            {
+                AuditoriaHelper.Registrar(
+                    accion: "IMPORT",
+                    tablaAfectada: "SeguimientoExportacion",
+                    idRegistroAfectado: "BULK",
+                    descripcion: $"Importación Excel: {_importInsertados} nuevos, {_importActualizados} actualizados, " +
+                                 $"{_importOmitidos} omitidos (de despachos o creados a mano), " +
+                                 $"{_filasSinProgramacion} sin F.H. PROGRAMACION, {_rechazadas.Count} celdas ilegibles.");
+            }
+            catch { /* No bloquear */ }
+
+            return tabla.Rows.Count;
+        }
+
+        /// <summary>
+        /// Lee el Excel y arma la tabla para sp_SE_ImportarLote, sin tocar la BD. Llena los
+        /// contadores de celdas ilegibles, filas sin programación y fechas deducidas.
+        /// </summary>
+        private DataTable LeerExcel(string path)
+        {
             _rechazadas.Clear();
             _filasSinProgramacion = 0;
             _duplicadosEnArchivo = 0;
             _fechasDeducidas = 0;
+
+            // ClosedXML carga el libro entero al abrirlo: un .xlsx muy comprimido se frena antes.
+            string errorContenido = LimitesImportacionSeguimiento.ValidarDescomprimido(path);
+            if (errorContenido != null)
+                throw new ErrorNegocioException(errorContenido);
 
             using (var workbook = new XLWorkbook(path))
             {
@@ -366,6 +426,11 @@ namespace WebSGV.Views.Exportacion
 
                 int rows = ultimaCelda.Address.RowNumber;
                 int cols = ultimaCelda.Address.ColumnNumber;
+
+                // Tope antes de recorrer la hoja (un .xlsx muy comprimido puede declarar miles de filas).
+                string errorDimension = LimitesImportacionSeguimiento.ValidarDimensiones(rows, cols);
+                if (errorDimension != null)
+                    throw new ErrorNegocioException(errorDimension);
 
                 // Detectar fila de headers (puede estar en fila 1 o más abajo si hay título)
                 int headerRow = DetectarFilaHeaders(ws, rows, cols);
@@ -514,43 +579,7 @@ namespace WebSGV.Views.Exportacion
                     tabla.Rows.Add(fila);
                 }
 
-                if (tabla.Rows.Count > 0)
-                {
-                    using (var conn = new SqlConnection(ConnStr))
-                    using (var cmd = new SqlCommand("sp_SE_ImportarLote", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.CommandTimeout = 300;
-                        var p = cmd.Parameters.Add("@filas", SqlDbType.Structured);
-                        p.TypeName = "dbo.TipoSeguimientoImportacion";
-                        p.Value = tabla;
-                        cmd.Parameters.Add("@idUsuario", SqlDbType.Int).Value = (object)ObtenerIdUsuarioSesion() ?? DBNull.Value;
-
-                        conn.Open();
-                        using (var rd = cmd.ExecuteReader())
-                        {
-                            if (rd.Read())
-                            {
-                                _importInsertados   = Convert.ToInt32(rd["insertados"]);
-                                _importActualizados = Convert.ToInt32(rd["actualizados"]);
-                                _duplicadosEnArchivo = Convert.ToInt32(rd["duplicadosEnArchivo"]);
-                            }
-                        }
-                    }
-                }
-
-                try
-                {
-                    AuditoriaHelper.Registrar(
-                        accion: "IMPORT",
-                        tablaAfectada: "SeguimientoExportacion",
-                        idRegistroAfectado: "BULK",
-                        descripcion: $"Importación Excel: {_importInsertados} nuevos, {_importActualizados} actualizados, " +
-                                     $"{_filasSinProgramacion} sin F.H. PROGRAMACION, {_rechazadas.Count} celdas ilegibles.");
-                }
-                catch { /* No bloquear */ }
-
-                return tabla.Rows.Count;
+                return tabla;
             }
         }
 
