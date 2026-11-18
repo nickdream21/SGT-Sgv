@@ -5,6 +5,8 @@ using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Common;
+using WebSGV.Services.Usuarios;
 
 namespace WebSGV.Views
 {
@@ -119,15 +121,19 @@ namespace WebSGV.Views
 
         protected void gvUsuarios_RowCommand(object sender, GridViewCommandEventArgs e)
         {
-            int idUsuario = Convert.ToInt32(e.CommandArgument);
+            if (e.CommandName == "ToggleActivo")
+            {
+                CambiarEstadoUsuario(e.CommandArgument);
+                return;
+            }
+
+            if (!int.TryParse(Convert.ToString(e.CommandArgument), out int idUsuario) || idUsuario <= 0)
+                return;
 
             switch (e.CommandName)
             {
                 case "EditarUsuario":
                     CargarUsuarioEnModal(idUsuario);
-                    break;
-                case "ToggleActivo":
-                    ToggleEstadoUsuario(idUsuario);
                     break;
                 case "ResetPassword":
                     PrepararResetPassword(idUsuario);
@@ -169,45 +175,34 @@ namespace WebSGV.Views
             AbrirModal("modalUsuario");
         }
 
-        private void ToggleEstadoUsuario(int idUsuario)
+        /// <summary>
+        /// Activar/desactivar con estado destino explícito "id|0" / "id|1" (B5-8, como B5-3 en los maestros): un F5
+        /// o una segunda pestaña ya no reactiva al usuario recién desactivado. El sello de sesión se renueva solo si
+        /// el estado cambia de verdad.
+        /// </summary>
+        private void CambiarEstadoUsuario(object argumento)
         {
-            if (idUsuario == SecurityHelper.ObtenerIdUsuario())
+            if (!EstadoActivoService.TryLeerArgumento(argumento, out int idUsuario, out bool nuevoActivo))
             {
-                MostrarMensaje("No puedes desactivar tu propia cuenta.", "warning");
+                MostrarMensaje("No se pudo leer la fila; recargue la página.", "warning");
                 CargarUsuarios();
                 return;
             }
 
-            DataTable cambio = DbHelper.ConsultarTabla(
-                // OUTPUT ... INTO: un OUTPUT sin INTO falla (error 334) si Usuarios llega a tener triggers.
-                @"DECLARE @cambio TABLE (activoAntes BIT, activoDespues BIT);
-                  UPDATE Usuarios SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END, selloSesion = NEWID()
-                  OUTPUT deleted.activo, inserted.activo INTO @cambio (activoAntes, activoDespues)
-                  WHERE idUsuario = @id;
-                  SELECT activoAntes, activoDespues FROM @cambio;",
-                DbHelper.Param("@id", idUsuario));
-            // Nuevo sello: las sesiones abiertas del usuario se cierran en su próxima petición.
-            SesionVigenteHelper.InvalidarCache(idUsuario);
-
-            if (cambio.Rows.Count == 0)
+            try
             {
-                MostrarMensaje("El usuario ya no existe. Actualice la lista.", "warning");
-                CargarUsuarios();
-                return;
+                ResultadoCambioEstado r = UsuarioEstadoService.CambiarEstado(idUsuario, nuevoActivo, SesionHelper.IdUsuarioActual);
+                MostrarMensaje(r.Mensaje, r.Cambiado ? "success" : "warning");
             }
-
-            bool activoAntes   = cambio.Rows[0]["activoAntes"] != DBNull.Value && Convert.ToBoolean(cambio.Rows[0]["activoAntes"]);
-            bool activoDespues = cambio.Rows[0]["activoDespues"] != DBNull.Value && Convert.ToBoolean(cambio.Rows[0]["activoDespues"]);
-            AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario,
-                activoDespues ? "Usuario activado" : "Usuario desactivado",
-                JsonEstadoActivo(activoAntes), JsonEstadoActivo(activoDespues));
-            MostrarMensaje("Estado del usuario actualizado correctamente.", "success");
+            catch (Exception ex)
+            {
+                MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex), "warning");
+            }
             CargarUsuarios();
         }
 
-        /// <summary>Valores de auditoría del estado activo: <c>{"activo":1}</c> / <c>{"activo":0}</c>.</summary>
-        internal static string JsonEstadoActivo(bool activo) =>
-            Newtonsoft.Json.JsonConvert.SerializeObject(new { activo = activo ? 1 : 0 });
+        /// <summary>CommandArgument del botón Activar/Desactivar: "id|estadoDestino" (B5-8).</summary>
+        protected string ArgumentoEstado(object id, object activo) => EstadoActivoService.ArgumentoComando(id, activo);
 
         /// <summary>
         /// Valores nuevos que se auditan al crear un usuario. Nunca incluye la contraseña ni su hash.

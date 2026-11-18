@@ -12,7 +12,7 @@ namespace WebSGV.Services.Common
     public sealed class TablaActivable
     {
         internal TablaActivable(string tabla, string columnaId, string columnaActivo, string expresionNombre,
-            string sustantivo, bool femenino)
+            string sustantivo, bool femenino, string setAdicional = null)
         {
             Tabla = tabla;
             ColumnaId = columnaId;
@@ -20,6 +20,7 @@ namespace WebSGV.Services.Common
             ExpresionNombre = expresionNombre;
             Sustantivo = sustantivo;
             Femenino = femenino;
+            SetAdicional = setAdicional;
         }
 
         public string Tabla { get; }
@@ -30,6 +31,11 @@ namespace WebSGV.Services.Common
         /// <summary>Sustantivo en minúsculas y singular ("tracto", "estación de peaje").</summary>
         public string Sustantivo { get; }
         public bool Femenino { get; }
+        /// <summary>
+        /// Asignación SQL constante que acompaña al cambio de estado y solo se aplica si el estado cambia de
+        /// verdad (p. ej. <c>selloSesion = NEWID()</c> en Usuarios). null si no hay.
+        /// </summary>
+        internal string SetAdicional { get; }
     }
 
     /// <summary>Resultado de <see cref="EstadoActivoService.Cambiar"/>.</summary>
@@ -118,7 +124,7 @@ namespace WebSGV.Services.Common
             int filas = Convert.ToInt32(DbHelper.EjecutarEscalar(
                 $@"DECLARE @cambiadas TABLE (id INT);
                    UPDATE {t.Tabla}
-                      SET {t.ColumnaActivo} = @nuevo
+                      SET {t.ColumnaActivo} = @nuevo{(t.SetAdicional == null ? "" : ", " + t.SetAdicional)}
                    OUTPUT inserted.{t.ColumnaId} INTO @cambiadas (id)
                     WHERE {t.ColumnaId} = @id AND {t.ColumnaActivo} <> @nuevo;
                    SELECT COUNT(*) FROM @cambiadas;",

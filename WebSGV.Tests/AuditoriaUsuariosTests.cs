@@ -15,14 +15,6 @@ namespace WebSGV.Tests
     /// </summary>
     public class AuditoriaUsuariosTests
     {
-        [Theory]
-        [InlineData(true, "{\"activo\":1}")]
-        [InlineData(false, "{\"activo\":0}")]
-        public void JsonEstadoActivo_EsUnoOCero(bool activo, string esperado)
-        {
-            Assert.Equal(esperado, GestionUsuarios.JsonEstadoActivo(activo));
-        }
-
         [Fact]
         public void JsonUsuarioNuevo_EscapaComillasYConservaTildes()
         {

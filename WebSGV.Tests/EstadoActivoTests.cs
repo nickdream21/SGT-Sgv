@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using WebSGV.Services.Clientes;
 using WebSGV.Services.Common;
+using WebSGV.Services.Usuarios;
 using Xunit;
 
 namespace WebSGV.Tests
@@ -101,6 +102,26 @@ namespace WebSGV.Tests
             Assert.Equal(femenino, CatalogoClienteService.EsFemenino(tipo));
         }
 
+        [Fact]
+        public void Usuarios_renuevan_el_sello_de_sesion_en_el_mismo_update()
+        {
+            // B5-8: el sello solo se renueva junto con el cambio real de estado (WHERE activo <> @nuevo)
+            TablaActivable t = UsuarioEstadoService.TablaUsuarios;
+            Assert.Equal("Usuarios", t.Tabla);
+            Assert.Equal("usuario", t.Sustantivo);
+            Assert.False(t.Femenino);
+            Assert.Equal("selloSesion = NEWID()", t.SetAdicional);
+            Assert.Null(MaestrosService.Tabla(MaestroSimple.Planta).SetAdicional);
+        }
+
+        [Fact]
+        public void Nadie_se_desactiva_a_si_mismo()
+        {
+            // Se rechaza antes de tocar la BD
+            var ex = Assert.Throws<ErrorNegocioException>(() => UsuarioEstadoService.CambiarEstado(42, false, 42));
+            Assert.Equal("No puedes desactivar tu propia cuenta.", ex.Message);
+        }
+
         // ── Código fuente de las pantallas ───────────────────────────────
 
         private static string RaizWeb()
@@ -142,6 +163,20 @@ namespace WebSGV.Tests
             Assert.Contains("MensajeHtml.Texto(mensaje)", cs);
             Assert.Contains("SGV.pnlErrorModal", js);
             Assert.DoesNotContain("msgPanel.querySelector('.alert-danger')", js);
+        }
+
+        [Fact]
+        public void GestionUsuarios_no_invierte_el_estado_a_ciegas()
+        {
+            // B5-8: con F5 o dos pestañas se reactivaba al usuario recién desactivado
+            string raiz = RaizWeb();
+            string cs = File.ReadAllText(Path.Combine(raiz, "Views", "GestionUsuarios.aspx.cs"));
+            string aspx = File.ReadAllText(Path.Combine(raiz, "Views", "GestionUsuarios.aspx"));
+
+            Assert.DoesNotContain("THEN 0 ELSE 1 END", cs);
+            Assert.Contains("EstadoActivoService.TryLeerArgumento(", cs);
+            Assert.Contains("UsuarioEstadoService.CambiarEstado(", cs);
+            Assert.Contains("CommandName=\"ToggleActivo\" CommandArgument='<%# ArgumentoEstado(", aspx);
         }
     }
 }

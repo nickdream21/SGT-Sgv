@@ -923,6 +923,7 @@
     <Compile Include="Services\Clientes\CatalogoClienteService.cs" />
     <Compile Include="Services\Vehiculos\PlacaVehiculo.cs" />
     <Compile Include="Services\Vehiculos\VehiculoService.cs" />
+    <Compile Include="Services\Usuarios\UsuarioEstadoService.cs" />
     <Compile Include="Views\RegistroClientes.aspx.cs">
       <DependentUpon>RegistroClientes.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

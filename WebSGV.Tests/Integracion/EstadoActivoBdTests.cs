@@ -4,6 +4,7 @@ using WebSGV.Helpers;
 using WebSGV.Services.Clientes;
 using WebSGV.Services.Common;
 using WebSGV.Services.Conductor;
+using WebSGV.Services.Usuarios;
 using WebSGV.Services.Vehiculos;
 using Xunit;
 
@@ -133,6 +134,64 @@ namespace WebSGV.Tests.Integracion
             }
         }
 
+        private static int CrearUsuario(string nombreUsuario) =>
+            Convert.ToInt32(DbHelper.EjecutarEscalar(
+                @"INSERT INTO Usuarios (nombreUsuario, nombre, contrasena, rol, activo)
+                  OUTPUT INSERTED.idUsuario
+                  VALUES (@user, 'Prueba B5-8', 'x', 'OPERADOR', 1)",
+                DbHelper.Param("@user", nombreUsuario)));
+
+        private static Guid Sello(int idUsuario) =>
+            (Guid)DbHelper.EjecutarEscalar("SELECT selloSesion FROM Usuarios WHERE idUsuario = @id",
+                DbHelper.Param("@id", idUsuario));
+
+        [FactBD]
+        public void Desactivar_dos_veces_un_usuario_renueva_el_sello_y_audita_una_sola_vez()
+        {
+            using (new TransaccionDePrueba())
+            {
+                string nombre = "zz_b58_" + Guid.NewGuid().ToString("N").Substring(0, 10);
+                int id = CrearUsuario(nombre);
+                int otroAdmin = CrearUsuario(nombre + "_a");
+                Guid selloInicial = Sello(id);
+
+                ResultadoCambioEstado primero = UsuarioEstadoService.CambiarEstado(id, false, otroAdmin);
+                Assert.True(primero.Cambiado);
+                Assert.Equal($"Usuario {nombre} desactivado correctamente.", primero.Mensaje);
+                Assert.False(Activo("Usuarios", "idUsuario", "activo", id));
+                Guid selloDesactivado = Sello(id);
+                Assert.NotEqual(selloInicial, selloDesactivado);   // sus sesiones abiertas se cierran
+                Assert.False(SesionVigenteHelper.LeerEstadoDeBd(id).Activo);
+
+                // F5 o segunda pestaña: antes lo reactivaba
+                ResultadoCambioEstado segundo = UsuarioEstadoService.CambiarEstado(id, false, otroAdmin);
+                Assert.False(segundo.Cambiado);
+                Assert.Equal("El usuario ya estaba inactivo; se actualizó la lista.", segundo.Mensaje);
+                Assert.False(Activo("Usuarios", "idUsuario", "activo", id));
+                Assert.Equal(selloDesactivado, Sello(id));          // sin cambio real no se renueva
+
+                DataTable aud = AuditoriasDeEstado("Usuarios", id);
+                Assert.Equal(1, aud.Rows.Count);
+                Assert.Equal("Estado: Activo", aud.Rows[0]["ValoresAnteriores"]);
+                Assert.Equal("Estado: Inactivo", aud.Rows[0]["ValoresNuevos"]);
+                Assert.Equal($"Usuario {nombre} desactivado", aud.Rows[0]["Descripcion"]);
+
+                // Reactivar también renueva el sello y se audita
+                Assert.True(UsuarioEstadoService.CambiarEstado(id, true, otroAdmin).Cambiado);
+                Assert.True(Activo("Usuarios", "idUsuario", "activo", id));
+                Assert.NotEqual(selloDesactivado, Sello(id));
+                Assert.Equal(2, AuditoriasDeEstado("Usuarios", id).Rows.Count);
+
+                // Error al final: nadie se desactiva a sí mismo; no toca la fila ni audita
+                Guid selloActual = Sello(id);
+                var ex = Assert.Throws<ErrorNegocioException>(() => UsuarioEstadoService.CambiarEstado(id, false, id));
+                Assert.Equal(UsuarioEstadoService.MensajeAutodesactivacion, ex.Message);
+                Assert.True(Activo("Usuarios", "idUsuario", "activo", id));
+                Assert.Equal(selloActual, Sello(id));
+                Assert.Equal(2, AuditoriasDeEstado("Usuarios", id).Rows.Count);
+            }
+        }
+
         [FactBD]
         public void Maestro_que_ya_no_existe_avisa_sin_auditar()
         {
@@ -146,6 +205,8 @@ namespace WebSGV.Tests.Integracion
 
                 Assert.Throws<ErrorNegocioException>(
                     () => MaestrosService.CambiarEstado(MaestroSimple.EstacionPeaje, int.MaxValue, true));
+                Assert.Throws<ErrorNegocioException>(
+                    () => UsuarioEstadoService.CambiarEstado(int.MaxValue, false, 1));
             }
         }
     }
