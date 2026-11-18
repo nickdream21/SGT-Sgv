@@ -44,7 +44,10 @@ namespace WebSGV.Helpers
         /// <summary>Roles autorizados para aprobar, rechazar o corregir liquidaciones.</summary>
         public static bool PuedeGestionarLiquidaciones() => EsAdminOSupervisor();
 
-        /// <summary>Roles con consulta global de liquidaciones (sin limitar por conductor).</summary>
+        /// <summary>
+        /// Roles que pueden listar liquidaciones APROBADO de todos los conductores. CONTABILIDAD
+        /// solo ve APROBADO: para una orden por id usar <c>AccesoLiquidacion.PuedeConsultar</c>.
+        /// </summary>
         public static bool PuedeConsultarLiquidacionesGlobales() =>
             EsAdminOSupervisor() || EsContabilidad();
 

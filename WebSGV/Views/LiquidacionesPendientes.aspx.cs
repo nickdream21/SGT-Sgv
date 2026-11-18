@@ -31,18 +31,9 @@ namespace WebSGV.Views
 
         private static bool PuedeConsultarOrden(int idOrdenViaje)
         {
-            if (!SecurityHelper.TieneSesionActiva() || idOrdenViaje <= 0)
-                return false;
-
-            if (SecurityHelper.PuedeConsultarLiquidacionesGlobales())
-                return true;
-
-            if (!SecurityHelper.EsConductor())
-                return false;
-
-            int idUsuario = SecurityHelper.ObtenerIdUsuario();
-            return idUsuario > 0 &&
-                LiquidacionesPendientesService.OrdenPerteneceAUsuarioConductor(idOrdenViaje, idUsuario);
+            // Regla única (B6-6): CONTABILIDAD solo ve APROBADO; el conductor, las suyas.
+            return SecurityHelper.TieneSesionActiva() &&
+                AccesoLiquidacion.PuedeConsultar(idOrdenViaje, SecurityHelper.ObtenerIdUsuario(), SecurityHelper.ObtenerRol());
         }
 
         // Los DTO DetalleLiquidacion, DetallePeajeItem, DetalleGenericoItem e ItemAdicional
@@ -619,7 +610,8 @@ namespace WebSGV.Views
         public static List<LiquidacionPorConformarItem> ObtenerLiquidacionesPorConformar(int idConductor)
         {
             var lista = new List<LiquidacionPorConformarItem>();
-            if (!SecurityHelper.TieneSesionActiva() || !SecurityHelper.PuedeConsultarLiquidacionesGlobales() || idConductor < 0)
+            // Sin CONTABILIDAD: solo ve liquidaciones APROBADO (B6-6, D3).
+            if (!SecurityHelper.TieneSesionActiva() || !AccesoLiquidacion.VeTodasLasOrdenes(SecurityHelper.ObtenerRol()) || idConductor < 0)
                 return lista;
 
             DateTime ahora = FechaHelper.Ahora();

@@ -15,8 +15,10 @@ namespace WebSGV.Views
     ///       firma = una versión anterior de la misma orden (p. ej. la declaración del conductor).
     ///
     /// Permisos:
-    ///   - Roles que consultan liquidaciones: cualquier orden.
+    ///   - Administración y SUPERVISOR: cualquier orden.
+    ///   - CONTABILIDAD: solo las APROBADO.
     ///   - CONDUCTOR: sólo las suyas.
+    ///   (ver <see cref="AccesoLiquidacion"/>)
     /// </summary>
     public partial class DescargarPdfOrdenViaje : Page
     {
@@ -89,16 +91,10 @@ namespace WebSGV.Views
             }
         }
 
-        private static bool UsuarioPuedeVerOrden(int idUsuario, int idOrdenViaje)
-        {
-            if (SecurityHelper.PuedeConsultarLiquidacionesGlobales())
-                return true;
-
-            if (!SecurityHelper.EsConductor())
-                return false;
-
-            return LiquidacionesPendientesService.OrdenPerteneceAUsuarioConductor(idOrdenViaje, idUsuario);
-        }
+        // Regla única (B6-6): CONTABILIDAD solo APROBADO; el conductor, las suyas. Una orden
+        // inexistente da el mismo 403 que una no permitida.
+        private static bool UsuarioPuedeVerOrden(int idUsuario, int idOrdenViaje) =>
+            AccesoLiquidacion.PuedeConsultar(idOrdenViaje, idUsuario, SecurityHelper.ObtenerRol());
 
         private void EscribirError(int statusCode, string mensaje)
         {
