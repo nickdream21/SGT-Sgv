@@ -12,8 +12,8 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 using WebSGV.Services.Common;
-using WebSGV.Models;
 using WebSGV.Services.Conductor;
+using WebSGV.Services.Consultas;
 
 namespace WebSGV.Views
 {
@@ -311,28 +311,28 @@ namespace WebSGV.Views
         }
 
         [WebMethod(EnableSession = true)]
-        public static DniResponse BuscarPorDNI(string numero)
+        public static RespuestaConsultaDocumento BuscarPorDNI(string numero)
         {
             // Los WebMethods no pasan por Page_Load: sin esto era un proxy público de consultas DNI.
-            if (!SecurityHelper.TieneSesionActiva() || !RolesHelper.TienePermiso("REGISTRO_CONDUCTORES"))
-                return new DniResponse { error = true, message = "Acceso no autorizado." };
+            if (!SecurityHelper.TieneSesionActiva())
+                return RespuestaConsultaDocumento.Error("Su sesión expiró; vuelva a iniciar sesión.");
+            if (!RolesHelper.TienePermiso("REGISTRO_CONDUCTORES"))
+                return RespuestaConsultaDocumento.Error("Acceso no autorizado.");
 
-            // El DNI peruano son 8 dígitos; evita inyectar parámetros en la URL de la API externa.
-            if (string.IsNullOrWhiteSpace(numero) || !System.Text.RegularExpressions.Regex.IsMatch(numero.Trim(), "^[0-9]{8}$"))
-                return new DniResponse { error = true, message = "El DNI debe tener 8 dígitos." };
-
+            // B5-6: la consulta la hace el servidor con el token de appSettings.Secrets.config (antes iba en el .js).
+            // El servicio valida los 8 dígitos (no se inyecta nada en la URL de la API externa), avisa si el DNI
+            // ya está registrado (misma comparación que el alta) y aplica el límite por sesión antes de gastar cuota.
             try
             {
-                return DniService.ConsultarPorDNI(numero.Trim());
+                var limite = LimiteConsultasSesion.DeSesionActual();
+                return ConsultaDocumentoService.DesdeConfiguracion().BuscarDni(numero,
+                    dni => RegistroConductorService.BuscarDuplicado(DocumentoConductor.NormalizarDni(dni), null,
+                        RegistroConductorService.ObtenerDocumentos()),
+                    () => limite != null && limite.Permitir());
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al consultar el DNI");
-                return new DniResponse
-                {
-                    error = true,
-                    message = "No se pudo consultar el DNI. Intente nuevamente."
-                };
+                return RespuestaConsultaDocumento.Error(MensajeErrorHelper.ParaUsuario(ex));
             }
         }
     }

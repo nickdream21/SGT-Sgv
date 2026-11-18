@@ -281,7 +281,9 @@
             pnlMensaje: '<%= pnlMensaje.ClientID %>',
             pnlErrorModal: '<%= pnlErrorModal.ClientID %>',
             txtRUC: '<%= txtRUC.ClientID %>',
-            txtNombre: '<%= txtNombre.ClientID %>'
+            btnBuscarRUC: '<%= btnBuscarRUC.ClientID %>',
+            txtNombre: '<%= txtNombre.ClientID %>',
+            txtDireccion: '<%= txtDireccion.ClientID %>'
         });
     </script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/RegistroClientes.js") %>"></script>

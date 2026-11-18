@@ -32,22 +32,37 @@ function filtrarTabla(valor, id) {
     filas.forEach(function (f, i) { if (i > 0) f.style.display = f.textContent.toLowerCase().includes(valor) ? '' : 'none'; });
 }
 
-async function buscarPorDNI() {
-    const dni = document.getElementById(SGV.txtDNI).value.trim();
-    const token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6Im1vcmFucGFsYWNpb3NhbGVtYmVydEBnbWFpbC5jb20ifQ.-nOvFy3s-JXWGF6IoEeJU1NtSrGXhM6sL3msay8eKRI';
-    if (dni.length !== 8) { alert('El DNI debe tener 8 dígitos.'); return; }
-    try {
-        const resp = await fetch('https://dniruc.apisperu.com/api/v1/dni/' + dni + '?token=' + token);
-        if (!resp.ok) throw new Error();
-        const data = await resp.json();
-        if (data.nombres) {
-            document.getElementById(SGV.txtNombres).value = data.nombres;
-            document.getElementById(SGV.txtApellidoPaterno).value = data.apellidoPaterno;
-            document.getElementById(SGV.txtApellidoMaterno).value = data.apellidoMaterno;
+// B5-6: la consulta la hace el servidor (BuscarPorDNI); el token de la API ya no está en este archivo.
+var consultandoDni = false;
+function buscarPorDNI() {
+    var dni = document.getElementById(SGV.txtDNI).value.trim();
+    if (!/^\d{8}$/.test(dni)) { SGV.avisar('El DNI debe tener 8 dígitos.'); return; }
+    if (consultandoDni) return;
+    consultandoDni = true;
+    var boton = document.getElementById(SGV.btnBuscarDNI);
+    if (boton) boton.disabled = true;
+    $.ajax({
+        type: 'POST',
+        url: 'RegistroChoferes.aspx/BuscarPorDNI',
+        data: JSON.stringify({ numero: dni }),
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json'
+    }).done(function (resp) {
+        var r = resp && resp.d;
+        if (r && r.exito) {
+            document.getElementById(SGV.txtNombres).value = r.nombres || '';
+            document.getElementById(SGV.txtApellidoPaterno).value = r.apellidoPaterno || '';
+            document.getElementById(SGV.txtApellidoMaterno).value = r.apellidoMaterno || '';
+            SGV.avisar('✅ Datos del DNI cargados; revíselos antes de registrar.');
         } else {
-            alert('No se encontró información para el DNI ingresado. Ingréselo manualmente.');
+            SGV.avisar((r && r.mensaje) || 'No se pudo consultar el DNI; complete los datos a mano.');
         }
-    } catch { alert('Error al consultar el DNI.'); }
+    }).fail(function () {
+        SGV.avisar('No se pudo consultar el DNI; complete los datos a mano.');
+    }).always(function () {
+        consultandoDni = false;
+        if (boton) boton.disabled = false;
+    });
 }
 
 function mostrarCampoDocumento() {

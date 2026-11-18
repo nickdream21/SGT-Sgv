@@ -37,18 +37,38 @@ function filtrarTabla(valor, id) {
     filas.forEach(function (f, i) { if (i > 0) f.style.display = f.textContent.toLowerCase().includes(valor) ? '' : 'none'; });
 }
 
-async function verificarRUC() {
-    const ruc = document.getElementById(SGV.txtRUC).value.trim();
-    const token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6Im1vcmFucGFsYWNpb3NhbGVtYmVydEBnbWFpbC5jb20ifQ.-nOvFy3s-JXWGF6IoEeJU1NtSrGXhM6sL3msay8eKRI';
-    if (!ruc) { alert('Debe ingresar un RUC para verificar.'); return; }
-    if (ruc.length !== 11) { alert('El RUC debe tener 11 dígitos.'); return; }
-    try {
-        const resp = await fetch('https://dniruc.apisperu.com/api/v1/ruc/' + ruc + '?token=' + token);
-        if (!resp.ok) throw new Error();
-        const data = await resp.json();
-        if (data.razonSocial)
-            document.getElementById(SGV.txtNombre).value = data.razonSocial;
-        else
-            alert('No se encontró información para el RUC ingresado. Ingrese el nombre manualmente.');
-    } catch { alert('Error al consultar el RUC.'); }
+// B5-6: la consulta la hace el servidor (BuscarPorRuc); el token de la API ya no está en este archivo.
+var consultandoRuc = false;
+function verificarRUC() {
+    var ruc = document.getElementById(SGV.txtRUC).value.trim();
+    if (!ruc) { SGV.avisar('Debe ingresar un RUC para verificar.'); return; }
+    if (!/^\d{11}$/.test(ruc)) { SGV.avisar('El RUC debe tener 11 dígitos.'); return; }
+    if (consultandoRuc) return;
+    consultandoRuc = true;
+    var boton = document.getElementById(SGV.btnBuscarRUC);
+    if (boton) boton.disabled = true;
+    $.ajax({
+        type: 'POST',
+        url: 'RegistroClientes.aspx/BuscarPorRuc',
+        data: JSON.stringify({ numero: ruc }),
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json'
+    }).done(function (resp) {
+        var r = resp && resp.d;
+        if (r && r.exito) {
+            document.getElementById(SGV.txtNombre).value = r.razonSocial || '';
+            // La dirección fiscal solo se propone si el campo está vacío: no pisa lo que ya escribió el usuario.
+            var direccion = document.getElementById(SGV.txtDireccion);
+            if (direccion && !direccion.value.trim() && r.direccion)
+                direccion.value = r.direccion.substring(0, direccion.maxLength > 0 ? direccion.maxLength : r.direccion.length);
+            SGV.avisar('✅ Datos del RUC cargados; revíselos antes de registrar.');
+        } else {
+            SGV.avisar((r && r.mensaje) || 'No se pudo consultar el RUC; complete los datos a mano.');
+        }
+    }).fail(function () {
+        SGV.avisar('No se pudo consultar el RUC; complete los datos a mano.');
+    }).always(function () {
+        consultandoRuc = false;
+        if (boton) boton.disabled = false;
+    });
 }

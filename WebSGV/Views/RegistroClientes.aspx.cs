@@ -3,13 +3,17 @@ using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Text.RegularExpressions;
+using System.Web.Script.Services;
+using System.Web.Services;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 using WebSGV.Services.Common;
+using WebSGV.Services.Consultas;
 
 namespace WebSGV.Views
 {
+    [ScriptService]
     public partial class RegistroClientes : PaginaBase
     {
         private const int LargoNombre = LargoColumnas.ClienteNombre;
@@ -320,6 +324,54 @@ namespace WebSGV.Views
         {
             pnlErrorModal.Visible = true;
             lblErrorModal.Text = MensajeHtml.Texto(mensaje);
+        }
+
+        /// <summary>
+        /// Botón "Verificar" del RUC (B5-6): la consulta a apisperu la hace el servidor con el token de
+        /// appSettings.Secrets.config; antes el .js llevaba el token en claro. Los WebMethods no pasan por
+        /// Page_Load, así que sesión y permiso se comprueban aquí.
+        /// </summary>
+        [WebMethod(EnableSession = true)]
+        public static RespuestaConsultaDocumento BuscarPorRuc(string numero)
+        {
+            if (!SecurityHelper.TieneSesionActiva())
+                return RespuestaConsultaDocumento.Error("Su sesión expiró; vuelva a iniciar sesión.");
+            if (!RolesHelper.TienePermiso("REGISTRO"))
+                return RespuestaConsultaDocumento.Error("Acceso no autorizado.");
+
+            // Si el RUC ya está registrado se avisa sin consultar la API (ahorra cuota); el límite por sesión
+            // se aplica justo antes de la consulta real.
+            try
+            {
+                var limite = LimiteConsultasSesion.DeSesionActual();
+                return ConsultaDocumentoService.DesdeConfiguracion().BuscarRuc(numero, ClienteConRuc,
+                    () => limite != null && limite.Permitir());
+            }
+            catch (Exception ex)
+            {
+                return RespuestaConsultaDocumento.Error(MensajeErrorHelper.ParaUsuario(ex));
+            }
+        }
+
+        /// <summary>
+        /// Aviso si ya hay un cliente (activo o inactivo) con ese RUC, con la misma comparación que la
+        /// validación de duplicado del alta (<c>ruc = @ruc</c> con el RUC recortado); null si está libre.
+        /// </summary>
+        private static string ClienteConRuc(string ruc)
+        {
+            object nombre = DbHelper.EjecutarEscalar(
+                "SELECT TOP 1 LTRIM(RTRIM(ISNULL(nombre, ''))) FROM Cliente WHERE ruc = @ruc ORDER BY idCliente",
+                DbHelper.Param("@ruc", ruc));
+            if (nombre == null || nombre == DBNull.Value) return null;
+            string texto = Convert.ToString(nombre);
+            return MensajeRucRegistrado(texto);
+        }
+
+        internal static string MensajeRucRegistrado(string nombreCliente)
+        {
+            string nombre = string.IsNullOrWhiteSpace(nombreCliente) ? "(sin nombre)" : nombreCliente.Trim();
+            // "VITAPRO S.A." ya termina en punto: no se agrega otro
+            return "Ya existe un cliente registrado con ese RUC: " + nombre + (nombre.EndsWith(".") ? "" : ".");
         }
     }
 }

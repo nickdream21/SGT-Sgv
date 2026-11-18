@@ -505,6 +505,7 @@
     <Compile Include="Helpers\ErrorAplicacionHelper.cs" />
     <Compile Include="Helpers\IpClienteHelper.cs" />
     <Compile Include="Helpers\LimiteConsultas.cs" />
+    <Compile Include="Helpers\LimiteConsultasSesion.cs" />
     <Compile Include="Helpers\JsonSeguro.cs" />
     <Compile Include="Helpers\MensajeHtml.cs" />
     <Compile Include="Helpers\DocumentoHelper.cs" />
@@ -648,8 +649,6 @@
     <Compile Include="Services\Despachos\Importacion\LectorDocumentosAduana.cs" />
     <Compile Include="Services\Despachos\Importacion\LectorGreTransportista.cs" />
     <Compile Include="Models\Liquidaciones\DetalleLiquidacionModels.cs" />
-    <Compile Include="Models\DniResponse.cs" />
-    <Compile Include="Models\DniService.cs" />
     <Compile Include="Views\AsignacionesMaquinaria.aspx.cs">
       <DependentUpon>AsignacionesMaquinaria.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -918,6 +917,7 @@
       <DependentUpon>CatalogoCliente.aspx</DependentUpon>
     </Compile>
     <Compile Include="Services\Clientes\CatalogoClienteService.cs" />
+    <Compile Include="Services\Consultas\ConsultaDocumentoService.cs" />
     <Compile Include="Services\Vehiculos\PlacaVehiculo.cs" />
     <Compile Include="Services\Vehiculos\VehiculoService.cs" />
     <Compile Include="Services\Usuarios\UsuarioEstadoService.cs" />

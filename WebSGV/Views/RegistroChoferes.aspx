@@ -255,6 +255,7 @@
             pnlMensaje: '<%= pnlMensaje.ClientID %>',
             pnlErrorModal: '<%= pnlErrorModal.ClientID %>',
             txtDNI: '<%= txtDNI.ClientID %>',
+            btnBuscarDNI: '<%= btnBuscarDNI.ClientID %>',
             txtNombres: '<%= txtNombres.ClientID %>',
             txtApellidoPaterno: '<%= txtApellidoPaterno.ClientID %>',
             txtApellidoMaterno: '<%= txtApellidoMaterno.ClientID %>',
