@@ -140,7 +140,7 @@ namespace WebSGV.Views
                 // Sin coincidencia exacta: se intenta por prefijo.
                 DataTable dtLike = DbHelper.ConsultarTabla(
                     baseSelect + " WHERE a.numeroAbastecimientoCombustible LIKE @numeroAbastecimientoLike",
-                    DbHelper.Param("@numeroAbastecimientoLike", numeroAbastecimiento + "%"));
+                    DbHelper.Param("@numeroAbastecimientoLike", DbHelper.PatronEmpieza(numeroAbastecimiento)));
 
                 if (dtLike.Rows.Count > 0)
                 {

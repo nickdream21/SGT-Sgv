@@ -103,7 +103,7 @@ namespace WebSGV.Views
             if (!string.IsNullOrEmpty(conductor))
             {
                 query.Append(" AND (c.nombre LIKE @Conductor OR c.apPaterno LIKE @Conductor OR c.DNI LIKE @Conductor)");
-                parametros.Add(DbHelper.Param("@Conductor", "%" + conductor + "%"));
+                parametros.Add(DbHelper.Param("@Conductor", DbHelper.PatronContiene(conductor)));
             }
 
             if (!string.IsNullOrEmpty(tipoAbast) && (tieneTipoAbast || tieneIdOrdenViaje))

@@ -73,13 +73,14 @@ namespace WebSGV.Services.Liquidaciones
             DbHelper.ConsultarTabla(@"
                         SELECT TOP 15
                             c.idConductor,
-                            c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '') AS nombreCompleto
+                            -- Igual que el filtro (RTRIM por columna): la sugerencia, usada o corregida como término, vuelve a encontrar al conductor.
+                            LTRIM(RTRIM(RTRIM(c.nombre) + ' ' + RTRIM(c.apPaterno) + ' ' + RTRIM(ISNULL(c.apMaterno, '')))) AS nombreCompleto
                         FROM Conductor c
                         INNER JOIN Usuarios u ON c.idConductor = u.idConductor
                         WHERE c.activo = 1
-                          AND (c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '')) LIKE @term
+                          AND (RTRIM(c.nombre) + ' ' + RTRIM(c.apPaterno) + ' ' + RTRIM(ISNULL(c.apMaterno, ''))) LIKE @term
                         ORDER BY nombreCompleto",
-                DbHelper.Param("@term", "%" + term.Trim() + "%"));
+                DbHelper.Param("@term", DbHelper.PatronContiene(term.Trim())));
 
         /// <summary>Columnas del resumen de una liquidación (bandejas de aprobadas y por conformar).</summary>
         private const string SelectResumenLiquidacion = @"
@@ -137,7 +138,7 @@ namespace WebSGV.Services.Liquidaciones
             if (!string.IsNullOrEmpty(fechaHasta))
                 query += " AND ov.fechaSalida <= @fechaHasta";
             if (!string.IsNullOrEmpty(numeroOrden))
-                query += " AND ov.numeroOrdenViaje LIKE '%' + @numeroOrden + '%'";
+                query += " AND ov.numeroOrdenViaje LIKE @numeroOrden";
 
             query += " ORDER BY ov.fechaSalida DESC";
 
@@ -149,7 +150,7 @@ namespace WebSGV.Services.Liquidaciones
             if (fh.HasValue)
                 pars.Add(DbHelper.Param("@fechaHasta", fh.Value));
             if (!string.IsNullOrEmpty(numeroOrden))
-                pars.Add(DbHelper.Param("@numeroOrden", numeroOrden));
+                pars.Add(DbHelper.Param("@numeroOrden", DbHelper.PatronContiene(numeroOrden)));
 
             return DbHelper.ConsultarTabla(query, pars.ToArray());
         }

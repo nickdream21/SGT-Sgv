@@ -59,6 +59,32 @@ namespace WebSGV.Tests.Integracion
                 string nombreCompleto = Convert.ToString(sugerido["nombreCompleto"]);
                 Assert.Equal(nombreCompleto.Trim(), nombreCompleto);
                 Assert.DoesNotContain("  ", nombreCompleto);
+
+                // B6-4: el filtro por nombre de Contabilidad encuentra con el nombre completo que sugiere el
+                // autocompletado (RTRIM por columna), y "_" / "%" ya no son comodines (antes encontraban todo).
+                Assert.True(Contiene(LiquidacionesContabilidadService.ObtenerAprobadas(0, "", nombreCompleto), "idOrdenViaje", idOrden),
+                    "Contabilidad no encontró la liquidación por el nombre completo '" + nombreCompleto + "'");
+                Assert.True(Contiene(LiquidacionesContabilidadService.ObtenerAprobadas(0, numero, nombreCompleto), "idOrdenViaje", idOrden));
+                Assert.False(Contiene(LiquidacionesContabilidadService.ObtenerAprobadas(0, "_", ""), "idOrdenViaje", idOrden), "'_' en el N° de orden");
+                Assert.False(Contiene(LiquidacionesContabilidadService.ObtenerAprobadas(0, "", "_"), "idOrdenViaje", idOrden), "'_' en el nombre");
+                Assert.False(Contiene(LiquidacionesContabilidadService.ObtenerAprobadas(0, "", "%"), "idOrdenViaje", idOrden), "'%' en el nombre");
+                Assert.DoesNotContain(LiquidacionesContabilidadService.BuscarConductoresConAprobadas("_").Rows.Cast<DataRow>(),
+                    r => Convert.ToInt32(r["idConductor"]) == datos.IdConductor);
+
+                // B6-4, Control de aprobadas: el autocompletado encuentra al conductor por su nombre completo (RTRIM
+                // por columna), y "_" no es comodín ni en el autocompletado ni en el N° de orden.
+                Assert.Contains(LiquidacionesPendientesService.BuscarConductores(nombreCompleto).Rows.Cast<DataRow>(),
+                    r => Convert.ToInt32(r["idConductor"]) == datos.IdConductor);
+                // La sugerencia sale sin el relleno de las columnas y, usada otra vez como término, vuelve a encontrarlo.
+                var sugerencia = LiquidacionesPendientesService.BuscarConductores(nombreCompleto).Rows.Cast<DataRow>()
+                    .First(r => Convert.ToInt32(r["idConductor"]) == datos.IdConductor)["nombreCompleto"].ToString();
+                Assert.DoesNotContain("  ", sugerencia);
+                Assert.Contains(LiquidacionesPendientesService.BuscarConductores(sugerencia.Substring(0, sugerencia.Length - 1)).Rows.Cast<DataRow>(),
+                    r => Convert.ToInt32(r["idConductor"]) == datos.IdConductor);
+                Assert.DoesNotContain(LiquidacionesPendientesService.BuscarConductores("_").Rows.Cast<DataRow>(),
+                    r => Convert.ToInt32(r["idConductor"]) == datos.IdConductor);
+                Assert.True(EnControlDeAprobadas(datos.IdConductor, numero.Substring(0, numero.Length - 2), idOrden), "Control de aprobadas por parte del N° de orden");
+                Assert.False(EnControlDeAprobadas(datos.IdConductor, "_", idOrden), "'_' en el N° de orden de Control de aprobadas");
             }
         }
 

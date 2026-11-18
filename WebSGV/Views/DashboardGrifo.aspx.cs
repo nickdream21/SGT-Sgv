@@ -171,7 +171,7 @@ namespace WebSGV.Views
             if (!string.IsNullOrEmpty(buscarConductor))
             {
                 query.Append(" AND (Conductor LIKE @BuscarConductor OR DNI LIKE @BuscarConductor)");
-                parametros.Add(DbHelper.Param("@BuscarConductor", $"%{buscarConductor}%"));
+                parametros.Add(DbHelper.Param("@BuscarConductor", DbHelper.PatronContiene(buscarConductor)));
             }
 
             query.Append(" ORDER BY FechaInicio DESC");
@@ -276,7 +276,7 @@ namespace WebSGV.Views
             if (!string.IsNullOrEmpty(buscar))
             {
                 query.Append(" AND (c.nombre LIKE @Buscar OR c.apPaterno LIKE @Buscar OR t.placaTracto LIKE @Buscar OR cr.placaCarreta LIKE @Buscar OR RTRIM(a.numeroAbastecimientoCombustible) LIKE @Buscar)");
-                parametros.Add(DbHelper.Param("@Buscar", $"%{buscar}%"));
+                parametros.Add(DbHelper.Param("@Buscar", DbHelper.PatronContiene(buscar)));
             }
 
             query.Append(" ORDER BY a.fechaHora DESC");

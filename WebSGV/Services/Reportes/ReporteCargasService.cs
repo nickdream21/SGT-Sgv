@@ -40,13 +40,13 @@ namespace WebSGV.Services.Reportes
             d.tipoOperacion = 'CARGA'
             AND d.fechaDespacho >= @desde AND d.fechaDespacho <= @hasta
             AND (@idCliente IS NULL OR d.idCliente = @idCliente)
-            AND (@pedido IS NULL OR d.numeroPedido LIKE @pedido + '%')
+            AND (@pedido IS NULL OR d.numeroPedido LIKE @pedido)
             AND (@texto IS NULL
-                 OR REPLACE(t.placaTracto, '-', '') LIKE '%' + REPLACE(@texto, '-', '') + '%'
-                 OR REPLACE(ca.placaCarreta, '-', '') LIKE '%' + REPLACE(@texto, '-', '') + '%'
-                 OR LTRIM(RTRIM(co.nombre)) + ' ' + LTRIM(RTRIM(co.apPaterno)) + ' ' + ISNULL(LTRIM(RTRIM(co.apMaterno)), '') LIKE '%' + @texto + '%'
-                 OR d.guiaRemitente LIKE '%' + @texto + '%'
-                 OR f.numeroFactura LIKE '%' + @texto + '%')";
+                 OR REPLACE(t.placaTracto, '-', '') LIKE @placa
+                 OR REPLACE(ca.placaCarreta, '-', '') LIKE @placa
+                 OR LTRIM(RTRIM(co.nombre)) + ' ' + LTRIM(RTRIM(co.apPaterno)) + ' ' + ISNULL(LTRIM(RTRIM(co.apMaterno)), '') LIKE @texto
+                 OR d.guiaRemitente LIKE @texto
+                 OR f.numeroFactura LIKE @texto)";
 
         private const string Joins = @"
             FROM Despachos d
@@ -102,14 +102,25 @@ namespace WebSGV.Services.Reportes
                 WHERE " + SoloVigentes + Filtro + @"
                 ORDER BY d.fechaDespacho, d.horaDespacho, d.idDespacho, dc.idDespachoCarga", Parametros(f));
 
-        private static System.Data.SqlClient.SqlParameter[] Parametros(FiltroCargas f) => new[]
+        /// <summary>
+        /// Parámetros del <see cref="Filtro"/>. Los patrones LIKE se arman aquí y buscan el texto literal
+        /// (<c>_</c>, <c>%</c> y <c>[</c> escapados, B6-4): el pedido "empieza por", el resto "contiene";
+        /// la placa se compara sin guiones de ambos lados (como antes con REPLACE en SQL).
+        /// </summary>
+        internal static System.Data.SqlClient.SqlParameter[] Parametros(FiltroCargas f)
         {
-            DbHelper.Param("@desde", f.Desde.Date),
-            DbHelper.Param("@hasta", f.Hasta.Date),
-            DbHelper.Param("@idCliente", f.IdCliente),
-            DbHelper.Param("@pedido", string.IsNullOrWhiteSpace(f.Pedido) ? null : f.Pedido.Trim()),
-            DbHelper.Param("@texto", string.IsNullOrWhiteSpace(f.Texto) ? null : f.Texto.Trim()),
-        };
+            string pedido = string.IsNullOrWhiteSpace(f.Pedido) ? null : f.Pedido.Trim();
+            string texto = string.IsNullOrWhiteSpace(f.Texto) ? null : f.Texto.Trim();
+            return new[]
+            {
+                DbHelper.Param("@desde", f.Desde.Date),
+                DbHelper.Param("@hasta", f.Hasta.Date),
+                DbHelper.Param("@idCliente", f.IdCliente),
+                DbHelper.Param("@pedido", pedido == null ? null : DbHelper.PatronEmpieza(pedido)),
+                DbHelper.Param("@texto", texto == null ? null : DbHelper.PatronContiene(texto)),
+                DbHelper.Param("@placa", texto == null ? null : DbHelper.PatronContiene(texto.Replace("-", ""))),
+            };
+        }
 
         /// <summary>Totales para las tarjetas de la página y el resumen del Excel/PDF.</summary>
         public sealed class Totales

@@ -121,7 +121,7 @@ namespace WebSGV.Views
             if (!string.IsNullOrEmpty(usuario))
             {
                 sb.Append(" AND NombreUsuario LIKE @Usuario");
-                parametros.Add(DbHelper.Param("@Usuario", "%" + usuario + "%"));
+                parametros.Add(DbHelper.Param("@Usuario", DbHelper.PatronContiene(usuario)));
             }
 
             sb.Append(" ORDER BY FechaHora DESC, IdAuditoria DESC");

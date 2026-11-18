@@ -119,7 +119,7 @@ namespace WebSGV.Services.Reportes
             if (!string.IsNullOrEmpty(buscarConductor))
             {
                 query.Append(" AND (c.nombre LIKE @BuscarConductor OR c.apPaterno LIKE @BuscarConductor OR c.DNI LIKE @BuscarConductor)");
-                parametrosViajes.Add(DbHelper.Param("@BuscarConductor", $"%{buscarConductor}%"));
+                parametrosViajes.Add(DbHelper.Param("@BuscarConductor", DbHelper.PatronContiene(buscarConductor)));
             }
 
             if (!string.IsNullOrEmpty(estadoViaje) && estadoViaje != "TODOS")

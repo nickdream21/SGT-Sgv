@@ -70,11 +70,24 @@ namespace WebSGV.Helpers
         /// </summary>
         public static string PatronContiene(string texto)
         {
-            string escapado = (texto ?? "")
+            return "%" + EscaparLike(texto) + "%";
+        }
+
+        /// <summary>
+        /// Patrón "empieza por" para <c>LIKE</c> (texto literal + <c>%</c>), con los mismos escapes que
+        /// <see cref="PatronContiene"/>. Los comodines se escapan con corchetes, así que el <c>LIKE</c> no lleva <c>ESCAPE</c>.
+        /// </summary>
+        public static string PatronEmpieza(string texto)
+        {
+            return EscaparLike(texto) + "%";
+        }
+
+        private static string EscaparLike(string texto)
+        {
+            return (texto ?? "")
                 .Replace("[", "[[]")
                 .Replace("%", "[%]")
                 .Replace("_", "[_]");
-            return "%" + escapado + "%";
         }
 
         // ------------------------------------------------------------------

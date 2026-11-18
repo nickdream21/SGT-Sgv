@@ -280,7 +280,7 @@ namespace WebSGV.Services.Exportacion
                 DbHelper.Param("@desde", f.Desde.Date),
                 DbHelper.Param("@hasta", f.Hasta.Date.AddDays(1)),
                 DbHelper.Param("@texto", texto),
-                DbHelper.Param("@like", texto == null ? null : "%" + texto + "%"),
+                DbHelper.Param("@like", texto == null ? null : DbHelper.PatronContiene(texto)),
                 DbHelper.Param("@planta", planta),
                 DbHelper.Param("@historial", f.IncluirHistorial),
                 DbHelper.Param("@cliente", string.IsNullOrWhiteSpace(f.Cliente) ? null : f.Cliente.Trim().ToUpperInvariant()),

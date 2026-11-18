@@ -45,14 +45,16 @@ namespace WebSGV.Services.Liquidaciones
                 WHERE ov.estadoAprobacion = @Aprobado
                   AND (@IdConductor <= 0 OR ov.idConductor = @IdConductor)
                   AND (@NumeroOrden = '' OR ov.numeroOrdenViaje LIKE @NumeroOrdenLike)
-                  AND (@NombreConductor = '' OR (c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, '')) LIKE @NombreConductorLike)
+                  AND (@NombreConductor = '' OR (RTRIM(c.nombre) + ' ' + RTRIM(c.apPaterno) + ' ' + RTRIM(ISNULL(c.apMaterno, ''))) LIKE @NombreConductorLike)
                 ORDER BY ov.fechaSalida DESC",
+                // RTRIM por columna (son char con relleno), igual que el autocompletado: sin esto el
+                // nombre completo que este mismo sugiere no encontraba nada. Comodines escapados (B6-4).
                 DbHelper.Param("@Aprobado",            EstadosOrden.Aprobado),
                 DbHelper.Param("@IdConductor",        idConductor),
                 DbHelper.Param("@NumeroOrden",         numeroOrden),
-                DbHelper.Param("@NumeroOrdenLike",     "%" + numeroOrden + "%"),
+                DbHelper.Param("@NumeroOrdenLike",     DbHelper.PatronContiene(numeroOrden)),
                 DbHelper.Param("@NombreConductor",     nombreConductor),
-                DbHelper.Param("@NombreConductorLike", "%" + nombreConductor + "%"));
+                DbHelper.Param("@NombreConductorLike", DbHelper.PatronContiene(nombreConductor)));
         }
 
         /// <summary>
@@ -76,7 +78,7 @@ namespace WebSGV.Services.Liquidaciones
                 WHERE nombreCompleto LIKE @Termino
                 ORDER BY nombreCompleto",
                 DbHelper.Param("@Aprobado", EstadosOrden.Aprobado),
-                DbHelper.Param("@Termino",  "%" + (termino ?? "").Trim() + "%"));
+                DbHelper.Param("@Termino",  DbHelper.PatronContiene((termino ?? "").Trim())));
         }
     }
 }
