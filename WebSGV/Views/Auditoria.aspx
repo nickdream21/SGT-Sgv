@@ -101,15 +101,15 @@
                             <label class="aud-form-label">Acción</label>
                             <asp:DropDownList ID="ddlAccion" runat="server" CssClass="form-control form-control-sm">
                                 <asp:ListItem Value="">-- Todas --</asp:ListItem>
-                                <asp:ListItem Value="INSERT">Insercion</asp:ListItem>
-                                <asp:ListItem Value="UPDATE">Actualizacion</asp:ListItem>
-                                <asp:ListItem Value="DELETE">Eliminacion</asp:ListItem>
-                                <asp:ListItem Value="LOGIN">Inicio Sesion</asp:ListItem>
-                                <asp:ListItem Value="LOGIN_FALLIDO">Login Fallido</asp:ListItem>
-                                <asp:ListItem Value="LOGOUT">Cierre Sesion</asp:ListItem>
-                                <asp:ListItem Value="APROBAR">Aprobacion</asp:ListItem>
+                                <asp:ListItem Value="INSERT">Inserción</asp:ListItem>
+                                <asp:ListItem Value="UPDATE">Actualización</asp:ListItem>
+                                <asp:ListItem Value="DELETE">Eliminación</asp:ListItem>
+                                <asp:ListItem Value="LOGIN">Inicio de sesión</asp:ListItem>
+                                <asp:ListItem Value="LOGIN_FALLIDO">Inicio de sesión fallido</asp:ListItem>
+                                <asp:ListItem Value="LOGOUT">Cierre de sesión</asp:ListItem>
+                                <asp:ListItem Value="APROBAR">Aprobación</asp:ListItem>
                                 <asp:ListItem Value="RECHAZAR">Rechazo</asp:ListItem>
-                                <asp:ListItem Value="LIQUIDAR">Liquidacion</asp:ListItem>
+                                <asp:ListItem Value="LIQUIDAR">Liquidación</asp:ListItem>
                                 <asp:ListItem Value="RETIRAR">Retiro</asp:ListItem>
                             </asp:DropDownList>
                         </div>

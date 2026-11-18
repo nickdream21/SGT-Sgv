@@ -18,7 +18,7 @@
     .\sql.ps1 "SELECT COUNT(*) FROM sys.procedures"
     .\sql.ps1 -Archivo .\Scripts\diagnostico.sql
     .\sql.ps1 "SELECT name FROM sys.tables" -Salida C:\temp\tablas.txt
-    .\sql.ps1 "SELECT OBJECT_DEFINITION(OBJECT_ID('dbo.sp_SE_Listar'))" -Texto
+    .\sql.ps1 "SELECT OBJECT_DEFINITION(OBJECT_ID('dbo.sp_SE_CambiarEstado'))" -Texto
     .\sql.ps1 "SELECT DB_NAME()" -Entorno produccion -ConfirmoProduccion
 #>
 param(

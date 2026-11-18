@@ -257,8 +257,6 @@ FROM (VALUES
     ('sp_CrearViajeProgreso'),
     ('sp_InsertarAbastecimientoCombustible'),
     ('sp_ObtenerViajesActivosParaGrifo'),
-    ('sp_SE_Insertar'),
-    ('sp_SE_Dashboard_KPIs'),
     ('sp_MQ_InsertarParteDiario'),
     ('sp_MQ_ObtenerAsignacionActiva'),
     ('GenerarNumeroOrdenViaje')

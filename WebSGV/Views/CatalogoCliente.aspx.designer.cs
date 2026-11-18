@@ -32,6 +32,11 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Label lblErrorModal;
 
         /// <summary>
+        /// Control pnlNotaRutas.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.Panel pnlNotaRutas;
+
+        /// <summary>
         /// Control lblResumen.
         /// </summary>
         protected global::System.Web.UI.WebControls.Label lblResumen;

@@ -275,9 +275,6 @@
     <Content Include="Database\StoredProcedures\sp_ObtenerPlantasPorAmbito.sql" />
     <Content Include="Database\StoredProcedures\sp_ObtenerTractosActivos.sql" />
     <Content Include="Database\StoredProcedures\sp_ObtenerViajesAbiertosConductor.sql" />
-    <Content Include="Database\StoredProcedures\sp_SE_ListarEnCurso.sql" />
-    <Content Include="Database\StoredProcedures\sp_SE_BuscarDespachosDisponibles.sql" />
-    <Content Include="Database\StoredProcedures\sp_SE_ObtenerDespachoPorId.sql" />
     <Content Include="Database\StoredProcedures\sp_ValidarDocumentosDuplicados.sql" />
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />

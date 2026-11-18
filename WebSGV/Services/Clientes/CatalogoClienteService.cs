@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using WebSGV.Helpers;
 using WebSGV.Services.Common;
 
@@ -214,24 +215,56 @@ namespace WebSGV.Services.Clientes
         }
 
         /// <summary>
-        /// ¿Ya existe una fila con ese nombre para el cliente? Se compara sin distinguir
-        /// mayúsculas ni espacios: dos productos que sólo difieren en eso son el mismo
-        /// producto escrito dos veces.
+        /// ¿Ya existe una fila con ese nombre? Se compara sin distinguir mayúsculas ni espacios: dos productos
+        /// que sólo difieren en eso son el mismo producto escrito dos veces. Productos y plantas se buscan dentro
+        /// del cliente; las rutas en toda la tabla (B5-5), porque <c>Ruta.nombre</c> es UNIQUE global y las rutas
+        /// generales (idCliente NULL) las comparten todos: filtrar por cliente dejaba pasar el duplicado y la BD
+        /// respondía con un error técnico.
         /// </summary>
         public static bool ExisteNombre(TipoCatalogo tipo, int idCliente, string nombre, int idExcluir = 0)
         {
             MetaCatalogo m = Meta(tipo);
+            string filtroCliente = m.PermiteSinCliente ? "" : "idCliente = @idCliente AND ";
 
             object valor = DbHelper.EjecutarEscalar(
                 $@"SELECT COUNT(*) FROM {m.Tabla}
-                    WHERE idCliente = @idCliente
-                      AND UPPER(LTRIM(RTRIM(nombre))) = UPPER(LTRIM(RTRIM(@nombre)))
+                    WHERE {filtroCliente}UPPER(LTRIM(RTRIM(nombre))) = UPPER(LTRIM(RTRIM(@nombre)))
                       AND {m.ColumnaId} <> @idExcluir",
                 DbHelper.Param("@idCliente", idCliente),
                 DbHelper.Param("@nombre", nombre),
                 DbHelper.Param("@idExcluir", idExcluir));
 
             return Convert.ToInt32(valor) > 0;
+        }
+
+        /// <summary>
+        /// Mensaje para un nombre repetido: "Ya existe una ruta con ese nombre." (las rutas se comparan en toda
+        /// la tabla) o "Este cliente ya tiene un producto con ese nombre." (el resto, dentro del cliente).
+        /// </summary>
+        public static string MensajeDuplicado(TipoCatalogo tipo)
+        {
+            MetaCatalogo m = Meta(tipo);
+            string articulo = m.Femenino ? "una" : "un";
+            return m.PermiteSinCliente
+                ? $"Ya existe {articulo} {m.Etiqueta} con ese nombre."
+                : $"Este cliente ya tiene {articulo} {m.Etiqueta} con ese nombre.";
+        }
+
+        /// <summary>
+        /// Ejecuta la escritura y convierte la violación de un índice único (2601/2627) en un
+        /// <see cref="ErrorNegocioException"/> con <see cref="MensajeDuplicado"/>: si otra pestaña grabó el mismo
+        /// nombre entre la comprobación y el guardado, el usuario ve un mensaje claro y no "error inesperado".
+        /// </summary>
+        private static T TraducirDuplicado<T>(TipoCatalogo tipo, Func<T> escritura)
+        {
+            try
+            {
+                return escritura();
+            }
+            catch (SqlException ex) when (ex.Number == 2601 || ex.Number == 2627)
+            {
+                throw new ErrorNegocioException(MensajeDuplicado(tipo), ex);
+            }
         }
 
         /// <summary>Agrega una fila al catálogo del cliente. Devuelve su id (para la auditoría).</summary>
@@ -241,14 +274,14 @@ namespace WebSGV.Services.Clientes
             Validar(tipo, nombre, detalle);
 
             // SCOPE_IDENTITY y no OUTPUT: si algún día la tabla tiene trigger, OUTPUT sin INTO falla
-            return Convert.ToInt32(DbHelper.EjecutarEscalar(
+            return TraducirDuplicado(tipo, () => Convert.ToInt32(DbHelper.EjecutarEscalar(
                 $@"INSERT INTO {m.Tabla} (nombre, {m.ColumnaDetalle}, idCliente, {m.ColumnaActivo}, {m.ColumnaFecha})
                    VALUES (@nombre, @detalle, @idCliente, 1, @fecha);
                    SELECT CAST(SCOPE_IDENTITY() AS INT);",
                 DbHelper.Param("@nombre", nombre.Trim()),
                 DbHelper.Param("@detalle", Opcional(detalle)),
                 DbHelper.Param("@idCliente", idCliente),
-                DbHelper.Param("@fecha", FechaHelper.Ahora())));
+                DbHelper.Param("@fecha", FechaHelper.Ahora()))));
         }
 
         /// <summary>Actualiza nombre y detalle de una fila. Devuelve las filas afectadas.</summary>
@@ -257,14 +290,14 @@ namespace WebSGV.Services.Clientes
             MetaCatalogo m = Meta(tipo);
             Validar(tipo, nombre, detalle);
 
-            return DbHelper.EjecutarNonQuery(
+            return TraducirDuplicado(tipo, () => DbHelper.EjecutarNonQuery(
                 $@"UPDATE {m.Tabla}
                       SET nombre = @nombre,
                           {m.ColumnaDetalle} = @detalle
                     WHERE {m.ColumnaId} = @idItem",
                 DbHelper.Param("@nombre", nombre.Trim()),
                 DbHelper.Param("@detalle", Opcional(detalle)),
-                DbHelper.Param("@idItem", idItem));
+                DbHelper.Param("@idItem", idItem)));
         }
 
         /// <summary>

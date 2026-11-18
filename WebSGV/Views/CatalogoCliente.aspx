@@ -36,7 +36,7 @@
                             AutoPostBack="true" OnSelectedIndexChanged="ddlCliente_SelectedIndexChanged">
                         </asp:DropDownList>
                         <small class="form-text text-muted">
-                            Cada cliente tiene sus propios productos, plantas y rutas.
+                            Cada cliente tiene sus propios productos y plantas; las rutas generales son comunes a todos.
                         </small>
                     </div>
                 </div>
@@ -79,6 +79,12 @@
 
             <div class="card shadow-sm" style="border-top-left-radius:0;border-top-right-radius:0;">
                 <div class="card-body">
+                    <%-- B5-5: las rutas "General" (sin cliente) las ven todos los clientes --%>
+                    <asp:Panel ID="pnlNotaRutas" runat="server" Visible="false" CssClass="alert alert-warning py-2 small" role="note">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Las rutas marcadas <strong>General</strong> son comunes a todos los clientes: editarlas o desactivarlas
+                        cambia la ruta para todos. El nombre de una ruta no se puede repetir, aunque la otra sea de otro cliente.
+                    </asp:Panel>
                     <div class="row">
 
                         <!-- Alta -->

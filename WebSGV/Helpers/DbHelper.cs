@@ -63,6 +63,20 @@ namespace WebSGV.Helpers
             return new SqlParameter(nombre, valor ?? DBNull.Value);
         }
 
+        /// <summary>
+        /// Patrón "contiene" para <c>LIKE</c> que busca el texto literal: escapa los comodines
+        /// <c>[</c>, <c>%</c> y <c>_</c> (el corchete primero, igual que en <c>sp_LD_ObtenerLotesRegistrados</c>)
+        /// y lo envuelve en <c>%...%</c>. Sin esto, buscar "a_b" también encontraba "axb" y "%" lo encontraba todo.
+        /// </summary>
+        public static string PatronContiene(string texto)
+        {
+            string escapado = (texto ?? "")
+                .Replace("[", "[[]")
+                .Replace("%", "[%]")
+                .Replace("_", "[_]");
+            return "%" + escapado + "%";
+        }
+
         // ------------------------------------------------------------------
         // Consultas que devuelven una tabla
         // ------------------------------------------------------------------

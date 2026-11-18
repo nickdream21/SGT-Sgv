@@ -83,7 +83,7 @@ namespace WebSGV.Views
             if (!string.IsNullOrEmpty(buscar))
             {
                 query += " AND (nombreUsuario LIKE @Buscar OR nombre LIKE @Buscar)";
-                parametros.Add(DbHelper.Param("@Buscar", "%" + buscar + "%"));
+                parametros.Add(DbHelper.Param("@Buscar", DbHelper.PatronContiene(buscar)));
             }
             if (!string.IsNullOrEmpty(rol))
             {

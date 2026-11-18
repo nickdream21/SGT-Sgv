@@ -122,6 +122,10 @@ namespace WebSGV.Views
             litEtiquetaAlta.Text = CatalogoClienteService.Etiqueta(TabActual);
             litEtiquetaDetalle.Text = etiquetaDetalle;
             litEtiquetaDetalleEditar.Text = etiquetaDetalle;
+
+            // Las rutas generales (sin cliente) las ven todos los clientes: editarlas o desactivarlas aquí cambia
+            // la ruta para todos (B5-5). Se avisa en la pestaña de Rutas en vez de cambiar el modelo.
+            pnlNotaRutas.Visible = CatalogoClienteService.PermiteSinCliente(TabActual);
         }
 
         private string ClaseTab(TipoCatalogo tipo) =>
@@ -169,7 +173,7 @@ namespace WebSGV.Views
             {
                 if (CatalogoClienteService.ExisteNombre(TabActual, idCliente, nombre))
                 {
-                    MostrarMensaje($"Este cliente ya tiene {(CatalogoClienteService.EsFemenino(TabActual) ? "una" : "un")} {CatalogoClienteService.Etiqueta(TabActual)} con ese nombre.");
+                    MostrarMensaje(CatalogoClienteService.MensajeDuplicado(TabActual));
                     return;
                 }
 
@@ -210,7 +214,7 @@ namespace WebSGV.Views
             {
                 if (CatalogoClienteService.ExisteNombre(TabActual, idCliente, nombre, idItem))
                 {
-                    MostrarErrorModal($"Este cliente ya tiene {(CatalogoClienteService.EsFemenino(TabActual) ? "otra" : "otro")} {CatalogoClienteService.Etiqueta(TabActual)} con ese nombre.");
+                    MostrarErrorModal(CatalogoClienteService.MensajeDuplicado(TabActual));
                     return;
                 }
 

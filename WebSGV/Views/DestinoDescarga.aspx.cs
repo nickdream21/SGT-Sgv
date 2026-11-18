@@ -177,9 +177,10 @@ namespace WebSGV.Views
                     case DestinoDescargaService.EstadoDestino.SinCambio: badge = "badge-secondary"; texto = "Igual"; break;
                     default: badge = "badge-danger"; texto = "Error"; break;
                 }
-                string planta = f.Planta == null ? "—"
-                    : f.PlantaAnterior != null ? $"{f.PlantaAnterior} → <strong>{H(f.Planta)}</strong>" : $"<strong>{H(f.Planta)}</strong>";
-                if (f.PlantaAnterior != null) planta = H(f.PlantaAnterior) + " → <strong>" + H(f.Planta) + "</strong>";
+                // Todo texto de la BD/Excel pasa por H (B5-5: había una rama muerta que lo escribía sin codificar)
+                string planta = f.PlantaAnterior != null ? H(f.PlantaAnterior) + " → <strong>" + H(f.Planta) + "</strong>"
+                    : f.Planta == null ? "—"
+                    : "<strong>" + H(f.Planta) + "</strong>";
 
                 sb.Append("<tr>")
                   .Append($"<td>{f.Fila}</td>")
