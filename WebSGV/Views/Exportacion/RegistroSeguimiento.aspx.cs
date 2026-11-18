@@ -122,7 +122,10 @@ namespace WebSGV.Views.Exportacion
             List<ViajeResumen> viajes;
             try
             {
-                viajes = FiltrarPorFase(SeguimientoViajesService.ListarTablero(Filtro()));
+                // Todos los filtrados, no los 500 de la tabla: un reporte no recorta en silencio (B6-2).
+                var listado = ListarParaExportar();
+                if (listado == null) return;
+                viajes = FiltrarPorFase(listado.Viajes);
             }
             catch (Exception ex)
             {
@@ -141,6 +144,13 @@ namespace WebSGV.Views.Exportacion
                 Cargar();
                 return;
             }
+            string motivoImagen = imagen ? ListadoTablero.MotivoNoImagen(viajes.Count, MaximoFilasImagen) : null;
+            if (motivoImagen != null)
+            {
+                MostrarMensaje(motivoImagen, "alerta");
+                Cargar();
+                return;
+            }
 
             string usuario = SesionHelper.Nombre(Session);
             var reporte =
@@ -150,6 +160,26 @@ namespace WebSGV.Views.Exportacion
                     viajes.ToDictionary(v => v.Id, v => v.Status));
             string prefijo = tipo == TipoExcel.Status ? "STATUS_UNIDADES_" : tipo == TipoExcel.StatusExtra ? "STATUS_EXTRA_" : "STATUS_GENERAL_";
             Enviar(reporte, prefijo, imagen);
+        }
+
+        /// <summary>
+        /// Una sola imagen PNG de muchas filas no se lee en el celular y pasa el alto máximo de una página continua
+        /// de QuestPDF; hasta 500 (el tope de la tabla) es lo que siempre se generó.
+        /// </summary>
+        private const int MaximoFilasImagen = SeguimientoViajesService.MaximoFilasTablero;
+
+        /// <summary>
+        /// Los viajes de los filtros para un Excel o imagen, hasta <see cref="SeguimientoViajesService.MaximoFilasExportacion"/>.
+        /// Si hay más, avisa, recarga la tabla y devuelve null: no se exporta una parte.
+        /// </summary>
+        private ListadoTablero ListarParaExportar()
+        {
+            var listado = SeguimientoViajesService.ListarTableroConTotal(Filtro(), SeguimientoViajesService.MaximoFilasExportacion);
+            string motivo = listado.MotivoNoExportar();
+            if (motivo == null) return listado;
+            MostrarMensaje(motivo, "alerta");
+            Cargar();
+            return null;
         }
 
         /// <summary>Días hacia atrás (por programación) en que se buscan los carros que vuelven de Ecuador.</summary>
@@ -181,7 +211,9 @@ namespace WebSGV.Views.Exportacion
             List<ViajeResumen> enCamino;
             try
             {
-                enCamino = LlegadaEstimada.EnCaminoAPlanta(SeguimientoViajesService.ListarTablero(Filtro()));
+                var listado = ListarParaExportar();
+                if (listado == null) return;
+                enCamino = LlegadaEstimada.EnCaminoAPlanta(listado.Viajes);
             }
             catch (Exception ex)
             {
@@ -271,15 +303,21 @@ namespace WebSGV.Views.Exportacion
             }
 
             List<ViajeResumen> todos;
+            string avisoTope = null;
             try
             {
-                todos = SeguimientoViajesService.ListarTablero(Filtro());
+                // La tabla se queda en los 500 más recientes (rendimiento), pero avisa si hay más (B6-2).
+                var listado = SeguimientoViajesService.ListarTableroConTotal(Filtro(), SeguimientoViajesService.MaximoFilasTablero);
+                todos = listado.Viajes;
+                avisoTope = listado.AvisoTabla();
             }
             catch (Exception ex)
             {
                 MostrarMensaje("No se pudo cargar el tablero: " + MensajeErrorHelper.ParaUsuario(ex), "peligro");
                 todos = new List<ViajeResumen>();
             }
+            pnlTope.Visible = avisoTope != null;
+            litTope.Text = HttpUtility.HtmlEncode(avisoTope ?? "");
 
             string fase = Fase();
             rptFases.DataSource = Pestanas.Select(p => new

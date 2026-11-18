@@ -174,12 +174,65 @@ namespace WebSGV.Services.Exportacion
     }
 
     /// <summary>
+    /// Viajes del tablero hasta un tope, con cuántos cumplen los filtros: así la pantalla avisa cuando no se
+    /// muestran todos y una exportación se niega en vez de recortar en silencio (B6-2).
+    /// </summary>
+    public sealed class ListadoTablero
+    {
+        public ListadoTablero(List<ViajeResumen> viajes, int total, int maximo)
+        {
+            Viajes = viajes ?? new List<ViajeResumen>();
+            Total = Math.Max(total, Viajes.Count);
+            Maximo = maximo;
+        }
+
+        /// <summary>Los viajes traídos: los <see cref="Maximo"/> más recientes por programación.</summary>
+        public List<ViajeResumen> Viajes { get; }
+
+        /// <summary>Cuántos viajes cumplen los filtros (aunque no se hayan traído todos).</summary>
+        public int Total { get; }
+
+        public int Maximo { get; }
+
+        /// <summary>Hay viajes que cumplen los filtros y no vinieron por el tope.</summary>
+        public bool Cortado => Total > Viajes.Count;
+
+        /// <summary>Aviso para la tabla en pantalla cuando se cortó; null si están todos.</summary>
+        public string AvisoTabla() => Cortado
+            ? $"Se muestran los {Viajes.Count.ToString("N0", Cultura)} viajes más recientes de {Total.ToString("N0", Cultura)}; " +
+              "acote las fechas (o la búsqueda) para ver el resto. Las pestañas cuentan solo los que se muestran; los Excel traen todos (las imágenes, hasta 500)."
+            : null;
+
+        /// <summary>Por qué no se exporta cuando se cortó; null si están todos y se puede exportar.</summary>
+        public string MotivoNoExportar() => Cortado
+            ? $"Acote las fechas: hay {Total.ToString("N0", Cultura)} viajes con estos filtros y el máximo para exportar es {Maximo.ToString("N0", Cultura)}."
+            : null;
+
+        /// <summary>Por qué no se genera la imagen: una sola imagen de más de <paramref name="maximoImagen"/> filas no se puede leer ni generar.</summary>
+        public static string MotivoNoImagen(int filas, int maximoImagen) => filas > maximoImagen
+            ? $"La imagen admite hasta {maximoImagen.ToString("N0", Cultura)} viajes y hay {filas.ToString("N0", Cultura)}: acote las fechas o baje el Excel."
+            : null;
+
+        private static readonly System.Globalization.CultureInfo Cultura = System.Globalization.CultureInfo.GetCultureInfo("es-PE");
+    }
+
+    /// <summary>
     /// Datos del tablero y del detalle del seguimiento de exportación (SeguimientoExportacion +
     /// SeguimientoHito). Las escrituras van por los sp_SE_* y quedan en la auditoría.
     /// </summary>
     public static class SeguimientoViajesService
     {
-        private const int MaximoFilasTablero = 500;
+        /// <summary>
+        /// Tope de la tabla en pantalla y de las listas internas (GPS automático, dashboard, grifo): con "Incluir los
+        /// importados" y un año entero hay más de 2000 viajes y la página se vuelve lenta. Si se corta, la tabla avisa.
+        /// </summary>
+        public const int MaximoFilasTablero = 500;
+
+        /// <summary>
+        /// Tope de seguridad de los Excel del tablero: un reporte trae todo lo filtrado (no recorta en silencio) y por
+        /// encima de esto se niega y pide acotar las fechas. Un año de importados son ~2800 viajes (2024).
+        /// </summary>
+        public const int MaximoFilasExportacion = 20000;
 
         private static readonly string[] ColumnasHora =
             HitosSeguimiento.Todos.Select(h => h.Columna)
@@ -201,12 +254,19 @@ namespace WebSGV.Services.Exportacion
         /// Viajes del tablero: los programados en el rango de fechas y, siempre, los abiertos de los despachos o creados
         /// a mano (aunque se programaran antes), para que ninguno en curso quede fuera. Con texto, en todas las fechas.
         /// </summary>
-        public static List<ViajeResumen> ListarTablero(FiltroTablero f)
+        public static List<ViajeResumen> ListarTablero(FiltroTablero f) => ListarTableroConTotal(f, MaximoFilasTablero).Viajes;
+
+        /// <summary>
+        /// Como <see cref="ListarTablero(FiltroTablero)"/>, hasta <paramref name="maximo"/> viajes (los más recientes) y
+        /// con cuántos cumplen los filtros, contados en la misma consulta (COUNT(*) OVER antes del TOP).
+        /// </summary>
+        public static ListadoTablero ListarTableroConTotal(FiltroTablero f, int maximo)
         {
+            if (maximo < 1) throw new ArgumentOutOfRangeException(nameof(maximo));
             string texto = string.IsNullOrWhiteSpace(f.Texto) ? null : f.Texto.Trim();
             string planta = string.IsNullOrWhiteSpace(f.Planta) ? null : f.Planta.Trim().ToUpperInvariant();
             DataTable dt = DbHelper.ConsultarTabla($@"
-                SELECT TOP {MaximoFilasTablero} * FROM ({SqlBase}
+                SELECT TOP (@maximo) t.*, COUNT(*) OVER () AS {ColumnaTotal} FROM ({SqlBase}
                   AND (@texto IS NOT NULL OR COALESCE(se.fhProgramacion, se.fechaRegistro) >= @desde AND COALESCE(se.fhProgramacion, se.fechaRegistro) < @hasta
                        OR se.origen IN ('DESPACHO', 'MANUAL') AND ISNULL(se.estado, '') NOT IN ('FINALIZADO', 'CANCELADO') AND se.fhLlegadaBaseFinal IS NULL)
                   AND (@texto IS NULL OR se.cliente LIKE @like OR se.carreta LIKE @like OR se.tracto1 LIKE @like OR se.tracto2 LIKE @like
@@ -223,9 +283,15 @@ namespace WebSGV.Services.Exportacion
                 DbHelper.Param("@like", texto == null ? null : "%" + texto + "%"),
                 DbHelper.Param("@planta", planta),
                 DbHelper.Param("@historial", f.IncluirHistorial),
-                DbHelper.Param("@cliente", string.IsNullOrWhiteSpace(f.Cliente) ? null : f.Cliente.Trim().ToUpperInvariant()));
-            return dt.Rows.Cast<DataRow>().Select(Resumir).ToList();
+                DbHelper.Param("@cliente", string.IsNullOrWhiteSpace(f.Cliente) ? null : f.Cliente.Trim().ToUpperInvariant()),
+                DbHelper.Param("@maximo", maximo));
+            int total = dt.Rows.Count == 0 ? 0 : Convert.ToInt32(dt.Rows[0][ColumnaTotal]);
+            // La cuenta no es del viaje: fuera antes de que la fila llegue al STATUS GENERAL.
+            dt.Columns.Remove(ColumnaTotal);
+            return new ListadoTablero(dt.Rows.Cast<DataRow>().Select(Resumir).ToList(), total, maximo);
         }
+
+        private const string ColumnaTotal = "sgvTotalFiltrado";
 
         /// <summary>
         /// Crea los viajes que faltan a partir de los despachos de carga de exportación desde

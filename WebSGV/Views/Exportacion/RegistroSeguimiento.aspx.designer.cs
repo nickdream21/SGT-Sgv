@@ -34,6 +34,8 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.DropDownList ddlPlanta;
         protected global::System.Web.UI.WebControls.CheckBox chkHistorial;
         protected global::System.Web.UI.WebControls.Button btnFiltrar;
+        protected global::System.Web.UI.WebControls.Panel pnlTope;
+        protected global::System.Web.UI.WebControls.Literal litTope;
         protected global::System.Web.UI.WebControls.Repeater rptFases;
         protected global::System.Web.UI.WebControls.Repeater rptViajes;
         protected global::System.Web.UI.WebControls.Panel pnlVacio;

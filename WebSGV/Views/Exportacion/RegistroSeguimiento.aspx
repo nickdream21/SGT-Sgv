@@ -105,6 +105,11 @@
             <span class="sx-nota sx-filtro-cuenta" id="sxFiltroCuenta" role="status"></span>
         </div>
 
+        <%-- Con más viajes que el tope de la tabla (p. ej. "Incluir los importados" y un año entero): avisa que no están todos. --%>
+        <asp:Panel ID="pnlTope" runat="server" Visible="false" CssClass="sx-mensaje sx-mensaje-alerta" role="status">
+            <asp:Literal ID="litTope" runat="server" />
+        </asp:Panel>
+
         <div class="sgv-tabs" role="tablist" aria-label="Fase del viaje">
             <asp:Repeater ID="rptFases" runat="server" OnItemCommand="rptFases_ItemCommand">
                 <ItemTemplate>
