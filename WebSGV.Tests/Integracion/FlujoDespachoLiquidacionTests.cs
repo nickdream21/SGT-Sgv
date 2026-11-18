@@ -648,6 +648,12 @@ namespace WebSGV.Tests.Integracion
                 var exMonto = Assert.Throws<ErrorNegocioException>(() => LiquidacionConductorService.EnviarLiquidacion(input));
                 Assert.Contains("gasto adicional", exMonto.Message);
 
+                // Tres decimales (migración 51: las columnas son DECIMAL(12,2) y SQL lo redondearía sin avisar).
+                input = NuevaLiquidacion(datos, idViaje);
+                input.GastosAdicionales[0].Soles = 12.345m;
+                var exDecimales = Assert.Throws<ErrorNegocioException>(() => LiquidacionConductorService.EnviarLiquidacion(input));
+                Assert.Contains("máximo 2 decimales", exDecimales.Message);
+
                 Assert.Equal(0, Convert.ToInt32(DbHelper.EjecutarEscalar(
                     "SELECT COUNT(*) FROM OrdenViaje WHERE numeroOrdenViaje = @n", DbHelper.Param("@n", input.NumeroOrdenViaje))));
                 Assert.Equal("ABIERTO", RegistroDespachoService.ObtenerInfoViaje(idViaje).EstadoViaje);

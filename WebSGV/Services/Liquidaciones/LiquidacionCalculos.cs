@@ -30,8 +30,20 @@ namespace WebSGV.Services.Liquidaciones
                 reintS > MontoMaximoAjuste || reintD > MontoMaximoAjuste)
                 return "Los montos no pueden superar S/ 9,999,999.";
 
+            if (!TieneHastaDosDecimales(descS) || !TieneHastaDosDecimales(descD) ||
+                !TieneHastaDosDecimales(reintS) || !TieneHastaDosDecimales(reintD))
+                return MensajeDosDecimales;
+
             return null;
         }
+
+        /// <summary>
+        /// Las columnas de dinero son de 2 decimales (DECIMAL(12,2) / (18,2)): un tercer decimal lo
+        /// redondearía SQL Server sin avisar. Misma regla que <see cref="Common.MontoHelper.ValidarMonto(decimal?, string)"/>.
+        /// </summary>
+        public static bool TieneHastaDosDecimales(decimal monto) => decimal.Round(monto, 2) == monto;
+
+        internal const string MensajeDosDecimales = "Ingrese los montos con máximo 2 decimales.";
 
         /// <summary>
         /// Saldo final de la liquidación, visto desde el conductor:
@@ -73,6 +85,7 @@ namespace WebSGV.Services.Liquidaciones
             {
                 if (m < 0) return "Los montos entregados al conductor no pueden ser negativos.";
                 if (m > MontoMaximoAjuste) return "Los montos no pueden superar S/ 9,999,999.";
+                if (!TieneHastaDosDecimales(m)) return MensajeDosDecimales;
             }
             return null;
         }

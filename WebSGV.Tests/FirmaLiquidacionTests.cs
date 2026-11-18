@@ -100,6 +100,33 @@ namespace WebSGV.Tests
             Assert.Equal(HuellaLiquidacion.Calcular(a), HuellaLiquidacion.Calcular(b));
         }
 
+        /// <summary>
+        /// Migración 51 (montos FLOAT -> DECIMAL(12,2)): las liquidaciones firmadas antes se leían de
+        /// columnas FLOAT y su huella se calculó con Convert.ToDecimal(double), que "0.00" redondea
+        /// lejos de cero (0.285 -> 0.29, 2.675 -> 2.68). La migración pasa por DECIMAL(19,6) para que
+        /// la BD guarde esos mismos 0.29 y 2.68 (un CAST directo daría 0.28 y 2.67, porque el binario
+        /// de 0.285 es 0.28499999...). Así la huella releída tras la migración sigue coincidiendo
+        /// con la firmada.
+        /// </summary>
+        [Theory]
+        [InlineData(0.285d, "0.29")]
+        [InlineData(2.675d, "2.68")]
+        [InlineData(12.35d, "12.35")]
+        [InlineData(1.005d, "1.01")]
+        public void Huella_ConMontoDeFloat_IgualALaDelDecimalQueGuardaLaMigracion51(double desdeFloat, string guardado)
+        {
+            decimal enBd = decimal.Parse(guardado, System.Globalization.CultureInfo.InvariantCulture);
+
+            var antes = Liquidacion();
+            antes.DespachoSoles = System.Convert.ToDecimal(desdeFloat);
+            antes.DetallesGastosAdicionales[0].Soles = System.Convert.ToDecimal(desdeFloat);
+            var despues = Liquidacion();
+            despues.DespachoSoles = enBd;
+            despues.DetallesGastosAdicionales[0].Soles = enBd;
+
+            Assert.Equal(HuellaLiquidacion.Calcular(antes), HuellaLiquidacion.Calcular(despues));
+        }
+
         // ---------------- Motivos de los ajustes ----------------
 
         [Fact]

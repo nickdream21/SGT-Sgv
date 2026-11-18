@@ -99,6 +99,58 @@ namespace WebSGV.Tests.Integracion
         }
 
         [FactBD]
+        public void NingunaColumnaNiParametro_UsaFloatOReal()
+        {
+            // Migración 51: el dinero de la liquidación era FLOAT (12.35 se guardaba como 12.3499999...).
+            // Ninguna tabla ni SP debe volver a usar un tipo binario aproximado (float = 62, real = 59).
+            var columnas = DbHelper.ConsultarTabla(@"
+                SELECT t.name + '.' + c.name AS columna
+                FROM sys.columns c JOIN sys.tables t ON t.object_id = c.object_id
+                WHERE c.system_type_id IN (59, 62)").Rows.Cast<DataRow>().Select(r => (string)r["columna"]).ToList();
+            Assert.True(columnas.Count == 0, "Columnas float/real: " + string.Join(", ", columnas));
+
+            var parametros = DbHelper.ConsultarTabla(@"
+                SELECT OBJECT_NAME(p.object_id) + ' ' + p.name AS parametro
+                FROM sys.parameters p
+                WHERE p.system_type_id IN (59, 62)").Rows.Cast<DataRow>().Select(r => (string)r["parametro"]).ToList();
+            Assert.True(parametros.Count == 0, "Parámetros float/real: " + string.Join(", ", parametros));
+        }
+
+        [FactBD]
+        public void MontosDeLaLiquidacion_SonDecimal12_2()
+        {
+            // Migración 51: las 30 columnas de dinero de Ingresos, Egresos, IngresosAdicionales y
+            // CategoriasAdicionales, con 2 decimales como valida MontoHelper.
+            var esperadas = new Dictionary<string, string[]>
+            {
+                ["Ingresos"] = new[] { "despachoSoles", "despachoDolares", "prestamoSoles", "prestamosDolares",
+                    "mensualidadSoles", "mensualidadDolares", "otrosSoles", "otrosDolares", "totalSoles", "totalDolares" },
+                ["Egresos"] = new[] { "peajesSoles", "peajesDolares", "alimentacionSoles", "alimentacionDolares",
+                    "apoyoseguridadSoles", "apoyoseguridadDolares", "reparacionesVariosSoles", "repacionesVariosDolares",
+                    "movilidadSoles", "movilidadDolares", "encarpada_desencarpadaSoles", "encarpada_desencarpadaDolares",
+                    "hospedajeSoles", "hospedajeDolares", "combustibleSoles", "combustibleDolares" },
+                ["IngresosAdicionales"] = new[] { "soles", "dolares" },
+                ["CategoriasAdicionales"] = new[] { "soles", "dolares" }
+            };
+            Assert.Equal(30, esperadas.Sum(e => e.Value.Length));
+
+            var tipos = DbHelper.ConsultarTabla(@"
+                SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, NUMERIC_PRECISION, NUMERIC_SCALE
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME IN ('Ingresos', 'Egresos', 'IngresosAdicionales', 'CategoriasAdicionales')")
+                .Rows.Cast<DataRow>()
+                .ToDictionary(r => (string)r["TABLE_NAME"] + "." + (string)r["COLUMN_NAME"],
+                              r => r["DATA_TYPE"] + "(" + r["NUMERIC_PRECISION"] + "," + r["NUMERIC_SCALE"] + ")",
+                              StringComparer.OrdinalIgnoreCase);
+
+            var mal = esperadas.SelectMany(e => e.Value.Select(c => e.Key + "." + c))
+                .Where(c => !tipos.TryGetValue(c, out string tipo) || tipo != "decimal(12,2)")
+                .Select(c => c + " = " + (tipos.TryGetValue(c, out string tipo) ? tipo : "no existe"))
+                .ToList();
+            Assert.True(mal.Count == 0, "Montos que no son decimal(12,2): " + string.Join(", ", mal));
+        }
+
+        [FactBD]
         public void TablasDeAuditoria_TienenSusTriggersDeSoloInsercionHabilitados()
         {
             // Migración 47: si alguien los deshabilita o borra, esta prueba lo delata.

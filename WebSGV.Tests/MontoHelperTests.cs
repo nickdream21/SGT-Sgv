@@ -107,6 +107,75 @@ namespace WebSGV.Tests
             Assert.Contains("máximo", ex.Message);
         }
 
+        // Las columnas de destino son de 2 decimales (DECIMAL(12,2) desde la migración 51): un tercer
+        // decimal lo redondearía SQL Server sin avisar y lo guardado no sería lo escrito ni lo firmado.
+        [Theory]
+        [InlineData("12.345")]
+        [InlineData("0.001")]
+        [InlineData("9999998.999")]
+        public void LeerMonto_ConMasDeDosDecimales_Lanza(string entrada)
+        {
+            var ex = Assert.Throws<ErrorNegocioException>(() => MontoHelper.LeerMonto(entrada, "Peajes nacionales (S/)"));
+            Assert.Contains("máximo 2 decimales", ex.Message);
+            Assert.Contains("Peajes nacionales (S/)", ex.Message);
+        }
+
+        [Theory]
+        [InlineData("12.50", "12.50")]
+        [InlineData("12.5", "12.5")]
+        [InlineData("12.500", "12.5")]   // ceros de más no cambian el monto
+        [InlineData("0.30", "0.30")]
+        [InlineData("9999999.00", "9999999")]
+        public void LeerMonto_ConHastaDosDecimales_Acepta(string entrada, string esperado)
+        {
+            Assert.Equal(decimal.Parse(esperado, System.Globalization.CultureInfo.InvariantCulture),
+                MontoHelper.LeerMonto(entrada, "Peajes nacionales (S/)"));
+        }
+
+        [Fact]
+        public void ValidarMonto_ConMasDeDosDecimales_LanzaErrorDeNegocio()
+        {
+            // Montos que llegan por JSON (otros gastos, peajes) pasan por ValidarMonto sin LeerMonto.
+            var ex = Assert.Throws<ErrorNegocioException>(() => MontoHelper.ValidarMonto(12.345m, "soles de gasto adicional"));
+            Assert.Contains("máximo 2 decimales", ex.Message);
+            Assert.Equal(ex.Message, MensajeError.ExtraerMensajeDeNegocio(ex));
+        }
+
+        // ---- ListaDespachos «Factura y CPIC por despacho»: monto opcional con las mismas reglas ----
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public void LeerMontoOpcional_Vacio_EsSinValorYSinError(string entrada)
+        {
+            var errores = new System.Collections.Generic.List<string>();
+            Assert.Null(WebSGV.Views.ListaDespachos.LeerMontoOpcional(entrada, "Valor del flete", errores));
+            Assert.Empty(errores);
+        }
+
+        [Fact]
+        public void LeerMontoOpcional_Valido_DevuelveElMonto()
+        {
+            var errores = new System.Collections.Generic.List<string>();
+            Assert.Equal(1200.50m, WebSGV.Views.ListaDespachos.LeerMontoOpcional("1200.50", "Valor del flete", errores));
+            Assert.Empty(errores);
+        }
+
+        [Theory]
+        [InlineData("12.345", "máximo 2 decimales")]
+        [InlineData("10000000", "máximo permitido")]
+        [InlineData("-5", "negativo")]
+        [InlineData("abc", "no es un número")]
+        public void LeerMontoOpcional_Invalido_AgregaElErrorDelCampo(string entrada, string fragmento)
+        {
+            var errores = new System.Collections.Generic.List<string>();
+            Assert.Null(WebSGV.Views.ListaDespachos.LeerMontoOpcional(entrada, "Valor total de la factura", errores));
+            string error = Assert.Single(errores);
+            Assert.Contains("Valor total de la factura", error);
+            Assert.Contains(fragmento, error);
+        }
+
         [Fact]
         public void LeerMonto_Negativo_Lanza()
         {

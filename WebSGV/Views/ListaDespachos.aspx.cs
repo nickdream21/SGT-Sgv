@@ -1531,8 +1531,8 @@ namespace WebSGV.Views
                     errores.Add("El número de CPIC debe tener 7 dígitos.");
                 DateTime? fechaFactura = DateTime.TryParse(txtAsigFacturaFecha.Text, out DateTime ff) ? ff : (DateTime?)null;
                 DateTime? fechaCpic = DateTime.TryParse(txtAsigCpicFecha.Text, out DateTime fc) ? fc : (DateTime?)null;
-                decimal? valorFactura = LeerMontoOpcional(txtAsigFacturaValor.Text, "El valor de la factura no es válido.", errores);
-                decimal? flete = LeerMontoOpcional(txtAsigCpicFlete.Text, "El valor del flete no es válido.", errores);
+                decimal? valorFactura = LeerMontoOpcional(txtAsigFacturaValor.Text, "Valor total de la factura", errores);
+                decimal? flete = LeerMontoOpcional(txtAsigCpicFlete.Text, "Valor del flete", errores);
                 if (errores.Count > 0)
                 {
                     MostrarMensajeManifiesto(string.Join(" ", errores), "warning");
@@ -1568,14 +1568,20 @@ namespace WebSGV.Views
             }
         }
 
-        /// <summary>Monto opcional del formulario (vacío = null); si no es un número, agrega <paramref name="error"/>.</summary>
-        private static decimal? LeerMontoOpcional(string texto, string error, List<string> errores)
+        /// <summary>
+        /// Monto opcional del formulario (vacío = null), validado como <see cref="ValidarMontoObligatorio"/> con
+        /// <see cref="MontoHelper.LeerMonto"/>: no numérico, negativo, sobre el tope o con más de 2 decimales
+        /// agrega el error del campo (antes solo se miraba que fuera un número no negativo).
+        /// </summary>
+        internal static decimal? LeerMontoOpcional(string texto, string campo, List<string> errores)
         {
             if (string.IsNullOrWhiteSpace(texto)) return null;
-            if (decimal.TryParse(texto, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal v) && v >= 0)
-                return v;
-            errores.Add(error);
-            return null;
+            try { return MontoHelper.LeerMonto(texto, campo); }
+            catch (ErrorNegocioException ex)
+            {
+                errores.Add(ex.Message);
+                return null;
+            }
         }
 
         /// <summary>Subir el PDF de una factura o CPIC del lote, por su id (renglón de "Factura y CPIC por despacho").</summary>

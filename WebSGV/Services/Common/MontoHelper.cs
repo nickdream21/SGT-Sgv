@@ -48,7 +48,8 @@ namespace WebSGV.Services.Common
         /// A diferencia de <see cref="ParseMonto"/>, lanza <see cref="ErrorNegocioException"/>
         /// (que hereda de <see cref="InvalidOperationException"/>) en lugar de clampar: el mensaje
         /// dice qué campo falla y se puede mostrar al usuario. La excepción también deshace la
-        /// transacción en curso.
+        /// transacción en curso. Rechaza negativos, montos sobre <see cref="MontoMaximo"/> y más
+        /// de 2 decimales.
         /// </summary>
         public static decimal ValidarMonto(decimal? monto, string campo)
         {
@@ -59,6 +60,13 @@ namespace WebSGV.Services.Common
             if (valor > MontoMaximo)
                 throw new ErrorNegocioException(
                     $"El monto de «{campo}» supera el máximo permitido ({MontoMaximo.ToString("N0", CultureInfo.InvariantCulture)}).");
+            // Todas las columnas de destino son de 2 decimales (DECIMAL(12,2) en la liquidación desde la
+            // migración 51, (18,2) en factura/flete y movimientos). Un tercer decimal lo redondearía SQL
+            // Server sin avisar y lo guardado no sería lo que se escribió (ni lo que se firmó).
+            // "12.50" o "12.500" pasan: solo se rechaza un decimal distinto de cero después del segundo.
+            if (decimal.Round(valor, 2) != valor)
+                throw new ErrorNegocioException(
+                    $"Ingrese el monto de «{campo}» con máximo 2 decimales.");
             return valor;
         }
 

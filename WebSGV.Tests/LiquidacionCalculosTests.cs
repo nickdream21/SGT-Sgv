@@ -6,6 +6,36 @@ namespace WebSGV.Tests
 {
     public class LiquidacionCalculosTests
     {
+        // ---- Máximo 2 decimales (migración 51: SQL redondearía el tercero sin avisar) ----
+
+        [Theory]
+        [InlineData(12.345, 0, 0, 0)]
+        [InlineData(0, 0.001, 0, 0)]
+        [InlineData(0, 0, 0, 5.555)]
+        public void ValidarMontosAjuste_ConMasDeDosDecimales_RetornaError(double descS, double descD, double reintS, double reintD)
+        {
+            string error = LiquidacionCalculos.ValidarMontosAjuste((decimal)descS, (decimal)descD, (decimal)reintS, (decimal)reintD);
+            Assert.Contains("máximo 2 decimales", error);
+        }
+
+        [Fact]
+        public void ValidarMontosAjuste_ConDosDecimales_RetornaNull() =>
+            Assert.Null(LiquidacionCalculos.ValidarMontosAjuste(12.35m, 0.30m, 12.500m, 9999999.00m));
+
+        [Fact]
+        public void ValidarIngresosEntregados_ConMasDeDosDecimales_RetornaError()
+        {
+            var ingresos = new WebSGV.Models.Liquidaciones.IngresosEntregados { DespachoSoles = 800m, PrestamoDolares = 12.345m };
+            Assert.Contains("máximo 2 decimales", LiquidacionCalculos.ValidarIngresosEntregados(ingresos));
+        }
+
+        [Fact]
+        public void ValidarIngresosEntregados_ConDosDecimales_RetornaNull()
+        {
+            var ingresos = new WebSGV.Models.Liquidaciones.IngresosEntregados { DespachoSoles = 9999999.00m, OtrosDolares = 0.30m, MensualidadSoles = 12.50m };
+            Assert.Null(LiquidacionCalculos.ValidarIngresosEntregados(ingresos));
+        }
+
         // ---- ValidarMontosAjuste ----
 
         [Fact]
