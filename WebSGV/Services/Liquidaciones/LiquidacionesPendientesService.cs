@@ -82,6 +82,20 @@ namespace WebSGV.Services.Liquidaciones
                         ORDER BY nombreCompleto",
                 DbHelper.Param("@term", DbHelper.PatronContiene(term.Trim())));
 
+        /// <summary>
+        /// Nombre del conductor con el mismo formato de las sugerencias de <see cref="BuscarConductores"/>,
+        /// para volver a mostrarlo en el cuadro del filtro tras el postback. Vacío si no existe.
+        /// </summary>
+        public static string NombreConductor(int idConductor)
+        {
+            object nombre = DbHelper.EjecutarEscalar(@"
+                        SELECT LTRIM(RTRIM(RTRIM(c.nombre) + ' ' + RTRIM(c.apPaterno) + ' ' + RTRIM(ISNULL(c.apMaterno, ''))))
+                        FROM Conductor c
+                        WHERE c.idConductor = @idConductor",
+                DbHelper.Param("@idConductor", idConductor));
+            return nombre == null || nombre == DBNull.Value ? string.Empty : nombre.ToString();
+        }
+
         /// <summary>Columnas del resumen de una liquidación (bandejas de aprobadas y por conformar).</summary>
         private const string SelectResumenLiquidacion = @"
                         SELECT

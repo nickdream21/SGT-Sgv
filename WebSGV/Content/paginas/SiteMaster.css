@@ -111,6 +111,9 @@ input.af-shield[readonly] {
     cursor: text !important;
 }
 
+/* Mensaje del modal de confirmación (SGV.confirmar en SiteMaster.js): respeta los saltos de línea. */
+.sgv-confirmar-mensaje { white-space: pre-line; }
+
 /* Avisos no bloqueantes (SGV.avisar en SiteMaster.js) */
 .sgv-avisos {
     position: fixed;

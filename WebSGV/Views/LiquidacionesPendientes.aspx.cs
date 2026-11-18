@@ -361,6 +361,29 @@ namespace WebSGV.Views
             CargarLiquidacionesPendientes();
         }
 
+        /// <summary>
+        /// Texto del cuadro Conductor (un &lt;input&gt; sin runat): tras el postback se vuelve a poner
+        /// el nombre del conductor que está filtrando, a partir del id oculto que usa el filtro.
+        /// Solo es para mostrar: si falla la lectura, el cuadro queda vacío y el filtro sigue igual.
+        /// </summary>
+        protected string NombreConductorFiltro
+        {
+            get
+            {
+                if (!int.TryParse(hfConductorId.Value, out int id) || id <= 0)
+                    return string.Empty;
+                try
+                {
+                    return LiquidacionesPendientesService.NombreConductor(id);
+                }
+                catch (Exception ex)
+                {
+                    LogSGV.Error(ex, "No se pudo leer el nombre del conductor del filtro en LiquidacionesPendientes");
+                    return string.Empty;
+                }
+            }
+        }
+
         protected void btnLimpiar_Click(object sender, EventArgs e)
         {
             hfConductorId.Value = "";

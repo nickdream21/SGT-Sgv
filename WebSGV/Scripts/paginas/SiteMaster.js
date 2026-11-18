@@ -180,15 +180,28 @@
 
 // ── Confirmaciones no bloqueantes ───────────────────────────────────
 // Reemplazo de confirm(): el cuadro nativo detiene la página y no se puede estilar.
-//   SGV.confirmar(mensaje, alAceptar[, { titulo, textoAceptar, peligro }])
-// "peligro" pinta el botón en rojo (eliminar, rechazar, revertir). El mensaje respeta los saltos de línea.
-// Además, todo elemento con onclick="return confirm('texto');" (los OnClientClick simples de los
-// botones de servidor) usa este modal sin tocar su marcado: se intercepta el clic, se pregunta y,
-// al aceptar, se repite el clic con el onclick retirado un instante.
+//   SGV.confirmar(mensaje[, alAceptar][, { titulo, textoAceptar, peligro }]) → Promise<bool>
+// "peligro" pinta el botón en rojo (eliminar, rechazar, revertir) y deja el foco en Cancelar.
+// El mensaje respeta los saltos de línea; Esc, la X o Cancelar responden false.
+// Botones de servidor: data-confirmar="texto" (\n = salto de línea), y opcionales
+// data-confirmar-titulo, data-confirmar-aceptar y data-confirmar-peligro="true". Se cancela el
+// clic, se pregunta y, al aceptar, se repite el mismo clic: su onclick (validación, postback) y el
+// UpdatePanel siguen igual. Úsalo en vez de OnClientClick="return confirm(...)".
+// Además, todo elemento con onclick="return confirm('texto');" (los OnClientClick simples que aún
+// quedan) usa este modal sin tocar su marcado: se intercepta el clic, se pregunta y, al aceptar,
+// se repite el clic con el onclick retirado un instante.
 (function () {
     var SGV = window.SGV = window.SGV || {};
     var $modal = null;
     var alAceptarActual = null;
+    var resolverActual = null;
+    var peligroActual = false;
+
+    function responder(valor) {
+        var resolver = resolverActual;
+        resolverActual = null;
+        if (typeof resolver === 'function') resolver(valor);
+    }
 
     function construir() {
         if ($modal) return $modal;
@@ -200,9 +213,9 @@
                     '<h5 class="modal-title" id="sgvConfirmarTitulo">Confirmar</h5>' +
                     '<button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>' +
                   '</div>' +
-                  '<div class="modal-body"><p class="mb-0" id="sgvConfirmarMensaje" style="white-space:pre-line"></p></div>' +
+                  '<div class="modal-body"><p class="mb-0 sgv-confirmar-mensaje" id="sgvConfirmarMensaje"></p></div>' +
                   '<div class="modal-footer">' +
-                    '<button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancelar</button>' +
+                    '<button type="button" class="btn btn-outline-secondary" id="sgvConfirmarCancelar" data-dismiss="modal">Cancelar</button>' +
                     '<button type="button" class="btn btn-primary" id="sgvConfirmarAceptar">Aceptar</button>' +
                   '</div>' +
                 '</div>' +
@@ -213,6 +226,7 @@
             var fn = alAceptarActual;
             alAceptarActual = null;
             $modal.modal('hide');
+            responder(true);
             if (typeof fn === 'function') fn();
         });
         // Suele abrirse encima de otro modal (detalle de liquidación): Bootstrap 4 deja el segundo fondo
@@ -221,24 +235,54 @@
         $modal.on('shown.bs.modal', function () { $('.modal-backdrop').last().css('z-index', 1055); });
         $modal.on('hidden.bs.modal', function () {
             alAceptarActual = null;
+            responder(false);   // Cancelar, X o Esc (tras Aceptar ya no queda nada por responder)
             if ($('.modal.show').not($modal).length) $(document.body).addClass('modal-open');
         });
-        $modal.on('shown.bs.modal', function () { $modal.find('#sgvConfirmarAceptar').trigger('focus'); });
+        // En una acción peligrosa el foco queda en Cancelar: un Enter distraído no la ejecuta.
+        $modal.on('shown.bs.modal', function () {
+            $modal.find(peligroActual ? '#sgvConfirmarCancelar' : '#sgvConfirmarAceptar').trigger('focus');
+        });
         return $modal;
     }
 
     SGV.confirmar = function (mensaje, alAceptar, opciones) {
+        if (alAceptar && typeof alAceptar === 'object') { opciones = alAceptar; alAceptar = null; }
         opciones = opciones || {};
         var $m = construir();
+        responder(false);   // una pregunta anterior sin contestar se da por cancelada
+        peligroActual = !!opciones.peligro;
         $m.find('#sgvConfirmarTitulo').text(opciones.titulo || 'Confirmar');
         $m.find('#sgvConfirmarMensaje').text(String(mensaje == null ? '' : mensaje));
         $m.find('#sgvConfirmarAceptar')
             .text(opciones.textoAceptar || 'Aceptar')
-            .toggleClass('btn-danger', !!opciones.peligro)
-            .toggleClass('btn-primary', !opciones.peligro);
+            .toggleClass('btn-danger', peligroActual)
+            .toggleClass('btn-primary', !peligroActual);
         alAceptarActual = alAceptar;
+        var promesa = window.Promise ? new Promise(function (resolver) { resolverActual = resolver; }) : null;
         $m.modal('show');
+        return promesa;
     };
+
+    // data-confirmar en botones y enlaces (ver arriba). La marca deja pasar el clic repetido.
+    document.addEventListener('click', function (e) {
+        var el = e.target && e.target.closest ? e.target.closest('[data-confirmar]') : null;
+        if (!el) return;
+        if (el.sgvConfirmado) { el.sgvConfirmado = false; return; }
+        if (el.disabled) return;
+
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        var esPeligro = (el.getAttribute('data-confirmar-peligro') || '').toLowerCase() === 'true';
+        SGV.confirmar(el.getAttribute('data-confirmar').replace(/\\n/g, '\n'), function () {
+            el.sgvConfirmado = true;
+            try { el.click(); }
+            finally { el.sgvConfirmado = false; }
+        }, {
+            titulo: el.getAttribute('data-confirmar-titulo') || undefined,
+            textoAceptar: el.getAttribute('data-confirmar-aceptar') || (esPeligro ? 'Continuar' : 'Aceptar'),
+            peligro: esPeligro
+        });
+    }, true);
 
     // onclick="return confirm('...');" exacto, con el texto como literal de cadena simple.
     var PATRON = /^\s*return\s+confirm\(\s*(['"])((?:\\.|(?!\1)[^\\])*)\1\s*\)\s*;?\s*$/;

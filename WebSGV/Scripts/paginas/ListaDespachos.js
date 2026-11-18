@@ -50,10 +50,6 @@ function establecerFechasPorDefecto() {
     }
 }
 
-function confirmarAccion(mensaje) {
-    return confirm(mensaje);
-}
-
 function validarNumeroPedido(input) {
     var valor = input.value.replace(/[^0-9]/g, '');
     input.value = valor;

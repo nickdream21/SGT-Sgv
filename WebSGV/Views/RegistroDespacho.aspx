@@ -1019,14 +1019,19 @@
                                                             CssClass="btn btn-outline-danger btn-sm mr-2"
                                                             OnClick="btnCancelarLote_Click"
                                                             CausesValidation="false"
-                                                            OnClientClick="return confirm('¿Está seguro de cancelar este lote? Se perderán todos los datos.');" />
+                                                            data-confirmar="¿Está seguro de cancelar este lote? Se perderán todos los datos."
+                                                            data-confirmar-titulo="Cancelar lote"
+                                                            data-confirmar-aceptar="Descartar lote"
+                                                            data-confirmar-peligro="true" />
                                                         
                                                         <asp:Button ID="btnFinalizarLote" runat="server" 
                                                             Text="Finalizar lote" 
                                                             CssClass="btn btn-success btn-sm"
                                                             OnClick="btnFinalizarLote_Click"
                                                             CausesValidation="false"
-                                                            OnClientClick="return confirm('¿Finalizar lote y guardar todos los despachos?');" />
+                                                            data-confirmar="¿Finalizar lote y guardar todos los despachos?"
+                                                            data-confirmar-titulo="Finalizar lote"
+                                                            data-confirmar-aceptar="Finalizar lote" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -1401,7 +1406,9 @@
                                                                 CommandName="Quitar"
                                                                 CausesValidation="false"
                                                                 CommandArgument='<%# Container.DataItemIndex %>'
-                                                                OnClientClick="return confirm('¿Quitar este conductor del lote?');" />
+                                                                data-confirmar="¿Quitar este conductor del lote?"
+                                                                data-confirmar-aceptar="Quitar"
+                                                                data-confirmar-peligro="true" />
                                                         </ItemTemplate>
                                                     </asp:TemplateField>
                                                 </Columns>
@@ -1479,7 +1486,8 @@
                                                 CommandName="Reabrir"
                                                 CommandArgument='<%# Eval("IdViajeProgreso") %>'
                                                 Visible='<%# Eval("EstadoViaje").ToString() == "CERRADO" %>'
-                                                OnClientClick="return confirm('¿Reabrir este viaje para agregar más despachos?');" />
+                                                data-confirmar="¿Reabrir este viaje para agregar más despachos?"
+                                                data-confirmar-aceptar="Reabrir viaje" />
                                         </ItemTemplate>
                                     </asp:TemplateField>
                                 </Columns>

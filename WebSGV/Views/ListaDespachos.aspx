@@ -845,7 +845,10 @@
                                                                 CssClass="btn btn-warning"
                                                                 OnClick="btnAnularLote_Click"
                                                                 CausesValidation="false"
-                                                                OnClientClick="return confirm('¿Anular este lote?\n\nTodos sus despachos quedarán como ANULADO y saldrán de la lista, de la liquidación del conductor y del seguimiento. Un viaje que quede sin despachos también se anula.\nNo se puede anular si algún viaje del lote ya tiene liquidación del conductor.\nLos registros se conservan para auditoría.');" />
+                                                                data-confirmar="¿Anular este lote?\n\nTodos sus despachos quedarán como ANULADO y saldrán de la lista, de la liquidación del conductor y del seguimiento. Un viaje que quede sin despachos también se anula.\nNo se puede anular si algún viaje del lote ya tiene liquidación del conductor.\nLos registros se conservan para auditoría."
+                                                                data-confirmar-titulo="Anular lote"
+                                                                data-confirmar-aceptar="Anular lote"
+                                                                data-confirmar-peligro="true" />
                                                         </div>
                                                         <div class="col-md-6 text-end">
                                                             <asp:Button ID="btnGuardarCambios" runat="server" 
@@ -853,7 +856,8 @@
                                                                 CssClass="btn btn-primary"
                                                                 OnClick="btnGuardarCambios_Click"
                                                                 ValidationGroup="EdicionLote"
-                                                                OnClientClick="return confirm('¿Está seguro de aplicar estos cambios a todo el lote?');" />
+                                                                data-confirmar="¿Está seguro de aplicar estos cambios a todo el lote?"
+                                                                data-confirmar-aceptar="Guardar cambios" />
                                                         </div>
                                                     </div>
                                                 </div>

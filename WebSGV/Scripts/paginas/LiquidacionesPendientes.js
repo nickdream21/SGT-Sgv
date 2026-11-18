@@ -754,7 +754,22 @@ $(function () {
     var tab = null;
     try { tab = sessionStorage.getItem('sgvLiqTab'); sessionStorage.removeItem('sgvLiqTab'); } catch (e) { }
     if (tab === 'aprobadas') cambiarTab('aprobadas');
+    else mostrarTabActiva();
+    $(window).on('resize orientationchange', mostrarTabActiva);
 });
+
+// En el celular la tira de pestañas se desplaza de lado (sgv-base.css) y la activa podía quedar
+// fuera de la vista. Se desplaza solo la tira (nunca la página) hasta que la activa se vea entera.
+function mostrarTabActiva() {
+    var tira = document.querySelector('.sgv-tabs');
+    var activa = tira && tira.querySelector('.sgv-tab.activo');
+    if (!activa || tira.scrollWidth <= tira.clientWidth) return;
+    var margen = 16;
+    var t = activa.getBoundingClientRect();
+    var c = tira.getBoundingClientRect();
+    if (t.left < c.left) tira.scrollLeft -= (c.left - t.left) + margen;
+    else if (t.right > c.right) tira.scrollLeft += (t.right - c.right) + margen;
+}
 
 function cambiarTab(tab) {
     $('#seccionPendientes').toggle(tab === 'pendientes');
@@ -763,6 +778,7 @@ function cambiarTab(tab) {
     $('#tabPendientes').toggleClass('activo', tab === 'pendientes');
     $('#tabPorConformar').toggleClass('activo', tab === 'porConformar');
     $('#tabAprobadas').toggleClass('activo', tab === 'aprobadas');
+    mostrarTabActiva();
 
     if (tab === 'porConformar') {
         cargarLiquidacionesPorConformar();
