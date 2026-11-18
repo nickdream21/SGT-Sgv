@@ -17,8 +17,10 @@ namespace WebSGV.Views
 {
     public partial class ReportesOrdenesViaje : PaginaBase
     {
-        private static readonly string[] EstadosViajePermitidos = { "TODOS", "ABIERTO", "CERRADO" };
-        private static readonly string[] EstadosPersonalizadoPermitidos = { "TODOS", "COMPLETADO", "PENDIENTE", "RECHAZADO" };
+        // "Viajes activos" solo lista viajes ABIERTO (un viaje CERRADO ya está liquidado): sin CERRADO.
+        private static readonly string[] EstadosViajePermitidos = { "TODOS", "ABIERTO" };
+        // Estado de la liquidación (OrdenViaje.estadoAprobacion): lista blanca única en FiltroEstadoLiquidacion.
+        private static readonly string[] EstadosPersonalizadoPermitidos = FiltroEstadoLiquidacion.Permitidos.ToArray();
         private static readonly string[] OrdenesPersonalizadoPermitidas = { "fecha_desc", "fecha_asc", "conductor", "cliente" };
 
         protected void Page_Load(object sender, EventArgs e)
@@ -63,6 +65,7 @@ namespace WebSGV.Views
                 txtPersFechaDesde.Text = primerDia.ToString("yyyy-MM-dd");
                 txtPersFechaHasta.Text = hoy.ToString("yyyy-MM-dd");
                 txtPersFactor.Text = "3.75";
+                CargarEstadosPersonalizado();
                 CargarConductoresPersonalizado();
                 CargarClientesPersonalizado();
 
@@ -70,6 +73,15 @@ namespace WebSGV.Views
                 CargarLiquidaciones();
                 CargarViajesActivos();
             }
+        }
+
+        /// <summary>Combo "Estado de la liquidación": las opciones salen de la misma lista blanca que valida la exportación.</summary>
+        private void CargarEstadosPersonalizado()
+        {
+            ddlPersEstado.Items.Clear();
+            foreach (var o in FiltroEstadoLiquidacion.Opciones)
+                ddlPersEstado.Items.Add(new System.Web.UI.WebControls.ListItem(o.Value, o.Key));
+            ddlPersEstado.SelectedValue = FiltroEstadoLiquidacion.Todos;
         }
 
         private void CargarConductoresPersonalizado()
@@ -293,7 +305,8 @@ namespace WebSGV.Views
                 gvViajesActivos.DataBind();
 
                 // Actualizar contadores
-                lblTotalViajesActivos.Text = $"{dt.Rows.Count} conductores";
+                // Una fila por viaje: los conductores se cuentan por DNI (uno con dos viajes abiertos es un conductor).
+                lblTotalViajesActivos.Text = $"{dt.Rows.Cast<DataRow>().Select(r => Convert.ToString(r["DNI"])).Distinct().Count()} conductores";
                 lblCountViajesActivos.Text = dt.Rows.Count.ToString();
                 lblCountViajesActivosTabla.Text = $"{dt.Rows.Count} viajes";
             }
@@ -845,7 +858,7 @@ namespace WebSGV.Views
             Tuple.Create("destino",          "Destino",             "text"),
             Tuple.Create("cantDespachos",    "Despachos",           "text"),
             Tuple.Create("numero",           "N.° de liquidación",  "text"),
-            Tuple.Create("estado",           "Estado",              "text"),
+            Tuple.Create("estado",           "Estado de la liquidación", "text"),
             Tuple.Create("ingresosSoles",    "Ingresos S/",         "money-sol"),
             Tuple.Create("ingresosDolares",  "Ingresos US$",          "money-dol"),
             Tuple.Create("gastosSoles",      "Gastos S/",           "money-sol"),
@@ -937,9 +950,9 @@ namespace WebSGV.Views
             if (!TryParseIdentificadorNoNegativo(q["idCliente"], "Cliente", out idCliente, out errorFecha))
                 throw new ArgumentException(errorFecha);
 
-            string estado = (q["estado"] ?? "TODOS").Trim().ToUpperInvariant();
-            if (!EstadosPersonalizadoPermitidos.Contains(estado))
-                throw new ArgumentException("El estado del viaje en reporte personalizado no es válido.");
+            string estado = FiltroEstadoLiquidacion.Normalizar(q["estado"]);
+            if (estado == null || !EstadosPersonalizadoPermitidos.Contains(estado))
+                throw new ArgumentException("El estado de la liquidación del reporte personalizado no es válido.");
 
             string orden = (q["orden"] ?? "fecha_desc").Trim().ToLowerInvariant();
             if (!OrdenesPersonalizadoPermitidas.Contains(orden))
@@ -1142,7 +1155,7 @@ namespace WebSGV.Views
                 Filas = dt.Rows.Cast<DataRow>().ToList(),
                 GeneradoPor = usuario
             };
-            r.Filtros.Add($"Período: {f.FechaDesde:dd/MM/yyyy} al {f.FechaHasta:dd/MM/yyyy}  ·  Estado: {Legible(f.Estado)}");
+            r.Filtros.Add($"Período: {f.FechaDesde:dd/MM/yyyy} al {f.FechaHasta:dd/MM/yyyy}  ·  Estado de la liquidación: {FiltroEstadoLiquidacion.Etiqueta(f.Estado)}");
 
             var otros = new List<string>();
             if (f.IdConductor > 0) otros.Add("Conductor: " + NombreDeCatalogo(ReportesOrdenesViajeService.ObtenerConductoresActivos(), "idConductor", "NombreCompleto", f.IdConductor));
@@ -1167,12 +1180,13 @@ namespace WebSGV.Views
                     Titulo = c.Item2,
                     Tipo = tipo,
                     Ancho = c.Item1 == "numero" ? 1.4f
+                          : c.Item1 == "estado" ? 1.6f   // "Pendiente de revisión (administración)"
                           : tipo != TipoColumnaReporte.Texto ? 1f
                           : ColumnasTextoLargo.Contains(c.Item1) ? 2.6f : 1.8f,
                     Valor = d =>
                     {
                         object v = clave != null && d.Table.Columns.Contains(clave) ? d[clave] : null;
-                        return c.Item1 == "estado" && v != null && v != DBNull.Value ? Legible(v.ToString()) : v;
+                        return c.Item1 == "estado" && v != null && v != DBNull.Value ? FiltroEstadoLiquidacion.Etiqueta(v.ToString()) : v;
                     },
                     VerdeSiPositivo = c.Item1.StartsWith("balance") || c.Item1.StartsWith("reintegro")
                 });
@@ -1339,7 +1353,7 @@ namespace WebSGV.Views
             string estadoNormalizado = (estadoViaje ?? string.Empty).Trim().ToUpperInvariant();
             if (!EstadosViajePermitidos.Contains(estadoNormalizado))
             {
-                mensaje = "Estado del viaje inválido. Seleccione Todos, Abierto o Cerrado.";
+                mensaje = "Estado del viaje inválido. Seleccione Todos o Abierto.";
                 return false;
             }
 

@@ -264,7 +264,6 @@
                                  <asp:DropDownList ID="ddlEstadoViaje" runat="server" CssClass="form-control">
                                     <asp:ListItem Value="TODOS" Text="Todos los estados"></asp:ListItem>
                                     <asp:ListItem Value="ABIERTO" Text="Abierto" Selected="True"></asp:ListItem>
-                                    <asp:ListItem Value="CERRADO" Text="Cerrado"></asp:ListItem>
                                 </asp:DropDownList>
                                 <small id="errEstadoViaje" class="text-danger d-none"></small>
                             </div>
@@ -389,12 +388,9 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label class="form-label">Estado del viaje</label>
+                                <label class="form-label">Estado de la liquidación</label>
+                                 <%-- Opciones: FiltroEstadoLiquidacion.Opciones (CargarEstadosPersonalizado). --%>
                                  <asp:DropDownList ID="ddlPersEstado" runat="server" CssClass="form-control">
-                                    <asp:ListItem Value="TODOS" Text="Todos" Selected="True"></asp:ListItem>
-                                    <asp:ListItem Value="COMPLETADO" Text="Liquidados (Completado)"></asp:ListItem>
-                                    <asp:ListItem Value="PENDIENTE" Text="Pendientes de Aprobación"></asp:ListItem>
-                                    <asp:ListItem Value="RECHAZADO" Text="Rechazados"></asp:ListItem>
                                  </asp:DropDownList>
                                 <small id="errPersEstado" class="text-danger d-none"></small>
                             </div>
@@ -513,7 +509,7 @@
                             <label class="col-check"><input type="checkbox" class="col-pers" value="destino" checked /> Destino</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="cantDespachos" /> N° Despachos</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="numero" checked /> N° Liquidación</label>
-                            <label class="col-check"><input type="checkbox" class="col-pers" value="estado" checked /> Estado</label>
+                            <label class="col-check"><input type="checkbox" class="col-pers" value="estado" checked /> Estado de la liquidación</label>
                         </div>
                     </div>
                     <hr />
@@ -607,7 +603,7 @@
                         <div class="text-muted small">
                             <i class="fas fa-info-circle mr-1"></i>
                             El reporte se generará con los filtros y columnas seleccionadas.
-                            Se construye sobre liquidaciones aprobadas por el administrador.
+                            Incluye las liquidaciones en el estado elegido (con "Todos", en cualquier estado).
                         </div>
                         <div class="d-flex" style="gap:0.5rem;">
                             <button type="button" class="btn btn-export btn-export-excel" onclick="generarPersonalizado('excel')">

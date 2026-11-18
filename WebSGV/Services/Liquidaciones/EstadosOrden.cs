@@ -8,6 +8,8 @@ namespace WebSGV.Services.Liquidaciones
     public static class EstadosOrden
     {
         public const string Pendiente = "PENDIENTE";
+        /// <summary>Rechazada por la administración (sp_RechazarLiquidacion): vuelve al conductor para corregirla.</summary>
+        public const string Reabierto = "REABIERTO";
         /// <summary>Revisada por el administrador; falta la conformidad firmada del conductor.</summary>
         public const string PorConformar = "POR_CONFORMAR";
         /// <summary>Con la conformidad del conductor firmada: liquidación cerrada.</summary>

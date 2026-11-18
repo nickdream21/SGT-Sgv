@@ -553,6 +553,7 @@
     <Compile Include="Services\GpsIntegracion\SeguimientoExportacionGpsService.cs" />
     <Compile Include="Services\GpsIntegracion\TrazabilidadCargaService.cs" />
     <Compile Include="Services\GpsIntegracion\TrazabilidadDescargaService.cs" />
+    <Compile Include="Services\Reportes\FiltroEstadoLiquidacion.cs" />
     <Compile Include="Services\Reportes\ReportesOrdenesViajeService.cs" />
     <Compile Include="Services\Reportes\ReporteCargasService.cs" />
     <Compile Include="Services\Reportes\ReporteTabular.cs" />

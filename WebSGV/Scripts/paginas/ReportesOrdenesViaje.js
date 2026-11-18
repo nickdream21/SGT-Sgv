@@ -177,7 +177,7 @@ function validarFiltroViajesActivos(buscarConductor, estadoViaje) {
         mostrarErrorCampo('errBuscarConductor', 'Solo se permiten letras, números, espacios, punto y guion.');
         ok = false;
     }
-    if (['TODOS', 'ABIERTO', 'CERRADO'].indexOf(estadoViaje) === -1) {
+    if (['TODOS', 'ABIERTO'].indexOf(estadoViaje) === -1) {
         mostrarErrorCampo('errEstadoViaje', 'Seleccione un estado de viaje válido.');
         ok = false;
     }
@@ -189,7 +189,9 @@ function validarFiltrosPersonalizados(fechaDesde, fechaHasta, estado, idConducto
     if (!fechaDesde || !validarFechaIso(fechaDesde)) { mostrarErrorCampo('errPersFechaDesde', 'Ingrese una fecha inicial válida (aaaa-mm-dd).'); ok = false; }
     if (!fechaHasta || !validarFechaIso(fechaHasta)) { mostrarErrorCampo('errPersFechaHasta', 'Ingrese una fecha final válida (aaaa-mm-dd).'); ok = false; }
     if (ok && new Date(fechaDesde) > new Date(fechaHasta)) { mostrarErrorCampo('errPersFechaHasta', 'La fecha final debe ser mayor o igual a la fecha inicial.'); ok = false; }
-    if (['TODOS', 'COMPLETADO', 'PENDIENTE', 'RECHAZADO'].indexOf(estado) === -1) { mostrarErrorCampo('errPersEstado', 'Seleccione un estado válido.'); ok = false; }
+    // Las opciones del combo vienen de la lista blanca del servidor (FiltroEstadoLiquidacion).
+    var estadoValido = $('#' + SGV.ddlPersEstado + ' option').filter(function () { return this.value === estado; }).length > 0;
+    if (!estado || !estadoValido) { mostrarErrorCampo('errPersEstado', 'Seleccione un estado de la liquidación válido.'); ok = false; }
     if (!/^\d+$/.test(idConductor) || parseInt(idConductor, 10) < 0) { mostrarErrorCampo('errPersConductor', 'Seleccione un conductor válido.'); ok = false; }
     if (!/^\d+$/.test(idCliente) || parseInt(idCliente, 10) < 0) { mostrarErrorCampo('errPersCliente', 'Seleccione un cliente válido.'); ok = false; }
     if (placaTracto && !/^[a-zA-Z0-9\-\s]{0,15}$/.test(placaTracto)) { mostrarErrorCampo('errPersPlaca', 'La placa permite letras, números, espacios y guion (máx. 15).'); ok = false; }

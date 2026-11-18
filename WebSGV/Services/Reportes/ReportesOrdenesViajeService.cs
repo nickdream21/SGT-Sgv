@@ -58,6 +58,11 @@ namespace WebSGV.Services.Reportes
         // Viajes activos sin liquidación (query dinámico con filtros)
         // ------------------------------------------------------------------
 
+        /// <remarks>
+        /// La consulta ya fija <c>vp.estadoViaje = 'ABIERTO'</c> (un viaje CERRADO ya está liquidado):
+        /// el combo solo ofrece "Todos" y "Abierto"; el filtro por <paramref name="estadoViaje"/> queda
+        /// como defensa y no amplía el resultado.
+        /// </remarks>
         public static DataTable ObtenerViajesActivos(string buscarConductor, string estadoViaje)
         {
             var parametrosViajes = new List<SqlParameter>();
@@ -272,7 +277,8 @@ namespace WebSGV.Services.Reportes
                     ISNULL((SELECT COUNT(DISTINCT d.idDespacho) FROM Despachos d
                             WHERE d.idViajeProgreso = ov.idViajeProgreso AND d.activo = 1), 0) AS CantidadDespachos,
                     ov.numeroOrdenViaje AS NumeroLiquidacion,
-                    ov.estadoViaje AS Estado,
+                    -- Estado de la liquidación en el flujo actual: el mismo campo que filtra el combo.
+                    ov.estadoAprobacion AS Estado,
                     ISNULL(ov.observaciones, '') AS Observaciones,
 
                     -- Ingresos por categoría
@@ -363,8 +369,9 @@ namespace WebSGV.Services.Reportes
                 LEFT JOIN Carreta ca ON ov.idCarreta = ca.idCarreta
                 WHERE ov.fechaSalida BETWEEN @FechaDesde AND @FechaHasta ");
 
-            if (!string.IsNullOrEmpty(estado) && estado != "TODOS")
-                sb.Append(" AND ov.estadoViaje = @Estado ");
+            // Lista blanca y condición en FiltroEstadoLiquidacion (ArgumentException si no es válido).
+            string condicionEstado = FiltroEstadoLiquidacion.CondicionSql(estado);
+            sb.Append(condicionEstado);
             if (idConductor > 0)
                 sb.Append(" AND ov.idConductor = @IdConductor ");
             if (!string.IsNullOrEmpty(placaTracto))
@@ -384,8 +391,8 @@ namespace WebSGV.Services.Reportes
             var prs = new List<SqlParameter>();
             prs.Add(DbHelper.Param("@FechaDesde", fechaDesde));
             prs.Add(DbHelper.Param("@FechaHasta", fechaHasta));
-            if (!string.IsNullOrEmpty(estado) && estado != "TODOS")
-                prs.Add(DbHelper.Param("@Estado", estado));
+            if (condicionEstado.Length > 0)
+                prs.Add(DbHelper.Param("@Estado", FiltroEstadoLiquidacion.Normalizar(estado)));
             if (idConductor > 0)
                 prs.Add(DbHelper.Param("@IdConductor", idConductor));
             if (!string.IsNullOrEmpty(placaTracto))
