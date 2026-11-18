@@ -14,7 +14,7 @@
             <div class="form-group">
                 <label>Nueva contraseña:</label>
                 <asp:TextBox ID="txtNuevaContrasena" runat="server" TextMode="Password" CssClass="form-control" placeholder="Ingrese su nueva contraseña" autocomplete="new-password"></asp:TextBox>
-                <p class="password-requirements">Mínimo <%= WebSGV.Helpers.PasswordHelper.LargoMinimoNueva %> caracteres.</p>
+                <p class="password-requirements"><%: WebSGV.Helpers.PoliticaContrasena.TextoAyuda %></p>
             </div>
 
             <div class="form-group">

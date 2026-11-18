@@ -14,7 +14,8 @@ function validarFormContrasena() {
         return false;
     }
     // Mismo mínimo que el servidor (PasswordHelper.LargoMinimoNueva), que la guarda recortada.
-    var minimo = SGV.largoMinimoContrasena || 8;
+    // Las demás reglas (nombre, DNI, secuencias...) las revisa el servidor (PoliticaContrasena).
+    var minimo = SGV.largoMinimoContrasena || 10;
     if (!nueva || nueva.trim().length < minimo) {
         SGV.avisar('La nueva contraseña debe tener al menos ' + minimo + ' caracteres.');
         return false;

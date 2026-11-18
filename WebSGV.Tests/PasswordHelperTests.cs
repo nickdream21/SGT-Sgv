@@ -336,26 +336,22 @@ namespace WebSGV.Tests
             Assert.Null(c4);
         }
 
-        // ── ValidarNueva ────────────────────────────────────────────────────────
+        // ── Largo de una contraseña nueva (las reglas completas: PoliticaContrasenaTests) ──
 
         [Fact]
-        public void ValidarNueva_MinimoOchoMaximo128()
+        public void LargoNueva_MinimoDiezMaximo128_ComoLaPolitica()
         {
-            Assert.Equal(8, PasswordHelper.LargoMinimoNueva);
+            Assert.Equal(10, PasswordHelper.LargoMinimoNueva);
             Assert.Equal(128, PasswordHelper.LargoMaximoNueva);
-            const string msjCorta = "La contraseña debe tener al menos 8 caracteres.";
-            Assert.Equal(msjCorta, PasswordHelper.ValidarNueva(null));
-            Assert.Equal(msjCorta, PasswordHelper.ValidarNueva(""));
-            Assert.Equal(msjCorta, PasswordHelper.ValidarNueva("1234567"));
-            Assert.Null(PasswordHelper.ValidarNueva("12345678"));
-            Assert.Null(PasswordHelper.ValidarNueva(new string('a', 128)));
-            Assert.Equal("La contraseña no puede tener más de 128 caracteres.", PasswordHelper.ValidarNueva(new string('a', 129)));
+            Assert.Equal(PoliticaContrasena.LargoMinimo, PasswordHelper.LargoMinimoNueva);
+            Assert.Equal(PoliticaContrasena.LargoMaximo, PasswordHelper.LargoMaximoNueva);
+            Assert.Equal("Mínimo 10 caracteres", PasswordHelper.TextoMinimoNueva);
         }
 
         [Fact]
         public void ContrasenaExistenteDeSeisCaracteres_SigueEntrando()
         {
-            // El mínimo de 8 es solo para contraseñas nuevas.
+            // El mínimo de 10 es solo para contraseñas nuevas.
             Assert.True(PasswordHelper.VerificarIngresada("abc123", PasswordHelper.HashPassword("abc123", 1000)));
             Assert.True(PasswordHelper.VerificarIngresada("abc123", HashFormatoAnterior("abc123", 1000)));
         }

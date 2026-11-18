@@ -34,9 +34,10 @@ namespace WebSGV.Helpers
         /// <summary>Un hash guardado con más iteraciones se rechaza (evita que un valor alterado cuelgue el servidor).</summary>
         public const int IteracionesMaximas = 5000000;
 
-        /// <summary>Largo mínimo y máximo de una contraseña NUEVA (las existentes más cortas siguen entrando).</summary>
-        public const int LargoMinimoNueva = 8;
-        public const int LargoMaximoNueva = 128;
+        /// <summary>Largo mínimo y máximo de una contraseña NUEVA (las existentes más cortas siguen entrando).
+        /// Las reglas completas están en <see cref="PoliticaContrasena"/>.</summary>
+        public const int LargoMinimoNueva = PoliticaContrasena.LargoMinimo;
+        public const int LargoMaximoNueva = PoliticaContrasena.LargoMaximo;
 
         public const string ClaveIteraciones = "Seguridad.IteracionesContrasena";
         public const string ClaveConvertirAlIngresar = "Seguridad.ConvertirHashAlIngresar";
@@ -195,19 +196,6 @@ namespace WebSGV.Helpers
         {
             HashGuardado h;
             return !TryLeer(storedHash, out h);
-        }
-
-        /// <summary>
-        /// Valida una contraseña NUEVA (ya recortada por quien llama). Devuelve el mensaje para el
-        /// usuario o null si sirve.
-        /// </summary>
-        public static string ValidarNueva(string nueva)
-        {
-            if (string.IsNullOrEmpty(nueva) || nueva.Length < LargoMinimoNueva)
-                return "La contraseña debe tener al menos " + LargoMinimoNueva + " caracteres.";
-            if (nueva.Length > LargoMaximoNueva)
-                return "La contraseña no puede tener más de " + LargoMaximoNueva + " caracteres.";
-            return null;
         }
 
         /// <summary>Texto del placeholder de los campos de contraseña nueva.</summary>

@@ -105,14 +105,16 @@ namespace WebSGV
                     return;
                 }
 
-                // Site.Master decide el modal obligatorio con este valor: se refresca desde la BD.
-                try { sesion["RequiereCambioContrasena"] = estado.RequiereCambioContrasena; }
+                // Site.Master decide el modal obligatorio con este valor: se refresca desde la BD (más
+                // la marca de sesión de una contraseña fuera de la política, que no está en la BD).
+                try { sesion["RequiereCambioContrasena"] = estado.RequiereCambioContrasena || SesionVigenteHelper.ContrasenaFueraDePolitica(sesion); }
                 catch { /* sesión de solo lectura: basta con usar el valor de la BD abajo */ }
             }
 
-            bool requiereCambio = estado != null
+            bool requiereCambio = (estado != null
                 ? estado.RequiereCambioContrasena
-                : sesion["RequiereCambioContrasena"] is bool b && b;
+                : sesion["RequiereCambioContrasena"] is bool b && b)
+                || SesionVigenteHelper.ContrasenaFueraDePolitica(sesion);
             if (!requiereCambio || publica)
                 return;
 

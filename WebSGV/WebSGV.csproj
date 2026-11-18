@@ -525,6 +525,8 @@
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Helpers\PasswordHelper.cs" />
+    <Compile Include="Helpers\PoliticaContrasena.cs" />
+    <Compile Include="Helpers\ContrasenaNuevaHelper.cs" />
     <Compile Include="Helpers\ReautenticacionHelper.cs" />
     <Compile Include="Helpers\RecursoHelper.cs" />
     <Compile Include="Helpers\ValidacionHelper.cs" />

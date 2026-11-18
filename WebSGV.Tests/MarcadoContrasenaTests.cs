@@ -8,7 +8,7 @@ namespace WebSGV.Tests
 {
     /// <summary>
     /// Mínimo de contraseñas nuevas (auditoría de seguridad, tarea 7): ningún formulario ni script
-    /// sigue pidiendo 6 caracteres; todos usan PasswordHelper.ValidarNueva / LargoMinimoNueva.
+    /// sigue pidiendo 6 (ni 8) caracteres; todos usan PoliticaContrasena (vía ContrasenaNuevaHelper) / LargoMinimoNueva.
     /// </summary>
     public class MarcadoContrasenaTests
     {
@@ -31,21 +31,30 @@ namespace WebSGV.Tests
         };
 
         [Fact]
-        public void NoQuedaElMinimoDeSeisCaracteres()
+        public void NoQuedaElMinimoDeSeisNiDeOchoCaracteres()
         {
-            var viejo = new Regex(@"M[ií]nimo 6|al menos 6 caracteres|[Ll]ength\s*<\s*6\b");
+            var viejo = new Regex(@"M[ií]nimo [68]\b|al menos [68] caracteres|[Ll]ength\s*<\s*[68]\b|largoMinimoContrasena\s*\|\|\s*[68]\b");
             var conMinimoViejo = Archivos.Where(a => viejo.IsMatch(Leer(a))).ToList();
-            Assert.True(conMinimoViejo.Count == 0, "Siguen con el mínimo de 6: " + string.Join(", ", conMinimoViejo));
+            Assert.True(conMinimoViejo.Count == 0, "Siguen con el mínimo de 6 u 8: " + string.Join(", ", conMinimoViejo));
         }
 
         [Fact]
-        public void ValidacionDelServidor_UsaValidarNueva()
+        public void ValidacionDelServidor_UsaLaPolitica()
         {
-            Assert.Contains("PasswordHelper.ValidarNueva(nuevaContrasena)", Leer("Site.Master.cs"));
-            Assert.Contains("PasswordHelper.ValidarNueva(nuevaContrasena)", Leer(@"Views\RestablecerContrasena.aspx.cs"));
+            Assert.Contains("ContrasenaNuevaHelper.ValidarParaUsuario(nuevaContrasena, IdUsuarioActual)", Leer("Site.Master.cs"));
+            Assert.Contains("ContrasenaNuevaHelper.ValidarParaUsuario(nuevaContrasena, idDelEnlace.Value)", Leer(@"Views\RestablecerContrasena.aspx.cs"));
             string gestion = Leer(@"Views\GestionUsuarios.aspx.cs");
-            Assert.Contains("PasswordHelper.ValidarNueva(contrasena)", gestion);
-            Assert.Contains("PasswordHelper.ValidarNueva(nuevaPass)", gestion);
+            Assert.Contains("ContrasenaNuevaHelper.ValidarParaNuevoUsuario(contrasena, nombreUsuario, nombre,", gestion);
+            Assert.Contains("ContrasenaNuevaHelper.ValidarParaUsuario(nuevaPass, idUsuario)", gestion);
+        }
+
+        [Fact]
+        public void FormulariosDeContrasenaNueva_MuestranLasReglas()
+        {
+            const string ayuda = "<%: WebSGV.Helpers.PoliticaContrasena.TextoAyuda %>";
+            Assert.Contains(ayuda, Leer("Site.Master"));
+            Assert.Contains(ayuda, Leer(@"Views\RestablecerContrasena.aspx"));
+            Assert.Equal(2, Regex.Matches(Leer(@"Views\GestionUsuarios.aspx"), Regex.Escape(ayuda)).Count);
         }
 
         [Fact]

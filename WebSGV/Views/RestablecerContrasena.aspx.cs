@@ -75,13 +75,6 @@ namespace WebSGV.Views
                 return;
             }
 
-            string errorNueva = PasswordHelper.ValidarNueva(nuevaContrasena);
-            if (errorNueva != null)
-            {
-                MostrarMensaje(errorNueva, false);
-                return;
-            }
-
             if (nuevaContrasena != confirmarContrasena)
             {
                 MostrarMensaje("Las contraseñas no coinciden.", false);
@@ -91,6 +84,30 @@ namespace WebSGV.Views
             if (string.IsNullOrEmpty(HashTokenActual))
             {
                 MostrarError("Sesión expirada. Solicite un nuevo enlace de recuperación.");
+                return;
+            }
+
+            // Las reglas miran el usuario, el nombre y el DNI de la cuenta del enlace.
+            string errorNueva;
+            try
+            {
+                int? idDelEnlace = IdUsuarioDelToken(HashTokenActual);
+                if (!idDelEnlace.HasValue)
+                {
+                    MostrarError("El enlace ha expirado o no es válido. Solicite uno nuevo desde la página de recuperación.");
+                    return;
+                }
+                errorNueva = ContrasenaNuevaHelper.ValidarParaUsuario(nuevaContrasena, idDelEnlace.Value);
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Restablecer contraseña: error al revisar la política de contraseña");
+                MostrarMensaje("No se pudo verificar el enlace. Intente nuevamente en unos minutos.", false);
+                return;
+            }
+            if (errorNueva != null)
+            {
+                MostrarMensaje(errorNueva, false);
                 return;
             }
 
@@ -113,6 +130,20 @@ namespace WebSGV.Views
         protected void btnVolverLogin_Click(object sender, EventArgs e)
         {
             Response.Redirect("~/Views/Login.aspx");
+        }
+
+        /// <summary>idUsuario del enlace vigente, o null si no existe o venció. Los errores de BD se propagan.</summary>
+        private static int? IdUsuarioDelToken(string hashToken)
+        {
+            object id = DbHelper.EjecutarEscalar(
+                @"SELECT TOP 1 idUsuario FROM Usuarios
+                  WHERE resetToken = @Hash
+                  AND resetTokenExpira > @FechaActual
+                  AND activo = 1",
+                DbHelper.Param("@Hash", hashToken),
+                DbHelper.Param("@FechaActual", FechaHelper.Ahora()));
+            if (id == null || id == DBNull.Value) return null;
+            return Convert.ToInt32(id);
         }
 
         /// <summary>true: vigente; false: no existe o venció; null: error de BD.</summary>

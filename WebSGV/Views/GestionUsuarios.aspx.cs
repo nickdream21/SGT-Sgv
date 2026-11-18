@@ -275,17 +275,23 @@ namespace WebSGV.Views
                     AbrirModal("modalUsuario");
                     return;
                 }
-                string errorContrasena = PasswordHelper.ValidarNueva(contrasena);
-                if (errorContrasena != null)
-                {
-                    MostrarMensajeModal(errorContrasena, "danger");
-                    AbrirModal("modalUsuario");
-                    return;
-                }
             }
 
             try
             {
+                if (idUsuario == 0)
+                {
+                    // Dentro del try: consulta el DNI y los apellidos del conductor vinculado.
+                    string errorContrasena = ContrasenaNuevaHelper.ValidarParaNuevoUsuario(contrasena, nombreUsuario, nombre,
+                        tieneConductor ? (int?)idConductor : null);
+                    if (errorContrasena != null)
+                    {
+                        MostrarMensajeModal(errorContrasena, "danger");
+                        AbrirModal("modalUsuario");
+                        return;
+                    }
+                }
+
                 if (tieneConductor)
                 {
                     int asociado = Convert.ToInt32(DbHelper.EjecutarEscalar(@"
@@ -394,32 +400,40 @@ namespace WebSGV.Views
             string nuevaPass     = (txtNuevaPass.Text ?? "").Trim();
             string confirmarPass = (txtConfirmarPass.Text ?? "").Trim();
 
-            string errorNueva = PasswordHelper.ValidarNueva(nuevaPass);
-            if (errorNueva != null)
+            try
             {
-                MostrarMensajeReset(errorNueva, "danger");
-                AbrirModal("modalResetPass");
-                return;
-            }
+                string errorNueva = ContrasenaNuevaHelper.ValidarParaUsuario(nuevaPass, idUsuario);
+                if (errorNueva != null)
+                {
+                    MostrarMensajeReset(errorNueva, "danger");
+                    AbrirModal("modalResetPass");
+                    return;
+                }
 
-            if (nuevaPass != confirmarPass)
+                if (nuevaPass != confirmarPass)
+                {
+                    MostrarMensajeReset("Las contraseñas no coinciden.", "danger");
+                    AbrirModal("modalResetPass");
+                    return;
+                }
+
+                string hash = PasswordHelper.HashPassword(nuevaPass);
+                DbHelper.EjecutarNonQuery(
+                    "UPDATE Usuarios SET contrasena = @hash, requiereCambioContrasena = 1, resetToken = NULL, resetTokenExpira = NULL, selloSesion = NEWID() WHERE idUsuario = @id",
+                    DbHelper.Param("@hash", hash),
+                    DbHelper.Param("@id",   idUsuario));
+                // Nuevo sello: las sesiones abiertas con la contraseña anterior se cierran.
+                SesionVigenteHelper.InvalidarCache(idUsuario);
+
+                AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario, "Contraseña restablecida por Admin Sistema");
+                MostrarMensaje("Contraseña restablecida exitosamente.", "success");
+                CargarUsuarios();
+            }
+            catch (Exception ex)
             {
-                MostrarMensajeReset("Las contraseñas no coinciden.", "danger");
+                MostrarMensajeReset(MensajeErrorHelper.ParaUsuario(ex), "danger");
                 AbrirModal("modalResetPass");
-                return;
             }
-
-            string hash = PasswordHelper.HashPassword(nuevaPass);
-            DbHelper.EjecutarNonQuery(
-                "UPDATE Usuarios SET contrasena = @hash, requiereCambioContrasena = 1, resetToken = NULL, resetTokenExpira = NULL, selloSesion = NEWID() WHERE idUsuario = @id",
-                DbHelper.Param("@hash", hash),
-                DbHelper.Param("@id",   idUsuario));
-            // Nuevo sello: las sesiones abiertas con la contraseña anterior se cierran.
-            SesionVigenteHelper.InvalidarCache(idUsuario);
-
-            AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario, "Contraseña restablecida por Admin Sistema");
-            MostrarMensaje("Contraseña restablecida exitosamente.", "success");
-            CargarUsuarios();
         }
 
         protected void btnBuscar_Click(object sender, EventArgs e) => CargarUsuarios();

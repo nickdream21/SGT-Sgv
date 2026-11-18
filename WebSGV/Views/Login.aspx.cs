@@ -28,6 +28,8 @@ namespace WebSGV.Views
             public int? IdConductor;
             public int? IdOperador;
             public bool RequiereCambioContrasena;
+            /// <summary>La contraseña con la que entró no cumple PoliticaContrasena (solo con Seguridad.ExigirPoliticaAlIngresar).</summary>
+            public bool ContrasenaFueraDePolitica;
             public Guid SelloSesion;
         }
 
@@ -195,6 +197,7 @@ namespace WebSGV.Views
                     IdConductor = resultado.IdConductor,
                     IdOperador = resultado.IdOperador,
                     RequiereCambioContrasena = resultado.RequiereCambioContrasena,
+                    ContrasenaFueraDePolitica = ContrasenaFueraDePolitica(resultado.IdUsuario, contrasena),
                     SelloSesion = resultado.SelloSesion
                 };
                 string token = GenerarTokenAleatorio();
@@ -223,6 +226,29 @@ namespace WebSGV.Views
                     MostrarMensaje("Demasiados intentos fallidos. El acceso quedó bloqueado temporalmente; intente más tarde.");
                 else
                     MostrarMensaje("Usuario o contraseña incorrectos. Por favor, intente nuevamente.");
+            }
+        }
+
+        /// <summary>
+        /// Con <c>Seguridad.ExigirPoliticaAlIngresar</c> en true: si la contraseña recién escrita (la
+        /// que coincidió, recortada como se guardan las nuevas) no cumple <see cref="PoliticaContrasena"/>,
+        /// la sesión queda con el cambio de contraseña obligatorio. No se guarda nada en la BD. Si falla
+        /// la consulta de los datos de la persona, el login sigue sin exigirlo.
+        /// </summary>
+        private static bool ContrasenaFueraDePolitica(int idUsuario, string contrasena)
+        {
+            try
+            {
+                if (!PoliticaContrasena.ExigeCambioAlIngresar(PoliticaContrasena.ExigirAlIngresar,
+                        () => ContrasenaNuevaHelper.ValidarParaUsuario((contrasena ?? "").Trim(), idUsuario)))
+                    return false;
+                LogSGV.Info("El usuario {IdUsuario} entró con una contraseña fuera de la política: debe cambiarla", idUsuario);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "No se pudo revisar la política de contraseña del usuario {IdUsuario} al iniciar sesión", idUsuario);
+                return false;
             }
         }
 
@@ -339,7 +365,8 @@ namespace WebSGV.Views
             // Leído por varias páginas (RegistroDespacho...) para
             // registrar quién sube o edita.
             Session["Usuario"] = datos.NombreUsuario;
-            Session["RequiereCambioContrasena"] = datos.RequiereCambioContrasena;
+            Session["RequiereCambioContrasena"] = datos.RequiereCambioContrasena || datos.ContrasenaFueraDePolitica;
+            SesionVigenteHelper.MarcarContrasenaFueraDePolitica(Session, datos.ContrasenaFueraDePolitica);
             // Sello de sesión: si cambian los datos de acceso del usuario, deja de coincidir con
             // el de la BD y Global.asax cierra esta sesión (SesionVigenteHelper).
             Session[SesionVigenteHelper.ClaveSello] = datos.SelloSesion;

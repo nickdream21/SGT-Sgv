@@ -2,6 +2,7 @@ using System;
 using System.Data;
 using System.Web;
 using System.Web.Caching;
+using System.Web.SessionState;
 using System.Web.UI;
 
 namespace WebSGV.Helpers
@@ -42,6 +43,13 @@ namespace WebSGV.Helpers
 
         public const string MensajeSesionCerrada =
             "Tu sesión se cerró porque cambiaron tus datos de acceso. Vuelve a ingresar.";
+
+        /// <summary>
+        /// Clave de sesión (bool): entró con una contraseña que no cumple <see cref="PoliticaContrasena"/>
+        /// y <c>Seguridad.ExigirPoliticaAlIngresar</c> está activo. Solo vive en la sesión (no se
+        /// guarda en la BD): se suma a <c>requiereCambioContrasena</c> hasta que la cambie.
+        /// </summary>
+        public const string ClaveContrasenaFueraDePolitica = "ContrasenaFueraDePolitica";
 
         public const string MensajeCambioContrasena =
             "Debes cambiar tu contraseña antes de continuar.";
@@ -126,6 +134,18 @@ namespace WebSGV.Helpers
 
         /// <summary>Nombre del PageMethod llamado ("" si no es un PageMethod).</summary>
         public static string NombreMetodo(string pathInfo) => (pathInfo ?? "").Trim('/');
+
+        /// <summary>True si la sesión entró con una contraseña fuera de la política (ver <see cref="ClaveContrasenaFueraDePolitica"/>).</summary>
+        public static bool ContrasenaFueraDePolitica(HttpSessionState sesion)
+        {
+            return sesion != null && sesion[ClaveContrasenaFueraDePolitica] is bool b && b;
+        }
+
+        public static void MarcarContrasenaFueraDePolitica(HttpSessionState sesion, bool valor)
+        {
+            if (sesion != null)
+                sesion[ClaveContrasenaFueraDePolitica] = valor;
+        }
 
         // ── BD y caché ─────────────────────────────────────────────────────
 

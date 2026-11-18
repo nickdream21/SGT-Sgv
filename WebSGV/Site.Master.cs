@@ -164,7 +164,13 @@ namespace WebSGV
             Navbar.Visible = true;
 
             if (!IsPostBack && RequiereCambioContrasena())
+            {
+                // Entró con una contraseña que no cumple las reglas (Seguridad.ExigirPoliticaAlIngresar).
+                if (SesionVigenteHelper.ContrasenaFueraDePolitica(Session))
+                    MostrarMensajeContrasena("Por seguridad debes cambiar tu contraseña: la actual no cumple las reglas de seguridad. "
+                        + PoliticaContrasena.TextoAyuda, "warning");
                 AbrirModalContrasenaObligatoria();
+            }
         }
 
         /// <summary>
@@ -244,7 +250,7 @@ namespace WebSGV
                     return;
                 }
 
-                string errorNueva = PasswordHelper.ValidarNueva(nuevaContrasena);
+                string errorNueva = ContrasenaNuevaHelper.ValidarParaUsuario(nuevaContrasena, IdUsuarioActual);
                 if (errorNueva != null)
                 {
                     MostrarMensajeContrasena(errorNueva, "danger");
@@ -310,6 +316,7 @@ namespace WebSGV
                 txtConfirmarContrasena.Text = "";
                 pnlMensajeContrasena.Visible = false;
                 Session["RequiereCambioContrasena"] = false;
+                SesionVigenteHelper.MarcarContrasenaFueraDePolitica(Session, false);
 
                 AuditoriaHelper.Registrar("UPDATE", "Usuarios", IdUsuarioActual, "Contrasena cambiada por el usuario");
 
@@ -326,7 +333,8 @@ namespace WebSGV
         private void MostrarMensajeContrasena(string mensaje, string tipo)
         {
             lblMensajeContrasena.Text = mensaje;
-            lblMensajeContrasena.CssClass = $"alert alert-{tipo} mb-0";
+            // d-block: el Label es un <span>; sin esto un aviso de varias líneas se ve cortado.
+            lblMensajeContrasena.CssClass = $"alert alert-{tipo} d-block mb-0";
             pnlMensajeContrasena.Visible = true;
         }
 
