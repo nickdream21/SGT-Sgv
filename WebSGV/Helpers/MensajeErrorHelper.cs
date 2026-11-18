@@ -21,5 +21,26 @@ namespace WebSGV.Helpers
                 LogSGV.Error(ex, "Error técnico mostrado al usuario como mensaje genérico");
             return MensajeError.Generico;
         }
+
+        /// <summary>
+        /// Igual que <see cref="ParaUsuario(Exception)"/>, pero el error técnico se registra con
+        /// <paramref name="contexto"/> (qué se estaba haciendo) en vez del texto genérico.
+        /// </summary>
+        public static string ParaUsuario(Exception ex, string contexto)
+        {
+            string negocio = MensajeError.ExtraerMensajeDeNegocio(ex);
+            if (negocio != null)
+                return negocio;
+
+            if (ex != null)
+                LogSGV.Error(ex, string.IsNullOrWhiteSpace(contexto) ? "Error técnico mostrado al usuario como mensaje genérico" : contexto);
+            return MensajeError.Generico;
+        }
+
+        /// <summary>
+        /// Código HTTP para responder un error en una descarga o llamada sin página: 400 si es un error de
+        /// negocio (el usuario puede corregirlo), 500 si es técnico.
+        /// </summary>
+        public static int CodigoHttp(Exception ex) => MensajeError.ExtraerMensajeDeNegocio(ex) != null ? 400 : 500;
     }
 }

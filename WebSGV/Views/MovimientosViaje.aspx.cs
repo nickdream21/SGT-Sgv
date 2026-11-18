@@ -20,8 +20,21 @@ namespace WebSGV.Views
     /// </summary>
     public partial class MovimientosViaje : PaginaBase
     {
-        private const int MaxBytesAdjunto = 5 * 1024 * 1024;
-        private static readonly string[] ExtensionesAdjunto = { ".pdf", ".jpg", ".jpeg", ".png" };
+        /// <summary>Captura del Yape o comprobante: 5 MB (Web.config deja 6 MB por envío).</summary>
+        public const int MaxBytesAdjunto = 5 * 1024 * 1024;
+        public static readonly string[] ExtensionesAdjunto = ArchivoSubidoHelper.ExtensionesPdfOImagen;
+
+        /// <summary>Error para el usuario ("Adjunto: …") o null si el archivo es un PDF/JPG/PNG de verdad y de hasta 5 MB.</summary>
+        public static string ValidarAdjunto(string nombre, long largo, byte[] cabecera)
+        {
+            string error = ArchivoSubidoHelper.Validar(nombre, largo, cabecera, MaxBytesAdjunto, ExtensionesAdjunto);
+            return error == null ? null : "Adjunto: " + error + ".";
+        }
+
+        private static string ValidarAdjunto(HttpPostedFile archivo) =>
+            archivo == null || archivo.ContentLength <= 0
+                ? "Adjunto: el archivo está vacío."
+                : ValidarAdjunto(archivo.FileName, archivo.ContentLength, ArchivoSubidoHelper.LeerCabecera(archivo.InputStream));
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -141,9 +154,10 @@ namespace WebSGV.Views
 
                 if (fuAdjunto.HasFile)
                 {
+                    // Tipo real por la firma de los primeros bytes, no solo la extensión (B6-8).
+                    string errorAdjunto = ValidarAdjunto(fuAdjunto.PostedFile);
+                    if (errorAdjunto != null) { MostrarMensaje(errorAdjunto, "warning"); return; }
                     string ext = Path.GetExtension(fuAdjunto.FileName ?? "").ToLowerInvariant();
-                    if (!ExtensionesAdjunto.Contains(ext)) { MostrarMensaje("El adjunto debe ser PDF, JPG o PNG.", "warning"); return; }
-                    if (fuAdjunto.PostedFile.ContentLength > MaxBytesAdjunto) { MostrarMensaje("El adjunto no puede superar 5 MB.", "warning"); return; }
                     m.RutaAdjunto = GuardarAdjunto(fuAdjunto, ext, m);
                 }
 

@@ -50,8 +50,9 @@ namespace WebSGV.Views.Exportacion
 
             if (!IsPostBack)
             {
-                if (!string.IsNullOrEmpty(Request.QueryString["msg"]))
-                    MostrarMensaje(Request.QueryString["msg"], Request.QueryString["tipo"] ?? "ok");
+                // Solo códigos fijos (B6-8): un texto libre en ?msg= no se muestra.
+                string aviso = AvisoSeguimiento.Texto(Request.QueryString["msg"], col);
+                if (aviso != null) MostrarMensaje(aviso, "ok");
                 Cargar();
             }
         }
@@ -214,7 +215,7 @@ namespace WebSGV.Views.Exportacion
                 int id = SeguimientoViajesService.GuardarDatosViaje(IdSeguimiento, txtPedido.Text, txtCarreta.Text,
                     txtTracto1.Text, txtChofer1.Text, txtTracto2.Text, txtChofer2.Text, ddlPlanta.SelectedValue,
                     LeerFecha(txtProgramacion.Text), UsuarioActual());
-                Volver(id, ModoNuevo ? "Viaje creado. Usa \"Actualizar GPS\" para traer sus horas." : "Datos del viaje guardados.");
+                Volver(id, ModoNuevo ? AvisoSeguimiento.Creado : AvisoSeguimiento.DatosGuardados);
             }
             catch (Exception ex)
             {
@@ -233,8 +234,7 @@ namespace WebSGV.Views.Exportacion
                 if (!string.IsNullOrWhiteSpace(txtNuevaHora.Text) && !valor.HasValue)
                     throw new Services.Common.ErrorNegocioException("La fecha y hora no es válida.");
                 SeguimientoViajesService.CorregirHito(IdSeguimiento, columna, valor, motivo, UsuarioActual());
-                var def = HitosSeguimiento.Buscar(columna);
-                Volver(IdSeguimiento, $"{def?.Nombre ?? "Hito"}: hora corregida.", columna);
+                Volver(IdSeguimiento, AvisoSeguimiento.HoraCorregida, columna);
             }
             catch (Exception ex)
             {
@@ -258,7 +258,7 @@ namespace WebSGV.Views.Exportacion
                     ddlBodegaNacional.SelectedValue,
                     LeerSacos(txtSacosRobados, "Sacos robados"), LeerSacos(txtSacosRotos, "Sacos rotos"), LeerSacos(txtSacosMojados, "Sacos mojados"),
                     txtMotivoRetraso.Text, UsuarioActual());
-                Volver(IdSeguimiento, "Datos guardados.");
+                Volver(IdSeguimiento, AvisoSeguimiento.ManualesGuardados);
             }
             catch (Exception ex)
             {
@@ -269,8 +269,18 @@ namespace WebSGV.Views.Exportacion
         protected void btnActualizarGps_Click(object sender, EventArgs e)
         {
             Server.ScriptTimeout = 300;
-            var r = SeguimientoExportacionGpsService.ConsultarYActualizar(IdSeguimiento);
-            Volver(IdSeguimiento, r.Mensaje, null, r.Exito ? "ok" : "alerta");
+            try
+            {
+                var r = SeguimientoExportacionGpsService.ConsultarYActualizar(IdSeguimiento);
+                // El resultado del GPS es un texto variable (placas, horas): se muestra en esta misma respuesta
+                // en vez de pasarlo por ?msg= (B6-8). Repetir la consulta con F5 no cambia nada que no cambie el GPS.
+                MostrarMensaje(r.Mensaje, r.Exito ? "ok" : "alerta");
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex, "SeguimientoViaje.ActualizarGps"), "peligro");
+            }
+            Cargar();
         }
 
         protected void btnEstado_Click(object sender, EventArgs e)
@@ -287,7 +297,7 @@ namespace WebSGV.Views.Exportacion
                 }
                 bool cerrado = d != null && string.Equals(d.Resumen.Estado, "FINALIZADO", StringComparison.OrdinalIgnoreCase);
                 SeguimientoViajesService.CambiarEstado(IdSeguimiento, cerrado ? "EN_CURSO" : "FINALIZADO", UsuarioActual());
-                Volver(IdSeguimiento, cerrado ? "Viaje reabierto." : "Viaje cerrado.");
+                Volver(IdSeguimiento, cerrado ? AvisoSeguimiento.Reabierto : AvisoSeguimiento.Cerrado);
             }
             catch (Exception ex)
             {
@@ -314,10 +324,13 @@ namespace WebSGV.Views.Exportacion
 
         // ── Utilidades ──────────────────────────────────────────────────────
 
-        /// <summary>Vuelve a cargar el detalle con un GET (así F5 no repite la acción).</summary>
-        private void Volver(int id, string mensaje, string columna = null, string tipo = "ok")
+        /// <summary>
+        /// Vuelve a cargar el detalle con un GET (así F5 no repite la acción). <paramref name="codigoAviso"/> es una
+        /// constante de <see cref="AvisoSeguimiento"/>, nunca un texto.
+        /// </summary>
+        private void Volver(int id, string codigoAviso, string columna = null)
         {
-            string url = $"SeguimientoViaje.aspx?id={id}&msg={HttpUtility.UrlEncode(mensaje)}&tipo={tipo}" +
+            string url = $"SeguimientoViaje.aspx?id={id}&msg={HttpUtility.UrlEncode(codigoAviso)}" +
                          (string.IsNullOrEmpty(columna) ? "" : "&col=" + HttpUtility.UrlEncode(columna));
             Response.Redirect(url, false);
             Context.ApplicationInstance.CompleteRequest();

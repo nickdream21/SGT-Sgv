@@ -20,7 +20,7 @@
             </asp:Panel>
         </div>
 
-        <asp:Panel ID="pnlMensaje" runat="server" Visible="false">
+        <asp:Panel ID="pnlMensaje" runat="server" Visible="false" EnableViewState="false">
             <asp:Literal ID="litMensaje" runat="server" />
         </asp:Panel>
 

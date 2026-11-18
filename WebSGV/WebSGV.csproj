@@ -587,6 +587,7 @@
     <Compile Include="Services\FirmaService.cs" />
     <Compile Include="Services\Exportacion\ExportacionStatusGeneral.cs" />
     <Compile Include="Services\Exportacion\FechaHoraExcel.cs" />
+    <Compile Include="Services\Exportacion\AvisoSeguimiento.cs" />
     <Compile Include="Services\Exportacion\HitosSeguimiento.cs" />
     <Compile Include="Services\Exportacion\IndicadoresExportacion.cs" />
     <Compile Include="Services\Exportacion\LimitesImportacionSeguimiento.cs" />

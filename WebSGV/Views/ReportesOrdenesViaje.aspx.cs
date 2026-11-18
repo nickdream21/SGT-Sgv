@@ -369,8 +369,7 @@ namespace WebSGV.Views
             catch (System.Threading.ThreadAbortException) { /* normal: Response.End() */ }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al exportar el reporte de liquidaciones en ReportesOrdenesViaje");
-                throw;
+                ResponderErrorExportacion(ex, "Error al exportar el reporte de liquidaciones en ReportesOrdenesViaje");
             }
         }
 
@@ -431,8 +430,7 @@ namespace WebSGV.Views
             catch (System.Threading.ThreadAbortException) { /* normal: Response.End() */ }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al exportar el reporte de viajes activos en ReportesOrdenesViaje");
-                throw;
+                ResponderErrorExportacion(ex, "Error al exportar el reporte de viajes activos en ReportesOrdenesViaje");
             }
         }
 
@@ -1126,8 +1124,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al generar el reporte personalizado en ReportesOrdenesViaje");
-                throw;
+                ResponderErrorExportacion(ex, "Error al generar el reporte personalizado en ReportesOrdenesViaje");
             }
         }
 
@@ -1360,13 +1357,38 @@ namespace WebSGV.Views
             return true;
         }
 
-        private void ResponderSolicitudInvalida(string mensaje)
+        private void ResponderSolicitudInvalida(string mensaje) => ResponderTexto(400, mensaje);
+
+        /// <summary>
+        /// Error al generar una exportación (GET ?action=...): responde el texto para el usuario con 400 (negocio)
+        /// o 500 (técnico, registrado con <paramref name="contexto"/>) en vez de relanzar hacia Error.aspx (B6-8).
+        /// </summary>
+        private void ResponderErrorExportacion(Exception ex, string contexto) =>
+            ResponderTexto(MensajeErrorHelper.CodigoHttp(ex), MensajeErrorHelper.ParaUsuario(ex, contexto));
+
+        private static void ResponderTexto(int codigo, string mensaje)
         {
-            HttpContext.Current.Response.Clear();
-            HttpContext.Current.Response.StatusCode = 400;
-            HttpContext.Current.Response.ContentType = "text/plain";
-            HttpContext.Current.Response.Write(mensaje);
-            HttpContext.Current.Response.End();
+            var resp = HttpContext.Current.Response;
+            try
+            {
+                // Si el archivo ya empezó a enviarse (cabeceras fuera) no se puede cambiar la respuesta.
+                resp.Clear();
+                resp.ClearHeaders();
+            }
+            catch (HttpException)
+            {
+                // No se puede responder texto, pero tampoco debe seguir el HTML de la página detrás del archivo a medias.
+                resp.SuppressContent = true;
+                HttpContext.Current.ApplicationInstance.CompleteRequest();
+                return;
+            }
+            resp.StatusCode = codigo;
+            resp.TrySkipIisCustomErrors = true;   // que IIS no lo cambie por su página de error
+            resp.ContentType = "text/plain";
+            resp.Charset = "utf-8";
+            resp.Cache.SetCacheability(HttpCacheability.NoCache);
+            resp.Write(mensaje);
+            resp.End();
         }
 
         private void MostrarMensaje(string mensaje, string tipo)

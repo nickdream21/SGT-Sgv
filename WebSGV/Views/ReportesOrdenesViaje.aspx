@@ -2,7 +2,7 @@
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
-    <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-4">
+    <asp:Panel ID="pnlMensajes" runat="server" Visible="false" EnableViewState="false" CssClass="mb-4">
         <asp:Label ID="lblMensaje" runat="server"></asp:Label>
     </asp:Panel>
 

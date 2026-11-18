@@ -65,8 +65,9 @@ namespace WebSGV.Views.Exportacion
             {
                 txtDesde.Text = FechaHelper.Hoy().AddDays(-DiasPorDefecto).ToString("yyyy-MM-dd");
                 txtHasta.Text = FechaHelper.Hoy().AddDays(DiasProgramadosAdelante).ToString("yyyy-MM-dd");
-                if (!string.IsNullOrEmpty(Request.QueryString["msg"]))
-                    MostrarMensaje(Request.QueryString["msg"], "ok");
+                // Solo códigos fijos de AvisoSeguimiento (B6-8): un texto libre en ?msg= no se muestra.
+                string aviso = AvisoSeguimiento.Texto(Request.QueryString["msg"]);
+                if (aviso != null) MostrarMensaje(aviso, "ok");
                 // Llegada desde el dashboard: ?fase= abre esa pestaña y ?buscar= deja el pedido o la placa ya filtrados.
                 string fase = Request.QueryString["fase"];
                 if (Pestanas.Any(p => p.Grupo == fase))

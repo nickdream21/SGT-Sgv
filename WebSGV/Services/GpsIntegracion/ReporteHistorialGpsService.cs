@@ -55,6 +55,13 @@ namespace WebSGV.Services.GpsIntegracion
             public string Error { get; set; }
             public string NombreArchivo { get; set; }
             public byte[] Contenido { get; set; }
+            /// <summary>
+            /// Ruta física del Excel cuando la página lo pasó a un temporal (ReporteGps no guarda los bytes en la
+            /// sesión InProc); entonces <see cref="Contenido"/> queda en null.
+            /// </summary>
+            public string RutaTemporal { get; set; }
+            /// <summary>True si hay Excel para descargar, en memoria o en el temporal.</summary>
+            public bool TieneArchivo => Contenido != null || RutaTemporal != null;
         }
 
         // ── Placas ───────────────────────────────────────────────────────

@@ -26,9 +26,11 @@ namespace WebSGV.Helpers
         public const string Manifiesto = "Manifiesto/_temp";
         /// <summary>PDF leídos en la bandeja de documentos (BandejaDocumentos).</summary>
         public const string Bandeja = "_temp/Bandeja";
+        /// <summary>Excel del historial GPS por placa (ReporteGps) mientras el usuario los descarga (B6-8).</summary>
+        public const string ReporteGps = "_temp/ReporteGps";
 
         /// <summary>Únicas carpetas (relativas a ~/Uploads) donde se guarda y se limpia. Rutas fijas, nunca del usuario.</summary>
-        public static readonly string[] CarpetasTemporales = { Factura, Cpic, Manifiesto, Bandeja };
+        public static readonly string[] CarpetasTemporales = { Factura, Cpic, Manifiesto, Bandeja, ReporteGps };
 
         public static readonly TimeSpan AntiguedadMaxima = TimeSpan.FromHours(24);
         public static readonly TimeSpan IntervaloLimpieza = TimeSpan.FromHours(1);
@@ -165,6 +167,29 @@ namespace WebSGV.Helpers
                 {
                     LogSGV.Advertencia("Temporales: no se pudo borrar {Archivo}. {Error}", Path.GetFileName(ruta ?? ""), ex.Message);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Contenido de un archivo guardado con <see cref="Guardar"/>, o null si ya no existe (lo borró la limpieza)
+        /// o si la ruta no está directamente dentro de una de <see cref="CarpetasTemporales"/>. Nunca lanza.
+        /// </summary>
+        public static byte[] Leer(string raizFisica, string ruta)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(ruta) || string.IsNullOrWhiteSpace(raizFisica)) return null;
+                string completa = Path.GetFullPath(ruta);
+                string carpeta = Path.GetDirectoryName(completa)?.TrimEnd(Path.DirectorySeparatorChar);
+                bool permitida = CarpetasTemporales.Any(c =>
+                    string.Equals(CarpetaFisica(raizFisica, c).TrimEnd(Path.DirectorySeparatorChar), carpeta, StringComparison.OrdinalIgnoreCase));
+                if (!permitida || !File.Exists(completa)) return null;
+                return File.ReadAllBytes(completa);
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Advertencia("Temporales: no se pudo leer {Archivo}. {Error}", Path.GetFileName(ruta ?? ""), ex.Message);
+                return null;
             }
         }
 

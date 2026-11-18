@@ -28,7 +28,7 @@ namespace WebSGV.Views
             if (!IsPostBack)
             {
                 PonerHoy();
-                Session.Remove(SesionResultados);
+                DescartarResultados();
                 PonerActivasVitapro(false);
             }
         }
@@ -158,11 +158,13 @@ namespace WebSGV.Views
             {
                 var placas = ReporteHistorialGpsService.LeerPlacas(txtPlacas.Text);
                 var resultados = ReporteHistorialGpsService.Generar(placas, desde, hasta);
+                int ok = resultados.Count(r => r.Contenido != null);
+                DescartarResultados();
+                PasarATemporales(resultados);
                 Session[SesionResultados] = resultados;
 
                 gvResultados.DataSource = resultados;
                 gvResultados.DataBind();
-                int ok = resultados.Count(r => r.Contenido != null);
                 litTituloResultados.Text = $"{ok} de {resultados.Count} reporte(s) listo(s) · {desde:dd/MM HH:mm} a {hasta:dd/MM HH:mm}";
                 btnZip.Visible = ok > 0;
 
@@ -185,16 +187,64 @@ namespace WebSGV.Views
         private List<ReporteHistorialGpsService.ResultadoPlaca> Resultados() =>
             Session[SesionResultados] as List<ReporteHistorialGpsService.ResultadoPlaca>;
 
+        private string RaizUploads() => DocumentoHelper.RaizFisicaUploads(Server);
+
+        /// <summary>
+        /// Hasta 60 Excel por clic: en vez de dejar los bytes en la sesión InProc (memoria del servidor por cada
+        /// usuario durante 30 min), cada Excel va a ~/Uploads/_temp/ReporteGps y en la sesión queda solo la ruta
+        /// (B6-8). Lo que no se recoja lo borra la limpieza de temporales a las 24 h. Si no se puede escribir el
+        /// archivo, ese Excel se queda en memoria como antes.
+        /// </summary>
+        private void PasarATemporales(IEnumerable<ReporteHistorialGpsService.ResultadoPlaca> resultados)
+        {
+            string raiz = RaizUploads();
+            foreach (var r in resultados.Where(x => x.Contenido != null))
+            {
+                try
+                {
+                    r.RutaTemporal = ArchivosTemporalesHelper.Guardar(raiz, ArchivosTemporalesHelper.ReporteGps, r.Contenido, ".xlsx");
+                    r.Contenido = null;
+                }
+                catch (Exception ex)
+                {
+                    LogSGV.Advertencia("Reporte GPS: el Excel de {Placa} queda en memoria, no se pudo guardar el temporal. {Error}", r.Placa, ex.Message);
+                }
+            }
+        }
+
+        /// <summary>Borra los Excel temporales del reporte anterior de esta sesión y lo olvida.</summary>
+        private void DescartarResultados()
+        {
+            var anteriores = Resultados();
+            if (anteriores != null)
+                ArchivosTemporalesHelper.Borrar(RaizUploads(), anteriores.Select(r => r.RutaTemporal).Where(r => r != null));
+            Session.Remove(SesionResultados);
+        }
+
+        /// <summary>El Excel de un resultado (de memoria o del temporal), o null si ya no está.</summary>
+        private byte[] ContenidoDe(ReporteHistorialGpsService.ResultadoPlaca r) =>
+            r.Contenido ?? ArchivosTemporalesHelper.Leer(RaizUploads(), r.RutaTemporal);
+
+        private void AvisarExpirados()
+        {
+            MostrarMensaje("Los reportes expiraron. Vuelva a pulsar Generar reportes.");
+            pnlResultados.Visible = false;
+        }
+
         protected void btnZip_Click(object sender, EventArgs e)
         {
             var resultados = Resultados();
-            if (resultados == null)
+            var conArchivo = resultados?
+                .Where(r => r.TieneArchivo)
+                .Select(r => new ReporteHistorialGpsService.ResultadoPlaca { NombreArchivo = r.NombreArchivo, Contenido = ContenidoDe(r) })
+                .Where(r => r.Contenido != null)
+                .ToList();
+            if (conArchivo == null || conArchivo.Count == 0)
             {
-                MostrarMensaje("Los reportes expiraron. Vuelva a pulsar Generar reportes.");
-                pnlResultados.Visible = false;
+                AvisarExpirados();
                 return;
             }
-            EnviarArchivo(ReporteHistorialGpsService.CrearZip(resultados), "application/zip",
+            EnviarArchivo(ReporteHistorialGpsService.CrearZip(conArchivo), "application/zip",
                 $"ReporteGPS_{FechaHelper.Ahora():yyyyMMdd_HHmm}.zip");
         }
 
@@ -203,13 +253,13 @@ namespace WebSGV.Views
             if (e.CommandName != "Descargar") return;
             var resultados = Resultados();
             int i = Convert.ToInt32(e.CommandArgument);
-            if (resultados == null || i < 0 || i >= resultados.Count || resultados[i].Contenido == null)
+            byte[] contenido = resultados == null || i < 0 || i >= resultados.Count ? null : ContenidoDe(resultados[i]);
+            if (contenido == null)
             {
-                MostrarMensaje("Los reportes expiraron. Vuelva a pulsar Generar reportes.");
-                pnlResultados.Visible = false;
+                AvisarExpirados();
                 return;
             }
-            EnviarArchivo(resultados[i].Contenido,
+            EnviarArchivo(contenido,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", resultados[i].NombreArchivo);
         }
 

@@ -140,5 +140,32 @@ namespace WebSGV.Tests
             Assert.False(File.Exists(temporal));
             Assert.True(File.Exists(definitivo));
         }
+
+        [Fact]
+        public void ReporteGps_guarda_en_su_carpeta_temporal_y_se_limpia_a_las_24_horas()
+        {
+            byte[] contenido = { 0x50, 0x4B, 0x03, 0x04 };
+            string ruta = ArchivosTemporalesHelper.Guardar(_raiz, ArchivosTemporalesHelper.ReporteGps, contenido, ".xlsx");
+            Assert.Equal(Path.Combine(_raiz, "_temp", "ReporteGps"), Path.GetDirectoryName(ruta));
+            Assert.Equal(contenido, ArchivosTemporalesHelper.Leer(_raiz, ruta));
+
+            File.SetLastWriteTimeUtc(ruta, Ahora - TimeSpan.FromHours(25));
+            ArchivosTemporalesHelper.LimpiarVencidos(_raiz, Ahora);
+            Assert.False(File.Exists(ruta));
+            Assert.Null(ArchivosTemporalesHelper.Leer(_raiz, ruta));
+        }
+
+        [Fact]
+        public void Leer_solo_lee_archivos_de_las_carpetas_temporales()
+        {
+            string definitivo = Archivo("Factura/2026/11", "FACTURA_3.pdf", TimeSpan.Zero);
+            string fuera = Path.Combine(Path.GetDirectoryName(_raiz), "fuera-" + Guid.NewGuid().ToString("N") + ".txt");
+
+            Assert.Null(ArchivosTemporalesHelper.Leer(_raiz, definitivo));
+            Assert.Null(ArchivosTemporalesHelper.Leer(_raiz, fuera));
+            Assert.Null(ArchivosTemporalesHelper.Leer(_raiz, Path.Combine(_raiz, "_temp", "ReporteGps", "..", "..", "Factura", "2026", "11", "FACTURA_3.pdf")));
+            Assert.Null(ArchivosTemporalesHelper.Leer(_raiz, null));
+            Assert.Null(ArchivosTemporalesHelper.Leer(null, definitivo));
+        }
     }
 }

@@ -94,7 +94,7 @@
                                 <asp:TemplateField HeaderText="Excel">
                                     <ItemTemplate>
                                         <asp:LinkButton ID="btnDescargar" runat="server" CommandName="Descargar" CommandArgument='<%# Container.DataItemIndex %>'
-                                            Visible='<%# Eval("Contenido") != null %>' CssClass="small">
+                                            Visible='<%# (bool)Eval("TieneArchivo") %>' CssClass="small">
                                             <i class="fas fa-download"></i> <%# HttpUtility.HtmlEncode(Eval("NombreArchivo")) %>
                                         </asp:LinkButton>
                                         <span class="text-danger small"><%# HttpUtility.HtmlEncode(Eval("Error")) %></span>

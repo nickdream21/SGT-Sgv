@@ -155,6 +155,7 @@ namespace WebSGV.Tests
         [InlineData("Views/BandejaDocumentos.aspx", 51200)]
         [InlineData("Views/FacturasFlete.aspx", 51200)]
         [InlineData("Views/Exportacion/ImportarSeguimiento.aspx", 12288)]
+        [InlineData("Views/MovimientosViaje.aspx", 6144)]
         public void WebConfig_LimiteDeEnvio_IisPorEncimaDeAspNet(string ruta, int kbEsperados)
         {
             XElement ubicacion = Ubicacion(ruta);
