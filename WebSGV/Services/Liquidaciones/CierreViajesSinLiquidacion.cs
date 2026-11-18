@@ -32,12 +32,17 @@ namespace WebSGV.Services.Liquidaciones
             return cerrados;
         }
 
-        /// <summary>Cierra todos los viajes ABIERTO con el motivo de cierre sin liquidación. Público para los tests.</summary>
+        /// <summary>
+        /// Cierra todos los viajes ABIERTO con el motivo de cierre sin liquidación. Público para los tests.
+        /// La hora se toma una vez (<c>@ahora</c>): <c>dbo.fn_AhoraPeru()</c> se evalúa por fila y los viajes
+        /// cerrados juntos deben compartir la misma <c>fechaCierre</c>.
+        /// </summary>
         public static int CerrarViajesAbiertos() =>
             DbHelper.EjecutarNonQuery(@"
+                DECLARE @ahora DATETIME = dbo.fn_AhoraPeru();
                 UPDATE ViajesEnProgreso
                 SET estadoViaje   = 'CERRADO',
-                    fechaCierre   = dbo.fn_AhoraPeru(),
+                    fechaCierre   = @ahora,
                     usuarioCierre = 'SISTEMA',
                     motivoCierre  = @motivo
                 WHERE estadoViaje = 'ABIERTO'",

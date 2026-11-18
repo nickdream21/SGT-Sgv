@@ -11,6 +11,12 @@
 --   BUG-2 Sin transacción: Ambos UPDATEs quedan dentro de
 --               BEGIN TRANSACTION … COMMIT / ROLLBACK.
 --   GUARD NULL: Si @idsViajes es NULL o vacío → RAISERROR.
+--
+-- 2026-11-18: la hora se toma UNA vez (@ahora). dbo.fn_AhoraPeru() es
+--   una UDF escalar no inlineable y se evalúa por fila: los viajes de
+--   una misma liquidación podían quedar con fechaCierre distintas, y
+--   sp_RechazarLiquidacion / sp_DC_RetirarLiquidacion / sp_LD_AnularLote
+--   reconocen a los viajes "hermanos" por fechaCierre igual.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_DC_CerrarViajesProgreso
     @idsViajes              VARCHAR(MAX),   -- CSV de IDs de ViajesEnProgreso
@@ -65,6 +71,9 @@ BEGIN
     SET @filasViajesCerrados    = 0;
     SET @filasDespachosCerrados = 0;
 
+    -- Una sola hora para todas las filas (ver cabecera).
+    DECLARE @ahora DATETIME = dbo.fn_AhoraPeru();
+
     -- --------------------------------------------------------
     -- 4. Transacción atómica: ambos UPDATEs o ninguno
     -- --------------------------------------------------------
@@ -75,7 +84,7 @@ BEGIN
         -- 4a. Cerrar viajes en progreso
         UPDATE ViajesEnProgreso
         SET estadoViaje = 'CERRADO',
-            fechaCierre = dbo.fn_AhoraPeru()
+            fechaCierre = @ahora
         WHERE idViajeProgreso IN (SELECT idViajeProgreso FROM @ids)
           AND estadoViaje     = 'ABIERTO'
           AND idConductor     = @idConductor;   -- defensa adicional en el UPDATE
@@ -85,7 +94,7 @@ BEGIN
         -- 4b. Marcar despachos asociados como COMPLETADO
         UPDATE Despachos
         SET estadoDespacho    = 'COMPLETADO',
-            fechaModificacion = dbo.fn_AhoraPeru()
+            fechaModificacion = @ahora
         WHERE idViajeProgreso IN (SELECT idViajeProgreso FROM @ids)
           AND activo = 1;
 
