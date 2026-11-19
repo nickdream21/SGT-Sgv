@@ -1,6 +1,6 @@
 ---
 name: probador
-description: QA de SGV en el sitio funcionando: levanta el sitio local, prueba el cambio de punta a punta por HTTP o en el navegador (Claude in Chrome) con los roles que corresponda, en escritorio (1366 px) y celular (390 px), y entrega evidencia. No corrige código.
+description: "QA de SGV en el sitio funcionando: levanta el sitio local, prueba el cambio de punta a punta por HTTP o en el navegador (Claude in Chrome) con los roles que corresponda, en escritorio (1366 px) y celular (390 px), y entrega evidencia. No corrige código."
 model: opus
 ---
 

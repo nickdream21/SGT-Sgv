@@ -1,6 +1,6 @@
 ---
 name: revisor
-description: Revisa los cambios sin commit de SGV (git diff) antes de cerrarlos: bugs, seguridad, datos reales, roles y convenciones de CLAUDE.md. Solo lee; devuelve hallazgos verificados y priorizados.
+description: "Revisa los cambios sin commit de SGV (git diff) antes de cerrarlos: bugs, seguridad, datos reales, roles y convenciones de CLAUDE.md. Solo lee; devuelve hallazgos verificados y priorizados."
 tools: Read, Grep, Glob, Bash, PowerShell
 model: opus
 ---
