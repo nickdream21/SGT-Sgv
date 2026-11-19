@@ -265,6 +265,10 @@ namespace WebSGV
                 catch { /* sin sesión en este punto del pipeline */ }
 
                 LogSGV.Error(real, "Error no controlado en {Ruta} (usuario {IdUsuario})", ruta, idUsuario);
+
+                // E1-7: correo a AvisoErroresPara (Web.config), con límite y en segundo plano; no lanza
+                // ni cambia la respuesta. Las exclusiones (bots, peticiones inválidas, negocio) van en AvisoErrores.
+                WebSGV.Services.Operacion.AvisoErrores.Notificar(real, Context);
             }
             catch
             {

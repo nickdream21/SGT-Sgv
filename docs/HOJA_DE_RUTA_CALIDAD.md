@@ -16,12 +16,12 @@ siguen en `docs/PLAN_MEJORAS_SGV.md`.
 
 ## Estado
 
-**Etapa actual: 1 — fase EJECUCIÓN, tarea E1-7** (E1-1, E1-3, E1-4, E1-6 y E1-8 hechas; E1-7 ya tiene el SMTP configurado y probado; E1-2: primera copia real a la unidad compartida `Respaldos_Sistemas_SGV` en curso; falta registrar la tarea diaria; E1-5 espera la orden de publicar).
+**Etapa actual: 1 — fase EJECUCIÓN, cierre de E1-2/E1-3 y E1-5** (E1-1, E1-3, E1-4, E1-6, E1-7 y E1-8 hechas; E1-2: primera copia real a la unidad compartida `Respaldos_Sistemas_SGV` en curso; falta registrar la tarea diaria; E1-5 espera la orden de publicar).
 Reparto de modelos: Fable 5.2 analiza y planifica; Opus 5.5 ejecuta.
 
 | # | Etapa | Nota hoy | Meta | Estado |
 |---|---|---|---|---|
-| 1 | Operación y continuidad | 4 | 7 | **En ejecución (5 de 8 hechas, 1 a medias)** |
+| 1 | Operación y continuidad | 4 | 7 | **En ejecución (6 de 8 hechas, 1 a medias)** |
 | 2 | Ordenar el plan de mejoras | 3 | 7 | Pendiente |
 | 3 | Integridad de la base de datos | 6,6 | 8 | Pendiente |
 | 4 | Seguridad avanzada | 7,5 | 9 | Pendiente |
@@ -64,7 +64,7 @@ archivos en `Uploads` (59 MB) y 31 PDF firmados (8,4 MB), con su SHA-256 en `Fir
 | **E1-4** | Publicación con paquete y vuelta atrás: perfil `Paquete.pubxml` y `herramientas/publicar/publicar.ps1` (zip por versión, sube sin tocar App_Data ni Uploads, lista y borra sobrantes solo con confirmación). Aceptación: `-SoloListar` muestra exactamente las páginas retiradas. | Claude | **Hecho** (revisor: 2 rondas); falta validarlo contra el FTP real |
 | **E1-5** | Publicar `master` (31 commits), borrar sobrantes, comprobar 404 de las páginas retiradas y la lista de verificación del plan. Requiere E1-1 y E1-2 antes. | Usuario da la orden; Claude acompaña | Pendiente |
 | **E1-6** | Salud y vigilancia: `Salud.ashx` anónimo (200/503 con `SELECT 1`; `?gps=1` da 503 si hay viajes activos y el GPS lleva más de 60 min sin consultar), regla pura con pruebas. | Claude | **Hecho** (revisor y probador, 2 rondas); falta publicar y crear los monitores |
-| **E1-7** | Correo ante errores: `CorreoHelper` común, `AvisoErrores` con límite (1 por tipo cada 30 min, 10 al día), desde `Application_Error`. Requiere SMTP configurado. | Claude | Pendiente; SMTP listo (Gmail `sistemas.cibertic@`, remitente alias `sgv-avisos@`, `SmtpFrom` en `appSettings.Secrets.config`, envío probado) |
+| **E1-7** | Correo ante errores: `CorreoHelper` común, `AvisoErrores` con límite (1 por tipo cada 30 min, 10 al día), desde `Application_Error`. Requiere SMTP configurado. | Claude | **Hecho** (revisor 2 rondas y probador; correo real recibido); falta `SmtpFrom` en el servidor al publicar |
 | **E1-8** | Retiro de DAB del repo y rotaciones. | Claude + usuario | **Hecho** el retiro (revisor: aprobado con cambios, corregidos); rotaciones y borrar `.env`/`dab-config.json` locales: usuario |
 
 **Decisiones del usuario** (recomendación entre paréntesis):
@@ -140,3 +140,4 @@ Fuera de esta etapa (pasa a la 3): borrar los SP retirados de la BD, Query Store
 | 2026-11-19 | 1 | E1-3 hecha: restauración ensayada en el SQL local (todo igual a somee) y `docs/PROCEDIMIENTO_RESPALDO.md`. |
 | 2026-11-19 | 1 | E1-2 código hecho: `respaldar-archivos.ps1` y `verificar-pdf-firmados.ps1`; falta la descarga real con la contraseña FTP. |
 | 2026-11-19 | 1 | E1-8 hecha: Data API Builder retirado del repo con prueba que impide que vuelva. SMTP de avisos configurado y probado (alias sgv-avisos@). Primer .bacpac real en la unidad compartida de Drive. |
+| 2026-11-19 | 1 | E1-7 hecha: aviso por correo ante errores (`AvisoErrores`, `CorreoHelper`), con límite y sin datos sensibles. |

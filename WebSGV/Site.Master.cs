@@ -103,8 +103,12 @@ namespace WebSGV
                     LogSGV.Advertencia("ViewState inválido o vencido en postback parcial de {Ruta} (con sesión: {HaySesion}). {Error}",
                         ruta, haySesion, real?.Message);
                 else if (real != null && WebSGV.Services.Common.MensajeError.ExtraerMensajeDeNegocio(real) == null)
+                {
                     LogSGV.Error(real, "Error en postback parcial de {Ruta} (usuario {IdUsuario})",
                         ruta, haySesion ? SesionHelper.IdUsuario(Session) : (int?)null);
+                    // E1-7: Application_Error sale antes del aviso para los postbacks parciales ya manejados.
+                    WebSGV.Services.Operacion.AvisoErrores.Notificar(real, Context);
+                }
             }
             catch
             {

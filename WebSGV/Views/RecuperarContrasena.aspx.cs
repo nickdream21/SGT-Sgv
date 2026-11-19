@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
-using System.Net;
-using System.Net.Mail;
 using System.Web.Hosting;
 using System.Web.UI;
 using WebSGV.Helpers;
@@ -159,18 +157,9 @@ namespace WebSGV.Views
         private void EncolarCorreoRecuperacion(SolicitudRecuperacion.Candidato usuario, string token)
         {
             int idUsuario = usuario.IdUsuario;
-            MailMessage mail;
-            string smtpHost, smtpUser, smtpPass;
-            int smtpPort;
-            bool smtpSSL;
+            string para, asunto, cuerpo;
             try
             {
-                smtpHost = ConfigurationManager.AppSettings["SmtpHost"];
-                smtpPort = int.Parse(ConfigurationManager.AppSettings["SmtpPort"]);
-                smtpUser = ConfigurationManager.AppSettings["SmtpUser"];
-                smtpPass = ConfigurationManager.AppSettings["SmtpPass"];
-                smtpSSL  = bool.Parse(ConfigurationManager.AppSettings["SmtpSSL"]);
-
                 // La URL base sale de configuración, no del Host del request: un atacante podría
                 // enviar un Host falso y hacer que el enlace con el token apunte a su dominio.
                 // Si App.UrlPublica está vacía solo se acepta el host del request en el sitio local;
@@ -184,12 +173,9 @@ namespace WebSGV.Views
                 }
                 string enlaceRecuperacion = $"{urlBase}/Views/RestablecerContrasena.aspx?token={Uri.EscapeDataString(token)}";
 
-                mail = new MailMessage();
-                mail.From = new MailAddress(smtpUser, "SGV - Sistema de Gestión");
-                mail.To.Add(usuario.Email);
-                mail.Subject = "Recuperación de Contraseña - SGV";
-                mail.IsBodyHtml = true;
-                mail.Body = $@"
+                para = usuario.Email;
+                asunto = "Recuperación de Contraseña - SGV";
+                cuerpo = $@"
                     <html>
                     <body style='font-family: Arial, sans-serif;'>
                         <h2>Recuperación de Contraseña</h2>
@@ -215,27 +201,15 @@ namespace WebSGV.Views
             {
                 HostingEnvironment.QueueBackgroundWorkItem(ct =>
                 {
-                    try
-                    {
-                        using (mail)
-                        using (var smtp = new SmtpClient(smtpHost, smtpPort))
-                        {
-                            smtp.Credentials = new NetworkCredential(smtpUser, smtpPass);
-                            smtp.EnableSsl = smtpSSL;
-                            smtp.Send(mail);
-                        }
+                    // CorreoHelper no lanza ni escribe el cuerpo (donde va el token) en el log.
+                    if (CorreoHelper.Enviar(para, asunto, cuerpo, esHtml: true))
                         LogSGV.Info("Recuperar contraseña: correo enviado al usuario {IdUsuario}", idUsuario);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Los errores SMTP no incluyen el cuerpo del mensaje (donde va el token).
-                        LogSGV.Error(ex, "Recuperar contraseña: no se pudo enviar el correo al usuario {IdUsuario}", idUsuario);
-                    }
+                    else
+                        LogSGV.Error("Recuperar contraseña: no se pudo enviar el correo al usuario {IdUsuario}", idUsuario);
                 });
             }
             catch (Exception ex)
             {
-                mail.Dispose();
                 LogSGV.Error(ex, "Recuperar contraseña: no se pudo encolar el correo del usuario {IdUsuario}", idUsuario);
             }
         }

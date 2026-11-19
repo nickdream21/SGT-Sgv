@@ -479,6 +479,7 @@
     <Compile Include="Helpers\HashHelper.cs" />
     <Compile Include="Helpers\SesionHelper.cs" />
     <Compile Include="Helpers\ControlIntentosLogin.cs" />
+    <Compile Include="Helpers\CorreoHelper.cs" />
     <Compile Include="Helpers\TokenRecuperacion.cs" />
     <Compile Include="Helpers\SolicitudRecuperacion.cs" />
     <Compile Include="Helpers\LogSGV.cs" />
@@ -566,6 +567,7 @@
     <Compile Include="Services\Exportacion\ExportacionLlegadas.cs" />
     <Compile Include="Services\Exportacion\ActualizacionGpsAutomatica.cs" />
     <Compile Include="Services\Operacion\EstadoSalud.cs" />
+    <Compile Include="Services\Operacion\AvisoErrores.cs" />
     <Compile Include="Salud.ashx.cs">
       <DependentUpon>Salud.ashx</DependentUpon>
     </Compile>

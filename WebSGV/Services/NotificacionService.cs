@@ -1,8 +1,5 @@
 using System;
-using System.Configuration;
 using System.Data;
-using System.Net;
-using System.Net.Mail;
 using System.Web;
 using WebSGV.Helpers;
 
@@ -53,42 +50,9 @@ namespace WebSGV.Services
 
         // ─── Punto de envío central ──────────────────────────────────────────────
 
-        private static void Enviar(string para, string asunto, string cuerpoHtml)
-        {
-            try
-            {
-                string host = ConfigurationManager.AppSettings["SmtpHost"];
-                string user = ConfigurationManager.AppSettings["SmtpUser"];
-                string pass = ConfigurationManager.AppSettings["SmtpPass"];
-
-                if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(user))
-                {
-                    LogSGV.Advertencia("SMTP no configurado: no se envió el correo '{Asunto}'", asunto);
-                    return;
-                }
-
-                int  port = int.TryParse(ConfigurationManager.AppSettings["SmtpPort"], out int p) ? p : 587;
-                bool ssl  = bool.TryParse(ConfigurationManager.AppSettings["SmtpSSL"],  out bool s) && s;
-
-                var mail = new MailMessage();
-                mail.From       = new MailAddress(user, "SGV - Sistema de Gestión");
-                mail.To.Add(para);
-                mail.Subject    = asunto;
-                mail.IsBodyHtml = true;
-                mail.Body       = cuerpoHtml;
-
-                var smtp = new SmtpClient(host, port)
-                {
-                    Credentials = new NetworkCredential(user, pass),
-                    EnableSsl   = ssl
-                };
-                smtp.Send(mail);
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "No se pudo enviar el correo '{Asunto}' a {Destinatario}", asunto, para);
-            }
-        }
+        /// <summary>Envío común (<see cref="CorreoHelper"/>): nunca lanza; un fallo queda en el log.</summary>
+        private static void Enviar(string para, string asunto, string cuerpoHtml) =>
+            CorreoHelper.Enviar(para, asunto, cuerpoHtml, esHtml: true);
 
         // ─── Notificaciones públicas ─────────────────────────────────────────────
 

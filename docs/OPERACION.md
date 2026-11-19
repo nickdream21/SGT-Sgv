@@ -1,4 +1,4 @@
-# Operación de SGV: vigilancia del sitio
+# Operación de SGV: vigilancia del sitio y avisos de errores
 
 Para enterarse si el sitio cae o si el GPS automático deja de correr (estuvo desactivado desde el 27/10/2026 sin que nadie lo notara).
 
@@ -41,3 +41,26 @@ Para enterarse si el sitio cae o si el GPS automático deja de correr (estuvo de
 2. Si cron-job.org llama bien (202/200), abrir el tablero de seguimiento y presionar "Actualizar GPS": el mensaje dice si falla el proveedor GPS (Onway) y para qué unidades.
 3. Si no hay viajes en curso, el monitor no avisa.
 4. Si el log dice "última consulta GPS ... (más de 90 min)" pero el cron corre: las unidades están quietas o sin equipo en Onway; no es una caída.
+
+## 4. Aviso por correo de errores no controlados
+
+Cada error no controlado del sitio (el que llega a `Global.asax` `Application_Error` y queda en el log como "Error no controlado en ...") y cada error de un postback parcial de UpdatePanel (`Site.Master`, "Error en postback parcial de ...") manda un correo de texto plano, en segundo plano, sin frenar la respuesta ni cambiar lo que ve el usuario. Código: `Services/Operacion/AvisoErrores.cs` (reglas, probadas en `AvisoErroresTests`) y `Helpers/CorreoHelper.cs` (envío común, el mismo de los avisos de liquidaciones y de la recuperación de contraseña).
+
+**Qué no cubre:** los errores que las páginas ya capturan y muestran con `MensajeErrorHelper` (quedan solo en el log) y los `[WebMethod]` (PageMethods: el ScriptHandler responde el error al navegador sin pasar por `Application_Error`).
+
+**A quién:** la clave `AvisoErroresPara` de `WebSGV/Web.config` (no es secreta), hoy `sistemas.cibertic@serviciosgeneralesviviana.com`. Para cambiarlo, editar ese valor (varios destinatarios separados por comas) y publicar `Web.config`; vacío = no se envía nada. Las peticiones locales (PCs de desarrollo: `Request.IsLocal` o host `localhost`/`127.0.0.1`/`::1`) no avisan. Para probar el aviso en local, agregar temporalmente `<add key="AvisoErroresLocal" value="true" />` en `appSettings` de `Web.config`, provocar el error y quitarla (no se versiona; el asunto lleva el host, p. ej. `localhost:44390`).
+
+**Remitente y servidor:** el SMTP de `appSettings.Secrets.config` (`SmtpHost`, `SmtpPort`, `SmtpSSL`, `SmtpUser`, `SmtpPass`) y `SmtpFrom` como remitente (`sgv-avisos@serviciosgeneralesviviana.com`, alias verificado de la cuenta de Gmail con la que se autentica). Sin `SmtpFrom` se usa `SmtpUser`. TLS siempre salvo `SmtpSSL=false` explícito, 30 s de espera como máximo (el envío va en segundo plano). Un fallo al enviar deja una línea en el log ("No se pudo enviar el correo ... a ***@dominio", sin la dirección completa).
+
+**Límite** (en memoria; se reinicia cuando el sitio se recicla):
+- Como mucho 1 correo cada 30 min por *tipo* de error: el tipo es la excepción + el lugar del código (primera línea propia de la pila) + la ruta (sin querystring, sin mayúsculas, con los números como `#`).
+- Como mucho 10 correos por día en total (día de Perú).
+- Un envío fallido no gasta el cupo: el tipo queda libre y el siguiente error igual vuelve a intentar. Tras 3 fallos seguidos del SMTP se pausan los envíos 15 min ("Aviso de error omitido: envíos en pausa ...").
+- La primera omisión de cada tipo en la ventana deja en el log "Aviso de error omitido por límite (tipo ...)"; las siguientes no, para no llenarlo.
+- Los omitidos se cuentan y el siguiente correo dice "Y N errores más sin aviso desde el ...": el detalle de esos está en `App_Data/logs`.
+
+**No avisan:** 404, peticiones inválidas (`HttpException` 4xx), "potentially dangerous Request..." (`HttpRequestValidationException`), ViewState vencido o inválido, `ThreadAbortException` (`Response.Redirect`), `ErrorNegocioException` (mensajes para el usuario), "Invalid postback or callback argument" (validación de eventos: un POST manipulado), los envíos demasiado grandes de un postback normal y los sondeos de bots (`.php`, `/wp-`, `/.env`, `/.git`, `cgi-bin`, `phpmyadmin`...).
+
+**Qué trae:** fecha y hora de Perú, sitio (host), URL sin los valores del querystring (solo los nombres: `?id=&token=`), método, usuario y rol si hay sesión, IP, tipo, mensaje, lugar y la excepción completa con sus internas y la pila. Nunca valores de formularios, cookies, contraseñas, cadenas de conexión ni el querystring con valores.
+
+**Qué hacer al recibir uno:** buscar la misma hora en `App_Data/logs/sgv-AAAAMMDD.log` del servidor (allí está todo, también los omitidos), reproducir con la ruta y el usuario del correo, y corregir con una tarea en `docs/PLAN_MEJORAS_SGV.md`.
