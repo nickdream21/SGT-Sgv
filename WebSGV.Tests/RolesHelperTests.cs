@@ -10,13 +10,12 @@ namespace WebSGV.Tests
 {
     public class RolesHelperTests
     {
-        // ─── Tarea 17: una sola fuente para la lista de roles en SQL y para OPERADOR ───
+        // ─── Tarea 17: una sola fuente para la lista de roles en SQL ───
 
         private static readonly string[] TodosLosRolesConocidos =
         {
             RolesHelper.ROL_ADMIN, "ADMINISTRADOR", RolesHelper.ROL_ADMIN_TRANSPORTE, RolesHelper.ROL_ADMIN_SISTEMA,
-            RolesHelper.ROL_CONDUCTOR, "CHOFER", RolesHelper.ROL_SUPERVISOR,
-            RolesHelper.ROL_ADMIN_MAQUINARIA, RolesHelper.ROL_OPERADOR, RolesHelper.ROL_CONTABILIDAD
+            RolesHelper.ROL_CONDUCTOR, "CHOFER", RolesHelper.ROL_SUPERVISOR, RolesHelper.ROL_CONTABILIDAD
         };
 
         [Fact]
@@ -67,18 +66,6 @@ namespace WebSGV.Tests
         }
 
         [Theory]
-        [InlineData("OPERADOR", true)]
-        [InlineData("OPERADOR ", true)]                             // espacio de más en la BD
-        [InlineData(" operador", true)]
-        [InlineData("CONDUCTOR", false)]
-        [InlineData("", false)]
-        [InlineData(null, false)]
-        public void EsRolOperador_SinImportarMayusculasNiEspacios(string rol, bool esperado)
-        {
-            Assert.Equal(esperado, RolesHelper.EsRolOperador(rol));
-        }
-
-        [Theory]
         [InlineData("CONDUCTOR")]
         [InlineData("CHOFER")]
         [InlineData(" chofer ")]                                    // sin distinguir mayúsculas/espacios
@@ -101,9 +88,7 @@ namespace WebSGV.Tests
         [Theory]
         [InlineData("CONDUCTOR", "~/Views/DashboardConductor.aspx")]
         [InlineData("chofer", "~/Views/DashboardConductor.aspx")]
-        [InlineData("OPERADOR", "~/Views/DashboardOperador.aspx")]
         [InlineData("ADMINISTRADOR DE SISTEMA", "~/Views/DashboardAdminSistema.aspx")]
-        [InlineData("ADMINISTRADOR DE MAQUINARIA", "~/Views/AsignacionesMaquinaria.aspx")] // Inicio.aspx lo rechaza
         [InlineData("CONTABILIDAD", "~/Views/LiquidacionesAprobadasContabilidad.aspx")]
         [InlineData("ADMIN", "~/Views/Inicio.aspx")]
         [InlineData("ADMINISTRADOR", "~/Views/Inicio.aspx")]
@@ -115,12 +100,118 @@ namespace WebSGV.Tests
 
         [Theory]
         [InlineData("INVITADO")]
-        [InlineData("ADMINISTRADOR DE GRIFO")]                     // rol retirado (2026-11): usuarios viejos van al login
+        [InlineData("ADMINISTRADOR DE GRIFO")]                     // roles retirados (2026-11): usuarios viejos van al login
+        [InlineData("OPERADOR")]
+        [InlineData("ADMINISTRADOR DE MAQUINARIA")]
         [InlineData("")]
         [InlineData(null)]
         public void UrlInicioSegunRol_RolDesconocido_Null(string rol)
         {
             Assert.Null(RolesHelper.UrlInicioSegunRol(rol));
+        }
+
+        // ===== Rol que GestionUsuarios deja guardar (PuedeAsignarseRol) =====
+
+        [Theory]
+        [InlineData("ADMIN")]
+        [InlineData("ADMINISTRADOR DE TRANSPORTE")]
+        [InlineData("ADMINISTRADOR DE SISTEMA")]
+        [InlineData("SUPERVISOR")]
+        [InlineData("CONDUCTOR")]
+        [InlineData("CONTABILIDAD")]
+        [InlineData(" supervisor ")]
+        [InlineData("ADMINISTRADOR")]                              // alias vigentes
+        [InlineData("CHOFER")]
+        public void PuedeAsignarseRol_AltaConRolVigente_Si(string rol)
+        {
+            Assert.True(RolesHelper.PuedeAsignarseRol(rol, null));
+        }
+
+        [Theory]
+        [InlineData("OPERADOR")]
+        [InlineData("ADMINISTRADOR DE GRIFO")]
+        [InlineData("ADMINISTRADOR DE MAQUINARIA")]
+        [InlineData(" operador ")]
+        [InlineData("INVITADO")]
+        [InlineData("")]
+        [InlineData("   ")]
+        [InlineData(null)]
+        public void PuedeAsignarseRol_AltaConRolRetiradoODesconocido_No(string rol)
+        {
+            Assert.False(RolesHelper.PuedeAsignarseRol(rol, null));
+        }
+
+        [Theory]
+        [InlineData("OPERADOR", "OPERADOR")]
+        [InlineData("OPERADOR", " operador ")]                     // el guardado normaliza; la BD puede tenerlo distinto
+        [InlineData("ADMINISTRADOR DE GRIFO", "Administrador de Grifo")]
+        [InlineData(" administrador de maquinaria", "ADMINISTRADOR DE MAQUINARIA ")]
+        public void PuedeAsignarseRol_EdicionQueConservaSuRolRetirado_Si(string rolNuevo, string rolAnterior)
+        {
+            Assert.True(RolesHelper.PuedeAsignarseRol(rolNuevo, rolAnterior));
+        }
+
+        [Theory]
+        [InlineData("OPERADOR", "ADMINISTRADOR DE GRIFO")]          // de un retirado a otro retirado
+        [InlineData("ADMINISTRADOR DE MAQUINARIA", "OPERADOR")]
+        [InlineData("OPERADOR", "SUPERVISOR")]                      // de un vigente a un retirado
+        [InlineData("ADMINISTRADOR DE GRIFO", "ADMIN")]
+        [InlineData("", "OPERADOR")]
+        [InlineData(null, "OPERADOR")]
+        [InlineData("", "")]                                        // rol vacío nunca, aunque el anterior estuviera vacío
+        public void PuedeAsignarseRol_EdicionHaciaRolRetiradoAjeno_No(string rolNuevo, string rolAnterior)
+        {
+            Assert.False(RolesHelper.PuedeAsignarseRol(rolNuevo, rolAnterior));
+        }
+
+        [Theory]
+        [InlineData("SUPERVISOR", "OPERADOR")]                      // sacar a un usuario de un rol retirado
+        [InlineData("ADMINISTRADOR", "ADMINISTRADOR DE GRIFO")]
+        [InlineData("CHOFER", "ADMINISTRADOR DE MAQUINARIA")]
+        [InlineData("CONDUCTOR", "SUPERVISOR")]
+        [InlineData("ADMIN", "ADMIN")]
+        public void PuedeAsignarseRol_EdicionHaciaRolVigente_Si(string rolNuevo, string rolAnterior)
+        {
+            Assert.True(RolesHelper.PuedeAsignarseRol(rolNuevo, rolAnterior));
+        }
+
+        // ===== Roles que GestionUsuarios ofrece (CombinarRolesDisponibles) =====
+
+        [Theory]
+        [InlineData("ADMINISTRADOR DE GRIFO")]                     // retirados: aunque quede un usuario con ese rol, no se ofrecen
+        [InlineData("OPERADOR")]
+        [InlineData(" operador ")]
+        [InlineData("ADMINISTRADOR DE MAQUINARIA")]
+        [InlineData("INVITADO")]
+        public void CombinarRolesDisponibles_RolRetiradoDeLaBd_NoSeOfrece(string rolBd)
+        {
+            var valores = RolesHelper.CombinarRolesDisponibles(new[] { rolBd }).Select(r => r.Valor).ToList();
+            Assert.DoesNotContain(valores, v => string.Equals(v, rolBd.Trim(), StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Theory]
+        [InlineData("ADMINISTRADOR")]                              // alias vigentes: solo salen si hay usuarios con ellos
+        [InlineData("CHOFER")]
+        public void CombinarRolesDisponibles_AliasVigenteDeLaBd_SeOfrece(string rolBd)
+        {
+            Assert.DoesNotContain(RolesHelper.CombinarRolesDisponibles(new string[0]), r => r.Valor == rolBd);
+            Assert.Contains(RolesHelper.CombinarRolesDisponibles(new[] { rolBd }), r => r.Valor == rolBd);
+        }
+
+        [Fact]
+        public void CombinarRolesDisponibles_SinBd_EsElCatalogoSinDuplicados()
+        {
+            var esperados = new[]
+            {
+                RolesHelper.ROL_ADMIN, RolesHelper.ROL_ADMIN_SISTEMA, RolesHelper.ROL_ADMIN_TRANSPORTE,
+                RolesHelper.ROL_CONDUCTOR, RolesHelper.ROL_CONTABILIDAD, RolesHelper.ROL_SUPERVISOR
+            }.OrderBy(r => r, StringComparer.OrdinalIgnoreCase);
+
+            Assert.Equal(esperados, RolesHelper.CombinarRolesDisponibles(null).Select(r => r.Valor));
+            // Un rol del catálogo que también está en la BD (con otro formato) no se repite.
+            Assert.Equal(esperados, RolesHelper.CombinarRolesDisponibles(new[] { " supervisor ", "CONDUCTOR" }).Select(r => r.Valor));
+            Assert.Equal("Contabilidad",
+                RolesHelper.CombinarRolesDisponibles(null).Single(r => r.Valor == RolesHelper.ROL_CONTABILIDAD).Texto);
         }
 
         [Theory]
@@ -174,13 +265,11 @@ namespace WebSGV.Tests
             { "DASHBOARD_CONDUCTOR",        Con("CONDUCTOR", "CHOFER") },
             { "MIS_VIAJES",                 Con("CONDUCTOR", "CHOFER") },
             { "MI_PERFIL",                  Con("CONDUCTOR", "CHOFER") },
-            { "DASHBOARD_OPERADOR",         Con("OPERADOR", "ADMINISTRADOR DE MAQUINARIA") },
-            { "PARTE_DIARIO",               Con("OPERADOR", "ADMINISTRADOR DE MAQUINARIA") },
             { "LIQUIDACIONES_CONTABILIDAD", Con("CONTABILIDAD", "SUPERVISOR") },
         };
 
-        // "ADMINISTRADOR DE GRIFO" ya no es un rol (retirado 2026-11), pero puede quedar en Usuarios.rol:
-        // se prueba para fijar que no tiene ningún permiso.
+        // "ADMINISTRADOR DE GRIFO", "ADMINISTRADOR DE MAQUINARIA" y "OPERADOR" ya no son roles (retirados
+        // 2026-11), pero pueden quedar en Usuarios.rol: se prueban para fijar que no tienen ningún permiso.
         private static readonly string[] RolesProbados =
         {
             "ADMIN", "ADMINISTRADOR", "ADMINISTRADOR DE TRANSPORTE", "ADMINISTRADOR DE SISTEMA", "SUPERVISOR",
@@ -219,7 +308,7 @@ namespace WebSGV.Tests
         public void ConstantesDeRol_EstanEnRolesProbados()
         {
             var constantes = ConstantesDeRol();
-            Assert.True(constantes.Count >= 8, "Se esperaban al menos 8 constantes ROL_*; hay " + constantes.Count);
+            Assert.True(constantes.Count >= 6, "Se esperaban al menos 6 constantes ROL_*; hay " + constantes.Count);
             var faltan = constantes.Where(c => !RolesProbados.Contains(c)).ToList();
             Assert.Empty(faltan);
         }

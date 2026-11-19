@@ -74,7 +74,7 @@
 
     /* Área táctil cómoda sin recortar el texto: el alto crece con el contenido.
        Sin !important: la especificidad (0,3,1) ya le gana a .form-control y .form-control-sm de
-       Bootstrap, y los estilos inline compactos de una página (DashboardOperador) siguen mandando. */
+       Bootstrap, y los estilos inline compactos de una página siguen mandando. */
     .form-control:not(textarea):not([multiple]):not([size]) {
         height: auto;
         min-height: 44px;

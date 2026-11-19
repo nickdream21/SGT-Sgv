@@ -39,7 +39,7 @@ Non-secret `appSettings` (e.g. `Empresa.RazonSocial`, `Empresa.Ruc`, `OrdenViaje
 
 `WebSGV/Views/RolesHelper.cs` (note: file is in `Views/` but namespace is `WebSGV.Helpers`) is the single source of truth for authorization. Use its constants and `ValidarAccesoSeccion(...)` / `TienePermiso(...)` rather than inlining role string checks. Recognized roles:
 
-`ADMIN` (also accepts `ADMINISTRADOR` and `ADMINISTRADOR DE TRANSPORTE` — `EsRolAdmin`), `ADMINISTRADOR DE SISTEMA` (only users and audit; it is **not** an admin of the operation), `CONDUCTOR` (also `CHOFER`), `SUPERVISOR`, `CONTABILIDAD`, `ADMINISTRADOR DE MAQUINARIA`, `OPERADOR`.
+`ADMIN` (also accepts `ADMINISTRADOR` and `ADMINISTRADOR DE TRANSPORTE` — `EsRolAdmin`), `ADMINISTRADOR DE SISTEMA` (only users and audit; it is **not** an admin of the operation), `CONDUCTOR` (also `CHOFER`), `SUPERVISOR`, `CONTABILIDAD`.
 
 The per-section matrix is `TienePermiso(seccion, rol)` (pure; `TienePermiso(seccion)` uses the session role), pinned by `WebSGV.Tests/RolesHelperTests.cs`.
 

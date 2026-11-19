@@ -30,18 +30,27 @@ namespace WebSGV.Views
 
         private void CargarRoles()
         {
-            var rolesDisponibles = RolesHelper.ObtenerRolesDisponibles();
-
             ddlFiltroRol.Items.Clear();
             ddlFiltroRol.Items.Add(new ListItem("-- Todos los roles --", ""));
 
-            ddlRol.Items.Clear();
-
-            foreach (var rol in rolesDisponibles)
-            {
+            foreach (var rol in CargarRolesAsignables())
                 ddlFiltroRol.Items.Add(new ListItem(rol.Texto, rol.Valor));
+        }
+
+        /// <summary>
+        /// Rehace solo la lista de roles del modal (no toca el filtro ni su selección): así un rol
+        /// retirado que se agregó al editar a un usuario que lo tiene no queda en el ViewState
+        /// para el siguiente alta o edición.
+        /// </summary>
+        private List<RolesHelper.RolDisponible> CargarRolesAsignables()
+        {
+            var rolesDisponibles = RolesHelper.ObtenerRolesDisponibles();
+
+            ddlRol.Items.Clear();
+            foreach (var rol in rolesDisponibles)
                 ddlRol.Items.Add(new ListItem(rol.Texto, rol.Valor));
-            }
+
+            return rolesDisponibles;
         }
 
         private void CargarConductores()
@@ -109,6 +118,7 @@ namespace WebSGV.Views
             txtNombreUsuario.Text   = "";
             txtNombreUsuario.Enabled = true;
             txtNombre.Text          = "";
+            CargarRolesAsignables();   // descarta un rol retirado que dejó la última edición
             if (ddlRol.Items.Count > 0)
                 ddlRol.SelectedIndex = 0;
             ddlConductor.SelectedIndex = 0;
@@ -158,6 +168,8 @@ namespace WebSGV.Views
             // Los roles son un valor cerrado en MAYUSCULAS; se normaliza para que un valor antiguo
             // en minuscula no deje de coincidir con la lista ni se vuelva a guardar asi.
             string rolUsuario = r["rol"].ToString().Trim().ToUpperInvariant();
+            // Lista limpia: el rol retirado solo aparece mientras se edita al usuario que ya lo tiene.
+            CargarRolesAsignables();
             ListItem itemRol = ddlRol.Items.FindByValue(rolUsuario);
             if (itemRol == null)
                 ddlRol.Items.Add(new ListItem(rolUsuario, rolUsuario));
@@ -217,6 +229,9 @@ namespace WebSGV.Views
                 requiereCambioContrasena = 1
             });
 
+        private static string MensajeRolNoVigente(string rol) =>
+            $"El rol {rol} ya no está vigente en el sistema y no se puede asignar. Elija otro rol.";
+
         private void PrepararResetPassword(int idUsuario)
         {
             object result = DbHelper.EjecutarEscalar(
@@ -263,6 +278,12 @@ namespace WebSGV.Views
 
             if (idUsuario == 0)
             {
+                if (!RolesHelper.PuedeAsignarseRol(rol, null))
+                {
+                    MostrarMensajeModal(MensajeRolNoVigente(rol), "danger");
+                    AbrirModal("modalUsuario");
+                    return;
+                }
                 if (!System.Text.RegularExpressions.Regex.IsMatch(nombreUsuario, @"^[A-Za-z0-9_.]{3,50}$"))
                 {
                     MostrarMensajeModal("El nombre de usuario debe tener entre 3 y 50 caracteres: solo letras, números, punto y guion bajo, sin espacios.", "danger");
@@ -349,6 +370,10 @@ namespace WebSGV.Views
                         throw new Services.Common.ErrorNegocioException("El usuario ya no existe. Actualice la lista.");
                     DataRow anterior = previo.Rows[0];
                     string rolAnterior = Convert.ToString(anterior["rol"]).Trim();
+
+                    // Un rol retirado solo se conserva si ya era el suyo; no se asigna a nadie más.
+                    if (!RolesHelper.PuedeAsignarseRol(rol, rolAnterior))
+                        throw new Services.Common.ErrorNegocioException(MensajeRolNoVigente(rol));
 
                     // Nadie se cambia su propio rol (ni se quita ni se da permisos): lo hace otro administrador de sistema.
                     if (idUsuario == SecurityHelper.ObtenerIdUsuario()

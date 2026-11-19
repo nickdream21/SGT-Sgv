@@ -2,21 +2,19 @@
 
 ## 📋 Descripción General
 
-**SGV (Sistema de Gestión de Viajes)** es una aplicación web ASP.NET Web Forms (.NET Framework 4.8) orientada a la gestión de transporte de carga. Administra el ciclo completo desde la programación de despachos, seguimiento de viajes, liquidación de gastos firmada digitalmente por conductores, hasta la aprobación administrativa con ajustes auditados. Incluye además módulos de gestión de maquinaria pesada y parte diario de operadores.
+**SGV (Sistema de Gestión de Viajes)** es una aplicación web ASP.NET Web Forms (.NET Framework 4.8) orientada a la gestión de transporte de carga. Administra el ciclo completo desde la programación de despachos, seguimiento de viajes, liquidación de gastos firmada digitalmente por conductores, hasta la aprobación administrativa con ajustes auditados.
 
 ---
 
 ## 👥 Roles del Sistema
 
-El sistema maneja **7 roles** (8 constantes `ROL_*`: `ADMIN` y `ADMINISTRADOR DE TRANSPORTE` tienen los mismos permisos) definidos en `WebSGV/Views/RolesHelper.cs`; los alias `ADMINISTRADOR` y `CHOFER` se aceptan como `ADMIN` y `CONDUCTOR`:
+El sistema maneja **5 roles** (6 constantes `ROL_*`: `ADMIN` y `ADMINISTRADOR DE TRANSPORTE` tienen los mismos permisos) definidos en `WebSGV/Views/RolesHelper.cs`; los alias `ADMINISTRADOR` y `CHOFER` se aceptan como `ADMIN` y `CONDUCTOR`:
 
 | Rol | Constante | Valor en BD | Redirección Login | Descripción |
 |-----|-----------|-------------|-------------------|-------------|
 | **Administrador de Transporte** | `ROL_ADMIN_TRANSPORTE` (y `ROL_ADMIN` para `ADMIN` / `ADMINISTRADOR`) | `ADMINISTRADOR DE TRANSPORTE` (también `ADMIN`, `ADMINISTRADOR`) | `Inicio.aspx` | Gestión operativa completa: despachos, viajes, liquidaciones, registros y reportes |
 | **Administrador de Sistema** | `ROL_ADMIN_SISTEMA` | `ADMINISTRADOR DE SISTEMA` | `DashboardAdminSistema.aspx` | Gestión de usuarios y auditoría; no opera despachos, liquidaciones ni reportes |
 | **Conductor** | `ROL_CONDUCTOR` | `CONDUCTOR` (también `CHOFER`) | `DashboardConductor.aspx` | Liquidación firmada de viajes asignados y consulta de historial |
-| **Administrador de Maquinaria** | `ROL_ADMIN_MAQUINARIA` | `ADMINISTRADOR DE MAQUINARIA` | `AsignacionesMaquinaria.aspx` | Gestión de equipos, obras, operadores y asignaciones |
-| **Operador** | `ROL_OPERADOR` | `OPERADOR` | `DashboardOperador.aspx` | Registro de parte diario de trabajo en maquinaria pesada |
 | **Contabilidad** | `ROL_CONTABILIDAD` | `CONTABILIDAD` | `LiquidacionesAprobadasContabilidad.aspx` | Consulta de liquidaciones aprobadas y sus PDF (menú propio: Liquidaciones Aprobadas) |
 | **Supervisor** | `ROL_SUPERVISOR` | `SUPERVISOR` | `Inicio.aspx` | Permisos similares a ADMIN en despachos, órdenes de viaje y registros |
 
@@ -28,18 +26,17 @@ El sistema maneja **7 roles** (8 constantes `ROL_*`: `ADMIN` y `ADMINISTRADOR DE
 
 ## 🔑 Matriz de Permisos por Sección
 
-ADMIN\* = `ADMIN`, `ADMINISTRADOR` y `ADMINISTRADOR DE TRANSPORTE` (`RolesHelper.EsRolAdmin`); CONDUCTOR incluye `CHOFER`; MAQUINARIA es el administrador de su módulo.
+ADMIN\* = `ADMIN`, `ADMINISTRADOR` y `ADMINISTRADOR DE TRANSPORTE` (`RolesHelper.EsRolAdmin`); CONDUCTOR incluye `CHOFER`. Los roles retirados (`ADMINISTRADOR DE GRIFO`, `ADMINISTRADOR DE MAQUINARIA`, `OPERADOR`) no tienen ningún permiso.
 
-| Sección (`TienePermiso(seccion, rol)`) | ADMIN\* | SUPERVISOR | CONDUCTOR | CONTABILIDAD | ADMIN_SISTEMA | MAQUINARIA | OPERADOR |
-|----------------------------------------|:------:|:----------:|:---------:|:------------:|:-------------:|:----------:|:--------:|
-| `DESPACHO` / `FACTURA` / `CPIC` / `ORDEN_VIAJE` / `REGISTRO` / `CONSULTAS` / `INDICADORES` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `REGISTRO_CONDUCTORES` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `AUDITORIA` | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `SEGUIMIENTO_EXPORTACION` / `DASHBOARD_EXPORTACION` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `DASHBOARD_CONDUCTOR` / `MIS_VIAJES` / `MI_PERFIL` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `DASHBOARD_OPERADOR` / `PARTE_DIARIO` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| `LIQUIDACIONES_CONTABILIDAD` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Cualquier otra sección | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Sección (`TienePermiso(seccion, rol)`) | ADMIN\* | SUPERVISOR | CONDUCTOR | CONTABILIDAD | ADMIN_SISTEMA |
+|----------------------------------------|:------:|:----------:|:---------:|:------------:|:-------------:|
+| `DESPACHO` / `FACTURA` / `CPIC` / `ORDEN_VIAJE` / `REGISTRO` / `CONSULTAS` / `INDICADORES` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `REGISTRO_CONDUCTORES` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `AUDITORIA` | ❌ | ❌ | ❌ | ❌ | ✅ |
+| `SEGUIMIENTO_EXPORTACION` / `DASHBOARD_EXPORTACION` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `DASHBOARD_CONDUCTOR` / `MIS_VIAJES` / `MI_PERFIL` | ✅ | ❌ | ✅ | ❌ | ❌ |
+| `LIQUIDACIONES_CONTABILIDAD` | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Cualquier otra sección | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 > Matriz verificada por `RolesHelperTests` (tabla literal; además comprueba que toda sección usada en el código existe en ella).
 
@@ -79,31 +76,6 @@ Admin Revisa: Aprobar / Rechazar / Editar
         │     · PDF firmado generado y archivado en ~/App_Data/OrdenesViaje
         │     → Pasa a Historial / Reportes
         └── Si Rechaza → Regresa al Conductor para corrección
-```
-
-### Flujo de Maquinaria (Admin de Maquinaria / Operador)
-
-```
-Admin Maquinaria configura maestros:
-  · RegistroEquiposMaquinaria.aspx (topadoras, motoniveladoras, etc.)
-  · RegistroObras.aspx
-  · RegistroClientesObra.aspx
-  · RegistroOperadores.aspx
-        │
-        ▼
-AsignacionesMaquinaria.aspx — Vincula Operador + Equipo + Obra (estado ACTIVA)
-        │
-        ▼
-Operador inicia sesión → DashboardOperador.aspx
-  · Ve su asignación activa (equipo + obra + cliente)
-  · Registra Parte Diario de Trabajo (número: PT-YYYY-XXXXXX)
-    - Odómetro inicio/fin, horómetro inicio/fin
-    - Consumo: petróleo, gasolina, aceite, grasa
-    - Carretera, sector, labor realizada
-    - Reclamos y observaciones
-        │
-        ▼
-Historial de partes accesible en Dashboard
 ```
 
 ---
@@ -196,42 +168,6 @@ El conductor accede a un dashboard con **3 pestañas**:
 
 #### Pestaña 3: Historial
 - Historial completo de liquidaciones (aprobadas, rechazadas, pendientes)
-
----
-
-## 🔩 Rol: Administrador de Maquinaria (`ADMINISTRADOR DE MAQUINARIA`)
-
-### Módulo de Maestros de Maquinaria
-
-| Página | Función |
-|--------|---------|
-| `RegistroEquiposMaquinaria.aspx` | Registro y gestión de equipos (topadoras, motoniveladoras, etc.) |
-| `RegistroObras.aspx` | Registro y gestión de obras |
-| `RegistroClientesObra.aspx` | Registro y gestión de clientes de obra (entidad diferente a clientes de transporte) |
-| `RegistroOperadores.aspx` | Registro y gestión de operadores de maquinaria |
-| `AsignacionesMaquinaria.aspx` | Vinculación Operador → Equipo → Obra (estado `ACTIVA`) |
-
-### Gestión de Asignaciones
-
-1. Crear asignación vinculando un operador, un equipo y una obra
-2. Cada operador puede tener una asignación `ACTIVA` a la vez
-3. El operador verá su asignación al ingresar a `DashboardOperador.aspx`
-
----
-
-## 🏗️ Rol: Operador (`OPERADOR`)
-
-### Dashboard del Operador (`DashboardOperador.aspx`)
-
-- Ve su asignación activa: equipo + obra + cliente
-- **Registra Parte Diario de Trabajo** (número: `PT-YYYY-XXXXXX`):
-  - Odómetro inicio/fin
-  - Horómetro inicio/fin
-  - Consumo de petróleo, gasolina, aceite, grasa
-  - Carretera y sector de trabajo
-  - Labor realizada
-  - Reclamos y observaciones
-- Historial de partes diarios registrados
 
 ---
 
@@ -369,29 +305,9 @@ Admin revisa liquidación pendiente:
     └── Auditoría del Sistema (solo Admin Sistema)
 ```
 
-### Menú Administrador de Maquinaria
-```
-├── Inicio
-├── Maquinaria
-│   ├── Equipos
-│   ├── Obras
-│   ├── Clientes de Obra
-│   ├── Operadores
-│   └── Asignaciones
-└── Configuración
-    └── Cambiar Contraseña
-```
-
 ### Menú Conductor
 ```
 ├── Inicio (DashboardConductor)
-└── Configuración
-    └── Cambiar Contraseña
-```
-
-### Menú Operador
-```
-├── Inicio (DashboardOperador)
 └── Configuración
     └── Cambiar Contraseña
 ```

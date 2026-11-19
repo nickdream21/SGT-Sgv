@@ -49,21 +49,19 @@ Ejemplo: sha256.310000.{salt de 16 bytes en base64, 24 caracteres}.{hash de 32 b
 | `ADMIN` (también `ADMINISTRADOR`) | `ROL_ADMIN`            | `Inicio.aspx`                          | Operación completa (Despacho, OV, Registro, liquidaciones, reportes) |
 | `ADMINISTRADOR DE TRANSPORTE` | `ROL_ADMIN_TRANSPORTE`     | `Inicio.aspx`                          | Igual que `ADMIN` (`EsRolAdmin`) |
 | `ADMINISTRADOR DE SISTEMA` | `ROL_ADMIN_SISTEMA`           | `DashboardAdminSistema.aspx`           | Solo gestión de usuarios y auditoría; no opera |
-| `SUPERVISOR`               | `ROL_SUPERVISOR`              | `Inicio.aspx`                          | Similar a Admin (sin dashboards de conductor/operador) |
+| `SUPERVISOR`               | `ROL_SUPERVISOR`              | `Inicio.aspx`                          | Similar a Admin (sin dashboard de conductor) |
 | `CONDUCTOR` (también `CHOFER`) | `ROL_CONDUCTOR`           | `DashboardConductor.aspx`              | Dashboard Conductor |
 | `CONTABILIDAD`             | `ROL_CONTABILIDAD`            | `LiquidacionesAprobadasContabilidad.aspx` | Consulta de liquidaciones aprobadas |
-| `ADMINISTRADOR DE MAQUINARIA` | `ROL_ADMIN_MAQUINARIA`     | `AsignacionesMaquinaria.aspx`          | Maquinaria |
-| `OPERADOR`                 | `ROL_OPERADOR`                | `DashboardOperador.aspx`               | Dashboard Operador (Parte Diario) |
 
 La matriz completa de permisos por sección está en `docs/FLUJO_DE_TRABAJO_SGV.md`.
+
+Roles retirados (2026-11): `ADMINISTRADOR DE GRIFO`, `ADMINISTRADOR DE MAQUINARIA` y `OPERADOR`. Un usuario antiguo con uno de ellos no tiene página de inicio ni permisos: al entrar vuelve al login. Gestión de Usuarios ya no los ofrece (`RolesHelper.CombinarRolesDisponibles` solo agrega de la BD roles vigentes), pero al editar a ese usuario muestra su rol actual para cambiarlo.
 
 ----------------------------|-------------------------------|---------------------------|-----------------------------|
 | `ADMIN`                    | `ROL_ADMIN`                   | `Inicio.aspx`            | Menú completo (Despacho, OV, Registro) |
 | `ADMINISTRADOR DE SISTEMA` | `ROL_ADMIN_SISTEMA`           | `Inicio.aspx`            | Menú Admin + Auditoría      |
 | `CONDUCTOR`                | `ROL_CONDUCTOR`               | `DashboardConductor.aspx`| Dashboard Conductor         |
 | `SUPERVISOR`               | `ROL_SUPERVISOR`              | `Inicio.aspx`            | Similar a Admin             |
-| `ADMINISTRADOR DE MAQUINARIA` | `ROL_ADMIN_MAQUINARIA`     | `Inicio.aspx`            | Menú básico (configurable)  |
-| `OPERADOR`                 | `ROL_OPERADOR`                | `DashboardOperador.aspx` | Dashboard Operador (Parte Diario) |
 
 ---
 
@@ -173,13 +171,15 @@ VALUES ('login_usuario', 'Nombre Completo', '<hash_pbkdf2>', 'NOMBRE DEL ROL', 1
 
 ## Ejemplo Paso a Paso
 
-### Crear rol "ADMINISTRADOR DE MAQUINARIA"
+### Así se creó el rol "CONTABILIDAD"
 
-1. **`RolesHelper.cs`** → Agregar `ROL_ADMIN_MAQUINARIA` + `EsAdminMaquinaria()`
-2. **`Site.Master.cs`** → Agregar propiedad `EsAdminMaquinaria`
-3. **`Site.Master`** → Agregar bloque de menú condicional
-4. **`RolesHelper.UrlInicioSegunRol`** → Agregar el `case` (hoy redirige a `AsignacionesMaquinaria.aspx`)
-5. **SQL** → `INSERT INTO Usuarios ... VALUES (..., 'ADMINISTRADOR DE MAQUINARIA', 1)`
+1. **`RolesHelper.cs`** → `ROL_CONTABILIDAD = "CONTABILIDAD"`, su etiqueta "Contabilidad" en `EtiquetasRol` y `EsContabilidad()`
+2. **`RolesHelper.TienePermiso`** → sección `LIQUIDACIONES_CONTABILIDAD` (`r == ROL_CONTABILIDAD || admin || supervisor`); en `RolesHelperTests`, el rol en `RolesProbados` y la fila de `MatrizEsperada`
+3. **`SecurityHelper.cs`** → `EsContabilidad()` y `PuedeConsultarLiquidacionesGlobales()` (admin, supervisor o contabilidad)
+4. **`Site.Master.cs`** → propiedad `EsContabilidad` (en `InicializarPropiedadesVacias` y `CargarInformacionUsuario`)
+5. **`Site.Master`** → bloque `<% if (EsContabilidad) { %>` con su menú
+6. **`RolesHelper.UrlInicioSegunRol`** → `case ROL_CONTABILIDAD: return "~/Views/LiquidacionesAprobadasContabilidad.aspx";`
+7. **SQL** → `Database/Scripts/script_AgregarRolContabilidad.sql` (alta idempotente de un usuario con rol `'CONTABILIDAD'`)
 
 ---
 

@@ -63,15 +63,13 @@
 
 ---
 
-## 👥 Roles del Sistema (6 roles)
+## 👥 Roles del Sistema (4 roles)
 
 | Rol | Valor en BD | Pantalla inicial |
 |---|---|---|
 | **Administrador de Transporte** | `ADMIN` | `Inicio.aspx` |
 | **Administrador de Sistema** | `ADMINISTRADOR DE SISTEMA` | `Inicio.aspx` |
 | **Conductor / Chofer** | `CONDUCTOR` | `DashboardConductor.aspx` |
-| **Administrador de Maquinaria** | `ADMINISTRADOR DE MAQUINARIA` | `Inicio.aspx` |
-| **Operador** | `OPERADOR` | `DashboardOperador.aspx` |
 | **Supervisor** | `SUPERVISOR` | `Inicio.aspx` |
 
 > Los roles **no tienen tabla propia** en BD. Se almacenan como texto libre en `Usuarios.rol` y se comparan siempre en mayúsculas (`.ToUpper()`).
@@ -102,24 +100,22 @@
 | `Session["Nombre"]` | Nombre completo |
 | `Session["NombreUsuario"]` | Login |
 | `Session["IdConductor"]` | Solo para rol CONDUCTOR |
-| `Session["IdOperador"]` | Solo para rol OPERADOR |
 
 ---
 
 ## 🔐 Matriz de Permisos
 
-| Sección | ADMIN | ADMIN_SISTEMA | CONDUCTOR | ADMIN_MAQUINARIA | OPERADOR | SUPERVISOR |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| Despachos | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| Facturas / CPIC | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| Órdenes de Viaje | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| Registros Maestros | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| Consultas / Indicadores | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| Registro Conductores | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| Auditoría | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Dashboard Conductor / Mis Viajes | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Firma Liquidación | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Dashboard Operador / Parte Diario | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
+| Sección | ADMIN | ADMIN_SISTEMA | CONDUCTOR | SUPERVISOR |
+|---|:---:|:---:|:---:|:---:|
+| Despachos | ✅ | ✅ | ❌ | ✅ |
+| Facturas / CPIC | ✅ | ✅ | ❌ | ✅ |
+| Órdenes de Viaje | ✅ | ✅ | ❌ | ✅ |
+| Registros Maestros | ✅ | ✅ | ❌ | ✅ |
+| Consultas / Indicadores | ✅ | ✅ | ❌ | ✅ |
+| Registro Conductores | ✅ | ✅ | ❌ | ✅ |
+| Auditoría | ❌ | ✅ | ❌ | ❌ |
+| Dashboard Conductor / Mis Viajes | ✅ | ✅ | ✅ | ❌ |
+| Firma Liquidación | ❌ | ❌ | ✅ | ❌ |
 
 ---
 
@@ -207,36 +203,6 @@ Al iniciar sesión el conductor ve sus viajes asignados en progreso y puede:
 | ❌ | No puede aprobar liquidaciones |
 | ❌ | No puede ver reportes globales |
 | ✅ | Solo ve sus propios viajes (filtrado por `Session["IdConductor"]`) |
-
----
-
-## ⚙️ ROL: Administrador de Maquinaria (`ADMINISTRADOR DE MAQUINARIA`)
-
-### Configuración de Maestros
-
-- `RegistroEquiposMaquinaria.aspx` — Topadoras, motoniveladoras, etc.
-- `RegistroObras.aspx` — Obras
-- `RegistroClientesObra.aspx` — Clientes de obra
-- `RegistroOperadores.aspx` — Operadores de maquinaria
-
-### Asignaciones
-
-- `AsignacionesMaquinaria.aspx` — Vincula Operador + Equipo + Obra (estado ACTIVA)
-
----
-
-## 👷 ROL: Operador (`OPERADOR`)
-
-### Dashboard del Operador — `DashboardOperador.aspx`
-
-- Ve su asignación activa (equipo + obra + cliente)
-- Registra **Parte Diario de Trabajo** (número: `PT-YYYY-XXXXXX`):
-  - Odómetro inicio/fin
-  - Horómetro inicio/fin
-  - Consumo: petróleo, gasolina, aceite, grasa
-  - Carretera, sector, labor realizada
-  - Reclamos y observaciones
-- Historial de partes diarios
 
 ---
 

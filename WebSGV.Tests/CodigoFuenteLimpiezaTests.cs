@@ -209,7 +209,7 @@ namespace WebSGV.Tests
             Assert.Matches(ComparacionLiteralRol, "private const string ROL_ADMIN_SISTEMA  = \"ADMINISTRADOR DE SISTEMA\";");
             Assert.Matches(ComparacionLiteralRol, "private static readonly string RolX = \"ADMINISTRADOR DE TRANSPORTE\";");
             // No son comparaciones de rol.
-            Assert.DoesNotMatch(ComparacionLiteralRol, "if (rol == RolesHelper.ROL_OPERADOR)");
+            Assert.DoesNotMatch(ComparacionLiteralRol, "if (rol == RolesHelper.ROL_CONTABILIDAD)");
             Assert.DoesNotMatch(ComparacionLiteralRol, "Col(\"CONDUCTOR\", TipoColumnaReporte.Texto, 2.2f, f => f[\"Conductor\"]);");
             Assert.DoesNotMatch(ComparacionLiteralRol, "int chofer = Columna(\"CHOFER\", \"CONDUCTOR\");");
             Assert.DoesNotMatch(ComparacionLiteralRol, "WHERE rol IN ('ADMIN', 'SUPERVISOR')");

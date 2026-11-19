@@ -203,57 +203,6 @@
                     </li>
                     <% } %>
 
-                    <!-- ==================== MENÚ PARA ADMINISTRADOR DE MAQUINARIA ==================== -->
-                    <% if (EsAdminMaquinaria)
-                        { %>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href='<%= ResolveUrl(UrlInicio) %>'>
-                            <i class="fas fa-home"></i>Inicio
-                        </a>
-                    </li>
-
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownRegistroMaquinaria" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-database"></i>Registro
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdownRegistroMaquinaria">
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroOperadores.aspx") %>'>
-                                <i class="fas fa-hard-hat"></i>Operadores
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroEquiposMaquinaria.aspx") %>'>
-                                <i class="fas fa-cogs"></i>Equipos / Maquinaria
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroClientesObra.aspx") %>'>
-                                <i class="fas fa-building"></i>Clientes de Obra
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroObras.aspx") %>'>
-                                <i class="fas fa-hard-hat"></i>Obras
-                            </a>
-                        </div>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href='<%= ResolveUrl("~/Views/AsignacionesMaquinaria.aspx") %>'>
-                            <i class="fas fa-project-diagram"></i>Asignaciones
-                        </a>
-                    </li>
-
-                    <% } %>
-
-                    <!-- ==================== MENÚ PARA OPERADOR ==================== -->
-                    <% if (EsOperador)
-                        { %>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href='<%= ResolveUrl("~/Views/DashboardOperador.aspx") %>'>
-                            <i class="fas fa-hard-hat"></i>Mi Dashboard
-                        </a>
-                    </li>
-
-                    <% } %>
-
                     <!-- ==================== MENÚ PARA CONDUCTOR ==================== -->
                     <% if (EsConductor)
                         { %>

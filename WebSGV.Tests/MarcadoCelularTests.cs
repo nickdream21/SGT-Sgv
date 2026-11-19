@@ -18,13 +18,6 @@ namespace WebSGV.Tests
     /// </summary>
     public class MarcadoCelularTests
     {
-        /// <summary>Páginas de maquinaria: fuera del alcance de la revisión móvil de 2026-11.</summary>
-        private static readonly HashSet<string> PaginasExcluidas = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "AsignacionesMaquinaria.aspx",
-            "RegistroEquiposMaquinaria.aspx",
-        };
-
         /// <summary>
         /// Envoltorios propios que ya desplazan su tabla (cada uno debe tener overflow-x: auto en
         /// algún CSS de Content; lo comprueba EnvoltoriosConocidos_TienenOverflowX).
@@ -79,7 +72,6 @@ namespace WebSGV.Tests
             int revisadas = 0;
             foreach (string archivo in Directory.GetFiles(vistas, "*.aspx", SearchOption.AllDirectories))
             {
-                if (PaginasExcluidas.Contains(Path.GetFileName(archivo))) continue;
                 string texto = SinCodigoNiComentarios(File.ReadAllText(archivo));
 
                 var pila = new List<Tuple<string, string>>();   // (etiqueta, clases)

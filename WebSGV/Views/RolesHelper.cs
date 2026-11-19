@@ -23,8 +23,6 @@ namespace WebSGV.Helpers
         public const string ROL_SUPERVISOR = "SUPERVISOR";
         public const string ROL_ADMIN_SISTEMA = "ADMINISTRADOR DE SISTEMA";
         public const string ROL_ADMIN_TRANSPORTE = "ADMINISTRADOR DE TRANSPORTE";
-        public const string ROL_ADMIN_MAQUINARIA = "ADMINISTRADOR DE MAQUINARIA";
-        public const string ROL_OPERADOR = "OPERADOR";
         public const string ROL_CONTABILIDAD = "CONTABILIDAD";
 
         private static readonly Dictionary<string, string> EtiquetasRol =
@@ -33,8 +31,6 @@ namespace WebSGV.Helpers
                 { ROL_ADMIN, "Administrador" },
                 { ROL_SUPERVISOR, "Supervisor" },
                 { ROL_CONDUCTOR, "Conductor" },
-                { ROL_ADMIN_MAQUINARIA, "Administrador de Maquinaria" },
-                { ROL_OPERADOR, "Operador" },
                 { ROL_CONTABILIDAD, "Contabilidad" },
                 { ROL_ADMIN_SISTEMA, "Administrador de Sistema" },
                 { ROL_ADMIN_TRANSPORTE, "Administrador de Transporte" }
@@ -81,15 +77,6 @@ namespace WebSGV.Helpers
             return RolesAdmin.Concat(new[] { ROL_SUPERVISOR }).ToList();
         }
 
-        /// <summary>
-        /// True si el rol indicado es OPERADOR, sin importar mayúsculas ni espacios. No lee la
-        /// sesión: sirve antes de guardarla (login).
-        /// </summary>
-        public static bool EsRolOperador(string rol)
-        {
-            return (rol ?? "").Trim().ToUpper() == ROL_OPERADOR;
-        }
-
         public static bool EsAdminTransporte()
         {
             return ObtenerRolActual() == ROL_ADMIN_TRANSPORTE;
@@ -134,9 +121,7 @@ namespace WebSGV.Helpers
 
             switch (r)
             {
-                case ROL_OPERADOR:         return "~/Views/DashboardOperador.aspx";
                 case ROL_ADMIN_SISTEMA:    return "~/Views/DashboardAdminSistema.aspx";
-                case ROL_ADMIN_MAQUINARIA: return "~/Views/AsignacionesMaquinaria.aspx";
                 case ROL_CONTABILIDAD:     return "~/Views/LiquidacionesAprobadasContabilidad.aspx";
                 case ROL_ADMIN:
                 case "ADMINISTRADOR":
@@ -144,24 +129,6 @@ namespace WebSGV.Helpers
                 case ROL_SUPERVISOR:       return "~/Views/Inicio.aspx";
                 default:                   return null;
             }
-        }
-
-        /// <summary>
-        /// Verifica si el usuario actual es Administrador de Maquinaria
-        /// </summary>
-        public static bool EsAdminMaquinaria()
-        {
-            string rolActual = ObtenerRolActual();
-            return rolActual == ROL_ADMIN_MAQUINARIA;
-        }
-
-        /// <summary>
-        /// Verifica si el usuario actual es Operador de Maquinaria
-        /// </summary>
-        public static bool EsOperador()
-        {
-            string rolActual = ObtenerRolActual();
-            return rolActual == ROL_OPERADOR;
         }
 
         /// <summary>
@@ -226,11 +193,6 @@ namespace WebSGV.Helpers
                 case "MI_PERFIL":
                     return EsRolConductor(r) || admin;
 
-                // Páginas del OPERADOR de Maquinaria
-                case "DASHBOARD_OPERADOR":
-                case "PARTE_DIARIO":
-                    return r == ROL_OPERADOR || r == ROL_ADMIN_MAQUINARIA || admin;
-
                 // Consulta para Contabilidad (solo lectura)
                 case "LIQUIDACIONES_CONTABILIDAD":
                     return r == ROL_CONTABILIDAD || admin || supervisor;
@@ -241,28 +203,58 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
-        /// Obtiene los roles disponibles centralizados desde BD + catálogo base.
-        /// Incluye roles históricos aunque actualmente no existan usuarios con ese rol.
+        /// True si el sistema reconoce el rol (tiene página de inicio): los del catálogo y sus
+        /// alias (ADMINISTRADOR, CHOFER). Un rol retirado (p. ej. ADMINISTRADOR DE GRIFO,
+        /// OPERADOR, ADMINISTRADOR DE MAQUINARIA) no es vigente aunque siga en algún usuario.
+        /// </summary>
+        public static bool EsRolVigente(string rol) => UrlInicioSegunRol(rol) != null;
+
+        /// <summary>
+        /// True si GestionUsuarios puede guardar <paramref name="rolNuevo"/>: debe ser vigente, salvo
+        /// en una edición que conserva el mismo rol que el usuario ya tenía (no se le obliga a
+        /// cambiarlo). En un alta <paramref name="rolAnterior"/> es null. Ignora mayúsculas y espacios.
+        /// </summary>
+        public static bool PuedeAsignarseRol(string rolNuevo, string rolAnterior)
+        {
+            string nuevo = (rolNuevo ?? "").Trim().ToUpperInvariant();
+            if (nuevo.Length == 0) return false;
+            if (EsRolVigente(nuevo)) return true;
+            return rolAnterior != null && nuevo == rolAnterior.Trim().ToUpperInvariant();
+        }
+
+        /// <summary>
+        /// Obtiene los roles que se pueden asignar: catálogo base + roles vigentes que ya
+        /// existan en la BD (alias como ADMINISTRADOR o CHOFER). Los roles retirados no se
+        /// ofrecen aunque quede algún usuario antiguo con ellos.
         /// </summary>
         public static List<RolDisponible> ObtenerRolesDisponibles()
         {
-            var roles = new List<string>();
-
-            // 1) Catálogo base del sistema (fuente canónica)
-            roles.AddRange(EtiquetasRol.Keys);
-
-            // 2) Roles existentes en BD para incluir valores dinámicos
+            var rolesBd = new List<string>();
             try
             {
                 DataTable dt = DbHelper.ConsultarTabla(
                     "SELECT DISTINCT LTRIM(RTRIM(rol)) AS rol FROM Usuarios WHERE rol IS NOT NULL AND LTRIM(RTRIM(rol)) <> ''");
                 foreach (DataRow row in dt.Rows)
-                    roles.Add(row["rol"].ToString());
+                    rolesBd.Add(row["rol"].ToString());
             }
             catch
             {
                 // Si la BD no responde, se mantiene el catálogo base para no romper la UI.
             }
+
+            return CombinarRolesDisponibles(rolesBd);
+        }
+
+        /// <summary>
+        /// Parte pura de <see cref="ObtenerRolesDisponibles"/>: une el catálogo base con los
+        /// roles leídos de la BD, descartando los que no son vigentes (<see cref="EsRolVigente"/>),
+        /// sin duplicados (ignora mayúsculas y espacios) y ordenados.
+        /// </summary>
+        public static List<RolDisponible> CombinarRolesDisponibles(IEnumerable<string> rolesBd)
+        {
+            var roles = new List<string>(EtiquetasRol.Keys);
+            if (rolesBd != null)
+                roles.AddRange(rolesBd.Where(EsRolVigente));
 
             return roles
                 .Where(r => !string.IsNullOrWhiteSpace(r))

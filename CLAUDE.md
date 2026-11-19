@@ -83,8 +83,6 @@ Role constants (always compare `.ToUpper().Trim()`). `EsRolAdmin` accepts `ADMIN
 | `ROL_ADMIN_SISTEMA` | `ADMINISTRADOR DE SISTEMA` | — |
 | `ROL_CONDUCTOR` | `CONDUCTOR` | `CHOFER` |
 | `ROL_SUPERVISOR` | `SUPERVISOR` | — |
-| `ROL_ADMIN_MAQUINARIA` | `ADMINISTRADOR DE MAQUINARIA` | — |
-| `ROL_OPERADOR` | `OPERADOR` | — |
 | `ROL_CONTABILIDAD` | `CONTABILIDAD` | — |
 
 Roles are stored as plain text in the `Usuarios.rol` column — there is no separate roles table. The `Usuarios` table also stores PBKDF2 password hashes in format `sha256.{iterations}.{salt_base64}.{hash_base64}` (PBKDF2-HMAC-SHA256); the older `{iterations}.{salt_base64}.{hash_base64}` (SHA1, 10000) still verifies and is converted on the next login.
@@ -96,8 +94,6 @@ All pages live under `WebSGV/Views/`. Role-specific dashboards redirect on login
 - ADMIN / ADMINISTRADOR / ADMINISTRADOR DE TRANSPORTE / SUPERVISOR → `Inicio.aspx`
 - CONDUCTOR / CHOFER → `DashboardConductor.aspx`
 - ADMINISTRADOR DE SISTEMA → `DashboardAdminSistema.aspx`
-- ADMINISTRADOR DE MAQUINARIA → `AsignacionesMaquinaria.aspx`
-- OPERADOR → `DashboardOperador.aspx`
 - CONTABILIDAD → `LiquidacionesAprobadasContabilidad.aspx`
 
 Core business flow: **Despacho → ViajesProgreso → Declaración del conductor (firma) → Revisión Admin (firma, POR_CONFORMAR) → Conformidad del conductor (firma, APROBADO) → PDF archivado**.
@@ -117,7 +113,7 @@ PDFs use **QuestPDF 2026.5.0** (Community license, set in `Global.asax.cs` and i
 SQL Server hosted on somee.com. Schema and stored procedures are tracked as `.sql` files in `WebSGV/Database/` but **are not auto-applied**:
 
 - `Database/Schema/` — DDL migrations numbered `01_`, `02_`, ... Apply them with `Database/aplicar-migraciones.ps1 -Entorno pruebas|produccion` (add `-SoloListar` for a dry run; production also needs `-ConfirmoProduccion`). It runs the pending ones in order and records each in `dbo.SchemaVersion` (created by `00_ControlMigraciones.sql`). Migrations must be idempotent (`IF COL_LENGTH/OBJECT_ID ...`); never edit an applied one — add a new number.
-- `Database/StoredProcedures/` — one file per proc (`CREATE OR ALTER`); naming convention: `sp_DC_*` (Dashboard Conductor), `sp_LD_*` (Liquidaciones), `sp_MQ_*` (Maquinaria), `sp_SE_*` (Seguimiento Exportación), etc. Every `sp_*` called from C# should have its file here.
+- `Database/StoredProcedures/` — one file per proc (`CREATE OR ALTER`); naming convention: `sp_DC_*` (Dashboard Conductor), `sp_LD_*` (Liquidaciones), `sp_SE_*` (Seguimiento Exportación), etc. Every `sp_*` called from C# should have its file here.
 - `Database/Scripts/` — ad-hoc migration / diagnostic scripts.
 
 Any new SP must be executed manually against the DB (SSMS / sqlcmd) before calling code will work. `Database/aplicar-procedimientos.ps1 -Entorno pruebas -SoloListar` compares every SP file with the DB (FALTA / DISTINTO); without `-SoloListar` it applies the differing files. The repo is the source of truth for SPs. `Database/Scripts/reparar-tildes-bd.ps1` fixes mojibake (UTF-8 read as Windows-1252) in DB objects outside the repo.

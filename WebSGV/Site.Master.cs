@@ -16,8 +16,6 @@ namespace WebSGV
         public bool EsAdmin { get; set; }
         public bool EsConductor { get; set; }
         public bool EsAdminSistema { get; set; }
-        public bool EsAdminMaquinaria { get; set; }
-        public bool EsOperador { get; set; }
         public bool EsContabilidad { get; set; }
         /// <summary>
         /// Rol SUPERVISOR. Calculada desde <see cref="RolUsuario"/> (igual que la comparación que
@@ -202,8 +200,6 @@ namespace WebSGV
             EsAdmin = false;
             EsConductor = false;
             EsAdminSistema = false;
-            EsAdminMaquinaria = false;
-            EsOperador = false;
             EsContabilidad = false;
             UrlInicio = "~/Views/Login.aspx";
         }
@@ -217,8 +213,6 @@ namespace WebSGV
                 EsAdmin = RolesHelper.EsAdmin();
                 EsConductor = RolesHelper.EsConductor();
                 EsAdminSistema = RolesHelper.EsAdminSistema();
-                EsAdminMaquinaria = RolesHelper.EsAdminMaquinaria();
-                EsOperador = RolesHelper.EsOperador();
                 EsContabilidad = RolesHelper.EsContabilidad();
                 UrlInicio = RolesHelper.UrlInicioSegunRol(RolUsuario) ?? "~/Views/Login.aspx";
             }

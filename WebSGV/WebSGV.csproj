@@ -190,11 +190,9 @@
     <Content Include="Database\Schema\51_MontosLiquidacionDecimal.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
-    <Content Include="Database\Scripts\script_AgregarRolAdminMaquinaria.sql" />
     <Content Include="Database\Scripts\script_CrearTablasDespachoObra.sql" />
     <Content Include="Database\Scripts\script_CrearTablasIngresoEcuador.sql" />
     <Content Include="Database\Scripts\script_CrearTablasMaquinaria.sql" />
-    <Content Include="Database\Scripts\script_DatosPruebaMaquinaria.sql" />
     <Content Include="Database\Scripts\script_TrazabilidadVolqueteCamioneta.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearCPIC.sql" />
     <Content Include="Database\StoredProcedures\sp_ActualizarLicenciaConductor.sql" />
@@ -263,7 +261,6 @@
     <Content Include="Database\StoredProcedures\sp_LD_ObtenerLotesRegistrados.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ObtenerTodosConductores.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ObtenerViajesActivos.sql" />
-    <Content Include="Database\StoredProcedures\sp_MQ_Maquinaria.sql" />
     <Content Include="Database\StoredProcedures\sp_ObtenerCarretasActivas.sql" />
     <Content Include="Database\StoredProcedures\sp_ObtenerClientesActivos.sql" />
     <Content Include="Database\StoredProcedures\sp_ObtenerConductoresActivos.sql" />
@@ -356,7 +353,6 @@
     <Content Include="Content\paginas\BandejaDocumentos.css" />
     <Content Include="Content\paginas\CargarExcel.css" />
     <Content Include="Content\paginas\DashboardConductor.css" />
-    <Content Include="Content\paginas\DashboardOperador.css" />
     <Content Include="Content\paginas\DetalleOrdenViaje.css" />
     <Content Include="Content\paginas\Exportacion\DashboardExportacion.css" />
     <Content Include="Content\paginas\Exportacion\SeguimientoExportacion.css" />
@@ -381,7 +377,6 @@
     <Content Include="Scripts\paginas\CargarExcel.js" />
     <Content Include="Scripts\paginas\CatalogoCliente.js" />
     <Content Include="Scripts\paginas\DashboardConductor.js" />
-    <Content Include="Scripts\paginas\DashboardOperador.js" />
     <Content Include="Scripts\paginas\Exportacion\DashboardExportacion.js" />
     <Content Include="Scripts\paginas\Exportacion\ImportarSeguimiento.js" />
     <Content Include="Scripts\paginas\Exportacion\RegistroSeguimiento.js" />
@@ -412,13 +407,11 @@
     <Content Include="Scripts\paginas\ReporteGps.js" />
     <Content Include="Scripts\paginas\SiteMaster-2.js" />
     <Content Include="Scripts\paginas\SiteMaster.js" />
-    <Content Include="Views\AsignacionesMaquinaria.aspx" />
     <Content Include="Views\Auditoria.aspx" />
     <Content Include="Views\CargarExcel.aspx" />
     <Content Include="Views\DashboardAdminSistema.aspx" />
     <Content Include="Views\GestionUsuarios.aspx" />
     <Content Include="Views\DashboardConductor.aspx" />
-    <Content Include="Views\DashboardOperador.aspx" />
     <Content Include="Views\DescargarDocumento.aspx" />
     <Content Include="Views\DescargarPdfOrdenViaje.aspx" />
     <Content Include="Views\DetalleOrdenViaje.aspx" />
@@ -450,11 +443,7 @@
     <Content Include="Views\RegistroChoferes.aspx" />
     <Content Include="Views\CatalogoCliente.aspx" />
     <Content Include="Views\RegistroClientes.aspx" />
-    <Content Include="Views\RegistroClientesObra.aspx" />
     <Content Include="Views\RegistroDespacho.aspx" />
-    <Content Include="Views\RegistroEquiposMaquinaria.aspx" />
-    <Content Include="Views\RegistroObras.aspx" />
-    <Content Include="Views\RegistroOperadores.aspx" />
     <Content Include="Views\RegistroPeajes.aspx" />
     <Content Include="Views\RegistroPlantas.aspx" />
     <Content Include="Views\RegistroProductos.aspx" />
@@ -614,13 +603,6 @@
     <Compile Include="Services\Despachos\Importacion\LectorDocumentosAduana.cs" />
     <Compile Include="Services\Despachos\Importacion\LectorGreTransportista.cs" />
     <Compile Include="Models\Liquidaciones\DetalleLiquidacionModels.cs" />
-    <Compile Include="Views\AsignacionesMaquinaria.aspx.cs">
-      <DependentUpon>AsignacionesMaquinaria.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\AsignacionesMaquinaria.aspx.designer.cs">
-      <DependentUpon>AsignacionesMaquinaria.aspx</DependentUpon>
-    </Compile>
     <Compile Include="Views\Auditoria.aspx.cs">
       <DependentUpon>Auditoria.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -686,13 +668,6 @@
     </Compile>
     <Compile Include="Views\DashboardConductor.aspx.designer.cs">
       <DependentUpon>DashboardConductor.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\DashboardOperador.aspx.cs">
-      <DependentUpon>DashboardOperador.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\DashboardOperador.aspx.designer.cs">
-      <DependentUpon>DashboardOperador.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\DescargarDocumento.aspx.cs">
       <DependentUpon>DescargarDocumento.aspx</DependentUpon>
@@ -854,40 +829,12 @@
     <Compile Include="Views\RegistroClientes.aspx.designer.cs">
       <DependentUpon>RegistroClientes.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Views\RegistroClientesObra.aspx.cs">
-      <DependentUpon>RegistroClientesObra.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\RegistroClientesObra.aspx.designer.cs">
-      <DependentUpon>RegistroClientesObra.aspx</DependentUpon>
-    </Compile>
     <Compile Include="Views\RegistroDespacho.aspx.cs">
       <DependentUpon>RegistroDespacho.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Views\RegistroDespacho.aspx.designer.cs">
       <DependentUpon>RegistroDespacho.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\RegistroEquiposMaquinaria.aspx.cs">
-      <DependentUpon>RegistroEquiposMaquinaria.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\RegistroEquiposMaquinaria.aspx.designer.cs">
-      <DependentUpon>RegistroEquiposMaquinaria.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\RegistroObras.aspx.cs">
-      <DependentUpon>RegistroObras.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\RegistroObras.aspx.designer.cs">
-      <DependentUpon>RegistroObras.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\RegistroOperadores.aspx.cs">
-      <DependentUpon>RegistroOperadores.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\RegistroOperadores.aspx.designer.cs">
-      <DependentUpon>RegistroOperadores.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\RegistroPeajes.aspx.cs">
       <DependentUpon>RegistroPeajes.aspx</DependentUpon>

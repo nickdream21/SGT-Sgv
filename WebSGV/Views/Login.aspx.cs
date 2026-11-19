@@ -26,7 +26,6 @@ namespace WebSGV.Views
             public string Nombre;
             public string NombreUsuario;
             public int? IdConductor;
-            public int? IdOperador;
             public bool RequiereCambioContrasena;
             /// <summary>La contraseña con la que entró no cumple PoliticaContrasena (solo con Seguridad.ExigirPoliticaAlIngresar).</summary>
             public bool ContrasenaFueraDePolitica;
@@ -45,10 +44,8 @@ namespace WebSGV.Views
             // significa que una página protegida nos rebotó. Limpiar sesión y mostrar el form
             // en lugar de reenviar al usuario al destino que ya falló.
             string errParam = Request.QueryString["error"];
-            // Igual con ?error=sin_operador: un OPERADOR sin operador vinculado tiene sesión válida, y
-            // reenviarlo a su inicio (DashboardOperador) volvería a rebotarlo aquí.
             string errNormalizado = (errParam ?? "").ToLowerInvariant();
-            if (errNormalizado == "sesion" || errNormalizado == "sin_operador" || errNormalizado == "sesion_cerrada")
+            if (errNormalizado == "sesion" || errNormalizado == "sesion_cerrada")
             {
                 if (SesionHelper.HaySesion(Session))
                 {
@@ -99,10 +96,6 @@ namespace WebSGV.Views
                             MostrarMensaje("Tu cuenta de usuario no está vinculada a un registro de conductor. " +
                                            "Contacta al administrador del sistema para que configure el vínculo correspondiente.");
                             break;
-                        case "sin_operador":
-                            MostrarMensaje("Tu cuenta de usuario no está vinculada a un registro de operador. " +
-                                           "Contacta al administrador del sistema para que configure el vínculo correspondiente.");
-                            break;
                         case "sesion":
                             MostrarMensaje("Tu sesión ha expirado o no es válida. Por favor, inicia sesión nuevamente.");
                             break;
@@ -150,7 +143,7 @@ namespace WebSGV.Views
             }
 
             (bool EsValido, string Rol, string Nombre, string NombreUsuario,
-             int IdUsuario, int? IdConductor, int? IdOperador, bool RequiereCambioContrasena, Guid SelloSesion) resultado;
+             int IdUsuario, int? IdConductor, bool RequiereCambioContrasena, Guid SelloSesion) resultado;
             try
             {
                 resultado = ValidarUsuario(usuario, contrasena);
@@ -195,7 +188,6 @@ namespace WebSGV.Views
                     Nombre = resultado.Nombre,
                     NombreUsuario = resultado.NombreUsuario,
                     IdConductor = resultado.IdConductor,
-                    IdOperador = resultado.IdOperador,
                     RequiereCambioContrasena = resultado.RequiereCambioContrasena,
                     ContrasenaFueraDePolitica = ContrasenaFueraDePolitica(resultado.IdUsuario, contrasena),
                     SelloSesion = resultado.SelloSesion
@@ -257,13 +249,12 @@ namespace WebSGV.Views
         private static readonly string HashFicticio = PasswordHelper.HashPassword(Guid.NewGuid().ToString("N"));
 
         private (bool EsValido, string Rol, string Nombre, string NombreUsuario,
-                 int IdUsuario, int? IdConductor, int? IdOperador, bool RequiereCambioContrasena, Guid SelloSesion) ValidarUsuario(string usuario, string contrasena)
+                 int IdUsuario, int? IdConductor, bool RequiereCambioContrasena, Guid SelloSesion) ValidarUsuario(string usuario, string contrasena)
         {
             bool esValido = false;
             string rol = "", nombre = "", nombreUsuario = "";
             int idUsuario = 0;
             int? idConductor = null;
-            int? idOperador = null;
             bool requiereCambioContrasena = false;
             Guid selloSesion = Guid.Empty;
 
@@ -271,7 +262,7 @@ namespace WebSGV.Views
             {
                 DataTable dt = DbHelper.ConsultarTabla(@"
                     SELECT u.idUsuario, u.nombreUsuario, u.nombre, u.rol,
-                           u.idConductor, u.idOperador, u.contrasena,
+                           u.idConductor, u.contrasena,
                            ISNULL(u.requiereCambioContrasena, 0) AS requiereCambioContrasena,
                            u.selloSesion
                     FROM Usuarios u
@@ -315,8 +306,6 @@ namespace WebSGV.Views
 
                         if (RolesHelper.EsRolConductor(rol) && reader["idConductor"] != DBNull.Value)
                             idConductor = Convert.ToInt32(reader["idConductor"]);
-                        else if (RolesHelper.EsRolOperador(rol) && reader["idOperador"] != DBNull.Value)
-                            idOperador = Convert.ToInt32(reader["idOperador"]);
 
                         esValido = true;
                         requiereCambioContrasena = Convert.ToBoolean(reader["requiereCambioContrasena"]);
@@ -338,7 +327,7 @@ namespace WebSGV.Views
                 throw;
             }
 
-            return (esValido, rol, nombre, nombreUsuario, idUsuario, idConductor, idOperador, requiereCambioContrasena, selloSesion);
+            return (esValido, rol, nombre, nombreUsuario, idUsuario, idConductor, requiereCambioContrasena, selloSesion);
         }
 
         /// <summary>
@@ -377,8 +366,6 @@ namespace WebSGV.Views
             string rol = (datos.Rol ?? "").Trim().ToUpper();
             if (RolesHelper.EsRolConductor(rol) && datos.IdConductor.HasValue)
                 Session["IdConductor"] = datos.IdConductor.Value;
-            if (RolesHelper.EsRolOperador(rol) && datos.IdOperador.HasValue)
-                Session["IdOperador"] = datos.IdOperador.Value;
 
             AuditoriaHelper.Registrar("LOGIN", "Usuarios", datos.IdUsuario.ToString(),
                 $"Inicio de sesión - Usuario: {datos.NombreUsuario}, Rol: {datos.Rol}");
