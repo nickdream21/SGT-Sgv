@@ -45,6 +45,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# FTP común (listado Unix/IIS, NLST+SIZE, credencial DPAPI): herramientas\comun\Ftp.psm1.
+Import-Module (Join-Path $PSScriptRoot '..\comun\Ftp.psm1') -Force -DisableNameChecking
+
 # =================================================================================================
 # Funciones puras (sin red ni BD): probar-espejo.ps1 las extrae de este archivo para probarlas.
 # =================================================================================================
@@ -54,28 +57,6 @@ function Test-RutaExcluida {
     param([string]$Ruta)
     foreach ($s in ($Ruta -split '[/\\]')) { if ($s -ieq '_temp') { return $true } }
     return $false
-}
-
-# Interpreta las líneas de un LIST de FTP (formato Unix o MS-DOS/IIS). Devuelve un objeto por línea
-# con Nombre, EsCarpeta, Tamano y Valido ($false si no se entendió la línea). Omite '.', '..' y 'total N'.
-function ConvertFrom-ListadoFtp {
-    param([string[]]$Lineas)
-    $res = @()
-    foreach ($l in $Lineas) {
-        if ([string]::IsNullOrWhiteSpace($l)) { continue }
-        $l = $l.TrimEnd("`r")
-        if ($l -match '^total\s+\d+$') { continue }
-        $nombre = $null; $esCarpeta = $false; $tam = -1L
-        if ($l -match '^([d\-])[rwxsStT\-]{9}\S*\s+\d+\s+\S+\s+(?:\S+\s+)?(\d+)\s+[A-Za-z]{3}\s+\d{1,2}\s+(?:\d{1,2}:\d{2}|\d{4})\s(.+)$') {
-            $esCarpeta = ($Matches[1] -eq 'd'); $tam = [long]$Matches[2]; $nombre = $Matches[3].Trim()
-        } elseif ($l -match '^\d{2}-\d{2}-\d{2,4}\s+\d{1,2}:\d{2}(?:AM|PM)?\s+(<DIR>|\d+)\s+(.+)$') {
-            $esCarpeta = ($Matches[1] -eq '<DIR>'); if (-not $esCarpeta) { $tam = [long]$Matches[1] }; $nombre = $Matches[2].Trim()
-        }
-        if ($nombre -eq '.' -or $nombre -eq '..') { continue }
-        $res += New-Object PSObject -Property ([ordered]@{
-            Nombre = $nombre; EsCarpeta = $esCarpeta; Tamano = $tam; Valido = ($null -ne $nombre); Linea = $l })
-    }
-    return $res
 }
 
 # Plan del espejo. $Remotos: objetos con Ruta ('Uploads/x/y.pdf') y Tamano (-1 si se desconoce).
@@ -142,78 +123,18 @@ function Format-Tamano([long]$bytes) {
 $raizRepo      = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')).TrimEnd('\') + '\'
 $dirPrivado    = Join-Path $raizRepo 'privado'
 $archivoCred   = Join-Path $dirPrivado 'ftp-respaldo.xml'
-$base          = $Servidor.TrimEnd('/') + '/' + $RutaSitio.Trim('/')
 $cmdGuardar    = '.\herramientas\respaldo\respaldar-archivos.ps1 -GuardarCredencial'
 
-function New-PeticionFtp([string]$url, [string]$metodo) {
-    $r = [System.Net.FtpWebRequest]::Create($url)
-    $r.Method = $metodo
-    $r.Credentials = $script:credRed
-    $r.UsePassive = $true; $r.UseBinary = $true; $r.KeepAlive = $false
-    $r.Timeout = 60000; $r.ReadWriteTimeout = 300000
-    return $r
-}
-
-function Get-UrlFtp([string]$rutaRelativaSitio) {
-    $partes = $rutaRelativaSitio.Trim('/') -split '/' | Where-Object { $_ } | ForEach-Object { [uri]::EscapeDataString($_) }
-    return $base + '/' + ($partes -join '/')
-}
-
-function Read-TextoFtp([string]$url, [string]$metodo) {
-    $resp = (New-PeticionFtp $url $metodo).GetResponse()
-    try {
-        $sr = New-Object IO.StreamReader($resp.GetResponseStream(), [Text.Encoding]::UTF8)
-        try { return $sr.ReadToEnd() } finally { $sr.Dispose() }
-    } finally { $resp.Close() }
-}
-
-function Get-TamanoFtp([string]$url) {
-    $resp = (New-PeticionFtp $url 'SIZE').GetResponse()
-    try { return [long]$resp.ContentLength } finally { $resp.Close() }
-}
-
-# Ejecuta el bloque; ante error espera 3 s y lo repite una vez.
-function Invoke-ConReintento([scriptblock]$Bloque) {
-    try { return & $Bloque }
-    catch { Start-Sleep -Seconds 3; return & $Bloque }
-}
-
-# Lista recursivamente una carpeta remota (ruta relativa al sitio, p. ej. 'App_Data/OrdenesViaje').
-# Agrega a $script:remotos objetos { Ruta = '<prefijoLocal>/<rel>'; Tamano }.
-function Add-ListadoRemoto([string]$rutaSitio, [string]$prefijoLocal, [string]$rel) {
-    $carpetaSitio = if ($rel) { "$rutaSitio/$rel" } else { $rutaSitio }
-    $url = (Get-UrlFtp $carpetaSitio) + '/'
-    try {
-        $texto = Invoke-ConReintento { Read-TextoFtp $url 'LIST' }
-    } catch {
+# Lista recursivamente una carpeta remota (ruta relativa al sitio, p. ej. 'App_Data/OrdenesViaje'),
+# sin entrar en _temp. Agrega a $script:remotos objetos { Ruta = '<prefijoLocal>/<rel>'; Tamano; Sitio }.
+function Add-ListadoRemoto([string]$rutaSitio, [string]$prefijoLocal) {
+    $l = Get-ListadoFtpRecursivo -Conexion $script:con -Carpeta $rutaSitio -Omitir { param($rel) Test-RutaExcluida $rel }
+    foreach ($e in $l.Errores) {
         $script:errores++
-        Write-Host "ERROR al listar /$carpetaSitio : $($_.Exception.Message)" -ForegroundColor Red
-        return
+        Write-Host $e -ForegroundColor Red
     }
-    $entradas = @(ConvertFrom-ListadoFtp ($texto -split "`n"))
-    if (@($entradas | Where-Object { -not $_.Valido }).Count -gt 0) {
-        # Formato de LIST desconocido: NLST + SIZE (si SIZE falla, se trata como carpeta).
-        $entradas = @()
-        try {
-            $nombres = (Invoke-ConReintento { Read-TextoFtp $url 'NLST' }) -split "`r?`n" | Where-Object { $_ }
-        } catch {
-            $script:errores++
-            Write-Host "ERROR al listar /$carpetaSitio : $($_.Exception.Message)" -ForegroundColor Red
-            return
-        }
-        foreach ($n in $nombres) {
-            $n = ($n.Trim() -split '/')[-1]
-            if (-not $n -or $n -eq '.' -or $n -eq '..') { continue }
-            $tam = -1L
-            try { $tam = Get-TamanoFtp (Get-UrlFtp "$carpetaSitio/$n") } catch { }
-            $entradas += New-Object PSObject -Property @{ Nombre = $n; EsCarpeta = ($tam -lt 0); Tamano = $tam; Valido = $true }
-        }
-    }
-    foreach ($e in $entradas) {
-        $relE = if ($rel) { "$rel/$($e.Nombre)" } else { $e.Nombre }
-        if (Test-RutaExcluida $relE) { continue }
-        if ($e.EsCarpeta) { Add-ListadoRemoto $rutaSitio $prefijoLocal $relE }
-        else { $script:remotos.Add((New-Object PSObject -Property @{ Ruta = "$prefijoLocal/$relE"; Tamano = $e.Tamano; Sitio = "$rutaSitio/$relE" })) }
+    foreach ($a in $l.Archivos) {
+        $script:remotos.Add((New-Object PSObject -Property @{ Ruta = "$prefijoLocal/$($a.Ruta)"; Tamano = $a.Tamano; Sitio = "$rutaSitio/$($a.Ruta)" }))
     }
 }
 
@@ -241,9 +162,10 @@ if ($GuardarCredencial) {
     "Credencial guardada en $archivoCred (cifrada para el usuario de Windows $env:USERDOMAIN\$env:USERNAME)."
 
     # Prueba de conexión (solo lista la raíz del sitio).
-    $script:credRed = $cred.GetNetworkCredential()
+    $script:con = New-ConexionFtp -Servidor $Servidor -RutaSitio $RutaSitio -Credencial $cred.GetNetworkCredential()
+    $base = $script:con.Base
     try {
-        Read-TextoFtp ($base + '/') 'NLST' | Out-Null
+        Read-TextoFtp $script:con ($base + '/') 'NLST' | Out-Null
         "Conexión FTP comprobada: OK."
     } catch {
         Write-Host "AVISO: la credencial se guardó, pero no se pudo listar $base : $($_.Exception.Message)" -ForegroundColor Yellow
@@ -266,16 +188,9 @@ if ($carpetaCompleta.StartsWith($raizRepo, [StringComparison]::OrdinalIgnoreCase
 $carpetaArchivos = Join-Path $carpetaCompleta.TrimEnd('\') 'archivos'
 $rutaLog = Join-Path $carpetaArchivos 'respaldos.log'
 
-if (-not (Test-Path -LiteralPath $archivoCred)) {
-    throw "No existe la credencial FTP ($archivoCred). Guárdela una vez con: $cmdGuardar"
-}
-try {
-    $cred = Import-Clixml -Path $archivoCred
-    if ($cred -isnot [System.Management.Automation.PSCredential]) { throw "el archivo no contiene una credencial" }
-    $script:credRed = $cred.GetNetworkCredential()
-} catch {
-    throw "No se pudo leer $archivoCred (se guardó con otro usuario de Windows o en otra máquina, o está dañado). Repita: $cmdGuardar"
-}
+$cred = Read-CredencialFtp -Archivo $archivoCred -ComandoGuardar $cmdGuardar
+$script:con = New-ConexionFtp -Servidor $Servidor -RutaSitio $RutaSitio -Credencial $cred.GetNetworkCredential()
+$base = $script:con.Base
 
 $origenes = @(
     @{ Sitio = 'Uploads';               Local = 'Uploads' }
@@ -293,7 +208,7 @@ $script:errores = 0
 $script:remotos = New-Object System.Collections.Generic.List[object]
 foreach ($o in $origenes) {
     "Listando /$($o.Sitio) ..."
-    Add-ListadoRemoto $o.Sitio $o.Local ''
+    Add-ListadoRemoto $o.Sitio $o.Local
 }
 
 $locales = @{}
@@ -339,12 +254,12 @@ foreach ($p in $aBajar) {
     $i++
     $final = Join-Path $carpetaArchivos ($p.Ruta.Replace('/', '\'))
     $temporal = "$final.descargando"
-    $url = Get-UrlFtp $porSitio[$p.Ruta]
+    $url = Get-UrlFtp $script:con $porSitio[$p.Ruta]
     try {
         New-Item -ItemType Directory -Force (Split-Path $final) | Out-Null
         Invoke-ConReintento {
             if (Test-Path -LiteralPath $temporal) { Remove-Item -LiteralPath $temporal -Force }
-            $resp = (New-PeticionFtp $url 'RETR').GetResponse()
+            $resp = (New-PeticionFtp $script:con $url 'RETR').GetResponse()
             try {
                 $entrada = $resp.GetResponseStream()
                 $salida = [IO.File]::Create($temporal)

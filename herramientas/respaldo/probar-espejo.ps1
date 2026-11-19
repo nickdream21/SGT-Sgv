@@ -15,7 +15,9 @@ $script = Join-Path $PSScriptRoot 'respaldar-archivos.ps1'
 $errores = $null
 $ast = [System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$null, [ref]$errores)
 if ($errores -and $errores.Count -gt 0) { throw "respaldar-archivos.ps1 tiene errores de sintaxis: $($errores[0].Message)" }
-$nombres = 'Test-RutaExcluida', 'ConvertFrom-ListadoFtp', 'Get-PlanEspejo', 'Get-NombreVersionAnterior', 'Move-DescargaASuSitio'
+# ConvertFrom-ListadoFtp vive en el módulo común (herramientas\comun\Ftp.psm1).
+Import-Module (Join-Path $PSScriptRoot '..\comun\Ftp.psm1') -Force -DisableNameChecking
+$nombres = 'Test-RutaExcluida', 'Get-PlanEspejo', 'Get-NombreVersionAnterior', 'Move-DescargaASuSitio'
 foreach ($n in $nombres) {
     $def = $ast.FindAll({ param($x) $x -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $x.Name -eq $n }, $true) |
            Select-Object -First 1
