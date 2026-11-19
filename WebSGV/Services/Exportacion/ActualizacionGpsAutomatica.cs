@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Web.Hosting;
 using WebSGV.Helpers;
@@ -29,6 +30,12 @@ namespace WebSGV.Services.Exportacion
 
         public static DateTime? UltimoInicio => _ultimoInicioUtc == DateTime.MinValue ? (DateTime?)null : FechaHelper.ConvertirDeUtc(_ultimoInicioUtc);
         public static DateTime? UltimoFin { get; private set; }
+
+        /// <summary>
+        /// Inicio (UTC) de la última corrida pedida por el programador externo (cron-job.org), no por el botón del
+        /// tablero. Salud.ashx?gps=1 avisa si pasa más de una hora sin ella. Vive en memoria: null tras un reciclaje.
+        /// </summary>
+        public static DateTime? UltimoInicioProgramado { get; private set; }
         public static string UltimoResumen { get; private set; }
 
         /// <summary>El resultado de la última corrida en palabras, para mostrarlo en el tablero.</summary>
@@ -47,6 +54,7 @@ namespace WebSGV.Services.Exportacion
             if (!aPedido && DateTime.UtcNow - _ultimoInicioUtc < Intervalo) return false;
             if (Interlocked.CompareExchange(ref _enCurso, 1, 0) != 0) return false;
             _ultimoInicioUtc = DateTime.UtcNow;
+            if (!aPedido) UltimoInicioProgramado = _ultimoInicioUtc;
             try
             {
                 HostingEnvironment.QueueBackgroundWorkItem(_ =>
@@ -70,6 +78,13 @@ namespace WebSGV.Services.Exportacion
             return true;
         }
 
+        /// <summary>
+        /// Los viajes del tablero entre los que cada corrida elige los que consulta (<see cref="SeguimientoViajesService.AbiertosParaGps"/>).
+        /// Solo lectura: Salud.ashx lo usa para saber si hay viajes que el GPS automático debería estar consultando.
+        /// </summary>
+        public static List<ViajeResumen> ViajesDelTablero(DateTime hoy) =>
+            SeguimientoViajesService.ListarTablero(new FiltroTablero { Desde = hoy.AddDays(-DiasViajes), Hasta = hoy.AddDays(1) });
+
         private static void Correr()
         {
             var reloj = System.Diagnostics.Stopwatch.StartNew();
@@ -79,7 +94,7 @@ namespace WebSGV.Services.Exportacion
             catch (Exception ex) { LogSGV.Error(ex, "Cierre automático de viajes sin liquidación"); }
             // Como al abrir el tablero: los despachos nuevos pasan a ser viajes antes de consultar el GPS.
             SeguimientoViajesService.SincronizarDespachos(hoy.AddDays(-DiasSincronizacion));
-            var viajes = SeguimientoViajesService.ListarTablero(new FiltroTablero { Desde = hoy.AddDays(-DiasViajes), Hasta = hoy.AddDays(1) });
+            var viajes = ViajesDelTablero(hoy);
             var r = SeguimientoViajesService.ActualizarGpsAbiertos(viajes, MaximoViajes, Presupuesto);
             UltimoResumen = $"{r.Consultados} consultados, {r.SinMovimiento} sin movimiento, {r.CamposNuevos} horas nuevas, {r.Aproximados} aproximados con su grupo, " +
                             $"{r.Pendientes} pendientes, {r.Errores.Count} con error, {reloj.Elapsed.TotalSeconds:0} s";

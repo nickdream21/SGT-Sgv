@@ -17,6 +17,8 @@ namespace WebSGV
             // acoplar el helper a System.Web.
             LogSGV.Inicializar(System.Web.Hosting.HostingEnvironment.MapPath("~/App_Data/logs"));
             LogSGV.Info("Aplicación SGV iniciada");
+            // Salud.ashx?gps=1 no avisa durante la primera hora: tras un reciclaje no se sabe cuándo corrió el GPS.
+            Salud.InicioAplicacionUtc = DateTime.UtcNow;
 
             // Recurso "jquery" del ScriptManager (validación unobtrusive) y MS Ajax con sus textos. Sin MVC ni bundling:
             // el sitio es WebForms puro con URLs .aspx directas.

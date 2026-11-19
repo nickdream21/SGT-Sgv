@@ -413,6 +413,16 @@ namespace WebSGV.Services.Exportacion
                 "Estado del viaje: " + estado);
         }
 
+        /// <summary>
+        /// Los viajes cuyo GPS se consulta (<see cref="ActualizarGpsAbiertos"/>): no cerrados, con algún tracto y ya
+        /// programados (las cargas de mañana o después, que el tablero muestra, aún no salen). Salud.ashx usa la
+        /// misma regla para saber si el GPS automático está atrasado.
+        /// </summary>
+        public static IEnumerable<ViajeResumen> AbiertosParaGps(IEnumerable<ViajeResumen> viajes, DateTime hoy) =>
+            viajes
+                .Where(v => v.Fase.Grupo != "cerrado" && (!string.IsNullOrWhiteSpace(v.Tracto1) || !string.IsNullOrWhiteSpace(v.Tracto2)))
+                .Where(v => !(v.FhProgramacion.HasValue && v.FhProgramacion.Value.Date > hoy.Date));
+
         /// <summary>Un viaje programado hace más de esto y todavía abierto se consulta al final.</summary>
         private const int DiasViajeAtrasado = 10;
 
@@ -424,12 +434,8 @@ namespace WebSGV.Services.Exportacion
         /// </summary>
         public static ResultadoActualizacionGps ActualizarGpsAbiertos(IEnumerable<ViajeResumen> viajes, int maximo, TimeSpan presupuesto)
         {
-            // Las cargas programadas para mañana o después (el tablero las muestra) aún no salen.
             DateTime hoy = FechaHelper.Hoy();
-            var abiertos = OrdenarParaGps(viajes
-                .Where(v => v.Fase.Grupo != "cerrado" && (!string.IsNullOrWhiteSpace(v.Tracto1) || !string.IsNullOrWhiteSpace(v.Tracto2)))
-                .Where(v => !(v.FhProgramacion.HasValue && v.FhProgramacion.Value.Date > hoy)),
-                hoy).ToList();
+            var abiertos = OrdenarParaGps(AbiertosParaGps(viajes, hoy), hoy).ToList();
             var r = new ResultadoActualizacionGps();
             var reloj = Stopwatch.StartNew();
 
