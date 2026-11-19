@@ -16,11 +16,11 @@ siguen en `docs/PLAN_MEJORAS_SGV.md`.
 
 ## Estado
 
-**Etapa actual: 1 — fase PLAN** (iniciada 2026-11-19).
+**Etapa actual: 1 — fase EJECUCIÓN, tarea E1-1** (plan escrito el 2026-11-19).
 
 | # | Etapa | Nota hoy | Meta | Estado |
 |---|---|---|---|---|
-| 1 | Operación y continuidad | 4 | 7 | **PLAN en curso** |
+| 1 | Operación y continuidad | 4 | 7 | **En ejecución (E1-1 de 8)** |
 | 2 | Ordenar el plan de mejoras | 3 | 7 | Pendiente |
 | 3 | Integridad de la base de datos | 6,6 | 8 | Pendiente |
 | 4 | Seguridad avanzada | 7,5 | 9 | Pendiente |
@@ -47,7 +47,46 @@ Alcance:
   automático (desactivado desde el 27/10 sin aviso).
 - Publicación con vuelta atrás (guardar el paquete de cada versión).
 
-Plan detallado: *(se escribe al terminar la fase PLAN)*
+#### Plan detallado (analista, 2026-11-19)
+
+Lo comprobado: en la PC de la oficina hay `sqlcmd`, `bcp` y un SQL Server local para ensayar la
+restauración; falta `sqlpackage`. El usuario de la BD puede exportar `.bacpac` pero no hacer BACKUP
+nativo. `sgvActualizada` ocupa 155 MB en archivos (81 MB son Query Store; los datos, unos 20 MB).
+Para publicar `master` no falta ninguna migración ni SP (51/51 y 98 iguales). En local hay 263
+archivos en `Uploads` (59 MB) y 31 PDF firmados (8,4 MB), con su SHA-256 en `FirmaDigital`.
+
+| Tarea | Qué | Quién | Estado |
+|---|---|---|---|
+| **E1-1** | Respaldo de la BD: `herramientas/respaldo/respaldar-bd.ps1` exporta un `.bacpac` fechado a una carpeta fuera del repo; conserva 30 diarios y 12 mensuales. Aceptación: sale un `.bacpac` sin errores. | Claude | En curso |
+| **E1-2** | Espejo de archivos: `respaldar-archivos.ps1` baja por FTP `Uploads` y `App_Data/OrdenesViaje` (nunca borra en local) y compara el SHA-256 de cada PDF con `FirmaDigital`/`OrdenViaje`. Aceptación: 0 faltantes, 0 distintos. | Claude (necesita la credencial FTP guardada por el usuario) | Pendiente |
+| **E1-3** | Restauración ensayada: `ensayar-restauracion.ps1` importa el `.bacpac` al SQL local y compara conteos; `docs/PROCEDIMIENTO_RESPALDO.md`; tarea programada de Windows. Aceptación: conteos iguales y el sitio local abre una liquidación firmada sobre la BD restaurada. | Claude + usuario | Pendiente |
+| **E1-4** | Publicación con paquete y vuelta atrás: perfil `Paquete.pubxml` y `herramientas/publicar/publicar.ps1` (zip por versión, sube sin tocar App_Data ni Uploads, lista y borra sobrantes solo con confirmación). Aceptación: `-SoloListar` muestra exactamente las páginas retiradas. | Claude | Pendiente |
+| **E1-5** | Publicar `master` (31 commits), borrar sobrantes, comprobar 404 de las páginas retiradas y la lista de verificación del plan. Requiere E1-1 y E1-2 antes. | Usuario da la orden; Claude acompaña | Pendiente |
+| **E1-6** | Salud y vigilancia: `Salud.ashx` anónimo (200/503 con `SELECT 1`; `?gps=1` da 503 si hay viajes activos y el GPS lleva más de 60 min sin consultar), regla pura con pruebas. | Claude | Pendiente |
+| **E1-7** | Correo ante errores: `CorreoHelper` común, `AvisoErrores` con límite (1 por tipo cada 30 min, 10 al día), desde `Application_Error`. Requiere SMTP configurado. | Claude | Pendiente |
+| **E1-8** | Retiro de DAB del repo y rotaciones. | Claude + usuario | Pendiente |
+
+**Decisiones del usuario** (recomendación entre paréntesis):
+1. Dónde guardar los respaldos (carpeta de OneDrive o Google Drive en la PC de la oficina, fuera del repo).
+2. Frecuencia (BD y archivos a diario a las 23:00; ensayo de restauración mensual).
+3. Correo de avisos (una cuenta Gmail del sistema con contraseña de aplicación; avisa al correo del usuario; también activa "recuperar contraseña").
+4. `FTPProfile.pubxml` de serviciosgiviana (borrarlo si ese sitio ya no se usa).
+
+**Solo el usuario, en paneles externos:**
+- apisperu: token nuevo, revocar el anterior, ponerlo en `appSettings.Secrets.config` (oficina, laptop, servidor).
+- somee: cambiar la contraseña FTP y volver a guardarla en Visual Studio; opcional, la de la BD.
+- `nickdream` y usuarios de prueba: cambiar la contraseña desde el sitio; sacar la de producción de `privado/CREDENCIALES_USUARIOS.txt`.
+- En cada máquina: borrar `.env` y `dab-config.json`.
+- cron-job.org: tras E1-5, reactivar "SGV GPS automático" y probarlo.
+- UptimeRobot: dos monitores cada 5 min sobre `/Salud.ashx` y `/Salud.ashx?gps=1` (tras E1-6 publicado).
+
+**Riesgos:** el `.bacpac` no es una copia consistente si hay escrituras durante la exportación (se
+exporta de noche; el primer ensayo dirá si valida); el FTP de somee va sin cifrar; el respaldo
+programado depende de que la PC de la oficina esté encendida; el borrado de sobrantes nunca debe
+tocar App_Data ni Uploads.
+
+Fuera de esta etapa (pasa a la 3): borrar los SP retirados de la BD, Query Store a 100 MB, aviso de
+`16_HoraPeru.sql` cambiada tras aplicarse.
 
 ### Etapa 2 — Ordenar el plan de mejoras (3 → 7)
 
@@ -91,3 +130,4 @@ Plan detallado: *(se escribe al terminar la fase PLAN)*
 | Fecha | Etapa | Hecho |
 |---|---|---|
 | 2026-11-19 | — | Análisis por áreas (5 analistas) y hoja de ruta creada. |
+| 2026-11-19 | 1 | Plan detallado escrito (E1-1 a E1-8); empieza la ejecución por E1-1. |
