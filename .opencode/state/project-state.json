@@ -336,7 +336,7 @@
       "status": "needs_clarification"
     }
   ],
-  "context_summary": "Proyecto ASP.NET Web Forms (.NET 4.8). Sistema multi-agente refactorizado a v2 (2026-04-29): 1 orquestador + 6 subagentes con paralelismo seguro, intent routing, evidence-gating obligatorio antes de cerrar tareas, y 11 skills cargables (frontend-design, systematic-debugging, verification-before-completion, test-driven-development, nueva-pagina-aspx, nueva-sp-sql, sql-injection-y-sqlcommand-seguro, itextsharp-pdf-webforms, auditoria-y-sesiones-sgv, msbuild-csproj-sync, viewstate-postback-webforms). El agente DBA usa SQL MCP Server (Data API Builder) — DDL sigue requiriendo despliegue manual.",
+  "context_summary": "Proyecto ASP.NET Web Forms (.NET 4.8). Sistema multi-agente refactorizado a v2 (2026-04-29): 1 orquestador + 6 subagentes con paralelismo seguro, intent routing, evidence-gating obligatorio antes de cerrar tareas, y 11 skills cargables (frontend-design, systematic-debugging, verification-before-completion, test-driven-development, nueva-pagina-aspx, nueva-sp-sql, sql-injection-y-sqlcommand-seguro, itextsharp-pdf-webforms, auditoria-y-sesiones-sgv, msbuild-csproj-sync, viewstate-postback-webforms). El agente DBA consulta la BD con WebSGV/Database/sql.ps1 (pruebas por defecto) — DDL sigue requiriendo despliegue manual.",
   "decisions_log": [
     {
       "ts": "2026-04-27",
@@ -346,6 +346,7 @@
     {
       "ts": "2026-04-27",
       "decision": "DBA usa SQL MCP Server (Data API Builder) para lectura/diagnóstico/ejecución de SPs. DDL sigue manual. Política git-first: el .sql se versiona ANTES de desplegar.",
+      "nota": "Retirado el 2026-11-19: Data API Builder se quitó del repo; el DBA consulta con WebSGV/Database/sql.ps1.",
       "task_id": null
     },
     {
@@ -537,8 +538,8 @@
       "description": "MCP DAB no instalado bloquea diagnóstico de bugs en datos",
       "owner": "dba",
       "severity": "medium",
-      "mitigation": "Setup en .opencode/mcp/sqlserver-setup.md; mientras no exista, dba pide a usuario que ejecute query y pegue resultado",
-      "status": "open"
+      "mitigation": "DAB retirado el 2026-11-19; el dba lee la BD con WebSGV/Database/sql.ps1",
+      "status": "closed"
     },
     {
       "id": "RISK-002",
@@ -590,34 +591,8 @@
   "mcp_servers": {
     "sql-mcp-server": {
       "type": "data-api-builder",
-      "transport": "stdio",
-      "config_file": "dab-config.json",
-      "status": "pending_configuration",
-      "setup_doc": ".opencode/mcp/sqlserver-setup.md",
-      "required_steps": [
-        "Instalar DAB: dotnet tool install --global Microsoft.DataApiBuilder",
-        "Definir DATABASE_CONNECTION_STRING en .env (raíz del repo)",
-        "Agregar bloque mcp + permission a opencode.jsonc (snippet en setup doc)",
-        "Reiniciar OpenCode"
-      ],
-      "tools_available": [
-        "describe_entities",
-        "read_records",
-        "aggregate_records",
-        "execute_entity",
-        "create_record",
-        "update_record",
-        "delete_record"
-      ],
-      "permissions_recommended": {
-        "describe_entities": "allow",
-        "read_records": "allow",
-        "aggregate_records": "allow",
-        "execute_entity": "ask",
-        "create_record": "ask",
-        "update_record": "ask",
-        "delete_record": "deny"
-      }
+      "status": "retirado",
+      "nota": "Data API Builder se retiró del repo el 2026-11-19 (sin uso, exponía Usuarios). El dba lee la BD con WebSGV/Database/sql.ps1."
     }
   },
   "verification_gate": {

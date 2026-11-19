@@ -111,16 +111,10 @@ WebSGV-specific:
 
 Audiencia por skill: ver `project-state.json` → `skills_registry`.
 
-## Configuración del MCP de SQL Server (DBA)
+## Acceso a la BD (DBA)
 
-`dab-config.json` ya está en el repo. Activación en
-`.opencode/mcp/sqlserver-setup.md`.
-
-Mientras `mcp_servers.sql-mcp-server.status == "pending_configuration"`, el
-dba puede aún:
-- Escribir los `.sql`.
-- Pedir al orquestador que el usuario ejecute queries y reporte resultados.
-- Marcar status="partial" hasta que MCP esté disponible.
+El SQL MCP Server (Data API Builder) se retiró el 2026-11-19. El dba lee la BD
+con `WebSGV/Database/sql.ps1`.
 
 ## Estado del sistema
 

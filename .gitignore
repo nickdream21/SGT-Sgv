@@ -293,7 +293,9 @@ WebSGV/dashboard/*.txt
 /docsApis/
 /swagger.json
 
-# Variables de entorno (Data API Builder) - NUNCA subir
+# Data API Builder se retiró del repo el 2026-11-19. Se siguen ignorando sus
+# archivos locales (.env con la cadena de conexión, dab-config.json) para que nadie
+# los suba por error; CodigoFuenteLimpiezaTests falla si vuelven a versionarse.
 .env
 
 # SQL Server files
@@ -397,10 +399,8 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# Data API Builder: la config LOCAL queda abierta (Unauthenticated, MCP/introspeccion
-# activos) por comodidad de desarrollo y NO debe versionarse ni desplegarse.
-# La de produccion (dab-config.production.json) si se versiona y esta bloqueada.
-dab-config.json
+# Data API Builder (retirado el 2026-11-19): nunca versionar su configuración.
+dab-config*.json
 
 
 # Datos de runtime generados/subidos por la app: liquidaciones firmadas (SGV-CDF-F-05),

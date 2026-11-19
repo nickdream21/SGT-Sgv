@@ -8,7 +8,7 @@ Repo-specific notes for OpenCode sessions. Generic .NET / ASP.NET advice is omit
 - Single project: `WebSGV/WebSGV.csproj`, solution `WebSGV.sln`.
 - NuGet uses the **legacy `packages.config`** model (`WebSGV/packages.config`) with packages restored to the top-level `packages/` directory. Do **not** convert to PackageReference casually.
 - No JS/Node build. Tests: xUnit project `WebSGV.Tests/`. CI: `.github/workflows/build.yml` (nuget restore + msbuild on windows-latest).
-- There is an Azure Data API Builder config (`dab-config.json` + gitignored `.env`) exposing the same DB over REST/GraphQL/MCP, but it is **not** wired into the Web Forms app — it's a side tool.
+- Azure Data API Builder (`dab-config*.json` + `.env`) was removed on 2026-11-19 — do not re-add it. Query the DB with `WebSGV/Database/sql.ps1`.
 
 ## Build / run
 
@@ -22,7 +22,6 @@ Repo-specific notes for OpenCode sessions. Generic .NET / ASP.NET advice is omit
 
 - `WebSGV/connectionStrings.config` — DB connection (`ConexionSGV`).
 - `WebSGV/appSettings.Secrets.config` — SMTP and other secrets.
-- Root `.env` — only consumed by `dab-config.json` (`@env('DATABASE_CONNECTION_STRING')`), not by the web app.
 
 `.gitignore` lines `**/connectionStrings.config` and `**/appSettings.Secrets.config` are intentional. Never commit replacements. The current files in the working tree contain real credentials for the somee.com SQL host — treat as sensitive even though they're locally present.
 
@@ -84,11 +83,6 @@ Este repo tiene un sistema de coordinación multi-agente bajo `.opencode/`:
 - **`.opencode/skills/`** — 6 skills cargables: `frontend-design`,
   `systematic-debugging`, `verification-before-completion`,
   `test-driven-development`, `nueva-pagina-aspx`, `nueva-sp-sql`.
-- **`.opencode/mcp/`** — configuración del **SQL MCP Server** (Data API Builder)
-  que el agente DBA usa para leer la DB, diagnosticar bugs y ejecutar SPs ya
-  desplegados. El MCP **no soporta DDL** — los `.sql` siguen requiriendo
-  despliegue manual con SSMS/sqlcmd. Setup detallado en
-  `.opencode/mcp/sqlserver-setup.md`.
 
 Reglas del sistema:
 - Solo el `orchestrator` mantiene conversación con el usuario.

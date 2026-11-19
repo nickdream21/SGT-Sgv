@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using WebSGV.Tests.Integracion;
 using Xunit;
 
 namespace WebSGV.Tests
@@ -264,6 +266,85 @@ namespace WebSGV.Tests
             Assert.True(sobrantes.Count == 0,
                 "Estas excepciones ya no tienen coincidencias; quítalas de ExcepcionesLiteralesRol:" +
                 Environment.NewLine + string.Join(Environment.NewLine, sobrantes));
+        }
+
+        // ---------- Data API Builder retirado (E1-8, 2026-11-19) ----------
+
+        // En la raíz: dab-config*.json (exponía la BD por REST/GraphQL, Usuarios incluido) y .env/.env.*
+        // (la cadena de conexión que leía DAB). Los locales siguen gitignorados; aquí se mira lo VERSIONADO.
+        private static readonly Regex ArchivoDabEnRaiz = new Regex(
+            @"^(dab-config[^/]*\.json|\.env(\.[^/]*)?)$", RegexOptions.IgnoreCase);
+
+        private static List<string> ArchivosVersionados(string raizRepo)
+        {
+            var info = new ProcessStartInfo("git", "ls-files -z")
+            {
+                WorkingDirectory = raizRepo,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8
+            };
+            Process proceso;
+            try
+            {
+                proceso = Process.Start(info);
+            }
+            catch (System.ComponentModel.Win32Exception ex)
+            {
+                // Sin git la prueba debe fallar (no omitirse): en CI tiene que verse.
+                throw new InvalidOperationException(
+                    "git no está en el PATH: instálalo o agrégalo para correr esta prueba.", ex);
+            }
+
+            using (proceso)
+            {
+                // Las dos salidas en paralelo: leer una entera antes de la otra puede bloquearse
+                // si git llena el búfer de la que nadie está leyendo.
+                var salida = proceso.StandardOutput.ReadToEndAsync();
+                var errores = proceso.StandardError.ReadToEndAsync();
+                if (!proceso.WaitForExit(30000))
+                {
+                    try { proceso.Kill(); } catch (InvalidOperationException) { }
+                    throw new TimeoutException("git ls-files no terminó en 30 s.");
+                }
+                Assert.True(proceso.ExitCode == 0, "git ls-files falló: " + errores.Result);
+                return salida.Result.Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            }
+        }
+
+        [Fact]
+        public void Repo_NoVersionaDataApiBuilderNiEnv()
+        {
+            string raizRepo = BaseDePruebas.RaizRepo;
+            Assert.NotNull(raizRepo);
+            List<string> versionados = ArchivosVersionados(raizRepo);
+            Assert.True(versionados.Count > 100, "git ls-files no devolvió los archivos del repo.");
+
+            List<string> hallazgos = versionados.Where(a => ArchivoDabEnRaiz.IsMatch(a)).ToList();
+
+            // .env.example no está en .gitignore: también falla si solo existe en disco (aún sin commit).
+            if (File.Exists(Path.Combine(raizRepo, ".env.example")) && !hallazgos.Contains(".env.example"))
+                hallazgos.Add(".env.example (en disco)");
+
+            Assert.True(hallazgos.Count == 0,
+                "Data API Builder se retiró del repo (E1-8): no versiones su configuración ni un .env. " +
+                "Para consultar la BD usa WebSGV/Database/sql.ps1:" +
+                Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
+        }
+
+        [Theory]
+        [InlineData("dab-config.json", true)]
+        [InlineData("dab-config.production.json", true)]
+        [InlineData(".env", true)]
+        [InlineData(".env.example", true)]
+        [InlineData("docs/dab-config.json", false)]
+        [InlineData("WebSGV/Web.config", false)]
+        [InlineData(".envrc", false)]
+        public void ArchivoDabEnRaiz_DistingueLoRetirado(string ruta, bool esperado)
+        {
+            Assert.Equal(esperado, ArchivoDabEnRaiz.IsMatch(ruta));
         }
 
         [Fact]

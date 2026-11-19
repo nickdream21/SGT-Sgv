@@ -68,7 +68,7 @@ SELECT (SELECT COUNT(*) FROM sys.tables)  AS tablas,     -- esperado 69
 ## Después: apuntar la app a la nueva base
 
 Actualizar la cadena de conexión (mismo nombre `ConexionSGV`, el código C# no cambia) en los
-**tres** lugares, con el **password nuevo** de la cuenta Pro:
-`WebSGV/connectionStrings.config`, `.env` (DAB) y `.claude/settings.json` (MCP). Los tres están
+**dos** lugares, con el **password nuevo** de la cuenta Pro:
+`WebSGV/connectionStrings.config` y `.claude/settings.json` (MCP). Los dos están
 gitignoreados. Republicar la app y correr las pruebas funcionales del
 `00_REPORTE_EJECUTIVO.md`.

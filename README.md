@@ -23,7 +23,6 @@ Plataforma web para la operación de transporte y construcción de **Servicios G
 | UI | Bootstrap 5, jQuery, AjaxControlToolkit |
 | Documentos | iTextSharp 5.5.13.4, EPPlus, ClosedXML |
 | Build | MSBuild / Visual Studio 2022 |
-| Configuración auxiliar | Data API Builder (`dab-config.json`) para uso externo/MCP |
 
 > NuGet usa **`packages.config` (legacy)**. No migres a `PackageReference` sin evaluación técnica previa.
 
@@ -67,7 +66,6 @@ Este proyecto separa secretos en archivos **no versionados**:
 
 - `WebSGV/connectionStrings.config`
 - `WebSGV/appSettings.Secrets.config`
-- `.env` (solo para `dab-config.json`, no para la app Web Forms)
 
 Usa `WebSGV/connectionStrings.Local.config.example` como referencia para tu entorno local y solicita credenciales al equipo.
 
@@ -140,7 +138,7 @@ El repositorio versiona SQL como archivos fuente, pero **no despliega automátic
 
 ## Seguridad y buenas prácticas
 
-- No commitees `connectionStrings.config`, `appSettings.Secrets.config` ni `.env` con secretos.
+- No commitees `connectionStrings.config` ni `appSettings.Secrets.config`.
 - Usa helpers existentes para contraseñas (`PasswordHelper`, `HashHelper`).
 - Usa `AuditoriaHelper` para registrar acciones relevantes.
 - Respeta control de acceso con `RolesHelper` (no hardcodees roles ad hoc).

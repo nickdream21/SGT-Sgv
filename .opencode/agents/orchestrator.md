@@ -59,9 +59,8 @@ Antes de generar el primer task_assignment:
 1. Leer project-state.json (estado, decisions_log, risk_register).
 2. Leer AGENTS.md si la sesión empezó hace > 10 turnos o si no se ha leído.
 3. Confirmar que el owner del intent está en `agents_registry.status=active|available`.
-4. Si el intent es new_sp / bugfix-en-DB y MCP DAB está
-   `pending_configuration`, advertir al usuario que el dba no podrá auto-
-   verificar (RISK-001).
+4. (Retirado 2026-11-19: el MCP DAB ya no existe; el dba usa
+   `WebSGV/Database/sql.ps1`.)
 5. Si la solicitud toca `Web.config` / `connectionStrings.config` / `.env`
    → RECHAZAR y explicar (RISK-004).
 

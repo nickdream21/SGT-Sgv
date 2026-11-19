@@ -25,7 +25,7 @@ Campos principales:
 | `risk_register`         | array    | **NUEVO v2**: riesgos abiertos con owner y mitigación                |
 | `agents_registry`       | object   | Modelo + fallback + runtime + status de cada agente                  |
 | `skills_registry`       | object   | **NUEVO v2**: 11 skills + scope + audiencia                          |
-| `mcp_servers`           | object   | Configuración del SQL MCP Server (DAB)                               |
+| `mcp_servers`           | object   | Retirado (DAB se quitó del repo el 2026-11-19)                       |
 | `verification_gate`     | object   | **NUEVO v2**: reglas de cierre con evidence                          |
 | `metrics`               | object   | Contadores (tasks, handoffs, parallel_groups, verification_rejections)|
 

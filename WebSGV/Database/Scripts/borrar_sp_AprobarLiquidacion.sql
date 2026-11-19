@@ -5,7 +5,7 @@
 --
 -- EJECUTAR SOLO DESPUÉS DE PUBLICAR un código posterior a 1a74e14 en el sitio que usa esta BD: el código
 -- anterior lo llama al aprobar. Después, borrar también
--- WebSGV/Database/StoredProcedures/sp_AprobarLiquidacion.sql y su entrada en dab-config.production.json.
+-- WebSGV/Database/StoredProcedures/sp_AprobarLiquidacion.sql.
 --
 --   WebSGV/Database/sql.ps1 -Archivo WebSGV/Database/Scripts/borrar_sp_AprobarLiquidacion.sql
 

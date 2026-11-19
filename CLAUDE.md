@@ -6,8 +6,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **SGV (Sistema de Gestión de Viajes)** — a transport/logistics management system for a Peruvian company. ASP.NET **Web Forms** (.NET Framework 4.8), single Visual Studio 2022 solution: `WebSGV.sln` (web project `WebSGV/WebSGV.csproj` + xUnit tests in `WebSGV.Tests/`). All web source lives under `WebSGV/`. There is no JS/Node build pipeline. CI: `.github/workflows/build.yml` runs `nuget restore` + `msbuild /t:Build` on every PR/push to master (windows-latest).
 
-A side tool (`dab-config.json` + `.env`) exposes the database over REST/GraphQL via Azure Data API Builder — it is not consumed by the web app.
-
 ## Build
 
 ```powershell
@@ -39,7 +37,8 @@ NuGet uses the **legacy `packages.config` model** — packages restore to the to
 
 - `WebSGV/connectionStrings.config` — DB connection string (`ConexionSGV`).
 - `WebSGV/appSettings.Secrets.config` — SMTP and API keys.
-- Root `.env` — consumed only by `dab-config.json`, not the web app.
+
+Azure Data API Builder (`dab-config*.json`, root `.env`) was removed on 2026-11-19 (unused, exposed `Usuarios` with password hashes); don't re-add it (enforced by `CodigoFuenteLimpiezaTests`). To query the DB use `WebSGV/Database/sql.ps1`.
 
 Non-sensitive `appSettings` (company name, RUC, PDF archive path) live inline in `Web.config` and are read by `Helpers/EmpresaConfigHelper.cs`.
 
