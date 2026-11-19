@@ -105,7 +105,39 @@ $env:SGV_CARPETA_RESPALDO = 'D:\RespaldosSGV'
 
 Sale con código `1` si hay faltantes o distintos. Por defecto usa la BD de pruebas (`sgvActualizada`, la que usa hoy el sitio publicado); `-Entorno produccion -ConfirmoProduccion` para la otra.
 
+# Ensayo de restauración y tarea programada (E1-3)
+
+El procedimiento completo para personas (qué se respalda, cómo restaurar en un desastre, lista del ensayo mensual) está en [`docs/PROCEDIMIENTO_RESPALDO.md`](../../docs/PROCEDIMIENTO_RESPALDO.md).
+
+## Ensayar la restauración
+
+```powershell
+# Importa el .bacpac más reciente de <Carpeta>\bd\ en el SQL Server local, compara y borra la BD
+.\herramientas\respaldo\ensayar-restauracion.ps1 -Carpeta D:\RespaldosSGV
+
+# Un archivo concreto, conservando la BD restaurada para revisarla a mano
+.\herramientas\respaldo\ensayar-restauracion.ps1 -Bacpac D:\RespaldosSGV\bd\sgvActualizada_20261119_2300.bacpac -Conservar
+
+# Sin comparar con somee (desastre real, somee caído)
+.\herramientas\respaldo\ensayar-restauracion.ps1 -Carpeta D:\RespaldosSGV -SinSomee
+```
+
+- Importa con `sqlpackage /Action:Import` en una BD **nueva** `sgvRestaurada_aaaaMMdd_HHmm` del SQL Server **local** (por defecto `.` y, si no responde, `(localdb)\MSSQLLocalDB`; autenticación de Windows). Rechaza servidores que no sean de esta máquina (somee incluido), nombres que contengan `sgvActualizada`/`sgvTransporte` y BD que ya existan.
+- Compara la BD restaurada con el propio `.bacpac` (`Origin.xml`: número de tablas, procedimientos, vistas, funciones y triggers y total de filas; `model.xml`: nombres de los objetos) y con somee (solo `SELECT`: filas por tabla y nombres). Si una tabla que cambia sola (`AuditoriaLog`, `Auditoria`, `SeguimientoExportacion`, `SeguimientoHito`, `PuntoControlGps`; parámetro `-TablasCambiantes`) tiene más filas en somee, se informa como "cambió después del respaldo".
+- Comprueba los triggers de solo inserción de `FirmaDigital` y `AuditoriaLog`: intenta `UPDATE` y `DELETE` dentro de una transacción en la BD restaurada local, exige que fallen y hace `ROLLBACK`.
+- Al final borra la BD restaurada (salvo `-Conservar`) y el login SQL que trae el `.bacpac` si la importación lo creó en el servidor local.
+- Código de salida: `0` OK; `1` la importación falló, faltan objetos o tablas, el total de filas no coincide o un trigger no bloquea; `2` restauración fiel al `.bacpac` pero con diferencias frente a somee que hay que revisar. Añade una línea a `<carpeta del .bacpac>\ensayos.log`.
+
+## Programar el respaldo diario
+
+```powershell
+.\herramientas\respaldo\programar-respaldo.ps1 -Carpeta D:\RespaldosSGV -SoloListar   # muestra la tarea, no registra
+.\herramientas\respaldo\programar-respaldo.ps1 -Carpeta D:\RespaldosSGV               # registra (o reemplaza)
+.\herramientas\respaldo\programar-respaldo.ps1 -Quitar
+```
+
+Registra "SGV - Respaldo diario" (23:00, `-Hora` para cambiarla): `respaldar-bd.ps1` y luego `respaldar-archivos.ps1` con la misma carpeta. Corre con el usuario actual **solo con la sesión iniciada** (puede estar bloqueada) para no guardar la contraseña de Windows; sin sesión (S4U) no podría descifrar la credencial FTP de DPAPI. Si se perdió una ejecución, corre apenas sea posible. La salida queda en `<Carpeta>\tarea-ultima-ejecucion.log`.
+
 ## Qué NO cubre todavía
 
-- **Restauración** y prueba de que el `.bacpac` se puede importar: tarea E1-3.
-- Programarlo (Programador de tareas) y copiar la carpeta a otro disco o a la nube.
+- Copiar la carpeta de respaldos a otro disco o a la nube (se recomienda que `<Carpeta>` esté dentro de OneDrive/Google Drive).
