@@ -6,7 +6,7 @@ namespace WebSGV.Helpers
     /// <summary>
     /// URL de archivos .js/.css propios con la versión del archivo (?v=fecha de modificación), para que
     /// el navegador descargue la versión nueva tras cada cambio en lugar de usar la de su caché.
-    /// Uso en .aspx: &lt;script src="&lt;%= RecursoHelper.Url("~/Scripts/paginas/Dashboard.js") %&gt;"&gt;&lt;/script&gt;
+    /// Uso en .aspx: &lt;script src="&lt;%= RecursoHelper.Url("~/Scripts/paginas/DashboardConductor.js") %&gt;"&gt;&lt;/script&gt;
     /// </summary>
     public static class RecursoHelper
     {

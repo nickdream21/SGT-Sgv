@@ -356,14 +356,12 @@
     <Content Include="Site.Master" />
     <Content Include="Content\App.css" />
     <Content Include="Content\paginas\AgregarAbastecimiento.css" />
-    <Content Include="Content\paginas\AgregarIndicadores.css" />
     <Content Include="Content\paginas\Auditoria.css" />
     <Content Include="Content\paginas\ReporteCargas.css" />
     <Content Include="Content\paginas\FacturasFlete.css" />
     <Content Include="Content\paginas\BandejaDocumentos.css" />
     <Content Include="Content\paginas\BuscarAbastecimiento.css" />
     <Content Include="Content\paginas\CargarExcel.css" />
-    <Content Include="Content\paginas\Dashboard.css" />
     <Content Include="Content\paginas\DashboardConductor.css" />
     <Content Include="Content\paginas\DashboardGrifo.css" />
     <Content Include="Content\paginas\DashboardOperador.css" />
@@ -395,7 +393,6 @@
     <Content Include="Scripts\paginas\BuscarAbastecimiento.js" />
     <Content Include="Scripts\paginas\CargarExcel.js" />
     <Content Include="Scripts\paginas\CatalogoCliente.js" />
-    <Content Include="Scripts\paginas\Dashboard.js" />
     <Content Include="Scripts\paginas\DashboardConductor.js" />
     <Content Include="Scripts\paginas\DashboardGrifo.js" />
     <Content Include="Scripts\paginas\DashboardOperador.js" />
@@ -432,12 +429,10 @@
     <Content Include="Scripts\paginas\SiteMaster-2.js" />
     <Content Include="Scripts\paginas\SiteMaster.js" />
     <Content Include="Views\AgregarAbastecimiento.aspx" />
-    <Content Include="Views\AgregarIndicadores.aspx" />
     <Content Include="Views\AsignacionesMaquinaria.aspx" />
     <Content Include="Views\Auditoria.aspx" />
     <Content Include="Views\BuscarAbastecimiento.aspx" />
     <Content Include="Views\CargarExcel.aspx" />
-    <Content Include="Views\Dashboard.aspx" />
     <Content Include="Views\DashboardAdminSistema.aspx" />
     <Content Include="Views\GestionUsuarios.aspx" />
     <Content Include="Views\DashboardConductor.aspx" />
@@ -637,13 +632,6 @@
     <Compile Include="Views\AgregarAbastecimiento.aspx.designer.cs">
       <DependentUpon>AgregarAbastecimiento.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Views\AgregarIndicadores.aspx.cs">
-      <DependentUpon>AgregarIndicadores.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\AgregarIndicadores.aspx.designer.cs">
-      <DependentUpon>AgregarIndicadores.aspx</DependentUpon>
-    </Compile>
     <Compile Include="Models\Conductor\LiquidacionConductorModels.cs" />
     <Compile Include="Models\GpsIntegracion\OnwayModels.cs" />
     <Compile Include="Models\Despachos\ListaDespachosModels.cs" />
@@ -729,13 +717,6 @@
     </Compile>
     <Compile Include="Views\GestionUsuarios.aspx.designer.cs">
       <DependentUpon>GestionUsuarios.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\Dashboard.aspx.cs">
-      <DependentUpon>Dashboard.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\Dashboard.aspx.designer.cs">
-      <DependentUpon>Dashboard.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\DashboardConductor.aspx.cs">
       <DependentUpon>DashboardConductor.aspx</DependentUpon>

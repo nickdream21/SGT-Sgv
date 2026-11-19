@@ -2121,36 +2121,6 @@
                                                                       }
                                                                   ]
                                               },
-                     "sp_ActualizarIndicador":  {
-                                                    "source":  {
-                                                                   "object":  "sp_ActualizarIndicador",
-                                                                   "type":  "stored-procedure"
-                                                               },
-                                                    "graphql":  {
-                                                                    "enabled":  true,
-                                                                    "operation":  "mutation",
-                                                                    "type":  {
-                                                                                 "singular":  "sp_ActualizarIndicador",
-                                                                                 "plural":  "sp_ActualizarIndicadors"
-                                                                             }
-                                                                },
-                                                    "rest":  {
-                                                                 "enabled":  true,
-                                                                 "methods":  [
-                                                                                 "post"
-                                                                             ]
-                                                             },
-                                                    "permissions":  [
-                                                                        {
-                                                                            "role":  "authenticated",
-                                                                            "actions":  [
-                                                                                            {
-                                                                                                "action":  "execute"
-                                                                                            }
-                                                                                        ]
-                                                                        }
-                                                                    ]
-                                                },
                      "sp_BuscarIndicadorPorNumeroPedido":  {
                                                                "source":  {
                                                                               "object":  "sp_BuscarIndicadorPorNumeroPedido",
@@ -2361,36 +2331,6 @@
                                                                     }
                                                                 ]
                                             },
-                     "sp_InsertarIndicador":  {
-                                                  "source":  {
-                                                                 "object":  "sp_InsertarIndicador",
-                                                                 "type":  "stored-procedure"
-                                                             },
-                                                  "graphql":  {
-                                                                  "enabled":  true,
-                                                                  "operation":  "mutation",
-                                                                  "type":  {
-                                                                               "singular":  "sp_InsertarIndicador",
-                                                                               "plural":  "sp_InsertarIndicadors"
-                                                                           }
-                                                              },
-                                                  "rest":  {
-                                                               "enabled":  true,
-                                                               "methods":  [
-                                                                               "post"
-                                                                           ]
-                                                           },
-                                                  "permissions":  [
-                                                                      {
-                                                                          "role":  "authenticated",
-                                                                          "actions":  [
-                                                                                          {
-                                                                                              "action":  "execute"
-                                                                                          }
-                                                                                      ]
-                                                                      }
-                                                                  ]
-                                              },
                      "sp_InsertarOrdenViaje":  {
                                                    "source":  {
                                                                   "object":  "sp_InsertarOrdenViaje",

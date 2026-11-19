@@ -122,14 +122,20 @@ namespace WebSGV.Tests
         [Theory]
         [InlineData("TestGenerarPdfOrdenViaje")]
         [InlineData("ConsultaAuditoria")]
+        [InlineData("Dashboard")]
+        [InlineData("AgregarIndicadores")]
         public void PaginaRetirada_NoExisteNiEstaEnElProyecto(string pagina)
         {
             string raiz = RaizWeb();
             Assert.False(File.Exists(Path.Combine(raiz, "Views", pagina + ".aspx")));
             Assert.False(File.Exists(Path.Combine(raiz, "Views", pagina + ".aspx.cs")));
 
+            // Nombre exacto: "Dashboard" es prefijo de DashboardConductor, DashboardGrifo, etc., que siguen.
             string csproj = File.ReadAllText(Path.Combine(raiz, "WebSGV.csproj"));
-            Assert.DoesNotContain(pagina, csproj);
+            Assert.DoesNotContain("Views\\" + pagina + ".aspx\"", csproj);
+            Assert.DoesNotContain("Views\\" + pagina + ".aspx.cs\"", csproj);
+            Assert.DoesNotContain("paginas\\" + pagina + ".css\"", csproj);
+            Assert.DoesNotContain("paginas\\" + pagina + ".js\"", csproj);
         }
 
         [Fact]
