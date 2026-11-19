@@ -16,7 +16,7 @@ siguen en `docs/PLAN_MEJORAS_SGV.md`.
 
 ## Estado
 
-**Etapa actual: 1 — fase EJECUCIÓN, tarea E1-2** (plan escrito el 2026-11-19; E1-1 hecha).
+**Etapa actual: 1 — fase EJECUCIÓN, tarea E1-3** (plan escrito el 2026-11-19; E1-1 hecha; E1-2 con código hecho, falta su primera descarga real).
 Reparto de modelos: Fable 5.2 analiza y planifica; Opus 5.5 ejecuta.
 
 | # | Etapa | Nota hoy | Meta | Estado |
@@ -59,7 +59,7 @@ archivos en `Uploads` (59 MB) y 31 PDF firmados (8,4 MB), con su SHA-256 en `Fir
 | Tarea | Qué | Quién | Estado |
 |---|---|---|---|
 | **E1-1** | Respaldo de la BD: `herramientas/respaldo/respaldar-bd.ps1` exporta un `.bacpac` fechado a una carpeta fuera del repo; conserva 30 diarios y 12 mensuales. Aceptación: sale un `.bacpac` sin errores. | Claude | **Hecho** (1,6 MB en 33 s) |
-| **E1-2** | Espejo de archivos: `respaldar-archivos.ps1` baja por FTP `Uploads` y `App_Data/OrdenesViaje` (nunca borra en local) y compara el SHA-256 de cada PDF con `FirmaDigital`/`OrdenViaje`. Aceptación: 0 faltantes, 0 distintos. | Claude (necesita la credencial FTP guardada por el usuario) | Pendiente |
+| **E1-2** | Espejo de archivos: `respaldar-archivos.ps1` baja por FTP `Uploads` y `App_Data/OrdenesViaje` (nunca borra en local) y compara el SHA-256 de cada PDF con `FirmaDigital`/`OrdenViaje`. Aceptación: 0 faltantes, 0 distintos. | Claude (necesita la credencial FTP guardada por el usuario) | **Código hecho**; falta la 1.ª descarga real (usuario) |
 | **E1-3** | Restauración ensayada: `ensayar-restauracion.ps1` importa el `.bacpac` al SQL local y compara conteos; `docs/PROCEDIMIENTO_RESPALDO.md`; tarea programada de Windows. Aceptación: conteos iguales y el sitio local abre una liquidación firmada sobre la BD restaurada. | Claude + usuario | Pendiente |
 | **E1-4** | Publicación con paquete y vuelta atrás: perfil `Paquete.pubxml` y `herramientas/publicar/publicar.ps1` (zip por versión, sube sin tocar App_Data ni Uploads, lista y borra sobrantes solo con confirmación). Aceptación: `-SoloListar` muestra exactamente las páginas retiradas. | Claude | Pendiente |
 | **E1-5** | Publicar `master` (31 commits), borrar sobrantes, comprobar 404 de las páginas retiradas y la lista de verificación del plan. Requiere E1-1 y E1-2 antes. | Usuario da la orden; Claude acompaña | Pendiente |
@@ -133,3 +133,4 @@ Fuera de esta etapa (pasa a la 3): borrar los SP retirados de la BD, Query Store
 | 2026-11-19 | — | Análisis por áreas (5 analistas) y hoja de ruta creada. |
 | 2026-11-19 | 1 | Plan detallado escrito (E1-1 a E1-8); empieza la ejecución por E1-1. |
 | 2026-11-19 | 1 | E1-1 hecha: `herramientas/respaldo/respaldar-bd.ps1` (bacpac + retención). |
+| 2026-11-19 | 1 | E1-2 código hecho: `respaldar-archivos.ps1` y `verificar-pdf-firmados.ps1`; falta la descarga real con la contraseña FTP. |

@@ -43,8 +43,69 @@ Conserva los **30 respaldos más recientes** y, de los anteriores, **el primero 
 - `WebSGV\connectionStrings.config` (o el de producción) en la máquina; están gitignored.
 - Windows PowerShell 5.1 o superior.
 
+# Espejo de los archivos del sitio (E1-2)
+
+`respaldar-archivos.ps1` copia por FTP los archivos del sitio publicado a la misma carpeta de respaldos, para no depender de somee:
+
+| Servidor (FTP) | Copia local |
+|---|---|
+| `/www.sgvtransporte.somee.com/Uploads` (CPIC, manifiestos, facturas, guías…) | `<Carpeta>\archivos\Uploads\...` |
+| `/www.sgvtransporte.somee.com/App_Data/OrdenesViaje` (PDF firmados, se conservan 5 años) | `<Carpeta>\archivos\OrdenesViaje\...` |
+
+## Primera vez: guardar la contraseña FTP
+
+```powershell
+.\herramientas\respaldo\respaldar-archivos.ps1 -GuardarCredencial
+```
+
+Pide la contraseña FTP de `SGVTRANSPORTES` (no se muestra) y la guarda en `privado\ftp-respaldo.xml` con `Export-Clixml`: queda cifrada con DPAPI y **solo la puede leer el mismo usuario de Windows en la misma máquina** (en otra PC u otro usuario hay que repetirlo). Antes comprueba que `privado/` esté en `.gitignore`, y al final prueba la conexión listando la raíz del sitio.
+
+**Repetir `-GuardarCredencial` cada vez que se rote la contraseña FTP** (si no, el espejo fallará al conectar).
+
+## Uso
+
+```powershell
+# Ver qué bajaría (lista el servidor; no baja ni crea nada)
+.\herramientas\respaldo\respaldar-archivos.ps1 -Carpeta D:\RespaldosSGV -SoloListar
+
+# Espejo (incremental) + verificación de los PDF firmados
+.\herramientas\respaldo\respaldar-archivos.ps1 -Carpeta D:\RespaldosSGV
+
+# Con la variable de entorno de E1-1
+$env:SGV_CARPETA_RESPALDO = 'D:\RespaldosSGV'
+.\herramientas\respaldo\respaldar-archivos.ps1
+
+# Solo verificar los PDF firmados de una copia contra la BD (pruebas, solo SELECT)
+.\herramientas\respaldo\verificar-pdf-firmados.ps1 -Carpeta D:\RespaldosSGV          # usa archivos\OrdenesViaje
+.\herramientas\respaldo\verificar-pdf-firmados.ps1 -Carpeta WebSGV\App_Data\OrdenesViaje
+
+# Probar la lógica del espejo (sin FTP ni BD)
+.\herramientas\respaldo\probar-espejo.ps1
+```
+
+## Cómo funciona el espejo
+
+- **Solo lectura en el servidor**: usa únicamente `LIST`/`NLST`/`SIZE`/`RETR`; nunca sube, renombra ni borra nada en somee. Entiende el `LIST` en formato Unix y MS-DOS/IIS; si no lo reconoce, usa `NLST` + `SIZE`.
+- **Incremental**: baja solo lo que no está en local o cuyo tamaño cambió. Se excluye toda carpeta `_temp` (borradores, p. ej. `Uploads\Factura\_temp`).
+- **Nunca borra en local**: un archivo borrado en el servidor sigue en el respaldo. Si un archivo cambió de tamaño, la copia local anterior se conserva como `<nombre>__anterior_aaaaMMdd_HHmmss.<ext>` antes de poner la nueva.
+- Cada archivo se baja a `<nombre>.descargando` y se renombra solo si llegó entero (mismo tamaño que en el servidor). Ante un error de red se reintenta una vez; si vuelve a fallar se cuenta como error y se sigue con el resto.
+- Al final llama a `verificar-pdf-firmados.ps1` sobre `<Carpeta>\archivos\OrdenesViaje`, imprime el resumen (revisados, bajados, cambiados, sin cambios, errores, verificación) y añade una línea a `<Carpeta>\archivos\respaldos.log`.
+- Rechaza cualquier carpeta dentro del repo (igual que `respaldar-bd.ps1`).
+- Código de salida: `0` todo bien; `1` errores al listar o bajar; `2` la descarga fue bien pero la verificación encontró PDF faltantes o distintos (o no se pudo hacer).
+- El FTP de somee no admite TLS: usuario y contraseña viajan sin cifrar por la red (igual que al publicar desde Visual Studio).
+
+## Verificación de los PDF firmados
+
+`verificar-pdf-firmados.ps1` calcula el SHA-256 de cada archivo y lo compara con la BD (solo `SELECT`): `FirmaDigital.rutaPdfFirmado` + `hashDocumento` (todas las firmas con PDF, también las anuladas: siguen siendo evidencia) y `OrdenViaje.rutaPdfFirmado` + `hashPdfFirmado`. Informa:
+
+- **OK**: existe y el hash coincide.
+- **Faltantes**: en la BD pero no en la carpeta.
+- **Distintos**: el hash no coincide. Si dos firmas usaron la misma ruta (PDF generados en máquinas distintas), indica con cuál coincide el archivo; si una versión `__anterior_` guardada por el espejo coincide, también lo dice.
+- **Sobrantes**: en la carpeta sin registro en la BD (no es error).
+
+Sale con código `1` si hay faltantes o distintos. Por defecto usa la BD de pruebas (`sgvActualizada`, la que usa hoy el sitio publicado); `-Entorno produccion -ConfirmoProduccion` para la otra.
+
 ## Qué NO cubre todavía
 
-- **Archivos** (`WebSGV\Uploads`, PDFs firmados de `App_Data\OrdenesViaje`): tarea E1-2.
 - **Restauración** y prueba de que el `.bacpac` se puede importar: tarea E1-3.
 - Programarlo (Programador de tareas) y copiar la carpeta a otro disco o a la nube.
