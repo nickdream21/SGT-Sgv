@@ -52,10 +52,6 @@ namespace WebSGV.Tests
 
         /// <summary>Código que no se puede llamar sin la página (code-behind): se revisa el fuente.</summary>
         [Theory]
-        [InlineData("Views", "ReporteAbastecimiento.aspx.cs", "DbHelper.PatronContiene(conductor)")]
-        [InlineData("Views", "DashboardGrifo.aspx.cs", "DbHelper.PatronContiene(buscarConductor)")]
-        [InlineData("Views", "DashboardGrifo.aspx.cs", "DbHelper.PatronContiene(buscar)")]
-        [InlineData("Views", "BuscarAbastecimiento.aspx.cs", "DbHelper.PatronEmpieza(numeroAbastecimiento)")]
         [InlineData("Services", "Reportes/ReportesOrdenesViajeService.cs", "DbHelper.PatronContiene(buscarConductor)")]
         [InlineData("Services", "Exportacion/SeguimientoViajesService.cs", "DbHelper.PatronContiene(texto)")]
         [InlineData("Services", "Liquidaciones/LiquidacionesContabilidadService.cs", "DbHelper.PatronContiene(nombreConductor)")]
@@ -68,7 +64,6 @@ namespace WebSGV.Tests
             Assert.DoesNotContain("\"%\" + texto", codigo);
             Assert.DoesNotContain("\"%\" + numeroOrden", codigo);
             Assert.DoesNotContain("\"%\" + nombreConductor", codigo);
-            Assert.DoesNotContain("numeroAbastecimiento + \"%\"", codigo);
         }
 
         [Fact]

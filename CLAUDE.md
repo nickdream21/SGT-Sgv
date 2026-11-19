@@ -71,7 +71,7 @@ Cookie: `SGV_SessionId`, 30-minute timeout, `HttpOnly`, `SameSite=Lax`.
 
 Two overlapping helpers exist — prefer `SecurityHelper` (newer) for new code:
 
-- `WebSGV/Helpers/SecurityHelper.cs` — `ExigirSesion()`, `ExigirRolAdmin()`, `ExigirRolAdminOSupervisor()`, `ExigirRolAdminOGrifo()`, plus `AgregarHeadersSeguridad()`. Without a session they go to Login; with a session but the wrong role they go to that role's home page (`RolesHelper.UrlInicioSegunRol`, the single source for per-role home pages), so the user is not logged out. The guards end the response (`Response.Redirect(url, true)`); keep them at the top of `Page_Load`, outside any `try`. `[WebMethod]`s skip `Page_Load`, so each one must check session/role itself (`EnableSession = true`).
+- `WebSGV/Helpers/SecurityHelper.cs` — `ExigirSesion()`, `ExigirRolAdmin()`, `ExigirRolAdminOSupervisor()`, plus `AgregarHeadersSeguridad()`. Without a session they go to Login; with a session but the wrong role they go to that role's home page (`RolesHelper.UrlInicioSegunRol`, the single source for per-role home pages), so the user is not logged out. The guards end the response (`Response.Redirect(url, true)`); keep them at the top of `Page_Load`, outside any `try`. `[WebMethod]`s skip `Page_Load`, so each one must check session/role itself (`EnableSession = true`).
 - `WebSGV/Views/RolesHelper.cs` (namespace `WebSGV.Helpers`) — `ValidarAccesoSeccion(seccion)`, `TienePermiso(seccion)` (session role) and `TienePermiso(seccion, rol)`: the pure per-section matrix, pinned by `RolesHelperTests` (change a permission → change that test on purpose).
 
 Role constants (always compare `.ToUpper().Trim()`). `EsRolAdmin` accepts `ADMIN`, `ADMINISTRADOR` and `ADMINISTRADOR DE TRANSPORTE`, but **not** `ADMINISTRADOR DE SISTEMA` (only users and audit):
@@ -83,7 +83,6 @@ Role constants (always compare `.ToUpper().Trim()`). `EsRolAdmin` accepts `ADMIN
 | `ROL_ADMIN_SISTEMA` | `ADMINISTRADOR DE SISTEMA` | — |
 | `ROL_CONDUCTOR` | `CONDUCTOR` | `CHOFER` |
 | `ROL_SUPERVISOR` | `SUPERVISOR` | — |
-| `ROL_ADMIN_GRIFO` | `ADMINISTRADOR DE GRIFO` | — |
 | `ROL_ADMIN_MAQUINARIA` | `ADMINISTRADOR DE MAQUINARIA` | — |
 | `ROL_OPERADOR` | `OPERADOR` | — |
 | `ROL_CONTABILIDAD` | `CONTABILIDAD` | — |
@@ -97,7 +96,6 @@ All pages live under `WebSGV/Views/`. Role-specific dashboards redirect on login
 - ADMIN / ADMINISTRADOR / ADMINISTRADOR DE TRANSPORTE / SUPERVISOR → `Inicio.aspx`
 - CONDUCTOR / CHOFER → `DashboardConductor.aspx`
 - ADMINISTRADOR DE SISTEMA → `DashboardAdminSistema.aspx`
-- ADMINISTRADOR DE GRIFO → `DashboardGrifo.aspx`
 - ADMINISTRADOR DE MAQUINARIA → `AsignacionesMaquinaria.aspx`
 - OPERADOR → `DashboardOperador.aspx`
 - CONTABILIDAD → `LiquidacionesAprobadasContabilidad.aspx`
@@ -109,7 +107,6 @@ Signatures are electronic signatures (Ley 27269), not certificate-based: a handw
 ### Services and PDF generation
 
 - `Services/PdfOrdenViajeService.cs` — travel order PDFs.
-- `Services/PdfAbastecimientoService.cs` — fuel supply vouchers.
 - `Services/FirmaService.cs` — digital signature embedding.
 - `Services/Reportes/ReporteTabular.cs` — shared Excel + PDF layout for tabular reports (company header, filters, totals, summary). New report exports should build a `ReporteTabular` instead of styling ClosedXML/QuestPDF by hand.
 
@@ -175,7 +172,6 @@ Functional/process documentation (Spanish) in `docs/`:
 - `docs/PLAN_MEJORAS_SGV.md` — **current improvement plan**: status, pending tasks, home-machine setup and the ordered production checklist. Read it first when resuming work.
 - `docs/FLUJO_DE_TRABAJO_SGV.md` — end-to-end business flow and role permission matrix.
 - `docs/GUIA_CREACION_ROLES.md` — step-by-step guide for adding a new role.
-- `docs/MEJORAS_UI_ABASTECIMIENTO.md` — UI conventions for the fuel supply module.
 
 ## Keeping the plan up to date (mandatory)
 

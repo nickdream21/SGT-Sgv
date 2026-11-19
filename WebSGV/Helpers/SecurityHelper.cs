@@ -34,7 +34,6 @@ namespace WebSGV.Helpers
         public static bool EsAdminOSupervisor() => EsAdmin() || ObtenerRol() == RolesHelper.ROL_SUPERVISOR;
 
         public static bool EsAdminSistema()    => ObtenerRol() == RolesHelper.ROL_ADMIN_SISTEMA;
-        public static bool EsAdminGrifo()      => ObtenerRol() == RolesHelper.ROL_ADMIN_GRIFO;
         public static bool EsAdminMaquinaria() => ObtenerRol() == RolesHelper.ROL_ADMIN_MAQUINARIA;
         /// <summary>CONDUCTOR o CHOFER (<see cref="RolesHelper.EsRolConductor"/>).</summary>
         public static bool EsConductor()       => RolesHelper.EsRolConductor(ObtenerRol());
@@ -113,17 +112,6 @@ namespace WebSGV.Helpers
         {
             ExigirSesion();
             if (!EsConductor())
-                RedirigirSinPermiso();
-        }
-
-        /// <summary>
-        /// Exige un administrador de la operación, SUPERVISOR o ADMIN_GRIFO.
-        /// (Usado en secciones de conductores y abastecimiento)
-        /// </summary>
-        public static void ExigirRolAdminOGrifo()
-        {
-            ExigirSesion();
-            if (!(EsAdminOSupervisor() || EsAdminGrifo()))
                 RedirigirSinPermiso();
         }
 

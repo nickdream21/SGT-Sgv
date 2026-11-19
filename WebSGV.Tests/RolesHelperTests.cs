@@ -15,7 +15,7 @@ namespace WebSGV.Tests
         private static readonly string[] TodosLosRolesConocidos =
         {
             RolesHelper.ROL_ADMIN, "ADMINISTRADOR", RolesHelper.ROL_ADMIN_TRANSPORTE, RolesHelper.ROL_ADMIN_SISTEMA,
-            RolesHelper.ROL_CONDUCTOR, "CHOFER", RolesHelper.ROL_SUPERVISOR, RolesHelper.ROL_ADMIN_GRIFO,
+            RolesHelper.ROL_CONDUCTOR, "CHOFER", RolesHelper.ROL_SUPERVISOR,
             RolesHelper.ROL_ADMIN_MAQUINARIA, RolesHelper.ROL_OPERADOR, RolesHelper.ROL_CONTABILIDAD
         };
 
@@ -102,7 +102,6 @@ namespace WebSGV.Tests
         [InlineData("CONDUCTOR", "~/Views/DashboardConductor.aspx")]
         [InlineData("chofer", "~/Views/DashboardConductor.aspx")]
         [InlineData("OPERADOR", "~/Views/DashboardOperador.aspx")]
-        [InlineData("ADMINISTRADOR DE GRIFO", "~/Views/DashboardGrifo.aspx")]
         [InlineData("ADMINISTRADOR DE SISTEMA", "~/Views/DashboardAdminSistema.aspx")]
         [InlineData("ADMINISTRADOR DE MAQUINARIA", "~/Views/AsignacionesMaquinaria.aspx")] // Inicio.aspx lo rechaza
         [InlineData("CONTABILIDAD", "~/Views/LiquidacionesAprobadasContabilidad.aspx")]
@@ -116,6 +115,7 @@ namespace WebSGV.Tests
 
         [Theory]
         [InlineData("INVITADO")]
+        [InlineData("ADMINISTRADOR DE GRIFO")]                     // rol retirado (2026-11): usuarios viejos van al login
         [InlineData("")]
         [InlineData(null)]
         public void UrlInicioSegunRol_RolDesconocido_Null(string rol)
@@ -144,20 +144,6 @@ namespace WebSGV.Tests
             Assert.Equal(esperado, RolesHelper.EsRolAdmin(rol));
         }
 
-        [Theory]
-        [InlineData("ADMIN", true)]
-        [InlineData("ADMINISTRADOR", true)]
-        [InlineData("ADMINISTRADOR DE TRANSPORTE", true)]          // la administradora real (antes recibía 403)
-        [InlineData(" Administrador de Grifo ", true)]
-        [InlineData("ADMINISTRADOR DE SISTEMA", false)]
-        [InlineData("SUPERVISOR", false)]
-        [InlineData("CONDUCTOR", false)]
-        [InlineData(null, false)]
-        public void PdfAbastecimiento_SoloAdministradoresYGrifo(string rol, bool esperado)
-        {
-            Assert.Equal(esperado, WebSGV.Views.DescargarPdfAbastecimiento.RolPuedeDescargar(rol));
-        }
-
         [Fact]
         public void AdminSistema_NoEsAdmin_YSuInicioEsSuPanel()
         {
@@ -181,9 +167,7 @@ namespace WebSGV.Tests
             { "REGISTRO",                   Con("SUPERVISOR") },
             { "CONSULTAS",                  Con("SUPERVISOR") },
             { "INDICADORES",                Con("SUPERVISOR") },
-            { "REGISTRO_CONDUCTORES",       Con("ADMINISTRADOR DE GRIFO", "SUPERVISOR") },
-            { "ABASTECIMIENTO",             Con("ADMINISTRADOR DE GRIFO", "SUPERVISOR") },
-            { "DASHBOARD_GRIFO",            Con("ADMINISTRADOR DE GRIFO") },
+            { "REGISTRO_CONDUCTORES",       Con("SUPERVISOR") },
             { "AUDITORIA",                  new[] { "ADMINISTRADOR DE SISTEMA" } },
             { "SEGUIMIENTO_EXPORTACION",    Con("SUPERVISOR") },
             { "DASHBOARD_EXPORTACION",      Con("SUPERVISOR") },
@@ -195,6 +179,8 @@ namespace WebSGV.Tests
             { "LIQUIDACIONES_CONTABILIDAD", Con("CONTABILIDAD", "SUPERVISOR") },
         };
 
+        // "ADMINISTRADOR DE GRIFO" ya no es un rol (retirado 2026-11), pero puede quedar en Usuarios.rol:
+        // se prueba para fijar que no tiene ningún permiso.
         private static readonly string[] RolesProbados =
         {
             "ADMIN", "ADMINISTRADOR", "ADMINISTRADOR DE TRANSPORTE", "ADMINISTRADOR DE SISTEMA", "SUPERVISOR",
@@ -233,7 +219,7 @@ namespace WebSGV.Tests
         public void ConstantesDeRol_EstanEnRolesProbados()
         {
             var constantes = ConstantesDeRol();
-            Assert.True(constantes.Count >= 9, "Se esperaban al menos 9 constantes ROL_*; hay " + constantes.Count);
+            Assert.True(constantes.Count >= 8, "Se esperaban al menos 8 constantes ROL_*; hay " + constantes.Count);
             var faltan = constantes.Where(c => !RolesProbados.Contains(c)).ToList();
             Assert.Empty(faltan);
         }

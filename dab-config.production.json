@@ -2061,36 +2061,6 @@
                                                                        }
                                                                    ]
                                                },
-                     "sp_ActualizarAbastecimientoCombustible":  {
-                                                                    "source":  {
-                                                                                   "object":  "sp_ActualizarAbastecimientoCombustible",
-                                                                                   "type":  "stored-procedure"
-                                                                               },
-                                                                    "graphql":  {
-                                                                                    "enabled":  true,
-                                                                                    "operation":  "mutation",
-                                                                                    "type":  {
-                                                                                                 "singular":  "sp_ActualizarAbastecimientoCombustible",
-                                                                                                 "plural":  "sp_ActualizarAbastecimientoCombustibles"
-                                                                                             }
-                                                                                },
-                                                                    "rest":  {
-                                                                                 "enabled":  true,
-                                                                                 "methods":  [
-                                                                                                 "post"
-                                                                                             ]
-                                                                             },
-                                                                    "permissions":  [
-                                                                                        {
-                                                                                            "role":  "authenticated",
-                                                                                            "actions":  [
-                                                                                                            {
-                                                                                                                "action":  "execute"
-                                                                                                            }
-                                                                                                        ]
-                                                                                        }
-                                                                                    ]
-                                                                },
                      "sp_ActualizarFactura":  {
                                                   "source":  {
                                                                  "object":  "sp_ActualizarFactura",
@@ -2241,36 +2211,6 @@
                                                                                      }
                                                                                  ]
                                                              },
-                     "sp_InsertarAbastecimientoCombustible":  {
-                                                                  "source":  {
-                                                                                 "object":  "sp_InsertarAbastecimientoCombustible",
-                                                                                 "type":  "stored-procedure"
-                                                                             },
-                                                                  "graphql":  {
-                                                                                  "enabled":  true,
-                                                                                  "operation":  "mutation",
-                                                                                  "type":  {
-                                                                                               "singular":  "sp_InsertarAbastecimientoCombustible",
-                                                                                               "plural":  "sp_InsertarAbastecimientoCombustibles"
-                                                                                           }
-                                                                              },
-                                                                  "rest":  {
-                                                                               "enabled":  true,
-                                                                               "methods":  [
-                                                                                               "post"
-                                                                                           ]
-                                                                           },
-                                                                  "permissions":  [
-                                                                                      {
-                                                                                          "role":  "authenticated",
-                                                                                          "actions":  [
-                                                                                                          {
-                                                                                                              "action":  "execute"
-                                                                                                          }
-                                                                                                      ]
-                                                                                      }
-                                                                                  ]
-                                                              },
                      "sp_InsertarDespacho":  {
                                                  "source":  {
                                                                 "object":  "sp_InsertarDespacho",

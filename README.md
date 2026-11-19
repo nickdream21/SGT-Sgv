@@ -176,7 +176,6 @@ El repositorio versiona SQL como archivos fuente, pero **no despliega automátic
 
 - `docs/FLUJO_DE_TRABAJO_SGV.md`
 - `docs/GUIA_CREACION_ROLES.md`
-- `docs/MEJORAS_UI_ABASTECIMIENTO.md`
 - `docs/STACK_Y_FLUJO_SGV.md`
 - `AGENTS.md` (guía técnica para sesiones asistidas por agentes)
 

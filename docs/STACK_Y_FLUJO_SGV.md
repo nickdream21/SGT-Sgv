@@ -63,14 +63,13 @@
 
 ---
 
-## 👥 Roles del Sistema (7 roles)
+## 👥 Roles del Sistema (6 roles)
 
 | Rol | Valor en BD | Pantalla inicial |
 |---|---|---|
 | **Administrador de Transporte** | `ADMIN` | `Inicio.aspx` |
 | **Administrador de Sistema** | `ADMINISTRADOR DE SISTEMA` | `Inicio.aspx` |
 | **Conductor / Chofer** | `CONDUCTOR` | `DashboardConductor.aspx` |
-| **Administrador de Grifo** | `ADMINISTRADOR DE GRIFO` | `DashboardGrifo.aspx` |
 | **Administrador de Maquinaria** | `ADMINISTRADOR DE MAQUINARIA` | `Inicio.aspx` |
 | **Operador** | `OPERADOR` | `DashboardOperador.aspx` |
 | **Supervisor** | `SUPERVISOR` | `Inicio.aspx` |
@@ -109,20 +108,18 @@
 
 ## 🔐 Matriz de Permisos
 
-| Sección | ADMIN | ADMIN_SISTEMA | CONDUCTOR | ADMIN_GRIFO | ADMIN_MAQUINARIA | OPERADOR | SUPERVISOR |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Despachos | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Facturas / CPIC | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Órdenes de Viaje | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Registros Maestros | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Consultas / Indicadores | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Registro Conductores | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ |
-| Abastecimiento | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ |
-| Dashboard Grifo | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Auditoría | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Dashboard Conductor / Mis Viajes | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Firma Liquidación | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Dashboard Operador / Parte Diario | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ |
+| Sección | ADMIN | ADMIN_SISTEMA | CONDUCTOR | ADMIN_MAQUINARIA | OPERADOR | SUPERVISOR |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Despachos | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Facturas / CPIC | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Órdenes de Viaje | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Registros Maestros | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Consultas / Indicadores | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Registro Conductores | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Auditoría | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Dashboard Conductor / Mis Viajes | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Firma Liquidación | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Dashboard Operador / Parte Diario | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
 
 ---
 
@@ -153,7 +150,6 @@
 | Página | Función |
 |---|---|
 | `ReportesOrdenesViaje.aspx` | Liquidaciones aprobadas con filtros por fecha y factor USD→S/. Descuentos y reintegros. Exportable a Excel y PDF. |
-| `AgregarIndicadores.aspx` | Indicadores de tiempo operativo (horas salida, llegada, carga, descarga) |
 
 ### Módulo 4 — Maestros / Registros
 
@@ -211,41 +207,6 @@ Al iniciar sesión el conductor ve sus viajes asignados en progreso y puede:
 | ❌ | No puede aprobar liquidaciones |
 | ❌ | No puede ver reportes globales |
 | ✅ | Solo ve sus propios viajes (filtrado por `Session["IdConductor"]`) |
-
----
-
-## ⛽ ROL: Administrador de Grifo (`ADMINISTRADOR DE GRIFO`)
-
-### Dashboard del Grifo — `DashboardGrifo.aspx`
-
-- Lista viajes activos pendientes de abastecimiento
-- **[Abastecer]** → `AgregarAbastecimiento.aspx` (Modo Viaje, datos prellenados)
-- **[Agregar manual]** → `AgregarAbastecimiento.aspx` (Modo Manual, dropdowns)
-
-### Flujo de Abastecimiento
-
-```
-DashboardGrifo.aspx — lista viajes activos
-        │
-        ├── [Abastecer] → AgregarAbastecimiento.aspx
-        │     · Registro de tickets (costo USD + galones)
-        │     · Cálculos: GL Total, GL Consumidos, Rendimiento KM/GL
-        │     · Número correlativo generado al guardar
-        │
-        ├── [Despacho a Obra] → RegistrarDespachoObra.aspx
-        │     · Cisterna lleva combustible a una obra
-        │     · Registra galones salida / retorno
-        │     · galonesAbastecidos = salida - retorno
-        │
-        ├── [Retorno Ecuador] → RegistrarRetornoEcuador.aspx
-        │     · Ingreso de combustible desde Ecuador con tickets detallados
-        │
-        └── Gestión posterior (BuscarAbastecimiento.aspx):
-              ├── Editar datos (GL, montos, producto, ruta, tipo)
-              ├── Cambiar Tipo (ABASTECIMIENTO ↔ MANTENIMIENTO ↔ OTRO)
-              ├── Anular → Marca como ANULADO (no editable)
-              └── Eliminar → Eliminación permanente con confirmación
-```
 
 ---
 

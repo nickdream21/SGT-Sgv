@@ -16,7 +16,6 @@ namespace WebSGV
         public bool EsAdmin { get; set; }
         public bool EsConductor { get; set; }
         public bool EsAdminSistema { get; set; }
-        public bool EsAdminGrifo { get; set; }
         public bool EsAdminMaquinaria { get; set; }
         public bool EsOperador { get; set; }
         public bool EsContabilidad { get; set; }
@@ -203,7 +202,6 @@ namespace WebSGV
             EsAdmin = false;
             EsConductor = false;
             EsAdminSistema = false;
-            EsAdminGrifo = false;
             EsAdminMaquinaria = false;
             EsOperador = false;
             EsContabilidad = false;
@@ -219,7 +217,6 @@ namespace WebSGV
                 EsAdmin = RolesHelper.EsAdmin();
                 EsConductor = RolesHelper.EsConductor();
                 EsAdminSistema = RolesHelper.EsAdminSistema();
-                EsAdminGrifo = RolesHelper.EsAdminGrifo();
                 EsAdminMaquinaria = RolesHelper.EsAdminMaquinaria();
                 EsOperador = RolesHelper.EsOperador();
                 EsContabilidad = RolesHelper.EsContabilidad();

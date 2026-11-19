@@ -203,47 +203,6 @@
                     </li>
                     <% } %>
 
-                    <!-- ==================== MENÚ PARA ADMINISTRADOR DE GRIFO ==================== -->
-                    <% if (EsAdminGrifo)
-                        { %>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href='<%= ResolveUrl("~/Views/DashboardGrifo.aspx") %>'>
-                            <i class="fas fa-home"></i>Inicio
-                        </a>
-                    </li>
-
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownAbastecimiento" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-gas-pump"></i>Abastecimiento
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdownAbastecimiento">
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/AgregarAbastecimiento.aspx") %>'>
-                                <i class="fas fa-plus-circle"></i>Registrar Abastecimiento
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/BuscarAbastecimiento.aspx") %>'>
-                                <i class="fas fa-search"></i>Buscar Abastecimiento
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ReporteAbastecimiento.aspx") %>'>
-                                <i class="fas fa-file-alt"></i>Reporte
-                            </a>
-                        </div>
-                    </li>
-
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownRegistroGrifo" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-database"></i>Registro
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdownRegistroGrifo">
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroChoferes.aspx") %>'>
-                                <i class="fas fa-user-tie"></i>Conductores
-                            </a>
-                        </div>
-                    </li>
-
-                    <% } %>
-
                     <!-- ==================== MENÚ PARA ADMINISTRADOR DE MAQUINARIA ==================== -->
                     <% if (EsAdminMaquinaria)
                         { %>

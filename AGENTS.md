@@ -39,7 +39,7 @@ Non-secret `appSettings` (e.g. `Empresa.RazonSocial`, `Empresa.Ruc`, `OrdenViaje
 
 `WebSGV/Views/RolesHelper.cs` (note: file is in `Views/` but namespace is `WebSGV.Helpers`) is the single source of truth for authorization. Use its constants and `ValidarAccesoSeccion(...)` / `TienePermiso(...)` rather than inlining role string checks. Recognized roles:
 
-`ADMIN` (also accepts `ADMINISTRADOR` and `ADMINISTRADOR DE TRANSPORTE` — `EsRolAdmin`), `ADMINISTRADOR DE SISTEMA` (only users and audit; it is **not** an admin of the operation), `CONDUCTOR` (also `CHOFER`), `SUPERVISOR`, `CONTABILIDAD`, `ADMINISTRADOR DE GRIFO`, `ADMINISTRADOR DE MAQUINARIA`, `OPERADOR`.
+`ADMIN` (also accepts `ADMINISTRADOR` and `ADMINISTRADOR DE TRANSPORTE` — `EsRolAdmin`), `ADMINISTRADOR DE SISTEMA` (only users and audit; it is **not** an admin of the operation), `CONDUCTOR` (also `CHOFER`), `SUPERVISOR`, `CONTABILIDAD`, `ADMINISTRADOR DE MAQUINARIA`, `OPERADOR`.
 
 The per-section matrix is `TienePermiso(seccion, rol)` (pure; `TienePermiso(seccion)` uses the session role), pinned by `WebSGV.Tests/RolesHelperTests.cs`.
 
@@ -55,7 +55,7 @@ Role comparisons are uppercase and trimmed — keep new roles consistent.
 
 ### PDF / signature flow
 
-- `Services/PdfOrdenViajeService.cs`, `Services/PdfAbastecimientoService.cs`, `Services/FirmaService.cs` use **QuestPDF 2026.5.0** (Community license set at startup; native Skia binaries deploy to `bin\runtimes\`). Excel uses **ClosedXML** only (iTextSharp and EPPlus were removed for licensing reasons).
+- `Services/PdfOrdenViajeService.cs`, `Services/FirmaService.cs` use **QuestPDF 2026.5.0** (Community license set at startup; native Skia binaries deploy to `bin\runtimes\`). Excel uses **ClosedXML** only (iTextSharp and EPPlus were removed for licensing reasons).
 - Signed PDFs are archived under `~/App_Data/OrdenesViaje` (`OrdenViaje.RutaArchivo` in `Web.config`). `App_Data/` and `Uploads/` contain runtime artifacts — don't commit churn there.
 
 ## Conventions
@@ -105,6 +105,5 @@ Functional/process docs live in `docs/` (Spanish):
 
 - `docs/FLUJO_DE_TRABAJO_SGV.md` — end-to-end business flow.
 - `docs/GUIA_CREACION_ROLES.md` — how to add a new role (matches `RolesHelper.cs`).
-- `docs/MEJORAS_UI_ABASTECIMIENTO.md` — UI conventions for the abastecimiento module.
 
 Consult these before making cross-cutting changes to roles or the dispatch/liquidation flow.

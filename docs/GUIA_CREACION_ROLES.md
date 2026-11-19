@@ -49,10 +49,9 @@ Ejemplo: sha256.310000.{salt de 16 bytes en base64, 24 caracteres}.{hash de 32 b
 | `ADMIN` (también `ADMINISTRADOR`) | `ROL_ADMIN`            | `Inicio.aspx`                          | Operación completa (Despacho, OV, Registro, liquidaciones, reportes) |
 | `ADMINISTRADOR DE TRANSPORTE` | `ROL_ADMIN_TRANSPORTE`     | `Inicio.aspx`                          | Igual que `ADMIN` (`EsRolAdmin`) |
 | `ADMINISTRADOR DE SISTEMA` | `ROL_ADMIN_SISTEMA`           | `DashboardAdminSistema.aspx`           | Solo gestión de usuarios y auditoría; no opera |
-| `SUPERVISOR`               | `ROL_SUPERVISOR`              | `Inicio.aspx`                          | Similar a Admin (sin dashboards de conductor/grifo/operador) |
+| `SUPERVISOR`               | `ROL_SUPERVISOR`              | `Inicio.aspx`                          | Similar a Admin (sin dashboards de conductor/operador) |
 | `CONDUCTOR` (también `CHOFER`) | `ROL_CONDUCTOR`           | `DashboardConductor.aspx`              | Dashboard Conductor |
 | `CONTABILIDAD`             | `ROL_CONTABILIDAD`            | `LiquidacionesAprobadasContabilidad.aspx` | Consulta de liquidaciones aprobadas |
-| `ADMINISTRADOR DE GRIFO`   | `ROL_ADMIN_GRIFO`             | `DashboardGrifo.aspx`                  | Abastecimiento + Conductores |
 | `ADMINISTRADOR DE MAQUINARIA` | `ROL_ADMIN_MAQUINARIA`     | `AsignacionesMaquinaria.aspx`          | Maquinaria |
 | `OPERADOR`                 | `ROL_OPERADOR`                | `DashboardOperador.aspx`               | Dashboard Operador (Parte Diario) |
 
@@ -62,7 +61,6 @@ La matriz completa de permisos por sección está en `docs/FLUJO_DE_TRABAJO_SGV.
 | `ADMIN`                    | `ROL_ADMIN`                   | `Inicio.aspx`            | Menú completo (Despacho, OV, Registro) |
 | `ADMINISTRADOR DE SISTEMA` | `ROL_ADMIN_SISTEMA`           | `Inicio.aspx`            | Menú Admin + Auditoría      |
 | `CONDUCTOR`                | `ROL_CONDUCTOR`               | `DashboardConductor.aspx`| Dashboard Conductor         |
-| `ADMINISTRADOR DE GRIFO`   | `ROL_ADMIN_GRIFO`             | `DashboardGrifo.aspx`    | Abastecimiento + Conductores |
 | `SUPERVISOR`               | `ROL_SUPERVISOR`              | `Inicio.aspx`            | Similar a Admin             |
 | `ADMINISTRADOR DE MAQUINARIA` | `ROL_ADMIN_MAQUINARIA`     | `Inicio.aspx`            | Menú básico (configurable)  |
 | `OPERADOR`                 | `ROL_OPERADOR`                | `DashboardOperador.aspx` | Dashboard Operador (Parte Diario) |

@@ -18,14 +18,9 @@ namespace WebSGV.Tests
     /// </summary>
     public class MarcadoCelularTests
     {
-        /// <summary>Páginas de grifo y maquinaria: fuera del alcance de la revisión móvil de 2026-11.</summary>
+        /// <summary>Páginas de maquinaria: fuera del alcance de la revisión móvil de 2026-11.</summary>
         private static readonly HashSet<string> PaginasExcluidas = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "AgregarAbastecimiento.aspx",
-            "BuscarAbastecimiento.aspx",
-            "DashboardGrifo.aspx",
-            "DescargarPdfAbastecimiento.aspx",
-            "ReporteAbastecimiento.aspx",
             "AsignacionesMaquinaria.aspx",
             "RegistroEquiposMaquinaria.aspx",
         };

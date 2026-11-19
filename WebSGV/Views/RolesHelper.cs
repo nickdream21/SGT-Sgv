@@ -23,7 +23,6 @@ namespace WebSGV.Helpers
         public const string ROL_SUPERVISOR = "SUPERVISOR";
         public const string ROL_ADMIN_SISTEMA = "ADMINISTRADOR DE SISTEMA";
         public const string ROL_ADMIN_TRANSPORTE = "ADMINISTRADOR DE TRANSPORTE";
-        public const string ROL_ADMIN_GRIFO = "ADMINISTRADOR DE GRIFO";
         public const string ROL_ADMIN_MAQUINARIA = "ADMINISTRADOR DE MAQUINARIA";
         public const string ROL_OPERADOR = "OPERADOR";
         public const string ROL_CONTABILIDAD = "CONTABILIDAD";
@@ -34,7 +33,6 @@ namespace WebSGV.Helpers
                 { ROL_ADMIN, "Administrador" },
                 { ROL_SUPERVISOR, "Supervisor" },
                 { ROL_CONDUCTOR, "Conductor" },
-                { ROL_ADMIN_GRIFO, "Administrador de Grifo" },
                 { ROL_ADMIN_MAQUINARIA, "Administrador de Maquinaria" },
                 { ROL_OPERADOR, "Operador" },
                 { ROL_CONTABILIDAD, "Contabilidad" },
@@ -137,7 +135,6 @@ namespace WebSGV.Helpers
             switch (r)
             {
                 case ROL_OPERADOR:         return "~/Views/DashboardOperador.aspx";
-                case ROL_ADMIN_GRIFO:      return "~/Views/DashboardGrifo.aspx";
                 case ROL_ADMIN_SISTEMA:    return "~/Views/DashboardAdminSistema.aspx";
                 case ROL_ADMIN_MAQUINARIA: return "~/Views/AsignacionesMaquinaria.aspx";
                 case ROL_CONTABILIDAD:     return "~/Views/LiquidacionesAprobadasContabilidad.aspx";
@@ -147,15 +144,6 @@ namespace WebSGV.Helpers
                 case ROL_SUPERVISOR:       return "~/Views/Inicio.aspx";
                 default:                   return null;
             }
-        }
-
-        /// <summary>
-        /// Verifica si el usuario actual es Administrador de Grifo
-        /// </summary>
-        public static bool EsAdminGrifo()
-        {
-            string rolActual = ObtenerRolActual();
-            return rolActual == ROL_ADMIN_GRIFO;
         }
 
         /// <summary>
@@ -219,14 +207,9 @@ namespace WebSGV.Helpers
                 case "INDICADORES":
                     return admin || supervisor;
 
-                // Registro de Conductores y Abastecimiento: también el administrador de grifo
+                // Registro de Conductores
                 case "REGISTRO_CONDUCTORES":
-                case "ABASTECIMIENTO":
-                    return admin || r == ROL_ADMIN_GRIFO || supervisor;
-
-                // Dashboard del Grifo
-                case "DASHBOARD_GRIFO":
-                    return r == ROL_ADMIN_GRIFO || admin;
+                    return admin || supervisor;
 
                 // Auditoría: solo ADMINISTRADOR DE SISTEMA
                 case "AUDITORIA":

@@ -2,24 +2,23 @@
 
 ## 📋 Descripción General
 
-**SGV (Sistema de Gestión de Viajes)** es una aplicación web ASP.NET Web Forms (.NET Framework 4.8) orientada a la gestión de transporte de carga. Administra el ciclo completo desde la programación de despachos, seguimiento de viajes, liquidación de gastos firmada digitalmente por conductores, hasta la aprobación administrativa con ajustes auditados. Incluye además módulos de abastecimiento de combustible, gestión de maquinaria pesada y parte diario de operadores.
+**SGV (Sistema de Gestión de Viajes)** es una aplicación web ASP.NET Web Forms (.NET Framework 4.8) orientada a la gestión de transporte de carga. Administra el ciclo completo desde la programación de despachos, seguimiento de viajes, liquidación de gastos firmada digitalmente por conductores, hasta la aprobación administrativa con ajustes auditados. Incluye además módulos de gestión de maquinaria pesada y parte diario de operadores.
 
 ---
 
 ## 👥 Roles del Sistema
 
-El sistema maneja **8 roles** (9 constantes `ROL_*`: `ADMIN` y `ADMINISTRADOR DE TRANSPORTE` tienen los mismos permisos) definidos en `WebSGV/Views/RolesHelper.cs`; los alias `ADMINISTRADOR` y `CHOFER` se aceptan como `ADMIN` y `CONDUCTOR`:
+El sistema maneja **7 roles** (8 constantes `ROL_*`: `ADMIN` y `ADMINISTRADOR DE TRANSPORTE` tienen los mismos permisos) definidos en `WebSGV/Views/RolesHelper.cs`; los alias `ADMINISTRADOR` y `CHOFER` se aceptan como `ADMIN` y `CONDUCTOR`:
 
 | Rol | Constante | Valor en BD | Redirección Login | Descripción |
 |-----|-----------|-------------|-------------------|-------------|
 | **Administrador de Transporte** | `ROL_ADMIN_TRANSPORTE` (y `ROL_ADMIN` para `ADMIN` / `ADMINISTRADOR`) | `ADMINISTRADOR DE TRANSPORTE` (también `ADMIN`, `ADMINISTRADOR`) | `Inicio.aspx` | Gestión operativa completa: despachos, viajes, liquidaciones, registros y reportes |
 | **Administrador de Sistema** | `ROL_ADMIN_SISTEMA` | `ADMINISTRADOR DE SISTEMA` | `DashboardAdminSistema.aspx` | Gestión de usuarios y auditoría; no opera despachos, liquidaciones ni reportes |
 | **Conductor** | `ROL_CONDUCTOR` | `CONDUCTOR` (también `CHOFER`) | `DashboardConductor.aspx` | Liquidación firmada de viajes asignados y consulta de historial |
-| **Administrador de Grifo** | `ROL_ADMIN_GRIFO` | `ADMINISTRADOR DE GRIFO` | `DashboardGrifo.aspx` | Gestión integral de abastecimiento de combustible |
 | **Administrador de Maquinaria** | `ROL_ADMIN_MAQUINARIA` | `ADMINISTRADOR DE MAQUINARIA` | `AsignacionesMaquinaria.aspx` | Gestión de equipos, obras, operadores y asignaciones |
 | **Operador** | `ROL_OPERADOR` | `OPERADOR` | `DashboardOperador.aspx` | Registro de parte diario de trabajo en maquinaria pesada |
 | **Contabilidad** | `ROL_CONTABILIDAD` | `CONTABILIDAD` | `LiquidacionesAprobadasContabilidad.aspx` | Consulta de liquidaciones aprobadas y sus PDF (menú propio: Liquidaciones Aprobadas) |
-| **Supervisor** | `ROL_SUPERVISOR` | `SUPERVISOR` | `Inicio.aspx` | Permisos similares a ADMIN en despachos, órdenes de viaje, registros y abastecimiento |
+| **Supervisor** | `ROL_SUPERVISOR` | `SUPERVISOR` | `Inicio.aspx` | Permisos similares a ADMIN en despachos, órdenes de viaje y registros |
 
 > La página de inicio de cada rol sale de `RolesHelper.UrlInicioSegunRol` (login, redirecciones y logo del menú).
 
@@ -29,19 +28,18 @@ El sistema maneja **8 roles** (9 constantes `ROL_*`: `ADMIN` y `ADMINISTRADOR DE
 
 ## 🔑 Matriz de Permisos por Sección
 
-ADMIN\* = `ADMIN`, `ADMINISTRADOR` y `ADMINISTRADOR DE TRANSPORTE` (`RolesHelper.EsRolAdmin`); CONDUCTOR incluye `CHOFER`; GRIFO y MAQUINARIA son los administradores de cada módulo.
+ADMIN\* = `ADMIN`, `ADMINISTRADOR` y `ADMINISTRADOR DE TRANSPORTE` (`RolesHelper.EsRolAdmin`); CONDUCTOR incluye `CHOFER`; MAQUINARIA es el administrador de su módulo.
 
-| Sección (`TienePermiso(seccion, rol)`) | ADMIN\* | SUPERVISOR | CONDUCTOR | CONTABILIDAD | ADMIN_SISTEMA | GRIFO | MAQUINARIA | OPERADOR |
-|----------------------------------------|:------:|:----------:|:---------:|:------------:|:-------------:|:-----:|:----------:|:--------:|
-| `DESPACHO` / `FACTURA` / `CPIC` / `ORDEN_VIAJE` / `REGISTRO` / `CONSULTAS` / `INDICADORES` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `REGISTRO_CONDUCTORES` / `ABASTECIMIENTO` | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `DASHBOARD_GRIFO` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `AUDITORIA` | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| `SEGUIMIENTO_EXPORTACION` / `DASHBOARD_EXPORTACION` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `DASHBOARD_CONDUCTOR` / `MIS_VIAJES` / `MI_PERFIL` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `DASHBOARD_OPERADOR` / `PARTE_DIARIO` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| `LIQUIDACIONES_CONTABILIDAD` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Cualquier otra sección | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Sección (`TienePermiso(seccion, rol)`) | ADMIN\* | SUPERVISOR | CONDUCTOR | CONTABILIDAD | ADMIN_SISTEMA | MAQUINARIA | OPERADOR |
+|----------------------------------------|:------:|:----------:|:---------:|:------------:|:-------------:|:----------:|:--------:|
+| `DESPACHO` / `FACTURA` / `CPIC` / `ORDEN_VIAJE` / `REGISTRO` / `CONSULTAS` / `INDICADORES` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `REGISTRO_CONDUCTORES` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `AUDITORIA` | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `SEGUIMIENTO_EXPORTACION` / `DASHBOARD_EXPORTACION` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `DASHBOARD_CONDUCTOR` / `MIS_VIAJES` / `MI_PERFIL` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `DASHBOARD_OPERADOR` / `PARTE_DIARIO` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| `LIQUIDACIONES_CONTABILIDAD` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Cualquier otra sección | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 > Matriz verificada por `RolesHelperTests` (tabla literal; además comprueba que toda sección usada en el código existe en ella).
 
@@ -81,35 +79,6 @@ Admin Revisa: Aprobar / Rechazar / Editar
         │     · PDF firmado generado y archivado en ~/App_Data/OrdenesViaje
         │     → Pasa a Historial / Reportes
         └── Si Rechaza → Regresa al Conductor para corrección
-```
-
-### Flujo de Abastecimiento (Admin de Grifo)
-
-```
-DashboardGrifo.aspx — lista viajes activos pendientes de abastecimiento
-        │
-        ├── [Abastecer] → AgregarAbastecimiento.aspx (Modo Viaje, datos prellenados)
-        └── [Agregar manual] → AgregarAbastecimiento.aspx (Modo Manual, dropdowns)
-        │
-        ▼
-Registro de Tickets (costo USD + galones)
-Cálculos automáticos: GL Total, GL Consumidos, Rendimiento KM/GL
-        │
-        ▼
-Guardar → número correlativo generado
-        │
-        ├── [Despacho a Obra] → RegistrarDespachoObra.aspx
-        │     Cisterna lleva combustible a una obra
-        │     Registra galones salida / retorno → galonesAbastecidos = salida - retorno
-        │
-        ├── [Retorno Ecuador] → RegistrarRetornoEcuador.aspx
-        │     Ingreso de combustible desde Ecuador con tickets detallados
-        │
-        └── Gestión posterior (BuscarAbastecimiento.aspx):
-              ├── Editar datos (GL, montos, producto, ruta, tipo)
-              ├── Cambiar Tipo (ABASTECIMIENTO ↔ MANTENIMIENTO ↔ OTRO)
-              ├── Anular → Marca como ANULADO (no editable)
-              └── Eliminar → Eliminación permanente con confirmación
 ```
 
 ### Flujo de Maquinaria (Admin de Maquinaria / Operador)
@@ -163,8 +132,6 @@ Historial de partes accesible en Dashboard
 |--------|---------|
 | `LiquidacionesPendientes.aspx` | **Liquidaciones Pendientes** — Lista de liquidaciones firmadas por conductores pendientes de revisión del admin. |
 | `DetalleOrdenViaje.aspx` | **Detalle de Orden de Viaje** — Vista completa de una liquidación con todos los datos financieros y estado de firma. |
-| `AgregarOrdenViaje.aspx` | **Crear Orden de Viaje** — Generación de la orden a partir del despacho finalizado (camino alternativo del admin). |
-| `BuscarOrdenViaje.aspx` | **Búsqueda Avanzada** — Búsqueda de órdenes por múltiples criterios. |
 | `FirmarLiquidacion.aspx` | **Firma Digital** — Canvas biométrico del conductor. Previo al envío de la liquidación. |
 
 **Acciones sobre liquidaciones pendientes:**
@@ -197,83 +164,8 @@ Historial de partes accesible en Dashboard
 
 | Página | Función |
 |--------|---------|
-| `AgregarCPIC.aspx` / `BuscarCPIC.aspx` | Gestión de documentos CPIC (operaciones internacionales) |
-| `AgregarFactura.aspx` / `BuscarFactura.aspx` | Gestión de facturas |
-| `AgregarIndicadores.aspx` | Registro de indicadores de tiempo operativo (horas de salida, llegada, carga, descarga) |
 | `CargarExcel.aspx` | Carga masiva de datos desde archivo Excel |
 | `DescargarPdfOrdenViaje.aspx` | Endpoint que sirve el PDF de una orden de viaje (QuestPDF; un PDF firmado se sirve archivado, nunca se regenera) |
-| `DescargarPdfAbastecimiento.aspx` | Endpoint que genera y sirve el PDF de un abastecimiento |
-
----
-
-## ⛽ Rol: Administrador de Grifo (`ADMINISTRADOR DE GRIFO`)
-
-### 1. Dashboard (`DashboardGrifo.aspx`)
-
-Pantalla de inicio con visión general de la operación:
-- Viajes activos pendientes de abastecimiento
-- Acceso rápido a registro y búsqueda
-
-### 2. Registro de Abastecimiento (`AgregarAbastecimiento.aspx`)
-
-| Función | Descripción |
-|---------|-------------|
-| **Modo Manual** | Selección libre de conductor, placa tracto, carreta, tipo de vehículo, ruta y producto |
-| **Modo Viaje** | Datos prellenados desde un viaje activo (conductor, placas, ruta, GL asignados) |
-| **Tipo de Registro** | `ABASTECIMIENTO` (rutina), `MANTENIMIENTO` (servicio técnico), `OTRO` (especial) |
-| **Tickets** | Tabla dinámica de tickets con costo USD y galones por ticket |
-| **Cálculos automáticos** | GL Total = GL Ruta + GL Comprados; GL Consumidos; Rendimiento KM/GL |
-
-**Validación condicional por tipo:**
-- **VIAJE PROGRAMADO**: Todos los campos obligatorios
-- **ABASTECIMIENTO**: Placa y conductor obligatorios; producto, GL Ruta y tickets opcionales
-- **MANTENIMIENTO / OTRO**: Solo fecha, hora y lugar son obligatorios
-
-### 3. Despacho a Obra (`RegistrarDespachoObra.aspx`)
-
-Módulo de despacho de cisterna hacia una obra específica.
-- Registra galones de salida y galones de retorno
-- `galonesAbastecidos = galones_salida − galones_retorno`
-- Persiste en tabla `DespachoCombustibleObra`
-
-### 4. Retorno Ecuador (`RegistrarRetornoEcuador.aspx`)
-
-Registro de ingresos de combustible proveniente de Ecuador.
-- Captura múltiples tickets detallados por operación
-- Persiste en tablas `IngresoCombustibleEcuador` + `DetalleTicketEcuador`
-
-### 5. Búsqueda y Gestión (`BuscarAbastecimiento.aspx`)
-
-| Acción | Descripción |
-|--------|-------------|
-| **Buscar** | Búsqueda por número de abastecimiento (exacta y LIKE) |
-| **Ver** | Visualización completa: datos del vehículo, combustible, rendimiento, observaciones |
-| **Editar** | Modificar GL, montos, producto, ruta, observaciones |
-| **Cambiar Tipo** | Cambiar entre ABASTECIMIENTO, MANTENIMIENTO, OTRO (no aplica a VIAJE PROGRAMADO) |
-| **Anular** | Marca como `ANULADO` — banner rojo, edición bloqueada, auditoría registrada |
-| **Eliminar** | Eliminación permanente con doble confirmación — auditoría registrada |
-
-**Estados del registro:**
-
-| Estado | Editable | Descripción |
-|--------|----------|-------------|
-| ABASTECIMIENTO | ✅ | Rutina operativa |
-| VIAJE PROGRAMADO | ✅ (tipo no cambiable) | Asociado a orden de viaje |
-| MANTENIMIENTO | ✅ | Servicio técnico |
-| OTRO | ✅ | Uso especial |
-| ANULADO | ❌ | Registro anulado, solo eliminar |
-
-### 6. Reportes (`ReporteAbastecimiento.aspx`)
-
-| Función | Descripción |
-|---------|-------------|
-| **Filtros** | Por rango de fechas, conductor, placa |
-| **Vista** | Tabla con todos los abastecimientos registrados |
-| **Exportar Excel** | Exportación con detección dinámica de columnas (`tipoAbastecimiento`, `rutaDescripcion`) |
-
-### 7. Registro de Conductores
-
-El Admin de Grifo puede registrar y gestionar conductores desde `RegistroChoferes.aspx`.
 
 ---
 
@@ -459,7 +351,6 @@ Admin revisa liquidación pendiente:
 │   └── Listar Despachos
 ├── Orden de Viaje
 │   ├── Liquidaciones Pendientes
-│   ├── Buscar Orden de Viaje
 │   └── Reportes
 ├── Registro
 │   ├── Conductores
@@ -470,31 +361,12 @@ Admin revisa liquidación pendiente:
 │   ├── Plantas
 │   ├── Rutas
 │   └── Productos
-├── Documentos
-│   ├── Facturas
-│   └── CPIC
 ├── Herramientas
-│   ├── Indicadores
 │   ├── Cargar Excel
 │   └── Reportes Avanzados
 └── Configuración
     ├── Cambiar Contraseña
     └── Auditoría del Sistema (solo Admin Sistema)
-```
-
-### Menú Administrador de Grifo
-```
-├── Inicio (DashboardGrifo)
-├── Abastecimiento
-│   ├── Registrar Abastecimiento
-│   ├── Buscar Abastecimiento
-│   ├── Despacho a Obra
-│   ├── Retorno Ecuador
-│   └── Reporte
-├── Registro
-│   └── Conductores
-└── Configuración
-    └── Cambiar Contraseña
 ```
 
 ### Menú Administrador de Maquinaria
@@ -540,17 +412,6 @@ Admin revisa liquidación pendiente:
 | Serialización | Newtonsoft.Json |
 | Autenticación | Sesión ASP.NET (`SGV_SessionId`, 30 min, anti-fijación) |
 | Auditoría | Tabla `AuditoriaLog` auto-creada en `Application_Start` via `AuditoriaHelper.cs` |
-
----
-
-## 🗄️ Columnas Dinámicas (Migraciones)
-
-El sistema usa detección dinámica de columnas via `ColumnaExisteEnTabla()` (consulta `sys.columns`) para columnas que pueden no existir si la migración aún no se aplicó:
-
-| Tabla | Columna | Script de Migración | Descripción |
-|-------|---------|--------------------|-------------|
-| `AbastecimientoCombustible` | `tipoAbastecimiento` | `script_AgregarColumnaTipoAbastecimiento.sql` | Tipo: ABASTECIMIENTO, MANTENIMIENTO, OTRO, VIAJE PROGRAMADO, ANULADO |
-| `AbastecimientoCombustible` | `rutaDescripcion` | `script_AgregarColumnaRutaDescripcion.sql` | Descripción libre de la ruta del viaje |
 
 ---
 
