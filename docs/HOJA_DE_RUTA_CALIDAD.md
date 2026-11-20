@@ -16,12 +16,12 @@ siguen en `docs/PLAN_MEJORAS_SGV.md`.
 
 ## Estado
 
-**Etapa actual: 1 — fase EJECUCIÓN, solo falta E1-5 (publicar)** (E1-1 a E1-4 y E1-6 a E1-9 hechas; respaldo diario a Google Drive funcionando desde el 2026-11-20; E1-5 espera la orden del usuario y las rotaciones de credenciales).
+**Etapa actual: 1 — fase EJECUCIÓN, solo falta E1-5 (publicar)** (E1-1 a E1-4 y E1-6 a E1-10 hechas; respaldo diario a Google Drive funcionando desde el 2026-11-20; E1-5 espera la orden del usuario y las rotaciones de credenciales).
 Reparto de modelos: Fable 5.2 analiza y planifica; Opus 5.5 ejecuta.
 
 | # | Etapa | Nota hoy | Meta | Estado |
 |---|---|---|---|---|
-| 1 | Operación y continuidad | 4 | 7 | **En ejecución (8 de 9 hechas; falta publicar)** |
+| 1 | Operación y continuidad | 4 | 7 | **En ejecución (9 de 10 hechas; falta publicar)** |
 | 2 | Ordenar el plan de mejoras | 3 | 7 | Pendiente |
 | 3 | Integridad de la base de datos | 6,6 | 8 | Pendiente |
 | 4 | Seguridad avanzada | 7,5 | 9 | Pendiente |
@@ -67,6 +67,7 @@ archivos en `Uploads` (59 MB) y 31 PDF firmados (8,4 MB), con su SHA-256 en `Fir
 | **E1-7** | Correo ante errores: `CorreoHelper` común, `AvisoErrores` con límite (1 por tipo cada 30 min, 10 al día), desde `Application_Error`. Requiere SMTP configurado. | Claude | **Hecho** (revisor 2 rondas y probador; correo real recibido); falta `SmtpFrom` en el servidor al publicar |
 | **E1-8** | Retiro de DAB del repo y rotaciones. | Claude + usuario | **Hecho** el retiro (revisor: aprobado con cambios, corregidos); rotaciones y borrar `.env`/`dab-config.json` locales: usuario |
 | **E1-9** | Cierre técnico: paquete sin linux/osx ni documentos, log sin valores del querystring, Salud vigila a Onway, respaldo a Drive verificado. | Claude | **Hecho** (revisor 2 rondas y probador) |
+| **E1-10** | `publicar.ps1`: sobrantes borrados dentro del mantenimiento; cancela si quedarían páginas viejas en vivo; validado contra somee en solo lectura (261 sobrantes). | Claude | **Hecho** (revisor 2 rondas) |
 
 **Decisiones del usuario** (recomendación entre paréntesis):
 1. Dónde guardar los respaldos (carpeta de OneDrive o Google Drive en la PC de la oficina, fuera del repo).
@@ -143,3 +144,4 @@ Fuera de esta etapa (pasa a la 3): borrar los SP retirados de la BD, Query Store
 | 2026-11-19 | 1 | E1-8 hecha: Data API Builder retirado del repo con prueba que impide que vuelva. SMTP de avisos configurado y probado (alias sgv-avisos@). Primer .bacpac real en la unidad compartida de Drive. |
 | 2026-11-19 | 1 | E1-7 hecha: aviso por correo ante errores (`AvisoErrores`, `CorreoHelper`), con límite y sin datos sensibles. |
 | 2026-11-20 | 1 | E1-9 hecha: cierre técnico. Primera copia completa en Drive (1023 archivos) y tarea diaria registrada. Solo falta publicar (E1-5). |
+| 2026-11-20 | 1 | E1-10 hecha: publicación segura frente a los 261 sobrantes del servidor. Solo falta publicar (E1-5). |

@@ -24,7 +24,8 @@ if ($errores -and $errores.Count -gt 0) { throw "publicar.ps1 tiene errores de s
 $nombres = 'ConvertTo-RutaSitio', 'Test-RutaProtegida', 'Test-RutaCandidataSobrante', 'Get-PlanPublicacion', 'Get-OrdenSubida',
            'Test-ContenidoPaquete', 'ConvertFrom-Manifiesto', 'Compare-PaqueteConManifiesto', 'Get-DecisionVolverA', 'Test-ConfirmacionBorrar',
            'Test-RutaDeControl', 'Get-PasosSubida', 'ConvertTo-TextoMarcador', 'ConvertFrom-Marcador', 'Test-MarcadorCoincide', 'ConvertFrom-CodigoAncestro',
-           'Invoke-PasosSubida', 'ConvertTo-TextoMarcadorEnCurso', 'Get-ConfianzaHashes', 'Test-RutaRuntimeNoWindows', 'Test-RutaQueNoSePublica', 'Remove-ArchivosQueNoSePublican'
+           'Invoke-PasosSubida', 'ConvertTo-TextoMarcadorEnCurso', 'Get-ConfianzaHashes', 'Test-RutaRuntimeNoWindows', 'Test-RutaQueNoSePublica', 'Remove-ArchivosQueNoSePublican',
+           'Test-RutaSobranteDeAplicacion', 'Format-PasosSubida', 'Test-RutaNativaSuelta', 'Get-DecisionSobrantesAplicacion', 'Get-DecisionBorrado'
 foreach ($n in $nombres) {
     $def = $ast.FindAll({ param($x) $x -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $x.Name -eq $n }, $false) |
            Select-Object -First 1
@@ -63,11 +64,12 @@ foreach ($r in 'Views/Inicio.aspx', 'App_DataX/a.aspx', 'MisUploads/a.js', 'Web.
 # 2) Candidatos a sobrante (por extensión o Database/)
 # -------------------------------------------------------------------------------------------------
 foreach ($r in 'Views/Dashboard.aspx', 'Site.Master', 'x.ASCX', 'Handler.ashx', 'Servicio.asmx', 'App_Code/A.cs', 'Scripts/a.js',
-               'Content/a.css', 'bin/Viejo.dll', 'Views/Web.config', 'Database/Schema/01_x.sql', 'database/README.md') {
+               'Content/a.css', 'bin/Viejo.dll', 'Views/Web.config', 'Database/Schema/01_x.sql', 'database/README.md',
+               'bin/runtimes/linux-x64/native/libQuestPdfSkia.so', 'BIN/runtimes/osx-arm64/native/libQuestPdfSkia.dylib') {
     Comprobar "Candidato a sobrante: '$r'" (Test-RutaCandidataSobrante $r) ''
 }
 foreach ($r in 'Content/logo.png', 'favicon.ico', 'Global.asax', 'robots.txt', 'App_Data/x.config', 'Uploads/a.js',
-               'connectionStrings.config', 'appSettings.Secrets.config', 'Views/Archivo.aspx.bak') {
+               'connectionStrings.config', 'appSettings.Secrets.config', 'Views/Archivo.aspx.bak', 'Content/linux/a.so', 'App_Data/runtimes/linux-x64/a.so') {
     Comprobar "No es candidato a sobrante: '$r'" (-not (Test-RutaCandidataSobrante $r)) ''
 }
 
@@ -182,6 +184,79 @@ Comprobar 'Pasos: app_offline.htm/publicacion.txt del paquete no se suben como c
 $pb = @(Get-PasosSubida -Rutas @('bin/b.dll', 'Views/A.aspx', 'bin/a.dll', 'Web.config'))
 Comprobar 'Pasos: cada grupo con sus rutas (bin ordenado)' ((($pb | Where-Object Paso -eq 'Bin').Rutas -join ',') -eq 'bin/a.dll,bin/b.dll' -and (($pb | Where-Object Paso -eq 'Contenido').Rutas -join ',') -eq 'Views/A.aspx' -and (($pb | Where-Object Paso -eq 'WebConfig').Rutas -join ',') -eq 'Web.config') ''
 
+# E1-10: los sobrantes se borran DENTRO de la ventana de mantenimiento (antes de QuitarMantenimiento)
+foreach ($r in 'bin/System.Web.Mvc.dll', 'BIN/es/x.resources.dll', 'bin/runtimes/linux-x64/native/a.so', 'Views/web.config', 'Views/WebForm2.aspx',
+               'Controles/X.ascx', 'Viejo.Master', 'Handler.ashx', 'Servicio.asmx', 'Otro.asax', 'App_Code/A.cs') {
+    Comprobar "Sobrante de aplicación (fuerza mantenimiento): '$r'" (Test-RutaSobranteDeAplicacion $r) ''
+}
+foreach ($r in 'Content/a.css', 'Scripts/a.js', 'Database/Schema/01_x.sql', 'Content/logo.png', 'binario/a.js') {
+    Comprobar "Sobrante estático (no fuerza mantenimiento): '$r'" (-not (Test-RutaSobranteDeAplicacion $r)) ''
+}
+function PasosS($rutas, $sobr, [switch]$Mant) { (@(Get-PasosSubida -Rutas $rutas -Sobrantes $sobr -MantenimientoEnServidor:$Mant) | ForEach-Object { $_.Paso }) -join ',' }
+$e = PasosS @('Web.config', 'bin/WebSGV.dll', 'Views/A.aspx') @('Views/Viejo.aspx', 'bin/System.Web.Mvc.dll')
+Comprobar '(E1-10) Orden: ... WebConfig, Sobrantes, QuitarMantenimiento, Marcador' ($e -eq 'MarcadorEnCurso,Mantenimiento,Contenido,Bin,WebConfig,Sobrantes,QuitarMantenimiento,Marcador') $e
+$e = PasosS @('Views/A.aspx') @('bin/System.Web.Mvc.dll')
+Comprobar '(E1-10) Solo contenido + sobrante de bin -> se fuerza el mantenimiento' ($e -eq 'MarcadorEnCurso,Mantenimiento,Contenido,Sobrantes,QuitarMantenimiento,Marcador') $e
+$e = PasosS @('Content/a.css') @('Views/WebForm2.aspx')
+Comprobar '(E1-10) Solo contenido + página retirada -> se fuerza el mantenimiento' ($e -eq 'MarcadorEnCurso,Mantenimiento,Contenido,Sobrantes,QuitarMantenimiento,Marcador') $e
+$e = PasosS @() @('Views/web.config')
+Comprobar '(E1-10) Nada que subir + Views/web.config sobrante -> mantenimiento y borrado' ($e -eq 'MarcadorEnCurso,Mantenimiento,Sobrantes,QuitarMantenimiento,Marcador') $e
+$e = PasosS @('Views/A.aspx') @('Content/viejo.css', 'Scripts/viejo.js', 'Database/Schema/01_x.sql')
+Comprobar '(E1-10) Solo sobrantes estáticos -> sin mantenimiento' ($e -eq 'MarcadorEnCurso,Contenido,Sobrantes,Marcador') $e
+$e = PasosS @('Views/A.aspx') @('Content/viejo.css') -Mant
+Comprobar '(E1-10) Sobrantes estáticos y app_offline olvidado -> se borran antes de quitarlo' ($e -eq 'MarcadorEnCurso,Contenido,Sobrantes,QuitarMantenimiento,Marcador') $e
+$e = PasosS @('bin/WebSGV.dll', 'Views/A.aspx') @()
+Comprobar '(E1-10) Sin -BorrarSobrantes (lista vacía) no hay paso Sobrantes' ($e -eq 'MarcadorEnCurso,Mantenimiento,Contenido,Bin,QuitarMantenimiento,Marcador') $e
+$e = PasosS @('bin/WebSGV.dll') $null
+Comprobar '(E1-10) Sobrantes $null tampoco crea el paso' ($e -eq 'MarcadorEnCurso,Mantenimiento,Bin,QuitarMantenimiento,Marcador') $e
+$ps = @(Get-PasosSubida -Rutas @('bin/WebSGV.dll') -Sobrantes @('bin/Zeta.dll', 'Views/web.config', 'BIN/Alfa.dll', 'Content/z.css', 'Views/Viejo.aspx'))
+$rs = @(($ps | Where-Object Paso -eq 'Sobrantes').Rutas)
+Comprobar '(E1-10) Sobrantes: páginas y .config de subcarpetas antes que bin/' (($rs -join ',') -eq 'Content/z.css,Views/Viejo.aspx,Views/web.config,BIN/Alfa.dll,bin/Zeta.dll') ($rs -join ',')
+$ps = @(Get-PasosSubida -Rutas @() -Sobrantes @('App_Data/a.config', 'Uploads/b.aspx', 'connectionStrings.config', 'appSettings.Secrets.config', 'app_offline.htm', 'publicacion.txt', 'Content/logo.png', 'Views/A.aspx'))
+$rs = @(($ps | Where-Object Paso -eq 'Sobrantes').Rutas)
+Comprobar '(E1-10) Sobrantes: nunca protegidos, de control ni no candidatos' (($rs -join ',') -eq 'Views/A.aspx') ($rs -join ',')
+$e = Format-PasosSubida @(Get-PasosSubida -Rutas @('Views/A.aspx', 'Views/B.aspx', 'bin/a.dll', 'Web.config') -Sobrantes @('Views/X.aspx', 'bin/y.dll'))
+Comprobar '(E1-10) Texto de los pasos con cantidades' ($e -eq 'MarcadorEnCurso -> Mantenimiento -> Contenido (2) -> Bin (1) -> WebConfig (1) -> Sobrantes (2) -> QuitarMantenimiento -> Marcador') $e
+
+# E1-10: DLL nativas sueltas (lista explícita en la raíz de bin/ + bin/runtimes/**)
+foreach ($r in 'bin/libgcc_s_dw2-1.dll', 'bin/libstdc++-6.dll', 'bin/libwinpthread-1.dll', 'bin/qpdf.dll', 'BIN/QUESTPDFSKIA.DLL', 'bin/zlib1.dll',
+               'bin/runtimes/linux-x64/native/libqpdf.so', 'bin/runtimes/win-x86/native/Viejo.dll') {
+    Comprobar "Nativa suelta (su DELE puede fallar sin error): '$r'" (Test-RutaNativaSuelta $r) ''
+}
+foreach ($r in 'bin/System.Web.Mvc.dll', 'bin/EPPlus.dll', 'bin/itextsharp.dll', 'bin/es/System.Web.Mvc.resources.dll', 'bin/sub/qpdf.dll',
+               'Views/qpdf.dll', 'qpdf.dll', 'bin/qpdf.dll.bak', 'bin/runtimes', 'bin/zlib.dll') {
+    Comprobar "No es nativa suelta (si falla su borrado, es error): '$r'" (-not (Test-RutaNativaSuelta $r)) ''
+}
+$ps = @(Get-PasosSubida -Rutas @() -Sobrantes @('bin/zlib1.dll', 'bin/System.Web.Mvc.dll', 'bin/runtimes/osx-x64/native/a.dylib', 'Views/web.config', 'bin/Antlr3.Runtime.dll', 'bin/QuestPdfSkia.dll'))
+$rs = @(($ps | Where-Object Paso -eq 'Sobrantes').Rutas)
+Comprobar '(E1-10) Sobrantes: páginas/.config, luego DLL administradas, al final de todo las nativas' (($rs -join ',') -eq 'Views/web.config,bin/Antlr3.Runtime.dll,bin/System.Web.Mvc.dll,bin/QuestPdfSkia.dll,bin/runtimes/osx-x64/native/a.dylib,bin/zlib1.dll') ($rs -join ',')
+
+# E1-10: sin -BorrarSobrantes, los sobrantes de aplicación cancelan la publicación (antes de escribir)
+$d = Get-DecisionSobrantesAplicacion -Sobrantes @('Views/WebForm2.aspx', 'Content/a.css', 'bin/System.Web.Mvc.dll')
+Comprobar '(E1-10) Sobrantes de aplicación sin -BorrarSobrantes -> no se permite' (-not $d.Permitido -and (Iguales $d.DeAplicacion @('Views/WebForm2.aspx', 'bin/System.Web.Mvc.dll'))) ($d | Out-String)
+$d = Get-DecisionSobrantesAplicacion -Sobrantes @('Views/web.config')
+Comprobar '(E1-10) Un Views/web.config sobrante también bloquea' (-not $d.Permitido) ''
+$d = Get-DecisionSobrantesAplicacion -Sobrantes @('Views/WebForm2.aspx') -BorrarSobrantes
+Comprobar '(E1-10) Con -BorrarSobrantes -> se permite (se borrarán)' ($d.Permitido) ''
+$d = Get-DecisionSobrantesAplicacion -Sobrantes @('Views/WebForm2.aspx') -PermitirSobrantesDeAplicacion
+Comprobar '(E1-10) Con -PermitirSobrantesDeAplicacion -> se permite a sabiendas' ($d.Permitido -and $d.DeAplicacion.Count -eq 1) ''
+$d = Get-DecisionSobrantesAplicacion -Sobrantes @('Content/a.css', 'Scripts/b.js', 'Database/x.sql', 'bin/QuestPdfSkia.dll', 'bin/zlib1.dll', 'bin/runtimes/linux-x64/native/a.so')
+Comprobar '(E1-10) Solo estáticos y nativas sueltas -> no bloquea' ($d.Permitido -and $d.DeAplicacion.Count -eq 0) ($d.DeAplicacion -join ', ')
+$d = Get-DecisionSobrantesAplicacion -Sobrantes @()
+Comprobar '(E1-10) Sin sobrantes -> se permite' ($d.Permitido) ''
+$d = Get-DecisionSobrantesAplicacion -Sobrantes @('App_Data/x.config', 'Uploads/a.aspx', 'connectionStrings.config')
+Comprobar '(E1-10) Protegidos nunca bloquean (no son sobrantes)' ($d.Permitido) ($d.DeAplicacion -join ', ')
+
+# E1-10: confirmación BORRAR: con otra respuesta se CANCELA (no se publica sin borrar)
+$d = Get-DecisionBorrado -Cantidad 261 -Respuesta 'BORRAR'
+Comprobar '(E1-10) Borrado: BORRAR -> sigue y borra' ($d.Preguntar -and $d.Continuar -and $d.Borrar) ($d | Out-String)
+foreach ($t in 'borrar', '', $null, 'SI', 'BORRAR TODO') {
+    $d = Get-DecisionBorrado -Cantidad 3 -Respuesta $t
+    Comprobar "(E1-10) Borrado: '$t' -> se cancela (ni sigue ni borra)" ($d.Preguntar -and -not $d.Continuar -and -not $d.Borrar) ($d | Out-String)
+}
+$d = Get-DecisionBorrado -Cantidad 0 -Respuesta $null
+Comprobar '(E1-10) Borrado: sin sobrantes -> no pregunta y sigue sin borrar' (-not $d.Preguntar -and $d.Continuar -and -not $d.Borrar) ($d | Out-String)
+
 # Marcador publicacion.txt
 $txtM = ConvertTo-TextoMarcador -Paquete '20261119_1610_3b2f8b0' -Commit '3b2f8b02be0fb3c13a37adc2513623f99ef378ff' -Fecha (Get-Date '2026-11-19 16:10:24') -Equipo 'PC1'
 $mk = ConvertFrom-Marcador $txtM
@@ -226,12 +301,12 @@ $r = Conf $mk $okP $okC $fM $null
 Comprobar '(B) Confianza: MDTM de la DLL falló (o no existe) -> no' (-not $r.Confiar -and $r.Motivo -match 'MDTM') $r.Motivo
 
 # Ejecución de los pasos con una acción simulada (sin red)
-function Simular($rutas, [string[]]$fallan, [switch]$Mant) {
+function Simular($rutas, [string[]]$fallan, [switch]$Mant, [string[]]$sobr) {
     $script:hechas = New-Object System.Collections.Generic.List[string]
     $acc = { param($paso, $ruta)
         $script:hechas.Add("$paso|$ruta")
         if ($fallan -contains "$paso|$ruta" -or $fallan -contains $paso) { throw "fallo simulado en $paso $ruta" } }
-    $pasosS = @(Get-PasosSubida -Rutas $rutas -MantenimientoEnServidor:$Mant)
+    $pasosS = @(Get-PasosSubida -Rutas $rutas -Sobrantes $sobr -MantenimientoEnServidor:$Mant)
     $res = Invoke-PasosSubida -Pasos $pasosS -Accion $acc -MantenimientoEnServidor:$Mant 6>$null
     return $res
 }
@@ -257,6 +332,28 @@ $r = Simular @('Views/A.aspx') @() -Mant
 Comprobar 'Ejecutar: app_offline olvidado en el servidor -> se quita al terminar bien' ($r.Errores -eq 0 -and -not $r.MantenimientoPuesto -and ($script:hechas -contains 'QuitarMantenimiento|app_offline.htm')) ($script:hechas -join ';')
 $r = Simular @('Views/A.aspx') @('Contenido') -Mant
 Comprobar 'Ejecutar: app_offline olvidado y falla el contenido -> sigue puesto' ($r.MantenimientoPuesto) ''
+
+# E1-10: ejecución con sobrantes
+$sobrS = @('bin/System.Web.Mvc.dll', 'Views/web.config', 'Views/WebForm2.aspx')
+$r = Simular $todo @() -sobr $sobrS
+Comprobar '(E1-10) Ejecutar: borra antes de quitar el mantenimiento, bin al final' (($script:hechas -join ';') -eq 'MarcadorEnCurso|publicacion.txt;Mantenimiento|app_offline.htm;Contenido|Views/A.aspx;Contenido|Views/B.aspx;Bin|bin/WebSGV.dll;WebConfig|Web.config;Sobrantes|Views/web.config;Sobrantes|Views/WebForm2.aspx;Sobrantes|bin/System.Web.Mvc.dll;QuitarMantenimiento|app_offline.htm') ($script:hechas -join ';')
+Comprobar '(E1-10) Ejecutar: todo bien -> 3 borrados, 4 subidos, mantenimiento quitado' ($r.Errores -eq 0 -and $r.Borrados -eq 3 -and $r.Subidos -eq 4 -and -not $r.MantenimientoPuesto) ($r | Out-String)
+$r = Simular $todo @('Sobrantes|Views/web.config') -sobr $sobrS
+Comprobar '(E1-10) Ejecutar: falla un borrado -> no borra bin/ ni quita el mantenimiento' ($r.PasoFallido -eq 'Sobrantes' -and $r.Errores -eq 1 -and $r.MantenimientoPuesto -and $r.Borrados -eq 0 -and -not ($script:hechas | Where-Object { $_ -like 'Sobrantes|bin/*' -or $_ -like 'QuitarMantenimiento|*' })) ($script:hechas -join ';')
+$r = Simular @('Views/A.aspx') @('Sobrantes|bin/System.Web.Mvc.dll') -sobr @('bin/System.Web.Mvc.dll', 'Content/viejo.css')
+Comprobar '(E1-10) Ejecutar: solo contenido + sobrante de bin que falla -> el mantenimiento (forzado) queda puesto' ($r.PasoFallido -eq 'Sobrantes' -and $r.MantenimientoPuesto -and $r.Borrados -eq 1 -and ($script:hechas -contains 'Mantenimiento|app_offline.htm')) ($script:hechas -join ';')
+$r = Simular @('Views/A.aspx') @('Sobrantes') -sobr @('Content/viejo.css')
+Comprobar '(E1-10) Ejecutar: falla un sobrante estático sin mantenimiento -> error, nada puesto' ($r.PasoFallido -eq 'Sobrantes' -and $r.Errores -eq 1 -and -not $r.MantenimientoPuesto) ($r | Out-String)
+$r = Simular $todo @('Bin') -sobr $sobrS
+Comprobar '(E1-10) Ejecutar: falla bin -> no se borra ningún sobrante' ($r.PasoFallido -eq 'Bin' -and $r.Borrados -eq 0 -and -not ($script:hechas | Where-Object { $_ -like 'Sobrantes|*' })) ($script:hechas -join ';')
+$sobrN = @('bin/QuestPdfSkia.dll', 'bin/System.Web.Mvc.dll', 'Views/WebForm2.aspx', 'bin/zlib1.dll')
+$r = Simular @('bin/WebSGV.dll') @('Sobrantes|bin/QuestPdfSkia.dll', 'Sobrantes|bin/zlib1.dll') -sobr $sobrN
+Comprobar '(E1-10) Ejecutar: nativas bloqueadas -> aviso, sin error, se quita el mantenimiento' ($r.Errores -eq 0 -and -not $r.PasoFallido -and -not $r.MantenimientoPuesto -and $r.Borrados -eq 2 -and (Iguales $r.NoBorradas @('bin/QuestPdfSkia.dll', 'bin/zlib1.dll')) -and ($script:hechas -contains 'QuitarMantenimiento|app_offline.htm')) (($r | Out-String) + ($script:hechas -join ';'))
+Comprobar '(E1-10) Ejecutar: las nativas se intentan después de todo lo demás' (($script:hechas -join ';') -match 'Sobrantes\|Views/WebForm2\.aspx;Sobrantes\|bin/System\.Web\.Mvc\.dll;Sobrantes\|bin/QuestPdfSkia\.dll;Sobrantes\|bin/zlib1\.dll;QuitarMantenimiento') ($script:hechas -join ';')
+$r = Simular @('bin/WebSGV.dll') @('Sobrantes|bin/System.Web.Mvc.dll') -sobr $sobrN
+Comprobar '(E1-10) Ejecutar: falla una DLL administrada -> error, no intenta las nativas, mantenimiento puesto' ($r.PasoFallido -eq 'Sobrantes' -and $r.Errores -eq 1 -and $r.MantenimientoPuesto -and $r.NoBorradas.Count -eq 0 -and -not ($script:hechas | Where-Object { $_ -like 'Sobrantes|bin/QuestPdfSkia.dll' -or $_ -like 'QuitarMantenimiento|*' })) ($script:hechas -join ';')
+$r = Simular $todo @() -sobr $sobrS
+Comprobar '(E1-10) Ejecutar: todo bien -> NoBorradas vacío' (@($r.NoBorradas).Count -eq 0) ''
 
 # Código de git merge-base --is-ancestor
 Comprobar 'Ancestro: 0 -> $true' ((ConvertFrom-CodigoAncestro 0) -eq $true) ''

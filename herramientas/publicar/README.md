@@ -35,7 +35,8 @@ El FTP común (listado, credencial) está en `herramientas\comun\Ftp.psm1`, comp
 # 2. Publicar de verdad (sube lo nuevo o distinto, por pasos: ver "Cómo sube" más abajo).
 .\herramientas\publicar\publicar.ps1
 
-# 2b. Publicar y además borrar los sobrantes (pide escribir BORRAR).
+# 2b. Publicar y además borrar los sobrantes dentro de la ventana de mantenimiento (pide escribir BORRAR al empezar).
+#     La primera publicación con este script debe ser así (ver "Cómo sube").
 .\herramientas\publicar\publicar.ps1 -BorrarSobrantes
 ```
 
@@ -58,15 +59,24 @@ publicaciones.log       <- una línea por subida
 
 ### Cómo sube (y qué pasa si falla)
 
-Pasos, en este orden (`-SoloListar` los muestra en la línea "Pasos de la subida"):
+Pasos, en este orden (`-SoloListar` los muestra en la línea "Pasos de la subida", p. ej. `MarcadorEnCurso -> Mantenimiento -> Contenido (181) -> Bin (72) -> WebConfig (1) -> Sobrantes (261) -> QuitarMantenimiento -> Marcador`):
 
 1. **MarcadorEnCurso**: sobrescribe `publicacion.txt` con `EN CURSO <paquete> <fecha>` antes de tocar nada. Si algo falla después, el marcador queda así y la próxima publicación no confía en lo publicado (sube todo lo de mismo tamaño).
-2. **Mantenimiento**: solo si hay algo de `bin\` o `Web.config` que subir, pone `app_offline.htm` en la raíz **antes del contenido** (así nunca se sirven páginas nuevas con la DLL vieja); mientras esté, IIS muestra "Actualizando el sistema, vuelve en unos minutos" en vez del sitio. Si solo cambia contenido, no se pone.
+2. **Mantenimiento**: pone `app_offline.htm` en la raíz **antes del contenido** (así nunca se sirven páginas nuevas con la DLL vieja) si hay algo de `bin\` o `Web.config` que subir, **o** sobrantes que borrar en `bin\`, `.config` o páginas (`.aspx`, `.ascx`, `.master`, `.ashx`, `.asmx`, `.asax`, `.cs`). Mientras esté, IIS muestra "Actualizando el sistema, vuelve en unos minutos" en vez del sitio. Si solo cambia contenido (y los sobrantes, si los hay, son CSS/JS/SQL), no se pone.
 3. **Contenido** (`.aspx`, CSS, JS, imágenes...), 4. **Bin** (`bin\`), 5. **WebConfig** (`Web.config`).
-6. **QuitarMantenimiento**: borra `app_offline.htm` (también si quedó de una subida fallida anterior).
-7. Sobrantes (solo con `-BorrarSobrantes` y BORRAR) y, si todo salió bien, el **marcador** `publicacion.txt` definitivo.
+6. **Sobrantes** (solo con `-BorrarSobrantes` y BORRAR): se borran **dentro de la ventana de mantenimiento**, antes de quitarla: primero las páginas, los `.config` de subcarpetas y los estáticos, después las DLL administradas de `bin\` (para no dejar un `web.config` apuntando a una DLL ya borrada) y al final de todo las **DLL nativas sueltas** (lista fija: `bin/libgcc_s_dw2-1.dll`, `libstdc++-6.dll`, `libwinpthread-1.dll`, `qpdf.dll`, `QuestPdfSkia.dll`, `zlib1.dll`, y todo `bin/runtimes/**`). Así el sitio nunca atiende con páginas viejas cuyo code-behind ya no está en la DLL nueva (darían 500 y correos de `AvisoErrores`).
+7. **QuitarMantenimiento**: borra `app_offline.htm` (también si quedó de una subida fallida anterior).
+8. Si todo salió bien, el **marcador** `publicacion.txt` definitivo.
 
-Al primer error de un paso no se pasa al siguiente (el paso en curso sí se termina): si falla el contenido, no se toca `bin\` ni `Web.config`. **Si `app_offline.htm` pudo quedar puesto (incluso si falló su propia subida), la salida lo dice en rojo: el sitio sigue EN MANTENIMIENTO** hasta repetir la publicación o usar `-VolverA` con la versión anterior; al terminar bien se quita solo. Para quitarlo a mano, borrar `app_offline.htm` de la raíz por FTP.
+BORRAR se pide **antes de escribir nada** en el servidor (no se espera con el sitio en mantenimiento); si no se escribe BORRAR, **se cancela** la publicación sin escribir nada. Con `-SoloListar -BorrarSobrantes` solo se muestra el paso `Sobrantes (N)`: no se pide nada ni se borra. Cada `DELE` vuelve a comprobar que la ruta no es protegida (`App_Data`, `Uploads`, secretos) y que es un sobrante válido.
+
+**Sin `-BorrarSobrantes`**, si en el servidor hay sobrantes de aplicación (páginas, `.config` o DLL administradas de `bin\`), la publicación **se cancela antes de escribir nada** y lo dice en rojo: esas páginas darían 500 con la DLL nueva. Repetir con `-BorrarSobrantes` o, a sabiendas, con `-PermitirSobrantesDeAplicacion`. Con `-SoloListar` solo avisa de que la publicación real se cancelaría. Los estáticos (CSS, JS, SQL) y las DLL nativas sueltas no bloquean. Vale también para `-VolverA`: las páginas que solo existen en la versión más nueva darían 500 con la DLL vieja.
+
+Al primer error de un paso no se pasa al siguiente (el paso en curso sí se termina, salvo **Sobrantes**, que se detiene en el primer borrado que falle: si no se pudo borrar una página o un `web.config`, no se borran las DLL que podría necesitar). Excepción: si falla el borrado de una **DLL nativa suelta** (el proceso de IIS puede tenerla cargada aunque `app_offline.htm` descargue la aplicación), es solo un aviso amarillo: se sigue, se quita el mantenimiento y al final se listan las que quedaron. Si falla el contenido, no se toca `bin\` ni `Web.config`; si falla un borrado, el mantenimiento no se quita. **Si `app_offline.htm` pudo quedar puesto (incluso si falló su propia subida), la salida lo dice en rojo: el sitio sigue EN MANTENIMIENTO** hasta repetir la publicación o usar `-VolverA` con la versión anterior; al terminar bien se quita solo. Para quitarlo a mano, borrar `app_offline.htm` de la raíz por FTP.
+
+> **Primera publicación con este script**: usar `-BorrarSobrantes` (y escribir BORRAR); sin él se cancela. El servidor tiene páginas retiradas (`Views/WebForm2.aspx`, `Views/TestGenerarPdfOrdenViaje.aspx`, Dashboard, Grifo...), DLL de MVC/Razor/FriendlyUrls/EPPlus/itextsharp en `bin\` y un `Views/web.config` de Razor que apunta a ellas: sin borrarlas, esas páginas darían 500 con la DLL nueva. Antes, mirar la lista "(b) Sobrantes" de un `-SoloListar -BorrarSobrantes`.
+>
+> **Reciclar el grupo de aplicaciones en el panel de somee justo antes** de esa publicación: así el proceso de IIS suelta las DLL nativas antiguas (`bin/QuestPdfSkia.dll`, `qpdf.dll`, `zlib1.dll`...) y se pueden borrar. Si aun así alguna queda bloqueada, la salida la lista en amarillo (el sitio queda publicado y atendiendo): reciclar otra vez y repetir con `-BorrarSobrantes`.
 
 ### Marcador `publicacion.txt` y varias máquinas
 
@@ -93,13 +103,13 @@ Ejemplo: la laptop publica `A` (marcador = `A`); luego la oficina publica `B` (m
 - Si el paquete **no tiene `manifiesto.txt`**, no se puede comprobar su integridad ni su commit: exige `-SinManifiesto` (y, como el commit es desconocido, también `-Forzar`). Cada opción acepta un riesgo distinto; ninguna cubre a la otra.
 - Si el paquete es anterior a E1-9 (trae `bin\runtimes\linux*`/`osx*`, `*.md` o `*.example`), se quitan de una copia temporal (la publicación guardada no se toca) antes de comprobarlo y subirlo, y la salida dice cuántos.
 - Volver atrás no deshace migraciones ni SP de la BD: si la versión nueva cambió la BD, revisar antes que la vieja funcione con ella.
-- Las páginas que solo existen en la versión nueva quedan como sobrantes; se borran con `-BorrarSobrantes`.
+- Las páginas que solo existen en la versión nueva quedan como sobrantes y darían 500 con la DLL vieja: sin `-BorrarSobrantes` la vuelta atrás se cancela antes de escribir (o, a sabiendas, `-PermitirSobrantesDeAplicacion`).
 
 ## Lo que no se toca nunca
 
 - `App_Data\` (PDF firmados), `Uploads\` (documentos) y los archivos de secretos (`connectionStrings*.config`, `appSettings.Secrets.config`): no van en el paquete, no se listan, no se suben y no se borran, aunque falten en el paquete. Esto lo fijan `probar-publicar.ps1` y el candado `ExcludeFromPackageFolders` de `WebSGV.csproj`.
 - Los **secretos del servidor**: el paquete no los lleva (a diferencia de publicar desde Visual Studio, que subía los de la PC). Si cambia un secreto (p. ej. una clave nueva en `appSettings.Secrets.config`), subir ese archivo a mano por FTP, a sabiendas de qué BD/claves lleva.
-- Nunca se borran carpetas (las vacías quedan) ni nada que no sea `.aspx/.ascx/.ashx/.asmx/.master/.cs/.js/.css/.dll/.config` o esté en `Database/`.
+- Nunca se borran carpetas (las vacías quedan) ni nada que no sea `.aspx/.ascx/.ashx/.asmx/.master/.cs/.js/.css/.dll/.config`, esté en `Database/` o sea un nativo de linux/osx (`bin/runtimes/linux*`, `osx*`: `.so`, `.dylib`, que ya no se publican).
 
 ## Visual Studio
 

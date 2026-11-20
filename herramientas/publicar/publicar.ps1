@@ -16,15 +16,21 @@
        Release (sin debug="true", con la regla ForzarHTTPS). Si algo falla, no sigue.
     3. Compara con el servidor por FTP (solo lectura: LIST/NLST/SIZE), sin entrar nunca en App_Data
        ni Uploads, y muestra (a) lo que se subiría y (b) los SOBRANTES: archivos
-       .aspx/.ascx/.ashx/.asmx/.master/.cs/.js/.css/.dll/.config (y todo lo de Database/) que están en
+       .aspx/.ascx/.ashx/.asmx/.master/.cs/.js/.css/.dll/.config (y todo lo de Database/ y de
+       bin\runtimes\linux*/osx*) que están en
        el servidor y no en el paquete. App_Data, Uploads y los archivos de secretos nunca son sobrantes.
     4. Sin -SoloListar escribe por pasos: primero sobrescribe el marcador publicacion.txt con "EN CURSO";
-       si hay que tocar bin\ o Web.config pone app_offline.htm (sitio en mantenimiento) ANTES de todo;
-       luego contenido, bin\, Web.config; solo si todo salió bien borra app_offline.htm. Al primer error
-       de un paso no pasa al siguiente; si app_offline.htm pudo quedar puesto, lo dice en rojo (el sitio
-       sigue en mantenimiento hasta repetir la publicación o usar -VolverA). Al terminar bien sube el
-       marcador publicacion.txt definitivo (paquete y commit).
-       Los sobrantes solo se borran con -BorrarSobrantes y escribiendo BORRAR cuando se pide.
+       si hay que tocar bin\ o Web.config (o borrar sobrantes de bin\, .config o páginas) pone
+       app_offline.htm (sitio en mantenimiento) ANTES de todo; luego contenido, bin\, Web.config y los
+       sobrantes (páginas y .config primero, bin\ al final); solo si todo salió bien borra app_offline.htm.
+       Al primer error de un paso no pasa al siguiente; si app_offline.htm pudo quedar puesto, lo dice en
+       rojo (el sitio sigue en mantenimiento hasta repetir la publicación o usar -VolverA). Al terminar bien
+       sube el marcador publicacion.txt definitivo (paquete y commit).
+       Los sobrantes solo se borran con -BorrarSobrantes y escribiendo BORRAR, que se pide antes de
+       escribir nada en el servidor (si no se escribe, se cancela sin escribir nada). Las DLL nativas sueltas
+       de bin/ se borran al final y, si están bloqueadas por IIS, es solo un aviso.
+       Sin -BorrarSobrantes, si hay sobrantes de aplicación (páginas, .config, DLL administradas de bin/) se
+       cancela antes de escribir (darían 500), salvo -PermitirSobrantesDeAplicacion. También con -VolverA.
     5. Solo se saltan archivos de mismo tamaño si se confía en los SHA-256 locales: el marcador del
        servidor coincide con ultimo-publicado.txt de esta máquina, no está EN CURSO, y bin/WebSGV.dll del
        servidor no es más nueva que el marcador (MDTM). Si no (otra PC publicó, una publicación falló, o
@@ -46,7 +52,12 @@
 .PARAMETER SoloListar
     Compila, empaqueta, comprueba y compara con el servidor, sin escribir en él.
 .PARAMETER BorrarSobrantes
-    Además de subir, borra los sobrantes (pide escribir BORRAR).
+    Además de subir, borra los sobrantes dentro de la ventana de mantenimiento (pide escribir BORRAR antes
+    de empezar; si no se escribe BORRAR, se cancela sin escribir nada). Con -SoloListar solo muestra el paso
+    'Sobrantes' en "Pasos de la subida": no pide nada ni borra.
+.PARAMETER PermitirSobrantesDeAplicacion
+    Publica aunque queden en el servidor sobrantes de aplicación (páginas, .config, DLL administradas de bin/)
+    sin -BorrarSobrantes. Sin esta opción la publicación se cancela antes de escribir: esas páginas darían 500.
 .PARAMETER VolverA
     Carpeta o .zip de una publicación anterior: la vuelve a subir (completa) en vez de compilar.
     Si es anterior al commit 773dad0 (contraseñas sha256.), o no se puede saber, exige -Forzar.
@@ -70,6 +81,7 @@ param(
     [string]$CarpetaPublicaciones,
     [switch]$SoloListar,
     [switch]$BorrarSobrantes,
+    [switch]$PermitirSobrantesDeAplicacion,
     [string]$VolverA,
     [switch]$Forzar,
     [switch]$SinManifiesto,
@@ -128,14 +140,73 @@ function Test-RutaDeControl {
 
 # $true si un archivo del servidor que no está en el paquete cuenta como sobrante (código o config
 # que IIS sirve o compila). Todo lo de Database/ también: el sitio no lo lee y no debe estar publicado.
+# También los binarios nativos de linux/osx (bin/runtimes/linux*|osx*/..., .so/.dylib): ya no se publican
+# (E1-9) y el servidor puede tenerlos de publicaciones anteriores; nunca los usa (es Windows).
 function Test-RutaCandidataSobrante {
     param([string]$Ruta)
     $r = ConvertTo-RutaSitio $Ruta
     if (Test-RutaProtegida $r) { return $false }
     if (Test-RutaDeControl $r) { return $false }
     if (($r -split '/')[0] -ieq 'Database') { return $true }
+    if (Test-RutaRuntimeNoWindows $r) { return $true }
     $ext = [IO.Path]::GetExtension($r).ToLowerInvariant()
     return @('.aspx', '.ascx', '.ashx', '.asmx', '.master', '.cs', '.js', '.css', '.dll', '.config') -contains $ext
+}
+
+# $true si borrar este sobrante cambia la aplicación (la reinicia o deja de compilar con la DLL nueva):
+# todo bin/, cualquier .config (p. ej. Views/web.config con configSections de Razor) y las páginas,
+# controles y manejadores (.aspx, .ascx, .master, .ashx, .asmx, .asax, .cs). Con alguno de estos, el borrado
+# va con el sitio en mantenimiento. Los demás (css, js, imágenes, Database/) son "estáticos".
+function Test-RutaSobranteDeAplicacion {
+    param([string]$Ruta)
+    $r = ConvertTo-RutaSitio $Ruta
+    if ($r -ilike 'bin/*') { return $true }
+    $ext = [IO.Path]::GetExtension($r).ToLowerInvariant()
+    return @('.config', '.aspx', '.ascx', '.master', '.ashx', '.asmx', '.asax', '.cs') -contains $ext
+}
+
+# $true si el sobrante es un binario nativo que puede estar bloqueado por w3wp: cualquier cosa bajo
+# bin/runtimes/ y, en la raíz de bin/, las DLL nativas (no administradas) que versiones anteriores dejaron
+# sueltas (QuestPDF/qpdf antiguos y sus dependencias de MinGW). Es una lista EXPLÍCITA, no se adivina por el
+# nombre. El proceso de IIS (w3wp) puede tenerlas cargadas aunque app_offline.htm descargue la aplicación, y
+# entonces su DELE falla: se borran al final del paso Sobrantes y, si falla, es un aviso (no un error).
+# Las DLL administradas (MVC, WebPages...) no entran aquí: si falla su borrado, es error.
+function Test-RutaNativaSuelta {
+    param([string]$Ruta)
+    $r = ConvertTo-RutaSitio $Ruta
+    if ($r -imatch '^bin/runtimes/.') { return $true }
+    $seg = @($r -split '/')
+    if ($seg.Count -ne 2 -or $seg[0] -ine 'bin') { return $false }
+    foreach ($n in @('libgcc_s_dw2-1.dll', 'libstdc++-6.dll', 'libwinpthread-1.dll', 'qpdf.dll', 'QuestPdfSkia.dll', 'zlib1.dll')) {
+        if ($seg[1] -ieq $n) { return $true }
+    }
+    return $false
+}
+
+# ¿Se puede publicar con estos sobrantes? Sin -BorrarSobrantes, un sobrante de aplicación (página, .config,
+# DLL administrada de bin/) quedaría en el servidor: una página vieja cuyo code-behind no está en la DLL nueva
+# da 500 (y correos de AvisoErrores), y un web.config viejo puede apuntar a DLL que ya no existen. Por eso se
+# cancela antes de escribir nada, salvo -PermitirSobrantesDeAplicacion. Las nativas sueltas
+# (Test-RutaNativaSuelta) y los estáticos no bloquean: dejarlos no rompe nada.
+# Vale igual para -VolverA: las páginas que solo existen en la versión más nueva darían 500 con la DLL vieja.
+# Devuelve { Permitido; DeAplicacion (rutas que bloquean) }.
+function Get-DecisionSobrantesAplicacion {
+    param([string[]]$Sobrantes, [switch]$BorrarSobrantes, [switch]$PermitirSobrantesDeAplicacion)
+    $deApp = @($Sobrantes | Where-Object { $_ } | ForEach-Object { ConvertTo-RutaSitio $_ } |
+        Where-Object { (Test-RutaCandidataSobrante $_) -and (Test-RutaSobranteDeAplicacion $_) -and -not (Test-RutaNativaSuelta $_) } | Sort-Object)
+    $permitido = $BorrarSobrantes -or $PermitirSobrantesDeAplicacion -or ($deApp.Count -eq 0)
+    return [pscustomobject]@{ Permitido = [bool]$permitido; DeAplicacion = $deApp }
+}
+
+# Confirmación del borrado con -BorrarSobrantes: se pide ANTES de escribir nada en el servidor.
+# $Cantidad: sobrantes que se borrarían. $Respuesta: lo que escribió el usuario ($null si no se preguntó).
+# Devuelve { Preguntar; Continuar; Borrar }: sin sobrantes no se pregunta y se sigue sin borrar; con BORRAR se
+# sigue borrando; con cualquier otra cosa se CANCELA la publicación (no se escribe nada en el servidor).
+function Get-DecisionBorrado {
+    param([int]$Cantidad, [string]$Respuesta)
+    if ($Cantidad -le 0) { return [pscustomobject]@{ Preguntar = $false; Continuar = $true; Borrar = $false } }
+    $ok = Test-ConfirmacionBorrar $Respuesta
+    return [pscustomobject]@{ Preguntar = $true; Continuar = [bool]$ok; Borrar = [bool]$ok }
 }
 
 # $true si el archivo es un binario nativo de QuestPDF para Linux o macOS (bin/runtimes/linux-*/...,
@@ -236,42 +307,84 @@ function Get-OrdenSubida {
 #   Contenido      archivos del grupo 0
 #   Bin            archivos de bin/
 #   WebConfig      Web.config raíz
+#   Sobrantes      borrar $Sobrantes (solo los que pasan Test-RutaCandidataSobrante), DENTRO de la ventana de
+#                  mantenimiento: primero lo que no es bin/ (páginas, .config de subcarpetas, estáticos),
+#                  después bin/ (para no dejar un web.config apuntando a una DLL ya borrada) y al final de
+#                  todo las nativas sueltas (Test-RutaNativaSuelta), que pueden estar bloqueadas. Si hay algún
+#                  sobrante de aplicación (Test-RutaSobranteDeAplicacion) también se pone el mantenimiento,
+#                  aunque no cambien bin/ ni Web.config.
 #   QuitarMantenimiento  borrar app_offline.htm (también si ya estaba en el servidor de una subida fallida)
 #   Marcador       subir publicacion.txt con el paquete y el commit
 # El que ejecuta se detiene al terminar el primer paso con errores: no pasa al siguiente.
 function Get-PasosSubida {
-    param([string[]]$Rutas, [switch]$MantenimientoEnServidor)
+    param([string[]]$Rutas, [string[]]$Sobrantes, [switch]$MantenimientoEnServidor)
     $rs = @($Rutas | Where-Object { $_ } | ForEach-Object { ConvertTo-RutaSitio $_ } | Where-Object { (Get-OrdenSubida $_) -ge 0 })
     $g0 = @($rs | Where-Object { (Get-OrdenSubida $_) -eq 0 } | Sort-Object)
     $g1 = @($rs | Where-Object { (Get-OrdenSubida $_) -eq 1 } | Sort-Object)
     $g2 = @($rs | Where-Object { (Get-OrdenSubida $_) -eq 2 })
-    $tocaApp = ($g1.Count + $g2.Count) -gt 0
+    $sb = @($Sobrantes | Where-Object { $_ } | ForEach-Object { ConvertTo-RutaSitio $_ } | Where-Object { Test-RutaCandidataSobrante $_ })
+    $sbOrden = @(@($sb | Where-Object { $_ -notlike 'bin/*' } | Sort-Object) +
+                 @($sb | Where-Object { $_ -like 'bin/*' -and -not (Test-RutaNativaSuelta $_) } | Sort-Object) +
+                 @($sb | Where-Object { Test-RutaNativaSuelta $_ } | Sort-Object))
+    $sobrantesApp = @($sb | Where-Object { Test-RutaSobranteDeAplicacion $_ }).Count -gt 0
+    $tocaApp = (($g1.Count + $g2.Count) -gt 0) -or $sobrantesApp
     $pasos = @([pscustomobject]@{ Paso = 'MarcadorEnCurso'; Rutas = @('publicacion.txt') })
     if ($tocaApp) { $pasos += [pscustomobject]@{ Paso = 'Mantenimiento'; Rutas = @('app_offline.htm') } }
     if ($g0.Count) { $pasos += [pscustomobject]@{ Paso = 'Contenido'; Rutas = $g0 } }
     if ($g1.Count) { $pasos += [pscustomobject]@{ Paso = 'Bin'; Rutas = $g1 } }
     if ($g2.Count) { $pasos += [pscustomobject]@{ Paso = 'WebConfig'; Rutas = $g2 } }
+    if ($sbOrden.Count) { $pasos += [pscustomobject]@{ Paso = 'Sobrantes'; Rutas = $sbOrden } }
     if ($tocaApp -or $MantenimientoEnServidor) { $pasos += [pscustomobject]@{ Paso = 'QuitarMantenimiento'; Rutas = @('app_offline.htm') } }
     $pasos += [pscustomobject]@{ Paso = 'Marcador'; Rutas = @('publicacion.txt') }
     return $pasos
 }
 
-# Ejecuta los pasos de Get-PasosSubida (salvo 'Marcador', que el script sube al final, tras los
-# sobrantes). $Accion: scriptblock (paso, ruta) que hace la escritura real (o una simulada en pruebas);
-# para Contenido/Bin/WebConfig se llama una vez por ruta, para los demás una vez con la ruta del paso.
-# Termina el paso en curso y, si tuvo errores, no sigue con los siguientes.
+# Texto de una línea con los pasos: 'MarcadorEnCurso -> Mantenimiento -> Contenido (3) -> Sobrantes (2) -> ...'.
+function Format-PasosSubida {
+    param([object[]]$Pasos)
+    return (@($Pasos | ForEach-Object {
+        if ($_.Paso -in 'Contenido', 'Bin', 'WebConfig', 'Sobrantes') { "$($_.Paso) ($(@($_.Rutas).Count))" } else { $_.Paso } }) -join ' -> ')
+}
+
+# Ejecuta los pasos de Get-PasosSubida (salvo 'Marcador', que el script sube al final). $Accion:
+# scriptblock (paso, ruta) que hace la escritura real (o una simulada en pruebas); para
+# Contenido/Bin/WebConfig/Sobrantes se llama una vez por ruta, para los demás una vez con la ruta del paso.
+# Termina el paso en curso y, si tuvo errores, no sigue con los siguientes. Excepción: en 'Sobrantes' se
+# detiene en el PRIMER borrado que falle (si no se pudo borrar una página o un web.config, no se borran
+# las DLL de bin/ que podría necesitar). Las nativas sueltas (Test-RutaNativaSuelta, al final del paso)
+# son la excepción a la excepción: si su DELE falla (w3wp las tiene cargadas) es un aviso, se sigue y
+# quedan en NoBorradas.
 # MantenimientoPuesto pasa a $true ANTES de intentar subir app_offline.htm (el STOR pudo llegar aunque
 # falle después la comprobación) y a $false solo si se borró bien.
-# Devuelve { Errores; Subidos; MantenimientoPuesto; Hechos (pasos intentados); PasoFallido }.
+# Devuelve { Errores; Subidos; Borrados; NoBorradas; MantenimientoPuesto; Hechos (pasos intentados); PasoFallido }.
 function Invoke-PasosSubida {
     param([object[]]$Pasos, [scriptblock]$Accion, [switch]$MantenimientoEnServidor)
-    $errores = 0; $subidos = 0; $puesto = [bool]$MantenimientoEnServidor
+    $errores = 0; $subidos = 0; $borrados = 0; $puesto = [bool]$MantenimientoEnServidor
+    $noBorradas = @()
     $hechos = @(); $fallido = $null
     foreach ($paso in $Pasos) {
         if ($paso.Paso -eq 'Marcador') { continue }
         $hechos += $paso.Paso
         $erroresPaso = 0
-        if ($paso.Paso -in 'Contenido', 'Bin', 'WebConfig') {
+        if ($paso.Paso -eq 'Sobrantes') {
+            $n = 0
+            foreach ($ruta in $paso.Rutas) {
+                $n++
+                try { & $Accion $paso.Paso $ruta | Out-Null; $borrados++ }
+                catch {
+                    if (Test-RutaNativaSuelta $ruta) {
+                        $noBorradas += $ruta
+                        Write-Host "AVISO: no se pudo borrar $ruta (DLL nativa, quizá cargada por el proceso de IIS): $($_.Exception.Message)" -ForegroundColor Yellow
+                        continue
+                    }
+                    $erroresPaso++
+                    Write-Host "ERROR al borrar $ruta : $($_.Exception.Message) (no se borran los $($paso.Rutas.Count - $n) sobrante(s) que faltan)." -ForegroundColor Red
+                    break
+                }
+                if ($n % 25 -eq 0) { Write-Host "  Sobrantes: $n de $($paso.Rutas.Count)..." }
+            }
+            Write-Host "Sobrantes: borrados $borrados de $($paso.Rutas.Count)$(if ($noBorradas.Count) { " ($($noBorradas.Count) nativa(s) bloqueada(s))" }) (las carpetas vacías quedan)."
+        } elseif ($paso.Paso -in 'Contenido', 'Bin', 'WebConfig') {
             $n = 0
             foreach ($ruta in $paso.Rutas) {
                 $n++
@@ -298,7 +411,7 @@ function Invoke-PasosSubida {
             break
         }
     }
-    return [pscustomobject]@{ Errores = $errores; Subidos = $subidos; MantenimientoPuesto = $puesto; Hechos = $hechos; PasoFallido = $fallido }
+    return [pscustomobject]@{ Errores = $errores; Subidos = $subidos; Borrados = $borrados; NoBorradas = $noBorradas; MantenimientoPuesto = $puesto; Hechos = $hechos; PasoFallido = $fallido }
 }
 
 # Marcador publicacion.txt (raíz del sitio): qué paquete y commit se publicó por última vez.
@@ -572,8 +685,6 @@ if ($ComprobarPaquete) {
     ""; Write-Host "Paquete NO apto: no se debe publicar." -ForegroundColor Red; exit 1
 }
 
-if ($BorrarSobrantes -and $SoloListar) { throw "-BorrarSobrantes no tiene sentido con -SoloListar (no se escribe en el servidor)." }
-
 # =================================================================================================
 # Carpeta de publicaciones
 # =================================================================================================
@@ -765,8 +876,7 @@ try {
         Write-Host "Guárdela una vez con: .\herramientas\respaldo\respaldar-archivos.ps1 -GuardarCredencial" -ForegroundColor Yellow
         # Vista previa sin servidor: los pasos si hubiera que subir el paquete completo.
         $pasosPrevia = @(Get-PasosSubida -Rutas @(Get-ArchivosCarpeta $sitio | ForEach-Object { $_.Ruta }))
-        $textoPrevia = @($pasosPrevia | ForEach-Object { if ($_.Paso -in 'Contenido', 'Bin', 'WebConfig') { "$($_.Paso) ($($_.Rutas.Count))" } else { $_.Paso } }) -join ' -> '
-        "Pasos de la subida si se subiera todo el paquete: $textoPrevia"
+        "Pasos de la subida si se subiera todo el paquete: $(Format-PasosSubida $pasosPrevia)"
         if ($SoloListar) { exit 0 } else { exit 1 }
     }
     $cred = Read-CredencialFtp -Archivo $ArchivoCredencial -ComandoGuardar '.\herramientas\respaldo\respaldar-archivos.ps1 -GuardarCredencial'
@@ -833,11 +943,47 @@ try {
     "(b) Sobrantes en el servidor (no están en el paquete): $($sobrantes.Count)"
     $sobrantes | ForEach-Object { "      $($_.Ruta)" }
     if ($sobrantes.Count -and -not $BorrarSobrantes) { "    (se borran solo con -BorrarSobrantes)" }
+    # Sobrantes que se borrarían (con -BorrarSobrantes): dentro de la ventana de mantenimiento, antes de quitarla.
+    $rutasBorrar = @($sobrantes | Where-Object { $_.Accion -eq 'Borrar' } | ForEach-Object { $_.Ruta })
+    $rutasSubir  = @($aSubir | ForEach-Object { $_.Ruta })
+    $nativasABorrar = @($rutasBorrar | Where-Object { (Test-RutaNativaSuelta $_) -and ($_ -notmatch '(?i)^bin/runtimes/(linux|osx)') })
     ""
-    "Pasos de la subida: " + ((@(Get-PasosSubida -Rutas ($aSubir | ForEach-Object { $_.Ruta }) -MantenimientoEnServidor:$mantenimientoEnServidor) |
-        ForEach-Object { if ($_.Paso -in 'Contenido', 'Bin', 'WebConfig') { "$($_.Paso) ($($_.Rutas.Count))" } else { $_.Paso } }) -join ' -> ')
+    "Pasos de la subida: " + (Format-PasosSubida @(Get-PasosSubida -Rutas $rutasSubir -Sobrantes $rutasBorrar -MantenimientoEnServidor:$mantenimientoEnServidor))
+    if ($nativasABorrar.Count) {
+        Write-Host "  Se borrarán al final $($nativasABorrar.Count) DLL nativa(s) suelta(s) de bin/ ($($nativasABorrar -join ', ')): el proceso de IIS puede tenerlas cargadas. Recicle el grupo de aplicaciones en el panel de somee JUSTO ANTES de publicar; si aun así no se pueden borrar, es solo un aviso." -ForegroundColor Yellow
+    }
 
-    if ($SoloListar) { ""; "(-SoloListar: no se escribió nada en el servidor)"; exit 0 }
+    # Sin -BorrarSobrantes no se publica dejando páginas, .config o DLL administradas viejas (darían 500).
+    $decisionApp = Get-DecisionSobrantesAplicacion -Sobrantes @($sobrantes | ForEach-Object { $_.Ruta }) -BorrarSobrantes:$BorrarSobrantes -PermitirSobrantesDeAplicacion:$PermitirSobrantesDeAplicacion
+    $textoBloqueo = "Hay $($decisionApp.DeAplicacion.Count) sobrante(s) de aplicación en el servidor (páginas, .config o DLL de bin/, p. ej. $(($decisionApp.DeAplicacion | Select-Object -First 3) -join ', ')): con la DLL nueva esas páginas darían error 500 (y correos de aviso). Repita con -BorrarSobrantes (o, a sabiendas, con -PermitirSobrantesDeAplicacion)."
+
+    if ($SoloListar) {
+        ""
+        if (-not $decisionApp.Permitido) { Write-Host "AVISO: la publicación real se CANCELARÍA. $textoBloqueo" -ForegroundColor Yellow }
+        if ($rutasBorrar.Count) { "(-SoloListar: no se pidió BORRAR ni se borró nada; sin -SoloListar se pediría escribir BORRAR antes de empezar)" }
+        "(-SoloListar: no se escribió nada en el servidor)"
+        exit 0
+    }
+    if (-not $decisionApp.Permitido) {
+        ""
+        Write-Host "PUBLICACIÓN CANCELADA, no se escribió nada en el servidor. $textoBloqueo" -ForegroundColor Red
+        exit 1
+    }
+
+    # Confirmación de borrado ANTES de escribir nada: el borrado va dentro de la ventana de mantenimiento y no
+    # se puede quedar esperando a que alguien escriba con el sitio en "Actualizando el sistema".
+    $resp = $null
+    if ($rutasBorrar.Count) {
+        ""
+        "Se borrarán $($rutasBorrar.Count) sobrante(s) del servidor (lista arriba), con el sitio en mantenimiento si alguno es de bin/, .config o páginas. App_Data, Uploads y secretos no se tocan."
+        $resp = Read-Host "Escriba BORRAR para confirmar (otra cosa: se cancela)"
+    }
+    $decisionBorrado = Get-DecisionBorrado -Cantidad $rutasBorrar.Count -Respuesta $resp
+    if (-not $decisionBorrado.Continuar) {
+        Write-Host "No se escribió BORRAR: publicación cancelada, no se escribió nada en el servidor." -ForegroundColor Yellow
+        exit 1
+    }
+    if ($decisionBorrado.Borrar) { "Confirmado: se borrarán antes de quitar el mantenimiento." }
 
     # =============================================================================================
     # Escritura en el servidor (STOR / DELE). Solo sin -SoloListar.
@@ -867,6 +1013,7 @@ try {
         } | Out-Null
     }
     function Remove-ArchivoSitio([string]$Ruta) {
+        if ((Test-RutaProtegida $Ruta)) { throw "ruta protegida: no se borra $Ruta" }   # defensa extra
         (New-PeticionFtp $con (Get-UrlFtp $con $Ruta) 'DELE').GetResponse().Close()
     }
 
@@ -874,7 +1021,7 @@ try {
         '<body style="font-family:Segoe UI,Arial,sans-serif;text-align:center;padding:48px 16px;color:#333">' +
         '<h1 style="font-size:1.4em">Actualizando el sistema, vuelve en unos minutos.</h1>' +
         '<p>SGV - Sistema de Gestión de Viajes</p></body></html>'
-    $pasos = @(Get-PasosSubida -Rutas ($aSubir | ForEach-Object { $_.Ruta }) -MantenimientoEnServidor:$mantenimientoEnServidor)
+    $pasos = @(Get-PasosSubida -Rutas $rutasSubir -Sobrantes $rutasBorrar -MantenimientoEnServidor:$mantenimientoEnServidor)
     $accion = {
         param($paso, $ruta)
         switch ($paso) {
@@ -887,6 +1034,11 @@ try {
                 "app_offline.htm puesto: el sitio muestra 'Actualizando el sistema' durante la subida."
             }
             'QuitarMantenimiento' { Remove-ArchivoSitio 'app_offline.htm'; "app_offline.htm quitado: el sitio vuelve a atender." }
+            'Sobrantes' {
+                # Las mismas protecciones del plan, otra vez justo antes de cada DELE.
+                if ((Test-RutaProtegida $ruta) -or -not (Test-RutaCandidataSobrante $ruta)) { throw "no es un sobrante borrable: $ruta" }
+                Remove-ArchivoSitio $ruta
+            }
             default { Send-ArchivoSitio $ruta ([IO.File]::ReadAllBytes((Join-Path $sitio ($ruta.Replace('/', '\'))))) }
         }
     }
@@ -894,28 +1046,8 @@ try {
     $errores = $resultado.Errores
     $subidos = $resultado.Subidos
     $mantenimientoPuesto = $resultado.MantenimientoPuesto
-    "Subidos en total: $subidos de $($aSubir.Count)."
-
-    $borrados = 0
-    if ($BorrarSobrantes -and $sobrantes.Count) {
-        if ($errores) {
-            Write-Host "Hubo errores al subir: no se borra ningún sobrante." -ForegroundColor Red
-        } else {
-            ""
-            "Se borrarán $($sobrantes.Count) sobrante(s) del servidor (lista arriba). App_Data, Uploads y secretos no se tocan."
-            $resp = Read-Host "Escriba BORRAR para confirmar"
-            if (Test-ConfirmacionBorrar $resp) {
-                foreach ($s in $sobrantes) {
-                    if ((Test-RutaProtegida $s.Ruta) -or -not (Test-RutaCandidataSobrante $s.Ruta)) { continue }
-                    try { Remove-ArchivoSitio $s.Ruta; $borrados++ }
-                    catch { $errores++; Write-Host "ERROR al borrar $($s.Ruta) : $($_.Exception.Message)" -ForegroundColor Red }
-                }
-                "Borrados: $borrados de $($sobrantes.Count) (las carpetas vacías quedan)."
-            } else {
-                "No se escribió BORRAR: no se borró nada."
-            }
-        }
-    }
+    $borrados = $resultado.Borrados
+    "Subidos en total: $subidos de $($aSubir.Count)$(if ($rutasBorrar.Count) { "; sobrantes borrados: $borrados de $($rutasBorrar.Count)" })."
 
     # Marcador: solo si todo salió bien (así otra máquina sabe qué hay publicado).
     if (-not $errores) {
@@ -928,14 +1060,27 @@ try {
         }
     }
 
-    $estado = if ($errores) { 'ERROR' } else { 'OK' }
-    Add-Content -LiteralPath $archivoLog -Encoding UTF8 -Value ('{0:yyyy-MM-dd HH:mm}  {1}  {2}  subidos {3}/{4}  borrados {5}  errores {6}{7}{8}' -f
-        (Get-Date), $estado, $nombrePublicacion, $subidos, $aSubir.Count, $borrados, $errores,
-        $(if ($VolverA) { '  (vuelta atrás)' } else { '' }), $(if ($mantenimientoPuesto) { '  APP_OFFLINE PUESTO' } else { '' }))
+    # Avisos ANTES de escribir el log: si Add-Content fallara, el aviso de mantenimiento ya salió.
     if ($mantenimientoPuesto) {
         ""
         Write-Host "ATENCIÓN: app_offline.htm SIGUE PUESTO en el servidor: el sitio está EN MANTENIMIENTO (muestra 'Actualizando el sistema')." -ForegroundColor Red
         Write-Host "Repita la publicación (o use -VolverA con la versión anterior); al terminar bien se quita solo." -ForegroundColor Red
+    }
+    $noBorradas = @($resultado.NoBorradas)
+    if ($noBorradas.Count) {
+        ""
+        Write-Host "AVISO: quedaron $($noBorradas.Count) DLL nativa(s) sin borrar (el proceso de IIS las tiene cargadas; no afectan al sitio):" -ForegroundColor Yellow
+        $noBorradas | ForEach-Object { Write-Host "      $_" -ForegroundColor Yellow }
+        Write-Host "Recicle el grupo de aplicaciones en el panel de somee y repita la publicación con -BorrarSobrantes." -ForegroundColor Yellow
+    }
+    $estado = if ($errores) { 'ERROR' } else { 'OK' }
+    try {
+        Add-Content -LiteralPath $archivoLog -Encoding UTF8 -Value ('{0:yyyy-MM-dd HH:mm}  {1}  {2}  subidos {3}/{4}  borrados {5}  errores {6}{7}{8}{9}' -f
+            (Get-Date), $estado, $nombrePublicacion, $subidos, $aSubir.Count, $borrados, $errores,
+            $(if ($VolverA) { '  (vuelta atrás)' } else { '' }), $(if ($mantenimientoPuesto) { '  APP_OFFLINE PUESTO' } else { '' }),
+            $(if ($noBorradas.Count) { "  nativas sin borrar $($noBorradas.Count)" } else { '' }))
+    } catch {
+        Write-Host "AVISO: no se pudo escribir el log $archivoLog : $($_.Exception.Message)" -ForegroundColor Yellow
     }
     if ($errores -and $resultado.PasoFallido -ne 'MarcadorEnCurso') {
         Write-Host "El marcador publicacion.txt queda 'EN CURSO': la próxima publicación subirá todo lo de mismo tamaño." -ForegroundColor Yellow
