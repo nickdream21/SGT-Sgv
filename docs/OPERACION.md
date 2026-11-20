@@ -4,7 +4,7 @@ Para enterarse si el sitio cae o si el GPS automático deja de correr (estuvo de
 
 ## 1. La página de salud
 
-`https://<sitio>/Salud.ashx` es anónima, solo lee y no escribe en la BD ni en la auditoría. Acepta GET y HEAD; un POST recibe 405 (PUT, DELETE y OPTIONS los responde IIS antes de llegar a la página). La respuesta solo dice `{"ok":true}` o `{"ok":false}`: el detalle va al log del sitio (`App_Data/logs`). Se reutiliza 20 s (solo BD) o 120 s (con GPS), así que un arreglo puede tardar hasta 2 min en verse.
+`https://sgvtransporte.somee.com/Salud.ashx` es anónima, solo lee y no escribe en la BD ni en la auditoría. Acepta GET y HEAD; un POST recibe 405 (PUT, DELETE y OPTIONS los responde IIS antes de llegar a la página). La respuesta solo dice `{"ok":true}` o `{"ok":false}`: el detalle va al log del sitio (`App_Data/logs`). Se reutiliza 20 s (solo BD) o 120 s (con GPS), así que un arreglo puede tardar hasta 2 min en verse.
 
 | Llamada | Responde |
 |---|---|
@@ -24,7 +24,7 @@ Para enterarse si el sitio cae o si el GPS automático deja de correr (estuvo de
 |---|---|---|
 | Monitor Type | Keyword | Keyword |
 | Friendly Name | SGV - sitio | SGV - GPS automático |
-| URL | `https://<sitio>/Salud.ashx` | `https://<sitio>/Salud.ashx?gps=1` |
+| URL | `https://sgvtransporte.somee.com/Salud.ashx` | `https://sgvtransporte.somee.com/Salud.ashx?gps=1` |
 | Keyword | `"ok":true` | `"ok":true` |
 | Alert when | Keyword **not exists** | Keyword **not exists** |
 | Monitoring Interval | 5 minutes | 5 minutes |
