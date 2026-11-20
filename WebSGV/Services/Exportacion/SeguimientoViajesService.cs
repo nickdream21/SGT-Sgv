@@ -135,6 +135,19 @@ namespace WebSGV.Services.Exportacion
 
         public List<string> Errores { get; } = new List<string>();
 
+        /// <summary>
+        /// Onway respondió bien a la consulta de la flota (última posición de todas las unidades; <see cref="FlotaRespondio"/>).
+        /// No depende de que algún viaje se pueda seguir: con unidades sin equipo GPS o quietas también es true. Salud.ashx
+        /// lo usa para saber si el proveedor responde (<see cref="ActualizacionGpsAutomatica.UltimaRespuestaOnwayProgramada"/>).
+        /// </summary>
+        public bool OnwayRespondio { get; set; }
+
+        /// <summary>
+        /// Respuesta válida de la flota: no null y con al menos una unidad. Una flota vacía con 200 (cuenta o subdominio
+        /// cambiado) cuenta como fallo.
+        /// </summary>
+        public static bool FlotaRespondio<T>(IReadOnlyCollection<T> foto) => foto != null && foto.Count > 0;
+
         private const string SinEquipo = "no tiene equipo GPS en Onway";
 
         /// <summary>
@@ -448,6 +461,7 @@ namespace WebSGV.Services.Exportacion
                 LogSGV.Advertencia("No se pudo traer la última posición de la flota: {Error}", ex.Message); // se consulta todo, como antes
             }
             DateTime ahoraUtc = DateTime.UtcNow;
+            r.OnwayRespondio = ResultadoActualizacionGps.FlotaRespondio(foto);
             if (foto != null)
             {
                 var quietos = abiertos.Where(v => MovimientoGps.SinMovimiento(v.Id, MovimientoGps.Posiciones(new[] { v.Tracto1, v.Tracto2 }, foto), ahoraUtc)).ToList();

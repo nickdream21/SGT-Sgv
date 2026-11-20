@@ -24,7 +24,7 @@ if ($errores -and $errores.Count -gt 0) { throw "publicar.ps1 tiene errores de s
 $nombres = 'ConvertTo-RutaSitio', 'Test-RutaProtegida', 'Test-RutaCandidataSobrante', 'Get-PlanPublicacion', 'Get-OrdenSubida',
            'Test-ContenidoPaquete', 'ConvertFrom-Manifiesto', 'Compare-PaqueteConManifiesto', 'Get-DecisionVolverA', 'Test-ConfirmacionBorrar',
            'Test-RutaDeControl', 'Get-PasosSubida', 'ConvertTo-TextoMarcador', 'ConvertFrom-Marcador', 'Test-MarcadorCoincide', 'ConvertFrom-CodigoAncestro',
-           'Invoke-PasosSubida', 'ConvertTo-TextoMarcadorEnCurso', 'Get-ConfianzaHashes'
+           'Invoke-PasosSubida', 'ConvertTo-TextoMarcadorEnCurso', 'Get-ConfianzaHashes', 'Test-RutaRuntimeNoWindows', 'Test-RutaQueNoSePublica', 'Remove-ArchivosQueNoSePublican'
 foreach ($n in $nombres) {
     $def = $ast.FindAll({ param($x) $x -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $x.Name -eq $n }, $false) |
            Select-Object -First 1
@@ -271,11 +271,41 @@ $wcRelease = '<configuration><system.web><compilation targetFramework="4.8" /></
 $wcDebug   = '<configuration><system.web><compilation debug="true" targetFramework="4.8" /></system.web><system.webServer><rewrite><rules><rule name="ForzarHTTPS" /></rules></rewrite></system.webServer></configuration>'
 $wcSinHttps = '<configuration><system.web><compilation targetFramework="4.8" /></system.web></configuration>'
 $bueno = @('Web.config', 'Global.asax', 'Views/Inicio.aspx', 'bin/WebSGV.dll', 'bin/runtimes/win-x86/native/QuestPdfSkia.dll',
-           'bin/runtimes/win-x64/native/QuestPdfSkia.dll', 'bin/roslyn/csc.exe.config', 'connectionStrings.config.example')
+           'bin/runtimes/win-x64/native/QuestPdfSkia.dll', 'bin/roslyn/csc.exe.config')
+foreach ($r in 'bin/runtimes/linux-x64/native/libQuestPdfSkia.so', 'bin\runtimes\linux-arm64\native\a.so', 'bin/runtimes/linux-musl-x64/native/a.so',
+               'bin/runtimes/osx-x64/native/a.dylib', 'BIN/RUNTIMES/OSX-ARM64/native/a.dylib') {
+    Comprobar "Runtime no Windows (se quita del paquete): '$r'" (Test-RutaRuntimeNoWindows $r) ''
+}
+foreach ($r in 'bin/runtimes/win-x86/native/QuestPdfSkia.dll', 'bin/runtimes/win-x64/native/QuestPdfSkia.dll', 'bin/WebSGV.dll',
+               'Content/linux/a.css', 'runtimes/linux-x64/a.so', 'bin/runtimesX/linux-x64/a.so') {
+    Comprobar "Se queda en el paquete: '$r'" (-not (Test-RutaRuntimeNoWindows $r)) ''
+}
+# -VolverA con un paquete anterior a E1-9: se quitan runtimes de linux/osx, *.md y *.example; lo demás se queda.
+foreach ($r in 'bin/runtimes/osx-x64/native/a.dylib', 'docs/LEEME.MD', 'connectionStrings.config.example') {
+    Comprobar "No se publica: '$r'" (Test-RutaQueNoSePublica $r) ''
+}
+foreach ($r in 'bin/runtimes/win-x64/native/QuestPdfSkia.dll', 'Views/Inicio.aspx', 'Web.config', 'Content/a.mdx') {
+    Comprobar "Se publica: '$r'" (-not (Test-RutaQueNoSePublica $r)) ''
+}
+$viejo = Join-Path $env:TEMP ('sgv-probar-volver-' + [guid]::NewGuid().ToString('N'))
+try {
+    foreach ($r in 'Web.config', 'bin\WebSGV.dll', 'bin\runtimes\win-x86\native\QuestPdfSkia.dll', 'bin\runtimes\linux-x64\native\libQuestPdfSkia.so',
+                   'bin\runtimes\osx-arm64\native\libQuestPdfSkia.dylib', 'dashboard\PLAN_MODERNIZACION.md', 'connectionStrings.config.example') {
+        $f = Join-Path $viejo $r
+        New-Item -ItemType Directory -Force (Split-Path $f) | Out-Null
+        [IO.File]::WriteAllText($f, 'x')
+    }
+    $quitados = @(Remove-ArchivosQueNoSePublican $viejo)
+    $quedan = @(Get-ChildItem -LiteralPath $viejo -Recurse -File | ForEach-Object { $_.FullName.Substring($viejo.Length + 1).Replace('\', '/') })
+    Comprobar 'VolverA paquete anterior a E1-9: quita 4 archivos' ($quitados.Count -eq 4) ($quitados -join ', ')
+    Comprobar 'VolverA paquete anterior a E1-9: quedan Web.config, la DLL y win-x86' (Iguales $quedan @('Web.config', 'bin/WebSGV.dll', 'bin/runtimes/win-x86/native/QuestPdfSkia.dll')) ($quedan -join ', ')
+    Comprobar 'VolverA paquete anterior a E1-9: sin carpetas linux/osx' (@(Get-ChildItem -LiteralPath (Join-Path $viejo 'bin\runtimes') -Directory | Where-Object { $_.Name -match '^(linux|osx)' }).Count -eq 0) ''
+    Comprobar 'VolverA paquete ya limpio: no quita nada' (@(Remove-ArchivosQueNoSePublican $viejo).Count -eq 0) ''
+} finally { Remove-Item -LiteralPath $viejo -Recurse -Force -ErrorAction SilentlyContinue }
 function Fallidas($rutas, $wc) { @(Test-ContenidoPaquete -Rutas $rutas -WebConfig $wc | Where-Object { -not $_.Ok } | ForEach-Object { $_.Comprobacion }) }
 $f0 = Fallidas $bueno $wcRelease
 Comprobar 'Paquete correcto: pasan todas' ($f0.Count -eq 0) ($f0 -join ', ')
-Comprobar 'Paquete: son 9 comprobaciones' (@(Test-ContenidoPaquete -Rutas $bueno -WebConfig $wcRelease).Count -eq 9) ''
+Comprobar 'Paquete: son 11 comprobaciones' (@(Test-ContenidoPaquete -Rutas $bueno -WebConfig $wcRelease).Count -eq 11) ''
 $casos = @(
     @{ n = 'con App_Data';                 r = $bueno + 'App_Data/OrdenesViaje/a.pdf';   wc = $wcRelease; esp = 'Sin App_Data' }
     @{ n = 'con app_data en minúsculas';   r = $bueno + 'app_data/x';                    wc = $wcRelease; esp = 'Sin App_Data' }
@@ -285,6 +315,11 @@ $casos = @(
     @{ n = 'con CONNECTIONSTRINGS.Prod.CONFIG en subcarpeta'; r = $bueno + 'Views/CONNECTIONSTRINGS.Prod.CONFIG'; wc = $wcRelease; esp = 'Sin archivos de secretos' }
     @{ n = 'con appSettings.Secrets.config'; r = $bueno + 'appSettings.Secrets.config';  wc = $wcRelease; esp = 'Sin archivos de secretos' }
     @{ n = 'con *.pdb';                    r = $bueno + 'bin/WebSGV.pdb';                wc = $wcRelease; esp = 'Sin *.pdb' }
+    @{ n = 'con runtimes de linux';        r = $bueno + 'bin/runtimes/linux-x64/native/libQuestPdfSkia.so'; wc = $wcRelease; esp = 'Sin runtimes de linux/osx' }
+    @{ n = 'con runtimes de linux-musl';   r = $bueno + 'bin/runtimes/linux-musl-x64/native/libQuestPdfSkia.so'; wc = $wcRelease; esp = 'Sin runtimes de linux/osx' }
+    @{ n = 'con runtimes de osx';          r = $bueno + 'BIN/Runtimes/OSX-arm64/native/libQuestPdfSkia.dylib'; wc = $wcRelease; esp = 'Sin runtimes de linux/osx' }
+    @{ n = 'con un .md';                   r = $bueno + 'dashboard/PLAN_MODERNIZACION.md'; wc = $wcRelease; esp = 'Sin documentos ni plantillas (*.md, *.example)' }
+    @{ n = 'con un .example';              r = $bueno + 'connectionStrings.config.example'; wc = $wcRelease; esp = 'Sin documentos ni plantillas (*.md, *.example)' }
     @{ n = 'sin bin/WebSGV.dll';           r = @($bueno | Where-Object { $_ -ne 'bin/WebSGV.dll' }); wc = $wcRelease; esp = 'Con bin/WebSGV.dll' }
     @{ n = 'sin QuestPDF win-x86';         r = @($bueno | Where-Object { $_ -notlike '*win-x86*' }); wc = $wcRelease; esp = 'Con QuestPDF nativo (win-x86)' }
     @{ n = 'sin QuestPDF win-x64';         r = @($bueno | Where-Object { $_ -notlike '*win-x64*' }); wc = $wcRelease; esp = 'Con QuestPDF nativo (win-x64)' }

@@ -312,6 +312,17 @@ namespace WebSGV.Services.Operacion
             return nombres.Count == 0 ? "" : "?" + string.Join("&", nombres);
         }
 
+        /// <summary>
+        /// URL para el log: la ruta tal cual y el querystring solo con los nombres de los parámetros
+        /// ("/Views/X.aspx?token=" en vez del token). Acepta una URL relativa o absoluta. Vacío si es null.
+        /// </summary>
+        public static string UrlSinValores(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return "";
+            int q = url.IndexOf('?');
+            return q < 0 ? url : url.Substring(0, q) + QuerySinValores(url.Substring(q));
+        }
+
         public static string ArmarAsunto(DatosErrorAviso d)
         {
             string tipo = d?.Excepcion?.GetType().Name ?? "Error";

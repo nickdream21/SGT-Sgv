@@ -17,7 +17,8 @@ $ast = [System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$
 if ($errores -and $errores.Count -gt 0) { throw "respaldar-archivos.ps1 tiene errores de sintaxis: $($errores[0].Message)" }
 # ConvertFrom-ListadoFtp vive en el módulo común (herramientas\comun\Ftp.psm1).
 Import-Module (Join-Path $PSScriptRoot '..\comun\Ftp.psm1') -Force -DisableNameChecking
-$nombres = 'Test-RutaExcluida', 'Get-PlanEspejo', 'Get-NombreVersionAnterior', 'Move-DescargaASuSitio'
+Import-Module (Join-Path $PSScriptRoot '..\comun\CopiaVerificada.psm1') -Force -DisableNameChecking
+$nombres = 'Test-RutaExcluida', 'Get-PlanEspejo', 'Get-NombreVersionAnterior', 'Move-DescargaASuSitio', 'Copy-DescargaASuSitio'
 foreach ($n in $nombres) {
     $def = $ast.FindAll({ param($x) $x -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $x.Name -eq $n }, $true) |
            Select-Object -First 1
@@ -121,6 +122,60 @@ try {
     $ant2 = Move-DescargaASuSitio -Temporal "$final.descargando" -Final $final -Fecha $f
     Comprobar 'Segundo cambio en el mismo segundo: no pisa la anterior' ($ant2 -eq 'doc__anterior_20261119_150405_2.pdf' -and [IO.File]::ReadAllText((Join-Path $tmp $ant)) -eq 'nuevo' -and [IO.File]::ReadAllText((Join-Path $tmp $ant2)) -eq 'nuevo 2') "$ant2"
     Comprobar 'No quedan temporales y no se perdió ningún archivo' ((@(Get-ChildItem $tmp -File).Count -eq 3) -and -not (Test-Path "$final.descargando")) (@(Get-ChildItem $tmp -File).Name -join ', ')
+} finally {
+    Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+# 6) Copia verificada al destino (Google Drive informa un tamaño incompleto justo después de escribir).
+#    Se simula el tamaño que informa el disco con -LeerTamano; nunca se escribe en G:.
+$tmp = Join-Path $env:TEMP ('sgv-probar-espejo-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory $tmp | Out-Null
+try {
+    $local = Join-Path $tmp 'local.descargando'
+    [IO.File]::WriteAllText($local, ('x' * 1000))
+    $tam = (Get-Item $local).Length
+    $shaLocal = Get-Sha256Archivo $local
+    Comprobar 'SHA-256 leyendo el contenido (64 hex)' ($shaLocal -match '^[0-9a-f]{64}$' -and $shaLocal -eq (Get-FileHash $local -Algorithm SHA256).Hash.ToLowerInvariant()) $shaLocal
+
+    # a) el tamaño se ve completo al tercer intento: OK por tamaño
+    $script:lecturas = 0
+    $tardio = { param($r) $script:lecturas++; if ($script:lecturas -lt 3) { 14520 } else { (Get-Item -LiteralPath $r).Length } }
+    $ok = Wait-TamanoArchivo -Ruta $local -Tamano $tam -Intentos 5 -EsperaMs 0 -LeerTamano $tardio
+    Comprobar 'Espera: el tamaño cuadra al tercer intento' ($ok -and $script:lecturas -eq 3) "lecturas $($script:lecturas)"
+    $siempreMal = { param($r) 14520 }
+    Comprobar 'Espera: nunca cuadra -> $false tras los intentos' (-not (Wait-TamanoArchivo -Ruta $local -Tamano $tam -Intentos 4 -EsperaMs 0 -LeerTamano $siempreMal)) ''
+
+    # b) el disco sigue informando 14520 pero el contenido llegó entero: OK por SHA-256, sin error
+    $final = Join-Path $tmp 'Uploads\CPIC\a.pdf'
+    $c = Copy-DescargaASuSitio -Temporal $local -Final $final -Tamano $tam -Sha $shaLocal -Fecha $f -Intentos 3 -EsperaMs 0 -LeerTamano $siempreMal
+    Comprobar 'Destino con tamaño incompleto informado y contenido entero: copiado, verificado por SHA-256' ($c.Resultado -eq 'Copiado' -and $c.Verificacion -eq 'Hash' -and (Get-Sha256Archivo $final) -eq $shaLocal) ($c | Out-String)
+    Comprobar 'No queda el .descargando en el destino' (-not (Test-Path "$final.descargando")) ''
+    Comprobar 'El temporal local sigue (lo borra el llamador)' (Test-Path $local) ''
+
+    # c) mismo contenido ya en el destino: no se copia ni se crea versión anterior
+    $c = Copy-DescargaASuSitio -Temporal $local -Final $final -Tamano $tam -Sha $shaLocal -Fecha $f -Intentos 1 -EsperaMs 0
+    Comprobar 'Mismo contenido ya en el destino: Igual, sin versión anterior' ($c.Resultado -eq 'Igual' -and @(Get-ChildItem (Split-Path $final) -File).Count -eq 1) ($c | Out-String)
+
+    # d) contenido distinto: copia verificada por tamaño y conserva la anterior
+    $local2 = Join-Path $tmp 'local2.descargando'
+    [IO.File]::WriteAllText($local2, ('y' * 1200))
+    $c = Copy-DescargaASuSitio -Temporal $local2 -Final $final -Tamano 1200 -Sha (Get-Sha256Archivo $local2) -Fecha $f -Intentos 2 -EsperaMs 0
+    Comprobar 'Cambio real: copiado por tamaño, con versión anterior' ($c.Resultado -eq 'Copiado' -and $c.Verificacion -eq 'Tamano' -and $c.Anterior -eq 'a__anterior_20261119_150405.pdf' -and [IO.File]::ReadAllText($final) -eq ('y' * 1200)) ($c | Out-String)
+
+    # e) el destino no coincide ni en tamaño ni en contenido: error, y el final queda como estaba
+    $antes = [IO.File]::ReadAllText($final)
+    $local3 = Join-Path $tmp 'local3.descargando'
+    [IO.File]::WriteAllText($local3, ('z' * 900))
+    $fallo = $null
+    try { Copy-DescargaASuSitio -Temporal $local3 -Final $final -Tamano 900 -Sha ('0' * 64) -Fecha $f -Intentos 2 -EsperaMs 0 -LeerTamano $siempreMal | Out-Null }
+    catch { $fallo = $_.Exception.Message }
+    Comprobar 'Ni tamaño ni SHA-256: error' ($fallo -match 'no coincide') "$fallo"
+    Comprobar 'Tras el error: el final no cambió y no queda .descargando' ([IO.File]::ReadAllText($final) -eq $antes -and -not (Test-Path "$final.descargando")) ''
+
+    # f) Copy-ArchivoVerificado (lo usa también respaldar-bd.ps1 para el .bacpac)
+    $bac = Join-Path $tmp 'bd\x.parcial.bacpac'
+    $v = Copy-ArchivoVerificado -Origen $local -Destino $bac -Tamano $tam -Sha $shaLocal -Intentos 2 -EsperaMs 0
+    Comprobar 'Copia verificada del .bacpac: por tamaño, crea la carpeta' ($v.Verificacion -eq 'Tamano' -and (Get-Sha256Archivo $bac) -eq $shaLocal) ($v | Out-String)
 } finally {
     Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
 }

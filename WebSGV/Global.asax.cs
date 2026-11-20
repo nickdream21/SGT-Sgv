@@ -212,7 +212,8 @@ namespace WebSGV
                     return;
                 }
 
-                string ruta = Request.RawUrl;
+                // Para el log: sin los valores del querystring (p. ej. el token de RestablecerContrasena).
+                string ruta = Request.Path + WebSGV.Services.Operacion.AvisoErrores.QuerySinValores(Request.Url.Query);
 
                 // Envío más grande que el maxRequestLength de la página (Web.config, tarea 14): se
                 // vuelve a la misma página por GET con ?aviso=archivo_grande (Site.Master lo muestra),
@@ -230,7 +231,7 @@ namespace WebSGV
                         ErrorAplicacionHelper.AvisoArchivoGrande);
 
                     LogSGV.Advertencia("Envío demasiado grande ({Bytes} bytes) en {Ruta}; se envía a {Destino}.",
-                        Request.ContentLength, ruta, destino);
+                        Request.ContentLength, ruta, WebSGV.Services.Operacion.AvisoErrores.UrlSinValores(destino));
                     Server.ClearError();
                     Redirigir(Context, destino);
                     return;
@@ -248,7 +249,8 @@ namespace WebSGV
                     string destino = ErrorAplicacionHelper.DestinoTrasErrorViewState(
                         Request.HttpMethod, haySesion, Request.AppRelativeCurrentExecutionFilePath, Request.Url.Query);
 
-                    LogSGV.Advertencia("ViewState inválido o vencido en {Ruta}; se envía a {Destino}. {Error}", ruta, destino, real.Message);
+                    LogSGV.Advertencia("ViewState inválido o vencido en {Ruta}; se envía a {Destino}. {Error}", ruta,
+                        WebSGV.Services.Operacion.AvisoErrores.UrlSinValores(destino), real.Message);
                     Server.ClearError();
                     Redirigir(Context, destino);
                     return;
@@ -264,7 +266,11 @@ namespace WebSGV
                 try { idUsuario = SesionHelper.IdUsuario(Context.Session); }
                 catch { /* sin sesión en este punto del pipeline */ }
 
-                LogSGV.Error(real, "Error no controlado en {Ruta} (usuario {IdUsuario})", ruta, idUsuario);
+                if (ErrorAplicacionHelper.EsValidacionDePeticion(real))
+                    LogSGV.Advertencia("Petición rechazada por la validación de ASP.NET ({Tipo}) en {Ruta} (usuario {IdUsuario})",
+                        real.GetType().Name, ruta, idUsuario); // sin real.Message: trae parte del valor enviado
+                else
+                    LogSGV.Error(real, "Error no controlado en {Ruta} (usuario {IdUsuario})", ruta, idUsuario);
 
                 // E1-7: correo a AvisoErroresPara (Web.config), con límite y en segundo plano; no lanza
                 // ni cambia la respuesta. Las exclusiones (bots, peticiones inválidas, negocio) van en AvisoErrores.

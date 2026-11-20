@@ -276,8 +276,7 @@
     <Content Include="Content\Templates\PlantillaIndicadores.xlsx" />
     <Content Include="connectionStrings.config" />
     <Content Include="appSettings.Secrets.config" />
-    <Content Include="dashboard\PLAN_MODERNIZACION.md" />
-    <Content Include="connectionStrings.config.example" />
+    <None Include="connectionStrings.config.example" />
     <Content Include="Scripts\Custom\JavaScript.js" />
     <Content Include="Scripts\JavaScript.js" />
     <Content Include="Scripts\OrdenViaje.js" />
@@ -324,7 +323,6 @@
     <Content Include="Scripts\lib\select2-4.0.13.min.js" />
     <Content Include="Scripts\lib\select2-4.1.0-rc.0.min.js" />
     <Content Include="Scripts\SGVScripts.js" />
-    <Content Include="Scripts\SQL\AgregarColumnaActivo.sql" />
     <Content Include="Scripts\WebForms\DetailsView.js" />
     <Content Include="Scripts\WebForms\Focus.js" />
     <Content Include="Scripts\WebForms\GridView.js" />

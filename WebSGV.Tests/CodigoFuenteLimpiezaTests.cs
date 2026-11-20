@@ -347,6 +347,54 @@ namespace WebSGV.Tests
             Assert.Equal(esperado, ArchivoDabEnRaiz.IsMatch(ruta));
         }
 
+        /// <summary>
+        /// E1-9: el log no guarda el querystring con sus valores (p. ej. el token de
+        /// RestablecerContrasena.aspx?token=). Se registra Request.Path + AvisoErrores.QuerySinValores(..)
+        /// o AvisoErrores.UrlSinValores(..). Detecta RawUrl / Request.Url en una llamada a LogSGV aunque esté
+        /// partida en varias líneas (hasta el ';'), y la variable "ruta" para el log tomada de RawUrl (el patrón anterior).
+        /// </summary>
+        private static readonly Regex UrlCompletaEnLog = new Regex(
+            @"\bLogSGV\.\w+\([^;]*\b(RawUrl|Request\.Url)\b(?!\.(AbsolutePath|LocalPath|GetLeftPart)\b)" +
+            @"|\bstring\s+ruta\s*=\s*\w*\.?RawUrl\s*;",
+            RegexOptions.Singleline);
+
+        /// <summary>Busca <paramref name="patron"/> en el texto completo de cada archivo (sin las líneas de comentario //).</summary>
+        private static List<string> BuscarEnTexto(string raiz, Regex patron)
+        {
+            var hallazgos = new List<string>();
+            foreach (string archivo in ArchivosFuente(raiz))
+            {
+                string relativo = archivo.Substring(raiz.Length).TrimStart('\\', '/').Replace('\\', '/');
+                string[] lineas = File.ReadAllLines(archivo)
+                    .Select(l => l.TrimStart().StartsWith("//", StringComparison.Ordinal) ? "" : l).ToArray();
+                string texto = string.Join("\n", lineas);
+                foreach (Match m in patron.Matches(texto))
+                {
+                    int linea = texto.Take(m.Index).Count(c => c == '\n') + 1;
+                    hallazgos.Add($"{relativo}:{linea}: {lineas[linea - 1].Trim()}");
+                }
+            }
+            return hallazgos;
+        }
+
+        [Fact]
+        public void Log_NoGuardaElQuerystringConValores()
+        {
+            Assert.Matches(UrlCompletaEnLog, "LogSGV.Info(\"x {Ruta}\", Request.RawUrl);");
+            Assert.Matches(UrlCompletaEnLog, "LogSGV.Error(ex, \"x {Url}\", Request.Url);");
+            Assert.Matches(UrlCompletaEnLog, "LogSGV.Advertencia(\"x {Ruta} {Destino}\",\n    idUsuario,\n    Request.RawUrl);");
+            Assert.Matches(UrlCompletaEnLog, "string ruta = Request.RawUrl;");
+            Assert.DoesNotMatch(UrlCompletaEnLog, "Response.Redirect(Request.RawUrl, true);");
+            Assert.DoesNotMatch(UrlCompletaEnLog, "LogSGV.Info(\"x {Ruta}\", req.FilePath);");
+            Assert.DoesNotMatch(UrlCompletaEnLog, "LogSGV.Info(\"x\", a);\nResponse.Redirect(Request.RawUrl);");
+            Assert.DoesNotMatch(UrlCompletaEnLog, "LogSGV.Info(\"x {Base}\",\n    Request.Url.GetLeftPart(UriPartial.Authority));");
+
+            List<string> hallazgos = BuscarEnTexto(RaizWeb(), UrlCompletaEnLog);
+            Assert.True(hallazgos.Count == 0,
+                "Registre Request.Path + AvisoErrores.QuerySinValores(Request.Url.Query) en vez de la URL completa:" +
+                Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
+        }
+
         [Fact]
         public void CodigoFuente_NoUsaDebugTraceNiConsole()
         {

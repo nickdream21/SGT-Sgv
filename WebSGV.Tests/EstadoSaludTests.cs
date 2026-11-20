@@ -128,6 +128,151 @@ namespace WebSGV.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => EstadoSalud.EvaluarConGps(true, 1, ArribaHaceRato, Ahora, Ahora, 0));
         }
 
+        // ── Proveedor GPS (Onway): el cron corre pero Onway no responde (E1-9) ──
+
+        /// <summary>Cron al día: la última corrida programada fue hace 10 min.</summary>
+        private static ResultadoSalud ConOnway(int? minutosOnway, int viajes = 3, DateTime? inicio = null, int? minutosCron = 10) =>
+            EstadoSalud.EvaluarConGpsYOnway(true, viajes, inicio ?? ArribaHaceRato,
+                minutosCron.HasValue ? Ahora.AddMinutes(-minutosCron.Value) : (DateTime?)null,
+                minutosOnway.HasValue ? Ahora.AddMinutes(-minutosOnway.Value) : (DateTime?)null, Ahora);
+
+        [Theory]
+        [InlineData(0, 200)]
+        [InlineData(15, 200)]
+        [InlineData(120, 200)]
+        [InlineData(121, 503)]
+        [InlineData(600, 503)]
+        public void Onway_CronAlDia_UltimaRespuestaValida_LimitesDelUmbral(int minutosOnway, int codigo)
+        {
+            var r = ConOnway(minutosOnway);
+            Assert.Equal(codigo, r.CodigoHttp);
+            Assert.Equal(codigo == 200, r.Ok);
+            Assert.Equal(codigo == 200 ? EstadoSalud.GpsAlDia : EstadoSalud.GpsOnwaySinRespuesta, r.Gps);
+            Assert.Equal(minutosOnway, r.MinutosOnway);
+            Assert.Equal(10, r.Minutos);
+        }
+
+        [Fact]
+        public void Onway_CronCorreYNuncaRespondio_503()
+        {
+            var r = ConOnway(null);
+            Assert.Equal(503, r.CodigoHttp);
+            Assert.Equal(EstadoSalud.GpsOnwaySinRespuesta, r.Gps);
+            Assert.Null(r.MinutosOnway);
+            Assert.Equal("{\"ok\":false}", r.ComoJson()); // el vigilante no ve cuál regla falló
+        }
+
+        [Theory]
+        [InlineData(30, 200)]  // recién reciclada: la marca vive en memoria
+        [InlineData(120, 200)]
+        [InlineData(121, 503)]
+        public void Onway_SinRespuestaTrasUnReciclaje_EsperaDosHoras(int minutosArriba, int codigo)
+        {
+            Assert.Equal(codigo, ConOnway(null, inicio: Ahora.AddMinutes(-minutosArriba)).CodigoHttp);
+        }
+
+        [Fact]
+        public void Onway_SinViajes_200AunqueOnwayNoResponda()
+        {
+            var r = ConOnway(null, viajes: 0);
+            Assert.Equal(200, r.CodigoHttp);
+            Assert.Equal(EstadoSalud.GpsSinViajes, r.Gps);
+        }
+
+        [Fact]
+        public void Onway_CronAtrasado_MandaLaReglaDelCron()
+        {
+            var r = ConOnway(null, minutosCron: 200);
+            Assert.Equal(503, r.CodigoHttp);
+            Assert.Equal(EstadoSalud.GpsAtrasado, r.Gps);
+            Assert.Equal("el cron no corre hace más de 60 min", Salud.ReglaQueFallo(r));
+        }
+
+        [Fact]
+        public void Onway_CronSinCorridasPeroRecienIniciada_NoJuzgaAOnway()
+        {
+            // Al día solo por el arranque reciente (sin corridas aún): no hay corridas que juzgar.
+            var r = ConOnway(null, inicio: Ahora.AddMinutes(-10), minutosCron: null);
+            Assert.Equal(200, r.CodigoHttp);
+            Assert.Equal(EstadoSalud.GpsAlDia, r.Gps);
+        }
+
+        [Fact]
+        public void Onway_BdCaida_503SinDetalle()
+        {
+            var r = EstadoSalud.EvaluarConGpsYOnway(false, 3, ArribaHaceRato, Ahora, null, Ahora);
+            Assert.Equal(503, r.CodigoHttp);
+            Assert.Null(r.Gps);
+        }
+
+        [Fact]
+        public void Onway_ElLogDiceCualReglaFallo_YNoSeRepiteCadaVez()
+        {
+            var r = ConOnway(300);
+            Assert.Equal("el cron corre pero Onway no responde bien hace más de 120 min", Salud.ReglaQueFallo(r));
+            Assert.Equal("sin falla", Salud.ReglaQueFallo(ConOnway(5)));
+            // Pasar de "atrasado" a "onway_sin_respuesta" es un cambio de estado: se registra; el mismo, una vez por hora.
+            Assert.True(EstadoSalud.DebeRegistrar(EstadoSalud.GpsAtrasado, Ahora, EstadoSalud.GpsOnwaySinRespuesta, Ahora));
+            Assert.False(EstadoSalud.DebeRegistrar(EstadoSalud.GpsOnwaySinRespuesta, Ahora, EstadoSalud.GpsOnwaySinRespuesta, Ahora.AddMinutes(30)));
+        }
+
+        [Fact]
+        public void Onway_UmbralInvalido_Lanza()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                EstadoSalud.EvaluarConGpsYOnway(true, 1, ArribaHaceRato, Ahora, Ahora, Ahora, umbralOnwayMinutos: 0));
+        }
+
+        [Fact]
+        public void Onway_FlotaRespondio_NullOVaciaEsFallo()
+        {
+            Assert.False(ResultadoActualizacionGps.FlotaRespondio<KeyValuePair<string, string>>(null));
+            Assert.False(ResultadoActualizacionGps.FlotaRespondio(new Dictionary<string, string>())); // 200 con flota vacía
+            Assert.True(ResultadoActualizacionGps.FlotaRespondio(new Dictionary<string, string> { { "ABC-123", "x" } }));
+        }
+
+        [Fact]
+        public void Onway_Marca_SoloCronConRespuestaValida()
+        {
+            var conRespuesta = new ResultadoActualizacionGps { OnwayRespondio = true };
+            // Unidades sin equipo GPS en Onway: son errores del resultado, pero la flota respondió: sí marca.
+            conRespuesta.Errores.Add("P-1 (ABC-123, carreta X): ABC-123 no tiene equipo GPS en Onway.");
+            var sinRespuesta = new ResultadoActualizacionGps { OnwayRespondio = false };
+
+            Assert.True(ActualizacionGpsAutomatica.DebeMarcarRespuestaOnway(true, conRespuesta));    // cron con respuesta
+            Assert.False(ActualizacionGpsAutomatica.DebeMarcarRespuestaOnway(false, conRespuesta));  // botón manual
+            Assert.False(ActualizacionGpsAutomatica.DebeMarcarRespuestaOnway(true, sinRespuesta));   // foto null o vacía
+            Assert.False(ActualizacionGpsAutomatica.DebeMarcarRespuestaOnway(true, null));
+        }
+
+        [Fact]
+        public void Onway_UltimaCorridaConError_503ConEtiquetaCronConError()
+        {
+            var r = EstadoSalud.EvaluarConGpsYOnway(true, 3, ArribaHaceRato, Ahora.AddMinutes(-10), Ahora.AddMinutes(-300), Ahora,
+                ultimaProgramadaConError: true);
+            Assert.Equal(503, r.CodigoHttp);
+            Assert.Equal(EstadoSalud.GpsCronConError, r.Gps);
+            Assert.Equal("{\"ok\":false}", r.ComoJson());
+            Assert.StartsWith("el cron corre pero su última corrida terminó con error", Salud.ReglaQueFallo(r));
+        }
+
+        [Fact]
+        public void Onway_UltimaCorridaConError_PeroOnwayRespondioHacePoco_200()
+        {
+            var r = EstadoSalud.EvaluarConGpsYOnway(true, 3, ArribaHaceRato, Ahora.AddMinutes(-10), Ahora.AddMinutes(-30), Ahora,
+                ultimaProgramadaConError: true);
+            Assert.Equal(200, r.CodigoHttp);
+            Assert.Equal(EstadoSalud.GpsAlDia, r.Gps);
+        }
+
+        [Fact]
+        public void Onway_CronAtrasadoConError_MandaAtrasado()
+        {
+            var r = EstadoSalud.EvaluarConGpsYOnway(true, 3, ArribaHaceRato, Ahora.AddMinutes(-200), null, Ahora,
+                ultimaProgramadaConError: true);
+            Assert.Equal(EstadoSalud.GpsAtrasado, r.Gps);
+        }
+
         // ── fhUltimaConsultaGps: solo advertencia en el log ──
 
         [Theory]

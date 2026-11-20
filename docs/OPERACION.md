@@ -9,9 +9,11 @@ Para enterarse si el sitio cae o si el GPS automático deja de correr (estuvo de
 | Llamada | Responde |
 |---|---|
 | `/Salud.ashx` | `200 {"ok":true}` si la BD responde a un `SELECT 1` en 5 s; si no, `503 {"ok":false}` |
-| `/Salud.ashx?gps=1` | Además, `503 {"ok":false}` si a la vez: hay viajes que el GPS automático debería consultar, el sitio lleva más de 60 min arriba y la última corrida pedida por cron-job.org (no el botón del tablero) fue hace más de 60 min o no hubo |
+| `/Salud.ashx?gps=1` | Además, `503 {"ok":false}` si a la vez: hay viajes que el GPS automático debería consultar, el sitio lleva más de 60 min arriba y la última corrida pedida por cron-job.org (no el botón del tablero) fue hace más de 60 min o no hubo (regla del cron). También `503` si el cron sí corrió en la última hora pero la última corrida programada en la que Onway respondió bien fue hace más de 120 min o no hubo, con el sitio más de 120 min arriba (regla del proveedor: credenciales vencidas, caída de Onway) |
 
-"Viajes que debería consultar" es la misma regla del GPS automático (`SeguimientoViajesService.AbiertosParaGps`): no cerrados, con tracto y ya programados. La primera hora tras un reciclaje no avisa (la hora de la última corrida vive en memoria). Si la consulta GPS más reciente de esos viajes (`fhUltimaConsultaGps`) tiene más de 90 min, solo queda una advertencia en el log. En el log, los avisos del GPS ("Salud: GPS ...") se escriben al cambiar el estado o como mucho una vez por hora.
+"Viajes que debería consultar" es la misma regla del GPS automático (`SeguimientoViajesService.AbiertosParaGps`): no cerrados, con tracto y ya programados. La primera hora tras un reciclaje no avisa (la hora de la última corrida vive en memoria). Si la consulta GPS más reciente de esos viajes (`fhUltimaConsultaGps`) tiene más de 90 min, solo queda una advertencia en el log. En el log, los avisos del GPS ("Salud: GPS ...") dicen qué regla falló (`atrasado`: el cron no corre; `onway_sin_respuesta`: el cron corre pero Onway no responde; `cron_con_error`: igual, pero la última corrida programada terminó con una excepción y no llegó a consultar a Onway) y se escriben al cambiar el estado o como mucho una vez por hora.
+
+"Onway respondió bien" es la consulta de la última posición de toda la flota que hace cada corrida (`ResultadoActualizacionGps.OnwayRespondio`; la hora queda en memoria en `ActualizacionGpsAutomatica.UltimaRespuestaOnwayProgramada`). Una flota vacía (respuesta 200 sin unidades: cuenta o subdominio cambiado) cuenta como fallo. No depende de que algún viaje se pueda seguir: unidades quietas o sin equipo GPS en Onway no cuentan como falla. Por eso no se usa `fhUltimaConsultaGps`, que no se escribe en esos casos. Solo cuentan las corridas de cron-job.org, no el botón del tablero; tras un reciclaje la marca se pierde y la regla espera 120 min.
 
 ## 2. Crear los monitores en UptimeRobot (una vez)
 
@@ -36,7 +38,10 @@ Para enterarse si el sitio cae o si el GPS automático deja de correr (estuvo de
 2. Si carga pero `Salud.ashx` da 503: la BD no responde. Probar `WebSGV/Database/sql.ps1 -Entorno produccion -ConfirmoProduccion "SELECT 1"`; si falla, es somee (estado del servidor SQL, contraseña rotada sin actualizar `connectionStrings.config`).
 3. El motivo exacto queda en el log del sitio: "Salud: la base de datos no respondió".
 
-**SGV - GPS automático atrasado** (el monitor 1 está en verde y el 2 no; en el log: "Salud: GPS ... atrasado")
+**SGV - GPS automático atrasado** (el monitor 1 está en verde y el 2 no; en el log: "Salud: GPS atrasado", "onway_sin_respuesta" o "cron_con_error")
+
+Si el log dice `onway_sin_respuesta` o `cron_con_error`, el cron llama bien: revisar primero en el log del sitio las líneas "Actualización automática del GPS" (resumen de cada corrida) y las de nivel Error de esas horas. Con `cron_con_error` la corrida se cae antes de llegar a Onway (BD, sincronización de despachos): el detalle está en ese Error. Con `onway_sin_respuesta` el problema es Onway: ir al paso 2 y, si el mensaje dice que Onway no responde o rechaza el acceso, revisar las credenciales de Onway en `appSettings.Secrets.config` del servidor o el estado del servicio con el proveedor.
+
 1. Entrar a cron-job.org y revisar la tarea del GPS: si está desactivada o su historial muestra 403, la clave `GpsAutomaticoClave` del servidor no coincide (pasó el 27/10 al publicar con un `appSettings.Secrets.config` viejo). Ver `herramientas/gps-automatico/README.md`.
 2. Si cron-job.org llama bien (202/200), abrir el tablero de seguimiento y presionar "Actualizar GPS": el mensaje dice si falla el proveedor GPS (Onway) y para qué unidades.
 3. Si no hay viajes en curso, el monitor no avisa.

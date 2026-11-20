@@ -36,6 +36,23 @@ namespace WebSGV.Services.Exportacion
         /// tablero. Salud.ashx?gps=1 avisa si pasa más de una hora sin ella. Vive en memoria: null tras un reciclaje.
         /// </summary>
         public static DateTime? UltimoInicioProgramado { get; private set; }
+
+        /// <summary>
+        /// Fin (UTC) de la última corrida programada (cron-job.org, no el botón) en la que Onway respondió bien a la
+        /// consulta de la flota (<see cref="ResultadoActualizacionGps.OnwayRespondio"/>). Salud.ashx?gps=1 avisa si el
+        /// cron corre pero pasan más de 2 h sin respuesta (credenciales vencidas, caída). Vive en memoria: null tras un reciclaje.
+        /// </summary>
+        public static DateTime? UltimaRespuestaOnwayProgramada { get; private set; }
+
+        /// <summary>
+        /// La última corrida programada terminó con excepción (BD, sincronización...): el log de Salud dice cron_con_error
+        /// en vez de onway_sin_respuesta, porque no llegó a consultar a Onway. Vive en memoria.
+        /// </summary>
+        public static bool UltimaProgramadaConError { get; private set; }
+
+        /// <summary>Si una corrida renueva <see cref="UltimaRespuestaOnwayProgramada"/>: solo las del cron (no el botón) con respuesta válida de Onway.</summary>
+        public static bool DebeMarcarRespuestaOnway(bool programada, ResultadoActualizacionGps r) =>
+            programada && r != null && r.OnwayRespondio;
         public static string UltimoResumen { get; private set; }
 
         /// <summary>El resultado de la última corrida en palabras, para mostrarlo en el tablero.</summary>
@@ -59,10 +76,11 @@ namespace WebSGV.Services.Exportacion
             {
                 HostingEnvironment.QueueBackgroundWorkItem(_ =>
                 {
-                    try { Correr(); }
+                    try { Correr(programada: !aPedido); }
                     catch (Exception ex)
                     {
                         LogSGV.Error(ex, "Actualización automática del GPS");
+                        if (!aPedido) UltimaProgramadaConError = true;
                         UltimoResumen = "Error: " + ex.Message;
                         UltimoMensaje = "No se pudo consultar el GPS. " + MensajeErrorHelper.ParaUsuario(ex);
                         UltimoConFallas = true;
@@ -85,7 +103,7 @@ namespace WebSGV.Services.Exportacion
         public static List<ViajeResumen> ViajesDelTablero(DateTime hoy) =>
             SeguimientoViajesService.ListarTablero(new FiltroTablero { Desde = hoy.AddDays(-DiasViajes), Hasta = hoy.AddDays(1) });
 
-        private static void Correr()
+        private static void Correr(bool programada)
         {
             var reloj = System.Diagnostics.Stopwatch.StartNew();
             DateTime hoy = FechaHelper.Hoy();
@@ -100,6 +118,8 @@ namespace WebSGV.Services.Exportacion
                             $"{r.Pendientes} pendientes, {r.Errores.Count} con error, {reloj.Elapsed.TotalSeconds:0} s";
             UltimoMensaje = r.MensajeParaUsuario(conBotonParaSeguir: false);
             UltimoConFallas = r.Fallas.Count > 0;
+            if (DebeMarcarRespuestaOnway(programada, r)) UltimaRespuestaOnwayProgramada = DateTime.UtcNow;
+            if (programada) UltimaProgramadaConError = false;
             LogSGV.Info("Actualización automática del GPS: {Resumen}", UltimoResumen);
             // Sin esto el resumen dice "3 con error" y no hay cómo saber cuáles.
             foreach (var error in r.Errores)

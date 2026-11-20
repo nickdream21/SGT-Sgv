@@ -12,8 +12,13 @@
     Incremental: baja solo lo que no existe en local o cuyo tamaño difiere. Nunca borra nada en
     local: un archivo borrado en el servidor sigue en el respaldo. Si un archivo cambió de tamaño,
     la versión local anterior se conserva como <nombre>__anterior_aaaaMMdd_HHmmss.<ext> antes de
-    poner la nueva. Cada archivo se baja a <nombre>.descargando y se renombra solo si llegó entero
-    (mismo tamaño que en el servidor); ante un error de red se reintenta una vez.
+    poner la nueva. Cada archivo se baja primero a una carpeta LOCAL (%LOCALAPPDATA%\SGV-respaldo\descargando,
+    fuera de Google Drive/OneDrive), se comprueba ahí que llegó entero (mismo tamaño que en el servidor;
+    ante un error de red se reintenta una vez) y se calcula su SHA-256. Luego se copia a
+    <nombre>.descargando en la carpeta final, se verifica allí (tamaño con reintentos hasta ~10 s y, si no
+    cuadra, el SHA-256 leyendo el contenido) y se renombra. Así el tamaño incompleto que Google Drive para
+    escritorio informa justo después de escribir no se cuenta como error. Si el archivo final ya tiene el
+    mismo contenido, no se toca (no se crea una versión __anterior_ igual).
 
     Al final llama a verificar-pdf-firmados.ps1 sobre <Carpeta>\archivos\OrdenesViaje (SHA-256
     contra la BD) y añade una línea a <Carpeta>\archivos\respaldos.log.
@@ -47,6 +52,8 @@ $ErrorActionPreference = 'Stop'
 
 # FTP común (listado Unix/IIS, NLST+SIZE, credencial DPAPI): herramientas\comun\Ftp.psm1.
 Import-Module (Join-Path $PSScriptRoot '..\comun\Ftp.psm1') -Force -DisableNameChecking
+# Copia verificada (tamaño con reintentos y SHA-256) hacia carpetas de Google Drive: herramientas\comun\CopiaVerificada.psm1.
+Import-Module (Join-Path $PSScriptRoot '..\comun\CopiaVerificada.psm1') -Force -DisableNameChecking
 
 # =================================================================================================
 # Funciones puras (sin red ni BD): probar-espejo.ps1 las extrae de este archivo para probarlas.
@@ -110,6 +117,29 @@ function Move-DescargaASuSitio {
     }
     Move-Item -LiteralPath $Temporal -Destination $Final
     return $anterior
+}
+
+# Pone en su sitio una descarga ya comprobada en la carpeta local ($Temporal, con su $Tamano y $Sha).
+# Si $Final ya existe con el mismo contenido (SHA-256), no hace nada (Resultado 'Igual'): Drive pudo informar
+# un tamaño viejo y el plan lo creyó cambiado. Si no, la copia a <Final>.descargando verificándola
+# (Copy-ArchivoVerificado: tamaño con reintentos y, si no cuadra, SHA-256) y la renombra con
+# Move-DescargaASuSitio (conserva la versión anterior). Si la verificación falla, borra el .descargando del
+# destino, deja $Final como estaba y lanza. Devuelve { Resultado = 'Igual'|'Copiado'; Anterior; Verificacion }.
+function Copy-DescargaASuSitio {
+    param([string]$Temporal, [string]$Final, [long]$Tamano, [string]$Sha, [datetime]$Fecha,
+          [int]$Intentos = 20, [int]$EsperaMs = 500, [scriptblock]$LeerTamano)
+    if ((Test-Path -LiteralPath $Final) -and (Get-Sha256Archivo $Final) -ieq $Sha) {
+        return [pscustomobject]@{ Resultado = 'Igual'; Anterior = $null; Verificacion = 'Hash' }
+    }
+    $enDestino = "$Final.descargando"
+    $p = @{ Origen = $Temporal; Destino = $enDestino; Tamano = $Tamano; Sha = $Sha; Intentos = $Intentos; EsperaMs = $EsperaMs }
+    if ($LeerTamano) { $p.LeerTamano = $LeerTamano }
+    try {
+        $c = Copy-ArchivoVerificado @p
+        $anterior = Move-DescargaASuSitio -Temporal $enDestino -Final $Final -Fecha $Fecha
+    }
+    catch { Remove-Item -LiteralPath $enDestino -Force -ErrorAction SilentlyContinue; throw }
+    return [pscustomobject]@{ Resultado = 'Copiado'; Anterior = $anterior; Verificacion = $c.Verificacion }
 }
 
 # =================================================================================================
@@ -248,15 +278,17 @@ if ($SoloListar) {
 # Descarga
 # =================================================================================================
 New-Item -ItemType Directory -Force $carpetaArchivos | Out-Null
-$bajados = 0; $reemplazados = 0; $bytesBajados = 0L
+# Descarga a una carpeta local (fuera de Drive): ahí el tamaño que informa el disco es fiable.
+$dirDescarga = Get-CarpetaTemporalLocal 'descargando'
+Get-ChildItem -LiteralPath $dirDescarga -File -Filter '*.descargando' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+$bajados = 0; $reemplazados = 0; $bytesBajados = 0L; $igualesPorContenido = 0; $verificadosPorHash = 0
 $i = 0
 foreach ($p in $aBajar) {
     $i++
     $final = Join-Path $carpetaArchivos ($p.Ruta.Replace('/', '\'))
-    $temporal = "$final.descargando"
+    $temporal = Join-Path $dirDescarga ([guid]::NewGuid().ToString('N') + '.descargando')
     $url = Get-UrlFtp $script:con $porSitio[$p.Ruta]
     try {
-        New-Item -ItemType Directory -Force (Split-Path $final) | Out-Null
         Invoke-ConReintento {
             if (Test-Path -LiteralPath $temporal) { Remove-Item -LiteralPath $temporal -Force }
             $resp = (New-PeticionFtp $script:con $url 'RETR').GetResponse()
@@ -271,16 +303,23 @@ foreach ($p in $aBajar) {
             }
         } | Out-Null
         $largo = (Get-Item -LiteralPath $temporal).Length
-        $anterior = Move-DescargaASuSitio -Temporal $temporal -Final $final -Fecha (Get-Date)
+        $sha = Get-Sha256Archivo $temporal
+        $c = Copy-DescargaASuSitio -Temporal $temporal -Final $final -Tamano $largo -Sha $sha -Fecha (Get-Date)
+        if ($c.Resultado -eq 'Igual') { $igualesPorContenido++; continue }
+        if ($c.Verificacion -eq 'Hash') { $verificadosPorHash++ }
         $bajados++; $bytesBajados += $largo
-        if ($anterior) { $reemplazados++; "  cambió $($p.Ruta) (versión anterior: $anterior)" }
+        if ($c.Anterior) { $reemplazados++; "  cambió $($p.Ruta) (versión anterior: $($c.Anterior))" }
         if ($bajados % 25 -eq 0) { "  bajados $bajados de $($aBajar.Count)..." }
     } catch {
         $script:errores++
-        if (Test-Path -LiteralPath $temporal) { Remove-Item -LiteralPath $temporal -Force -ErrorAction SilentlyContinue }
         Write-Host "ERROR al bajar $($p.Ruta) : $($_.Exception.Message)" -ForegroundColor Red
+    } finally {
+        if (Test-Path -LiteralPath $temporal) { Remove-Item -LiteralPath $temporal -Force -ErrorAction SilentlyContinue }
     }
 }
+if ($igualesPorContenido) { "  $igualesPorContenido archivo(s) parecían cambiados por su tamaño en el destino, pero el contenido es el mismo: no se tocaron." }
+if ($verificadosPorHash) { "  $verificadosPorHash archivo(s) se comprobaron por SHA-256 en el destino (el tamaño tardó en verse completo)." }
+$iguales += $igualesPorContenido
 
 # =================================================================================================
 # Verificación de PDF firmados

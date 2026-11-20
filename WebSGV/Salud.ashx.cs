@@ -79,8 +79,9 @@ namespace WebSGV
         /// Consulta real de Salud (solo lectura, sin caché). <paramref name="ahoraUtc"/> en UTC. Los viajes activos son los
         /// mismos que consulta el GPS automático (<see cref="ActualizacionGpsAutomatica.ViajesDelTablero"/> +
         /// <see cref="SeguimientoViajesService.AbiertosParaGps"/>); el 503 lo decide la última corrida programada
-        /// (<see cref="ActualizacionGpsAutomatica.UltimoInicioProgramado"/>). fhUltimaConsultaGps (hora de Perú) solo
-        /// deja una advertencia en el log si es muy vieja.
+        /// (<see cref="ActualizacionGpsAutomatica.UltimoInicioProgramado"/>) y, si el cron corre, la última respuesta válida
+        /// de Onway en una corrida programada (<see cref="ActualizacionGpsAutomatica.UltimaRespuestaOnwayProgramada"/>).
+        /// fhUltimaConsultaGps (hora de Perú) solo deja una advertencia en el log si es muy vieja.
         /// </summary>
         public static ResultadoSalud Evaluar(bool conGps, DateTime ahoraUtc)
         {
@@ -94,8 +95,9 @@ namespace WebSGV
                 DateTime ahoraPeru = FechaHelper.ConvertirDeUtc(DateTime.SpecifyKind(ahoraUtc, DateTimeKind.Utc));
                 var activos = SeguimientoViajesService.AbiertosParaGps(ActualizacionGpsAutomatica.ViajesDelTablero(ahoraPeru.Date), ahoraPeru.Date).ToList();
                 DateTime? ultimaConsulta = activos.Max(v => v.UltimaConsultaGps);
-                ResultadoSalud r = EstadoSalud.EvaluarConGps(true, activos.Count, InicioAplicacionUtc,
-                    ActualizacionGpsAutomatica.UltimoInicioProgramado, ahoraUtc);
+                ResultadoSalud r = EstadoSalud.EvaluarConGpsYOnway(true, activos.Count, InicioAplicacionUtc,
+                    ActualizacionGpsAutomatica.UltimoInicioProgramado, ActualizacionGpsAutomatica.UltimaRespuestaOnwayProgramada, ahoraUtc,
+                    ultimaProgramadaConError: ActualizacionGpsAutomatica.UltimaProgramadaConError);
                 bool consultaVieja = EstadoSalud.ConsultaVieja(activos.Count, ultimaConsulta, ahoraPeru);
                 RegistrarAviso(r, consultaVieja, activos.Count, ultimaConsulta, ahoraUtc);
                 return r;
@@ -120,9 +122,23 @@ namespace WebSGV
             if (estado.Length == 0)
                 LogSGV.Info("Salud: el GPS automático volvió a estar al día ({Gps}, {Viajes} viajes activos)", r.Gps, viajes);
             else
-                LogSGV.Advertencia("Salud: GPS {Gps}, {Minutos} min desde la última corrida programada; {Viajes} viajes activos, " +
-                    "última consulta GPS {Ultima}{Vieja}", r.Gps, r.Minutos, viajes, ultimaConsulta,
+                LogSGV.Advertencia("Salud: GPS {Gps} ({Regla}), {Minutos} min desde la última corrida programada, {MinutosOnway} min " +
+                    "desde la última respuesta válida de Onway; {Viajes} viajes activos, última consulta GPS {Ultima}{Vieja}",
+                    r.Gps, ReglaQueFallo(r), r.Minutos, r.MinutosOnway, viajes, ultimaConsulta,
                     consultaVieja ? $" (más de {EstadoSalud.UmbralConsultaViejaMinutos} min)" : "");
+        }
+
+        /// <summary>Qué regla dio el 503, en palabras, para el log.</summary>
+        public static string ReglaQueFallo(ResultadoSalud r)
+        {
+            if (r == null || r.Ok) return "sin falla";
+            switch (r.Gps)
+            {
+                case EstadoSalud.GpsAtrasado: return $"el cron no corre hace más de {EstadoSalud.UmbralGpsMinutos} min";
+                case EstadoSalud.GpsOnwaySinRespuesta: return $"el cron corre pero Onway no responde bien hace más de {EstadoSalud.UmbralOnwayMinutos} min";
+                case EstadoSalud.GpsCronConError: return $"el cron corre pero su última corrida terminó con error (sin respuesta de Onway hace más de {EstadoSalud.UmbralOnwayMinutos} min)";
+                default: return "la base de datos no respondió";
+            }
         }
 
         /// <summary>SELECT 1 con <see cref="SegundosLimiteBd"/> s para conectar y para ejecutar.</summary>

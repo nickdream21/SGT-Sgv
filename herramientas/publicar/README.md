@@ -51,7 +51,8 @@ publicaciones.log       <- una línea por subida
 ```
 
 - **Cambios sin confirmar**: si hay cambios sin commit en `WebSGV/` (o `packages/`, `WebSGV.sln`), se niega; `-PermitirCambiosSinConfirmar` lo permite y lo anota en el manifiesto. Lo normal es publicar siempre un commit.
-- **Comprobaciones del paquete** (si alguna falla, no compara ni sube): sin `App_Data`, `Uploads`, `Database`, archivos de secretos ni `*.pdb`; con `bin\WebSGV.dll`, los nativos de QuestPDF (`bin\runtimes\win-x86\native` y `win-x64`) y `Web.config` de Release (sin `debug="true"`, con la regla `ForzarHTTPS`). Se pueden correr solas sobre cualquier carpeta: `publicar.ps1 -ComprobarPaquete <carpeta>`.
+- **Solo lo necesario**: al armar el paquete se quitan los binarios nativos de QuestPDF para linux y osx (`bin\runtimes\linux-*`, `osx-*`; el servidor es Windows y usa `win-x86`/`win-x64`). Se quitan aquí y no en el csproj para no tocar el `QuestPDF.targets`. Documentos (`*.md`) y plantillas (`*.example`) no se publican: en el csproj van como `<None>` o fuera de `WebSGV/` (p. ej. `docs/PLAN_MODERNIZACION.md`).
+- **Comprobaciones del paquete** (si alguna falla, no compara ni sube): sin `App_Data`, `Uploads`, `Database`, archivos de secretos, `*.pdb`, `*.md`, `*.example` ni `bin\runtimes\linux*`/`osx*`; con `bin\WebSGV.dll`, los nativos de QuestPDF (`bin\runtimes\win-x86\native` y `win-x64`) y `Web.config` de Release (sin `debug="true"`, con la regla `ForzarHTTPS`). Se pueden correr solas sobre cualquier carpeta: `publicar.ps1 -ComprobarPaquete <carpeta>`.
 - **Qué se sube**: lo que no está en el servidor o tiene otro tamaño, y lo de mismo tamaño cuyo SHA-256 no coincide con el de la última publicación hecha con este script (o si no hay registro, o el marcador del servidor no coincide: ver abajo). `-SubirTodo` sube todo.
 - **Sin credencial** hace todo lo local, avisa `FALTA LA CREDENCIAL FTP` y no toca el servidor.
 
@@ -90,6 +91,7 @@ Ejemplo: la laptop publica `A` (marcador = `A`); luego la oficina publica `B` (m
 - Acepta la carpeta o el `.zip` de una publicación. Comprueba que los archivos coinciden con su manifiesto y sube el paquete **completo**.
 - Si el paquete es **anterior al commit `773dad0`** (contraseñas en formato `sha256.`), o no se puede saber (p. ej. el commit no existe en este clon), se niega salvo `-Forzar`: con ese código nadie podría iniciar sesión.
 - Si el paquete **no tiene `manifiesto.txt`**, no se puede comprobar su integridad ni su commit: exige `-SinManifiesto` (y, como el commit es desconocido, también `-Forzar`). Cada opción acepta un riesgo distinto; ninguna cubre a la otra.
+- Si el paquete es anterior a E1-9 (trae `bin\runtimes\linux*`/`osx*`, `*.md` o `*.example`), se quitan de una copia temporal (la publicación guardada no se toca) antes de comprobarlo y subirlo, y la salida dice cuántos.
 - Volver atrás no deshace migraciones ni SP de la BD: si la versión nueva cambió la BD, revisar antes que la vieja funcione con ella.
 - Las páginas que solo existen en la versión nueva quedan como sobrantes; se borran con `-BorrarSobrantes`.
 

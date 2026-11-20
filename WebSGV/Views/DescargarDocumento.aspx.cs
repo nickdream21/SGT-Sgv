@@ -19,7 +19,9 @@ namespace WebSGV.Views
             string rutaVirtual = DocumentoHelper.ObtenerRutaPermitida(Context, Request.QueryString["k"]);
             if (rutaVirtual == null)
             {
-                LogSGV.Advertencia("Descarga: la llave {Llave} no está registrada en la sesión (sesión nueva o enlace de otra sesión)", Request.QueryString["k"]);
+                // No se registra el valor de la llave (da acceso al documento durante la sesión): solo si venía.
+                LogSGV.Advertencia("Descarga: la llave no está registrada en la sesión (sesión nueva o enlace de otra sesión; llave vacía: {Vacia})",
+                    string.IsNullOrEmpty(Request.QueryString["k"]));
                 NoEncontrado("A");
                 return;
             }

@@ -76,6 +76,14 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void EsValidacionDePeticion_SoloHttpRequestValidationException()
+        {
+            Assert.True(ErrorAplicacionHelper.EsValidacionDePeticion(new HttpRequestValidationException("valor <script>")));
+            Assert.False(ErrorAplicacionHelper.EsValidacionDePeticion(new HttpException(500, "Falla")));
+            Assert.False(ErrorAplicacionHelper.EsValidacionDePeticion(null));
+        }
+
+        [Fact]
         public void EsNoEncontrado_SoloHttp404()
         {
             Assert.True(ErrorAplicacionHelper.EsNoEncontrado(new HttpException(404, "No existe")));

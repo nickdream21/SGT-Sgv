@@ -11,9 +11,11 @@
     sqlpackage en un archivo de respuesta temporal (@archivo) dentro de %TEMP% que se borra al
     terminar: no aparece en la línea de comandos ni en la salida (se enmascara por si acaso).
 
-    Destino: <Carpeta>\bd\<nombreBD>_aaaaMMdd_HHmm.bacpac. Se escribe primero como
-    *.parcial.bacpac y se renombra solo si sqlpackage termina bien; si falla, sale con código <> 0
-    y no aplica la retención.
+    Destino: <Carpeta>\bd\<nombreBD>_aaaaMMdd_HHmm.bacpac. sqlpackage exporta primero a una carpeta
+    LOCAL (%LOCALAPPDATA%\SGV-respaldo\bd, fuera de Google Drive/OneDrive, cuyo disco virtual informa un
+    tamaño incompleto justo después de escribir). Si termina bien, se copia al destino como
+    *.parcial.bacpac, se verifica allí (tamaño con reintentos y, si no cuadra, SHA-256 leyendo el
+    contenido) y se renombra. Si algo falla, sale con código <> 0 y no aplica la retención.
 
     Retención: conserva los 30 más recientes y, de los anteriores, el primero de cada mes de los
     últimos 12 meses; borra el resto. Cada ejecución añade una línea a <Carpeta>\bd\respaldos.log.
@@ -36,6 +38,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+Import-Module (Join-Path $PSScriptRoot '..\comun\CopiaVerificada.psm1') -Force -DisableNameChecking
 
 # Función pura de retención: recibe los nombres de los .bacpac y "hoy"; devuelve los nombres a
 # borrar. Los nombres que no siguen el patrón <bd>_aaaaMMdd_HHmm.bacpac se ignoran (nunca se borran).
@@ -141,6 +144,12 @@ if ($SoloListar) {
 if (Test-Path $rutaFinal) { throw "Ya existe $rutaFinal (otro respaldo en el mismo minuto). Espere un minuto y repita." }
 New-Item -ItemType Directory -Force $carpetaBd | Out-Null
 if (Test-Path $rutaParcial) { Remove-Item $rutaParcial -Force }
+# sqlpackage escribe en una carpeta local; al destino (quizá Google Drive) solo va la copia verificada.
+$carpetaLocalBd = Get-CarpetaTemporalLocal 'bd'
+$rutaLocal = Join-Path $carpetaLocalBd ($nombreFinal -replace '\.bacpac$', '.parcial.bacpac')
+# Restos de corridas cortadas (Ctrl+C, límite de la tarea): cada uno es una copia completa de la BD.
+Get-ChildItem -LiteralPath $carpetaLocalBd -Filter '*.parcial.bacpac' -File -ErrorAction SilentlyContinue |
+    Remove-Item -Force -ErrorAction SilentlyContinue
 
 # --- Exportación -------------------------------------------------------------------------------
 # La contraseña va en un archivo de respuesta en %TEMP% (perfil del usuario), borrado en finally.
@@ -155,7 +164,7 @@ $lineas = @(
     # y la validación falla ("El nombre de entidad de seguridad de destino es incorrecto", probado el
     # 2026-11-19). La propia cadena de la app usa TrustServerCertificate=True. Quitarlo si somee lo corrige.
     '/SourceTrustServerCertificate:True'
-    "/TargetFile:`"$rutaParcial`""
+    "/TargetFile:`"$rutaLocal`""
     '/p:CommandTimeout=600'
 )
 [IO.File]::WriteAllLines($rsp, $lineas, (New-Object Text.UTF8Encoding($false)))
@@ -178,16 +187,28 @@ try {
 $duracion = (Get-Date) - $inicio
 $textoDuracion = '{0:hh\:mm\:ss}' -f $duracion
 
-if ($codigo -ne 0 -or -not (Test-Path $rutaParcial) -or (Get-Item $rutaParcial).Length -eq 0) {
-    if (Test-Path $rutaParcial) { Remove-Item $rutaParcial -Force -ErrorAction SilentlyContinue }
+if ($codigo -ne 0 -or -not (Test-Path -LiteralPath $rutaLocal) -or (Get-Item -LiteralPath $rutaLocal).Length -eq 0) {
+    if (Test-Path -LiteralPath $rutaLocal) { Remove-Item -LiteralPath $rutaLocal -Force -ErrorAction SilentlyContinue }
     Add-Content -Path $rutaLog -Encoding UTF8 -Value ('{0:yyyy-MM-dd HH:mm}  ERROR  {1}  sqlpackage código {2}  duración {3}' -f $inicio, $Entorno, $codigo, $textoDuracion)
     Write-Host "ERROR: sqlpackage terminó con código $codigo. No se aplicó la retención." -ForegroundColor Red
     if ($codigo -eq 0) { $codigo = 1 }
     exit $codigo
 }
 
-Move-Item $rutaParcial $rutaFinal
-$tamano = (Get-Item $rutaFinal).Length
+# Copia al destino verificada (tamaño con reintentos o SHA-256) y renombre; el local se borra siempre.
+$tamano = (Get-Item -LiteralPath $rutaLocal).Length
+try {
+    $verificacion = (Copy-ArchivoVerificado -Origen $rutaLocal -Destino $rutaParcial -Tamano $tamano -Sha (Get-Sha256Archivo $rutaLocal)).Verificacion
+    Move-Item -LiteralPath $rutaParcial -Destination $rutaFinal
+} catch {
+    if (Test-Path -LiteralPath $rutaParcial) { Remove-Item -LiteralPath $rutaParcial -Force -ErrorAction SilentlyContinue }
+    Add-Content -Path $rutaLog -Encoding UTF8 -Value ('{0:yyyy-MM-dd HH:mm}  ERROR  {1}  copia al destino: {2}  duración {3}' -f $inicio, $Entorno, $_.Exception.Message, $textoDuracion)
+    Write-Host "ERROR al copiar el respaldo a $carpetaBd : $($_.Exception.Message). No se aplicó la retención." -ForegroundColor Red
+    exit 1
+} finally {
+    Remove-Item -LiteralPath $rutaLocal -Force -ErrorAction SilentlyContinue
+}
+if ($verificacion -eq 'Hash') { "Copia comprobada por SHA-256 (el tamaño en el destino tardó en verse completo)." }
 
 # --- Retención ---------------------------------------------------------------------------------
 $aBorrar = @(Get-RespaldosABorrar -Nombres (Get-NombresExistentes) -Hoy $inicio)

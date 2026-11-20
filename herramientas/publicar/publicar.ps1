@@ -10,7 +10,8 @@
        archivo). Comprime la carpeta en <CarpetaPublicaciones>\<aaaaMMdd_HHmm>_<commit corto>.zip.
        La carpeta de publicaciones nunca puede estar dentro del repo.
     2. Comprueba el paquete: sin App_Data, Uploads, Database, archivos de secretos
-       (connectionStrings*.config, appSettings.Secrets.config) ni *.pdb; con bin\WebSGV.dll, los
+       (connectionStrings*.config, appSettings.Secrets.config), *.pdb, *.md, *.example ni binarios
+       nativos de linux/osx (bin\runtimes\linux-*, osx-*: se quitan al armarlo); con bin\WebSGV.dll, los
        binarios nativos de QuestPDF (bin\runtimes\win-x86 y win-x64) y Web.config transformado a
        Release (sin debug="true", con la regla ForzarHTTPS). Si algo falla, no sigue.
     3. Compara con el servidor por FTP (solo lectura: LIST/NLST/SIZE), sin entrar nunca en App_Data
@@ -135,6 +136,40 @@ function Test-RutaCandidataSobrante {
     if (($r -split '/')[0] -ieq 'Database') { return $true }
     $ext = [IO.Path]::GetExtension($r).ToLowerInvariant()
     return @('.aspx', '.ascx', '.ashx', '.asmx', '.master', '.cs', '.js', '.css', '.dll', '.config') -contains $ext
+}
+
+# $true si el archivo es un binario nativo de QuestPDF para Linux o macOS (bin/runtimes/linux-*/...,
+# bin/runtimes/osx-*/...): el servidor es Windows y solo usa win-x86/win-x64. El csproj los copia a bin/
+# (QuestPDF.targets); se quitan al armar el paquete, no en el csproj, para no tocar ese targets.
+function Test-RutaRuntimeNoWindows {
+    param([string]$Ruta)
+    $r = ConvertTo-RutaSitio $Ruta
+    return $r -imatch '^bin/runtimes/(linux|osx)[^/]*(/|$)'
+}
+
+# $true si el archivo ya no se publica (E1-9): binarios nativos de linux/osx, documentos (*.md) y plantillas
+# (*.example). Los paquetes anteriores a E1-9 los traen; -VolverA los quita antes de comprobar y subir.
+function Test-RutaQueNoSePublica {
+    param([string]$Ruta)
+    $r = ConvertTo-RutaSitio $Ruta
+    return (Test-RutaRuntimeNoWindows $r) -or ($r -ilike '*.md') -or ($r -ilike '*.example')
+}
+
+# Borra de una carpeta de sitio los archivos que ya no se publican (Test-RutaQueNoSePublica) y las carpetas
+# bin\runtimes\linux*/osx* que queden. Devuelve las rutas borradas (relativas, con '/').
+function Remove-ArchivosQueNoSePublican {
+    param([string]$CarpetaSitio)
+    $raiz = (Resolve-Path -LiteralPath $CarpetaSitio).Path.TrimEnd('\') + '\'
+    $borrados = New-Object System.Collections.Generic.List[string]
+    foreach ($f in @(Get-ChildItem -LiteralPath $raiz -Recurse -File -Force)) {
+        $rel = $f.FullName.Substring($raiz.Length).Replace('\', '/')
+        if (Test-RutaQueNoSePublica $rel) { Remove-Item -LiteralPath $f.FullName -Force; $borrados.Add($rel) }
+    }
+    $dirRuntimes = Join-Path $raiz 'bin\runtimes'
+    if (Test-Path -LiteralPath $dirRuntimes) {
+        Get-ChildItem -LiteralPath $dirRuntimes -Directory | Where-Object { $_.Name -imatch '^(linux|osx)' } | Remove-Item -Recurse -Force
+    }
+    return $borrados.ToArray()
 }
 
 # Plan de publicación.
@@ -364,6 +399,8 @@ function Test-ContenidoPaquete {
     Add-Res 'Sin archivos de secretos' ($rs | Where-Object {
         $h = ($_ -split '/')[-1]; $h -like 'connectionStrings*.config' -or $h -ieq 'appSettings.Secrets.config' }) 'no hay connectionStrings*.config ni appSettings.Secrets.config'
     Add-Res 'Sin *.pdb'     ($rs | Where-Object { $_ -ilike '*.pdb' }) 'no hay'
+    Add-Res 'Sin runtimes de linux/osx' ($rs | Where-Object { Test-RutaRuntimeNoWindows $_ }) 'solo win-x86 y win-x64'
+    Add-Res 'Sin documentos ni plantillas (*.md, *.example)' ($rs | Where-Object { $_ -ilike '*.md' -or $_ -ilike '*.example' }) 'no hay'
     Add-Res 'Con bin/WebSGV.dll' $(if ($rs -icontains 'bin/WebSGV.dll') { @() } else { @('falta bin/WebSGV.dll') }) 'está'
     foreach ($arq in 'win-x86', 'win-x64') {
         $n = @($rs | Where-Object { $_ -ilike "bin/runtimes/$arq/native/QuestPdf*.dll" })
@@ -554,6 +591,7 @@ $archivoUltimo = Join-Path $CarpetaPublicaciones 'ultimo-publicado.txt'
 $archivoLog    = Join-Path $CarpetaPublicaciones 'publicaciones.log'
 
 $temporalVolver = $null
+$temporalLimpio = $null
 try {
     if ($VolverA) {
         # =========================================================================================
@@ -595,6 +633,17 @@ try {
             $problemas = @(Compare-PaqueteConManifiesto -Archivos @(Get-ArchivosCarpeta $sitio -ConHash) -Manifiesto $man.Archivos)
             if ($problemas.Count) { throw "El paquete no coincide con su manifiesto: $(($problemas | Select-Object -First 5) -join '; ')" }
             "  los $($man.Archivos.Count) archivos coinciden con el manifiesto (SHA-256)."
+        }
+        # Paquetes anteriores a E1-9: traen runtimes de linux/osx, *.md o *.example. Se quitan de una copia (la
+        # publicación guardada no se toca) antes de las comprobaciones, para que el paquete sea apto y no se suban.
+        if (@(Get-ArchivosCarpeta $sitio | Where-Object { Test-RutaQueNoSePublica $_.Ruta }).Count) {
+            if (-not $temporalVolver) {
+                $temporalLimpio = Join-Path $env:TEMP ('sgv-volver-' + [guid]::NewGuid().ToString('N'))
+                Copy-Item -LiteralPath $sitio -Destination $temporalLimpio -Recurse
+                $sitio = $temporalLimpio
+            }
+            $quitados = @(Remove-ArchivosQueNoSePublican $sitio)
+            "  quitados $($quitados.Count) archivo(s) que ya no se publican (runtimes de linux/osx, *.md, *.example; paquete anterior a E1-9): $(($quitados | Select-Object -First 3) -join ', ')$(if ($quitados.Count -gt 3) { ', ...' })"
         }
         $SubirTodo = $true      # volver atrás sube el paquete completo
         $nombrePublicacion = [IO.Path]::GetFileName($origen) -replace '\.zip$', ''
@@ -656,6 +705,21 @@ try {
         } finally {
             $ErrorActionPreference = $eap
             Remove-Item -LiteralPath $rsp -Force -ErrorAction SilentlyContinue
+        }
+
+        # Binarios nativos de QuestPDF para linux/osx: el servidor es Windows (se conservan win-x86 y win-x64).
+        # Los *.md y *.example no se quitan aquí: si el csproj los publica, la comprobación del paquete lo dice.
+        $sitioBarra = $sitio.TrimEnd('\') + '\'
+        $runtimesFuera = @(Get-ChildItem -LiteralPath $sitio -Recurse -File -Force |
+            Where-Object { Test-RutaRuntimeNoWindows $_.FullName.Substring($sitioBarra.Length) })
+        if ($runtimesFuera.Count) {
+            $runtimesFuera | Remove-Item -Force
+            $dirRuntimes = Join-Path $sitio 'bin\runtimes'
+            if (Test-Path -LiteralPath $dirRuntimes) {
+                Get-ChildItem -LiteralPath $dirRuntimes -Directory | Where-Object { $_.Name -imatch '^(linux|osx)' } |
+                    Remove-Item -Recurse -Force
+            }
+            "Quitados $($runtimesFuera.Count) binario(s) nativo(s) de linux/osx de bin\runtimes (el servidor es Windows)."
         }
 
         # Manifiesto (fuera de sitio\, para no subirlo).
@@ -883,4 +947,5 @@ try {
     exit 0
 } finally {
     if ($temporalVolver) { Remove-Item -LiteralPath $temporalVolver -Recurse -Force -ErrorAction SilentlyContinue }
+    if ($temporalLimpio) { Remove-Item -LiteralPath $temporalLimpio -Recurse -Force -ErrorAction SilentlyContinue }
 }

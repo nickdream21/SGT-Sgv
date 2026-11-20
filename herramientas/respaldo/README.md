@@ -30,7 +30,7 @@ Resultado: `<Carpeta>\bd\<nombreBD>_aaaaMMdd_HHmm.bacpac` y una línea por ejecu
 
 - Lee la cadena `ConexionSGV` de `WebSGV\connectionStrings.config` (pruebas) o `connectionStrings.Production.config` (producción), igual que `WebSGV\Database\sql.ps1`, y comprueba que apunte a la BD esperada.
 - La contraseña no va en la línea de comandos: se escribe en un archivo de respuesta temporal de `sqlpackage` (`sqlpackage @archivo`) en `%TEMP%` del usuario, que se borra al terminar (también si falla). Si `sqlpackage` la repitiera en un mensaje, se enmascara con `********`. Mientras dura la exportación, ese archivo existe en `%TEMP%` (solo accesible para el usuario de Windows).
-- Se escribe primero `*.parcial.bacpac` y se renombra solo si `sqlpackage` termina bien. Si falla: código de salida distinto de 0, se borra el parcial, se anota `ERROR` en el log y **no** se aplica la retención.
+- `sqlpackage` exporta a una carpeta **local** (`%LOCALAPPDATA%\SGV-respaldo\bd`); si termina bien, se copia al destino como `*.parcial.bacpac`, se verifica allí (tamaño con reintentos o SHA-256, igual que el espejo: Google Drive informa un tamaño incompleto justo después de escribir) y se renombra. El local se borra siempre. Si falla: código de salida distinto de 0, se borra el parcial, se anota `ERROR` en el log y **no** se aplica la retención.
 - Se rechaza cualquier carpeta dentro del repo (el `.bacpac` contiene datos reales y contraseñas cifradas de usuarios).
 
 ## Retención
@@ -88,7 +88,8 @@ $env:SGV_CARPETA_RESPALDO = 'D:\RespaldosSGV'
 - **Solo lectura en el servidor**: usa únicamente `LIST`/`NLST`/`SIZE`/`RETR`; nunca sube, renombra ni borra nada en somee. Entiende el `LIST` en formato Unix y MS-DOS/IIS; si no lo reconoce, usa `NLST` + `SIZE`.
 - **Incremental**: baja solo lo que no está en local o cuyo tamaño cambió. Se excluye toda carpeta `_temp` (borradores, p. ej. `Uploads\Factura\_temp`).
 - **Nunca borra en local**: un archivo borrado en el servidor sigue en el respaldo. Si un archivo cambió de tamaño, la copia local anterior se conserva como `<nombre>__anterior_aaaaMMdd_HHmmss.<ext>` antes de poner la nueva.
-- Cada archivo se baja a `<nombre>.descargando` y se renombra solo si llegó entero (mismo tamaño que en el servidor). Ante un error de red se reintenta una vez; si vuelve a fallar se cuenta como error y se sigue con el resto.
+- Cada archivo se baja primero a una carpeta **local** (`%LOCALAPPDATA%\SGV-respaldo\descargando`, fuera de Google Drive/OneDrive), se comprueba ahí que llegó entero (mismo tamaño que en el servidor) y se calcula su SHA-256. Ante un error de red se reintenta una vez; si vuelve a fallar se cuenta como error y se sigue con el resto.
+- Después se copia a `<nombre>.descargando` en la carpeta final, se verifica allí y se renombra: primero el tamaño, releído cada 500 ms hasta ~10 s; si no cuadra, el SHA-256 leyendo el contenido. Solo es error si tampoco coincide el contenido. Motivo: Google Drive para escritorio (`G:\Unidades compartidas\...`) informa un tamaño incompleto justo después de escribir (se vio "llegaron 14520 bytes de 370309" con el archivo entero). Si el archivo final ya tiene el mismo contenido, no se toca ni se crea una versión `__anterior_`. La copia común está en `herramientas\comun\CopiaVerificada.psm1`.
 - Al final llama a `verificar-pdf-firmados.ps1` sobre `<Carpeta>\archivos\OrdenesViaje`, imprime el resumen (revisados, bajados, cambiados, sin cambios, errores, verificación) y añade una línea a `<Carpeta>\archivos\respaldos.log`.
 - Rechaza cualquier carpeta dentro del repo (igual que `respaldar-bd.ps1`).
 - Código de salida: `0` todo bien; `1` errores al listar o bajar; `2` la descarga fue bien pero la verificación encontró PDF faltantes o distintos (o no se pudo hacer).

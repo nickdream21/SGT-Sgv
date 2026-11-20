@@ -387,6 +387,19 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void UrlSinValores_QuitaLosValoresDelQuerystring()
+        {
+            Assert.Equal("", AvisoErrores.UrlSinValores(null));
+            Assert.Equal("/Views/Inicio.aspx", AvisoErrores.UrlSinValores("/Views/Inicio.aspx"));
+            Assert.Equal("/Views/RestablecerContrasena.aspx?token=",
+                AvisoErrores.UrlSinValores("/Views/RestablecerContrasena.aspx?token=abc123secreto"));
+            Assert.Equal("~/Views/X.aspx?token=&aviso=",
+                AvisoErrores.UrlSinValores("~/Views/X.aspx?token=abc&aviso=pagina_vencida"));
+            Assert.Equal("/Views/X.aspx", AvisoErrores.UrlSinValores("/Views/X.aspx?"));
+            Assert.DoesNotContain("abc123", AvisoErrores.UrlSinValores("https://sitio/Views/R.aspx?token=abc123&x=1"));
+        }
+
+        [Fact]
         public void Asunto_UnaLineaConTipoRutaYSitio()
         {
             var d = Datos(new InvalidOperationException("x"));

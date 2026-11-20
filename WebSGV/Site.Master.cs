@@ -98,7 +98,8 @@ namespace WebSGV
                 bool haySesion = TieneSesionActivaLocal();
                 ScriptManager1.AsyncPostBackErrorMessage = ErrorAplicacionHelper.MensajePostbackParcial(real, haySesion);
 
-                string ruta = Request.RawUrl;
+                // Para el log: sin los valores del querystring (p. ej. el token de RestablecerContrasena).
+                string ruta = Request.Path + WebSGV.Services.Operacion.AvisoErrores.QuerySinValores(Request.Url.Query);
                 if (ErrorAplicacionHelper.EsErrorViewState(real))
                     LogSGV.Advertencia("ViewState inválido o vencido en postback parcial de {Ruta} (con sesión: {HaySesion}). {Error}",
                         ruta, haySesion, real?.Message);

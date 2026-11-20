@@ -164,6 +164,12 @@ namespace WebSGV.Helpers
             return null;
         }
 
+        /// <summary>
+        /// Petición rechazada por la validación de ASP.NET (texto peligroso en un campo o el querystring). Su Message
+        /// trae un trozo del valor enviado, así que no se registra: solo el tipo y la ruta sin valores.
+        /// </summary>
+        public static bool EsValidacionDePeticion(Exception ex) => ex is HttpRequestValidationException;
+
         /// <summary>Recurso inexistente (HttpException con código 404).</summary>
         public static bool EsNoEncontrado(Exception ex)
         {
