@@ -29,6 +29,7 @@ CREATE OR ALTER PROCEDURE sp_DC_RegistrarConformidadConductor
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     DECLARE @estadoAprobacion VARCHAR(20);
     DECLARE @idFirmaAdmin     INT;

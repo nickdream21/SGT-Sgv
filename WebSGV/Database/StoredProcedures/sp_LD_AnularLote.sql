@@ -29,6 +29,7 @@ CREATE OR ALTER PROCEDURE sp_LD_AnularLote
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
     SET @viajesAnulados = 0;
 
     IF @idsDespachos IS NULL OR LEN(LTRIM(RTRIM(@idsDespachos))) = 0

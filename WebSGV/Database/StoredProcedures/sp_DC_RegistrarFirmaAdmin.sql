@@ -31,6 +31,7 @@ CREATE OR ALTER PROCEDURE sp_DC_RegistrarFirmaAdmin
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     DECLARE @usuario VARCHAR(50) = (SELECT nombreUsuario FROM Usuarios WHERE idUsuario = @idUsuarioFirmante);
 

@@ -27,6 +27,7 @@ CREATE OR ALTER PROCEDURE sp_SE_SincronizarDespachos
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     DECLARE @creados INT = 0, @actualizados INT = 0;
 

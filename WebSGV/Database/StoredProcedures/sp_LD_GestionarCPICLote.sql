@@ -18,7 +18,8 @@
 --     (THROW 50018) y una factura no tiene dos CPIC (THROW 50019).
 --   * Un despacho anulado (activo = 0 o ANULADO) no se toca (THROW 50015).
 -- Transacción propia solo si el llamador no trae una; nunca hace
--- ROLLBACK de la del llamador (Editar lote la abre en C#).
+-- ROLLBACK de la del llamador (Editar lote la abre en C#), pero ante un error
+-- (XACT_ABORT ON) esa transacción queda deshecha y el llamador no debe continuarla.
 -- @usuario: quién escribe; la auditoría la registra el C# con el
 -- idCPIC y la acción que devuelve este SP.
 -- Devuelve idCPIC y accion (ENLAZADA / ACTUALIZADA / RENOMBRADA / CREADA).
@@ -32,6 +33,7 @@ CREATE OR ALTER PROCEDURE sp_LD_GestionarCPICLote
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     IF @idsDespachos IS NULL OR LEN(@idsDespachos) = 0
         RETURN;

@@ -16,7 +16,8 @@
 --     50017 / 50018) y una factura sin dos CPIC (THROW 50019). Sin ningún
 --     número: THROW 50023.
 -- Transacción propia solo si el llamador no trae una; nunca hace ROLLBACK
--- de la del llamador. @usuario: quién asigna (la auditoría la registra el
+-- de la del llamador, pero ante un error (XACT_ABORT ON) esa transacción queda
+-- deshecha y el llamador no debe continuarla. @usuario: quién asigna (la auditoría la registra el
 -- C# con los ids que devuelve este SP).
 -- Devuelve idFactura, accionFactura, idCPIC, accionCPIC (CREADA / EXISTENTE
 -- o NULL si no se indicó ese documento) y despachos (cuántos se marcaron).
@@ -34,6 +35,7 @@ CREATE OR ALTER PROCEDURE sp_LD_AsignarDocumentosDespachos
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     SET @numeroFactura = NULLIF(UPPER(LTRIM(RTRIM(@numeroFactura))), '');
     SET @numeroCPIC    = NULLIF(LTRIM(RTRIM(@numeroCPIC)), '');

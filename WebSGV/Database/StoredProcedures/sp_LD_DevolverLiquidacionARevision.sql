@@ -25,6 +25,7 @@ CREATE OR ALTER PROCEDURE sp_LD_DevolverLiquidacionARevision
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     DECLARE @estado            VARCHAR(20);
     DECLARE @idConductor       INT;

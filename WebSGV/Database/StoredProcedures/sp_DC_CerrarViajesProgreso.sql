@@ -28,6 +28,7 @@ CREATE OR ALTER PROCEDURE sp_DC_CerrarViajesProgreso
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     -- --------------------------------------------------------
     -- 0. Guard clause: entrada vacía / NULL

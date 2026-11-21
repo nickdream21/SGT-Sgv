@@ -65,6 +65,7 @@ CREATE OR ALTER PROCEDURE sp_CrearDespacho
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     -- Resolver la planta: se prefiere el id; el texto es el camino de respaldo.
     IF @idPlanta IS NULL AND @lugarOperacion IS NOT NULL

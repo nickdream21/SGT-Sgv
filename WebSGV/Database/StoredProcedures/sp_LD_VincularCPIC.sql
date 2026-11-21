@@ -12,7 +12,9 @@
 --     50018) o una factura que ya tiene otra CPIC (THROW 50019) no se unen.
 --   * Las búsquedas van dentro de la transacción (UPDLOCK, HOLDLOCK): dos
 --     registros a la vez no crean la misma CPIC dos veces. Transacción propia
---     solo si el llamador no trae una; nunca hace ROLLBACK de la del llamador.
+--     solo si el llamador no trae una; nunca hace ROLLBACK de la del llamador,
+--     pero ante un error (XACT_ABORT ON) esa transacción queda deshecha y el
+--     llamador no debe continuarla.
 -- Devuelve idCPIC y accion (CREADA / ACTUALIZADA).
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_VincularCPIC
@@ -26,6 +28,7 @@ CREATE OR ALTER PROCEDURE sp_LD_VincularCPIC
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     SET @numeroCPIC = LTRIM(RTRIM(@numeroCPIC));
     IF @numeroCPIC IS NULL OR @numeroCPIC = '' OR @idsDespachos IS NULL OR LEN(@idsDespachos) = 0

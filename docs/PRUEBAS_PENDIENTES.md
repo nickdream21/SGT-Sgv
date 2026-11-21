@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-024 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-025 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -37,6 +37,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-020** Gestión de Usuarios con `operador` — editar a `operador`, cancelar, "Nuevo usuario" → el desplegable no ofrece OPERADOR; editarlo sin cambiar el rol y guardar → lo conserva (escribe en la BD: solo si no se desactiva, U-015). · C
 - [ ] **P-021** Cambio de contraseña con espacio final — por el modal del menú: nueva = actual + espacio → debe entrar escribiéndola sin el espacio; restaurarla después. · C
 - [ ] **P-022** `Seguridad.ExigirPoliticaAlIngresar` en true — con una cuenta de prueba de contraseña débil (escribe datos de prueba). Cubierto por xUnit (`ExigeCambioAlIngresar`). · C
+- [ ] **P-025** Firmas y conformidad de una liquidación de punta a punta con `XACT_ABORT ON` (E3-4) — declaración del conductor, revisión del admin y conformidad: el camino feliz y una contraseña errónea (debe mostrar el aviso y no dejar nada a medias). En `sgvActualizada` `OrdenViaje` no tiene filas: hacerlo cuando haya una orden de prueba, o en el sitio local tras crear una. · B
 
 - [ ] **P-024** Respaldo diario de las 23:00 — confirmar que la tarea "SGV - Respaldo diario" corre: el 2026-11-20 no corrió a esa hora (¿PC apagada?) y el último `.bacpac` era el de las 11:50 de ese día. Mirar el historial del Programador de tareas y la fecha del último archivo. · B
 

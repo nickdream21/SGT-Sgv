@@ -21,6 +21,7 @@ CREATE OR ALTER PROCEDURE sp_SE_RegistrarHitoGps
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     IF @columna NOT IN ('fhSalidaBase1', 'fhLlegadaTrujillo', 'fhIngresoPlanta', 'fhSalidaPlanta', 'fhLlegadaBase2',
                         'fhSalidaBase2', 'fhLlegadaBodegaNacional', 'fhIngresoBodegaNacional', 'fhSalidaBodegaNacional',

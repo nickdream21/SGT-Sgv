@@ -34,6 +34,7 @@ CREATE OR ALTER PROCEDURE sp_DC_RegistrarFirmaConductor
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     DECLARE @numeroOrdenViaje VARCHAR(50);
     DECLARE @estadoAprobacion VARCHAR(20);

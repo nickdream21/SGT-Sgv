@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `e2667bc` — E3-3: número de viaje con correlativo propio (migración 53, `sp_SiguienteCorrelativo`, `sp_SiguienteNumeroViaje`), aplicado en pruebas; `aplicar-procedimientos.ps1` aplica primero los SP nuevos. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-21**, commit anterior `d40fc06` — E3-4: `SET XACT_ABORT ON` en los 18 SP con transacción que no lo tenían, aplicado en pruebas; prueba de CI `TransaccionesEnSpTests`. No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-102 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
@@ -11,7 +11,7 @@
 - El sitio publicado (`https://sgvtransporte.somee.com`, publicación `20261120_1311_60853e8`) usa la BD de **pruebas** `sgvActualizada`, que tiene **datos reales** desde el 2026-10-19: no se borra ni limpia nada allí sin confirmar.
 - Producción (`sgvTransporte`) no está al día: el paso a producción es `docs/PASO_A_PRODUCCION.md`, en orden, tras la decisión U-011.
 - Etapa 1 (operación) cerrada: respaldo diario de la BD y de los archivos en Google Drive, restauración ensayada, publicación con vuelta atrás (`herramientas/publicar/publicar.ps1`), monitores de UptimeRobot y cron del GPS activos.
-- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 en curso** (integridad de la BD): plan detallado en la hoja de ruta, sigue E3-4. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
+- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 en curso** (integridad de la BD): plan detallado en la hoja de ruta, sigue E3-5 (espera la aprobación de D-029 a D-031). Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
 - Lo abierto está en este plan (mejoras) y en los documentos de "Otros documentos" (usuario, datos, pruebas); cada uno se cuenta en su propio documento.
 
 ## Top 20

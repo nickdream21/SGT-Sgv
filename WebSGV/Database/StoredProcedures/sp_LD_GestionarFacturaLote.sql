@@ -20,7 +20,8 @@
 --   * Despachos de clientes distintos: THROW 50020.
 --   * Un despacho anulado (activo = 0 o ANULADO) no se toca (THROW 50015).
 -- Transacción propia solo si el llamador no trae una; nunca hace
--- ROLLBACK de la del llamador (Editar lote la abre en C#).
+-- ROLLBACK de la del llamador (Editar lote la abre en C#), pero ante un error
+-- (XACT_ABORT ON) esa transacción queda deshecha y el llamador no debe continuarla.
 -- Devuelve idFactura y accion (ENLAZADA / ACTUALIZADA / RENOMBRADA / CREADA).
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_GestionarFacturaLote
@@ -33,6 +34,7 @@ CREATE OR ALTER PROCEDURE sp_LD_GestionarFacturaLote
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     IF @idsDespachos IS NULL OR LEN(@idsDespachos) = 0
         RETURN;

@@ -10,7 +10,9 @@
 --   * valorTotal = precio de las mercancías de la CPIC (casilla 16), o 0.
 -- Devuelve idFactura y accion (CREADA / REUTILIZADA) y cuántos despachos
 -- se unieron. Las búsquedas van dentro de la transacción (2026-11-17); transacción
--- propia solo si el llamador no trae una; nunca hace ROLLBACK de la del llamador.
+-- propia solo si el llamador no trae una; nunca hace ROLLBACK de la del llamador,
+-- pero ante un error (XACT_ABORT ON) esa transacción queda deshecha y el llamador
+-- no debe continuarla.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_RegistrarFacturaTercero
     @idsDespachos   VARCHAR(MAX),
@@ -23,6 +25,7 @@ CREATE OR ALTER PROCEDURE sp_LD_RegistrarFacturaTercero
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     SET @numeroFactura = UPPER(LTRIM(RTRIM(@numeroFactura)));
     IF @numeroFactura IS NULL OR @numeroFactura = '' OR @idsDespachos IS NULL OR LEN(@idsDespachos) = 0 OR @idCliente IS NULL

@@ -28,6 +28,7 @@ CREATE OR ALTER PROCEDURE sp_CompletarDespachoProgramado
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     IF NOT EXISTS (SELECT 1 FROM Despachos WHERE idDespacho = @idDespacho AND activo = 1 AND tipoOperacion = 'CARGA')
     BEGIN
