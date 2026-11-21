@@ -1,0 +1,273 @@
+# Decisiones de negocio de SGV
+
+Este documento es la fuente de las **reglas de negocio acordadas con el usuario** que no se deducen solas del código:
+qué significa "aprobada", qué se bloquea, qué se deja como está y por qué. Antes vivían solo en el historial de
+`docs/PLAN_MEJORAS_SGV.md`; el detalle técnico de cada cambio (pruebas, revisiones, SP) sigue en ese historial y en
+git (`git show <commit>`). Las reglas técnicas y de arquitectura están en `CLAUDE.md`; el flujo y los permisos por rol,
+en `docs/FLUJO_DE_TRABAJO_SGV.md`; los clientes terceros, en `docs/CLIENTES_TERCEROS.md`.
+
+**Cómo agregar una decisión**: una entrada nueva con el siguiente número `DN-xx` en el módulo que corresponda, con
+la regla en pocas líneas, `Desde:` (fecha y commit), `En el código:` (archivo:línea o clave de `Web.config`; "solo
+procedimiento" si no la aplica el código) y `Estado:` (vigente / pendiente de reactivar / aplicada una vez / a confirmar). Si una
+decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la nueva. Nunca datos personales (DNI,
+nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
+
+## Índice
+
+| Id | Decisión |
+|---|---|
+| DN-01 | "Aprobada" = conformidad del conductor firmada |
+| DN-02 | Saldos de conductores como neto por conductor y moneda |
+| DN-03 | Los conductores liquidan en papel hasta que el usuario diga |
+| DN-04 | Reenviar o retirar una liquidación anula la firma anterior |
+| DN-05 | Viaje nacional: sin peajes ni dólares |
+| DN-06 | Sin liquidaciones de prueba y número de orden que nunca se repite |
+| DN-07 | "Dinero y pagos del viaje": apagada, con sus decisiones para reactivarla |
+| DN-08 | Cambiar uno mismo la contraseña cierra las demás sesiones |
+| DN-09 | Recuperar la contraseña por correo quita el cambio obligatorio |
+| DN-10 | Recuperar contraseña sin revelar qué cuentas existen |
+| DN-11 | Un lote se anula, no se elimina (D1) |
+| DN-12 | Un despacho con liquidación no se anula ni cambia fecha, tipo o ámbito (D2) |
+| DN-13 | Factura única por número y cliente; CPIC única por número (D3) |
+| DN-14 | Guía sin coincidencia de tracto ni carreta: elegir el camión a mano (D5) |
+| DN-15 | Finalizar lote es todo o nada, y se bloquea sin PDF o con guía repetida (D6) |
+| DN-16 | Decisiones del bloque 4 aplicadas una sola vez (D4 y D7) |
+| DN-17 | La placa de un vehículo con historial no se cambia |
+| DN-18 | Los viajes del seguimiento nacen de los despachos |
+| DN-19 | Inicio y término de carga estimados desde la salida de planta |
+| DN-20 | Los 15 viajes antiguos que siguen en "Activos" se dejan como están |
+| DN-21 | Un CPI por factura y un MCI por camión (observada, a confirmar) |
+| DN-22 | Vitapro (ida): todo sale de la factura F222 y el packing list (observada, a confirmar) |
+| DN-23 | Cargas y flete por camión de los demás clientes (observada, a confirmar) |
+| DN-24 | En qué columna va el flete (observada, a confirmar) |
+
+---
+
+## 1. Liquidaciones y firmas
+
+### DN-01 — "Aprobada" = conformidad del conductor firmada
+Una liquidación cuenta como aprobada solo cuando el conductor firmó su conformidad (`estadoAprobacion = 'APROBADO'`).
+Una orden POR_CONFORMAR (revisada por el administrador pero sin conformidad) no aparece en Control de aprobadas,
+Contabilidad, Reportes de órdenes ni Saldos de conductores.
+- Desde: 2026-11-16, `9ccb1c8`.
+- En el código: `WebSGV/Services/Liquidaciones/EstadosOrden.cs:16` (`Aprobado = "APROBADO"`, definición única).
+- Estado: vigente.
+
+### DN-02 — Saldos de conductores como neto por conductor y moneda
+Los totales de Saldos de conductores se suman como neto por conductor y por moneda (lo que la empresa le debe menos
+lo que él debe), iguales en pantalla y en Excel, con una fila "Total pendiente". El total suma solo lo pendiente:
+lo ya saldado no se vuelve a cobrar ni pagar.
+- Desde: 2026-11-16, `9ccb1c8`.
+- En el código: `WebSGV/Services/Liquidaciones/SaldosConductorService.cs:264-266` (solo lo pendiente,
+  "Total pendiente") y `:288-291` (`Totales`).
+- Estado: vigente.
+
+### DN-03 — Los conductores liquidan en papel hasta que el usuario diga
+Mientras los conductores no usen el sistema, los viajes de liquidación abiertos se cierran solos en cada corrida del
+GPS automático (estado CERRADO, usuario SISTEMA, motivo "Liquidado en papel…"), sin tocar despachos ni seguimiento.
+Para que los conductores empiecen a liquidar en el sistema se cambia la clave a `true` y se publica.
+- Desde: 2026-11-13, `f2e77ab`.
+- En el código: `WebSGV/Web.config:38` (`Liquidaciones.ConductoresEnSistema` = `false`);
+  `WebSGV/Services/Liquidaciones/CierreViajesSinLiquidacion.cs:21-27`.
+- Estado: vigente (se cambia cuando el usuario presente el sistema a los conductores).
+
+### DN-04 — Reenviar o retirar una liquidación anula la firma anterior
+Si el conductor corrige y reenvía una orden rechazada, la declaración firmada antes (sobre otros montos) se anula y
+debe firmar de nuevo. Lo mismo al retirar una liquidación: primero se anula su firma.
+- Desde: 2026-11-15, `2f81ea9`.
+- En el código: `WebSGV/Database/StoredProcedures/sp_DC_ActualizarOrdenViajeConductor.sql:38` (solo REABIERTO) y
+  `:41-60` (anulación de las firmas vigentes); al retirar,
+  `WebSGV/Database/StoredProcedures/sp_DC_RetirarLiquidacion.sql:93-115` (anula la declaración antes de borrar la
+  orden).
+- Estado: vigente.
+
+### DN-05 — Viaje nacional: sin peajes ni dólares
+En un viaje nacional el servidor pone en cero los peajes y los montos en dólares, solo si la página también mostraba
+nacional. Si el GPS no respondió o la página mostraba internacional, rechaza el envío con un aviso en vez de borrar
+dinero en silencio.
+- Desde: 2026-11-15, `e028677`.
+- En el código: `WebSGV/Services/Conductor/ReglasLiquidacionConductor.cs:79` (`DecidirAmbito`).
+- Estado: vigente.
+
+### DN-06 — Sin liquidaciones de prueba y número de orden que nunca se repite
+Antes de que entren los conductores no debe quedar ninguna liquidación anterior (las de prueba se retiraron con
+`Database/Scripts/retirar_liquidaciones_prueba_2026-11-16.sql`). El correlativo `OV-AAAA-NNNNNN` no reutiliza un
+número ya emitido aunque la orden se haya borrado (considera firmas, movimientos y auditoría).
+- Desde: 2026-11-16, `873947a`.
+- En el código: `WebSGV/Database/StoredProcedures/sp_DC_GenerarNumeroOrden.sql:6-12` y `:39`.
+- Estado: vigente.
+
+### DN-07 — "Dinero y pagos del viaje": apagada, con sus decisiones para reactivarla
+La pantalla para registrar en el momento las entregas de dinero al conductor y los pagos directos a proveedores del
+viaje está apagada (la empresa sabe cuánto entrega y prefiere enfocarse en otras cosas); no se borró nada. Si se
+reactiva, valen las decisiones del 2026-11-11, a confirmar antes con el usuario:
+- sin confirmación "Recibí" del conductor: basta su conformidad final, que lista cada entrega;
+- registran administración y monitoreo;
+- el pago del saldo de la liquidación queda fuera por ahora;
+- sobre sin conductor portador: no se registra quién lleva el sobre; la gerencia sabe cuánto entregó y el conductor
+  lo acepta al firmar.
+- Desde: 2026-11-11, `56c0d81` (decisiones) y `1e3652d` (sobre sin portador); apagada 2026-11-13, `f2e77ab`.
+- En el código: `WebSGV/Web.config:33` (`MovimientosViaje.Habilitado` = `false`);
+  `WebSGV/Services/Liquidaciones/MovimientosViajeService.cs:61-67`.
+- Estado: pendiente de reactivar (tarea abierta "Retomar Dinero y pagos del viaje" del plan). Mientras siga
+  apagada, no aplicar la migración que borra `MovimientoDineroViaje.idConductorPortador` sin volver a probar la
+  pantalla.
+
+## 2. Usuarios y acceso
+
+### DN-08 — Cambiar uno mismo la contraseña cierra las demás sesiones
+Cuando un usuario cambia su propia contraseña, la sesión desde la que la cambió sigue abierta y se cierran todas sus
+otras sesiones (otro navegador, otro celular).
+- Desde: 2026-11-16, `825ae9d`.
+- En el código: `WebSGV/Site.Master.cs:295-307` (nuevo `selloSesion` guardado en la sesión actual).
+- Estado: vigente.
+
+### DN-09 — Recuperar la contraseña por correo quita el cambio obligatorio
+Quien restablece su contraseña con el enlace del correo ya eligió una clave nueva: no se le vuelve a pedir el cambio
+obligatorio, y sus sesiones abiertas se cierran.
+- Desde: 2026-11-16, `825ae9d`.
+- En el código: `WebSGV/Views/RestablecerContrasena.aspx.cs:188-190` (`requiereCambioContrasena = 0`,
+  `selloSesion = NEWID()`).
+- Estado: vigente.
+
+### DN-10 — Recuperar contraseña sin revelar qué cuentas existen
+La pantalla de recuperación responde siempre el mismo mensaje y en el mismo tiempo, exista o no la cuenta y tenga o
+no correo; si no tiene correo, se pide al administrador. Hay límites por cuenta (3 por hora) y por IP (10 en 15 min).
+- Desde: 2026-11-15, `d8a6b4d`.
+- En el código: `WebSGV/Helpers/SolicitudRecuperacion.cs:27` (`MensajeUnico`) y `:31-34` (límites).
+- Estado: vigente.
+
+## 3. Despachos y documentos
+
+Las decisiones D1–D7 del bloque 4 (2026-11-16) quedan en DN-11 a DN-16.
+
+### DN-11 — Un lote se anula, no se elimina (D1)
+La única acción es "Anular lote": los despachos quedan ANULADO y `activo = 0`, y salen de la liquidación del conductor
+y del seguimiento de exportación. El botón "Eliminar" se quitó.
+- Desde: 2026-11-16, `9bc0fec`.
+- En el código: `WebSGV/Database/StoredProcedures/sp_LD_AnularLote.sql:110-113` (ANULADO, `activo = 0`);
+  `WebSGV/Views/ListaDespachos.aspx:843-846`.
+- Estado: vigente.
+
+### DN-12 — Un despacho con liquidación no se anula ni cambia fecha, tipo o ámbito (D2)
+Si el viaje del despacho ya tiene orden de viaje (liquidación del conductor), no se puede anular el lote ni cambiar
+su fecha, tipo de operación o ámbito (el código también bloquea planta y conductor,
+`sp_LD_ActualizarDespachoEnLote.sql:100-104`).
+- Desde: 2026-11-16, `9bc0fec` (anular) y 2026-11-17, `8c0b59b` (editar lote).
+- En el código: `WebSGV/Database/StoredProcedures/sp_LD_AnularLote.sql:107` (THROW 50010);
+  `WebSGV/Database/StoredProcedures/sp_LD_ActualizarDespachoEnLote.sql:89-104` (THROW 50024).
+- Estado: vigente.
+
+### DN-13 — Factura única por número y cliente; CPIC única por número (D3)
+Una factura se identifica por (número, cliente) y una CPIC por su número. La CPIC es una por factura comercial
+(embarque) y cada camión lleva su MCI. Escribir un número que ya existe en un lote significa "estos despachos van con
+ese documento": se enlaza, no se renombra.
+- Desde: 2026-11-17, `56c758c`.
+- En el código: `WebSGV/Database/Schema/49_UnicidadFacturaCpic.sql:6-7` (`UX_CPIC_numeroCPIC`,
+  `UX_Factura_numero_cliente`).
+- Estado: vigente.
+
+### DN-14 — Guía sin coincidencia de tracto ni carreta: elegir el camión a mano (D5)
+En la Bandeja de documentos y en RegistroDespacho, una guía que no coincide con ningún despacho programado por tracto
+ni por carreta nunca se asigna "por descarte": queda "Elija el camión" hasta que el usuario elija o la marque como no
+registrar.
+- Desde: 2026-11-17, `2e413ce`.
+- En el código: Bandeja, `WebSGV/Services/Despachos/BandejaDocumentosService.cs:44` (`MensajePorElegir`) y `:947`;
+  RegistroDespacho, `WebSGV/Services/Despachos/ProgramacionCarga.cs:156-163` (con el Word la única guía sobrante se
+  propone, pero el camión lo elige el usuario).
+- Estado: vigente.
+
+### DN-15 — Finalizar lote es todo o nada, y se bloquea sin PDF o con guía repetida (D6)
+"Finalizar lote" crea factura, CPIC y despachos en una sola transacción: si algo falla no queda nada a medias, y
+reintentar no duplica documentos. Antes de escribir revalida y, por decisión del usuario, se bloquea:
+- si el PDF temporal adjuntado al iniciar el lote ya no está ("Cancele el lote y vuelva a iniciarlo…");
+- si una guía de remitente se repite (mismo cliente + guía + tipo, en la BD o dentro del lote).
+- Desde: 2026-11-17, `c92546c`.
+- En el código: `WebSGV/Services/Despachos/FinalizarLoteService.cs:40` (servicio), `:48-56` (`Revalidar`),
+  `:119-129` (documentos que ya no están), `:136-139` (`GuiasRepetidasEnLote`) y `:166-174` (`GuiasRepetidasEnBd`).
+- Estado: vigente.
+
+### DN-16 — Decisiones del bloque 4 aplicadas una sola vez (D4 y D7)
+D4: `EditarDespacho.aspx` se borró (la edición se hace desde "Editar lote" en ListaDespachos). D7: los despachos de
+prueba `demo-video` 2353–2355 quedaron ANULADO y `activo = 0`.
+- Desde: D4 2026-11-17, `8c0b59b`; D7 2026-11-17 (datos de sgvActualizada).
+- En el código: D4, la página ya no existe en `WebSGV/Views/`; D7, solo procedimiento (datos).
+- Estado: aplicada una vez.
+
+### DN-17 — La placa de un vehículo con historial no se cambia
+Un tracto o semirremolque que ya tiene despachos u otros registros no puede cambiar de placa, salvo de formato (se corrompería el
+historial); las placas son únicas sin importar guiones ("ABC123" = "ABC-123"). Decisión del orquestador por
+delegación del usuario (bloque 5, D2).
+- Desde: 2026-11-17, `c5c4d21` (y `b06752f` para placas únicas).
+- En el código: `WebSGV/Services/Vehiculos/VehiculoService.cs:21-26` y `:212` (cambiar solo el formato siempre se
+  permite).
+- Estado: vigente.
+
+## 4. Seguimiento de exportación
+
+### DN-18 — Los viajes del seguimiento nacen de los despachos
+Cada despacho de carga de exportación crea su viaje en el seguimiento, que se completa con el despacho de descarga en
+Ecuador; el despacho manda en pedido, carreta, tractos y choferes, y un despacho anulado deja el viaje cancelado. Lo
+importado del Excel antiguo ya no sirve para seguir los viajes de ahora: el tablero lo oculta salvo que se marque
+"Incluir los importados del Excel".
+- Desde: 2026-10-20, `a22748b` (migración `32_SeguimientoDesdeDespachos`).
+- En el código: `WebSGV/Database/StoredProcedures/sp_SE_SincronizarDespachos.sql:134-140` (viajes nuevos desde
+  `#carga`) y `:160-163` (despacho de carga anulado → CANCELADO; `:90-93`, lo mismo para terceros);
+  `WebSGV/Views/Exportacion/RegistroSeguimiento.aspx:102`.
+- Estado: vigente.
+
+### DN-19 — Inicio y término de carga estimados desde la salida de planta
+Cuando no hay horas reales de carga: término = salida de planta − 10 min; inicio = término − 12 min; nunca antes del
+ingreso a planta (si la estadía es corta, se reparte en proporción). Se calculan al leer, no se guardan; si alguien
+escribe la hora real, manda la escrita.
+- Desde: 2026-11-13, `f2e77ab` (regla del usuario).
+- En el código: `WebSGV/Services/Exportacion/HitosSeguimiento.cs:69-86` (`CargaEstimada`).
+- Estado: vigente.
+
+### DN-20 — Los 15 viajes antiguos que siguen en "Activos" se dejan como están
+Los 15 viajes de setiembre y octubre que quedaron en "Activos" del seguimiento no se cierran a mano (decisión del
+usuario). El aviso "Falta inicio y término de carga" que se decidió dejar ese mismo día quedó superado al día
+siguiente por DN-19.
+- Desde: 2026-11-12, `03afb60`.
+- En el código: solo procedimiento.
+- Estado: vigente.
+
+## 5. CPI y manifiesto (MCI) de exportación
+
+**Estas no son decisiones del usuario sino reglas observadas**: se sacaron el 2026-10-23 de 51 CPI y 288 MCI hechos
+a mano por la administradora de transporte, para cuando el sistema los genere (tarea abierta "Generar el CPI y el
+manifiesto (MCI)" del plan). Varias siguen preguntadas en la tarea abierta "CPI: respuestas de la administradora":
+hay que confirmarlas con ella antes de programarlas. Hoy se arman a mano en Excel y el sistema solo guarda el escaneo.
+
+### DN-21 — Un CPI por factura y un MCI por camión (observada)
+Un CPI por factura y un MCI por camión; el CPI suma los sacos y pesos de sus MCI. Los correlativos son los propios de
+la administradora de transporte. Si hay varias versiones del archivo vale la última modificada. El BORRADOR se hace
+al llegar la factura, sin el día; el día se pone cuando salen los camiones.
+- Desde: 2026-10-23, `991d44b`.
+- En el código: solo procedimiento (generación pendiente).
+- Estado: a confirmar con la administradora (tarea abierta "CPI: respuestas de la administradora").
+
+### DN-22 — Vitapro (ida): todo sale de la factura F222 y el packing list (observada)
+Casilla 16 = total CPT; flete = TOT. CARGO; peso bruto = total del packing list. Flete por camión:
+1188 bolsas × 1,55 = 1841,40, repartido en tramos de 0,725 / 0,25 / 0,575 por bolsa.
+- Desde: 2026-10-23, `991d44b`.
+- En el código: solo procedimiento.
+- Estado: a confirmar con la administradora (tarea abierta "CPI: respuestas de la administradora").
+
+### DN-23 — Cargas y flete por camión de los demás clientes (observada)
+- Cartavio: 620 bolsas de 50 kg por camión (+0,2 kg de tara); flete 2540 por camión (¿subió a 2600?) + 50 de otros gastos
+  por CPI.
+- Novopan (Quito → Piura/Trujillo, CPT Tumbes): 14 pallets y 715 por camión; volumen en m3 y anexo de productos.
+- Inbalnor → Vitapro: 1300 sacos de 25 kg (+0,1 kg por saco en el bruto); 1700 por camión.
+- Tadel / Productos Pesqueros (harina de Manta → Vitapro): 2000 sacos; 7200.
+- Desde: 2026-10-23, `991d44b`.
+- En el código: solo procedimiento.
+- Estado: a confirmar con la administradora (tarea abierta "CPI: respuestas de la administradora").
+
+### DN-24 — En qué columna va el flete (observada)
+El flete va en la columna del remitente (Vitapro ida, Cartavio, Novopan) o en la del destinatario (los que traen
+carga a Vitapro); cómo lo decide ella sigue preguntado. Errores de la copia a mano que la generación debe evitar: año equivocado en el CPI o el MCI, tramos
+que no suman el flete, peso bruto mal escrito y nombres de producto mal copiados.
+- Desde: 2026-10-23, `991d44b`.
+- En el código: solo procedimiento.
+- Estado: a confirmar con la administradora (tarea abierta "CPI: respuestas de la administradora").

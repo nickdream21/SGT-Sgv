@@ -4,6 +4,8 @@
 
 **SGV (Sistema de Gestión de Viajes)** es una aplicación web ASP.NET Web Forms (.NET Framework 4.8) orientada a la gestión de transporte de carga. Administra el ciclo completo desde la programación de despachos, seguimiento de viajes, liquidación de gastos firmada digitalmente por conductores, hasta la aprobación administrativa con ajustes auditados.
 
+Las reglas de negocio acordadas con el usuario (qué es "aprobada", qué se bloquea, reglas de CPI/MCI…) están en `docs/DECISIONES_NEGOCIO.md`.
+
 ---
 
 ## 👥 Roles del Sistema

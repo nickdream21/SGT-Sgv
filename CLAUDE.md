@@ -166,6 +166,7 @@ Functional/process documentation (Spanish) in `docs/`:
 
 - `docs/PLAN_MEJORAS_SGV.md` — **current improvement plan**: status, pending tasks, home-machine setup and the ordered production checklist. Read it first when resuming work.
 - `docs/FLUJO_DE_TRABAJO_SGV.md` — end-to-end business flow and role permission matrix.
+- `docs/DECISIONES_NEGOCIO.md` — business rules agreed with the user (`DN-xx`, with date/commit and where the code applies them); add new ones there.
 - `docs/GUIA_CREACION_ROLES.md` — step-by-step guide for adding a new role.
 
 ## Keeping the plan up to date (mandatory)

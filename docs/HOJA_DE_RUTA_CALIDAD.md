@@ -16,13 +16,13 @@ siguen en `docs/PLAN_MEJORAS_SGV.md`.
 
 ## Estado
 
-**Etapa actual: 2 — fase EJECUCIÓN, empieza por E2-1** (plan detallado escrito el 2026-11-21). De la Etapa 1 quedan acciones del usuario: rotaciones de credenciales y los PDF de la laptop. La ejecución la hace Opus 5.5.
+**Etapa actual: 2 — fase EJECUCIÓN, sigue E2-2** (plan detallado escrito el 2026-11-21). De la Etapa 1 quedan acciones del usuario: rotaciones de credenciales y los PDF de la laptop. La ejecución la hace Opus 5.5.
 Reparto de modelos: Fable 5.2 analiza y planifica; Opus 5.5 ejecuta.
 
 | # | Etapa | Nota hoy | Meta | Estado |
 |---|---|---|---|---|
 | 1 | Operación y continuidad | 4 | 7 | **Cerrada 2026-11-20 — nota medida: 7** (monitores UptimeRobot y cron del GPS activos desde 2026-11-21; quedan las rotaciones de credenciales del usuario) |
-| 2 | Ordenar el plan de mejoras | 3 | 7 | **En ejecución (0 de 7)** |
+| 2 | Ordenar el plan de mejoras | 3 | 7 | **En ejecución (1 de 7)** |
 | 3 | Integridad de la base de datos | 6,6 | 8 | Pendiente |
 | 4 | Seguridad avanzada | 7,5 | 9 | Pendiente |
 | 5 | Interfaz y usabilidad | 6,5 | 8 | Pendiente |
@@ -140,7 +140,7 @@ contradice lo actual (publicar desde Visual Studio, DAB, `DeleteExistingFiles`).
 
 | Tarea | Qué | Aceptación | Estado |
 |---|---|---|---|
-| **E2-1** | **Rescatar antes de archivar.** `docs/DECISIONES_NEGOCIO.md` con las 6 decisiones que solo están en el historial (plan L109, L113, L127, L333, L1071, L1076) y las reglas de CPI/MCI del ítem L720 (L726–738). | Cada decisión cita el commit o la fecha y el código que la aplica; sin datos personales. | Pendiente |
+| **E2-1** | **Rescatar antes de archivar.** `docs/DECISIONES_NEGOCIO.md` con las 6 decisiones que solo están en el historial (plan L109, L113, L127, L333, L1071, L1076) y las reglas de CPI/MCI del ítem L720 (L726–738). | Cada decisión cita el commit o la fecha y el código que la aplica; sin datos personales. | **Hecho** 2026-11-21 |
 | **E2-2** | **Operación.** (a) README de publicar: "Antes y después de publicar" (orden migración → SP → DLL, y SP compatible con la DLL publicada; claves que necesita el archivo de secretos del servidor; carpetas con permiso de escritura; comprobaciones). (b) `WebSGV/appSettings.Secrets.config.example` con los nombres de las claves, sin valores (`<None>` en el csproj). (c) `docs/PASO_A_PRODUCCION.md` destilado de la sección 6 (pasos 1–5, 7 y 8; controles antes de las migraciones 30, 49, 50 y 51; scripts de borrado y de recálculo). (d) `docs/PREPARAR_MAQUINA.md`. (e) `docs/OPERACION.md:38` corregido (el sitio usa `sgvActualizada`). | Nada vigente de las secciones 2, 5 y 6 queda solo en el plan; ningún paso contradice a `publicar.ps1`; `probar-publicar.ps1` y la suite en verde. | Pendiente |
 | **E2-3** | **Archivar el historial.** Sección 3, "Hechas" y las `[x]` mezcladas pasan a `docs/archivo/HISTORIAL_2026.md`; los pendientes escondidos en ítems `[x]` (L268, L297, L347, L443) y los 6 puntos del ítem L253 salen como tareas propias; los datos personales se enmascaran. | El archivo conserva todas las filas con su commit; el plan ya no tiene sección 3 ni "Hechas"; 0 documentos de identidad en `docs/`. | Pendiente |
 | **E2-4** | **Partir y limpiar las abiertas** según las tablas de clasificación: cerrar 21 hechas y 6 obsoletas con su evidencia, unir 23 duplicadas, repartir el resto en los documentos de arriba con id, prioridad y texto corto; "ver sección 3" se cambia por el commit. **Top 20** al principio del plan. | **Tabla de conciliación** en `privado/etapa2/conciliacion.md`: cada una de las 270 líneas → id nuevo o "cerrada: motivo"; ninguna sin destino. Las marcadas "sin verificar" se comprueban antes de cerrarlas. | Pendiente |
@@ -227,3 +227,4 @@ commit de E2-4).
 | 2026-11-20 | 1 | E1-5 hecha: publicado `60853e8` con `publicar.ps1` (254 subidos, 261 sobrantes borrados con respaldo previo). **Etapa 1 cerrada.** Nota de operación 4 → 6,5: respaldo diario BD + archivos verificado y restauración ensayada, publicación con paquete y vuelta atrás, Salud.ashx, aviso por correo de errores; falta (usuario) monitores UptimeRobot, cron del GPS y rotaciones para llegar a 7. |
 | 2026-11-21 | 1 | Cron de cron-job.org "SGV GPS automático" reactivado (prueba 202, cada 10 min) y 2 monitores de UptimeRobot (palabra clave `"ok":true` cada 5 min, aviso por correo): "SGV - Sitio y BD" (`Salud.ashx`) y "SGV - GPS y Onway" (`?gps=1`), ambos Up. Nota de operación: **7**. |
 | 2026-11-21 | 2 | Plan detallado: 270 abiertas clasificadas una por una (98 mejoras, 73 del usuario, 26 de datos, 23 de operación, 23 duplicadas, 21 hechas, 6 obsoletas) y auditoría de documentos; tareas E2-1 a E2-7. |
+| 2026-11-21 | 2 | E2-1 hecha: `docs/DECISIONES_NEGOCIO.md` con 24 decisiones (DN-01 a DN-24) rescatadas del historial del plan, cada una con fecha/commit y dónde la aplica el código; sin datos personales. |
