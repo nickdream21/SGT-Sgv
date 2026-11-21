@@ -86,7 +86,7 @@ WHERE idDespachoOrigen IS NULL AND idDespachoDestino IS NULL AND estado = 'COMPL
 .\WebSGV\Database\aplicar-migraciones.ps1 -Entorno produccion -ConfirmoProduccion
 ```
 
-Aplica en orden todas las pendientes de `Database/Schema/` (hoy 01–55) y las registra en `dbo.SchemaVersion`. Si una se detiene, corregir el dato que dice el mensaje y repetir (son idempotentes). Algunas que conviene conocer: la **26 borra `Despachos.idProducto`**; la 16 pone la hora de Perú (`dbo.fn_AhoraPeru()`); la 46 agrega `Usuarios.selloSesion` (al pasar, todas las sesiones se cierran una vez); la 47 protege `AuditoriaLog` y `Auditoria` contra UPDATE/DELETE.
+Aplica en orden todas las pendientes de `Database/Schema/` (hoy 01–56) y las registra en `dbo.SchemaVersion`. Si una se detiene, corregir el dato que dice el mensaje y repetir (son idempotentes). Algunas que conviene conocer: la **26 borra `Despachos.idProducto`**; la 16 pone la hora de Perú (`dbo.fn_AhoraPeru()`); la 46 agrega `Usuarios.selloSesion` (al pasar, todas las sesiones se cierran una vez); la 47 protege `AuditoriaLog` y `Auditoria` contra UPDATE/DELETE.
 
 **Migración 52** (`52_TriggersAuditoriaHeredados.sql`, E3-1): crea los 11 triggers `TR_<tabla>_Auditoria` heredados (llenan `Auditoria`; `sp_DC_GenerarNumeroOrden` la lee) solo si faltan; donde ya existen no hace nada y solo queda registrada. Ensayada antes con `herramientas/respaldo/ensayar-migracion.ps1`. Control después (solo SELECT): `SELECT name, is_disabled FROM sys.triggers WHERE name LIKE 'TR[_]%[_]Auditoria'` → los 11 de la migración (más `TR_AbastecimientoCombustible_Auditoria` si existe, que se borra en E3-8) con `is_disabled = 0`. Si `aplicar-migraciones.ps1 -SoloListar` avisa de un hash distinto en `16_HoraPeru.sql`, comparar `dbo.fn_AhoraPeru` con el archivo antes de aceptarlo en `$HashesAceptados` (el de pruebas ya está aceptado, revisado el 2026-11-21).
 
@@ -132,6 +132,8 @@ UNION ALL SELECT 'OVA.idUsuarioAdmin', COUNT(*) FROM OrdenViajeAjuste a WHERE id
 ```
 
 Lo que salga se anota como `D-` nuevo y se corrige (con aprobación del usuario) antes de aplicar. Los montos de liquidación no se miden aquí (en `sgvTransporte` deberían estar vacíos o en cero; si no, la 54 lo dice con el conteo). La 55 busca las FK repetidas por estructura, no por nombre (en `sgvTransporte` tendrán otros nombres generados). Control después: `SELECT name FROM sys.check_constraints WHERE is_not_trusted = 1 OR is_disabled = 1` y lo mismo en `sys.foreign_keys` → 0 filas; la lista exacta está en `WebSGV.Tests/Integracion/IntegridadBdTests.cs`. En el ensayo la 54 tardó 180 ms y la 55, 193 ms.
+
+**Migración 56** (`56_QueryStoreAcotado.sql`, E3-7): Query Store de la BD actual con tope de 100 MB, captura y limpieza por tamaño `AUTO` y `READ_WRITE` (`sgvTransporte` tiene hoy 2000 MB de tope). Es un `ALTER DATABASE` (no va en transacción; `aplicar-migraciones.ps1` no la envuelve) y necesita permiso ALTER sobre la BD: si falta, se detiene con THROW 56001 y hay que hacerlo desde el panel de somee. Control antes y después: `SELECT actual_state_desc, readonly_reason, max_storage_size_mb, current_storage_size_mb, query_capture_mode_desc, size_based_cleanup_mode_desc FROM sys.database_query_store_options` → después `READ_WRITE`, 100, `AUTO`, `AUTO` (si lo usado pasa de 90 MB, la limpieza lo baja al 80 % en las horas siguientes).
 
 ## 5. Procedimientos almacenados
 

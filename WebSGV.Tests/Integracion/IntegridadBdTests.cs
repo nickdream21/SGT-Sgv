@@ -248,6 +248,22 @@ namespace WebSGV.Tests.Integracion
         }
 
         [FactBD]
+        public void QueryStore_tiene_tope_de_100_MB_y_esta_en_READ_WRITE()
+        {
+            // Migración 56 (E3-7, M-053): con 1000 MB de tope podía comerse los 500 MB de datos del plan de somee.
+            DataTable t = DbHelper.ConsultarTabla(@"
+                SELECT actual_state_desc, desired_state_desc, max_storage_size_mb, query_capture_mode_desc, size_based_cleanup_mode_desc
+                FROM sys.database_query_store_options");
+            Assert.Equal(1, t.Rows.Count);
+            DataRow r = t.Rows[0];
+            Assert.Equal(100L, Convert.ToInt64(r["max_storage_size_mb"]));
+            Assert.Equal("READ_WRITE", Convert.ToString(r["desired_state_desc"]));
+            Assert.Equal("READ_WRITE", Convert.ToString(r["actual_state_desc"]));
+            Assert.Equal("AUTO", Convert.ToString(r["query_capture_mode_desc"]));
+            Assert.Equal("AUTO", Convert.ToString(r["size_based_cleanup_mode_desc"]));
+        }
+
+        [FactBD]
         public void NingunaFkNiCheck_EstaSinValidarODeshabilitada()
         {
             var mal = Nombres(@"SELECT 'FK ' + name FROM sys.foreign_keys WHERE is_not_trusted = 1 OR is_disabled = 1
