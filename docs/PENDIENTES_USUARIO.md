@@ -4,7 +4,7 @@ Lo que **solo puede hacer el usuario** (o la oficina, a pedido suyo): decisiones
 
 Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = valor claro; C = menor. Las mejoras de código están en `docs/PLAN_MEJORAS_SGV.md` (`M-`), los datos por corregir en `docs/DATOS_POR_CORREGIR.md` (`D-`) y las pruebas en `docs/PRUEBAS_PENDIENTES.md` (`P-`).
 
-Último id usado: U-072 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: U-074 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Credenciales y paneles externos
 
@@ -17,6 +17,8 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-008** PDF firmados que solo están en la laptop — la verificación diaria del respaldo da FALLA hasta subirlos: 31 faltantes, todos de firmas anuladas de prueba (firmas 380–385, 392–395, 680–682, 686 y la copia de la 684 de `OV-2026-000003_REVISION.pdf`). Copiarlos al respaldo o aceptar que `verificar-pdf-firmados.ps1` los marque. · C
 - [ ] **U-009** Conectar Claude in Chrome en la PC de casa — en la oficina ya está (Edge). Pasos en `herramientas/sitio-local/README.md`. · C
 - [ ] **U-010** somee: factura del plan Premium — en noviembre había una factura pendiente del plan Premium de 6 meses (US$ 51,90); si no se paga, se cae el sitio. Confirmar que está pagada. · B
+
+- [ ] **U-073** Panel de somee: ¿permite un segundo usuario de BD con permisos limitados? — hoy la aplicación entra como `db_owner` y desde SQL no se pueden crear logins; con un usuario limitado nadie podría saltarse la protección de firmas y auditoría. · B
 
 ## Decisiones de negocio
 
@@ -68,6 +70,8 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-056** Reporte de cargas: más pestañas — solo si se piden: "Facturas" (una fila por factura), "Documentación" (pendientes con antigüedad) y detalle por producto/cliente. · C
 - [ ] **U-057** Interfaz de documentos: filtro y columnas — ¿"Con documentos pendientes" como filtro por defecto en Lotes registrados?, ¿compactar las 13 columnas (Operación, Ámbito, Planta, Creado)?, ¿anotar el número de pedido también desde "Documentos"? · C
 - [ ] **U-058** Dashboards e indicadores — el usuario tiene temas que comentar antes (al final). · C
+
+- [ ] **U-074** Autorizar el borrado de objetos retirados de la BD del sitio (E3-8) — unas 35 tablas de Grifo, Maquinaria y del modelo viejo (88 filas de maestros, ninguna de negocio actual), 19 SP, 5 vistas y 1 función; con respaldo nuevo y ensayo previo en una copia local. `Indicadores` y `CargarExcel` quedan fuera. Lista en `docs/HOJA_DE_RUTA_CALIDAD.md`, Etapa 3. · B
 
 ## Datos o documentos por conseguir
 

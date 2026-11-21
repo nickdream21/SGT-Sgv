@@ -2,16 +2,16 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `0b46c1d` — E2-7: Etapa 2 cerrada con nota 7 (medición en `docs/HOJA_DE_RUTA_CALIDAD.md`). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-21**, commit anterior `4e88487` — plan detallado de la Etapa 3 (tareas E3-1 a E3-9 en `docs/HOJA_DE_RUTA_CALIDAD.md`). No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-100 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-101 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
 - El sitio publicado (`https://sgvtransporte.somee.com`, publicación `20261120_1311_60853e8`) usa la BD de **pruebas** `sgvActualizada`, que tiene **datos reales** desde el 2026-10-19: no se borra ni limpia nada allí sin confirmar.
 - Producción (`sgvTransporte`) no está al día: el paso a producción es `docs/PASO_A_PRODUCCION.md`, en orden, tras la decisión U-011.
 - Etapa 1 (operación) cerrada: respaldo diario de la BD y de los archivos en Google Drive, restauración ensayada, publicación con vuelta atrás (`herramientas/publicar/publicar.ps1`), monitores de UptimeRobot y cron del GPS activos.
-- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **sigue la Etapa 3** (integridad de la BD), primero su plan. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
+- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 en curso** (integridad de la BD): plan detallado en la hoja de ruta, sigue E3-1. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
 - Lo abierto está en este plan (mejoras) y en los documentos de "Otros documentos" (usuario, datos, pruebas); cada uno se cuenta en su propio documento.
 
 ## Top 20
@@ -139,6 +139,8 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 - [ ] **M-058** Restos tras retirar Maquinaria — `Database/Scripts/script_CrearTablasMaquinaria.sql` (en el csproj) y la columna `Usuarios.idOperador` con su FK (ningún código la lee). Decidir junto con las tablas de maquinaria (1 fila de maestros cada una). · C
 - [ ] **M-059** FacturasFlete: PDF anterior huérfano al corregir — al corregir una factura (ACTUALIZADA) el PDF anterior queda en `Uploads/FacturasFlete` sin fila que lo apunte; limpieza de huérfanos. · C
 - [ ] **M-060** Tabla `PuntoControlGps` de exportación casi sin uso — "Verificar GPS" ya no usa sus 20 puntos, pero `HoraLlegadaGpsService.cs:52` usa el punto `BASE`: no borrar la tabla entera. · C
+
+- [ ] **M-101** `verificar-pdf-firmados` da 31 faltantes falsos — son las firmas de las órdenes de prueba retiradas el 2026-11-16; por eso la tarea "SGV - Respaldo diario" termina con resultado 2 y la alarma pierde valor. Excluir las firmas anuladas de órdenes retiradas (`herramientas/respaldo/verificar-pdf-firmados.ps1`). · B
 
 ### Etapa 4 — Seguridad
 

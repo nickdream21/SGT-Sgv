@@ -16,14 +16,14 @@ retomar el trabajo**: dice en qué etapa estamos y qué sigue. El detalle de cad
 
 ## Estado
 
-**Etapa actual: 3 — fase PLAN, sin empezar** (la Etapa 2 se cerró el 2026-11-21 con nota 7; el plan de la Etapa 3 lo hace Fable 5.2). De la Etapa 1 quedan acciones del usuario: rotaciones de credenciales y los PDF de la laptop. La ejecución la hace Opus 5.5.
+**Etapa actual: 3 — fase EJECUCIÓN, sigue E3-1** (plan detallado escrito el 2026-11-21 con Fable 5.2; la Etapa 2 se cerró ese día con nota 7). De la Etapa 1 quedan acciones del usuario: rotaciones de credenciales y los PDF de la laptop. La ejecución la hace Opus 5.5.
 Reparto de modelos: Fable 5.2 analiza y planifica; Opus 5.5 ejecuta.
 
 | # | Etapa | Nota hoy | Meta | Estado |
 |---|---|---|---|---|
 | 1 | Operación y continuidad | 4 | 7 | **Cerrada 2026-11-20 — nota medida: 7** (monitores UptimeRobot y cron del GPS activos desde 2026-11-21; quedan las rotaciones de credenciales del usuario) |
 | 2 | Ordenar el plan de mejoras | 3 | 7 | **Cerrada 2026-11-21 — nota medida: 7** (plan de 211 líneas y 33 KB, Top 20, pendientes repartidos con id; `CodigoFuenteLimpiezaTests` lo sostiene) |
-| 3 | Integridad de la base de datos | 6,6 | 8 | Pendiente |
+| 3 | Integridad de la base de datos | 6,6 | 8 | **Plan detallado 2026-11-21; en ejecución (0 de 9)** |
 | 4 | Seguridad avanzada | 7,5 | 9 | Pendiente |
 | 5 | Interfaz y usabilidad | 6,5 | 8 | Pendiente |
 | 6 | Arquitectura y medición | 5,5 | 7,5 | Pendiente |
@@ -178,11 +178,78 @@ commit de E2-4).
 
 ### Etapa 3 — Integridad de la base de datos (6,6 → 8)
 
-- Restricciones CHECK en estados (`COMPLETADO`/`FINALIZADO` conviven) y `Usuarios.rol`.
-- Llaves foráneas que faltan (17 columnas `id*`), PK en `CPIC_Productos`.
-- Borrar los 17 SP sin archivo en el repo y las tablas de módulos retirados (con respaldo previo).
-- Usuario de BD con mínimo privilegio, si somee lo permite; Query Store acotado.
-- TRY/CATCH y `XACT_ABORT` en los SP con transacción; índices duplicados y FK sin índice.
+**Plan detallado (2026-11-21).** Medido con SELECT sobre `sys.*` en `sgvActualizada` (la BD del sitio):
+82 tablas, 115 SP, 5 vistas, 3 funciones, 18 triggers, 10 CHECK y 126 FK; migraciones 51 de 51 y 98 SP
+iguales al repo. Ninguna FK ni CHECK sin validar. `OrdenViaje` y las tablas de liquidación están vacías:
+es el mejor momento para endurecerlas, antes de que entren los conductores (U-012).
+
+Lo que se encontró:
+- **Estados sin CHECK** (solo hay 10 CHECK). `SeguimientoExportacion.estado` tiene 5 992 `COMPLETADO`
+  que el código no reconoce como cerrados (solo `FINALIZADO` y `CANCELADO`): hoy cuentan como abiertos
+  (causa de M-023); los escribe `ImportarSeguimiento.aspx.cs:762-780`. `sp_RechazarLiquidacion.sql:95`
+  escribe `'EN_PROCESO'`, que ningún otro código conoce. 19 despachos (272–290) están `PROGRAMADO` con
+  `activo=0`. `OrdenViaje.estadoAprobacion` tiene DEFAULT `'APROBADO'` y admite NULL (M-050). 3 usuarios
+  activos con roles retirados (U-015). `FirmaDigital.etapa` tiene 20 NULL históricos (append-only).
+- **Llaves**: 10 FK que faltan (5 huérfanos: `SeguimientoExportacion.idUsuarioModificacion = 1`, usuario
+  que no existe); 14 FK duplicadas (tablas vacías); 3 índices repetidos en `Despachos`; única tabla sin PK:
+  `CPIC_Productos` (vacía); cascadas en `DocumentosCPIC` y `DocumentosFactura` que dejarían PDF huérfanos.
+- **Sobrantes**: 17 SP en la BD sin archivo (M-048, M-049), 2 SP sin uso (M-054, M-055), 5 vistas y 1
+  función sin uso, unas 35 tablas de Grifo, Maquinaria y del modelo viejo (88 filas, ninguna de negocio
+  actual) y 14 triggers `TR_*_Auditoria` vivos sin archivo en el repo. `Indicadores` y `UploadHistory`
+  no se tocan (`CargarExcel` sin decidir).
+- **Transacciones**: 18 de los 24 SP con transacción tienen TRY/CATCH pero no `SET XACT_ABORT ON` (un
+  corte por tiempo de espera deja la transacción abierta en el pool). `sp_DC_RegistrarFirmaAdmin.sql:87-92`
+  devuelve `ERROR_MESSAGE()` al usuario; `sp_DC_CerrarViajesProgreso.sql:112-115` relanza con `RAISERROR`.
+- **Correlativo de viaje (M-051)**: `COUNT+1` con `CAST(... AS VARCHAR(3))`: desde el viaje 1000 del año
+  sale `VP-AAAA-00*`, choca con el índice único y **el despacho no se crea**; igual si se borra un viaje
+  o dos se crean a la vez. Hoy va por el 081.
+- **Privilegios**: la app entra como `db_owner` y somee no deja crear logins desde SQL (U-073). Query
+  Store: 89 MB usados, tope 1 000 MB, con un plan de 500 MB (M-053).
+- **Herramientas**: nada ensaya una migración antes de la BD viva; `aplicar-procedimientos.ps1` no hace
+  ejecución de humo (M-052). En la PC de oficina hay SQL Server Express, LocalDB y `sqlpackage`, y
+  `ensayar-restauracion.ps1` ya importa un `.bacpac`.
+
+| Tarea | Qué | Aceptación | Estado |
+|---|---|---|---|
+| **E3-1** | **Herramientas y pruebas** (no toca datos). `-Entorno ensayo` (solo servidor local) en `sql.ps1`, `aplicar-migraciones.ps1` y `aplicar-procedimientos.ps1`; `herramientas/respaldo/ensayar-migracion.ps1` (respaldo → BD `sgvEnsayo_*` local → migraciones y SP pendientes → `[FactBD]` → controles → borra); `BaseDePruebas.cs` acepta `sgvEnsayo_*` en servidor local; M-052: humo con `dm_exec_describe_first_result_set_for_object` y lista de 4 permitidos; migración **52** con los 14 triggers heredados; hash de `16_HoraPeru.sql` reconocido; `IntegridadBdTests.cs` (PK, objetos con archivo o en lista de retiro, triggers de `FirmaDigital`, FK y CHECK validados). | Ensayo OK sobre el `.bacpac` del día; `-SoloListar` sin avisos; suite en verde. Cierra M-052. | Pendiente |
+| **E3-2** | **Bugs de estado.** `sp_RechazarLiquidacion.sql:95` → `PROGRAMADO`; `sp_DC_RegistrarFirmaAdmin` y `sp_DC_CerrarViajesProgreso` → `THROW`; `ImportarSeguimiento.DerivarEstado`: COMPLETADO → FINALIZADO, PENDIENTE → EN_CURSO; pruebas. | 0 `EN_PROCESO` en los SP; pruebas nuevas en verde; `probador`: rechazar una liquidación e importar STATUS. | Pendiente |
+| **E3-3** | **Correlativo de viaje.** Migración **53**: tabla `Correlativo(serie, anio, ultimo)` y `sp_SiguienteCorrelativo` (`UPDLOCK, HOLDLOCK`, sin tope de cifras); lo usan `sp_CrearDespacho`, `sp_CrearViajeProgreso` y `sp_LD_ReubicarDespachoEnViajeDelConductor`. | Pruebas: no se repite tras borrar un viaje; el 1000 sale `VP-AAAA-1000`; `probador`: crear y programar un despacho. Cierra M-051. | Pendiente |
+| **E3-4** | **`XACT_ABORT`.** `SET XACT_ABORT ON` en los 18 SP; prueba de CI: todo `.sql` con `BEGIN TRAN` lo tiene y todo `CATCH` relanza. | Prueba de CI y `[FactBD]` de lotes y flujo en verde. | Pendiente |
+| **E3-5** | **Corregir datos** (D-029, D-030, D-031), con respaldo previo y **aprobación del usuario**: script con controles que se detiene si los conteos no coinciden. | Las consultas de control dan 0; `probador`: tablero de seguimiento. | Pendiente |
+| **E3-6** | **Restricciones.** Migración **54**: CHECK de estados, tipos, etapa y rol (rol tras U-015; si no, se pospone solo ese), regla ANULADO ⇔ `activo=0`, `estadoAprobacion` NOT NULL con DEFAULT `PENDIENTE`, NOT NULL que faltan, montos `>= 0`. Migración **55**: las 10 FK, cascadas de documentos a NO ACTION, fuera las 14 FK y los 3 índices repetidos, índices de apoyo. | `is_not_trusted = 0`; lista exacta en `IntegridadBdTests`; ensayo OK; `probador`: usuarios, anular lote, liquidar. Cierra M-050. | Pendiente |
+| **E3-7** | **Query Store.** Migración **56**: `MAX_STORAGE_SIZE_MB = 100`. | Valor comprobado por prueba. Cierra M-053. | Pendiente |
+| **E3-8** | **Borrado** (al final, con respaldo nuevo, ensayo y **orden del usuario**: U-074). Migración **57**: DROP de 19 SP, 5 vistas y 1 función. Migración **58**: DROP de las ~35 tablas retiradas, `Usuarios.idOperador`, `OrdenViaje.tipoViaje`; `observaciones` a `nvarchar(max)`. Código: `VehiculoService.cs:72-98`, `FirmaService.RevocarFirma`, scripts de grifo y maquinaria. | 0 objetos en la BD sin archivo; suite y `probar-publicar.ps1` en verde; `probador`: tractos, carretas y firmas. Cierra M-048, M-049, M-054, M-055, M-057 y M-058. | Pendiente |
+| **E3-9** | **Cierre.** Medir la nota; hoja, plan y `docs/PASO_A_PRODUCCION.md` (pasos de las migraciones 52 a 58 con sus controles). | Ver "Cómo se mide". | Pendiente |
+
+Orden: el de la tabla (primero lo que no toca datos; lo destructivo al final). Cada migración es
+idempotente, se detiene con `THROW` si encuentra datos que violen la regla y pasa antes por
+`ensayar-migracion.ps1`. Cada tarea: `desarrollador` → `revisor` (y `probador` donde se indica) → commit.
+
+**Cómo se mide el 8:** 0 SP, vistas, funciones y triggers en la BD sin archivo; `aplicar-procedimientos
+-SoloListar` con 0 distintos y 0 errores de humo fuera de los 4 permitidos; los CHECK y las 10 FK
+existen, validados, con 0 valores fuera de dominio, 0 huérfanos, 0 FK o índices repetidos y 0 tablas
+sin PK; 0 SP con transacción sin `XACT_ABORT ON`; `estadoAprobacion` sin DEFAULT `APROBADO`; el viaje
+1000 se crea; Query Store a 100 MB; cada migración ensayada y con su paso en `PASO_A_PRODUCCION.md`.
+No pasa de 8 porque la app sigue como `db_owner` (los triggers append-only se pueden saltar), no hay
+respaldo a un punto en el tiempo (solo el `.bacpac` diario), `Indicadores`/`CargarExcel` siguen sin
+decidir y `sgvTransporte` no tendrá estas reglas hasta el paso a producción (U-011).
+
+**Decisiones tomadas por Claude:** sin FK en `AuditoriaLog.IdUsuario`, `Auditoria.IdRegistro` ni
+`FirmaDigital.idDocumento` (auditoría polimórfica; las firmas sobreviven al retiro de la orden, DN-04 y
+DN-06); el CHECK de `FirmaDigital.etapa` acepta NULL; sin CHECK en `tipoRuta` (crece con cada tercero);
+no se pasa a `nvarchar`; `SYSUTCDATETIME` en las firmas se queda; el correlativo va en tabla y no en
+`SEQUENCE`; los 14 triggers heredados se versionan, no se borran.
+
+**Decisiones del usuario** (no frenan E3-1 a E3-4): aprobar las correcciones D-029 a D-031 sobre la BD
+del sitio (E3-5); U-015 (desactivar los 3 usuarios de roles retirados); U-074 (autorizar el borrado de
+E3-8); aplicar las migraciones 54, 55, 57 y 58 fuera del horario de uso.
+
+Fuera de la etapa: usuario de mínimo privilegio (depende del panel de somee: U-073), M-056 (espera a
+U-040), M-059 y M-060.
+
+Riesgos: la BD de pruebas es la del sitio (por eso el ensayo local primero y respaldo antes de E3-5,
+E3-6 y E3-8); un CHECK nuevo hace fallar un INSERT que antes pasaba (por eso E3-2 va antes y el
+`probador` recorre los flujos); el borrado solo se revierte desde el `.bacpac`.
 
 ### Etapa 4 — Seguridad avanzada (7,5 → 9)
 
@@ -230,3 +297,4 @@ commit de E2-4).
 | 2026-11-21 | 2 | E2-5 hecha: borrados de la raíz `ANALISIS_PROYECTO.md`, `configuraciondenuevosagentes.md`, `flujoactual.md`, `formulasDash` (mismo SHA-256 que `WebSGV/dashboard/formulasDash`, que se queda), `mcp-cursor-executed.txt`, `paNedd.txt` y `opencode.jsonc`, y `.opencode/` entero (23 archivos); movidos a `docs/archivo/` `Documentacion_Tecnica_PBI_SGV_MARZO2025.md`, `PLAN_REFACTOR_SERVICES.md`, `PLAN_MEJORAS_INTERNAS.md`, `PLAN_MODERNIZACION.md` y `docs/migracion_somee/` (foto del esquema de 2026-05; `.gitignore` y `PASO_A_PRODUCCION.md` apuntan a la ruta nueva); `STACK_Y_FLUJO_SGV.md` fusionado en `FLUJO_DE_TRABAJO_SGV.md` (solo lo vigente: servidor, seguridad, datos de la empresa) y borrado; `README.md` reescrito (stack real e índice de `docs/` y `herramientas/`); `AGENTS.md` reducido a remitir a `CLAUDE.md`; ejemplo de contraseña de `GUIA_CREACION_ROLES.md` cambiado por un marcador; `probar-publicar.ps1` usa `dashboard/LEEME.md` como ejemplo de `.md`. No había skill de iTextSharp en `.claude/skills/`. M-047 cerrada. |
 | 2026-11-21 | 2 | E2-6 hecha: reglas de los pendientes iguales en `CLAUDE.md` ("Keeping the plan up to date", con la tabla de dónde va cada cosa), los agentes `analista`, `desarrollador`, `revisor` y `probador`, la skill `nuevo-sp` y "Reglas" de `PLAN_MEJORAS_SGV`, `PENDIENTES_USUARIO`, `DATOS_POR_CORREGIR`, `PRUEBAS_PENDIENTES` y `DECISIONES_NEGOCIO`; cada cabecera con `Último id usado` (M-100, U-072, D-028, P-023, DN-24; los retirados U-006, D-016, D-017 y M-047 no se reutilizan). Pruebas nuevas en `CodigoFuenteLimpiezaTests`: plan < 80 KB, sin `- [x]` en los 5 documentos, ids únicos, del prefijo del documento y no mayores que el último usado, y ningún número con forma de DNI en `docs/` (comprobado que fallan al agregar una `[x]` o un DNI de 8 cifras). |
 | 2026-11-21 | 2 | E2-7: Etapa 2 cerrada con **nota 7**. Medido: plan de 211 líneas y 33 261 B (meta < 400 y < 60 KB); 0 `[x]` y 0 hechas/duplicadas entre las abiertas (verificado en E2-4 y sostenido por la prueba); 99 M, 71 U, 26 D y 23 P, todas con id y prioridad; Top 20 al principio del plan; operación en `PASO_A_PRODUCCION`, `PREPARAR_MAQUINA` y el README de publicar; 0 documentos vigentes con el stack viejo (las menciones que quedan dicen que se retiró). Sigue: plan de la Etapa 3 (Fable 5.2). |
+| 2026-11-21 | 3 | Plan detallado de la Etapa 3: la BD medida con SELECT (82 tablas, 115 SP, 10 CHECK, 126 FK); tareas E3-1 a E3-9; nuevos D-029 a D-032, U-073, U-074, M-101 y P-024. Sigue E3-1 (Opus 5.5). |

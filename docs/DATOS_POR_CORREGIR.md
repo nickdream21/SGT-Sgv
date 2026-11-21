@@ -4,7 +4,7 @@ Registros de la BD que hay que corregir, completar o cargar. Casi todos están e
 
 Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = menor.
 
-Último id usado: D-028 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: D-032 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Facturas
 
@@ -36,6 +36,11 @@ Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = meno
 - [ ] **D-022** Guía T660-00016530 del pedido 4400133881 — dice otro chofer y el tracto T7J-861, pero la administradora tiene BNG-758 (viaje manual 7341, pedido `PENDIENTE`). Confirmar con quien emitió la guía y enlazar el despacho 873 con el viaje 7341 (o corregir chofer/tracto). · C
 - [ ] **D-023** Seguimiento: 4 pares de viajes importados con el mismo tracto el mismo día — A6L-927 2025-06-24, C6L-700 y AMN-912 2025-01-06, TBM-898 2024-03-23: parecen duplicados de la carga histórica. Revisar con el usuario. · C
 - [ ] **D-024** 9 GRE de Polinplast de setiembre sin PDF — (EG03-15116 a 15340, despachos 3038–3046): bajarlas de SUNAT (Consulta de GRE, 01–30/09) y subirlas por la bandeja. · C
+
+- [ ] **D-029** Despachos 272–290 dados de baja sin estado ANULADO — están `PROGRAMADO` con `activo=0` (los dejó así un script de anulación del 2026-10-16); pasan a `estadoDespacho='ANULADO'`. Requisito del CHECK de la Etapa 3 (E3-5 y E3-6). Control: `SELECT COUNT(*) FROM Despachos WHERE estadoDespacho<>'ANULADO' AND activo=0` (hoy 19). · A
+- [ ] **D-030** Seguimiento: 5 992 viajes en `COMPLETADO` pasan a `FINALIZADO` — el código solo reconoce `FINALIZADO` y `CANCELADO` como cerrados, así que hoy cuentan como abiertos (M-023); cambia el tablero: pasan a "Cerrado". Después de corregir `ImportarSeguimiento.DerivarEstado` (E3-2). Control: `SELECT estado, COUNT(*) FROM SeguimientoExportacion GROUP BY estado`. · A
+- [ ] **D-031** Seguimiento: `idUsuarioModificacion = 1` en 5 filas del 22/10 — ese usuario no existe; pasan a NULL antes de la FK (E3-6). Control: `SELECT COUNT(*) FROM SeguimientoExportacion s WHERE idUsuarioModificacion IS NOT NULL AND NOT EXISTS (SELECT 1 FROM Usuarios u WHERE u.idUsuario = s.idUsuarioModificacion)`. · B
+- [ ] **D-032** Viaje de prueba `VP-SIM-1111` (id 1843, ANULADO) — borrarlo junto con los datos de prueba de D-012. Control: `SELECT idViajeProgreso, estadoViaje FROM ViajesEnProgreso WHERE numeroViaje = 'VP-SIM-1111'`. · C
 
 ## Catálogos y usuarios
 
