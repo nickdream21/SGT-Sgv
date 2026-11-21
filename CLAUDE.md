@@ -175,7 +175,7 @@ Functional/process documentation (Spanish) in `docs/`:
 
 The plan is the only shared context between machines and sessions — never let it fall behind:
 
-- **In the same commit as any feature, fix, migration or new SP**, update `docs/PLAN_MEJORAS_SGV.md`: the "Última actualización" line (date + last commit), a row in section 3, the item in section 4 (`[x]` when done), and, if it affects production (migrations, SPs, DLLs, secrets, manual post-publish steps), `docs/PASO_A_PRODUCCION.md` for the move to `sgvTransporte` and "Antes y después de publicar" in `herramientas/publicar/README.md` for what every publication needs.
+- **In the same commit as any feature, fix, migration or new SP**, update `docs/PLAN_MEJORAS_SGV.md`: the "Última actualización" line (date + last commit) and section 4: when a task is done it is deleted from the plan (the commit is the history; `docs/archivo/HISTORIAL_2026.md` holds the history up to 2026-11-21 and is frozen, never written to). And, if it affects production (migrations, SPs, DLLs, secrets, manual post-publish steps), `docs/PASO_A_PRODUCCION.md` for the move to `sgvTransporte` and "Antes y después de publicar" in `herramientas/publicar/README.md` for what every publication needs.
 - **Every loose end becomes its own `[ ]` under "Abiertas"** in section 4 (business decisions, follow-ups, "pendiente: …"). Never leave a pending item buried inside the text of a finished task or only in a chat reply.
 - Also update the Claude memory `pendientes_paso_a_produccion.md` when something is applied only to the test DB.
 - Before finishing a task, check `git status` for untracked files: commit them, gitignore them, or say why they stay.

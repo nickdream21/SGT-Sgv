@@ -139,7 +139,7 @@ Contiene 96 usuarios: 88 conductores (por DNI), 3 administradores, 2 administrad
 - `idUsuario=1` → `admin` / rol: `Administrador` — ⚠️ ¿Es usuario real o de prueba?
 - `idUsuario=2` → `operador` / rol: `Operador` — ⚠️ Nombre genérico, probablemente de prueba
 - `idUsuario=3` → `STEPHANYSGV` / rol: `Usuario` — ⚠️ Rol desconocido `Usuario`, no aparece en tabla Roles
-- `idUsuario=89-91` → `47876756`, `75020176`, `46328546` con rol `Administrador` — ⚠️ Verificar si son reales
+- `idUsuario=89-91` → `********`, `********`, `********` con rol `Administrador` — ⚠️ Verificar si son reales
 - `idUsuario=94-98` → cuentas especializadas (`adminsistema`, `grifo_admin`, `admin.grifo`, etc.)
 
 **Decisión requerida:** ¿Cuáles usuarios deben migrarse a producción? ¿Cuáles son de prueba?
