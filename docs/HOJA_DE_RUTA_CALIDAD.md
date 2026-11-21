@@ -1,8 +1,8 @@
 # Hoja de ruta de calidad SGV
 
 Índice corto de las etapas de mejora que salieron del análisis del 2026-11-19. **Leer esto primero al
-retomar el trabajo**: dice en qué etapa estamos y qué sigue. El detalle de cada tarea y el historial
-siguen en `docs/PLAN_MEJORAS_SGV.md`.
+retomar el trabajo**: dice en qué etapa estamos y qué sigue. El detalle de cada tarea está en
+`docs/PLAN_MEJORAS_SGV.md` y en los documentos que enlaza; el historial, en `git log`.
 
 ## Cómo se trabaja (acordado con el usuario, 2026-11-19)
 
@@ -16,13 +16,13 @@ siguen en `docs/PLAN_MEJORAS_SGV.md`.
 
 ## Estado
 
-**Etapa actual: 2 — fase EJECUCIÓN, sigue E2-4** (plan detallado escrito el 2026-11-21). De la Etapa 1 quedan acciones del usuario: rotaciones de credenciales y los PDF de la laptop. La ejecución la hace Opus 5.5.
+**Etapa actual: 2 — fase EJECUCIÓN, sigue E2-5** (plan detallado escrito el 2026-11-21). De la Etapa 1 quedan acciones del usuario: rotaciones de credenciales y los PDF de la laptop. La ejecución la hace Opus 5.5.
 Reparto de modelos: Fable 5.2 analiza y planifica; Opus 5.5 ejecuta.
 
 | # | Etapa | Nota hoy | Meta | Estado |
 |---|---|---|---|---|
 | 1 | Operación y continuidad | 4 | 7 | **Cerrada 2026-11-20 — nota medida: 7** (monitores UptimeRobot y cron del GPS activos desde 2026-11-21; quedan las rotaciones de credenciales del usuario) |
-| 2 | Ordenar el plan de mejoras | 3 | 7 | **En ejecución (3 de 7)** |
+| 2 | Ordenar el plan de mejoras | 3 | 7 | **En ejecución (4 de 7)** |
 | 3 | Integridad de la base de datos | 6,6 | 8 | Pendiente |
 | 4 | Seguridad avanzada | 7,5 | 9 | Pendiente |
 | 5 | Interfaz y usabilidad | 6,5 | 8 | Pendiente |
@@ -64,7 +64,7 @@ archivos en `Uploads` (59 MB) y 31 PDF firmados (8,4 MB), con su SHA-256 en `Fir
 | **E1-4** | Publicación con paquete y vuelta atrás: perfil `Paquete.pubxml` y `herramientas/publicar/publicar.ps1` (zip por versión, sube sin tocar App_Data ni Uploads, lista y borra sobrantes solo con confirmación). Aceptación: `-SoloListar` muestra exactamente las páginas retiradas. | Claude | **Hecho** (revisor: 2 rondas); falta validarlo contra el FTP real |
 | **E1-5** | Publicar `master` (31 commits), borrar sobrantes, comprobar 404 de las páginas retiradas y la lista de verificación del plan. Requiere E1-1 y E1-2 antes. | Usuario da la orden; Claude acompaña | **Hecho** 2026-11-20 (`20261120_1311_60853e8`) |
 | **E1-6** | Salud y vigilancia: `Salud.ashx` anónimo (200/503 con `SELECT 1`; `?gps=1` da 503 si hay viajes activos y el GPS lleva más de 60 min sin consultar), regla pura con pruebas. | Claude | **Hecho** (revisor y probador, 2 rondas); falta publicar y crear los monitores |
-| **E1-7** | Correo ante errores: `CorreoHelper` común, `AvisoErrores` con límite (1 por tipo cada 30 min, 10 al día), desde `Application_Error`. Requiere SMTP configurado. | Claude | **Hecho** (revisor 2 rondas y probador; correo real recibido); falta `SmtpFrom` en el servidor al publicar |
+| **E1-7** | Correo ante errores: `CorreoHelper` común, `AvisoErrores` con límite (1 por tipo cada 30 min, 10 al día), desde `Application_Error`. Requiere SMTP configurado. | Claude | **Hecho** (revisor 2 rondas y probador; correo real recibido); `SmtpFrom` en el servidor: hecho 2026-11-20 |
 | **E1-8** | Retiro de DAB del repo y rotaciones. | Claude + usuario | **Hecho** el retiro (revisor: aprobado con cambios, corregidos); rotaciones y borrar `.env`/`dab-config.json` locales: usuario |
 | **E1-9** | Cierre técnico: paquete sin linux/osx ni documentos, log sin valores del querystring, Salud vigila a Onway, respaldo a Drive verificado. | Claude | **Hecho** (revisor 2 rondas y probador) |
 | **E1-10** | `publicar.ps1`: sobrantes borrados dentro del mantenimiento; cancela si quedarían páginas viejas en vivo; validado contra somee en solo lectura (261 sobrantes). | Claude | **Hecho** (revisor 2 rondas) |
@@ -143,7 +143,7 @@ contradice lo actual (publicar desde Visual Studio, DAB, `DeleteExistingFiles`).
 | **E2-1** | **Rescatar antes de archivar.** `docs/DECISIONES_NEGOCIO.md` con las 6 decisiones que solo están en el historial (plan L109, L113, L127, L333, L1071, L1076) y las reglas de CPI/MCI del ítem L720 (L726–738). | Cada decisión cita el commit o la fecha y el código que la aplica; sin datos personales. | **Hecho** 2026-11-21 |
 | **E2-2** | **Operación.** (a) README de publicar: "Antes y después de publicar" (orden migración → SP → DLL, y SP compatible con la DLL publicada; claves que necesita el archivo de secretos del servidor; carpetas con permiso de escritura; comprobaciones). (b) `WebSGV/appSettings.Secrets.config.example` con los nombres de las claves, sin valores (`<None>` en el csproj). (c) `docs/PASO_A_PRODUCCION.md` destilado de la sección 6 (pasos 1–5, 7 y 8; controles antes de las migraciones 30, 49, 50 y 51; scripts de borrado y de recálculo). (d) `docs/PREPARAR_MAQUINA.md`. (e) `docs/OPERACION.md:38` corregido (el sitio usa `sgvActualizada`). | Nada vigente de las secciones 2, 5 y 6 queda solo en el plan; ningún paso contradice a `publicar.ps1`; `probar-publicar.ps1` y la suite en verde. | **Hecho** 2026-11-21 |
 | **E2-3** | **Archivar el historial.** Sección 3, "Hechas" y las `[x]` mezcladas pasan a `docs/archivo/HISTORIAL_2026.md`; los pendientes escondidos en ítems `[x]` (L268, L297, L347, L443) y los 6 puntos del ítem L253 salen como tareas propias; los datos personales se enmascaran. | El archivo conserva todas las filas con su commit; el plan ya no tiene sección 3 ni "Hechas"; 0 documentos de identidad en `docs/`. | **Hecho** 2026-11-21 |
-| **E2-4** | **Partir y limpiar las abiertas** según las tablas de clasificación: cerrar 21 hechas y 6 obsoletas con su evidencia, unir 23 duplicadas, repartir el resto en los documentos de arriba con id, prioridad y texto corto; "ver sección 3" se cambia por el commit. **Top 20** al principio del plan. | **Tabla de conciliación** en `privado/etapa2/conciliacion.md`: cada una de las 270 líneas → id nuevo o "cerrada: motivo"; ninguna sin destino. Las marcadas "sin verificar" se comprueban antes de cerrarlas. | Pendiente |
+| **E2-4** | **Partir y limpiar las abiertas** según las tablas de clasificación: cerrar 21 hechas y 6 obsoletas con su evidencia, unir 23 duplicadas, repartir el resto en los documentos de arriba con id, prioridad y texto corto; "ver sección 3" se cambia por el commit. **Top 20** al principio del plan. | **Tabla de conciliación** en `privado/etapa2/conciliacion.md`: cada una de las 270 líneas → id nuevo o "cerrada: motivo"; ninguna sin destino. Las marcadas "sin verificar" se comprueban antes de cerrarlas. | **Hecho** 2026-11-21: fueron 287 casillas (no 270): 29 cerradas (23 hechas, 6 obsoletas), 38 unidas, 3 a otros documentos; cifras en la bitácora |
 | **E2-5** | **Documentos viejos.** Borrar de la raíz `ANALISIS_PROYECTO.md`, `configuraciondenuevosagentes.md`, `flujoactual.md`, `formulasDash`, `mcp-cursor-executed.txt`, `paNedd.txt`; mover a `docs/archivo/` `Documentacion_Tecnica_PBI_SGV_MARZO2025.md`, `PLAN_REFACTOR_SERVICES.md`, `PLAN_MEJORAS_INTERNAS.md` y `PLAN_MODERNIZACION.md`; fusionar `STACK_Y_FLUJO_SGV.md` en `FLUJO_DE_TRABAJO_SGV.md`; poner al día `README.md`; el ejemplo de `GUIA_CREACION_ROLES.md:198` pasa a un marcador. `.opencode/` y `opencode.jsonc` se borran y `AGENTS.md` queda en pocas líneas que remiten a `CLAUDE.md`. | Ninguna referencia rota (Grep de cada nombre); `probar-publicar.ps1` (usa `PLAN_MODERNIZACION.md` como texto de prueba) y la suite en verde. | Pendiente |
 | **E2-6** | **Que no vuelva a crecer.** Reglas nuevas en `CLAUDE.md` ("Keeping the plan up to date"), en los agentes `analista` y `desarrollador`, en la skill `nuevo-sp` y en la memoria: dónde va cada cosa; el historial es `git log` (`docs/archivo/HISTORIAL_2026.md` queda congelado, no se escribe); una tarea terminada se borra del plan. Prueba en `CodigoFuenteLimpiezaTests`: el plan pesa menos de 80 KB y no tiene líneas `- [x]`. | La prueba falla si al plan se le agrega una línea `[x]`; suite en verde. | Pendiente |
 | **E2-7** | **Cierre.** Medir la nota y anotarla; actualizar esta hoja y la memoria. | Ver "Cómo se mide". | Pendiente |
@@ -169,12 +169,8 @@ pasa de 7 porque seguirán abiertos unos 70 pendientes del usuario y unas 100 me
    `push --force` (como el 2026-07-10). Recomendación: no reescribir si el repositorio es privado.
 2. **Top 20**: Claude propone el orden en E2-4; el usuario lo ajusta según el negocio.
 
-**Prioridad A que ya se ve** (línea del plan): rotaciones de credenciales (315, 316, 273, 519, 272);
-descargas de Guayaquil de 9 pedidos sin registrar (692); facturas de flete de Vitapro por registrar
-(401) y una factura anulada que cuenta doble (402); 23 PDF de factura por subir (698); coma decimal en
-el celular (263); bandeja con dos pestañas (362); generar CPI y MCI (720); prueba de punta a punta con
-un pedido real (1033); control de estados antes de la migración 48 en producción (276); activar
-`ConductoresEnSistema` cuando los conductores empiecen (407).
+**Prioridad A**: ver el **Top 20** al principio de `docs/PLAN_MEJORAS_SGV.md` (E2-4); el control de
+estados antes de la migración 48 en producción está en `docs/PASO_A_PRODUCCION.md`, paso 3.
 
 Riesgos: perder una decisión al archivar (por eso E2-1 va primero); remisiones rotas; que los agentes
 sigan escribiendo en secciones que ya no existen (la parte de `CLAUDE.md` de E2-6 se adelanta al
@@ -230,3 +226,4 @@ commit de E2-4).
 | 2026-11-21 | 2 | E2-1 hecha: `docs/DECISIONES_NEGOCIO.md` con 24 decisiones (DN-01 a DN-24) rescatadas del historial del plan, cada una con fecha/commit y dónde la aplica el código; sin datos personales. |
 | 2026-11-21 | 2 | E2-2 hecha: lo de cada publicación en `herramientas/publicar/README.md` ("Antes y después de publicar": orden migración → SP → DLL, claves del servidor, permisos de escritura, comprobaciones), plantilla `WebSGV/appSettings.Secrets.config.example`, `docs/PASO_A_PRODUCCION.md` (procedimiento único a `sgvTransporte` con sus SELECT de control), `docs/PREPARAR_MAQUINA.md` e índice de procedimientos en `docs/OPERACION.md`. Secciones 2, 5 y 6 del plan marcadas como historial. |
 | 2026-11-21 | 2 | E2-3 hecha: historial del plan a `docs/archivo/HISTORIAL_2026.md` (las dos líneas largas de la cabecera, secciones 2, 3, 5 y 6, "Hechas" y las 149 `[x]`/tachadas que seguían en la sección 4 (más 25 sub-tareas `[x]`), con sus sub-líneas; 990 líneas, 392 KB). El plan pasa de 1571 líneas y 479 KB a 632 líneas y 92 KB, sin sección 3 ni "Hechas" y con 0 `[x]`; 1526 líneas no vacías del original, 0 sin destino. Pendientes escondidos sacados como `[ ]` propias: 7 del ítem de verificaciones del 2026-11-16 (el punto 1 ya estaba hecho), el DEFAULT 'APROBADO' (B6-7, Etapa 3) y el filtro por la 2.ª factura/CPIC (tarea 11); el borrado de `Database/` del servidor ya se hizo en E1-5 y el cambio de contraseñas de prueba ya estaba como tarea y en `docs/PASO_A_PRODUCCION.md`. Abiertas `[ ]`: 273 → 285 (las 4 últimas, tras la revisión: tablero en el navegador, subir Uploads, documentación por la Bandeja y la decisión de purgar el historial de git). DNI y nombres de conductores enmascarados en plan y archivo (17 líneas). También enmascarados los tres usuarios-DNI de `docs/migracion_somee/02_clasificacion_tablas.md:142` y la fecha de nacimiento y dirección de un conductor que quedaban en el archivo. |
+| 2026-11-21 | 2 | E2-4 hecha: las 287 casillas abiertas del plan (`d52f964`) conciliadas una por una en `privado/etapa2/conciliacion.md` (script `verificar-conciliacion.py`: OK). 29 cerradas (23 hechas y 6 obsoletas, cada una con su evidencia: SELECT en `sgvActualizada`, archivo o commit; 3 de ellas, U-006, D-016 y D-017, tras la revisión: sus ids quedan retirados, sin renumerar), 38 unidas a la que queda, 3 a documentos existentes (`docs/PASO_A_PRODUCCION.md` paso 3 y README de publicar). El resto, con id, prioridad y texto corto: plan 99 mejoras `M-` (198 líneas, 31,2 KB; antes 633 líneas y 92 KB) con **Top 20**; nuevos `docs/PENDIENTES_USUARIO.md` (71 `U-`, 94 líneas, 20,4 KB; U-010 partida del Query Store), `docs/DATOS_POR_CORREGIR.md` (26 `D-`, 48 líneas, 11,5 KB; cada A y B con su consulta de control o "sin consulta") y `docs/PRUEBAS_PENDIENTES.md` (23 `P-`, 42 líneas, 6,2 KB; P-023 partida de la fila 292; 1 `[~]`). D1 del bloque 5 confirmada resuelta (conductores 70/75 inactivos). `CLAUDE.md` y agentes `analista`, `desarrollador` y `probador` apuntan a los documentos nuevos. |

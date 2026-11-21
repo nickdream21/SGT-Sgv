@@ -164,7 +164,10 @@ Orchestrator rules: give each subagent a self-contained brief (goal, context alr
 
 Functional/process documentation (Spanish) in `docs/`:
 
-- `docs/PLAN_MEJORAS_SGV.md` — **current improvement plan**: status and pending tasks. Read it first when resuming work. Machine setup is in `docs/PREPARAR_MAQUINA.md` and the production checklist in `docs/PASO_A_PRODUCCION.md`.
+- `docs/PLAN_MEJORAS_SGV.md` — **current improvement plan**: status, Top 20 and the open improvements (`M-xxx`). Read it first when resuming work. Machine setup is in `docs/PREPARAR_MAQUINA.md` and the production checklist in `docs/PASO_A_PRODUCCION.md`.
+- `docs/PENDIENTES_USUARIO.md` — what only the user can do (`U-xxx`): business decisions, credentials and external panels, data to obtain.
+- `docs/DATOS_POR_CORREGIR.md` — DB records to fix or load (`D-xxx`), with their control query; never written without the user's approval.
+- `docs/PRUEBAS_PENDIENTES.md` — what is still to be tested in the browser, on a phone, with a real order/driver or on the published site (`P-xxx`), for the `probador` or the user.
 - `docs/FLUJO_DE_TRABAJO_SGV.md` — end-to-end business flow and role permission matrix.
 - `docs/DECISIONES_NEGOCIO.md` — business rules agreed with the user (`DN-xx`, with date/commit and where the code applies them); add new ones there.
 - `docs/GUIA_CREACION_ROLES.md` — step-by-step guide for adding a new role.
@@ -175,8 +178,8 @@ Functional/process documentation (Spanish) in `docs/`:
 
 The plan is the only shared context between machines and sessions — never let it fall behind:
 
-- **In the same commit as any feature, fix, migration or new SP**, update `docs/PLAN_MEJORAS_SGV.md`: the "Última actualización" line (date + last commit) and section 4: when a task is done it is deleted from the plan (the commit is the history; `docs/archivo/HISTORIAL_2026.md` holds the history up to 2026-11-21 and is frozen, never written to). And, if it affects production (migrations, SPs, DLLs, secrets, manual post-publish steps), `docs/PASO_A_PRODUCCION.md` for the move to `sgvTransporte` and "Antes y después de publicar" in `herramientas/publicar/README.md` for what every publication needs.
-- **Every loose end becomes its own `[ ]` under "Abiertas"** in section 4 (business decisions, follow-ups, "pendiente: …"). Never leave a pending item buried inside the text of a finished task or only in a chat reply.
+- **In the same commit as any feature, fix, migration or new SP**, update `docs/PLAN_MEJORAS_SGV.md`: the "Última actualización" line (date + last commit) and the item's document: when a task is done it is deleted from its document (the commit is the history; `docs/archivo/HISTORIAL_2026.md` holds the history up to 2026-11-21 and is frozen, never written to). And, if it affects production (migrations, SPs, DLLs, secrets, manual post-publish steps), `docs/PASO_A_PRODUCCION.md` for the move to `sgvTransporte` and "Antes y después de publicar" in `herramientas/publicar/README.md` for what every publication needs.
+- **Every loose end becomes its own `[ ]` with an id** in the right document: code/DB improvement → `docs/PLAN_MEJORAS_SGV.md` (`M-`); only the user can do it (decision, panel, data to obtain) → `docs/PENDIENTES_USUARIO.md` (`U-`); records to fix or load → `docs/DATOS_POR_CORREGIR.md` (`D-`); test in the browser/phone/real order/published site → `docs/PRUEBAS_PENDIENTES.md` (`P-`). A new item takes the number after the highest one in its document (the others are never renumbered), with priority A/B/C and one or two lines; when done it is deleted, never marked `[x]`. Never leave a pending item buried inside the text of a finished task or only in a chat reply.
 - Also update the Claude memory `pendientes_paso_a_produccion.md` when something is applied only to the test DB.
 - Before finishing a task, check `git status` for untracked files: commit them, gitignore them, or say why they stay.
 

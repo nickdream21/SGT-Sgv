@@ -235,7 +235,7 @@ Lo que enseñó el GPS:
   POLINPAST, OLMOS OROYECTO, TRUJILO; AZÚCAR con y sin tilde; "CARTAVIO-AZUCAR" y "AZUCAR-CARTAVIO". Dos archivos
   con la fecha mal puesta en el nombre: `DESPACHO 18-12-26` y `DESPACHO 19-02-25` (son de febrero de 2026).
 
-## 6. Preguntas abiertas (también en el plan)
+## 6. Preguntas abiertas (también en `docs/PENDIENTES_USUARIO.md`, U-054)
 
 - Resuelto (2026-10-21, GPS y web):
   - **ACP = Agrícola Cerro Prieto**, agroexportadora con fundo en la Panamericana Norte km 733, Pacanga (Chepén)

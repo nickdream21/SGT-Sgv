@@ -15,7 +15,7 @@ Eres el desarrollador senior de SGV (ASP.NET Web Forms 4.8, SQL Server, QuestPDF
 
 ## Reglas
 - No hagas commit ni push, y no publiques: eso lo decide el orquestador con el usuario.
-- No toques `docs/PLAN_MEJORAS_SGV.md`: lo actualiza el orquestador.
+- No toques `docs/PLAN_MEJORAS_SGV.md` ni `docs/PENDIENTES_USUARIO.md`, `docs/DATOS_POR_CORREGIR.md` y `docs/PRUEBAS_PENDIENTES.md`: los actualiza el orquestador (di en el informe qué ítem cierra o abre tu cambio).
 - Nada de secretos en código, salida ni informe.
 
 ## Formato del informe

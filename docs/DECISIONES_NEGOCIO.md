@@ -109,7 +109,7 @@ reactiva, valen las decisiones del 2026-11-11, a confirmar antes con el usuario:
 - Desde: 2026-11-11, `56c0d81` (decisiones) y `1e3652d` (sobre sin portador); apagada 2026-11-13, `f2e77ab`.
 - En el código: `WebSGV/Web.config:33` (`MovimientosViaje.Habilitado` = `false`);
   `WebSGV/Services/Liquidaciones/MovimientosViajeService.cs:61-67`.
-- Estado: pendiente de reactivar (tarea abierta "Retomar Dinero y pagos del viaje" del plan). Mientras siga
+- Estado: pendiente de reactivar (U-040 en `docs/PENDIENTES_USUARIO.md`). Mientras siga
   apagada, no aplicar la migración que borra `MovimientoDineroViaje.idConductorPortador` sin volver a probar la
   pantalla.
 
@@ -235,8 +235,8 @@ siguiente por DN-19.
 ## 5. CPI y manifiesto (MCI) de exportación
 
 **Estas no son decisiones del usuario sino reglas observadas**: se sacaron el 2026-10-23 de 51 CPI y 288 MCI hechos
-a mano por la administradora de transporte, para cuando el sistema los genere (tarea abierta "Generar el CPI y el
-manifiesto (MCI)" del plan). Varias siguen preguntadas en la tarea abierta "CPI: respuestas de la administradora":
+a mano por la administradora de transporte, para cuando el sistema los genere (M-037 en
+`docs/PLAN_MEJORAS_SGV.md`). Varias siguen preguntadas en U-023 (`docs/PENDIENTES_USUARIO.md`):
 hay que confirmarlas con ella antes de programarlas. Hoy se arman a mano en Excel y el sistema solo guarda el escaneo.
 
 ### DN-21 — Un CPI por factura y un MCI por camión (observada)
@@ -245,14 +245,14 @@ la administradora de transporte. Si hay varias versiones del archivo vale la úl
 al llegar la factura, sin el día; el día se pone cuando salen los camiones.
 - Desde: 2026-10-23, `991d44b`.
 - En el código: solo procedimiento (generación pendiente).
-- Estado: a confirmar con la administradora (tarea abierta "CPI: respuestas de la administradora").
+- Estado: a confirmar con la administradora (U-023 en `docs/PENDIENTES_USUARIO.md`).
 
 ### DN-22 — Vitapro (ida): todo sale de la factura F222 y el packing list (observada)
 Casilla 16 = total CPT; flete = TOT. CARGO; peso bruto = total del packing list. Flete por camión:
 1188 bolsas × 1,55 = 1841,40, repartido en tramos de 0,725 / 0,25 / 0,575 por bolsa.
 - Desde: 2026-10-23, `991d44b`.
 - En el código: solo procedimiento.
-- Estado: a confirmar con la administradora (tarea abierta "CPI: respuestas de la administradora").
+- Estado: a confirmar con la administradora (U-023 en `docs/PENDIENTES_USUARIO.md`).
 
 ### DN-23 — Cargas y flete por camión de los demás clientes (observada)
 - Cartavio: 620 bolsas de 50 kg por camión (+0,2 kg de tara); flete 2540 por camión (¿subió a 2600?) + 50 de otros gastos
@@ -262,7 +262,7 @@ Casilla 16 = total CPT; flete = TOT. CARGO; peso bruto = total del packing list.
 - Tadel / Productos Pesqueros (harina de Manta → Vitapro): 2000 sacos; 7200.
 - Desde: 2026-10-23, `991d44b`.
 - En el código: solo procedimiento.
-- Estado: a confirmar con la administradora (tarea abierta "CPI: respuestas de la administradora").
+- Estado: a confirmar con la administradora (U-023 en `docs/PENDIENTES_USUARIO.md`).
 
 ### DN-24 — En qué columna va el flete (observada)
 El flete va en la columna del remitente (Vitapro ida, Cartavio, Novopan) o en la del destinatario (los que traen
@@ -270,4 +270,4 @@ carga a Vitapro); cómo lo decide ella sigue preguntado. Errores de la copia a m
 que no suman el flete, peso bruto mal escrito y nombres de producto mal copiados.
 - Desde: 2026-10-23, `991d44b`.
 - En el código: solo procedimiento.
-- Estado: a confirmar con la administradora (tarea abierta "CPI: respuestas de la administradora").
+- Estado: a confirmar con la administradora (U-023 en `docs/PENDIENTES_USUARIO.md`).

@@ -152,7 +152,7 @@ Lo de **cada** publicación. Cómo arma, comprueba y sube el paquete está arrib
 
 ## Lo que no se toca nunca
 
-- `App_Data\` (PDF firmados), `Uploads\` (documentos) y los archivos de secretos (`connectionStrings*.config`, `appSettings.Secrets.config`): no van en el paquete, no se listan, no se suben y no se borran, aunque falten en el paquete. Esto lo fijan `probar-publicar.ps1` y el candado `ExcludeFromPackageFolders` de `WebSGV.csproj`.
+- `App_Data\` (PDF firmados; también `App_Data/Abastecimientos`, los PDF del módulo Grifo ya retirado, que se conservan en el servidor), `Uploads\` (documentos) y los archivos de secretos (`connectionStrings*.config`, `appSettings.Secrets.config`): no van en el paquete, no se listan, no se suben y no se borran, aunque falten en el paquete. Esto lo fijan `probar-publicar.ps1` y el candado `ExcludeFromPackageFolders` de `WebSGV.csproj`.
 - Los **secretos del servidor**: el paquete no los lleva (a diferencia de publicar desde Visual Studio, que subía los de la PC). Si cambia un secreto (p. ej. una clave nueva en `appSettings.Secrets.config`), ver "Cambiar una clave sin publicar" en "Antes y después de publicar".
 - Nunca se borran carpetas (las vacías quedan) ni nada que no sea `.aspx/.ascx/.ashx/.asmx/.master/.cs/.js/.css/.dll/.config`, esté en `Database/` o sea un nativo de linux/osx (`bin/runtimes/linux*`, `osx*`: `.so`, `.dylib`, que ya no se publican).
 

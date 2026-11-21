@@ -20,7 +20,7 @@ Todos los comandos se corren desde la raíz del repo, en una PC con `WebSGV/conn
 ## 1. Antes de empezar
 
 1. Que nadie esté usando el sitio (avisar) y que no haya una publicación a medias.
-2. Comprobar qué BD usa hoy el servidor: bajar por FTP `connectionStrings.config` del sitio a una carpeta fuera del repo y mirar `Initial Catalog` (sin copiar la contraseña a ningún lado). Guardar esa copia: es la vuelta atrás del paso 9.
+2. Guardar la cadena actual del servidor: bajar por FTP `connectionStrings.config` del sitio a una carpeta fuera del repo (sin copiar la contraseña a ningún lado). Esa copia es la vuelta atrás del paso 9. Que el sitio usa hoy `sgvActualizada` ya está comprobado (2026-11-21: los LOGIN desde IP públicas del 20 y 21/11 están en su `AuditoriaLog`); solo falta guardar la copia, y de paso confirmar el `Initial Catalog`.
 3. Comprobar que la PC tiene `connectionStrings.Production.config` y que apunta a `sgvTransporte`:
 
    ```powershell

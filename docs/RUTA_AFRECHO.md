@@ -15,7 +15,7 @@ Análisis del 25–27/10/2026 con el historial de Onway (`herramientas/reporte-g
 | 24/10/2026 | F6O-779 / T7A-996 | despacho 1923 | Word 25/10 `AFRECHO-HUAQUILLAS` |
 
 **F6O-779 no tiene equipo en Onway** (151 equipos, ninguno con esa placa). El aproximado con su grupo pide 2
-compañeras con señal y el afrecho solo tiene a AVM-877: queda sin posición (decisión pendiente en el plan).
+compañeras con señal y el afrecho solo tiene a AVM-877: queda sin posición (decisión pendiente: U-060 en `docs/PENDIENTES_USUARIO.md`).
 
 ## 2. Afrecho: el recorrido (hora Perú)
 
@@ -58,11 +58,11 @@ ASU-748 / T0L-975 y ASU-862 / T4C-976, 06:00: las mismas unidades que cargan Vit
 | 26/10 | **Trujillo, Av. Gonzales Prada (acceso Vitapro): descarga de la importación** | 06:17–13:28 | 08:21–13:46 |
 | 26/10 | Planta Vitapro Trujillo: carga de exportación | 13:48–18:17 | 13:46–18:29 |
 
-- Es el "retorno Ecuador → Perú" del plan, ahora con Vitapro: el camión baja con la exportación, carga la
+- Es el "retorno Ecuador → Perú" de U-021 (`docs/PENDIENTES_USUARIO.md`), ahora con Vitapro: el camión baja con la exportación, carga la
   importación en la misma visita a Jave y la descarga en Trujillo justo antes de la carga siguiente.
 - Hitos que tendría la ruta: carga en Jave (la misma visita de la descarga de la exportación), TCI, CEBAF, base,
   llegada / salida de la descarga en Trujillo. Falta decidir con la oficina si es un viaje aparte o el tramo de
-  vuelta del viaje de exportación (sección 4 del plan).
+  vuelta del viaje de exportación (`docs/PENDIENTES_USUARIO.md`, U-021).
 - Mientras tanto "Programar con el Word" ya no la ofrece como sección de carga (se creaba como una exportación).
 
 ## 4. Unidades "sin actualizar": el GPS está apagado, no es el cron-job
