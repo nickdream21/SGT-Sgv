@@ -2,16 +2,16 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `d40fc06` — E3-4: `SET XACT_ABORT ON` en los 18 SP con transacción que no lo tenían, aplicado en pruebas; prueba de CI `TransaccionesEnSpTests`. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-21**, commit anterior `9fd1ef8` — E3-5: datos corregidos en pruebas con `Database/Scripts/corregir_datos_etapa3_2026-11-21.sql` (D-029, D-030, D-031 y U-015, aprobados por el usuario), tras respaldo y ensayo local. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-102 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-105 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
 - El sitio publicado (`https://sgvtransporte.somee.com`, publicación `20261120_1311_60853e8`) usa la BD de **pruebas** `sgvActualizada`, que tiene **datos reales** desde el 2026-10-19: no se borra ni limpia nada allí sin confirmar.
 - Producción (`sgvTransporte`) no está al día: el paso a producción es `docs/PASO_A_PRODUCCION.md`, en orden, tras la decisión U-011.
 - Etapa 1 (operación) cerrada: respaldo diario de la BD y de los archivos en Google Drive, restauración ensayada, publicación con vuelta atrás (`herramientas/publicar/publicar.ps1`), monitores de UptimeRobot y cron del GPS activos.
-- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 en curso** (integridad de la BD): plan detallado en la hoja de ruta, sigue E3-5 (espera la aprobación de D-029 a D-031). Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
+- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 en curso** (integridad de la BD): plan detallado en la hoja de ruta, sigue E3-6. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
 - Lo abierto está en este plan (mejoras) y en los documentos de "Otros documentos" (usuario, datos, pruebas); cada uno se cuenta en su propio documento.
 
 ## Top 20
@@ -39,7 +39,7 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 | 17 | M-001 | Word sin coincidencia → despacho nuevo | riesgo de despacho de más | Claude |
 | 18 | M-002 | Guía con fecha posterior a la programada | riesgo de despacho duplicado | Claude |
 | 19 | M-003 | Guía emitida 2 días antes no encuentra su programado | deja guías sin programado y puede duplicar el despacho | Claude |
-| 20 | U-015 | Desactivar usuarios de módulos retirados | 3 cuentas activas con contraseña conocida | Usuario |
+| 20 | M-004 | Guía o factura escrita a mano en una carga programada | el ZIP no la reconoce y crearía otro despacho | Claude |
 
 ## Otros documentos
 
@@ -67,6 +67,7 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 - [ ] **M-011** Hora de la programación del Word en el lote ZIP+Word — en el lote que se arma con ZIP + Word se guarda la hora del registro, no la columna HORARIO (al programar con el Word ya se guarda). · C
 - [ ] **M-012** Alias de choferes — recordar la corrección cuando se elige a mano un nombre del Word no reconocido (tabla de alias por conductor, migración). Hoy no hace falta: 64/64 nombres reales se reconocen. · C
 - [ ] **M-013** Finalizar lote: copias huérfanas tras un commit en duda — si el lote en realidad no se guardó, las copias definitivas del primer intento quedan sueltas en `~/Uploads` (rutas en `App_Data/logs`). Sin riesgo para los datos; limpiar a mano si pasa o automatizar la limpieza. · C
+- [ ] **M-105** ListaDespachos: el filtro "Estado del lote: Todos" no incluye los anulados — `sp_LD_ObtenerLotesRegistrados` solo los devuelve con "Anulados"; renombrar a "Todos (sin anulados)" o incluirlos. · C
 
 ### Liquidaciones y saldos
 
@@ -82,7 +83,7 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 - [ ] **M-020** Reporte del grifo Santa Rosa enviado solo — con el GPS automático los datos están al día, pero el texto se arma al abrir RegistroSeguimiento: falta el envío (correo o WhatsApp). Depende de confirmar el formato (U-028). · B
 - [ ] **M-021** Unidad sin equipo GPS (F6O-779) en el tablero — sus viajes no avanzan solos; marcarlos "sin GPS: llenar a mano" en vez de consultarlos en cada actualización. · C
 - [ ] **M-022** ImportarSeguimiento: mostrar qué filas se omitieron — hoy solo cuántas: que `sp_SE_ImportarLote` devuelva un segundo resultado con fila/pedido/tracto de cada omitida. · C
-- [ ] **M-023** Seguimiento: importados de 2024 cuentan como "Retorno" — con 2024 e importados: Activos 500, Retorno 482, Cerrados 0. Revisar la fase que `HitosSeguimiento` da a los importados sin hitos de cierre. · C
+- [ ] **M-023** Seguimiento: 247 importados de 2024 siguen abiertos — tras D-030 (E3-5, 2026-11-21) los 2 520 COMPLETADO de 2024 salen "Cerrado"; quedan 247 en `EN_CURSO` sin `fhSalida` que cuentan como activos. Decidir con el usuario si se cierran (script `D-`) o se ajusta la fase que `HitosSeguimiento` da a los importados sin hitos de cierre. · C
 - [ ] **M-024** Mapa del viaje: paradas calculadas en el navegador — (250 m, 30 min). Si se quieren en el Excel o el dashboard, llevarlas al servidor (`ObtenerRuta`). · C
 - [ ] **M-025** Cargas históricas de terceros crean viajes EN_CURSO — al registrar despachos pasados con `TercerosConDocumentos`, `sp_SE_SincronizarDespachos` crea sus viajes EN_CURSO; cerrarlos con `sp_SE_CambiarEstado` o que la herramienta lo haga sola. · C
 - [ ] **M-026** Salida/llegada que el seguimiento no marca — los viajes que empiezan con un tercero (Crisar en Cartavio, Polinplast en Chapaira) no tienen salida de la base, y los que terminan en la cochera o en Vitapro Trujillo no tienen llegada. Buscar en el historial GPS la última salida de la base Sullana antes de la carga (como `HoraLlegadaGpsService`). · C
@@ -96,6 +97,7 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 - [ ] **M-034** Trazabilidad: unir los tramos por la carreta — con la columna CAMBIO del Word (qué tracto lleva la carreta en la carga y cuál en la descarga), para armar el viaje completo y completar tracto 2 y chofer de descarga sin esperar el pedido. · C
 - [ ] **M-035** Perfiles de llegada: medir y regenerar cada mes — volver a medir la hora al grifo de Crisar con `Generar-PerfilCrisar.ps1` cuando haya más días (error típico 1,5 h); comparar la llegada estimada con la real unos días y ajustar la ventana de km/hora; regenerar cada mes `PerfilesLlegada.json` con `Generar-Perfil.ps1` y luego `Generar-PerfilCrisar.ps1` (y recompilar: va en la DLL). Ver `herramientas/perfil-llegada/README.md`. · C
 - [ ] **M-036** Espacio de `App_Data/HistorialGps` en somee — 3–45 KB por tracto y día, se borra a los 30 días: revisar la cuota tras unas semanas de uso. · C
+- [ ] **M-104** Dashboard de exportación: "viajes cerrados" no cuenta los `FINALIZADO` — `IndicadoresExportacion.cs:395` cuenta solo los que tienen `fhLlegadaBaseFinal`: en 2024 da 0 frente a 2 520 "Cerrado" en el tablero. Aclarar el rótulo o contar también `FINALIZADO` (visto por el probador en E3-5). · C
 
 ### CPIC y MCI
 
@@ -145,7 +147,6 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 
 - [ ] **M-061** Cambiar el carnet de extranjería real del ejemplo por uno ficticio — en `Services/Conductor/DocumentoConductor.cs`, `Services/Conductor/RegistroConductorService.cs`, `WebSGV.Tests/DocumentoConductorTests.cs` y `WebSGV.Tests/Integracion/ConductorLargosBdTests.cs` (que la prueba inserte su propio conductor dentro de `TransaccionDePrueba`). Es de un conductor real (conductor 218). · B
 - [ ] **M-062** Login de una cuenta inactiva no deja `LOGIN_FALLIDO` — en AuditoriaLog (observado en B5-8). Va con "registrar LOGIN_FALLIDO y bloqueos" de la etapa 4. · B
-- [ ] **M-063** Mensaje propio para un usuario con rol retirado o desconocido — hoy vuelve a Login con "Tu sesión ha expirado…" y cada intento deja un LOGIN en auditoría. Rechazarlo antes de crear la sesión con "tu cuenta no tiene un rol vigente". Deja de importar si se desactivan los usuarios de roles retirados (U-015). · C
 - [ ] **M-064** Secciones de `TienePermiso` sin página — FACTURA, CPIC, CONSULTAS, INDICADORES, AUDITORIA… (`RolesHelper.cs:169-182`) y ADMIN con acceso a DASHBOARD_CONDUCTOR: depurarlas (cambia `RolesHelperTests` a propósito). · C
 - [ ] **M-065** ReportesOrdenesViaje: `ex.Message` de cualquier `ArgumentException` al usuario — `ResponderSolicitudInvalida(ex.Message)` (`ReportesOrdenesViaje.aspx.cs:~1123`): si ClosedXML/QuestPDF lanza una, su texto técnico llega al usuario. · C
 - [ ] **M-066** No quedarse sin administrador de sistema activo — impedir que dos se desactiven a la vez (`NOT EXISTS` de otro ADMINISTRADOR DE SISTEMA activo en el `WHERE`) y ocultar "Desactivar" en la fila propia (hoy el servidor lo rechaza con aviso). · C
@@ -172,6 +173,7 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 - [ ] **M-084** Registro de clientes: celda de contacto — el texto sale más bajo que el resto de la fila. · C
 - [ ] **M-085** Expediente completo muestra igual "Para completar, suba…" — ocultar esa ayuda cuando no falta nada (`BandejaDocumentos.aspx.cs:770`). · C
 - [ ] **M-086** Registro de despacho: tira de pasos y "Ver lotes pendientes" — "1 Word → 2 ZIP → 3 Revisar pendientes" y el botón al terminar de programar. · C
+- [ ] **M-103** Auditoría: no volcar `ValoresAnteriores`/`ValoresNuevos` enteros en la página — `Auditoria.aspx:218` los pone completos en `data-anterior` de cada fila (la fila de D-030 del script de E3-5 pesa 137 KB); recortarlos en la lista y traer el detalle al abrirlo. · C
 
 ### Etapa 6 — Arquitectura y medición
 

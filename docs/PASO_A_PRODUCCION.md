@@ -119,6 +119,8 @@ Las dos deben devolver 0 filas.
 
 **Controles de E3-2 (solo SELECT):** `SELECT COUNT(*) FROM Despachos WHERE estadoDespacho = 'EN_PROCESO'` y `SELECT estado, COUNT(*) FROM SeguimientoExportacion GROUP BY estado`. Desde E3-2 los SP dejan los despachos rechazados en `PROGRAMADO` y el seguimiento solo en `EN_CURSO`/`FINALIZADO`/`CANCELADO`; si salen `EN_PROCESO`, `COMPLETADO` o `PENDIENTE`, anotarlos como un `D-` nuevo (la corrección de pruebas es D-030).
 
+**Datos de E3-5 (antes de las migraciones 54 y 55, cuyos CHECK y FK fallarían):** en pruebas se corrigieron el 2026-11-21 con `WebSGV/Database/Scripts/corregir_datos_etapa3_2026-11-21.sql`, que solo corre en `sgvActualizada` o en un ensayo y espera los conteos de pruebas. En `sgvTransporte` medir los mismos controles: `SELECT COUNT(*) FROM Despachos WHERE activo = 0 AND ISNULL(estadoDespacho, '') <> 'ANULADO'`, `SELECT COUNT(*) FROM SeguimientoExportacion WHERE estado = 'COMPLETADO'`, `SELECT COUNT(*) FROM SeguimientoExportacion s WHERE idUsuarioModificacion IS NOT NULL AND NOT EXISTS (SELECT 1 FROM Usuarios u WHERE u.idUsuario = s.idUsuarioModificacion)` y los usuarios de roles retirados, activos e inactivos (`SELECT idUsuario, rol, activo FROM Usuarios WHERE rol IN ('ADMINISTRADOR DE GRIFO', 'ADMINISTRADOR DE MAQUINARIA', 'OPERADOR')`): el CHECK de rol de la migración 54 acepta los inactivos con rol retirado, pero los activos hay que desactivarlos antes (como U-015 en pruebas). Lo que no dé 0 (o salga activo) se anota como `D-`/`U-` nuevo y se corrige con un script propio para producción, con la aprobación del usuario.
+
 ## 6. SP retirados
 
 Ninguno de los dos los llama el código publicado.

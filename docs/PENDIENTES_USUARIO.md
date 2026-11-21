@@ -4,7 +4,7 @@ Lo que **solo puede hacer el usuario** (o la oficina, a pedido suyo): decisiones
 
 Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = valor claro; C = menor. Las mejoras de código están en `docs/PLAN_MEJORAS_SGV.md` (`M-`), los datos por corregir en `docs/DATOS_POR_CORREGIR.md` (`D-`) y las pruebas en `docs/PRUEBAS_PENDIENTES.md` (`P-`).
 
-Último id usado: U-074 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: U-075 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Credenciales y paneles externos
 
@@ -19,6 +19,7 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-010** somee: factura del plan Premium — en noviembre había una factura pendiente del plan Premium de 6 meses (US$ 51,90); si no se paga, se cae el sitio. Confirmar que está pagada. · B
 
 - [ ] **U-073** Panel de somee: ¿permite un segundo usuario de BD con permisos limitados? — hoy la aplicación entra como `db_owner` y desde SQL no se pueden crear logins; con un usuario limitado nadie podría saltarse la protección de firmas y auditoría. · B
+- [ ] **U-075** Quitar de `privado/CREDENCIALES_USUARIOS.txt` los usuarios desactivados `admin.grifo`, `admin.maquinaria` y `operador` y su nota (*) — en esta máquina y en la laptop (el archivo está fuera de git); si alguno se reactiva, cambiar antes su contraseña. · C
 
 ## Decisiones de negocio
 
@@ -26,7 +27,6 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-012** El día que los conductores empiecen a liquidar en el sistema — poner `Liquidaciones.ConductoresEnSistema` en `true` en `Web.config` y publicar. Hasta entonces sus viajes de liquidación se cierran solos en cada corrida del GPS automático. Ese día cada conductor empieza con el viaje de sus despachos desde esa fecha (DN-03). · A
 - [ ] **U-013** Puesta en marcha de conductores con su propio usuario — piloto con 3–5 conductores, capacitación corta con su celular, periodo de convivencia con la liquidación en papel y un responsable de soporte por WhatsApp; la guía de capturas pasa al manual (M-074). El borrador del formulario ya existe. · B
 - [ ] **U-014** Cuándo poner `Seguridad.ExigirPoliticaAlIngresar` en `true` — (Web.config): quien entre con una contraseña que no cumple queda en el modal hasta cambiarla (un conductor en ruta, desde el celular). Recomendado: al presentar el sistema a los conductores, avisándoles antes. · B
-- [ ] **U-015** Desactivar los usuarios `admin.grifo`, `admin.maquinaria` y `operador` — (ids 91, 92 y 94, activos en `sgvActualizada`; sus módulos ya se retiraron). Recomendado: desactivar desde GestionUsuarios, no borrar (conserva la auditoría), y quitarlos de `privado/CREDENCIALES_USUARIOS.txt`. Hoy solo salen con "Todos los roles" en el filtro. · B
 - [ ] **U-016** Separación de funciones del administrador de sistema — puede crear o editar otra cuenta con rol de administración y entrar con ella. Decidir si se limita (solo roles operativos, con aprobación) o se acepta con la auditoría como control. · B
 - [ ] **U-017** Páginas sin enlace en el menú — quedan `CargarExcel.aspx` (lee/escribe la tabla `Indicadores` vieja, dice "completado" aunque pierda filas, nunca se usó), `RegistroProductos.aspx` y `RegistroRutas.aspx` (repiten CatalogoCliente). Recomendado: borrar las tres; `Indicadores` se queda (historial de placas). · B
 - [ ] **U-018** ¿Exigir el PDF de la factura comercial a los clientes con perfil CPIC? — (Novopan y otros): hoy solo a los de pedido (ZIP); ninguna de sus 20 facturas tiene PDF, así que exigirlo pasaría todos sus lotes a "pendiente". · B
@@ -71,7 +71,6 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-057** Interfaz de documentos: filtro y columnas — ¿"Con documentos pendientes" como filtro por defecto en Lotes registrados?, ¿compactar las 13 columnas (Operación, Ámbito, Planta, Creado)?, ¿anotar el número de pedido también desde "Documentos"? · C
 - [ ] **U-058** Dashboards e indicadores — el usuario tiene temas que comentar antes (al final). · C
 
-- [ ] **U-074** Autorizar el borrado de objetos retirados de la BD del sitio (E3-8) — unas 35 tablas de Grifo, Maquinaria y del modelo viejo (88 filas de maestros, ninguna de negocio actual), 19 SP, 5 vistas y 1 función; con respaldo nuevo y ensayo previo en una copia local. `Indicadores` y `CargarExcel` quedan fuera. Lista en `docs/HOJA_DE_RUTA_CALIDAD.md`, Etapa 3. · B
 
 ## Datos o documentos por conseguir
 
