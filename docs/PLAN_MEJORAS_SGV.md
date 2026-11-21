@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `6844759` — E2-6: reglas de los pendientes unificadas (`CLAUDE.md`, agentes, `nuevo-sp` y "Reglas" de cada documento), línea "Último id usado" en cada cabecera y pruebas en `CodigoFuenteLimpiezaTests` (plan < 80 KB, sin `[x]`, ids al día, sin DNI en `docs/`). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-21**, commit anterior `0b46c1d` — E2-7: Etapa 2 cerrada con nota 7 (medición en `docs/HOJA_DE_RUTA_CALIDAD.md`). No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-100 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
@@ -11,7 +11,7 @@
 - El sitio publicado (`https://sgvtransporte.somee.com`, publicación `20261120_1311_60853e8`) usa la BD de **pruebas** `sgvActualizada`, que tiene **datos reales** desde el 2026-10-19: no se borra ni limpia nada allí sin confirmar.
 - Producción (`sgvTransporte`) no está al día: el paso a producción es `docs/PASO_A_PRODUCCION.md`, en orden, tras la decisión U-011.
 - Etapa 1 (operación) cerrada: respaldo diario de la BD y de los archivos en Google Drive, restauración ensayada, publicación con vuelta atrás (`herramientas/publicar/publicar.ps1`), monitores de UptimeRobot y cron del GPS activos.
-- **Etapa 2 en curso** (ordenar el plan): E2-6 hecha, sigue E2-7. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
+- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **sigue la Etapa 3** (integridad de la BD), primero su plan. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
 - Lo abierto está en este plan (mejoras) y en los documentos de "Otros documentos" (usuario, datos, pruebas); cada uno se cuenta en su propio documento.
 
 ## Top 20
