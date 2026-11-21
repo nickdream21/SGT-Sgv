@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `4e88487` — plan detallado de la Etapa 3 (tareas E3-1 a E3-9 en `docs/HOJA_DE_RUTA_CALIDAD.md`). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-21**, commit anterior `8ba21a5` — E3-1: ensayo local de migraciones (`-Entorno ensayo`, `herramientas/respaldo/ensayar-migracion.ps1`), humo de SP (M-052), migración 52 (triggers de auditoría heredados) e `IntegridadBdTests`. No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-101 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
@@ -127,10 +127,9 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 ### Etapa 3 — Integridad de la BD
 
 - [ ] **M-048** Correr `Database/Scripts/borrar-sp-se-sin-uso.sql` en `sgvActualizada` — los 8 `sp_SE_*` sin uso siguen en la BD y `60853e8` (publicado) no los llama. Antes, el SELECT de control de `docs/PASO_A_PRODUCCION.md`, paso 6. Con orden del usuario. · B
-- [ ] **M-049** Migración 52: DROP de los 9 SP de módulos retirados — `sp_InsertarIndicador`, 3 de grifo y 5 `sp_MQ_*` (siguen en `sgvActualizada`). Pedir confirmación antes de aplicarla (es la BD del sitio). Las tablas y sus datos se conservan. · B
+- [ ] **M-049** Migración 57 (E3-8): DROP de los 9 SP de módulos retirados — `sp_InsertarIndicador`, 3 de grifo y 5 `sp_MQ_*` (siguen en `sgvActualizada`). Pedir confirmación antes de aplicarla (es la BD del sitio). Las tablas y sus datos se conservan. · B
 - [ ] **M-050** Quitar el DEFAULT 'APROBADO' de `OrdenViaje.estadoAprobacion` — un INSERT que omita la columna daría la orden por aprobada sin firma (hoy ningún INSERT del repo la omite). · B
 - [ ] **M-051** Número de viaje por conteo — `VP-AAAA-NNN` = cantidad de viajes del año + 1 (`sp_CrearDespacho.sql:110`, `sp_CrearViajeProgreso.sql:18`, `sp_LD_ReubicarDespacho…:78`): si se borran viajes puede repetirse. Pasar a un correlativo (hoy sin repetidos). · B
-- [ ] **M-052** Ejecución de humo antes de aplicar un SP — un SP con error rompió 15 min la lista de lotes del sitio publicado (tarea 17). Añadir a `aplicar-procedimientos.ps1` una ejecución de prueba de los SP de lectura (o `SET PARSEONLY`/`sp_describe_first_result_set`) antes de dar "Listo". · B
 - [ ] **M-053** Query Store acotado en `sgvActualizada` — tope de 500 MB de datos; el Query Store puede crecer hasta 1000 MB (`max_storage_size_mb` medido en pruebas). Bajarlo a 100 MB (`ALTER DATABASE … SET QUERY_STORE (MAX_STORAGE_SIZE_MB = 100)`). Crecimiento estimado con todos los choferes liquidando: 11–16 MB al mes (2 a 3 años); `sgvTransporte` (Premium) tiene 2000 MB. · B
 - [ ] **M-054** `sp_DC_RevocarFirma` y `FirmaService.RevocarFirma` sin uso — siguen en el repo (`sp_DC_RevocarFirma.sql`, `FirmaService.cs:229`) y en la BD: borrarlos. · C
 - [ ] **M-055** Borrar `sp_LD_ActualizarConductorDominanteViajes` — de la BD y del repo: ya no se llama y el código nuevo está publicado (`60853e8`). · C

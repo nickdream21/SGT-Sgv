@@ -34,7 +34,7 @@ Copiarlos a mano desde la otra PC (p. ej. con la transferencia de archivos de An
 
 - **Visual Studio 2022** con desarrollo web ASP.NET (MSBuild, IIS Express, `vstest.console.exe`) y `nuget restore WebSGV.sln` la primera vez.
 - **Microsoft Command Line Utilities for SQL Server** (`sqlcmd`, ODBC 18): los usa `WebSGV/Database/sql.ps1` y los `aplicar-*.ps1`.
-- **`sqlpackage`** (`dotnet tool install -g microsoft.sqlpackage`), solo si esta PC hace respaldos o el ensayo de restauración (`docs/PROCEDIMIENTO_RESPALDO.md`).
+- **`sqlpackage`** (`dotnet tool install -g microsoft.sqlpackage`), solo si esta PC hace respaldos, el ensayo de restauración (`docs/PROCEDIMIENTO_RESPALDO.md`) o el ensayo de migraciones (sección 5.1).
 - **Node.js**, solo para las capturas sin ventana (`herramientas/sitio-local/capturar.js`).
 - **Extensión Claude in Chrome** (Chrome o Edge) para que Claude pruebe en el navegador: pasos en `herramientas/sitio-local/README.md`.
 
@@ -55,6 +55,15 @@ Solo hacen falta en la PC que publica o respalda. Abrir una consola nueva despu�
 ## 5. Si esta PC hace el respaldo diario
 
 Hoy lo hace la PC de la oficina, a las 23:00, a la unidad compartida de Google Workspace `Respaldos_Sistemas_SGV`. En otra PC: instalar **Google Drive para escritorio** con una cuenta que vea esa unidad (aparece en `G:\Unidades compartidas\Respaldos_Sistemas_SGV`), usar esa ruta como `SGV_CARPETA_RESPALDO`, guardar la credencial FTP (sección 2) y registrar la tarea con `programar-respaldo.ps1` (`docs/PROCEDIMIENTO_RESPALDO.md`, sección 3). No registrarla en las dos PC a la vez.
+
+### 5.1. Si esta PC ensaya migraciones y SP (`ensayar-migracion.ps1`)
+
+Obligatorio antes de aplicar migraciones o SP a la BD del sitio (`herramientas/respaldo/README.md`, E3-1). Hoy solo está listo en la PC de la oficina. Hace falta:
+
+- **SQL Server local**: SQL Server Express (instancia por defecto, `.`) o **LocalDB** (`(localdb)\MSSQLLocalDB`, viene con Visual Studio), con el usuario de Windows con permiso para crear bases. Comprobar: `sqlcmd -S . -E -C -Q "SELECT HAS_PERMS_BY_NAME(NULL, NULL, 'CREATE ANY DATABASE')"` (o `-S "(localdb)\MSSQLLocalDB"`) → `1`.
+- **`sqlpackage`** (sección 3), en el PATH o en `%USERPROFILE%\.dotnet\tools`.
+- **La carpeta de respaldos** con al menos un `.bacpac` en `<carpeta>\bd\`: la unidad compartida de Google Drive (`G:\Unidades compartidas\Respaldos_Sistemas_SGV`, sección 5) como `SGV_CARPETA_RESPALDO` o `-Carpeta`. Sin Drive, `-RespaldoNuevo` exporta uno (necesita `connectionStrings.config`) o se pasa `-Bacpac` a un archivo fuera del repo.
+- La solución compilada en Debug (para las `[FactBD]`) o `-SinPruebas`.
 
 ## 6. Comprobar
 

@@ -86,9 +86,13 @@ WHERE idDespachoOrigen IS NULL AND idDespachoDestino IS NULL AND estado = 'COMPL
 .\WebSGV\Database\aplicar-migraciones.ps1 -Entorno produccion -ConfirmoProduccion
 ```
 
-Aplica en orden todas las pendientes de `Database/Schema/` (hoy 01–51) y las registra en `dbo.SchemaVersion`. Si una se detiene, corregir el dato que dice el mensaje y repetir (son idempotentes). Algunas que conviene conocer: la **26 borra `Despachos.idProducto`**; la 16 pone la hora de Perú (`dbo.fn_AhoraPeru()`); la 46 agrega `Usuarios.selloSesion` (al pasar, todas las sesiones se cierran una vez); la 47 protege `AuditoriaLog` y `Auditoria` contra UPDATE/DELETE.
+Aplica en orden todas las pendientes de `Database/Schema/` (hoy 01–52) y las registra en `dbo.SchemaVersion`. Si una se detiene, corregir el dato que dice el mensaje y repetir (son idempotentes). Algunas que conviene conocer: la **26 borra `Despachos.idProducto`**; la 16 pone la hora de Perú (`dbo.fn_AhoraPeru()`); la 46 agrega `Usuarios.selloSesion` (al pasar, todas las sesiones se cierran una vez); la 47 protege `AuditoriaLog` y `Auditoria` contra UPDATE/DELETE.
+
+**Migración 52** (`52_TriggersAuditoriaHeredados.sql`, E3-1): crea los 11 triggers `TR_<tabla>_Auditoria` heredados (llenan `Auditoria`; `sp_DC_GenerarNumeroOrden` la lee) solo si faltan; donde ya existen no hace nada y solo queda registrada. Ensayada antes con `herramientas/respaldo/ensayar-migracion.ps1`. Control después (solo SELECT): `SELECT name, is_disabled FROM sys.triggers WHERE name LIKE 'TR[_]%[_]Auditoria'` → los 11 de la migración (más `TR_AbastecimientoCombustible_Auditoria` si existe, que se borra en E3-8) con `is_disabled = 0`. Si `aplicar-migraciones.ps1 -SoloListar` avisa de un hash distinto en `16_HoraPeru.sql`, comparar `dbo.fn_AhoraPeru` con el archivo antes de aceptarlo en `$HashesAceptados` (el de pruebas ya está aceptado, revisado el 2026-11-21).
 
 ## 5. Procedimientos almacenados
+
+**Obligatorio antes de este paso y del 4:** ensayar el mismo commit sobre el `.bacpac` más reciente con `.\herramientas\respaldo\ensayar-migracion.ps1` (migraciones, SP, ejecución de humo y `[FactBD]` en una copia local) y tener `RESULTADO: OK`. `aplicar-procedimientos.ps1` vuelve a hacer el humo al terminar, pero en producción eso llega tarde: el SP ya quedó aplicado.
 
 En la misma sesión que el paso 4 (la 51 y sus 5 SP van juntos):
 

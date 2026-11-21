@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    Ejecuta una consulta o un archivo .sql contra la BD de PRUEBAS (o produccion) sin exponer la clave.
+    Ejecuta una consulta o un archivo .sql contra la BD de PRUEBAS (o produccion, o un ensayo local) sin exponer la clave.
 
 .DESCRIPTION
     Herramienta de uso diario (para personas y para agentes de IA). Lee la cadena ConexionSGV de
@@ -13,6 +13,8 @@
     Con -Texto devuelve las columnas sin cabecera ni recorte (para extraer definiciones de objetos).
 
     Produccion: solo con -ConfirmoProduccion.
+    Ensayo: -Entorno ensayo -BaseDeDatos sgvEnsayo_<algo> [-Servidor .]: solo un SQL Server LOCAL con
+    autenticacion de Windows; no lee connectionStrings.config (ver conexion-bd.ps1).
 
 .EXAMPLE
     .\sql.ps1 "SELECT COUNT(*) FROM sys.procedures"
@@ -20,6 +22,7 @@
     .\sql.ps1 "SELECT name FROM sys.tables" -Salida C:\temp\tablas.txt
     .\sql.ps1 "SELECT OBJECT_DEFINITION(OBJECT_ID('dbo.sp_SE_CambiarEstado'))" -Texto
     .\sql.ps1 "SELECT DB_NAME()" -Entorno produccion -ConfirmoProduccion
+    .\sql.ps1 "SELECT COUNT(*) FROM dbo.SchemaVersion" -Entorno ensayo -BaseDeDatos sgvEnsayo_20261121_1000
 #>
 param(
     [Parameter(Position = 0)]
@@ -27,8 +30,12 @@ param(
 
     [string]$Archivo,
 
-    [ValidateSet('pruebas', 'produccion')]
+    [ValidateSet('pruebas', 'produccion', 'ensayo')]
     [string]$Entorno = 'pruebas',
+
+    # Solo con -Entorno ensayo (BD sgvEnsayo_* en un SQL Server local).
+    [string]$BaseDeDatos,
+    [string]$Servidor,
 
     [string]$Salida,
     [switch]$Texto,
@@ -44,21 +51,11 @@ if ($Entorno -eq 'produccion' -and -not $ConfirmoProduccion) {
     throw "Para usar PRODUCCION agregue -ConfirmoProduccion."
 }
 
-$dirWeb          = Split-Path $PSScriptRoot -Parent
-$archivoConexion = if ($Entorno -eq 'produccion') { 'connectionStrings.Production.config' } else { 'connectionStrings.config' }
-$bdEsperada      = if ($Entorno -eq 'produccion') { 'sgvTransporte' } else { 'sgvActualizada' }
-
-[xml]$xml = Get-Content (Join-Path $dirWeb $archivoConexion) -Raw
-$cs = ($xml.connectionStrings.add | Where-Object { $_.name -eq 'ConexionSGV' } | Select-Object -First 1).connectionString
-$b = New-Object System.Data.SqlClient.SqlConnectionStringBuilder($cs)
-if ($b.InitialCatalog -ne $bdEsperada) { throw "$archivoConexion apunta a '$($b.InitialCatalog)', se esperaba '$bdEsperada'." }
-
-$sqlcmd = (Get-Command sqlcmd -ErrorAction SilentlyContinue).Source
-if (-not $sqlcmd) {
-    $sqlcmd = Get-ChildItem 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\*\Tools\Binn\SQLCMD.EXE' -ErrorAction SilentlyContinue |
-              Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
-}
-if (-not $sqlcmd) { throw "No se encontro sqlcmd (instalar Microsoft Command Line Utilities for SQL Server)." }
+$dirWeb = Split-Path $PSScriptRoot -Parent
+. (Join-Path $PSScriptRoot 'conexion-bd.ps1')
+$con = Get-ConexionSgv -Entorno $Entorno -BaseDeDatos $BaseDeDatos -Servidor $Servidor -DirWeb $dirWeb
+$cs  = $con.Cadena
+$sqlcmd = Get-RutaSqlcmd
 
 if ($Texto) {
     # sqlcmd no permite "sin cabecera" y "sin recorte" a la vez: se usa SqlClient. Cada fila sale
@@ -80,13 +77,12 @@ if ($Texto) {
     exit 0
 }
 
-$argumentos = @('-S', $b.DataSource, '-d', $b.InitialCatalog, '-U', $b.UserID,
-                '-C', '-I', '-f', '65001', '-b', '-W', '-s', '|')
+$argumentos = @(Get-ArgumentosSqlcmd $con) + @('-C', '-I', '-f', '65001', '-b', '-W', '-s', '|')
 if ($Archivo) { $argumentos += @('-i', (Resolve-Path $Archivo).Path) }
 else          { $argumentos += @('-Q', "SET NOCOUNT ON; $Consulta") }
 if ($Salida)  { $argumentos += @('-o', $Salida) }
 
-$env:SQLCMDPASSWORD = $b.Password
+if (-not $con.Integrada) { $env:SQLCMDPASSWORD = $con.Clave }
 try {
     & $sqlcmd @argumentos
     $codigo = $LASTEXITCODE

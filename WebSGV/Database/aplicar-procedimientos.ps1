@@ -11,18 +11,30 @@
     (todos son re-ejecutables: CREATE OR ALTER o IF OBJECT_ID ... DROP).
     Con -Todos ejecuta todos los archivos.
 
-    La conexión se lee igual que en aplicar-migraciones.ps1 (archivos gitignored).
+    La conexión se lee igual que en aplicar-migraciones.ps1 (archivos gitignored; con -Entorno ensayo,
+    una BD sgvEnsayo_* de un SQL Server local con la autenticación de Windows).
     Aplicar ANTES las migraciones: varios procedimientos usan dbo.fn_AhoraPeru() (migración 16).
+
+    Ejecución de humo (M-052), también con -SoloListar: cada procedimiento del repo que exista en la
+    BD se compila con sys.dm_exec_describe_first_result_set_for_object(OBJECT_ID(...), 0), que
+    detecta tablas o columnas que ya no existen sin ejecutar nada, y con
+    sys.dm_sql_referenced_entities (la primera solo informa el primer error). Un error que no esté
+    en $ErroresHumoPermitidos se informa y el script termina con código 1, sin "Listo".
 
 .EXAMPLE
     .\aplicar-procedimientos.ps1 -Entorno pruebas -SoloListar
     .\aplicar-procedimientos.ps1 -Entorno pruebas
     .\aplicar-procedimientos.ps1 -Entorno produccion -ConfirmoProduccion
+    .\aplicar-procedimientos.ps1 -Entorno ensayo -BaseDeDatos sgvEnsayo_20261121_1000
 #>
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('pruebas', 'produccion')]
+    [ValidateSet('pruebas', 'produccion', 'ensayo')]
     [string]$Entorno,
+
+    # Solo con -Entorno ensayo (BD sgvEnsayo_* en un SQL Server local).
+    [string]$BaseDeDatos,
+    [string]$Servidor,
 
     [switch]$SoloListar,
     [switch]$Todos,
@@ -35,24 +47,27 @@ $dirDatabase = $PSScriptRoot
 $dirSps      = Join-Path $dirDatabase 'StoredProcedures'
 $dirWeb      = Split-Path $dirDatabase -Parent
 
-$archivoConexion = if ($Entorno -eq 'produccion') { 'connectionStrings.Production.config' } else { 'connectionStrings.config' }
-$bdEsperada      = if ($Entorno -eq 'produccion') { 'sgvTransporte' } else { 'sgvActualizada' }
-
 if ($Entorno -eq 'produccion' -and -not $SoloListar -and -not $ConfirmoProduccion) {
     throw "Para modificar PRODUCCIÓN agregue -ConfirmoProduccion (o use -SoloListar)."
 }
 
-[xml]$xml = Get-Content (Join-Path $dirWeb $archivoConexion) -Raw
-$cs = ($xml.connectionStrings.add | Where-Object { $_.name -eq 'ConexionSGV' } | Select-Object -First 1).connectionString
-$b = New-Object System.Data.SqlClient.SqlConnectionStringBuilder($cs)
-if ($b.InitialCatalog -ne $bdEsperada) { throw "$archivoConexion apunta a '$($b.InitialCatalog)', se esperaba '$bdEsperada'." }
+. (Join-Path $dirDatabase 'conexion-bd.ps1')
+$con = Get-ConexionSgv -Entorno $Entorno -BaseDeDatos $BaseDeDatos -Servidor $Servidor -DirWeb $dirWeb
+$cs  = $con.Cadena
+[void](Get-RutaSqlcmd)
 
-$sqlcmd = (Get-Command sqlcmd -ErrorAction SilentlyContinue).Source
-if (-not $sqlcmd) {
-    $sqlcmd = Get-ChildItem 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\*\Tools\Binn\SQLCMD.EXE' -ErrorAction SilentlyContinue |
-              Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+# Errores de la ejecución de humo que son falsos positivos conocidos (procedimiento -> error_number):
+# SQL dinámico (11514) y tablas temporales (4902, 11526), cuyo resultado no se puede describir sin
+# ejecutar. Medido en sgvActualizada el 2026-11-21. Añadir aquí solo con el motivo.
+$ErroresHumoPermitidos = @{
+    'sp_SE_CorregirHito'         = 11514   # EXEC sp_executesql con la columna elegida
+    'sp_SE_ImportarLote'         = 4902    # usa #lote, que crea quien lo llama
+    'sp_SE_RegistrarHitoGps'     = 11514   # EXEC sp_executesql con la columna elegida
+    'sp_SE_SincronizarDespachos' = 11526   # INSERT ... desde una tabla temporal
 }
-if (-not $sqlcmd) { throw "No se encontró sqlcmd." }
+# Errores que la DMV puede devolver junto al principal ("no se pudo determinar el resultado"): solo
+# se aceptan acompañando al permitido de ese procedimiento, nunca solos.
+$ErroresHumoSecundarios = @(11529, 11501)
 
 # Compara ignorando espacios, mayúsculas y la forma de la cabecera: SQL Server guarda
 # "CREATE PROCEDURE [dbo].[x]" aunque se haya ejecutado "CREATE OR ALTER PROCEDURE x".
@@ -65,7 +80,7 @@ function Normalizar([string]$texto) {
     return $t
 }
 
-Write-Host "Entorno: $Entorno  ->  $($b.DataSource) / $($b.InitialCatalog)" -ForegroundColor Cyan
+Write-Host "Entorno: $Entorno  ->  $($con.Servidor) / $($con.Bd)" -ForegroundColor Cyan
 
 # Definiciones actuales en la BD
 $enBd = @{}
@@ -78,6 +93,7 @@ try {
 
 # Procedimientos definidos en cada archivo (lotes separados por GO)
 $aEjecutar = New-Object System.Collections.Generic.List[string]
+$nombresRepo = New-Object System.Collections.Generic.List[string]
 $faltan = 0; $distintos = 0; $iguales = 0
 foreach ($archivo in Get-ChildItem $dirSps -Filter '*.sql' | Sort-Object Name) {
     $texto = [IO.File]::ReadAllText($archivo.FullName)
@@ -88,6 +104,7 @@ foreach ($archivo in Get-ChildItem $dirSps -Filter '*.sql' | Sort-Object Name) {
         if (-not $m.Success) { continue }
         $nombre = $m.Groups[1].Value
         $clave = $nombre.ToLowerInvariant()
+        $nombresRepo.Add($nombre)
         if (-not $enBd.ContainsKey($clave)) {
             Write-Host ("  FALTA     {0,-50} ({1})" -f $nombre, $archivo.Name) -ForegroundColor Yellow; $faltan++; $cambia = $true
         }
@@ -100,11 +117,69 @@ foreach ($archivo in Get-ChildItem $dirSps -Filter '*.sql' | Sort-Object Name) {
 }
 Write-Host "Iguales: $iguales   Distintos: $distintos   Faltan: $faltan   Archivos a ejecutar: $($aEjecutar.Count)"
 
-if ($SoloListar -or $aEjecutar.Count -eq 0) { return }
-
-foreach ($ruta in $aEjecutar) {
-    Write-Host "Ejecutando $([IO.Path]::GetFileName($ruta)) ..." -ForegroundColor Cyan
-    & $sqlcmd -C -I -b -f 65001 -S $b.DataSource -d $b.InitialCatalog -U $b.UserID -P $b.Password -i $ruta
-    if ($LASTEXITCODE -ne 0) { throw "Falló $([IO.Path]::GetFileName($ruta)) (sqlcmd exit $LASTEXITCODE)." }
+if (-not $SoloListar) {
+    foreach ($ruta in $aEjecutar) {
+        Write-Host "Ejecutando $([IO.Path]::GetFileName($ruta)) ..." -ForegroundColor Cyan
+        Invoke-SqlcmdSgv $con @('-C', '-I', '-b', '-f', '65001', '-i', $ruta)
+        if ($LASTEXITCODE -ne 0) { throw "Falló $([IO.Path]::GetFileName($ruta)) (sqlcmd exit $LASTEXITCODE)." }
+    }
 }
+
+# ── Ejecución de humo (M-052) ───────────────────────────────────────────────
+# Solo compila: dm_exec_describe_first_result_set_for_object no ejecuta el procedimiento.
+$erroresHumo = New-Object System.Collections.Generic.List[string]
+$revisados = 0; $permitidos = 0
+$conn = New-Object System.Data.SqlClient.SqlConnection($cs); $conn.Open()
+try {
+    foreach ($nombre in ($nombresRepo | Sort-Object -Unique)) {
+        $cmd = New-Object System.Data.SqlClient.SqlCommand(@"
+SELECT d.error_number, d.error_message
+FROM sys.dm_exec_describe_first_result_set_for_object(OBJECT_ID(@nombre), 0) d
+WHERE d.error_number IS NOT NULL;
+SELECT CASE WHEN OBJECT_ID(@nombre, 'P') IS NULL THEN 0 ELSE 1 END;
+"@, $conn)
+        $cmd.CommandTimeout = 120
+        [void]$cmd.Parameters.AddWithValue('@nombre', 'dbo.' + $nombre)
+        $r = $cmd.ExecuteReader()
+        $filas = @()
+        while ($r.Read()) { $filas += [pscustomobject]@{ Numero = [int]$r.GetValue(0); Mensaje = [string]$r.GetValue(1) } }
+        [void]$r.NextResult(); [void]$r.Read(); $existe = [int]$r.GetValue(0) -eq 1
+        $r.Close()
+        if (-not $existe) { continue }   # FALTA (con -SoloListar): ya se informó arriba
+        $revisados++
+
+        # Segunda comprobación: la DMV de arriba informa solo el PRIMER error, así que en los 4
+        # permitidos un objeto o una columna que falte más adelante quedaría tapado. Las
+        # dependencias (dm_sql_referenced_entities) fallan con el error 2020 si el SP referencia
+        # algo que no existe. Medido el 2026-11-21: 0 errores en los 115 SP de la BD.
+        $dep = New-Object System.Data.SqlClient.SqlCommand("SELECT COUNT(*) FROM sys.dm_sql_referenced_entities(@nombre, 'OBJECT');", $conn)
+        $dep.CommandTimeout = 120
+        [void]$dep.Parameters.AddWithValue('@nombre', 'dbo.' + $nombre)
+        try { [void]$dep.ExecuteScalar() }
+        catch [System.Data.SqlClient.SqlException] {
+            $ex = $_.Exception
+            $erroresHumo.Add(("{0}: error {1} en sus dependencias: {2}" -f $nombre, $ex.Number, ($ex.Message -replace '\s+', ' ').Trim()))
+            continue
+        }
+
+        if ($filas.Count -eq 0) { continue }
+        # Se revisan TODAS las filas de error: un SP permitido solo pasa si cada una es su número
+        # permitido o uno de los secundarios que la DMV añade al mismo error.
+        $aceptables = @($ErroresHumoPermitidos[$nombre]) + $ErroresHumoSecundarios | Where-Object { $null -ne $_ }
+        $ajenas = @($filas | Where-Object { $aceptables -notcontains $_.Numero })
+        if ($ErroresHumoPermitidos.ContainsKey($nombre) -and $ajenas.Count -eq 0 -and
+            @($filas | Where-Object { $_.Numero -eq $ErroresHumoPermitidos[$nombre] }).Count -gt 0) { $permitidos++; continue }
+        $f = if ($ajenas.Count -gt 0) { $ajenas[0] } else { $filas[0] }
+        $erroresHumo.Add(("{0}: error {1}: {2}" -f $nombre, $f.Numero, ($f.Mensaje -replace '\s+', ' ').Trim()))
+    }
+} finally { $conn.Close() }
+
+Write-Host "Humo: $revisados procedimientos compilados, $permitidos con un error permitido, $($erroresHumo.Count) con error."
+if ($erroresHumo.Count -gt 0) {
+    foreach ($e in $erroresHumo) { Write-Host "  ERROR HUMO  $e" -ForegroundColor Red }
+    Write-Host "La ejecución de humo encontró procedimientos que no compilan contra la BD (ver arriba)." -ForegroundColor Red
+    exit 1
+}
+
+if ($SoloListar -or $aEjecutar.Count -eq 0) { return }
 Write-Host "Listo." -ForegroundColor Green

@@ -139,6 +139,30 @@ El procedimiento completo para personas (qué se respalda, cómo restaurar en un
 
 Registra "SGV - Respaldo diario" (23:00, `-Hora` para cambiarla): `respaldar-bd.ps1` y luego `respaldar-archivos.ps1` con la misma carpeta. Corre con el usuario actual **solo con la sesión iniciada** (puede estar bloqueada) para no guardar la contraseña de Windows; sin sesión (S4U) no podría descifrar la credencial FTP de DPAPI. Si se perdió una ejecución, corre apenas sea posible. La salida queda en `<Carpeta>\tarea-ultima-ejecucion.log`.
 
+## Ensayar migraciones y procedimientos antes de la BD viva (E3-1)
+
+```powershell
+# Último .bacpac de <Carpeta>\bd\ → sgvEnsayo_aaaaMMdd_HHmm local → migraciones → SP y humo → [FactBD] → borra
+.\herramientas\respaldo\ensayar-migracion.ps1 -Carpeta 'G:\Unidades compartidas\Respaldos_Sistemas_SGV'
+
+# Con un respaldo recién exportado (respaldar-bd.ps1, solo lee pruebas) y consultas de control
+.\herramientas\respaldo\ensayar-migracion.ps1 -RespaldoNuevo -ArchivoControl .\control.sql
+
+# Conservar la BD de ensayo para revisarla o romperla a mano (bórrela después), sin pruebas
+.\herramientas\respaldo\ensayar-migracion.ps1 -Conservar -SinPruebas
+.\WebSGV\Database\sql.ps1 "SELECT COUNT(*) FROM dbo.SchemaVersion" -Entorno ensayo -BaseDeDatos sgvEnsayo_20261121_1300
+```
+
+- Toma el `.bacpac` más reciente de `<Carpeta>\bd\` (o `-Bacpac`; `-RespaldoNuevo` exporta uno antes) y muestra su fecha y antigüedad. `-Carpeta` por defecto es `$env:SGV_CARPETA_RESPALDO`.
+- Lo importa con `sqlpackage` en una BD **nueva** `sgvEnsayo_aaaaMMdd_HHmm` (`-NombreBd`, siempre `sgvEnsayo_*`) de un SQL Server **local** (`.` y, si no responde, `(localdb)\MSSQLLocalDB`; `-Servidor`), con la autenticación de Windows. Rechaza servidores remotos y BD que ya existan.
+- Corre `aplicar-migraciones.ps1` y `aplicar-procedimientos.ps1` con `-Entorno ensayo -BaseDeDatos <ensayo>`, cada uno en su proceso (su salida queda en el log). El segundo incluye la **ejecución de humo** (M-052): compila cada SP del repo con `sys.dm_exec_describe_first_result_set_for_object`; se revisan todas las filas de error de cada SP, y una fuera de los 4 permitidos (`$ErroresHumoPermitidos`: SQL dinámico y tablas temporales, cada SP con su número; 11529/11501 solo acompañando a ese número) hace fallar el ensayo. Como esa vista solo informa el **primer** error, cada SP pasa además por `sys.dm_sql_referenced_entities`, que falla (2020, 207) si referencia una tabla o columna que no existe: así un objeto que falte más adelante en uno de los 4 permitidos no queda tapado (probado). Límite: una columna que falte en una sentencia que usa una tabla temporal (`sp_SE_SincronizarDespachos`) no se detecta; eso lo cubren las `[FactBD]` del ensayo.
+- Corre las pruebas de integración (`WebSGV.Tests.Integracion`, con `vstest`) contra el ensayo poniendo `SGV_TEST_CONNSTR`; `BaseDePruebas` acepta `sgvEnsayo_*` solo si el servidor es local. Compile antes (`msbuild WebSGV.sln /p:Configuration=Debug`) o use `-SinPruebas`.
+- `-ArchivoControl`: un `.sql` con consultas `SELECT` de control que se ejecuta al final con `sql.ps1 -Entorno ensayo`; su resultado sale en el log.
+- Al final borra la BD de ensayo (tiene datos reales) y el login SQL que crea la importación (el `.bacpac` trae el usuario de somee y `sqlpackage` crea su login con una contraseña aleatoria). Solo borra un login si cumple **todo**: figura como `SqlLogin` en el `model.xml` del `.bacpac`, es de tipo `S` (login SQL, nunca uno de Windows), no existía en el servidor antes del ensayo y su SID es el de un usuario de la BD de ensayo (se consulta antes del `DROP DATABASE`). Con `-Conservar` no borra nada e imprime los comandos para la BD y para esos logins.
+- **Log**: la salida completa en `<Carpeta>\ensayos\ensayo-migracion_aaaaMMdd_HHmm.log` y una línea por ensayo en `<Carpeta>\ensayos\ensayos.log`. Va junto a los respaldos (fuera del repo, ya tiene datos reales y está en la unidad compartida) en vez de `C:\PublicacionesSGV`, que es de las publicaciones; no contiene claves (la conexión local no usa contraseña y nunca se lee `connectionStrings.config`).
+- Código de salida: `0` todo en verde; `1` falló la importación, una migración, un SP, el humo, una prueba, el control o el borrado.
+- **Obligatorio** antes de aplicar migraciones o SP a `sgvActualizada` (la BD del sitio; `herramientas/publicar/README.md`, "Antes") o a producción (`docs/PASO_A_PRODUCCION.md`, pasos 4 y 5): el humo de `aplicar-procedimientos.ps1` sobre la BD viva avisa, pero después de aplicar. Requisitos de la PC: `docs/PREPARAR_MAQUINA.md`, sección 5.1.
+
 ## Qué NO cubre todavía
 
 - Copiar la carpeta de respaldos a otro disco o a la nube (se recomienda que `<Carpeta>` esté dentro de OneDrive/Google Drive).
