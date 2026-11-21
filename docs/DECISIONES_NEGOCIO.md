@@ -1,16 +1,20 @@
 # Decisiones de negocio de SGV
 
 Este documento es la fuente de las **reglas de negocio acordadas con el usuario** que no se deducen solas del código:
-qué significa "aprobada", qué se bloquea, qué se deja como está y por qué. Antes vivían solo en el historial de
-`docs/PLAN_MEJORAS_SGV.md`; el detalle técnico de cada cambio (pruebas, revisiones, SP) sigue en ese historial y en
+qué significa "aprobada", qué se bloquea, qué se deja como está y por qué. Antes vivían solo en el historial del plan; el
+detalle técnico de cada cambio (pruebas, revisiones, SP) sigue en `docs/archivo/HISTORIAL_2026.md` (congelado) y en
 git (`git show <commit>`). Las reglas técnicas y de arquitectura están en `CLAUDE.md`; el flujo y los permisos por rol,
 en `docs/FLUJO_DE_TRABAJO_SGV.md`; los clientes terceros, en `docs/CLIENTES_TERCEROS.md`.
 
-**Cómo agregar una decisión**: una entrada nueva con el siguiente número `DN-xx` en el módulo que corresponda, con
+**Cómo agregar una decisión**: una entrada nueva `### DN-xx` con el número siguiente al `Último id usado` (y esa línea
+se actualiza en el mismo cambio), en el módulo que corresponda y en el índice, con
 la regla en pocas líneas, `Desde:` (fecha y commit), `En el código:` (archivo:línea o clave de `Web.config`; "solo
 procedimiento" si no la aplica el código) y `Estado:` (vigente / pendiente de reactivar / aplicada una vez / a confirmar). Si una
 decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la nueva. Nunca datos personales (DNI,
 nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
+Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
+
+Último id usado: DN-24 (la próxima decisión toma el siguiente; ver "Reglas" al final).
 
 ## Índice
 
@@ -271,3 +275,24 @@ que no suman el flete, peso bruto mal escrito y nombres de producto mal copiados
 - Desde: 2026-10-23, `991d44b`.
 - En el código: solo procedimiento.
 - Estado: a confirmar con la administradora (U-023 en `docs/PENDIENTES_USUARIO.md`).
+
+## Reglas
+
+Las mismas en `docs/PLAN_MEJORAS_SGV.md`, `docs/PENDIENTES_USUARIO.md`, `docs/DATOS_POR_CORREGIR.md`, `docs/PRUEBAS_PENDIENTES.md`, `docs/DECISIONES_NEGOCIO.md` y `CLAUDE.md` ("Keeping the plan up to date"). `CodigoFuenteLimpiezaTests` comprueba una parte: sin `[x]`, formato del id, ids únicos y no mayores que el último usado, tamaño del plan y números con forma de DNI en `docs/`.
+
+| Qué es | Dónde va |
+|---|---|
+| Mejora de código o de la BD | `docs/PLAN_MEJORAS_SGV.md` (`M-`) |
+| Lo que solo puede hacer el usuario: decisión, credencial, panel externo, dato o documento por conseguir | `docs/PENDIENTES_USUARIO.md` (`U-`) |
+| Registros que corregir, completar o cargar | `docs/DATOS_POR_CORREGIR.md` (`D-`) |
+| Probar en el navegador, en celular, con un rol, pedido o conductor real, o en el sitio publicado | `docs/PRUEBAS_PENDIENTES.md` (`P-`) |
+| Regla de negocio acordada con el usuario | `docs/DECISIONES_NEGOCIO.md` (`DN-`) |
+| Paso del paso a producción (`sgvTransporte`) | `docs/PASO_A_PRODUCCION.md` |
+| Paso de cada publicación | `herramientas/publicar/README.md`, "Antes y después de publicar" |
+
+- **Id nuevo**: el siguiente al `Último id usado` de la cabecera del documento, y esa línea se actualiza en el mismo cambio. Los ids no se reutilizan (tampoco los de ítems borrados o retirados) ni se renumeran.
+- **Formato**: cada pendiente es su propio `- [ ] **M-001** título — qué y dónde (archivo si se sabe) · A/B/C`, nunca escondido en el texto de otro ni solo en un chat. A: riesgo de datos, dinero o seguridad, o bloquea el uso real; B: valor claro; C: menor.
+- **Al terminar**, el ítem se borra de su documento en el mismo commit (nunca `[x]`): el commit es el historial (`git log`; `docs/archivo/HISTORIAL_2026.md` está congelado y no se escribe). Si deja algo pendiente, va con un id nuevo. Las decisiones (`DN-`) no se borran: si una cambia, se marca "reemplazada por DN-yy".
+- **En el mismo commit que una feature, fix, migración o SP**: la línea "Última actualización" de `docs/PLAN_MEJORAS_SGV.md` (fecha y commit anterior), y `docs/PASO_A_PRODUCCION.md` o el README de publicar si afecta a producción o a la publicación.
+- **Sin datos personales en `docs/`**: ni DNI, carnets, teléfonos, fechas de nacimiento, direcciones ni nombres de conductores (tampoco contraseñas ni tokens): usar el rol, el id, la placa o el número del documento.
+- El plan pesa menos de 80 KB.

@@ -138,14 +138,14 @@ The main session is the **orchestrator**: it talks to the user, decides, delegat
 | Agent | Does | Never |
 |---|---|---|
 | `analista` | Reads code/DB (SELECT only), root cause, one recommended plan with exact files | edits files or writes to the DB |
-| `desarrollador` | Implements the plan, tests, build, full test suite | commits, publishes, touches the plan doc |
+| `desarrollador` | Implements the plan, tests, build, full test suite | commits, publishes, touches the plan or the pending/decision documents |
 | `revisor` | Reviews `git diff`: bugs, security, real data, deploy, conventions; verified findings + verdict | edits |
 | `probador` | Runs the local site, tests end to end by role and at 1366/390 px, with evidence | edits repo code, writes on the published site |
 
 Flow, scaled to the task (use only the agents that add value):
 
 1. **Small and obvious** (a typo, one-line fix, a question): the orchestrator does it directly.
-2. **Bug or feature**: `analista` → orchestrator approves the plan (asks the user only for business decisions) → `desarrollador` → `revisor` and `probador` **in parallel** → if there are findings, back to `desarrollador` with the exact list (max. 2 rounds, then report to the user) → orchestrator updates `docs/PLAN_MEJORAS_SGV.md`, checks `git status` and reports.
+2. **Bug or feature**: `analista` → orchestrator approves the plan (asks the user only for business decisions) → `desarrollador` → `revisor` and `probador` **in parallel** → if there are findings, back to `desarrollador` with the exact list (max. 2 rounds, then report to the user) → orchestrator updates the plan and the pending documents (see "Keeping the plan up to date"), checks `git status` and reports.
 3. **Review/audit**: `revisor` and/or `probador` in parallel, plus `analista` for an area.
 
 Orchestrator rules: give each subagent a self-contained brief (goal, context already known, files, acceptance criteria, what *not* to do); never trust a report without its evidence (build/test output, file:line, test table); launch independent agents in the same message. **One commit per finished task** (standing user instruction, 2026-11-14): as soon as a task is approved by `revisor`/`probador` and the plan is updated, commit only that task's files (never mix tasks; stage by path, never `git add -A`); work on several tasks in sequence, not interleaved in the working tree. Push and publish only when the user says so. Report to the user in Spanish, short: what changed, evidence, what is pending.
@@ -178,9 +178,25 @@ Functional/process documentation (Spanish) in `docs/`:
 
 The plan is the only shared context between machines and sessions — never let it fall behind:
 
-- **In the same commit as any feature, fix, migration or new SP**, update `docs/PLAN_MEJORAS_SGV.md`: the "Última actualización" line (date + last commit) and the item's document: when a task is done it is deleted from its document (the commit is the history; `docs/archivo/HISTORIAL_2026.md` holds the history up to 2026-11-21 and is frozen, never written to). And, if it affects production (migrations, SPs, DLLs, secrets, manual post-publish steps), `docs/PASO_A_PRODUCCION.md` for the move to `sgvTransporte` and "Antes y después de publicar" in `herramientas/publicar/README.md` for what every publication needs.
-- **Every loose end becomes its own `[ ]` with an id** in the right document: code/DB improvement → `docs/PLAN_MEJORAS_SGV.md` (`M-`); only the user can do it (decision, panel, data to obtain) → `docs/PENDIENTES_USUARIO.md` (`U-`); records to fix or load → `docs/DATOS_POR_CORREGIR.md` (`D-`); test in the browser/phone/real order/published site → `docs/PRUEBAS_PENDIENTES.md` (`P-`). A new item takes the number after the highest one in its document (the others are never renumbered), with priority A/B/C and one or two lines; when done it is deleted, never marked `[x]`. Never leave a pending item buried inside the text of a finished task or only in a chat reply.
-- Also update the Claude memory `pendientes_paso_a_produccion.md` when something is applied only to the test DB.
+The same rules are written (in Spanish) under "Reglas" in the five pending/decision documents below, and are partly enforced by `CodigoFuenteLimpiezaTests` (no `[x]`, id format and uniqueness, last id, plan size, DNI-shaped numbers):
+
+| What it is | Where it goes |
+|---|---|
+| Code or DB improvement | `docs/PLAN_MEJORAS_SGV.md` (`M-`) |
+| Only the user can do it (decision, credential, external panel, data or document to obtain) | `docs/PENDIENTES_USUARIO.md` (`U-`) |
+| Records to fix, complete or load | `docs/DATOS_POR_CORREGIR.md` (`D-`) |
+| Test in the browser, on a phone, with a real role, order or driver, or on the published site | `docs/PRUEBAS_PENDIENTES.md` (`P-`) |
+| Business rule agreed with the user | `docs/DECISIONES_NEGOCIO.md` (`DN-`) |
+| Step of the move to production (`sgvTransporte`) | `docs/PASO_A_PRODUCCION.md` |
+| Step every publication needs | "Antes y después de publicar" in `herramientas/publicar/README.md` |
+
+- **New id**: the number after the `Último id usado` line in that document's header, and that line is updated in the same change. Ids are never reused (not even those of deleted or retired items) and never renumbered.
+- **Format**: every loose end is its own `- [ ] **M-001** title — what and where (file if known) · A/B/C`, never buried inside another item or only in a chat reply. A: risk to data, money or security, or blocks real use; B: clear value; C: minor.
+- **When a task is done** it is deleted from its document in the same commit, never marked `[x]`: the commit is the history (`git log`; `docs/archivo/HISTORIAL_2026.md` is frozen, never written to). Whatever it leaves pending gets a new id. Decisions (`DN-`) are not deleted: a changed one is marked "reemplazada por DN-yy".
+- **In the same commit as any feature, fix, migration or SP**, update the "Última actualización" line of `docs/PLAN_MEJORAS_SGV.md` (date + previous commit), plus `docs/PASO_A_PRODUCCION.md` / the publish README if it affects production or publishing (migrations, SPs, DLLs, secrets, manual steps).
+- **No personal data in `docs/`**: no DNI, driver's licences, phone numbers, birth dates, addresses or drivers' names (nor passwords or tokens): use the role, the id, the plate or the document number.
+- The plan stays under 80 KB.
+- What is applied only to the test DB the orchestrator also keeps in its own Claude memory (outside the repo).
 - Before finishing a task, check `git status` for untracked files: commit them, gitignore them, or say why they stay.
 
 `AGENTS.md` at the repo root only points other AI tools to this file; there is no other agent system in the repo.

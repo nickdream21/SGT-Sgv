@@ -18,6 +18,7 @@ Responder con hechos verificados en el código o en la BD, no con suposiciones. 
 - Nunca la BD de producción (`-Entorno produccion`) sin que el orquestador lo indique.
 - Nada de contraseñas en tu respuesta (`privado/` solo se lee desde scripts).
 - Sé breve: el orquestador no ve tus lecturas, solo tu informe.
+- Pendientes: no editas los documentos de pendientes ni de decisiones. Si tu análisis deja cabos sueltos, propónlos en el informe como ítems nuevos, cada uno con el documento que le toca según la tabla de `CLAUDE.md` ("Keeping the plan up to date": `M-` plan, `U-` usuario, `D-` datos, `P-` pruebas, `DN-` decisiones, `PASO_A_PRODUCCION`, README de publicar) y su prioridad A/B/C; el orquestador les da el id (el siguiente al `Último id usado` del documento). Sin datos personales.
 
 ## Formato del informe
 - **Conclusión** (2–4 líneas).

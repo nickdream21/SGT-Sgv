@@ -275,9 +275,9 @@ namespace WebSGV.Tests
         private static readonly Regex ArchivoDabEnRaiz = new Regex(
             @"^(dab-config[^/]*\.json|\.env(\.[^/]*)?)$", RegexOptions.IgnoreCase);
 
-        private static List<string> ArchivosVersionados(string raizRepo)
+        private static List<string> ArchivosVersionados(string raizRepo, string argumentos = "ls-files -z")
         {
-            var info = new ProcessStartInfo("git", "ls-files -z")
+            var info = new ProcessStartInfo("git", argumentos)
             {
                 WorkingDirectory = raizRepo,
                 UseShellExecute = false,
@@ -406,6 +406,197 @@ namespace WebSGV.Tests
             Assert.True(hallazgos.Count == 0,
                 "Usa LogSGV.Info/Advertencia/Error en lugar de Debug/Trace/Console " +
                 "(o MensajeErrorHelper.ParaUsuario(ex), que ya registra el error):" +
+                Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
+        }
+
+        // ---------- Documentos de pendientes (E2-6, 2026-11-21) ----------
+        // Reglas en CLAUDE.md ("Keeping the plan up to date") y en "Reglas" de cada documento: una tarea
+        // terminada se borra (nunca [x]), cada id nuevo es el siguiente al "Último id usado" de la cabecera
+        // (los retirados no se reutilizan), el plan pesa menos de 80 KB y docs/ no lleva datos personales.
+
+        private const int TamanoMaximoPlanBytes = 80 * 1024;
+
+        /// <summary>Ítem de lista marcado como hecho: "- [x]" (también "*"/"+", "[X]" y con sangría).</summary>
+        private static readonly Regex LineaMarcadaHecha = new Regex(@"^[ \t]*[-*+][ \t]+\[[xX]\]", RegexOptions.Multiline);
+
+        /// <summary>Id definido al inicio de un ítem ("- [ ] **M-001**") o de un encabezado ("### DN-01").</summary>
+        private static readonly Regex IdDefinido = new Regex(
+            @"^(?:[ \t]*[-*+][ \t]+\[[ xX~]\][ \t]+\*\*|#{2,4}[ \t]+)(?<pref>[A-Z]{1,2})-(?<num>[0-9]{2,4})\b",
+            RegexOptions.Multiline);
+
+        /// <summary>Cualquier casilla de lista ("- [ ]", "- [~]", "- [x]"), con el resto de la línea.</summary>
+        private static readonly Regex Casilla = new Regex(
+            @"^[ \t]*[-*+][ \t]+\[[ ~xX]\](?<resto>[^\r\n]*)", RegexOptions.Multiline);
+
+        private static readonly Regex UltimoIdUsado = new Regex(
+            @"^Último id usado: (?<pref>[A-Z]{1,2})-(?<num>[0-9]{2,4})\b", RegexOptions.Multiline);
+
+        private static string LeerDoc(string relativo)
+        {
+            string raizRepo = BaseDePruebas.RaizRepo;
+            Assert.NotNull(raizRepo);
+            string ruta = Path.Combine(raizRepo, relativo.Replace('/', Path.DirectorySeparatorChar));
+            Assert.True(File.Exists(ruta), "No existe " + relativo + ": si se movió, actualiza esta prueba y CLAUDE.md.");
+            return File.ReadAllText(ruta);
+        }
+
+        private static int NumeroDeLinea(string texto, int indice) => texto.Take(indice).Count(c => c == '\n') + 1;
+
+        [Fact]
+        public void Plan_PesaMenosDe80KB()
+        {
+            string raizRepo = BaseDePruebas.RaizRepo;
+            Assert.NotNull(raizRepo);
+            long bytes = new FileInfo(Path.Combine(raizRepo, "docs", "PLAN_MEJORAS_SGV.md")).Length;
+            Assert.True(bytes < TamanoMaximoPlanBytes,
+                $"docs/PLAN_MEJORAS_SGV.md pesa {bytes / 1024} KB (máximo 80 KB): borra las tareas terminadas " +
+                "(el commit es el historial) y deja cada pendiente en una o dos líneas; lo que no es una mejora de " +
+                "código va a PENDIENTES_USUARIO, DATOS_POR_CORREGIR, PRUEBAS_PENDIENTES o DECISIONES_NEGOCIO.");
+        }
+
+        [Fact]
+        public void LineaMarcadaHecha_DistingueHechasDePendientes()
+        {
+            Assert.Matches(LineaMarcadaHecha, "- [x] **M-001** algo · B");
+            Assert.Matches(LineaMarcadaHecha, "  - [X] sub-tarea");
+            Assert.Matches(LineaMarcadaHecha, "texto\n* [x] otra");
+            Assert.DoesNotMatch(LineaMarcadaHecha, "- [ ] **M-001** algo · B");
+            Assert.DoesNotMatch(LineaMarcadaHecha, "- [~] **P-006** a medias · C");
+            Assert.DoesNotMatch(LineaMarcadaHecha, "nunca se marca `- [x]`: se borra");
+        }
+
+        [Theory]
+        [InlineData("docs/PLAN_MEJORAS_SGV.md", "M")]
+        [InlineData("docs/PENDIENTES_USUARIO.md", "U")]
+        [InlineData("docs/DATOS_POR_CORREGIR.md", "D")]
+        [InlineData("docs/PRUEBAS_PENDIENTES.md", "P")]
+        [InlineData("docs/DECISIONES_NEGOCIO.md", "DN")]
+        public void DocumentoDePendientes_SinHechasConIdsUnicosYUltimoIdAlDia(string relativo, string prefijo)
+        {
+            string texto = LeerDoc(relativo);
+
+            List<string> hechas = LineaMarcadaHecha.Matches(texto).Cast<Match>()
+                .Select(m => relativo + ":" + NumeroDeLinea(texto, m.Index)).ToList();
+            Assert.True(hechas.Count == 0,
+                "Una tarea terminada se BORRA de su documento en el mismo commit (el commit es el historial), " +
+                "nunca se marca [x]; si deja algo pendiente, va con un id nuevo:" +
+                Environment.NewLine + string.Join(Environment.NewLine, hechas));
+
+            List<Match> ultimos = UltimoIdUsado.Matches(texto).Cast<Match>().ToList();
+            Assert.True(ultimos.Count == 1,
+                $"{relativo} debe tener en su cabecera una sola línea \"Último id usado: {prefijo}-NNN\" " +
+                $"(tiene {ultimos.Count}).");
+            Assert.True(ultimos[0].Groups["pref"].Value == prefijo,
+                $"La línea \"Último id usado\" de {relativo} debe usar el prefijo {prefijo}- " +
+                $"(dice {ultimos[0].Groups["pref"].Value}-).");
+            int ultimo = int.Parse(ultimos[0].Groups["num"].Value);
+
+            // Toda casilla empieza por su id en negrita, con el prefijo de este documento: "- [ ] **M-001** …".
+            var formato = new Regex(@"^[ \t]+\*\*" + prefijo + @"-[0-9]{3}\*\*");
+            List<string> malFormadas = Casilla.Matches(texto).Cast<Match>()
+                .Where(m => !formato.IsMatch(m.Groups["resto"].Value))
+                .Select(m => $"{relativo}:{NumeroDeLinea(texto, m.Index)}: {m.Value.Trim()}").ToList();
+            Assert.True(malFormadas.Count == 0,
+                $"Cada pendiente de {relativo} empieza por su id en negrita y con el prefijo del documento, " +
+                $"\"- [ ] **{prefijo}-NNN** título — qué y dónde · A/B/C\" (tres cifras, mayúsculas):" +
+                Environment.NewLine + string.Join(Environment.NewLine, malFormadas));
+
+            var ids = IdDefinido.Matches(texto).Cast<Match>()
+                .Select(m => new
+                {
+                    Pref = m.Groups["pref"].Value,
+                    Num = int.Parse(m.Groups["num"].Value),
+                    Id = m.Groups["pref"].Value + "-" + m.Groups["num"].Value,
+                    Linea = NumeroDeLinea(texto, m.Index)
+                }).ToList();
+            Assert.True(ids.Count > 0, $"No se encontró ningún id {prefijo}- en {relativo}: ¿cambió el formato?");
+
+            var ajenos = ids.Where(i => i.Pref != prefijo).Select(i => $"{relativo}:{i.Linea}: {i.Id}").ToList();
+            Assert.True(ajenos.Count == 0,
+                $"En {relativo} solo se definen ids {prefijo}-; cada pendiente va al documento de su tipo " +
+                "(tabla de \"Reglas\"):" + Environment.NewLine + string.Join(Environment.NewLine, ajenos));
+
+            var repetidos = ids.GroupBy(i => i.Num).Where(g => g.Count() > 1)
+                .Select(g => g.First().Id + " en las líneas " + string.Join(", ", g.Select(i => i.Linea))).ToList();
+            Assert.True(repetidos.Count == 0,
+                $"Ids repetidos en {relativo}: dale al nuevo el siguiente al \"Último id usado\" " +
+                "(los ids no se reutilizan ni se renumeran):" + Environment.NewLine + string.Join(Environment.NewLine, repetidos));
+
+            var mayores = ids.Where(i => i.Num > ultimo).Select(i => $"{relativo}:{i.Linea}: {i.Id}").ToList();
+            Assert.True(mayores.Count == 0,
+                $"Ids mayores que \"Último id usado: {prefijo}-{ultimo:000}\" en {relativo}: al crear un pendiente, " +
+                "actualiza esa línea de la cabecera en el mismo cambio:" +
+                Environment.NewLine + string.Join(Environment.NewLine, mayores));
+        }
+
+        /// <summary>
+        /// Dos formas de un DNI:
+        /// 1) ocho cifras sueltas. No cuentan: las que siguen a la serie de un comprobante ("F222-", "E001-",
+        ///    "T660-": cuatro letras o cifras y guion), a "_", "/", "\" o a un punto pegado a una letra o cifra
+        ///    (rutas, nombres de archivo, versiones); las que van pegadas a letras, cifras, "-" o "_" (RUC de 11,
+        ///    pedidos de 10, 20261120_1311); las que empiezan por 000 (correlativos como "F222-00008603 a
+        ///    00008626") y las fechas 20AAMMDD. "DNI-12345678" y "#12345678" sí cuentan.
+        /// 2) la palabra DNI seguida (tras hasta 6 signos) de 7 cifras o más, aunque lleven puntos o espacios
+        ///    ("DNI 12.345.678"). "DNI ****" o "DNI de 8 cifras" no cuentan.
+        /// </summary>
+        private static readonly Regex NumeroConFormaDeDni = new Regex(
+            @"(?<![0-9A-Za-z_/\\])(?<![A-Za-z0-9]{4}-)(?<![0-9A-Za-z]\.)(?!000)" +
+            @"(?!20[0-9]{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12][0-9]|3[01]))[0-9]{8}(?![0-9A-Za-z_\-])" +
+            @"|\b(?i:DNI)\b\W{0,6}[0-9](?:[.\s]?[0-9]){6,}");
+
+        private static readonly string[] ExtensionesDeTexto = { ".md", ".txt", ".sql", ".csv", ".json", ".html", ".ps1" };
+
+        [Fact]
+        public void NumeroConFormaDeDni_NoConfundeComprobantesFechasNiRuc()
+        {
+            Assert.Matches(NumeroConFormaDeDni, "DNI 12345678");
+            Assert.Matches(NumeroConFormaDeDni, "dni: 03497777, carnet");
+            Assert.Matches(NumeroConFormaDeDni, "(41117532)");
+            Assert.Matches(NumeroConFormaDeDni, "DNI-12345678");
+            Assert.Matches(NumeroConFormaDeDni, "DNI #12345678");
+            Assert.Matches(NumeroConFormaDeDni, "DNI 12.345.678");
+            Assert.Matches(NumeroConFormaDeDni, "dni: 4 5 6 7 8 9 0 1");
+            Assert.Matches(NumeroConFormaDeDni, "conductor #12345678");
+            Assert.DoesNotMatch(NumeroConFormaDeDni, "DNI ****");
+            Assert.DoesNotMatch(NumeroConFormaDeDni, "un DNI de 8 cifras");
+            Assert.DoesNotMatch(NumeroConFormaDeDni, "DNI y nombres enmascarados (17 líneas)");
+            Assert.DoesNotMatch(NumeroConFormaDeDni, "archivo v1.12345678 y foto.12345678");
+            Assert.DoesNotMatch(NumeroConFormaDeDni, "factura F222-00008603");
+            Assert.DoesNotMatch(NumeroConFormaDeDni, "F222-00008603 a 00008626");
+            Assert.DoesNotMatch(NumeroConFormaDeDni, "guía T660-00016530 y E001-18727");
+            Assert.DoesNotMatch(NumeroConFormaDeDni, "publicación 20261120_1311_60853e8");
+            Assert.DoesNotMatch(NumeroConFormaDeDni, "el 20261120");
+            Assert.DoesNotMatch(NumeroConFormaDeDni, "RUC 20123456789");
+            Assert.DoesNotMatch(NumeroConFormaDeDni, "pedido 4400134426");
+            Assert.DoesNotMatch(NumeroConFormaDeDni, "docs/12345678/x.pdf");
+        }
+
+        [Fact]
+        public void Docs_SinNumerosConFormaDeDni()
+        {
+            string raizRepo = BaseDePruebas.RaizRepo;
+            Assert.NotNull(raizRepo);
+            // Versionados y nuevos sin gitignorar: docs/DOCUMENTACION y los .sql de datos maestros están
+            // gitignorados a propósito (documentos reales) y no se publican en el repo.
+            List<string> archivos = ArchivosVersionados(raizRepo, "ls-files -z --cached --others --exclude-standard -- docs")
+                .Where(a => ExtensionesDeTexto.Contains(Path.GetExtension(a).ToLowerInvariant()))
+                .Where(a => File.Exists(Path.Combine(raizRepo, a)))
+                .ToList();
+            Assert.True(archivos.Any(a => a == "docs/PLAN_MEJORAS_SGV.md"), "git ls-files no devolvió los documentos de docs/.");
+
+            var hallazgos = new List<string>();
+            foreach (string relativo in archivos)
+            {
+                string[] lineas = File.ReadAllLines(Path.Combine(raizRepo, relativo));
+                for (int i = 0; i < lineas.Length; i++)
+                    foreach (Match m in NumeroConFormaDeDni.Matches(lineas[i]))
+                        // Sin el número en el mensaje: no repetir el dato personal en la salida de la prueba.
+                        hallazgos.Add($"{relativo}:{i + 1}, columna {m.Index + 1}");
+            }
+
+            Assert.True(hallazgos.Count == 0,
+                "docs/ no lleva datos personales: cambia el DNI (8 cifras) por el rol, el id del conductor o " +
+                "\"DNI ****\"; si es otra cosa (un correlativo), escríbelo con su serie (F222-00008603):" +
                 Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
         }
     }

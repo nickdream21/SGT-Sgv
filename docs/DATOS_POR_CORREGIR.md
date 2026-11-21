@@ -4,6 +4,8 @@ Registros de la BD que hay que corregir, completar o cargar. Casi todos están e
 
 Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = menor.
 
+Último id usado: D-028 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+
 ## Facturas
 
 - [ ] **D-001** Facturas de flete de Vitapro por registrar — pedidos 4400134426, 4400134496, 4400134478, 4400134530, 4400134534, 4400134620, 4400134660, 4400134741, 4400134752, 4400134759 y 4400134786 (cargas del 31/10 al 11/11) sin factura de flete; en SUNAT hay 5 E001 a Vitapro del 13/11 (E001-18727 a 18731; 0 registradas al 2026-11-21). Además la F319-00021039 del afrecho del 24/10 (CPIC 0003948) sin factura de flete nuestra, y el pedido de prueba 9900000001. De aquí en adelante, subir cada semana las nuevas en Reportes → Facturas de flete. Control: `SELECT f.numeroPedido, COUNT(ff.idFacturaFlete) AS facturasFlete FROM Factura f LEFT JOIN FacturaFlete ff ON ff.numeroFacturaComercial = f.numeroFactura AND ff.activo = 1 WHERE f.numeroPedido IN ('4400134426', '4400134496', '4400134478', '4400134530', '4400134534', '4400134620', '4400134660', '4400134741', '4400134752', '4400134759', '4400134786') GROUP BY f.numeroPedido` (0 = pendiente; los 11 en 0 al 2026-11-21) y `SELECT numeroFactura FROM FacturaFlete WHERE numeroFactura BETWEEN 'E001-18727' AND 'E001-18731'` (0 filas = pendiente). · A
@@ -44,5 +46,21 @@ Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = meno
 
 ## Reglas
 
-- Al corregirse, el ítem se borra (el commit es el historial). Un pendiente nuevo toma el número siguiente al mayor de este documento.
-- Sin DNI, carnets, teléfonos ni nombres completos de conductores: usar el id del conductor, la placa o el número del documento.
+Las mismas en `docs/PLAN_MEJORAS_SGV.md`, `docs/PENDIENTES_USUARIO.md`, `docs/DATOS_POR_CORREGIR.md`, `docs/PRUEBAS_PENDIENTES.md`, `docs/DECISIONES_NEGOCIO.md` y `CLAUDE.md` ("Keeping the plan up to date"). `CodigoFuenteLimpiezaTests` comprueba una parte: sin `[x]`, formato del id, ids únicos y no mayores que el último usado, tamaño del plan y números con forma de DNI en `docs/`.
+
+| Qué es | Dónde va |
+|---|---|
+| Mejora de código o de la BD | `docs/PLAN_MEJORAS_SGV.md` (`M-`) |
+| Lo que solo puede hacer el usuario: decisión, credencial, panel externo, dato o documento por conseguir | `docs/PENDIENTES_USUARIO.md` (`U-`) |
+| Registros que corregir, completar o cargar | `docs/DATOS_POR_CORREGIR.md` (`D-`) |
+| Probar en el navegador, en celular, con un rol, pedido o conductor real, o en el sitio publicado | `docs/PRUEBAS_PENDIENTES.md` (`P-`) |
+| Regla de negocio acordada con el usuario | `docs/DECISIONES_NEGOCIO.md` (`DN-`) |
+| Paso del paso a producción (`sgvTransporte`) | `docs/PASO_A_PRODUCCION.md` |
+| Paso de cada publicación | `herramientas/publicar/README.md`, "Antes y después de publicar" |
+
+- **Id nuevo**: el siguiente al `Último id usado` de la cabecera del documento, y esa línea se actualiza en el mismo cambio. Los ids no se reutilizan (tampoco los de ítems borrados o retirados) ni se renumeran.
+- **Formato**: cada pendiente es su propio `- [ ] **M-001** título — qué y dónde (archivo si se sabe) · A/B/C`, nunca escondido en el texto de otro ni solo en un chat. A: riesgo de datos, dinero o seguridad, o bloquea el uso real; B: valor claro; C: menor.
+- **Al terminar**, el ítem se borra de su documento en el mismo commit (nunca `[x]`): el commit es el historial (`git log`; `docs/archivo/HISTORIAL_2026.md` está congelado y no se escribe). Si deja algo pendiente, va con un id nuevo. Las decisiones (`DN-`) no se borran: si una cambia, se marca "reemplazada por DN-yy".
+- **En el mismo commit que una feature, fix, migración o SP**: la línea "Última actualización" de `docs/PLAN_MEJORAS_SGV.md` (fecha y commit anterior), y `docs/PASO_A_PRODUCCION.md` o el README de publicar si afecta a producción o a la publicación.
+- **Sin datos personales en `docs/`**: ni DNI, carnets, teléfonos, fechas de nacimiento, direcciones ni nombres de conductores (tampoco contraseñas ni tokens): usar el rol, el id, la placa o el número del documento.
+- El plan pesa menos de 80 KB.

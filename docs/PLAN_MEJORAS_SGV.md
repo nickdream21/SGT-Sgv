@@ -2,15 +2,17 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `db13195` — E2-5: documentos viejos retirados (raíz, `.opencode/`, planes terminados y `docs/migracion_somee/` a `docs/archivo/`), README y AGENTS.md al día; M-047 cerrada. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-21**, commit anterior `6844759` — E2-6: reglas de los pendientes unificadas (`CLAUDE.md`, agentes, `nuevo-sp` y "Reglas" de cada documento), línea "Último id usado" en cada cabecera y pruebas en `CodigoFuenteLimpiezaTests` (plan < 80 KB, sin `[x]`, ids al día, sin DNI en `docs/`). No contiene contraseñas: solo dice dónde están.
+
+Último id usado: M-100 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
 - El sitio publicado (`https://sgvtransporte.somee.com`, publicación `20261120_1311_60853e8`) usa la BD de **pruebas** `sgvActualizada`, que tiene **datos reales** desde el 2026-10-19: no se borra ni limpia nada allí sin confirmar.
 - Producción (`sgvTransporte`) no está al día: el paso a producción es `docs/PASO_A_PRODUCCION.md`, en orden, tras la decisión U-011.
 - Etapa 1 (operación) cerrada: respaldo diario de la BD y de los archivos en Google Drive, restauración ensayada, publicación con vuelta atrás (`herramientas/publicar/publicar.ps1`), monitores de UptimeRobot y cron del GPS activos.
-- **Etapa 2 en curso** (ordenar el plan): E2-5 hecha, sigue E2-6. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
-- Abiertas: 99 mejoras en este plan, 71 pendientes del usuario, 26 datos por corregir y 23 pruebas pendientes.
+- **Etapa 2 en curso** (ordenar el plan): E2-6 hecha, sigue E2-7. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
+- Lo abierto está en este plan (mejoras) y en los documentos de "Otros documentos" (usuario, datos, pruebas); cada uno se cuenta en su propio documento.
 
 ## Top 20
 
@@ -189,7 +191,21 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 
 ## Reglas
 
-- Al terminar, la tarea se borra de su documento; el commit es el historial (no se marca `[x]`).
-- Dónde va cada pendiente nuevo: mejora de código o BD → este plan (`M-`); lo que solo puede hacer el usuario → `docs/PENDIENTES_USUARIO.md` (`U-`); registros por corregir o cargar → `docs/DATOS_POR_CORREGIR.md` (`D-`); probar en el navegador, en celular, con un pedido real o en el sitio publicado → `docs/PRUEBAS_PENDIENTES.md` (`P-`). Paso del paso a producción → `docs/PASO_A_PRODUCCION.md`; de cada publicación → `herramientas/publicar/README.md`; decisión ya tomada → `docs/DECISIONES_NEGOCIO.md`.
-- Un pendiente nuevo toma el número siguiente al mayor de su documento; los ids son estables: uno cerrado desaparece y los demás no se renumeran. Va como su propio `[ ]`, nunca escondido dentro del texto de otro.
-- Formato: `- [ ] **M-001** título — qué y dónde (archivo si se sabe) · A/B/C` (A: riesgo de datos, dinero o seguridad, o bloquea el uso real; B: valor claro; C: menor u opcional). Sin DNI, carnets, teléfonos, direcciones ni nombres completos de conductores.
+Las mismas en `docs/PLAN_MEJORAS_SGV.md`, `docs/PENDIENTES_USUARIO.md`, `docs/DATOS_POR_CORREGIR.md`, `docs/PRUEBAS_PENDIENTES.md`, `docs/DECISIONES_NEGOCIO.md` y `CLAUDE.md` ("Keeping the plan up to date"). `CodigoFuenteLimpiezaTests` comprueba una parte: sin `[x]`, formato del id, ids únicos y no mayores que el último usado, tamaño del plan y números con forma de DNI en `docs/`.
+
+| Qué es | Dónde va |
+|---|---|
+| Mejora de código o de la BD | `docs/PLAN_MEJORAS_SGV.md` (`M-`) |
+| Lo que solo puede hacer el usuario: decisión, credencial, panel externo, dato o documento por conseguir | `docs/PENDIENTES_USUARIO.md` (`U-`) |
+| Registros que corregir, completar o cargar | `docs/DATOS_POR_CORREGIR.md` (`D-`) |
+| Probar en el navegador, en celular, con un rol, pedido o conductor real, o en el sitio publicado | `docs/PRUEBAS_PENDIENTES.md` (`P-`) |
+| Regla de negocio acordada con el usuario | `docs/DECISIONES_NEGOCIO.md` (`DN-`) |
+| Paso del paso a producción (`sgvTransporte`) | `docs/PASO_A_PRODUCCION.md` |
+| Paso de cada publicación | `herramientas/publicar/README.md`, "Antes y después de publicar" |
+
+- **Id nuevo**: el siguiente al `Último id usado` de la cabecera del documento, y esa línea se actualiza en el mismo cambio. Los ids no se reutilizan (tampoco los de ítems borrados o retirados) ni se renumeran.
+- **Formato**: cada pendiente es su propio `- [ ] **M-001** título — qué y dónde (archivo si se sabe) · A/B/C`, nunca escondido en el texto de otro ni solo en un chat. A: riesgo de datos, dinero o seguridad, o bloquea el uso real; B: valor claro; C: menor.
+- **Al terminar**, el ítem se borra de su documento en el mismo commit (nunca `[x]`): el commit es el historial (`git log`; `docs/archivo/HISTORIAL_2026.md` está congelado y no se escribe). Si deja algo pendiente, va con un id nuevo. Las decisiones (`DN-`) no se borran: si una cambia, se marca "reemplazada por DN-yy".
+- **En el mismo commit que una feature, fix, migración o SP**: la línea "Última actualización" de `docs/PLAN_MEJORAS_SGV.md` (fecha y commit anterior), y `docs/PASO_A_PRODUCCION.md` o el README de publicar si afecta a producción o a la publicación.
+- **Sin datos personales en `docs/`**: ni DNI, carnets, teléfonos, fechas de nacimiento, direcciones ni nombres de conductores (tampoco contraseñas ni tokens): usar el rol, el id, la placa o el número del documento.
+- El plan pesa menos de 80 KB.

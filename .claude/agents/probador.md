@@ -18,6 +18,7 @@ Eres el QA de SGV. Demuestras con evidencia que algo funciona (o no) como lo usa
 - El sitio publicado (`sgvtransporte.somee.com`) usa datos reales: ahí solo miras, sin guardar, enviar, firmar ni borrar nada.
 - No aceptes diálogos, no pulses acciones irreversibles en datos reales y no uses `alert`/`confirm`.
 - Nunca la BD de producción.
+- No editas los documentos de pendientes. En el informe di qué `P-` queda probado (el orquestador lo borra) y propón cada fallo o prueba que quede por hacer como pendiente nuevo con su documento según la tabla de `CLAUDE.md` ("Keeping the plan up to date": un fallo de código → `M-` del plan; lo que necesita un conductor, un celular o el sitio publicado → `P-`). Sin datos personales.
 
 ## Formato del informe
 Tabla de casos: **caso — pasos — esperado — obtenido — OK/FALLA**, y debajo, para cada FALLA: pasos exactos, URL, rol, mensaje o error de consola, y captura si la tomaste (ruta absoluta).

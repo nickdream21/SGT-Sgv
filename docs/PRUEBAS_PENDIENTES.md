@@ -4,6 +4,8 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
+Último id usado: P-023 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+
 ## Con un pedido o un conductor real (usuario)
 
 - [ ] **P-001** Prueba de punta a punta con un pedido real — correo + Word → carga → descarga → viaje → liquidación y firma → aprobación → PDF → contabilidad, en pruebas. · A
@@ -38,5 +40,23 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 
 ## Reglas
 
-- Al pasar la prueba, el ítem se borra (si falla, el fallo pasa a `docs/PLAN_MEJORAS_SGV.md` como `M-`). Un pendiente nuevo toma el número siguiente al mayor de este documento.
-- Evidencia de cada prueba en el informe del `probador` (tabla de casos, capturas a 1366 y 390 px).
+Las mismas en `docs/PLAN_MEJORAS_SGV.md`, `docs/PENDIENTES_USUARIO.md`, `docs/DATOS_POR_CORREGIR.md`, `docs/PRUEBAS_PENDIENTES.md`, `docs/DECISIONES_NEGOCIO.md` y `CLAUDE.md` ("Keeping the plan up to date"). `CodigoFuenteLimpiezaTests` comprueba una parte: sin `[x]`, formato del id, ids únicos y no mayores que el último usado, tamaño del plan y números con forma de DNI en `docs/`.
+
+| Qué es | Dónde va |
+|---|---|
+| Mejora de código o de la BD | `docs/PLAN_MEJORAS_SGV.md` (`M-`) |
+| Lo que solo puede hacer el usuario: decisión, credencial, panel externo, dato o documento por conseguir | `docs/PENDIENTES_USUARIO.md` (`U-`) |
+| Registros que corregir, completar o cargar | `docs/DATOS_POR_CORREGIR.md` (`D-`) |
+| Probar en el navegador, en celular, con un rol, pedido o conductor real, o en el sitio publicado | `docs/PRUEBAS_PENDIENTES.md` (`P-`) |
+| Regla de negocio acordada con el usuario | `docs/DECISIONES_NEGOCIO.md` (`DN-`) |
+| Paso del paso a producción (`sgvTransporte`) | `docs/PASO_A_PRODUCCION.md` |
+| Paso de cada publicación | `herramientas/publicar/README.md`, "Antes y después de publicar" |
+
+- **Id nuevo**: el siguiente al `Último id usado` de la cabecera del documento, y esa línea se actualiza en el mismo cambio. Los ids no se reutilizan (tampoco los de ítems borrados o retirados) ni se renumeran.
+- **Formato**: cada pendiente es su propio `- [ ] **M-001** título — qué y dónde (archivo si se sabe) · A/B/C`, nunca escondido en el texto de otro ni solo en un chat. A: riesgo de datos, dinero o seguridad, o bloquea el uso real; B: valor claro; C: menor.
+- **Al terminar**, el ítem se borra de su documento en el mismo commit (nunca `[x]`): el commit es el historial (`git log`; `docs/archivo/HISTORIAL_2026.md` está congelado y no se escribe). Si deja algo pendiente, va con un id nuevo. Las decisiones (`DN-`) no se borran: si una cambia, se marca "reemplazada por DN-yy".
+- **En el mismo commit que una feature, fix, migración o SP**: la línea "Última actualización" de `docs/PLAN_MEJORAS_SGV.md` (fecha y commit anterior), y `docs/PASO_A_PRODUCCION.md` o el README de publicar si afecta a producción o a la publicación.
+- **Sin datos personales en `docs/`**: ni DNI, carnets, teléfonos, fechas de nacimiento, direcciones ni nombres de conductores (tampoco contraseñas ni tokens): usar el rol, el id, la placa o el número del documento.
+- El plan pesa menos de 80 KB.
+
+Además, en este documento: al pasar la prueba el ítem se borra, y si falla, el fallo pasa a `docs/PLAN_MEJORAS_SGV.md` como `M-` nuevo; `[~]` = a medias; la evidencia de cada prueba va en el informe del `probador` (tabla de casos, capturas a 1366 y 390 px).
