@@ -2,6 +2,17 @@
 
 Para enterarse si el sitio cae o si el GPS automático deja de correr (estuvo desactivado desde el 27/10/2026 sin que nadie lo notara).
 
+**Dónde está cada procedimiento**
+
+| Para | Documento |
+|---|---|
+| Publicar, volver atrás, y lo de antes y después de cada publicación | [`herramientas/publicar/README.md`](../herramientas/publicar/README.md) |
+| Respaldo y restauración | [`docs/PROCEDIMIENTO_RESPALDO.md`](PROCEDIMIENTO_RESPALDO.md) (detalle técnico en `herramientas/respaldo/README.md`) |
+| Pasar el sitio a la BD de producción `sgvTransporte` | [`docs/PASO_A_PRODUCCION.md`](PASO_A_PRODUCCION.md) |
+| Preparar una PC (archivos fuera de git, herramientas, variables) | [`docs/PREPARAR_MAQUINA.md`](PREPARAR_MAQUINA.md) |
+| GPS automático (cron-job.org) | [`herramientas/gps-automatico/README.md`](../herramientas/gps-automatico/README.md) |
+| Vigilancia del sitio y avisos de errores | este documento |
+
 ## 1. La página de salud
 
 `https://sgvtransporte.somee.com/Salud.ashx` es anónima, solo lee y no escribe en la BD ni en la auditoría. Acepta GET y HEAD; un POST recibe 405 (PUT, DELETE y OPTIONS los responde IIS antes de llegar a la página). La respuesta solo dice `{"ok":true}` o `{"ok":false}`: el detalle va al log del sitio (`App_Data/logs`). Se reutiliza 20 s (solo BD) o 120 s (con GPS), así que un arreglo puede tardar hasta 2 min en verse.
@@ -35,7 +46,7 @@ Para enterarse si el sitio cae o si el GPS automático deja de correr (estuvo de
 
 **SGV - sitio caído**
 1. Abrir el sitio en el navegador. Si no carga: revisar el panel de somee (sitio detenido, cuota, dominio) y si hay una publicación a medias (`app_offline.htm` olvidado; ver `herramientas/publicar`).
-2. Si carga pero `Salud.ashx` da 503: la BD no responde. Probar `WebSGV/Database/sql.ps1 -Entorno produccion -ConfirmoProduccion "SELECT 1"`; si falla, es somee (estado del servidor SQL, contraseña rotada sin actualizar `connectionStrings.config`).
+2. Si carga pero `Salud.ashx` da 503: la BD no responde. Probar `WebSGV/Database/sql.ps1 "SELECT 1"` (sin `-Entorno`: la BD de pruebas `sgvActualizada`, que es la que usa hoy el sitio publicado; tras el [paso a producción](PASO_A_PRODUCCION.md) sería `-Entorno produccion -ConfirmoProduccion`); si falla, es somee (estado del servidor SQL, contraseña rotada sin actualizar el `connectionStrings.config` del servidor y el de la PC).
 3. El motivo exacto queda en el log del sitio: "Salud: la base de datos no respondió".
 
 **SGV - GPS automático atrasado** (el monitor 1 está en verde y el 2 no; en el log: "Salud: GPS atrasado", "onway_sin_respuesta" o "cron_con_error")

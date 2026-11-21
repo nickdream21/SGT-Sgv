@@ -44,7 +44,7 @@ Cada publicación queda en `<SGV_CARPETA_PUBLICACIONES>\`:
 
 ```
 20261119_1504_3b2f8b0\
-    sitio\              <- lo que se sube (lo mismo que hace Visual Studio al publicar)
+    sitio\              <- lo que se sube
     manifiesto.txt      <- commit, rama, cambios sin confirmar, fecha y SHA-256 de cada archivo
 20261119_1504_3b2f8b0.zip
 ultimo-publicado.txt    <- la última publicación subida con este script
@@ -87,9 +87,54 @@ Al terminar bien, el script sube a la raíz del sitio `publicacion.txt` con el n
 
 Si no se confía (publicó la otra PC, la publicación anterior falló, se nota una DLL subida desde Visual Studio, o es la primera vez), todo lo de mismo tamaño se sube (como `-SubirTodo`) y la salida dice el motivo.
 
-**Una publicación desde Visual Studio NO se detecta si no cambió `bin/WebSGV.dll`** (VS no toca el marcador): después de publicar desde Visual Studio, use `-SubirTodo`.
+**Una subida por fuera de este script NO se detecta si no cambió `bin/WebSGV.dll`** (no toca el marcador): en ese caso, la siguiente publicación con `-SubirTodo`.
 
 Ejemplo: la laptop publica `A` (marcador = `A`); luego la oficina publica `B` (marcador = `B`). Cuando la laptop vuelva a publicar, su `ultimo-publicado.txt` dice `A` y el servidor `B`: sube todo lo de mismo tamaño, sin saltarse nada que la oficina haya cambiado. `app_offline.htm` y `publicacion.txt` nunca cuentan como sobrantes.
+
+## Antes y después de publicar
+
+Lo de **cada** publicación. Cómo arma, comprueba y sube el paquete está arriba ("Publicar", "Cómo sube"); aquí solo lo que el script no hace. El sitio publicado usa la BD de pruebas **`sgvActualizada`** (la de producción `sgvTransporte` no se usa todavía; pasar a ella: [`docs/PASO_A_PRODUCCION.md`](../../docs/PASO_A_PRODUCCION.md)).
+
+### Antes
+
+1. **Orden: migración → SP → DLL.** Si el commit trae migraciones (`WebSGV/Database/Schema/`) o SP (`StoredProcedures/`), aplicarlos a `sgvActualizada` **antes** de `publicar.ps1`:
+
+   ```powershell
+   .\WebSGV\Database\aplicar-migraciones.ps1   -Entorno pruebas -SoloListar   # luego sin -SoloListar
+   .\WebSGV\Database\aplicar-procedimientos.ps1 -Entorno pruebas -SoloListar  # FALTA / DISTINTO; luego sin -SoloListar
+   ```
+
+   Como esa BD es la del sitio, **cada SP que se aplica tiene que funcionar con la DLL que está publicada** (parámetros nuevos opcionales, columnas nuevas al final y leídas por nombre) y la DLL que se va a publicar tiene que funcionar con los SP que haya en la BD. Si un cambio no admite las dos versiones a la vez (p. ej. el C# lee una columna que el SP viejo no devuelve), aplicar el SP y publicar seguidos, en ese orden. Al volver atrás (`-VolverA`) la BD no se deshace: comprobar antes que la versión vieja funcione con ella (ver "Volver atrás").
+2. **Secretos del servidor.** El paquete no lleva `appSettings.Secrets.config` (ver "Lo que no se toca nunca"); el del servidor debe tener estas claves (solo nombres; la plantilla con un comentario por clave es [`WebSGV/appSettings.Secrets.config.example`](../../WebSGV/appSettings.Secrets.config.example)):
+   - `OnwayAuth0ClientId`, `OnwayAuth0ClientSecret`, `OnwayUsername`, `OnwayPassword` (GPS);
+   - `GpsAutomaticoClave` (igual al encabezado `X-SGV-Clave` de cron-job.org; si no coincide, 403 y cron-job.org desactiva la tarea);
+   - `ApisPeruToken` (búsqueda de DNI/RUC);
+   - `SmtpHost`, `SmtpPort`, `SmtpSSL`, `SmtpUser`, `SmtpPass`, `SmtpFrom` (correos y aviso de errores).
+
+   **Nunca** `AvisoErroresLocal` (es solo para probar el aviso en una PC de desarrollo; ver `docs/OPERACION.md`, sección 4). Además, el `appSettings.Secrets.config` **local** de la PC que publica tiene que tener `GpsAutomaticoClave`: el target `VerificarSecretosAlPublicar` del csproj corta la compilación del paquete si falta (el archivo local no se sube).
+
+   **Cambiar una clave sin publicar:** con un cliente FTP (FileZilla) bajar `/www.sgvtransporte.somee.com/appSettings.Secrets.config` a una carpeta fuera del repo, agregar o cambiar la clave con un editor (sin copiar los valores al chat ni a ningún documento), subirlo al mismo lugar y borrar la copia local. El sitio puede seguir con los valores viejos en memoria hasta reiniciarse: reciclar el grupo de aplicaciones en el panel de somee. Si se cambió `GpsAutomaticoClave`, cambiarla también en cron-job.org (`herramientas/gps-automatico/README.md`).
+3. **Permisos de escritura en el servidor.** La cuenta del grupo de aplicaciones de somee debe poder crear, escribir y borrar en estas carpetas (las crea el sitio si faltan; el paquete no las lleva):
+
+   | Carpeta | Qué escribe |
+   |---|---|
+   | `App_Data/OrdenesViaje` | PDF firmados de las liquidaciones (`OrdenViaje.RutaArchivo`) |
+   | `App_Data/RutasGps` | Caché del mapa de la ruta del seguimiento |
+   | `App_Data/HistorialGps` | Caché del historial GPS (se borra a los 30 días) |
+   | `App_Data/logs` | Log del sitio `sgv-AAAAMMDD.log` |
+   | `Uploads/Factura`, `Uploads/CPIC`, `Uploads/Manifiesto`, `Uploads/Guias`, `Uploads/FacturasFlete`, `Uploads/MovimientosViaje` | Documentos subidos (por año/mes) |
+   | `Uploads/Factura/_temp`, `Uploads/CPIC/_temp`, `Uploads/Manifiesto/_temp`, `Uploads/_temp/Bandeja`, `Uploads/_temp/ReporteGps` | Temporales; `Global.asax` borra al arrancar los de más de 24 h |
+
+   Solo hay que revisarlo en un servidor nuevo o si aparece un error de acceso denegado en el log; en somee ya funciona.
+
+### Después
+
+1. `https://sgvtransporte.somee.com/Views/Login.aspx` responde 200 (y no la página de mantenimiento: si sigue, ver "Cómo sube").
+2. `https://sgvtransporte.somee.com/Salud.ashx` y `.../Salud.ashx?gps=1` responden `{"ok":true}` (pueden tardar hasta 2 min en reflejar un cambio; detalle en `docs/OPERACION.md`, sección 1).
+3. Iniciar sesión en el sitio y abrir las páginas que tocó el cambio (usuarios por rol: `privado/CREDENCIALES_USUARIOS.txt`, solo el que haga falta).
+4. Si se borraron sobrantes, cada página retirada responde 404 (p. ej. `Views/WebForm2.aspx`). Cabeceras de seguridad: `curl -I https://sgvtransporte.somee.com/Views/Login.aspx`.
+5. Log del servidor: bajar por FTP `App_Data/logs/sgv-AAAAMMDD.log` del día y buscar líneas de nivel Error desde la hora de la publicación; también si llegó algún correo de `AvisoErrores`.
+6. Los dos monitores de UptimeRobot ("SGV - Sitio y BD" y "SGV - GPS y Onway") en verde, y en cron-job.org la tarea "SGV GPS automático" activa con la última corrida 200/202 (`docs/OPERACION.md`, secciones 2 y 3).
 
 ## Volver atrás
 
@@ -108,12 +153,12 @@ Ejemplo: la laptop publica `A` (marcador = `A`); luego la oficina publica `B` (m
 ## Lo que no se toca nunca
 
 - `App_Data\` (PDF firmados), `Uploads\` (documentos) y los archivos de secretos (`connectionStrings*.config`, `appSettings.Secrets.config`): no van en el paquete, no se listan, no se suben y no se borran, aunque falten en el paquete. Esto lo fijan `probar-publicar.ps1` y el candado `ExcludeFromPackageFolders` de `WebSGV.csproj`.
-- Los **secretos del servidor**: el paquete no los lleva (a diferencia de publicar desde Visual Studio, que subía los de la PC). Si cambia un secreto (p. ej. una clave nueva en `appSettings.Secrets.config`), subir ese archivo a mano por FTP, a sabiendas de qué BD/claves lleva.
+- Los **secretos del servidor**: el paquete no los lleva (a diferencia de publicar desde Visual Studio, que subía los de la PC). Si cambia un secreto (p. ej. una clave nueva en `appSettings.Secrets.config`), ver "Cambiar una clave sin publicar" en "Antes y después de publicar".
 - Nunca se borran carpetas (las vacías quedan) ni nada que no sea `.aspx/.ascx/.ashx/.asmx/.master/.cs/.js/.css/.dll/.config`, esté en `Database/` o sea un nativo de linux/osx (`bin/runtimes/linux*`, `osx*`: `.so`, `.dylib`, que ya no se publican).
 
 ## Visual Studio
 
-`WebSGV\Properties\PublishProfiles\Paquete.pubxml` publica a carpeta con los mismos candados (los `*.pubxml` están en `.gitignore`, así que existe solo en la máquina donde se creó). Una vez que se publique con `publicar.ps1`, **no publicar también desde Visual Studio** (`FTPProfile1`): no usa `app_offline.htm`, sube los secretos de la PC y no actualiza el marcador `publicacion.txt`. El script solo lo nota si VS cambió `bin/WebSGV.dll` (fecha MDTM más nueva que el marcador); si no, **NO se detecta**: después de publicar desde Visual Studio use `-SubirTodo`.
+No se publica desde Visual Studio: los perfiles se retiraron en E1-9 (guardados en `privado/perfiles-publicacion-retirados/`); si alguien publicó desde VS, la siguiente publicación va con `-SubirTodo`.
 
 ## Pruebas
 

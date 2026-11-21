@@ -277,6 +277,7 @@
     <Content Include="connectionStrings.config" />
     <Content Include="appSettings.Secrets.config" />
     <None Include="connectionStrings.config.example" />
+    <None Include="appSettings.Secrets.config.example" />
     <Content Include="Scripts\Custom\JavaScript.js" />
     <Content Include="Scripts\JavaScript.js" />
     <Content Include="Scripts\OrdenViaje.js" />

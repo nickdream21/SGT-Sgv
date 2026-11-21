@@ -93,7 +93,7 @@ $env:SGV_CARPETA_RESPALDO = 'D:\RespaldosSGV'
 - Al final llama a `verificar-pdf-firmados.ps1` sobre `<Carpeta>\archivos\OrdenesViaje`, imprime el resumen (revisados, bajados, cambiados, sin cambios, errores, verificación) y añade una línea a `<Carpeta>\archivos\respaldos.log`.
 - Rechaza cualquier carpeta dentro del repo (igual que `respaldar-bd.ps1`).
 - Código de salida: `0` todo bien; `1` errores al listar o bajar; `2` la descarga fue bien pero la verificación encontró PDF faltantes o distintos (o no se pudo hacer).
-- El FTP de somee no admite TLS: usuario y contraseña viajan sin cifrar por la red (igual que al publicar desde Visual Studio).
+- El FTP de somee no admite TLS: usuario y contraseña viajan sin cifrar por la red (igual que en `publicar.ps1`).
 
 ## Verificación de los PDF firmados
 

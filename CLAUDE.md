@@ -164,16 +164,18 @@ Orchestrator rules: give each subagent a self-contained brief (goal, context alr
 
 Functional/process documentation (Spanish) in `docs/`:
 
-- `docs/PLAN_MEJORAS_SGV.md` — **current improvement plan**: status, pending tasks, home-machine setup and the ordered production checklist. Read it first when resuming work.
+- `docs/PLAN_MEJORAS_SGV.md` — **current improvement plan**: status and pending tasks. Read it first when resuming work. Machine setup is in `docs/PREPARAR_MAQUINA.md` and the production checklist in `docs/PASO_A_PRODUCCION.md`.
 - `docs/FLUJO_DE_TRABAJO_SGV.md` — end-to-end business flow and role permission matrix.
 - `docs/DECISIONES_NEGOCIO.md` — business rules agreed with the user (`DN-xx`, with date/commit and where the code applies them); add new ones there.
 - `docs/GUIA_CREACION_ROLES.md` — step-by-step guide for adding a new role.
+- `docs/PASO_A_PRODUCCION.md` — the single ordered procedure to move the published site from `sgvActualizada` to `sgvTransporte` (control SELECTs, migrations, SPs, data reloads, connection switch); only when the user decides.
+- `docs/PREPARAR_MAQUINA.md` — setting up a new machine: files outside git (incl. `WebSGV/appSettings.Secrets.config.example`), regenerating `privado/ftp-respaldo.xml`, tools and environment variables.
 
 ## Keeping the plan up to date (mandatory)
 
 The plan is the only shared context between machines and sessions — never let it fall behind:
 
-- **In the same commit as any feature, fix, migration or new SP**, update `docs/PLAN_MEJORAS_SGV.md`: the "Última actualización" line (date + last commit), a row in section 3, the item in section 4 (`[x]` when done), and section 6 if it affects production (migrations, SPs, DLLs, secrets, manual post-publish steps).
+- **In the same commit as any feature, fix, migration or new SP**, update `docs/PLAN_MEJORAS_SGV.md`: the "Última actualización" line (date + last commit), a row in section 3, the item in section 4 (`[x]` when done), and, if it affects production (migrations, SPs, DLLs, secrets, manual post-publish steps), `docs/PASO_A_PRODUCCION.md` for the move to `sgvTransporte` and "Antes y después de publicar" in `herramientas/publicar/README.md` for what every publication needs.
 - **Every loose end becomes its own `[ ]` under "Abiertas"** in section 4 (business decisions, follow-ups, "pendiente: …"). Never leave a pending item buried inside the text of a finished task or only in a chat reply.
 - Also update the Claude memory `pendientes_paso_a_produccion.md` when something is applied only to the test DB.
 - Before finishing a task, check `git status` for untracked files: commit them, gitignore them, or say why they stay.

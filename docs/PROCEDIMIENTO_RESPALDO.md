@@ -57,7 +57,7 @@ Requisitos en la PC: `sqlpackage` (`dotnet tool install -g microsoft.sqlpackage`
      `sqlpackage /Action:Import /SourceFile:<archivo.bacpac> /TargetServerName:<servidor> /TargetDatabaseName:<nombre> /TargetUser:<usuario> /TargetPassword:<clave> /TargetTrustServerCertificate:True`
    - **somee** (si la BD se perdió o se dañó): en el panel de somee cree una BD **vacía** y corra el mismo comando apuntando a ella (sqlpackage solo importa en una BD vacía). Si la BD dañada sigue existiendo, no la borre hasta tener la nueva funcionando.
 3. El `.bacpac` trae el login SQL del usuario de somee; en un servidor nuevo se crea con una contraseña aleatoria. Asígnele una contraseña (`ALTER LOGIN [...] WITH PASSWORD = '...'`) o cree un usuario propio con rol `db_owner` en la BD.
-4. Actualice la cadena `ConexionSGV` en `WebSGV\connectionStrings.config` (pruebas) o `connectionStrings.Production.config` (producción) con el servidor, la BD, el usuario y la contraseña nuevos, y publique el sitio.
+4. Actualice la cadena `ConexionSGV` en `WebSGV\connectionStrings.config` (pruebas) o `connectionStrings.Production.config` (producción) con el servidor, la BD, el usuario y la contraseña nuevos, y cambie la cadena del servidor: con un cliente FTP, subir a la raíz del sitio (`/www.sgvtransporte.somee.com/`) ese archivo **con el nombre `connectionStrings.config`** (el `Web.config` lee `configSource="connectionStrings.config"`), desde una copia fuera del repo que se borra después. `publicar.ps1` nunca sube este archivo. El sitio se reinicia solo al cambiarlo (ver `docs/PASO_A_PRODUCCION.md`, paso 9).
 5. Pruebe: inicio de sesión, una liquidación firmada y `Views/VerificarDocumento.aspx` con un código de verificación.
 
 ### Archivos

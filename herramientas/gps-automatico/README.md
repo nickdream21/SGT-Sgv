@@ -7,8 +7,8 @@ GET https://sgvtransporte.somee.com/Views/Exportacion/GpsAutomatico.ashx
 Encabezado:  X-SGV-Clave: <GpsAutomaticoClave>
 ```
 
-La clave está en `WebSGV/appSettings.Secrets.config` (`GpsAutomaticoClave`, no está en git; se publica con el
-sitio). La llamada responde al instante (202 = empezó, 200 = ya hay una en curso o la anterior fue hace menos de
+La clave es `GpsAutomaticoClave` del `appSettings.Secrets.config` **del servidor** (no está en git y `publicar.ps1`
+no la sube: el archivo del servidor se cambia aparte). La llamada responde al instante (202 = empezó, 200 = ya hay una en curso o la anterior fue hace menos de
 5 min) y la actualización corre en el servidor: sincroniza los despachos nuevos, trae en **una sola consulta** la
 última posición de toda la flota y analiza con el historial solo los viajes cuyos tractos se movieron (los
 quietos solo refrescan la hora de su posición; cada 45 min se analizan todos igual). Sin clave o con otra: 403.
@@ -45,12 +45,15 @@ Register-ScheduledTask -TaskName 'SGV - GPS automático' -Action $accion -Trigge
 
 ## Si cambia la clave
 
-Cambiarla en `appSettings.Secrets.config`, publicar y actualizarla en cron-job.org (o la tarea lee el archivo
-sola). Copiar el archivo a la laptop de casa como los demás secretos.
+Cambiarla en el `appSettings.Secrets.config` del servidor como dice "Cambiar una clave sin publicar" en
+`herramientas/publicar/README.md` (bajarlo por FTP, editarlo, subirlo y reciclar el grupo de aplicaciones) y
+después en cron-job.org (la tarea de Windows lee el archivo local sola). Ponerla también en el
+`appSettings.Secrets.config` local de cada PC: `publicar.ps1` no compila el paquete si falta.
 
 ## Si cron-job.org manda 403 o desactiva la tarea
 
-403 = el sitio publicado no tiene la misma `GpsAutomaticoClave` (pasó el 27/10/2026: se publicó desde la laptop con
-un `appSettings.Secrets.config` viejo y todos los viajes salían "GPS sin reportar"). Copiar el archivo correcto (o
-poner como clave el valor del encabezado `X-SGV-Clave` de la tarea), volver a publicar y en cron-job.org activar la
-tarea y hacer *Test run* (202). Desde entonces publicar sin la clave da error y el tablero avisa si falta.
+403 = el `appSettings.Secrets.config` del servidor no tiene la misma `GpsAutomaticoClave` que el encabezado
+`X-SGV-Clave` de la tarea (pasó el 27/10/2026, cuando se publicaba desde Visual Studio y se subió un archivo viejo;
+`publicar.ps1` ya no sube secretos). Corregir la clave en el archivo del servidor ("Cambiar una clave sin publicar"
+en `herramientas/publicar/README.md`, o poner como clave el valor del encabezado de la tarea), reciclar el grupo de
+aplicaciones y en cron-job.org activar la tarea y hacer *Test run* (202). El tablero avisa si falta la clave.
