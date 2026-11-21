@@ -13,6 +13,7 @@ namespace WebSGV.Services.Usuarios
     public static class UsuarioEstadoService
     {
         public const string MensajeAutodesactivacion = "No puedes desactivar tu propia cuenta.";
+        public const string MensajeRolNoVigente = "Asigne un rol vigente antes de activar este usuario.";
 
         internal static readonly TablaActivable TablaUsuarios = new TablaActivable(
             "Usuarios", "idUsuario", "activo", "nombreUsuario", "usuario", femenino: false,
@@ -28,11 +29,27 @@ namespace WebSGV.Services.Usuarios
             if (!nuevoActivo && idUsuarioActual.HasValue && idUsuario == idUsuarioActual.Value)
                 throw new ErrorNegocioException(MensajeAutodesactivacion);
 
+            // Un rol retirado (Grifo, Maquinaria, Operador) solo puede quedar en una cuenta inactiva
+            // (CK_Usuarios_Rol, migración 54): sin esto la BD rechazaría el UPDATE con un error técnico.
+            if (nuevoActivo)
+                ValidarRolParaActivar(DbHelper.EjecutarEscalar("SELECT rol FROM Usuarios WHERE idUsuario = @id",
+                    DbHelper.Param("@id", idUsuario)) as string);
+
             ResultadoCambioEstado r = EstadoActivoService.Cambiar(TablaUsuarios, idUsuario, nuevoActivo);
             // Nuevo sello: la caché de 60 s no debe seguir dando por vigente la sesión del usuario.
             if (r.Cambiado)
                 SesionVigenteHelper.InvalidarCache(idUsuario);
             return r;
+        }
+
+        /// <summary>
+        /// Rechaza activar una cuenta cuyo rol no es vigente (<see cref="RolesHelper.EsRolVigente"/>). Un rol
+        /// null (usuario inexistente) no se valida aquí: lo resuelve <see cref="EstadoActivoService"/>.
+        /// </summary>
+        internal static void ValidarRolParaActivar(string rol)
+        {
+            if (rol != null && !RolesHelper.EsRolVigente(rol))
+                throw new ErrorNegocioException(MensajeRolNoVigente);
         }
     }
 }

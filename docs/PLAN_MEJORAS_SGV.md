@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `9fd1ef8` — E3-5: datos corregidos en pruebas con `Database/Scripts/corregir_datos_etapa3_2026-11-21.sql` (D-029, D-030, D-031 y U-015, aprobados por el usuario), tras respaldo y ensayo local. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-21**, commit anterior `854f839` — E3-6: migraciones 54 (CHECK de dominio y montos, `estadoAprobacion` NOT NULL DEFAULT `PENDIENTE`) y 55 (10 FK, sin cascada en documentos, fuera 14 FK y 3 índices repetidos, índices de apoyo), ensayadas en local. No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-105 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
@@ -11,7 +11,7 @@
 - El sitio publicado (`https://sgvtransporte.somee.com`, publicación `20261120_1311_60853e8`) usa la BD de **pruebas** `sgvActualizada`, que tiene **datos reales** desde el 2026-10-19: no se borra ni limpia nada allí sin confirmar.
 - Producción (`sgvTransporte`) no está al día: el paso a producción es `docs/PASO_A_PRODUCCION.md`, en orden, tras la decisión U-011.
 - Etapa 1 (operación) cerrada: respaldo diario de la BD y de los archivos en Google Drive, restauración ensayada, publicación con vuelta atrás (`herramientas/publicar/publicar.ps1`), monitores de UptimeRobot y cron del GPS activos.
-- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 en curso** (integridad de la BD): plan detallado en la hoja de ruta, sigue E3-6. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
+- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 en curso** (integridad de la BD): plan detallado en la hoja de ruta, sigue E3-7. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
 - Lo abierto está en este plan (mejoras) y en los documentos de "Otros documentos" (usuario, datos, pruebas); cada uno se cuenta en su propio documento.
 
 ## Top 20
@@ -130,7 +130,6 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 
 - [ ] **M-048** Correr `Database/Scripts/borrar-sp-se-sin-uso.sql` en `sgvActualizada` — los 8 `sp_SE_*` sin uso siguen en la BD y `60853e8` (publicado) no los llama. Antes, el SELECT de control de `docs/PASO_A_PRODUCCION.md`, paso 6. Con orden del usuario. · B
 - [ ] **M-049** Migración 57 (E3-8): DROP de los 9 SP de módulos retirados — `sp_InsertarIndicador`, 3 de grifo y 5 `sp_MQ_*` (siguen en `sgvActualizada`). Pedir confirmación antes de aplicarla (es la BD del sitio). Las tablas y sus datos se conservan. · B
-- [ ] **M-050** Quitar el DEFAULT 'APROBADO' de `OrdenViaje.estadoAprobacion` — un INSERT que omita la columna daría la orden por aprobada sin firma (hoy ningún INSERT del repo la omite). · B
 - [ ] **M-053** Query Store acotado en `sgvActualizada` — tope de 500 MB de datos; el Query Store puede crecer hasta 1000 MB (`max_storage_size_mb` medido en pruebas). Bajarlo a 100 MB (`ALTER DATABASE … SET QUERY_STORE (MAX_STORAGE_SIZE_MB = 100)`). Crecimiento estimado con todos los choferes liquidando: 11–16 MB al mes (2 a 3 años); `sgvTransporte` (Premium) tiene 2000 MB. · B
 - [ ] **M-054** `sp_DC_RevocarFirma` y `FirmaService.RevocarFirma` sin uso — siguen en el repo (`sp_DC_RevocarFirma.sql`, `FirmaService.cs:229`) y en la BD: borrarlos. · C
 - [ ] **M-055** Borrar `sp_LD_ActualizarConductorDominanteViajes` — de la BD y del repo: ya no se llama y el código nuevo está publicado (`60853e8`). · C

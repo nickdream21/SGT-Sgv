@@ -31,7 +31,8 @@ namespace WebSGV.Tests.Integracion
         {
             using (new TransaccionDePrueba())
             {
-                int id = CrearUsuario(" CONDUCTOR ", null);
+                // Solo espacios al final: CK_Usuarios_Rol (migración 54) no acepta un rol con espacios delante.
+                int id = CrearUsuario("CONDUCTOR  ", null);
                 Guid sello = Sello(id);
                 Assert.NotEqual(Guid.Empty, sello);
 

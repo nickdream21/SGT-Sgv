@@ -30,7 +30,7 @@ namespace WebSGV.Tests.Integracion
             {
                 // Un día sin cargas, para no chocar con lo registrado
                 DateTime fecha = FechaHelper.Hoy().AddDays(5);
-                DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0 WHERE fechaDespacho = @f", DbHelper.Param("@f", fecha));
+                DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0, estadoDespacho = 'ANULADO' WHERE fechaDespacho = @f", DbHelper.Param("@f", fecha));
 
                 DataRow cliente = DbHelper.ConsultarTabla("SELECT TOP 1 idCliente, ruc FROM Cliente WHERE activo = 1 AND ruc IS NOT NULL ORDER BY idCliente").Rows[0];
                 int idCliente = Convert.ToInt32(cliente["idCliente"]);

@@ -109,7 +109,7 @@ namespace WebSGV.Tests.Integracion
             using (new TransaccionDePrueba())
             {
                 DateTime fecha = FechaHelper.Hoy().AddDays(17);
-                DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0 WHERE fechaDespacho BETWEEN @f AND DATEADD(day, 1, @f)", DbHelper.Param("@f", fecha));
+                DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0, estadoDespacho = 'ANULADO' WHERE fechaDespacho BETWEEN @f AND DATEADD(day, 1, @f)", DbHelper.Param("@f", fecha));
                 var lote = LoteNacional(fecha, 1);
                 var c = lote.Conductores[0];
 

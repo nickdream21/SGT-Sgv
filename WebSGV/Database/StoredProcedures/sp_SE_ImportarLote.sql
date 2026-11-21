@@ -24,6 +24,8 @@
 --   salida de la bodega o llegada a la base final (decisión del usuario 2026-11-21), queda
 --   FINALIZADO (la misma regla de EstadoSeguimiento.DerivarDeImportacion); si no, el estado
 --   que trae el Excel.
+-- 2026-11-21 (E3-6): el estado del Excel se normaliza (COMPLETADO -> FINALIZADO; fuera de EN_CURSO,
+--   FINALIZADO y CANCELADO -> EN_CURSO) antes del CHECK de la migración 54; este SP va antes que la 54.
 -- =============================================================================
 CREATE OR ALTER PROCEDURE dbo.sp_SE_ImportarLote
     @filas      dbo.TipoSeguimientoImportacion READONLY,
@@ -47,6 +49,17 @@ BEGIN
     WHERE x.rn = 1;
 
     DECLARE @duplicados INT = (SELECT COUNT(*) FROM @filas) - (SELECT COUNT(*) FROM #lote);
+
+    -- 2026-11-21 (E3-6): el estado que trae el Excel se normaliza antes de usarlo. La versión publicada
+    -- de ImportarSeguimiento (60853e8) todavía manda COMPLETADO y PENDIENTE, que CK_SeguimientoExportacion_Estado
+    -- (migración 54) rechaza: COMPLETADO es FINALIZADO; cualquier otro valor fuera del dominio (PENDIENTE, NULL,
+    -- texto suelto) es EN_CURSO. La regla de cierre por fechas y la de no reabrir viajes cerrados siguen igual.
+    UPDATE #lote
+    SET estado = CASE
+                     WHEN UPPER(LTRIM(RTRIM(estado))) = 'COMPLETADO' THEN 'FINALIZADO'
+                     WHEN UPPER(LTRIM(RTRIM(estado))) IN ('EN_CURSO', 'FINALIZADO', 'CANCELADO') THEN UPPER(LTRIM(RTRIM(estado)))
+                     ELSE 'EN_CURSO'
+                 END;
 
     -- Emparejar con lo importado antes (si hubiera varios activos con la misma llave, el menor id)
     ALTER TABLE #lote ADD idExistente INT NULL, omitido BIT NULL;

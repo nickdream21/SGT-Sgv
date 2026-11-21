@@ -86,11 +86,52 @@ WHERE idDespachoOrigen IS NULL AND idDespachoDestino IS NULL AND estado = 'COMPL
 .\WebSGV\Database\aplicar-migraciones.ps1 -Entorno produccion -ConfirmoProduccion
 ```
 
-Aplica en orden todas las pendientes de `Database/Schema/` (hoy 01–52) y las registra en `dbo.SchemaVersion`. Si una se detiene, corregir el dato que dice el mensaje y repetir (son idempotentes). Algunas que conviene conocer: la **26 borra `Despachos.idProducto`**; la 16 pone la hora de Perú (`dbo.fn_AhoraPeru()`); la 46 agrega `Usuarios.selloSesion` (al pasar, todas las sesiones se cierran una vez); la 47 protege `AuditoriaLog` y `Auditoria` contra UPDATE/DELETE.
+Aplica en orden todas las pendientes de `Database/Schema/` (hoy 01–55) y las registra en `dbo.SchemaVersion`. Si una se detiene, corregir el dato que dice el mensaje y repetir (son idempotentes). Algunas que conviene conocer: la **26 borra `Despachos.idProducto`**; la 16 pone la hora de Perú (`dbo.fn_AhoraPeru()`); la 46 agrega `Usuarios.selloSesion` (al pasar, todas las sesiones se cierran una vez); la 47 protege `AuditoriaLog` y `Auditoria` contra UPDATE/DELETE.
 
 **Migración 52** (`52_TriggersAuditoriaHeredados.sql`, E3-1): crea los 11 triggers `TR_<tabla>_Auditoria` heredados (llenan `Auditoria`; `sp_DC_GenerarNumeroOrden` la lee) solo si faltan; donde ya existen no hace nada y solo queda registrada. Ensayada antes con `herramientas/respaldo/ensayar-migracion.ps1`. Control después (solo SELECT): `SELECT name, is_disabled FROM sys.triggers WHERE name LIKE 'TR[_]%[_]Auditoria'` → los 11 de la migración (más `TR_AbastecimientoCombustible_Auditoria` si existe, que se borra en E3-8) con `is_disabled = 0`. Si `aplicar-migraciones.ps1 -SoloListar` avisa de un hash distinto en `16_HoraPeru.sql`, comparar `dbo.fn_AhoraPeru` con el archivo antes de aceptarlo en `$HashesAceptados` (el de pruebas ya está aceptado, revisado el 2026-11-21).
 
 **Migración 53** (`53_CorrelativoViaje.sql`, E3-3): crea `Correlativo` y la siembra con el número `VP-AAAA-NNN` más alto de cada año de `sgvTransporte` (excluye formatos como `VP-SIM-*`); se detiene con `THROW 51000` si un año queda por debajo. **Debe ir antes que los SP del paso 5** (`sp_CrearDespacho`, `sp_CrearViajeProgreso` y `sp_LD_ReubicarDespachoEnViajeDelConductor` llaman a `sp_SiguienteNumeroViaje`, que usa la tabla). Control después: `SELECT serie, anio, ultimo FROM Correlativo` contra el número más alto de cada año (`MAX(TRY_CAST(SUBSTRING(numeroViajeProgreso, 9, 20) AS INT))` agrupado por `SUBSTRING(numeroViajeProgreso, 4, 4)`, solo filas `LIKE 'VP-[0-9][0-9][0-9][0-9]-%'`): `ultimo` nunca menor.
+
+**Migraciones 54 y 55** (`54_RestriccionesDominio.sql`, `55_LlavesEIndices.sql`, E3-6): CHECK de dominio y montos, `OrdenViaje.estadoAprobacion` NOT NULL con DEFAULT `PENDIENTE` (fuera el `APROBADO`), 10 FK nuevas, documentos sin cascada, FK e índices repetidos fuera. Cada regla cuenta antes y se detiene (THROW 54001/54002 o 55001) con la tabla, la regla y el conteo; no corrigen datos. **Orden: `sp_SE_ImportarLote` → 54 → 55.** Antes de `aplicar-migraciones.ps1` de este paso, aplicar solo ese SP (`.\WebSGV\Database\sql.ps1 -Entorno produccion -ConfirmoProduccion -Archivo WebSGV\Database\StoredProcedures\sp_SE_ImportarLote.sql`, como se hizo en pruebas el 2026-11-21); el resto de los SP, en el paso 5. No importar el STATUS GENERAL entre medio: la pantalla ImportarSeguimiento de la versión publicada `60853e8` manda COMPLETADO y PENDIENTE, que la 54 rechaza; ese SP los normaliza (COMPLETADO → FINALIZADO, lo demás → EN_CURSO). **Antes**, en `sgvTransporte`, correr los controles de datos de E3-5 (paso 5) y estos (solo SELECT; todos deben dar 0 filas o conteo 0):
+
+```sql
+SELECT estadoDespacho, tipoOperacion, activo, COUNT(*) FROM Despachos
+ WHERE estadoDespacho NOT IN ('PROGRAMADO','COMPLETADO','ANULADO') OR tipoOperacion NOT IN ('CARGA','DESCARGA')
+    OR (activo = 0 AND estadoDespacho <> 'ANULADO') OR (activo = 1 AND estadoDespacho = 'ANULADO')
+ GROUP BY estadoDespacho, tipoOperacion, activo;
+SELECT estadoViaje, COUNT(*) FROM ViajesEnProgreso WHERE estadoViaje NOT IN ('ABIERTO','CERRADO','ANULADO') GROUP BY estadoViaje;
+SELECT estadoAprobacion, estadoViaje, COUNT(*) FROM OrdenViaje
+ WHERE ISNULL(estadoAprobacion, '') NOT IN ('PENDIENTE','POR_CONFORMAR','REABIERTO','APROBADO')
+    OR ISNULL(estadoViaje, '') NOT IN ('PENDIENTE','COMPLETADO')
+ GROUP BY estadoAprobacion, estadoViaje;
+SELECT estado, origen, COUNT(*) FROM SeguimientoExportacion
+ WHERE estado NOT IN ('EN_CURSO','FINALIZADO','CANCELADO') OR origen NOT IN ('DESPACHO','MANUAL') GROUP BY estado, origen;
+SELECT etapa, estadoFirma, COUNT(*) FROM FirmaDigital
+ WHERE etapa NOT IN ('DECLARACION','REVISION','CONFORMIDAD','ANULACION') OR estadoFirma NOT IN ('V','A') GROUP BY etapa, estadoFirma;
+SELECT rol, activo, COUNT(*) FROM Usuarios
+ WHERE rol IS NULL OR (rol NOT IN ('ADMIN','ADMINISTRADOR','ADMINISTRADOR DE TRANSPORTE','ADMINISTRADOR DE SISTEMA','CONDUCTOR','CHOFER','SUPERVISOR','CONTABILIDAD')
+   AND NOT (activo = 0 AND rol IN ('ADMINISTRADOR DE GRIFO','ADMINISTRADOR DE MAQUINARIA','OPERADOR')))
+ GROUP BY rol, activo;
+SELECT moneda, COUNT(*) FROM FacturaFlete WHERE moneda NOT IN ('PEN','USD') GROUP BY moneda;
+SELECT 'Factura' t, COUNT(*) n FROM Factura WHERE valorTotal < 0
+UNION ALL SELECT 'CPIC', COUNT(*) FROM CPIC WHERE valorTotalFlete < 0 OR pesoNeto < 0 OR pesoBruto < 0
+UNION ALL SELECT 'FacturaFlete', COUNT(*) FROM FacturaFlete WHERE cantidad < 0 OR valorUnitario < 0 OR valorVenta < 0 OR igv < 0 OR importeTotal < 0
+UNION ALL SELECT 'FacturaFleteItem', COUNT(*) FROM FacturaFleteItem WHERE cantidad < 0 OR valorUnitario < 0
+UNION ALL SELECT 'DespachoCarga', COUNT(*) FROM DespachoCarga WHERE pesoBrutoKg < 0 OR pesoNetoKg < 0;
+-- Huérfanos de las 10 FK nuevas (la 55 los cuenta y se detiene; aquí se ven antes):
+SELECT 'SE.idDespachoOrigen' c, COUNT(*) n FROM SeguimientoExportacion s WHERE idDespachoOrigen IS NOT NULL AND NOT EXISTS (SELECT 1 FROM Despachos d WHERE d.idDespacho = s.idDespachoOrigen)
+UNION ALL SELECT 'SE.idDespachoDestino', COUNT(*) FROM SeguimientoExportacion s WHERE idDespachoDestino IS NOT NULL AND NOT EXISTS (SELECT 1 FROM Despachos d WHERE d.idDespacho = s.idDespachoDestino)
+UNION ALL SELECT 'SE.idUsuarioRegistro', COUNT(*) FROM SeguimientoExportacion s WHERE idUsuarioRegistro IS NOT NULL AND NOT EXISTS (SELECT 1 FROM Usuarios u WHERE u.idUsuario = s.idUsuarioRegistro)
+UNION ALL SELECT 'SE.idUsuarioModificacion', COUNT(*) FROM SeguimientoExportacion s WHERE idUsuarioModificacion IS NOT NULL AND NOT EXISTS (SELECT 1 FROM Usuarios u WHERE u.idUsuario = s.idUsuarioModificacion)
+UNION ALL SELECT 'SH.idUsuarioCorreccion', COUNT(*) FROM SeguimientoHito h WHERE idUsuarioCorreccion IS NOT NULL AND NOT EXISTS (SELECT 1 FROM Usuarios u WHERE u.idUsuario = h.idUsuarioCorreccion)
+UNION ALL SELECT 'FD.idUsuarioFirmante', COUNT(*) FROM FirmaDigital f WHERE idUsuarioFirmante IS NOT NULL AND NOT EXISTS (SELECT 1 FROM Usuarios u WHERE u.idUsuario = f.idUsuarioFirmante)
+UNION ALL SELECT 'MDV.idViajeProgreso', COUNT(*) FROM MovimientoDineroViaje m WHERE idViajeProgreso IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ViajesEnProgreso v WHERE v.idViajeProgreso = m.idViajeProgreso)
+UNION ALL SELECT 'MDV.idUsuarioRegistro', COUNT(*) FROM MovimientoDineroViaje m WHERE idUsuarioRegistro IS NOT NULL AND NOT EXISTS (SELECT 1 FROM Usuarios u WHERE u.idUsuario = m.idUsuarioRegistro)
+UNION ALL SELECT 'MDV.idUsuarioAnulacion', COUNT(*) FROM MovimientoDineroViaje m WHERE idUsuarioAnulacion IS NOT NULL AND NOT EXISTS (SELECT 1 FROM Usuarios u WHERE u.idUsuario = m.idUsuarioAnulacion)
+UNION ALL SELECT 'OVA.idUsuarioAdmin', COUNT(*) FROM OrdenViajeAjuste a WHERE idUsuarioAdmin IS NOT NULL AND NOT EXISTS (SELECT 1 FROM Usuarios u WHERE u.idUsuario = a.idUsuarioAdmin);
+```
+
+Lo que salga se anota como `D-` nuevo y se corrige (con aprobación del usuario) antes de aplicar. Los montos de liquidación no se miden aquí (en `sgvTransporte` deberían estar vacíos o en cero; si no, la 54 lo dice con el conteo). La 55 busca las FK repetidas por estructura, no por nombre (en `sgvTransporte` tendrán otros nombres generados). Control después: `SELECT name FROM sys.check_constraints WHERE is_not_trusted = 1 OR is_disabled = 1` y lo mismo en `sys.foreign_keys` → 0 filas; la lista exacta está en `WebSGV.Tests/Integracion/IntegridadBdTests.cs`. En el ensayo la 54 tardó 180 ms y la 55, 193 ms.
 
 ## 5. Procedimientos almacenados
 

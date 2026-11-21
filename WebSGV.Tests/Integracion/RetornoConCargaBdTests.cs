@@ -26,7 +26,7 @@ namespace WebSGV.Tests.Integracion
             using (new TransaccionDePrueba())
             {
                 DateTime fechaCarga = FechaHelper.Hoy().AddDays(5);
-                DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0 WHERE fechaDespacho = @f", DbHelper.Param("@f", fechaCarga));
+                DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0, estadoDespacho = 'ANULADO' WHERE fechaDespacho = @f", DbHelper.Param("@f", fechaCarga));
 
                 int idCliente = Convert.ToInt32(DbHelper.EjecutarEscalar("SELECT TOP 1 idCliente FROM Cliente WHERE activo = 1 AND UPPER(nombre) LIKE '%VITAPRO%' ORDER BY idCliente"));
                 int idPlanta = Convert.ToInt32(DbHelper.EjecutarEscalar("SELECT TOP 1 idPlanta FROM Planta WHERE activo = 1 AND esInternacional = 0 AND UPPER(nombre) LIKE '%TRUJILLO%' ORDER BY idPlanta"));

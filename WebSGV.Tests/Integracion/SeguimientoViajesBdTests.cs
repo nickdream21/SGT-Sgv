@@ -109,7 +109,7 @@ namespace WebSGV.Tests.Integracion
                 Assert.Equal(2, SeguimientoViajesService.ListarTablero(new FiltroTablero { Desde = desde, Hasta = DateTime.Today, Texto = pedido, IncluirHistorial = true }).Count);
 
                 // Despacho de carga anulado: el viaje queda anulado.
-                DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0 WHERE idDespacho = @id", DbHelper.Param("@id", idCarga));
+                DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0, estadoDespacho = 'ANULADO' WHERE idDespacho = @id", DbHelper.Param("@id", idCarga));
                 SeguimientoViajesService.SincronizarDespachos(desde);
                 v = SeguimientoViajesService.ListarTablero(new FiltroTablero { Desde = desde, Hasta = DateTime.Today, Texto = pedido }).Single();
                 Assert.Equal("Anulado", v.Fase.Nombre);

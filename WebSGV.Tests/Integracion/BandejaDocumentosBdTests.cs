@@ -38,7 +38,7 @@ namespace WebSGV.Tests.Integracion
         private static Escenario Preparar(int dias, bool primeraCoincide = true)
         {
             DateTime fecha = FechaHelper.Hoy().AddDays(dias);
-            DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0 WHERE fechaDespacho BETWEEN @f AND DATEADD(day, 2, @f)", DbHelper.Param("@f", fecha));
+            DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0, estadoDespacho = 'ANULADO' WHERE fechaDespacho BETWEEN @f AND DATEADD(day, 2, @f)", DbHelper.Param("@f", fecha));
 
             DataRow cliente = DbHelper.ConsultarTabla("SELECT TOP 1 idCliente, ruc FROM Cliente WHERE activo = 1 AND ruc IS NOT NULL ORDER BY idCliente").Rows[0];
             int idCliente = Convert.ToInt32(cliente["idCliente"]);
@@ -230,7 +230,7 @@ namespace WebSGV.Tests.Integracion
                 using (new TransaccionDePrueba())
                 {
                     DateTime fecha = FechaHelper.Hoy().AddDays(9);
-                    DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0 WHERE fechaDespacho BETWEEN DATEADD(day, -1, @f) AND DATEADD(day, 2, @f)", DbHelper.Param("@f", fecha));
+                    DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0, estadoDespacho = 'ANULADO' WHERE fechaDespacho BETWEEN DATEADD(day, -1, @f) AND DATEADD(day, 2, @f)", DbHelper.Param("@f", fecha));
 
                     DataRow cliente = DbHelper.ConsultarTabla("SELECT TOP 1 idCliente, ruc FROM Cliente WHERE activo = 1 AND ruc IS NOT NULL ORDER BY idCliente").Rows[0];
                     int idCliente = Convert.ToInt32(cliente["idCliente"]);
@@ -332,7 +332,7 @@ namespace WebSGV.Tests.Integracion
                 using (new TransaccionDePrueba())
                 {
                     DateTime fecha = FechaHelper.Hoy().AddDays(12);
-                    DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0 WHERE fechaDespacho BETWEEN DATEADD(day, -1, @f) AND DATEADD(day, 2, @f)", DbHelper.Param("@f", fecha));
+                    DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0, estadoDespacho = 'ANULADO' WHERE fechaDespacho BETWEEN DATEADD(day, -1, @f) AND DATEADD(day, 2, @f)", DbHelper.Param("@f", fecha));
 
                     DataRow cliente = DbHelper.ConsultarTabla("SELECT TOP 1 idCliente, ruc FROM Cliente WHERE activo = 1 AND ruc IS NOT NULL ORDER BY idCliente").Rows[0];
                     int idCliente = Convert.ToInt32(cliente["idCliente"]);

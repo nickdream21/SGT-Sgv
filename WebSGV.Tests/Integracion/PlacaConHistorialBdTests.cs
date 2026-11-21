@@ -26,10 +26,10 @@ namespace WebSGV.Tests.Integracion
         private static int Despacho(int idTracto, int idCarreta) =>
             Convert.ToInt32(DbHelper.EjecutarEscalar(@"
                 INSERT INTO Despachos (numeroDespacho, fechaDespacho, horaDespacho, idConductor, idTracto, idCarreta, idCliente,
-                                       lugarOperacion, tipoOperacion, activo)
+                                       lugarOperacion, tipoOperacion, activo, estadoDespacho)
                 OUTPUT INSERTED.idDespacho
                 VALUES ('ZZ-B54', CAST(dbo.fn_AhoraPeru() AS DATE), '08:00', @cond, @tracto, @carreta, @cliente,
-                        'Trujillo', 'CARGA', 0)",
+                        'Trujillo', 'CARGA', 0, 'ANULADO')",
                 DbHelper.Param("@cond", Primero("SELECT MIN(idConductor) FROM Conductor")),
                 DbHelper.Param("@tracto", idTracto), DbHelper.Param("@carreta", idCarreta),
                 DbHelper.Param("@cliente", Primero("SELECT MIN(idCliente) FROM Cliente"))));

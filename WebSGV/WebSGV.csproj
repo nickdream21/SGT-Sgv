@@ -190,6 +190,8 @@
     <Content Include="Database\Schema\51_MontosLiquidacionDecimal.sql" />
     <Content Include="Database\Schema\52_TriggersAuditoriaHeredados.sql" />
     <Content Include="Database\Schema\53_CorrelativoViaje.sql" />
+    <Content Include="Database\Schema\54_RestriccionesDominio.sql" />
+    <Content Include="Database\Schema\55_LlavesEIndices.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_CrearTablasDespachoObra.sql" />

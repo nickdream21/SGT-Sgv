@@ -88,7 +88,8 @@ namespace WebSGV.Tests.Integracion
                 Ejecutar(@"INSERT INTO MovimientoDineroViaje (tipo, idConductor, numeroOrdenViaje, fecha, concepto,
                                montoSoles, medio, idUsuarioRegistro)
                            VALUES ('ENTREGA', (SELECT TOP 1 idConductor FROM Conductor ORDER BY idConductor), @n,
-                               dbo.fn_AhoraPeru(), 'Prueba numeración', 1, 'EFECTIVO', 1)",
+                               dbo.fn_AhoraPeru(), 'Prueba numeración', 1, 'EFECTIVO',
+                               (SELECT MIN(idUsuario) FROM Usuarios))",   // FK_MovimientoDineroViaje_UsuarioRegistro (migración 55)
                     ("@n", Numero(prefijo, b + 19)));
                 Assert.Equal(b + 20, Secuencial(DashboardConductorService.GenerarNumeroOrden(), prefijo));
 

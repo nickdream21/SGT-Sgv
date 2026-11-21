@@ -27,7 +27,7 @@ namespace WebSGV.Tests.Integracion
             using (new TransaccionDePrueba())
             {
                 DateTime fecha = FechaHelper.Hoy().AddDays(6);
-                DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0 WHERE fechaDespacho = @f", DbHelper.Param("@f", fecha));
+                DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0, estadoDespacho = 'ANULADO' WHERE fechaDespacho = @f", DbHelper.Param("@f", fecha));
 
                 int idCliente = Convert.ToInt32(DbHelper.EjecutarEscalar(@"
                     INSERT INTO Cliente (ruc, nombre, activo, esExportador, monedaFacturacion, fechaRegistro)
@@ -95,7 +95,7 @@ namespace WebSGV.Tests.Integracion
                 Assert.DoesNotContain(SeguimientoViajesService.ListarTablero(filtro), x => x.Id == idSeguimiento);
 
                 // 4) Anular el despacho anula el viaje.
-                DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0 WHERE idDespacho = @id", DbHelper.Param("@id", r.Creados[0]));
+                DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0, estadoDespacho = 'ANULADO' WHERE idDespacho = @id", DbHelper.Param("@id", r.Creados[0]));
                 SeguimientoViajesService.SincronizarDespachos(fecha.AddDays(-1));
                 Assert.Equal("CANCELADO", DbHelper.EjecutarEscalar("SELECT estado FROM SeguimientoExportacion WHERE idSeguimiento = @id", DbHelper.Param("@id", idSeguimiento)));
             }
@@ -113,7 +113,7 @@ namespace WebSGV.Tests.Integracion
             {
                 DateTime fecha = FechaHelper.Hoy().AddDays(6);
                 const string pedido = "4499999999";
-                DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0 WHERE fechaDespacho = @f", DbHelper.Param("@f", fecha));
+                DbHelper.EjecutarNonQuery("UPDATE Despachos SET activo = 0, estadoDespacho = 'ANULADO' WHERE fechaDespacho = @f", DbHelper.Param("@f", fecha));
 
                 int idCliente = Convert.ToInt32(DbHelper.EjecutarEscalar(@"
                     INSERT INTO Cliente (ruc, nombre, activo, esExportador, monedaFacturacion, fechaRegistro)

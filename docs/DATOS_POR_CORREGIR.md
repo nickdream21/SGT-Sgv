@@ -4,7 +4,7 @@ Registros de la BD que hay que corregir, completar o cargar. Casi todos están e
 
 Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = menor.
 
-Último id usado: D-032 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: D-033 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Facturas
 
@@ -38,6 +38,7 @@ Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = meno
 - [ ] **D-024** 9 GRE de Polinplast de setiembre sin PDF — (EG03-15116 a 15340, despachos 3038–3046): bajarlas de SUNAT (Consulta de GRE, 01–30/09) y subirlas por la bandeja. · C
 
 - [ ] **D-032** Viaje de prueba `VP-SIM-1111` (id 1843, ANULADO) — borrarlo junto con los datos de prueba de D-012. Control: `SELECT idViajeProgreso, estadoViaje FROM ViajesEnProgreso WHERE numeroViajeProgreso = 'VP-SIM-1111'`. · C
+- [ ] **D-033** Datos QA de la prueba de E3-6 — usuario `qa.e36prueba` (id 811, inactivo), despachos 17840 y 17841 (pedidos 9999999036 y 9999999037, ANULADO) y viajes 15130 y 15131 (VP-2026-081 y VP-2026-082, ANULADO): borrarlos junto con D-012 y D-032. Control: `SELECT 'usuario' t, idUsuario id, activo FROM Usuarios WHERE idUsuario = 811 AND nombreUsuario = 'qa.e36prueba' UNION ALL SELECT 'despacho', idDespacho, activo FROM Despachos WHERE idDespacho IN (17840, 17841) AND numeroPedido IN ('9999999036', '9999999037') UNION ALL SELECT 'viaje', idViajeProgreso, activo FROM ViajesEnProgreso WHERE idViajeProgreso IN (15130, 15131) AND numeroViajeProgreso IN ('VP-2026-081', 'VP-2026-082')` (5 filas mientras sigan; 0 cuando se borren). · C
 
 ## Catálogos y usuarios
 

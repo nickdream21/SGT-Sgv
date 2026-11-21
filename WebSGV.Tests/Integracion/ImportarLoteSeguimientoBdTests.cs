@@ -55,7 +55,7 @@ namespace WebSGV.Tests.Integracion
             r["cliente"] = Pedido;
             r["tracto1"] = tracto;
             r["fhProgramacion"] = ProgDe(tracto);
-            r["estado"] = estado;
+            r["estado"] = (object)estado ?? DBNull.Value;
             foreach (var v in valores) r[v.Columna] = v.Valor;
             t.Rows.Add(r);
         }
@@ -274,6 +274,40 @@ namespace WebSGV.Tests.Integracion
                 Assert.Equal("EN_CURSO", Leer(abierto)["estado"]);
                 Assert.Equal("FINALIZADO", Leer(cierraConSalida)["estado"]);
                 Assert.Equal("FINALIZADO", Leer(cierraConLlegadaBase)["estado"]);
+            }
+        }
+
+        [FactBD]
+        public void Importar_NormalizaLosEstadosQueMandaLaVersionPublicada()
+        {
+            // E3-6: ImportarSeguimiento publicado (60853e8) manda COMPLETADO y PENDIENTE; el SP los guarda como
+            // FINALIZADO y EN_CURSO (CK_SeguimientoExportacion_Estado, migración 54, rechaza los otros).
+            using (new TransaccionDePrueba())
+            {
+                int existentePendiente = Viaje("zzi-131", null, "EN_CURSO", "Conductor Excel");
+                var lote = TablaDelTipo();
+                Fila(lote, 3, "zzi-130", "COMPLETADO");                 // nuevo, sin fechas de cierre
+                Fila(lote, 4, "zzi-131", "PENDIENTE");                  // existente
+                Fila(lote, 5, "zzi-132", "PENDIENTE");                  // nuevo
+                Fila(lote, 6, "zzi-133", null);                         // nuevo, sin estado
+                Fila(lote, 7, "zzi-134", "en_curso ");                  // nuevo, texto suelto válido
+
+                var r = Importar(lote).Rows[0];
+                Assert.Equal(4, Convert.ToInt32(r["insertados"]));
+                Assert.Equal(1, Convert.ToInt32(r["actualizados"]));
+
+                string Estado(string tracto) => Convert.ToString(DbHelper.EjecutarEscalar(
+                    "SELECT estado FROM SeguimientoExportacion WHERE activo = 1 AND cliente = @c AND tracto1 = @t AND fhProgramacion = @p",
+                    DbHelper.Param("@c", Pedido), DbHelper.Param("@t", tracto), DbHelper.Param("@p", ProgDe(tracto))));
+
+                Assert.Equal("FINALIZADO", Estado("zzi-130"));
+                Assert.Equal("EN_CURSO", Estado("zzi-131"));
+                Assert.Equal("EN_CURSO", Estado("zzi-132"));
+                Assert.Equal("EN_CURSO", Estado("zzi-133"));
+                Assert.Equal("EN_CURSO", Estado("zzi-134"));
+                Assert.Equal(existentePendiente, Convert.ToInt32(DbHelper.EjecutarEscalar(
+                    "SELECT idSeguimiento FROM SeguimientoExportacion WHERE activo = 1 AND cliente = @c AND tracto1 = 'zzi-131'",
+                    DbHelper.Param("@c", Pedido))));
             }
         }
     }
