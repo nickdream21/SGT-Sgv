@@ -16,6 +16,10 @@
 --   * Si todos los despachos activos del viaje son ya del nuevo conductor y él
 --     no tiene otro viaje abierto, el viaje pasa a él (el conductor se registró mal).
 --   * Si no, va al viaje ABIERTO más reciente del conductor o a uno nuevo.
+--
+-- 2026-11-21 (E3-3, M-051): el número VP-AAAA-NNN del viaje nuevo sale de
+-- sp_SiguienteNumeroViaje (antes COUNT(*) + 1); corre dentro de la transacción de
+-- ListaDespachosService, así que un ROLLBACK devuelve también el correlativo.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_ReubicarDespachoEnViajeDelConductor
     @idDespacho  INT,
@@ -74,9 +78,9 @@ BEGIN
 
     IF @viajeDestino IS NULL
     BEGIN
-        DECLARE @contador INT = (SELECT COUNT(*) + 1 FROM ViajesEnProgreso WHERE YEAR(fechaCreacion) = YEAR(@fechaActual));
-        DECLARE @numeroViaje VARCHAR(20) = 'VP-' + CAST(YEAR(@fechaActual) AS VARCHAR(4)) + '-'
-            + RIGHT('000' + CAST(@contador AS VARCHAR(10)), CASE WHEN @contador > 999 THEN LEN(CAST(@contador AS VARCHAR(10))) ELSE 3 END);
+        DECLARE @anioViaje INT = YEAR(@fechaActual);
+        DECLARE @numeroViaje VARCHAR(20);
+        EXEC dbo.sp_SiguienteNumeroViaje @anioViaje, @numeroViaje OUTPUT;
 
         INSERT INTO ViajesEnProgreso (
             numeroViajeProgreso, idConductor, fechaInicio, fechaUltimaActividad,

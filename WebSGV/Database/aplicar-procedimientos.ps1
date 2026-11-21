@@ -92,13 +92,19 @@ try {
 } finally { $conn.Close() }
 
 # Procedimientos definidos en cada archivo (lotes separados por GO)
+# Orden de ejecución: primero los archivos con algún procedimiento NUEVO (FALTA) y después los que
+# cambian (DISTINTO), alfabético dentro de cada grupo. Un SP modificado puede llamar a uno nuevo
+# (E3-3: sp_CrearDespacho -> sp_SiguienteNumeroViaje); en orden alfabético puro el llamador quedaba
+# aplicado antes y, hasta crear el nuevo (o para siempre si un sqlcmd intermedio fallaba), la BD
+# respondía con el error 2812 (procedimiento inexistente).
+$aEjecutarNuevos = New-Object System.Collections.Generic.List[string]
 $aEjecutar = New-Object System.Collections.Generic.List[string]
 $nombresRepo = New-Object System.Collections.Generic.List[string]
 $faltan = 0; $distintos = 0; $iguales = 0
 foreach ($archivo in Get-ChildItem $dirSps -Filter '*.sql' | Sort-Object Name) {
     $texto = [IO.File]::ReadAllText($archivo.FullName)
     $lotes = [regex]::Split($texto, '(?im)^\s*GO\s*$')
-    $cambia = $false
+    $cambia = $false; $nuevo = $false
     foreach ($lote in $lotes) {
         $m = [regex]::Match($lote, '(?i)\b(?:CREATE(?:\s+OR\s+ALTER)?|ALTER)\s+PROC(?:EDURE)?\s+(?:\[?dbo\]?\.)?\[?([A-Za-z0-9_]+)\]?')
         if (-not $m.Success) { continue }
@@ -106,16 +112,21 @@ foreach ($archivo in Get-ChildItem $dirSps -Filter '*.sql' | Sort-Object Name) {
         $clave = $nombre.ToLowerInvariant()
         $nombresRepo.Add($nombre)
         if (-not $enBd.ContainsKey($clave)) {
-            Write-Host ("  FALTA     {0,-50} ({1})" -f $nombre, $archivo.Name) -ForegroundColor Yellow; $faltan++; $cambia = $true
+            Write-Host ("  FALTA     {0,-50} ({1})" -f $nombre, $archivo.Name) -ForegroundColor Yellow; $faltan++; $cambia = $true; $nuevo = $true
         }
         elseif ($enBd[$clave] -ne (Normalizar $lote)) {
             Write-Host ("  DISTINTO  {0,-50} ({1})" -f $nombre, $archivo.Name); $distintos++; $cambia = $true
         }
         else { $iguales++ }
     }
-    if ($cambia -or $Todos) { $aEjecutar.Add($archivo.FullName) }
+    if ($nuevo) { $aEjecutarNuevos.Add($archivo.FullName) }
+    elseif ($cambia -or $Todos) { $aEjecutar.Add($archivo.FullName) }
 }
+$aEjecutar.InsertRange(0, $aEjecutarNuevos)
 Write-Host "Iguales: $iguales   Distintos: $distintos   Faltan: $faltan   Archivos a ejecutar: $($aEjecutar.Count)"
+if ($aEjecutar.Count -gt 0) {
+    Write-Host ("Orden de ejecución: " + (($aEjecutar | ForEach-Object { [IO.Path]::GetFileName($_) }) -join ', '))
+}
 
 if (-not $SoloListar) {
     foreach ($ruta in $aEjecutar) {

@@ -2,16 +2,16 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `b0b29e2` — E3-2: estados al rechazar (`PROGRAMADO`), `THROW` en firma del admin y cierre de viajes, estado del seguimiento importado (EN_CURSO/FINALIZADO) y la reimportación ya no reabre viajes cerrados; 4 SP aplicados en pruebas. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-21**, commit anterior `e2667bc` — E3-3: número de viaje con correlativo propio (migración 53, `sp_SiguienteCorrelativo`, `sp_SiguienteNumeroViaje`), aplicado en pruebas; `aplicar-procedimientos.ps1` aplica primero los SP nuevos. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-101 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-102 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
 - El sitio publicado (`https://sgvtransporte.somee.com`, publicación `20261120_1311_60853e8`) usa la BD de **pruebas** `sgvActualizada`, que tiene **datos reales** desde el 2026-10-19: no se borra ni limpia nada allí sin confirmar.
 - Producción (`sgvTransporte`) no está al día: el paso a producción es `docs/PASO_A_PRODUCCION.md`, en orden, tras la decisión U-011.
 - Etapa 1 (operación) cerrada: respaldo diario de la BD y de los archivos en Google Drive, restauración ensayada, publicación con vuelta atrás (`herramientas/publicar/publicar.ps1`), monitores de UptimeRobot y cron del GPS activos.
-- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 en curso** (integridad de la BD): plan detallado en la hoja de ruta, sigue E3-3. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
+- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 en curso** (integridad de la BD): plan detallado en la hoja de ruta, sigue E3-4. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
 - Lo abierto está en este plan (mejoras) y en los documentos de "Otros documentos" (usuario, datos, pruebas); cada uno se cuenta en su propio documento.
 
 ## Top 20
@@ -129,7 +129,6 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 - [ ] **M-048** Correr `Database/Scripts/borrar-sp-se-sin-uso.sql` en `sgvActualizada` — los 8 `sp_SE_*` sin uso siguen en la BD y `60853e8` (publicado) no los llama. Antes, el SELECT de control de `docs/PASO_A_PRODUCCION.md`, paso 6. Con orden del usuario. · B
 - [ ] **M-049** Migración 57 (E3-8): DROP de los 9 SP de módulos retirados — `sp_InsertarIndicador`, 3 de grifo y 5 `sp_MQ_*` (siguen en `sgvActualizada`). Pedir confirmación antes de aplicarla (es la BD del sitio). Las tablas y sus datos se conservan. · B
 - [ ] **M-050** Quitar el DEFAULT 'APROBADO' de `OrdenViaje.estadoAprobacion` — un INSERT que omita la columna daría la orden por aprobada sin firma (hoy ningún INSERT del repo la omite). · B
-- [ ] **M-051** Número de viaje por conteo — `VP-AAAA-NNN` = cantidad de viajes del año + 1 (`sp_CrearDespacho.sql:110`, `sp_CrearViajeProgreso.sql:18`, `sp_LD_ReubicarDespacho…:78`): si se borran viajes puede repetirse. Pasar a un correlativo (hoy sin repetidos). · B
 - [ ] **M-053** Query Store acotado en `sgvActualizada` — tope de 500 MB de datos; el Query Store puede crecer hasta 1000 MB (`max_storage_size_mb` medido en pruebas). Bajarlo a 100 MB (`ALTER DATABASE … SET QUERY_STORE (MAX_STORAGE_SIZE_MB = 100)`). Crecimiento estimado con todos los choferes liquidando: 11–16 MB al mes (2 a 3 años); `sgvTransporte` (Premium) tiene 2000 MB. · B
 - [ ] **M-054** `sp_DC_RevocarFirma` y `FirmaService.RevocarFirma` sin uso — siguen en el repo (`sp_DC_RevocarFirma.sql`, `FirmaService.cs:229`) y en la BD: borrarlos. · C
 - [ ] **M-055** Borrar `sp_LD_ActualizarConductorDominanteViajes` — de la BD y del repo: ya no se llama y el código nuevo está publicado (`60853e8`). · C
@@ -140,6 +139,7 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 - [ ] **M-060** Tabla `PuntoControlGps` de exportación casi sin uso — "Verificar GPS" ya no usa sus 20 puntos, pero `HoraLlegadaGpsService.cs:52` usa el punto `BASE`: no borrar la tabla entera. · C
 
 - [ ] **M-101** `verificar-pdf-firmados` da 31 faltantes falsos — son las firmas de las órdenes de prueba retiradas el 2026-11-16; por eso la tarea "SGV - Respaldo diario" termina con resultado 2 y la alarma pierde valor. Excluir las firmas anuladas de órdenes retiradas (`herramientas/respaldo/verificar-pdf-firmados.ps1`). · B
+- [ ] **M-102** 23 archivos de `Database/StoredProcedures/` sin registrar en `WebSGV.csproj` — entre ellos `sp_RechazarLiquidacion.sql`, `sp_LD_ReubicarDespachoEnViajeDelConductor.sql` y los `sp_SE_*`: registrarlos y una prueba de CI que lo exija, como la de las páginas. · C
 
 ### Etapa 4 — Seguridad
 

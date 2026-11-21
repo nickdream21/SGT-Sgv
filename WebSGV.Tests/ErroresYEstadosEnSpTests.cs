@@ -88,5 +88,41 @@ namespace WebSGV.Tests
             Assert.DoesNotContain("ERROR_MESSAGE", limpio);
             Assert.Contains("SELECT 1", limpio);
         }
+
+        // E3-3 (M-051): el número de viaje sale de dbo.Correlativo vía sp_SiguienteNumeroViaje.
+        // Cubre COUNT(*) + 1 y ISNULL(COUNT(*), 0) + 1.
+        private const string PatronCountMas1 = @"COUNT\s*\(\s*\*\s*\)\s*(,\s*0\s*\))?\s*\+\s*1";
+
+        [Fact]
+        public void Ningun_sp_numera_con_COUNT_mas_1()
+        {
+            Assert.Empty(ArchivosQueContienen(PatronCountMas1));
+        }
+
+        [Theory]
+        [InlineData("SELECT @n = COUNT(*) + 1 FROM ViajesEnProgreso", true)]
+        [InlineData("SELECT @n = ISNULL(COUNT(*), 0) + 1 FROM ViajesEnProgreso", true)]
+        [InlineData("SELECT @n = ISNULL( COUNT( * ) ,0 )+1 FROM ViajesEnProgreso", true)]
+        [InlineData("SELECT @n = COUNT(*) FROM ViajesEnProgreso; SET @m = @n + 1", false)]
+        [InlineData("SELECT cantidadDespachos = (SELECT COUNT(*) FROM Despachos) FROM ViajesEnProgreso", false)]
+        public void El_patron_COUNT_mas_1_detecta_ambas_formas(string sql, bool detecta)
+        {
+            Assert.Equal(detecta, Regex.IsMatch(SinComentarios(sql), PatronCountMas1, RegexOptions.IgnoreCase));
+        }
+
+        [Fact]
+        public void Solo_sp_SiguienteNumeroViaje_arma_el_numero_VP()
+        {
+            Assert.Equal(new[] { "sp_SiguienteNumeroViaje.sql" }, ArchivosQueContienen(@"'VP-"));
+        }
+
+        [Theory]
+        [InlineData("sp_CrearDespacho.sql")]
+        [InlineData("sp_CrearViajeProgreso.sql")]
+        [InlineData("sp_LD_ReubicarDespachoEnViajeDelConductor.sql")]
+        public void Los_SP_que_crean_viajes_piden_el_numero_a_sp_SiguienteNumeroViaje(string archivo)
+        {
+            Assert.Matches(new Regex(@"\bEXEC\s+(dbo\.)?sp_SiguienteNumeroViaje\b", RegexOptions.IgnoreCase), Codigo(archivo));
+        }
     }
 }

@@ -30,6 +30,10 @@
 -- Viaje: si el conductor ya tiene un viaje ABIERTO (por ejemplo, el mismo que cargo
 -- en Trujillo y aun no liquida), la app lo envia en @idViajeProgreso y la descarga se
 -- suma a ese viaje: una sola liquidacion con carga y descarga.
+--
+-- 2026-11-21 (E3-3, M-051): el numero VP-AAAA-NNN del viaje nuevo sale de
+-- sp_SiguienteNumeroViaje (antes COUNT(*) + 1, que repetia numeros con dos usuarios a
+-- la vez o tras borrar un viaje), dentro de la misma transaccion del despacho.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_CrearDespacho
     @idConductor        INT,
@@ -100,15 +104,10 @@ BEGIN
         -- viajes huerfanos si el INSERT del despacho falla.
         IF @idViajeProgreso IS NULL
         BEGIN
-            DECLARE @contador    INT;
+            DECLARE @anioViaje   INT = YEAR(@fechaCreacion);
             DECLARE @numeroViaje VARCHAR(20);
 
-            SELECT @contador = ISNULL(COUNT(*), 0) + 1
-            FROM ViajesEnProgreso
-            WHERE YEAR(fechaCreacion) = YEAR(@fechaCreacion);
-
-            SET @numeroViaje = 'VP-' + CAST(YEAR(@fechaCreacion) AS VARCHAR(4)) + '-'
-                             + RIGHT('000' + CAST(@contador AS VARCHAR(3)), 3);
+            EXEC dbo.sp_SiguienteNumeroViaje @anioViaje, @numeroViaje OUTPUT;
 
             INSERT INTO ViajesEnProgreso (
                 numeroViajeProgreso, idConductor, fechaInicio, fechaUltimaActividad,

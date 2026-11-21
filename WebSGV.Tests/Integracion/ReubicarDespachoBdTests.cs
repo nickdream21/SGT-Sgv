@@ -38,10 +38,15 @@ namespace WebSGV.Tests.Integracion
                 int otro = Entero("SELECT TOP 1 idConductor FROM Conductor WHERE idConductor <> @c ORDER BY idConductor DESC", "@c", conductorViaje);
 
                 DbHelper.EjecutarNonQuery("UPDATE Despachos SET idConductor = @c WHERE idDespacho = @d", DbHelper.Param("@c", otro), DbHelper.Param("@d", despacho));
+                int maxViajeAntes = Entero("SELECT MAX(idViajeProgreso) FROM ViajesEnProgreso");
                 Reubicar(despacho);
 
                 int viajeNuevo = Entero("SELECT idViajeProgreso FROM Despachos WHERE idDespacho = @d", "@d", despacho);
                 Assert.NotEqual(viaje, viajeNuevo);
+                // E3-3: si abrió un viaje nuevo, el número sale de sp_SiguienteNumeroViaje (VP-AAAA-NNN, desde 1000 todas las cifras).
+                if (viajeNuevo > maxViajeAntes)
+                    Assert.Matches(@"^VP-\d{4}-\d{3,}$", Convert.ToString(DbHelper.EjecutarEscalar(
+                        "SELECT numeroViajeProgreso FROM ViajesEnProgreso WHERE idViajeProgreso = @v", DbHelper.Param("@v", viajeNuevo))));
                 Assert.Equal(otro, Entero("SELECT idConductor FROM ViajesEnProgreso WHERE idViajeProgreso = @v", "@v", viajeNuevo));
                 Assert.Equal(conductorViaje, Entero("SELECT idConductor FROM ViajesEnProgreso WHERE idViajeProgreso = @v", "@v", viaje));
                 Assert.Equal(

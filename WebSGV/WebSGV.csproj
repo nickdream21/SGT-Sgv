@@ -189,6 +189,7 @@
     <Content Include="Database\Schema\50_UnicidadPlacaCarreta.sql" />
     <Content Include="Database\Schema\51_MontosLiquidacionDecimal.sql" />
     <Content Include="Database\Schema\52_TriggersAuditoriaHeredados.sql" />
+    <Content Include="Database\Schema\53_CorrelativoViaje.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_CrearTablasDespachoObra.sql" />
@@ -206,6 +207,8 @@
     <Content Include="Database\StoredProcedures\sp_RegistrarProductoImportado.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearFactura.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearViajeProgreso.sql" />
+    <Content Include="Database\StoredProcedures\sp_SiguienteCorrelativo.sql" />
+    <Content Include="Database\StoredProcedures\sp_SiguienteNumeroViaje.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_ActualizarOrdenViajeConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_CerrarViajesProgreso.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_BloquearViajesParaLiquidar.sql" />

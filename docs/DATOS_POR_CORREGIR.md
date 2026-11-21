@@ -40,7 +40,7 @@ Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = meno
 - [ ] **D-029** Despachos 272–290 dados de baja sin estado ANULADO — están `PROGRAMADO` con `activo=0` (los dejó así un script de anulación del 2026-10-16); pasan a `estadoDespacho='ANULADO'`. Requisito del CHECK de la Etapa 3 (E3-5 y E3-6). Control: `SELECT COUNT(*) FROM Despachos WHERE estadoDespacho<>'ANULADO' AND activo=0` (hoy 19). · A
 - [ ] **D-030** Seguimiento: 5 992 viajes en `COMPLETADO` pasan a `FINALIZADO` — el código solo reconoce `FINALIZADO` y `CANCELADO` como cerrados, así que hoy cuentan como abiertos (M-023); cambia el tablero: pasan a "Cerrado". La importación ya escribe `FINALIZADO` (E3-2, 2026-11-21): se puede corregir. Control: `SELECT estado, COUNT(*) FROM SeguimientoExportacion GROUP BY estado`. · A
 - [ ] **D-031** Seguimiento: `idUsuarioModificacion = 1` en 5 filas del 22/10 — ese usuario no existe; pasan a NULL antes de la FK (E3-6). Control: `SELECT COUNT(*) FROM SeguimientoExportacion s WHERE idUsuarioModificacion IS NOT NULL AND NOT EXISTS (SELECT 1 FROM Usuarios u WHERE u.idUsuario = s.idUsuarioModificacion)`. · B
-- [ ] **D-032** Viaje de prueba `VP-SIM-1111` (id 1843, ANULADO) — borrarlo junto con los datos de prueba de D-012. Control: `SELECT idViajeProgreso, estadoViaje FROM ViajesEnProgreso WHERE numeroViaje = 'VP-SIM-1111'`. · C
+- [ ] **D-032** Viaje de prueba `VP-SIM-1111` (id 1843, ANULADO) — borrarlo junto con los datos de prueba de D-012. Control: `SELECT idViajeProgreso, estadoViaje FROM ViajesEnProgreso WHERE numeroViajeProgreso = 'VP-SIM-1111'`. · C
 
 ## Catálogos y usuarios
 
