@@ -195,7 +195,7 @@ VALUES ('login_usuario', 'Nombre Completo', '<hash_pbkdf2>', 'NOMBRE DEL ROL', 1
 ### Generar Hash PBKDF2 desde PowerShell
 
 ```powershell
-$password = "MiContrasena123"
+$password = "<contraseña temporal>"
 $saltSize = 16; $hashSize = 32; $iterations = 310000
 $salt = New-Object byte[] $saltSize
 [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($salt)

@@ -2,14 +2,14 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `d52f964` — E2-4: abiertas partidas en este plan (mejoras `M-`), `docs/PENDIENTES_USUARIO.md` (`U-`), `docs/DATOS_POR_CORREGIR.md` (`D-`) y `docs/PRUEBAS_PENDIENTES.md` (`P-`); hechas, obsoletas y duplicadas cerradas. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-21**, commit anterior `db13195` — E2-5: documentos viejos retirados (raíz, `.opencode/`, planes terminados y `docs/migracion_somee/` a `docs/archivo/`), README y AGENTS.md al día; M-047 cerrada. No contiene contraseñas: solo dice dónde están.
 
 ## Estado
 
 - El sitio publicado (`https://sgvtransporte.somee.com`, publicación `20261120_1311_60853e8`) usa la BD de **pruebas** `sgvActualizada`, que tiene **datos reales** desde el 2026-10-19: no se borra ni limpia nada allí sin confirmar.
 - Producción (`sgvTransporte`) no está al día: el paso a producción es `docs/PASO_A_PRODUCCION.md`, en orden, tras la decisión U-011.
 - Etapa 1 (operación) cerrada: respaldo diario de la BD y de los archivos en Google Drive, restauración ensayada, publicación con vuelta atrás (`herramientas/publicar/publicar.ps1`), monitores de UptimeRobot y cron del GPS activos.
-- **Etapa 2 en curso** (ordenar el plan): E2-4 hecha, sigue E2-5. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
+- **Etapa 2 en curso** (ordenar el plan): E2-5 hecha, sigue E2-6. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
 - Abiertas: 99 mejoras en este plan, 71 pendientes del usuario, 26 datos por corregir y 23 pruebas pendientes.
 
 ## Top 20
@@ -121,10 +121,6 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 - [ ] **M-046** Subir al sitio publicado los Uploads que solo están en la PC de la oficina — con `herramientas/publicar/subir-uploads.ps1` (orden del usuario): los 23 PDF de factura de `Uploads\Factura\2026\11\` (la BD ya los registra y el sitio dice "el archivo no existe"), el de F222-00008545 (está en `Uploads` de la laptop), los CPIC y MCI de Crisar/Novopan (`Uploads\CPIC|Manifiesto\2026\11\`) y las facturas comerciales. Las 76 facturas de flete ya se subieron. Los 14 pedidos del 01–19/10 no tienen PDF de factura adjunto: el usuario decide si se suben a mano desde ListaDespachos. · A
 
 ## Mejoras abiertas — Calidad (por etapa de la hoja de ruta)
-
-### Etapa 2 — Ordenar el plan (en curso)
-
-- [ ] **M-047** Documentos viejos que nombran páginas o roles borrados, y `.opencode/` — `ANALISIS_PROYECTO.md`, `flujoactual.md`, `configuraciondenuevosagentes.md` (raíz) y `.opencode/` (enseña `TienePermiso("ABASTECIMIENTO")`, `sp_AB_*`, DAB). Se resuelve en E2-5 (decisión tomada: borrar `.opencode/` y `opencode.jsonc`, `docs/HOJA_DE_RUTA_CALIDAD.md`). · C
 
 ### Etapa 3 — Integridad de la BD
 

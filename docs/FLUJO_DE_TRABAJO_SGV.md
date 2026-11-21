@@ -330,16 +330,27 @@ Admin revisa liquidación pendiente:
 | Serialización | Newtonsoft.Json |
 | Autenticación | Sesión ASP.NET (`SGV_SessionId`, 30 min, anti-fijación) |
 | Auditoría | Tabla `AuditoriaLog` auto-creada en `Application_Start` via `AuditoriaHelper.cs` |
+| Servidor web | IIS / IIS Express (HTTPS en el puerto 44390 en desarrollo); cultura `es-PE` |
+
+Sin MVC, FriendlyUrls, bundling ni AjaxControlToolkit: WebForms puro (ver `CLAUDE.md`, "Request flow" y "Front-end libraries").
+
+**Seguridad**
+
+- Contraseñas con PBKDF2-HMAC-SHA256, 310 000 iteraciones por defecto (`PasswordHelper.IteracionesPorDefecto`), formato `sha256.{iter}.{salt}.{hash}`; el formato anterior (SHA1, 10 000) se convierte en el siguiente inicio de sesión.
+- Secretos en archivos externos no versionados: `connectionStrings.config` y `appSettings.Secrets.config`.
+- La estructura de la tabla `Usuarios` está en `docs/GUIA_CREACION_ROLES.md`; las claves de sesión, en `CLAUDE.md` ("Authentication and session").
+
+**Datos de la empresa** (razón social, rubro, RUC, domicilio fiscal y web pública `sgvtransporte.somee.com`): claves `Empresa.*` de `WebSGV/Web.config`, leídas por `EmpresaConfigHelper.cs`. No se repiten aquí para que haya una sola fuente.
 
 ---
 
 ## ⚠️ Notas de Infraestructura
 
 - **`Application_Error` (`Global.asax.cs`)**: todo error se registra una vez con `LogSGV` (`App_Data/logs`). ViewState inválido o vencido → advertencia y redirección a `Login.aspx?error=sesion`; 404 → info; el resto → error con ruta y usuario. En Release (`customErrors` RemoteOnly) el usuario remoto va a `Error.aspx` con un mensaje genérico; en desarrollo se ve la pantalla de error de ASP.NET.
-- **Routing**: `RouteConfig.cs` está vacío. No hay routing real — las páginas se acceden por URL física `.aspx`.
+- **Routing**: no hay (no existe `RouteConfig.cs`): las páginas se abren por su ruta física `.aspx`.
 - **PDFs archivados**: En `~/App_Data/OrdenesViaje` — **no commit** de esta carpeta.
 - **Secretos**: `connectionStrings.config` y `appSettings.Secrets.config` están **gitignoreados**. Nunca commitear.
 
 ---
 
-*Documento actualizado — Abril 2026. Refleja el estado real del código en `WebSGV/Views/` y `WebSGV/Database/`.*
+*Documento actualizado — noviembre 2026. Refleja el estado real del código en `WebSGV/Views/` y `WebSGV/Database/`.*

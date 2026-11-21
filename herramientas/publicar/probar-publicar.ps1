@@ -387,7 +387,7 @@ foreach ($r in 'bin/runtimes/win-x64/native/QuestPdfSkia.dll', 'Views/Inicio.asp
 $viejo = Join-Path $env:TEMP ('sgv-probar-volver-' + [guid]::NewGuid().ToString('N'))
 try {
     foreach ($r in 'Web.config', 'bin\WebSGV.dll', 'bin\runtimes\win-x86\native\QuestPdfSkia.dll', 'bin\runtimes\linux-x64\native\libQuestPdfSkia.so',
-                   'bin\runtimes\osx-arm64\native\libQuestPdfSkia.dylib', 'dashboard\PLAN_MODERNIZACION.md', 'connectionStrings.config.example') {
+                   'bin\runtimes\osx-arm64\native\libQuestPdfSkia.dylib', 'dashboard\LEEME.md', 'connectionStrings.config.example') {
         $f = Join-Path $viejo $r
         New-Item -ItemType Directory -Force (Split-Path $f) | Out-Null
         [IO.File]::WriteAllText($f, 'x')
@@ -415,7 +415,7 @@ $casos = @(
     @{ n = 'con runtimes de linux';        r = $bueno + 'bin/runtimes/linux-x64/native/libQuestPdfSkia.so'; wc = $wcRelease; esp = 'Sin runtimes de linux/osx' }
     @{ n = 'con runtimes de linux-musl';   r = $bueno + 'bin/runtimes/linux-musl-x64/native/libQuestPdfSkia.so'; wc = $wcRelease; esp = 'Sin runtimes de linux/osx' }
     @{ n = 'con runtimes de osx';          r = $bueno + 'BIN/Runtimes/OSX-arm64/native/libQuestPdfSkia.dylib'; wc = $wcRelease; esp = 'Sin runtimes de linux/osx' }
-    @{ n = 'con un .md';                   r = $bueno + 'dashboard/PLAN_MODERNIZACION.md'; wc = $wcRelease; esp = 'Sin documentos ni plantillas (*.md, *.example)' }
+    @{ n = 'con un .md';                   r = $bueno + 'dashboard/LEEME.md'; wc = $wcRelease; esp = 'Sin documentos ni plantillas (*.md, *.example)' }
     @{ n = 'con un .example';              r = $bueno + 'connectionStrings.config.example'; wc = $wcRelease; esp = 'Sin documentos ni plantillas (*.md, *.example)' }
     @{ n = 'sin bin/WebSGV.dll';           r = @($bueno | Where-Object { $_ -ne 'bin/WebSGV.dll' }); wc = $wcRelease; esp = 'Con bin/WebSGV.dll' }
     @{ n = 'sin QuestPDF win-x86';         r = @($bueno | Where-Object { $_ -notlike '*win-x86*' }); wc = $wcRelease; esp = 'Con QuestPDF nativo (win-x86)' }

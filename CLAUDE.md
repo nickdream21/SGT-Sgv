@@ -183,4 +183,4 @@ The plan is the only shared context between machines and sessions — never let 
 - Also update the Claude memory `pendientes_paso_a_produccion.md` when something is applied only to the test DB.
 - Before finishing a task, check `git status` for untracked files: commit them, gitignore them, or say why they stay.
 
-Also see `AGENTS.md` at the repo root for additional architecture notes and the multi-agent coordination system under `.opencode/`.
+`AGENTS.md` at the repo root only points other AI tools to this file; there is no other agent system in the repo.
