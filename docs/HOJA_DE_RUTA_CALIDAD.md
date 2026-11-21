@@ -16,12 +16,12 @@ siguen en `docs/PLAN_MEJORAS_SGV.md`.
 
 ## Estado
 
-**Etapa actual: 2 — fase PLAN** (Etapa 1 cerrada el 2026-11-20: publicado `60853e8`; quedan acciones del usuario: rotaciones, monitores de UptimeRobot, cron-job.org y los PDF de la laptop). La fase PLAN la hace Fable 5.2.
+**Etapa actual: 2 — fase PLAN** (Etapa 1 cerrada el 2026-11-20: publicado `60853e8`; quedan acciones del usuario: rotaciones de credenciales y los PDF de la laptop). La fase PLAN la hace Fable 5.2.
 Reparto de modelos: Fable 5.2 analiza y planifica; Opus 5.5 ejecuta.
 
 | # | Etapa | Nota hoy | Meta | Estado |
 |---|---|---|---|---|
-| 1 | Operación y continuidad | 4 | 7 | **Cerrada 2026-11-20 — nota medida: 6,5** (7 cuando el usuario cree los monitores, reactive el cron y rote credenciales) |
+| 1 | Operación y continuidad | 4 | 7 | **Cerrada 2026-11-20 — nota medida: 7** (monitores UptimeRobot y cron del GPS activos desde 2026-11-21; quedan las rotaciones de credenciales del usuario) |
 | 2 | Ordenar el plan de mejoras | 3 | 7 | **Siguiente: fase PLAN** |
 | 3 | Integridad de la base de datos | 6,6 | 8 | Pendiente |
 | 4 | Seguridad avanzada | 7,5 | 9 | Pendiente |
@@ -146,3 +146,4 @@ Fuera de esta etapa (pasa a la 3): borrar los SP retirados de la BD, Query Store
 | 2026-11-20 | 1 | E1-9 hecha: cierre técnico. Primera copia completa en Drive (1023 archivos) y tarea diaria registrada. Solo falta publicar (E1-5). |
 | 2026-11-20 | 1 | E1-10 hecha: publicación segura frente a los 261 sobrantes del servidor. Solo falta publicar (E1-5). |
 | 2026-11-20 | 1 | E1-5 hecha: publicado `60853e8` con `publicar.ps1` (254 subidos, 261 sobrantes borrados con respaldo previo). **Etapa 1 cerrada.** Nota de operación 4 → 6,5: respaldo diario BD + archivos verificado y restauración ensayada, publicación con paquete y vuelta atrás, Salud.ashx, aviso por correo de errores; falta (usuario) monitores UptimeRobot, cron del GPS y rotaciones para llegar a 7. |
+| 2026-11-21 | 1 | Cron de cron-job.org "SGV GPS automático" reactivado (prueba 202, cada 10 min) y 2 monitores de UptimeRobot (palabra clave `"ok":true` cada 5 min, aviso por correo): "SGV - Sitio y BD" (`Salud.ashx`) y "SGV - GPS y Onway" (`?gps=1`), ambos Up. Nota de operación: **7**. |
