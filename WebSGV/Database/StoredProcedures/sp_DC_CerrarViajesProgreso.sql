@@ -17,6 +17,8 @@
 --   una misma liquidación podían quedar con fechaCierre distintas, y
 --   sp_RechazarLiquidacion / sp_DC_RetirarLiquidacion / sp_LD_AnularLote
 --   reconocen a los viajes "hermanos" por fechaCierre igual.
+-- 2026-11-21: el CATCH relanza con THROW (antes RAISERROR(ERROR_MESSAGE()), que
+--   cambiaba el número del error a 50000 y mostraba el texto técnico al usuario).
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_DC_CerrarViajesProgreso
     @idsViajes              VARCHAR(MAX),   -- CSV de IDs de ViajesEnProgreso
@@ -108,11 +110,10 @@ BEGIN
         IF @@TRANCOUNT > 0
             ROLLBACK TRANSACTION;
 
-        -- Re-lanzar el error original con contexto
-        DECLARE @msg   NVARCHAR(2048) = ERROR_MESSAGE();
-        DECLARE @sev   INT            = ERROR_SEVERITY();
-        DECLARE @state INT            = ERROR_STATE();
-        RAISERROR(@msg, @sev, @state);
+        -- THROW relanza el error original con su número: MensajeErrorHelper muestra
+        -- el texto genérico ante errores técnicos (RAISERROR(@msg) los convertía en 50000
+        -- y el texto técnico llegaba al usuario).
+        THROW;
 
     END CATCH
 

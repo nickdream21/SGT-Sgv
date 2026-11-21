@@ -1207,8 +1207,6 @@ namespace WebSGV.Views
             {
                 case "PROGRAMADO":
                     return "programado";
-                case "EN_PROCESO":
-                    return "en_proceso";
                 case "COMPLETADO":
                     return "completado";
                 case "APROBADO":

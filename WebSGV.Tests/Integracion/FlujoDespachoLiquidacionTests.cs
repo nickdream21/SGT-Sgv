@@ -538,6 +538,12 @@ namespace WebSGV.Tests.Integracion
                 LiquidacionesPendientesService.Rechazar(input.NumeroOrdenViaje, datos.IdUsuarioAdmin, "Corregir montos (test)");
                 Assert.Equal("ABIERTO", RegistroDespachoService.ObtenerInfoViaje(viaje1).EstadoViaje);
                 Assert.Equal("ABIERTO", RegistroDespachoService.ObtenerInfoViaje(viaje2).EstadoViaje);
+                // Y todos los despachos activos de esos viajes vuelven a PROGRAMADO (antes EN_PROCESO).
+                DataTable despachos = DbHelper.ConsultarTabla(
+                    "SELECT estadoDespacho FROM Despachos WHERE activo = 1 AND idViajeProgreso IN (@v1, @v2)",
+                    DbHelper.Param("@v1", viaje1), DbHelper.Param("@v2", viaje2));
+                Assert.NotEqual(0, despachos.Rows.Count);
+                Assert.All(despachos.Rows.Cast<DataRow>(), f => Assert.Equal("PROGRAMADO", f["estadoDespacho"]));
 
                 // Reenviar los cierra de nuevo; retirar los vuelve a abrir todos.
                 input.EsReliquidacion = true;
@@ -586,7 +592,7 @@ namespace WebSGV.Tests.Integracion
                 Assert.Equal("REABIERTO", ov["estadoAprobacion"]);
                 Assert.Equal("Falta comprobante de peaje", ov["observacionesRechazo"]);
                 Assert.Equal("ABIERTO", RegistroDespachoService.ObtenerInfoViaje(idViaje).EstadoViaje);
-                Assert.Equal("EN_PROCESO", Fila("SELECT estadoDespacho FROM Despachos WHERE idDespacho = @id", idDespacho)["estadoDespacho"]);
+                Assert.Equal("PROGRAMADO", Fila("SELECT estadoDespacho FROM Despachos WHERE idDespacho = @id", idDespacho)["estadoDespacho"]);
 
                 // El conductor corrige y vuelve a enviar con el mismo número de orden.
                 input.EsReliquidacion = true;

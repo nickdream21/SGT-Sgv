@@ -12,7 +12,7 @@ namespace WebSGV.Helpers
     /// delegan aquí, para que las expresiones de enlace de datos del markup
     /// (<c><%# ObtenerClaseEstado(...) %></c>) sigan funcionando sin cambios.
     ///
-    /// No aplica a estados de flujo (PROGRAMADO/EN_PROCESO/APROBADO…) de
+    /// No aplica a estados de flujo (PROGRAMADO/COMPLETADO/APROBADO…) de
     /// DashboardConductor/ReportesOrdenesViaje, que tienen semántica distinta.
     /// </summary>
     public static class EstadoUiHelper

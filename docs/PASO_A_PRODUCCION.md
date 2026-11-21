@@ -115,6 +115,8 @@ WHERE ty.name IN ('float','real') AND OBJECT_NAME(p.object_id) IN
 
 Las dos deben devolver 0 filas.
 
+**Controles de E3-2 (solo SELECT):** `SELECT COUNT(*) FROM Despachos WHERE estadoDespacho = 'EN_PROCESO'` y `SELECT estado, COUNT(*) FROM SeguimientoExportacion GROUP BY estado`. Desde E3-2 los SP dejan los despachos rechazados en `PROGRAMADO` y el seguimiento solo en `EN_CURSO`/`FINALIZADO`/`CANCELADO`; si salen `EN_PROCESO`, `COMPLETADO` o `PENDIENTE`, anotarlos como un `D-` nuevo (la corrección de pruebas es D-030).
+
 ## 6. SP retirados
 
 Ninguno de los dos los llama el código publicado.

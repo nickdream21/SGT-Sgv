@@ -7,6 +7,9 @@
 --            estar POR_CONFORMAR y sin otra firma de revisión vigente.
 -- @huellaContenido: SHA-256 de los montos y motivos revisados. La conformidad del
 -- conductor solo se acepta si firma exactamente esa misma huella.
+-- 2026-11-21: los errores técnicos se relanzan (THROW) en vez de devolver
+--   @resultado = 0 con ERROR_MESSAGE() en @mensaje (el texto técnico llegaba al
+--   usuario). La validación previa sigue devolviendo @resultado = 0 con su mensaje.
 -- =============================================================================
 CREATE OR ALTER PROCEDURE sp_DC_RegistrarFirmaAdmin
     @idOrdenViaje        INT,
@@ -86,9 +89,9 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        SET @resultado     = 0;
-        SET @idFirmaSalida = 0;
-        SET @mensaje       = 'Error al registrar la firma de revisión: ' + ERROR_MESSAGE();
+        -- Sin ERROR_MESSAGE() hacia el usuario: el error sube al C# (FirmaService borra
+        -- el PDF y lo relanza), que lo registra y muestra un texto genérico.
+        THROW;
     END CATCH
 END
 GO

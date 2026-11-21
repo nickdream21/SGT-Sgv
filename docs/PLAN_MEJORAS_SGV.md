@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `8ba21a5` — E3-1: ensayo local de migraciones (`-Entorno ensayo`, `herramientas/respaldo/ensayar-migracion.ps1`), humo de SP (M-052), migración 52 (triggers de auditoría heredados) e `IntegridadBdTests`. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-21**, commit anterior `b0b29e2` — E3-2: estados al rechazar (`PROGRAMADO`), `THROW` en firma del admin y cierre de viajes, estado del seguimiento importado (EN_CURSO/FINALIZADO) y la reimportación ya no reabre viajes cerrados; 4 SP aplicados en pruebas. No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-101 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
@@ -11,7 +11,7 @@
 - El sitio publicado (`https://sgvtransporte.somee.com`, publicación `20261120_1311_60853e8`) usa la BD de **pruebas** `sgvActualizada`, que tiene **datos reales** desde el 2026-10-19: no se borra ni limpia nada allí sin confirmar.
 - Producción (`sgvTransporte`) no está al día: el paso a producción es `docs/PASO_A_PRODUCCION.md`, en orden, tras la decisión U-011.
 - Etapa 1 (operación) cerrada: respaldo diario de la BD y de los archivos en Google Drive, restauración ensayada, publicación con vuelta atrás (`herramientas/publicar/publicar.ps1`), monitores de UptimeRobot y cron del GPS activos.
-- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 en curso** (integridad de la BD): plan detallado en la hoja de ruta, sigue E3-1. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
+- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 en curso** (integridad de la BD): plan detallado en la hoja de ruta, sigue E3-3. Las etapas 3 a 6 (integridad de la BD, seguridad, interfaz, arquitectura) están en la hoja de ruta.
 - Lo abierto está en este plan (mejoras) y en los documentos de "Otros documentos" (usuario, datos, pruebas); cada uno se cuenta en su propio documento.
 
 ## Top 20

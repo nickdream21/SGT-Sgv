@@ -4,13 +4,16 @@
 -- Descripción: Rechaza una liquidación pendiente. Revierte el
 --              estadoAprobacion a 'REABIERTO', reabre el viaje
 --              en ViajesEnProgreso y devuelve sus despachos a
---              'EN_PROCESO' para que el conductor pueda corregir
+--              'PROGRAMADO' para que el conductor pueda corregir
 --              y volver a liquidar.
 -- Sincronizado con producción: 2026-04-28
 -- 2026-11-15: solo rechaza una liquidación PENDIENTE que la administración aún no
 --   firmó (antes también POR_CONFORMAR o APROBADO, que quedaban trabadas). La orden se
 --   lee con UPDLOCK; si ya fue procesada devuelve Resultado 0 sin cambiar nada. Los
 --   errores técnicos se relanzan (THROW): el C# los registra y muestra un texto genérico.
+-- 2026-11-21: los despachos vuelven a 'PROGRAMADO' (antes 'EN_PROCESO', estado que
+--   ninguna pantalla reconoce), igual que sp_DC_RetirarLiquidacion y
+--   sp_ReabrirViajeProgreso; también se actualiza fechaModificacion.
 -- Nota: el orden de parámetros en producción es
 --       (@numeroOrdenViaje, @observaciones, @idUsuarioAprobacion).
 --       El C# llama siempre por nombre — el orden no afecta.
@@ -92,7 +95,8 @@ BEGIN
 
             -- Reabrir despachos asociados
             UPDATE Despachos
-            SET estadoDespacho = 'EN_PROCESO'
+            SET estadoDespacho    = 'PROGRAMADO',
+                fechaModificacion = dbo.fn_AhoraPeru()
             WHERE idViajeProgreso IN (SELECT idViajeProgreso FROM @viajes)
               AND activo          = 1;
         END

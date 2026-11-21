@@ -60,6 +60,29 @@ namespace WebSGV.Services.Exportacion
     }
 
     /// <summary>
+    /// Estados válidos de SeguimientoExportacion.estado (los que acepta sp_SE_CambiarEstado).
+    /// </summary>
+    public static class EstadoSeguimiento
+    {
+        public const string EnCurso = "EN_CURSO";
+        public const string Finalizado = "FINALIZADO";
+        public const string Cancelado = "CANCELADO";
+
+        /// <summary>
+        /// Estado de una fila importada del Excel: FINALIZADO si ya tiene término de descarga,
+        /// salida de la bodega de destino o llegada a la base final (decisión del usuario
+        /// 2026-11-21: la llegada a base cierra el viaje, como en el tablero); si no, EN_CURSO.
+        /// Nunca otro valor (antes devolvía COMPLETADO/PENDIENTE, que el resto del sistema no
+        /// reconoce). sp_SE_ImportarLote aplica la misma regla al reimportar.
+        /// </summary>
+        public static string DerivarDeImportacion(IDictionary<string, DateTime?> fechas)
+        {
+            bool Hay(string k) => fechas != null && fechas.TryGetValue(k, out var v) && v.HasValue;
+            return Hay("fhTerminoDescarga") || Hay("fhSalida") || Hay("fhLlegadaBaseFinal") ? Finalizado : EnCurso;
+        }
+    }
+
+    /// <summary>
     /// Inicio y término de carga en la planta de Trujillo, que ni el GPS ni nadie registra: se estiman desde la
     /// salida de planta (regla del usuario 2026-11-13): término = salida − 10 min; inicio = término − 12 min.
     /// Nunca antes del ingreso a planta: si la unidad estuvo menos de 22 min dentro, el inicio queda en el

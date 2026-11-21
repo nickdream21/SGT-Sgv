@@ -133,27 +133,27 @@ namespace WebSGV.Tests.Integracion
 
                 var lote = TablaDelTipo();
                 var otraHora = new DateTime(2026, 10, 6, 20, 0, 0);
-                Fila(lote, 3, "zzi-101", "PENDIENTE", ("conductorOrigen", "Primera version"));
+                Fila(lote, 3, "zzi-101", "EN_CURSO", ("conductorOrigen", "Primera version"));
                 Fila(lote, 4, "zzi-101", "EN_CURSO", ("conductorOrigen", "Nuevo"), ("fhIngresoPlanta", otraHora));   // gana la última
-                Fila(lote, 5, "zzi-102", "COMPLETADO", ("fhIngresoPlanta", otraHora), ("fhTerminoDescarga", otraHora));
+                Fila(lote, 5, "zzi-102", "FINALIZADO", ("fhIngresoPlanta", otraHora), ("fhTerminoDescarga", otraHora));
                 Fila(lote, 6, "zzi-103", "EN_CURSO", ("conductorOrigen", "Pisado"), ("fhSalidaBase2", otraHora),
                     ("fhIngresoPlanta", otraHora), ("motivoRetraso", "no debe llegar"));
-                Fila(lote, 7, "zzi-104", "COMPLETADO", ("conductorOrigen", "Pisado"), ("fhTerminoDescarga", otraHora));
-                Fila(lote, 8, "zzi-105", "COMPLETADO", ("fhIngresoPlanta", otraHora));
-                Fila(lote, 9, "zzi-106", "COMPLETADO", ("conductorOrigen", "Pisado"), ("fhTerminoDescarga", otraHora));
+                Fila(lote, 7, "zzi-104", "FINALIZADO", ("conductorOrigen", "Pisado"), ("fhTerminoDescarga", otraHora));
+                Fila(lote, 8, "zzi-105", "EN_CURSO", ("fhIngresoPlanta", otraHora));
+                Fila(lote, 9, "zzi-106", "FINALIZADO", ("conductorOrigen", "Pisado"), ("fhTerminoDescarga", otraHora));
                 var placaMal = lote.NewRow();   // otra placa, mismo pedido y misma hora que zzi-107
                 placaMal["fila"] = 11; placaMal["cliente"] = Pedido; placaMal["tracto1"] = "zzi-1O7";
-                placaMal["fhProgramacion"] = ProgDe("zzi-107"); placaMal["estado"] = "COMPLETADO";
+                placaMal["fhProgramacion"] = ProgDe("zzi-107"); placaMal["estado"] = "FINALIZADO";
                 placaMal["conductorOrigen"] = "Pisado";
                 lote.Rows.Add(placaMal);
                 // Mismo tracto, OTRO día: es otro viaje y se crea.
                 var lote10 = lote.NewRow();
                 lote10["fila"] = 10; lote10["cliente"] = Pedido; lote10["tracto1"] = "zzi-106";
-                lote10["fhProgramacion"] = Prog.AddDays(3); lote10["estado"] = "PENDIENTE";
+                lote10["fhProgramacion"] = Prog.AddDays(3); lote10["estado"] = "EN_CURSO";
                 lote.Rows.Add(lote10);
                 var otroCamion = lote.NewRow();
                 otroCamion["fila"] = 12; otroCamion["cliente"] = "9900000779"; otroCamion["tracto1"] = "zzi-109";
-                otroCamion["fhProgramacion"] = medianoche; otroCamion["estado"] = "PENDIENTE";
+                otroCamion["fhProgramacion"] = medianoche; otroCamion["estado"] = "EN_CURSO";
                 lote.Rows.Add(otroCamion);
 
                 var res = Importar(lote);
@@ -182,7 +182,7 @@ namespace WebSGV.Tests.Integracion
                 var act = DbHelper.ConsultarTabla(
                     "SELECT estado, conductorOrigen, fhIngresoPlanta FROM SeguimientoExportacion WHERE idSeguimiento = @id",
                     DbHelper.Param("@id", importado)).Rows[0];
-                Assert.Equal("COMPLETADO", act["estado"]);
+                Assert.Equal("FINALIZADO", act["estado"]);
                 Assert.Equal("Conductor Excel", act["conductorOrigen"]);
                 Assert.Equal(otraHora, act["fhIngresoPlanta"]);
                 Assert.Equal(1, Cuantos("zzi-102"));
@@ -196,8 +196,8 @@ namespace WebSGV.Tests.Integracion
                 Assert.Equal(1, Cuantos("zzi-104"));
 
                 // Llave con importado y de despachos: se actualiza el importado; el de despachos no cambia.
-                Assert.Equal("COMPLETADO", DbHelper.EjecutarEscalar(
-                    "SELECT estado FROM SeguimientoExportacion WHERE idSeguimiento = @id", DbHelper.Param("@id", importadoGemelo)));
+                Assert.Equal(otraHora, DbHelper.EjecutarEscalar(
+                    "SELECT fhIngresoPlanta FROM SeguimientoExportacion WHERE idSeguimiento = @id", DbHelper.Param("@id", importadoGemelo)));
                 Assert.Equal(fotoGemelo, Foto(despachoGemelo));
                 Assert.Equal(2, Cuantos("zzi-105"));
 
@@ -222,6 +222,58 @@ namespace WebSGV.Tests.Integracion
                     "SELECT COUNT(*) FROM SeguimientoExportacion WHERE activo = 1 AND tracto1 = 'zzi-109' AND fhProgramacion = @p AND origen IS NULL",
                     DbHelper.Param("@p", medianoche))));
                 Assert.Equal(fotoMedianoche, Foto(despachoMedianoche));
+            }
+        }
+
+        /// <summary>
+        /// E3-2: reimportar no reabre un viaje cerrado. Antes el UPDATE ponía siempre el estado del Excel
+        /// (EN_CURSO si la celda de término venía vacía), aunque el viaje estuviera FINALIZADO/CANCELADO
+        /// o la BD ya tuviera el término de descarga.
+        /// </summary>
+        [FactBD]
+        public void Reimportar_SinFechasDeCierre_NoReabreUnViajeCerrado()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var termino = new DateTime(2026, 10, 9, 15, 20, 0);
+                var intermedio = new DateTime(2026, 10, 7, 9, 0, 0);
+                int finalizadoAMano = Viaje("zzi-121", null, "FINALIZADO", "Conductor Cerrado");
+                int cancelado = Viaje("zzi-122", null, "CANCELADO", "Conductor Anulado");
+                int conTerminoEnBd = Viaje("zzi-123", null, "EN_CURSO", "Conductor Termino");
+                DbHelper.EjecutarNonQuery("UPDATE SeguimientoExportacion SET fhTerminoDescarga = @t WHERE idSeguimiento = @id",
+                    DbHelper.Param("@t", termino), DbHelper.Param("@id", conTerminoEnBd));
+                int abierto = Viaje("zzi-124", null, "EN_CURSO", "Conductor Abierto");
+                int cierraConSalida = Viaje("zzi-125", null, "EN_CURSO", "Conductor Salida");
+                int cierraConLlegadaBase = Viaje("zzi-126", null, "EN_CURSO", "Conductor Base");
+
+                // Lo que manda el C#: EN_CURSO cuando la fila no trae término de descarga ni salida.
+                var lote = TablaDelTipo();
+                Fila(lote, 3, "zzi-121", "EN_CURSO", ("fhLlegadaTCI", intermedio));
+                Fila(lote, 4, "zzi-122", "EN_CURSO", ("fhLlegadaTCI", intermedio));
+                Fila(lote, 5, "zzi-123", "EN_CURSO", ("fhLlegadaTCI", intermedio));
+                Fila(lote, 6, "zzi-124", "EN_CURSO", ("fhLlegadaTCI", intermedio));
+                Fila(lote, 7, "zzi-125", "FINALIZADO", ("fhSalida", termino));
+                // Solo llegada a la base final: también cierra (decisión 2026-11-21). El estado de la
+                // fila va EN_CURSO a propósito: el SP lo deriva de las fechas.
+                Fila(lote, 8, "zzi-126", "EN_CURSO", ("fhLlegadaBaseFinal", termino));
+
+                var r = Importar(lote).Rows[0];
+                Assert.Equal(6, Convert.ToInt32(r["actualizados"]));
+                Assert.Equal(0, Convert.ToInt32(r["insertados"]));
+
+                DataRow Leer(int id) => DbHelper.ConsultarTabla(
+                    "SELECT estado, fhTerminoDescarga, fhLlegadaTCI FROM SeguimientoExportacion WHERE idSeguimiento = @id",
+                    DbHelper.Param("@id", id)).Rows[0];
+
+                Assert.Equal("FINALIZADO", Leer(finalizadoAMano)["estado"]);
+                Assert.Equal("CANCELADO", Leer(cancelado)["estado"]);
+                var conTermino = Leer(conTerminoEnBd);
+                Assert.Equal("FINALIZADO", conTermino["estado"]);
+                Assert.Equal(termino, conTermino["fhTerminoDescarga"]);   // la celda vacía no lo borra
+                Assert.Equal(intermedio, conTermino["fhLlegadaTCI"]);      // y el resto sí se actualizó
+                Assert.Equal("EN_CURSO", Leer(abierto)["estado"]);
+                Assert.Equal("FINALIZADO", Leer(cierraConSalida)["estado"]);
+                Assert.Equal("FINALIZADO", Leer(cierraConLlegadaBase)["estado"]);
             }
         }
     }

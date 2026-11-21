@@ -18,6 +18,12 @@
 --
 -- Devuelve una fila: insertados, actualizados, duplicadosEnArchivo, omitidos
 -- (el C# las lee por nombre: agregar columnas al final no rompe una versión anterior).
+--
+-- 2026-11-21 (E3-2): al actualizar, el estado ya no se pisa sin condición. Un viaje FINALIZADO
+--   o CANCELADO lo conserva; si las fechas combinadas (Excel + BD) tienen término de descarga,
+--   salida de la bodega o llegada a la base final (decisión del usuario 2026-11-21), queda
+--   FINALIZADO (la misma regla de EstadoSeguimiento.DerivarDeImportacion); si no, el estado
+--   que trae el Excel.
 -- =============================================================================
 CREATE OR ALTER PROCEDURE dbo.sp_SE_ImportarLote
     @filas      dbo.TipoSeguimientoImportacion READONLY,
@@ -118,7 +124,16 @@ BEGIN
         fhSalida                      = ISNULL(l.fhSalida,                      se.fhSalida),
         fhLlegadaBaseFinal            = ISNULL(l.fhLlegadaBaseFinal,            se.fhLlegadaBaseFinal),
         motivoRetraso                 = ISNULL(l.motivoRetraso,                 se.motivoRetraso),
-        estado                        = ISNULL(l.estado,                        se.estado),
+        -- Un viaje cerrado (a mano o por importación) no vuelve a EN_CURSO, y el estado se
+        -- deriva de las fechas YA combinadas: el Excel con la celda vacía no borra el cierre.
+        -- Cierre = término de descarga, salida de la bodega o llegada a la base final.
+        estado = CASE
+                     WHEN se.estado IN ('FINALIZADO', 'CANCELADO') THEN se.estado
+                     WHEN ISNULL(l.fhTerminoDescarga, se.fhTerminoDescarga) IS NOT NULL
+                       OR ISNULL(l.fhSalida, se.fhSalida) IS NOT NULL
+                       OR ISNULL(l.fhLlegadaBaseFinal, se.fhLlegadaBaseFinal) IS NOT NULL THEN 'FINALIZADO'
+                     ELSE ISNULL(l.estado, se.estado)
+                 END,
         fechaModificacion             = @ahora,
         idUsuarioModificacion         = ISNULL(@idUsuario,                      se.idUsuarioModificacion)
     FROM SeguimientoExportacion se

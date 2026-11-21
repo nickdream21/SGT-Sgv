@@ -575,7 +575,7 @@ namespace WebSGV.Views.Exportacion
                     fila["bodegaEcuatoriana"] = Texto(LeerTexto(ws, r, colMap, "bodegaEcuatoriana"), 150);
                     fila["bodegaDescarga"]    = Texto(LeerTexto(ws, r, colMap, "bodegaDescarga"), 150);
                     fila["motivoRetraso"]     = Texto(LeerTexto(ws, r, colMap, "motivoRetraso"), 1000);
-                    fila["estado"]            = DerivarEstado(fechasFila);
+                    fila["estado"]            = EstadoSeguimiento.DerivarDeImportacion(fechasFila);
                     tabla.Rows.Add(fila);
                 }
 
@@ -753,32 +753,5 @@ namespace WebSGV.Views.Exportacion
             return id > 0 ? id : (int?)null;
         }
 
-        /// <summary>
-        /// Determina el estado de un registro importado en función de las fechas presentes:
-        ///   - COMPLETADO: hay fecha de término de descarga o salida del destino final.
-        ///   - EN_CURSO  : hay fechas intermedias pero no la final.
-        ///   - PENDIENTE : no hay fechas significativas registradas.
-        /// </summary>
-        private static string DerivarEstado(Dictionary<string, DateTime?> fechas)
-        {
-            DateTime? Get(string k) => fechas.TryGetValue(k, out var v) ? v : null;
-
-            // Indicadores de viaje finalizado
-            if (Get("fhTerminoDescarga").HasValue || Get("fhSalida").HasValue)
-                return "COMPLETADO";
-
-            // Cualquier hito intermedio significa que el viaje arrancó
-            string[] enCurso = {
-                "fhSalidaBase1","fhLlegadaTrujillo","fhIngresoPlanta","fhInicioCarga","fhTerminoCarga",
-                "fhSalidaPlanta","fhLlegadaBase2","fhSalidaBase2","fhLlegadaBodegaNacional",
-                "fhIngresoBodegaNacional","fhSalidaBodegaNacional","fhLlegadaCEBAF","fhCruceEcuador",
-                "fhAutorizacionNacionalizacion","fhLlegadaTCI","fhSalidaTCI","fhLlegadaPlantaEcuador",
-                "fhLlegadaAlmacen","fhIngreso","fhInicioDescarga"
-            };
-            if (enCurso.Any(k => Get(k).HasValue))
-                return "EN_CURSO";
-
-            return "PENDIENTE";
-        }
     }
 }
