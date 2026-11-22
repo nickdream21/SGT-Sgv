@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `8d0eb60` — E4-15 (código): 0 manejadores inline propios (95 pasados a `data-accion` con delegación en `SiteMaster.js`), prueba que lo exige; aplicar la CSP de scripts queda en M-125; nuevos M-125 y P-049 a P-051. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `f6c3c90` — E4-16: Etapa 4 cerrada con nota 8 (el código está completo; el 9 espera U-078, rotaciones, U-080/U-092, U-084 y M-125); sigue el análisis de la Etapa 5. No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-125 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
