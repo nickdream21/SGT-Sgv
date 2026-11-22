@@ -2,35 +2,17 @@
 using System.Data;
 using System.Web;
 using WebSGV.Helpers;
+using WebSGV.Services.Usuarios;
 
 namespace WebSGV.Views
 {
     public partial class WebForm1 : PaginaBase
     {
-        // ── Regeneración del ID de sesión al iniciar sesión (anti session fixation) ──
-        // Con sesión InProc no es fiable cambiar el SessionID dentro del mismo request, así
-        // que el login se completa en dos pasos:
-        //   1) btnLogin_Click valida credenciales, guarda los datos en caché bajo un token
-        //      aleatorio de un solo uso (60 s), abandona la sesión, borra su cookie y deja el
-        //      token en una cookie HttpOnly.
-        //   2) Login.aspx?completar=1 llega SIN cookie de sesión → ASP.NET crea un ID nuevo;
-        //      aquí se consume el token y se carga la sesión.
-        private const string CookieTicketLogin = "SGV_LoginTicket";
-        private const string PrefijoCacheTicket = "SGV_LoginTicket_";
+        /// <summary>?error= con el que SegundoFactor.aspx vuelve aquí cuando el paso pendiente venció o no existe.</summary>
+        public const string CodigoSegundoFactorVencido = "segundo_factor";
 
-        [Serializable]
-        private class DatosLogin
-        {
-            public int IdUsuario;
-            public string Rol;
-            public string Nombre;
-            public string NombreUsuario;
-            public int? IdConductor;
-            public bool RequiereCambioContrasena;
-            /// <summary>La contraseña con la que entró no cumple PoliticaContrasena (solo con Seguridad.ExigirPoliticaAlIngresar).</summary>
-            public bool ContrasenaFueraDePolitica;
-            public Guid SelloSesion;
-        }
+        // Regeneración del ID de sesión al iniciar sesión (anti session fixation): InicioSesionHelper
+        // (EmitirTicket en btnLogin_Click o en SegundoFactor.aspx, ConsumirTicket en CompletarLogin).
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -123,6 +105,9 @@ namespace WebSGV.Views
                         case SesionVigenteHelper.CodigoSesionVencida:
                             MostrarMensaje(SesionVigenteHelper.MensajeDuracionMaxima);
                             break;
+                        case CodigoSegundoFactorVencido:
+                            MostrarMensaje("El tiempo para escribir el código del segundo factor terminó. Vuelva a ingresar su usuario y contraseña.");
+                            break;
                     }
                 }
             }
@@ -202,7 +187,7 @@ namespace WebSGV.Views
                 }
 
                 // Paso 1 de la regeneración de sesión: ticket de un solo uso + sesión nueva.
-                var datos = new DatosLogin
+                InicioSesionHelper.EmitirTicket(Context, new DatosLogin
                 {
                     IdUsuario = resultado.IdUsuario,
                     Rol = resultado.Rol,
@@ -211,26 +196,9 @@ namespace WebSGV.Views
                     IdConductor = resultado.IdConductor,
                     RequiereCambioContrasena = resultado.RequiereCambioContrasena,
                     ContrasenaFueraDePolitica = ContrasenaFueraDePolitica(resultado.IdUsuario, contrasena),
-                    SelloSesion = resultado.SelloSesion
-                };
-                string token = GenerarTokenAleatorio();
-                HttpRuntime.Cache.Insert(PrefijoCacheTicket + token, datos, null,
-                    DateTime.UtcNow.AddSeconds(60), System.Web.Caching.Cache.NoSlidingExpiration);
-
-                Session.Clear();
-                Session.Abandon();
-                Response.Cookies.Add(new HttpCookie("SGV_SessionId", "") { Expires = DateTime.Now.AddDays(-1), HttpOnly = true });
-                // Cookie de sesión (sin Expires): el vencimiento de 60 s lo controla la caché del
-                // servidor. Con Expires, un celular con la hora adelantada la descartaba al llegar
-                // y el login terminaba en "Tu sesión ha expirado".
-                Response.Cookies.Add(new HttpCookie(CookieTicketLogin, token)
-                {
-                    HttpOnly = true,
-                    Secure = Request.IsSecureConnection
+                    SelloSesion = resultado.SelloSesion,
+                    SegundoFactorActivo = resultado.SegundoFactorActivo
                 });
-
-                Response.Redirect("~/Views/Login.aspx?completar=1", false);
-                Context.ApplicationInstance.CompleteRequest();
             }
             else
             {
@@ -288,6 +256,7 @@ namespace WebSGV.Views
             public int? IdConductor;
             public bool RequiereCambioContrasena;
             public Guid SelloSesion;
+            public bool SegundoFactorActivo;
         }
 
         private ResultadoValidacion ValidarUsuario(string usuario, string contrasena)
@@ -306,14 +275,16 @@ namespace WebSGV.Views
             {
                 // Sin filtrar por activo: una cuenta inactiva se verifica igual (mismo costo) y se rechaza
                 // con el mismo mensaje, pero queda su LOGIN_FALLIDO (M-062).
-                DataTable dt = DbHelper.ConsultarTabla(@"
+                // Sin la migración 62 (tabla del segundo factor): con el interruptor apagado se entra como antes.
+                DataTable dt = InicioSesionHelper.ConsultarConSegundoFactor(conTabla => DbHelper.ConsultarTabla(@"
                     SELECT u.idUsuario, u.nombreUsuario, u.nombre, u.rol,
                            u.idConductor, u.contrasena, u.activo,
                            ISNULL(u.requiereCambioContrasena, 0) AS requiereCambioContrasena,
-                           u.selloSesion
+                           u.selloSesion,
+                           " + InicioSesionHelper.SqlFactorActivo(conTabla, "u.idUsuario") + @" AS segundoFactorActivo
                     FROM Usuarios u
                     WHERE u.nombreUsuario = @Usuario",
-                    DbHelper.Param("@Usuario", usuario));
+                    DbHelper.Param("@Usuario", usuario)));
 
                 if (dt.Rows.Count > 0)
                 {
@@ -360,6 +331,7 @@ namespace WebSGV.Views
                         r.EsValido = true;
                         r.RequiereCambioContrasena = Convert.ToBoolean(reader["requiereCambioContrasena"]);
                         r.SelloSesion = (Guid)reader["selloSesion"];
+                        r.SegundoFactorActivo = Convert.ToBoolean(reader["segundoFactorActivo"]);
                     }
                 }
                 else
@@ -387,16 +359,30 @@ namespace WebSGV.Views
         /// </summary>
         private void CompletarLogin()
         {
-            string token = Request.Cookies[CookieTicketLogin]?.Value;
-            Response.Cookies.Add(new HttpCookie(CookieTicketLogin, "") { Expires = DateTime.Now.AddDays(-1), HttpOnly = true });
-
-            DatosLogin datos = string.IsNullOrEmpty(token)
-                ? null
-                : HttpRuntime.Cache.Remove(PrefijoCacheTicket + token) as DatosLogin;
-
+            DatosLogin datos = InicioSesionHelper.ConsumirTicket(Context);
             if (datos == null)
             {
                 Response.Redirect("~/Views/Login.aspx?error=sesion", true);
+                return;
+            }
+
+            // Segundo factor (E4-14): con el factor activo (o el interruptor que lo exige para su rol) la sesión NO
+            // se inicia aquí. Esta sesión, que ya tiene un id nuevo, queda solo con el estado pendiente (sin
+            // identidad ni rol, 5 min) y SegundoFactor.aspx emite otro ticket cuando el código es correcto.
+            DecisionSegundoFactor decision = datos.SegundoFactorVerificado
+                ? DecisionSegundoFactor.SesionDirecta
+                : SegundoFactorReglas.Decidir(SegundoFactorReglas.ExigirSegundoFactor, datos.Rol, datos.SegundoFactorActivo);
+            if (decision != DecisionSegundoFactor.SesionDirecta)
+            {
+                SesionHelper.IniciarSegundoFactorPendiente(Session, new SegundoFactorPendiente
+                {
+                    IdUsuario = datos.IdUsuario,
+                    NombreUsuario = datos.NombreUsuario,
+                    InicioUtc = DateTime.UtcNow,
+                    ContrasenaFueraDePolitica = datos.ContrasenaFueraDePolitica,
+                    ExigirAlta = decision == DecisionSegundoFactor.ExigirAlta
+                });
+                Response.Redirect("~/Views/SegundoFactor.aspx", true);
                 return;
             }
 
@@ -418,18 +404,19 @@ namespace WebSGV.Views
             string rol = (datos.Rol ?? "").Trim().ToUpper();
 
             AuditoriaHelper.Registrar("LOGIN", "Usuarios", datos.IdUsuario.ToString(),
-                $"Inicio de sesión - Usuario: {datos.NombreUsuario}, Rol: {datos.Rol}");
+                $"Inicio de sesión - Usuario: {datos.NombreUsuario}, Rol: {datos.Rol}"
+                + (datos.SegundoFactorVerificado ? " (con segundo factor)" : ""));
+
+            // Alta obligatoria recién hecha: los códigos de recuperación se muestran una sola vez en MiSeguridad.
+            if (datos.CodigosRecuperacionNuevos != null && datos.CodigosRecuperacionNuevos.Length > 0)
+            {
+                MiSeguridad.GuardarCodigosPorMostrar(Session, datos.CodigosRecuperacionNuevos, porActivacion: true);
+                Response.Redirect("~/Views/MiSeguridad.aspx", true);
+                return;
+            }
 
             // Rol no reconocido: Inicio.aspx lo rechaza y Login limpia la sesión (sin loops).
             Response.Redirect(RolesHelper.UrlInicioSegunRol(rol) ?? "~/Views/Inicio.aspx", true);
-        }
-
-        private static string GenerarTokenAleatorio()
-        {
-            byte[] bytes = new byte[32];
-            using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
-                rng.GetBytes(bytes);
-            return HttpServerUtility.UrlTokenEncode(bytes);
         }
 
         /// <summary>Cierra la sesión de esta petición y borra su cookie (el formulario se muestra sin sesión).</summary>

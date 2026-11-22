@@ -81,7 +81,8 @@ namespace WebSGV.Tests
             "CeldaGuiaMci(",              // ListaDespachos: HtmlEncode de la guía + insignia de textos fijos
             "InsigniaDocumento(",         // ListaDespachos: HtmlEncode del texto
             "UrlAdjunto(",             // MovimientosViaje: URL de DocumentoHelper (NavigateUrl la codifica el HyperLink)
-            "ConfirmarCambioEstado("      // GestionUsuarios: texto plano en data-confirmar (el Button codifica el atributo; SGV.confirmar lo pone con .text())
+            "ConfirmarCambioEstado(",     // GestionUsuarios: texto plano en data-confirmar (el Button codifica el atributo; SGV.confirmar lo pone con .text())
+            "ConfirmarQuitarSegundoFactor(" // GestionUsuarios (E4-14): igual que ConfirmarCambioEstado
         };
 
         private static readonly Regex ExpresionSinCodificar = new Regex(@"<%#(?![:$])(.*?)%>", RegexOptions.Singleline | RegexOptions.Compiled);

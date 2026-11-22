@@ -26,6 +26,29 @@ namespace WebSGV.Tests
             Assert.All(RolesHelper.RolesAdmin, r => Assert.Equal(r.Trim().ToUpper(), r)); // la consulta compara UPPER(TRIM(rol))
         }
 
+        /// <summary>
+        /// E4-14 (U-079, opción recomendada): llevan segundo factor administración, supervisor, contabilidad y
+        /// administrador de sistema; nunca el conductor. Cambiar esta lista es una decisión a propósito.
+        /// </summary>
+        [Fact]
+        public void ExigeSegundoFactor_TodosMenosElConductor()
+        {
+            var conFactor = TodosLosRolesConocidos.Where(RolesHelper.ExigeSegundoFactor).OrderBy(r => r);
+            Assert.Equal(new[]
+            {
+                RolesHelper.ROL_ADMIN, "ADMINISTRADOR", RolesHelper.ROL_ADMIN_SISTEMA, RolesHelper.ROL_ADMIN_TRANSPORTE,
+                RolesHelper.ROL_CONTABILIDAD, RolesHelper.ROL_SUPERVISOR
+            }.OrderBy(r => r), conFactor);
+
+            Assert.False(RolesHelper.ExigeSegundoFactor(RolesHelper.ROL_CONDUCTOR));
+            Assert.False(RolesHelper.ExigeSegundoFactor(" chofer "));
+            Assert.True(RolesHelper.ExigeSegundoFactor(" supervisor "));
+            Assert.True(RolesHelper.ExigeSegundoFactor("administrador de sistema"));
+            Assert.False(RolesHelper.ExigeSegundoFactor(null));
+            Assert.False(RolesHelper.ExigeSegundoFactor(""));
+            Assert.False(RolesHelper.ExigeSegundoFactor("OPERADOR"));
+        }
+
         [Fact]
         public void RolesAvisosOperacion_SonAdminsMasSupervisor()
         {

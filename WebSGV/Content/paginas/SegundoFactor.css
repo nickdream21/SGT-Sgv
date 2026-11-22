@@ -1,0 +1,57 @@
+/* SegundoFactor.aspx: paso del código del celular al entrar (E4-14). */
+.sf-contenedor {
+    max-width: 460px;
+    margin: 40px auto;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 28px;
+}
+
+.sf-titulo {
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.sf-subtitulo {
+    color: #555;
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.sf-codigo {
+    font-size: 22px;
+    letter-spacing: 4px;
+    text-align: center;
+    font-family: Consolas, "Courier New", monospace;
+}
+
+.sf-pasos {
+    font-size: 14px;
+    padding-left: 20px;
+}
+
+.sf-qr svg {
+    width: 200px;
+    height: 200px;
+    max-width: 100%;
+    background: #fff;
+}
+
+.sf-secreto {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 16px;
+    letter-spacing: 1px;
+    word-break: break-word;
+    user-select: all;
+}
+
+@media (max-width: 480px) {
+    .sf-contenedor {
+        margin: 16px 0;
+        padding: 18px 16px;
+    }
+}

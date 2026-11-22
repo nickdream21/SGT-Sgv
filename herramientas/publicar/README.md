@@ -111,7 +111,10 @@ Lo de **cada** publicación. Cómo arma, comprueba y sube el paquete está arrib
    - `OnwayAuth0ClientId`, `OnwayAuth0ClientSecret`, `OnwayUsername`, `OnwayPassword` (GPS);
    - `GpsAutomaticoClave` (igual al encabezado `X-SGV-Clave` de cron-job.org; si no coincide, 403 y cron-job.org desactiva la tarea);
    - `ApisPeruToken` (búsqueda de DNI/RUC);
-   - `SmtpHost`, `SmtpPort`, `SmtpSSL`, `SmtpUser`, `SmtpPass`, `SmtpFrom` (correos y aviso de errores).
+   - `SmtpHost`, `SmtpPort`, `SmtpSSL`, `SmtpUser`, `SmtpPass`, `SmtpFrom` (correos y aviso de errores);
+   - `Seguridad.ClaveSegundoFactor` (desde E4-14): **la misma** en el servidor y en todas las PCs que usan la misma BD, copiada (nunca generar otra si alguien ya se enroló: sus secretos no se descifrarían). Sin ella, `Mi seguridad` dice "no configurado" y quien tenga el factor activo no puede entrar.
+
+   El interruptor `Seguridad.ExigirSegundoFactor` (en `Web.config`, no es secreto) se publica en `false` hasta que el usuario decida encenderlo (U-092). El paquete lleva `bin\QRCoder.dll` (NuGet QRCoder 1.8.1, sin binarios nativos).
 
    **Nunca** `AvisoErroresLocal` (es solo para probar el aviso en una PC de desarrollo; ver `docs/OPERACION.md`, sección 4). Además, el `appSettings.Secrets.config` **local** de la PC que publica tiene que tener `GpsAutomaticoClave`: el target `VerificarSecretosAlPublicar` del csproj corta la compilación del paquete si falta (el archivo local no se sube).
 

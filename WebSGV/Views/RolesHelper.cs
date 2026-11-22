@@ -77,6 +77,20 @@ namespace WebSGV.Helpers
             return RolesAdmin.Concat(new[] { ROL_SUPERVISOR }).ToList();
         }
 
+        /// <summary>
+        /// Roles que llevan segundo factor (código del celular al entrar, E4-14, U-079): administración
+        /// (<see cref="EsRolAdmin"/>), SUPERVISOR, CONTABILIDAD y ADMINISTRADOR DE SISTEMA. Nunca el
+        /// conductor (ya vuelve a escribir su contraseña para firmar). Sin el interruptor
+        /// <c>Seguridad.ExigirSegundoFactor</c> el alta es voluntaria para estos roles; con él, obligatoria.
+        /// Pura (no lee la sesión); fijada por <c>RolesHelperTests</c>.
+        /// </summary>
+        public static bool ExigeSegundoFactor(string rol)
+        {
+            string r = (rol ?? "").Trim().ToUpper();
+            if (EsRolConductor(r)) return false;
+            return EsRolAdmin(r) || r == ROL_SUPERVISOR || r == ROL_CONTABILIDAD || r == ROL_ADMIN_SISTEMA;
+        }
+
         public static bool EsAdminTransporte()
         {
             return ObtenerRolActual() == ROL_ADMIN_TRANSPORTE;

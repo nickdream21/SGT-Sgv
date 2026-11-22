@@ -194,6 +194,8 @@ namespace WebSGV.Tests.Integracion
             "CK_MovimientoDineroViaje_Montos", "CK_MovimientoDineroViaje_Tipo", "CK_OnwayAuthCache_UnaFila",
             "CK_PagoSaldoConductor_Medio",
             "CK_IntentoAcceso_Fallidos",
+            // Migración 62 (E4-14): activo solo con secreto y fecha de alta; paso TOTP no negativo.
+            "CK_UsuarioSegundoFactor_ActivoConSecreto", "CK_UsuarioSegundoFactor_Paso",
         };
 
         /// <summary>

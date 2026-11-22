@@ -63,6 +63,10 @@
                     <asp:TemplateField HeaderText="Rol">
                         <ItemTemplate>
                             <span class="badge badge-info"><%#: Eval("rol") %></span>
+                            <%-- E4-14: verificación en dos pasos activa. --%>
+                            <asp:PlaceHolder runat="server" Visible='<%# SegundoFactorActivo(Eval("segundoFactor")) %>'>
+                                <span class="badge badge-success" title="Verificación en dos pasos activa">2 pasos</span>
+                            </asp:PlaceHolder>
                         </ItemTemplate>
                     </asp:TemplateField>
                     <asp:TemplateField HeaderText="Estado" ItemStyle-Width="90px">
@@ -86,6 +90,12 @@
                             <asp:Button runat="server" Text="Contraseña" CssClass="btn btn-sm btn-secondary"
                                 Visible='<%# AccionesFila(Eval("idUsuario")).PuedeRestablecerContrasena %>'
                                 CommandName="ResetPassword" CommandArgument='<%# Eval("idUsuario") %>' />
+                            <%-- E4-14: celular y códigos perdidos; no en la fila propia. Pide la contraseña del administrador. --%>
+                            <asp:Button runat="server" Text="Quitar 2.º factor" CssClass="btn btn-sm btn-outline-danger ml-1"
+                                Visible='<%# PuedeQuitarSegundoFactor(Eval("idUsuario"), Eval("segundoFactor")) %>'
+                                CommandName="QuitarSegundoFactor" CommandArgument='<%# Eval("idUsuario") %>'
+                                data-confirmar='<%# ConfirmarQuitarSegundoFactor(Eval("nombreUsuario")) %>'
+                                data-confirmar-titulo="Quitar segundo factor" data-confirmar-peligro="true" />
                         </ItemTemplate>
                     </asp:TemplateField>
                 </Columns>

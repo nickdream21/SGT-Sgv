@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI;
@@ -87,7 +88,7 @@ namespace WebSGV.Views
             string estado = ddlFiltroEstado.SelectedValue;
 
             var parametros = new List<SqlParameter>();
-            string query = "SELECT idUsuario, nombreUsuario, nombre, rol, activo FROM Usuarios WHERE 1=1";
+            string query = " FROM Usuarios WHERE 1=1";
 
             if (!string.IsNullOrEmpty(buscar))
             {
@@ -106,7 +107,16 @@ namespace WebSGV.Views
             }
             query += " ORDER BY activo DESC, rol, nombre";
 
-            DataTable dt = DbHelper.ConsultarTabla(query, parametros.ToArray());
+            // segundoFactor: 1 si lo tiene activo, 0 si tiene un alta a medias, NULL si no tiene nada (E4-14). Sin la
+            // migración 62 y con el interruptor apagado, NULL para todos (sin insignias). Parámetros nuevos en cada
+            // intento: un SqlParameter no puede estar en dos comandos.
+            DataTable dt = InicioSesionHelper.ConsultarConSegundoFactor(conTabla => DbHelper.ConsultarTabla(
+                @"SELECT idUsuario, nombreUsuario, nombre, rol, activo, "
+                    + (conTabla
+                        ? "(SELECT CAST(f.activo AS INT) FROM dbo.UsuarioSegundoFactor f WHERE f.idUsuario = Usuarios.idUsuario)"
+                        : "CAST(NULL AS INT)")
+                    + " AS segundoFactor" + query,
+                parametros.Select(p => DbHelper.Param(p.ParameterName, p.Value)).ToArray()));
             gvUsuarios.DataSource = dt;
             gvUsuarios.DataBind();
         }
@@ -158,6 +168,9 @@ namespace WebSGV.Views
                 case "EditarUsuario":
                     CargarUsuarioEnModal(idUsuario);
                     break;
+                case "QuitarSegundoFactor":
+                    QuitarSegundoFactor(idUsuario);
+                    break;
                 case "ResetPassword":
                     if (AdminUsuariosReglas.EsFilaPropia(idUsuario, SesionHelper.IdUsuarioActual))
                     {
@@ -189,6 +202,9 @@ namespace WebSGV.Views
 
         /// <summary>Acción pendiente "ACTIVAR|id": tras la contraseña, activa esa cuenta de administración.</summary>
         private const string AccionReautActivar = "ACTIVAR|";
+
+        /// <summary>Acción pendiente "QUITAR2F|id": tras la contraseña, quita el segundo factor de ese usuario (E4-14).</summary>
+        private const string AccionReautQuitarSegundoFactor = "QUITAR2F|";
 
         /// <summary>
         /// True mientras btnConfirmarReaut_Click retoma un guardado: si era un alta, la contraseña del usuario nuevo
@@ -252,6 +268,13 @@ namespace WebSGV.Views
                     System.Globalization.CultureInfo.InvariantCulture, out int idActivar) && idActivar > 0)
             {
                 CambiarEstadoUsuario(idActivar.ToString(System.Globalization.CultureInfo.InvariantCulture) + "|1");
+                return;
+            }
+            if (accion.StartsWith(AccionReautQuitarSegundoFactor, StringComparison.Ordinal)
+                && int.TryParse(accion.Substring(AccionReautQuitarSegundoFactor.Length), System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out int idQuitar) && idQuitar > 0)
+            {
+                QuitarSegundoFactor(idQuitar);
                 return;
             }
             if (accion.StartsWith(AccionReautReset, StringComparison.Ordinal)
@@ -342,6 +365,63 @@ namespace WebSGV.Views
             }
             CargarUsuarios();
         }
+
+        /// <summary>
+        /// "Quitar segundo factor" (E4-14): el usuario perdió el celular y los códigos. Solo sobre otra fila, con la
+        /// contraseña del administrador (ventana de E4-12). Borra el factor y sus códigos y renueva el sello: las
+        /// sesiones abiertas de ese usuario se cierran; al volver a entrar solo pide la contraseña (o el alta, si el
+        /// interruptor la exige).
+        /// </summary>
+        private void QuitarSegundoFactor(int idUsuario)
+        {
+            if (AdminUsuariosReglas.EsFilaPropia(idUsuario, SesionHelper.IdUsuarioActual))
+            {
+                MostrarMensaje(AdminUsuariosReglas.MensajeQuitarSegundoFactorPropio, "warning");
+                CargarUsuarios();
+                return;
+            }
+            if (!ReautenticacionVigente())
+            {
+                PedirReautenticacion(AccionReautQuitarSegundoFactor + idUsuario.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    "quitar el segundo factor de otro usuario");
+                CargarUsuarios();
+                return;
+            }
+
+            try
+            {
+                string nombre = Convert.ToString(DbHelper.EjecutarEscalar("SELECT nombreUsuario FROM Usuarios WHERE idUsuario = @id",
+                    DbHelper.Param("@id", idUsuario)) ?? "").Trim();
+                if (SegundoFactorService.Quitar(idUsuario))
+                {
+                    AuditoriaHelper.Registrar(SegundoFactorService.AccionQuitado, "Usuarios", idUsuario,
+                        "Segundo factor quitado por Admin Sistema (usuario " + nombre + "); sus sesiones se cierran");
+                    MostrarMensaje("Se quitó el segundo factor de " + nombre + ". Al entrar solo se le pedirá la contraseña"
+                        + (SegundoFactorReglas.ExigirSegundoFactor ? " y deberá configurarlo de nuevo." : "."), "success");
+                }
+                else
+                    MostrarMensaje("El usuario " + nombre + " ya no tenía segundo factor.", "info");
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex), "warning");
+            }
+            CargarUsuarios();
+        }
+
+        /// <summary>Fila con segundo factor (activo o alta a medias): muestra "Quitar 2.º factor" si no es la propia.</summary>
+        protected bool PuedeQuitarSegundoFactor(object idUsuario, object segundoFactor) =>
+            AdminUsuariosReglas.PuedeQuitarSegundoFactor(Convert.ToInt32(idUsuario, System.Globalization.CultureInfo.InvariantCulture),
+                SesionHelper.IdUsuarioActual, segundoFactor != null && segundoFactor != DBNull.Value);
+
+        /// <summary>1 = activo (insignia "2 pasos").</summary>
+        protected static bool SegundoFactorActivo(object segundoFactor) =>
+            segundoFactor != null && segundoFactor != DBNull.Value && Convert.ToInt32(segundoFactor) == 1;
+
+        /// <summary>data-confirmar de "Quitar 2.º factor" (texto plano, como ConfirmarCambioEstado).</summary>
+        protected string ConfirmarQuitarSegundoFactor(object nombreUsuario) =>
+            $"¿Quitar el segundo factor de {Convert.ToString(nombreUsuario)}?\\n\\nHágalo solo si perdió el celular y sus códigos de recuperación. " +
+            "Sus sesiones abiertas se cerrarán.";
 
         /// <summary>CommandArgument del botón Activar/Desactivar: "id|estadoDestino" (B5-8).</summary>
         protected string ArgumentoEstado(object id, object activo) => EstadoActivoService.ArgumentoComando(id, activo);

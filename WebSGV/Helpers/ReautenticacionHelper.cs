@@ -13,7 +13,12 @@ namespace WebSGV.Helpers
         /// El administrador de sistema confirma su contraseña antes de restablecer la de otro usuario o
         /// cambiarle el rol en GestionUsuarios (E4-12).
         /// </summary>
-        AdminUsuarios
+        AdminUsuarios,
+        /// <summary>
+        /// Confirmar la contraseña en MiSeguridad antes de dar de alta o cambiar el segundo factor, o de generar
+        /// códigos de recuperación nuevos (E4-14).
+        /// </summary>
+        SegundoFactor
     }
 
     /// <summary>
@@ -38,6 +43,9 @@ namespace WebSGV.Helpers
 
         /// <summary>Acción de auditoría de una contraseña incorrecta del administrador en Gestión de usuarios.</summary>
         public const string AccionAdminUsuariosIncorrecta = "ADMIN_USUARIOS_CONTRASENA_INCORRECTA";
+
+        /// <summary>Acción de auditoría de una contraseña incorrecta en MiSeguridad (segundo factor).</summary>
+        public const string AccionSegundoFactorIncorrecta = "SEGUNDO_FACTOR_CONTRASENA_INCORRECTA";
 
         /// <summary>Contadores en la tabla IntentoAcceso (sobreviven al reciclaje), con el mismo almacén del login.</summary>
         private static readonly ControlIntentosLogin Control = new ControlIntentosLogin(
@@ -91,14 +99,15 @@ namespace WebSGV.Helpers
 
             bool esFirma = proposito == PropositoReautenticacion.Firma;
             bool esAdmin = proposito == PropositoReautenticacion.AdminUsuarios;
-            string msjIncorrecta = esFirma || esAdmin ? "La contraseña no es correcta." : "La contraseña actual es incorrecta.";
+            bool esSegundoFactor = proposito == PropositoReautenticacion.SegundoFactor;
+            string msjIncorrecta = esFirma || esAdmin || esSegundoFactor ? "La contraseña no es correcta." : "La contraseña actual es incorrecta.";
 
             if (idUsuario <= 0)
                 return "Sesión no válida. Inicie sesión nuevamente.";
             if (string.IsNullOrEmpty(contrasena))
                 return esFirma
                     ? "Escribe tu contraseña para confirmar que eres tú quien firma."
-                    : esAdmin
+                    : esAdmin || esSegundoFactor
                         ? "Escribe tu contraseña para confirmar el cambio."
                         : "Escribe tu contraseña actual.";
             if (contrasena.Length > LargoMaximoIngresada)
@@ -125,7 +134,9 @@ namespace WebSGV.Helpers
                     ? "No se pudo verificar la contraseña al firmar (usuario {IdUsuario})"
                     : esAdmin
                         ? "No se pudo verificar la contraseña del administrador en Gestión de usuarios (usuario {IdUsuario})"
-                        : "No se pudo verificar la contraseña actual al cambiarla (usuario {IdUsuario})", idUsuario);
+                        : esSegundoFactor
+                            ? "No se pudo verificar la contraseña en Mi seguridad (usuario {IdUsuario})"
+                            : "No se pudo verificar la contraseña actual al cambiarla (usuario {IdUsuario})", idUsuario);
                 return "No se pudo verificar tu contraseña en este momento. Inténtalo de nuevo en unos minutos.";
             }
 
@@ -139,6 +150,11 @@ namespace WebSGV.Helpers
             if (esFirma)
                 auditar("FIRMA_CONTRASENA_INCORRECTA", "Usuarios", idUsuario,
                     bloqueado ? "Contraseña incorrecta al firmar: firma bloqueada temporalmente" : "Contraseña incorrecta al firmar");
+            else if (esSegundoFactor)
+                auditar(AccionSegundoFactorIncorrecta, "Usuarios", idUsuario,
+                    bloqueado
+                        ? "Contraseña incorrecta al confirmar un cambio del segundo factor: bloqueada temporalmente"
+                        : "Contraseña incorrecta al confirmar un cambio del segundo factor");
             else if (esAdmin)
                 auditar(AccionAdminUsuariosIncorrecta, "Usuarios", idUsuario,
                     bloqueado
@@ -152,7 +168,7 @@ namespace WebSGV.Helpers
                 return msjIncorrecta;
             if (esFirma)
                 return "Demasiadas contraseñas incorrectas. La firma quedó bloqueada por " + (int)Bloqueo.TotalMinutes + " minutos.";
-            if (esAdmin)
+            if (esAdmin || esSegundoFactor)
                 return "Demasiadas contraseñas incorrectas. La confirmación, el cambio de contraseña y la firma quedaron bloqueados por " + (int)Bloqueo.TotalMinutes + " minutos.";
             return "Demasiadas contraseñas incorrectas. El cambio de contraseña y la firma quedaron bloqueados por " + (int)Bloqueo.TotalMinutes + " minutos.";
         }

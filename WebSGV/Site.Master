@@ -236,6 +236,11 @@
                             <a class="dropdown-item" href="#modalCambiarContrasena" data-toggle="modal">
                                 <i class="fas fa-key"></i>Cambiar Contraseña
                             </a>
+                            <% if (MuestraMiSeguridad) { %>
+                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/MiSeguridad.aspx") %>'>
+                                <i class="fas fa-mobile-alt"></i>Mi seguridad
+                            </a>
+                            <% } %>
                             <% if (EsAdminSistema) { %>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href='<%= ResolveUrl("~/Views/Auditoria.aspx") %>'>

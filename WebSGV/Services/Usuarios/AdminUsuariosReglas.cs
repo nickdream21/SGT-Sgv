@@ -51,6 +51,16 @@ namespace WebSGV.Services.Usuarios
         }
 
         /// <summary>
+        /// "Quitar segundo factor" (E4-14): solo sobre otro usuario que lo tiene (activo o con un alta a medias).
+        /// El propio no: si lo perdió, se lo quita otro administrador de sistema o el script de emergencia.
+        /// </summary>
+        public static bool PuedeQuitarSegundoFactor(int idFila, int? idUsuarioActual, bool tieneSegundoFactor) =>
+            tieneSegundoFactor && Decidir(idFila, idUsuarioActual).PuedeDesactivar;
+
+        public const string MensajeQuitarSegundoFactorPropio =
+            "No puede quitarse su propio segundo factor. Pídaselo a otro administrador de sistema.";
+
+        /// <summary>
         /// Guardar el modal de usuario pide la contraseña del administrador si es un alta (cualquier rol: con la
         /// sesión abierta otra persona podría crearse una cuenta propia) o si cambia el rol de un usuario existente.
         /// Editar solo el nombre o el conductor vinculado no la pide.

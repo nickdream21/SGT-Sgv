@@ -1,0 +1,85 @@
+/* MiSeguridad.aspx: verificación en dos pasos de la cuenta (E4-14). */
+.ms-contenedor {
+    max-width: 720px;
+    padding-top: 20px;
+    padding-bottom: 30px;
+}
+
+.ms-titulo {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.ms-pasos {
+    font-size: 14px;
+    padding-left: 20px;
+}
+
+.ms-qr svg {
+    width: 220px;
+    height: 220px;
+    max-width: 100%;
+    background: #fff;
+}
+
+.ms-secreto {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 16px;
+    letter-spacing: 1px;
+    word-break: break-word;
+    user-select: all;
+}
+
+.ms-codigo {
+    font-size: 20px;
+    letter-spacing: 4px;
+    text-align: center;
+    font-family: Consolas, "Courier New", monospace;
+    max-width: 220px;
+}
+
+.ms-confirmar,
+.ms-contrasena {
+    max-width: 360px;
+}
+
+.ms-codigos {
+    columns: 2;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 16px;
+    margin-bottom: 12px;
+}
+
+.ms-codigos li {
+    padding: 2px 0;
+}
+
+@media (max-width: 480px) {
+    .ms-codigos {
+        columns: 1;
+    }
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    #listaCodigos,
+    #listaCodigos * {
+        visibility: visible;
+    }
+
+    #listaCodigos {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+}
+
+/* Botones de texto largo: que bajen de línea en el celular en vez de salirse de la tarjeta. */
+.ms-contenedor .btn {
+    white-space: normal;
+    max-width: 100%;
+}

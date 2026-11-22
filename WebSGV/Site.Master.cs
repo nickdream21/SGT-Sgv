@@ -17,6 +17,8 @@ namespace WebSGV
         public bool EsConductor { get; set; }
         public bool EsAdminSistema { get; set; }
         public bool EsContabilidad { get; set; }
+        /// <summary>Enlace "Mi seguridad" (segundo factor, E4-14): solo los roles de RolesHelper.ExigeSegundoFactor.</summary>
+        public bool MuestraMiSeguridad { get; set; }
         /// <summary>
         /// Rol SUPERVISOR. Calculada desde <see cref="RolUsuario"/> (igual que la comparación que
         /// había en el markup), así queda en sintonía con InicializarPropiedadesVacias y
@@ -139,8 +141,13 @@ namespace WebSGV
                                       || origen == btnCambiarContrasena.UniqueID;
             bool esCerrarSesion = origen == btnCerrarSesion.UniqueID
                                   || Request.Form[btnCerrarSesion.UniqueID] != null;
+            // "Ya los guardé" de MiSeguridad: sin él, los códigos del alta obligatoria quedan en pantalla
+            // y el modal de cambio de contraseña no se abre en esa página (E4-14).
+            string idCodigosGuardados = (Page as Views.MiSeguridad)?.UniqueIdCodigosGuardados;
+            bool esCodigosGuardados = idCodigosGuardados != null
+                                      && (origen == idCodigosGuardados || Request.Form[idCodigosGuardados] != null);
 
-            if (!esCambioContrasena && !esCerrarSesion)
+            if (!esCambioContrasena && !esCerrarSesion && !esCodigosGuardados)
                 Response.Redirect(Request.RawUrl, true);
         }
 
@@ -170,7 +177,10 @@ namespace WebSGV
             CargarInformacionUsuario();
             Navbar.Visible = true;
 
-            if (!IsPostBack && RequiereCambioContrasena())
+            // Con códigos de recuperación recién generados en pantalla, el modal obligatorio los taparía: se abre
+            // cuando el usuario pulsa "Ya los guardé" (recarga sin códigos). Solo en MiSeguridad, como mucho 10 min.
+            bool mostrandoCodigos = (Page as Views.MiSeguridad)?.MostrandoCodigosRecuperacion == true;
+            if (!IsPostBack && RequiereCambioContrasena() && !mostrandoCodigos)
             {
                 // Entró con una contraseña que no cumple las reglas (Seguridad.ExigirPoliticaAlIngresar).
                 if (SesionVigenteHelper.ContrasenaFueraDePolitica(Session))
@@ -211,6 +221,7 @@ namespace WebSGV
             EsConductor = false;
             EsAdminSistema = false;
             EsContabilidad = false;
+            MuestraMiSeguridad = false;
             UrlInicio = "~/Views/Login.aspx";
         }
 
@@ -224,6 +235,7 @@ namespace WebSGV
                 EsConductor = RolesHelper.EsConductor();
                 EsAdminSistema = RolesHelper.EsAdminSistema();
                 EsContabilidad = RolesHelper.EsContabilidad();
+                MuestraMiSeguridad = RolesHelper.ExigeSegundoFactor(RolesHelper.ObtenerRolActual());
                 UrlInicio = RolesHelper.UrlInicioSegunRol(RolUsuario) ?? "~/Views/Login.aspx";
             }
             catch

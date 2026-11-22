@@ -1,9 +1,34 @@
-using System;
+﻿using System;
 using System.Web;
 using System.Web.SessionState;
 
 namespace WebSGV.Helpers
 {
+    /// <summary>
+    /// Paso intermedio del login con segundo factor (E4-14): la contraseña fue correcta y falta el código.
+    /// Lo mínimo para terminar el login después: el id (no es <see cref="SesionHelper.ClaveUsuarioId"/>), el
+    /// nombre de usuario (etiqueta de la app y auditoría), el instante UTC y la marca de contraseña fuera de
+    /// la política (no se puede recalcular: hace falta la contraseña escrita). Sin rol: rol, nombre y
+    /// conductor se vuelven a leer de la BD al aceptar el código (<see cref="InicioSesionHelper.CargarDatosLogin"/>).
+    /// </summary>
+    [Serializable]
+    public sealed class SegundoFactorPendiente
+    {
+        public int IdUsuario { get; set; }
+        public string NombreUsuario { get; set; }
+        public DateTime InicioUtc { get; set; }
+        public bool ContrasenaFueraDePolitica { get; set; }
+        /// <summary>No tiene el factor y el interruptor lo exige: primero lo da de alta.</summary>
+        public bool ExigirAlta { get; set; }
+
+        /// <summary>
+        /// True durante <see cref="WebSGV.Services.Usuarios.SegundoFactorReglas.VidaPendiente"/> desde <see cref="InicioUtc"/>
+        /// (<see cref="WebSGV.Services.Usuarios.SegundoFactorReglas.VidaPendienteAlta"/> si debe dar de alta el factor).
+        /// </summary>
+        public bool Vigente(DateTime ahoraUtc) =>
+            IdUsuario > 0 && WebSGV.Services.Usuarios.SegundoFactorReglas.PendienteVigente(InicioUtc, ahoraUtc, ExigirAlta);
+    }
+
     /// <summary>
     /// Único punto de lectura y escritura de las claves de sesión de autenticación
     /// (<c>UsuarioID</c>, <c>Rol</c>, <c>Nombre</c> e <c>IdConductor</c>). Ningún otro archivo debe indexar la sesión
@@ -52,6 +77,7 @@ namespace WebSGV.Helpers
         /// </summary>
         public static void Iniciar(HttpSessionState sesion, int idUsuario, string rol, string nombre, int? idConductor = null)
         {
+            sesion.Remove(ClaveSegundoFactorPendiente);
             sesion[ClaveUsuarioId] = idUsuario;
             sesion[ClaveRol] = rol;
             sesion[ClaveNombre] = nombre;
@@ -62,6 +88,51 @@ namespace WebSGV.Helpers
             sesion[ClaveInicioSesionUtc] = DateTime.UtcNow;
             sesion.Remove(ClaveReautenticacionAdminUtc);
         }
+
+        /// <summary>
+        /// Clave del paso intermedio del segundo factor (E4-14): contraseña correcta, falta el código. Guarda un
+        /// <see cref="SegundoFactorPendiente"/>, nunca el rol ni el id en <see cref="ClaveUsuarioId"/>: para
+        /// <see cref="HaySesion"/>, <c>SecurityHelper</c>, Site.Master y Global.asax no hay sesión.
+        /// </summary>
+        public const string ClaveSegundoFactorPendiente = "SegundoFactorPendiente";
+
+        /// <summary>
+        /// Deja la sesión (recién creada por el login, sin identidad) en el paso del segundo factor. Quita
+        /// cualquier identidad que tuviera, por si acaso.
+        /// </summary>
+        public static void IniciarSegundoFactorPendiente(HttpSessionState sesion, SegundoFactorPendiente pendiente)
+        {
+            if (sesion == null) throw new ArgumentNullException(nameof(sesion));
+            if (pendiente == null) throw new ArgumentNullException(nameof(pendiente));
+            sesion.Remove(ClaveUsuarioId);
+            sesion.Remove(ClaveRol);
+            sesion.Remove(ClaveNombre);
+            sesion.Remove(ClaveIdConductor);
+            sesion.Remove(ClaveInicioSesionUtc);
+            sesion.Remove(ClaveReautenticacionAdminUtc);
+            sesion[ClaveSegundoFactorPendiente] = pendiente;
+        }
+
+        /// <summary>
+        /// Estado pendiente del segundo factor si sigue vigente (<see cref="SegundoFactorPendiente.Vigente"/>), o
+        /// null. Uno vencido se quita de la sesión. Con una sesión ya iniciada siempre null.
+        /// </summary>
+        public static SegundoFactorPendiente ObtenerSegundoFactorPendiente(HttpSessionState sesion, DateTime ahoraUtc)
+        {
+            if (sesion == null || HaySesion(sesion)) return null;
+            var p = sesion[ClaveSegundoFactorPendiente] as SegundoFactorPendiente;
+            if (p == null) return null;
+            if (!p.Vigente(ahoraUtc))
+            {
+                sesion.Remove(ClaveSegundoFactorPendiente);
+                return null;
+            }
+            return p;
+        }
+
+        /// <summary>Quita el estado pendiente del segundo factor.</summary>
+        public static void QuitarSegundoFactorPendiente(HttpSessionState sesion) =>
+            sesion?.Remove(ClaveSegundoFactorPendiente);
 
         /// <summary>Guarda la hora (UTC) de una contraseña del administrador correcta en Gestión de usuarios.</summary>
         public static void MarcarReautenticacionAdmin(HttpSessionState sesion, DateTime ahoraUtc)

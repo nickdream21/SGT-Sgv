@@ -80,6 +80,8 @@ namespace WebSGV.Helpers
             "login.aspx",
             "recuperarcontrasena.aspx",
             "restablecercontrasena.aspx",
+            // Paso del segundo factor (E4-14): aún no hay sesión, solo el estado pendiente de 5 min.
+            "segundofactor.aspx",
             "verificardocumento.aspx",
             "error.aspx",
             "error404.aspx"

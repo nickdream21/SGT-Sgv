@@ -143,6 +143,9 @@
     <Reference Include="QuestPDF, Version=2026.5.0.0, Culture=neutral, PublicKeyToken=0f3c2b2315ff52c8, processorArchitecture=MSIL">
       <HintPath>..\packages\QuestPDF.2026.5.0\lib\netstandard2.0\QuestPDF.dll</HintPath>
     </Reference>
+    <Reference Include="QRCoder, Version=1.8.1.0, Culture=neutral, PublicKeyToken=c4ed5b9ae8358a28, processorArchitecture=MSIL">
+      <HintPath>..\packages\QRCoder.1.8.1\lib\net40\QRCoder.dll</HintPath>
+    </Reference>
     <Reference Include="Serilog">
       <HintPath>..\packages\Serilog.2.12.0\lib\net47\Serilog.dll</HintPath>
     </Reference>
@@ -194,14 +197,24 @@
     <Content Include="Database\Schema\59_BorrarRevocarFirmaYPortador.sql" />
     <Content Include="Database\Schema\60_BorrarTablasGrifoYGuias.sql" />
     <Content Include="Database\Schema\61_IntentoAcceso.sql" />
+    <Content Include="Database\Schema\62_SegundoFactor.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
+    <Content Include="Database\Scripts\quitar-segundo-factor.ps1" />
     <Content Include="Database\StoredProcedures\sp_CrearCPIC.sql" />
     <Content Include="Database\StoredProcedures\sp_ActualizarLicenciaConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_US_ObtenerEstadoSesion.sql" />
     <Content Include="Database\StoredProcedures\sp_US_QuitarIntentoAcceso.sql" />
     <Content Include="Database\StoredProcedures\sp_US_ReservarIntentoAcceso.sql" />
     <Content Include="Database\StoredProcedures\sp_US_DevolverIntentoAcceso.sql" />
+    <Content Include="Database\StoredProcedures\sp_US_ObtenerSegundoFactor.sql" />
+    <Content Include="Database\StoredProcedures\sp_US_GuardarSecretoPendiente.sql" />
+    <Content Include="Database\StoredProcedures\sp_US_ActivarSegundoFactor.sql" />
+    <Content Include="Database\StoredProcedures\sp_US_RegistrarPasoTotp.sql" />
+    <Content Include="Database\StoredProcedures\sp_US_ObtenerCodigosRecuperacion.sql" />
+    <Content Include="Database\StoredProcedures\sp_US_UsarCodigoRecuperacion.sql" />
+    <Content Include="Database\StoredProcedures\sp_US_ReemplazarCodigosRecuperacion.sql" />
+    <Content Include="Database\StoredProcedures\sp_US_QuitarSegundoFactor.sql" />
     <Content Include="Database\StoredProcedures\sp_CompletarDespachoProgramado.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearDespacho.sql" />
     <Content Include="Database\StoredProcedures\sp_DD_QuitarDestino.sql" />
@@ -365,6 +378,8 @@
     <Content Include="Content\paginas\ListaDespachos-2.css" />
     <Content Include="Content\paginas\ListaDespachos.css" />
     <Content Include="Content\paginas\Login.css" />
+    <Content Include="Content\paginas\MiSeguridad.css" />
+    <Content Include="Content\paginas\SegundoFactor.css" />
     <Content Include="Content\paginas\RecuperarContrasena.css" />
     <Content Include="Content\paginas\RegistroDespacho-2.css" />
     <Content Include="Content\paginas\RegistroDespacho.css" />
@@ -391,6 +406,8 @@
     <Content Include="Scripts\paginas\LiquidacionesPendientes.js" />
     <Content Include="Scripts\paginas\ListaDespachos.js" />
     <Content Include="Scripts\paginas\Login.js" />
+    <Content Include="Scripts\paginas\MiSeguridad.js" />
+    <Content Include="Scripts\paginas\SegundoFactor.js" />
     <Content Include="Scripts\paginas\RegistroChoferes.js" />
     <Content Include="Scripts\paginas\RegistroClientes.js" />
     <Content Include="Scripts\paginas\RegistroDespacho-2.js" />
@@ -438,6 +455,8 @@
     <Content Include="Views\ReporteGps.aspx" />
     <Content Include="Views\ListaDespachos.aspx" />
     <Content Include="Views\Login.aspx" />
+    <Content Include="Views\MiSeguridad.aspx" />
+    <Content Include="Views\SegundoFactor.aspx" />
     <Content Include="Views\RecuperarContrasena.aspx" />
     <Content Include="Views\RegistroChoferes.aspx" />
     <Content Include="Views\CatalogoCliente.aspx" />
@@ -483,6 +502,7 @@
     <Compile Include="Helpers\SolicitudRecuperacion.cs" />
     <Compile Include="Helpers\Base32.cs" />
     <Compile Include="Helpers\Totp.cs" />
+    <Compile Include="Helpers\InicioSesionHelper.cs" />
     <Compile Include="Helpers\CifradoSecreto.cs" />
     <Compile Include="Helpers\LogSGV.cs" />
     <Compile Include="Helpers\NumeroALetrasHelper.cs" />
@@ -777,6 +797,20 @@
     <Compile Include="Views\Login.aspx.designer.cs">
       <DependentUpon>Login.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Views\MiSeguridad.aspx.cs">
+      <DependentUpon>MiSeguridad.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\MiSeguridad.aspx.designer.cs">
+      <DependentUpon>MiSeguridad.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SegundoFactor.aspx.cs">
+      <DependentUpon>SegundoFactor.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\SegundoFactor.aspx.designer.cs">
+      <DependentUpon>SegundoFactor.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Views\RecuperarContrasena.aspx.cs">
       <DependentUpon>RecuperarContrasena.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -835,6 +869,8 @@
     <Compile Include="Services\Vehiculos\PlacaVehiculo.cs" />
     <Compile Include="Services\Vehiculos\VehiculoService.cs" />
     <Compile Include="Services\Usuarios\AdminUsuariosReglas.cs" />
+    <Compile Include="Services\Usuarios\SegundoFactorReglas.cs" />
+    <Compile Include="Services\Usuarios\SegundoFactorService.cs" />
     <Compile Include="Services\Usuarios\UsuarioEstadoService.cs" />
     <Compile Include="Views\RegistroClientes.aspx.cs">
       <DependentUpon>RegistroClientes.aspx</DependentUpon>

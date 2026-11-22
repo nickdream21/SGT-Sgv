@@ -57,6 +57,8 @@ namespace WebSGV.Tests
                 { "Views/LiquidacionesAprobadasContabilidad.aspx","RolesHelper.ValidarAccesoSeccion(\"LIQUIDACIONES_CONTABILIDAD\")" },
                 { "Views/LiquidacionesPendientes.aspx",           "RolesHelper.ValidarAccesoSeccion(\"ORDEN_VIAJE\")" },
                 { "Views/ListaDespachos.aspx",                    "SecurityHelper.ExigirRolAdminOSupervisor()" },
+                // Los roles de RolesHelper.ExigeSegundoFactor; otro rol (conductor) vuelve a su inicio después (E4-14).
+                { "Views/MiSeguridad.aspx",                       "SecurityHelper.ExigirSesion()" },
                 { "Views/MovimientosViaje.aspx",                  "SecurityHelper.ExigirRolAdminOSupervisor()" },
                 { "Views/RegistroChoferes.aspx",                  "RolesHelper.ValidarAccesoSeccion(\"REGISTRO_CONDUCTORES\")" },
                 { "Views/RegistroClientes.aspx",                  "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
@@ -80,6 +82,7 @@ namespace WebSGV.Tests
                 { "Views/Login.aspx",                "inicio de sesión" },
                 { "Views/RecuperarContrasena.aspx",  "pedir el correo de recuperación" },
                 { "Views/RestablecerContrasena.aspx","enlace con token del correo de recuperación" },
+                { "Views/SegundoFactor.aspx",        "código del segundo factor (E4-14): aún no hay sesión, solo el estado pendiente de 5 min sin rol" },
                 { "Views/VerificarDocumento.aspx",   "verificación pública del PDF firmado (código del pie)" },
                 { "Views/Error.aspx",                "página de error: debe mostrarse siempre" },
                 { "Views/Error404.aspx",             "página 404: debe mostrarse siempre" },
@@ -289,6 +292,8 @@ namespace WebSGV.Tests
                 { "Views/LiquidacionesAprobadasContabilidad.aspx",new[] { A, S, K } },
                 { "Views/LiquidacionesPendientes.aspx",           new[] { A, S } },
                 { "Views/ListaDespachos.aspx",                    new[] { A, S } },
+                // Solo la sesión: el conductor vuelve a su inicio después (RolesHelper.ExigeSegundoFactor, E4-14).
+                { "Views/MiSeguridad.aspx",                       Todos },
                 { "Views/MovimientosViaje.aspx",                  new[] { A, S } },
                 { "Views/RegistroChoferes.aspx",                  new[] { A, S } },
                 { "Views/RegistroClientes.aspx",                  new[] { A, S } },

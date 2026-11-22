@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-047 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-048 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -60,6 +60,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-045** Sello de E4-11 en la PC de la oficina — tras U-088: la primera noche crea `<Carpeta>\sellos\sello-sgvActualizada_*.txt.gz` (con Google Drive de destino), la segunda dice OK en `sellos.log` y la tarea termina con `LastTaskResult 0`. · B
 - [ ] **P-046** Sesión de 12 h de E4-12 de verdad — una sesión de prueba abierta y con actividad más de 12 h (local o publicado): una página va a `Login.aspx?error=sesion_vencida` y un AJAX recibe 401 con `codigoLogin: sesion_vencida`; y una sesión abierta antes de publicar E4-12 se cierra en la primera petición tras publicar. · B
 - [ ] **P-047** Acciones de administración completas con la contraseña correcta (E4-12) — con una cuenta creada solo para la prueba: restablecer su contraseña, cambiarle el rol y devolverlo, desactivarla y activarla siendo de administración (pide la contraseña), un alta en la que la ventana de 5 min vence a mitad del formulario, y la auditoría `UPDATE`; borrar la cuenta al final. · C
+- [ ] **P-048** Alta obligatoria del segundo factor con cambio de contraseña pendiente, cambiándola de verdad (E4-14) — con una cuenta de prueba, el interruptor encendido solo en local y `requiereCambioContrasena = 1`: activar, "Ya los guardé", cambiar la contraseña a otra en el modal y comprobar que los códigos no reaparecen; luego devolver la contraseña original y `requiereCambioContrasena`, y quitar el factor. · C
 
 ## Reglas
 

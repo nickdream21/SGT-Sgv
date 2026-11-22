@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `5d701b7` — E4-3: matriz de permisos igual a lo que hacen las páginas (DN-26, opción recomendada de U-081), FacturasFlete, Productos y Rutas con guarda de sección, prueba rol × página; cierra M-064; nuevos M-124 y U-090. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `00b1315` — E4-14: segundo factor (TOTP) en uso, apagado por interruptor (DN-27, opciones recomendadas de U-079): migración 62 y 8 SP `sp_US_*` (aplicados en pruebas), `SegundoFactor.aspx`, `MiSeguridad.aspx`, quitar el factor desde Gestión de usuarios y script de emergencia, QRCoder 1.8.1; nuevos U-091, U-092 y P-048. No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-124 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 

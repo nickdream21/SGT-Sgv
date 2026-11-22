@@ -275,6 +275,19 @@ SELECT LEFT(clave, 10) AS prefijo, COUNT(*) FROM dbo.IntentoAcceso GROUP BY LEFT
 SELECT Accion, COUNT(*) FROM AuditoriaLog WHERE Accion IN ('LOGIN_FALLIDO', 'LOGIN_BLOQUEADO') GROUP BY Accion;
 ```
 
+**Migración 62** (`62_SegundoFactor.sql`, E4-14): crea `dbo.UsuarioSegundoFactor` (secreto TOTP cifrado, vigente y pendiente, `ultimoPasoUsado`) y `dbo.UsuarioCodigoRecuperacion` (hash con sal de cada código de un solo uso), con sus FK y CHECK. Es aditiva: no toca datos. **Orden: migración 62 → `aplicar-procedimientos.ps1`** (los 8 SP `sp_US_ObtenerSegundoFactor`, `sp_US_GuardarSecretoPendiente`, `sp_US_ActivarSegundoFactor`, `sp_US_RegistrarPasoTotp`, `sp_US_ObtenerCodigosRecuperacion`, `sp_US_ReemplazarCodigosRecuperacion`, `sp_US_UsarCodigoRecuperacion`, `sp_US_QuitarSegundoFactor`) **→ publicar el código de E4-4/E4-14**. El login consulta `UsuarioSegundoFactor`: con el interruptor `Seguridad.ExigirSegundoFactor` apagado, si la tabla falta el login sigue funcionando y deja un error en el log; encendido, nadie de los roles con segundo factor entra hasta aplicarla. Además, en el `appSettings.Secrets.config` del servidor debe estar **la misma** `Seguridad.ClaveSegundoFactor` que en las demás copias que usan esa BD (si se pasa de `sgvActualizada` a `sgvTransporte` sin nadie enrolado, puede generarse una nueva; con alguien enrolado, hay que llevar la misma o quitarle el factor). Control posterior (solo SELECT):
+
+```sql
+-- Las 2 tablas: ninguna NULL.
+SELECT OBJECT_ID('dbo.UsuarioSegundoFactor') AS factor, OBJECT_ID('dbo.UsuarioCodigoRecuperacion') AS codigos;
+-- Los 8 SP: 8 filas.
+SELECT name FROM sys.procedures WHERE name IN ('sp_US_ObtenerSegundoFactor','sp_US_GuardarSecretoPendiente','sp_US_ActivarSegundoFactor','sp_US_RegistrarPasoTotp','sp_US_ObtenerCodigosRecuperacion','sp_US_ReemplazarCodigosRecuperacion','sp_US_UsarCodigoRecuperacion','sp_US_QuitarSegundoFactor');
+-- Registrada: 1 fila.
+SELECT archivo, fechaAplicacion FROM dbo.SchemaVersion WHERE archivo = '62_SegundoFactor.sql';
+```
+
+Emergencia (alguien perdió el celular y sus códigos, y no hay otro ADMINISTRADOR DE SISTEMA): `.\WebSGV\Database\Scripts\quitar-segundo-factor.ps1 -IdUsuario N -Entorno produccion -ConfirmoProduccion` (pide escribir el nombre de usuario, cierra sus sesiones y audita).
+
 ## 5. Procedimientos almacenados
 
 **Obligatorio antes de este paso y del 4:** ensayar el mismo commit sobre el `.bacpac` más reciente con `.\herramientas\respaldo\ensayar-migracion.ps1` (migraciones, SP, ejecución de humo y `[FactBD]` en una copia local) y tener `RESULTADO: OK`. `aplicar-procedimientos.ps1` vuelve a hacer el humo al terminar, pero en producción eso llega tarde: el SP ya quedó aplicado.

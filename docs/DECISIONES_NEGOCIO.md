@@ -14,7 +14,7 @@ decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la n
 nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
 Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 
-Último id usado: DN-26 (la próxima decisión toma el siguiente; ver "Reglas" al final).
+Último id usado: DN-27 (la próxima decisión toma el siguiente; ver "Reglas" al final).
 
 ## Índice
 
@@ -46,6 +46,7 @@ Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 | DN-24 | En qué columna va el flete (observada, a confirmar) |
 | DN-25 | Se borra el portador del sobre aunque la pantalla de dinero siga apagada |
 | DN-26 | Permisos del SUPERVISOR y del administrador como funcionan hoy (opción recomendada, a confirmar) |
+| DN-27 | Segundo factor: quién lo lleva, apagado por interruptor y cómo se recupera (opción recomendada, a confirmar) |
 
 ---
 
@@ -156,6 +157,18 @@ panel del conductor: la matriz de permisos se ajustó a lo que ya hacían las p�
 - Desde: 2026-11-22, E4-3. El usuario pidió terminar la Etapa 4 sin decidir U-081; se aplicó la opción que el pendiente
   recomendaba. Si decide otra cosa, se cambia la matriz y `GuardasAccesoTests.AccesoEsperado` a propósito (U-090).
 - En el código: `WebSGV/Views/RolesHelper.cs` (`Matriz`), guardas de `FacturasFlete`, `RegistroProductos` y `RegistroRutas`.
+- Estado: vigente (observada, a confirmar).
+
+### DN-27 — Segundo factor: quién lo lleva, apagado por interruptor y cómo se recupera (opción recomendada, a confirmar)
+Lo llevan administración, SUPERVISOR, CONTABILIDAD y ADMINISTRADOR DE SISTEMA, nunca el conductor (ya reescribe su
+contraseña para firmar). Mientras el interruptor `Seguridad.ExigirSegundoFactor` esté apagado es voluntario (se activa en
+"Mi seguridad"), pero quien lo activó da el código siempre; encendido, quien no lo tiene lo activa antes de entrar. Hay 10
+códigos de recuperación de un solo uso; si también se pierden, otro ADMINISTRADOR DE SISTEMA lo quita (o el script de
+emergencia). Sin "recordar este equipo".
+- Desde: 2026-11-22, E4-14. El usuario pidió terminar la Etapa 4 sin decidir U-079; se aplicaron sus opciones recomendadas
+  y, para "obligatorio o voluntario", el interruptor apagado (encenderlo es U-092).
+- En el código: `WebSGV/Views/RolesHelper.cs` (`ExigeSegundoFactor`), `WebSGV/Services/Usuarios/SegundoFactorReglas.cs`
+  (`Decidir`), `WebSGV/Web.config` (`Seguridad.ExigirSegundoFactor`).
 - Estado: vigente (observada, a confirmar).
 
 ## 3. Despachos y documentos
