@@ -84,6 +84,7 @@ namespace WebSGV.Tests
                 { "Views/Error.aspx",                "página de error: debe mostrarse siempre" },
                 { "Views/Error404.aspx",             "página 404: debe mostrarse siempre" },
                 { "Salud.ashx",                      "prueba de salud del monitoreo, sin datos" },
+                { "CspInforme.ashx",                 "informes CSP del navegador (E4-5): solo POST, 8 KB, con límite; no lee ni escribe la BD" },
             };
 
         /// <summary>

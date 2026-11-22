@@ -34,6 +34,12 @@ namespace WebSGV.Tests
         [InlineData("X-Content-Type-Options", "nosniff")]
         // No "same-origin": las teselas de OpenStreetMap exigen Referer (si no, 403 "Access blocked").
         [InlineData("Referrer-Policy", "strict-origin-when-cross-origin")]
+        // E4-5
+        [InlineData("Content-Security-Policy", "frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'")]
+        [InlineData("Content-Security-Policy-Report-Only", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org; font-src 'self' data:; connect-src 'self'; frame-src 'self'; worker-src 'self' blob:; report-uri /CspInforme.ashx")]
+        [InlineData("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), clipboard-write=(self)")]
+        [InlineData("Cross-Origin-Opener-Policy", "same-origin")]
+        [InlineData("Cross-Origin-Resource-Policy", "same-origin")]
         public void WebConfig_EnviaCabeceraDeSeguridadUnaVez(string nombre, string valor)
         {
             XElement cabeceras = Cargar("Web.config").Root
@@ -48,6 +54,19 @@ namespace WebSGV.Tests
             XElement quitar = cabeceras.Elements("remove").FirstOrDefault(r => (string)r.Attribute("name") == nombre);
             Assert.NotNull(quitar);
             Assert.True(quitar.IsBefore(agregadas[0]));
+        }
+
+        /// <summary>
+        /// E4-5: solo report-uri. Con report-to (y Reporting-Endpoints) Chrome ignora report-uri y la Reporting API
+        /// entrega solo por https y en lotes: los informes dejarían de llegar al momento.
+        /// </summary>
+        [Fact]
+        public void WebConfig_CspSinReportToNiReportingEndpoints()
+        {
+            XElement cabeceras = Cargar("Web.config").Root
+                .Element("system.webServer").Element("httpProtocol").Element("customHeaders");
+            Assert.DoesNotContain(cabeceras.Elements("add"), a => (string)a.Attribute("name") == "Reporting-Endpoints");
+            Assert.DoesNotContain(cabeceras.Elements("add"), a => ((string)a.Attribute("value") ?? "").Contains("report-to"));
         }
 
         [Fact]

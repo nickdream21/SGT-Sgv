@@ -277,6 +277,7 @@
     <Content Include="Database\StoredProcedures\sp_ValidarDocumentosDuplicados.sql" />
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
+    <Content Include="CspInforme.ashx" />
     <Content Include="Salud.ashx" />
     <Content Include="Scripts\agregarOrdenViaje.js" />
     <Content Include="Content\Templates\PlantillaIndicadores.xlsx" />
@@ -573,6 +574,10 @@
     <Compile Include="Services\Exportacion\ActualizacionGpsAutomatica.cs" />
     <Compile Include="Services\Operacion\EstadoSalud.cs" />
     <Compile Include="Services\Operacion\AvisoErrores.cs" />
+    <Compile Include="Services\Operacion\InformeCsp.cs" />
+    <Compile Include="CspInforme.ashx.cs">
+      <DependentUpon>CspInforme.ashx</DependentUpon>
+    </Compile>
     <Compile Include="Salud.ashx.cs">
       <DependentUpon>Salud.ashx</DependentUpon>
     </Compile>

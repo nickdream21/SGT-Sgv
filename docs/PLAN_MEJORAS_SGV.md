@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `b8e447c` — E4-4: intentos de acceso en la BD (migración 61 `IntentoAcceso`; SP `sp_US_ReservarIntentoAcceso`, `sp_US_DevolverIntentoAcceso` y `sp_US_QuitarIntentoAcceso`, aplicados en pruebas); tres límites en el login; usuarios fuera de `[A-Za-z0-9._@-]` cuentan en una clave fija; `LOGIN_FALLIDO` y `LOGIN_BLOQUEADO` en la auditoría; fuera `LimiteConsultas`; cierra M-062; nuevos M-114 y M-115, U-087 y P-035. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `a4ecb2b` — E4-5: CSP aplicada (marcos, `object`, `base`, formularios) y en modo informe, `Permissions-Policy`, COOP y CORP en `Web.config`; receptor `CspInforme.ashx` con deduplicación; E4-15 ajustada (MicrosoftAjax usa `eval` en cada página); nuevos P-036 y P-037. No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-115 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
