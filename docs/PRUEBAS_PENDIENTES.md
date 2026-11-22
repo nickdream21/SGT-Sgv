@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-060 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-062 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -73,6 +73,8 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-058** Montos con coma donde faltan datos en la BD de pruebas (E5-1) — el modal de revisión de LiquidacionesPendientes con una orden real (hoy armado con datos ficticios), "Registrar CPIC" de un lote internacional sin CPIC y MovimientosViaje con `Habilitado=true` (solo local): "12,50" se guarda como 12,50 y un monto ilegible no sale del navegador. · C
 - [ ] **P-059** Descarga por fila de ReporteGps con el bloqueo de envío (E5-2) — al generar un reporte real de una placa (consulta el GPS y registra auditoría), pulsar el Excel de una fila: llega el archivo y la página queda usable a los ~3 s; repetir con "Descargar todos (ZIP)". · C
 - [ ] **P-060** Bloqueo de envío en un navegador con ventana y en un celular (E5-2) — Cerrar sesión del conductor con cambios reales en la liquidación y "¿salir?" cancelado (se libera a ~2 s); una subida larga real en FacturasFlete o RegistroDespacho no acepta un segundo toque antes de terminar; un lector de pantalla (NVDA o TalkBack) anuncia "Procesando…". · C
+- [ ] **P-061** "Crear nuevo viaje" con envío único (E5-3) — con un conductor de 2 o más viajes abiertos en RegistroDespacho: sale la confirmación y se crea un solo viaje; con la página en dos pestañas, la segunda responde "Ya se registró"; un segundo registro legítimo en la misma pestaña funciona (el token nuevo llega por el UpdatePanel). · B
+- [ ] **P-062** MovimientosViaje con envío único (E5-3) — con `MovimientosViaje.Habilitado` encendido (solo local o al activarlo): registrar, pulsar F5 y aceptar el reenvío: 1 sola fila, aviso "Ya se registró" y el formulario vacío. · B
 
 ## Reglas
 

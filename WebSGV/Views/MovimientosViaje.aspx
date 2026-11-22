@@ -96,6 +96,8 @@
                             <asp:FileUpload ID="fuAdjunto" runat="server" CssClass="form-control-file" accept=".pdf,.jpg,.jpeg,.png" />
                         </div>
 
+                        <%-- Envío único (E5-3): token de un solo uso; un segundo POST del mismo formulario no registra otra vez --%>
+                        <asp:HiddenField ID="hfEnvioUnico" runat="server" />
                         <asp:Button ID="btnRegistrar" runat="server" Text="Registrar" CssClass="btn btn-primary-custom btn-block" OnClick="btnRegistrar_Click" data-espera="120" />
                     </div>
                 </div>

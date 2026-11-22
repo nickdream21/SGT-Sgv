@@ -80,6 +80,7 @@ namespace WebSGV.Views
 
             if (!Page.IsPostBack)
             {
+                EnvioUnicoHelper.Emitir(ClaveEnvioUnicoViaje, hfEnvioUnicoViaje);
                 CargarDatos();
                 EstablecerFechaPorDefecto();
                 ConfigurarEstadoPagina();
@@ -3121,6 +3122,11 @@ namespace WebSGV.Views
             {
                 // Múltiples viajes abiertos
                 pnlMultiplesViajes.Visible = true;
+                // Token fresco cada vez que aparece "Crear nuevo viaje" (E5-3): el bloque de viajes no se dibuja hasta
+                // elegir un conductor, y este postback refresca UpdatePanelViajes, donde vive el campo. Solo si el campo
+                // está vacío: emitir en cada cambio de conductor descartaría (tope de 20) el token de otra pestaña abierta.
+                if (string.IsNullOrEmpty(hfEnvioUnicoViaje.Value))
+                    EnvioUnicoHelper.Emitir(ClaveEnvioUnicoViaje, hfEnvioUnicoViaje);
 
                 ddlViajesActivos.Items.Clear();
                 ddlViajesActivos.Items.Add(new ListItem("-- Seleccione un viaje --", "0"));
@@ -3145,14 +3151,29 @@ namespace WebSGV.Views
                 UpdatePanelViajes.Update();
         }
 
+        /// <summary>Clave de "Crear nuevo viaje" en <see cref="EnvioUnicoHelper"/> (E5-3).</summary>
+        public const string ClaveEnvioUnicoViaje = "RegistroDespacho.CrearNuevoViaje";
+
         protected void btnCrearNuevoViaje_Click(object sender, EventArgs e)
         {
+            // Envío único (E5-3): la respuesta lleva siempre un token nuevo (hfEnvioUnicoViaje está dentro de
+            // UpdatePanelViajes, que este botón refresca); el recibido se consume justo antes de crear el viaje.
+            string token = hfEnvioUnicoViaje.Value;
+            EnvioUnicoHelper.Emitir(ClaveEnvioUnicoViaje, hfEnvioUnicoViaje);
+            UpdatePanelViajes.Update();
             try
             {
                 if (ddlConductor.SelectedValue != "0")
                 {
                     int idConductor = Convert.ToInt32(ddlConductor.SelectedValue);
                     string nombreConductor = ddlConductor.SelectedItem.Text;
+
+                    if (!EnvioUnicoHelper.Consumir(ClaveEnvioUnicoViaje, token))
+                    {
+                        MostrarMensaje(EnvioUnicoHelper.MensajeYaRegistrado, "warning");
+                        CargarViajesEnProgreso(idConductor);
+                        return;
+                    }
 
                     // Crear nuevo viaje forzosamente
                     int nuevoViajeId = CrearNuevoViajeProgreso(idConductor, "Viaje creado manualmente por usuario");

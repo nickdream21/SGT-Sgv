@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `97e8634` — E5-2: bloqueo global de doble envío con "Procesando…" en `SiteMaster.js` (submit, `form.submit` y PageRequestManager; sin `disabled`; topes por `data-descarga`, `data-espera` y subidas con archivo); fuera los bloqueos y velos propios; nuevos M-130 y M-131, P-059 y P-060. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `4b159ee` — E5-3: envío único en el servidor (`EnvioUnicoHelper`, token por formulario en la sesión) en MovimientosViaje, Crear nuevo viaje de RegistroDespacho (con `data-confirmar`) y RegistroPlantas; nuevos M-132, P-061 y P-062. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-131 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-132 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -162,6 +162,7 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 
 Las tareas de la etapa (E5-1 a E5-24) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; cada pendiente de aquí dice con qué tarea se cierra.
 
+- [ ] **M-132** Catálogos sin índice único por nombre — RegistroPeajes, RegistroRutas y RegistroProductos comprueban el duplicado con `COUNT(*)` antes del INSERT, pero dos usuarios a la vez podrían duplicar: índices únicos sobre el nombre en mayúsculas (EstacionesPeaje; Ruta por cliente; Producto por cliente y nombre), con migración idempotente y antes la limpieza de duplicados si los hay (`DATOS_POR_CORREGIR.md`). · C
 - [ ] **M-130** Bloqueo de envío: una descarga que tarda más de 3 s se libera antes de llegar — los controles `data-descarga` (`SiteMaster.js`, `esperaDe`) liberan a los 3 s fijos; si el PDF de ReporteCargas, el ZIP de ReporteGps o el STATUS de RegistroSeguimiento tardan más en somee, otro clic cancela la respuesta pendiente. Usar una cookie testigo: el botón manda un token, el servidor la pone al escribir el archivo y el script libera al verla (tope ~60 s). · B
 - [ ] **M-131** Bloqueo de envío: detalles menores de E5-2 — (1) `RegistroDespacho.js` `_guardiaLote` no pregunta "¿salir?" si se cierra la pestaña durante un postback parcial (`SGV.envioEnCurso()` también vale en los parciales; el lote sigue en la sesión): exponer `SGV.envioCompletoEnCurso()`; (2) `EnvioUnicoTests` (`InicioMetodo`) solo reconoce métodos `void/string/bool/int/byte[]` y no ve descargas escritas desde Services o Helpers. · C
 - [ ] **M-129** Factor de conversión de ReportesOrdenesViaje con coma de miles — `TryParseFactor` (`ReportesOrdenesViaje.aspx.cs` ~1270) cambia la coma por punto y lee con `NumberStyles.Number`: "1,000" se lee como 1 (lo acota el rango 0,01–20). No es dinero, pero conviene la misma regla de `MontoHelper` (un separador decimal, sin miles) o una propia para el factor. · C

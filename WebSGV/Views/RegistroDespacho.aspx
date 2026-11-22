@@ -1067,6 +1067,9 @@
                                                  re-renderizar todo el formulario (lo que reiniciaba los Select2 y movía la página). -->
                                             <asp:UpdatePanel ID="UpdatePanelViajes" runat="server" UpdateMode="Conditional">
                                                 <ContentTemplate>
+                                            <%-- Envío único de "Crear nuevo viaje" (E5-3): dentro de este panel (y fuera de
+                                                 pnlViajesProgreso, que puede estar oculto) para que el token nuevo llegue al navegador --%>
+                                            <asp:HiddenField ID="hfEnvioUnicoViaje" runat="server" />
                                             <asp:Panel ID="pnlViajesProgreso" runat="server" CssClass="card mb-4" style="border-top: 2px solid #6d28d9;" Visible="false">
                                                 <div class="rd-viaje-header">
                                                     <h6><i class="fas fa-route mr-1"></i> Viajes en Progreso — <span id="spanNombreConductor" runat="server"></span></h6>
@@ -1118,6 +1121,9 @@
                                                                             Text="Crear nuevo viaje" 
                                                                             CssClass="btn btn-outline-success btn-sm w-100"
                                                                             OnClick="btnCrearNuevoViaje_Click"
+                                                                            data-confirmar="Se creará un viaje en progreso nuevo para este conductor, aparte de los que ya tiene abiertos.\n¿Desea crearlo?"
+                                                                            data-confirmar-titulo="Crear nuevo viaje"
+                                                                            data-confirmar-aceptar="Crear viaje"
                                                                             CausesValidation="false" />
                                                                     </div>
                                                                 </div>

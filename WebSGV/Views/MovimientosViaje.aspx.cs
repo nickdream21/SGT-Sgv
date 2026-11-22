@@ -44,6 +44,7 @@ namespace WebSGV.Views
             SecurityHelper.AgregarHeadersSeguridad();
             if (IsPostBack) return;
 
+            EnvioUnicoHelper.Emitir(ClaveEnvioUnico, hfEnvioUnico);
             CargarListas();
             txtFecha.Text = FechaHelper.Ahora().ToString("yyyy-MM-ddTHH:mm", CultureInfo.InvariantCulture);
             if (int.TryParse(Request.QueryString["conductor"], out int idConductor) && ddlConductor.Items.FindByValue(idConductor.ToString()) != null)
@@ -120,8 +121,15 @@ namespace WebSGV.Views
                                                      (pagS > 0 ? $" · pagos directos S/ {pagS:N2}" : ""));
         }
 
+        /// <summary>Clave del formulario de registro en <see cref="EnvioUnicoHelper"/> (E5-3).</summary>
+        public const string ClaveEnvioUnico = "MovimientosViaje.Registrar";
+
         protected void btnRegistrar_Click(object sender, EventArgs e)
         {
+            // Envío único (E5-3): la respuesta lleva siempre un token nuevo (el siguiente registro legítimo
+            // funciona); el recibido se consume justo antes de escribir.
+            string token = hfEnvioUnico.Value;
+            EnvioUnicoHelper.Emitir(ClaveEnvioUnico, hfEnvioUnico);
             try
             {
                 if (!DateTime.TryParseExact(txtFecha.Text, new[] { "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss" },
@@ -151,6 +159,16 @@ namespace WebSGV.Views
 
                 string error = MovimientosViajeService.Validar(m, FechaHelper.Ahora());
                 if (error != null) { MostrarMensaje(error, "warning"); return; }
+
+                // Antes del adjunto y del INSERT: un POST repetido no guarda ni el archivo ni la fila.
+                if (!EnvioUnicoHelper.Consumir(ClaveEnvioUnico, token))
+                {
+                    MostrarMensaje(EnvioUnicoHelper.MensajeYaRegistrado, "warning");
+                    // Sin los montos reenviados: un clic más con el token nuevo no debe duplicar el registro.
+                    txtSoles.Text = txtDolares.Text = txtOperacion.Text = txtProveedor.Text = txtRuc.Text = txtComprobante.Text = txtDescripcion.Text = "";
+                    CargarMovimientos();
+                    return;
+                }
 
                 if (fuAdjunto.HasFile)
                 {

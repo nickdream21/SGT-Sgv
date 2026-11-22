@@ -170,6 +170,13 @@ namespace WebSGV.Helpers
         /// <summary>True si la sesión tiene un ID de usuario entero válido.</summary>
         public static bool HaySesion(HttpSessionState sesion) => IdUsuario(sesion).HasValue;
 
+        /// <summary>
+        /// True si la sesión (envoltorio <see cref="HttpSessionStateBase"/>, el que se puede simular en las pruebas)
+        /// tiene un ID de usuario entero válido. Lo usa <see cref="EnvioUnicoHelper"/>.
+        /// </summary>
+        public static bool HaySesionEn(HttpSessionStateBase sesion) =>
+            sesion != null && SesionVigenteHelper.EnteroDeSesion(sesion[ClaveUsuarioId]).HasValue;
+
         // ── Atajos sobre la petición actual ────────────────────────────────
 
         private static HttpSessionState SesionActual => HttpContext.Current?.Session;

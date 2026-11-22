@@ -2,6 +2,8 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
     <asp:HiddenField ID="hfIdPlanta" runat="server" />
+    <%-- Envío único de "Registrar planta" (E5-3): un segundo POST del mismo formulario no registra otra vez --%>
+    <asp:HiddenField ID="hfEnvioUnico" runat="server" />
 
     <asp:Panel ID="pnlMensaje" runat="server" Visible="false">
         <asp:Label ID="lblMensaje" runat="server"></asp:Label>

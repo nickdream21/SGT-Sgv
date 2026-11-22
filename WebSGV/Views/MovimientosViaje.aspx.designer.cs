@@ -31,6 +31,15 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.TextBox txtDescripcion;
         protected global::System.Web.UI.WebControls.FileUpload fuAdjunto;
         protected global::System.Web.UI.WebControls.Button btnRegistrar;
+
+        /// <summary>
+        /// Control hfEnvioUnico.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfEnvioUnico;
         protected global::System.Web.UI.WebControls.Literal litTotales;
         protected global::System.Web.UI.WebControls.Repeater rptMovimientos;
         protected global::System.Web.UI.WebControls.Panel pnlVacio;

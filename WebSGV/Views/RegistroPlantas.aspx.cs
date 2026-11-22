@@ -19,6 +19,7 @@ namespace WebSGV.Views
 
             if (!IsPostBack)
             {
+                EnvioUnicoHelper.Emitir(ClaveEnvioUnico, hfEnvioUnico);
                 CargarPlantas();
             }
         }
@@ -39,8 +40,15 @@ namespace WebSGV.Views
             }
         }
 
+        /// <summary>Clave del formulario de registro en <see cref="EnvioUnicoHelper"/> (E5-3).</summary>
+        public const string ClaveEnvioUnico = "RegistroPlantas.Registrar";
+
         protected void btnRegistrar_Click(object sender, EventArgs e)
         {
+            // Envío único (E5-3): la respuesta lleva siempre un token nuevo; el recibido se consume antes de escribir.
+            string token = hfEnvioUnico.Value;
+            EnvioUnicoHelper.Emitir(ClaveEnvioUnico, hfEnvioUnico);
+
             if (!Page.IsValid)
             {
                 MostrarMensaje("Corrija los campos marcados de la planta.");
@@ -58,6 +66,15 @@ namespace WebSGV.Views
             if (!Regex.IsMatch(nombre, "^[A-ZÁÉÍÓÚÑ0-9\\s\\-\\.,]{3,200}$"))
             {
                 MostrarMensaje("Nombre de planta inválido: use entre 3 y 200 caracteres válidos.");
+                return;
+            }
+
+            // Antes de la comprobación de nombre repetido: un POST repetido ve "Ya se registró", no "Ya existe".
+            if (!EnvioUnicoHelper.Consumir(ClaveEnvioUnico, token))
+            {
+                MostrarMensaje(EnvioUnicoHelper.MensajeYaRegistrado, tipo: "warning");
+                txtNombre.Text = "";
+                CargarPlantas();
                 return;
             }
 
@@ -186,10 +203,10 @@ namespace WebSGV.Views
             }
         }
 
-        private void MostrarMensaje(string mensaje, bool esExito = false)
+        private void MostrarMensaje(string mensaje, bool esExito = false, string tipo = null)
         {
             pnlMensaje.Visible = true;
-            string css = esExito ? "alert alert-success" : "alert alert-danger";
+            string css = "alert alert-" + (tipo ?? (esExito ? "success" : "danger"));
             lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(mensaje)}</div>";
         }
 
